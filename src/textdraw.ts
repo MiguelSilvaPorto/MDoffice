@@ -537,6 +537,166 @@ export class TextBoard {
     }
   }
 
+  // ---------- texto que se ajusta à caixa ----------
+
+  private eBordaVertical(r: number, c: number): boolean {
+    // olha a linha de cima/baixo também: o texto transbordando pode ter apagado a borda
+    for (const rr of [r, r - 1, r + 1]) {
+      if (rr < 0 || rr >= this.rows) continue;
+      const ch = this.chars.get(key(rr, c));
+      if (ch && "│┃|║".includes(ch)) return true;
+      const mask = this.conn.get(key(rr, c)) ?? 0;
+      if (mask !== 0 && (mask & (U | D)) !== 0) return true;
+    }
+    return false;
+  }
+
+  private eBordaHorizontal(r: number, c: number): boolean {
+    for (const cc of [c, c - 1, c + 1]) {
+      if (cc < 0 || cc >= this.cols) continue;
+      const ch = this.chars.get(key(r, cc));
+      if (ch && "─━-═".includes(ch)) return true;
+      const mask = this.conn.get(key(r, cc)) ?? 0;
+      if (mask !== 0 && (mask & (L | R)) !== 0) return true;
+    }
+    return false;
+  }
+
+  /** Acha a caixa (retângulo desenhado) que envolve o ponto — é o que permite ajustar o texto. */
+  private findBox(r: number, c: number): { r1: number; c1: number; r2: number; c2: number } | null {
+    let c1 = -1;
+    for (let cc = c; cc >= 0; cc--) {
+      if (this.eBordaVertical(r, cc)) {
+        c1 = cc;
+        break;
+      }
+    }
+    if (c1 < 0) return null;
+    let c2 = -1;
+    // a busca da direita começa depois da borda esquerda (senão acha ela mesma)
+    for (let cc = Math.max(c, c1 + 1); cc < this.cols; cc++) {
+      if (this.eBordaVertical(r, cc)) {
+        c2 = cc;
+        break;
+      }
+    }
+    if (c2 < 0 || c2 - c1 < 3) return null;
+    let r1 = -1;
+    for (let rr = r; rr >= 0; rr--) {
+      if (this.eBordaHorizontal(rr, c1) || this.eBordaHorizontal(rr, c2)) {
+        r1 = rr;
+        break;
+      }
+    }
+    if (r1 < 0) return null;
+    let r2 = -1;
+    for (let rr = Math.max(r, r1 + 1); rr < this.rows; rr++) {
+      if (this.eBordaHorizontal(rr, c1) || this.eBordaHorizontal(rr, c2)) {
+        r2 = rr;
+        break;
+      }
+    }
+    if (r2 < 0 || r2 - r1 < 2) return null;
+    return { r1, c1, r2, c2 };
+  }
+
+  /** Quebra as linhas para caber na largura, sem cortar palavra quando dá. */
+  private wrapToWidth(lines: string[], largura: number): string[] {
+    const out: string[] = [];
+    for (const linha of lines) {
+      let resto = linha.trim();
+      while (resto.length > largura) {
+        let corte = resto.lastIndexOf(" ", largura);
+        if (corte <= 0) corte = largura;
+        out.push(resto.slice(0, corte).trimEnd());
+        resto = resto.slice(corte).trimStart();
+      }
+      if (resto) out.push(resto);
+    }
+    return out;
+  }
+
+  /** Célula que é borda/traço (não é texto). */
+  private eCelulaDeBorda(r: number, c: number): boolean {
+    const ch = this.chars.get(key(r, c));
+    if (ch && "│┃|║─━-═┌┐└┘├┤┬┴┼".includes(ch)) return true;
+    return (this.conn.get(key(r, c)) ?? 0) !== 0;
+  }
+
+  /** Apaga só o TEXTO do retângulo (as bordas desenhadas ficam). */
+  private apagarTextoDentro(r1: number, c1: number, r2: number, c2: number): void {
+    for (let rr = Math.max(0, r1); rr <= Math.min(this.rows - 1, r2); rr++) {
+      for (let cc = Math.max(0, c1); cc <= Math.min(this.cols - 1, c2); cc++) this.chars.delete(key(rr, cc));
+    }
+  }
+
+  /** Põe o texto selecionado dentro da caixa em volta: quebrado na largura e centralizado. */
+  fitSelectionToBox(): boolean {
+    const sel = this.selection;
+    if (!sel) {
+      toast("Escolha ⌖, arraste sobre o texto e clique de novo em “Ajustar à caixa”.", "info", 4600);
+      return false;
+    }
+    const caixa = this.findBox(sel.r1, sel.c1) ?? this.findBox(sel.r2, sel.c2);
+    if (!caixa) {
+      toast("Não encontrei uma caixa em volta dessa área.", "info", 3600);
+      return false;
+    }
+    const linhas: string[] = [];
+    for (let rr = sel.r1; rr <= sel.r2; rr++) {
+      // pega a linha inteira a partir da seleção (senão o texto que transborda se perderia)
+      let fim = sel.c1;
+      for (let cc = this.cols - 1; cc >= sel.c1; cc--) {
+        if (this.cellChar(rr, cc) !== " " && !this.eCelulaDeBorda(rr, cc)) {
+          fim = cc;
+          break;
+        }
+      }
+      let linha = "";
+      for (let cc = sel.c1; cc <= fim; cc++) {
+        // a borda não é texto: entra como espaço
+        linha += this.eCelulaDeBorda(rr, cc) ? " " : this.cellChar(rr, cc);
+      }
+      linhas.push(linha.replace(/\s+$/, ""));
+    }
+    const naoVazias = linhas.filter((l) => l.trim() !== "");
+    if (!naoVazias.length) {
+      toast("A área selecionada não tem texto.", "info", 3000);
+      return false;
+    }
+    const recuo = Math.min(...naoVazias.map((l) => l.length - l.trimStart().length));
+    const texto = linhas.map((l) => l.slice(recuo)).join("\n");
+
+    const largura = Math.max(3, caixa.c2 - caixa.c1 - 1);
+    const altura = Math.max(1, caixa.r2 - caixa.r1 - 1);
+    let quebradas = this.wrapToWidth(texto.split("\n"), largura);
+    if (!quebradas.length) quebradas = [""];
+    if (quebradas.length > altura) quebradas = quebradas.slice(0, altura);
+
+    this.pushUndo();
+    // apaga o texto selecionado e também o que passou da seleção (transbordo) naquelas linhas
+    for (let rr = sel.r1; rr <= sel.r2; rr++) {
+      let fim = sel.c2;
+      for (let cc = this.cols - 1; cc > sel.c2; cc--) {
+        if (this.cellChar(rr, cc) !== " " && !this.eCelulaDeBorda(rr, cc)) {
+          fim = cc;
+          break;
+        }
+      }
+      this.apagarTextoDentro(rr, sel.c1, rr, fim);
+    }
+    this.apagarTextoDentro(caixa.r1 + 1, caixa.c1 + 1, caixa.r2 - 1, caixa.c2 - 1);
+    // redesenha a borda: o texto que transbordava pode ter apagado pedaços dela
+    this.rectangle(caixa.r1, caixa.c1, caixa.r2, caixa.c2);
+    const inicio = caixa.r1 + 1 + Math.max(0, Math.floor((altura - quebradas.length) / 2));
+    quebradas.forEach((linha, i) => this.addText(inicio + i, caixa.c1 + 1, linha));
+    this.selection = null;
+    this.request();
+    this.onChange?.();
+    toast("Texto ajustado dentro da caixa.", "ok", 3200);
+    return true;
+  }
+
   private rectangle(r1: number, c1: number, r2: number, c2: number): void {
     const rt = Math.min(r1, r2);
     const rb = Math.max(r1, r2);
@@ -758,7 +918,20 @@ export class TextBoard {
       input.remove();
       if (value) {
         this.pushUndo();
-        value.split("\n").forEach((line, i) => this.addText(cell.r + i, cell.c, line));
+        const linhas = value.split("\n");
+        const caixa = this.findBox(cell.r, cell.c);
+        if (caixa) {
+          // digitou dentro de uma caixa: quebra o texto para caber nela
+          const largura = Math.max(3, caixa.c2 - caixa.c1 - 1);
+          const altura = Math.max(1, caixa.r2 - caixa.r1 - 1);
+          let quebradas = this.wrapToWidth(linhas, largura);
+          if (!quebradas.length) quebradas = [""];
+          if (quebradas.length > altura) quebradas = quebradas.slice(0, altura);
+          quebradas.forEach((line, i) => this.addText(Math.min(cell.r + i, caixa.r2 - 1), caixa.c1 + 1, line));
+          toast("O texto foi quebrado para caber na caixa.", "info", 3000);
+        } else {
+          linhas.forEach((line, i) => this.addText(cell.r + i, cell.c, line));
+        }
         this.request();
       }
       this.onChange?.();
@@ -955,6 +1128,7 @@ export function createTextDrawEditor(opts: TextEditorOptions): TextEditorHandle 
         <button class="btn icon" data-act="redo" title="Refazer (Ctrl+Y)"><svg class="ic"><use href="#i-redo"/></svg></button>
         <button class="btn icon" data-act="del" title="Apagar a área selecionada (Del)"><svg class="ic"><use href="#i-trash"/></svg></button>
         <button class="tbtn wide" data-act="clear" title="Limpar tudo para começar de novo">Limpar</button>
+        <button class="tbtn wide" data-act="fit-box" title="Ajustar o texto selecionado para caber dentro da caixa">Ajustar à caixa</button>
       </div>
       <span class="tsep"></span>
       <div class="dr-group">
@@ -977,6 +1151,8 @@ export function createTextDrawEditor(opts: TextEditorOptions): TextEditorHandle 
   const canvas = panel.querySelector<HTMLCanvasElement>(".dr-canvas")!;
   const wrap = panel.querySelector<HTMLElement>(".draw-canvas-wrap")!;
   const board = new TextBoard(canvas, wrap, { doc: opts.doc ?? null });
+  // gancho de depuração/teste (mesmo padrão do window.__mdcreator.app)
+  (window as unknown as { __mdcreatorTextBoard?: TextBoard }).__mdcreatorTextBoard = board;
 
   const traceSelect = panel.querySelector<HTMLSelectElement>(".txt-trace")!;
   traceSelect.value = style;
@@ -1072,6 +1248,7 @@ export function createTextDrawEditor(opts: TextEditorOptions): TextEditorHandle 
   act("redo", () => board.redo());
   act("del", () => board.eraseSelection());
   act("clear", () => board.clearAll());
+  act("fit-box", () => board.fitSelectionToBox());
 
   // ---- zoom (ajuste fino) ----
   const zoomLabel = panel.querySelector<HTMLElement>('[data-act="zoom-reset"]')!;
@@ -1118,6 +1295,7 @@ export function createTextDrawEditor(opts: TextEditorOptions): TextEditorHandle 
     panel.querySelector<HTMLButtonElement>('[data-act="redo"]')!.disabled = !board.canRedo();
     panel.querySelector<HTMLButtonElement>('[data-act="clear"]')!.disabled = board.isEmpty();
     panel.querySelector<HTMLButtonElement>('[data-act="del"]')!.disabled = !board.hasSelection();
+    panel.querySelector<HTMLButtonElement>('[data-act="fit-box"]')!.disabled = !board.hasSelection();
   };
   board.onChange = () => {
     refresh();
