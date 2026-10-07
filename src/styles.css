@@ -1275,8 +1275,8 @@ body.no-preview #preview-wrap {
 }
 
 .cm-issue-popup {
-  position: absolute;
-  z-index: 40;
+  position: fixed;
+  z-index: 60;
   display: flex;
   flex-direction: column;
   gap: 8px;

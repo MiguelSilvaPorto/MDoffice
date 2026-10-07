@@ -157,6 +157,17 @@ export class MdEditor {
     });
     // ao rolar ou mudar o texto, o popup de sugestões some (as posições mudam)
     this.view.scrollDOM.addEventListener("scroll", () => this.closeIssuesPopup(), { passive: true });
+    // clicar fora (menu, painel, preview) também fecha o popup
+    document.addEventListener(
+      "mousedown",
+      (event) => {
+        if (!this.popup) return;
+        const alvo = event.target as Node | null;
+        if (alvo && (this.popup.contains(alvo) || this.view.dom.contains(alvo))) return;
+        this.closeIssuesPopup();
+      },
+      true
+    );
   }
 
   /** Extensões do editor com o tema ATUAL (recriadas ao trocar de tema/documento). */
@@ -195,7 +206,8 @@ export class MdEditor {
       this.hlComp.of(syntaxHighlighting(this.dark ? darkHL : lightHL)),
       issueField,
       EditorView.domEventHandlers({
-        mousedown: (event, view) => this.handleIssueClick(event, view),
+        mousedown: (event) => this.handleIssueMouseDown(event),
+        mouseup: (event, view) => this.handleIssueMouseUp(event, view),
       }),
     ];
   }
@@ -359,23 +371,39 @@ export class MdEditor {
 
   private popup: HTMLElement | null = null;
 
-  private handleIssueClick(event: MouseEvent, view: EditorView): boolean {
+  /**
+   * Clique na palavra sublinhada: NUNCA intercepta o mouse — é o que permite clicar no meio
+   * da palavra, arrastar e selecionar normalmente. Só fecha o popup que estiver aberto.
+   */
+  private handleIssueMouseDown(event: MouseEvent): boolean {
     if (event.button !== 0) return false;
+    this.closeIssuesPopup();
+    return false;
+  }
+
+  /** Abre o popup do corretor quando o clique/seleção termina numa palavra sublinhada. */
+  private handleIssueMouseUp(event: MouseEvent, view: EditorView): boolean {
+    if (event.button !== 0) return false;
+    const issues = view.state.field(issueField).issues;
+    const sel = view.state.selection.main;
+
+    if (!sel.empty) {
+      // selecionou pedaço de uma palavra sublinhada (ex.: clique duplo) → mostra as sugestões
+      const dentro = issues.find((i) => sel.from >= i.from && sel.to <= i.to && i.to - i.from <= 60);
+      if (!dentro) return false;
+      this.showIssuePopup(dentro, view);
+      return false;
+    }
+
     const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
     if (pos === null) return false;
-    const issues = view.state.field(issueField).issues;
-    // se a palavra tem aviso de ortografia e de estilo ao mesmo tempo,
-    // o clique mostra a sugestão de ortografia primeiro
+    // palavra errada primeiro (o clique nela deve mostrar as sugestões)
     const issue =
       issues.find((i) => i.kind === "spell" && pos >= i.from && pos <= i.to) ??
       issues.find((i) => pos >= i.from && pos <= i.to);
-    if (!issue) {
-      this.closeIssuesPopup();
-      return false;
-    }
-    event.preventDefault();
+    if (!issue) return false;
     this.showIssuePopup(issue, view);
-    return true;
+    return false;
   }
 
   private showIssuePopup(issue: WritingIssue, view: EditorView): void {
@@ -448,14 +476,17 @@ export class MdEditor {
     );
     pop.append(actions);
 
-    const host = this.view.dom.parentElement ?? this.view.dom;
-    const hostRect = host.getBoundingClientRect();
+    // camada fixa da página: não é cortada pelo editor nem atrapalha o texto por baixo
     const coords = view.coordsAtPos(issue.from);
-    host.append(pop);
+    document.body.append(pop);
+    pop.style.position = "fixed";
     const width = pop.offsetWidth;
-    const left = (coords?.left ?? hostRect.left) - hostRect.left - 10;
-    pop.style.left = `${Math.max(8, Math.min(left, hostRect.width - width - 12))}px`;
-    pop.style.top = `${(coords?.bottom ?? hostRect.bottom) - hostRect.top + 6}px`;
+    const height = pop.offsetHeight;
+    const left = (coords?.left ?? 0) - 10;
+    pop.style.left = `${Math.max(8, Math.min(left, window.innerWidth - width - 12))}px`;
+    const abaixo = (coords?.bottom ?? 0) + 6;
+    const acima = (coords?.top ?? 0) - height - 6;
+    pop.style.top = `${abaixo + height > window.innerHeight - 6 && acima > 6 ? acima : abaixo}px`;
     this.popup = pop;
   }
 
