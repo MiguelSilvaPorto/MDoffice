@@ -225,58 +225,100 @@ export class MdEditor {
     this.view.focus();
   }
 
-  /** Alinhamento estilo Word: envolve as linhas selecionadas em <div align="…">. */
+  /**
+   * Alinhamento estilo Word: envolve as linhas tocadas pela seleção em `<div align="…">`.
+   * Se a seleção for só uma PARTE de um bloco já alinhado, o resto do bloco mantém o
+   * alinhamento antigo — só o trecho selecionado muda.
+   */
   setAlignment(kind: "left" | "center" | "right" | "justify"): void {
     const { state } = this.view;
     const sel = state.selection.main;
-    const first = state.doc.lineAt(sel.from);
-    const last = state.doc.lineAt(sel.to);
     const openRx = /^<div align="(left|center|right|justify)">$/;
     const isBlank = (n: number) => state.doc.line(n).text.trim() === "";
 
-    let f = first.number;
-    let l = last.number;
+    const selFirst = state.doc.lineAt(sel.from).number;
+    const selLast = state.doc.lineAt(sel.to).number;
+
+    // ---------- existe um invólucro em volta? ----------
+    let wrapperFrom = -1;
+    let wrapperTo = -1;
     let current: string | null = null;
 
-    // a própria primeira linha selecionada já é o invólucro?
-    const ownOpen = openRx.exec(state.doc.line(f).text.trim());
-    if (ownOpen) {
-      current = ownOpen[1];
+    const openAt = (n: number): string | null => {
+      const m = openRx.exec(state.doc.line(n).text.trim());
+      return m ? m[1] : null;
+    };
+
+    const proprio = openAt(selFirst);
+    if (proprio) {
+      // a própria seleção começa no invólucro
+      current = proprio;
+      wrapperFrom = selFirst;
     } else {
-      // senão, procura o invólucro logo acima (pulando linhas em branco)
-      let up = f;
-      while (up > 1 && isBlank(up - 1)) up--;
-      if (up > 1) {
-        const m = openRx.exec(state.doc.line(up - 1).text.trim());
+      // procura subindo, atravessando o conteúdo do bloco (pode haver vários parágrafos)
+      for (let n = selFirst - 1; n >= 1; n--) {
+        const txt = state.doc.line(n).text.trim();
+        if (txt === "</div>") break; // já estamos fora de qualquer bloco
+        const m = openRx.exec(txt);
         if (m) {
           current = m[1];
-          f = up - 1;
+          wrapperFrom = n;
+          break;
         }
       }
     }
-    // e o fechamento logo abaixo
-    let down = l;
-    while (down < state.doc.lines && isBlank(down + 1)) down++;
-    if (down < state.doc.lines && state.doc.line(down + 1).text.trim() === "</div>") {
-      l = down + 1;
+    if (wrapperFrom > 0) {
+      for (let n = Math.max(selLast, wrapperFrom) + 1; n <= state.doc.lines; n++) {
+        const txt = state.doc.line(n).text.trim();
+        if (openRx.test(txt)) break; // entrou em outro bloco
+        if (txt === "</div>") {
+          wrapperTo = n;
+          break;
+        }
+      }
+      if (wrapperTo < 0) {
+        // abriu mas não fechou: trata como bloco comum
+        current = null;
+        wrapperFrom = -1;
+      }
     }
 
-    const from = state.doc.line(f).from;
-    const to = state.doc.line(l).to;
-    let body = state.sliceDoc(from, to);
-    if (current) {
-      body = body.replace(/^\s*<div align="[^"]*">\s*\n?/, "").replace(/\n?\s*<\/div>\s*$/, "");
+    // ---------- linhas do bloco selecionado ----------
+    let blocoFirst = selFirst;
+    let blocoLast = selLast;
+    if (wrapperFrom > 0) {
+      // dentro do invólucro: o conteúdo começa depois da abertura e termina antes do fecho
+      let cFirst = wrapperFrom + 1;
+      while (cFirst < state.doc.lines && isBlank(cFirst)) cFirst++;
+      let cLast = wrapperTo - 1;
+      while (cLast > 1 && isBlank(cLast)) cLast--;
+      blocoFirst = Math.min(Math.max(selFirst, cFirst), cLast);
+      blocoLast = Math.min(Math.max(selLast, cFirst), cLast);
     }
-    body = body.replace(/^\n+|\n+$/g, "");
+    const blocoFrom = state.doc.line(blocoFirst).from;
+    const blocoTo = state.doc.line(blocoLast).to;
+    const bloco = state.sliceDoc(blocoFrom, blocoTo);
 
-    if (current === kind) {
-      // clicou no mesmo alinhamento → volta ao normal
-      this.view.dispatch({ changes: { from, to, insert: body } });
+    if (wrapperFrom < 0) {
+      // sem invólucro: coloca um novo em volta do trecho selecionado
+      this.view.dispatch({
+        changes: { from: blocoFrom, to: blocoTo, insert: `<div align="${kind}">\n\n${bloco}\n\n</div>` },
+      });
       this.view.focus();
       return;
     }
+
+    // ---------- reescreve só o que muda ----------
+    const limpo = (s: string) => s.replace(/^\s+|\s+$/g, "");
+    const antes = limpo(state.sliceDoc(state.doc.line(wrapperFrom).to, blocoFrom));
+    const depois = limpo(state.sliceDoc(blocoTo, state.doc.line(wrapperTo).from));
+    const partes: string[] = [];
+    if (antes) partes.push(`<div align="${current}">\n\n${antes}\n\n</div>`);
+    partes.push(kind === current ? bloco : `<div align="${kind}">\n\n${bloco}\n\n</div>`);
+    if (depois) partes.push(`<div align="${current}">\n\n${depois}\n\n</div>`);
+
     this.view.dispatch({
-      changes: { from, to, insert: `<div align="${kind}">\n\n${body}\n\n</div>` },
+      changes: { from: state.doc.line(wrapperFrom).from, to: state.doc.line(wrapperTo).to, insert: partes.join("\n\n") },
     });
     this.view.focus();
   }
@@ -477,7 +519,43 @@ export class MdEditor {
     return { from: sel.from, to: sel.to };
   }
 
-  /** Envolve a seleção com marcas (ex.: **negrito**). */
+  /** Acha o par de marcas que envolve a seleção (ex.: a seleção está dentro de **…**). */
+  private findWrapper(
+    from: number,
+    to: number,
+    before: string,
+    after: string
+  ): { from: number; to: number; innerFrom: number; innerTo: number } | null {
+    const { state } = this.view;
+    const lineStart = state.doc.lineAt(from).from;
+    const lineEnd = state.doc.lineAt(to).to;
+    const antes = state.sliceDoc(lineStart, from);
+    let startIdx = antes.lastIndexOf(before);
+    // o "*" do itálico não pode ser um pedaço do "**" do negrito
+    while (startIdx >= 0 && before === "*") {
+      const abs = lineStart + startIdx;
+      const prev = state.sliceDoc(Math.max(0, abs - 1), abs);
+      const next = state.sliceDoc(abs + 1, abs + 2);
+      if (prev !== "*" && next !== "*") break;
+      startIdx = antes.lastIndexOf(before, startIdx - 1);
+    }
+    if (startIdx < 0) return null;
+    const depois = state.sliceDoc(to, lineEnd);
+    const endIdx = depois.indexOf(after);
+    if (endIdx < 0) return null;
+    const openFrom = lineStart + startIdx;
+    const openTo = openFrom + before.length;
+    const closeFrom = to + endIdx;
+    const closeTo = closeFrom + after.length;
+    if (openTo > closeFrom) return null;
+    return { from: openFrom, to: closeTo, innerFrom: openTo, innerTo: closeFrom };
+  }
+
+  /**
+   * Envolve a seleção com marcas (ex.: **negrito**). Se a seleção for só um pedaço de um
+   * trecho já formatado igual, ele TIRA a formatação somente desse pedaço — o resto continua
+   * como estava (ex.: “**Um texto** todo **em negrito**”).
+   */
   wrapSelection(before: string, after: string, ph: string): void {
     const { state } = this.view;
     const sel = state.selection.main;
@@ -488,18 +566,55 @@ export class MdEditor {
         changes: { from: sel.from, to: sel.to, insert: before + ph + after },
         selection: { anchor: sel.from + before.length, head: sel.from + before.length + ph.length },
       });
-    } else if (text.startsWith(before) && text.endsWith(after) && text.length >= before.length + after.length) {
+      this.view.focus();
+      return;
+    }
+
+    if (text.startsWith(before) && text.endsWith(after) && text.length >= before.length + after.length) {
       const inner = text.slice(before.length, text.length - after.length);
       this.view.dispatch({
         changes: { from: sel.from, to: sel.to, insert: inner },
         selection: { anchor: sel.from, head: sel.from + inner.length },
       });
-    } else {
-      this.view.dispatch({
-        changes: { from: sel.from, to: sel.to, insert: before + text + after },
-        selection: { anchor: sel.from + before.length, head: sel.from + before.length + text.length },
-      });
+      this.view.focus();
+      return;
     }
+
+    const wrapper = this.findWrapper(sel.from, sel.to, before, after);
+    if (wrapper) {
+      // já está formatado assim: tira a formatação só do pedaço selecionado
+      const antesBruto = state.sliceDoc(wrapper.innerFrom, sel.from);
+      const depoisBruto = state.sliceDoc(sel.to, wrapper.innerTo);
+      const antes = antesBruto.replace(/\s+$/, "");
+      const depois = depoisBruto.replace(/^\s+/, "");
+      const espacoAntes = antesBruto.length > antes.length;
+      const espacoDepois = depoisBruto.length > depois.length;
+      const selecao = text.replace(/^\s+|\s+$/g, "") || text;
+
+      const partes: { txt: string; espacoAntes: boolean; selecao?: boolean }[] = [];
+      if (antes) partes.push({ txt: before + antes + after, espacoAntes: false });
+      partes.push({ txt: selecao, espacoAntes: antes ? espacoAntes : false, selecao: true });
+      if (depois) partes.push({ txt: before + depois + after, espacoAntes: espacoDepois });
+
+      let novo = "";
+      let inicioSelecao = 0;
+      for (const p of partes) {
+        if (novo && p.espacoAntes) novo += " ";
+        if (p.selecao) inicioSelecao = novo.length;
+        novo += p.txt;
+      }
+      this.view.dispatch({
+        changes: { from: wrapper.from, to: wrapper.to, insert: novo },
+        selection: { anchor: inicioSelecao, head: inicioSelecao + selecao.length },
+      });
+      this.view.focus();
+      return;
+    }
+
+    this.view.dispatch({
+      changes: { from: sel.from, to: sel.to, insert: before + text + after },
+      selection: { anchor: sel.from + before.length, head: sel.from + before.length + text.length },
+    });
     this.view.focus();
   }
 
