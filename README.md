@@ -63,6 +63,9 @@ produzir documentos bonitos e funcionais — inclusive para enviar à IA.
   (marca-texto `<mark>`) e **alinhamento de tabelas** (`:---`, `:---:`, `---:` renderizam
   à esquerda/centro/direita). Como o Markdown não tem sintaxe de alinhamento, o app usa
   `<div align="…">` em volta do trecho: clique no mesmo botão para voltar ao normal.
+  O alinhamento age **só nas linhas selecionadas** — se você pegar um trecho de um bloco já
+  alinhado, o resto do bloco continua como estava (o app divide o bloco). No menu **⋯**,
+  **Reparar alinhamentos** conserta `<div>` sobrando ou sem fechar de documentos antigos.
 - **Assistente de escrita (português, offline)**: sublinha em **vermelho** as palavras fora
   do dicionário pt-BR e em **amarelo** problemas de estilo/gramática (abreviações de internet
   como “vc”, palavras grudadas como “derrepente”, repetições “de de”, espaços extras,
