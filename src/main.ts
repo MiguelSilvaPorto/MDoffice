@@ -483,8 +483,15 @@ class App {
 
   private async autosave(): Promise<void> {
     if (!this.dirty) return;
-    // Sem caminho (ex.: app rodando no navegador): o texto vai para temp/rascunho.md do projeto.
+    // Documento novo (sem arquivo ainda): cria o rascunho e passa a salvar nele — é o
+    // "salva conforme eu escrevo". Se não houver acesso a arquivos (navegador), cai
+    // no servidor de desenvolvimento, que grava em temp/rascunho.md do projeto.
     if (!this.path) {
+      try {
+        if (await this.ensureSaved()) return;
+      } catch {
+        /* sem arquivos: segue para o salvamento pelo servidor */
+      }
       const salvou = await files.saveDraftFallback("rascunho", this.editor.getText());
       if (salvou) {
         this.dirty = false;
