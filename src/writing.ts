@@ -530,6 +530,22 @@ export function checkStyle(text: string): WritingIssue[] {
     push(m.index, m.index + m[0].length, "Pontuação repetida demais", m[1], [], true);
   }
 
+  // trecho comprido sem NENHUMA pontuação: falta vírgula/ponto entre as orações
+  // (não tenta adivinhar onde: só avisa — quebrar orações precisa de leitura humana)
+  const semPontoRx = /(?<![\p{L}\d])[\p{L}\d]+(?:\s+[\p{L}\d]+){24,}/gu;
+  while ((m = semPontoRx.exec(mask)) !== null) {
+    const inicio = m.index;
+    const fim = inicio + Math.min(m[0].length, 60);
+    push(
+      inicio,
+      fim,
+      "Esse trecho está muito longo sem vírgulas nem pontos — separe em orações (frases curtas leem melhor e a IA entende melhor)",
+      undefined,
+      [],
+      false
+    );
+  }
+
   // frases começando com minúscula (depois de . ! ?)
   const lowerAfterRx = /([.!?])\s+([a-záàâãéêíóôõúç][\p{L}]*)/gu;
   while ((m = lowerAfterRx.exec(mask)) !== null) {
