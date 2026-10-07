@@ -1023,11 +1023,17 @@ body.no-preview #preview-wrap {
   position: absolute;
   z-index: 5;
   padding: 2px 4px;
-  background: rgba(255, 255, 255, 0.92);
+  /* usa as cores do tema: no escuro, texto claro sobre fundo escuro (antes ficava claro em fundo branco = invisível) */
+  color: var(--fg);
+  background: var(--panel);
   border: 1px dashed var(--accent);
   border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+  caret-color: var(--accent);
   font-family: Inter, "Segoe UI", system-ui, sans-serif;
   line-height: 1.25;
+  /* sem quebra automática: cada linha digitada é uma linha da grade */
+  white-space: pre;
   resize: none;
   overflow: hidden;
   outline: none;

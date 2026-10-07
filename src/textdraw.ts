@@ -730,16 +730,19 @@ export class TextBoard {
     input.title = `${title} — Enter quebra linha · Ctrl+Enter ou clicar fora conclui`;
     const cellWpx = this.canvas.clientWidth / this.cols;
     const cellHpx = this.canvas.clientHeight / this.rows;
+    const fontPx = Math.max(12, Math.round(this.m.fontSize * (this.canvas.clientHeight / this.m.logicalH)));
     input.style.left = `${this.canvas.offsetLeft + cell.c * cellWpx}px`;
     input.style.top = `${this.canvas.offsetTop + cell.r * cellHpx}px`;
-    input.style.fontSize = `${Math.max(12, Math.round(this.m.fontSize * (this.canvas.clientHeight / this.m.logicalH)))}px`;
+    input.style.fontSize = `${fontPx}px`;
     input.style.lineHeight = "1.15";
 
     const fit = () => {
       const lines = input.value.split("\n");
       const longest = Math.max(1, ...lines.map((l) => l.length));
-      input.style.width = `${Math.max(150, longest * cellWpx * 1.05)}px`;
-      input.style.height = `${Math.max(1, lines.length) * cellHpx}px`;
+      // largura com folga (a fonte real varia): melhor sobrar do que cortar o texto
+      input.style.width = `${Math.min(460, Math.max(150, longest * fontPx * 0.72 + 16))}px`;
+      // altura pelo tamanho da LETRA: a célula da grade é bem menor e cortava o texto
+      input.style.height = `${Math.round(lines.length * fontPx * 1.3) + 8}px`;
     };
     input.addEventListener("input", fit);
     fit();
