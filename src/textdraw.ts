@@ -830,7 +830,8 @@ export class TextBoard {
 
   private onDown = (e: PointerEvent): void => {
     if (e.button !== 0) return;
-    this.canvas.focus();
+    // foca sem rolar a tela (senão o navegador "puxa" a vista para o canvas a cada traço)
+    this.canvas.focus({ preventScroll: true });
     const cell = this.cellFromEvent(e);
     try {
       this.canvas.setPointerCapture(e.pointerId);
@@ -1430,7 +1431,7 @@ export function createTextDrawEditor(opts: TextEditorOptions): TextEditorHandle 
   refresh();
   return {
     el: panel,
-    focus: () => canvas.focus(),
+    focus: () => canvas.focus({ preventScroll: true }),
     dispose: () => board.dispose(),
     applyText: (text: string) => {
       if (stopped) return;

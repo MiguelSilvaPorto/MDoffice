@@ -1112,7 +1112,8 @@ export class Board {
     } catch {
       /* alguns ambientes não suportam captura */
     }
-    this.canvas.focus();
+    // foca sem rolar a tela (senão o navegador "puxa" a vista para o canvas a cada traço)
+    this.canvas.focus({ preventScroll: true });
     const p = this.pt(e);
 
     if (this.tool === "select") {
@@ -2134,7 +2135,7 @@ export function createDrawEditor(opts: DrawEditorOptions): DrawEditorHandle {
   refresh();
   return {
     el: panel,
-    focus: () => canvas.focus(),
+    focus: () => canvas.focus({ preventScroll: true }),
     dispose: () => board.dispose(),
   };
 }
