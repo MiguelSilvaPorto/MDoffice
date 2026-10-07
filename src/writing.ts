@@ -262,8 +262,8 @@ const INFORMAL: { rx: RegExp; message: string; fix?: string; suggestion?: string
   { rx: /(?<![\p{L}])coisa(?![\p{L}])/giu, message: "“coisa” é vago em texto formal — prefira “item”, “elemento” ou “aspecto”", suggestion: "item" },
   { rx: /(?<![\p{L}])baita(?![\p{L}])/giu, message: "“baita” é informal — use “grande” ou “expressivo”", fix: "grande" },
   { rx: /(?<![\p{L}])muito massa(?![\p{L}])/giu, message: "“muito massa” é informal — use “excelente”", fix: "excelente" },
-  { rx: /(?<![\p{L}])apps(?![\p{L}])/giu, message: "em texto formal prefira “aplicativos”", suggestion: "aplicativos" },
-  { rx: /(?<![\p{L}])app(?![\p{L}])/giu, message: "em texto formal prefira “aplicativo”", suggestion: "aplicativo" },
+  { rx: /(?<![\p{L}])apps(?![\p{L}])/giu, message: "em texto formal prefira “aplicativos”", suggestion: "aplicativos", fix: "aplicativos" },
+  { rx: /(?<![\p{L}])app(?![\p{L}])/giu, message: "em texto formal prefira “aplicativo”", suggestion: "aplicativo", fix: "aplicativo" },
 ];
 
 /** Sinônimos curados para “usar outra palavra”. */

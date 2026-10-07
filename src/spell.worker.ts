@@ -267,8 +267,13 @@ function sugerirPalavra(palavra: string): { sugestoes: string[]; best?: string; 
     const baseSegundo = segundo ? semBonus(segundo[1], segundo[0]) : 0;
     const soAcento = norm(primeiro[0]) === p;
     // só acento (ou erro clássico): sempre confiável.
-    // Parecida: precisa ser muito parecida E estar claramente na frente das outras.
-    if (soAcento || classico || (basePrimeiro >= 0.78 && basePrimeiro - baseSegundo >= 0.08)) {
+    // Parecida: precisa ser parecida E estar claramente na frente (a frequência entra aqui:
+    // é o que faz "atensao → atenção" ganhar de palpites raros tipo "atentato")
+    if (soAcento || classico || (basePrimeiro >= 0.7 && primeiro[1] - (segundo?.[1] ?? 0) >= 0.08)) {
+      best = ajustarCaixa(palavra, primeiro[0]);
+    }
+    // Uma ÚNICA sugestão: não há dúvida de qual é a palavra certa — aplica sozinho.
+    if (!best && !segundo && !soAcento) {
       best = ajustarCaixa(palavra, primeiro[0]);
     }
   }
