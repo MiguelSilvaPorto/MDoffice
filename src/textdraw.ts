@@ -524,10 +524,22 @@ export class TextBoard {
   private redrawPen(): void {
     if (!this.draftBase) return;
     this.restore(this.draftBase);
-    const pts = simplify(
-      this.penPoints.map((p) => ({ x: p.c, y: p.r })),
+    const crus = this.penPoints;
+    let pts = simplify(
+      crus.map((p) => ({ x: p.c, y: p.r })),
       1.1
     ).map((p) => ({ r: Math.round(p.y), c: Math.round(p.x) }));
+    if (crus.length) {
+      // a simplificação não pode "comer" o fim do traço (senão a caixa não fecha)
+      const ultimo = crus[crus.length - 1];
+      const fim = pts[pts.length - 1];
+      if (!fim || fim.r !== ultimo.r || fim.c !== ultimo.c) pts = [...pts, { r: ultimo.r, c: ultimo.c }];
+      // terminou perto de onde começou? fecha o traço (caixas desenhadas à mão)
+      const inicio = crus[0];
+      if (pts.length > 2 && Math.max(Math.abs(ultimo.r - inicio.r), Math.abs(ultimo.c - inicio.c)) <= 3) {
+        pts = [...pts, { r: inicio.r, c: inicio.c }];
+      }
+    }
     if (pts.length <= 1) {
       if (pts.length === 1) this.addConn(pts[0].r, pts[0].c, L | R);
       return;
@@ -888,6 +900,18 @@ export class TextBoard {
       this.restore(this.draftBase);
       if (this.tool === "line") this.traceLine(this.startCell.r, this.startCell.c, fim.r, fim.c);
       else this.rectangle(this.startCell.r, this.startCell.c, fim.r, fim.c);
+      this.request();
+      this.onChange?.();
+    }
+    // caneta: o ponto onde o mouse foi solto também faz parte do traço
+    if (this.tool === "pen" && this.draftBase && this.penPoints.length) {
+      const fim = this.cellFromEvent(e);
+      const ultimo = this.penPoints[this.penPoints.length - 1];
+      if (fim.r !== ultimo.r || fim.c !== ultimo.c) {
+        this.penPoints.push(fim);
+        this.penDrew = true;
+      }
+      this.redrawPen();
       this.request();
       this.onChange?.();
     }
