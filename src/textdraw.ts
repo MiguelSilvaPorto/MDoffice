@@ -85,7 +85,9 @@ function metrics(cols: number, rows: number): Metrics {
     const fontSize = CELL_FONT;
     const cellW = (advance * fontSize) / probe;
     const cellH = Math.round(fontSize * 1.18);
-    metricsCache = { cellW, cellH, fontSize, logicalW: 0, logicalH: 0 };
+    // QUADRADINHOS: o lado vem da altura da letra (a letra fica centralizada na célula)
+    const lado = Math.max(Math.round(cellW), cellH);
+    metricsCache = { cellW: lado, cellH: lado, fontSize, logicalW: 0, logicalH: 0 };
   }
   const base = metricsCache!;
   return { ...base, logicalW: base.cellW * cols, logicalH: base.cellH * rows };
@@ -229,14 +231,44 @@ export class TextBoard {
     }
     ctx.stroke();
 
+    // traços e bordas desenhados como LINHAS de verdade: ligam certinho entre células
+    // (necessário agora que as células são quadradas e a letra é mais estreita que a célula)
+    ctx.strokeStyle = "#1f2937";
+    ctx.lineWidth = Math.max(1, this.m.cellH * 0.08);
+    ctx.lineCap = "butt";
+    ctx.beginPath();
+    for (const [k, mask] of this.conn) {
+      if (mask === 0 || this.chars.has(k)) continue;
+      const [r, c] = k.split(",").map(Number);
+      const x = (c + 0.5) * this.m.cellW;
+      const y = (r + 0.5) * this.m.cellH;
+      if (mask & L) {
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - this.m.cellW / 2, y);
+      }
+      if (mask & R) {
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + this.m.cellW / 2, y);
+      }
+      if (mask & U) {
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y - this.m.cellH / 2);
+      }
+      if (mask & D) {
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y + this.m.cellH / 2);
+      }
+    }
+    ctx.stroke();
+
     ctx.fillStyle = "#1f2937";
     ctx.font = `${this.m.fontSize}px ${MONO}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.cols; c++) {
-        const ch = this.cellChar(r, c);
-        if (ch === " ") continue;
+        const ch = this.chars.get(key(r, c));
+        if (!ch || ch === " ") continue;
         ctx.fillText(ch, (c + 0.5) * this.m.cellW, (r + 0.52) * this.m.cellH);
       }
     }
