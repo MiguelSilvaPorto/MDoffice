@@ -29,7 +29,19 @@ const issueField = StateField.define<{ issues: WritingIssue[]; deco: DecorationS
         changed = true;
       }
     }
-    if (!changed && !tr.docChanged) return value;
+    if (tr.docChanged) {
+      // Os avisos precisam ANDAR junto com o texto: sem isso, digitar acima de uma palavra
+      // sublinhada deixa o sublinhado preso na posição antiga (parece que ele "sobe").
+      issues = issues
+        .map((i) => {
+          const from = tr.changes.mapPos(i.from, 1);
+          const to = tr.changes.mapPos(i.to, -1);
+          return to > from ? { ...i, from, to } : null;
+        })
+        .filter((i): i is WritingIssue => i !== null);
+      changed = true;
+    }
+    if (!changed) return value;
     const ranges = [];
     const docLen = tr.state.doc.length;
     for (const issue of issues) {
