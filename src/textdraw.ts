@@ -60,7 +60,9 @@ REVERSE.ascii.set("\\", 0);
 const MONO = `ui-monospace, "Cascadia Code", Consolas, monospace`;
 const CELL_FONT = 26;
 const DEFAULT_COLS = 64;
-const DEFAULT_ROWS = 22;
+// mais linhas que colunas "proporcionais": com células quadradas, 64×40 dá um campo
+// equilibrado (antes eram 22 linhas e o campo virava uma faixa horizontal)
+const DEFAULT_ROWS = 40;
 
 const key = (r: number, c: number) => `${r},${c}`;
 
