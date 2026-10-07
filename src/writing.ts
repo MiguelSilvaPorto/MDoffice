@@ -16,6 +16,8 @@ export interface WritingIssue {
   fix?: string;
   /** pode ser aplicada sozinha enquanto se digita (espaços, maiúsculas, abreviações) */
   safe?: boolean;
+  /** correção de ortografia em que dá para confiar (aplicada sozinha pela correção automática) */
+  auto?: string;
 }
 
 export interface WritingStats {
@@ -260,6 +262,8 @@ const INFORMAL: { rx: RegExp; message: string; fix?: string; suggestion?: string
   { rx: /(?<![\p{L}])coisa(?![\p{L}])/giu, message: "“coisa” é vago em texto formal — prefira “item”, “elemento” ou “aspecto”", suggestion: "item" },
   { rx: /(?<![\p{L}])baita(?![\p{L}])/giu, message: "“baita” é informal — use “grande” ou “expressivo”", fix: "grande" },
   { rx: /(?<![\p{L}])muito massa(?![\p{L}])/giu, message: "“muito massa” é informal — use “excelente”", fix: "excelente" },
+  { rx: /(?<![\p{L}])apps(?![\p{L}])/giu, message: "em texto formal prefira “aplicativos”", suggestion: "aplicativos" },
+  { rx: /(?<![\p{L}])app(?![\p{L}])/giu, message: "em texto formal prefira “aplicativo”", suggestion: "aplicativo" },
 ];
 
 /** Sinônimos curados para “usar outra palavra”. */
@@ -362,6 +366,8 @@ function isInsideMask(text: string, from: number, to: number): boolean {
 interface SpellHit {
   word: string;
   suggestions: string[];
+  /** correção em que dá para confiar (aplicada sozinha pela correção automática) */
+  best?: string;
 }
 
 let spellWorker: Worker | null = null;
@@ -438,7 +444,7 @@ async function waitForSpell(timeoutMs = 3000): Promise<boolean> {
   return spellReady;
 }
 
-async function checkWords(words: string[]): Promise<Map<string, string[]>> {
+async function checkWords(words: string[]): Promise<Map<string, SpellHit>> {
   const worker = ensureSpellWorker();
   if (!worker || spellFailed || !words.length) return new Map();
   if (!(await waitForSpell())) return new Map();
@@ -447,7 +453,7 @@ async function checkWords(words: string[]): Promise<Map<string, string[]>> {
     spellPending.set(id, resolve);
     worker.postMessage({ type: "check", id, words });
   });
-  return new Map(hits.map((h) => [h.word, h.suggestions]));
+  return new Map(hits.map((h) => [h.word, h]));
 }
 
 // ---------- regras de estilo ----------
@@ -696,15 +702,16 @@ export async function checkText(text: string, ignore: Set<string>): Promise<Writ
   if (tokens.length) {
     const wrong = await checkWords(Array.from(unique));
     for (const token of tokens) {
-      const suggestions = wrong.get(token.word);
-      if (suggestions) {
+      const hit = wrong.get(token.word);
+      if (hit) {
         issues.push({
           from: token.from,
           to: token.to,
           word: token.word,
           kind: "spell",
           message: `“${token.word}” não está no dicionário`,
-          suggestions,
+          suggestions: hit.suggestions,
+          auto: hit.best,
         });
         continue;
       }

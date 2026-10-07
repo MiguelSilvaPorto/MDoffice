@@ -36,7 +36,7 @@ export function openReviewModal(opts: ReviewOptions): ReviewHandle {
     <footer class="wm-foot">
       <button class="btn" data-recheck>Revisar de novo</button>
       <span class="dr-spacer"></span>
-      <button class="btn" data-fix-all>Corrigir tudo (estilo)</button>
+      <button class="btn" data-fix-all>Corrigir tudo</button>
       <button class="btn primary" data-close>Fechar</button>
     </footer>`;
   backdrop.append(modal);

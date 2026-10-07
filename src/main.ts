@@ -253,6 +253,8 @@ class App {
     this.editor.setIssues(this.issues);
     this.updateWritingBadge();
     this.reviewHandle?.refresh(this.issues, writingStats(text));
+    // com o resultado da ortografia em mãos, a correção automática ganha o que fazer
+    if (this.autoFix && this.autoFixArmed) this.autoFixSoon();
   }
 
   /** Liga/desliga a correção automática (guardada entre sessões). */
@@ -268,23 +270,60 @@ class App {
     );
   }
 
-  /** Aplica as correções de estilo (as que têm substituição pronta) numa só ação. */
-  private applyFixes(issues: WritingIssue[]): number {
-    const fixes = issues.filter((i) => i.kind === "style" && i.fix);
-    if (!fixes.length) return 0;
-    this.editor.replaceRanges(fixes.map((i) => ({ from: i.from, to: i.to, insert: i.fix! })));
-    return fixes.length;
+  /** Substituição de um aviso: estilo usa `fix`; ortografia usa `auto` (correção confiável). */
+  private replacementFor(issue: WritingIssue): string | undefined {
+    return issue.kind === "spell" ? issue.auto : issue.fix;
   }
 
-  /** Enquanto se digita: aplica só o que é seguro (maiúsculas, espaços, abreviações). */
+  /** Aplica as correções disponíveis numa só ação (um único desfazer). */
+  private applyFixes(issues: WritingIssue[]): number {
+    const aplicaveis = issues.filter((i) => this.replacementFor(i) !== undefined);
+    if (!aplicaveis.length) return 0;
+    this.editor.replaceRanges(
+      aplicaveis.map((i) => ({ from: i.from, to: i.to, insert: this.replacementFor(i)! }))
+    );
+    return aplicaveis.length;
+  }
+
+  /** Primeira coluna do parágrafo que contém a posição. */
+  private paragraphStartAt(pos: number): number {
+    const doc = this.editor.view.state.doc;
+    let line = doc.lineAt(pos);
+    while (line.number > 1 && doc.line(line.number - 1).text.trim() !== "") line = doc.line(line.number - 1);
+    return line.from;
+  }
+
+  /**
+   * Corrige sozinho as palavras erradas em que dá para confiar ("responsavo" → "responsável").
+   * Nunca mexe na palavra em que o cursor está (ela pode estar pela metade) e confere se o
+   * texto naquele ponto continua igual antes de trocar.
+   */
+  private autoFixWords(from: number, to: number, soDepoisDoCursor = true): number {
+    const view = this.editor.view;
+    const doc = view.state.doc;
+    const pos = view.state.selection.main.head;
+    const alvos = this.issues.filter(
+      (i) =>
+        i.kind === "spell" &&
+        i.auto &&
+        i.from >= from &&
+        i.to <= to &&
+        (!soDepoisDoCursor || pos > i.to) &&
+        doc.sliceString(i.from, i.to) === i.word
+    );
+    return this.applyFixes(alvos);
+  }
+
+  /** Enquanto se digita: aplica só o que é seguro (maiúsculas, espaços, abreviações) + palavras. */
   private autoFixSafe(): number {
     const view = this.editor.view;
-    const line = view.state.doc.lineAt(view.state.selection.main.head);
+    const doc = view.state.doc;
+    const pos = view.state.selection.main.head;
+    const line = doc.lineAt(pos);
     // recalcula na hora: as posições antigas podem ter mudado
-    const fresh = checkStyle(view.state.doc.toString()).filter(
-      (i) => i.safe && i.from >= line.from && i.to <= line.to
-    );
-    return this.applyFixes(fresh);
+    const fresh = checkStyle(doc.toString()).filter((i) => i.safe && i.from >= line.from && i.to <= line.to);
+    const parFrom = this.paragraphStartAt(pos);
+    return this.applyFixes(fresh) + this.autoFixWords(parFrom, pos);
   }
 
   /**
@@ -303,7 +342,7 @@ class App {
     const from = doc.line(first).from;
     const to = doc.line(line.number - 2).to;
     const fresh = checkStyle(doc.toString()).filter((i) => i.from >= from && i.to <= to);
-    return this.applyFixes(fresh);
+    return this.applyFixes(fresh) + this.autoFixWords(from, to);
   }
 
   private updateWritingBadge(): void {
@@ -399,9 +438,11 @@ class App {
         this.isDraft = false;
       }
 
-      // correção automática: ponto, vírgulas, maiúsculas e trocas formais antes de gravar
+      // correção automática: ponto, vírgulas, maiúsculas, trocas formais e palavras erradas
       if (this.autoFix) {
-        const count = this.applyFixes(checkStyle(this.editor.getText()));
+        const count =
+          this.applyFixes(checkStyle(this.editor.getText())) +
+          this.autoFixWords(0, this.editor.getText().length, false);
         if (count) toast(`Correção automática: ${count} ajuste${count === 1 ? "" : "s"} antes de salvar.`, "ok", 2600);
       }
 

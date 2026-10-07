@@ -87,14 +87,18 @@ produzir documentos bonitos e funcionais — inclusive para enviar à IA.
   imperfeito, futuro e condicional). Se o verbo não estiver na lista, o app **não troca
   nada** — só sugere, para não mudar o sentido.
 - **Correção automática** (ligada por padrão; liga/desliga em **⋯ → Correção automática**):
+  - **palavras erradas** — quando o corretor tem certeza da troca (só acento, erro clássico
+    ou palavra muito parecida e comum), ela entra sozinha **assim que você termina a palavra**
+    (nunca no meio dela): *responsavo* → **responsável**, *reuniao* → **reunião**, *otima* →
+    **ótima**, *excessao* → **exceção**;
   - **enquanto você escreve** — maiúscula no começo de frase/parágrafo, espaços, pontuação
     repetida e abreviações (“vc” → “você”) entram sozinhos assim que você pausa;
   - **ao terminar o parágrafo** (linha em branco) — o parágrafo anterior ganha ponto final,
     vírgulas e trocas formais;
   - **ao salvar** (`Ctrl+S` / `Salvar como`) — o documento inteiro é revisado antes de gravar.
   Ela **não mexe** em documento que você só abriu (precisa que você digite) e cada correção é
-  uma ação única de *desfazer* (`Ctrl+Z`). Palavras fora do dicionário nunca são trocadas
-  sozinhas — só sugeridas.
+  uma ação única de *desfazer* (`Ctrl+Z`). Palavras em que o corretor **não** tem certeza
+  continuam só sugeridas (clique ou `F7` → **Corrigir tudo**).
 - **“Você quis dizer…?”**: para palavras que **existem** no dicionário mas estão a **uma
   letra** de uma palavra muito comum (ex.: *maneria* → **maneira**, com troca de letras de
   lugar) o app sugere a palavra provável — sem alarmar em palavras curtas nem nas que diferem
