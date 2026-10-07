@@ -492,7 +492,7 @@ export class MdEditor {
     actions.className = "cm-issue-row";
     addChip(
       actions,
-      "Ignorar palavra",
+      "Adicionar ao dicionário",
       () => {
         this.onIgnoreWord?.(issue.word);
         this.closeIssuesPopup();

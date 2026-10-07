@@ -1280,6 +1280,41 @@ body.no-preview #preview-wrap {
   text-underline-offset: 3px;
 }
 
+/* dicionário pessoal (menu ⋯ → Dicionário pessoal…) */
+.dict-add {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.dict-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--fg);
+}
+
+.dict-list {
+  max-height: 260px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dict-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
 .cm-issue-popup {
   position: fixed;
   z-index: 60;
