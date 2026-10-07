@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mdCreator — editor Markdown</title>
+  </head>
+  <body>
+    <!-- Ícones (sprite SVG) -->
+    <svg style="display: none" aria-hidden="true">
+      <symbol id="i-new" viewBox="0 0 24 24"><path d="M6 2h8l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 2v5h5"/><path d="M12 11v6M9 14h6"/></symbol>
+      <symbol id="i-open" viewBox="0 0 24 24"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></symbol>
+      <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5z"/><path d="M9 3v6h6V3"/><path d="M8 13h8v8H8z"/></symbol>
+      <symbol id="i-saveas" viewBox="0 0 24 24"><path d="M5 3h9l4 4v9"/><path d="M9 3v6h6V3"/><path d="M19 15v6M16 18h6"/></symbol>
+      <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9.5 4v16"/></symbol>
+      <symbol id="i-draw" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/></symbol>
+      <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-4.5-4.5L6 21"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></symbol>
+      <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.5"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+      <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-5"/></symbol>
+      <symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h5"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/></symbol>
+      <symbol id="i-dup" viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M5 16V5a1 1 0 0 1 1-1h11"/></symbol>
+      <symbol id="i-paste" viewBox="0 0 24 24"><path d="M9 3h6v3H9z"/><path d="M8 4H6a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-2"/><path d="M12 11v6"/><path d="M9.5 14.5 12 17l2.5-2.5"/></symbol>
+      <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></symbol>
+      <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.4 9.3a2.7 2.7 0 1 1 3.8 2.5c-.8.4-1.2 1-1.2 1.8v.3"/><path d="M12 17.3h.01"/></symbol>
+      <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10.5V20h12v-9.5"/></symbol>
+      <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5.5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="18.5" r="1.4"/></symbol>
+      <symbol id="i-flow" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="9.5" width="7" height="5" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/><path d="M10 5.5h2.6a1.4 1.4 0 0 1 1.4 1.4v3.6"/><path d="M10 18.5h2.6a1.4 1.4 0 0 0 1.4-1.4v-3.6"/></symbol>
+      <symbol id="i-align-left" viewBox="0 0 24 24"><path d="M4 6h16M4 10.5h10M4 15h16M4 19.5h8"/></symbol>
+      <symbol id="i-align-center" viewBox="0 0 24 24"><path d="M4 6h16M7 10.5h10M4 15h16M8 19.5h8"/></symbol>
+      <symbol id="i-align-right" viewBox="0 0 24 24"><path d="M4 6h16M10 10.5h10M4 15h16M12 19.5h8"/></symbol>
+      <symbol id="i-align-justify" viewBox="0 0 24 24"><path d="M4 6h16M4 10.5h16M4 15h16M4 19.5h16"/></symbol>
+      <symbol id="i-mark" viewBox="0 0 24 24"><path d="M14 3.5 20.5 10 11 19.5H5.5v-5.5z"/><path d="M4 21h16"/></symbol>
+      <symbol id="i-code" viewBox="0 0 24 24"><path d="M8.5 8 5 12l3.5 4"/><path d="M15.5 8 19 12l-3.5 4"/><path d="M13 6l-2 12"/></symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9.5 12 15.5 18 9.5"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 6.5"/></symbol>
+    </svg>
+
+    <div id="app">
+      <header id="topbar">
+        <div class="brand"><span class="brand-mark">M↓</span><span class="brand-name">mdCreator</span></div>
+
+        <div class="tb-group">
+          <button class="btn icon" data-act="new" title="Novo documento (Ctrl+N)"><svg class="ic"><use href="#i-new"/></svg></button>
+          <button class="btn icon" data-act="open" title="Abrir (Ctrl+O)"><svg class="ic"><use href="#i-open"/></svg></button>
+          <button class="btn icon" data-act="save" title="Salvar (Ctrl+S)"><svg class="ic"><use href="#i-save"/></svg></button>
+        </div>
+
+        <div class="tb-title"><span id="dirty-dot" hidden>●</span><span id="doc-title">Sem título.md</span></div>
+        <div class="tb-spacer"></div>
+
+        <div class="tb-group">
+          <div class="split-btn">
+            <button class="btn primary" data-act="draw" title="Desenhar dentro do documento (Ctrl+Shift+D)"><svg class="ic"><use href="#i-draw"/></svg><span>Desenhar</span></button>
+            <button class="btn primary split-caret" data-menu="draw-style" title="Escolher o tipo de desenho: imagem ou letras e símbolos"><svg class="ic"><use href="#i-chevron"/></svg></button>
+          </div>
+          <button class="btn" data-act="image" title="Inserir imagem (ou colar com Ctrl+V, ou arrastar o arquivo)"><svg class="ic"><use href="#i-image"/></svg><span>Imagem</span></button>
+          <button class="btn icon" data-menu="more" title="Mais opções"><svg class="ic"><use href="#i-more"/></svg></button>
+        </div>
+      </header>
+
+      <div id="body">
+        <aside id="sidebar">
+          <section class="side-sec">
+            <h3>Recentes</h3>
+            <div id="recents-list" class="side-list"></div>
+          </section>
+          <section class="side-sec grow">
+            <h3>Estrutura</h3>
+            <div id="outline" class="side-list"></div>
+          </section>
+        </aside>
+
+        <main id="editor-wrap">
+          <div id="toolbar">
+            <button class="tbtn" data-act="bold" title="Negrito (Ctrl+B)"><b>B</b></button>
+            <button class="tbtn" data-act="italic" title="Itálico (Ctrl+I)"><i>I</i></button>
+            <button class="tbtn" data-act="heading" title="Título (H1 → H3)"><b>H</b></button>
+            <span class="tsep"></span>
+            <button class="tbtn" data-act="list" title="Lista">•</button>
+            <button class="tbtn" data-act="task" title="Lista de tarefas (campo clicável no preview)"><span class="mono">[ ]</span></button>
+            <button class="tbtn" data-act="table" title="Tabela">▦</button>
+            <button class="tbtn" data-act="link" title="Link">🔗</button>
+            <span class="tsep"></span>
+            <button class="tbtn" data-act="align-left" title="Alinhar à esquerda"><svg class="ic"><use href="#i-align-left"/></svg></button>
+            <button class="tbtn" data-act="align-center" title="Centralizar"><svg class="ic"><use href="#i-align-center"/></svg></button>
+            <button class="tbtn" data-act="align-right" title="Alinhar à direita"><svg class="ic"><use href="#i-align-right"/></svg></button>
+            <button class="tbtn" data-act="align-justify" title="Justificar (como no Word)"><svg class="ic"><use href="#i-align-justify"/></svg></button>
+            <button class="tbtn" data-act="mark" title="Destaque (marca-texto)"><svg class="ic"><use href="#i-mark"/></svg></button>
+            <span class="tsep"></span>
+            <button class="tbtn" data-act="toggle-more" id="tb-more" title="Mais formatação"><svg class="ic"><use href="#i-more"/></svg></button>
+            <span class="tsep"></span>
+            <button class="tbtn wide" data-act="ai-template" title="Modelo estruturado para pedir algo à IA">Modelo IA</button>
+            <div id="toolbar-more" hidden>
+              <button class="tbtn" data-act="strike" title="Riscado"><s>S</s></button>
+              <button class="tbtn" data-act="code" title="Código embutido"><span class="mono">&lt;/&gt;</span></button>
+              <button class="tbtn" data-act="codeblock" title="Bloco de código"><span class="mono">```</span></button>
+              <button class="tbtn" data-act="quote" title="Citação">&gt;</button>
+              <button class="tbtn" data-act="olist" title="Lista numerada">1.</button>
+              <button class="tbtn" data-act="hr" title="Linha divisória">―</button>
+              <button class="tbtn" data-act="mermaid" title="Diagrama (Mermaid)">◈</button>
+            </div>
+          </div>
+          <div id="editor"></div>
+        </main>
+
+        <div id="splitter" title="Arraste para redimensionar · duplo clique volta a 50/50"></div>
+
+        <section id="preview-wrap">
+          <div id="preview" class="markdown-body"></div>
+        </section>
+      </div>
+
+      <footer id="statusbar">
+        <span id="st-words">0 palavras</span>
+        <span id="st-chars">0 caracteres</span>
+        <span id="st-lines">1 linha</span>
+        <span id="st-cursor">Ln 1, Col 1</span>
+        <span class="flex"></span>
+        <button id="st-writing" class="path-btn" hidden title="Abrir a revisão de texto (F7)"></button>
+        <span id="save-state" class="muted">Novo documento</span>
+        <button id="st-path" class="path-btn" title="Mostrar arquivo na pasta" hidden></button>
+      </footer>
+    </div>
+
+    <div id="toasts"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
