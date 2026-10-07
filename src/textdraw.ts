@@ -671,7 +671,8 @@ export class TextBoard {
     const altura = Math.max(1, caixa.r2 - caixa.r1 - 1);
     let quebradas = this.wrapToWidth(texto.split("\n"), largura);
     if (!quebradas.length) quebradas = [""];
-    if (quebradas.length > altura) quebradas = quebradas.slice(0, altura);
+    const cortou = quebradas.length > altura;
+    if (cortou) quebradas = quebradas.slice(0, altura);
 
     this.pushUndo();
     // apaga o texto selecionado e também o que passou da seleção (transbordo) naquelas linhas
@@ -693,7 +694,11 @@ export class TextBoard {
     this.selection = null;
     this.request();
     this.onChange?.();
-    toast("Texto ajustado dentro da caixa.", "ok", 3200);
+    toast(
+      cortou ? "Texto ajustado na caixa — mas não coube tudo: aumente a altura da caixa." : "Texto ajustado dentro da caixa.",
+      cortou ? "info" : "ok",
+      4200
+    );
     return true;
   }
 
@@ -926,9 +931,10 @@ export class TextBoard {
           const altura = Math.max(1, caixa.r2 - caixa.r1 - 1);
           let quebradas = this.wrapToWidth(linhas, largura);
           if (!quebradas.length) quebradas = [""];
-          if (quebradas.length > altura) quebradas = quebradas.slice(0, altura);
+          const cortou = quebradas.length > altura;
+          if (cortou) quebradas = quebradas.slice(0, altura);
           quebradas.forEach((line, i) => this.addText(Math.min(cell.r + i, caixa.r2 - 1), caixa.c1 + 1, line));
-          toast("O texto foi quebrado para caber na caixa.", "info", 3000);
+          toast(cortou ? "Texto quebrado na caixa — não coube tudo (faça a caixa mais alta)." : "O texto foi quebrado para caber na caixa.", "info", cortou ? 4600 : 3000);
         } else {
           linhas.forEach((line, i) => this.addText(cell.r + i, cell.c, line));
         }
