@@ -626,16 +626,12 @@ export class TextBoard {
       return;
     }
 
-    if (this.tool === "text") {
-      this.openInput(cell, "", "Digite o texto");
-      return;
-    }
-    if (this.tool === "field") {
-      this.openInput(cell, "[ ] ", "Campo selecionável");
-      return;
-    }
-    if (this.tool === "table") {
-      this.openTablePopover(cell);
+    if (this.tool === "text" || this.tool === "field" || this.tool === "table") {
+      // impede o navegador de dar foco ao canvas e "roubar" o foco da caixinha de texto
+      e.preventDefault();
+      if (this.tool === "text") this.openInput(cell, "", "Digite o texto");
+      else if (this.tool === "field") this.openInput(cell, "[ ] ", "Campo selecionável");
+      else this.openTablePopover(cell);
       return;
     }
 
@@ -775,6 +771,10 @@ export class TextBoard {
     this.host.append(input);
     input.focus();
     input.select();
+    // alguns navegadores ainda tentam dar foco ao canvas: garante o foco na caixinha
+    requestAnimationFrame(() => {
+      if (!done && input.isConnected && document.activeElement !== input) input.focus();
+    });
   }
 
   private openTablePopover(cell: { r: number; c: number }): void {
