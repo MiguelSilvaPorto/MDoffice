@@ -1350,6 +1350,10 @@ class App {
       case "mark":
         this.editor.wrapSelection("<mark>", "</mark>", "destaque");
         break;
+      case "small":
+        // letras menores (Markdown não tem tamanho de fonte; <small> é HTML seguro e simples)
+        this.editor.wrapSelection("<small>", "</small>", "texto menor");
+        break;
       case "table":
         this.editor.insert(TABLE_SNIPPET);
         break;

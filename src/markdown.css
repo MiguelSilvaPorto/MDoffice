@@ -240,6 +240,11 @@ body {
   border-radius: 4px;
 }
 
+/* letras menores (o Markdown não tem tamanho de fonte — usamos <small>) */
+.markdown-body small {
+  font-size: 0.82em;
+}
+
 /* alinhamento (estilo Word) — o Markdown não tem sintaxe, então usamos <div align="…"> */
 .markdown-body [align="left"] {
   text-align: left;
