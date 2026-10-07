@@ -715,9 +715,11 @@ export class Board {
     }
     this.canvas.style.width = `${Math.round(cssW)}px`;
     this.canvas.style.height = `${Math.round(cssH)}px`;
-    const bufferScale = clamp(((cssW * dpr) / this.W), 1, 3);
-    this.canvas.width = Math.round(this.W * bufferScale);
-    this.canvas.height = Math.round(this.H * bufferScale);
+    // buffer do tamanho exibido (× densidade da tela): sem redução forte, a grade e os
+    // traços de 1px continuam visíveis em qualquer zoom (antes pareciam sumir)
+    const bufferScale = clamp(((cssW * dpr) / this.W), 0.1, 3);
+    this.canvas.width = Math.max(1, Math.round(this.W * bufferScale));
+    this.canvas.height = Math.max(1, Math.round(this.H * bufferScale));
     this.request();
   }
 

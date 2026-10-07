@@ -175,11 +175,14 @@ export class TextBoard {
     const avail = Math.max(220, hostW - 20);
     const cssW = Math.min(avail, this.m.logicalW) * this.zoom;
     const cssH = (cssW * this.m.logicalH) / this.m.logicalW;
-    this.canvas.style.width = `${Math.round(cssW)}px`;
-    this.canvas.style.height = `${Math.round(cssH)}px`;
-    const buffer = clamp((cssW * dpr) / this.m.logicalW, 1, 3);
-    this.canvas.width = Math.round(this.m.logicalW * buffer);
-    this.canvas.height = Math.round(this.m.logicalH * buffer);
+    const canvas = this.canvas;
+    canvas.style.width = `${Math.round(cssW)}px`;
+    canvas.style.height = `${Math.round(cssH)}px`;
+    // buffer do tamanho exibido (× densidade da tela): sem redução forte, a grade e os
+    // traços de 1px continuam visíveis em qualquer zoom (antes pareciam sumir)
+    const buffer = clamp((cssW * dpr) / this.m.logicalW, 0.1, 3);
+    canvas.width = Math.max(1, Math.round(this.m.logicalW * buffer));
+    canvas.height = Math.max(1, Math.round(this.m.logicalH * buffer));
     this.request();
   }
 
@@ -211,7 +214,7 @@ export class TextBoard {
     ctx.fillRect(0, 0, this.m.logicalW, this.m.logicalH);
 
     // grade de apoio (não sai no texto final)
-    ctx.strokeStyle = "rgba(15, 23, 42, 0.07)";
+    ctx.strokeStyle = "rgba(15, 23, 42, 0.16)";
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let c = 0; c <= this.cols; c++) {
