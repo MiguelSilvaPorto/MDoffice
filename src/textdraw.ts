@@ -707,7 +707,16 @@ export class TextBoard {
     const rb = Math.max(r1, r2);
     const cl = Math.min(c1, c2);
     const cr = Math.max(c1, c2);
-    if (rb - rt < 1 || cr - cl < 1) return;
+    // caixa "deitada" ou "em pé" (1 célula de altura/largura): desenha como linha
+    if (rb - rt < 1 && cr - cl < 1) return;
+    if (rb - rt < 1) {
+      this.segmentH(rt, cl, cr);
+      return;
+    }
+    if (cr - cl < 1) {
+      this.segmentV(cl, rt, rb);
+      return;
+    }
     this.segmentH(rt, cl, cr);
     this.segmentH(rb, cl, cr);
     this.segmentV(cl, rt, rb);
@@ -872,6 +881,15 @@ export class TextBoard {
       if (this.canvas.hasPointerCapture(e.pointerId)) this.canvas.releasePointerCapture(e.pointerId);
     } catch {
       /* ignora */
+    }
+    // garante que linha/caixa terminem exatamente na célula onde o mouse foi solto
+    if ((this.tool === "line" || this.tool === "rect") && this.startCell && this.draftBase) {
+      const fim = this.cellFromEvent(e);
+      this.restore(this.draftBase);
+      if (this.tool === "line") this.traceLine(this.startCell.r, this.startCell.c, fim.r, fim.c);
+      else this.rectangle(this.startCell.r, this.startCell.c, fim.r, fim.c);
+      this.request();
+      this.onChange?.();
     }
     this.startCell = null;
     this.lastCell = null;
