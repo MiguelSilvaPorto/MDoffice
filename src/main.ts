@@ -353,13 +353,19 @@ class App {
     const view = this.editor.view;
     const doc = view.state.doc;
     const line = doc.lineAt(view.state.selection.main.head);
-    if (line.text.trim() !== "" || line.number < 3) return 0;
-    // só um Enter: o parágrafo continua na próxima linha — não mexe
-    if (doc.line(line.number - 1).text.trim() !== "") return 0;
-    let first = line.number - 2;
+    const texto = line.text.trim();
+    // Linha vazia (parágrafo terminado) OU já começando um bloco novo (imagem, título,
+    // lista, tabela, citação, cerca de código): nos dois casos o parágrafo de cima acabou.
+    const vazia = texto === "";
+    const bloco = /^(#|!\[|\||```|>|[-*+]\s|\d+\.\s)/.test(texto);
+    if (!vazia && !bloco) return 0;
+    const ultimaAcima = vazia ? line.number - 2 : line.number - 1;
+    if (ultimaAcima < 1) return 0;
+    if (vazia && doc.line(ultimaAcima).text.trim() !== "") return 0;
+    let first = ultimaAcima;
     while (first > 1 && doc.line(first - 1).text.trim() !== "") first--;
     const from = doc.line(first).from;
-    const to = doc.line(line.number - 2).to;
+    const to = doc.line(ultimaAcima).to;
     const fresh = checkStyle(doc.toString()).filter((i) => i.from >= from && i.to <= to);
     return this.applyFixes(fresh) + this.autoFixWords(from, to);
   }

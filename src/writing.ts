@@ -530,6 +530,18 @@ export function checkStyle(text: string): WritingIssue[] {
     push(m.index, m.index + m[0].length, "Pontuação repetida demais", m[1], [], true);
   }
 
+  // expressões que pedem vírgula dos DOIS lados (no meio da frase)
+  const entreVirgulas = /\b(ou seja|isto é|por exemplo|em outras palavras|ou melhor|no entanto|porém|contudo|entretanto|todavia|portanto|além disso|além do mais)\b/giu;
+  while ((m = entreVirgulas.exec(mask)) !== null) {
+    const ini = m.index;
+    const fim = ini + m[0].length;
+    const antes = text.slice(Math.max(0, ini - 1), ini);
+    const depois = text.slice(fim, fim + 1);
+    if (antes === "," || depois === "," || antes === "\n" || antes === "") continue;
+    if (ini === 0 || text.slice(Math.max(0, ini - 1), ini) === "\n") continue; // começo de linha: outra regra cuida
+    push(ini, fim, `Em volta de “${m[0]}” costumam vir vírgulas`, `, ${m[0]},`, [], false);
+  }
+
   // trecho comprido sem NENHUMA pontuação: falta vírgula/ponto entre as orações
   // (não tenta adivinhar onde: só avisa — quebrar orações precisa de leitura humana)
   const semPontoRx = /(?<![\p{L}\d])[\p{L}\d]+(?:\s+[\p{L}\d]+){24,}/gu;
@@ -604,7 +616,8 @@ export function checkStyle(text: string): WritingIssue[] {
       // o ponto só falta no FIM DO PARÁGRAFO: se a linha de baixo continua o texto,
       // a frase segue ali (é escrita "quebrada" em várias linhas) — não é erro
       const proxima = (maskLines[i + 1] ?? "").trim();
-      const fimDeParagrafo = i + 1 >= lines.length || proxima === "" || /^([#>|`]|[-*+]\s|\d+\.\s|```)/.test(proxima);
+      const fimDeParagrafo =
+        i + 1 >= lines.length || proxima === "" || /^([#>|`]|!\[|[-*+]\s|\d+\.\s|```)/.test(proxima);
       if (!skip && fimDeParagrafo && words >= 3 && !endsOk && /[\p{L}\d]$/u.test(trimmed)) {
         const lineEnd = offset + raw.trimEnd().length;
         const wm = /[\p{L}\d]+$/u.exec(text.slice(offset, lineEnd));
