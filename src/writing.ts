@@ -328,6 +328,9 @@ export const SYNONYMS: Record<string, string[]> = {
 // ---------- utilitários ----------
 
 /** Esconde trechos que não devem ser corrigidos (código, links, front-matter). */
+const MASCA = "·";
+const mascara = (n: number) => MASCA.repeat(Math.max(0, n));
+
 function maskNonProse(text: string): string {
   const lines = text.split("\n");
   let inFence = false;
@@ -335,35 +338,36 @@ function maskNonProse(text: string): string {
     const fence = /^\s*(```|~~~)/.test(line);
     if (fence) {
       inFence = !inFence;
-      return " ".repeat(line.length);
+      return mascara(line.length);
     }
-    if (inFence) return " ".repeat(line.length);
-    if (index === 0 && /^---\s*$/.test(line)) return " ".repeat(line.length);
+    if (inFence) return mascara(line.length);
+    if (index === 0 && /^---\s*$/.test(line)) return mascara(line.length);
     let out = line;
-    // links/imagens: mantém só o rótulo
-    out = out.replace(/!\[([^\]]*)\]\([^)]*\)/g, (_m, label: string) => label);
-    out = out.replace(/\[([^\]]*)\]\([^)]*\)/g, (_m, label: string) => label);
+    // links/imagens: mantém só o rótulo, no lugar certo e com o mesmo comprimento
+    out = out.replace(/!\[([^\]]*)\]\(([^)]*)\)/g, (_m, label: string, url: string) => `${mascara(2)}${label}${mascara(3 + url.length)}`);
+    out = out.replace(/\[([^\]]*)\]\(([^)]*)\)/g, (_m, label: string, url: string) => `${mascara(1)}${label}${mascara(3 + url.length)}`);
     // html
-    out = out.replace(/<[^>]+>/g, (m) => " ".repeat(m.length));
+    out = out.replace(/<[^>]+>/g, (m) => mascara(m.length));
     // código embutido
-    out = out.replace(/`[^`]*`/g, (m) => " ".repeat(m.length));
+    out = out.replace(/`[^`]*`/g, (m) => mascara(m.length));
     // URLs soltas
-    out = out.replace(/https?:\/\/\S+/g, (m) => " ".repeat(m.length));
+    out = out.replace(/https?:\/\/\S+/g, (m) => mascara(m.length));
     return out;
   });
   let result = masked.join("\n");
   // front-matter (--- no topo)
   if (/^---\s*\n/.test(text)) {
-    const end = result.indexOf("\n---", 3);
+    const end = result.indexOf(`\n${MASCA}---`, 3);
     if (end > 0) {
-      result = " ".repeat(end + 4) + result.slice(end + 4);
+      result = mascara(end + 4) + result.slice(end + 4);
     }
   }
   return result;
 }
 
 function isInsideMask(text: string, from: number, to: number): boolean {
-  return maskNonProse(text).slice(from, to).trim() === "" && text.slice(from, to).trim() !== "";
+  const pedaco = maskNonProse(text).slice(from, to);
+  return /^[·\s]*$/.test(pedaco) && pedaco.includes(MASCA) && text.slice(from, to).trim() !== "";
 }
 
 // ---------- ortografia ----------
@@ -616,8 +620,12 @@ export function checkStyle(text: string): WritingIssue[] {
       // o ponto só falta no FIM DO PARÁGRAFO: se a linha de baixo continua o texto,
       // a frase segue ali (é escrita "quebrada" em várias linhas) — não é erro
       const proxima = (maskLines[i + 1] ?? "").trim();
+      const proximaCrua = (lines[i + 1] ?? "").trim();
       const fimDeParagrafo =
-        i + 1 >= lines.length || proxima === "" || /^([#>|`]|!\[|[-*+]\s|\d+\.\s|```)/.test(proxima);
+        i + 1 >= lines.length ||
+        proxima === "" ||
+        proximaCrua === "" ||
+        /^([#>|`]|!\[|[-*+]\s|\d+\.\s|```)/.test(proximaCrua);
       if (!skip && fimDeParagrafo && words >= 3 && !endsOk && /[\p{L}\d]$/u.test(trimmed)) {
         const lineEnd = offset + raw.trimEnd().length;
         const wm = /[\p{L}\d]+$/u.exec(text.slice(offset, lineEnd));
@@ -768,7 +776,25 @@ export async function checkText(text: string, ignore: Set<string>): Promise<Writ
       }
     }
   }
-  return issues.sort((a, b) => a.from - b.from);
+  // Junta avisos que caem no MESMO trecho: palavra errada + falta do ponto final.
+  // Assim a correção da palavra já sai com o ponto ("correçao" → "correção."), em vez de
+  // um aviso anular o outro (antes eles se sobrepunham e só um era aplicado).
+  const fundidos: WritingIssue[] = [];
+  for (const i of issues) {
+    const par = fundidos.find((f) => f.kind !== i.kind && f.from === i.from && f.to === i.to);
+    if (par && (/ponto final/.test(par.message) || /ponto final/.test(i.message))) {
+      const palavra = par.kind === "spell" ? par : i;
+      palavra.message = `${palavra.message} — e falta o ponto final`;
+      palavra.suggestions = palavra.suggestions.map((s) => (s.endsWith(".") ? s : `${s}.`));
+      if (palavra.auto && !palavra.auto.endsWith(".")) palavra.auto = `${palavra.auto}.`;
+      if (palavra.fix && !palavra.fix.endsWith(".")) palavra.fix = `${palavra.fix}.`;
+      fundidos.splice(fundidos.indexOf(par), 1);
+      fundidos.push(palavra);
+      continue;
+    }
+    fundidos.push(i);
+  }
+  return fundidos.sort((a, b) => a.from - b.from);
 }
 
 /** Sinônimos para trocar a palavra por outra. */
