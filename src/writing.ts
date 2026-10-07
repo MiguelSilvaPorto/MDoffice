@@ -580,7 +580,11 @@ export function checkStyle(text: string): WritingIssue[] {
       const words = trimmed.split(/\s+/).filter(Boolean).length;
       const skip = trimmed === "" || /^[#>\-*+\d|`<]/.test(trimmed) || /[|:]\s*$/.test(trimmed);
       const endsOk = /[.!?:;…)\]"'»]$/.test(trimmed);
-      if (!skip && words >= 3 && !endsOk && /[\p{L}\d]$/u.test(trimmed)) {
+      // o ponto só falta no FIM DO PARÁGRAFO: se a linha de baixo continua o texto,
+      // a frase segue ali (é escrita "quebrada" em várias linhas) — não é erro
+      const proxima = (maskLines[i + 1] ?? "").trim();
+      const fimDeParagrafo = i + 1 >= lines.length || proxima === "" || /^([#>|`]|[-*+]\s|\d+\.\s|```)/.test(proxima);
+      if (!skip && fimDeParagrafo && words >= 3 && !endsOk && /[\p{L}\d]$/u.test(trimmed)) {
         const lineEnd = offset + raw.trimEnd().length;
         const wm = /[\p{L}\d]+$/u.exec(text.slice(offset, lineEnd));
         const start = lineEnd - (wm ? wm[0].length : 1);
