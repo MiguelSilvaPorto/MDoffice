@@ -295,42 +295,55 @@ export class MdEditor {
       }
     }
 
-    // ---------- linhas do bloco selecionado ----------
-    let blocoFirst = selFirst;
-    let blocoLast = selLast;
-    if (wrapperFrom > 0) {
-      // dentro do invólucro: o conteúdo começa depois da abertura e termina antes do fecho
-      let cFirst = wrapperFrom + 1;
-      while (cFirst < state.doc.lines && isBlank(cFirst)) cFirst++;
-      let cLast = wrapperTo - 1;
-      while (cLast > 1 && isBlank(cLast)) cLast--;
-      blocoFirst = Math.min(Math.max(selFirst, cFirst), cLast);
-      blocoLast = Math.min(Math.max(selLast, cFirst), cLast);
-    }
-    const blocoFrom = state.doc.line(blocoFirst).from;
-    const blocoTo = state.doc.line(blocoLast).to;
-    const bloco = state.sliceDoc(blocoFrom, blocoTo);
-
-    if (wrapperFrom < 0) {
-      // sem invólucro: coloca um novo em volta do trecho selecionado
-      this.view.dispatch({
-        changes: { from: blocoFrom, to: blocoTo, insert: `<div align="${kind}">\n\n${bloco}\n\n</div>` },
-      });
-      this.view.focus();
-      return;
-    }
-
-    // ---------- reescreve só o que muda ----------
+    // ---------- o que muda: exatamente o trecho selecionado ----------
     const limpo = (s: string) => s.replace(/^\s+|\s+$/g, "");
-    const antes = limpo(state.sliceDoc(state.doc.line(wrapperFrom).to, blocoFrom));
-    const depois = limpo(state.sliceDoc(blocoTo, state.doc.line(wrapperTo).from));
+    let limiteFrom: number; // região que pode ser reescrita (conteúdo do bloco ou parágrafo)
+    let limiteTo: number;
+    let alinhamentoFora: string | null = null;
+
+    if (wrapperFrom > 0) {
+      limiteFrom = state.doc.line(wrapperFrom).to;
+      limiteTo = state.doc.line(wrapperTo).from;
+      alinhamentoFora = current;
+    } else {
+      // sem invólucro: o antes/depois é o resto do parágrafo em volta da seleção
+      let primeira = selFirst;
+      while (primeira > 1 && !isBlank(primeira - 1)) primeira--;
+      let ultima = selLast;
+      while (ultima < state.doc.lines && !isBlank(ultima + 1)) ultima++;
+      limiteFrom = state.doc.line(primeira).from;
+      limiteTo = state.doc.line(ultima).to;
+    }
+
+    let meioFrom = sel.from;
+    let meioTo = sel.to;
+    if (sel.empty) {
+      // sem seleção: o alvo é o parágrafo inteiro (como no Word)
+      let primeira = selFirst;
+      while (primeira > 1 && primeira - 1 > Math.max(0, wrapperFrom) && !isBlank(primeira - 1)) primeira--;
+      let ultima = selLast;
+      while (ultima < state.doc.lines && (wrapperTo < 0 || ultima + 1 < wrapperTo) && !isBlank(ultima + 1)) ultima++;
+      meioFrom = state.doc.line(primeira).from;
+      meioTo = state.doc.line(ultima).to;
+    }
+
+    const antes = limpo(state.sliceDoc(limiteFrom, meioFrom));
+    const depois = limpo(state.sliceDoc(meioTo, limiteTo));
+    const meio = limpo(state.sliceDoc(meioFrom, meioTo));
+    if (!meio) return;
+
+    const comFora = (texto: string) => (alinhamentoFora ? `<div align="${alinhamentoFora}">\n\n${texto}\n\n</div>` : texto);
     const partes: string[] = [];
-    if (antes) partes.push(`<div align="${current}">\n\n${antes}\n\n</div>`);
-    partes.push(kind === current ? bloco : `<div align="${kind}">\n\n${bloco}\n\n</div>`);
-    if (depois) partes.push(`<div align="${current}">\n\n${depois}\n\n</div>`);
+    if (antes) partes.push(comFora(antes));
+    partes.push(kind === alinhamentoFora ? meio : `<div align="${kind}">\n\n${meio}\n\n</div>`);
+    if (depois) partes.push(comFora(depois));
 
     this.view.dispatch({
-      changes: { from: state.doc.line(wrapperFrom).from, to: state.doc.line(wrapperTo).to, insert: partes.join("\n\n") },
+      changes: {
+        from: wrapperFrom > 0 ? state.doc.line(wrapperFrom).from : limiteFrom,
+        to: wrapperFrom > 0 ? state.doc.line(wrapperTo).to : limiteTo,
+        insert: partes.join("\n\n"),
+      },
     });
     this.view.focus();
   }
