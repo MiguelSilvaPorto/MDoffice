@@ -262,7 +262,10 @@ export class Preview {
           return;
         }
         const trimmed = body.replace(/\s+$/, "");
-        if (trimmed === currentText) return;
+        // compara ignorando espaços no fim das linhas: enquanto você desenha o bloco é
+        // regravado pelo próprio quadro e não pode recarregá-lo (senão a vista pula)
+        const semFim = (t: string) => t.replace(/[ \t]+$/gm, "").replace(/\s+$/, "");
+        if (trimmed === currentText || semFim(trimmed) === semFim(currentText)) return;
         currentText = trimmed;
         editor.applyText(trimmed);
       };

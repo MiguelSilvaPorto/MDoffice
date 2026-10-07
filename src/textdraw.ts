@@ -1104,6 +1104,8 @@ export class TextBoard {
 
   /** Recarrega o desenho a partir de um texto (usado quando o usuário edita no editor). */
   applyText(text: string): void {
+    // enquanto um traço está em andamento, não recarrega (evita apagar o que está sendo desenhado)
+    if (this.draftBase) return;
     this.conn.clear();
     this.chars.clear();
     const lines = text.replace(/\r\n/g, "\n").split("\n");
@@ -1117,8 +1119,9 @@ export class TextBoard {
         else this.chars.set(key(r, c), ch);
       }
     }
+    // NÃO avisa o app aqui: esse texto veio do próprio editor e avisar de volta criava um
+    // ciclo (prancheta → editor → pré-visualização → prancheta) que repintava tudo sem parar.
     this.request();
-    this.onChange?.();
   }
 
   /** Reconstrói o modelo a partir de um texto já desenhado (para reabrir e editar). */
