@@ -439,15 +439,33 @@ pub fn rename_file(from: String, to: String) -> Result<String, String> {
     Ok(target.to_string_lossy().to_string())
 }
 
-/// Pasta de rascunhos do app: documentos criados e ainda não salvos pelo usuário.
-/// Fica no diretório de dados local do app (persistente entre reinícios), não em Documentos.
+/// Raiz do projeto em desenvolvimento (pasta que tem package.json e src-tauri).
+fn project_root() -> Option<PathBuf> {
+    let mut dir = std::env::current_dir().ok()?;
+    for _ in 0..5 {
+        if dir.join("package.json").exists() && dir.join("src-tauri").exists() {
+            return Some(dir);
+        }
+        if !dir.pop() {
+            break;
+        }
+    }
+    None
+}
+
+/// Pasta do salvamento automático (rascunhos).
+/// Preferimos `temp/` dentro do PRÓPRIO PROJETO — é a pasta que você vê no editor durante
+/// o desenvolvimento. No app instalado (sem projeto por perto) usa a pasta de dados do app.
 fn drafts_folder(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     use tauri::Manager;
-    let dir = app
-        .path()
-        .app_local_data_dir()
-        .map_err(|e| e.to_string())?
-        .join("rascunhos");
+    let dir = match project_root() {
+        Some(root) => root.join("temp"),
+        None => app
+            .path()
+            .app_local_data_dir()
+            .map_err(|e| e.to_string())?
+            .join("rascunhos"),
+    };
     if !dir.exists() {
         fs::create_dir_all(&dir).map_err(io_err)?;
     }

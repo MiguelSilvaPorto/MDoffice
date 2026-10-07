@@ -122,6 +122,36 @@ export async function deleteDraft(path: string): Promise<void> {
   await invoke("delete_draft", { path });
 }
 
+/**
+ * Salvamento automático quando o app roda no NAVEGADOR (dev): o navegador não pode
+ * escrever arquivos, então o texto vai para o servidor de desenvolvimento, que grava
+ * em `temp/rascunho.md` dentro do projeto (a mesma pasta que o app usa).
+ */
+export async function saveDraftFallback(name: string, content: string): Promise<boolean> {
+  try {
+    const res = await fetch("/__salvar", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name, content }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Lê o salvamento automático gravado pelo servidor de desenvolvimento (`temp/rascunho.md`). */
+export async function loadDraftFallback(): Promise<string | null> {
+  try {
+    const res = await fetch("/temp/rascunho.md", { cache: "no-store" });
+    if (!res.ok) return null;
+    const texto = await res.text();
+    return texto.trim() ? texto : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Copia a pasta assets/ de um documento para o lado do outro. */
 export async function copyAssets(fromDoc: string, toDoc: string): Promise<number> {
   return await invoke<number>("copy_assets", { fromDoc, toDoc });

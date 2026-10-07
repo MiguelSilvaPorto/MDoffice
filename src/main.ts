@@ -197,7 +197,26 @@ class App {
         7500
       );
     } catch {
-      /* sem rascunhos */
+      /* sem rascunhos do app */
+    }
+    // Navegador (dev) ou sem rascunho do app: recupera o temp/rascunho.md do projeto.
+    if (this.dirty || this.path) return;
+    try {
+      const texto = await files.loadDraftFallback();
+      if (!texto || !texto.trim()) return;
+      this.autoFixArmed = false;
+      this.editor.setText(texto);
+      this.dirty = false;
+      this.statusSaved = "Salvo automaticamente em temp/";
+      this.refreshTitle();
+      this.refreshPath();
+      this.setSaveState();
+      this.updateStats();
+      this.renderOutline();
+      await this.preview.render(texto);
+      toast("Texto recuperado do salvamento automático (temp/rascunho.md).", "info", 6500);
+    } catch {
+      /* sem salvamento automático */
     }
   }
 
@@ -463,7 +482,18 @@ class App {
   private autosaveSoon = debounce(() => void this.autosave(), 2000);
 
   private async autosave(): Promise<void> {
-    if (!this.dirty || !this.path) return;
+    if (!this.dirty) return;
+    // Sem caminho (ex.: app rodando no navegador): o texto vai para temp/rascunho.md do projeto.
+    if (!this.path) {
+      const salvou = await files.saveDraftFallback("rascunho", this.editor.getText());
+      if (salvou) {
+        this.dirty = false;
+        this.statusSaved = `Salvo automaticamente em temp/ às ${fmtTime()}`;
+        this.refreshTitle();
+        this.setSaveState();
+      }
+      return;
+    }
     try {
       await files.saveDoc(this.path, this.editor.getText());
       this.dirty = false;
@@ -473,7 +503,8 @@ class App {
       this.refreshTitle();
       this.setSaveState();
     } catch {
-      /* silencioso: o usuário ainda pode salvar manualmente */
+      // não conseguiu gravar pelo app (navegador): guarda em temp/ do projeto
+      await files.saveDraftFallback("rascunho", this.editor.getText());
     }
   }
 

@@ -147,6 +147,10 @@ O dicionário pt-BR (≈5 MB, vem do pacote `dictionary-pt`) fica fora do reposi
 `npm run app` / `npm run build` copiam ele sozinho para `public/dicionario/`. Para copiar
 na mão: `npm run prep:dicionario`.
 
+**Salvamento automático**: o app guarda o documento em andamento numa pasta **`temp/` dentro
+do projeto** (na janela do app e também quando ele roda no navegador, via servidor de
+desenvolvimento). Essa pasta fica no `.gitignore` — seus rascunhos **não** vão para o Git.
+
 Gerar o executável/instalador:
 
 ```bash
