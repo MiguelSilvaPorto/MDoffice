@@ -4,6 +4,10 @@
 // - sugestões de outras palavras (sinônimos)
 // - estatísticas do texto (palavras repetidas, frases longas…)
 
+// lista das palavras mais frequentes do português: usada para saber se uma palavra é
+// comum (e então NÃO sugerir troca) ou rara (aí sim vale o "você quis dizer…")
+import { FREQUENTES } from "./palavras";
+
 export interface WritingIssue {
   from: number;
   to: number;
@@ -142,7 +146,8 @@ const COMMON_WORDS = new Set([
 /** Procura uma palavra muito comum a uma letra de distância (ex.: maneria → maneira). */
 function commonNeighbor(word: string): string | null {
   const lower = word.toLowerCase();
-  if (lower.length < 5 || COMMON_WORDS.has(lower)) return null;
+  // só vale para palavra RARA: "fizer" é comum (não tem nada de errado) e "maneria" não existe
+  if (lower.length < 5 || FREQUENTES.has(lower) || COMMON_WORDS.has(lower)) return null;
   const letters = "abcdefghijklmnopqrstuvwxyzáâãàéêíóôõúüç";
   const variants = new Set<string>();
   // troca de duas letras de lugar (o caso "maneria" → "maneira")
@@ -158,7 +163,7 @@ function commonNeighbor(word: string): string | null {
     }
   }
   for (const candidate of variants) {
-    if (COMMON_WORDS.has(candidate)) return candidate;
+    if (FREQUENTES.has(candidate) || COMMON_WORDS.has(candidate)) return candidate;
   }
   return null;
 }
