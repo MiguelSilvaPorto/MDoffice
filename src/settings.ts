@@ -32,6 +32,7 @@ export function renderSettingsPage(version = "0.1.0"): void {
   if (localStorage.getItem("mdc.theme") === "dark") document.documentElement.dataset.theme = "dark";
   const s = loadSettings();
   const autoFix = loadJSON<boolean>("mdc.autofix", true);
+  const copilot = loadJSON<boolean>("mdc.copilot", true);
   const temaEscuro = document.documentElement.dataset.theme === "dark";
   const semPainel = loadJSON<boolean>("mdc.no-sidebar", false);
   const semPreview = loadJSON<boolean>("mdc.no-preview", false);
@@ -51,7 +52,14 @@ export function renderSettingsPage(version = "0.1.0"): void {
         <h4>Escrita e correção</h4>
         ${TONES.map((t) => `<label class="tr-opt"><input type="radio" name="tone" value="${t.id}"> <span><b>${t.title}</b> — ${t.desc}</span></label>`).join("")}
         <label class="tr-opt"><input type="checkbox" data-autofix> <span><b>Correção automática</b> — ponto final, vírgulas, maiúsculas e palavras erradas entram sozinhas enquanto você escreve e ao pausar.</span></label>
-        <p class="muted">Dicionário pessoal: <b>${dict.length}</b> palavra(s) — gerencie no editor (menu ⋯ → Dicionário pessoal…).</p>
+        <label class="tr-opt"><input type="checkbox" data-copilot> <span><b>Sugestões inline (estilo Copilot)</b> — completa a frase enquanto você digita; <kbd>Tab</kbd> aceita, <kbd>Alt</kbd>+<kbd>Seta</kbd> palavra por palavra.</span></label>
+        <h4 style="margin-top:14px">Dicionário pessoal</h4>
+        <p class="muted">Palavras aqui não são marcadas como erro (nomes, marcas, termos técnicos).</p>
+        <div class="dict-add">
+          <input type="text" class="dict-input" placeholder="digite uma palavra (ex.: mdCreator)" />
+          <button class="btn primary" data-dict-add>Adicionar</button>
+        </div>
+        <div class="dict-list" data-dict-list></div>
       </section>
       <section>
         <h4>Arquivos e salvamento</h4>
@@ -87,6 +95,49 @@ export function renderSettingsPage(version = "0.1.0"): void {
   const q = <T extends HTMLElement>(sel: string) => page.querySelector<T>(sel)!;
   page.querySelectorAll<HTMLInputElement>('input[name="tone"]').forEach((r) => (r.checked = r.value === s.tone));
   q<HTMLInputElement>("[data-autofix]").checked = autoFix;
+  q<HTMLInputElement>("[data-copilot]").checked = copilot;
+
+  // dicionário pessoal (mesma lista que o editor usa)
+  const listaDict = q("[data-dict-list]");
+  const palavras = new Set<string>(dict.map((w) => String(w).toLowerCase()));
+  const desenharDict = () => {
+    const ordenadas = Array.from(palavras).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    listaDict.innerHTML = "";
+    if (!ordenadas.length) {
+      listaDict.append(h("p", { class: "muted", text: "Nenhuma palavra ainda." }));
+      return;
+    }
+    for (const w of ordenadas) {
+      const linha = h("div", { class: "dict-row" });
+      linha.append(h("span", { text: w }));
+      const b = h("button", { class: "btn icon", type: "button", title: "Remover do dicionário" });
+      b.textContent = "×";
+      b.addEventListener("click", () => {
+        palavras.delete(w);
+        saveJSON("mdc.ignore-words", Array.from(palavras));
+        desenharDict();
+      });
+      linha.append(b);
+      listaDict.append(linha);
+    }
+  };
+  const adicionarDict = () => {
+    const campo = q<HTMLInputElement>(".dict-input");
+    const valor = campo.value.trim().toLowerCase();
+    if (!valor) return;
+    palavras.add(valor);
+    saveJSON("mdc.ignore-words", Array.from(palavras));
+    campo.value = "";
+    desenharDict();
+  };
+  desenharDict();
+  q<HTMLElement>("[data-dict-add]").addEventListener("click", adicionarDict);
+  q<HTMLInputElement>(".dict-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      adicionarDict();
+    }
+  });
   q<HTMLInputElement>("[data-hist]").checked = s.historyOn;
   q<HTMLSelectElement>("[data-max]").value = String(s.historyMax);
   q<HTMLInputElement>("[data-tema]").checked = temaEscuro;
@@ -103,6 +154,7 @@ export function renderSettingsPage(version = "0.1.0"): void {
       historyMax: Number(q<HTMLSelectElement>("[data-max]").value) || 60,
     });
     saveJSON("mdc.autofix", q<HTMLInputElement>("[data-autofix]").checked);
+    saveJSON("mdc.copilot", q<HTMLInputElement>("[data-copilot]").checked);
     const escuro = q<HTMLInputElement>("[data-tema]").checked;
     localStorage.setItem("mdc.theme", escuro ? "dark" : "light");
     document.documentElement.dataset.theme = escuro ? "dark" : "light";
