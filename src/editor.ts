@@ -377,7 +377,10 @@ export class MdEditor {
   /** Chamado quando algo muda por causa de uma sugestão (para revisar de novo). */
   onIssuesChanged: (() => void) | null = null;
 
-  /** Chamado quando o usuário manda ignorar uma palavra. */
+  /** Chamado quando o usuário manda ignorar uma palavra NESTE texto (temporário). */
+  onIgnoreHere: ((word: string) => void) | null = null;
+
+  /** Chamado quando o usuário manda ignorar uma palavra (dicionário pessoal, para sempre). */
   onIgnoreWord: ((word: string) => void) | null = null;
 
   /** Seleciona e mostra um trecho (usado pelo painel de revisão). */
@@ -490,6 +493,15 @@ export class MdEditor {
 
     const actions = document.createElement("div");
     actions.className = "cm-issue-row";
+    addChip(
+      actions,
+      "Ignorar palavra",
+      () => {
+        this.onIgnoreHere?.(issue.word);
+        this.closeIssuesPopup();
+      },
+      true
+    );
     addChip(
       actions,
       "Adicionar ao dicionário",

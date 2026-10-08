@@ -92,6 +92,8 @@ class App {
   private title: string | null = null;
   private isDraft = false;
   private ignoreWords = new Set<string>(loadJSON<string[]>("mdc.ignore-words", []));
+  /** Palavras ignoradas só neste documento (voltam nos outros). */
+  private ignoredHere = new Set<string>();
   private issues: WritingIssue[] = [];
   /** Correção automática de estilo ligada (ponto, vírgulas, maiúsculas…). */
   private autoFix = loadJSON<boolean>("mdc.autofix", true);
@@ -151,6 +153,11 @@ class App {
     this.editor.view.contentDOM.addEventListener("paste", (e) => void this.onPaste(e as ClipboardEvent));
     this.editor.onIssuesChanged = () => this.checkWritingSoon();
     this.editor.onIgnoreWord = (word) => this.ignoreWord(word);
+    this.editor.onIgnoreHere = (word) => {
+      this.ignoredHere.add(word.toLowerCase());
+      toast(`“${word}” ignorada neste texto (nos outros documentos ela continua sendo verificada).`, "info", 3600);
+      void this.runWritingCheck();
+    };
     document.querySelector("#st-writing")?.addEventListener("click", () => this.openReview());
     $("#st-path").addEventListener("click", () => {
       if (this.path) void revealItemInDir(this.path).catch(() => {});
@@ -293,7 +300,7 @@ class App {
   private async runWritingCheck(): Promise<void> {
     const text = this.editor.getText();
     try {
-      this.issues = await checkText(text, this.ignoreWords);
+      this.issues = await checkText(text, new Set([...this.ignoreWords, ...this.ignoredHere]));
     } catch {
       this.issues = [];
     }
