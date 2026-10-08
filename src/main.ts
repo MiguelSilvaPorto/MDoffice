@@ -318,7 +318,10 @@ class App {
     void this.restoreSession();
     // carrega o dicionário em segundo plano (worker) e revisa quando ficar pronto
     window.setTimeout(() => warmUpSpell(), 2000);
-    onSpellReady(() => this.checkWritingSoon());
+    onSpellReady(() => {
+      this.checkWritingSoon();
+      this.wordHost.recheckSpelling();
+    });
   }
 
   /** Reabre as abas da sessão anterior; sem sessão, cai no rascunho mais recente. */
