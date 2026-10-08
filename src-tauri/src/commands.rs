@@ -480,7 +480,7 @@ fn prune_drafts(dir: &Path) {
     let cutoff = std::time::SystemTime::now() - std::time::Duration::from_secs(15 * 24 * 60 * 60);
     for entry in entries.flatten() {
         let path = entry.path();
-        if path.extension().map(|e| e != "md").unwrap_or(true) {
+        if path.extension().map(|e| e != "md" && e != "docx").unwrap_or(true) {
             continue;
         }
         if let Ok(meta) = entry.metadata() {
@@ -510,7 +510,7 @@ pub fn list_drafts(app: tauri::AppHandle) -> Result<Vec<DraftInfo>, String> {
     };
     for entry in entries.flatten() {
         let path = entry.path();
-        if path.extension().map(|e| e != "md").unwrap_or(true) {
+        if path.extension().map(|e| e != "md" && e != "docx").unwrap_or(true) {
             continue;
         }
         let modified_ms = entry
@@ -531,10 +531,14 @@ pub fn list_drafts(app: tauri::AppHandle) -> Result<Vec<DraftInfo>, String> {
 
 /// Caminho livre para um novo rascunho (nome vindo do título do documento).
 #[tauri::command]
-pub fn draft_path(app: tauri::AppHandle, base: String) -> Result<String, String> {
+pub fn draft_path(app: tauri::AppHandle, base: String, ext: Option<String>) -> Result<String, String> {
     let dir = drafts_folder(&app)?;
     prune_drafts(&dir);
-    let target = unique_path(&dir, &slugify(&base), "md");
+    let ext = match ext.as_deref() {
+        Some("docx") => "docx",
+        _ => "md",
+    };
+    let target = unique_path(&dir, &slugify(&base), ext);
     Ok(target.to_string_lossy().to_string())
 }
 
@@ -825,7 +829,7 @@ fn scan_markdown(dir: &Path, depth: usize, budget: &mut usize) -> Vec<MdNode> {
             }
         } else if kind.is_file() {
             let lower = name.to_lowercase();
-            if lower.ends_with(".md") || lower.ends_with(".markdown") || lower.ends_with(".mdx") {
+            if lower.ends_with(".md") || lower.ends_with(".markdown") || lower.ends_with(".mdx") || lower.ends_with(".docx") {
                 *budget = budget.saturating_sub(1);
                 docs.push(MdNode {
                     name,

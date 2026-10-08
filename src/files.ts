@@ -113,8 +113,8 @@ export async function listDrafts(): Promise<DraftInfo[]> {
 }
 
 /** Caminho livre para um novo rascunho na pasta do app. */
-export async function draftPath(base: string): Promise<string> {
-  return await invoke<string>("draft_path", { base });
+export async function draftPath(base: string, ext: "md" | "docx" = "md"): Promise<string> {
+  return await invoke<string>("draft_path", { base, ext });
 }
 
 /** Apaga um rascunho do app. */

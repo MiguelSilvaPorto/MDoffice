@@ -54,6 +54,8 @@ export interface TabBarHooks {
   onSelect: (id: string) => void;
   onClose: (id: string) => void;
   onNew: () => void;
+  /** Abre o menu do "+" (escolher o tipo de arquivo novo). */
+  onNewMenu: (anchor: HTMLElement) => void;
   onRename: (id: string, value: string) => void;
   /** Nova ordem das abas (ids), depois de arrastar. */
   onReorder: (ids: string[]) => void;
@@ -71,9 +73,9 @@ export class TabBar {
     this.hooks = hooks;
     this.el = host;
     this.strip = h("div", { class: "tab-strip", role: "tablist" });
-    const plus = h("button", { class: "tab-new", type: "button", title: "Nova aba (Ctrl+T)", "aria-label": "Nova aba" });
+    const plus = h("button", { class: "tab-new", type: "button", title: "Novo (Ctrl+T) — documento, planilha ou apresentação", "aria-label": "Novo" });
     plus.innerHTML = '<svg class="ic"><use href="#i-plus"/></svg>';
-    plus.addEventListener("click", () => hooks.onNew());
+    plus.addEventListener("click", () => hooks.onNewMenu(plus));
     const recents = h("button", { class: "tab-recents", type: "button", title: "Recentes e rascunhos" });
     recents.innerHTML = '<svg class="ic"><use href="#i-clock"/></svg><span>Recentes</span>';
     recents.addEventListener("click", () => hooks.onRecents(recents));

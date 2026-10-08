@@ -213,6 +213,7 @@ class App {
       onSelect: (id) => this.selectTab(id),
       onClose: (id) => void this.closeTab(id),
       onNew: () => void this.newDoc(),
+      onNewMenu: (anchor) => this.openNewMenu(anchor),
       onRename: (id, value) => void this.renameTab(id, value),
       onReorder: (ids) => this.reorderTabs(ids),
       onContext: (id, x, y) => this.openTabMenu(id, x, y),
@@ -646,6 +647,53 @@ class App {
   }
 
   /** Menu "Recentes": arquivos recentes que não estão abertos e rascunhos guardados no app. */
+  /** Menu do "+" das abas: escolher o tipo de arquivo novo (documento, planilha ou apresentação). */
+  private openNewMenu(anchor: HTMLElement): void {
+    const criar = (rotulo: string, texto: string) => {
+      this.closeMenus();
+      const tab = newTab(this.editor.createState(texto), { path: null, isDraft: false, statusSaved: "Novo arquivo" });
+      this.tabs.push(tab);
+      this.selectTab(tab.id);
+      toast(`${rotulo} criada — use Ctrl+Shift+S para salvar numa pasta sua.`, "ok", 3800);
+    };
+    const modeloPlanilha = [
+      "# Planilha",
+      "",
+      "| Item | Valor | Quantidade | Total |",
+      "| --- | ---: | ---: | ---: |",
+      "| Exemplo | 10,00 | 2 | 20,00 |",
+      "|  |  |  |  |",
+      "",
+      "> Dica: as colunas com `---:` ficam alinhadas à direita, como número de planilha.",
+    ].join("\n");
+    const modeloDeck = [
+      "# Apresentação",
+      "",
+      "## Subtítulo da capa",
+      "",
+      "Seu nome · data",
+      "",
+      "---",
+      "",
+      "## Slide 2",
+      "",
+      "- Primeiro ponto",
+      "- Segundo ponto",
+      "",
+      "---",
+      "",
+      "## Slide 3",
+      "",
+      "Fim — aperte F5 para apresentar.",
+    ].join("\n");
+    this.openMenu(anchor, (menu) => {
+      menu.classList.add("recents-menu");
+      this.ddItem(menu, { icon: "i-doc", label: "Documento", hint: "md / Word", onPick: () => void this.newDoc() });
+      this.ddItem(menu, { icon: "i-grid", label: "Planilha", hint: "Excel (tabela)", onPick: () => criar("Planilha", modeloPlanilha) });
+      this.ddItem(menu, { icon: "i-eye", label: "Apresentação", hint: "PowerPoint (slides, F5)", onPick: () => criar("Apresentação", modeloDeck) });
+    });
+  }
+
   private async openRecentsMenu(anchor: HTMLElement): Promise<void> {
     const open = new Set(this.tabs.map((t) => (t.path ?? "").toLowerCase()));
     let drafts: files.DraftInfo[] = [];
