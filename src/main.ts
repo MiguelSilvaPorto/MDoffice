@@ -234,6 +234,7 @@ class App {
     this.autosaveSoon();
     this.checkWritingSoon();
     if (this.autoFix) this.autoFixSoon();
+    if (this.autoFix) this.idleFixSoon();
     // mantém o desenho de letras aberto em sincronia com o texto do editor
     this.preview.syncTextEditorWith(this.editor.getText());
   }
@@ -243,6 +244,33 @@ class App {
   private checkWritingSoon = debounce(() => void this.runWritingCheck(), 900);
 
   private autoFixSoon = debounce(() => this.runAutoFix(), 700);
+
+  // Alguns segundos depois de você parar de digitar, as correções "de fim de frase"
+  // (ponto final, vírgulas) são aplicadas sozinhas — o cursor fica ANTES do ponto, então
+  // se você continuar escrevendo o texto entra no lugar certo.
+  private idleFixSoon = debounce(() => this.runIdleFix(), 3500);
+
+  private runIdleFix(): void {
+    if (!this.autoFix || !this.autoFixArmed) return;
+    const view = this.editor.view;
+    const doc = view.state.doc;
+    const pos = view.state.selection.main.head;
+    const line = doc.lineAt(pos);
+    if (line.text.trim() === "") return; // linha vazia: o gatilho do parágrafo cuida
+    // parágrafo em que o cursor está (linhas seguidas não vazias)
+    let first = line.number;
+    while (first > 1 && doc.line(first - 1).text.trim() !== "") first--;
+    let last = line.number;
+    while (last < doc.lines && doc.line(last + 1).text.trim() !== "") last++;
+    const from = doc.line(first).from;
+    const to = doc.line(last).to;
+    const fresh = checkStyle(doc.toString()).filter((i) => i.fix && i.from >= from && i.to <= to);
+    if (!fresh.length) return;
+    this.editor.replaceRanges(
+      fresh.map((i) => ({ from: i.from, to: i.to, insert: i.fix! })),
+      -1
+    );
+  }
 
   /** Correção automática: não depende do dicionário, roda logo depois de você pausar. */
   private runAutoFix(): void {

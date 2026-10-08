@@ -548,7 +548,7 @@ export class MdEditor {
   }
 
   /** Substitui vários intervalos numa só transação (uma única ação de desfazer). */
-  replaceRanges(changes: { from: number; to: number; insert: string }[]): void {
+  replaceRanges(changes: { from: number; to: number; insert: string }[], cursorAssoc: -1 | 1 = 1): void {
     if (!changes.length) return;
     const docLen = this.view.state.doc.length;
     const list = changes
@@ -567,7 +567,14 @@ export class MdEditor {
       safe.push(c);
     }
     if (!safe.length) return;
-    this.view.dispatch({ changes: safe });
+    // cursorAssoc -1 mantém o cursor ANTES do texto inserido (usado ao acrescentar o ponto
+    // final: se o usuário continuar a frase, o texto entra antes do ponto)
+    const sel = this.view.state.selection.main;
+    const mapped = this.view.state.changes(safe);
+    this.view.dispatch({
+      changes: safe,
+      selection: { anchor: mapped.mapPos(sel.anchor, cursorAssoc), head: mapped.mapPos(sel.head, cursorAssoc) },
+    });
   }
 
   selectionPos(): { from: number; to: number } {
