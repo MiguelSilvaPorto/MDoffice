@@ -28,6 +28,10 @@ export interface WordHostOpts {
   onChange: () => void;
   /** Contagens (palavras, páginas, página atual) mudaram. */
   onStatus: () => void;
+  onFind?: () => void;
+  onReplace?: () => void;
+  onReview?: () => void;
+  onAddons?: () => void;
 }
 
 export interface WordStats {
@@ -101,6 +105,10 @@ export class WordHost {
       pickImage: () => void this.pickImage(),
       setSetup: (s) => this.setSetup(s),
       askLink: (cur) => this.askLink(cur),
+      onFind: () => this.opts.onFind?.(),
+      onReplace: () => this.opts.onReplace?.(),
+      onReview: () => this.opts.onReview?.(),
+      onAddons: () => this.opts.onAddons?.(),
     });
 
     // zoom: escala a folha e ajusta a área de rolagem

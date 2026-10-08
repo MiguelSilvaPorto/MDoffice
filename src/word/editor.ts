@@ -67,6 +67,7 @@ export class WordEditor {
   readonly view: EditorView;
   setup: PageSetup = { ...DEFAULT_SETUP, margins: { ...DEFAULT_SETUP.margins } };
   private hooks: WordEditorHooks;
+  private copiedMarks: readonly import("prosemirror-model").Mark[] | null = null;
 
   constructor(host: HTMLElement, hooks: WordEditorHooks) {
     this.hooks = hooks;
@@ -297,11 +298,38 @@ export class WordEditor {
     tr = tr.removeMark(from, to);
     state.doc.nodesBetween(from, to, (node, pos) => {
       if (PARA_TYPES.includes(node.type.name)) {
-        tr = tr.setNodeMarkup(pos, node.type, { ...node.attrs, align: null, spaceBefore: null, spaceAfter: null, lineHeight: null, indentLeft: null, indentFirst: null });
+        tr = tr.setNodeMarkup(pos, node.type, { ...node.attrs, align: null, spaceBefore: null, spaceAfter: null, lineHeight: null, indentLeft: null, indentFirst: null, bg: null, borderBottom: null });
       }
     });
     this.view.dispatch(tr.setStoredMarks([]));
     this.view.focus();
+  }
+
+  /** Pincel de formatação: copia marcas do cursor/seleção. */
+  copyFormat(): boolean {
+    const state = this.view.state;
+    const { $from } = state.selection;
+    this.copiedMarks = state.storedMarks ?? $from.marks();
+    return !!this.copiedMarks;
+  }
+
+  /** Pincel de formatação: aplica marcas salvas na seleção. */
+  applyFormat(): boolean {
+    if (!this.copiedMarks) return false;
+    const state = this.view.state;
+    const { from, to } = state.selection;
+    let tr = state.tr;
+    tr = tr.removeMark(from, to);
+    for (const m of this.copiedMarks) {
+      tr = tr.addMark(from, to, m);
+    }
+    this.view.dispatch(tr);
+    this.view.focus();
+    return true;
+  }
+
+  hasCopiedFormat(): boolean {
+    return !!this.copiedMarks;
   }
 
   // ---------- blocos e parágrafo ----------
@@ -341,6 +369,29 @@ export class WordEditor {
 
   paragraphSpacing(patch: { spaceBefore?: number | null; spaceAfter?: number | null }): void {
     this.mapTextblocks(() => patch)(this.view.state, this.view.dispatch);
+    this.view.focus();
+  }
+
+  paragraphShading(color: string | null): void {
+    this.mapTextblocks(() => ({ bg: color }))(this.view.state, this.view.dispatch);
+    this.view.focus();
+  }
+
+  toggleParagraphBorder(): void {
+    this.mapTextblocks((n) => ({ borderBottom: !n.attrs.borderBottom }))(this.view.state, this.view.dispatch);
+    this.view.focus();
+  }
+
+  /** Alterna maiúsculas/minúsculas no texto selecionado. */
+  changeCase(mode: "upper" | "lower" | "title"): void {
+    const { from, to } = this.view.state.selection;
+    if (from === to) return;
+    const text = this.view.state.doc.textBetween(from, to);
+    let transformed = text;
+    if (mode === "upper") transformed = text.toUpperCase();
+    else if (mode === "lower") transformed = text.toLowerCase();
+    else if (mode === "title") transformed = text.replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+    this.view.dispatch(this.view.state.tr.insertText(transformed, from, to));
     this.view.focus();
   }
 

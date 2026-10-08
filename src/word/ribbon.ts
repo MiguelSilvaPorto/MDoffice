@@ -12,6 +12,13 @@ export interface RibbonHooks {
   setSetup: (setup: PageSetup) => void;
   /** Pergunta o endereço do link. Devolve null se cancelou. */
   askLink: (current: string | null) => Promise<string | null>;
+  /** Busca e substituição */
+  onFind?: () => void;
+  onReplace?: () => void;
+  /** Painel lateral / editor de revisão */
+  onReview?: () => void;
+  /** Suplementos / extensões */
+  onAddons?: () => void;
 }
 
 const COLORS = ["#000000", "#434343", "#999999", "#d9d9d9", "#ffffff", "#c00000", "#ff0000", "#ff9900", "#ffd966", "#00b050", "#00b0f0", "#0070c0", "#7030a0", "#ff66cc"];
@@ -25,12 +32,12 @@ const btn = (cmd: string, label: string, title: string, extra = "") =>
 
 /** Estilos de parágrafo da galeria (id do bloco, nome, legenda). */
 const STYLES: [string, string, string][] = [
-  ["paragraph", "Normal", "Texto"],
-  ["h1", "Título 1", "Cabeçalho"],
-  ["h2", "Título 2", "Cabeçalho"],
-  ["h3", "Título 3", "Cabeçalho"],
-  ["quote", "Citação", "Recuo"],
-  ["code", "Código", "Monoespaçado"],
+  ["paragraph", "Normal", "Calibri, 11"],
+  ["h1", "Título 1", "Calibri Light, 16"],
+  ["h2", "Título 2", "Calibri Light, 13"],
+  ["h3", "Título 3", "Calibri, 12"],
+  ["quote", "Citação", "Calibri, 11"],
+  ["code", "Código", "Consolas, 10"],
 ];
 
 /** Grupo da fita: conteúdo em cima, nome embaixo (como no Word). */
@@ -41,6 +48,7 @@ export class Ribbon {
   readonly el: HTMLElement;
   private hooks: RibbonHooks;
   private pop: HTMLElement | null = null;
+  private showParaMarks = false;
 
   constructor(host: HTMLElement, hooks: RibbonHooks) {
     this.el = host;
@@ -54,8 +62,13 @@ export class Ribbon {
       ${group("Área de Transferência", `
         ${btn("paste", icon("i-paste") + "<span>Colar</span>", "Colar (Ctrl+V)", "big")}
         <div class="rb-col">
-          ${btn("cut", "✂", "Recortar (Ctrl+X)")}
-          ${btn("copy", icon("i-copy"), "Copiar (Ctrl+C)")}
+          <div class="rb-row">
+            ${btn("cut", "✂", "Recortar (Ctrl+X)")}
+            ${btn("copy", icon("i-copy"), "Copiar (Ctrl+C)")}
+          </div>
+          <div class="rb-row">
+            ${btn("format-painter", icon("i-brush"), "Pincel de Formatação (copiar e aplicar estilo)")}
+          </div>
         </div>`)}
       ${group("Fonte", `
         <div class="rb-rows">
@@ -66,35 +79,38 @@ export class Ribbon {
             <select class="rb-select size" data-sel="size" title="Tamanho da letra" aria-label="Tamanho da letra">
               ${FONT_SIZES.map((s) => `<option value="${s}">${s}</option>`).join("")}
             </select>
-            ${btn("size-up", "A<small>▲</small>", "Aumentar a letra")}
-            ${btn("size-down", "A<small>▼</small>", "Diminuir a letra")}
+            ${btn("size-up", "A<small>▲</small>", "Aumentar tamanho da fonte")}
+            ${btn("size-down", "A<small>▼</small>", "Diminuir tamanho da fonte")}
+            ${btn("change-case", "Aa ▾", "Maiúsculas / Minúsculas")}
             ${btn("clear", "A<small>✕</small>", "Limpar formatação")}
           </div>
           <div class="rb-row">
             ${btn("bold", "<b>N</b>", "Negrito (Ctrl+B)")}
             ${btn("italic", "<i>I</i>", "Itálico (Ctrl+I)")}
             ${btn("underline", "<u>S</u>", "Sublinhado (Ctrl+U)")}
-            ${btn("strike", "<s>ab</s>", "Riscado")}
+            ${btn("strike", "<s>ab</s>", "Tachado")}
             ${btn("sub", "x<small>₂</small>", "Subscrito (Ctrl+,)")}
             ${btn("sup", "x<small>²</small>", "Sobrescrito (Ctrl+.)")}
-            ${btn("highlight", `<span class="rb-a hl">ab</span><span class="rb-bar" data-bar="highlight"></span>`, "Cor de destaque (marca-texto)", "colorbtn")}
-            ${btn("color", `<span class="rb-a">A</span><span class="rb-bar" data-bar="color"></span>`, "Cor da letra", "colorbtn")}
+            ${btn("highlight", `<span class="rb-a hl">ab</span><span class="rb-bar" data-bar="highlight"></span>`, "Cor do Realce do Texto", "colorbtn")}
+            ${btn("color", `<span class="rb-a">A</span><span class="rb-bar" data-bar="color"></span>`, "Cor da Fonte", "colorbtn")}
           </div>
         </div>`)}
       ${group("Parágrafo", `
         <div class="rb-rows">
           <div class="rb-row">
-            ${btn("bullet", "•≡", "Lista com marcadores (Ctrl+Shift+L)")}
-            ${btn("ordered", "1.≡", "Lista numerada")}
-            ${btn("outdent", "⇤", "Diminuir recuo")}
-            ${btn("indent", "⇥", "Aumentar recuo")}
+            ${btn("bullet", "•≡", "Marcadores (Ctrl+Shift+L)")}
+            ${btn("ordered", "1.≡", "Numeração")}
+            ${btn("multilevel", "1.a.i", "Lista de Vários Níveis")}
+            ${btn("outdent", "⇤", "Diminuir Recuo")}
+            ${btn("indent", "⇥", "Aumentar Recuo")}
+            ${btn("para-marks", icon("i-pilcrow"), "Mostrar/Ocultar Marcas de Parágrafo (¶)")}
           </div>
           <div class="rb-row">
-            ${btn("align-left", icon("i-align-left"), "Alinhar à esquerda (Ctrl+L)")}
+            ${btn("align-left", icon("i-align-left"), "Alinhar à Esquerda (Ctrl+L)")}
             ${btn("align-center", icon("i-align-center"), "Centralizar (Ctrl+E)")}
-            ${btn("align-right", icon("i-align-right"), "Alinhar à direita (Ctrl+R)")}
+            ${btn("align-right", icon("i-align-right"), "Alinhar à Direita (Ctrl+R)")}
             ${btn("align-justify", icon("i-align-justify"), "Justificar (Ctrl+J)")}
-            <select class="rb-select lh" data-sel="lh" title="Espaçamento entre linhas" aria-label="Espaçamento entre linhas">
+            <select class="rb-select lh" data-sel="lh" title="Espaçamento de Linha e Parágrafo" aria-label="Espaçamento de Linha">
               <option value="">Linhas: padrão</option>
               <option value="1">1,0</option>
               <option value="1.15">1,15</option>
@@ -102,6 +118,8 @@ export class Ribbon {
               <option value="2">2,0</option>
               <option value="2.5">2,5</option>
             </select>
+            ${btn("shading", icon("i-bucket"), "Sombreamento do Parágrafo", "colorbtn")}
+            ${btn("border-bottom", icon("i-border"), "Bordas")}
           </div>
         </div>`)}
       ${group("Estilos", `
@@ -116,6 +134,18 @@ export class Ribbon {
           ${btn("pagebreak", "⤓", "Quebra de página (Ctrl+Enter)")}
           ${btn("rule", "―", "Linha horizontal")}
         </div>`)}
+      ${group("Editando", `
+        <div class="rb-col">
+          ${btn("find", icon("i-search") + "<span>Localizar</span>", "Localizar texto (Ctrl+F)")}
+          ${btn("replace", icon("i-replace") + "<span>Substituir</span>", "Substituir texto (Ctrl+H)")}
+          ${btn("select-all", "<span>Selecionar ▾</span>", "Selecionar Tudo (Ctrl+A)")}
+        </div>`)}
+      ${group("Voz", `
+        ${btn("dictate", icon("i-mic") + "<span>Ditar</span>", "Ditar texto por voz", "big")}`)}
+      ${group("Revisão de Texto", `
+        ${btn("editor-panel", icon("i-feather") + "<span>Editor</span>", "Editor de ortografia e escrita", "big")}`)}
+      ${group("Suplementos", `
+        ${btn("addons", icon("i-addons") + "<span>Suplementos</span>", "Suplementos do Office", "big")}`)}
       ${group("Tabela", `
         <div class="rb-rows">
           <div class="rb-row">
@@ -267,6 +297,60 @@ export class Ribbon {
         return ed.table("addRowBefore");
       case "t-row-after":
         return ed.table("addRowAfter");
+      case "format-painter": {
+        if (ed.hasCopiedFormat()) {
+          ed.applyFormat();
+          anchor.classList.remove("active-btn");
+        } else {
+          ed.copyFormat();
+          anchor.classList.add("active-btn");
+        }
+        return;
+      }
+      case "change-case": {
+        return this.caseMenu(anchor);
+      }
+      case "para-marks": {
+        this.showParaMarks = !this.showParaMarks;
+        anchor.classList.toggle("active-btn", this.showParaMarks);
+        this.el.closest("#word-pane")?.classList.toggle("show-para-marks", this.showParaMarks);
+        return;
+      }
+      case "multilevel": {
+        return ed.list("ordered");
+      }
+      case "shading": {
+        return this.palette(anchor, COLORS, true, (c) => ed.paragraphShading(c), "Sem sombreamento");
+      }
+      case "border-bottom": {
+        return ed.toggleParagraphBorder();
+      }
+      case "find": {
+        if (this.hooks.onFind) this.hooks.onFind();
+        else window.dispatchEvent(new KeyboardEvent("keydown", { key: "f", ctrlKey: true }));
+        return;
+      }
+      case "replace": {
+        if (this.hooks.onReplace) this.hooks.onReplace();
+        else window.dispatchEvent(new KeyboardEvent("keydown", { key: "h", ctrlKey: true }));
+        return;
+      }
+      case "select-all": {
+        ed.focus();
+        document.execCommand("selectAll");
+        return;
+      }
+      case "dictate": {
+        return this.startDictation(anchor);
+      }
+      case "editor-panel": {
+        this.hooks.onReview?.();
+        return;
+      }
+      case "addons": {
+        this.hooks.onAddons?.();
+        return;
+      }
       case "t-row-del":
         return ed.table("deleteRow");
       case "t-col-before":
@@ -286,6 +370,50 @@ export class Ribbon {
       case "page":
         return this.pageDialog();
     }
+  }
+
+  private caseMenu(anchor: HTMLElement): void {
+    const pop = h("div", { class: "wd-pal wd-menu-pop" });
+    const items: [string, "upper" | "lower" | "title"][] = [
+      ["Primeira letra da frase em maiúscula", "title"],
+      ["minúsculas", "lower"],
+      ["MAIÚSCULAS", "upper"],
+    ];
+    for (const [label, mode] of items) {
+      const b = h("button", { class: "wd-menu-item", type: "button", text: label });
+      b.addEventListener("mousedown", (e) => e.preventDefault());
+      b.addEventListener("click", () => {
+        this.closePop();
+        this.hooks.editor.changeCase(mode);
+      });
+      pop.append(b);
+    }
+    this.place(pop, anchor);
+  }
+
+  private startDictation(anchor: HTMLElement): void {
+    const SpeechRecognition = (window as unknown as { SpeechRecognition?: any; webkitSpeechRecognition?: any }).SpeechRecognition ||
+      (window as unknown as { SpeechRecognition?: any; webkitSpeechRecognition?: any }).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("O reconhecimento de voz pelo navegador (Web Speech API) não está disponível no sistema atual.");
+      return;
+    }
+    const rec = new SpeechRecognition();
+    rec.lang = "pt-BR";
+    rec.continuous = false;
+    rec.interimResults = false;
+    anchor.classList.add("active-btn");
+    rec.onresult = (ev: any) => {
+      const text = ev.results?.[0]?.[0]?.transcript;
+      if (text) this.hooks.editor.insertPlainText(" " + text);
+    };
+    rec.onend = () => {
+      anchor.classList.remove("active-btn");
+    };
+    rec.onerror = () => {
+      anchor.classList.remove("active-btn");
+    };
+    rec.start();
   }
 
   private closePop(): void {

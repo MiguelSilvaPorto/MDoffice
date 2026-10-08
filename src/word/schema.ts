@@ -16,6 +16,10 @@ export interface ParaAttrs {
   /** recuo à esquerda e da primeira linha, em pontos */
   indentLeft: number | null;
   indentFirst: number | null;
+  /** cor de fundo / sombreamento do parágrafo */
+  bg: string | null;
+  /** borda inferior do parágrafo */
+  borderBottom: boolean | null;
 }
 
 const paraAttrs = {
@@ -25,6 +29,8 @@ const paraAttrs = {
   lineHeight: { default: null as number | null },
   indentLeft: { default: null as number | null },
   indentFirst: { default: null as number | null },
+  bg: { default: null as string | null },
+  borderBottom: { default: null as boolean | null },
 };
 
 function num(v: string | null | undefined): number | null {
@@ -53,6 +59,8 @@ function paraStyle(attrs: Record<string, unknown>): string {
   if (a.lineHeight != null) css.push(`line-height:${a.lineHeight}`);
   if (a.indentLeft != null) css.push(`margin-left:${a.indentLeft}pt`);
   if (a.indentFirst != null) css.push(`text-indent:${a.indentFirst}pt`);
+  if (a.bg) css.push(`background-color:${a.bg};padding:4px 8px;border-radius:3px`);
+  if (a.borderBottom) css.push(`border-bottom:1.5px solid currentColor;padding-bottom:3px`);
   return css.join(";");
 }
 
@@ -66,6 +74,8 @@ function paraFromDOM(dom: HTMLElement): Partial<ParaAttrs> {
     lineHeight: num(st.lineHeight) && !/[a-z%]/i.test(st.lineHeight) ? num(st.lineHeight) : null,
     indentLeft: toPt(st.marginLeft),
     indentFirst: toPt(st.textIndent),
+    bg: st.backgroundColor || null,
+    borderBottom: !!st.borderBottom || null,
   };
 }
 

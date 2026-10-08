@@ -206,6 +206,13 @@ export class App {
       spellEnabled: () => true,
       onChange: () => this.onWordChange(),
       onStatus: () => this.wordStatus(),
+      onFind: () => this.sidebar.focusSearch(),
+      onReplace: () => {
+        toast("Use a busca lateral ou atalhos para substituir em lote.", "info", 2600);
+        this.sidebar.focusSearch();
+      },
+      onReview: () => this.openReview(),
+      onAddons: () => toast("Painel de Suplementos do mdOffice.", "info", 2400),
     });
     $("#ol-collapse").addEventListener("click", () => this.outline.collapseAll(true));
     $("#ol-expand").addEventListener("click", () => this.outline.collapseAll(false));
