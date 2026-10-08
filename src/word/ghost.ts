@@ -1,0 +1,151 @@
+// Sugestão de próximas palavras (texto fantasma, estilo Copilot) dentro do documento Word.
+// Usa o mesmo preditor do editor Markdown (broker/ghost): palavras do próprio texto + português comum.
+// Tab aceita tudo, Alt+Seta / Ctrl+Seta aceita palavra por palavra, Esc descarta.
+import { Plugin, PluginKey, TextSelection, type EditorState } from "prosemirror-state";
+import { Decoration, DecorationSet, type EditorView } from "prosemirror-view";
+import { DocumentIndex } from "../broker/ghost/documentIndex";
+import { predictFromLine } from "../broker/ghost/predict";
+import type { GhostSuggestion } from "../broker/ghost/types";
+import { consumeTyped, cycleSuggestion, altLabel, outcomeOf } from "../broker/ghost/suggestion";
+import { accepted, rejected } from "../broker/personal/feedback";
+
+export interface WordGhostHooks {
+  enabled: () => boolean;
+}
+
+const key = new PluginKey<GhostSuggestion | null>("word-ghost");
+
+/** Texto do parágrafo até o cursor / depois dele (objetos como imagem viram um caractere neutro). */
+function around(state: EditorState): { before: string; after: string } | null {
+  const sel = state.selection;
+  if (!sel.empty || !sel.$from.parent.isTextblock) return null;
+  const $p = sel.$from;
+  return {
+    before: $p.parent.textBetween(0, $p.parentOffset, undefined, "￼"),
+    after: $p.parent.textBetween($p.parentOffset, $p.parent.content.size, undefined, "￼"),
+  };
+}
+
+function setSuggestion(view: EditorView, s: GhostSuggestion | null): void {
+  view.dispatch(view.state.tr.setMeta(key, { set: s }));
+}
+
+function accept(view: EditorView, wordOnly: boolean): boolean {
+  const cur = key.getState(view.state);
+  if (!cur || !cur.text) return false;
+  const m = wordOnly && !cur.replace ? /^(\S+\s*)/.exec(cur.text) : null;
+  const o = outcomeOf(cur);
+  if (o && (!m || m[1].trim() === cur.text.split(" ")[0])) accepted(o);
+  const insert = m ? m[1] : cur.text;
+  const rest = cur.text.slice(insert.length);
+  const pos = cur.pos - (cur.replace ?? 0); // correção: troca o que foi digitado
+  const tr = view.state.tr.insertText(insert, pos, cur.pos);
+  tr.setSelection(TextSelection.create(tr.doc, pos + insert.length));
+  tr.setMeta(key, { set: rest ? { text: rest, pos: pos + insert.length } : null });
+  view.dispatch(tr.scrollIntoView());
+  return true;
+}
+
+export function ghostPlugin(hooks: WordGhostHooks): Plugin {
+  const index = new DocumentIndex();
+  let predictTimer: number | undefined;
+  let indexTimer: number | undefined;
+  const reindex = (state: EditorState): void => index.update(state.doc.textBetween(0, state.doc.content.size, "\n", " "));
+
+  return new Plugin<GhostSuggestion | null>({
+    key,
+    state: {
+      init: () => null,
+      apply(tr, cur) {
+        const meta = tr.getMeta(key) as { set: GhostSuggestion | null } | undefined;
+        if (meta) return meta.set;
+        if (!cur) return null;
+        if (tr.docChanged) {
+          // digitou exatamente o começo da sugestão: consome sem esperar o próximo cálculo
+          let typed = "";
+          let at = -1;
+          let pure = true;
+          tr.steps.forEach((st) => {
+            const j = st.toJSON() as { stepType: string; from?: number; to?: number; slice?: { content?: { text?: string }[] } };
+            const txt = j.slice?.content?.map((c) => c.text ?? "").join("") ?? "";
+            if (j.stepType !== "replace" || j.from !== j.to || !txt) pure = false;
+            else {
+              typed += txt;
+              if (at < 0) at = j.from!;
+            }
+          });
+          if (pure && at === cur.pos) {
+            if (!cur.text.toLowerCase().startsWith(typed.toLowerCase())) {
+              const o = outcomeOf(cur);
+              if (o) rejected(o, false); // digitou outra coisa: essa sugestão não serviu
+            }
+            return consumeTyped(cur, typed);
+          }
+          return null;
+        }
+        if (tr.selectionSet && tr.selection.head !== cur.pos) return null;
+        return cur;
+      },
+    },
+    props: {
+      decorations(state) {
+        const s = key.getState(state);
+        if (!s || !s.text || !hooks.enabled()) return null;
+        const w = document.createElement("span");
+        w.className = "wd-ghost";
+        w.textContent = s.text;
+        w.setAttribute("aria-hidden", "true");
+        if (s.replace) w.classList.add("wd-ghost-fix");
+        const label = altLabel(s);
+        if (label) w.dataset.alts = label;
+        return DecorationSet.create(state.doc, [Decoration.widget(s.pos, w, { side: 1, key: `ghost-${s.pos}-${s.text}-${s.alt ?? 0}` })]);
+      },
+      handleKeyDown(view, e) {
+        if (!hooks.enabled() || !key.getState(view.state)) return false;
+        if (e.key === "Tab" && !e.shiftKey && !e.ctrlKey && !e.altKey) return accept(view, false);
+        if (e.key === "ArrowRight" && (e.altKey || e.ctrlKey) && !e.shiftKey) return accept(view, true);
+        if (e.altKey && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+          const cur = key.getState(view.state)!;
+          if (!cur.alts || cur.alts.length < 2) return false;
+          setSuggestion(view, cycleSuggestion(cur, e.key === "ArrowDown" ? 1 : -1));
+          return true;
+        }
+        if (e.key === "Escape") {
+          const o = outcomeOf(key.getState(view.state)!);
+          if (o) rejected(o, true);
+          setSuggestion(view, null);
+          return true;
+        }
+        return false;
+      },
+    },
+    view(view) {
+      reindex(view.state);
+      return {
+        update(v, prev) {
+          if (!hooks.enabled()) return;
+          const changed = !prev.doc.eq(v.state.doc);
+          if (changed) {
+            window.clearTimeout(indexTimer);
+            indexTimer = window.setTimeout(() => reindex(v.state), 800);
+          }
+          if (!changed && prev.selection.eq(v.state.selection)) return;
+          window.clearTimeout(predictTimer);
+          predictTimer = window.setTimeout(() => {
+            if (!hooks.enabled()) return;
+            const ctx = around(v.state);
+            const pos = v.state.selection.head;
+            const pred = ctx ? predictFromLine(ctx.before, ctx.after, pos, index) : null;
+            const cur = key.getState(v.state);
+            if (pred?.text === cur?.text && pred?.pos === cur?.pos && pred?.alts?.length === cur?.alts?.length) return;
+            setSuggestion(v, pred);
+          }, 90);
+        },
+        destroy() {
+          window.clearTimeout(predictTimer);
+          window.clearTimeout(indexTimer);
+        },
+      };
+    },
+  });
+}

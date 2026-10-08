@@ -57,17 +57,22 @@ export interface WordEditorHooks {
   onSelection: () => void;
   /** Plugins extras (paginação, corretor). */
   plugins?: () => Plugin[];
+  /** Plugins que precisam tratar o teclado ANTES dos atalhos do editor (ex.: Tab da sugestão). */
+  earlyPlugins?: () => Plugin[];
   /** Imagem colada ou arrastada (data URL). */
   onImage?: (dataUrl: string) => void;
 }
 
 const PARA_TYPES = ["paragraph", "heading"];
+/** Atributos de parágrafo que o pincel de formatação leva junto. */
+const PAINTER_PARA_ATTRS = ["align", "lineHeight", "spaceBefore", "spaceAfter", "indentLeft", "indentFirst"];
 
 export class WordEditor {
   readonly view: EditorView;
   setup: PageSetup = { ...DEFAULT_SETUP, margins: { ...DEFAULT_SETUP.margins } };
   private hooks: WordEditorHooks;
   private copiedMarks: readonly import("prosemirror-model").Mark[] | null = null;
+  private copiedPara: Record<string, unknown> | null = null;
 
   constructor(host: HTMLElement, hooks: WordEditorHooks) {
     this.hooks = hooks;
@@ -114,6 +119,7 @@ export class WordEditor {
     };
     const mark = (n: string): Command => toggleMark(schema.marks[n]);
     return [
+      ...(this.hooks.earlyPlugins?.() ?? []),
       history(),
       keymap({
         "Mod-z": undo,
@@ -305,27 +311,50 @@ export class WordEditor {
     this.view.focus();
   }
 
-  /** Pincel de formatação: copia marcas do cursor/seleção. */
+  /** Pincel de formatação: copia as marcas (menos link) e o formato do parágrafo do cursor. */
   copyFormat(): boolean {
     const state = this.view.state;
     const { $from } = state.selection;
-    this.copiedMarks = state.storedMarks ?? $from.marks();
-    return !!this.copiedMarks;
+    this.copiedMarks = (state.storedMarks ?? $from.marks()).filter((m) => m.type !== schema.marks.link);
+    const para: Record<string, unknown> = {};
+    for (let d = $from.depth; d >= 0; d--) {
+      const n = $from.node(d);
+      if (!PARA_TYPES.includes(n.type.name)) continue;
+      for (const k of PAINTER_PARA_ATTRS) para[k] = n.attrs[k] ?? null;
+      break;
+    }
+    this.copiedPara = para;
+    return true;
   }
 
-  /** Pincel de formatação: aplica marcas salvas na seleção. */
+  /** Pincel de formatação: aplica o formato copiado à seleção (troca a formatação de letra existente). */
   applyFormat(): boolean {
     if (!this.copiedMarks) return false;
     const state = this.view.state;
-    const { from, to } = state.selection;
+    const { from, to, empty } = state.selection;
+    if (empty) return false;
     let tr = state.tr;
-    tr = tr.removeMark(from, to);
-    for (const m of this.copiedMarks) {
-      tr = tr.addMark(from, to, m);
+    for (const t of Object.values(schema.marks)) if (t !== schema.marks.link) tr = tr.removeMark(from, to, t);
+    for (const m of this.copiedMarks) tr = tr.addMark(from, to, m);
+    const para = this.copiedPara;
+    if (para) {
+      state.doc.nodesBetween(from, to, (node, pos) => {
+        if (!PARA_TYPES.includes(node.type.name)) return true;
+        const patch: Record<string, unknown> = {};
+        for (const k of PAINTER_PARA_ATTRS) if (k in node.type.spec.attrs!) patch[k] = para[k];
+        tr = tr.setNodeMarkup(pos, node.type, { ...node.attrs, ...patch });
+        return false;
+      });
     }
     this.view.dispatch(tr);
     this.view.focus();
     return true;
+  }
+
+  /** Esquece o formato copiado. */
+  clearCopiedFormat(): void {
+    this.copiedMarks = null;
+    this.copiedPara = null;
   }
 
   hasCopiedFormat(): boolean {

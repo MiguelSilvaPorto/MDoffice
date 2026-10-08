@@ -136,6 +136,37 @@ produzir documentos bonitos e funcionais — inclusive para enviar à IA.
   sugestões, estatísticas (palavras, frases, média, frases longas), correção item a item e
   **“Corrigir tudo (estilo)”**. O dicionário carrega em segundo plano (não trava o app) e
   você pode **ignorar** palavras que não quer mais ver avisadas.
+- **Sugestão de palavras enquanto você digita (Markdown e Word, offline)**: a continuação
+  aparece em cinza depois do cursor. **Tab** aceita tudo, **Alt+→** aceita palavra por palavra,
+  **Alt+↓ / Alt+↑** trocam entre até 3 opções (o indicador “1/3” mostra quantas há) e **Esc**
+  descarta. Ela completa a palavra que você está digitando (a partir de 1–3 letras, conforme a
+  confiança) e prevê a próxima palavra ou até 3 (“de acordo com o”). Só aparece quando há
+  confiança. Vem de três fontes juntas: um **modelo do português** embutido
+  (`public/ngrams/pt.json`, só contagens de palavras e sequências de 2–3 palavras, gerado de
+  textos da Wikipédia em português), **o próprio documento** (o que você repete passa a ser
+  sugerido) e uma **memória dos seus documentos recentes** (guardada só neste computador; em
+  Configurações há “Esquecer o que aprendeu”). Em textos de teste, quem aceita só as sugestões
+  certas digita 17–21% menos teclas num documento novo (antes: 5–12%), e mais ainda em
+  documentos que repetem termos. Para refazer o modelo e medir:
+  `node scripts/fetch-corpus.mjs corpus.txt 100 6000`,
+  `node scripts/build-ngrams.mjs public/ngrams/pt.json corpus.txt --vocab=24000 --trimin=8` e
+  `GHOST_MODEL=public/ngrams/pt.json ALT=1 npx tsx scripts/eval-ghost.mts texto.txt`.
+- **Aprende com você (só neste computador)**: as sugestões de palavras guardam o que você aceita e
+  recusa (Tab, Esc, digitar outra coisa) e ajustam a confiança; há um **perfil do seu estilo** (tamanho
+  das frases, vírgulas, como abre as frases) que alimenta a revisão — a regra “seu estilo” avisa uma
+  frase bem mais longa que o seu normal — e um **modo de intensidade** das sugestões (discreta,
+  equilibrada, agressiva) em Configurações. Ao dar espaço depois de uma palavra com erro de digitação
+  (“voce”, “resultdo”), o texto fantasma oferece a correção (Tab troca). As sugestões do corretor são
+  reordenadas pelo contexto da frase.
+- **Revisão inteligente** (Ctrl+K → “Revisão inteligente”, Markdown e Word): analisa o documento todo e,
+  para palavras que se repetem demais (“importante” 38 vezes), propõe trocas por sinônimos **na mesma
+  forma** (tempo verbal, plural, feminino), mostrando um **diff** (antes/depois, em contexto) e **o
+  porquê** de cada troca. Só propõe quando o contexto sustenta (a palavra de antes e a de depois) e
+  nada muda sem você aceitar. Quando você já aceitou várias sugestões de palavras, o app analisa em
+  segundo plano e mostra um aviso discreto na barra de baixo. A análise roda em fatias de poucos
+  milissegundos, numa só thread, só com o computador parado, e pausa se você digitar ou a aba sumir.
+  Sinônimos: lista escolhida a dedo + (opcional, “menos certas”) o dicionário aberto do LibreOffice
+  (`scripts/build-synonyms.mjs`, derivado do TeP 2.0).
 - **Ponto e vírgula automáticos**: o assistente avisa (e o **“Corrigir tudo”** aplica) quando
   falta o **ponto final** no fim do parágrafo, quando falta **vírgula antes** de “mas, porém,
   contudo, entretanto, todavia”, **depois** de conectivos que abrem a frase (“Além disso,”,
@@ -306,7 +337,7 @@ src/                  frontend (TypeScript, sem framework) — um "motor" por pa
 ├─ broker/            sugestão e correção (português, offline)
 │  ├─ writing.ts      fachada; peças: tone, mask, spell, stats, check, neighbor
 │  ├─ data/ · style/  listas de palavras/frases e regras de estilo (ABNT, tom…)
-│  ├─ ghost/          sugestões inline estilo Copilot
+│  ├─ ghost/          sugestão de palavras (predict, model, memory, documentIndex…)
 │  └─ spell.worker.ts · palavras.ts · review.ts
 ├─ translate/         tradução: plano, máscara, motores, cache, modelo offline, controlador
 ├─ export/            tela Exportar (HTML, PDF, Word, MD, TXT, ZIP, cópia)

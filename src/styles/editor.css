@@ -214,7 +214,8 @@
 }
 
 /* Texto fantasma de sugestão inline (estilo Copilot) */
-.cm-ghost-text {
+.cm-ghost-text,
+.wd-ghost {
   color: #64748b;
   opacity: 0.55;
   pointer-events: none;
@@ -222,7 +223,34 @@
   font-style: italic;
 }
 
-[data-theme="dark"] .cm-ghost-text {
+/* quando há mais de uma opção, mostra "2/3" (Alt+Seta para baixo troca) */
+.cm-ghost-text[data-alts]::after,
+.wd-ghost[data-alts]::after {
+  content: " " attr(data-alts);
+  margin-left: 4px;
+  font-size: 9px;
+  font-style: normal;
+  opacity: 0.7;
+  vertical-align: super;
+}
+
+/* correção do que acabou de ser digitado (Tab troca) */
+.cm-ghost-fix,
+.wd-ghost-fix {
+  color: #b45309;
+  opacity: 0.85;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.cm-ghost-fix::before,
+.wd-ghost-fix::before {
+  content: "↳ ";
+  font-weight: 400;
+}
+
+[data-theme="dark"] .cm-ghost-text,
+[data-theme="dark"] .wd-ghost {
   color: #94a3b8;
   opacity: 0.55;
 }

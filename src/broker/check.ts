@@ -6,6 +6,9 @@ import { commonNeighbor } from "./neighbor";
 import { checkWords } from "./spell";
 import { checkStyle } from "./style";
 import type { WritingIssue } from "./types";
+import { rerankSuggestions } from "./personal/rerank";
+import { personalIndex } from "./ghost/memory";
+import { DocumentIndex } from "./ghost/documentIndex";
 
 export async function checkText(text: string, ignore: Set<string>): Promise<WritingIssue[]> {
   const issues = checkStyle(text);
@@ -25,9 +28,13 @@ export async function checkText(text: string, ignore: Set<string>): Promise<Writ
   }
   if (tokens.length) {
     const wrong = await checkWords(Array.from(unique));
+    const docIdx = new DocumentIndex();
+    docIdx.update(text); // o que está escrito neste documento ajuda a escolher a palavra certa
     for (const token of tokens) {
       const hit = wrong.get(token.word);
       if (hit) {
+        const suggestions = hit.glued ? hit.suggestions : rerankSuggestions(text, token.from, token.to, hit.suggestions, docIdx);
+        const used = personalIndex.wordFreq.get(token.word.toLowerCase()) ?? 0;
         issues.push({
           from: token.from,
           to: token.to,
@@ -35,9 +42,12 @@ export async function checkText(text: string, ignore: Set<string>): Promise<Writ
           kind: "spell",
           message: hit.glued
             ? `“${token.word}” parece ter palavras coladas — faltou um espaço? Talvez “${hit.suggestions[0]}”`
-            : `“${token.word}” não está no dicionário`,
-          suggestions: hit.suggestions,
-          auto: hit.best,
+            : used >= 4
+              ? `“${token.word}” não está no dicionário, mas você a usa com frequência (${used} vezes nos seus textos) — se for um termo seu, adicione ao dicionário`
+              : `“${token.word}” não está no dicionário`,
+          suggestions,
+          // a correção automática só vale se o contexto não discordar da escolha do dicionário
+          auto: hit.best && suggestions[0] === hit.suggestions[0] ? hit.best : hit.glued ? hit.best : undefined,
         });
         continue;
       }

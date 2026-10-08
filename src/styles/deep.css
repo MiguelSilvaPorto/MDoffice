@@ -1,0 +1,133 @@
+/* ---------- Revisão inteligente (diff das trocas sugeridas) ---------- */
+
+.dp-modal {
+  width: min(900px, 94vw);
+  height: min(840px, 92vh);
+}
+
+.dp-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 18px;
+}
+
+.dp-sum {
+  color: var(--muted, var(--fg));
+  font-size: 13px;
+}
+
+.dp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dp-group {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-2);
+  padding: 12px 14px;
+}
+
+.dp-ghead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dp-ghead strong {
+  font-size: 15px;
+}
+
+.dp-ghead .btn {
+  margin-left: auto;
+}
+
+.dp-gwhy {
+  margin: 6px 0 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dp-row {
+  border-top: 1px solid var(--border);
+  padding: 9px 0 4px;
+}
+
+.dp-diff {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.dp-ctx {
+  color: var(--muted, var(--fg));
+  opacity: 0.85;
+}
+
+.dp-diff del {
+  padding: 0 3px;
+  border-radius: 4px;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  text-decoration: line-through;
+}
+
+.dp-diff ins {
+  margin-left: 3px;
+  padding: 0 3px;
+  border-radius: 4px;
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 16%, transparent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.dp-why {
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted, var(--fg));
+}
+
+.dp-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 7px 0 4px;
+}
+
+.dp-conf {
+  margin-right: auto;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.dp-conf-hi {
+  color: var(--ok);
+}
+
+.dp-conf-mid {
+  color: #b45309;
+}
+
+.dp-applied,
+.dp-ignored,
+.dp-stale {
+  opacity: 0.55;
+}
+
+.dp-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+/* aviso discreto na barra de baixo: há sugestões de revisão prontas */
+.st-deep {
+  color: var(--accent);
+  font-weight: 600;
+}

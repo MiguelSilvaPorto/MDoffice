@@ -48,6 +48,8 @@ export class Ribbon {
   readonly el: HTMLElement;
   private hooks: RibbonHooks;
   private pop: HTMLElement | null = null;
+  /** Pincel de formatação: desligado, para uma seleção ("once") ou fixo ("sticky"). */
+  private painter: "off" | "once" | "sticky" = "off";
   private showParaMarks = false;
 
   constructor(host: HTMLElement, hooks: RibbonHooks) {
@@ -170,6 +172,23 @@ export class Ribbon {
       // botões não tiram o foco do documento (selects precisam do foco para abrir)
       if (t.closest("button")) e.preventDefault();
     });
+    // pincel: duplo clique deixa ligado até apertar Esc ou clicar de novo
+    host.addEventListener("dblclick", (e) => {
+      if (!(e.target as HTMLElement).closest("[data-cmd=format-painter]")) return;
+      this.hooks.editor.copyFormat();
+      this.setPainter("sticky");
+    });
+    // com o pincel ligado, a próxima seleção com o mouse recebe o formato
+    this.hooks.editor.view.dom.addEventListener("mouseup", () => {
+      if (this.painter === "off") return;
+      setTimeout(() => {
+        if (this.painter === "off" || !this.hooks.editor.applyFormat()) return;
+        if (this.painter === "once") this.setPainter("off");
+      }, 0);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && this.painter !== "off") this.setPainter("off");
+    });
     host.addEventListener("click", (e) => {
       const b = (e.target as HTMLElement).closest<HTMLElement>("[data-cmd]");
       if (b) void this.run(b.dataset.cmd!, b);
@@ -190,6 +209,13 @@ export class Ribbon {
           break;
       }
     });
+  }
+
+  private setPainter(mode: "off" | "once" | "sticky"): void {
+    this.painter = mode;
+    this.el.querySelector("[data-cmd=format-painter]")?.classList.toggle("active-btn", mode !== "off");
+    this.hooks.editor.view.dom.classList.toggle("painting", mode !== "off");
+    if (mode === "off") this.hooks.editor.clearCopiedFormat();
   }
 
   // ---------- estado visual ----------
@@ -298,12 +324,10 @@ export class Ribbon {
       case "t-row-after":
         return ed.table("addRowAfter");
       case "format-painter": {
-        if (ed.hasCopiedFormat()) {
-          ed.applyFormat();
-          anchor.classList.remove("active-btn");
-        } else {
+        if (this.painter !== "off") this.setPainter("off");
+        else {
           ed.copyFormat();
-          anchor.classList.add("active-btn");
+          this.setPainter("once");
         }
         return;
       }

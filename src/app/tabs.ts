@@ -1,6 +1,7 @@
 // Abas: abrir, fechar, trocar, reordenar, menus e sessão (reabre as abas ao iniciar).
 
 import type { App } from "./app";
+import { rememberDocument } from "../broker/ghost/memory";
 import * as files from "../files";
 import { newTab, tabLabel, type DocTab } from "../tabs";
 import { plainText } from "../word/schema";
@@ -108,10 +109,12 @@ export const tabsMethods = {
   snapshotTab(this: App): void {
     if (this.tab.kind === "word") {
       this.wordHost.snapshot(this.tab.word!);
-      return;
+    } else {
+      this.tab.state = this.editor.getState();
+      this.tab.scrollTop = this.editor.scrollTop();
     }
-    this.tab.state = this.editor.getState();
-    this.tab.scrollTop = this.editor.scrollTop();
+    // a sugestão de palavras aprende com o que foi escrito (fica só neste computador)
+    if (this.tab.kind !== "settings" && this.copilot) rememberDocument(this.tab.id, this.textOf(this.tab));
   },
 
   /** Torna a aba indicada a ativa e redesenha tudo que depende do documento. */

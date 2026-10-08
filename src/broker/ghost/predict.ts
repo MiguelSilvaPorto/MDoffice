@@ -1,142 +1,357 @@
-// Lógica de predição: olha a linha e o cursor e devolve a sugestão de continuação, se houver.
+// Previsão: olha o que vem antes do cursor e devolve a continuação mais provável, se houver confiança.
+// Junta duas fontes: o modelo do idioma (model.ts) e o que a própria pessoa escreve no documento (documentIndex.ts).
+// Sem o modelo carregado, cai no plano B (legacy.ts).
 
 import { type Text } from "@codemirror/state";
-import { PALAVRAS_LISTA } from "../palavras";
 import { type GhostSuggestion } from "./types";
-import { CURATED_TRIGRAMS, CURATED_BIGRAMS } from "./ngrams";
-import { DocumentIndex } from "./documentIndex";
+import { DocumentIndex, SENTENCE_START } from "./documentIndex";
+import { getLanguageModel, type LangModel, START, COMMA, NUMBER } from "./model";
+import { predictLegacy } from "./legacy";
+import { personalIndex } from "./memory";
+import { preference, thresholdScale } from "../personal/feedback";
+import { agreementFactor } from "./agreement";
+import { fixTypo } from "./typo";
 
-/**
- * Analisa a linha e a posição do cursor e devolve a sugestão de ghost text, se houver.
- */
-export function predictCompletion(
-  doc: Text,
-  pos: number,
-  index: DocumentIndex
-): GhostSuggestion | null {
+/** Confiança mínima (0–1) para mostrar a sugestão. Ajustada medindo acertos em textos de teste (veja eval). */
+/** Quanto o documento pesa na mistura com o modelo do idioma. */
+export const MIX = { kNext: 4, kPrefix: 3, maxLambda: 0.8, personal: 0.5, /** peso de algo que apareceu só 1 vez (pode ser acaso) */ single: 0.5 };
+/** Quanto vale uma contagem do documento: o 1 vale menos (pode ser acaso) e passar de 5 não aumenta (evita repetição em ciclo). */
+const seen = (c: number): number => (c >= 2 ? Math.min(c, 5) : c * MIX.single);
+
+export const THRESHOLDS = {
+  /** próxima palavra, depois de um espaço */
+  next: 0.15,
+  /** continuar a sugestão com mais uma palavra (até 3 no total) */
+  chain: 0.45,
+  /** completar a palavra com 1 letra digitada / 2 / 3 ou mais */
+  prefix1: 0.6,
+  prefix2: 0.3,
+  prefix3: 0.2,
+  /** quantas palavras no máximo numa sugestão */
+  maxWords: 3,
+  /** oferece corrigir a palavra recém-digitada quando parece erro de digitação */
+  typoFix: true,
+  /** usa a regra de concordância de gênero e número */
+  agreement: true,
+  /** quantas opções oferecer (a primeira aparece; as outras trocam com Alt+Seta para baixo) */
+  alternatives: 3,
+  /** confiança mínima para uma alternativa */
+  alt: 0.06,
+};
+
+/** Analisa a linha e a posição do cursor e devolve a sugestão de texto fantasma, se houver. */
+export function predictCompletion(doc: Text, pos: number, index: DocumentIndex): GhostSuggestion | null {
   const line = doc.lineAt(pos);
   const col = pos - line.from;
-  const before = line.text.slice(0, col);
-  const after = line.text.slice(col);
+  return predictFromLine(line.text.slice(0, col), line.text.slice(col), pos, index);
+}
 
-  // Se o cursor estiver no meio de caracteres alfanuméricos (ex: pa|lavra), não atrapalha
-  if (/^[a-zA-ZÀ-ÿ0-9_-]/u.test(after)) {
-    return null;
+/**
+ * Previsão sem depender do CodeMirror: recebe o texto da linha/parágrafo antes e depois do cursor.
+ * (O editor do Word usa esta versão.)
+ */
+export function predictFromLine(before: string, after: string, pos: number, index: DocumentIndex): GhostSuggestion | null {
+  // cursor no meio de uma palavra (pa|lavra): não atrapalha
+  if (/^[\p{L}0-9_-]/u.test(after)) return null;
+  if (before.trim() === "") return null;
+  if (before.trim().startsWith("```")) return null;
+  const model = getLanguageModel();
+  if (!model) return predictLegacy(before, after, pos, index);
+  const r = predictWithModel(model, before, index, THRESHOLDS.alternatives);
+  if (r?.replace) return { text: r.texts[0], pos, replace: r.replace }; // correção do que foi digitado: sem alternativas nem aprendizado
+  return r ? { text: r.texts[0], pos, alts: r.texts, altWords: r.words, prev: r.prev, mode: r.mode } : null;
+}
+
+// ---------------------------------------------------------------- contexto
+
+const WORD = /[A-Za-zÀ-ÿ]+(?:-[A-Za-zÀ-ÿ]+)*|\d+(?:[.,]\d+)*|,/g;
+
+interface Ctx {
+  /** palavras anteriores (minúsculas; número = "#"; vírgula = ",") — sem a palavra que está sendo digitada */
+  tokens: string[];
+  /** a palavra que está sendo digitada (como foi digitada), ou null se acabou de dar espaço */
+  prefix: string | null;
+  /** o cursor está no começo de uma frase */
+  sentenceStart: boolean;
+  /** a palavra que acabou de ser terminada com espaço (como foi digitada), se houver */
+  justTyped: { word: string; spaces: number; mid: boolean } | null;
+}
+
+function readContext(before: string): Ctx | null {
+  const endsLetter = /[\p{L}0-9_-]$/u.test(before);
+  const endsSpace = /\s$/.test(before);
+  if (!endsLetter && !endsSpace) return null;
+  // só a frase atual conta
+  let seg = before;
+  const rx = /[.!?;:()…]+(?:\s+|$)/g;
+  let m: RegExpExecArray | null;
+  let cut = 0;
+  while ((m = rx.exec(before))) cut = m.index + m[0].length;
+  if (cut > 0) seg = before.slice(cut);
+  // linha de lista/título/tabela do Markdown: ignora os símbolos do começo
+  seg = seg.replace(/^\s*(?:[-*+>]\s+|\d+[.)]\s+|#{1,6}\s+|\|\s*)/, "");
+  const raw = seg.match(WORD) ?? [];
+  const toks = raw.map((w) => (/^\d/.test(w) ? "#" : w === "," ? "," : w.toLowerCase()));
+  let prefix: string | null = null;
+  if (endsLetter) {
+    const last = raw[raw.length - 1];
+    if (!last || /^\d/.test(last) || !before.endsWith(last)) return null;
+    prefix = last;
+    toks.pop();
   }
-
-  // Linha em branco ou apenas espaços: nada para prever
-  if (before.trim() === "") {
-    return null;
+  // palavra recém-terminada: "resultdo " (letras seguidas de espaço), para oferecer a correção
+  let justTyped: Ctx["justTyped"] = null;
+  if (endsSpace) {
+    const jm = /([\p{L}][\p{L}'-]*)(\s+)$/u.exec(before);
+    if (jm) justTyped = { word: jm[1], spaces: jm[2].length, mid: toks.length > 1 };
   }
+  return { tokens: toks, prefix, sentenceStart: cut > 0 ? toks.length === 0 : false, justTyped };
+}
 
-  // Não sugerir em linhas de cerca de código markdown (```)
-  if (before.trim().startsWith("```")) {
-    return null;
+// ---------------------------------------------------------------- pontuação
+
+interface Cand {
+  lc: string;
+  id: number;
+  display: string;
+  pc: number;
+  pd: number;
+}
+
+interface Ranked {
+  best: Cand;
+  p: number;
+  /** probabilidade da própria palavra digitada estar completa (modo prefixo) */
+  pSelf: number;
+}
+
+/** Fontes de evidência: o documento aberto (peso 1) e a memória dos outros documentos (peso 0,5). */
+function sourcesOf(index: DocumentIndex): [DocumentIndex, number][] {
+  return index === personalIndex ? [[index, 1]] : [[index, 1], [personalIndex, MIX.personal]];
+}
+
+function docMaps(sources: [DocumentIndex, number][], t1: string | undefined, t2: string | undefined) {
+  // as chaves guardam a grafia original: junta por minúsculas
+  const fold = (pick: (i: DocumentIndex) => Map<string, number> | undefined): Map<string, number> => {
+    const out = new Map<string, number>();
+    for (const [idx, w] of sources) {
+      const m = pick(idx);
+      if (m) for (const [word, c] of m) out.set(word.toLowerCase(), (out.get(word.toLowerCase()) ?? 0) + seen(c) * w);
+    }
+    return out;
+  };
+  return {
+    tri: fold((i) => (t1 && t2 ? i.trigrams.get(`${t1} ${t2}`) : undefined)),
+    bi: fold((i) => (t2 ? i.bigrams.get(t2) : undefined)),
+  };
+}
+
+const sum = (m: Map<string, number>): number => {
+  let s = 0;
+  for (const c of m.values()) s += c;
+  return s;
+};
+
+
+/**
+ * Evita sugestões em ciclo ("casa casa casa", "o projeto de o projeto de"): zera repetir a palavra anterior e
+ * enfraquece o que acabaria repetindo uma sequência ou uma palavra já muito usada nas últimas palavras.
+ */
+function repeatPenalty(tokens: string[], w: string): number {
+  const n = tokens.length;
+  if (n === 0 || w.length < 1) return 1;
+  if (tokens[n - 1] === w) return 0;
+  const recent = tokens.slice(-24);
+  let f = 1;
+  let uses = 0;
+  for (const t of recent) if (t === w) uses++;
+  if (uses >= 3) f *= 0.15;
+  else if (uses === 2) f *= 0.6;
+  if (n >= 2) {
+    const a = tokens[n - 2];
+    const b = tokens[n - 1];
+    for (let i = 0; i + 2 < recent.length; i++) if (recent[i] === a && recent[i + 1] === b && recent[i + 2] === w) { f *= 0.05; break; }
   }
+  return f;
+}
 
-  // --- Caso 1: Usuário está digitando letras no final (prefixo de palavra) ---
-  const prefixMatch = /([a-zA-ZÀ-ÿ0-9_-]+)$/.exec(before);
-  if (prefixMatch) {
-    const prefix = prefixMatch[1];
-    if (prefix.length < 2) return null;
+/** Escolhe a melhor palavra para o contexto (e o prefixo digitado, se houver). */
+/** As `k` palavras mais prováveis, da melhor para a pior. */
+function rank(model: LangModel, index: DocumentIndex, tokens: string[], prefix: string | null, k = 1): Ranked[] {
+  const idOf = (w: string | undefined): number => (w === undefined ? START : w === "," ? COMMA : w === "#" ? NUMBER : (model.idOf.get(w) ?? -1));
+  const t2 = tokens.length ? tokens[tokens.length - 1] : undefined;
+  const t1 = tokens.length > 1 ? tokens[tokens.length - 2] : undefined;
+  const c2 = idOf(t2);
+  const c1 = tokens.length > 1 ? idOf(t1) : START;
+  // com 1 palavra só, o contexto de trigrama é "<s> palavra"
+  const tri = tokens.length >= 1 && c1 >= 0 && c2 >= 0 ? model.trigram(tokens.length === 1 ? START : c1, c2) : { succ: [], total: 0 };
+  const bi = c2 >= 0 || tokens.length === 0 ? model.bigram(tokens.length === 0 ? START : c2) : { succ: [], total: 0 };
+  // no documento, o começo da frase é o contexto "<s>"
+  const sources = sourcesOf(index);
+  const originalOf = (lc: string): string | undefined => sources.map(([i]) => i.originalCase.get(lc)).find(Boolean);
+  const doc = docMaps(sources, tokens.length >= 2 ? t1 : tokens.length === 1 ? SENTENCE_START : undefined, tokens.length >= 1 ? t2 : SENTENCE_START);
+  const lowPrefix = prefix?.toLowerCase() ?? null;
 
-    const textBeforePrefix = before.slice(0, -prefix.length);
-    const wordsBefore = textBeforePrefix.trim().split(/\s+/);
-    const prevWord = wordsBefore.length > 0 ? wordsBefore[wordsBefore.length - 1] : "";
+  const cands = new Map<string, Cand>();
+  const add = (lc: string, id: number, display?: string): Cand => {
+    let c = cands.get(lc);
+    if (!c) cands.set(lc, (c = { lc, id, display: display ?? (id >= 0 ? model.display(id) : lc), pc: 0, pd: 0 }));
+    return c;
+  };
+  const okPrefix = (lc: string) => lowPrefix === null || lc.startsWith(lowPrefix);
 
-    let candidate: string | null = null;
+  // ----- modelo do idioma
+  const triMap = new Map(tri.succ.map((s) => [s.id, s.count]));
+  const biMap = new Map(bi.succ.map((s) => [s.id, s.count]));
+  const consider = (id: number) => {
+    if (id < 3) return;
+    const lc = model.words[id];
+    if (!okPrefix(lc)) return;
+    const c = add(lc, id);
+    const p3 = tri.total > 0 ? (triMap.get(id) ?? 0) / tri.total : 0;
+    const p2 = bi.total > 0 ? (biMap.get(id) ?? 0) / bi.total : 0;
+    const p1 = model.uniProb(id);
+    c.pc = tri.total > 0 ? 0.5 * p3 + 0.35 * p2 + 0.15 * p1 : 0.8 * p2 + 0.2 * p1;
+  };
+  for (const s of tri.succ) consider(s.id);
+  for (const s of bi.succ) consider(s.id);
+  if (lowPrefix !== null) for (const id of model.withPrefix(lowPrefix)) consider(id);
 
-    // 1. Tenta achar bigrama no documento onde a palavra anterior se conecta com este prefixo
-    if (prevWord) {
-      candidate = index.getBestBigram(prevWord, prefix);
+  // ----- o que a pessoa escreve no documento
+  const docT3 = sum(doc.tri);
+  const docT2 = sum(doc.bi);
+  let ev = docT3 * 2 + docT2;
+  if (lowPrefix === null) {
+    for (const [lc, n] of doc.tri) add(lc, model.idOf.get(lc) ?? -1, originalOf(lc)).pd += (docT3 > 0 ? (docT2 > 0 ? 0.65 : 1) * n / docT3 : 0);
+    for (const [lc, n] of doc.bi) add(lc, model.idOf.get(lc) ?? -1, originalOf(lc)).pd += docT2 > 0 ? (docT3 > 0 ? 0.35 : 1) * n / docT2 : 0;
+  } else {
+    // palavras do documento que começam com o prefixo (a própria palavra em digitação, se só apareceu 1 vez, não conta)
+    let freqSum = 0;
+    const byPrefix: [string, number][] = [];
+    const freq = new Map<string, number>();
+    for (const [idx, w] of sources) for (const [lc, n] of idx.wordFreq) if (lc.startsWith(lowPrefix)) freq.set(lc, (freq.get(lc) ?? 0) + seen(n) * w);
+    for (const [lc, n] of freq) {
+      if (lc === lowPrefix && n <= 1) continue;
+      byPrefix.push([lc, n]);
+      freqSum += n;
     }
-
-    // 2. Tenta nos bigramas curados de português
-    if (!candidate && prevWord) {
-      const curList = CURATED_BIGRAMS[prevWord.toLowerCase()];
-      if (curList) {
-        const found = curList.find((w) => w.toLowerCase().startsWith(prefix.toLowerCase()));
-        if (found) candidate = found;
-      }
-    }
-
-    // 3. Tenta palavras mais usadas do próprio documento atual
-    if (!candidate) {
-      candidate = index.getWordByPrefix(prefix);
-    }
-
-    // 4. Tenta nas palavras mais frequentes da língua portuguesa
-    if (!candidate) {
-      const pNorm = prefix.toLowerCase();
-      for (const w of PALAVRAS_LISTA) {
-        if (w.toLowerCase().startsWith(pNorm) && w.length > pNorm.length) {
-          candidate = w;
-          break;
-        }
-      }
-    }
-
-    if (candidate && candidate.toLowerCase().startsWith(prefix.toLowerCase())) {
-      let suffix = candidate.slice(prefix.length);
-      if (prefix[0] === prefix[0].toUpperCase() && suffix.length > 0) {
-        if (prefix === prefix.toUpperCase()) {
-          suffix = suffix.toUpperCase();
-        }
-      }
-      if (suffix.length > 0) {
-        return { text: suffix, pos };
-      }
-    }
-
-    return null;
-  }
-
-  // --- Caso 2: Usuário terminou uma palavra e deu espaço (prever próxima palavra) ---
-  const spaceMatch = /\s+$/.exec(before);
-  if (spaceMatch) {
-    const trimmed = before.trim();
-    if (!trimmed) return null;
-
-    const words = trimmed.split(/[\s,;:!?—\-]+/);
-    const lastWord = words[words.length - 1];
-    const secondLastWord = words.length > 1 ? words[words.length - 2] : "";
-
-    let nextWords: string | null = null;
-
-    // 1. Trigrama no documento atual
-    if (secondLastWord && lastWord) {
-      nextWords = index.getBestTrigram(secondLastWord, lastWord);
-    }
-
-    // 2. Trigrama curado da língua portuguesa
-    if (!nextWords && secondLastWord && lastWord) {
-      const key = `${secondLastWord.toLowerCase()} ${lastWord.toLowerCase()}`;
-      const list = CURATED_TRIGRAMS[key];
-      if (list && list.length > 0) {
-        nextWords = list[0];
-      }
-    }
-
-    // 3. Bigrama no documento atual
-    if (!nextWords && lastWord) {
-      nextWords = index.getBestBigram(lastWord);
-    }
-
-    // 4. Bigrama curado da língua portuguesa
-    if (!nextWords && lastWord) {
-      const list = CURATED_BIGRAMS[lastWord.toLowerCase()];
-      if (list && list.length > 0) {
-        nextWords = list[0];
-      }
-    }
-
-    if (nextWords && nextWords.trim().length > 0) {
-      if (nextWords.toLowerCase() === lastWord.toLowerCase()) return null;
-      if (after.trim().startsWith(nextWords)) return null;
-
-      return { text: nextWords, pos };
+    const ctxTot = [...doc.tri, ...doc.bi].filter(([lc]) => okPrefix(lc)).reduce((a, [, n]) => a + n, 0);
+    ev = freqSum + 2 * ctxTot;
+    const triTot = [...doc.tri].filter(([lc]) => okPrefix(lc)).reduce((a, [, n]) => a + n, 0);
+    const biTot = [...doc.bi].filter(([lc]) => okPrefix(lc)).reduce((a, [, n]) => a + n, 0);
+    for (const [lc, n] of byPrefix) {
+      const c = add(lc, model.idOf.get(lc) ?? -1, originalOf(lc));
+      const pu = n / freqSum;
+      const ct = triTot > 0 ? (doc.tri.get(lc) ?? 0) / triTot : biTot > 0 ? (doc.bi.get(lc) ?? 0) / biTot : 0;
+      c.pd = ctxTot > 0 ? 0.65 * ct + 0.35 * pu : pu;
     }
   }
+  if (!cands.size) return [];
 
-  return null;
+  // ----- mistura: quanto mais evidência no documento, mais peso ele tem
+  const lambda = Math.min(MIX.maxLambda, ev / (ev + (lowPrefix === null ? MIX.kNext : MIX.kPrefix)));
+  let pcSum = 0;
+  let pdSum = 0;
+  for (const c of cands.values()) {
+    pcSum += c.pc;
+    pdSum += c.pd;
+  }
+  const norm = lowPrefix !== null; // com prefixo: probabilidade entre as palavras que começam assim
+  const scored: { c: Cand; p: number }[] = [];
+  let pSelf = 0;
+  for (const c of cands.values()) {
+    const a = norm ? (pcSum > 0 ? c.pc / pcSum : 0) : c.pc;
+    const d = norm ? (pdSum > 0 ? c.pd / pdSum : 0) : c.pd;
+    let p = (1 - lambda) * a + lambda * d;
+    // quem digita em minúsculas raramente quer um nome próprio
+    if (lowPrefix !== null && prefix![0] === prefix![0].toLowerCase() && c.id >= 0 && model.caps.has(c.id)) p *= 0.4;
+    if (lowPrefix !== null && c.lc === lowPrefix) {
+      pSelf = p;
+      continue; // a própria palavra completa: não há o que sugerir
+    }
+    p *= preference(tokens.length ? tokens[tokens.length - 1] : SENTENCE_START, c.lc); // o que a pessoa costuma aceitar
+    if (THRESHOLDS.agreement) p *= agreementFactor(tokens[tokens.length - 1], c.lc); // concordância de gênero e número
+    p *= repeatPenalty(tokens, c.lc);
+    if (p <= 0) continue;
+    scored.push({ c, p });
+  }
+  scored.sort((x, y) => y.p - x.p);
+  return scored.slice(0, k).map((x) => ({ best: x.c, p: x.p, pSelf }));
+}
+
+/** Sugestão principal + alternativas (da mais para a menos provável). A primeira é a que aparece em cinza. */
+function predictWithModel(model: LangModel, before: string, index: DocumentIndex, k = 1): { texts: string[]; words: string[]; prev: string; mode: "next" | "prefix"; replace?: number } | null {
+  const ctx = readContext(before);
+  if (!ctx) return null;
+  const T = THRESHOLDS;
+  const prev0 = ctx.tokens.length ? ctx.tokens[ctx.tokens.length - 1] : SENTENCE_START;
+  const typoFix = (): { texts: string[]; words: string[]; prev: string; mode: "next"; replace: number } | null => {
+    const jt = ctx.justTyped;
+    if (!T.typoFix || !jt) return null;
+    // nome próprio no meio da frase (inicial maiúscula): não mexe
+    if (jt.mid && jt.word[0] !== jt.word[0].toLowerCase() && jt.word !== jt.word.toUpperCase()) return null;
+    const fixed = fixTypo(model, jt.word.toLowerCase());
+    if (!fixed) return null;
+    const upper = jt.word === jt.word.toUpperCase() && jt.word.length > 1;
+    const cap = jt.word[0] !== jt.word[0].toLowerCase();
+    const text = upper ? fixed.toUpperCase() : cap ? fixed[0].toUpperCase() + fixed.slice(1) : fixed;
+    // troca a palavra e mantém o espaço que a pessoa digitou
+    return { texts: [text + " ".repeat(jt.spaces)], words: [fixed], prev: prev0, mode: "next", replace: jt.word.length + jt.spaces };
+  };
+  // o contexto de uma palavra com erro é pouco confiável: a correção vem antes de qualquer previsão
+  const fixFirst = typoFix();
+  if (fixFirst) return fixFirst;
+  const list = rank(model, index, ctx.tokens, ctx.prefix, k);
+  if (!list.length) return null;
+  const out: string[] = [];
+  const words: string[] = [];
+  for (let i = 0; i < list.length; i++) {
+    const text = suggestFrom(model, index, ctx, list[i], i === 0);
+    if (i === 0) {
+      if (!text) return null;
+      out.push(text);
+      words.push(list[i].best.lc);
+    } else if (text && list[i].p >= T.alt && !out.includes(text)) {
+      out.push(text);
+      words.push(list[i].best.lc);
+    }
+  }
+  return { texts: out, words, prev: prev0, mode: ctx.prefix !== null ? "prefix" : "next" };
+}
+
+/** Monta o texto a sugerir a partir de uma palavra escolhida (ou nada, se faltar confiança). */
+function suggestFrom(model: LangModel, index: DocumentIndex, ctx: Ctx, first: Ranked, main: boolean): string | null {
+  const T = THRESHOLDS;
+  const words: string[] = [];
+  let tokens = ctx.tokens;
+  if (ctx.prefix !== null) {
+    const n = ctx.prefix.length;
+    const need = (n === 1 ? T.prefix1 : n === 2 ? T.prefix2 : T.prefix3) * thresholdScale("prefix");
+    // a própria palavra digitada já é provável: deixa a pessoa terminar
+    if (main && (first.p < need || first.pSelf > first.p)) return null;
+    let disp = first.best.display;
+    if (ctx.prefix === ctx.prefix.toUpperCase() && n > 1) disp = disp.toUpperCase();
+    else if (ctx.prefix[0] !== ctx.prefix[0].toLowerCase() && disp[0] === disp[0].toLowerCase() && first.best.id >= 0 && model.caps.has(first.best.id)) disp = disp[0].toUpperCase() + disp.slice(1);
+    const suffix = disp.slice(n);
+    if (!suffix) return null;
+    words.push(suffix);
+    tokens = [...tokens, first.best.lc];
+    // palavra completada com folga: pode seguir com a próxima
+    if (!main || first.p < 0.6) return suffix;
+  } else {
+    if (main && first.p < T.next * thresholdScale("next")) return null;
+    let w = first.best.display;
+    if (ctx.sentenceStart) w = w[0].toUpperCase() + w.slice(1);
+    words.push(w);
+    tokens = [...tokens, first.best.lc];
+    if (!main) return w;
+  }
+  // continua enquanto houver muita certeza (frases feitas: "de acordo com o")
+  while (words.length < T.maxWords) {
+    const nx = rank(model, index, tokens, null)[0];
+    if (!nx || nx.p < T.chain) break;
+    words.push(nx.best.display);
+    tokens = [...tokens, nx.best.lc];
+  }
+  return ctx.prefix !== null ? words[0] + (words.length > 1 ? " " + words.slice(1).join(" ") : "") : words.join(" ");
 }

@@ -1,5 +1,6 @@
 // mdCreator — o app: guarda o estado (abas, editor, painéis) e liga as peças.
 // O trabalho de cada assunto está nos arquivos ao lado (tabs, documents, wordDocs, assistant…).
+import { loadLanguageModel } from "../broker/ghost/model";
 import { MdEditor, type CursorPos } from "../md/editor";
 import { Preview } from "../md/preview";
 import * as files from "../files";
@@ -33,6 +34,7 @@ import { windowControlsMethods } from "./windowControls";
 import { commandsMethods } from "./commands";
 import { keysMethods } from "./keys";
 import { layoutMethods } from "./layout";
+import { deepReviewMethods } from "./deepReview";
 
 export class App {
   editor!: MdEditor;
@@ -109,6 +111,12 @@ export class App {
   /** Sugestões inline e previsão de palavras (estilo Copilot) ligadas. */
   copilot = loadJSON<boolean>("mdc.copilot", true);
   reviewHandle: ReviewHandle | null = null;
+  /** Revisão inteligente (palavras repetidas): tela aberta, análise em andamento e a última guardada. */
+  deepHandle: { close(): void } | null = null;
+  deepRunning = false;
+  deepDirty = false;
+  deepLastAccepted = 0;
+  deepCache: { key: string; result: import("../broker/deep/analyze").DeepResult } | null = null;
   get cursor(): CursorPos {
     return this.tab.cursor;
   }
@@ -117,6 +125,7 @@ export class App {
   }
 
   async start(): Promise<void> {
+    void loadLanguageModel(); // modelo de idioma da sugestão de palavras (arquivo local)
     this.preview = new Preview($("#preview"), {
       onOpenLocalDoc: (p) => void this.openPath(p),
       onSaveDrawing: async (rel, png, json) => {
@@ -204,6 +213,7 @@ export class App {
       },
       addToDictionary: (w) => this.ignoreWord(w),
       spellEnabled: () => true,
+      ghostEnabled: () => this.copilot,
       onChange: () => this.onWordChange(),
       onStatus: () => this.wordStatus(),
       onFind: () => this.sidebar.focusSearch(),
@@ -238,6 +248,8 @@ export class App {
       void this.runWritingCheck();
     };
     document.querySelector("#st-writing")?.addEventListener("click", () => this.openReview());
+    document.querySelector("#st-deep")?.addEventListener("click", () => this.openDeepReview());
+    this.startDeepWatcher();
     setTone(this.settings.tone);
     $("#st-history").addEventListener("click", () => void this.openHistory());
     $("#st-path").addEventListener("click", () => {
@@ -303,5 +315,6 @@ type WindowControlsMethodsType = typeof windowControlsMethods;
 type CommandsMethodsType = typeof commandsMethods;
 type KeysMethodsType = typeof keysMethods;
 type LayoutMethodsType = typeof layoutMethods;
-export interface App extends TabsMethodsType, PagesMethodsType, HomeContextMethodsType, DocumentsMethodsType, WordDocsMethodsType, AssistantMethodsType, DictionaryMethodsType, MdToolsMethodsType, HistorySearchMethodsType, MediaMethodsType, DrawingMethodsType, AiContextMethodsType, MenusMethodsType, ToolbarMethodsType, WindowControlsMethodsType, CommandsMethodsType, KeysMethodsType, LayoutMethodsType {}
-Object.assign(App.prototype, tabsMethods, pagesMethods, homeContextMethods, documentsMethods, wordDocsMethods, assistantMethods, dictionaryMethods, mdToolsMethods, historySearchMethods, mediaMethods, drawingMethods, aiContextMethods, menusMethods, toolbarMethods, windowControlsMethods, commandsMethods, keysMethods, layoutMethods);
+type DeepReviewMethodsType = typeof deepReviewMethods;
+export interface App extends TabsMethodsType, PagesMethodsType, HomeContextMethodsType, DocumentsMethodsType, WordDocsMethodsType, AssistantMethodsType, DictionaryMethodsType, MdToolsMethodsType, HistorySearchMethodsType, MediaMethodsType, DrawingMethodsType, AiContextMethodsType, MenusMethodsType, ToolbarMethodsType, WindowControlsMethodsType, CommandsMethodsType, KeysMethodsType, LayoutMethodsType, DeepReviewMethodsType {}
+Object.assign(App.prototype, tabsMethods, pagesMethods, homeContextMethods, documentsMethods, wordDocsMethods, assistantMethods, dictionaryMethods, mdToolsMethods, historySearchMethods, mediaMethods, drawingMethods, aiContextMethods, menusMethods, toolbarMethods, windowControlsMethods, commandsMethods, keysMethods, layoutMethods, deepReviewMethods);

@@ -4,6 +4,7 @@ import type { EditorState } from "prosemirror-state";
 import type { Node as PMNode } from "prosemirror-model";
 import { WordEditor } from "./editor";
 import { Ribbon } from "./ribbon";
+import { ghostPlugin } from "./ghost";
 import { paginationPlugin, requestPagination, GAP_PX } from "./pagination";
 import { spellPlugin } from "./spell";
 import { emptyDoc, plainText } from "./schema";
@@ -24,6 +25,8 @@ export interface WordHostOpts {
   ignoreHere: (word: string) => void;
   addToDictionary: (word: string) => void;
   spellEnabled: () => boolean;
+  /** Sugestão de próximas palavras (texto fantasma) ligada? */
+  ghostEnabled: () => boolean;
   /** O texto/formato mudou. */
   onChange: () => void;
   /** Contagens (palavras, páginas, página atual) mudaram. */
@@ -76,6 +79,7 @@ export class WordHost {
         this.statusSoon();
       },
       onImage: (url) => void this.insertImageData(url),
+      earlyPlugins: () => [ghostPlugin({ enabled: () => this.opts.ghostEnabled() })],
       plugins: () => {
         this.spell = spellPlugin({
           getIgnore: () => this.opts.getIgnore(),
@@ -310,6 +314,30 @@ export class WordHost {
 
   text(): string {
     return plainText(this.editor.getDoc());
+  }
+
+  /** Os trechos de texto corrido do documento, com a posição de cada um (para a revisão inteligente). */
+  deepSegments(): { text: string; base: number }[] {
+    const out: { text: string; base: number }[] = [];
+    this.editor.getDoc().descendants((node, pos) => {
+      if (!node.isTextblock) return true;
+      let run = "";
+      let base = -1;
+      const flush = () => {
+        if (run) out.push({ text: run, base });
+        run = "";
+        base = -1;
+      };
+      node.forEach((child, offset) => {
+        if (child.isText) {
+          if (base < 0) base = pos + 1 + offset;
+          run += child.text;
+        } else flush();
+      });
+      flush();
+      return false;
+    });
+    return out;
   }
 
   /** Texto (JSON) do documento inteiro, para histórico e rascunhos. */

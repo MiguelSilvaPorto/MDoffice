@@ -465,6 +465,11 @@ self.addEventListener("message", (event: MessageEvent) => {
       if (lower !== word && typo.check(lower)) continue;
       if (JARGAO.test(word)) continue;
       const r = sugerirPalavra(word);
+      // só faltou acento ou cedilha ("missao" → "missão")? Isso vale mais que supor palavras coladas ("miss ao")
+      if (variantesAcento(word).length) {
+        hits.push({ word, suggestions: r.sugestoes, best: r.best });
+        continue;
+      }
       // faltou espaço? "coisasque" → "coisas que" (a certeza vem de as duas partes serem palavras comuns)
       // nomes próprios e marcas (Instagram, WhatsApp) não viram "Insta gram": exige palavras comuns
       const minuscula = word[0] === word[0].toLowerCase();
@@ -477,10 +482,12 @@ self.addEventListener("message", (event: MessageEvent) => {
         const junto = grudada.partes.join(" ");
         const outros = cortes.slice(1).map((c) => c.partes.join(" "));
         const forte = grudada.todasFrequentes && grudada.partes.length === 2 && grudada.partes.every((p) => p.length >= 2) && word.length >= 6;
+        // corte fraco (só uma parte é palavra comum): primeiro as palavras parecidas, depois o corte
+        const resto = r.sugestoes.filter((x) => x !== junto && !outros.includes(x));
         hits.push({
           word,
           glued: true,
-          suggestions: [junto, ...outros, ...r.sugestoes.filter((x) => x !== junto && !outros.includes(x))].slice(0, 6),
+          suggestions: (grudada.todasFrequentes || camel ? [junto, ...outros, ...resto] : [...resto.slice(0, 2), junto, ...outros, ...resto.slice(2)]).slice(0, 6),
           best: forte ? junto : r.best,
         });
         continue;

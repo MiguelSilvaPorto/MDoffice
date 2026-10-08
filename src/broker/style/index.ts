@@ -9,6 +9,7 @@ import { lowercaseAfterPeriod, paragraphStartLowercase } from "./capitalization"
 import { phrases } from "./phrases";
 import { informalRegister, aGente } from "./register";
 import { abntHours, abntHoursColon, abntUnits, abntMonths, abntAcronymPlural, abntCitation, abntPage, abntEtAl, abntDash, abntLatin } from "./abnt";
+import { personalLongSentence } from "./personal";
 import type { Rule } from "./types";
 
 const RULES: Rule[] = [
@@ -40,6 +41,7 @@ const RULES: Rule[] = [
   abntEtAl,
   abntDash,
   abntLatin,
+  personalLongSentence,
 ];
 
 export function checkStyle(text: string): WritingIssue[] {

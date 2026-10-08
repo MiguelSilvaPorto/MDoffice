@@ -45,6 +45,7 @@ export const commandsMethods = {
     add("Tradução", "Ver português e inglês juntos", () => this.showLanguage("both"));
 
     add("Escrever", "Revisar texto", () => this.openReview(), "F7", "ortografia gramática");
+    add("Escrever", "Revisão inteligente (palavras repetidas)", () => this.openDeepReview(), undefined, "sinônimos repetição diff trocar palavras");
     add("Escrever", "Apresentar (slides)", () => this.openSlides(), "F5", "apresentação slides powerpoint deck");
     add("Escrever", "Modo foco", () => this.toggleFocus(), "Ctrl+Shift+F", "concentrar zen");
     add("Escrever", "Desenhar", () => void this.openDraw(), "Ctrl+Shift+D");

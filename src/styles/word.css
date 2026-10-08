@@ -28,17 +28,15 @@ body.settings-open #word-pane {
 /* Fita no estilo do Word: grupos com o nome embaixo, botões grandes e galeria de estilos. */
 .wd-ribbon {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap; /* quando falta largura, os grupos descem para a 2ª linha: nada fica escondido */
   align-items: stretch;
-  gap: 0;
+  gap: 6px 0;
   margin: 6px 8px 0;
   padding: 6px 4px 4px;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  overflow-x: auto;
-  scrollbar-width: none;
   flex: none;
 }
 
@@ -206,7 +204,7 @@ body.settings-open #word-pane {
   display: flex;
   align-items: center;
   gap: 6px;
-  max-width: 380px;
+  max-width: min(380px, 34vw);
   overflow-x: auto;
   padding: 2px 4px;
   scrollbar-width: none;
@@ -421,9 +419,9 @@ body.settings-open #word-pane {
   font-size: var(--wd-size, 11pt);
   line-height: 1.15;
   color: #1f2328;
-  white-space: pre-wrap;
+  white-space: break-spaces; /* Tab e espaços no fim da linha quebram em vez de passar da margem da página */
   word-wrap: break-word;
-  tab-size: 8;
+  tab-size: 4;
 }
 
 .wd-doc > :first-child {
@@ -863,4 +861,10 @@ body.settings-open #word-pane {
 
 body.home-open #word-pane {
   display: none;
+}
+
+/* Pincel de formatação ligado: o cursor avisa que a próxima seleção recebe o formato */
+.wd-doc.painting,
+.wd-doc.painting * {
+  cursor: copy;
 }

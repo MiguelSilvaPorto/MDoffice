@@ -1,5 +1,14 @@
 // Indexador do documento: aprende, em tempo real e só no seu computador, as palavras que você usa.
 
+/** Contexto do começo de uma frase. */
+export const SENTENCE_START = "<s>";
+
+function add(m: Map<string, Map<string, number>>, key: string, word: string): void {
+  let inner = m.get(key);
+  if (!inner) m.set(key, (inner = new Map()));
+  inner.set(word, (inner.get(word) ?? 0) + 1);
+}
+
 export class DocumentIndex {
   /** Mapa de frequência de palavras no documento: normalizado -> contagem */
   readonly wordFreq = new Map<string, number>();
@@ -16,45 +25,25 @@ export class DocumentIndex {
     this.bigrams.clear();
     this.trigrams.clear();
 
-    const rx = /[a-zA-ZÀ-ÿ0-9_-]+/g;
-    let match: RegExpExecArray | null;
-    const tokens: string[] = [];
-
-    while ((match = rx.exec(text)) !== null) {
-      tokens.push(match[0]);
-    }
-
-    for (let i = 0; i < tokens.length; i++) {
-      const orig = tokens[i];
-      const norm = orig.toLowerCase();
-
-      this.wordFreq.set(norm, (this.wordFreq.get(norm) ?? 0) + 1);
-      if (!this.originalCase.has(norm)) {
-        this.originalCase.set(norm, orig);
-      }
-
-      // Bigrama
-      if (i > 0) {
-        const prev = tokens[i - 1].toLowerCase();
-        let bMap = this.bigrams.get(prev);
-        if (!bMap) {
-          bMap = new Map();
-          this.bigrams.set(prev, bMap);
+    // frase por frase: o começo da frase vira o contexto "<s>" (assim o índice aprende como a pessoa ABRE as frases)
+    // e nada atravessa o ponto final. As vírgulas contam como parte do contexto, como no modelo do idioma.
+    const wordRx = /[A-Za-zÀ-ÿ]+(?:-[A-Za-zÀ-ÿ]+)*|\d+(?:[.,]\d+)*|,/g;
+    for (const sentence of text.split(/[.!?;:()…]+(?:\s+|$)|\n+/)) {
+      const raw = sentence.match(wordRx);
+      if (!raw) continue;
+      let p1 = "";
+      let p2 = SENTENCE_START;
+      for (const w of raw) {
+        const isWord = !/^[\d,]/.test(w);
+        const norm = w === "," ? "," : /^\d/.test(w) ? "#" : w.toLowerCase();
+        if (isWord) {
+          this.wordFreq.set(norm, (this.wordFreq.get(norm) ?? 0) + 1);
+          if (!this.originalCase.has(norm)) this.originalCase.set(norm, w);
+          add(this.bigrams, p2, w);
+          if (p1) add(this.trigrams, p1 + " " + p2, w);
         }
-        bMap.set(orig, (bMap.get(orig) ?? 0) + 1);
-      }
-
-      // Trigrama
-      if (i > 1) {
-        const p1 = tokens[i - 2].toLowerCase();
-        const p2 = tokens[i - 1].toLowerCase();
-        const key = `${p1} ${p2}`;
-        let tMap = this.trigrams.get(key);
-        if (!tMap) {
-          tMap = new Map();
-          this.trigrams.set(key, tMap);
-        }
-        tMap.set(orig, (tMap.get(orig) ?? 0) + 1);
+        p1 = p2;
+        p2 = norm;
       }
     }
   }

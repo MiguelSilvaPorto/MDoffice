@@ -1,4 +1,8 @@
 // Página de Configurações (abre como uma aba, ao lado dos documentos). Cada ajuste vale na hora.
+import { toast } from "./util";
+import { clearGhostMemory } from "./broker/ghost/memory";
+import { profileSummary } from "./broker/personal/profile";
+import { getGhostMode, setGhostMode, clearFeedback, feedbackSummary, type GhostMode } from "./broker/personal/feedback";
 import type { Translation, ProviderChoice } from "./translate/controller";
 import type { Tone } from "./broker/writing";
 import type { AppSettings } from "./settings";
@@ -94,6 +98,21 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
           <div class="st-list">
             ${toggle("autofix", "Correção automática", "Ponto final, vírgulas, maiúsculas, espaços e palavras erradas entram sozinhos (Ctrl+Z desfaz).", ctx.autoFix())}
             ${toggle("copilot", "Sugestões enquanto digita", "Mostra a continuação da frase em cinza. Tab aceita; Alt+Seta aceita uma palavra.", ctx.copilot())}
+            <div class="st-row">
+              <span class="st-text"><b>Intensidade das sugestões</b><small>Discreta: aparece menos e mais certeira. Agressiva: aparece mais, com mais erros.</small></span>
+              <select class="st-select" data-sel="ghostmode">
+                <option value="discreto">Discreta</option>
+                <option value="equilibrado">Equilibrada</option>
+                <option value="agressivo">Agressiva</option>
+              </select>
+            </div>
+            <div class="st-row">
+              <span class="st-text"><b>Seu estilo de escrita</b><small data-style-summary></small></span>
+            </div>
+            <div class="st-row">
+              <span class="st-text"><b>Memória das sugestões</b><small>As sugestões aprendem com os seus documentos recentes. Fica só neste computador.</small></span>
+              <button class="btn small st-btn" data-act="forget-ghost">Esquecer o que aprendeu</button>
+            </div>
             <div class="st-row">
               <span class="st-text"><b>Dicionário pessoal</b><small data-dict-count></small></span>
               <button class="btn small st-btn" data-act="dict">Abrir dicionário…</button>
@@ -228,7 +247,34 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     const n = ctx.dictionaryCount();
     q("[data-dict-count]").textContent = n ? `${n} palavra(s) que você mandou ignorar` : "Nenhuma palavra ainda — clique numa palavra sublinhada e escolha “Adicionar ao dicionário”.";
   };
+  const paintStyle = () => {
+    const p = profileSummary();
+    const fb = feedbackSummary();
+    const el = q("[data-style-summary]");
+    if (!p.ready) {
+      el.textContent = `Ainda aprendendo: ${p.docs} documento(s), ${p.words} palavras analisadas (a partir de ~400 palavras o app passa a usar o seu estilo na revisão).`;
+      return;
+    }
+    const pct = (n: number) => `${Math.round((100 * n) / Math.max(1, p.sentences))}%`;
+    const ab = p.openers.slice(0, 3).map(([w, n]) => `“${w}” (${pct(n)})`).join(", ");
+    el.textContent =
+      `Frases de ${Math.round(p.avgSentence)} palavras em média (90% até ${p.p90}); ${p.commasPer100.toFixed(1).replace(".", ",")} vírgulas a cada 100 palavras; palavras de ${p.avgWordLen.toFixed(1).replace(".", ",")} letras. Costuma abrir frases com ${ab}.` +
+      (fb.decisions >= 30 ? ` Você aceita ${Math.round(fb.acceptNext * 100)}% das sugestões de próxima palavra e ${Math.round(fb.acceptPrefix * 100)}% das de completar palavra.` : "");
+  };
+  paintStyle();
+  const modeSel = q<HTMLSelectElement>("[data-sel=ghostmode]");
+  modeSel.value = getGhostMode();
+  modeSel.addEventListener("change", () => {
+    setGhostMode(modeSel.value as GhostMode);
+    flash();
+  });
   paintDict();
+  on('[data-act="forget-ghost"]', "click", () => {
+    clearGhostMemory();
+    clearFeedback();
+    paintStyle();
+    toast("As sugestões esqueceram o que aprenderam dos seus documentos.", "ok", 2600);
+  });
   on('[data-act="dict"]', "click", () => {
     ctx.openDictionary();
   });
