@@ -1634,6 +1634,49 @@ body.no-preview .cm-editor {
   }
 }
 
+.slides-notes {
+  margin: 0 auto 8px;
+  max-width: min(1100px, 92vw);
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e9edf5;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.slides-overlay.tema-claro {
+  background: #f4f6fa;
+  color: #14181f;
+}
+
+.slides-overlay.tema-claro .slides-bar {
+  background: rgba(0, 0, 0, 0.05);
+  border-top-color: rgba(0, 0, 0, 0.12);
+}
+
+.slides-overlay.tema-claro .slides-notes {
+  background: rgba(0, 0, 0, 0.05);
+  color: #14181f;
+}
+
+.slide {
+  position: relative;
+}
+
+.slide-num {
+  position: absolute;
+  right: 0.6em;
+  bottom: 0.2em;
+  font-size: 0.6em;
+  opacity: 0.55;
+}
+
+.slide.layout-titulo,
+.slide.layout-secao {
+  text-align: center;
+}
+
 .cm-issue-popup {
   position: fixed;
   z-index: 60;
@@ -4217,6 +4260,35 @@ body.home-open .sb-tab[data-side="home"] {
   box-shadow: 0 10px 28px rgba(196, 62, 28, 0.2);
 }
 
+/* Card selecionado como filtro ativo */
+.home-card.selected {
+  transform: translateY(-2px);
+}
+
+.home-card.card-word.selected {
+  border-color: #185abd !important;
+  background: color-mix(in srgb, #185abd 10%, var(--panel)) !important;
+  box-shadow: 0 0 0 2px #185abd, 0 8px 24px rgba(24, 90, 189, 0.22) !important;
+}
+
+.home-card.card-excel.selected {
+  border-color: #107c41 !important;
+  background: color-mix(in srgb, #107c41 10%, var(--panel)) !important;
+  box-shadow: 0 0 0 2px #107c41, 0 8px 24px rgba(16, 124, 65, 0.22) !important;
+}
+
+.home-card.card-md.selected {
+  border-color: #0284c7 !important;
+  background: color-mix(in srgb, #0284c7 10%, var(--panel)) !important;
+  box-shadow: 0 0 0 2px #0284c7, 0 8px 24px rgba(2, 132, 199, 0.22) !important;
+}
+
+.home-card.card-ppt.selected {
+  border-color: #c43e1c !important;
+  background: color-mix(in srgb, #c43e1c 10%, var(--panel)) !important;
+  box-shadow: 0 0 0 2px #c43e1c, 0 8px 24px rgba(196, 62, 28, 0.22) !important;
+}
+
 .home-card-top {
   display: flex;
   align-items: center;
@@ -4296,21 +4368,104 @@ body.home-open .sb-tab[data-side="home"] {
 
 .home-card-footer {
   margin-top: 16px;
-  padding-top: 14px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
-}
-
-.home-card-cta {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--accent);
+  gap: 8px;
 }
 
-.home-card-cta b {
-  font-size: 15px;
+.home-card-cta-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  transition: color 0.12s ease;
+}
+
+.home-card:hover .home-card-cta-label,
+.home-card.selected .home-card-cta-label {
+  color: var(--fg);
+}
+
+.home-card-new-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 650;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid transparent;
+  transition: all 0.12s ease;
+  cursor: pointer;
+}
+
+.home-card-new-pill:hover {
+  background: var(--accent);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+/* Barra de filtro ativo */
+.home-filter-active-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+.home-filter-badge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--fg);
+}
+
+.home-filter-badge-dot {
+  font-size: 13px;
+}
+
+.home-filter-clear-btn {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.home-filter-clear-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* Card rápido para criar novo documento na lista filtrada */
+.home-file-row-new {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: var(--accent-soft);
+}
+
+.home-file-row-new:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.home-file-row-new .home-file-name {
+  color: var(--accent);
+  font-weight: 650;
 }
 
 /* Modelos rápidos */

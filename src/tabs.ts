@@ -108,7 +108,7 @@ export class TabBar {
     const settings = t.kind === "settings";
     const el = h("div", {
       class: `tab${active ? " active" : ""}${!settings && t.dirty ? " dirty" : ""}${!settings && (t.isDraft || !t.path) ? " draft" : ""}${settings ? " special" : ""}`,
-      "data-kind": settings ? "settings" : "doc",
+      "data-kind": t.kind ?? "doc",
       role: "tab",
       "aria-selected": String(active),
       "data-id": t.id,

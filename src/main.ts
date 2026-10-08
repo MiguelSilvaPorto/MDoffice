@@ -25,7 +25,7 @@ import type { Node as PMNode } from "prosemirror-model";
 import { bytesToBase64 } from "./util";
 import { openHistoryDialog } from "./historyUi";
 import { loadSettings, type AppSettings } from "./settings";
-import { openPresentation } from "./slides";
+import { openPresentation, deckSummary } from "./power/host";
 import { renderSettingsPage, type SettingsSection } from "./settingsPage";
 import { renderHomePage, type HomeCtx } from "./homePage";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
@@ -2797,7 +2797,7 @@ class App {
     this.ddItem(menu, { icon: "i-clock", label: "Histórico de versões", onPick: () => void this.openHistory() });
     this.ddItem(menu, { icon: "i-spark", label: "Configurações", hint: `tom ${this.settings.tone}`, onPick: () => this.showSettings() });
     this.ddItem(menu, { icon: "i-check", label: "Revisar texto", hint: "F7", onPick: () => this.openReview() });
-    this.ddItem(menu, { icon: "i-eye", label: "Apresentar (slides)", hint: "F5", onPick: () => this.openSlides() });
+    this.ddItem(menu, { icon: "i-eye", label: "Apresentar (slides)", hint: `F5 · ${deckSummary(this.editor.getText())}`, onPick: () => this.openSlides() });
     this.ddItem(menu, {
       icon: "i-check",
       label: "Dicionário pessoal…",
