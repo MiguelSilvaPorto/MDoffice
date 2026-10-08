@@ -7,6 +7,8 @@ import { baseName, h, stripExt, uid } from "./util";
 /** Tudo o que pertence a UM documento aberto. */
 export interface DocTab {
   id: string;
+  /** "settings" é a aba de Configurações (não tem texto); o resto são documentos. */
+  kind?: "doc" | "settings";
   path: string | null;
   title: string | null;
   isDraft: boolean;
@@ -19,6 +21,8 @@ export interface DocTab {
   state: EditorState;
   scrollTop: number;
   cursor: CursorPos;
+  /** Seções recolhidas no painel Estrutura deste documento. */
+  outlineCollapsed: Set<string>;
 }
 
 export function newTab(state: EditorState, init: Partial<DocTab> = {}): DocTab {
@@ -35,12 +39,14 @@ export function newTab(state: EditorState, init: Partial<DocTab> = {}): DocTab {
     state,
     scrollTop: 0,
     cursor: { line: 1, col: 1 },
+    outlineCollapsed: new Set(),
     ...init,
   };
 }
 
 /** Nome mostrado na aba (sem a extensão .md). */
 export function tabLabel(t: DocTab): string {
+  if (t.kind === "settings") return "Configurações";
   return t.path ? stripExt(baseName(t.path)) : t.title ?? "Sem título";
 }
 
@@ -95,15 +101,17 @@ export class TabBar {
 
   private buildTab(t: DocTab, active: boolean, total: number): HTMLElement {
     const label = tabLabel(t);
+    const settings = t.kind === "settings";
     const el = h("div", {
-      class: `tab${active ? " active" : ""}${t.dirty ? " dirty" : ""}${t.isDraft || !t.path ? " draft" : ""}`,
+      class: `tab${active ? " active" : ""}${!settings && t.dirty ? " dirty" : ""}${!settings && (t.isDraft || !t.path) ? " draft" : ""}${settings ? " special" : ""}`,
+      "data-kind": settings ? "settings" : "doc",
       role: "tab",
       "aria-selected": String(active),
       "data-id": t.id,
       title: t.path ? `${t.path}\nDuplo clique ou F2 para renomear` : `${label} (ainda não salvo)\nDuplo clique ou F2 para renomear`,
     });
     const icon = h("span", { class: "tab-ic" });
-    icon.innerHTML = '<svg class="ic"><use href="#i-doc"/></svg>';
+    icon.innerHTML = `<svg class="ic"><use href="#${settings ? "i-gear" : "i-doc"}"/></svg>`;
     const name = h("span", { class: "tab-name", text: label });
     const dot = h("span", { class: "tab-dot", title: "Alterações ainda não gravadas" });
     const close = h("button", { class: "tab-x", type: "button", title: "Fechar aba (Ctrl+W)", "aria-label": `Fechar ${label}` });
@@ -116,7 +124,7 @@ export class TabBar {
     el.append(icon, name, dot, close);
 
     el.addEventListener("dblclick", (e) => {
-      if ((e.target as HTMLElement).closest(".tab-x")) return;
+      if (settings || (e.target as HTMLElement).closest(".tab-x")) return;
       this.beginRename(t.id);
     });
     el.addEventListener("auxclick", (e) => {
@@ -201,7 +209,7 @@ export class TabBar {
   beginRename(id: string): void {
     const el = this.strip.querySelector<HTMLElement>(`.tab[data-id="${id}"]`);
     const nameEl = el?.querySelector<HTMLElement>(".tab-name");
-    if (!el || !nameEl || this.renaming) return;
+    if (!el || !nameEl || this.renaming || el.dataset.kind === "settings") return;
     const current = nameEl.textContent || "";
     this.renaming = true;
     const input = h("input", { class: "tab-input", type: "text", value: current, spellcheck: "false" });

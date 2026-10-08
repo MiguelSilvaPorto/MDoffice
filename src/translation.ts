@@ -392,118 +392,13 @@ export class Translation {
 
   // ---------- ajustes ----------
 
-  openSettings(): void {
-    const s = this.settings;
-    const backdrop = h("div", { class: "modal-backdrop" });
-    const modal = h("div", { class: "modal tr-modal" });
-    const off = this.offline;
-    modal.innerHTML = `
-      <header class="wm-head">
-        <svg class="ic"><use href="#i-globe"/></svg>
-        <h2>Tradução automática</h2>
-        <button class="btn icon" data-close title="Fechar (Esc)"><svg class="ic"><use href="#i-close"/></svg></button>
-      </header>
-      <div class="wm-body tr-body">
-        <section>
-          <h4>Como traduzir</h4>
-          <label class="tr-opt"><input type="radio" name="prov" value="auto"> <span><b>Automático</b> — usa o modo offline se ele já estiver instalado; senão o online.</span></label>
-          <label class="tr-opt"><input type="radio" name="prov" value="online"> <span><b>Online (grátis)</b> — MyMemory. Rápido para começar, mas tem limite diário e qualidade média.</span></label>
-          <label class="tr-opt"><input type="radio" name="prov" value="offline"> <span><b>Offline</b> — modelo rodando no seu PC, sem limite e sem internet (baixa ≈120 MB uma vez).</span></label>
-          <div class="tr-offline">
-            <button class="btn small" data-dl></button>
-            <span class="muted" data-dl-status></span>
-          </div>
-          <label class="tr-field">E-mail para ampliar o limite do modo online (opcional)
-            <input type="email" data-email placeholder="voce@exemplo.com" autocomplete="off" spellcheck="false">
-          </label>
-        </section>
-        <section>
-          <h4>Qualidade</h4>
-          <label class="tr-opt"><input type="checkbox" data-polish> <span><b>Melhorar o português antes de traduzir</b> — corrige pontuação, maiúsculas, “a gente → nós” e linguagem informal para a tradução sair mais clara.</span></label>
-        </section>
-        <section>
-          <h4>Glossário</h4>
-          <p class="muted">Um termo por linha. <code>mdCreator</code> mantém o nome igual; <code>rascunho = draft</code> força a tradução.</p>
-          <textarea data-gloss rows="6" spellcheck="false" placeholder="mdCreator&#10;rascunho = draft"></textarea>
-        </section>
-      </div>
-      <footer class="wm-foot">
-        <button class="btn" data-clear title="Apaga o que o app já traduziu e guardou">Limpar memória de traduções</button>
-        <span class="dr-spacer"></span>
-        <button class="btn primary" data-ok>Salvar</button>
-      </footer>`;
-    backdrop.append(modal);
-    document.body.append(backdrop);
-
-    modal.querySelectorAll<HTMLInputElement>('input[name="prov"]').forEach((r) => (r.checked = r.value === s.provider));
-    (modal.querySelector("[data-email]") as HTMLInputElement).value = s.email;
-    (modal.querySelector("[data-polish]") as HTMLInputElement).checked = s.polish;
-    (modal.querySelector("[data-gloss]") as HTMLTextAreaElement).value = s.glossary.map((g) => (g.en ? `${g.pt} = ${g.en}` : g.pt)).join("\n");
-
-    const dl = modal.querySelector<HTMLButtonElement>("[data-dl]")!;
-    const dlStatus = modal.querySelector<HTMLElement>("[data-dl-status]")!;
-    const paintOffline = () => {
-      const st = off.status;
-      if (st.state === "ready" || (off.downloaded && st.state === "idle")) {
-        dl.textContent = "Modelo offline instalado";
-        dl.disabled = true;
-        dlStatus.textContent = "Pronto para usar sem internet.";
-      } else if (st.state === "loading") {
-        dl.textContent = "Baixando…";
-        dl.disabled = true;
-        dlStatus.textContent = st.message;
-      } else {
-        dl.textContent = "Baixar modelo offline";
-        dl.disabled = false;
-        dlStatus.textContent = st.state === "error" ? st.message : "Ainda não instalado.";
-      }
-    };
-    paintOffline();
-    const prev = off.onStatus;
-    off.onStatus = (st) => {
-      prev?.(st);
-      paintOffline();
-    };
-    dl.addEventListener("click", () => {
-      off.warmUp();
-      paintOffline();
-    });
-
-    const close = () => {
-      off.onStatus = prev;
-      document.removeEventListener("keydown", onKey, true);
-      backdrop.remove();
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        close();
-      }
-    };
-    document.addEventListener("keydown", onKey, true);
-    backdrop.addEventListener("mousedown", (e) => {
-      if (e.target === backdrop) close();
-    });
-    modal.querySelector("[data-close]")!.addEventListener("click", close);
-    modal.querySelector("[data-clear]")!.addEventListener("click", () => this.clearCache());
-    modal.querySelector("[data-ok]")!.addEventListener("click", () => {
-      s.provider = (modal.querySelector('input[name="prov"]:checked') as HTMLInputElement)?.value as ProviderChoice;
-      s.email = (modal.querySelector("[data-email]") as HTMLInputElement).value.trim();
-      s.polish = (modal.querySelector("[data-polish]") as HTMLInputElement).checked;
-      s.glossary = (modal.querySelector("[data-gloss]") as HTMLTextAreaElement).value
-        .split("\n")
-        .map((l) => l.trim())
-        .filter(Boolean)
-        .map((l) => {
-          const i = l.indexOf("=");
-          return i < 0 ? { pt: l, en: "" } : { pt: l.slice(0, i).trim(), en: l.slice(i + 1).trim() };
-        })
-        .filter((g) => g.pt);
-      this.save();
-      if (s.provider === "offline") off.warmUp();
-      close();
-      if (s.enabled) this.docChanged(this.getMarkdown(), true);
-    });
+  /** Muda ajustes (vale na hora; usado pela página de Configurações). */
+  update(patch: Partial<TrSettings>): void {
+    Object.assign(this.settings, patch);
+    this.save();
+    if (this.settings.provider === "offline") this.offline.warmUp();
+    this.prepMemo.clear();
+    this.applyView();
+    if (this.settings.enabled) this.docChanged(this.getMarkdown(), true);
   }
 }

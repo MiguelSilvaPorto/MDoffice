@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>mdCreator — editor Markdown</title>
+    <title>mdOffice — editor de documentos</title>
   </head>
   <body>
     <!-- Ícones (sprite SVG) -->
@@ -44,6 +44,7 @@
       <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.500 6h.01M4.500 12h.01M4.500 18h.01"/></symbol>
       <symbol id="i-folder-plus" viewBox="0 0 24 24"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M12 11.500v5M9.500 14h5"/></symbol>
       <symbol id="i-chevron-r" viewBox="0 0 24 24"><path d="M9.500 6 15.500 12 9.500 18"/></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.9-1.5-2-3.4-2.300.9a7.500 7.500 0 0 0-2.600-1.500L14 2.500h-4l-.4 2.500a7.500 7.500 0 0 0-2.600 1.500l-2.300-.9-2 3.400 1.900 1.500a7.600 7.600 0 0 0 0 3l-1.900 1.500 2 3.400 2.300-.9a7.500 7.500 0 0 0 2.600 1.500l.4 2.500h4l.4-2.500a7.500 7.500 0 0 0 2.600-1.500l2.300.9 2-3.400z"/></symbol>
       <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
       <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
       <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M10 12h5M10 16h5"/></symbol>
@@ -137,7 +138,13 @@
           </section>
 
           <section class="sb-panel" id="sp-outline" hidden>
-            <div class="sb-head"><h3>Estrutura</h3></div>
+            <div class="sb-head">
+              <h3>Estrutura</h3>
+              <span class="sb-actions">
+                <button class="sb-mini" id="ol-collapse" title="Recolher todas as seções"><svg class="ic"><use href="#i-chevron-r"/></svg></button>
+                <button class="sb-mini" id="ol-expand" title="Abrir todas as seções"><svg class="ic"><use href="#i-chevron"/></svg></button>
+              </span>
+            </div>
             <div id="outline" class="sb-scroll"></div>
           </section>
 
@@ -187,6 +194,8 @@
         </main>
 
         <div id="splitter" title="Arraste para redimensionar · duplo clique volta a 50/50"></div>
+
+        <section id="settings-page" hidden aria-label="Configurações"></section>
 
         <section id="preview-wrap">
           <div id="preview-bar" hidden>

@@ -25,6 +25,8 @@ export interface SidebarHooks {
   /** Procura no conteúdo dos documentos (disco + abas abertas). */
   searchContent: (query: string, roots: string[]) => Promise<files.ContentHit[]>;
   openAt: (path: string, line: number) => void;
+  /** Filtro de texto do painel Estrutura. */
+  outlineFilter: (query: string) => void;
   /** Abre o menu de contexto (x, y) de um item. */
   contextMenu: (x: number, y: number, items: { label: string; run: () => void }[]) => void;
 }
@@ -208,9 +210,7 @@ export class Sidebar {
   }
 
   filterOutline(): void {
-    document.querySelectorAll<HTMLElement>("#outline .outline-item").forEach((el) => {
-      el.hidden = !!this.query && !(el.textContent || "").toLowerCase().includes(this.query);
-    });
+    this.hooks.outlineFilter(this.query);
   }
 
   // ---------- projetos ----------

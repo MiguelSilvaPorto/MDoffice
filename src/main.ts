@@ -10,12 +10,15 @@ import { checkText, checkStyle, stats as writingStats, warmUpSpell, onSpellReady
 import { openReviewModal, type ReviewHandle } from "./review";
 import { TabBar, newTab, tabLabel, type DocTab } from "./tabs";
 import { Sidebar } from "./sidebar";
+import { OutlinePanel } from "./outline";
 import { Translation } from "./translation";
 import { openExportDialog, type ExportFormat } from "./export";
 import { openPalette, type PaletteItem } from "./palette";
 import { snapshot, moveHistory, listVersions, clearHistory } from "./history";
 import { openHistoryDialog } from "./historyUi";
-import { loadSettings, openSettingsDialog, type AppSettings } from "./settings";
+import { loadSettings, type AppSettings } from "./settings";
+import { openPresentation } from "./slides";
+import { renderSettingsPage, type SettingsSection } from "./settingsPage";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
@@ -95,7 +98,11 @@ class App {
   private preview!: Preview;
   private settings: AppSettings = loadSettings();
   private tabBar!: TabBar;
+  /** Aba de Configurações (fica fora de this.tabs, que só tem documentos). */
+  private settingsTab: DocTab | null = null;
+  private showingSettings = false;
   private sidebar!: Sidebar;
+  private outline!: OutlinePanel;
   private translation!: Translation;
   /** Todas as abas abertas (na ordem da fileira) e a que está ativa. */
   private tabs: DocTab[] = [];
@@ -191,6 +198,7 @@ class App {
       () => this.onDocChange(),
       (pos) => {
         this.cursor = pos;
+        this.outline?.setCursorLine(pos.line);
         $("#st-cursor").textContent = `Ln ${pos.line}, Col ${pos.col}`;
       },
       this.copilot
@@ -202,7 +210,7 @@ class App {
     this.tab = newTab(this.editor.getState());
     this.tabs = [this.tab];
     this.tabBar = new TabBar($("#tabbar"), {
-      onSelect: (id) => void this.switchTo(id),
+      onSelect: (id) => this.selectTab(id),
       onClose: (id) => void this.closeTab(id),
       onNew: () => void this.newDoc(),
       onRename: (id, value) => void this.renameTab(id, value),
@@ -223,10 +231,22 @@ class App {
       defaultDir: () => files.defaultDocsDir(),
       newDocIn: (dir) => void this.newDocIn(dir),
       reveal: (p) => void revealItemInDir(p).catch(() => {}),
+      outlineFilter: (q) => this.outline?.setFilter(q),
       searchContent: (q, roots) => this.searchContent(q, roots),
       openAt: (p, line) => void this.openAt(p, line),
       contextMenu: (x, y, items) => this.openMenuAt(x, y, items),
     });
+    this.outline = new OutlinePanel($("#outline"), {
+      getText: () => this.editor.getText(),
+      goto: (line) => this.editor.gotoLine(line),
+      edit: (from, to, insert) => this.editor.replaceRange(from, to, insert),
+      copy: (text) => void copyText(text).then((ok) => toast(ok ? "Texto da seção copiado." : "Não foi possível copiar.", ok ? "ok" : "err", 2200)),
+      notify: (msg) => toast(msg, "info", 3000),
+      openMenu: (x, y, items) => this.openMenuAt(x, y, items),
+    });
+    this.outline.useCollapsed(this.tab.outlineCollapsed);
+    $("#ol-collapse").addEventListener("click", () => this.outline.collapseAll(true));
+    $("#ol-expand").addEventListener("click", () => this.outline.collapseAll(false));
     $("#ctx-add").addEventListener("click", () => void this.chooseFolders());
     if (loadJSON<boolean>("mdc.no-sidebar", false)) document.body.classList.add("no-sidebar");
     if (loadJSON<boolean>("mdc.no-preview", false)) document.body.classList.add("no-preview");
@@ -381,6 +401,8 @@ class App {
       this.tab = target;
     }
     this.editor.loadState(target.state, target.scrollTop);
+    this.outline?.useCollapsed(target.outlineCollapsed);
+    this.outline?.setCursorLine(target.cursor.line);
     this.setPreviewPath(target.path);
     this.afterTabChange();
     this.editor.setIssues(target.issues);
@@ -411,7 +433,87 @@ class App {
     });
   }
 
+  /** Desenha a fileira de abas (documentos + Configurações, se aberta). */
+  private renderTabs(): void {
+    if (!this.tabBar) return;
+    const list = this.settingsTab ? [...this.tabs, this.settingsTab] : this.tabs;
+    this.tabBar.render(list, this.showingSettings && this.settingsTab ? this.settingsTab.id : this.tab.id);
+  }
+
+  private activeTabId(): string {
+    return this.showingSettings && this.settingsTab ? this.settingsTab.id : this.tab.id;
+  }
+
+  private selectTab(id: string): void {
+    if (this.settingsTab && id === this.settingsTab.id) {
+      this.showSettings();
+      return;
+    }
+    void this.switchTo(id);
+  }
+
+  /** Abre a aba de Configurações (uma só): mostra a página no lugar do editor. */
+  private showSettings(section: SettingsSection = "escrita"): void {
+    if (!this.settingsTab) this.settingsTab = newTab(this.tab.state, { kind: "settings" });
+    this.showingSettings = true;
+    document.body.classList.add("settings-open");
+    this.closeMenus();
+    renderSettingsPage($("#settings-page"), this.settingsContext(), section);
+    $("#settings-page").hidden = false;
+    this.renderTabs();
+  }
+
+  private hideSettings(): void {
+    if (!this.showingSettings) return;
+    this.showingSettings = false;
+    document.body.classList.remove("settings-open");
+    $("#settings-page").hidden = true;
+    this.renderTabs();
+  }
+
+  private closeSettings(): void {
+    this.hideSettings();
+    this.settingsTab = null;
+    this.renderTabs();
+    this.editor.focus();
+  }
+
+  private settingsContext(): import("./settingsPage").SettingsCtx {
+    return {
+      settings: () => this.settings,
+      patch: (p) => {
+        this.settings = { ...this.settings, ...p };
+        saveJSON("mdc.settings", this.settings);
+        if (p.tone) {
+          setTone(p.tone);
+          void this.runWritingCheck();
+          this.translationDocChanged(true);
+        }
+      },
+      translation: this.translation,
+      autoFix: () => this.autoFix,
+      setAutoFix: (on) => this.setAutoFix(on),
+      copilot: () => this.copilot,
+      setCopilot: (on) => this.setCopilot(on),
+      dictionaryCount: () => this.ignoreWords.size,
+      openDictionary: () => this.showDictionary(),
+      dark: () => document.documentElement.dataset.theme === "dark",
+      setDark: (dark) => this.applyTheme(dark),
+      flag: (cls) => document.body.classList.contains(cls),
+      toggleFlag: (cls) => this.toggle(cls),
+      drawStyle: () => (loadJSON<string>("mdc.drawstyle", "image") === "text" ? "text" : "image"),
+      setDrawStyle: (style) => this.setDrawStyle(style),
+      historyCount: async () => (this.path ? (await listVersions(this.path)).length : 0),
+      clearHistory: async () => {
+        if (this.path) await clearHistory(this.path);
+        toast("Histórico deste documento apagado.", "info", 2400);
+      },
+      openHistory: () => void this.openHistory(),
+    };
+  }
+
   private async switchTo(id: string): Promise<void> {
+    this.hideSettings();
     const target = this.tabs.find((t) => t.id === id);
     if (!target || target === this.tab || this.switching) return;
     this.switching = true;
@@ -438,6 +540,10 @@ class App {
 
   /** Fecha a aba. Nada de perguntas: o que não está salvo vira rascunho e fica em "Recentes". */
   private async closeTab(id: string): Promise<void> {
+    if (this.settingsTab && id === this.settingsTab.id) {
+      this.closeSettings();
+      return;
+    }
     const tab = this.tabs.find((t) => t.id === id);
     if (!tab || this.switching) return;
     const isCurrent = tab === this.tab;
@@ -839,56 +945,6 @@ class App {
     toast(ok ? "Versão salva no histórico." : "Esse texto já está no histórico.", ok ? "ok" : "info", 2400);
   }
 
-  private openAppSettings(): void {
-    // Abre as configurações numa JANELA PRÓPRIA (como uma aba nova). No navegador (dev)
-    // usa window.open; se nada disso funcionar, cai no diálogo antigo.
-    const url = "index.html?tela=config";
-    const tauri = (window as unknown as { __TAURI__?: unknown }).__TAURI__;
-    if (tauri) {
-      void import("@tauri-apps/api/webviewWindow")
-        .then(async ({ WebviewWindow }) => {
-          const existente = await WebviewWindow.getByLabel("config");
-          if (existente) {
-            await existente.setFocus();
-            return;
-          }
-          new WebviewWindow("config", {
-            url,
-            title: "Configurações — mdCreator",
-            width: 780,
-            height: 720,
-            minWidth: 560,
-            minHeight: 480,
-            center: true,
-          });
-        })
-        .catch(() => this.openSettingsModal());
-      return;
-    }
-    const win = window.open(url, "_blank", "width=780,height=720");
-    if (!win) this.openSettingsModal();
-  }
-
-  /** Reserva: o diálogo antigo (caso a janela não possa ser aberta). */
-  private openSettingsModal(): void {
-    openSettingsDialog({
-      current: this.settings,
-      historyCount: async () => (this.path ? (await listVersions(this.path)).length : 0),
-      onSave: (next) => {
-        this.settings = next;
-        setTone(next.tone);
-        void this.runWritingCheck();
-        this.translationDocChanged(true);
-        toast("Configurações salvas.", "ok", 2200);
-      },
-      onClearHistory: async () => {
-        if (this.path) await clearHistory(this.path);
-        toast("Histórico deste documento apagado.", "info", 2400);
-      },
-      onOpenHistory: () => void this.openHistory(),
-    });
-  }
-
   private setTonePref(tone: Tone): void {
     this.settings = { ...this.settings, tone };
     saveJSON("mdc.settings", this.settings);
@@ -1080,6 +1136,11 @@ class App {
     toast(`Alinhamentos reparados: ${partes.join(" e ")}.`, "ok", 4200);
   }
 
+  /** Módulo de apresentações: mostra o documento como slides (cada slide após uma linha ---). */
+  private openSlides(): void {
+    openPresentation(this.editor.getText(), this.title ?? "Apresentação");
+  }
+
   private openReview(): void {
     if (this.reviewHandle) return;
     this.reviewHandle = openReviewModal({
@@ -1189,7 +1250,7 @@ class App {
       this.refreshTitle();
       this.setSaveState();
     } else {
-      this.tabBar.render(this.tabs, this.tab.id);
+      this.renderTabs();
     }
     this.sidebar?.render();
   }
@@ -2033,7 +2094,7 @@ class App {
         this.toggleTranslation();
         break;
       case "translate-settings":
-        this.translation.openSettings();
+        this.showSettings("traducao");
         break;
       case "export":
         this.openExport();
@@ -2115,8 +2176,9 @@ class App {
     }
     this.ddSep(menu);
     this.ddItem(menu, { icon: "i-clock", label: "Histórico de versões", onPick: () => void this.openHistory() });
-    this.ddItem(menu, { icon: "i-spark", label: "Configurações (tom, histórico)…", hint: `tom ${this.settings.tone}`, onPick: () => this.openAppSettings() });
+    this.ddItem(menu, { icon: "i-spark", label: "Configurações", hint: `tom ${this.settings.tone}`, onPick: () => this.showSettings() });
     this.ddItem(menu, { icon: "i-check", label: "Revisar texto", hint: "F7", onPick: () => this.openReview() });
+    this.ddItem(menu, { icon: "i-eye", label: "Apresentar (slides)", hint: "F5", onPick: () => this.openSlides() });
     this.ddItem(menu, {
       icon: "i-check",
       label: "Dicionário pessoal…",
@@ -2370,11 +2432,11 @@ class App {
     add("Documento", "Histórico de versões", () => void this.openHistory(), undefined, "versoes restaurar voltar anterior");
     add("Documento", "Salvar versão agora", () => void this.saveVersionNow(), undefined, "historico marcar");
     add("Buscar", "Buscar no conteúdo dos documentos", () => this.sidebar.focusSearch(), undefined, "procurar texto pesquisar projetos");
-    add("Configurações", "Configurações (tom do texto, histórico)…", () => this.openAppSettings(), undefined, "preferencias ajustes");
+    add("Configurações", "Abrir configurações", () => this.showSettings(), undefined, "preferencias ajustes tom historico");
     add("Configurações", "Tom do texto: formal", () => this.setTonePref("formal"));
     add("Configurações", "Tom do texto: neutro", () => this.setTonePref("neutro"));
     add("Configurações", "Tom do texto: informal", () => this.setTonePref("informal"));
-    add("Documento", "Fechar aba", () => void this.closeTab(this.tab.id), "Ctrl+W");
+    add("Documento", "Fechar aba", () => void this.closeTab(this.activeTabId()), "Ctrl+W");
     add("Documento", "Reabrir aba fechada", () => void this.reopenClosedTab(), "Ctrl+Shift+T");
 
     add("Exportar", "Exportar…", () => this.openExport(), "Ctrl+Shift+E");
@@ -2389,12 +2451,13 @@ class App {
 
     const tr = this.translation;
     add("Tradução", tr.settings.enabled ? "Desligar tradução automática" : "Ligar tradução automática (PT-BR → inglês)", () => this.toggleTranslation(), "Ctrl+Alt+T", "traduzir english");
-    add("Tradução", "Ajustes da tradução (offline, glossário…)", () => tr.openSettings(), undefined, "motor modelo glossario");
+    add("Tradução", "Ajustes da tradução (offline, glossário…)", () => this.showSettings("traducao"), undefined, "motor modelo glossario");
     add("Tradução", "Ver só português", () => this.showLanguage("pt"));
     add("Tradução", "Ver só inglês", () => this.showLanguage("en"));
     add("Tradução", "Ver português e inglês juntos", () => this.showLanguage("both"));
 
     add("Escrever", "Revisar texto", () => this.openReview(), "F7", "ortografia gramática");
+    add("Escrever", "Apresentar (slides)", () => this.openSlides(), "F5", "apresentação slides powerpoint deck");
     add("Escrever", "Modo foco", () => this.toggleFocus(), "Ctrl+Shift+F", "concentrar zen");
     add("Escrever", "Desenhar", () => void this.openDraw(), "Ctrl+Shift+D");
     add("Escrever", "Inserir imagem", () => void this.insertImageFromDialog());
@@ -2453,6 +2516,12 @@ class App {
         this.showWelcome();
         return;
       }
+      if (e.key === "F5") {
+        // apresentar: o documento vira uma sequência de slides (separados por ---)
+        e.preventDefault();
+        this.openSlides();
+        return;
+      }
       if (e.key === "F7") {
         e.preventDefault();
         this.openReview();
@@ -2488,7 +2557,7 @@ class App {
         void this.switchRelative(e.shiftKey ? -1 : 1);
       } else if (k === "w") {
         e.preventDefault();
-        void this.closeTab(this.tab.id);
+        void this.closeTab(this.activeTabId());
       } else if (k === "t" && e.shiftKey) {
         e.preventDefault();
         void this.reopenClosedTab();
@@ -2535,31 +2604,7 @@ class App {
   }
 
   private renderOutline(): void {
-    const host = $("#outline");
-    const lines = this.editor.getText().split("\n");
-    let inFence = false;
-    const items: { level: number; text: string; line: number }[] = [];
-    lines.forEach((l, i) => {
-      if (/^\s*(```|~~~)/.test(l)) {
-        inFence = !inFence;
-        return;
-      }
-      if (inFence) return;
-      const m = /^(#{1,6})\s+(.+)$/.exec(l);
-      if (m) items.push({ level: m[1].length, text: m[2].replace(/\s+#+\s*$/, "").trim(), line: i + 1 });
-    });
-
-    host.innerHTML = "";
-    if (!items.length) {
-      host.append(h("div", { class: "side-empty", text: "Sem títulos ainda" }));
-      return;
-    }
-    for (const it of items) {
-      const btn = h("button", { class: `outline-item lv${it.level}`, title: `Ir para a linha ${it.line}`, text: it.text });
-      btn.addEventListener("click", () => this.editor.gotoLine(it.line));
-      host.append(btn);
-    }
-    this.sidebar?.filterOutline();
+    this.outline?.render();
   }
 
   private updateStats(): void {
@@ -2584,7 +2629,7 @@ class App {
 
   private refreshTitle(): void {
     const name = this.path ? baseName(this.path) : `${this.title ?? "Sem título"}.md`;
-    this.tabBar?.render(this.tabs, this.tab.id);
+    this.renderTabs();
     const title = `${this.dirty ? "• " : ""}${name} — mdCreator`;
     document.title = title;
     // Fora do Tauri (ex.: preview no navegador) a API não existe: seguimos em silêncio.
@@ -2729,15 +2774,10 @@ class App {
   }
 }
 
-// Esta janela é a das Configurações? (aberta pelo menu ⋯ → Configurações)
-if (new URLSearchParams(location.search).get("tela") === "config") {
-  void import("./settings").then((m) => m.renderSettingsPage());
-} else {
-  const app = new App();
-  // gancho de depuração (útil para inspecionar/testar o app em execução)
-  (window as unknown as Record<string, unknown>).__mdcreator = { app };
-  void app.start().catch((e) => {
-    console.error(e);
-    toast("Erro ao iniciar o mdCreator: " + e, "err", 8000);
-  });
-}
+const app = new App();
+// gancho de depuração (útil para inspecionar/testar o app em execução)
+(window as unknown as Record<string, unknown>).__mdcreator = { app };
+void app.start().catch((e) => {
+  console.error(e);
+  toast("Erro ao iniciar o mdCreator: " + e, "err", 8000);
+});

@@ -28,6 +28,13 @@ produzir documentos bonitos e funcionais — inclusive para enviar à IA.
   (.zip) ou **copiar formatado** (cola no Word/Docs). Cada um em **português**, **inglês** ou
   **os dois** (documento bilíngue em duas colunas, parágrafo por parágrafo; no Markdown/texto/ZIP
   saem dois arquivos). Opções de tema (claro, papel, escuro), tamanho da página e sumário.
+- **Estrutura do texto** (painel lateral, 3º ícone): árvore de títulos com **seções que
+  recolhem** (setinha; botões de recolher/abrir tudo no topo), **destaque da seção onde o cursor
+  está**, **palavras** de cada seção e **tarefas** concluídas (2/5). Clique leva ao título; o
+  **⋯** (ou botão direito) abre: mover a seção para cima/baixo (junto com as subseções),
+  promover/rebaixar o nível (## ↔ #), adicionar subseção, copiar o texto da seção e excluir —
+  tudo é uma ação só no `Ctrl+Z`. Títulos dentro de blocos de código são ignorados, e a caixa
+  **Buscar** filtra a lista.
 - **Busca de comandos** (`Ctrl+K`) e **modo foco** (`Ctrl+Shift+F`, Esc sai).
 - **Histórico de versões**: cada documento guarda cópias sozinhas (a cada 5 minutos, se o texto
   mudou, e sempre que você salva). Abra pelo botão **Histórico** no rodapé, pelo menu **⋯** ou
@@ -35,7 +42,11 @@ produzir documentos bonitos e funcionais — inclusive para enviar à IA.
   verde entrou) e **Restaurar** troca o texto numa ação só (`Ctrl+Z` desfaz; o texto de antes é
   guardado como "Antes de restaurar"). Dá para **salvar versão com nome** e o histórico acompanha
   o arquivo quando você renomeia ou usa Salvar como.
-- **Tom do texto** (**⋯ → Configurações**): *formal* (aponta “pra”, “tá”, “a gente”, “coisa”…),
+- **Configurações numa aba**: **⋯ → Configurações** (ou `Ctrl+K`) abre uma aba ao lado dos
+  documentos, com menu lateral (Escrita, Tradução, Histórico, Aparência, Atalhos). Cada ajuste vale
+  na hora, sem botão Salvar: tom do texto, correção automática, sugestões ao digitar, dicionário
+  pessoal, motor e glossário da tradução, histórico, tema, painéis e estilo do desenho.
+- **Tom do texto** (em Configurações → Escrita): *formal* (aponta “pra”, “tá”, “a gente”, “coisa”…),
   *neutro* (só o claramente informal) ou *informal* (não mexe no registro, só ortografia e
   pontuação). Vale para o assistente, a correção automática e o português enviado à tradução.
 - **Busca no conteúdo**: a caixa **Buscar** do painel lateral procura dentro dos documentos dos
