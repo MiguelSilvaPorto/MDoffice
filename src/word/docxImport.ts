@@ -435,8 +435,10 @@ function readBlocks(ctx: Ctx, container: El): PMNode[] {
     const levels = ctx.numbering.get(numId) ?? [];
     const fmt = levels[ilvl]?.fmt ?? "bullet";
     const ordered = fmt !== "bullet" && fmt !== "none";
-    if (stackNum !== null && stackNum !== numId) closeLists();
-    stackNum = numId;
+    // um nível interno com outro numId (lista dentro de lista) continua a lista de fora
+    const nestedInside = ilvl > 0 && stack.length >= ilvl;
+    if (stackNum !== null && stackNum !== numId && !nestedInside) closeLists();
+    if (stackNum === null) stackNum = numId;
     // desce até o nível pedido
     while (stack.length < ilvl + 1) {
       const lvl = stack.length;
@@ -568,7 +570,12 @@ async function readHeaderFooter(ctx: Ctx, sect: El | null, kind: "header" | "foo
     }
     if (text.trim()) lines.push(text.trim());
   }
-  return { text: lines.join(" · "), page };
+  let text = lines.join(" · ");
+  if (page) {
+    // "Página 3 de 10": o número vem do campo; sobram só as palavras soltas
+    text = text.replace(/(?:[\s·|-]*)(?:p[áa]gina|p[áa]g\.?|page)?\s*(?:de|of|\/)?\s*$/i, "").trim();
+  }
+  return { text, page };
 }
 
 export async function importDocx(bytes: Uint8Array | ArrayBuffer): Promise<{ doc: PMNode; setup: PageSetup }> {

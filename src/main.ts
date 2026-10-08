@@ -688,7 +688,18 @@ class App {
     ].join("\n");
     this.openMenu(anchor, (menu) => {
       menu.classList.add("recents-menu");
-      this.ddItem(menu, { icon: "i-doc", label: "Documento", hint: "md / Word", onPick: () => void this.newDoc() });
+      this.ddItem(menu, { icon: "i-doc", label: "Documento Markdown", hint: ".md", onPick: () => void this.newDoc() });
+      this.ddItem(menu, {
+        icon: "i-word",
+        label: "Documento Word (.docx)",
+        hint: "em construção",
+        onPick: () =>
+          toast(
+            "Abrir e editar .docx está em construção (o motor do Word existe, falta ligar no editor). Por enquanto use ⋯ → Exportar → Word para gerar o .docx.",
+            "info",
+            7000
+          ),
+      });
       this.ddItem(menu, { icon: "i-grid", label: "Planilha", hint: "Excel (tabela)", onPick: () => criar("Planilha", modeloPlanilha) });
       this.ddItem(menu, { icon: "i-eye", label: "Apresentação", hint: "PowerPoint (slides, F5)", onPick: () => criar("Apresentação", modeloDeck) });
     });

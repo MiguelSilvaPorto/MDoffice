@@ -240,10 +240,13 @@ async function blocksOf(parent: PMNode, ctx: Ctx, quote = false): Promise<Block[
       case "ordered_list":
         out.push(...(await listBlocks(node, ctx, 0)));
         break;
-      case "table":
+      case "table": {
         out.push(await tableFrom(node, ctx));
-        out.push(new Paragraph({ children: [], spacing: { after: 120 } }));
+        // o Word exige um parágrafo entre duas tabelas e depois da última; nos outros casos não precisa
+        const next = kidsList[kidsList.indexOf(node) + 1];
+        if (!next || next.type.name === "table") out.push(new Paragraph({ children: [], spacing: { after: 120 } }));
         break;
+      }
       default:
         break;
     }
