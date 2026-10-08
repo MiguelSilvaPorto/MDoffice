@@ -8,7 +8,7 @@ import { paginationPlugin, requestPagination, GAP_PX } from "./pagination";
 import { spellPlugin } from "./spell";
 import { emptyDoc, plainText } from "./schema";
 import { CM_TO_PX, DEFAULT_SETUP, deserialize, pageSizePx, serialize, type PageSetup } from "./model";
-import { outlineSource } from "./markdown";
+import { outlineSource, type WordOutlineSource } from "./markdown";
 import { h } from "../util";
 
 /** O que cada aba de documento Word guarda (texto, desfazer, página e rolagem). */
@@ -371,16 +371,28 @@ export class WordHost {
   }
 
   /** Títulos do documento no formato que o painel Estrutura entende. */
-  outline(): { text: string; positions: number[] } {
+  outline(): WordOutlineSource {
     return outlineSource(this.editor.getDoc());
   }
 
-  gotoLine(line: number): void {
-    const { positions } = this.outline();
-    const pos = positions[line - 1];
-    if (pos === undefined) return;
-    this.editor.scrollToPos(pos);
-    // centraliza o trecho na tela
+  /** Navega diretamente para um parágrafo por ID (data-pid / pid). */
+  gotoParagraph(pid: string): boolean {
+    let targetPos: number | null = null;
+    this.editor.getDoc().descendants((node, pos) => {
+      if (node.attrs.pid === pid) {
+        targetPos = pos + 1;
+        return false;
+      }
+      return true;
+    });
+
+    if (targetPos === null) return false;
+    this.editor.scrollToPos(targetPos);
+    this.centerStageOnPos(targetPos);
+    return true;
+  }
+
+  private centerStageOnPos(pos: number): void {
     window.setTimeout(() => {
       try {
         const c = this.editor.view.coordsAtPos(pos);
@@ -390,5 +402,94 @@ export class WordHost {
         /* sem posição */
       }
     }, 30);
+  }
+
+  gotoLine(line: number): void {
+    const { positions } = this.outline();
+    const pos = positions[line - 1];
+    if (pos === undefined) return;
+    this.editor.scrollToPos(pos);
+    this.centerStageOnPos(pos);
+  }
+
+  /**
+   * Barramento unificado de comandos (Shell ↔ Canvas).
+   * Despacha comandos de formatação, navegação e inserção de forma desacoplada.
+   */
+  dispatchCommand(command: string, payload?: unknown): boolean {
+    const ed = this.editor;
+    if (command.startsWith("style:")) {
+      ed.setBlock(command.slice(6));
+      return true;
+    }
+    switch (command) {
+      case "undo":
+        ed.undo();
+        return true;
+      case "redo":
+        ed.redo();
+        return true;
+      case "bold":
+      case "italic":
+      case "underline":
+      case "strike":
+      case "sub":
+      case "sup":
+        ed.toggle(command);
+        return true;
+      case "clear":
+        ed.clearFormatting();
+        return true;
+      case "size-up":
+        ed.stepFontSize(1);
+        return true;
+      case "size-down":
+        ed.stepFontSize(-1);
+        return true;
+      case "align-left":
+      case "align-center":
+      case "align-right":
+      case "align-justify":
+        ed.align(command.slice(6) as "left");
+        return true;
+      case "indent":
+        ed.indent(1);
+        return true;
+      case "outdent":
+        ed.indent(-1);
+        return true;
+      case "bullet":
+      case "ordered":
+        ed.list(command as "bullet" | "ordered");
+        return true;
+      case "font-family":
+        ed.setMark("font_family", payload ? { name: String(payload) } : null);
+        return true;
+      case "font-size":
+        ed.setMark("font_size", payload ? { size: Number(payload) || 12 } : null);
+        return true;
+      case "text-color":
+        ed.setMark("text_color", payload ? { color: String(payload) } : null);
+        return true;
+      case "highlight-color":
+        ed.setMark("highlight", payload ? { color: String(payload) } : null);
+        return true;
+      case "set-link":
+        ed.setLink(payload ? String(payload) : null);
+        return true;
+      case "print":
+        this.print();
+        return true;
+      case "zoom":
+        this.setZoom(Number(payload) || 1);
+        return true;
+      case "goto-paragraph":
+        return this.gotoParagraph(String(payload));
+      case "goto-line":
+        this.gotoLine(Number(payload) || 1);
+        return true;
+      default:
+        return false;
+    }
   }
 }

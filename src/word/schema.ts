@@ -80,21 +80,30 @@ const nodes: Record<string, NodeSpec> = {
   paragraph: {
     content: "inline*",
     group: "block",
-    attrs: paraAttrs,
-    parseDOM: [{ tag: "p", getAttrs: (d) => paraFromDOM(d as HTMLElement) }],
-    toDOM: (n) => withStyle("p", n.attrs),
+    attrs: { ...paraAttrs, pid: { default: null as string | null } },
+    parseDOM: [{
+      tag: "p",
+      getAttrs: (d) => {
+        const el = d as HTMLElement;
+        return { ...paraFromDOM(el), pid: el.getAttribute("data-pid") || null };
+      },
+    }],
+    toDOM: (n) => withStyle("p", n.attrs, n.attrs.pid ? { "data-pid": n.attrs.pid } : {}),
   },
 
   heading: {
     content: "inline*",
     group: "block",
     defining: true,
-    attrs: { ...paraAttrs, level: { default: 1 } },
+    attrs: { ...paraAttrs, level: { default: 1 }, pid: { default: null as string | null } },
     parseDOM: [1, 2, 3, 4, 5, 6].map((level) => ({
       tag: `h${level}`,
-      getAttrs: (d: HTMLElement | string) => ({ level, ...paraFromDOM(d as HTMLElement) }),
+      getAttrs: (d: HTMLElement | string) => {
+        const el = d as HTMLElement;
+        return { level, ...paraFromDOM(el), pid: el.getAttribute?.("data-pid") || null };
+      },
     })),
-    toDOM: (n) => withStyle(`h${n.attrs.level}`, n.attrs),
+    toDOM: (n) => withStyle(`h${n.attrs.level}`, n.attrs, n.attrs.pid ? { "data-pid": n.attrs.pid } : {}),
   },
 
   blockquote: {
@@ -287,7 +296,9 @@ export function plainText(doc: PMNode): string {
 }
 
 export const FONT_FAMILIES = [
+  "Aptos",
   "Calibri",
+  "Inter",
   "Arial",
   "Times New Roman",
   "Georgia",

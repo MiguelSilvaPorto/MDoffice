@@ -511,6 +511,12 @@ export class WordEditor {
     this.view.focus();
   }
 
+  /** Insere texto puro no cursor (usado por Colar na fita). */
+  insertPlainText(text: string): void {
+    this.view.dispatch(this.view.state.tr.insertText(text).scrollIntoView());
+    this.view.focus();
+  }
+
   /** Substitui um trecho (usado pelas sugestões do corretor). */
   replaceText(from: number, to: number, text: string): void {
     const { state } = this.view;

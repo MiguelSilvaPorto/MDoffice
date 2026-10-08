@@ -25,25 +25,34 @@ body.settings-open #word-pane {
   display: none;
 }
 
+/* Fita no estilo do Word: grupos com o nome embaixo, botões grandes e galeria de estilos. */
 .wd-ribbon {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 4px;
-  padding: 6px 10px;
-  background: var(--panel-2);
-  border-bottom: 1px solid var(--border);
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0;
+  margin: 6px 8px 0;
+  padding: 6px 4px 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  overflow-x: auto;
+  scrollbar-width: none;
   flex: none;
 }
 
 .rb-group {
   display: flex;
-  align-items: center;
-  gap: 2px;
-  padding-right: 8px;
-  margin-right: 4px;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0 8px;
   border-right: 1px solid var(--border);
   flex: none;
+}
+
+.rb-group:last-child {
+  border-right: 0;
 }
 
 .rb-group[hidden] {
@@ -52,15 +61,41 @@ body.settings-open #word-pane {
 
 .rb-group.rb-end {
   margin-left: auto;
-  border-right: 0;
 }
 
-.rb-label {
-  padding: 0 6px;
-  color: var(--accent);
+.rb-body {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-height: 62px;
+}
+
+.rb-glabel {
+  padding-top: 2px;
+  color: var(--muted, var(--fg));
+  opacity: 0.75;
   font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.rb-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rb-row,
+.rb-col {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.rb-col {
+  flex-direction: column;
+  justify-content: center;
 }
 
 .rb {
@@ -68,16 +103,35 @@ body.settings-open #word-pane {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  min-width: 30px;
-  height: 30px;
-  padding: 0 7px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
   color: var(--fg);
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: 6px;
   font-size: 13px;
   cursor: pointer;
   white-space: nowrap;
+}
+
+.rb .ic {
+  width: 17px;
+  height: 17px;
+}
+
+.rb.big {
+  flex-direction: column;
+  gap: 3px;
+  min-width: 52px;
+  height: 56px;
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
+.rb.big .ic {
+  width: 26px;
+  height: 26px;
 }
 
 .rb:hover:not(:disabled) {
@@ -95,11 +149,7 @@ body.settings-open #word-pane {
 }
 
 .rb small {
-  font-size: 10px;
-}
-
-.rb.txt span {
-  font-size: 12.5px;
+  font-size: 9px;
 }
 
 .rb.colorbtn {
@@ -128,30 +178,94 @@ body.settings-open #word-pane {
 }
 
 .rb-select {
-  height: 30px;
+  height: 26px;
   padding: 0 6px;
   color: var(--fg);
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: 6px;
   font: inherit;
   font-size: 12.5px;
 }
 
-.rb-select.wide {
-  width: 118px;
-}
-
 .rb-select.font {
-  width: 132px;
+  width: 134px;
 }
 
 .rb-select.size {
-  width: 62px;
+  width: 56px;
 }
 
 .rb-select.lh {
-  width: 118px;
+  width: 128px;
+  margin-left: 4px;
+}
+
+/* galeria de estilos */
+.rb-styles {
+  display: flex;
+  gap: 6px;
+  max-width: 272px;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: none;
+}
+
+.rb-style {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex: none;
+  width: 92px;
+  height: 52px;
+  color: var(--fg);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.rb-style:hover {
+  background: var(--accent-soft);
+}
+
+.rb-style.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.rb-style span {
+  font-size: 13px;
+}
+
+.rb-style small {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.rb-style.st-h1 span {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.rb-style.st-h2 span {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.rb-style.st-h3 span {
+  font-weight: 700;
+}
+
+.rb-style.st-quote span {
+  font-style: italic;
+}
+
+.rb-style.st-code span {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
 }
 
 #wd-stage {

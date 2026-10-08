@@ -240,22 +240,31 @@ export function fromMarkdown(md: string): PMNode {
 
 // ---------- Estrutura (títulos) ----------
 
-/** Texto estilo Markdown só com os títulos e o texto de cada bloco + a posição de cada linha no documento. */
-export function outlineSource(doc: PMNode): { text: string; positions: number[] } {
+export interface WordOutlineSource {
+  text: string;
+  positions: number[];
+  pids: (string | null)[];
+}
+
+/** Texto estilo Markdown só com os títulos e o texto de cada bloco + a posição de cada linha no documento e IDs. */
+export function outlineSource(doc: PMNode): WordOutlineSource {
   const lines: string[] = [];
   const positions: number[] = [];
+  const pids: (string | null)[] = [];
   doc.descendants((node, pos) => {
     if (node.type.name === "heading") {
       lines.push(`${"#".repeat(Number(node.attrs.level))} ${node.textContent}`);
       positions.push(pos + 1);
+      pids.push(node.attrs.pid ?? null);
       return false;
     }
     if (node.isTextblock) {
       lines.push(node.textContent);
       positions.push(pos + 1);
+      pids.push(node.attrs.pid ?? null);
       return false;
     }
     return true;
   });
-  return { text: lines.join("\n"), positions };
+  return { text: lines.join("\n"), positions, pids };
 }

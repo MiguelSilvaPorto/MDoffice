@@ -3,6 +3,7 @@
    no HTML exportado) e acrescenta o "chrome" da aplicação.
    ========================================================================== */
 @import "./md/markdown.css";
+@import "./styles/fonts.css";
 
 /* O restante da interface fica em src/styles/ (um arquivo por área; a ORDEM abaixo importa). */
 @import "./styles/tokens.css";

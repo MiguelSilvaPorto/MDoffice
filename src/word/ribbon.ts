@@ -23,6 +23,20 @@ const icon = (name: string) => `<svg class="ic"><use href="#${name}"/></svg>`;
 const btn = (cmd: string, label: string, title: string, extra = "") =>
   `<button type="button" class="rb ${extra}" data-cmd="${cmd}" title="${title}" aria-label="${title}">${label}</button>`;
 
+/** Estilos de parágrafo da galeria (id do bloco, nome, legenda). */
+const STYLES: [string, string, string][] = [
+  ["paragraph", "Normal", "Texto"],
+  ["h1", "Título 1", "Cabeçalho"],
+  ["h2", "Título 2", "Cabeçalho"],
+  ["h3", "Título 3", "Cabeçalho"],
+  ["quote", "Citação", "Recuo"],
+  ["code", "Código", "Monoespaçado"],
+];
+
+/** Grupo da fita: conteúdo em cima, nome embaixo (como no Word). */
+const group = (label: string, body: string, cls = "", hidden = false) =>
+  `<div class="rb-group ${cls}"${hidden ? " hidden" : ""}><div class="rb-body">${body}</div><div class="rb-glabel">${label}</div></div>`;
+
 export class Ribbon {
   readonly el: HTMLElement;
   private hooks: RibbonHooks;
@@ -32,85 +46,94 @@ export class Ribbon {
     this.el = host;
     this.hooks = hooks;
     host.innerHTML = `
-      <div class="rb-group">
-        ${btn("undo", icon("i-undo"), "Desfazer (Ctrl+Z)")}
-        ${btn("redo", icon("i-redo"), "Refazer (Ctrl+Y)")}
-      </div>
-      <div class="rb-group">
-        <select class="rb-select wide" data-sel="block" title="Estilo do parágrafo" aria-label="Estilo do parágrafo">
-          <option value="paragraph">Texto normal</option>
-          <option value="h1">Título 1</option>
-          <option value="h2">Título 2</option>
-          <option value="h3">Título 3</option>
-          <option value="h4">Título 4</option>
-          <option value="quote">Citação</option>
-          <option value="code">Código</option>
-        </select>
-        <select class="rb-select font" data-sel="font" title="Fonte" aria-label="Fonte">
-          ${FONT_FAMILIES.map((f) => `<option value="${f}" style="font-family:'${f}'">${f}</option>`).join("")}
-        </select>
-        <select class="rb-select size" data-sel="size" title="Tamanho da letra" aria-label="Tamanho da letra">
-          ${FONT_SIZES.map((s) => `<option value="${s}">${s}</option>`).join("")}
-        </select>
-        ${btn("size-up", "A<small>+</small>", "Aumentar a letra")}
-        ${btn("size-down", "A<small>−</small>", "Diminuir a letra")}
-      </div>
-      <div class="rb-group">
-        ${btn("bold", "<b>N</b>", "Negrito (Ctrl+B)")}
-        ${btn("italic", "<i>I</i>", "Itálico (Ctrl+I)")}
-        ${btn("underline", "<u>S</u>", "Sublinhado (Ctrl+U)")}
-        ${btn("strike", "<s>ab</s>", "Riscado")}
-        ${btn("sub", "x<small>₂</small>", "Subscrito (Ctrl+,)")}
-        ${btn("sup", "x<small>²</small>", "Sobrescrito (Ctrl+.)")}
-        ${btn("clear", "A<small>✕</small>", "Limpar formatação")}
-      </div>
-      <div class="rb-group">
-        ${btn("color", `<span class="rb-a">A</span><span class="rb-bar" data-bar="color"></span>`, "Cor da letra", "colorbtn")}
-        ${btn("highlight", `<span class="rb-a hl">ab</span><span class="rb-bar" data-bar="highlight"></span>`, "Cor de destaque (marca-texto)", "colorbtn")}
-      </div>
-      <div class="rb-group">
-        ${btn("align-left", icon("i-align-left"), "Alinhar à esquerda (Ctrl+L)")}
-        ${btn("align-center", icon("i-align-center"), "Centralizar (Ctrl+E)")}
-        ${btn("align-right", icon("i-align-right"), "Alinhar à direita (Ctrl+R)")}
-        ${btn("align-justify", icon("i-align-justify"), "Justificar (Ctrl+J)")}
-        <select class="rb-select lh" data-sel="lh" title="Espaçamento entre linhas" aria-label="Espaçamento entre linhas">
-          <option value="">Linhas: padrão</option>
-          <option value="1">1,0</option>
-          <option value="1.15">1,15</option>
-          <option value="1.5">1,5</option>
-          <option value="2">2,0</option>
-          <option value="2.5">2,5</option>
-        </select>
-        ${btn("outdent", "⇤", "Diminuir recuo")}
-        ${btn("indent", "⇥", "Aumentar recuo")}
-      </div>
-      <div class="rb-group">
-        ${btn("bullet", "•≡", "Lista com marcadores (Ctrl+Shift+L)")}
-        ${btn("ordered", "1.≡", "Lista numerada")}
-      </div>
-      <div class="rb-group">
-        ${btn("table", icon("i-grid"), "Inserir tabela")}
-        ${btn("image", icon("i-image"), "Inserir imagem")}
-        ${btn("link", "🔗", "Inserir link")}
-        ${btn("pagebreak", "⤓", "Quebra de página (Ctrl+Enter)")}
-        ${btn("rule", "―", "Linha horizontal")}
-      </div>
-      <div class="rb-group rb-table" hidden>
-        <span class="rb-label">Tabela</span>
-        ${btn("t-row-before", "↑+", "Linha acima")}
-        ${btn("t-row-after", "↓+", "Linha abaixo")}
-        ${btn("t-row-del", "−L", "Excluir linha")}
-        ${btn("t-col-before", "←+", "Coluna à esquerda")}
-        ${btn("t-col-after", "→+", "Coluna à direita")}
-        ${btn("t-col-del", "−C", "Excluir coluna")}
-        ${btn("t-merge", "⊞", "Mesclar células")}
-        ${btn("t-split", "⊟", "Dividir célula")}
-        ${btn("t-shade", "▨", "Sombrear célula")}
-        ${btn("t-del", "🗑", "Excluir tabela")}
-      </div>
-      <div class="rb-group rb-end">
-        ${btn("page", icon("i-doc") + "<span>Página</span>", "Tamanho, margens, cabeçalho e rodapé", "txt")}
-      </div>`;
+      ${group("Desfazer", `
+        <div class="rb-col">
+          ${btn("undo", icon("i-undo"), "Desfazer (Ctrl+Z)")}
+          ${btn("redo", icon("i-redo"), "Refazer (Ctrl+Y)")}
+        </div>`)}
+      ${group("Área de Transferência", `
+        ${btn("paste", icon("i-paste") + "<span>Colar</span>", "Colar (Ctrl+V)", "big")}
+        <div class="rb-col">
+          ${btn("cut", "✂", "Recortar (Ctrl+X)")}
+          ${btn("copy", icon("i-copy"), "Copiar (Ctrl+C)")}
+        </div>`)}
+      ${group("Fonte", `
+        <div class="rb-rows">
+          <div class="rb-row">
+            <select class="rb-select font" data-sel="font" title="Fonte" aria-label="Fonte">
+              ${FONT_FAMILIES.map((f) => `<option value="${f}" style="font-family:'${f}'">${f}</option>`).join("")}
+            </select>
+            <select class="rb-select size" data-sel="size" title="Tamanho da letra" aria-label="Tamanho da letra">
+              ${FONT_SIZES.map((s) => `<option value="${s}">${s}</option>`).join("")}
+            </select>
+            ${btn("size-up", "A<small>▲</small>", "Aumentar a letra")}
+            ${btn("size-down", "A<small>▼</small>", "Diminuir a letra")}
+            ${btn("clear", "A<small>✕</small>", "Limpar formatação")}
+          </div>
+          <div class="rb-row">
+            ${btn("bold", "<b>N</b>", "Negrito (Ctrl+B)")}
+            ${btn("italic", "<i>I</i>", "Itálico (Ctrl+I)")}
+            ${btn("underline", "<u>S</u>", "Sublinhado (Ctrl+U)")}
+            ${btn("strike", "<s>ab</s>", "Riscado")}
+            ${btn("sub", "x<small>₂</small>", "Subscrito (Ctrl+,)")}
+            ${btn("sup", "x<small>²</small>", "Sobrescrito (Ctrl+.)")}
+            ${btn("highlight", `<span class="rb-a hl">ab</span><span class="rb-bar" data-bar="highlight"></span>`, "Cor de destaque (marca-texto)", "colorbtn")}
+            ${btn("color", `<span class="rb-a">A</span><span class="rb-bar" data-bar="color"></span>`, "Cor da letra", "colorbtn")}
+          </div>
+        </div>`)}
+      ${group("Parágrafo", `
+        <div class="rb-rows">
+          <div class="rb-row">
+            ${btn("bullet", "•≡", "Lista com marcadores (Ctrl+Shift+L)")}
+            ${btn("ordered", "1.≡", "Lista numerada")}
+            ${btn("outdent", "⇤", "Diminuir recuo")}
+            ${btn("indent", "⇥", "Aumentar recuo")}
+          </div>
+          <div class="rb-row">
+            ${btn("align-left", icon("i-align-left"), "Alinhar à esquerda (Ctrl+L)")}
+            ${btn("align-center", icon("i-align-center"), "Centralizar (Ctrl+E)")}
+            ${btn("align-right", icon("i-align-right"), "Alinhar à direita (Ctrl+R)")}
+            ${btn("align-justify", icon("i-align-justify"), "Justificar (Ctrl+J)")}
+            <select class="rb-select lh" data-sel="lh" title="Espaçamento entre linhas" aria-label="Espaçamento entre linhas">
+              <option value="">Linhas: padrão</option>
+              <option value="1">1,0</option>
+              <option value="1.15">1,15</option>
+              <option value="1.5">1,5</option>
+              <option value="2">2,0</option>
+              <option value="2.5">2,5</option>
+            </select>
+          </div>
+        </div>`)}
+      ${group("Estilos", `
+        <div class="rb-styles">
+          ${STYLES.map(([k, name, sub]) => `<button type="button" class="rb-style st-${k}" data-cmd="style:${k}" data-block="${k}" title="${name}"><span>${name}</span><small>${sub}</small></button>`).join("")}
+        </div>`)}
+      ${group("Inserir", `
+        ${btn("table", icon("i-grid") + "<span>Tabela</span>", "Inserir tabela", "big")}
+        ${btn("image", icon("i-image") + "<span>Imagem</span>", "Inserir imagem", "big")}
+        <div class="rb-col">
+          ${btn("link", "🔗", "Inserir link")}
+          ${btn("pagebreak", "⤓", "Quebra de página (Ctrl+Enter)")}
+          ${btn("rule", "―", "Linha horizontal")}
+        </div>`)}
+      ${group("Tabela", `
+        <div class="rb-rows">
+          <div class="rb-row">
+            ${btn("t-row-before", "↑+", "Linha acima")}
+            ${btn("t-row-after", "↓+", "Linha abaixo")}
+            ${btn("t-row-del", "−L", "Excluir linha")}
+            ${btn("t-merge", "⊞", "Mesclar células")}
+            ${btn("t-shade", "▨", "Sombrear célula")}
+          </div>
+          <div class="rb-row">
+            ${btn("t-col-before", "←+", "Coluna à esquerda")}
+            ${btn("t-col-after", "→+", "Coluna à direita")}
+            ${btn("t-col-del", "−C", "Excluir coluna")}
+            ${btn("t-split", "⊟", "Dividir célula")}
+            ${btn("t-del", "🗑", "Excluir tabela")}
+          </div>
+        </div>`, "rb-table", true)}
+      ${group("Documento", btn("page", icon("i-doc") + "<span>Página</span>", "Tamanho, margens, cabeçalho e rodapé", "big"), "rb-end")}`;
 
     host.addEventListener("mousedown", (e) => {
       const t = e.target as HTMLElement;
@@ -126,9 +149,6 @@ export class Ribbon {
       if (!s) return;
       const ed = this.hooks.editor;
       switch (s.dataset.sel) {
-        case "block":
-          ed.setBlock(s.value);
-          break;
         case "font":
           ed.setMark("font_family", { name: s.value });
           break;
@@ -166,7 +186,7 @@ export class Ribbon {
       const s = this.el.querySelector<HTMLSelectElement>(`[data-sel="${name}"]`)!;
       if (v === "" || [...s.options].some((o) => o.value === v)) s.value = v;
     };
-    sel("block", st.block);
+    this.el.querySelectorAll<HTMLElement>("[data-block]").forEach((b) => b.classList.toggle("active", b.dataset.block === st.block));
     sel("font", st.fontFamily ?? this.hooks.editor.setup.defaultFont);
     sel("size", String(st.fontSize ?? this.hooks.editor.setup.defaultSize));
     sel("lh", st.lineHeight ? String(st.lineHeight) : "");
@@ -184,7 +204,18 @@ export class Ribbon {
   private async run(cmd: string, anchor: HTMLElement): Promise<void> {
     const ed = this.hooks.editor;
     this.closePop();
+    if (cmd.startsWith("style:")) return ed.setBlock(cmd.slice(6));
     switch (cmd) {
+      case "paste":
+        return void navigator.clipboard
+          .readText()
+          .then((t) => t && ed.insertPlainText(t))
+          .catch(() => {});
+      case "cut":
+      case "copy":
+        ed.focus();
+        document.execCommand(cmd);
+        return;
       case "undo":
         return ed.undo();
       case "redo":
