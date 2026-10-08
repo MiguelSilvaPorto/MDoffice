@@ -546,6 +546,22 @@ export function checkStyle(text: string): WritingIssue[] {
     push(ini, fim, `Em volta de “${m[0]}” costumam vir vírgulas`, `, ${m[0]},`, [], false);
   }
 
+  // Frase muito comprida: propõe a quebra em pontos SEGUROS — antes de "e" (nova frase)
+  // e antes de "como" (introduz exemplos). Só depois de 12+ palavras sem pontuação, e como
+  // sugestão de troca (não mexe enquanto você digita; entra na pausa/salvar/Corrigir tudo).
+  const quebraSegura = /(?<![\p{L},;:])((?:[\p{L}][\p{L}']*\s+){11,}?)(e|como)\s+([\p{L}])/giu;
+  while ((m = quebraSegura.exec(mask)) !== null) {
+    const conj = m[2];
+    const ini = Math.max(0, m.index + m[1].length - 1); // inclui o espaço antes da conjunção
+    const fim = ini + 1 + conj.length;
+    if (conj.toLowerCase() === "como") {
+      push(ini, fim, "Antes de “como” (exemplos) costuma vir vírgula", `, ${conj}`, [], false);
+    } else {
+      const comMaiuscula = conj[0].toUpperCase() + conj.slice(1);
+      push(ini, fim, "Frase muito comprida: comece nova frase aqui", `. ${comMaiuscula}`, [], false);
+    }
+  }
+
   // trecho comprido sem NENHUMA pontuação: falta vírgula/ponto entre as orações
   // (não tenta adivinhar onde: só avisa — quebrar orações precisa de leitura humana)
   const semPontoRx = /(?<![\p{L}\d])[\p{L}\d]+(?:\s+[\p{L}\d]+){24,}/gu;
