@@ -8,7 +8,9 @@ import { baseName, h, stripExt, uid } from "./util";
 export interface DocTab {
   id: string;
   /** "settings" é a aba de Configurações (não tem texto); o resto são documentos. */
-  kind?: "doc" | "settings";
+  kind?: "doc" | "settings" | "word";
+  /** Dados do documento Word (só nas abas kind "word"). */
+  word?: import("./word/host").WordTabData;
   path: string | null;
   title: string | null;
   isDraft: boolean;
@@ -113,7 +115,7 @@ export class TabBar {
       title: t.path ? `${t.path}\nDuplo clique ou F2 para renomear` : `${label} (ainda não salvo)\nDuplo clique ou F2 para renomear`,
     });
     const icon = h("span", { class: "tab-ic" });
-    icon.innerHTML = `<svg class="ic"><use href="#${settings ? "i-gear" : "i-doc"}"/></svg>`;
+    icon.innerHTML = `<svg class="ic"><use href="#${settings ? "i-gear" : t.kind === "word" ? "i-word" : "i-doc"}"/></svg>`;
     const name = h("span", { class: "tab-name", text: label });
     const dot = h("span", { class: "tab-dot", title: "Alterações ainda não gravadas" });
     const close = h("button", { class: "tab-x", type: "button", title: "Fechar aba (Ctrl+W)", "aria-label": `Fechar ${label}` });

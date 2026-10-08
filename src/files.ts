@@ -8,8 +8,18 @@ export const IMG_FILTER = {
   extensions: ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "avif"],
 };
 
+export const DOCX_FILTER = { name: "Documento do Word", extensions: ["docx"] };
+
 export async function pickOpenDoc(): Promise<string | null> {
-  const p = await dlgOpen({ multiple: false, directory: false, filters: [MD_FILTER] });
+  const p = await dlgOpen({
+    multiple: false,
+    directory: false,
+    filters: [
+      { name: "Todos os documentos", extensions: [...MD_FILTER.extensions, "docx"] },
+      MD_FILTER,
+      DOCX_FILTER,
+    ],
+  });
   return typeof p === "string" ? p : null;
 }
 

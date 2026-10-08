@@ -27,6 +27,12 @@ export interface ExportCtx {
   isDark: () => boolean;
   translation: Translation;
   mdCss: string;
+  /** Documento Word aberto: gera o .docx direto do motor (sem passar por Markdown). */
+  nativeDocx?: () => Promise<Uint8Array>;
+  /** Documento Word aberto: gera o .docx a partir de Markdown (versão traduzida). */
+  docxFromMarkdown?: (md: string) => Promise<Uint8Array>;
+  /** Documento Word aberto: imprime a própria folha (PDF fiel à tela). */
+  printNative?: () => void;
   /** Garante um arquivo em disco (o pacote ZIP precisa do .md salvo ao lado das imagens). */
   ensureFile: () => Promise<boolean>;
   reveal: (path: string) => void;
@@ -436,6 +442,13 @@ async function runExport(ctx: ExportCtx, prefs: ExportPrefs, say: (t: string) =>
     return true;
   }
 
+  // ----- PDF de documento Word: imprime a própria folha -----
+  if (prefs.format === "pdf" && ctx.printNative && prefs.lang === "pt") {
+    ctx.printNative();
+    toast("Na janela de impressão, escolha “Salvar como PDF” como impressora.", "info", 6500);
+    return true;
+  }
+
   // ----- PDF (impressão) -----
   if (prefs.format === "pdf") {
     say("Montando o documento…");
@@ -481,13 +494,18 @@ async function runExport(ctx: ExportCtx, prefs: ExportPrefs, say: (t: string) =>
     }
     case "docx": {
       say("Gerando o documento do Word…");
-      const bytes = await buildDocx({
-        markdown: prefs.lang === "en" ? enMd : md,
-        bilingual: prefs.lang === "both" && doc ? ctx.translation.blocks(doc) : undefined,
-        title: name,
-        docPath: ctx.docPath(),
-        pageSize: prefs.size,
-      });
+      const bytes =
+        ctx.nativeDocx && prefs.lang === "pt"
+          ? await ctx.nativeDocx()
+          : ctx.docxFromMarkdown && prefs.lang === "en"
+            ? await ctx.docxFromMarkdown(enMd)
+            : await buildDocx({
+                markdown: prefs.lang === "en" ? enMd : md,
+                bilingual: prefs.lang === "both" && doc ? ctx.translation.blocks(doc) : undefined,
+                title: name,
+                docPath: ctx.docPath(),
+                pageSize: prefs.size,
+              });
       await files.saveBinary(target, bytesToBase64(bytes));
       written.push(target);
       break;

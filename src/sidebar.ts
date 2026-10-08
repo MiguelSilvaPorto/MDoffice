@@ -3,7 +3,7 @@
 import * as files from "./files";
 import { $, baseName, docDirOf, h, loadJSON, saveJSON, stripExt } from "./util";
 
-export type SidePanel = "home" | "projects" | "outline" | "context";
+export type SidePanel = "projects" | "outline" | "context";
 
 export interface OpenDocInfo {
   id: string;
@@ -29,6 +29,8 @@ export interface SidebarHooks {
   outlineFilter: (query: string) => void;
   /** Abre o menu de contexto (x, y) de um item. */
   contextMenu: (x: number, y: number, items: { label: string; run: () => void }[]) => void;
+  /** Abre ou alterna o Início (Hub de documentos) na área de edição. */
+  onHome: () => void;
 }
 
 const SIDE_KEY = "mdc.side-panel";
@@ -55,15 +57,21 @@ export class Sidebar {
 
   async init(): Promise<void> {
     const saved = loadJSON<string>(SIDE_KEY, "projects");
-    this.active = (["home", "projects", "outline", "context"] as string[]).includes(saved) ? (saved as SidePanel) : "projects";
+    this.active = (["projects", "outline", "context"] as string[]).includes(saved) ? (saved as SidePanel) : "projects";
     document.querySelectorAll<HTMLElement>(".sb-tab").forEach((b) =>
-      b.addEventListener("click", () => this.show(b.dataset.side as SidePanel))
+      b.addEventListener("click", () => {
+        if (b.dataset.side === "home") {
+          this.hooks.onHome();
+          return;
+        }
+        this.show(b.dataset.side as SidePanel);
+      })
     );
     const search = $("#sb-search") as HTMLInputElement;
     search.addEventListener("input", () => {
       this.query = search.value.trim().toLowerCase();
-      // buscar no conteúdo é coisa de projetos: sai do Início/Contexto para ver os resultados
-      if (this.query.length >= 2 && (this.active === "home" || this.active === "context")) this.show("projects");
+      // buscar no conteúdo é coisa de projetos: sai do Contexto para ver os resultados
+      if (this.query.length >= 2 && this.active === "context") this.show("projects");
       this.render();
       this.scheduleContentSearch();
     });
@@ -106,6 +114,14 @@ export class Sidebar {
     document.querySelectorAll<HTMLElement>(".sb-panel").forEach((p) => (p.hidden = p.id !== `sp-${panel}`));
     ($("#sb-search") as HTMLInputElement).placeholder = panel === "outline" ? "Buscar título" : "Buscar";
     this.render();
+  }
+
+  setHomeActive(active: boolean): void {
+    const homeBtn = document.querySelector<HTMLElement>('.sb-tab[data-side="home"]');
+    if (homeBtn) {
+      homeBtn.classList.toggle("active", active);
+      homeBtn.setAttribute("aria-selected", String(active));
+    }
   }
 
   private persist(): void {
@@ -205,7 +221,6 @@ export class Sidebar {
   /** O que está aberto/ativo mudou: redesenha os realces. */
   render(): void {
     if (this.active === "projects") this.renderProjects();
-    else if (this.active === "home") void this.renderHome();
     else if (this.active === "outline") this.filterOutline();
   }
 

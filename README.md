@@ -5,6 +5,20 @@ produzir documentos bonitos e funcionais — inclusive para enviar à IA.
 
 ## O que ele faz
 
+- **Motor do Word (.docx)**: **+ → Documento Word** cria um documento editado direto na folha
+  (sem Markdown) e **Abrir** aceita `.docx` do Word. Folha **A4/Carta** com margens, páginas de
+  verdade (o texto flui de uma página para a outra, parágrafos longos se dividem entre elas),
+  **cabeçalho, rodapé e “Página X de Y”**. Fita com estilos (Texto normal, Título 1–4, Citação,
+  Código), **fonte, tamanho, cor da letra e destaque**, negrito/itálico/sublinhado/riscado,
+  sub/sobrescrito, alinhamento (inclui justificado), entrelinha, recuo, listas com níveis,
+  **tabelas** (inserir, linhas/colunas, mesclar, sombrear), **imagens** (inserir, colar, arrastar),
+  links, quebra de página e **zoom**. Salva **.docx de verdade** (`Ctrl+S`) e exporta em PDF
+  (imprime a própria folha). O corretor de português sublinha erros e abre sugestões ao clicar; o
+  histórico de versões, as abas, a Estrutura e a busca nas abas funcionam também aqui.
+  *Arquivos .docx seus só são gravados quando você salva (o motor pode simplificar o que ainda não
+  entende: comentários, revisões, campos, caixas de texto); o histórico guarda cópias antes.*
+  Ainda não há: tradução ao vivo (use Exportar → Inglês), desenho, notas de rodapé, colunas e
+  tabelas dentro de tabelas com mesclagem complexa.
 - **Abas estilo Chrome**: uma fileira horizontal com todos os documentos abertos, cada um
   com seu próprio texto, histórico de desfazer e posição de rolagem. `Ctrl+T` nova aba,
   `Ctrl+W` fecha, `Ctrl+Tab` / `Ctrl+1…9` trocam, `Ctrl+Shift+T` reabre a última fechada,

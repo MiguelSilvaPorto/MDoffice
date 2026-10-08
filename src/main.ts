@@ -15,10 +15,19 @@ import { Translation } from "./translation";
 import { openExportDialog, type ExportFormat } from "./export";
 import { openPalette, type PaletteItem } from "./palette";
 import { snapshot, moveHistory, listVersions, clearHistory } from "./history";
+import { WordHost, type WordTabData } from "./word/host";
+import { importDocx } from "./word/docxImport";
+import { exportDocx } from "./word/docxExport";
+import { toMarkdown, fromMarkdown } from "./word/markdown";
+import { deserialize as wordDeserialize, serialize as wordSerialize, type PageSetup } from "./word/model";
+import { plainText } from "./word/schema";
+import type { Node as PMNode } from "prosemirror-model";
+import { bytesToBase64 } from "./util";
 import { openHistoryDialog } from "./historyUi";
 import { loadSettings, type AppSettings } from "./settings";
 import { openPresentation } from "./slides";
 import { renderSettingsPage, type SettingsSection } from "./settingsPage";
+import { renderHomePage, type HomeCtx } from "./homePage";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
@@ -101,8 +110,11 @@ class App {
   /** Aba de Configurações (fica fora de this.tabs, que só tem documentos). */
   private settingsTab: DocTab | null = null;
   private showingSettings = false;
+  private showingHome = false;
   private sidebar!: Sidebar;
   private outline!: OutlinePanel;
+  private wordHost!: WordHost;
+  private docxNotice = false;
   private translation!: Translation;
   /** Todas as abas abertas (na ordem da fileira) e a que está ativa. */
   private tabs: DocTab[] = [];
@@ -236,16 +248,33 @@ class App {
       searchContent: (q, roots) => this.searchContent(q, roots),
       openAt: (p, line) => void this.openAt(p, line),
       contextMenu: (x, y, items) => this.openMenuAt(x, y, items),
+      onHome: () => this.toggleHome(),
     });
     this.outline = new OutlinePanel($("#outline"), {
-      getText: () => this.editor.getText(),
-      goto: (line) => this.editor.gotoLine(line),
-      edit: (from, to, insert) => this.editor.replaceRange(from, to, insert),
+      getText: () => (this.tab.kind === "word" ? this.wordHost.outline().text : this.editor.getText()),
+      goto: (line) => (this.tab.kind === "word" ? this.wordHost.gotoLine(line) : this.editor.gotoLine(line)),
+      edit: (from, to, insert) => {
+        if (this.tab.kind === "word") toast("Reorganizar seções ainda não funciona em documentos Word.", "info", 3200);
+        else this.editor.replaceRange(from, to, insert);
+      },
       copy: (text) => void copyText(text).then((ok) => toast(ok ? "Texto da seção copiado." : "Não foi possível copiar.", ok ? "ok" : "err", 2200)),
       notify: (msg) => toast(msg, "info", 3000),
       openMenu: (x, y, items) => this.openMenuAt(x, y, items),
     });
     this.outline.useCollapsed(this.tab.outlineCollapsed);
+    this.wordHost = new WordHost({
+      pane: $("#word-pane"),
+      getIgnore: () => new Set([...this.ignoreWords, ...this.tab.ignoredHere]),
+      ignoreHere: (w) => {
+        this.tab.ignoredHere.add(w.toLowerCase());
+        this.wordHost.recheckSpelling();
+        toast(`“${w}” ignorada neste texto.`, "info", 2600);
+      },
+      addToDictionary: (w) => this.ignoreWord(w),
+      spellEnabled: () => true,
+      onChange: () => this.onWordChange(),
+      onStatus: () => this.wordStatus(),
+    });
     $("#ol-collapse").addEventListener("click", () => this.outline.collapseAll(true));
     $("#ol-expand").addEventListener("click", () => this.outline.collapseAll(false));
     $("#ctx-add").addEventListener("click", () => void this.chooseFolders());
@@ -300,8 +329,8 @@ class App {
       let activateTab: DocTab | null = null;
       for (const p of saved.paths) {
         try {
-          const content = await files.loadDoc(p);
-          const tab = this.addTabFor(p, content, saved.drafts?.includes(p) ?? false);
+          const wasDraft = saved.drafts?.includes(p) ?? false;
+          const tab = /\.docx$/i.test(p) ? await this.addDocxTab(p, wasDraft) : this.addTabFor(p, await files.loadDoc(p), wasDraft);
           restored++;
           if (p === saved.active) activateTab = tab;
         } catch {
@@ -386,11 +415,16 @@ class App {
   }
 
   private textOf(tab: DocTab): string {
+    if (tab.kind === "word") return tab === this.tab ? this.wordHost.text() : plainText(tab.word!.state.doc);
     return tab === this.tab ? this.editor.getText() : tab.state.doc.toString();
   }
 
   /** Guarda o estado da aba ativa (texto/undo/rolagem) antes de sair dela. */
   private snapshotTab(): void {
+    if (this.tab.kind === "word") {
+      this.wordHost.snapshot(this.tab.word!);
+      return;
+    }
     this.tab.state = this.editor.getState();
     this.tab.scrollTop = this.editor.scrollTop();
   }
@@ -401,6 +435,11 @@ class App {
       this.snapshotTab();
       this.tab = target;
     }
+    if (target.kind === "word") {
+      this.enterWord(target);
+      return;
+    }
+    this.leaveWord();
     this.editor.loadState(target.state, target.scrollTop);
     this.outline?.useCollapsed(target.outlineCollapsed);
     this.outline?.setCursorLine(target.cursor.line);
@@ -450,11 +489,13 @@ class App {
       this.showSettings();
       return;
     }
+    this.hideHome();
     void this.switchTo(id);
   }
 
   /** Abre a aba de Configurações (uma só): mostra a página no lugar do editor. */
   private showSettings(section: SettingsSection = "escrita"): void {
+    if (this.showingHome) this.hideHome();
     if (!this.settingsTab) this.settingsTab = newTab(this.tab.state, { kind: "settings" });
     this.showingSettings = true;
     document.body.classList.add("settings-open");
@@ -477,6 +518,235 @@ class App {
     this.settingsTab = null;
     this.renderTabs();
     this.editor.focus();
+  }
+
+  /** Abre o Início (Hub de documentos: Word, Excel, Markdown, PowerPoint, recentes e modelos). */
+  private showHome(): void {
+    if (this.showingSettings) this.hideSettings();
+    this.showingHome = true;
+    document.body.classList.add("home-open");
+    this.closeMenus();
+    this.sidebar?.setHomeActive(true);
+    renderHomePage($("#home-page"), this.homeContext());
+    $("#home-page").hidden = false;
+  }
+
+  private hideHome(): void {
+    if (!this.showingHome) return;
+    this.showingHome = false;
+    document.body.classList.remove("home-open");
+    this.sidebar?.setHomeActive(false);
+    $("#home-page").hidden = true;
+    this.editor?.focus();
+  }
+
+  private toggleHome(): void {
+    if (this.showingHome) {
+      this.hideHome();
+    } else {
+      this.showHome();
+    }
+  }
+
+  private homeContext(): HomeCtx {
+    return {
+      createDoc: (tipo) => {
+        this.hideHome();
+        if (tipo === "word") {
+          void this.newWordDoc();
+          return;
+        }
+        let titulo = "Documento";
+        let texto = "";
+        if (tipo === "excel") {
+          titulo = "Planilha Excel";
+          texto = [
+            "# Planilha de Dados",
+            "",
+            "| ID | Descrição do Item | Categoria | Quantidade | Valor Unit. (R$) | Total (R$) |",
+            "| :-: | :--- | :--- | ---: | ---: | ---: |",
+            "| 01 | Item de Exemplo A | Serviços | 2 | 125,00 | 250,00 |",
+            "| 02 | Item de Exemplo B | Suprimentos | 5 | 45,00 | 225,00 |",
+            "| 03 | Licença de Sistema | Tecnologia | 1 | 380,00 | 380,00 |",
+            "| 04 | Suporte Mensal | Operação | 1 | 150,00 | 150,00 |",
+            "| **—** | **Total Geral** | **—** | **9** | **—** | **1.005,00** |",
+            "",
+            "> 📊 **Dica do Excel:** Colunas com alinhamento numérico à direita (`---:`) organizam valores monetários e quantidades. Você pode copiar tabelas para o Excel ou colar do Excel no editor.",
+            "",
+          ].join("\n");
+        } else if (tipo === "md") {
+          titulo = "Documento Markdown";
+          texto = [
+            "# Novo Documento Markdown",
+            "",
+            "Escreva com agilidade e foco na escrita.",
+            "",
+            "## Destaques",
+            "- [x] Pré-visualização simultânea em tempo real lado a lado",
+            "- [ ] Tradução automática com um clique (`Ctrl+Alt+T`)",
+            "- [ ] Desenho à mão livre ou vetorial (`Ctrl+Shift+D`)",
+            "- [ ] Revisão ortográfica e estilo ABNT",
+            "",
+          ].join("\n");
+        } else if (tipo === "ppt") {
+          titulo = "Apresentação PowerPoint";
+          texto = [
+            "# Apresentação mdOffice",
+            "",
+            "## Subtítulo da sua Apresentação",
+            "",
+            "Apresentador · Data",
+            "",
+            "---",
+            "",
+            "## 1. Visão Geral",
+            "",
+            "- Apresentação moderna construída em slides simples",
+            "- Cada lâmina é separada por uma linha de três traços (`---`)",
+            "- Aperte **F5** a qualquer momento para entrar em tela cheia!",
+            "",
+            "---",
+            "",
+            "## 2. Principais Metas",
+            "",
+            "1. **Clareza:** Slides objetivos com tipografia elegante",
+            "2. **Agilidade:** Foco no conteúdo sem perder tempo com alinhamento manual",
+            "3. **Exportação:** Exporte para PDF com uma lâmina por página (Ctrl+P)",
+            "",
+            "---",
+            "",
+            "## 3. Conclusão",
+            "",
+            "Obrigado!",
+            "",
+            "> Aperte **F5** para iniciar o modo de apresentação agora mesmo.",
+            "",
+          ].join("\n");
+        }
+
+        const tab = newTab(this.editor.createState(texto), { path: null, isDraft: false, statusSaved: "Novo arquivo" });
+        this.tabs.push(tab);
+        this.selectTab(tab.id);
+        toast(`${titulo} criado — use Ctrl+Shift+S para salvar numa pasta sua.`, "ok", 3800);
+      },
+
+      createTemplate: (template) => {
+        this.hideHome();
+        let texto = "";
+        let rotulo = "Modelo";
+        if (template === "abnt") {
+          rotulo = "Trabalho ABNT";
+          texto = [
+            "# TÍTULO DO TRABALHO ACADÊMICO",
+            "",
+            "## SUBTÍTULO",
+            "",
+            "**Nome do Autor**",
+            "",
+            "---",
+            "",
+            "### RESUMO",
+            "Este trabalho apresenta uma abordagem prática para elaboração de documentos conforme os padrões da ABNT. Palavras-chave: Documento. Normas. ABNT.",
+            "",
+            "---",
+            "",
+            "### 1. INTRODUÇÃO",
+            "Contextualização do tema, justificativa e objetivos geral e específicos da pesquisa.",
+            "",
+            "### 2. DESENVOLVIMENTO",
+            "Revisão teórica, metodologia aplicada e discussão dos resultados obtidos.",
+            "",
+            "### 3. CONSIDERAÇÕES FINAIS",
+            "Síntese dos achados e recomendações para trabalhos futuros.",
+            "",
+            "---",
+            "",
+            "### REFERÊNCIAS",
+            "- SOBRENOME, Nome. *Título da Obra em Itálico*. Cidade: Editora, 2026.",
+            "- ASSOCIAÇÃO BRASILEIRA DE NORMAS TÉCNICAS. *NBR 14724*: Informação e documentação. Rio de Janeiro: ABNT, 2011.",
+            "",
+          ].join("\n");
+        } else if (template === "relatorio") {
+          rotulo = "Relatório Executivo";
+          texto = [
+            "# Relatório Executivo Mensal",
+            "",
+            "**Período:** Outubro / 2026",
+            "**Responsável:** Equipe de Gestão",
+            "",
+            "---",
+            "",
+            "## 1. Sumário Executivo",
+            "Breve resumo com as principais métricas e conquistas do período.",
+            "",
+            "## 2. Metas e Indicadores",
+            "| Indicador | Meta | Realizado | Status |",
+            "| :--- | ---: | ---: | :-: |",
+            "| Usuários Ativos | 10.000 | 12.450 | ✅ Superado |",
+            "| Tempo de Resposta | < 200ms | 145ms | ✅ No prazo |",
+            "| Satisfação (CSAT) | 90% | 94% | ✅ Superado |",
+            "",
+            "## 3. Próximos Passos",
+            "Plano de ação para o próximo ciclo de entregas.",
+            "",
+          ].join("\n");
+        } else if (template === "orcamento") {
+          rotulo = "Planilha Orçamentária";
+          texto = [
+            "# Orçamento e Custos do Projeto",
+            "",
+            "| Categoria | Descrição | Previsão (R$) | Realizado (R$) | Diferença (R$) |",
+            "| :--- | :--- | ---: | ---: | ---: |",
+            "| Pessoal | Desenvolvimento | 15.000,00 | 14.200,00 | + 800,00 |",
+            "| Infraestrutura | Servidores & Nuvem | 3.500,00 | 3.100,00 | + 400,00 |",
+            "| Marketing | Lançamento | 5.000,00 | 5.000,00 | 0,00 |",
+            "| **Total** | | **23.500,00** | **22.300,00** | **+ 1.200,00** |",
+            "",
+          ].join("\n");
+        } else if (template === "ia") {
+          rotulo = "Pedido para IA";
+          texto = AI_TEMPLATE;
+        }
+
+        const tab = newTab(this.editor.createState(texto), { path: null, isDraft: false, statusSaved: "Novo arquivo" });
+        this.tabs.push(tab);
+        this.selectTab(tab.id);
+        toast(`${rotulo} criado com sucesso.`, "ok", 3500);
+      },
+
+      openExisting: () => {
+        this.hideHome();
+        void this.openDocDialog();
+      },
+
+      openPath: (path) => {
+        this.hideHome();
+        void this.openPath(path);
+      },
+
+      recents: () => {
+        return this.recents.map((r) => ({
+          path: r.path,
+          name: baseName(r.path),
+          at: r.at,
+        }));
+      },
+
+      drafts: () => files.listDrafts(),
+
+      openDraft: (draft) => {
+        this.hideHome();
+        void this.openPath(draft.path);
+      },
+
+      deleteDraft: async (path) => {
+        await files.deleteDraft(path);
+        toast("Rascunho excluído.", "info", 2000);
+      },
+
+      closeHome: () => this.hideHome(),
+      hasOpenTabs: this.tabs.length > 0,
+    };
   }
 
   private settingsContext(): import("./settingsPage").SettingsCtx {
@@ -515,6 +785,7 @@ class App {
 
   private async switchTo(id: string): Promise<void> {
     this.hideSettings();
+    this.hideHome();
     const target = this.tabs.find((t) => t.id === id);
     if (!target || target === this.tab || this.switching) return;
     this.switching = true;
@@ -548,7 +819,9 @@ class App {
     const tab = this.tabs.find((t) => t.id === id);
     if (!tab || this.switching) return;
     const isCurrent = tab === this.tab;
-    if (isCurrent) await this.autosave();
+    if (tab.kind === "word") {
+      if (!(await this.prepareCloseWord(tab))) return;
+    } else if (isCurrent) await this.autosave();
     else if (tab.dirty && tab.path) {
       try {
         await files.saveDoc(tab.path, this.textOf(tab));
@@ -689,17 +962,7 @@ class App {
     this.openMenu(anchor, (menu) => {
       menu.classList.add("recents-menu");
       this.ddItem(menu, { icon: "i-doc", label: "Documento Markdown", hint: ".md", onPick: () => void this.newDoc() });
-      this.ddItem(menu, {
-        icon: "i-word",
-        label: "Documento Word (.docx)",
-        hint: "em construção",
-        onPick: () =>
-          toast(
-            "Abrir e editar .docx está em construção (o motor do Word existe, falta ligar no editor). Por enquanto use ⋯ → Exportar → Word para gerar o .docx.",
-            "info",
-            7000
-          ),
-      });
+      this.ddItem(menu, { icon: "i-word", label: "Documento Word (.docx)", hint: "páginas, fontes, tabelas", onPick: () => void this.newWordDoc() });
       this.ddItem(menu, { icon: "i-grid", label: "Planilha", hint: "Excel (tabela)", onPick: () => criar("Planilha", modeloPlanilha) });
       this.ddItem(menu, { icon: "i-eye", label: "Apresentação", hint: "PowerPoint (slides, F5)", onPick: () => criar("Apresentação", modeloDeck) });
     });
@@ -828,6 +1091,10 @@ class App {
   }
 
   private async runWritingCheck(): Promise<void> {
+    if (this.tab.kind === "word") {
+      this.wordHost.recheckSpelling();
+      return;
+    }
     const text = this.editor.getText();
     try {
       this.issues = await checkText(text, new Set([...this.ignoreWords, ...this.ignoredHere]));
@@ -971,6 +1238,7 @@ class App {
     saveJSON("mdc.ignore-words", Array.from(this.ignoreWords));
     toast(`“${word}” foi adicionada ao dicionário pessoal.`, "ok", 3000);
     void this.runWritingCheck();
+    this.wordHost?.recheckSpelling();
   }
 
   /** Dicionário pessoal: palavras (nomes, termos técnicos…) que não devem ser marcadas. */
@@ -983,24 +1251,31 @@ class App {
   }
 
   private async openHistory(): Promise<void> {
-    if (!this.path && !(await this.ensureSaved())) return;
+    const word = this.tab.kind === "word";
+    if (word ? !(await this.ensureWordFile()) : !this.path && !(await this.ensureSaved())) return;
     const path = this.path;
     if (!path) return;
+    const current = () => (word ? this.wordHost.serialized() : this.editor.getText());
     // garante que o estado de agora já esteja no histórico
-    await snapshot(path, this.editor.getText(), { max: this.settings.historyMax });
+    await snapshot(path, current(), { max: this.settings.historyMax });
     openHistoryDialog({
       doc: path,
       title: tabLabel(this.tab),
       max: this.settings.historyMax,
-      getText: () => this.editor.getText(),
-      restore: (text) => this.editor.replaceRange(0, this.editor.getText().length, text),
+      getText: current,
+      project: word ? (t) => this.wordProjection(t) : undefined,
+      restore: (text) => {
+        if (word) this.wordHost.restore(text);
+        else this.editor.replaceRange(0, this.editor.getText().length, text);
+      },
     });
   }
 
   private async saveVersionNow(): Promise<void> {
-    if (!this.path && !(await this.ensureSaved())) return;
+    const word = this.tab.kind === "word";
+    if (word ? !(await this.ensureWordFile()) : !this.path && !(await this.ensureSaved())) return;
     if (!this.path) return;
-    const ok = await snapshot(this.path, this.editor.getText(), { manual: true, max: this.settings.historyMax });
+    const ok = await snapshot(this.path, word ? this.wordHost.serialized() : this.editor.getText(), { manual: true, max: this.settings.historyMax });
     toast(ok ? "Versão salva no histórico." : "Esse texto já está no histórico.", ok ? "ok" : "info", 2400);
   }
 
@@ -1053,7 +1328,9 @@ class App {
   }
 
   private async openAt(path: string, line: number): Promise<void> {
-    if (await this.openPath(path)) window.setTimeout(() => this.editor.gotoLine(line), 80);
+    if (await this.openPath(path)) {
+      window.setTimeout(() => (this.tab.kind === "word" ? this.wordHost.gotoLine(line) : this.editor.gotoLine(line)), 80);
+    }
   }
 
   private showDictionary(): void {
@@ -1201,6 +1478,10 @@ class App {
   }
 
   private openReview(): void {
+    if (this.tab.kind === "word") {
+      toast("Em documentos Word, clique nas palavras sublinhadas para ver as sugestões.", "info", 3600);
+      return;
+    }
     if (this.reviewHandle) return;
     this.reviewHandle = openReviewModal({
       issues: this.issues,
@@ -1270,6 +1551,7 @@ class App {
   private autosaveSoon = debounce(() => void this.autosave(), 2000);
 
   private async autosave(): Promise<void> {
+    if (this.tab.kind === "word") return this.autosaveWord();
     const tab = this.tab;
     if (!tab.dirty) return;
     const text = this.editor.getText();
@@ -1328,6 +1610,7 @@ class App {
   }
 
   private async save(saveAs = false): Promise<boolean> {
+    if (this.tab.kind === "word") return this.saveWord(saveAs);
     try {
       const previousPath = this.path;
       const wasDraft = this.isDraft;
@@ -1387,6 +1670,257 @@ class App {
     }
   }
 
+  // ---------- documentos Word (.docx) ----------
+
+  /** Cria uma aba de documento Word (sem ativá-la). */
+  private addWordTab(data: WordTabData, init: Partial<DocTab> = {}): DocTab {
+    const tab = newTab(this.editor.createState(""), { kind: "word", word: data, title: "Documento", statusSaved: "Novo documento Word", ...init });
+    this.tabs.push(tab);
+    return tab;
+  }
+
+  private async newWordDoc(): Promise<void> {
+    const tab = this.addWordTab(this.wordHost.createTab());
+    await this.switchTo(tab.id);
+    this.wordHost.focus();
+  }
+
+  private async readDocx(path: string): Promise<{ doc: PMNode; setup: PageSetup }> {
+    const url = await files.readDataUrl(path);
+    const bin = atob(url.slice(url.indexOf(",") + 1));
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return await importDocx(bytes);
+  }
+
+  private async addDocxTab(path: string, isDraft = false): Promise<DocTab> {
+    const { doc, setup } = await this.readDocx(path);
+    return this.addWordTab(this.wordHost.createTab(doc, setup), {
+      path,
+      isDraft,
+      title: null,
+      statusSaved: isDraft ? "Rascunho guardado no app" : `Aberto às ${fmtTime()}`,
+    });
+  }
+
+  private async openDocx(path: string): Promise<boolean> {
+    try {
+      const tab = await this.addDocxTab(path);
+      this.addRecent(path);
+      const current = this.tab;
+      const reuse = current.kind !== "word" && !current.path && !current.dirty && this.textOf(current).length === 0;
+      await this.switchTo(tab.id);
+      if (reuse && this.tab === tab) {
+        this.tabs = this.tabs.filter((t) => t !== current);
+        this.afterTabChange();
+      }
+      return true;
+    } catch (e) {
+      toast("Não foi possível abrir o documento do Word: " + e, "err", 7000);
+      return false;
+    }
+  }
+
+  private enterWord(target: DocTab): void {
+    document.body.classList.add("word-open");
+    $("#word-pane").hidden = false;
+    this.wordHost.load(target.word!);
+    this.outline?.useCollapsed(target.outlineCollapsed);
+    this.afterTabChange();
+    this.wordHost.focus();
+  }
+
+  private leaveWord(): void {
+    document.body.classList.remove("word-open");
+  }
+
+  private onWordChange(): void {
+    if (this.tab.kind !== "word") return;
+    const was = this.dirty;
+    this.dirty = true;
+    if (!was) this.refreshTitle();
+    this.setSaveState();
+    this.outlineSoon();
+    this.autosaveSoon();
+  }
+
+  /** Contagens do documento Word mudaram: rodapé e destaque da seção atual. */
+  private wordStatus(): void {
+    if (this.tab.kind !== "word") return;
+    this.updateStats();
+    this.outline?.setCursorLine(this.wordHost.cursorLine());
+  }
+
+  private wordProjection(serialized: string): string {
+    const r = wordDeserialize(serialized);
+    return r ? plainText(r.doc) : serialized;
+  }
+
+  /** Grava o .docx de uma aba (a ativa lê do editor; as outras, do estado guardado). */
+  private async writeDocx(tab: DocTab, path: string): Promise<void> {
+    const live = tab === this.tab;
+    const doc = live ? this.wordHost.doc() : tab.word!.state.doc;
+    const setup = live ? this.wordHost.setup() : tab.word!.setup;
+    const bytes = await exportDocx(doc, setup, tabLabel(tab));
+    await files.saveBinary(path, bytesToBase64(bytes));
+  }
+
+  private wordSerialized(tab: DocTab): string {
+    return tab === this.tab ? this.wordHost.serialized() : wordSerialize(tab.word!.state.doc, tab.word!.setup);
+  }
+
+  /** Documento novo ainda sem arquivo: cria o rascunho (.docx) na pasta do app. */
+  private async ensureWordFile(): Promise<boolean> {
+    const tab = this.tab;
+    if (tab.path) return true;
+    try {
+      tab.path = await files.draftPath(slugify(tabLabel(tab)) || "documento", "docx");
+      tab.isDraft = true;
+      await this.writeDocx(tab, tab.path);
+      tab.dirty = false;
+      tab.statusSaved = "Rascunho guardado no app";
+      this.afterSave(tab);
+      this.saveSession();
+      return true;
+    } catch (e) {
+      toast("Não consegui guardar o rascunho: " + e, "err", 6000);
+      return false;
+    }
+  }
+
+  /**
+   * Salvamento automático do Word. Rascunhos do app são regravados sempre; arquivos SEUS só
+   * são gravados em Salvar — o motor pode simplificar recursos que ainda não entende
+   * (comentários, revisões, campos). O histórico guarda cópias de qualquer jeito.
+   */
+  private async autosaveWord(): Promise<void> {
+    const tab = this.tab;
+    if (tab.kind !== "word" || !tab.dirty) return;
+    if (tab.path && !tab.isDraft) {
+      this.recordVersion(tab.path, this.wordHost.serialized());
+      return;
+    }
+    try {
+      if (!tab.path) {
+        tab.path = await files.draftPath(slugify(tabLabel(tab)) || "documento", "docx");
+        tab.isDraft = true;
+      }
+      await this.writeDocx(tab, tab.path);
+      tab.dirty = false;
+      tab.statusSaved = `Rascunho atualizado às ${fmtTime()}`;
+      this.recordVersion(tab.path, this.wordSerialized(tab));
+      this.afterSave(tab);
+      this.saveSession();
+    } catch {
+      /* sem acesso a arquivos (navegador): segue sem salvar */
+    }
+  }
+
+  private async saveWord(saveAs: boolean): Promise<boolean> {
+    const tab = this.tab;
+    try {
+      const previous = tab.path;
+      const wasDraft = tab.isDraft;
+      if (saveAs || !tab.path || wasDraft) {
+        const suggested = `${tabLabel(tab)}.docx`;
+        let defaultPath = suggested;
+        try {
+          defaultPath = joinPath(await files.defaultDocsDir(), suggested);
+        } catch {
+          /* só o nome */
+        }
+        const picked = await files.pickSaveAny(defaultPath, "Documento do Word", ["docx"]);
+        if (!picked) return false;
+        tab.path = /\.docx$/i.test(picked) ? picked : `${picked.replace(/\.[a-zA-Z0-9]+$/, "")}.docx`;
+        tab.isDraft = false;
+        tab.title = null;
+      }
+      await this.writeDocx(tab, tab.path!);
+      if (wasDraft && previous && previous !== tab.path) void files.deleteDraft(previous).catch(() => {});
+      if (previous && previous !== tab.path) void moveHistory(previous, tab.path!);
+      tab.dirty = false;
+      tab.statusSaved = `Salvo às ${fmtTime()}`;
+      this.recordVersion(tab.path!, this.wordSerialized(tab), true);
+      this.addRecent(tab.path!);
+      this.setPreviewPath(tab.path);
+      this.afterTabChange();
+      if (!this.docxNotice) {
+        this.docxNotice = true;
+        toast("Salvo como .docx. Se o arquivo veio do Word, recursos que o mdOffice ainda não entende (comentários, revisões, campos) podem ser simplificados.", "info", 7500);
+      } else toast(`Documento salvo em ${baseName(tab.path!)}`, "ok", 2600);
+      return true;
+    } catch (e) {
+      toast("Erro ao salvar: " + e, "err", 7000);
+      return false;
+    }
+  }
+
+  /** Antes de fechar uma aba Word: rascunhos ficam guardados; arquivos seus perguntam. */
+  private async prepareCloseWord(tab: DocTab): Promise<boolean> {
+    if (!tab.dirty) return true;
+    if (tab.isDraft || !tab.path) {
+      try {
+        if (tab === this.tab) await this.autosaveWord();
+        else {
+          if (!tab.path) {
+            tab.path = await files.draftPath(slugify(tabLabel(tab)) || "documento", "docx");
+            tab.isDraft = true;
+          }
+          await this.writeDocx(tab, tab.path);
+        }
+      } catch {
+        /* segue: nada a fazer sem acesso a arquivos */
+      }
+      return true;
+    }
+    const choice = await this.askSaveChanges(tabLabel(tab));
+    if (choice === "cancel") return false;
+    if (choice === "save") {
+      if (tab !== this.tab) {
+        await this.switchTo(tab.id);
+        if (this.tab !== tab) return false;
+      }
+      if (!(await this.saveWord(false))) return false;
+    }
+    return true;
+  }
+
+  private askSaveChanges(name: string): Promise<"save" | "discard" | "cancel"> {
+    return new Promise((resolve) => {
+      const backdrop = h("div", { class: "modal-backdrop" });
+      const modal = h("div", { class: "modal tr-modal link-modal" });
+      modal.innerHTML = `
+        <header class="wm-head"><h2>Salvar alterações?</h2></header>
+        <div class="wm-body tr-body"><p>O documento <b></b> tem alterações que ainda não foram salvas no arquivo.</p></div>
+        <footer class="wm-foot">
+          <button class="btn" data-cancel>Cancelar</button>
+          <span class="dr-spacer"></span>
+          <button class="btn" data-discard>Não salvar</button>
+          <button class="btn primary" data-save>Salvar</button>
+        </footer>`;
+      modal.querySelector("b")!.textContent = name;
+      backdrop.append(modal);
+      document.body.append(backdrop);
+      const done = (v: "save" | "discard" | "cancel") => {
+        document.removeEventListener("keydown", onKey, true);
+        backdrop.remove();
+        resolve(v);
+      };
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          done("cancel");
+        }
+      };
+      document.addEventListener("keydown", onKey, true);
+      modal.querySelector("[data-cancel]")!.addEventListener("click", () => done("cancel"));
+      modal.querySelector("[data-discard]")!.addEventListener("click", () => done("discard"));
+      modal.querySelector("[data-save]")!.addEventListener("click", () => done("save"));
+      modal.querySelector<HTMLElement>("[data-save]")!.focus();
+    });
+  }
+
   private async newDoc(): Promise<void> {
     // já existe uma aba vazia e sem nome? só vai até ela (como o Chrome faz com a página nova)
     const empty = this.tabs.find((t) => !t.path && !t.dirty && this.textOf(t).length === 0);
@@ -1411,6 +1945,11 @@ class App {
     if (already) {
       await this.switchTo(already.id);
       return true;
+    }
+    if (/\.docx$/i.test(path)) return await this.openDocx(path);
+    if (/\.doc$/i.test(path)) {
+      toast("O formato antigo .doc não é aceito. Abra no Word e salve como .docx.", "info", 5500);
+      return false;
     }
     try {
       const content = await files.loadDoc(path);
@@ -1495,7 +2034,7 @@ class App {
       toast(`Nome definido: "${value}". Ele será usado quando o documento for salvo.`, "ok", 3600);
       return;
     }
-    const target = /\.[a-zA-Z0-9]+$/.test(value) ? value : `${value}.md`;
+    const target = /\.[a-zA-Z0-9]+$/.test(value) ? value : `${value}${this.tab.kind === "word" ? ".docx" : ".md"}`;
     try {
       const previous = this.path;
       const newPath = await files.renameFile(this.path, target);
@@ -1566,7 +2105,7 @@ class App {
   }
 
   private async handleDropped(paths: string[]): Promise<void> {
-    const mdPath = paths.find(isMarkdownPath);
+    const mdPath = paths.find((p) => isMarkdownPath(p) || /\.docx$/i.test(p));
     const images = paths.filter(isImagePath);
     if (mdPath) await this.openPath(mdPath);
     if (!images.length) return;
@@ -1590,6 +2129,10 @@ class App {
   }
 
   private async openDraw(): Promise<void> {
+    if (this.tab.kind === "word") {
+      toast("O desenho ainda não está disponível em documentos Word.", "info", 3200);
+      return;
+    }
     if (this.drawingEditorOpen()) {
       toast("Finalize o desenho que já está aberto (Concluir ou Cancelar) antes de criar outro.", "info", 4200);
       return;
@@ -2011,8 +2554,12 @@ class App {
     if (document.querySelector(".export-modal")) return;
     openExportDialog(
       {
-        getMarkdown: () => this.editor.getText(),
+        getMarkdown: () => (this.tab.kind === "word" ? toMarkdown(this.wordHost.doc()) : this.editor.getText()),
         docPath: () => this.path,
+        nativeDocx: this.tab.kind === "word" ? () => exportDocx(this.wordHost.doc(), this.wordHost.setup(), tabLabel(this.tab)) : undefined,
+        docxFromMarkdown:
+          this.tab.kind === "word" ? (md: string) => exportDocx(fromMarkdown(md), this.wordHost.setup(), tabLabel(this.tab)) : undefined,
+        printNative: this.tab.kind === "word" ? () => this.wordHost.print() : undefined,
         docName: () => (this.path ? stripExt(baseName(this.path)) : slugify(this.docTitleForFileName()) || "documento"),
         isDark: () => document.documentElement.dataset.theme === "dark",
         translation: this.translation,
@@ -2078,6 +2625,16 @@ class App {
   // ---------- barra de ferramentas ----------
 
   private act(name: string): void {
+    if (this.tab.kind === "word") {
+      if (name === "image") {
+        this.wordHost.pickImageDialog();
+        return;
+      }
+      if (name === "draw") {
+        toast("O desenho ainda não está disponível em documentos Word.", "info", 3200);
+        return;
+      }
+    }
     switch (name) {
       case "heading":
         this.editor.cycleHeading();
@@ -2528,8 +3085,8 @@ class App {
     add("Ver", "Alternar tema claro/escuro", () => this.applyTheme(document.documentElement.dataset.theme !== "dark"), undefined, "escuro dark");
     add("Ver", "Mostrar/ocultar painel lateral", () => this.toggle("no-sidebar"));
     add("Ver", "Mostrar/ocultar pré-visualização", () => this.toggle("no-preview"));
+    add("Ver", "Início (Hub de criação: Word, Excel, MD, PowerPoint)", () => this.showHome(), undefined, "home inicio novo hub criar");
     add("Ver", "Painel: Projetos", () => this.openSidePanel("projects"));
-    add("Ver", "Painel: Início (abertos e recentes)", () => this.openSidePanel("home"));
     add("Ver", "Painel: Estrutura do documento", () => this.openSidePanel("outline"));
     add("Ver", "Boas-vindas e ajuda", () => this.showWelcome(), "F1");
 
@@ -2545,12 +3102,16 @@ class App {
     this.translation.setView(view);
   }
 
-  private openSidePanel(panel: "home" | "projects" | "outline" | "context"): void {
+  private openSidePanel(panel: "projects" | "outline" | "context"): void {
     document.body.classList.remove("no-sidebar");
     this.sidebar.show(panel);
   }
 
   private toggleTranslation(): void {
+    if (this.tab.kind === "word") {
+      toast("A tradução ao vivo ainda é só para Markdown. Em documentos Word use Exportar e escolha o idioma Inglês.", "info", 5200);
+      return;
+    }
     const on = !this.translation.settings.enabled;
     if (on && document.body.classList.contains("no-preview")) document.body.classList.remove("no-preview");
     this.translation.setEnabled(on);
@@ -2645,10 +3206,10 @@ class App {
       } else if (e.shiftKey && k === "e") {
         e.preventDefault();
         this.openExport();
-      } else if (k === "b") {
+      } else if (k === "b" && this.tab.kind !== "word") {
         e.preventDefault();
         this.act("bold");
-      } else if (k === "i") {
+      } else if (k === "i" && this.tab.kind !== "word") {
         e.preventDefault();
         this.act("italic");
       }
@@ -2667,6 +3228,19 @@ class App {
   }
 
   private updateStats(): void {
+    if (this.tab.kind === "word") {
+      const w = this.wordHost.stats();
+      $("#st-words").textContent = `${w.words} ${w.words === 1 ? "palavra" : "palavras"}`;
+      $("#st-chars").textContent = `${w.chars} caracteres`;
+      $("#st-lines").textContent = `${w.pages} ${w.pages === 1 ? "página" : "páginas"}`;
+      $("#st-cursor").textContent = `Página ${w.page}`;
+      const badge = document.querySelector<HTMLElement>("#st-writing");
+      if (badge) {
+        badge.hidden = w.issues === 0;
+        badge.textContent = `${w.issues} aviso${w.issues === 1 ? "" : "s"} de escrita`;
+      }
+      return;
+    }
     const text = this.editor.getText();
     const words = (text.match(/[\p{L}\p{N}_'-]+/gu) || []).length;
     const lines = text ? text.split("\n").length : 1;

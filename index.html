@@ -121,10 +121,6 @@
             <input id="sb-search" type="text" placeholder="Buscar" autocomplete="off" spellcheck="false" />
           </label>
 
-          <section class="sb-panel" id="sp-home" hidden>
-            <div class="sb-head"><h3>Início</h3></div>
-            <div id="home-list" class="sb-scroll"></div>
-          </section>
 
           <section class="sb-panel" id="sp-projects" hidden>
             <div class="sb-head">
@@ -196,6 +192,29 @@
         <div id="splitter" title="Arraste para redimensionar · duplo clique volta a 50/50"></div>
 
         <section id="settings-page" hidden aria-label="Configurações"></section>
+
+        <section id="word-pane" hidden aria-label="Documento Word">
+          <div id="word-ribbon" class="wd-ribbon" role="toolbar" aria-label="Formatação"></div>
+          <div id="wd-stage">
+            <div id="wd-holder">
+              <div id="wd-zoom">
+                <div id="wd-sheet" class="wd-sheet">
+                  <div class="wd-hdr-first" hidden></div>
+                  <div id="word-editor"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="wd-zoombar">
+            <span id="wd-pageinfo">Página 1 de 1</span>
+            <span class="flex"></span>
+            <button class="btn small" id="wd-zoom-out" title="Diminuir o zoom">−</button>
+            <input id="wd-zoom-range" type="range" min="50" max="200" step="10" value="100" aria-label="Zoom" />
+            <button class="btn small" id="wd-zoom-in" title="Aumentar o zoom">+</button>
+            <span id="wd-zoom-val">100%</span>
+          </div>
+        </section>
+        <section id="home-page" hidden aria-label="Início"></section>
 
         <section id="preview-wrap">
           <div id="preview-bar" hidden>

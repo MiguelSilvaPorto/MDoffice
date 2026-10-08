@@ -281,7 +281,6 @@ export function plainText(doc: PMNode): string {
       out.push(node.textContent);
       return false;
     }
-    if (node.type.name === "page_break") out.push("");
     return true;
   });
   return out.join("\n");

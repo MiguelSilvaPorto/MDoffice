@@ -6,6 +6,8 @@ export interface HistoryHooks {
   doc: string;
   title: string;
   getText: () => string;
+  /** Converte o texto guardado numa versão em texto legível (documentos Word guardam JSON). */
+  project?: (text: string) => string;
   max: number;
   /** Troca o texto do editor pela versão escolhida (uma ação só, dá para desfazer com Ctrl+Z). */
   restore: (text: string) => void;
@@ -68,13 +70,14 @@ export function openHistoryDialog(hooks: HistoryHooks): void {
 
   const showDiff = (v: Version) => {
     selected = v;
-    const current = hooks.getText();
-    const lines = diffLines(v.text, current);
+    const view = hooks.project ?? ((t: string) => t);
+    const current = view(hooks.getText());
+    const lines = diffLines(view(v.text), current);
     const changed = lines.filter((l) => l.kind !== "same").length;
     head.textContent = "";
     head.append(
       h("b", { text: v.label || (v.manual ? "Versão marcada" : "Versão automática") }),
-      h("span", { class: "muted", text: ` · ${when(v.at)} (${ago(v.at)}) · ${v.text.length} caracteres` })
+      h("span", { class: "muted", text: ` · ${when(v.at)} (${ago(v.at)}) · ${view(v.text).length} caracteres` })
     );
     q("[data-legend]").textContent = changed ? "Vermelho: estava nesta versão e saiu · Verde: entrou depois" : "Esta versão é igual ao texto atual.";
     diffEl.textContent = "";
@@ -141,7 +144,7 @@ export function openHistoryDialog(hooks: HistoryHooks): void {
     close();
   });
   btn.copy.addEventListener("click", async () => {
-    if (selected) toast((await copyText(selected.text)) ? "Texto da versão copiado." : "Não foi possível copiar.", "info", 2200);
+    if (selected) toast((await copyText((hooks.project ?? ((t: string) => t))(selected.text))) ? "Texto da versão copiado." : "Não foi possível copiar.", "info", 2200);
   });
   btn.del.addEventListener("click", async () => {
     if (!selected?.id) return;
