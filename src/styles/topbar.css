@@ -1,0 +1,250 @@
+/* ---------- barra superior ---------- */
+
+#topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 0 0 10px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  flex: none;
+  user-select: none;
+  position: relative;
+  -webkit-app-region: drag;
+}
+
+#topbar button,
+#topbar input,
+#topbar .btn,
+#topbar .split-btn,
+#topbar .palette-btn,
+#topbar .window-controls,
+#topbar .tb-quick-actions {
+  -webkit-app-region: no-drag;
+}
+
+/* Coluna esquerda: sidebar e ações rápidas de arquivo */
+.tb-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
+.tb-quick-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 2px;
+  flex: none;
+}
+
+.tb-quick-actions .btn.icon {
+  width: 26px;
+  height: 24px;
+  border-radius: 5px;
+  color: var(--muted);
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+
+.tb-quick-actions .btn.icon .ic {
+  width: 14px;
+  height: 14px;
+}
+
+.tb-quick-actions .btn.icon:hover {
+  background: var(--panel);
+  color: var(--fg);
+}
+
+/* Coluna central: busca / omnibar centralizada */
+.tb-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1.2 1 0%;
+  min-width: 200px;
+  max-width: 440px;
+  padding: 0 10px;
+}
+
+.palette-btn {
+  width: 100%;
+  max-width: 380px;
+  height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.palette-btn:hover {
+  background: var(--panel);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  color: var(--fg);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.palette-text {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-btn kbd {
+  margin-left: auto;
+  padding: 1px 5px;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: 10px var(--ui-font);
+  letter-spacing: 0.02em;
+  flex: none;
+}
+
+/* Coluna direita: botões de ferramentas e controles da janela */
+.tb-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  flex: 1 1 0%;
+  height: 100%;
+}
+
+.tb-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tb-pill-btn {
+  height: 28px;
+  padding: 0 9px;
+  font-size: 12px;
+  border-radius: 7px;
+  gap: 5px;
+}
+
+.tb-icon-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 7px;
+}
+
+.tb-split-draw {
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.tb-split-draw .btn {
+  height: 28px;
+  font-size: 12px;
+  border-radius: 0;
+}
+
+.tb-draw-main {
+  padding: 0 8px 0 9px;
+  background: var(--accent-soft);
+  color: var(--fg);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  font-weight: 550;
+}
+
+.tb-draw-main:hover {
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.tb-draw-caret {
+  background: var(--accent-soft);
+  color: var(--fg);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  border-left: 1px solid color-mix(in srgb, var(--accent) 30%, transparent) !important;
+  width: 20px !important;
+  padding: 0 !important;
+}
+
+.tb-draw-caret:hover {
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.win-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+  margin: 0 4px 0 6px;
+  flex: none;
+}
+
+/* ---------- controles da janela (estilo nativo Windows 11 / VS Code) ---------- */
+
+.window-controls {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  flex: none;
+  -webkit-app-region: no-drag;
+}
+
+.win-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  transition: background 0.1s ease, color 0.1s ease;
+  -webkit-app-region: no-drag;
+}
+
+.win-btn:hover {
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+  color: var(--fg);
+}
+
+.win-btn:active {
+  background: color-mix(in srgb, var(--fg) 14%, transparent);
+}
+
+.win-btn.close:hover {
+  background: #c42b1c !important;
+  color: #ffffff !important;
+}
+
+.win-btn.close:active {
+  background: #a92417 !important;
+  color: #ffffff !important;
+}
+
+.win-ic {
+  width: 12px;
+  height: 12px;
+  stroke: currentColor;
+  fill: none;
+  flex: none;
+  pointer-events: none;
+}

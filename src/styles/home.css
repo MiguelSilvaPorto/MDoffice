@@ -1,0 +1,655 @@
+/* ==========================================================================
+   Início / mdOffice Hub (Start Page)
+   ========================================================================== */
+
+#home-page {
+  flex: 1 1 0%;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+body.home-open #home-page {
+  display: flex;
+  flex-direction: column;
+}
+
+body.home-open #editor-wrap,
+body.home-open #splitter,
+body.home-open #preview-wrap,
+body.home-open #settings-page {
+  display: none !important;
+}
+
+/* Destaque no botão de Início da barra lateral */
+.sb-tab[data-side="home"].active,
+body.home-open .sb-tab[data-side="home"] {
+  color: var(--accent) !important;
+  background: var(--accent-soft) !important;
+}
+
+.home-wrap {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 36px 36px 64px;
+  box-sizing: border-box;
+}
+
+.home-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 36px;
+}
+
+.home-hero {
+  flex: 1;
+}
+
+.home-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
+}
+
+.home-tag .ic {
+  width: 13px;
+  height: 13px;
+}
+
+.home-title {
+  margin: 0 0 6px;
+  font-size: 32px;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+  color: var(--fg);
+}
+
+.home-subtitle {
+  margin: 0;
+  font-size: 14.5px;
+  color: var(--muted);
+  line-height: 1.5;
+  max-width: 600px;
+}
+
+.home-resume-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 15px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  flex: none;
+}
+
+.home-resume-btn:hover {
+  background: var(--panel);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.home-section {
+  margin-bottom: 36px;
+}
+
+.home-section-head {
+  margin-bottom: 16px;
+}
+
+.home-section-title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 650;
+  color: var(--fg);
+  letter-spacing: -0.01em;
+}
+
+.home-section-desc {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Grade dos 4 Cards: Word, Excel, Markdown, PowerPoint */
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1020px) {
+  .home-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 580px) {
+  .home-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.home-card {
+  display: flex;
+  flex-direction: column;
+  padding: 22px 18px 18px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.home-card:hover {
+  transform: translateY(-4px);
+  background: var(--panel);
+}
+
+/* Cores de destaque nos 4 cards */
+.home-card.card-word:hover {
+  border-color: #185abd;
+  box-shadow: 0 10px 28px rgba(24, 90, 189, 0.2);
+}
+
+.home-card.card-excel:hover {
+  border-color: #107c41;
+  box-shadow: 0 10px 28px rgba(16, 124, 65, 0.2);
+}
+
+.home-card.card-md:hover {
+  border-color: #0284c7;
+  box-shadow: 0 10px 28px rgba(2, 132, 199, 0.2);
+}
+
+.home-card.card-ppt:hover {
+  border-color: #c43e1c;
+  box-shadow: 0 10px 28px rgba(196, 62, 28, 0.2);
+}
+
+/* Card selecionado como filtro ativo */
+.home-card.selected {
+  transform: translateY(-2px);
+}
+
+.home-card.card-word.selected {
+  border-color: #185abd !important;
+  background: color-mix(in srgb, #185abd 10%, var(--panel)) !important;
+  box-shadow: 0 0 0 2px #185abd, 0 8px 24px rgba(24, 90, 189, 0.22) !important;
+}
+
+.home-card.card-excel.selected {
+  border-color: #107c41 !important;
+  background: color-mix(in srgb, #107c41 10%, var(--panel)) !important;
+  box-shadow: 0 0 0 2px #107c41, 0 8px 24px rgba(16, 124, 65, 0.22) !important;
+}
+
+.home-card.card-md.selected {
+  border-color: #0284c7 !important;
+  background: color-mix(in srgb, #0284c7 10%, var(--panel)) !important;
+  box-shadow: 0 0 0 2px #0284c7, 0 8px 24px rgba(2, 132, 199, 0.22) !important;
+}
+
+.home-card.card-ppt.selected {
+  border-color: #c43e1c !important;
+  background: color-mix(in srgb, #c43e1c 10%, var(--panel)) !important;
+  box-shadow: 0 0 0 2px #c43e1c, 0 8px 24px rgba(196, 62, 28, 0.22) !important;
+}
+
+.home-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+}
+
+.home-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+}
+
+.badge-word {
+  background: rgba(24, 90, 189, 0.12);
+  color: #185abd;
+}
+
+.badge-excel {
+  background: rgba(16, 124, 65, 0.12);
+  color: #107c41;
+}
+
+.badge-md {
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+}
+
+.badge-ppt {
+  background: rgba(196, 62, 28, 0.12);
+  color: #c43e1c;
+}
+
+.home-card-icon-box {
+  margin: 6px 0 16px;
+  display: flex;
+  align-items: center;
+}
+
+.home-brand-icon {
+  width: 52px;
+  height: 52px;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.14));
+}
+
+.home-card-body {
+  flex: 1;
+}
+
+.home-card-title {
+  margin: 0 0 2px;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.home-card-type {
+  display: block;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.home-card-desc {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--muted);
+  min-height: 38px;
+}
+
+.home-card-footer {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.home-card-cta-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  transition: color 0.12s ease;
+}
+
+.home-card:hover .home-card-cta-label,
+.home-card.selected .home-card-cta-label {
+  color: var(--fg);
+}
+
+.home-card-new-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 650;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid transparent;
+  transition: all 0.12s ease;
+  cursor: pointer;
+}
+
+.home-card-new-pill:hover {
+  background: var(--accent);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+/* Barra de filtro ativo */
+.home-filter-active-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+.home-filter-badge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--fg);
+}
+
+.home-filter-badge-dot {
+  font-size: 13px;
+}
+
+.home-filter-clear-btn {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.home-filter-clear-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* Card rápido para criar novo documento na lista filtrada */
+.home-file-row-new {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: var(--accent-soft);
+}
+
+.home-file-row-new:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.home-file-row-new .home-file-name {
+  color: var(--accent);
+  font-weight: 650;
+}
+
+/* Modelos rápidos */
+.home-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.home-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 15px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--fg);
+  font-size: 12.5px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.home-chip-btn .ic {
+  width: 15px;
+  height: 15px;
+  color: var(--muted);
+}
+
+.home-chip-btn:hover {
+  background: var(--panel);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.home-chip-btn:hover .ic {
+  color: var(--accent);
+}
+
+/* Recentes e rascunhos */
+.home-tabs-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+}
+
+.home-tabs-left {
+  display: flex;
+  gap: 6px;
+}
+
+.home-tab-pill {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.home-tab-pill:hover {
+  color: var(--fg);
+}
+
+.home-tab-pill.active {
+  background: var(--panel-2);
+  color: var(--fg);
+}
+
+.home-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 10px;
+  width: 220px;
+}
+
+.home-search-box .ic {
+  width: 14px;
+  height: 14px;
+  color: var(--muted);
+}
+
+.home-search-field {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+}
+
+.home-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.home-file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.home-file-row:hover {
+  background: var(--panel-2);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+
+.home-file-col-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.home-file-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  flex: none;
+}
+
+.home-file-icon.file-icon-word {
+  background: rgba(24, 90, 189, 0.12);
+  color: #185abd;
+}
+
+.home-file-icon.file-icon-excel {
+  background: rgba(16, 124, 65, 0.12);
+  color: #107c41;
+}
+
+.home-file-icon.file-icon-md {
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+}
+
+.home-file-icon.file-icon-ppt {
+  background: rgba(196, 62, 28, 0.12);
+  color: #c43e1c;
+}
+
+.home-file-icon.file-icon-draft {
+  background: var(--panel-2);
+  color: var(--muted);
+}
+
+.home-file-icon .ic {
+  width: 17px;
+  height: 17px;
+}
+
+.home-file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.home-file-name {
+  font-size: 13.5px;
+  font-weight: 580;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-file-path {
+  font-size: 11.5px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-file-col-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+}
+
+.home-file-time {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.home-file-open {
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.home-file-delete {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--muted);
+}
+
+.home-file-delete:hover {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+}
+
+.home-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 20px;
+  text-align: center;
+}
+
+.home-empty-ic {
+  width: 32px;
+  height: 32px;
+  color: var(--muted);
+  opacity: 0.5;
+  margin-bottom: 10px;
+}
+
+.home-empty p {
+  margin: 0 0 4px;
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--fg);
+}
+
+.home-empty-hint {
+  font-size: 12px;
+  color: var(--muted);
+  max-width: 360px;
+}

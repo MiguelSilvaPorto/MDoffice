@@ -1,6 +1,6 @@
 // Página de Configurações (abre como uma aba, ao lado dos documentos). Cada ajuste vale na hora.
-import type { Translation, ProviderChoice } from "./translation";
-import type { Tone } from "./writing";
+import type { Translation, ProviderChoice } from "./translate/controller";
+import type { Tone } from "./broker/writing";
 import type { AppSettings } from "./settings";
 
 

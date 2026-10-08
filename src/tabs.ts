@@ -1,7 +1,7 @@
 // Abas de documentos (estilo Chrome): uma fileira horizontal, uma aba por documento.
 import type { EditorState } from "@codemirror/state";
-import type { CursorPos } from "./editor";
-import type { WritingIssue } from "./writing";
+import type { CursorPos } from "./md/editor";
+import type { WritingIssue } from "./broker/writing";
 import { baseName, h, stripExt, uid } from "./util";
 
 /** Tudo o que pertence a UM documento aberto. */

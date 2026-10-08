@@ -1,0 +1,93 @@
+/* ==========================================================================
+   Busca de comandos (Ctrl+K) e modo foco
+   ========================================================================== */
+
+.palette-backdrop {
+  align-items: flex-start;
+  padding-top: 12vh;
+}
+
+.palette {
+  display: flex;
+  flex-direction: column;
+  width: min(620px, 92vw);
+  max-height: 64vh;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.palette-input {
+  padding: 15px 18px;
+  color: var(--fg);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  font: inherit;
+  font-size: 15px;
+  outline: none;
+}
+
+.palette-list {
+  overflow: auto;
+  padding: 6px;
+}
+
+.palette-group {
+  padding: 9px 12px 4px;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 12px;
+  color: var(--fg);
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.palette-item.active {
+  background: var(--accent-soft);
+}
+
+.pi-hint {
+  margin-left: auto;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.palette-empty {
+  padding: 18px;
+  color: var(--muted);
+  text-align: center;
+}
+
+body.focus-mode #topbar,
+body.focus-mode #tabbar,
+body.focus-mode #sidebar,
+body.focus-mode #toolbar,
+body.focus-mode #preview-wrap,
+body.focus-mode #splitter {
+  display: none;
+}
+
+body.focus-mode #editor-wrap {
+  flex: 1 1 0;
+}

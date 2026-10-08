@@ -1,0 +1,43 @@
+/* ---------- topo: tradução e exportar ---------- */
+
+.btn.toggle[aria-pressed="true"],
+.btn.toggle.on {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  font-weight: 600;
+}
+
+.btn.primary-soft {
+  color: var(--fg);
+  background: var(--panel-2);
+  border-color: var(--border);
+  font-weight: 560;
+}
+
+.btn.primary-soft:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+.btn.small {
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+@media (max-width: 1180px) {
+  .palette-btn span,
+  .palette-btn kbd {
+    display: none;
+  }
+  .palette-btn {
+    width: 30px;
+    min-width: 0;
+    padding: 0;
+    justify-content: center;
+  }
+  .tb-pill-btn span,
+  .tb-draw-main span {
+    display: none;
+  }
+}

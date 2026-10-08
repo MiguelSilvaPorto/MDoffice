@@ -1,0 +1,234 @@
+// Assistente de escrita no Markdown: correção automática, avisos e revisão.
+
+import type { App } from "./app";
+import { checkText, checkStyle, stats as writingStats, spellIsReady, spellHasFailed, type WritingIssue } from "../broker/writing";
+import { openReviewModal } from "../broker/review";
+import { $, toast, saveJSON } from "../util";
+
+export const assistantMethods = {
+  runIdleFix(this: App): void {
+    if (!this.autoFix || !this.autoFixArmed) return;
+    const view = this.editor.view;
+    const doc = view.state.doc;
+    const pos = view.state.selection.main.head;
+    const line = doc.lineAt(pos);
+    if (line.text.trim() === "") return; // linha vazia: o gatilho do parágrafo cuida
+    // parágrafo em que o cursor está (linhas seguidas não vazias)
+    let first = line.number;
+    while (first > 1 && doc.line(first - 1).text.trim() !== "") first--;
+    let last = line.number;
+    while (last < doc.lines && doc.line(last + 1).text.trim() !== "") last++;
+    const from = doc.line(first).from;
+    const to = doc.line(last).to;
+    const fresh = checkStyle(doc.toString()).filter((i) => i.fix && i.from >= from && i.to <= to);
+    if (!fresh.length) return;
+    this.editor.replaceRanges(
+      fresh.map((i) => ({ from: i.from, to: i.to, insert: i.fix! })),
+      -1
+    );
+  },
+
+  /** Correção automática: não depende do dicionário, roda logo depois de você pausar. */
+  runAutoFix(this: App): void {
+    if (!this.autoFix || !this.autoFixArmed) return;
+    let typed = 0;
+    let ended = 0;
+    // repete algumas vezes porque uma correção pode abrir caminho para outra
+    // (ex.: maiúscula no começo e depois “a gente vai” → “Nós vamos”)
+    for (let i = 0; i < 3; i++) {
+      const t = this.autoFixSafe();
+      const e = this.autoFixFinishedParagraph();
+      typed += t;
+      ended += e;
+      if (!t && !e) break;
+    }
+    if (typed + ended > 0) void this.runWritingCheck();
+    if (ended) toast(`Correção automática: ${ended} ajuste${ended === 1 ? "" : "s"}.`, "ok", 2400);
+  },
+
+  async runWritingCheck(this: App): Promise<void> {
+    if (this.tab.kind === "word") {
+      this.wordHost.recheckSpelling();
+      return;
+    }
+    const text = this.editor.getText();
+    try {
+      this.issues = await checkText(text, new Set([...this.ignoreWords, ...this.ignoredHere]));
+    } catch {
+      this.issues = [];
+    }
+    this.editor.setIssues(this.issues);
+    this.updateWritingBadge();
+    this.reviewHandle?.refresh(this.issues, writingStats(text));
+    // com o resultado da ortografia em mãos, a correção automática ganha o que fazer
+    if (this.autoFix && this.autoFixArmed) this.autoFixSoon();
+  },
+
+  /** Liga/desliga a correção automática (guardada entre sessões). */
+  setAutoFix(this: App, on: boolean): void {
+    this.autoFix = on;
+    saveJSON("mdc.autofix", on);
+    toast(
+      on
+        ? "Correção automática ligada: ponto, vírgulas, maiúsculas e trocas formais entram sozinhos."
+        : "Correção automática desligada.",
+      "info",
+      3400
+    );
+  },
+
+  /** Liga/desliga sugestões inline estilo Copilot (guardadas entre sessões). */
+  setCopilot(this: App, on: boolean): void {
+    this.copilot = on;
+    saveJSON("mdc.copilot", on);
+    this.editor.setGhostTextEnabled(on);
+    toast(
+      on
+        ? "Sugestões inline ligadas (estilo Copilot): use Tab para aceitar ou Alt+Seta para palavra por palavra."
+        : "Sugestões inline desativadas.",
+      "ok",
+      2800
+    );
+  },
+
+  /** Substituição de um aviso: estilo usa `fix`; ortografia usa `auto` (correção confiável). */
+  replacementFor(this: App, issue: WritingIssue): string | undefined {
+    return issue.kind === "spell" ? issue.auto : issue.fix;
+  },
+
+  /** Aplica as correções disponíveis numa só ação (um único desfazer). */
+  applyFixes(this: App, issues: WritingIssue[]): number {
+    const aplicaveis = issues.filter((i) => this.replacementFor(i) !== undefined);
+    if (!aplicaveis.length) return 0;
+    this.editor.replaceRanges(
+      aplicaveis.map((i) => ({ from: i.from, to: i.to, insert: this.replacementFor(i)! }))
+    );
+    return aplicaveis.length;
+  },
+
+  /** Primeira coluna do parágrafo que contém a posição. */
+  paragraphStartAt(this: App, pos: number): number {
+    const doc = this.editor.view.state.doc;
+    let line = doc.lineAt(pos);
+    while (line.number > 1 && doc.line(line.number - 1).text.trim() !== "") line = doc.line(line.number - 1);
+    return line.from;
+  },
+
+  /**
+   * Corrige sozinho as palavras erradas em que dá para confiar ("responsavo" → "responsável").
+   * Nunca mexe na palavra em que o cursor está (ela pode estar pela metade) e confere se o
+   * texto naquele ponto continua igual antes de trocar.
+   */
+  autoFixWords(this: App, from: number, to: number, soDepoisDoCursor = true): number {
+    const view = this.editor.view;
+    const doc = view.state.doc;
+    const pos = view.state.selection.main.head;
+    const alvos = this.issues.filter(
+      (i) =>
+        i.kind === "spell" &&
+        i.auto &&
+        i.from >= from &&
+        i.to <= to &&
+        (!soDepoisDoCursor || pos > i.to) &&
+        doc.sliceString(i.from, i.to) === i.word
+    );
+    return this.applyFixes(alvos);
+  },
+
+  /** Enquanto se digita: aplica só o que é seguro (maiúsculas, espaços, abreviações) + palavras. */
+  autoFixSafe(this: App): number {
+    const view = this.editor.view;
+    const doc = view.state.doc;
+    const pos = view.state.selection.main.head;
+    const line = doc.lineAt(pos);
+    // recalcula na hora: as posições antigas podem ter mudado
+    const fresh = checkStyle(doc.toString()).filter((i) => i.safe && i.from >= line.from && i.to <= line.to);
+    const parFrom = this.paragraphStartAt(pos);
+    return this.applyFixes(fresh) + this.autoFixWords(parFrom, pos);
+  },
+
+  /**
+   * Correção automática de parágrafo: quando o cursor está numa linha vazia e existe uma
+   * linha em branco antes (parágrafo concluído), corrige o parágrafo que ficou para trás.
+   */
+  autoFixFinishedParagraph(this: App): number {
+    const view = this.editor.view;
+    const doc = view.state.doc;
+    const line = doc.lineAt(view.state.selection.main.head);
+    const texto = line.text.trim();
+    // Linha vazia (parágrafo terminado) OU já começando um bloco novo (imagem, título,
+    // lista, tabela, citação, cerca de código): nos dois casos o parágrafo de cima acabou.
+    const vazia = texto === "";
+    const bloco = /^(#|!\[|\||```|>|[-*+]\s|\d+\.\s)/.test(texto);
+    if (!vazia && !bloco) return 0;
+    const ultimaAcima = vazia ? line.number - 2 : line.number - 1;
+    if (ultimaAcima < 1) return 0;
+    if (vazia && doc.line(ultimaAcima).text.trim() !== "") return 0;
+    let first = ultimaAcima;
+    while (first > 1 && doc.line(first - 1).text.trim() !== "") first--;
+    const from = doc.line(first).from;
+    const to = doc.line(ultimaAcima).to;
+    const fresh = checkStyle(doc.toString()).filter((i) => i.from >= from && i.to <= to);
+    return this.applyFixes(fresh) + this.autoFixWords(from, to);
+  },
+
+  updateWritingBadge(this: App): void {
+    const btn = document.querySelector<HTMLButtonElement>("#st-writing");
+    if (!btn) return;
+    const count = this.issues.length;
+    const loading = !spellIsReady() && !spellHasFailed();
+    if (!count && !loading) {
+      btn.hidden = true;
+      return;
+    }
+    const spell = this.issues.filter((i) => i.kind === "spell").length;
+    const parts = [count ? `${count} aviso${count === 1 ? "" : "s"}` : "nenhum aviso"];
+    if (spell) parts.push(`${spell} de escrita`);
+    btn.hidden = false;
+    btn.textContent = `Revisar: ${parts.join(" · ")}${loading ? " · carregando dicionário…" : ""}`;
+  },
+
+  ignoreWord(this: App, word: string): void {
+    this.ignoreWords.add(word.toLowerCase());
+    saveJSON("mdc.ignore-words", Array.from(this.ignoreWords));
+    toast(`“${word}” foi adicionada ao dicionário pessoal.`, "ok", 3000);
+    void this.runWritingCheck();
+    this.wordHost?.recheckSpelling();
+  },
+
+  openReview(this: App): void {
+    if (this.tab.kind === "word") {
+      toast("Em documentos Word, clique nas palavras sublinhadas para ver as sugestões.", "info", 3600);
+      return;
+    }
+    if (this.reviewHandle) return;
+    this.reviewHandle = openReviewModal({
+      issues: this.issues,
+      stats: writingStats(this.editor.getText()),
+      onGoTo: (issue) => {
+        this.editor.gotoRange(issue.from, issue.to);
+        this.reviewHandle?.close();
+      },
+      onFix: (issue) => {
+        const replacement = issue.fix ?? issue.suggestions[0];
+        if (!replacement) return;
+        this.editor.replaceRange(issue.from, issue.to, replacement);
+        this.checkWritingSoon();
+      },
+      onFixAllStyle: () => {
+        const count = this.applyFixes(this.issues);
+        if (!count) {
+          toast("Nenhuma correção automática de estilo disponível.", "info", 2600);
+          return;
+        }
+        toast(`${count} correção(ões) de estilo aplicada(s).`, "ok", 3200);
+        this.checkWritingSoon();
+      },
+      onIgnore: (word) => this.ignoreWord(word),
+      onRecheck: () => void this.runWritingCheck(),
+      onClose: () => {
+        this.reviewHandle = null;
+      },
+    });
+  },
+};

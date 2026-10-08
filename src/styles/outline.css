@@ -1,0 +1,129 @@
+/* ==========================================================================
+   Painel Estrutura: seções que recolhem, seção atual, contagens e ações
+   ========================================================================== */
+
+.ol-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding-right: 4px;
+  color: var(--sb-fg);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.ol-row:hover {
+  background: var(--sb-hover);
+}
+
+.ol-row.current {
+  color: var(--sb-active-fg);
+  background: var(--sb-active);
+}
+
+.ol-row.lv1 .ol-name {
+  font-weight: 700;
+}
+
+.ol-row.lv2 .ol-name {
+  font-weight: 550;
+}
+
+.ol-row.lv4 .ol-name,
+.ol-row.lv5 .ol-name,
+.ol-row.lv6 .ol-name {
+  color: var(--sb-muted);
+}
+
+.ol-chev {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 18px;
+  height: 22px;
+  padding: 0;
+  color: var(--sb-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.ol-chev.empty {
+  pointer-events: none;
+}
+
+.ol-chev:hover {
+  color: var(--sb-fg);
+  background: var(--sb-hover);
+}
+
+.ol-chev .ic {
+  width: 13px;
+  height: 13px;
+  transition: transform 0.12s ease;
+}
+
+.ol-chev .ic.open {
+  transform: rotate(90deg);
+}
+
+.ol-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ol-words,
+.ol-badge {
+  flex: none;
+  color: var(--sb-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ol-badge {
+  padding: 0 6px;
+  border: 1px solid var(--sb-line);
+  border-radius: 999px;
+}
+
+.ol-badge.done {
+  color: var(--sb-ok);
+  border-color: color-mix(in srgb, var(--sb-ok) 50%, transparent);
+}
+
+.ol-more {
+  display: none;
+  flex: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: var(--sb-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.ol-more .ic {
+  width: 14px;
+  height: 14px;
+}
+
+.ol-row:hover .ol-more {
+  display: grid;
+}
+
+.ol-row:hover .ol-words {
+  display: none;
+}
+
+.ol-more:hover {
+  color: var(--sb-fg);
+  background: var(--sb-hover);
+}

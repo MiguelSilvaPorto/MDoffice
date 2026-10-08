@@ -1,0 +1,292 @@
+/* ==========================================================================
+   Abas de documentos (estilo Chrome)
+   ========================================================================== */
+
+#tabbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 40px;
+  padding: 7px 8px 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+
+.tab-strip {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 0;
+  max-width: calc(100% - 190px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.tab-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 1 200px;
+  width: 200px;
+  min-width: 104px;
+  height: 33px;
+  padding: 0 6px 0 10px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  color: var(--muted);
+  cursor: default;
+  user-select: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+/* separador fino entre abas inativas (como no Chrome) */
+.tab:not(.active)::after {
+  content: "";
+  position: absolute;
+  right: -2px;
+  top: 9px;
+  bottom: 9px;
+  width: 1px;
+  background: var(--border);
+}
+
+.tab:not(.active):hover {
+  background: color-mix(in srgb, var(--panel) 60%, transparent);
+  color: var(--fg);
+}
+
+.tab:not(.active):hover::after,
+.tab:not(.active):hover + .tab::after {
+  opacity: 0;
+}
+
+.tab.active {
+  z-index: 1;
+  height: 34px;
+  margin-bottom: -1px;
+  background: var(--panel);
+  border-color: var(--border);
+  color: var(--fg);
+}
+
+.tab.dragging {
+  z-index: 3;
+  opacity: 0.92;
+  box-shadow: var(--shadow);
+  background: var(--panel);
+  transition: none;
+}
+
+.tab-ic {
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: var(--muted);
+}
+
+.tab.active .tab-ic {
+  color: var(--accent);
+}
+
+.tab-ic .ic {
+  width: 15px;
+  height: 15px;
+}
+
+.tab.draft .tab-name {
+  font-style: italic;
+}
+
+.tab-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+}
+
+.tab.active .tab-name {
+  font-weight: 560;
+}
+
+.tab-input {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  padding: 0 5px;
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  font: inherit;
+  font-size: 12.5px;
+  outline: none;
+}
+
+.tab-dot {
+  display: none;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin: 0 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.tab.dirty .tab-dot {
+  display: block;
+}
+
+.tab-x {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.tab-x .ic {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2.2;
+}
+
+.tab.active .tab-x,
+.tab:hover .tab-x {
+  opacity: 1;
+}
+
+/* aba com alterações: o ponto ocupa o lugar do ×, que volta ao passar o mouse */
+.tab.dirty:not(:hover) .tab-x {
+  display: none;
+}
+
+.tab.dirty:hover .tab-dot {
+  display: none;
+}
+
+.tab-x:hover {
+  color: #fff;
+  background: var(--danger);
+}
+
+.tab-new,
+.tab-recents {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  height: 28px;
+  margin-bottom: 3px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.tab-new {
+  width: 28px;
+  justify-content: center;
+}
+
+.tab-recents {
+  padding: 0 9px;
+  font-size: 12px;
+}
+
+.tab-new:hover,
+.tab-recents:hover {
+  color: var(--fg);
+  background: var(--accent-soft);
+}
+
+.tab-fill {
+  flex: 1;
+}
+
+/* menu de recentes */
+.dropdown.recents-menu {
+  min-width: 340px;
+  max-width: 440px;
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.dd-row {
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+}
+
+.dd-row:hover {
+  background: var(--accent-soft);
+}
+
+.dd-item.two-line {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+}
+
+.dd-item.two-line:hover {
+  background: transparent;
+}
+
+.tl-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 550;
+}
+
+.tl-dir {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.dd-x {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-right: 6px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.dd-row:hover .dd-x {
+  opacity: 1;
+}
+
+.dd-x:hover {
+  color: #fff;
+  background: var(--danger);
+}

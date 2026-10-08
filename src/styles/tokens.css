@@ -1,0 +1,36 @@
+/* ---------- variáveis ---------- */
+
+:root {
+  --bg: #f4f5f8;
+  --panel: #ffffff;
+  --panel-2: #fafbfc;
+  --border: #e2e5ea;
+  --fg: #1c212b;
+  --muted: #6b7280;
+  --accent: #4f46e5;
+  --accent-soft: rgba(79, 70, 229, 0.12);
+  --accent-fg: #ffffff;
+  --danger: #dc2626;
+  --ok: #059669;
+  --shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+  --ui-font: Inter, "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  /* largura máxima da coluna de texto (editor e pré-visualização) */
+  --doc-width: 980px;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #0e1014;
+  --panel: #15181e;
+  --panel-2: #191d24;
+  --border: #262b35;
+  --fg: #e6e8ee;
+  --muted: #93a0b4;
+  --accent: #818cf8;
+  --accent-soft: rgba(129, 140, 248, 0.16);
+  --accent-fg: #0e1014;
+  --danger: #f87171;
+  --ok: #34d399;
+  --shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}

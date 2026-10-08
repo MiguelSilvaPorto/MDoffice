@@ -1,5 +1,5 @@
 // Configurações gerais do app: tom do texto e histórico de versões.
-import type { Tone } from "./writing";
+import type { Tone } from "./broker/writing";
 import { loadJSON } from "./util";
 
 export interface AppSettings {

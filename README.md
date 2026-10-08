@@ -286,24 +286,38 @@ legível e as imagens ficam vinculadas por caminhos relativos dentro do ZIP.
 ## Estrutura do projeto
 
 ```
-src/                  frontend (TypeScript, sem framework)
-├─ main.ts            integração geral (arquivos, IA, atalhos)
-├─ tabs.ts            abas de documentos (barra estilo Chrome)
-├─ sidebar.ts         painel lateral: início, projetos, estrutura, contexto IA
-├─ translate.ts       tradução: segmentação do Markdown, proteção de código/links, cache, motores
-├─ translate.worker.ts  motor offline (modelo no PC, em segundo plano)
-├─ translation.ts     preview duplo PT/EN ao vivo, ajustes e glossário
-├─ export.ts          tela Exportar (HTML, PDF, Word, MD, TXT, ZIP, cópia)
-├─ docx.ts            Markdown → Word
-├─ palette.ts         busca de comandos (Ctrl+K)
-├─ editor.ts          CodeMirror 6 (tema, atalhos de Markdown, listas)
-├─ preview.ts         Markdown → HTML + imagens + Mermaid + export
-├─ draw.ts            desenho assistido embutido (PNG + JSON)
-├─ files.ts           pontes com o backend (Tauri)
-├─ markdown.css       estilos do documento (usados no app e no HTML exportado)
-├─ styles.css         interface do app
+src/                  frontend (TypeScript, sem framework) — um "motor" por pasta
+├─ main.ts            ponto de partida (cria o App)
+├─ app/               o app: estado e integração (um arquivo por assunto)
+│  ├─ app.ts          classe App (campos, abas, getters) + junta os módulos abaixo
+│  ├─ tabs · pages · documents · wordDocs · assistant · media · drawing
+│  ├─ aiContext · menus · toolbar · commands · keys · layout …
+├─ md/                motor do Markdown
+│  ├─ editor.ts + editor/   CodeMirror 6 (tema, alinhamento, formatação, avisos)
+│  ├─ preview.ts      Markdown → HTML + imagens + Mermaid
+│  ├─ draw/           desenho assistido embutido (modelo, reconhecimento, quadro, editor)
+│  ├─ textdraw/       desenho em letras e símbolos (grade, glifos, editor)
+│  ├─ diagram/        construtor de diagramas Mermaid
+│  ├─ docx.ts         Markdown → Word (usado ao exportar)
+│  └─ markdown.css    estilos do documento (app e HTML exportado)
+├─ word/              motor do Word (.docx): schema, editor, paginação, fita
+│  └─ docx/           importação do .docx (estilos, blocos, mídia, página)
+├─ power/             motor de apresentações (slides)
+├─ broker/            sugestão e correção (português, offline)
+│  ├─ writing.ts      fachada; peças: tone, mask, spell, stats, check, neighbor
+│  ├─ data/ · style/  listas de palavras/frases e regras de estilo (ABNT, tom…)
+│  ├─ ghost/          sugestões inline estilo Copilot
+│  └─ spell.worker.ts · palavras.ts · review.ts
+├─ translate/         tradução: plano, máscara, motores, cache, modelo offline, controlador
+├─ export/            tela Exportar (HTML, PDF, Word, MD, TXT, ZIP, cópia)
+├─ tabs.ts · sidebar.ts · outline.ts   abas, painel lateral, Estrutura
+├─ history.ts · historyUi.ts           histórico de versões
+├─ settings.ts · settingsPage.ts       configurações (aba)
+├─ palette.ts · files.ts               Ctrl+K · pontes com o backend (Tauri)
+├─ styles.css         só importa os arquivos de styles/ (um por área da interface)
+└─ styles/            tokens, base, topbar, sidebar, editor, word, home …
 src-tauri/            backend Rust
-├─ src/commands.rs    ler/gravar arquivos, inspecionar diretórios e assets
+├─ src/commands/      files · assets · drafts · projects · search · bundle · util
 ├─ src/lib.rs         registro dos plugins/comandos
 └─ tauri.conf.json    janela, build e empacotamento
 ```

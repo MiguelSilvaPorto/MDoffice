@@ -1,0 +1,97 @@
+/* ---------- pré-visualização ---------- */
+
+#preview-wrap {
+  flex: var(--rg, 1) 1 0;
+  min-width: 0;
+  overflow: auto;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+}
+
+[data-theme="dark"] #preview.markdown-body,
+[data-theme="dark"] #preview-en.markdown-body {
+  --md-fg: #e6e8ee;
+  --md-muted: #9aa3b2;
+  --md-accent: #a5b4fc;
+  --md-border: #2b303b;
+  --md-code-bg: #191d24;
+  --md-code-fg: #e6e8ee;
+  --md-quote-bg: #191d24;
+  --md-table-head: #1b1f27;
+  --md-table-stripe: #171a21;
+  --hl-keyword: #ff7b72;
+  --hl-string: #a5d6ff;
+  --hl-number: #ffa657;
+  --hl-comment: #8b949e;
+  --hl-function: #d2a8ff;
+  --hl-attr: #79c0ff;
+  --hl-builtin: #ffa657;
+  --hl-type: #d2a8ff;
+}
+
+[data-theme="dark"] #preview.markdown-body mark,
+[data-theme="dark"] #preview-en.markdown-body mark,
+[data-theme="dark"] #preview-en.markdown-body [align] mark,
+[data-theme="dark"] #preview.markdown-body [align] mark {
+  background: rgba(250, 204, 21, 0.28);
+  color: #fef9c3;
+}
+
+#preview.markdown-body,
+#preview-en.markdown-body {
+  max-width: var(--doc-width);
+}
+
+.welcome {
+  width: auto;
+  min-width: 0;
+  max-width: 620px;
+  margin: 4vh auto 0;
+  padding: 26px 28px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  overflow-wrap: anywhere;
+}
+
+.welcome-logo {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.welcome h1 {
+  margin: 14px 0 6px;
+  font-size: 1.5em;
+  border: 0;
+  padding: 0;
+}
+
+.welcome p {
+  color: var(--muted);
+}
+
+.welcome ul {
+  padding-left: 1.2em;
+}
+
+.welcome li {
+  margin: 6px 0;
+}
+
+.welcome code {
+  background: var(--md-code-bg);
+  color: var(--md-code-fg);
+  padding: 0.15em 0.4em;
+  border-radius: 6px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}

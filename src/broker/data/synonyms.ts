@@ -1,0 +1,61 @@
+// Sinônimos curados para “usar outra palavra”.
+
+/** Sinônimos curados para “usar outra palavra”. */
+export const SYNONYMS: Record<string, string[]> = {
+  importante: ["essencial", "fundamental", "relevante", "crucial", "decisivo"],
+  grande: ["amplo", "enorme", "vasto", "extenso", "elevado"],
+  pequeno: ["reduzido", "curto", "mínimo", "compacto", "leve"],
+  bom: ["ótimo", "excelente", "adequado", "positivo", "eficaz"],
+  ruim: ["fraco", "inadequado", "precário", "insuficiente", "negativo"],
+  rápido: ["ágil", "veloz", "imediato", "acelerado"],
+  lento: ["devagar", "gradual", "moroso", "arrastado"],
+  problema: ["questão", "falha", "dificuldade", "obstáculo", "erro"],
+  solução: ["resposta", "saída", "alternativa", "medida"],
+  ajuda: ["apoio", "suporte", "auxílio", "colaboração"],
+  melhorar: ["aperfeiçoar", "aprimorar", "elevar", "otimizar", "refinar"],
+  fazer: ["realizar", "executar", "produzir", "elaborar", "desenvolver"],
+  criar: ["desenvolver", "produzir", "montar", "elaborar", "gerar"],
+  mostrar: ["exibir", "apresentar", "demonstrar", "indicar", "revelar"],
+  usar: ["utilizar", "empregar", "aplicar", "adotar"],
+  mudar: ["alterar", "ajustar", "modificar", "trocar", "revisar"],
+  difícil: ["complexo", "desafiador", "trabalhoso", "complicado"],
+  fácil: ["simples", "direto", "descomplicado", "prático"],
+  bonito: ["elegante", "agradável", "atraente", "bem-feito"],
+  interessante: ["relevante", "curioso", "notável", "instigante"],
+  muito: ["bastante", "considerável", "elevado", "intenso"],
+  pouco: ["reduzido", "mínimo", "limitado", "escasso"],
+  sempre: ["constantemente", "invariavelmente", "em todos os casos"],
+  nunca: ["jamais", "em nenhum caso"],
+  começar: ["iniciar", "abrir", "dar início", "arrancar"],
+  terminar: ["concluir", "finalizar", "encerrar", "completar"],
+  claro: ["evidente", "nítido", "objetivo", "transparente"],
+  forte: ["robusto", "consistente", "intenso", "sólido"],
+  novo: ["recente", "inédito", "atualizado", "moderno"],
+  antigo: ["anterior", "prévio", "original", "tradicional"],
+  ideia: ["conceito", "proposta", "noção", "plano"],
+  objetivo: ["meta", "finalidade", "propósito", "intuito"],
+  exemplo: ["modelo", "caso", "amostra", "demonstração"],
+  erro: ["falha", "equívoco", "engano", "defeito"],
+  tempo: ["prazo", "período", "duração", "momento"],
+  pessoa: ["indivíduo", "alguém", "usuário", "participante"],
+  trabalho: ["tarefa", "atividade", "projeto", "esforço"],
+  resultado: ["conclusão", "desfecho", "efeito", "produto"],
+  explicar: ["detalhar", "esclarecer", "descrever", "justificar"],
+  entender: ["compreender", "assimilar", "captar", "perceber"],
+  pensar: ["refletir", "considerar", "avaliar", "ponderar"],
+  verificar: ["conferir", "checar", "validar", "confirmar"],
+  adicionar: ["incluir", "acrescentar", "inserir", "incorporar"],
+  remover: ["retirar", "excluir", "eliminar", "apagar"],
+  garantir: ["assegurar", "certificar", "garantir"],
+  permitir: ["possibilitar", "autorizar", "habilitar"],
+  precisar: ["necessitar", "requerer", "demandar"],
+  acontecer: ["ocorrer", "suceder", "verificar-se"],
+  enorme: ["gigantesco", "colossal", "imenso"],
+  rápido_e_fácil: [],
+};
+
+/** Sinônimos para trocar a palavra por outra. */
+export function synonymsFor(word: string): string[] {
+  const key = word.toLowerCase();
+  return SYNONYMS[key] ?? [];
+}

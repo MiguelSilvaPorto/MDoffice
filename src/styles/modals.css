@@ -1,0 +1,183 @@
+/* ---------- modais ---------- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, #0b0d12 55%, transparent);
+  backdrop-filter: blur(3px);
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  width: min(1520px, 95vw);
+  height: min(940px, 92vh);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.draw-modal .dr-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dr-head h2 {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 650;
+}
+
+.dr-hint {
+  color: var(--muted);
+  font-size: 11.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dr-head .btn {
+  margin-left: auto;
+}
+
+.dr-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 7px 12px;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.dr-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.dr-spacer {
+  flex: 1;
+}
+
+.dr-tool {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+
+.swatch.active {
+  border-color: var(--panel);
+  outline: 2px solid var(--accent);
+}
+
+.color-input {
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.dr-range {
+  width: 110px;
+  accent-color: var(--accent);
+}
+
+.dr-w {
+  min-width: 16px;
+  text-align: center;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dr-fill.active {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.dr-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.dr-check input {
+  accent-color: var(--accent);
+}
+
+.draw-canvas-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--bg);
+  padding: 22px;
+}
+
+.dr-canvas {
+  display: block;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.18);
+  touch-action: none;
+}
+
+.draw-text-input {
+  position: absolute;
+  z-index: 5;
+  padding: 2px 4px;
+  /* usa as cores do tema: no escuro, texto claro sobre fundo escuro (antes ficava claro em fundo branco = invisível) */
+  color: var(--fg);
+  background: var(--panel);
+  border: 1px dashed var(--accent);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+  caret-color: var(--accent);
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+  line-height: 1.25;
+  /* sem quebra automática: cada linha digitada é uma linha da grade */
+  white-space: pre;
+  resize: none;
+  overflow: hidden;
+  outline: none;
+}
+
+.dr-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.dr-foot .muted {
+  font-size: 11.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

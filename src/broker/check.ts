@@ -1,0 +1,78 @@
+// Verificação completa: estilo + ortografia (dicionário) + “você quis dizer…?”.
+
+import { ABBREVIATIONS, GLUED } from "./data/abbreviations";
+import { maskNonProse } from "./mask";
+import { commonNeighbor } from "./neighbor";
+import { checkWords } from "./spell";
+import { checkStyle } from "./style";
+import type { WritingIssue } from "./types";
+
+export async function checkText(text: string, ignore: Set<string>): Promise<WritingIssue[]> {
+  const issues = checkStyle(text);
+  const mask = maskNonProse(text);
+  const rx = /[\p{L}][\p{L}'-]{2,}/gu;
+  const tokens: { word: string; from: number; to: number }[] = [];
+  const unique = new Set<string>();
+  let m: RegExpExecArray | null;
+  while ((m = rx.exec(mask)) !== null) {
+    const word = m[0];
+    const lower = word.toLowerCase();
+    if (ignore.has(lower)) continue;
+    if (ABBREVIATIONS[lower] || GLUED[lower]) continue;
+    if (word === word.toUpperCase() && word.length <= 4) continue;
+    tokens.push({ word, from: m.index, to: m.index + word.length });
+    unique.add(word);
+  }
+  if (tokens.length) {
+    const wrong = await checkWords(Array.from(unique));
+    for (const token of tokens) {
+      const hit = wrong.get(token.word);
+      if (hit) {
+        issues.push({
+          from: token.from,
+          to: token.to,
+          word: token.word,
+          kind: "spell",
+          message: hit.glued
+            ? `“${token.word}” parece ter palavras coladas — faltou um espaço? Talvez “${hit.suggestions[0]}”`
+            : `“${token.word}” não está no dicionário`,
+          suggestions: hit.suggestions,
+          auto: hit.best,
+        });
+        continue;
+      }
+      // A palavra existe no dicionário, mas pode ser um erro de uma letra
+      // numa palavra muito comum (ex.: "maneria" → "maneira").
+      const near = commonNeighbor(token.word);
+      if (near) {
+        issues.push({
+          from: token.from,
+          to: token.to,
+          word: token.word,
+          kind: "style",
+          message: `“${token.word}” existe, mas você quis dizer “${near}”?`,
+          suggestions: [near],
+        });
+      }
+    }
+  }
+  // Junta avisos que caem no MESMO trecho: palavra errada + falta do ponto final.
+  // Assim a correção da palavra já sai com o ponto ("correçao" → "correção."), em vez de
+  // um aviso anular o outro (antes eles se sobrepunham e só um era aplicado).
+  const fundidos: WritingIssue[] = [];
+  for (const i of issues) {
+    const par = fundidos.find((f) => f.kind !== i.kind && f.from === i.from && f.to === i.to);
+    if (par && (/ponto final/.test(par.message) || /ponto final/.test(i.message))) {
+      const palavra = par.kind === "spell" ? par : i;
+      palavra.message = `${palavra.message} — e falta o ponto final`;
+      palavra.suggestions = palavra.suggestions.map((s) => (s.endsWith(".") ? s : `${s}.`));
+      if (palavra.auto && !palavra.auto.endsWith(".")) palavra.auto = `${palavra.auto}.`;
+      if (palavra.fix && !palavra.fix.endsWith(".")) palavra.fix = `${palavra.fix}.`;
+      fundidos.splice(fundidos.indexOf(par), 1);
+      fundidos.push(palavra);
+      continue;
+    }
+    fundidos.push(i);
+  }
+  return fundidos.sort((a, b) => a.from - b.from);
+}

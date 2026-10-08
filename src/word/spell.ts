@@ -3,7 +3,7 @@
 import { Plugin, PluginKey } from "prosemirror-state";
 import { Decoration, DecorationSet, type EditorView } from "prosemirror-view";
 import type { Node as PMNode } from "prosemirror-model";
-import { checkText, type WritingIssue } from "./../writing";
+import { checkText, type WritingIssue } from "../broker/writing";
 
 export interface WordSpellHooks {
   /** Palavras que o usuário mandou ignorar (dicionário pessoal + só neste texto). */

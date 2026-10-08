@@ -1,0 +1,273 @@
+/* ---------- editor ---------- */
+
+#editor-wrap {
+  flex: var(--lg, 1) 1 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--panel);
+}
+
+#toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 6px 8px;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+
+.tbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.tbtn:hover {
+  background: var(--accent-soft);
+}
+
+.tbtn.active,
+.tbtn:active {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.tbtn.wide {
+  padding: 0 9px;
+  font-size: 12.5px;
+}
+
+.tbtn .mono {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+}
+
+.tbtn i {
+  font-family: Georgia, serif;
+}
+
+/* botão dividido (ação principal + menu) */
+.split-btn {
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.split-btn .btn:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  padding-right: 9px;
+}
+
+.split-caret {
+  width: 24px !important;
+  padding: 0 !important;
+  justify-content: center;
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.split-caret .ic {
+  width: 14px;
+  height: 14px;
+}
+
+/* barra de formatação: botões extras só quando pedidos */
+#toolbar-more {
+  display: contents;
+}
+
+#toolbar-more[hidden] {
+  display: none;
+}
+
+/* menus suspensos ("⋯") */
+.dropdown {
+  position: fixed;
+  z-index: 95;
+  min-width: 250px;
+  max-width: 330px;
+  padding: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.dd-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  color: var(--fg);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dd-item:hover {
+  background: var(--accent-soft);
+}
+
+.dd-item .ic {
+  width: 15px;
+  height: 15px;
+  color: var(--muted);
+  flex: none;
+}
+
+.dd-hint {
+  margin-left: auto;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 11px;
+  flex: none;
+}
+
+.dd-check {
+  margin-left: auto;
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
+  flex: none;
+}
+
+.dd-sep {
+  height: 1px;
+  margin: 5px 8px;
+  background: var(--border);
+}
+
+.dd-title {
+  padding: 7px 10px 3px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dd-note {
+  padding: 2px 10px 8px;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: normal;
+}
+
+.tsep {
+  width: 1px;
+  height: 18px;
+  margin: 0 5px;
+  background: var(--border);
+  flex: none;
+}
+
+#editor {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  /* coluna de escrita centralizada, com limite de largura */
+  display: flex;
+  justify-content: center;
+  cursor: text;
+}
+
+/* Limite do campo de escrita: evita linhas gigantes em telas largas. */
+.cm-editor {
+  height: 100%;
+  width: 100%;
+  max-width: var(--doc-width);
+}
+
+.cm-scroller,
+.cm-content {
+  width: 100%;
+}
+
+.cm-content {
+  min-height: 100%;
+}
+
+.cm-line {
+  min-height: 1.7em;
+}
+
+/* Texto fantasma de sugestão inline (estilo Copilot) */
+.cm-ghost-text {
+  color: #64748b;
+  opacity: 0.55;
+  pointer-events: none;
+  user-select: none;
+  font-style: italic;
+}
+
+[data-theme="dark"] .cm-ghost-text {
+  color: #94a3b8;
+  opacity: 0.55;
+}
+
+/* ---------- divisor ---------- */
+
+#splitter {
+  width: 6px;
+  flex: none;
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+  z-index: 2;
+}
+
+#splitter::after {
+  content: "";
+  position: absolute;
+  inset: 0 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+#splitter:hover::after,
+body.resizing #splitter::after {
+  background: var(--accent);
+}
+
+body.resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+body.no-preview #splitter,
+body.no-preview #preview-wrap {
+  display: none !important;
+}
+
+body.no-preview #editor-wrap {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  max-width: none !important;
+}
+
+body.no-preview .cm-editor {
+  max-width: min(100%, 1200px);
+}

@@ -1,0 +1,211 @@
+/* ---------- modal de boas-vindas ---------- */
+
+.welcome-modal {
+  width: min(700px, 93vw);
+  height: auto;
+  max-height: 88vh;
+}
+
+.folder-modal {
+  width: min(850px, 94vw);
+  height: min(760px, 90vh);
+}
+
+.folder-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 18px;
+}
+
+.folder-note {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.folder-snapshots {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.folder-snapshot {
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.folder-snapshot-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 11px;
+  color: var(--fg);
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.folder-tree {
+  max-height: 210px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px 13px;
+  color: var(--fg);
+  background: var(--panel);
+  font: 12px/1.55 ui-monospace, "Cascadia Code", Consolas, monospace;
+  white-space: pre;
+}
+
+.folder-truncated {
+  padding: 6px 11px;
+  color: #b45309;
+  background: color-mix(in srgb, #f59e0b 10%, var(--panel));
+  font-size: 12px;
+}
+
+.folder-prompt-label {
+  font-weight: 650;
+}
+
+#folder-prompt {
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
+  padding: 10px 12px;
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  outline: none;
+  font: inherit;
+  line-height: 1.5;
+}
+
+#folder-prompt:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.editor-context-menu {
+  position: fixed;
+  z-index: 80;
+  min-width: 218px;
+  padding: 5px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 10px;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.context-menu-item:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.context-menu-item span {
+  font-weight: 600;
+}
+
+.context-menu-item kbd {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+/* Desenho é editado diretamente dentro da imagem no preview, sem popup. */
+.draw-image-frame {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  margin: 1.1em 0;
+}
+
+.draw-image-frame img {
+  display: block;
+}
+
+.draw-edit-btn {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  color: #fff;
+  background: rgba(25, 28, 36, 0.84);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  font: 12px var(--ui-font);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.draw-image-frame:hover .draw-edit-btn,
+.draw-edit-btn:focus-visible {
+  opacity: 1;
+}
+
+.draw-inline {
+  width: 100%;
+  margin: 1.2em 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--panel-2);
+  box-shadow: 0 5px 18px rgba(15, 23, 42, 0.1);
+}
+
+.draw-inline .dr-toolbar {
+  gap: 3px;
+  padding: 6px 8px;
+}
+
+.draw-inline .draw-canvas-wrap {
+  display: flex;
+  justify-content: safe center;
+  max-height: min(62vh, 680px);
+  padding: 12px;
+}
+
+.dr-zoom {
+  min-width: 54px;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.draw-inline .dr-canvas {
+  touch-action: none;
+}
+
+.di-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+}
+
+.di-foot .muted {
+  color: var(--muted);
+  font-size: 11px;
+}

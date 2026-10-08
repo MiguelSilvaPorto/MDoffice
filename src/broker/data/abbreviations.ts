@@ -1,0 +1,51 @@
+// Abreviações de internet e palavras que costumam vir grudadas.
+
+/** Abreviações de internet → forma correta. */
+export const ABBREVIATIONS: Record<string, string> = {
+  vc: "você",
+  vcs: "vocês",
+  pq: "porque",
+  tbm: "também",
+  tb: "também",
+  mto: "muito",
+  mt: "muito",
+  eh: "é",
+  ta: "está",
+  "tá": "está",
+  qdo: "quando",
+  qnd: "quando",
+  qq: "qualquer",
+  vdd: "verdade",
+  pfv: "por favor",
+  dnv: "de novo",
+  vlw: "valeu",
+  obg: "obrigado",
+  blz: "beleza",
+  q: "que",
+  "tô": "estou",
+  tou: "estou",
+  "cê": "você",
+  msm: "mesmo",
+  cmg: "comigo",
+  ctg: "contigo",
+  agr: "agora",
+  dps: "depois",
+  qm: "quem",
+  qts: "quantos",
+  sdds: "saudades",
+};
+
+/** Palavras grudadas → separadas. */
+export const GLUED: Record<string, string> = {
+  derrepente: "de repente",
+  derepente: "de repente",
+  concerteza: "com certeza",
+  apartir: "a partir",
+  denovo: "de novo",
+  porisso: "por isso",
+  emcima: "em cima",
+  arespeito: "a respeito",
+  maomenos: "mais ou menos",
+  demais: "demais",
+  " pramim": " para mim",
+};
