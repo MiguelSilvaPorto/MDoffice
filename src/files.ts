@@ -166,3 +166,40 @@ export async function defaultDocsDir(): Promise<string> {
 export async function uniqueMdPath(dir: string, base: string): Promise<string> {
   return await invoke<string>("unique_md_path", { dir, base });
 }
+
+export interface MdNode {
+  name: string;
+  path: string;
+  directory: boolean;
+  children: MdNode[];
+}
+
+/** Documentos Markdown de uma pasta (com subpastas que tenham .md). */
+export async function listMarkdown(path: string): Promise<MdNode[]> {
+  return await invoke<MdNode[]>("list_markdown", { path });
+}
+
+/** Grava um arquivo binário (base64) — usado pelo DOCX. */
+export async function saveBinary(path: string, base64: string): Promise<void> {
+  await invoke("save_binary", { path, data: base64 });
+}
+
+/** Caixa "Salvar como" genérica para os formatos de exportação. */
+export async function pickSaveAny(defaultPath: string, label: string, extensions: string[]): Promise<string | null> {
+  const p = await dlgSave({ defaultPath, filters: [{ name: label, extensions }] });
+  return typeof p === "string" ? p : null;
+}
+
+export interface ContentHit {
+  path: string;
+  name: string;
+  line: number;
+  text: string;
+  start: number;
+  end: number;
+}
+
+/** Procura um texto dentro dos documentos Markdown das pastas (sem diferenciar acentos/maiúsculas). */
+export async function searchMarkdown(roots: string[], query: string, limit = 150): Promise<ContentHit[]> {
+  return await invoke<ContentHit[]>("search_markdown", { roots, query, limit });
+}

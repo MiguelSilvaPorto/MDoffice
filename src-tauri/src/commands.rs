@@ -780,3 +780,212 @@ mod tests {
         fs::remove_dir_all(&root).expect("limpa arquivos de teste");
     }
 }
+
+#[derive(Serialize)]
+pub struct MdNode {
+    pub name: String,
+    pub path: String,
+    pub directory: bool,
+    pub children: Vec<MdNode>,
+}
+
+fn scan_markdown(dir: &Path, depth: usize, budget: &mut usize) -> Vec<MdNode> {
+    let Ok(read) = fs::read_dir(dir) else {
+        return Vec::new();
+    };
+    let mut entries: Vec<_> = read.flatten().collect();
+    entries.sort_by_key(|e| e.file_name().to_string_lossy().to_lowercase());
+    let mut dirs = Vec::new();
+    let mut docs = Vec::new();
+    for entry in entries {
+        if *budget == 0 {
+            break;
+        }
+        let name = entry.file_name().to_string_lossy().to_string();
+        if name.starts_with('.') {
+            continue;
+        }
+        let Ok(kind) = entry.file_type() else { continue };
+        if kind.is_symlink() {
+            continue;
+        }
+        let path = entry.path();
+        if kind.is_dir() {
+            if depth == 0 || matches!(name.as_str(), "node_modules" | "target" | "dist" | "assets" | "build") {
+                continue;
+            }
+            let children = scan_markdown(&path, depth - 1, budget);
+            if !children.is_empty() {
+                dirs.push(MdNode {
+                    name,
+                    path: path.to_string_lossy().to_string(),
+                    directory: true,
+                    children,
+                });
+            }
+        } else if kind.is_file() {
+            let lower = name.to_lowercase();
+            if lower.ends_with(".md") || lower.ends_with(".markdown") || lower.ends_with(".mdx") {
+                *budget = budget.saturating_sub(1);
+                docs.push(MdNode {
+                    name,
+                    path: path.to_string_lossy().to_string(),
+                    directory: false,
+                    children: Vec::new(),
+                });
+            }
+        }
+    }
+    dirs.extend(docs);
+    dirs
+}
+
+/// Lista os documentos Markdown de uma pasta (subpastas até 4 níveis; só as que têm .md).
+#[tauri::command]
+pub fn list_markdown(path: String) -> Result<Vec<MdNode>, String> {
+    let root = Path::new(&path);
+    if !root.is_dir() {
+        return Err("A pasta não foi encontrada.".to_string());
+    }
+    let mut budget = 400usize;
+    Ok(scan_markdown(root, 4, &mut budget))
+}
+
+/// Cria uma subpasta (e devolve o caminho dela).
+#[tauri::command]
+pub fn create_folder(parent: String, name: String) -> Result<String, String> {
+    let clean: String = name
+        .trim()
+        .chars()
+        .map(|c| match c {
+            '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '-',
+            c => c,
+        })
+        .collect();
+    if clean.is_empty() || clean == "." || clean == ".." {
+        return Err("Nome de pasta inválido.".to_string());
+    }
+    let target = Path::new(&parent).join(clean);
+    if target.exists() {
+        return Err("Já existe uma pasta com esse nome.".to_string());
+    }
+    fs::create_dir_all(&target).map_err(io_err)?;
+    Ok(target.to_string_lossy().to_string())
+}
+
+/// Grava bytes (base64) num arquivo, criando a pasta de destino se preciso (DOCX, PDF…).
+#[tauri::command]
+pub fn save_binary(path: String, data: String) -> Result<(), String> {
+    let bytes = B64.decode(data.as_bytes()).map_err(|e| e.to_string())?;
+    let p = PathBuf::from(&path);
+    if let Some(dir) = p.parent() {
+        if !dir.as_os_str().is_empty() && !dir.exists() {
+            fs::create_dir_all(dir).map_err(io_err)?;
+        }
+    }
+    fs::write(&p, bytes).map_err(io_err)
+}
+
+#[derive(Serialize)]
+pub struct SearchHit {
+    pub path: String,
+    pub name: String,
+    pub line: usize,
+    pub text: String,
+    pub start: usize,
+    pub end: usize,
+}
+
+/// Minúscula e sem acento, caractere a caractere (os índices continuam alinhados).
+fn fold_char(c: char) -> char {
+    let l = c.to_lowercase().next().unwrap_or(c);
+    match l {
+        'á' | 'à' | 'â' | 'ã' | 'ä' => 'a',
+        'é' | 'è' | 'ê' | 'ë' => 'e',
+        'í' | 'ì' | 'î' | 'ï' => 'i',
+        'ó' | 'ò' | 'ô' | 'õ' | 'ö' => 'o',
+        'ú' | 'ù' | 'û' | 'ü' => 'u',
+        'ç' => 'c',
+        'ñ' => 'n',
+        x => x,
+    }
+}
+
+fn collect_markdown(dir: &Path, depth: usize, out: &mut Vec<PathBuf>) {
+    let Ok(read) = fs::read_dir(dir) else { return };
+    for entry in read.flatten() {
+        if out.len() >= 2000 {
+            return;
+        }
+        let name = entry.file_name().to_string_lossy().to_string();
+        if name.starts_with('.') {
+            continue;
+        }
+        let Ok(kind) = entry.file_type() else { continue };
+        if kind.is_symlink() {
+            continue;
+        }
+        let path = entry.path();
+        if kind.is_dir() {
+            if depth > 0 && !matches!(name.as_str(), "node_modules" | "target" | "dist" | "build") {
+                collect_markdown(&path, depth - 1, out);
+            }
+        } else if kind.is_file() {
+            let lower = name.to_lowercase();
+            if lower.ends_with(".md") || lower.ends_with(".markdown") || lower.ends_with(".mdx") {
+                out.push(path);
+            }
+        }
+    }
+}
+
+/// Procura um texto dentro dos documentos Markdown das pastas (sem diferenciar maiúsculas/acentos).
+#[tauri::command]
+pub fn search_markdown(roots: Vec<String>, query: String, limit: usize) -> Result<Vec<SearchHit>, String> {
+    let needle: Vec<char> = query.trim().chars().map(fold_char).collect();
+    if needle.len() < 2 {
+        return Ok(Vec::new());
+    }
+    let limit = limit.clamp(1, 300);
+    let mut files = Vec::new();
+    for root in &roots {
+        collect_markdown(Path::new(root), 6, &mut files);
+    }
+    let mut hits = Vec::new();
+    'files: for path in files {
+        let Ok(meta) = fs::metadata(&path) else { continue };
+        if meta.len() > 2_000_000 {
+            continue;
+        }
+        let Ok(text) = fs::read_to_string(&path) else { continue };
+        let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+        let mut per_file = 0;
+        for (i, line) in text.lines().enumerate() {
+            let chars: Vec<char> = line.chars().collect();
+            let folded: Vec<char> = chars.iter().map(|c| fold_char(*c)).collect();
+            let Some(pos) = folded.windows(needle.len()).position(|w| w == needle.as_slice()) else {
+                continue;
+            };
+            // recorte de até ~140 caracteres em volta do achado
+            let from = pos.saturating_sub(50);
+            let to = (pos + needle.len() + 90).min(chars.len());
+            let snippet: String = chars[from..to].iter().collect();
+            hits.push(SearchHit {
+                path: path.to_string_lossy().to_string(),
+                name: name.clone(),
+                line: i + 1,
+                text: snippet,
+                start: pos - from,
+                end: pos - from + needle.len(),
+            });
+            per_file += 1;
+            if hits.len() >= limit {
+                break 'files;
+            }
+            if per_file >= 5 {
+                break;
+            }
+        }
+    }
+    Ok(hits)
+}

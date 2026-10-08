@@ -1,0 +1,178 @@
+// Histórico de versões: cópias do documento guardadas no próprio app (IndexedDB), por arquivo.
+// Entram sozinhas de tempos em tempos quando o texto mudou, ou na hora com "Salvar versão".
+
+export interface Version {
+  id?: number;
+  doc: string;
+  at: number;
+  text: string;
+  /** Nome dado pelo usuário (versão marcada) ou motivo (ex.: "Antes de restaurar"). */
+  label?: string;
+  manual: boolean;
+}
+
+const DB_NAME = "mdc-history";
+const STORE = "versions";
+const AUTO_EVERY_MS = 5 * 60 * 1000;
+
+let dbPromise: Promise<IDBDatabase> | null = null;
+
+function open(): Promise<IDBDatabase> {
+  if (!dbPromise) {
+    dbPromise = new Promise((ok, fail) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const store = req.result.createObjectStore(STORE, { keyPath: "id", autoIncrement: true });
+        store.createIndex("doc", "doc");
+      };
+      req.onsuccess = () => ok(req.result);
+      req.onerror = () => fail(req.error);
+    });
+  }
+  return dbPromise;
+}
+
+function wrap<T>(req: IDBRequest<T>): Promise<T> {
+  return new Promise((ok, fail) => {
+    req.onsuccess = () => ok(req.result);
+    req.onerror = () => fail(req.error);
+  });
+}
+
+const key = (path: string) => path.toLowerCase();
+
+/** Versões do documento, da mais nova para a mais antiga. */
+export async function listVersions(doc: string): Promise<Version[]> {
+  try {
+    const db = await open();
+    const all = await wrap(db.transaction(STORE).objectStore(STORE).index("doc").getAll(key(doc)));
+    return (all as Version[]).sort((a, b) => b.at - a.at);
+  } catch {
+    return [];
+  }
+}
+
+export interface SnapOptions {
+  manual?: boolean;
+  label?: string;
+  /** Quantas versões guardar por documento (as marcadas à mão têm prioridade). */
+  max?: number;
+  /** Ignora o intervalo mínimo entre versões automáticas. */
+  force?: boolean;
+}
+
+/** Guarda uma versão se o texto mudou. Devolve true se gravou. */
+export async function snapshot(doc: string, text: string, opts: SnapOptions = {}): Promise<boolean> {
+  if (!doc || !text.trim()) return false;
+  try {
+    const list = await listVersions(doc);
+    const last = list[0];
+    if (last && last.text === text) {
+      // mesma versão: só promove a marcada à mão
+      if (opts.manual && !last.manual) {
+        const db = await open();
+        await wrap(db.transaction(STORE, "readwrite").objectStore(STORE).put({ ...last, manual: true, label: opts.label ?? last.label }));
+      }
+      return false;
+    }
+    if (!opts.manual && !opts.force && last && Date.now() - last.at < AUTO_EVERY_MS) return false;
+    const db = await open();
+    const store = db.transaction(STORE, "readwrite").objectStore(STORE);
+    await wrap(store.add({ doc: key(doc), at: Date.now(), text, manual: !!opts.manual, label: opts.label } satisfies Version));
+    await prune(doc, opts.max ?? 60);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function prune(doc: string, max: number): Promise<void> {
+  const list = await listVersions(doc);
+  if (list.length <= max) return;
+  const db = await open();
+  const store = db.transaction(STORE, "readwrite").objectStore(STORE);
+  // remove as mais antigas que NÃO foram marcadas à mão
+  let extra = list.length - max;
+  for (const v of [...list].reverse()) {
+    if (extra <= 0) break;
+    if (v.manual) continue;
+    store.delete(v.id!);
+    extra--;
+  }
+}
+
+export async function removeVersion(id: number): Promise<void> {
+  try {
+    const db = await open();
+    await wrap(db.transaction(STORE, "readwrite").objectStore(STORE).delete(id));
+  } catch {
+    /* ignora */
+  }
+}
+
+export async function clearHistory(doc: string): Promise<void> {
+  for (const v of await listVersions(doc)) if (v.id !== undefined) await removeVersion(v.id);
+}
+
+/** O arquivo mudou de caminho (renomear / salvar como): leva o histórico junto. */
+export async function moveHistory(from: string, to: string): Promise<void> {
+  if (key(from) === key(to)) return;
+  try {
+    const list = await listVersions(from);
+    if (!list.length) return;
+    const db = await open();
+    const store = db.transaction(STORE, "readwrite").objectStore(STORE);
+    for (const v of list) store.put({ ...v, doc: key(to) });
+  } catch {
+    /* ignora */
+  }
+}
+
+// ---------- diferença entre versões ----------
+
+export interface DiffLine {
+  kind: "same" | "add" | "del";
+  text: string;
+}
+
+/** Diferença por linhas (LCS): "del" = só na versão antiga, "add" = só na nova. */
+export function diffLines(oldText: string, newText: string): DiffLine[] {
+  const a = oldText.split("\n");
+  const b = newText.split("\n");
+  // corta o começo/fim iguais para a tabela ficar pequena
+  let head = 0;
+  while (head < a.length && head < b.length && a[head] === b[head]) head++;
+  let tail = 0;
+  while (tail < a.length - head && tail < b.length - head && a[a.length - 1 - tail] === b[b.length - 1 - tail]) tail++;
+  const ma = a.slice(head, a.length - tail);
+  const mb = b.slice(head, b.length - tail);
+  const out: DiffLine[] = a.slice(0, head).map((text) => ({ kind: "same", text }));
+
+  if (ma.length * mb.length > 4_000_000) {
+    // documentos enormes: sem LCS, mostra bloco removido + bloco novo
+    ma.forEach((text) => out.push({ kind: "del", text }));
+    mb.forEach((text) => out.push({ kind: "add", text }));
+  } else {
+    const w = mb.length + 1;
+    const t = new Uint32Array((ma.length + 1) * w);
+    for (let i = ma.length - 1; i >= 0; i--) {
+      for (let j = mb.length - 1; j >= 0; j--) {
+        t[i * w + j] = ma[i] === mb[j] ? t[(i + 1) * w + j + 1] + 1 : Math.max(t[(i + 1) * w + j], t[i * w + j + 1]);
+      }
+    }
+    let i = 0;
+    let j = 0;
+    while (i < ma.length && j < mb.length) {
+      if (ma[i] === mb[j]) {
+        out.push({ kind: "same", text: ma[i] });
+        i++;
+        j++;
+      } else if (t[(i + 1) * w + j] >= t[i * w + j + 1]) out.push({ kind: "del", text: ma[i++] });
+      else out.push({ kind: "add", text: mb[j++] });
+    }
+    while (i < ma.length) out.push({ kind: "del", text: ma[i++] });
+    while (j < mb.length) out.push({ kind: "add", text: mb[j++] });
+  }
+  a.slice(a.length - tail).forEach((text) => out.push({ kind: "same", text }));
+  return out;
+}

@@ -8,6 +8,7 @@ import { syntaxHighlighting, HighlightStyle, indentOnInput, bracketMatching } fr
 import { tags as t } from "@lezer/highlight";
 import { clamp } from "./util";
 import { synonymsFor, type WritingIssue } from "./writing";
+import { createGhostTextExtension, setGhostEffect } from "./autocomplete";
 
 export interface CursorPos {
   line: number;
@@ -153,14 +154,17 @@ export class MdEditor {
   private onDocChange: () => void;
   private onCursor: (pos: CursorPos) => void;
   private dark = false;
+  private ghostTextEnabled = true;
 
   constructor(
     parent: HTMLElement,
     onDocChange: () => void,
-    onCursor: (pos: CursorPos) => void
+    onCursor: (pos: CursorPos) => void,
+    ghostTextEnabled = true
   ) {
     this.onDocChange = onDocChange;
     this.onCursor = onCursor;
+    this.ghostTextEnabled = ghostTextEnabled;
     this.extensions = this.buildExtensions();
 
     this.view = new EditorView({
@@ -194,6 +198,9 @@ export class MdEditor {
       bracketMatching(),
       markdown({ base: markdownLanguage, codeLanguages: languages }),
       EditorView.lineWrapping,
+      createGhostTextExtension({
+        getEnabled: () => this.ghostTextEnabled,
+      }),
       Prec.high(
         keymap.of([
           { key: "Enter", run: (v) => this.continueList(v) },
@@ -224,7 +231,19 @@ export class MdEditor {
     ];
   }
 
+  setGhostTextEnabled(enabled: boolean): void {
+    this.ghostTextEnabled = enabled;
+    if (!enabled) {
+      this.view.dispatch({ effects: setGhostEffect.of(null) });
+    }
+  }
+
+  isGhostTextEnabled(): boolean {
+    return this.ghostTextEnabled;
+  }
+
   // ---------- conteúdo ----------
+
 
   getText(): string {
     return this.view.state.doc.toString();
@@ -247,6 +266,28 @@ export class MdEditor {
 
   focus(): void {
     this.view.focus();
+  }
+
+  /** Estado completo do editor (texto, seleção e histórico de desfazer) — usado pelas abas. */
+  getState(): EditorState {
+    return this.view.state;
+  }
+
+  /** Cria um estado novo (com histórico próprio) para o documento de uma aba. */
+  createState(text: string): EditorState {
+    return EditorState.create({ doc: text, extensions: this.buildExtensions() });
+  }
+
+  /** Troca o documento inteiro por outro estado salvo, mantendo tema e rolagem da aba. */
+  loadState(state: EditorState, scrollTop = 0): void {
+    this.view.setState(state);
+    this.setTheme(this.dark);
+    this.view.scrollDOM.scrollTop = scrollTop;
+    this.view.requestMeasure();
+  }
+
+  scrollTop(): number {
+    return this.view.scrollDOM.scrollTop;
   }
 
   /**

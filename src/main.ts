@@ -1,15 +1,24 @@
 // mdCreator — integra editor, pré-visualização, desenho, imagens e arquivos.
 import { MdEditor, type CursorPos } from "./editor";
-import { Preview, getExportHtml, welcomeHtml } from "./preview";
+import { Preview, welcomeHtml } from "./preview";
 import * as files from "./files";
 import { createDrawEditor, placeholderDataUrl, type DrawDoc } from "./draw";
 import { TEXT_DRAW_PLACEHOLDER } from "./textdraw";
 import { openDiagramBuilder } from "./diagram";
+import { setTone, type Tone } from "./writing";
 import { checkText, checkStyle, stats as writingStats, warmUpSpell, onSpellReady, spellIsReady, spellHasFailed, type WritingIssue } from "./writing";
 import { openReviewModal, type ReviewHandle } from "./review";
+import { TabBar, newTab, tabLabel, type DocTab } from "./tabs";
+import { Sidebar } from "./sidebar";
+import { Translation } from "./translation";
+import { openExportDialog, type ExportFormat } from "./export";
+import { openPalette, type PaletteItem } from "./palette";
+import { snapshot, moveHistory, listVersions, clearHistory } from "./history";
+import { openHistoryDialog } from "./historyUi";
+import { loadSettings, openSettingsDialog, type AppSettings } from "./settings";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { ask } from "@tauri-apps/plugin-dialog";
+
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import mdCss from "./markdown.css?raw";
 import "./styles.css";
@@ -84,23 +93,77 @@ interface LinkedFolder {
 class App {
   private editor!: MdEditor;
   private preview!: Preview;
-  private path: string | null = null;
-  private dirty = false;
-  private statusSaved = "Novo documento";
+  private settings: AppSettings = loadSettings();
+  private tabBar!: TabBar;
+  private sidebar!: Sidebar;
+  private translation!: Translation;
+  /** Todas as abas abertas (na ordem da fileira) e a que está ativa. */
+  private tabs: DocTab[] = [];
+  private tab!: DocTab;
+  private closedTabs: string[] = [];
+  private switching = false;
   private recents: Recent[] = [];
   private linkedFolders: LinkedFolder[] = [];
-  private title: string | null = null;
-  private isDraft = false;
   private ignoreWords = new Set<string>(loadJSON<string[]>("mdc.ignore-words", []));
+
+  // O documento "atual" é o da aba ativa: estes atalhos evitam repetir `this.tab.` por todo lado.
+  private get path(): string | null {
+    return this.tab.path;
+  }
+  private set path(v: string | null) {
+    this.tab.path = v;
+  }
+  private get dirty(): boolean {
+    return this.tab.dirty;
+  }
+  private set dirty(v: boolean) {
+    this.tab.dirty = v;
+  }
+  private get statusSaved(): string {
+    return this.tab.statusSaved;
+  }
+  private set statusSaved(v: string) {
+    this.tab.statusSaved = v;
+  }
+  private get title(): string | null {
+    return this.tab.title;
+  }
+  private set title(v: string | null) {
+    this.tab.title = v;
+  }
+  private get isDraft(): boolean {
+    return this.tab.isDraft;
+  }
+  private set isDraft(v: boolean) {
+    this.tab.isDraft = v;
+  }
   /** Palavras ignoradas só neste documento (voltam nos outros). */
-  private ignoredHere = new Set<string>();
-  private issues: WritingIssue[] = [];
+  private get ignoredHere(): Set<string> {
+    return this.tab.ignoredHere;
+  }
+  private get issues(): WritingIssue[] {
+    return this.tab.issues;
+  }
+  private set issues(v: WritingIssue[]) {
+    this.tab.issues = v;
+  }
+  private get autoFixArmed(): boolean {
+    return this.tab.autoFixArmed;
+  }
+  private set autoFixArmed(v: boolean) {
+    this.tab.autoFixArmed = v;
+  }
   /** Correção automática de estilo ligada (ponto, vírgulas, maiúsculas…). */
   private autoFix = loadJSON<boolean>("mdc.autofix", true);
-  /** Só corrige depois que o usuário edita este documento (não mexe no que foi aberto). */
-  private autoFixArmed = false;
+  /** Sugestões inline e previsão de palavras (estilo Copilot) ligadas. */
+  private copilot = loadJSON<boolean>("mdc.copilot", true);
   private reviewHandle: ReviewHandle | null = null;
-  private cursor: CursorPos = { line: 1, col: 1 };
+  private get cursor(): CursorPos {
+    return this.tab.cursor;
+  }
+  private set cursor(v: CursorPos) {
+    this.tab.cursor = v;
+  }
 
   async start(): Promise<void> {
     this.preview = new Preview($("#preview"), {
@@ -109,7 +172,7 @@ class App {
         if (!this.path) throw new Error("Salve o documento antes de editar desenhos.");
         await files.updateAsset(this.path, rel, png);
         await files.updateAsset(this.path, `${rel}.draw.json`, toBase64Utf8(json));
-        this.preview.setDocPath(this.path);
+        this.setPreviewPath(this.path);
         this.preview.invalidateAsset(rel);
         toast("Desenho atualizado no documento.", "ok");
       },
@@ -129,23 +192,50 @@ class App {
       (pos) => {
         this.cursor = pos;
         $("#st-cursor").textContent = `Ln ${pos.line}, Col ${pos.col}`;
-      }
+      },
+      this.copilot
     );
+    this.translation = new Translation({
+      polishPt: (t) => this.polishForTranslation(t),
+      getMarkdown: () => this.editor.getText(),
+    });
+    this.tab = newTab(this.editor.getState());
+    this.tabs = [this.tab];
+    this.tabBar = new TabBar($("#tabbar"), {
+      onSelect: (id) => void this.switchTo(id),
+      onClose: (id) => void this.closeTab(id),
+      onNew: () => void this.newDoc(),
+      onRename: (id, value) => void this.renameTab(id, value),
+      onReorder: (ids) => this.reorderTabs(ids),
+      onContext: (id, x, y) => this.openTabMenu(id, x, y),
+      onRecents: (anchor) => void this.openRecentsMenu(anchor),
+    });
 
     this.recents = loadJSON<Recent[]>("mdc.recents", []);
     this.linkedFolders = loadJSON<LinkedFolder[]>("mdc.linked-folders", []);
-    // clicar no título permite renomear o documento
-    const titleEl = $("#doc-title");
-    titleEl.title = "Clique para renomear o documento";
-    titleEl.addEventListener("click", () => this.startTitleEdit());
+    this.sidebar = new Sidebar({
+      openPath: (p) => void this.openPath(p),
+      activateTab: (id) => void this.switchTo(id),
+      openDocs: () =>
+        this.tabs.map((t) => ({ id: t.id, path: t.path, label: tabLabel(t), dirty: t.dirty, active: t === this.tab })),
+      recents: () => this.recents.map((r) => r.path),
+      pickFolders: () => files.pickFolders(),
+      defaultDir: () => files.defaultDocsDir(),
+      newDocIn: (dir) => void this.newDocIn(dir),
+      reveal: (p) => void revealItemInDir(p).catch(() => {}),
+      searchContent: (q, roots) => this.searchContent(q, roots),
+      openAt: (p, line) => void this.openAt(p, line),
+      contextMenu: (x, y, items) => this.openMenuAt(x, y, items),
+    });
+    $("#ctx-add").addEventListener("click", () => void this.chooseFolders());
     if (loadJSON<boolean>("mdc.no-sidebar", false)) document.body.classList.add("no-sidebar");
     if (loadJSON<boolean>("mdc.no-preview", false)) document.body.classList.add("no-preview");
 
-    this.renderRecents();
     this.renderLinkedFolders();
     this.renderOutline();
     this.applyTheme(this.initialDark(), false);
     this.setupToolbar();
+    this.setupWindowControls();
     this.setupSplitter();
     this.setupKeys();
     this.setupEditorInteractions();
@@ -159,26 +249,57 @@ class App {
       void this.runWritingCheck();
     };
     document.querySelector("#st-writing")?.addEventListener("click", () => this.openReview());
+    setTone(this.settings.tone);
+    $("#st-history").addEventListener("click", () => void this.openHistory());
     $("#st-path").addEventListener("click", () => {
       if (this.path) void revealItemInDir(this.path).catch(() => {});
     });
     window.addEventListener("blur", () => void this.autosave());
+    window.addEventListener("beforeunload", () => void this.autosave());
     await this.setupDragDrop();
 
     this.refreshTitle();
     this.refreshPath();
     this.setSaveState();
     this.updateStats();
+    void this.sidebar.init();
     void this.preview.render("");
     this.editor.focus();
-    void this.restoreDrafts();
+    void this.restoreSession();
     // carrega o dicionário em segundo plano (worker) e revisa quando ficar pronto
     window.setTimeout(() => warmUpSpell(), 2000);
     onSpellReady(() => this.checkWritingSoon());
   }
 
-  /** Restaura o rascunho mais recente guardado na pasta do app. */
-  private async restoreDrafts(): Promise<void> {
+  /** Reabre as abas da sessão anterior; sem sessão, cai no rascunho mais recente. */
+  private async restoreSession(): Promise<void> {
+    const saved = loadJSON<{ paths: string[]; active: string | null; drafts: string[] } | null>("mdc.session", null);
+    let restored = 0;
+    if (saved && Array.isArray(saved.paths)) {
+      let activateTab: DocTab | null = null;
+      for (const p of saved.paths) {
+        try {
+          const content = await files.loadDoc(p);
+          const tab = this.addTabFor(p, content, saved.drafts?.includes(p) ?? false);
+          restored++;
+          if (p === saved.active) activateTab = tab;
+        } catch {
+          /* arquivo sumiu: ignora */
+        }
+      }
+      if (restored) {
+        // se o usuário já começou a digitar na aba inicial, ela continua existindo
+        this.dropPristineStartTab();
+        await this.activate(activateTab ?? this.tabs[this.tabs.length - 1]);
+        toast(`${restored} aba${restored === 1 ? "" : "s"} da sessão anterior reaberta${restored === 1 ? "" : "s"}.`, "info", 3600);
+        return;
+      }
+    }
+    await this.restoreLegacyDraft();
+  }
+
+  /** Antes das abas, o app guardava só o último rascunho; ainda recuperamos ele. */
+  private async restoreLegacyDraft(): Promise<void> {
     try {
       const drafts = await files.listDrafts();
       const latest = drafts[0];
@@ -189,14 +310,11 @@ class App {
       this.isDraft = true;
       this.autoFixArmed = false;
       this.editor.setText(content);
+      this.tab.state = this.editor.getState();
       this.dirty = false;
       this.statusSaved = "Rascunho guardado no app";
-      this.preview.setDocPath(latest.path);
-      this.refreshTitle();
-      this.refreshPath();
-      this.setSaveState();
-      this.updateStats();
-      this.renderOutline();
+      this.setPreviewPath(latest.path);
+      this.afterTabChange();
       await this.preview.render(content);
       toast(
         `Rascunho da sessão anterior restaurado (${baseName(latest.path)}). Use "Salvar como" para guardar numa pasta sua.`,
@@ -213,13 +331,10 @@ class App {
       if (!texto || !texto.trim()) return;
       this.autoFixArmed = false;
       this.editor.setText(texto);
+      this.tab.state = this.editor.getState();
       this.dirty = false;
       this.statusSaved = "Salvo automaticamente em temp/";
-      this.refreshTitle();
-      this.refreshPath();
-      this.setSaveState();
-      this.updateStats();
-      this.renderOutline();
+      this.afterTabChange();
       await this.preview.render(texto);
       toast("Texto recuperado do salvamento automático (temp/rascunho.md).", "info", 6500);
     } catch {
@@ -227,13 +342,263 @@ class App {
     }
   }
 
+  // ---------- abas ----------
+
+  /** Cria uma aba (sem ativá-la) para um arquivo já lido. */
+  private addTabFor(path: string | null, content: string, isDraft = false): DocTab {
+    const tab = newTab(this.editor.createState(content), {
+      path,
+      isDraft,
+      statusSaved: isDraft ? "Rascunho guardado no app" : `Aberto às ${fmtTime()}`,
+    });
+    this.tabs.push(tab);
+    return tab;
+  }
+
+  /** A aba inicial vazia some quando outras abas assumem o lugar dela. */
+  private dropPristineStartTab(): void {
+    const first = this.tabs[0];
+    if (!first || this.tabs.length < 2 || first !== this.tab) return;
+    if (first.path || first.dirty || this.textOf(first).length > 0) return;
+    this.tabs = this.tabs.filter((t) => t !== first);
+    this.tab = this.tabs[0];
+  }
+
+  private textOf(tab: DocTab): string {
+    return tab === this.tab ? this.editor.getText() : tab.state.doc.toString();
+  }
+
+  /** Guarda o estado da aba ativa (texto/undo/rolagem) antes de sair dela. */
+  private snapshotTab(): void {
+    this.tab.state = this.editor.getState();
+    this.tab.scrollTop = this.editor.scrollTop();
+  }
+
+  /** Torna a aba indicada a ativa e redesenha tudo que depende do documento. */
+  private async activate(target: DocTab): Promise<void> {
+    if (target !== this.tab) {
+      this.snapshotTab();
+      this.tab = target;
+    }
+    this.editor.loadState(target.state, target.scrollTop);
+    this.setPreviewPath(target.path);
+    this.afterTabChange();
+    this.editor.setIssues(target.issues);
+    this.updateWritingBadge();
+    this.checkWritingSoon();
+    this.translationDocChanged(true);
+    await this.preview.render(this.editor.getText());
+    this.editor.focus();
+  }
+
+  /** Atualiza título, barra de abas, rodapé, contagens e estrutura. */
+  private afterTabChange(): void {
+    this.refreshTitle();
+    this.refreshPath();
+    this.setSaveState();
+    this.updateStats();
+    this.renderOutline();
+    this.saveSession();
+    this.sidebar?.render();
+  }
+
+  private saveSession(): void {
+    const withPath = this.tabs.filter((t) => t.path);
+    saveJSON("mdc.session", {
+      paths: withPath.map((t) => t.path!),
+      drafts: withPath.filter((t) => t.isDraft).map((t) => t.path!),
+      active: this.tab.path,
+    });
+  }
+
+  private async switchTo(id: string): Promise<void> {
+    const target = this.tabs.find((t) => t.id === id);
+    if (!target || target === this.tab || this.switching) return;
+    this.switching = true;
+    try {
+      await this.autosave(); // grava a aba de onde estamos saindo
+      await this.activate(target);
+    } finally {
+      this.switching = false;
+    }
+  }
+
+  private async switchRelative(step: number): Promise<void> {
+    if (this.tabs.length < 2) return;
+    const i = this.tabs.indexOf(this.tab);
+    await this.switchTo(this.tabs[(i + step + this.tabs.length) % this.tabs.length].id);
+  }
+
+  private reorderTabs(ids: string[]): void {
+    const byId = new Map(this.tabs.map((t) => [t.id, t]));
+    const next = ids.map((id) => byId.get(id)).filter((t): t is DocTab => !!t);
+    if (next.length === this.tabs.length) this.tabs = next;
+    this.saveSession();
+  }
+
+  /** Fecha a aba. Nada de perguntas: o que não está salvo vira rascunho e fica em "Recentes". */
+  private async closeTab(id: string): Promise<void> {
+    const tab = this.tabs.find((t) => t.id === id);
+    if (!tab || this.switching) return;
+    const isCurrent = tab === this.tab;
+    if (isCurrent) await this.autosave();
+    else if (tab.dirty && tab.path) {
+      try {
+        await files.saveDoc(tab.path, this.textOf(tab));
+        tab.dirty = false;
+      } catch {
+        /* segue: o rascunho da sessão já tem o texto */
+      }
+    }
+    // rascunho vazio não vale a pena guardar
+    if (tab.isDraft && tab.path && !this.textOf(tab).trim()) void files.deleteDraft(tab.path).catch(() => {});
+    else if (tab.path) this.closedTabs.push(tab.path);
+    const index = this.tabs.indexOf(tab);
+    this.tabs = this.tabs.filter((t) => t !== tab);
+    if (!this.tabs.length) this.tabs.push(newTab(this.editor.createState("")));
+    if (isCurrent) {
+      this.switching = true;
+      try {
+        await this.activate(this.tabs[Math.min(index, this.tabs.length - 1)]);
+      } finally {
+        this.switching = false;
+      }
+    } else {
+      this.afterTabChange();
+    }
+  }
+
+  private async reopenClosedTab(): Promise<void> {
+    while (this.closedTabs.length) {
+      const p = this.closedTabs.pop()!;
+      if (this.tabs.some((t) => t.path === p)) continue;
+      if (await this.openPath(p)) return;
+    }
+    toast("Nenhuma aba fechada para reabrir.", "info", 2200);
+  }
+
+  private async closeOthers(keep: DocTab, onlyRight = false): Promise<void> {
+    const start = this.tabs.indexOf(keep);
+    const victims = this.tabs.filter((t, i) => t !== keep && (!onlyRight || i > start));
+    if (victims.includes(this.tab)) await this.switchTo(keep.id);
+    for (const v of victims) await this.closeTab(v.id);
+  }
+
+  private async renameTab(id: string, value: string): Promise<void> {
+    const tab = this.tabs.find((t) => t.id === id);
+    if (!tab) return;
+    if (tab !== this.tab) await this.switchTo(id);
+    await this.applyTitle(value);
+  }
+
+  /** Menu suspenso solto (botão direito) numa posição da tela. */
+  private openMenuAt(x: number, y: number, items: { label: string; hint?: string; run: () => void; sep?: boolean }[]): void {
+    this.closeMenus();
+    const menu = h("div", { class: "dropdown" });
+    for (const it of items) {
+      if (it.sep) this.ddSep(menu);
+      this.ddItem(menu, { label: it.label, hint: it.hint, onPick: it.run });
+    }
+    document.body.append(menu);
+    menu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - menu.offsetWidth - 8))}px`;
+    menu.style.top = `${Math.max(8, Math.min(y, window.innerHeight - menu.offsetHeight - 8))}px`;
+    const dismiss = (ev: MouseEvent) => {
+      if (!menu.contains(ev.target as Node)) {
+        this.closeMenus();
+        document.removeEventListener("mousedown", dismiss, true);
+      }
+    };
+    document.addEventListener("mousedown", dismiss, true);
+  }
+
+  private openTabMenu(id: string, x: number, y: number): void {
+    const tab = this.tabs.find((t) => t.id === id);
+    if (!tab) return;
+    const items: { label: string; hint?: string; run: () => void; sep?: boolean }[] = [
+      { label: "Renomear", hint: "F2", run: () => this.tabBar.beginRename(id) },
+      { label: "Duplicar aba", run: () => void this.duplicateTab(tab) },
+    ];
+    if (tab.path) {
+      items.push(
+        { label: "Mostrar na pasta", run: () => void revealItemInDir(tab.path!).catch(() => {}) },
+        { label: "Copiar caminho", run: () => void copyText(tab.path!) }
+      );
+    }
+    items.push(
+      { label: "Fechar", hint: "Ctrl+W", run: () => void this.closeTab(id), sep: true },
+      { label: "Fechar as outras", run: () => void this.closeOthers(tab) },
+      { label: "Fechar as da direita", run: () => void this.closeOthers(tab, true) }
+    );
+    this.openMenuAt(x, y, items);
+  }
+
+  private async duplicateTab(tab: DocTab): Promise<void> {
+    const copy = this.addTabFor(null, this.textOf(tab));
+    copy.title = `${tabLabel(tab)} (cópia)`;
+    copy.dirty = true;
+    await this.switchTo(copy.id);
+  }
+
+  /** Menu "Recentes": arquivos recentes que não estão abertos e rascunhos guardados no app. */
+  private async openRecentsMenu(anchor: HTMLElement): Promise<void> {
+    const open = new Set(this.tabs.map((t) => (t.path ?? "").toLowerCase()));
+    let drafts: files.DraftInfo[] = [];
+    try {
+      drafts = (await files.listDrafts()).filter((d) => !open.has(d.path.toLowerCase())).slice(0, 6);
+    } catch {
+      /* sem rascunhos (navegador) */
+    }
+    this.openMenu(anchor, (menu) => {
+      menu.classList.add("recents-menu");
+      const recents = this.recents.filter((r) => !open.has(r.path.toLowerCase()));
+      const row = (p: string, forget: (() => void) | null) => {
+        const btn = h("button", { class: "dd-item two-line", type: "button", title: p });
+        btn.append(h("span", { class: "tl-name", text: stripExt(baseName(p)) }), h("span", { class: "tl-dir", text: docDirOf(p) }));
+        btn.addEventListener("click", () => {
+          this.closeMenus();
+          void this.openPath(p);
+        });
+        const wrap = h("div", { class: "dd-row" }, [btn]);
+        if (forget) {
+          const x = h("button", { class: "dd-x", type: "button", title: "Tirar da lista", text: "×" });
+          x.addEventListener("click", (e) => {
+            e.stopPropagation();
+            forget();
+            wrap.remove();
+          });
+          wrap.append(x);
+        }
+        menu.append(wrap);
+      };
+      menu.append(h("div", { class: "dd-title", text: "Arquivos recentes" }));
+      if (!recents.length) this.ddNote(menu, "Nenhum arquivo recente fora das abas abertas.");
+      for (const r of recents) {
+        row(r.path, () => {
+          this.recents = this.recents.filter((x) => x.path !== r.path);
+          saveJSON("mdc.recents", this.recents);
+        });
+      }
+      if (drafts.length) {
+        this.ddSep(menu);
+        menu.append(h("div", { class: "dd-title", text: "Rascunhos guardados no app" }));
+        for (const d of drafts) row(d.path, null);
+      }
+      this.ddSep(menu);
+      this.ddItem(menu, { icon: "i-open", label: "Abrir arquivo…", hint: "Ctrl+O", onPick: () => void this.openDocDialog() });
+      if (this.closedTabs.length) {
+        this.ddItem(menu, { icon: "i-undo", label: "Reabrir aba fechada", hint: "Ctrl+Shift+T", onPick: () => void this.reopenClosedTab() });
+      }
+    });
+  }
+
   // ---------- fluxo de documento ----------
 
   private onDocChange(): void {
+    const wasDirty = this.dirty;
     this.dirty = true;
     // a correção automática só age depois que você digita (não mexe em documento aberto)
     this.autoFixArmed = true;
-    this.refreshTitle();
+    if (!wasDirty) this.refreshTitle();
     this.setSaveState();
     this.updatePreview();
     this.statsSoon();
@@ -323,6 +688,21 @@ class App {
       3400
     );
   }
+
+  /** Liga/desliga sugestões inline estilo Copilot (guardadas entre sessões). */
+  private setCopilot(on: boolean): void {
+    this.copilot = on;
+    saveJSON("mdc.copilot", on);
+    this.editor.setGhostTextEnabled(on);
+    toast(
+      on
+        ? "Sugestões inline ligadas (estilo Copilot): use Tab para aceitar ou Alt+Seta para palavra por palavra."
+        : "Sugestões inline desativadas.",
+      "ok",
+      2800
+    );
+  }
+
 
   /** Substituição de um aviso: estilo usa `fix`; ortografia usa `auto` (correção confiável). */
   private replacementFor(issue: WritingIssue): string | undefined {
@@ -429,6 +809,138 @@ class App {
   }
 
   /** Dicionário pessoal: palavras (nomes, termos técnicos…) que não devem ser marcadas. */
+  // ---------- histórico de versões, configurações e busca no conteúdo ----------
+
+  /** Guarda uma versão do texto (automática, no máximo uma a cada 5 min — ou sempre, ao salvar). */
+  private recordVersion(path: string, text: string, force = false): void {
+    if (!this.settings.historyOn) return;
+    void snapshot(path, text, { max: this.settings.historyMax, force });
+  }
+
+  private async openHistory(): Promise<void> {
+    if (!this.path && !(await this.ensureSaved())) return;
+    const path = this.path;
+    if (!path) return;
+    // garante que o estado de agora já esteja no histórico
+    await snapshot(path, this.editor.getText(), { max: this.settings.historyMax });
+    openHistoryDialog({
+      doc: path,
+      title: tabLabel(this.tab),
+      max: this.settings.historyMax,
+      getText: () => this.editor.getText(),
+      restore: (text) => this.editor.replaceRange(0, this.editor.getText().length, text),
+    });
+  }
+
+  private async saveVersionNow(): Promise<void> {
+    if (!this.path && !(await this.ensureSaved())) return;
+    if (!this.path) return;
+    const ok = await snapshot(this.path, this.editor.getText(), { manual: true, max: this.settings.historyMax });
+    toast(ok ? "Versão salva no histórico." : "Esse texto já está no histórico.", ok ? "ok" : "info", 2400);
+  }
+
+  private openAppSettings(): void {
+    // Abre as configurações numa JANELA PRÓPRIA (como uma aba nova). No navegador (dev)
+    // usa window.open; se nada disso funcionar, cai no diálogo antigo.
+    const url = "index.html?tela=config";
+    const tauri = (window as unknown as { __TAURI__?: unknown }).__TAURI__;
+    if (tauri) {
+      void import("@tauri-apps/api/webviewWindow")
+        .then(async ({ WebviewWindow }) => {
+          const existente = await WebviewWindow.getByLabel("config");
+          if (existente) {
+            await existente.setFocus();
+            return;
+          }
+          new WebviewWindow("config", {
+            url,
+            title: "Configurações — mdCreator",
+            width: 780,
+            height: 720,
+            minWidth: 560,
+            minHeight: 480,
+            center: true,
+          });
+        })
+        .catch(() => this.openSettingsModal());
+      return;
+    }
+    const win = window.open(url, "_blank", "width=780,height=720");
+    if (!win) this.openSettingsModal();
+  }
+
+  /** Reserva: o diálogo antigo (caso a janela não possa ser aberta). */
+  private openSettingsModal(): void {
+    openSettingsDialog({
+      current: this.settings,
+      historyCount: async () => (this.path ? (await listVersions(this.path)).length : 0),
+      onSave: (next) => {
+        this.settings = next;
+        setTone(next.tone);
+        void this.runWritingCheck();
+        this.translationDocChanged(true);
+        toast("Configurações salvas.", "ok", 2200);
+      },
+      onClearHistory: async () => {
+        if (this.path) await clearHistory(this.path);
+        toast("Histórico deste documento apagado.", "info", 2400);
+      },
+      onOpenHistory: () => void this.openHistory(),
+    });
+  }
+
+  private setTonePref(tone: Tone): void {
+    this.settings = { ...this.settings, tone };
+    saveJSON("mdc.settings", this.settings);
+    setTone(tone);
+    void this.runWritingCheck();
+    toast(`Tom do texto: ${tone}.`, "ok", 2200);
+  }
+
+  /** Busca no conteúdo: arquivos dos projetos (disco) + o que está nas abas abertas (mesmo sem salvar). */
+  private async searchContent(query: string, roots: string[]): Promise<files.ContentHit[]> {
+    const fold = (s: string) => Array.from(s, (c) => c.normalize("NFD")[0].toLowerCase()).join("");
+    const needle = fold(query.trim());
+    if (needle.length < 2) return [];
+    const open = new Map<string, files.ContentHit[]>();
+    for (const t of this.tabs) {
+      if (!t.path) continue;
+      const hits: files.ContentHit[] = [];
+      this.textOf(t)
+        .split("\n")
+        .some((line, i) => {
+          const pos = fold(line).indexOf(needle);
+          if (pos < 0) return false;
+          const from = Math.max(0, pos - 50);
+          hits.push({
+            path: t.path!,
+            name: baseName(t.path!),
+            line: i + 1,
+            text: line.slice(from, pos + needle.length + 90),
+            start: pos - from,
+            end: pos - from + needle.length,
+          });
+          return hits.length >= 5;
+        });
+      open.set(t.path.toLowerCase(), hits);
+    }
+    let disk: files.ContentHit[] = [];
+    if (roots.length) {
+      try {
+        disk = await files.searchMarkdown(roots, query);
+      } catch {
+        disk = [];
+      }
+    }
+    const merged = disk.filter((h) => !open.has(h.path.toLowerCase()));
+    for (const hits of open.values()) merged.push(...hits);
+    return merged.sort((a, b) => a.path.localeCompare(b.path) || a.line - b.line);
+  }
+
+  private async openAt(path: string, line: number): Promise<void> {
+    if (await this.openPath(path)) window.setTimeout(() => this.editor.gotoLine(line), 80);
+  }
+
   private showDictionary(): void {
     const backdrop = h("div", { class: "modal-backdrop" });
     const modal = h("div", { class: "modal" });
@@ -600,42 +1112,98 @@ class App {
     });
   }
 
-  private updatePreview = debounce(() => void this.preview.render(this.editor.getText()), 180);
+  /** Avisa a tradução ao vivo que o texto (ou a aba) mudou. */
+  private translationDocChanged(immediate = false): void {
+    this.translation?.docChanged(this.editor.getText(), immediate);
+  }
+
+  /** Arruma o português (pontuação, maiúsculas, formalidade) antes de mandar traduzir. */
+  private polishForTranslation(text: string): string {
+    try {
+      const fixes = checkStyle(text)
+        .filter((i) => i.fix !== undefined)
+        .sort((a, b) => b.from - a.from);
+      let out = text;
+      let limit = Infinity;
+      for (const i of fixes) {
+        if (i.to > limit) continue;
+        out = out.slice(0, i.from) + i.fix + out.slice(i.to);
+        limit = i.from;
+      }
+      return out;
+    } catch {
+      return text;
+    }
+  }
+
+  private setPreviewPath(p: string | null): void {
+    this.preview.setDocPath(p);
+    this.translation?.setDocPath(p);
+  }
+
+  private updatePreview = debounce(() => {
+    void this.preview.render(this.editor.getText());
+    this.translationDocChanged();
+  }, 180);
   private statsSoon = debounce(() => this.updateStats(), 260);
   private outlineSoon = debounce(() => this.renderOutline(), 400);
   private autosaveSoon = debounce(() => void this.autosave(), 2000);
 
   private async autosave(): Promise<void> {
-    if (!this.dirty) return;
+    const tab = this.tab;
+    if (!tab.dirty) return;
+    const text = this.editor.getText();
     // Documento novo (sem arquivo ainda): cria o rascunho e passa a salvar nele — é o
     // "salva conforme eu escrevo". Se não houver acesso a arquivos (navegador), cai
     // no servidor de desenvolvimento, que grava em temp/rascunho.md do projeto.
-    if (!this.path) {
+    if (!tab.path) {
       try {
         if (await this.ensureSaved()) return;
       } catch {
         /* sem arquivos: segue para o salvamento pelo servidor */
       }
-      const salvou = await files.saveDraftFallback("rascunho", this.editor.getText());
+      const salvou = await files.saveDraftFallback("rascunho", text);
       if (salvou) {
-        this.dirty = false;
-        this.statusSaved = `Salvo automaticamente em temp/ às ${fmtTime()}`;
-        this.refreshTitle();
-        this.setSaveState();
+        tab.dirty = false;
+        tab.statusSaved = `Salvo automaticamente em temp/ às ${fmtTime()}`;
+        this.afterSave(tab);
       }
       return;
     }
     try {
-      await files.saveDoc(this.path, this.editor.getText());
-      this.dirty = false;
-      this.statusSaved = this.isDraft
-        ? `Rascunho atualizado às ${fmtTime()}`
-        : `Salvo automaticamente às ${fmtTime()}`;
-      this.refreshTitle();
-      this.setSaveState();
+      await files.saveDoc(tab.path, text);
+      this.recordVersion(tab.path, text);
+      // se o texto mudou enquanto gravava, continua "sujo" (o próximo autosave pega)
+      if (tab !== this.tab || this.editor.getText() === text) tab.dirty = false;
+      tab.statusSaved = tab.isDraft ? `Rascunho atualizado às ${fmtTime()}` : `Salvo automaticamente às ${fmtTime()}`;
+      this.afterSave(tab);
     } catch {
       // não conseguiu gravar pelo app (navegador): guarda em temp/ do projeto
-      await files.saveDraftFallback("rascunho", this.editor.getText());
+      await files.saveDraftFallback("rascunho", text);
+    }
+  }
+
+  /** Redesenha o que depende do estado "salvo" — só se a aba ainda for a ativa. */
+  private afterSave(tab: DocTab): void {
+    if (tab === this.tab) {
+      this.refreshTitle();
+      this.setSaveState();
+    } else {
+      this.tabBar.render(this.tabs, this.tab.id);
+    }
+    this.sidebar?.render();
+  }
+
+  /** Cria um documento novo dentro da pasta de um projeto e abre numa aba. */
+  private async newDocIn(dir: string): Promise<void> {
+    try {
+      const target = await files.uniqueMdPath(dir, "novo-documento");
+      await files.saveDoc(target, "");
+      await this.openPath(target);
+      void this.sidebar.refresh();
+      this.tabBar.beginRename(this.tab.id);
+    } catch (e) {
+      toast("Não consegui criar o documento: " + e, "err", 5000);
     }
   }
 
@@ -667,6 +1235,8 @@ class App {
 
       const content = this.editor.getText();
       await files.saveDoc(this.path, content);
+      if (previousPath && previousPath !== this.path) void moveHistory(previousPath, this.path);
+      this.recordVersion(this.path, content, true);
 
       // saiu do rascunho para uma pasta do usuário: leva as imagens junto
       if (wasDraft && previousPath && docDirOf(this.path) !== docDirOf(previousPath)) {
@@ -681,11 +1251,9 @@ class App {
 
       this.dirty = false;
       this.statusSaved = `Salvo às ${fmtTime()}`;
-      this.preview.setDocPath(this.path);
+      this.setPreviewPath(this.path);
       if (!this.isDraft) this.addRecent(this.path);
-      this.refreshTitle();
-      this.refreshPath();
-      this.setSaveState();
+      this.afterTabChange();
 
       if (previousPath && !wasDraft && docDirOf(this.path) !== docDirOf(previousPath) && /\]\(assets\//.test(content)) {
         toast("Salvo em outra pasta: as imagens de assets/ continuam na pasta antiga.", "info", 7000);
@@ -700,21 +1268,16 @@ class App {
   }
 
   private async newDoc(): Promise<void> {
-    if (!(await this.confirmDiscard())) return;
-    this.path = null;
-    this.title = null;
-    this.isDraft = false;
-    this.statusSaved = "Novo documento";
-    this.autoFixArmed = false;
-    this.editor.setText("");
-    this.dirty = false;
-    this.preview.setDocPath(null);
-    this.refreshTitle();
-    this.refreshPath();
-    this.setSaveState();
-    this.updateStats();
-    this.renderOutline();
-    void this.preview.render("");
+    // já existe uma aba vazia e sem nome? só vai até ela (como o Chrome faz com a página nova)
+    const empty = this.tabs.find((t) => !t.path && !t.dirty && this.textOf(t).length === 0);
+    if (empty) {
+      if (empty !== this.tab) await this.switchTo(empty.id);
+      this.editor.focus();
+      return;
+    }
+    const tab = newTab(this.editor.createState(""));
+    this.tabs.push(tab);
+    await this.switchTo(tab.id);
   }
 
   private async openDocDialog(): Promise<void> {
@@ -722,40 +1285,30 @@ class App {
     if (picked) await this.openPath(picked);
   }
 
+  /** Abre o arquivo numa aba (se já estiver aberto, só vai até ela). */
   private async openPath(path: string): Promise<boolean> {
-    if (!(await this.confirmDiscard())) return false;
+    const already = this.tabs.find((t) => t.path && t.path.toLowerCase() === path.toLowerCase());
+    if (already) {
+      await this.switchTo(already.id);
+      return true;
+    }
     try {
       const content = await files.loadDoc(path);
-      this.path = path;
-      this.title = null;
-      this.isDraft = false;
-      this.autoFixArmed = false;
-      this.editor.setText(content);
-      this.dirty = false;
-      this.statusSaved = `Aberto às ${fmtTime()}`;
-      this.preview.setDocPath(path);
-      this.refreshTitle();
-      this.refreshPath();
-      this.setSaveState();
-      this.updateStats();
-      this.renderOutline();
+      const tab = this.addTabFor(path, content);
       this.addRecent(path);
-      await this.preview.render(content);
+      // abrir a partir de uma aba vazia e sem nome ocupa o lugar dela
+      const current = this.tab;
+      const reuse = !current.path && !current.dirty && this.textOf(current).length === 0;
+      await this.switchTo(tab.id);
+      if (reuse && this.tab === tab) {
+        this.tabs = this.tabs.filter((t) => t !== current);
+        this.afterTabChange();
+      }
       return true;
     } catch (e) {
       toast("Não foi possível abrir o arquivo: " + e, "err");
       return false;
     }
-  }
-
-  private async confirmDiscard(): Promise<boolean> {
-    if (!this.dirty) return true;
-    return await ask("Há alterações não salvas. Descartar?", {
-      title: "mdCreator",
-      kind: "warning",
-      okLabel: "Descartar",
-      cancelLabel: "Manter",
-    });
   }
 
   /**
@@ -764,7 +1317,9 @@ class App {
    * Funciona mesmo com backends antigos (não depende de comandos novos).
    */
   private async ensureSaved(): Promise<boolean> {
-    if (this.path) return true;
+    const tab = this.tab;
+    if (tab.path) return true;
+    const text = this.editor.getText();
     try {
       const base = slugify(this.docTitleForFileName()) || "documento";
       let target: string | null = null;
@@ -781,15 +1336,17 @@ class App {
           target = joinPath(dir, `${base}-${i}.md`);
         }
       }
-      await files.saveDoc(target, this.editor.getText());
-      this.path = target;
-      this.isDraft = true;
-      this.dirty = false;
-      this.statusSaved = "Rascunho guardado no app";
-      this.preview.setDocPath(target);
-      this.refreshTitle();
-      this.refreshPath();
-      this.setSaveState();
+      await files.saveDoc(target, text);
+      tab.path = target;
+      tab.isDraft = true;
+      tab.dirty = this.tab === tab ? this.editor.getText() !== text : false;
+      tab.statusSaved = "Rascunho guardado no app";
+      if (this.tab === tab) {
+        this.setPreviewPath(target);
+        this.refreshPath();
+      }
+      this.afterSave(tab);
+      this.saveSession();
       toast(
         "Rascunho guardado na pasta do app (não é a versão final). Use Ctrl+Shift+S quando quiser salvar numa pasta sua.",
         "info",
@@ -810,49 +1367,11 @@ class App {
     return base.slice(0, 60) || "documento";
   }
 
-  /** Edição do nome do documento direto no cabeçalho. */
-  private startTitleEdit(): void {
-    const host = $("#doc-title");
-    if (host.querySelector("input")) return;
-    const current = this.path ? stripExt(baseName(this.path)) : this.title ?? "";
-    const input = document.createElement("input");
-    input.type = "text";
-    input.className = "title-input";
-    input.value = current;
-    input.placeholder = "Nome do documento";
-    input.title = "Enter confirma · Esc cancela";
-    host.textContent = "";
-    host.append(input);
-    input.focus();
-    input.select();
-
-    let settled = false;
-    const done = async (keep: boolean) => {
-      if (settled) return;
-      settled = true;
-      const value = input.value.trim();
-      input.remove();
-      this.refreshTitle();
-      if (keep && value && value !== current) await this.applyTitle(value);
-    };
-    input.addEventListener("blur", () => void done(true));
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        void done(true);
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        void done(false);
-      }
-    });
-  }
-
   /** Aplica o novo nome: renomeia o arquivo (se já salvo) ou guarda para o próximo salvamento. */
   private async applyTitle(value: string): Promise<void> {
     if (!this.path) {
       this.title = value;
-      this.refreshTitle();
+      this.afterTabChange();
       toast(`Nome definido: "${value}". Ele será usado quando o documento for salvo.`, "ok", 3600);
       return;
     }
@@ -860,14 +1379,12 @@ class App {
     try {
       const previous = this.path;
       const newPath = await files.renameFile(this.path, target);
+      void moveHistory(this.path, newPath);
       this.path = newPath;
       this.recents = this.recents.map((r) => (r.path === previous ? { ...r, path: newPath } : r));
       saveJSON("mdc.recents", this.recents);
-      this.renderRecents();
-      this.preview.setDocPath(newPath);
-      this.refreshTitle();
-      this.refreshPath();
-      this.setSaveState();
+      this.setPreviewPath(newPath);
+      this.afterTabChange();
       toast(`Documento renomeado para ${baseName(newPath)}.`, "ok", 3200);
     } catch (e) {
       toast("Não foi possível renomear: " + e, "err", 6000);
@@ -1369,48 +1886,26 @@ class App {
     );
   }
 
-  private async exportHtml(): Promise<void> {
-    const text = this.editor.getText();
-    if (!text.trim()) {
-      toast("Documento vazio — nada para exportar.", "info");
-      return;
-    }
-    const base = this.path ? stripExt(baseName(this.path)) : "documento";
-    const target = await files.pickSaveHtml(`${base}.html`);
-    if (!target) return;
-    try {
-      await this.preview.render(text);
-      const html = getExportHtml($("#preview"), base, mdCss);
-      await files.saveDoc(target, html);
-      toast(`HTML exportado: ${baseName(target)}`, "ok");
-      void revealItemInDir(target).catch(() => {});
-    } catch (e) {
-      toast("Falha ao exportar: " + e, "err");
-    }
-  }
-
-  private async exportPortableBundle(): Promise<void> {
-    if (!this.path) {
-      if (!(await this.save(true))) return;
-    } else if (this.dirty && !(await this.save(false))) {
-      return;
-    }
-    if (!this.path) return;
-
-    const suggested = `${stripExt(baseName(this.path))}-para-ia.zip`;
-    const target = await files.pickSaveBundle(joinPath(docDirOf(this.path), suggested));
-    if (!target) return;
-    try {
-      const count = await files.exportPortableBundle(this.path, this.editor.getText(), target);
-      toast(
-        `Pacote criado com o Markdown e ${count} imagem(ns) local(is). Envie o ZIP inteiro para a IA. URLs externas precisam de internet.`,
-        "ok",
-        6500
-      );
-      void revealItemInDir(target).catch(() => {});
-    } catch (e) {
-      toast("Não foi possível criar o pacote: " + e, "err", 7000);
-    }
+  /** Abre a tela de exportação (HTML, PDF, Word, Markdown, texto, pacote para IA ou cópia). */
+  private openExport(format?: ExportFormat): void {
+    if (document.querySelector(".export-modal")) return;
+    openExportDialog(
+      {
+        getMarkdown: () => this.editor.getText(),
+        docPath: () => this.path,
+        docName: () => (this.path ? stripExt(baseName(this.path)) : slugify(this.docTitleForFileName()) || "documento"),
+        isDark: () => document.documentElement.dataset.theme === "dark",
+        translation: this.translation,
+        mdCss,
+        ensureFile: async () => {
+          if (!this.path) return await this.save(true);
+          if (this.dirty) return await this.save(false);
+          return true;
+        },
+        reveal: (p) => void revealItemInDir(p).catch(() => {}),
+      },
+      format
+    );
   }
 
   // ---------- boas-vindas ----------
@@ -1534,6 +2029,18 @@ class App {
       case "draw":
         this.openDraw();
         break;
+      case "translate-toggle":
+        this.toggleTranslation();
+        break;
+      case "translate-settings":
+        this.translation.openSettings();
+        break;
+      case "export":
+        this.openExport();
+        break;
+      case "palette":
+        this.openPalette();
+        break;
     }
   }
 
@@ -1592,14 +2099,23 @@ class App {
     this.ddItem(menu, { icon: "i-saveas", label: "Salvar como…", hint: "Ctrl+Shift+S", onPick: () => void this.save(true) });
     this.ddSep(menu);
     this.ddItem(menu, { icon: "i-copy", label: "Copiar para a IA", hint: "Ctrl+Shift+C", onPick: () => void this.copyForAI() });
-    this.ddItem(menu, { icon: "i-export", label: "Exportar HTML", hint: "Ctrl+Shift+E", onPick: () => void this.exportHtml() });
-    this.ddItem(menu, { icon: "i-folder", label: "Pacote IA (.zip)", hint: "tudo junto", onPick: () => void this.exportPortableBundle() });
+    this.ddItem(menu, { icon: "i-export", label: "Exportar…", hint: "Ctrl+Shift+E", onPick: () => this.openExport() });
+    this.ddItem(menu, { icon: "i-zip", label: "Pacote para IA (.zip)", hint: "tudo junto", onPick: () => this.openExport("zip") });
+    this.ddItem(menu, {
+      icon: "i-globe",
+      label: "Tradução automática",
+      hint: "Ctrl+Alt+T",
+      checked: this.translation.settings.enabled,
+      onPick: () => this.toggleTranslation(),
+    });
     this.ddSep(menu);
     this.ddItem(menu, { icon: "i-folder", label: "Vincular pastas (contexto)…", onPick: () => void this.chooseFolders() });
     for (const folder of this.linkedFolders.slice(-3).reverse()) {
       this.ddItem(menu, { label: folder.name, hint: folder.path, onPick: () => void this.showFolderContext([folder.path]) });
     }
     this.ddSep(menu);
+    this.ddItem(menu, { icon: "i-clock", label: "Histórico de versões", onPick: () => void this.openHistory() });
+    this.ddItem(menu, { icon: "i-spark", label: "Configurações (tom, histórico)…", hint: `tom ${this.settings.tone}`, onPick: () => this.openAppSettings() });
     this.ddItem(menu, { icon: "i-check", label: "Revisar texto", hint: "F7", onPick: () => this.openReview() });
     this.ddItem(menu, {
       icon: "i-check",
@@ -1620,6 +2136,14 @@ class App {
       checked: this.autoFix,
       onPick: () => this.setAutoFix(!this.autoFix),
     });
+    this.ddItem(menu, {
+      icon: "i-check",
+      label: "Sugestões inline (estilo Copilot)",
+      hint: "Tab aceita, Alt+Seta palavra",
+      checked: this.copilot,
+      onPick: () => this.setCopilot(!this.copilot),
+    });
+
     this.ddSep(menu);
     this.ddItem(menu, {
       icon: "i-sidebar",
@@ -1695,10 +2219,10 @@ class App {
             void this.chooseFolders();
             break;
           case "export-html":
-            void this.exportHtml();
+            this.openExport("html");
             break;
           case "export-bundle":
-            void this.exportPortableBundle();
+            this.openExport("zip");
             break;
           case "toggle-more": {
             const box = document.querySelector<HTMLElement>("#toolbar-more");
@@ -1743,9 +2267,183 @@ class App {
     }
   }
 
+  /** Controles de janela integrados (minimizar, maximizar/restaurar, fechar e arrastar). */
+  private setupWindowControls(): void {
+    const btnMin = document.getElementById("win-min");
+    const btnMax = document.getElementById("win-max");
+    const btnClose = document.getElementById("win-close");
+    const topbar = document.getElementById("topbar");
+
+    // Remove barra branca nativa no Tauri e ativa sombra
+    try {
+      const win = getCurrentWindow();
+      void win.setDecorations(false);
+      void win.setShadow(true);
+    } catch {
+      /* ambiente web/preview */
+    }
+
+    const updateMaxIcon = async () => {
+      try {
+        const isMax = await getCurrentWindow().isMaximized();
+        if (btnMax) {
+          const use = btnMax.querySelector("use");
+          if (use) {
+            use.setAttribute("href", isMax ? "#i-win-restore" : "#i-win-max");
+          }
+          btnMax.title = isMax ? "Restaurar tamanho" : "Maximizar";
+          btnMax.setAttribute("aria-label", btnMax.title);
+        }
+      } catch {
+        /* ambiente sem janela nativa (preview no navegador) */
+      }
+    };
+
+    btnMin?.addEventListener("click", () => {
+      try {
+        void getCurrentWindow().minimize();
+      } catch {}
+    });
+
+    btnMax?.addEventListener("click", async () => {
+      try {
+        await getCurrentWindow().toggleMaximize();
+        await updateMaxIcon();
+      } catch {}
+    });
+
+    btnClose?.addEventListener("click", async () => {
+      try {
+        await this.autosave();
+        await getCurrentWindow().close();
+      } catch {}
+    });
+
+    // Duplo clique na barra superior alterna maximizar
+    topbar?.addEventListener("dblclick", (e) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("button, input, a, .win-btn, .btn, .split-btn, .palette-btn")) {
+        try {
+          void getCurrentWindow().toggleMaximize().then(updateMaxIcon);
+        } catch {}
+      }
+    });
+
+    // Arrastar janela com o mouse (fallback seguro para além do data-tauri-drag-region)
+    topbar?.addEventListener("mousedown", (e) => {
+      if (e.button !== 0) return;
+      const target = e.target as HTMLElement;
+      if (!target.closest("button, input, a, .win-btn, .btn, .split-btn, .palette-btn")) {
+        try {
+          void getCurrentWindow().startDragging();
+        } catch {}
+      }
+    });
+
+    // Sincroniza ícone de maximizar ao redimensionar
+    window.addEventListener("resize", () => {
+      void updateMaxIcon();
+    });
+
+    void updateMaxIcon();
+  }
+
+  /** Modo foco: só o texto, sem painéis nem barras (Esc ou Ctrl+Shift+F para sair). */
+  private toggleFocus(force?: boolean): void {
+    const on = force ?? !document.body.classList.contains("focus-mode");
+    document.body.classList.toggle("focus-mode", on);
+    if (on) toast("Modo foco: Esc para sair.", "info", 2200);
+    this.editor.focus();
+  }
+
+  /** Busca de comandos (Ctrl+K). */
+  private openPalette(): void {
+    const items: PaletteItem[] = [];
+    const add = (group: string, label: string, run: () => void, hint?: string, keywords?: string) =>
+      items.push({ group, label, run, hint, keywords });
+
+    add("Documento", "Novo documento (nova aba)", () => void this.newDoc(), "Ctrl+T", "criar");
+    add("Documento", "Abrir arquivo…", () => void this.openDocDialog(), "Ctrl+O");
+    add("Documento", "Salvar", () => void this.save(false), "Ctrl+S");
+    add("Documento", "Salvar como…", () => void this.save(true), "Ctrl+Shift+S");
+    add("Documento", "Renomear documento", () => this.tabBar.beginRename(this.tab.id), "F2", "nome título");
+    add("Documento", "Histórico de versões", () => void this.openHistory(), undefined, "versoes restaurar voltar anterior");
+    add("Documento", "Salvar versão agora", () => void this.saveVersionNow(), undefined, "historico marcar");
+    add("Buscar", "Buscar no conteúdo dos documentos", () => this.sidebar.focusSearch(), undefined, "procurar texto pesquisar projetos");
+    add("Configurações", "Configurações (tom do texto, histórico)…", () => this.openAppSettings(), undefined, "preferencias ajustes");
+    add("Configurações", "Tom do texto: formal", () => this.setTonePref("formal"));
+    add("Configurações", "Tom do texto: neutro", () => this.setTonePref("neutro"));
+    add("Configurações", "Tom do texto: informal", () => this.setTonePref("informal"));
+    add("Documento", "Fechar aba", () => void this.closeTab(this.tab.id), "Ctrl+W");
+    add("Documento", "Reabrir aba fechada", () => void this.reopenClosedTab(), "Ctrl+Shift+T");
+
+    add("Exportar", "Exportar…", () => this.openExport(), "Ctrl+Shift+E");
+    add("Exportar", "Exportar como PDF", () => this.openExport("pdf"), undefined, "imprimir");
+    add("Exportar", "Exportar como Word (.docx)", () => this.openExport("docx"), undefined, "doc");
+    add("Exportar", "Exportar como página web (.html)", () => this.openExport("html"), undefined, "site");
+    add("Exportar", "Exportar Markdown", () => this.openExport("md"));
+    add("Exportar", "Exportar texto simples", () => this.openExport("txt"), undefined, "txt");
+    add("Exportar", "Pacote para IA (.zip)", () => this.openExport("zip"), undefined, "zip");
+    add("Exportar", "Copiar formatado (colar no Word)", () => this.openExport("copy"));
+    add("Exportar", "Copiar Markdown para a IA", () => void this.copyForAI(), "Ctrl+Shift+C");
+
+    const tr = this.translation;
+    add("Tradução", tr.settings.enabled ? "Desligar tradução automática" : "Ligar tradução automática (PT-BR → inglês)", () => this.toggleTranslation(), "Ctrl+Alt+T", "traduzir english");
+    add("Tradução", "Ajustes da tradução (offline, glossário…)", () => tr.openSettings(), undefined, "motor modelo glossario");
+    add("Tradução", "Ver só português", () => this.showLanguage("pt"));
+    add("Tradução", "Ver só inglês", () => this.showLanguage("en"));
+    add("Tradução", "Ver português e inglês juntos", () => this.showLanguage("both"));
+
+    add("Escrever", "Revisar texto", () => this.openReview(), "F7", "ortografia gramática");
+    add("Escrever", "Modo foco", () => this.toggleFocus(), "Ctrl+Shift+F", "concentrar zen");
+    add("Escrever", "Desenhar", () => void this.openDraw(), "Ctrl+Shift+D");
+    add("Escrever", "Inserir imagem", () => void this.insertImageFromDialog());
+    add("Escrever", "Inserir tabela", () => this.act("table"));
+    add("Escrever", "Inserir diagrama", () => this.act("mermaid"));
+    add("Escrever", "Inserir modelo para IA", () => this.act("ai-template"));
+    add("Escrever", "Dicionário pessoal…", () => this.showDictionary());
+
+    add("Ver", "Alternar tema claro/escuro", () => this.applyTheme(document.documentElement.dataset.theme !== "dark"), undefined, "escuro dark");
+    add("Ver", "Mostrar/ocultar painel lateral", () => this.toggle("no-sidebar"));
+    add("Ver", "Mostrar/ocultar pré-visualização", () => this.toggle("no-preview"));
+    add("Ver", "Painel: Projetos", () => this.openSidePanel("projects"));
+    add("Ver", "Painel: Início (abertos e recentes)", () => this.openSidePanel("home"));
+    add("Ver", "Painel: Estrutura do documento", () => this.openSidePanel("outline"));
+    add("Ver", "Boas-vindas e ajuda", () => this.showWelcome(), "F1");
+
+    this.tabs.forEach((t, i) => {
+      if (t !== this.tab) add("Ir para a aba", tabLabel(t), () => void this.switchTo(t.id), i < 9 ? `Ctrl+${i + 1}` : undefined);
+    });
+    this.recents.slice(0, 8).forEach((r) => add("Recentes", stripExt(baseName(r.path)), () => void this.openPath(r.path), docDirOf(r.path)));
+    openPalette(items);
+  }
+
+  private showLanguage(view: "pt" | "en" | "both"): void {
+    if (!this.translation.settings.enabled) this.toggleTranslation();
+    this.translation.setView(view);
+  }
+
+  private openSidePanel(panel: "home" | "projects" | "outline" | "context"): void {
+    document.body.classList.remove("no-sidebar");
+    this.sidebar.show(panel);
+  }
+
+  private toggleTranslation(): void {
+    const on = !this.translation.settings.enabled;
+    if (on && document.body.classList.contains("no-preview")) document.body.classList.remove("no-preview");
+    this.translation.setEnabled(on);
+    if (on && !loadJSON<boolean>("mdc.tr-intro", false)) {
+      saveJSON("mdc.tr-intro", true);
+      toast("Você escreve em português; o inglês aparece ao lado e acompanha o que você digita. Ajustes: botão “Ajustes” acima da pré-visualização.", "info", 7000);
+    }
+  }
+
   private toggle(cls: string): void {
     const on = document.body.classList.toggle(cls);
     saveJSON(`mdc.${cls}`, on);
+    if (cls === "no-preview" || cls === "no-sidebar") {
+      this.editor?.view?.requestMeasure();
+    }
   }
 
   private setupKeys(): void {
@@ -1760,6 +2458,15 @@ class App {
         this.openReview();
         return;
       }
+      if (e.key === "Escape" && document.body.classList.contains("focus-mode") && !document.querySelector(".modal-backdrop")) {
+        this.toggleFocus(false);
+        return;
+      }
+      if (e.key === "F2" && !document.querySelector(".modal-backdrop")) {
+        e.preventDefault();
+        this.tabBar.beginRename(this.tab.id);
+        return;
+      }
       const ctrl = e.ctrlKey || e.metaKey;
       if (!ctrl) return;
       const k = e.key.toLowerCase();
@@ -1770,12 +2477,37 @@ class App {
         return;
       }
       if (inModal) return;
-      if (k === "o") {
+      if (k === "k" && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        this.openPalette();
+      } else if (e.shiftKey && k === "f") {
+        e.preventDefault();
+        this.toggleFocus();
+      } else if (e.key === "Tab") {
+        e.preventDefault();
+        void this.switchRelative(e.shiftKey ? -1 : 1);
+      } else if (k === "w") {
+        e.preventDefault();
+        void this.closeTab(this.tab.id);
+      } else if (k === "t" && e.shiftKey) {
+        e.preventDefault();
+        void this.reopenClosedTab();
+      } else if (k === "t" && !e.altKey) {
+        e.preventDefault();
+        void this.newDoc();
+      } else if (/^[1-9]$/.test(k) && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        const target = k === "9" ? this.tabs[this.tabs.length - 1] : this.tabs[Number(k) - 1];
+        if (target) void this.switchTo(target.id);
+      } else if (k === "o") {
         e.preventDefault();
         void this.openDocDialog();
       } else if (k === "n") {
         e.preventDefault();
         void this.newDoc();
+      } else if (e.altKey && k === "t") {
+        e.preventDefault();
+        this.toggleTranslation();
       } else if (e.shiftKey && k === "d") {
         e.preventDefault();
         void this.openDraw();
@@ -1784,7 +2516,7 @@ class App {
         void this.copyForAI();
       } else if (e.shiftKey && k === "e") {
         e.preventDefault();
-        void this.exportHtml();
+        this.openExport();
       } else if (k === "b") {
         e.preventDefault();
         this.act("bold");
@@ -1798,36 +2530,8 @@ class App {
   // ---------- painel lateral / status ----------
 
   private addRecent(path: string): void {
-    this.recents = [{ path, at: Date.now() }, ...this.recents.filter((r) => r.path.toLowerCase() !== path.toLowerCase())].slice(0, 8);
+    this.recents = [{ path, at: Date.now() }, ...this.recents.filter((r) => r.path.toLowerCase() !== path.toLowerCase())].slice(0, 12);
     saveJSON("mdc.recents", this.recents);
-    this.renderRecents();
-  }
-
-  private renderRecents(): void {
-    const host = $("#recents-list");
-    host.innerHTML = "";
-    if (!this.recents.length) {
-      host.append(h("div", { class: "side-empty", text: "Nenhum arquivo aberto ainda" }));
-      return;
-    }
-    for (const r of this.recents) {
-      const item = h("div", { class: "recent" });
-      const btn = h("button", { class: "recent-btn", title: r.path });
-      btn.append(
-        h("span", { class: "recent-name", text: baseName(r.path) }),
-        h("span", { class: "recent-dir", text: docDirOf(r.path) })
-      );
-      btn.addEventListener("click", () => void this.openPath(r.path));
-      const rm = h("button", { class: "recent-x", text: "×", title: "Remover da lista" });
-      rm.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.recents = this.recents.filter((x) => x.path !== r.path);
-        saveJSON("mdc.recents", this.recents);
-        this.renderRecents();
-      });
-      item.append(btn, rm);
-      host.append(item);
-    }
   }
 
   private renderOutline(): void {
@@ -1855,6 +2559,7 @@ class App {
       btn.addEventListener("click", () => this.editor.gotoLine(it.line));
       host.append(btn);
     }
+    this.sidebar?.filterOutline();
   }
 
   private updateStats(): void {
@@ -1879,9 +2584,7 @@ class App {
 
   private refreshTitle(): void {
     const name = this.path ? baseName(this.path) : `${this.title ?? "Sem título"}.md`;
-    $("#doc-title").textContent = name;
-    const dot = $("#dirty-dot");
-    dot.hidden = !this.dirty;
+    this.tabBar?.render(this.tabs, this.tab.id);
     const title = `${this.dirty ? "• " : ""}${name} — mdCreator`;
     document.title = title;
     // Fora do Tauri (ex.: preview no navegador) a API não existe: seguimos em silêncio.
@@ -1921,9 +2624,13 @@ class App {
     localStorage.setItem("mdc.theme", dark ? "dark" : "light");
     this.editor?.setTheme(dark);
     this.preview?.setDark(dark);
+    this.translation?.setDark(dark);
     const btn = document.querySelector<HTMLElement>("#btn-theme");
     if (btn) btn.innerHTML = `<svg class="ic"><use href="#${dark ? "i-sun" : "i-moon"}"/></svg>`;
-    if (rerender && this.editor) void this.preview.render(this.editor.getText());
+    if (rerender && this.editor) {
+      void this.preview.render(this.editor.getText());
+      this.translationDocChanged(true);
+    }
   }
 
   private setupSplitter(): void {
@@ -2022,10 +2729,15 @@ class App {
   }
 }
 
-const app = new App();
-// gancho de depuração (útil para inspecionar/testar o app em execução)
-(window as unknown as Record<string, unknown>).__mdcreator = { app };
-void app.start().catch((e) => {
-  console.error(e);
-  toast("Erro ao iniciar o mdCreator: " + e, "err", 8000);
-});
+// Esta janela é a das Configurações? (aberta pelo menu ⋯ → Configurações)
+if (new URLSearchParams(location.search).get("tela") === "config") {
+  void import("./settings").then((m) => m.renderSettingsPage());
+} else {
+  const app = new App();
+  // gancho de depuração (útil para inspecionar/testar o app em execução)
+  (window as unknown as Record<string, unknown>).__mdcreator = { app };
+  void app.start().catch((e) => {
+    console.error(e);
+    toast("Erro ao iniciar o mdCreator: " + e, "err", 8000);
+  });
+}

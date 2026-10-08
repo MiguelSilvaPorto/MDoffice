@@ -8,7 +8,16 @@ export const FREQUENTES = new Set(
   PALAVRAS.split(" ").map((w) => w.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase())
 );
 
+/** Formas exatas com seus acentos corretos em minúsculas (ex.: "sessão", "ótima", "não") */
+export const FREQUENTES_EXATAS = new Set(
+  PALAVRAS.split(" ").map((w) => w.toLowerCase())
+);
+
+export const PALAVRAS_LISTA: string[] = PALAVRAS.split(" ");
+
+
 /** Devolve a lista de palavras frequentes (para debugar/testar). */
 export function listaFrequentes(): string[] {
   return [...FREQUENTES];
 }
+

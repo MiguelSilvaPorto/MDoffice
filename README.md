@@ -5,6 +5,42 @@ produzir documentos bonitos e funcionais — inclusive para enviar à IA.
 
 ## O que ele faz
 
+- **Abas estilo Chrome**: uma fileira horizontal com todos os documentos abertos, cada um
+  com seu próprio texto, histórico de desfazer e posição de rolagem. `Ctrl+T` nova aba,
+  `Ctrl+W` fecha, `Ctrl+Tab` / `Ctrl+1…9` trocam, `Ctrl+Shift+T` reabre a última fechada,
+  arraste para reordenar e clique com o botão direito para duplicar/fechar outras. Fechar uma
+  aba nunca pergunta nada: o que não foi salvo vira rascunho e fica em **Recentes**. As abas
+  abertas voltam sozinhas quando você reabre o app.
+- **Painel lateral de projetos**: ícones de painéis (**Início**, **Projetos**, **Estrutura** e
+  **Contexto IA**), busca e uma árvore de projetos — cada projeto é uma pasta sua, com os
+  `.md` dentro (✓ marca o que já está aberto numa aba). `+` cria um documento no projeto.
+- **Tradução automática PT-BR → inglês**: ligue em **Traduzir** (`Ctrl+Alt+T`). Você escreve em
+  português; a pré-visualização mostra **português e inglês lado a lado** (ou só um deles, ou
+  um embaixo do outro) e o inglês acompanha o que você digita — só os trechos alterados são
+  traduzidos de novo, o resto vem de uma memória local. Código, links, imagens, tabelas e
+  diagramas ficam intactos. Antes de traduzir, o app **arruma o português** (pontuação,
+  maiúsculas, “a gente → nós”, linguagem informal) para a tradução sair mais clara. Há um
+  **glossário** (termos que não se traduzem ou têm tradução fixa) em **Ajustes**. Dois motores:
+  **online grátis** (MyMemory) e **offline** (modelo que roda no PC, ≈120 MB baixados uma vez, sem
+  limite). No modo automático, se o limite do online acabar, ele passa para o offline.
+- **Exportar** (botão no topo ou `Ctrl+Shift+E`): uma tela só para escolher formato e idioma —
+  **página web**, **PDF**, **Word (.docx)**, **Markdown**, **texto simples**, **pacote para IA**
+  (.zip) ou **copiar formatado** (cola no Word/Docs). Cada um em **português**, **inglês** ou
+  **os dois** (documento bilíngue em duas colunas, parágrafo por parágrafo; no Markdown/texto/ZIP
+  saem dois arquivos). Opções de tema (claro, papel, escuro), tamanho da página e sumário.
+- **Busca de comandos** (`Ctrl+K`) e **modo foco** (`Ctrl+Shift+F`, Esc sai).
+- **Histórico de versões**: cada documento guarda cópias sozinhas (a cada 5 minutos, se o texto
+  mudou, e sempre que você salva). Abra pelo botão **Histórico** no rodapé, pelo menu **⋯** ou
+  pelo `Ctrl+K`: a lista mostra as versões, o lado direito mostra **o que mudou** (vermelho saiu,
+  verde entrou) e **Restaurar** troca o texto numa ação só (`Ctrl+Z` desfaz; o texto de antes é
+  guardado como "Antes de restaurar"). Dá para **salvar versão com nome** e o histórico acompanha
+  o arquivo quando você renomeia ou usa Salvar como.
+- **Tom do texto** (**⋯ → Configurações**): *formal* (aponta “pra”, “tá”, “a gente”, “coisa”…),
+  *neutro* (só o claramente informal) ou *informal* (não mexe no registro, só ortografia e
+  pontuação). Vale para o assistente, a correção automática e o português enviado à tradução.
+- **Busca no conteúdo**: a caixa **Buscar** do painel lateral procura dentro dos documentos dos
+  seus projetos (ignora acento e maiúscula) e nas abas abertas, mesmo sem salvar; clique no
+  resultado para abrir já na linha. Também em `Ctrl+K → Buscar no conteúdo`.
 - **Interface simples**: no topo só o essencial (Novo, Abrir, Salvar, Desenhar, Imagem e **⋯**).
   O resto (copiar para IA, HTML, Pacote IA, tema, painéis, pastas) fica no menu **⋯** — e a
   barra de formatação mostra uma linha só, com o **⋯** revelando o resto quando você quiser.
@@ -28,7 +64,7 @@ produzir documentos bonitos e funcionais — inclusive para enviar à IA.
 - **Caixa de texto nos dois estilos**: ferramenta **T** — clique e escreva (Enter quebra
   linha, Ctrl+Enter ou clicar fora conclui). No modo imagem, duplo clique edita o texto;
   no modo letras, o texto é escrito em linhas na grade.
-- **Renomear pelo título**: clique no nome do documento (no topo) e digite o novo nome.
+- **Renomear pela aba**: dê **duplo clique na aba** (ou `F2`) e digite o novo nome.
   Se o arquivo já estiver salvo, ele é **renomeado no disco** (a pasta `assets/` continua
   funcionando, pois as imagens são relativas); se ainda não foi salvo, o nome vale para o
   próximo salvamento. Nomes com caracteres inválidos são limpos e nada é sobrescrito.
@@ -102,6 +138,12 @@ produzir documentos bonitos e funcionais — inclusive para enviar à IA.
   Ela **não mexe** em documento que você só abriu (precisa que você digite) e cada correção é
   uma ação única de *desfazer* (`Ctrl+Z`). Palavras em que o corretor **não** tem certeza
   continuam só sugeridas (clique ou `F7` → **Corrigir tudo**).
+- **Espaço esquecido**: palavras coladas viram duas (“coisasque” → **coisas que**, “naoconsigo” →
+  **não consigo**, “textoOutro” → **texto Outro**) — sozinho quando as duas partes são palavras
+  comuns; com a palavra cortada no fim (“coisasqu”) o app só sugere “coisas que”. Também avisa e
+  corrige o espaço que falta depois de ponto, “!” e “?” (“fim.Começo”, “Oi!Tudo”). Marcas e
+  nomes (Instagram, WhatsApp) não são cortados, e verbos de informática (“scrollar”, “commitar”,
+  “deployar”…) não contam como erro.
 - **“Você quis dizer…?”**: para palavras que **existem** no dicionário mas estão a **uma
   letra** de uma palavra muito comum (ex.: *maneria* → **maneira**, com troca de letras de
   lugar) o app sugere a palavra provável — sem alarmar em palavras curtas nem nas que diferem
@@ -117,7 +159,7 @@ produzir documentos bonitos e funcionais — inclusive para enviar à IA.
   Formato da resposta) — ótimo para pedir coisas à IA.
 - **Copiar p/ IA**: copia o Markdown pronto e lembra você de anexar as imagens.
 - **Exportar HTML**: um único arquivo com o CSS embutido e as imagens em base64
-  (perfeito para compartilhar ou abrir depois).
+  (perfeito para compartilhar ou abrir depois) — agora dentro da tela **Exportar**.
 - **Pacote IA (.zip)**: reúne o Markdown, todas as imagens locais referenciadas,
   os JSONs editáveis dos desenhos e um `INSTRUCOES_PARA_IA.md` com campos simples
   para explicar a tarefa, o formato e os critérios. Envie o ZIP inteiro para levar tudo junto.
@@ -178,7 +220,14 @@ Outros comandos:
 | `Ctrl+Shift+S`     | Salvar como                   |
 | `Ctrl+Shift+D`     | Abrir o quadro de desenho     |
 | `Ctrl+Shift+C`     | Copiar Markdown para a IA     |
-| `Ctrl+Shift+E`     | Exportar HTML                 |
+| `Ctrl+Shift+E`     | Exportar (HTML, PDF, Word…)   |
+| `Ctrl+T` / `Ctrl+W` | Nova aba / fechar aba         |
+| `Ctrl+Tab`, `Ctrl+1…9` | Trocar de aba            |
+| `Ctrl+Shift+T`     | Reabrir aba fechada           |
+| `F2`               | Renomear o documento          |
+| `Ctrl+K`           | Buscar comandos               |
+| `Ctrl+Alt+T`       | Tradução automática           |
+| `Ctrl+Shift+F`     | Modo foco                     |
 | `Ctrl+B` / `Ctrl+I`| Negrito / itálico             |
 | `Ctrl+V`           | Colar imagem da área de transferência |
 | `F1`               | Tela de boas-vindas / ajuda   |
@@ -213,7 +262,15 @@ legível e as imagens ficam vinculadas por caminhos relativos dentro do ZIP.
 
 ```
 src/                  frontend (TypeScript, sem framework)
-├─ main.ts            integração geral (arquivos, IA, export, atalhos)
+├─ main.ts            integração geral (arquivos, IA, atalhos)
+├─ tabs.ts            abas de documentos (barra estilo Chrome)
+├─ sidebar.ts         painel lateral: início, projetos, estrutura, contexto IA
+├─ translate.ts       tradução: segmentação do Markdown, proteção de código/links, cache, motores
+├─ translate.worker.ts  motor offline (modelo no PC, em segundo plano)
+├─ translation.ts     preview duplo PT/EN ao vivo, ajustes e glossário
+├─ export.ts          tela Exportar (HTML, PDF, Word, MD, TXT, ZIP, cópia)
+├─ docx.ts            Markdown → Word
+├─ palette.ts         busca de comandos (Ctrl+K)
 ├─ editor.ts          CodeMirror 6 (tema, atalhos de Markdown, listas)
 ├─ preview.ts         Markdown → HTML + imagens + Mermaid + export
 ├─ draw.ts            desenho assistido embutido (PNG + JSON)

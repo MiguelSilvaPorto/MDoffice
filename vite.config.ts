@@ -44,12 +44,32 @@ function tempSavePlugin(): Plugin {
   };
 }
 
+/**
+ * No modo dev o Vite acrescenta `?import` aos imports dinâmicos e recusa arquivos de public/.
+ * O motor offline de tradução (onnxruntime) importa seus .mjs assim, então servimos /ort/ "cru".
+ */
+function ortPlugin(): Plugin {
+  return {
+    name: "mdc-ort-public",
+    configureServer(server) {
+      server.middlewares.use("/ort", (req, res, next) => {
+        const nome = path.basename((req.url || "").split("?")[0]);
+        const arquivo = path.join(process.cwd(), "public", "ort", nome);
+        if (!nome || !fs.existsSync(arquivo)) return next();
+        res.setHeader("content-type", nome.endsWith(".wasm") ? "application/wasm" : "text/javascript");
+        res.setHeader("cache-control", "no-cache");
+        fs.createReadStream(arquivo).pipe(res);
+      });
+    },
+  };
+}
+
 // Configuração pensada para o Tauri 2:
 // - porta fixa 1420 (definida em tauri.conf.json > build.devUrl)
 // - não limpar o terminal para não esconder logs do cargo
 export default defineConfig({
   clearScreen: false,
-  plugins: [tempSavePlugin()],
+  plugins: [tempSavePlugin(), ortPlugin()],
   server: {
     port: 1420,
     strictPort: true,

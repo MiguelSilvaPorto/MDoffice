@@ -7,11 +7,13 @@
 // "responsável" (e não "responsado", que é flexão, nem "responsivo", que é só parecido),
 // "improtante" vira "importante" e "otima" vira "ótima" — tudo isso em poucos milissegundos.
 import Typo from "typo-js";
-import { FREQUENTES } from "./palavras";
+import { FREQUENTES, PALAVRAS_LISTA } from "./palavras";
 
 interface SpellHit {
   word: string;
   suggestions: string[];
+  /** faltou espaço entre palavras (ex.: “coisasque” → “coisas que”) */
+  glued?: boolean;
   /** correção em que dá para confiar (aplicada sozinha pela correção automática) */
   best?: string;
 }
@@ -136,10 +138,11 @@ function construirIndice(): Map<string, string[]> {
     }
   }
   // formas frequentes que não estão no .dic (ex.: "importante", "ótima", "reunião")
-  for (const w of FREQUENTES) {
+  for (const w of PALAVRAS_LISTA) {
     if (typo && !typo.check(w)) continue;
     adicionar(w);
   }
+
   indice = mapa;
   return mapa;
 }
@@ -280,6 +283,122 @@ function sugerirPalavra(palavra: string): { sugestoes: string[]; best?: string; 
   return { sugestoes, best, notas: ordenadas.slice(0, 8) };
 }
 
+// ---------- palavras grudadas ("coisasque" → "coisas que") ----------
+
+/** Posição de cada palavra frequente (sem acento) — quanto menor, mais comum. */
+const POSICAO = new Map<string, number>();
+PALAVRAS_LISTA.forEach((w, i) => {
+  const n = norm(w);
+  if (!POSICAO.has(n)) POSICAO.set(n, i);
+});
+
+/** Palavrinhas de uma letra que podem aparecer coladas (“eu e você”, “a casa”). */
+const UMA_LETRA = new Set(["a", "e", "o", "é"]);
+
+interface Peca {
+  texto: string;
+  frequente: boolean;
+  posicao: number;
+}
+
+const pecas = new Map<string, Peca | null>();
+
+/** O pedaço é uma palavra de verdade? (frequente, ou com 4+ letras no dicionário) */
+function pecaValida(p: string): Peca | null {
+  const guardada = pecas.get(p);
+  if (guardada !== undefined) return guardada;
+  let r: Peca | null = null;
+  const lower = p.toLowerCase();
+  if (p.length === 1) {
+    if (UMA_LETRA.has(lower)) r = { texto: p, frequente: true, posicao: 5 };
+  } else {
+    const pos = POSICAO.get(norm(p));
+    if (pos !== undefined) {
+      if (typo?.check(lower)) r = { texto: p, frequente: true, posicao: pos };
+      else {
+        // acento faltando: "nao" → "não"
+        const v = variantesAcento(lower).find((x) => POSICAO.has(norm(x)));
+        if (v) r = { texto: ajustarCaixa(p, v), frequente: true, posicao: pos };
+      }
+    } else if (p.length >= 4 && typo?.check(lower)) {
+      r = { texto: p, frequente: false, posicao: 99999 };
+    }
+  }
+  pecas.set(p, r);
+  return r;
+}
+
+interface Segmentacao {
+  pontos: number;
+  partes: string[];
+  todasFrequentes: boolean;
+  peloMenosUma: boolean;
+}
+
+/** Melhor jeito de cortar a palavra em 2 ou 3 palavras reais (ou null). */
+function separarGrudada(palavra: string): Segmentacao[] {
+  const n = palavra.length;
+  if (n < 5 || n > 28 || /[-'’]/.test(palavra)) return [];
+  const memo = new Map<string, Segmentacao | null>();
+  const cortar = (i: number, restam: number): Segmentacao | null => {
+    if (i === n) return { pontos: 0, partes: [], todasFrequentes: true, peloMenosUma: false };
+    if (restam === 0) return null;
+    const chave = i + "|" + restam;
+    if (memo.has(chave)) return memo.get(chave)!;
+    let melhor: Segmentacao | null = null;
+    for (let j = i + 1; j <= n; j++) {
+      if (i === 0 && j === n) continue; // precisa de pelo menos duas palavras
+      const peca = pecaValida(palavra.slice(i, j));
+      if (!peca) continue;
+      const resto = cortar(j, restam - 1);
+      if (!resto) continue;
+      const pontos = (peca.frequente ? 1 + 0.5 * (1 - Math.min(peca.posicao, 5000) / 5000) : 0.3) - 0.35 + resto.pontos;
+      if (!melhor || pontos > melhor.pontos) {
+        melhor = { pontos, partes: [peca.texto, ...resto.partes], todasFrequentes: peca.frequente && resto.todasFrequentes, peloMenosUma: peca.frequente || resto.peloMenosUma };
+      }
+    }
+    memo.set(chave, melhor);
+    return melhor;
+  };
+  // prefere o corte em MENOS palavras ("nao consigo" e não "na o consigo")
+  const duas = cortar(0, 2);
+  const tres = cortar(0, 3);
+  const lista = [duas, tres].filter((x): x is Segmentacao => !!x);
+  return lista.filter((x, i) => lista.findIndex((y) => y.partes.join(" ") === x.partes.join(" ")) === i);
+}
+
+/** Palavras curtas que costumam vir depois (para completar “coisasqu” → “coisas que”). */
+const COMPLETAVEIS = [
+  "que", "quando", "qual", "quais", "quem", "para", "como", "mas", "com", "uma", "não", "isso", "porque",
+  "então", "pois", "onde", "muito", "mais", "são", "foi", "sem", "por", "até", "nos", "das", "dos", "ele",
+  "ela", "seu", "sua", "tem", "vai", "está", "estão", "também", "só", "já",
+];
+
+/** Último pedaço cortado no meio: "coisasqu" → "coisas que" (só sugestão, sem certeza). */
+function separarTruncada(palavra: string): string[] {
+  const n = palavra.length;
+  const achadas: string[] = [];
+  if (n < 5) return achadas;
+  for (let i = Math.min(n - 2, 14); i >= 3; i--) {
+    const esquerda = pecaValida(palavra.slice(0, i));
+    if (!esquerda || !esquerda.frequente) continue;
+    const resto = norm(palavra.slice(i));
+    if (resto.length < 2 || resto.length > 5) continue;
+    for (const c of COMPLETAVEIS) {
+      if (norm(c).startsWith(resto) && norm(c) !== resto) achadas.push(`${esquerda.texto} ${c}`);
+      if (achadas.length >= 3) return achadas;
+    }
+    if (achadas.length) return achadas;
+  }
+  return achadas;
+}
+
+/** Verbos de informática aportuguesados (“scrollar”, “commitar”…): jargão, não erro. */
+const JARGAO = new RegExp(
+  "^(scroll|deploy|commit|debug|upload|download|backup|print|stream|hack|rebas|merg|push|pull|logg|build)(ar|a|as|am|o|ou|ando|ado|ada|ados|adas|ei|e|em|amos|aram|ava|avam|aria|ará|ou)$",
+  "i"
+);
+
 self.addEventListener("message", (event: MessageEvent) => {
   const data = event.data as { type: string; id?: number; words?: string[]; base?: string };
 
@@ -344,7 +463,33 @@ self.addEventListener("message", (event: MessageEvent) => {
       if (PALAVRAS_OK.has(lower)) continue;
       if (typo.check(word)) continue;
       if (lower !== word && typo.check(lower)) continue;
+      if (JARGAO.test(word)) continue;
       const r = sugerirPalavra(word);
+      // faltou espaço? "coisasque" → "coisas que" (a certeza vem de as duas partes serem palavras comuns)
+      // nomes próprios e marcas (Instagram, WhatsApp) não viram "Insta gram": exige palavras comuns
+      const minuscula = word[0] === word[0].toLowerCase();
+      const camel = /\p{Ll}\p{Lu}/u.test(word);
+      const cortes = separarGrudada(word).filter(
+        (c) => c.todasFrequentes || camel || (c.peloMenosUma && minuscula && word.length >= 8)
+      );
+      if (cortes.length) {
+        const grudada = cortes[0];
+        const junto = grudada.partes.join(" ");
+        const outros = cortes.slice(1).map((c) => c.partes.join(" "));
+        const forte = grudada.todasFrequentes && grudada.partes.length === 2 && grudada.partes.every((p) => p.length >= 2) && word.length >= 6;
+        hits.push({
+          word,
+          glued: true,
+          suggestions: [junto, ...outros, ...r.sugestoes.filter((x) => x !== junto && !outros.includes(x))].slice(0, 6),
+          best: forte ? junto : r.best,
+        });
+        continue;
+      }
+      const truncada = separarTruncada(word);
+      if (truncada.length) {
+        hits.push({ word, glued: true, suggestions: [...truncada, ...r.sugestoes.filter((x) => !truncada.includes(x))].slice(0, 6), best: undefined });
+        continue;
+      }
       hits.push({ word, suggestions: r.sugestoes, best: r.best });
     }
     self.postMessage({ type: "result", id: data.id, hits });

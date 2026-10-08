@@ -122,10 +122,13 @@ export class Preview {
   private textSync: ((markdown: string) => void) | null = null;
   private lastMarkdown = "";
   private hooks: PreviewHooks;
+  /** Somente leitura (ex.: pré-visualização em inglês): sem botões de edição nem tarefas clicáveis. */
+  private readOnly: boolean;
 
-  constructor(el: HTMLElement, hooks: PreviewHooks) {
+  constructor(el: HTMLElement, hooks: PreviewHooks, opts: { readOnly?: boolean } = {}) {
     this.el = el;
     this.hooks = hooks;
+    this.readOnly = !!opts.readOnly;
     this.el.addEventListener("click", this.onClick);
   }
 
@@ -167,7 +170,7 @@ export class Preview {
     }
     const myToken = ++this.token;
     if (!md.trim()) {
-      this.el.innerHTML = welcomeHtml();
+      this.el.innerHTML = this.readOnly ? "" : welcomeHtml();
       return;
     }
     const html = await marked.parse(md, { gfm: true, async: true });
@@ -176,6 +179,21 @@ export class Preview {
     this.postProcess();
     void this.resolveImages(myToken);
     void this.renderMermaid(myToken);
+  }
+
+  /** Renderiza e ESPERA as imagens e os diagramas ficarem prontos (usado pela exportação). */
+  async renderAndWait(md: string): Promise<void> {
+    this.lastMarkdown = md;
+    const myToken = ++this.token;
+    if (!md.trim()) {
+      this.el.innerHTML = "";
+      return;
+    }
+    const html = await marked.parse(md, { gfm: true, async: true });
+    this.el.innerHTML = DOMPurify.sanitize(String(html), { ADD_ATTR: ["target", "rel"] });
+    this.postProcess();
+    await this.resolveImages(myToken);
+    await this.renderMermaid(myToken);
   }
 
   /** Abre o editor de desenho embutido na imagem indicada (usado após criar um desenho). */
@@ -345,8 +363,10 @@ export class Preview {
 
     // campos selecionáveis: as caixas de tarefa ficam clicáveis e refletem no Markdown
     this.el.querySelectorAll<HTMLInputElement>('li > input[type="checkbox"]').forEach((cb) => {
-      cb.disabled = false;
-      cb.removeAttribute("disabled");
+      if (!this.readOnly) {
+        cb.disabled = false;
+        cb.removeAttribute("disabled");
+      }
       cb.parentElement?.classList.add("task-list-item");
     });
 
@@ -357,7 +377,7 @@ export class Preview {
       if (!/\/assets\/desenho-[^/]+\.(?:png|svg)$/i.test(`/${src.replace(/^\.?\//, "")}`) && !/^desenho(?::|$)/i.test(alt)) return;
       img.classList.add("draw-img");
       img.dataset.rel = src;
-      if (img.closest(".draw-image-frame")) return;
+      if (this.readOnly || img.closest(".draw-image-frame")) return;
       const frame = document.createElement("figure");
       frame.className = "draw-image-frame";
       img.replaceWith(frame);
@@ -405,7 +425,7 @@ export class Preview {
 
         const actions = document.createElement("div");
         actions.className = "code-actions";
-        if (this.isTextBlock(code)) {
+        if (this.isTextBlock(code) && !this.readOnly) {
           const edit = document.createElement("button");
           edit.type = "button";
           edit.className = "code-edit-text";
@@ -460,6 +480,7 @@ export class Preview {
     }
 
     const checkbox = target.closest<HTMLInputElement>('input[type="checkbox"]');
+    if (checkbox && this.readOnly) return;
     if (checkbox && checkbox.closest("li.task-list-item")) {
       const all = Array.from(this.el.querySelectorAll<HTMLInputElement>('li.task-list-item input[type="checkbox"]'));
       const index = all.indexOf(checkbox);
@@ -481,7 +502,7 @@ export class Preview {
       this.el.querySelector(`[id="${CSS.escape(id)}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
-    if (/\.(md|markdown|txt)$/i.test(href)) {
+    if (/\.(md|markdown|txt)$/i.test(href) && !this.readOnly) {
       this.hooks.onOpenLocalDoc(this.resolveAbs(href));
     }
   };
@@ -536,7 +557,9 @@ export class Preview {
       const err = await renderMermaidInto(host, source, this.dark);
       if (myToken !== this.token) return;
       const pre = code.closest("pre");
-      if (err === null) {
+      if (err === null && this.readOnly) {
+        (pre ?? code).replaceWith(host);
+      } else if (err === null) {
         // botão para reabrir o diagrama no construtor
         const edit = document.createElement("button");
         edit.type = "button";

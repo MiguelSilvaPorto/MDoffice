@@ -6,7 +6,7 @@
 
 // lista das palavras mais frequentes do português: usada para saber se uma palavra é
 // comum (e então NÃO sugerir troca) ou rara (aí sim vale o "você quis dizer…")
-import { FREQUENTES } from "./palavras";
+import { FREQUENTES, FREQUENTES_EXATAS } from "./palavras";
 
 export interface WritingIssue {
   from: number;
@@ -146,16 +146,23 @@ const COMMON_WORDS = new Set([
 /** Procura uma palavra muito comum a uma letra de distância (ex.: maneria → maneira). */
 function commonNeighbor(word: string): string | null {
   const lower = word.toLowerCase();
-  // só vale para palavra RARA: "fizer" é comum (não tem nada de errado) e "maneria" não existe
-  if (lower.length < 5 || FREQUENTES.has(lower) || COMMON_WORDS.has(lower)) return null;
+  const normWord = lower.normalize("NFD").replace(/\p{M}/gu, "");
+  // Se a palavra já é comum (com ou sem acento), não tem nada de errado: não sugere troca!
+  if (
+    lower.length < 5 ||
+    FREQUENTES_EXATAS.has(lower) ||
+    FREQUENTES.has(normWord) ||
+    COMMON_WORDS.has(lower)
+  ) {
+    return null;
+  }
   const letters = "abcdefghijklmnopqrstuvwxyzáâãàéêíóôõúüç";
   const variants = new Set<string>();
   // troca de duas letras de lugar (o caso "maneria" → "maneira")
   for (let i = 0; i < lower.length - 1; i++) {
     variants.add(lower.slice(0, i) + lower[i + 1] + lower[i] + lower.slice(i + 2));
   }
-  // trocas de uma letra (ignorando o final: é onde as conjugações diferem,
-  // o que evitaria falsos positivos como "escrevi" → "escreve")
+  // trocas de uma letra (ignorando o final: é onde as conjugações diferem)
   for (let i = 0; i < lower.length - 1; i++) {
     for (const c of letters) {
       const replaced = lower.slice(0, i) + c + lower.slice(i + 1);
@@ -163,10 +170,16 @@ function commonNeighbor(word: string): string | null {
     }
   }
   for (const candidate of variants) {
-    if (FREQUENTES.has(candidate) || COMMON_WORDS.has(candidate)) return candidate;
+    // A sugestão precisa ser uma palavra real e comum com sua grafia correta
+    if (FREQUENTES_EXATAS.has(candidate) || COMMON_WORDS.has(candidate)) {
+      // Nunca sugerir trocar apenas por versão sem acento de uma palavra já existente
+      if (candidate.normalize("NFD").replace(/\p{M}/gu, "") === normWord) continue;
+      return candidate;
+    }
   }
   return null;
 }
+
 
 /** Conectivos que pedem vírgula quando abrem a frase. */
 const INTRO_CONNECTIVES = [
@@ -247,6 +260,19 @@ const A_GENTE_VERBS: Record<string, string> = {
 function aGenteFix(verb: string): string | null {
   const plural = A_GENTE_VERBS[verb.toLowerCase()];
   return plural || null;
+}
+
+/**
+ * Tom do texto: "formal" aponta toda linguagem informal; "neutro" só os casos claros (sem “a gente”
+ * e sem sugestões de estilo); "informal" não mexe no registro (só ortografia e pontuação).
+ */
+export type Tone = "formal" | "neutro" | "informal";
+let tone: Tone = "formal";
+export function setTone(t: Tone): void {
+  tone = t;
+}
+export function getTone(): Tone {
+  return tone;
 }
 
 /** Linguagem informal → alternativa formal. */
@@ -375,6 +401,7 @@ function isInsideMask(text: string, from: number, to: number): boolean {
 interface SpellHit {
   word: string;
   suggestions: string[];
+  glued?: boolean;
   /** correção em que dá para confiar (aplicada sozinha pela correção automática) */
   best?: string;
 }
@@ -528,6 +555,13 @@ export function checkStyle(text: string): WritingIssue[] {
     push(m.index, m.index + 1, `Falta um espaço depois de “${m[1]}”`, `${m[1]} `, [], true);
   }
 
+  // falta de espaço depois de . ! ? quando a próxima frase começa em maiúscula ("fim.Começo", "oi!Tudo")
+  const semEspacoFim = /(?<=[\p{Ll}\d)”"])([.!?])(?=[\p{Lu}])/gu;
+  while ((m = semEspacoFim.exec(mask)) !== null) {
+    // siglas e abreviações com ponto (S.A., U.S.A.) não entram: a letra antes do ponto é maiúscula ali
+    push(m.index, m.index + 1, `Falta um espaço depois de “${m[1]}”`, `${m[1]} `, [], true);
+  }
+
   // pontuação repetida (!!! / ???)
   const repeatedPunct = /([!?])\1{2,}/g;
   while ((m = repeatedPunct.exec(mask)) !== null) {
@@ -653,7 +687,8 @@ export function checkStyle(text: string): WritingIssue[] {
   }
 
   // registro informal → formal
-  for (const rule of INFORMAL) {
+  for (const rule of tone === "informal" ? [] : INFORMAL) {
+    if (tone === "neutro" && !rule.fix) continue;
     rule.rx.lastIndex = 0;
     while ((m = rule.rx.exec(mask)) !== null) {
       push(m.index, m.index + m[0].length, rule.message, rule.fix, rule.suggestion ? [rule.suggestion] : []);
@@ -662,7 +697,7 @@ export function checkStyle(text: string): WritingIssue[] {
 
   // “a gente” + verbo: corrige a frase inteira, com o verbo na pessoa certa
   const aGenteRx = /(?<![\p{L}])(a gente|A gente)([^\S\n]+([\p{L}]+))?/gu;
-  while ((m = aGenteRx.exec(mask)) !== null) {
+  while (tone === "formal" && (m = aGenteRx.exec(mask)) !== null) {
     const phrase = m[1];
     const verb = m[3];
     const quem = phrase[0] === "A" ? "Nós" : "nós";
@@ -688,7 +723,162 @@ export function checkStyle(text: string): WritingIssue[] {
     }
   }
 
+  // ---------- regras da ABNT e tipografia brasileira ----------
+
+  // 1. Horas no padrão ABNT (14h, 14h30)
+  const horasHsRx = /(?<![\p{L}\d])(\d{1,2})\s*(hs|hrs)(?![\p{L}\d])/giu;
+  while ((m = horasHsRx.exec(mask)) !== null) {
+    const hora = m[1];
+    push(
+      m.index,
+      m.index + m[0].length,
+      `[ABNT] O símbolo de horas é apenas “h” (use “${hora}h”, evite “${m[2]}”)`,
+      `${hora}h`,
+      [`${hora}h`],
+      true
+    );
+  }
+
+  const horasDoisPontosRx = /(?<![\p{L}\d])(\d{1,2}):(\d{2})\s*(?:hs?|hrs)(?![\p{L}\d])/giu;
+  while ((m = horasDoisPontosRx.exec(mask)) !== null) {
+    const fix = `${m[1]}h${m[2]}`;
+    push(
+      m.index,
+      m.index + m[0].length,
+      `[ABNT] No padrão brasileiro use “${fix}”`,
+      fix,
+      [fix],
+      true
+    );
+  }
+
+  // 2. Espaço obrigatório entre número e unidade de medida (ABNT / IBGE)
+  const unidadesRx = /(?<![\p{L}\d#])(\d+(?:[.,]\d+)?)(km|kg|cm|mm|mg|ml|min|kb|mb|gb|tb|khz|mhz|ghz|[º°]c)\b/giu;
+  while ((m = unidadesRx.exec(mask)) !== null) {
+    const num = m[1];
+    let unit = m[2];
+    if (/[º°]c/i.test(unit)) unit = "°C";
+    const fix = `${num} ${unit}`;
+    push(
+      m.index,
+      m.index + m[0].length,
+      `[ABNT/IBGE] Espaço obrigatório entre número e unidade: “${fix}”`,
+      fix,
+      [fix],
+      true
+    );
+  }
+
+  // 3. Meses com letra minúscula em datas (ABNT / Gramática pt-BR)
+  const dataMesRx = /(?<![\p{L}])(\d{1,2})\s+de\s+(Janeiro|Fevereiro|Março|Abril|Maio|Junho|Julho|Agosto|Setembro|Outubro|Novembro|Dezembro)(?![\p{L}])/gu;
+  while ((m = dataMesRx.exec(mask)) !== null) {
+    const dia = m[1];
+    const mesMin = m[2].toLowerCase();
+    const fix = `${dia} de ${mesMin}`;
+    push(
+      m.index,
+      m.index + m[0].length,
+      `[ABNT] Meses do ano são grafados com inicial minúscula: “${mesMin}”`,
+      fix,
+      [fix],
+      true
+    );
+  }
+
+  // 4. Plural de siglas em português (sem apóstrofo)
+  const siglasPluralRx = /(?<![\p{L}])([A-ZÁÉÍÓÚ]{2,})'s(?![\p{L}])/gu;
+  while ((m = siglasPluralRx.exec(mask)) !== null) {
+    const fix = `${m[1]}s`;
+    push(
+      m.index,
+      m.index + m[0].length,
+      `[ABNT] Plural de sigla em português não leva apóstrofo: “${fix}”`,
+      fix,
+      [fix],
+      true
+    );
+  }
+
+  // 5. Citações autor-data (ABNT NBR 10520)
+  const citacaoAutorRx = /\(([A-ZÁÉÍÓÚa-záéíóúçãõâêô]+(?:\s*;\s*[A-ZÁÉÍÓÚa-záéíóúçãõâêô]+)*),\s*(\d{4}(?:,\s*p\.\s*\d+)?)\)/gu;
+  while ((m = citacaoAutorRx.exec(mask)) !== null) {
+    const autor = m[1];
+    const resto = m[2];
+    if (autor !== autor.toUpperCase() && autor.length >= 3) {
+      const autorUpper = autor.toUpperCase();
+      const fix = `(${autorUpper}, ${resto})`;
+      push(
+        m.index,
+        m.index + m[0].length,
+        `[ABNT NBR 10520] Sobrenome do autor entre parênteses deve estar em maiúsculas: “${autorUpper}”`,
+        fix,
+        [fix],
+        false
+      );
+    }
+  }
+
+  // Indicação de página: pág. 15 / pag 15 / pg 15 -> p. 15
+  const pagRx = /(?<![\p{L}])(p[áa]g|pag|pg)\.?\s*(\d+)(?![\p{L}])/giu;
+  while ((m = pagRx.exec(mask)) !== null) {
+    const num = m[2];
+    const fix = `p. ${num}`;
+    push(
+      m.index,
+      m.index + m[0].length,
+      `[ABNT] A abreviatura padrão de página é “p. ${num}”`,
+      fix,
+      [fix],
+      true
+    );
+  }
+
+  // "et al." com ponto em al. (et. al. ou et al sem ponto)
+  const etAlRx = /(?<![\p{L}])(et\.?\s*al)(?!\.)(?![\p{L}])/giu;
+  while ((m = etAlRx.exec(mask)) !== null) {
+    push(
+      m.index,
+      m.index + m[0].length,
+      `[ABNT] A expressão latina correta é “et al.” (com ponto no final)`,
+      "et al.",
+      ["et al."],
+      true
+    );
+  }
+
+  // 6. Travessão para orações intercaladas (incisos) em vez de hífen duplo "--"
+  const travessaoRx = /(?<=\S)\s+--\s+(?=\S)/g;
+  while ((m = travessaoRx.exec(mask)) !== null) {
+    push(
+      m.index,
+      m.index + m[0].length,
+      `[ABNT/Tipografia] Use travessão “ — ” para orações intercaladas (incisos)`,
+      " — ",
+      [" — "],
+      true
+    );
+  }
+
+  // 7. Expressões em latim que devem vir em itálico
+  const latimRx = /(?<![\p{L}*_])\b(a priori|a posteriori|ad hoc|in loco|in vitro|in vivo|stricto sensu|lato sensu|ipsis litteris|apud)\b(?![\p{L}*_])/giu;
+  while ((m = latimRx.exec(mask)) !== null) {
+    const termo = m[1];
+    const antes = text.slice(Math.max(0, m.index - 1), m.index);
+    const depois = text.slice(m.index + m[0].length, m.index + m[0].length + 1);
+    if (antes === "*" || antes === "_" || depois === "*" || depois === "_") continue;
+    const fix = `*${termo}*`;
+    push(
+      m.index,
+      m.index + m[0].length,
+      `[ABNT] Termos em latim devem ser destacados em itálico: “*${termo}*”`,
+      fix,
+      [fix],
+      true
+    );
+  }
+
   const seen = new Set<string>();
+
   return issues
     .filter((i) => !isInsideMask(text, i.from, i.to))
     .filter((i) => {
@@ -771,7 +961,9 @@ export async function checkText(text: string, ignore: Set<string>): Promise<Writ
           to: token.to,
           word: token.word,
           kind: "spell",
-          message: `“${token.word}” não está no dicionário`,
+          message: hit.glued
+            ? `“${token.word}” parece ter palavras coladas — faltou um espaço? Talvez “${hit.suggestions[0]}”`
+            : `“${token.word}” não está no dicionário`,
           suggestions: hit.suggestions,
           auto: hit.best,
         });

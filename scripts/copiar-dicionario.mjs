@@ -18,3 +18,20 @@ for (const [de, para] of [
   copyFileSync(`${origem}/${de}`, `${destino}/${para}`);
   console.log(`copiado: ${destino}/${para}`);
 }
+
+// Motor de tradução offline (onnxruntime-web): os .wasm ficam locais para funcionar sem internet.
+const ort = "node_modules/onnxruntime-web/dist";
+if (existsSync(ort)) {
+  mkdirSync("public/ort", { recursive: true });
+  for (const arq of [
+    "ort-wasm-simd-threaded.wasm",
+    "ort-wasm-simd-threaded.mjs",
+    "ort-wasm-simd-threaded.asyncify.wasm",
+    "ort-wasm-simd-threaded.asyncify.mjs",
+  ]) {
+    if (existsSync(`${ort}/${arq}`)) {
+      copyFileSync(`${ort}/${arq}`, `public/ort/${arq}`);
+      console.log(`copiado: public/ort/${arq}`);
+    }
+  }
+}
