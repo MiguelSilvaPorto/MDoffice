@@ -34,7 +34,7 @@ if ($temOrigin) {
   if ("$cont".Trim()) {
     $p = "$cont".Trim() -split '\s+'
     Write-Host ("  main esta {0} commit(s) a frente e {1} atras do origin/main (ultimo fetch)" -f $p[1], $p[0])
-    if ([int]$p[1] -gt 0) { Write-Host "  (push so quando o usuario pedir)" }
+    if ([int]$p[1] -gt 0) { Write-Host "  (o fechar.ps1 e o monitor-push.ps1 enviam sozinhos)" }
   } else {
     Write-Host "  (sem origin/main baixado - rode git fetch para comparar)"
   }
