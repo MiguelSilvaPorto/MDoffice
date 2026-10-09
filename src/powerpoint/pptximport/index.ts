@@ -14,6 +14,8 @@ export interface ResultadoImport {
   setup: DeckSetup;
   /** limitações encontradas (o que não pôde ser reproduzido) */
   avisos: string[];
+  /** formas lidas mas não desenhadas (sem nada visível), por lâmina — para diagnóstico */
+  descartes: string[][];
 }
 
 interface Modelo {
@@ -124,6 +126,7 @@ export async function pptxToDeck(bytes: Uint8Array, setupBase: DeckSetup = DEFAU
   };
   const textoPadrao = filho(pres, "defaultTextStyle");
   const seq = { n: 0 };
+  const descartesPorLamina: string[][] = [];
 
   const slides: Slide[] = [];
   for (let i = 0; i < partes.length; i++) {
@@ -161,7 +164,9 @@ export async function pptxToDeck(bytes: Uint8Array, setupBase: DeckSetup = DEFAU
       rels: sl.rels,
       numeroSlide: i + 1,
       seq,
+      descartes: [],
     };
+    descartesPorLamina.push(base.descartes);
 
     // decorações do mestre e do layout (embaixo), a menos que o slide/layout peça para escondê-las
     const shapes: Shape[] = [];
@@ -209,7 +214,7 @@ export async function pptxToDeck(bytes: Uint8Array, setupBase: DeckSetup = DEFAU
     fontsRaw: raw,
   };
   const titulo = slides[0].md.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? "Apresentação";
-  return { deck: { titulo, slides }, setup, avisos: [...avisos] };
+  return { deck: { titulo, slides }, setup, avisos: [...avisos], descartes: descartesPorLamina };
 }
 
 export { deckParaMarkdown } from "./slides-md";

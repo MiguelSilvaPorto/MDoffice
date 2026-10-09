@@ -300,11 +300,15 @@ function cq(pt: number, ctx: CtxRender): string {
 function svgDaForma(s: Shape, ctx: CtxRender, soContorno = false): string {
   const w = (s.box.w / 100) * ctx.larguraPt;
   const h = (s.box.h / 100) * ctx.alturaPt;
-  const hh = Math.max(h, 0.01);
-  const ww = Math.max(w, 0.01);
+  // a geometria usa o tamanho REAL (uma linha vertical tem largura 0), mas o SVG precisa de pelo menos 1 pt de cada lado:
+  // o navegador não pinta um SVG de tamanho zero, e as linhas conectoras sumiam
+  const hh = Math.max(h, 0);
+  const ww = Math.max(w, 0);
+  const sh = Math.max(h, 1);
+  const sw = Math.max(w, 1);
   const tr = tracadosDa(s, ww, hh);
   const fill = soContorno ? undefined : s.fillX;
-  const { defs, ref, alpha } = defsDeFill(s.id, fill, ww, hh, ctx);
+  const { defs, ref, alpha } = defsDeFill(s.id, fill, Math.max(ww, 0.01), Math.max(hh, 0.01), ctx);
   let marcas = "";
   let mi = "";
   let mf = "";
@@ -335,7 +339,7 @@ function svgDaForma(s: Shape, ctx: CtxRender, soContorno = false): string {
     sombra = `filter:drop-shadow(${cq(dx, ctx)} ${cq(dy, ctx)} ${cq(s.shadow.blur / 2, ctx)} ${rgba(s.shadow.color, s.shadow.alpha)});`;
   }
   return (
-    `<svg class="pp-geo" viewBox="0 0 ${n3(ww)} ${n3(hh)}" style="width:${cq(ww, ctx)};height:${cq(hh, ctx)};${sombra}" aria-hidden="true">` +
+    `<svg class="pp-geo" viewBox="0 0 ${n3(sw)} ${n3(sh)}" style="width:${cq(sw, ctx)};height:${cq(sh, ctx)};${sombra}" aria-hidden="true">` +
     `<defs>${defs}${marcas}</defs><g transform="${mover}">${caminhos}</g></svg>`
   );
 }

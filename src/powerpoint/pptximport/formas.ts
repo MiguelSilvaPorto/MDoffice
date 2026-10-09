@@ -32,6 +32,8 @@ export interface CtxForma {
   numeroSlide: number;
   /** contador para ids únicos de forma */
   seq: { n: number };
+  /** formas que o importador não desenhou, com o motivo (diagnóstico) */
+  descartes: string[];
 }
 
 export function ctxCor(c: CtxForma, phClr?: CorResolvida): ContextoCor {
@@ -387,7 +389,10 @@ function gdValores(av: No | undefined): Record<string, number> {
 async function lerForma(no: No, c: CtxForma, grupos: Grupo[], fixa: boolean, visual: "sp" | "pic" | "cxn"): Promise<Shape | undefined> {
   const nv = filho(no, visual === "sp" ? "nvSpPr" : visual === "pic" ? "nvPicPr" : "nvCxnSpPr");
   const cNv = filho(nv, "cNvPr");
-  if (cNv?.a.hidden === "1") return undefined;
+  if (cNv?.a.hidden === "1") {
+    c.descartes.push(`${cNv.a.name ?? "?"}: oculta`);
+    return undefined;
+  }
   const nome = cNv?.a.name ?? "";
   const ph = caminho(nv, "nvPr/ph");
   const heranca: Heranca = {};
@@ -399,7 +404,10 @@ async function lerForma(no: No, c: CtxForma, grupos: Grupo[], fixa: boolean, vis
 
   const spPr = filho(no, "spPr");
   let xf = lerXfrm(spPr) ?? lerXfrm(filho(heranca.layout, "spPr")) ?? lerXfrm(filho(heranca.mestre, "spPr"));
-  if (!xf) return undefined;
+  if (!xf) {
+    c.descartes.push(`${nome}: sem posição`);
+    return undefined;
+  }
   for (let i = grupos.length - 1; i >= 0; i--) xf = aplicarGrupo(xf, grupos[i]);
 
   const estilo = filho(no, "style");
@@ -550,7 +558,10 @@ async function lerForma(no: No, c: CtxForma, grupos: Grupo[], fixa: boolean, vis
 
   // forma sem nada visível: não entra
   const visivel = forma.kind === "imagem" || forma.fillX || forma.ln || forma.paras;
-  if (!visivel) return undefined;
+  if (!visivel) {
+    c.descartes.push(`${nome} (${forma.geom}): sem preenchimento, contorno nem texto`);
+    return undefined;
+  }
   return forma;
 }
 
