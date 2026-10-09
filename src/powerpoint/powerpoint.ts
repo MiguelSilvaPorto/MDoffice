@@ -106,6 +106,7 @@ export class PowerPointHost {
   private fixas = false;
   private encaixe = lerFlag("mdc.pp.encaixe", true);
   private grade = lerFlag("mdc.pp.grade", false);
+  private faixaVertical = lerFlag("mdc.pp.faixaVertical", false);
   private hist = new Historico<Estado>(100);
   private pendente: Estado | null = null;
   private antesEdicao: Estado | null = null;
@@ -176,9 +177,11 @@ export class PowerPointHost {
           </div>
         </div>
         <aside class="pp-side">
+          <div class="pp-side-resize" data-side-resize title="Arraste para mudar a largura"></div>
           <div class="pp-side-tabs">
             <button type="button" class="on" data-lateral="formatar">Formatar</button>
             <button type="button" data-lateral="notas">Notas</button>
+            <button type="button" class="pp-side-fechar" data-side-toggle title="Esconder o painel" aria-label="Esconder o painel">»</button>
           </div>
           <div class="pp-side-corpo pp-painel" data-formatar></div>
           <div class="pp-side-corpo" data-notas-corpo hidden>
@@ -190,15 +193,17 @@ export class PowerPointHost {
       <div class="pp-status">
         <span data-pos>Lâmina 1 / 1</span>
         <span class="spacer"></span>
+        <button type="button" class="btn small pp-side-btn" data-side-toggle title="Mostrar ou esconder o painel Formatar/Notas" aria-pressed="true">Painel</button>
         <span class="pp-zoom">
           <button type="button" class="btn small" data-zoom="out" title="Reduzir zoom" aria-label="Reduzir zoom">−</button>
-          <input type="range" min="40" max="300" step="10" value="100" data-zoomrange aria-label="Zoom">
+          <input type="range" min="${Stage.limites.min}" max="${Stage.limites.max}" step="${Stage.limites.passo}" value="100" data-zoomrange aria-label="Zoom">
           <span class="pp-zoom-val" data-zoomval>100%</span>
           <button type="button" class="btn small" data-zoom="in" title="Ampliar zoom" aria-label="Ampliar zoom">+</button>
         </span>
       </div>`;
 
     this.strip = $("[data-strip]", this.pane);
+    this.pane.querySelector(".pp-left")?.classList.toggle("faixa-vertical", this.faixaVertical);
     this.canvas = $("[data-canvas]", this.pane);
     this.frame = $("[data-frame]", this.pane);
     this.slideEl = $("[data-slide]", this.pane);
@@ -210,6 +215,7 @@ export class PowerPointHost {
     this.stage.attach(this.frame, this.slideEl);
     this.notes.attach(this.notesEl, (notes) => this.mudarNotas(notes));
 
+    this.ligarPainelLateral();
     // abas do painel lateral
     for (const b of this.pane.querySelectorAll<HTMLElement>("[data-lateral]")) {
       b.addEventListener("click", () => this.mostrarLateral(b.dataset.lateral as "formatar" | "notas"));
@@ -221,6 +227,19 @@ export class PowerPointHost {
     }
     const range = this.pane.querySelector<HTMLInputElement>("[data-zoomrange]");
     range?.addEventListener("input", () => this.setZoom(+range.value));
+
+    // Ctrl + roda do mouse amplia/reduz direto no palco (como no PowerPoint).
+    // Sem Ctrl, a roda continua rolando a lâmina normalmente.
+    this.canvas.addEventListener(
+      "wheel",
+      (e) => {
+        if (!e.ctrlKey && !e.metaKey) return;
+        e.preventDefault();
+        // dy < 0 = roda para cima = ampliar
+        this.setZoom(this.stage.zoomAtual + (e.deltaY < 0 ? 10 : -10));
+      },
+      { passive: false }
+    );
 
     // arrastar uma imagem do computador para a lâmina
     this.canvas.addEventListener("dragover", (e) => {
@@ -237,6 +256,56 @@ export class PowerPointHost {
 
     this.pane.style.setProperty("--slide-ratio", String(stageRatio(this.setup)));
     this.pintar();
+  }
+
+  /** Esconder/mostrar e redimensionar o painel lateral; a escolha fica guardada. */
+  private ligarPainelLateral(): void {
+    const guardado = (k: string) => {
+      try {
+        return localStorage.getItem(k);
+      } catch {
+        return null;
+      }
+    };
+    const guardar = (k: string, v: string) => {
+      try {
+        localStorage.setItem(k, v);
+      } catch {
+        /* sem armazenamento: vale só nesta sessão */
+      }
+    };
+    const largura = Number(guardado("pp-side-w"));
+    if (largura >= 200 && largura <= 600) this.pane.style.setProperty("--pp-side-w", `${largura}px`);
+    const aplicar = (oculto: boolean) => {
+      this.pane.classList.toggle("pp-side-oculto", oculto);
+      for (const b of this.pane.querySelectorAll<HTMLElement>(".pp-side-btn")) b.setAttribute("aria-pressed", String(!oculto));
+      guardar("pp-side-oculto", oculto ? "1" : "0");
+      requestAnimationFrame(() => this.stage.desenharSelecao());
+    };
+    aplicar(guardado("pp-side-oculto") === "1");
+    for (const b of this.pane.querySelectorAll<HTMLElement>("[data-side-toggle]")) b.addEventListener("click", () => aplicar(!this.pane.classList.contains("pp-side-oculto")));
+    const alca = this.pane.querySelector<HTMLElement>("[data-side-resize]")!;
+    alca.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      alca.setPointerCapture(e.pointerId);
+      const move = (ev: PointerEvent) => {
+        const w = Math.max(200, Math.min(600, this.pane.getBoundingClientRect().right - ev.clientX));
+        this.pane.style.setProperty("--pp-side-w", `${w}px`);
+      };
+      const fim = () => {
+        alca.removeEventListener("pointermove", move);
+        alca.removeEventListener("pointerup", fim);
+        guardar("pp-side-w", String(Math.round(parseFloat(this.pane.style.getPropertyValue("--pp-side-w")) || 260)));
+        this.stage.desenharSelecao();
+      };
+      alca.addEventListener("pointermove", move);
+      alca.addEventListener("pointerup", fim);
+    });
+  }
+
+  /** Mostra o painel se estiver escondido (usado quando o usuário pede algo que mora nele). */
+  private mostrarPainelLateral(): void {
+    if (this.pane.classList.contains("pp-side-oculto")) this.pane.querySelector<HTMLElement>("[data-side-toggle]")?.click();
   }
 
   private mostrarLateral(qual: "formatar" | "notas"): void {
@@ -399,8 +468,7 @@ export class PowerPointHost {
       btn.addEventListener("dragover", (e) => {
         if (!e.dataTransfer?.types.includes("application/x-pp-lamina")) return;
         e.preventDefault();
-        const r = btn.getBoundingClientRect();
-        const antes = e.clientX < r.left + r.width / 2;
+        const antes = this.antesDaMiniatura(btn, e);
         btn.classList.toggle("alvo-antes", antes);
         btn.classList.toggle("alvo-depois", !antes);
       });
@@ -409,8 +477,7 @@ export class PowerPointHost {
         const de = Number(e.dataTransfer?.getData("application/x-pp-lamina"));
         if (!Number.isFinite(de)) return;
         e.preventDefault();
-        const r = btn.getBoundingClientRect();
-        const antes = e.clientX < r.left + r.width / 2;
+        const antes = this.antesDaMiniatura(btn, e);
         let para = antes ? i : i + 1;
         if (de < para) para--;
         this.moverLaminaPara(de, para);
@@ -438,6 +505,14 @@ export class PowerPointHost {
     add.innerHTML = '<svg class="ic"><use href="#i-plus"/></svg><span>Nova lâmina</span>';
     add.addEventListener("click", () => this.run("slide-new"));
     this.strip.append(add);
+    // mantém a miniatura da lâmina atual à vista (na horizontal e na vertical)
+    this.strip.querySelector(".pp-thumb.active")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
+
+  /** Arrastar na faixa: numa faixa vertical o "antes" é acima; na horizontal, à esquerda. */
+  private antesDaMiniatura(el: HTMLElement, e: { clientX: number; clientY: number }): boolean {
+    const r = el.getBoundingClientRect();
+    return this.faixaVertical ? e.clientY < r.top + r.height / 2 : e.clientX < r.left + r.width / 2;
   }
 
   private atualizarStatus(): void {
@@ -530,6 +605,7 @@ export class PowerPointHost {
       fixas: this.fixas,
       encaixe: this.encaixe,
       grade: this.grade,
+      faixaVertical: this.faixaVertical,
       paleta: this.estilo().paleta,
       fontes: this.fontesDoDeck(),
       setup: this.setup,
@@ -1366,6 +1442,14 @@ export class PowerPointHost {
         this.fixas = !this.fixas;
         if (!this.fixas) this.selecao = this.selecao.filter((id) => !this.atual().shapes.find((s) => s.id === id)?.fixa);
         return this.pintar();
+      case "painel-lateral":
+        this.pane.querySelector<HTMLElement>("[data-side-toggle]")?.click();
+        return;
+      case "alt-faixa":
+        this.faixaVertical = !this.faixaVertical;
+        gravarFlag("mdc.pp.faixaVertical", this.faixaVertical);
+        this.pane.querySelector(".pp-left")?.classList.toggle("faixa-vertical", this.faixaVertical);
+        return this.atualizarUI();
     }
   }
 

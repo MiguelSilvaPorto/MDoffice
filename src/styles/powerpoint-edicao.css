@@ -1044,3 +1044,42 @@ button.ppr.cor {
 .pp-thumb.arrastando { opacity: 0.45; }
 .pp-thumb.alvo-antes { box-shadow: -3px 0 0 var(--accent); }
 .pp-thumb.alvo-depois { box-shadow: 3px 0 0 var(--accent); }
+
+/* ---------- painel lateral: esconder e redimensionar ---------- */
+
+.pp-side {
+  position: relative;
+  width: var(--pp-side-w, 260px);
+  min-width: 200px;
+  max-width: 600px;
+}
+
+.pp-side-resize {
+  position: absolute;
+  left: -3px;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 5;
+}
+
+.pp-side-resize:hover,
+.pp-side-resize:active {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.pp-side-tabs .pp-side-fechar {
+  flex: none;
+  width: 30px;
+  font-size: 15px;
+}
+
+.pp-side-btn[aria-pressed="true"] {
+  color: var(--fg);
+  background: var(--panel-2);
+}
+
+.pp-side-oculto .pp-side {
+  display: none;
+}

@@ -306,7 +306,11 @@ export class Fita {
       grupo(
         "Mostrar",
         `<div class="ppr-col">
+           ${pequeno("painel-lateral", ic("i-sidebar"), "Painel Formatar", "Mostrar ou esconder o painel Formatar/Notas (à direita)")}
+           ${pequeno("alt-faixa", ic("i-columns"), "Faixa vertical", "Mostrar a faixa de lâminas na lateral (vertical) ou de volta no topo (horizontal)")}
            ${pequeno("alt-encaixe", `<span class="ppr-seta">✓</span>`, "Guias de encaixe", "Ligar/desligar o encaixe nas guias")}
+         </div>
+         <div class="ppr-col">
            ${pequeno("alt-grade", `<span class="ppr-seta">▦</span>`, "Grade", "Mostrar a grade")}
            ${pequeno("alt-fixas", `<span class="ppr-seta">✎</span>`, "Editar elementos do layout", "Permite selecionar e mexer nas decorações que vêm do layout")}
          </div>`
@@ -638,6 +642,7 @@ export class Fita {
     on("alt-encaixe", st.encaixe);
     on("alt-grade", st.grade);
     on("alt-fixas", st.fixas);
+    on("alt-faixa", st.faixaVertical);
     on("ferramenta:texto", st.ferramenta?.tipo === "texto");
     for (const c of ["negrito", "italico", "sublinhado", "tachado", "maior", "menor", "cor-texto", "marcadores", "numeracao", "recuo-menos", "recuo-mais", "espaco", "alinhar-esquerda", "alinhar-centro", "alinhar-direita", "alinhar-justificado", "v-topo", "v-meio", "v-base"]) dis(c, !temTexto);
     dis("desfazer", !st.podeDesfazer);
