@@ -23,7 +23,10 @@ body.xlsx-open #preview-wrap {
   display: none;
 }
 
-body.settings-open #excel-pane {
+/* O Início é uma página inteira: esconde o painel enquanto ele estiver aberto
+   (senão os dois dividem a tela). */
+body.settings-open #excel-pane,
+body.home-open #excel-pane {
   display: none;
 }
 

@@ -13,6 +13,7 @@
     "test:excel": "node scripts/testar-excel.mjs && node scripts/testar-grade-excel.mjs",
     "test:log": "node scripts/testar-snapshots.mts",
     "test:backup": "node scripts/testar-backup.mts && node scripts/testar-backup-e2e.cjs",
+    "test:layout": "node scripts/testar-layout.mts",
     "preview": "vite preview",
     "tauri": "tauri",
     "icon": "node scripts/gen-icon.mjs && tauri icon app-icon.png",

@@ -22,7 +22,8 @@ body.ppt-open #preview-wrap {
   display: none;
 }
 
-body.settings-open #powerpoint-pane {
+body.settings-open #powerpoint-pane,
+body.home-open #powerpoint-pane {
   display: none;
 }
 
