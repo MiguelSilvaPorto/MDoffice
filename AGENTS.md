@@ -18,13 +18,13 @@ As ferramentas ficam em `tools\worktrees\` (PowerShell) e são de uso **obrigat�
    Cria `.worktrees\feat-minha-tarefa` a partir da `main`, com `node_modules` e os arquivos pesados ligados por *junction*. Prefixos de branch: `feat`, `fix`, `docs`, `refactor`, `chore`, `test`, `perf`. Uma worktree por tarefa; solicitação nova, worktree nova.
 2. **Trabalhar** só dentro da worktree: editar, validar (`npx tsc --noEmit`) e commitar acontecem lá, nunca na cópia principal.
 3. **Fechar** (de dentro da worktree): `tools\worktrees\fechar.ps1 -Mensagem "feat(escopo): descrição"`
-   Commita o que faltar, integra a `main` na worktree, entrega o trabalho na `main` e agenda a remoção da worktree e da branch local. **Sempre use o `fechar.ps1`** — ele resolve sozinho os problemas comuns (main que andou, trava entre fechamentos simultâneos, links de `node_modules`, pasta presa, worktree órfã). Não improvise `git merge`, `git checkout main` ou remoção manual da pasta.
+   Commita o que faltar, integra a `main` na worktree, entrega o trabalho na `main`, envia a `main` ao GitHub e agenda a remoção da worktree e da branch local. **Sempre use o `fechar.ps1`** — ele resolve sozinho os problemas comuns (main que andou, trava entre fechamentos simultâneos, links de `node_modules`, pasta presa, worktree órfã). Não improvise `git merge`, `git checkout main` ou remoção manual da pasta.
 
 ### Regras
 
 - **Nada de commit, edição ou `checkout` na cópia principal.** Se você se pegar na `main` com alterações, pare: copie o trabalho para uma worktree.
 - **Nunca deixe worktree órfã.** Terminou ou desistiu? Rode o `fechar.ps1` (ou `limpar.ps1 -Nome <branch> -Forcar -ApagarBranch` para descartar).
 - **Conflito:** o `fechar.ps1` para, lista os arquivos e deixa o merge em andamento na worktree. Resolva, rode `git add` e execute o `fechar.ps1` de novo.
-- **Push e publicação só quando o usuário pedir.** O `fechar.ps1` entrega na `main` local; para publicar, use `fechar.ps1 -Publicar` (ou `git push` na cópia principal) apenas por pedido explícito.
+- **O push é automático — não o faça à mão.** O `fechar.ps1` já envia a `main` ao GitHub depois de entregar. Se o envio falhar, ou se alguém fechar com `-SemPush`, o monitor (`monitor-push.ps1`, tarefa agendada instalada por `instalar-monitor.ps1`) envia quando todas as worktrees tiverem terminado. Ele nunca força push: se a `main` e o GitHub divergirem, avisa no log (`.git\mdoffice-monitor.log`) e espera o usuário resolver.
 - **Não mexa em worktree de outro agente.** `tools\worktrees\status.ps1` mostra worktrees, estado da `main` e limpeza pendente.
 - **Proteção opcional:** `tools\worktrees\instalar-protecao.ps1` instala um hook que bloqueia commit direto na `main`.

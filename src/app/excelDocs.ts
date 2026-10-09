@@ -330,18 +330,21 @@ export const excelDocsMethods = {
       const backdrop = h("div", { class: "modal-backdrop" });
       const modal = h("div", { class: "modal pg-modal" });
       modal.innerHTML = `
-        <header class="wm-head"><h2>Configurar planilha</h2></header>
+        <header class="wm-head">
+          <svg class="ic"><use href="#i-gear"/></svg>
+          <h2>Configurar planilha</h2>
+          <button class="btn icon" data-close title="Fechar (Esc)"><svg class="ic"><use href="#i-close"/></svg></button>
+        </header>
         <div class="wm-body">
-          <label class="pg-row"><span>Linhas da grade</span>
-            <input type="checkbox" data-k="grade" />
-          </label>
-          <label class="pg-row"><span>Casas decimais</span>
+          <p class="pg-hint">Vale para toda a planilha: linhas de grade, casas decimais, moeda e zoom.</p>
+          <label class="pg-row"><span class="pg-check"><input type="checkbox" data-k="grade"> Mostrar as linhas de grade</span></label>
+          <label class="pg-row"><span class="pg-rot">Casas decimais</span>
             <input type="number" data-k="casas" min="0" max="10" step="1" />
           </label>
-          <label class="pg-row"><span>Símbolo da moeda</span>
+          <label class="pg-row"><span class="pg-rot">Símbolo da moeda</span>
             <input type="text" data-k="moeda" placeholder="R$" />
           </label>
-          <label class="pg-row"><span>Zoom (%)</span>
+          <label class="pg-row"><span class="pg-rot">Zoom (%)</span>
             <input type="number" data-k="zoom" min="50" max="200" step="10" />
           </label>
         </div>
@@ -379,6 +382,10 @@ export const excelDocsMethods = {
         }
       };
       document.addEventListener("keydown", onKey, true);
+      backdrop.addEventListener("mousedown", (e) => {
+        if (e.target === backdrop) done(null);
+      });
+      modal.querySelector("[data-close]")!.addEventListener("click", () => done(null));
       modal.querySelector("[data-cancel]")!.addEventListener("click", () => done(null));
       modal.querySelector<HTMLButtonElement>("[data-ok]")!.addEventListener("click", () => {
         modal.querySelectorAll<Campo>("[data-k]").forEach((campo) => {

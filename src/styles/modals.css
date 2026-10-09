@@ -181,3 +181,63 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ---------- diálogos "Configurar" (apresentação, planilha) ---------- */
+/* O formulário é curto: o modal fica do tamanho do conteúdo, com a coluna dos
+   rótulos alinhada e os campos ocupando o resto da linha. */
+
+.modal.pg-modal {
+  width: min(560px, 94vw);
+  height: auto;
+  max-height: 90vh;
+}
+
+.pg-modal .wm-body {
+  padding: 2px 18px 16px;
+}
+
+.pg-modal .pg-hint {
+  margin: 12px 0 6px;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.pg-modal .pg-row {
+  align-items: center;
+  margin: 10px 0;
+}
+
+.pg-modal .pg-rot {
+  flex: 0 0 140px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.pg-modal .pg-row select,
+.pg-modal .pg-row input:not([type="checkbox"]) {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 9px;
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.pg-modal .pg-row input[type="number"] {
+  max-width: 140px;
+}
+
+.pg-modal .pg-row select:focus,
+.pg-modal .pg-row input:not([type="checkbox"]):focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.pg-modal .pg-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
