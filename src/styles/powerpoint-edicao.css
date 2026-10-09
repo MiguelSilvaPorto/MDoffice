@@ -1040,3 +1040,7 @@ button.ppr.cor {
 .pp-tg { width: 16px; height: 16px; border: 1px solid var(--border, #bbb); border-radius: 2px; cursor: pointer; }
 .pp-tg.on { background: var(--accent); border-color: var(--accent); }
 .ppr-opc { display: flex; align-items: center; gap: 4px; font-size: 12px; white-space: nowrap; }
+
+.pp-thumb.arrastando { opacity: 0.45; }
+.pp-thumb.alvo-antes { box-shadow: -3px 0 0 var(--accent); }
+.pp-thumb.alvo-depois { box-shadow: 3px 0 0 var(--accent); }

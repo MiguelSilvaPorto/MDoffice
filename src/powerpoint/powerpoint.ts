@@ -388,6 +388,33 @@ export class PowerPointHost {
       inner.append(num);
       btn.append(inner);
       btn.addEventListener("click", () => this.irPara(i));
+      // arrastar para reordenar
+      btn.draggable = true;
+      btn.addEventListener("dragstart", (e) => {
+        e.dataTransfer?.setData("application/x-pp-lamina", String(i));
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+        btn.classList.add("arrastando");
+      });
+      btn.addEventListener("dragend", () => this.strip.querySelectorAll(".arrastando, .alvo-antes, .alvo-depois").forEach((n) => n.classList.remove("arrastando", "alvo-antes", "alvo-depois")));
+      btn.addEventListener("dragover", (e) => {
+        if (!e.dataTransfer?.types.includes("application/x-pp-lamina")) return;
+        e.preventDefault();
+        const r = btn.getBoundingClientRect();
+        const antes = e.clientX < r.left + r.width / 2;
+        btn.classList.toggle("alvo-antes", antes);
+        btn.classList.toggle("alvo-depois", !antes);
+      });
+      btn.addEventListener("dragleave", () => btn.classList.remove("alvo-antes", "alvo-depois"));
+      btn.addEventListener("drop", (e) => {
+        const de = Number(e.dataTransfer?.getData("application/x-pp-lamina"));
+        if (!Number.isFinite(de)) return;
+        e.preventDefault();
+        const r = btn.getBoundingClientRect();
+        const antes = e.clientX < r.left + r.width / 2;
+        let para = antes ? i : i + 1;
+        if (de < para) para--;
+        this.moverLaminaPara(de, para);
+      });
 
       const del = document.createElement("button");
       del.type = "button";
@@ -1773,6 +1800,18 @@ export class PowerPointHost {
   // outras ações
   // ------------------------------------------------------------------
 
+  /** Arrastar na faixa: leva a lâmina `de` para a posição `para` (índice final). */
+  private moverLaminaPara(de: number, para: number): void {
+    if (de === para || de < 0 || para < 0 || de >= this.slides.length || para >= this.slides.length) return;
+    this.registrar();
+    const r = moveSlide(this.deck, de, para);
+    this.slides = r.deck.slides;
+    this.indice = r.index;
+    this.selecao = [];
+    this.markDirty();
+    this.pintar();
+  }
+
   private moverLamina(delta: number): void {
     this.registrar();
     const r = moveSlide(this.deck, this.indice, this.indice + delta);
@@ -2034,11 +2073,6 @@ export class PowerPointHost {
     this.indice = novo;
     this.selecao = [];
     this.pintar();
-  }
-
-  /** Reordena lâminas por ids (arrastar na faixa). */
-  reordenar(ids: string[]): void {
-    void ids;
   }
 
   /** Distribui formas (usado pelo botão da fita). */
