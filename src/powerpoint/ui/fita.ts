@@ -54,7 +54,7 @@ export class Fita {
       <div class="ppr-abas" role="tablist">
         ${ABAS.map((a) => `<button type="button" class="ppr-aba${a.id === "inicio" ? " on" : ""}" role="tab" data-aba="${a.id}"${a.id === "formato" || a.id === "tabela" ? " hidden" : ""}>${a.nome}</button>`).join("")}
         <span class="ppr-enche"></span>
-        <button type="button" class="ppr-aba ppr-cfg" data-cmd="configure" title="Configurar apresentação">${ic("i-gear")}<span>Configurar</span></button>
+        <button type="button" class="ppr-aba ppr-cfg" data-cmd="configure" title="Configurar apresentação: proporção, tema, fonte e rodapé">${ic("i-gear")}<span>Configurar</span></button>
       </div>
       <div class="ppr-paineis">
         <div class="ppr-painel" data-painel="inicio">${this.inicio()}</div>
