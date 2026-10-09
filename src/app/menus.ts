@@ -7,7 +7,7 @@ import { $, copyText, h } from "../util";
 export const menusMethods = {
   /** Menu suspenso solto (botão direito) numa posição da tela. */
   openMenuAt(this: App, x: number, y: number, items: { label: string; hint?: string; run: () => void; sep?: boolean }[]): void {
-    this.closeMenus();
+    this.closeMenus(false);
     const menu = h("div", { class: "dropdown" });
     for (const it of items) {
       if (it.sep) this.ddSep(menu);
@@ -51,13 +51,17 @@ export const menusMethods = {
     });
   },
 
-  closeMenus(this: App): void {
-    document.querySelectorAll(".dropdown").forEach((m) => m.remove());
+  closeMenus(this: App, animar = true): void {
+    document.querySelectorAll(".dropdown").forEach((m) => {
+      // ao trocar de menu, o antigo some na hora (a despedida animada é para quando só se fecha)
+      if (!animar) m.classList.add("sem-despedida");
+      m.remove();
+    });
   },
 
   openMenu(this: App, anchor: HTMLElement, build: (menu: HTMLElement) => void): void {
     const wasOpen = !!document.querySelector(".dropdown");
-    this.closeMenus();
+    this.closeMenus(false);
     if (wasOpen) return;
     const menu = h("div", { class: "dropdown" });
     build(menu);
