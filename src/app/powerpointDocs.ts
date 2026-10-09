@@ -273,36 +273,39 @@ export const powerpointDocsMethods = {
       const backdrop = h("div", { class: "modal-backdrop" });
       const modal = h("div", { class: "modal pg-modal" });
       modal.innerHTML = `
-        <header class="wm-head"><h2>Configurar apresentação</h2></header>
+        <header class="wm-head">
+          <svg class="ic"><use href="#i-gear"/></svg>
+          <h2>Configurar apresentação</h2>
+          <button class="btn icon" data-close title="Fechar (Esc)"><svg class="ic"><use href="#i-close"/></svg></button>
+        </header>
         <div class="wm-body">
-          <label class="pg-row"><span>Proporção</span>
+          <p class="pg-hint">Vale para todas as lâminas: proporção, tema, fonte padrão e rodapé.</p>
+          <label class="pg-row"><span class="pg-rot">Proporção</span>
             <select data-k="aspect">
               <option value="16:9">16:9 (tela cheia)</option>
               <option value="4:3">4:3 (projetor antigo)</option>
             </select>
           </label>
-          <label class="pg-row"><span>Tema</span>
+          <label class="pg-row"><span class="pg-rot">Tema</span>
             <select data-k="theme">
               <option value="claro">Claro</option>
               <option value="escuro">Escuro</option>
               <option value="contraste">Alto contraste</option>
             </select>
           </label>
-          <label class="pg-row"><span>Fonte padrão</span>
+          <label class="pg-row"><span class="pg-rot">Fonte padrão</span>
             <select data-k="fontFamily">
               <option>Segoe UI</option><option>Calibri</option><option>Arial</option>
               <option>Georgia</option><option>Times New Roman</option><option>Verdana</option><option>Consolas</option>
             </select>
           </label>
-          <label class="pg-row"><span>Tamanho (pt)</span>
+          <label class="pg-row"><span class="pg-rot">Tamanho (pt)</span>
             <input type="number" data-k="fontSize" min="8" max="96" step="1">
           </label>
-          <label class="pg-row"><span>Rodapé</span>
+          <label class="pg-row"><span class="pg-rot">Rodapé</span>
             <input type="text" data-k="footer" placeholder="Nome da empresa, por exemplo">
           </label>
-          <label class="pg-row"><span class="pg-check">
-            <input type="checkbox" data-k="showNumber"> Mostrar o número da lâmina
-          </label>
+          <label class="pg-row"><span class="pg-check"><input type="checkbox" data-k="showNumber"> Mostrar o número da lâmina</span></label>
         </div>
         <footer class="wm-foot">
           <button class="btn" data-cancel>Cancelar</button>
@@ -339,6 +342,10 @@ export const powerpointDocsMethods = {
         }
       };
       document.addEventListener("keydown", onKey, true);
+      backdrop.addEventListener("mousedown", (e) => {
+        if (e.target === backdrop) done(null);
+      });
+      modal.querySelector("[data-close]")!.addEventListener("click", () => done(null));
       modal.querySelector("[data-cancel]")!.addEventListener("click", () => done(null));
       modal.querySelector<HTMLButtonElement>("[data-ok]")!.addEventListener("click", () => {
         modal.querySelectorAll<Campo>("[data-k]").forEach((campo) => {

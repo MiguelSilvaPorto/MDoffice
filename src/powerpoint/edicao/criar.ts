@@ -83,6 +83,11 @@ const saturacao = (hex: string) => {
   return Math.max(...ch) - Math.min(...ch);
 };
 
+/** Cor do texto que fica legível sobre um preenchimento de acento (acento escuro → branco, claro → escuro). */
+export function corDeContraste(acento: string): string {
+  return claro(acento) < 150 ? "FFFFFF" : "1C212B";
+}
+
 /** Olha o deck e descobre a fonte, a cor de texto e a cor de destaque que mais aparecem. */
 export function estiloDoDeck(slides: Slide[], setup: DeckSetup): EstiloDeck {
   const t = themeOf(setup.theme);
@@ -169,7 +174,7 @@ export function novaForma(item: ItemGaleria, box: ShapeBox, estilo: EstiloDeck):
   s.fill = estilo.acento;
   s.ln = { color: ajustarCor(estilo.acento, 0.7), alpha: 1, w: 1, dash: "solid" };
   // texto dentro da forma: branco em fundo escuro e escuro em fundo claro
-  const corNoTexto = claro(estilo.acento) < 150 ? "FFFFFF" : "1C212B";
+  const corNoTexto = corDeContraste(estilo.acento);
   s.color = corNoTexto;
   s.align = "centro";
   s.paras = [paraVazio({ size: estilo.tamanho }, "centro")];

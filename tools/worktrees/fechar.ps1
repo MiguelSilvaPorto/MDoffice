@@ -2,8 +2,9 @@
 # fechar.ps1 - Fecha a tarefa: commita o que faltar, integra a main na worktree, entrega o
 # trabalho na MAIN (fast-forward) e agenda a limpeza da worktree e da branch local.
 #
-# Roda DE DENTRO da worktree (.worktrees\...). NAO faz push: publicar no GitHub so
-# acontece quando o usuario pedir (use -Publicar nesse caso).
+# Roda DE DENTRO da worktree (.worktrees\...). Depois de entregar na main, da PUSH
+# AUTOMATICO da main no GitHub (origin) - e de la que o usuario trabalha em outro lugar.
+# Se o push falhar (sem rede), nada se perde: o monitor-push.ps1 envia depois.
 #
 # FLUXO
 #   1. commita o que estiver pendente (exige -Mensagem quando ha alteracao)
@@ -12,16 +13,17 @@
 #      Resolva, rode "git add" e execute este script de novo. Nada vai para a main
 #      com conflito.
 #   3. avanca a main (git merge --ff-only) - so entra na main trabalho que ja contem a main
-#   4. agenda em segundo plano a remocao da worktree e da branch local (log em
+#   4. push da main para o origin (desligue com -SemPush)
+#   5. agenda em segundo plano a remocao da worktree e da branch local (log em
 #      .worktrees\limpeza-automatica.log) - nenhuma tarefa deixa worktree orfa
-#   5. avisa de OUTRAS worktrees paradas com pendencia
+#   6. avisa de OUTRAS worktrees paradas com pendencia
 #
 # Dois fechamentos ao mesmo tempo sao serializados por uma trava (.git\mdoffice-fechar.lock).
 #
 # Uso:
 #   tools\worktrees\fechar.ps1 -Mensagem "feat(escopo): descricao"
 #   tools\worktrees\fechar.ps1                  (sem pendencia: so integra e entrega)
-#   tools\worktrees\fechar.ps1 -Publicar        (alem de entregar na main, da push da main no origin)
+#   tools\worktrees\fechar.ps1 -SemPush         (entrega na main mas nao envia ao GitHub agora)
 #   tools\worktrees\fechar.ps1 -SemIntegrar     (so commita aqui; nao mexe na main nem limpa)
 #   tools\worktrees\fechar.ps1 -ManterWorktree  (entrega na main mas nao agenda a limpeza)
 #   tools\worktrees\fechar.ps1 -ParadaHoras 24  (aviso de outras worktrees paradas; padrao 12h)
@@ -30,7 +32,7 @@
 [CmdletBinding()]
 param(
   [string]$Mensagem,
-  [switch]$Publicar,
+  [switch]$SemPush,
   [switch]$SemIntegrar,
   [switch]$ManterWorktree,
   [int]$ParadaHoras = 12
@@ -143,21 +145,21 @@ try {
   Remove-Item $trava -Force -ErrorAction SilentlyContinue
 }
 
-# -- publicar (so quando o usuario pedir) --------------------------------------
-if ($Publicar) {
+# -- 4) push automatico da main para o GitHub ---------------------------------
+if (-not $SemPush) {
   $temOrigin = "$(Exec -PermitirFalha { git -C $principal remote get-url origin })".Trim()
   if (-not $temOrigin) {
-    Write-Warning "Sem remote origin - nada para publicar."
+    Write-Warning "Sem remote origin - nada para enviar."
   } else {
     $saidaPush = Exec -PermitirFalha { git -C $principal push origin main }
     if ($LASTEXITCODE -eq 0) {
-      Write-Host "Main publicada no origin."
+      Write-Host "Main enviada ao GitHub (origin)."
     } else {
-      Write-Warning "O push falhou (a entrega local na main ja foi feita):`n$($saidaPush | Out-String)"
+      Write-Warning "O push falhou (a entrega local na main ja foi feita; o monitor-push.ps1 tenta de novo quando nao houver worktrees ativas):`n$($saidaPush | Out-String)"
     }
   }
 } else {
-  Write-Host "Nada foi publicado (sem push). So publique quando o usuario pedir: fechar.ps1 -Publicar ou git push na copia principal."
+  Write-Host "Push pulado (-SemPush): a main local ficou a frente do GitHub; o monitor-push.ps1 envia quando nao houver worktrees ativas."
 }
 
 $ultimos = Exec -PermitirFalha { git -C $principal log --oneline -3 main }
@@ -165,7 +167,7 @@ Write-Host ""
 Write-Host "Ultimos commits da main:"
 if ($ultimos) { $ultimos | ForEach-Object { Write-Host "  $_" } }
 
-# -- 4) limpeza automatica: nao deixar worktree orfa ---------------------------
+# -- 5) limpeza automatica: nao deixar worktree orfa ---------------------------
 Write-Host ""
 if ($entregue -and -not $ManterWorktree) {
   $slug = $branch -replace '/', '-'
@@ -186,7 +188,7 @@ if ($entregue -and -not $ManterWorktree) {
   Write-Host "Para limpar a worktree (da copia principal): tools\worktrees\limpar.ps1 -Nome $branch -ApagarBranch"
 }
 
-# -- 5) varredura: worktrees paradas com pendencia (aviso para a proxima IA) ---
+# -- 6) varredura: worktrees paradas com pendencia (aviso para a proxima IA) ---
 $limiteSegundos = $ParadaHoras * 3600
 $agoraSegundos = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 

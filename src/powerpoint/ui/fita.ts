@@ -6,6 +6,7 @@ import type { SlideLayout } from "../schema";
 import { abrirCores } from "./cores";
 import { FONTES_COMUNS, TAMANHOS, cmParaPt, ptParaCm, type EstadoUI } from "./estado";
 import { abrirGaleria, iconeDeForma } from "./galeria";
+import { abrirModelos } from "./modelos";
 import { abrirPopup, fecharPopup } from "./popup";
 import { GALERIA } from "../edicao/criar";
 import { ORDEM_LAYOUTS, ROTULOS_LAYOUT } from "../edicao/layouts";
@@ -54,7 +55,8 @@ export class Fita {
       <div class="ppr-abas" role="tablist">
         ${ABAS.map((a) => `<button type="button" class="ppr-aba${a.id === "inicio" ? " on" : ""}" role="tab" data-aba="${a.id}"${a.id === "formato" || a.id === "tabela" ? " hidden" : ""}>${a.nome}</button>`).join("")}
         <span class="ppr-enche"></span>
-        <button type="button" class="ppr-aba ppr-cfg" data-cmd="configure" title="Configurar apresentação">${ic("i-gear")}<span>Configurar</span></button>
+        <button type="button" class="ppr-aba ppr-tpl" data-cmd="modelo" data-menu="1" title="Aplicar um modelo à apresentação (tema, cores e fonte)">${ic("i-addons")}<span>Template</span></button>
+        <button type="button" class="ppr-aba ppr-cfg" data-cmd="configure" title="Configurar apresentação: proporção, tema, fonte e rodapé">${ic("i-gear")}<span>Configurar</span></button>
       </div>
       <div class="ppr-paineis">
         <div class="ppr-painel" data-painel="inicio">${this.inicio()}</div>
@@ -379,6 +381,9 @@ export class Fita {
     switch (cmd) {
       case "galeria":
         abrirGaleria(ancora, (item) => run("forma-inserir", String(GALERIA.indexOf(item))));
+        return;
+      case "modelo":
+        abrirModelos(ancora, (m) => run("modelo", m.id));
         return;
       case "tabela-grade": {
         const N = 8;
