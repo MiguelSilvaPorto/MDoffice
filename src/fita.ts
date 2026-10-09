@@ -155,9 +155,17 @@ export function ligarRecolherFita(o: OpcoesRecolherFita): { alternar: () => void
  * aparece o cursor de redimensionar e, arrastando, os botões acompanham (a faixa
  * fica menor e sobra espaço para o documento, ou maior para quem prefere assim).
  * Duplo clique na borda volta ao tamanho normal.
+ *
+ * `modo` decide COMO a faixa acompanha:
+ * - `"zoom"` (padrão): aplica `zoom` na faixa inteira — simples, mas a fonte
+ *   encolhe junto e fica ilegível abaixo de ~90%.
+ * - `"metricas"`: publica `--fita-escala` e deixa o CSS escalar as métricas
+ *   (alturas, ícones, espaçamentos) mantendo um piso para a fonte. É o modo das
+ *   Apresentações, onde a fita tem muitos botões grandes.
  */
-export function ligarAjusteAlturaFita(o: { el: HTMLElement }): void {
+export function ligarAjusteAlturaFita(o: { el: HTMLElement; modo?: "zoom" | "metricas" }): void {
   let escala = lerEscala();
+  const porMetricas = o.modo === "metricas";
 
   // alça na borda de baixo (logo abaixo da faixa, sem cobrir os botões)
   const alca = document.createElement("div");
@@ -173,8 +181,19 @@ export function ligarAjusteAlturaFita(o: { el: HTMLElement }): void {
   const rotulo = () => `Arraste para ajustar o tamanho da faixa de opções (${Math.round(escala * 100)}%) · duplo clique volta ao normal`;
 
   const aplicar = (): void => {
-    if (escala === 1) o.el.style.removeProperty("zoom");
-    else o.el.style.setProperty("zoom", String(escala));
+    // a escala vai para o CSS; cada fita decide o que fazer com ela
+    o.el.style.setProperty("--fita-escala", String(escala));
+    // fita baixa: os botões grandes viram "ícone + nome" numa linha, o que
+    // devolve espaço vertical sem diminuir a fonte (o piso está no CSS)
+    if (porMetricas) o.el.classList.toggle("fita-compacta", escala < 0.88);
+    if (porMetricas) {
+      // nada de `zoom`: ele encolheria também a fonte (o piso fica no CSS)
+      o.el.style.removeProperty("zoom");
+    } else if (escala === 1) {
+      o.el.style.removeProperty("zoom");
+    } else {
+      o.el.style.setProperty("zoom", String(escala));
+    }
     alca.title = rotulo();
     alca.setAttribute("aria-valuenow", String(Math.round(escala * 100)));
   };
@@ -183,10 +202,38 @@ export function ligarAjusteAlturaFita(o: { el: HTMLElement }): void {
     document.dispatchEvent(new CustomEvent(EVENTO_ESCALA, { detail: escala }));
   };
 
+  // Duplo clique volta ao normal. Não dá para usar o evento `dblclick`: o
+  // `preventDefault` do pointerdown (abaixo) corta os eventos de mouse de
+  // compatibilidade, e o navegador para de contar o segundo clique como duplo.
+  // Então contamos aqui: dois toques próximos, no mesmo lugar.
+  let ultimoToque = 0;
+  let ultimoX = 0;
+  let ultimoY = 0;
+
   alca.addEventListener("pointerdown", (e) => {
     if (e.button !== 0) return;
     e.preventDefault();
-    alca.setPointerCapture(e.pointerId);
+
+    const agora = Date.now();
+    const duplo =
+      agora - ultimoToque < 350 && Math.abs(e.clientX - ultimoX) < 6 && Math.abs(e.clientY - ultimoY) < 6;
+    ultimoToque = agora;
+    ultimoX = e.clientX;
+    ultimoY = e.clientY;
+    if (duplo) {
+      escala = 1;
+      aplicar();
+      gravarEscala(1);
+      avisar();
+      return;
+    }
+
+    // capturar o ponteiro é o ideal, mas não pode impedir o arrasto se falhar
+    try {
+      alca.setPointerCapture(e.pointerId);
+    } catch {
+      /* ponteiro sintético/sem captura: segue pelo listener no próprio elemento */
+    }
     alca.classList.add("arrastando");
     document.body.style.cursor = "row-resize";
     const y0 = e.clientY;
@@ -210,13 +257,6 @@ export function ligarAjusteAlturaFita(o: { el: HTMLElement }): void {
     alca.addEventListener("pointermove", mover);
     alca.addEventListener("pointerup", soltar);
     alca.addEventListener("pointercancel", soltar);
-  });
-
-  alca.addEventListener("dblclick", () => {
-    escala = 1;
-    aplicar();
-    gravarEscala(1);
-    avisar();
   });
 
   // com o foco na borda, as setas também ajustam (acessibilidade)

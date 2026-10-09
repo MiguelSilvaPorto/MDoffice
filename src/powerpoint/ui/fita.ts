@@ -414,6 +414,23 @@ export class Fita {
         });
         return;
       }
+      // "Nova lâmina" pergunta QUAL layout a lâmina nova deve ter. Sem este
+      // menu o botão ficava sem efeito nenhum (ele é um botão de menu).
+      case "slide-novo": {
+        const el = abrirPopup(
+          ancora,
+          `<div class="pp-pop-rot">Nova lâmina</div>` +
+            LAYOUTS.map(([id, nome]) => `<button type="button" class="pp-pop-item" data-lay="${id}">${nome}</button>`).join(""),
+          { classe: "pp-pop-menu" }
+        );
+        el.addEventListener("click", (ev) => {
+          const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-lay]");
+          if (!b) return;
+          fecharPopup();
+          run("slide-new", b.dataset.lay);
+        });
+        return;
+      }
       case "tabela-bordas-menu": {
         const itens: [string, string][] = [["todas", "Todas as bordas"], ["externas", "Bordas externas"], ["internas", "Bordas internas"], ["topo", "Borda superior"], ["base", "Borda inferior"], ["esquerda", "Borda esquerda"], ["direita", "Borda direita"], ["nenhuma", "Sem borda"]];
         const el = abrirPopup(ancora, itens.map(([k, n]) => `<button type="button" class="pp-pop-item" data-borda="${k}">${n}</button>`).join(""), { classe: "pp-pop-menu" });

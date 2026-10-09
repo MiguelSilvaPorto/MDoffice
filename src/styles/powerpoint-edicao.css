@@ -15,14 +15,48 @@
   box-shadow: none;
   overflow: visible;
   background: var(--panel);
+
+  /* ------------------------------------------------------------------
+     Escala da fita (arrastar a borda de baixo — ver src/fita.ts).
+     As MÉTRICAS (alturas, ícones, espaçamentos) acompanham a escala para
+     a fita caber melhor; a FONTE tem piso, senão o texto fica ilegível.
+     Tudo abaixo sai daqui: mudar a escala aqui ajusta a fita inteira.
+     ------------------------------------------------------------------ */
+  --fita-e: var(--fita-escala, 1);
+  --pe-1: calc(1px * var(--fita-e));
+  --pe-2: calc(2px * var(--fita-e));
+  --pe-3: calc(3px * var(--fita-e));
+  --pe-4: calc(4px * var(--fita-e));
+  --pe-5: calc(5px * var(--fita-e));
+  --pe-6: calc(6px * var(--fita-e));
+  --pe-8: calc(8px * var(--fita-e));
+  --pe-10: calc(10px * var(--fita-e));
+  --pe-14: calc(14px * var(--fita-e));
+  --pe-aba-alt: max(22px, calc(24px * var(--fita-e)));
+  --pe-altura: max(22px, calc(26px * var(--fita-e)));
+  --pe-icone: max(14px, calc(16px * var(--fita-e)));
+  --pe-icone-g: max(20px, calc(28px * var(--fita-e)));
+
+  /* pisos de fonte: 10,5px é o menor texto confortável; 11,5px para ações */
+  --pe-fonte: max(11.5px, calc(13px * var(--fita-e)));
+  --pe-fonte-peq: max(11px, calc(12px * var(--fita-e)));
+  --pe-fonte-rot: max(10.5px, calc(11px * var(--fita-e)));
 }
 
 .ppr-abas {
   display: flex;
   align-items: flex-end;
-  gap: 2px;
-  padding: 4px 10px 0;
+  gap: var(--pe-2);
+  padding: var(--pe-4) var(--pe-10) 0;
   border-bottom: 1px solid var(--border);
+  /* as abas não somem: quando não couberem, rolam na horizontal */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.ppr-abas::-webkit-scrollbar {
+  display: none;
 }
 
 .ppr-enche {
@@ -32,15 +66,17 @@
 .ppr-aba {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 14px 7px;
+  gap: var(--pe-5);
+  padding: var(--pe-6) var(--pe-14) calc(7px * var(--fita-e));
   color: var(--fg);
   background: transparent;
   border: 0;
   border-bottom: 3px solid transparent;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--pe-fonte);
   cursor: pointer;
+  white-space: nowrap;
+  flex: none;
 }
 
 .ppr-aba[hidden] {
@@ -58,8 +94,9 @@
 }
 
 .ppr-aba .ic {
-  width: 15px;
-  height: 15px;
+  width: calc(15px * var(--fita-e));
+  height: calc(15px * var(--fita-e));
+  flex: none;
 }
 
 .ppr-painel {
@@ -68,8 +105,8 @@
      fica com altura previsível e sobra espaço para a lâmina) */
   flex-wrap: nowrap;
   align-items: stretch;
-  padding: 6px 8px 4px;
-  min-height: 92px;
+  padding: var(--pe-6) var(--pe-8) var(--pe-4);
+  min-height: calc(92px * var(--fita-e));
   overflow-x: auto;
   overflow-y: hidden;
 }
@@ -82,7 +119,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 0 8px;
+  padding: 0 var(--pe-8);
   border-right: 1px solid var(--border);
   flex: none;
 }
@@ -94,14 +131,14 @@
 .ppr-corpo {
   display: flex;
   align-items: stretch;
-  gap: 4px;
+  gap: var(--pe-4);
   flex: 1;
 }
 
 .ppr-rotulo {
-  padding-top: 3px;
+  padding-top: var(--pe-3);
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--pe-fonte-rot);
   text-align: center;
   white-space: nowrap;
 }
@@ -110,21 +147,21 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 6px;
+  gap: var(--pe-6);
 }
 
 .ppr-linha,
 .ppr-col {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--pe-2);
 }
 
 .ppr-col {
   flex-direction: column;
   align-items: stretch;
   justify-content: center;
-  gap: 1px;
+  gap: var(--pe-1);
 }
 
 .ppr {
@@ -135,23 +172,24 @@ button.ppr {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  min-width: 26px;
-  height: 26px;
-  padding: 0 6px;
+  gap: var(--pe-5);
+  min-width: var(--pe-altura);
+  height: var(--pe-altura);
+  padding: 0 var(--pe-6);
   color: var(--fg);
   background: transparent;
   border: 1px solid transparent;
   border-radius: 3px;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--pe-fonte);
   cursor: pointer;
   white-space: nowrap;
 }
 
 button.ppr .ic {
-  width: 16px;
-  height: 16px;
+  width: var(--pe-icone);
+  height: var(--pe-icone);
+  flex: none;
 }
 
 button.ppr:hover:not(:disabled) {
@@ -171,30 +209,71 @@ button.ppr.on {
 
 button.ppr.txt {
   justify-content: flex-start;
-  height: 24px;
-  font-size: 12px;
+  height: var(--pe-aba-alt);
+  font-size: var(--pe-fonte-peq);
 }
 
 button.ppr.big {
   flex-direction: column;
   justify-content: flex-start;
-  gap: 3px;
-  min-width: 58px;
+  gap: var(--pe-3);
+  min-width: calc(58px * var(--fita-e));
   height: auto;
-  padding: 6px 6px 3px;
-  font-size: 12px;
+  padding: var(--pe-6) var(--pe-6) var(--pe-3);
+  font-size: var(--pe-fonte-peq);
 }
 
 button.ppr.big .ic {
-  width: 28px;
-  height: 28px;
+  width: var(--pe-icone-g);
+  height: var(--pe-icone-g);
 }
 
 button.ppr.big > span:not(.car):not(.ppr-gal-ic) {
   line-height: 1.1;
   text-align: center;
   white-space: normal;
-  max-width: 76px;
+  max-width: calc(76px * var(--fita-e));
+}
+
+/* ------------------------------------------------------------------
+   Fita baixa (arrastada para menos de ~88%): os botões grandes deixam de
+   empilhar ícone + nome e ficam numa linha só. A fita perde bastante altura
+   — que é o motivo de encolhê-la — e o texto continua do mesmo tamanho.
+   ------------------------------------------------------------------ */
+
+.pp-ribbon.ppr.fita-compacta button.ppr.big {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--pe-5);
+  min-width: 0;
+  padding: 0 var(--pe-6);
+  height: var(--pe-altura);
+}
+
+.pp-ribbon.ppr.fita-compacta button.ppr.big .ic {
+  width: var(--pe-icone);
+  height: var(--pe-icone);
+}
+
+.pp-ribbon.ppr.fita-compacta button.ppr.big > span:not(.car):not(.ppr-gal-ic) {
+  max-width: none;
+  text-align: left;
+  white-space: nowrap;
+}
+
+/* o rótulo do grupo some primeiro: é a informação menos importante da fita */
+.pp-ribbon.ppr.fita-compacta .ppr-rotulo {
+  padding-top: var(--pe-2);
+}
+
+.pp-ribbon.ppr.fita-compacta .ppr-corpo {
+  align-items: center;
+}
+
+/* as colunas de botões pequenos acompanham a linha única */
+.pp-ribbon.ppr.fita-compacta .ppr-linhas {
+  gap: var(--pe-3);
 }
 
 button.ppr .car {
@@ -208,22 +287,23 @@ button.ppr.big .car {
 }
 
 .ppr-sel {
-  height: 24px;
-  padding: 0 4px;
+  height: var(--pe-aba-alt);
+  padding: 0 var(--pe-4);
   color: var(--fg);
   background: var(--panel-2);
   border: 1px solid var(--border);
   border-radius: 3px;
   font: inherit;
-  font-size: 12.5px;
+  font-size: var(--pe-fonte-peq);
+  max-width: calc(140px * var(--fita-e));
 }
 
 .ppr-sel.fonte {
-  width: 140px;
+  width: calc(140px * var(--fita-e));
 }
 
 .ppr-sel.tam {
-  width: 58px;
+  width: calc(58px * var(--fita-e));
 }
 
 .ppr-a {
@@ -468,6 +548,15 @@ button.ppr.cor {
 
 .pp-pop-menu {
   min-width: 210px;
+}
+
+/* título curto no topo de um popup de menu (ex.: "Nova lâmina") */
+.pp-pop-rot {
+  padding: 4px 8px 6px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11.5px;
 }
 
 .pp-pop-galeria {

@@ -217,7 +217,7 @@ export class PowerPointHost {
     const abasFita = $(".ppr-abas", this.fita.el);
     const paineisFita = $(".ppr-paineis", this.fita.el);
     ligarRecolherFita({ el: this.fita.el, abas: abasFita, paineis: paineisFita });
-    ligarAjusteAlturaFita({ el: this.fita.el });
+    ligarAjusteAlturaFita({ el: this.fita.el, modo: "metricas" });
     paineisFita.addEventListener(
       "wheel",
       (e) => {
@@ -1060,6 +1060,10 @@ export class PowerPointHost {
 
     switch (cmd) {
       // ---- lâmina ----
+      // a fita emite "slide-novo" e o botão "+" da faixa emite "slide-new":
+      // os dois nomes fazem a mesma coisa (antes só um deles era tratado e o
+      // botão "Nova lâmina" da fita ficava sem efeito)
+      case "slide-novo":
       case "slide-new": {
         this.registrar();
         // a lâmina nova herda o fundo e as decorações fixas da atual e já vem com as caixas do layout escolhido
