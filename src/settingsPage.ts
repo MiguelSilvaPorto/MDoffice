@@ -36,12 +36,12 @@ export interface SettingsCtx {
   openHistory: () => void;
 }
 
-const NAV: { id: SettingsSection; label: string; icon: string }[] = [
-  { id: "escrita", label: "Escrita", icon: "i-draw" },
-  { id: "traducao", label: "Tradução", icon: "i-globe" },
-  { id: "historico", label: "Histórico", icon: "i-clock" },
-  { id: "aparencia", label: "Aparência", icon: "i-eye" },
-  { id: "atalhos", label: "Atalhos", icon: "i-code" },
+const NAV: { id: SettingsSection; label: string; desc: string; icon: string }[] = [
+  { id: "escrita", label: "Escrita", desc: "Correção e sugestões", icon: "i-feather" },
+  { id: "traducao", label: "Tradução", desc: "Inglês ao vivo e glossário", icon: "i-globe" },
+  { id: "historico", label: "Histórico", desc: "Versões, backup e salvamento", icon: "i-clock" },
+  { id: "aparencia", label: "Aparência", desc: "Tema e elementos da janela", icon: "i-eye" },
+  { id: "atalhos", label: "Atalhos", desc: "Teclas rápidas do app", icon: "i-code" },
 ];
 
 const TONES: { id: Tone; title: string; desc: string }[] = [
@@ -50,27 +50,59 @@ const TONES: { id: Tone; title: string; desc: string }[] = [
   { id: "informal", title: "Informal", desc: "Não mexe no jeito de falar: corrige ortografia, pontuação e maiúsculas, mas aceita gírias e “a gente”." },
 ];
 
-const SHORTCUTS: [string, string][] = [
-  ["Ctrl+T", "Nova aba"],
-  ["Ctrl+W", "Fechar aba"],
-  ["Ctrl+Shift+T", "Reabrir a última aba fechada"],
-  ["Ctrl+Tab / Ctrl+1…9", "Trocar de aba"],
-  ["F2", "Renomear o documento"],
-  ["Ctrl+O / Ctrl+S", "Abrir / salvar"],
-  ["Ctrl+Shift+S", "Salvar como"],
-  ["Ctrl+K", "Buscar comandos"],
-  ["Ctrl+Shift+E", "Exportar"],
-  ["Ctrl+Alt+T", "Tradução automática"],
-  ["Ctrl+Shift+F", "Modo foco (Esc sai)"],
-  ["Ctrl+Shift+D", "Desenhar"],
-  ["Ctrl+F1", "Recolher/expandir a faixa de opções"],
-  ["F7", "Revisar texto"],
-  ["F1", "Boas-vindas e ajuda"],
+const PROVIDERS: { id: ProviderChoice; title: string; desc: string }[] = [
+  { id: "auto", title: "Automático", desc: "Usa o modo offline se já estiver instalado; senão o online. Se o limite do online acabar, troca sozinho." },
+  { id: "online", title: "Online (grátis)", desc: "MyMemory. Bom para começar, mas tem limite diário e qualidade média." },
+  { id: "offline", title: "Offline", desc: "Modelo no seu PC, sem limite e sem internet (baixa cerca de 120 MB uma vez)." },
 ];
 
+const SHORTCUT_GROUPS: { title: string; keys: [string, string][] }[] = [
+  {
+    title: "Abas",
+    keys: [
+      ["Ctrl+T", "Nova aba"],
+      ["Ctrl+W", "Fechar aba"],
+      ["Ctrl+Shift+T", "Reabrir a última aba fechada"],
+      ["Ctrl+Tab / Ctrl+1…9", "Trocar de aba"],
+    ],
+  },
+  {
+    title: "Arquivo",
+    keys: [
+      ["Ctrl+O / Ctrl+S", "Abrir / salvar"],
+      ["Ctrl+Shift+S", "Salvar como"],
+      ["Ctrl+Shift+E", "Exportar"],
+      ["F2", "Renomear o documento"],
+    ],
+  },
+  {
+    title: "Escrita e IA",
+    keys: [
+      ["Ctrl+K", "Buscar comandos"],
+      ["F7", "Revisar texto"],
+      ["Ctrl+Alt+T", "Tradução automática"],
+      ["Ctrl+Shift+D", "Desenhar"],
+    ],
+  },
+  {
+    title: "Janela e ajuda",
+    keys: [
+      ["Ctrl+Shift+F", "Modo foco (Esc sai)"],
+      ["Ctrl+F1", "Recolher/expandir a faixa de opções"],
+      ["F1", "Boas-vindas e ajuda"],
+    ],
+  },
+];
+
+/** Chip de ícone que ancora cada linha de ajuste. */
+function rowIcon(icon: string): string {
+  return `<span class="st-row-ic"><svg class="ic"><use href="#${icon}"/></svg></span>`;
+}
+
 /** Interruptor liga/desliga acessível. */
-function toggle(id: string, label: string, desc: string, on: boolean): string {
+function toggle(id: string, label: string, desc: string, on: boolean, icon: string): string {
   return `<label class="st-row">
+    ${rowIcon(icon)}
     <span class="st-text"><b>${label}</b><small>${desc}</small></span>
     <input type="checkbox" class="st-switch" role="switch" data-k="${id}" ${on ? "checked" : ""}>
   </label>`;
@@ -84,27 +116,43 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
 
   host.innerHTML = `
     <aside class="st-nav" role="tablist" aria-label="Seções das configurações">
-      <h2>Configurações</h2>
-      ${NAV.map((n) => `<button class="st-nav-item" role="tab" data-nav="${n.id}"><svg class="ic"><use href="#${n.icon}"/></svg><span>${n.label}</span></button>`).join("")}
-      <span class="st-saved" aria-live="polite"></span>
+      <header class="st-brand">
+        <span class="st-brand-ic"><svg class="ic"><use href="#i-gear"/></svg></span>
+        <span class="st-brand-txt"><h2>Configurações</h2><small>Preferências do app</small></span>
+      </header>
+      ${NAV.map(
+        (n) => `<button class="st-nav-item" role="tab" data-nav="${n.id}" title="${n.label}"><span class="st-nav-ic"><svg class="ic"><use href="#${n.icon}"/></svg></span><span class="st-nav-txt"><b>${n.label}</b><small>${n.desc}</small></span></button>`
+      ).join("")}
     </aside>
     <div class="st-scroll">
       <div class="st-col">
+        <div class="st-headbar">
+          <span class="st-heading"><svg class="ic"><use href="#i-feather" data-st-icon/></svg><b data-st-title>Escrita</b></span>
+          <span class="st-saved" aria-live="polite"></span>
+        </div>
+
         <section class="st-sec" data-sec="escrita">
-          <h3>Escrita</h3>
-          <p class="st-lead">Como o assistente corrige e sugere enquanto você escreve.</p>
-          <h4>Tom do texto</h4>
-          <div class="st-cards">
-            ${TONES.map(
-              (t) => `<label class="st-card"><input type="radio" name="tone" value="${t.id}" ${s.tone === t.id ? "checked" : ""}>
-                <span><b>${t.title}</b><small>${t.desc}</small></span></label>`
-            ).join("")}
+          <header class="st-sec-head">
+            <span class="st-sec-ic"><svg class="ic"><use href="#i-feather"/></svg></span>
+            <div class="st-sec-txt">
+              <h3>Escrita</h3>
+              <p class="st-lead">Como o assistente corrige e sugere enquanto você escreve.</p>
+            </div>
+          </header>
+
+          <h4 class="st-group">Tom do texto</h4>
+          <div class="st-seg" role="radiogroup" aria-label="Tom do texto">
+            ${TONES.map((t) => `<label class="st-seg-item"><input type="radio" name="tone" value="${t.id}" ${s.tone === t.id ? "checked" : ""}><span>${t.title}</span></label>`).join("")}
           </div>
+          <p class="st-seg-desc" data-tone-desc></p>
           <p class="st-note">Vale para o assistente de escrita, a correção automática e o português enviado à tradução.</p>
+
+          <h4 class="st-group">Digitação e sugestões</h4>
           <div class="st-list">
-            ${toggle("autofix", "Correção automática", "Ponto final, vírgulas, maiúsculas, espaços e palavras erradas entram sozinhos (Ctrl+Z desfaz).", ctx.autoFix())}
-            ${toggle("copilot", "Sugestões enquanto digita", "Mostra a continuação da frase em cinza. Tab aceita; Alt+Seta aceita uma palavra.", ctx.copilot())}
+            ${toggle("autofix", "Correção automática", "Ponto final, vírgulas, maiúsculas, espaços e palavras erradas entram sozinhos (Ctrl+Z desfaz).", ctx.autoFix(), "i-brush")}
+            ${toggle("copilot", "Sugestões enquanto digita", "Mostra a continuação da frase em cinza. Tab aceita; Alt+Seta aceita uma palavra.", ctx.copilot(), "i-spark")}
             <div class="st-row">
+              ${rowIcon("i-focus")}
               <span class="st-text"><b>Intensidade das sugestões</b><small>Só aparece quando poupa digitação de verdade. Discreta: 4+ letras e só com muita certeza. Equilibrada: 3+ letras. Agressiva: 2+ letras, aparece mais e erra mais.</small></span>
               <select class="st-select" data-sel="ghostmode">
                 <option value="discreto">Discreta</option>
@@ -112,20 +160,32 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
                 <option value="agressivo">Agressiva</option>
               </select>
             </div>
-            ${toggle("llm", "IA local na revisão inteligente", "Um modelo de linguagem pequeno (Gemma 3 270M, que já vem no app) confere cada troca de palavra sugerida. Roda em uma thread só, usa a GPU, trabalha só com o computador parado e sai da memória quando não está em uso. Nada sai do seu computador.", llmEnabled())}
-            ${toggle("llmtyping", "IA ajuda nas sugestões enquanto digito", "Numa pausa curta no meio de uma palavra, a IA local escolhe, entre os candidatos do modelo de palavras, o que combina com a frase (acerta bem mais). Só aparece quando a IA tem bastante certeza. Precisa da IA local e da GPU; carrega na primeira vez (alguns segundos) e sai da memória depois de 90 s parado.", llmTypingSetting())}
-            ${toggle("llmgpu", "Usar a GPU para a IA local", "A IA local só funciona na GPU (WebGPU). Se você desligar, ela fica inativa e a revisão usa só as regras.", llmUseGpu())}
+          </div>
+
+          <h4 class="st-group">IA local</h4>
+          <div class="st-list">
+            ${toggle("llm", "IA local na revisão inteligente", "Um modelo de linguagem pequeno (Gemma 3 270M, que já vem no app) confere cada troca de palavra sugerida. Roda em uma thread só, usa a GPU, trabalha só com o computador parado e sai da memória quando não está em uso. Nada sai do seu computador.", llmEnabled(), "i-shield")}
+            ${toggle("llmtyping", "IA ajuda nas sugestões enquanto digito", "Numa pausa curta no meio de uma palavra, a IA local escolhe, entre os candidatos do modelo de palavras, o que combina com a frase (acerta bem mais). Só aparece quando a IA tem bastante certeza. Precisa da IA local e da GPU; carrega na primeira vez (alguns segundos) e sai da memória depois de 90 s parado.", llmTypingSetting(), "i-feather")}
+            ${toggle("llmgpu", "Usar a GPU para a IA local", "A IA local só funciona na GPU (WebGPU). Se você desligar, ela fica inativa e a revisão usa só as regras.", llmUseGpu(), "i-grid")}
             <div class="st-row">
+              ${rowIcon("i-check")}
               <span class="st-text"><b>Estado da IA local</b><small data-llm-status>verificando…</small></span>
             </div>
+          </div>
+
+          <h4 class="st-group">Aprendizado</h4>
+          <div class="st-list">
             <div class="st-row">
+              ${rowIcon("i-pilcrow")}
               <span class="st-text"><b>Seu estilo de escrita</b><small data-style-summary></small></span>
             </div>
             <div class="st-row">
+              ${rowIcon("i-search")}
               <span class="st-text"><b>Memória das sugestões</b><small>As sugestões aprendem com os seus documentos recentes. Fica só neste computador.</small></span>
               <button class="btn small st-btn" data-act="forget-ghost">Esquecer o que aprendeu</button>
             </div>
             <div class="st-row">
+              ${rowIcon("i-text")}
               <span class="st-text"><b>Dicionário pessoal</b><small data-dict-count></small></span>
               <button class="btn small st-btn" data-act="dict">Abrir dicionário…</button>
             </div>
@@ -133,43 +193,63 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
         </section>
 
         <section class="st-sec" data-sec="traducao">
-          <h3>Tradução</h3>
-          <p class="st-lead">Você escreve em português; a pré-visualização mostra o inglês ao vivo e a exportação traduz o documento.</p>
+          <header class="st-sec-head">
+            <span class="st-sec-ic"><svg class="ic"><use href="#i-globe"/></svg></span>
+            <div class="st-sec-txt">
+              <h3>Tradução</h3>
+              <p class="st-lead">Você escreve em português; a pré-visualização mostra o inglês ao vivo e a exportação traduz o documento.</p>
+            </div>
+          </header>
+
+          <h4 class="st-group">Inglês ao vivo</h4>
           <div class="st-list">
-            ${toggle("tr-on", "Tradução automática", "Mostra a versão em inglês ao lado do português (Ctrl+Alt+T).", tr.enabled)}
-            ${toggle("tr-polish", "Melhorar o português antes de traduzir", "Corrige pontuação, maiúsculas, “a gente → nós” e linguagem informal para a tradução sair mais clara.", tr.polish)}
+            ${toggle("tr-on", "Tradução automática", "Mostra a versão em inglês ao lado do português (Ctrl+Alt+T).", tr.enabled, "i-columns")}
+            ${toggle("tr-polish", "Melhorar o português antes de traduzir", "Corrige pontuação, maiúsculas, “a gente → nós” e linguagem informal para a tradução sair mais clara.", tr.polish, "i-brush")}
           </div>
-          <h4>Motor de tradução</h4>
-          <div class="st-cards">
-            <label class="st-card"><input type="radio" name="prov" value="auto" ${tr.provider === "auto" ? "checked" : ""}><span><b>Automático</b><small>Usa o modo offline se já estiver instalado; senão o online. Se o limite do online acabar, troca sozinho.</small></span></label>
-            <label class="st-card"><input type="radio" name="prov" value="online" ${tr.provider === "online" ? "checked" : ""}><span><b>Online (grátis)</b><small>MyMemory. Bom para começar, mas tem limite diário e qualidade média.</small></span></label>
-            <label class="st-card"><input type="radio" name="prov" value="offline" ${tr.provider === "offline" ? "checked" : ""}><span><b>Offline</b><small>Modelo no seu PC, sem limite e sem internet (baixa cerca de 120 MB uma vez).</small></span></label>
+
+          <h4 class="st-group">Motor de tradução</h4>
+          <div class="st-seg" role="radiogroup" aria-label="Motor de tradução">
+            ${PROVIDERS.map((p) => `<label class="st-seg-item"><input type="radio" name="prov" value="${p.id}" ${tr.provider === p.id ? "checked" : ""}><span>${p.title}</span></label>`).join("")}
           </div>
+          <p class="st-seg-desc" data-prov-desc></p>
           <div class="st-inline">
             <button class="btn small st-btn" data-act="dl"></button>
             <span class="muted" data-dl-status></span>
           </div>
-          <label class="st-field">E-mail para ampliar o limite do modo online (opcional)
+
+          <h4 class="st-group">Limite e glossário</h4>
+          <label class="st-field">
+            <span class="st-field-label"><b>E-mail para ampliar o limite do modo online</b><small>Opcional — aumenta a cota diária do provedor online.</small></span>
             <input type="email" data-k="email" placeholder="voce@exemplo.com" autocomplete="off" spellcheck="false" value="${tr.email.replace(/"/g, "&quot;")}">
           </label>
-          <label class="st-field">Glossário — um termo por linha. <code>mdCreator</code> mantém o nome; <code>rascunho = draft</code> força a tradução.
+          <label class="st-field">
+            <span class="st-field-label"><b>Glossário</b><small>Um termo por linha. <code>mdCreator</code> mantém o nome; <code>rascunho = draft</code> força a tradução.</small></span>
             <textarea data-k="gloss" rows="6" spellcheck="false" placeholder="mdCreator&#10;rascunho = draft"></textarea>
           </label>
           <div class="st-inline"><button class="btn small st-btn" data-act="clear-tr">Limpar memória de traduções</button></div>
         </section>
 
         <section class="st-sec" data-sec="historico">
-          <h3>Histórico e salvamento</h3>
-          <p class="st-lead">Salvamento contínuo, cópias do documento guardadas no app e o log de alterações para voltar atrás.</p>
+          <header class="st-sec-head">
+            <span class="st-sec-ic"><svg class="ic"><use href="#i-clock"/></svg></span>
+            <div class="st-sec-txt">
+              <h3>Histórico e salvamento</h3>
+              <p class="st-lead">Salvamento contínuo, cópias do documento guardadas no app e o log de alterações para voltar atrás.</p>
+            </div>
+          </header>
+
+          <h4 class="st-group">Salvamento e versões</h4>
           <div class="st-list">
-            ${toggle("autosave", "Salvamento automático", "Grava o documento sozinho enquanto você escreve. Desligue se quiser salvar apenas com Ctrl+S.", s.autosaveOn)}
-            ${toggle("hist", "Guardar versões dos documentos", "Uma cópia automática a cada 5 minutos (se o texto mudou) e ao salvar.", s.historyOn)}
+            ${toggle("autosave", "Salvamento automático", "Grava o documento sozinho enquanto você escreve. Desligue se quiser salvar apenas com Ctrl+S.", s.autosaveOn, "i-save")}
+            ${toggle("hist", "Guardar versões dos documentos", "Uma cópia automática a cada 5 minutos (se o texto mudou) e ao salvar.", s.historyOn, "i-clock")}
             <div class="st-row">
+              ${rowIcon("i-list")}
               <span class="st-text"><b>Versões por documento</b><small>As marcadas por você (★) nunca são apagadas sozinhas.</small></span>
               <select data-k="hist-max" class="st-select">${[20, 40, 60, 100, 200].map((n) => `<option value="${n}" ${s.historyMax === n ? "selected" : ""}>${n} versões</option>`).join("")}</select>
             </div>
-            ${toggle("commits", "Guardar o log de alterações", "Guarda só a instrução de cada mudança (o que saiu e o que entrou), não o arquivo inteiro. Dá para voltar a qualquer ponto pela aba Alterações do histórico.", s.commitsOn)}
+            ${toggle("commits", "Guardar o log de alterações", "Guarda só a instrução de cada mudança (o que saiu e o que entrou), não o arquivo inteiro. Dá para voltar a qualquer ponto pela aba Alterações do histórico.", s.commitsOn, "i-code")}
             <div class="st-row">
+              ${rowIcon("i-doc")}
               <span class="st-text"><b>Este documento</b><small data-hist-count></small></span>
               <span class="st-btns">
                 <button class="btn small st-btn" data-act="hist-open">Abrir histórico</button>
@@ -178,12 +258,13 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
             </div>
           </div>
 
-          <h4>Backup em disco</h4>
-          <p class="st-lead">Uma cópia de verdade do arquivo, gravada em duas pastas ao mesmo tempo. Se uma falhar (HD desconectado, sem permissão), a outra ainda salva.</p>
+          <h4 class="st-group">Backup em disco</h4>
+          <p class="st-sub">Uma cópia de verdade do arquivo, gravada em duas pastas ao mesmo tempo. Se uma falhar (HD desconectado, sem permissão), a outra ainda salva.</p>
           <div class="st-list">
-            ${toggle("backup", "Guardar cópia dos documentos em disco", "Ao salvar, ao sair de um documento com alterações e uma vez por dia. Também vale para Word, PowerPoint e Excel.", s.backupOn)}
-            ${toggle("backupwarn", "Avisar quando o original sumir", "Se você apagar um arquivo do disco, o app avisa na barra inferior e deixa restaurar pela cópia.", s.backupWarnMissing)}
+            ${toggle("backup", "Guardar cópia dos documentos em disco", "Ao salvar, ao sair de um documento com alterações e uma vez por dia. Também vale para Word, PowerPoint e Excel.", s.backupOn, "i-folder")}
+            ${toggle("backupwarn", "Avisar quando o original sumir", "Se você apagar um arquivo do disco, o app avisa na barra inferior e deixa restaurar pela cópia.", s.backupWarnMissing, "i-eye")}
             <div class="st-row">
+              ${rowIcon("i-folder-plus")}
               <span class="st-text"><b>Pasta escolhida por você</b><small data-backup-root>—</small></span>
               <span class="st-btns">
                 <button class="btn small st-btn" data-act="backup-dir">Escolher pasta…</button>
@@ -191,21 +272,25 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
               </span>
             </div>
             <div class="st-row">
+              ${rowIcon("i-trash")}
               <span class="st-text"><b>Política de limpeza</b><small>Quanto cada documento guarda antes de as cópias mais antigas saírem. As marcadas à mão nunca saem.</small></span>
               <select data-k="backup-profile" class="st-select">
                 ${backup.PERFIS.map((p) => `<option value="${p.id}" ${s.backupProfile === p.id ? "selected" : ""}>${p.nome}</option>`).join("")}
               </select>
             </div>
-            <p class="st-note" data-backup-profile-desc></p>
+            <p class="st-list-note" data-backup-profile-desc></p>
             <div class="st-row" data-backup-custom ${s.backupProfile === "personalizado" ? "" : "hidden"}>
+              ${rowIcon("i-copy")}
               <span class="st-text"><b>Cópias por documento</b><small>0 = guardar quantas existirem, sem limite de quantidade.</small></span>
               <select data-k="backup-copies" class="st-select">${[10, 20, 50, 100, 200, 500, 0].map((n) => `<option value="${n}" ${s.backupCopies === n ? "selected" : ""}>${n === 0 ? "sem limite" : `${n} cópias`}</option>`).join("")}</select>
             </div>
             <div class="st-row" data-backup-custom2 ${s.backupProfile === "personalizado" ? "" : "hidden"}>
+              ${rowIcon("i-clock")}
               <span class="st-text"><b>Prazo</b><small>0 = não apagar por tempo (só pela quantidade acima).</small></span>
               <select data-k="backup-days" class="st-select">${[7, 30, 90, 365, 0].map((n) => `<option value="${n}" ${s.backupDays === n ? "selected" : ""}>${n === 0 ? "sem prazo" : n === 365 ? "1 ano" : `${n} dias`}</option>`).join("")}</select>
             </div>
             <div class="st-row">
+              ${rowIcon("i-grid")}
               <span class="st-text"><b>Espaço usado</b><small data-backup-size>calculando…</small></span>
               <span class="st-btns">
                 <button class="btn small st-btn" data-act="backup-prune">Limpar cópias antigas</button>
@@ -215,13 +300,20 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
         </section>
 
         <section class="st-sec" data-sec="aparencia">
-          <h3>Aparência</h3>
-          <p class="st-lead">Tema e o que aparece na janela.</p>
+          <header class="st-sec-head">
+            <span class="st-sec-ic"><svg class="ic"><use href="#i-eye"/></svg></span>
+            <div class="st-sec-txt">
+              <h3>Aparência</h3>
+              <p class="st-lead">Tema e o que aparece na janela.</p>
+            </div>
+          </header>
+          <h4 class="st-group">Tema e janela</h4>
           <div class="st-list">
-            ${toggle("dark", "Tema escuro", "Cores escuras na interface, no editor e na pré-visualização.", ctx.dark())}
-            ${toggle("sidebar", "Painel lateral", "Projetos, busca, estrutura e contexto para a IA.", !ctx.flag("no-sidebar"))}
-            ${toggle("preview", "Pré-visualização", "O resultado formatado ao lado do texto.", !ctx.flag("no-preview"))}
+            ${toggle("dark", "Tema escuro", "Cores escuras na interface, no editor e na pré-visualização.", ctx.dark(), "i-moon")}
+            ${toggle("sidebar", "Painel lateral", "Projetos, busca, estrutura e contexto para a IA.", !ctx.flag("no-sidebar"), "i-sidebar")}
+            ${toggle("preview", "Pré-visualização", "O resultado formatado ao lado do texto.", !ctx.flag("no-preview"), "i-columns")}
             <div class="st-row">
+              ${rowIcon("i-draw")}
               <span class="st-text"><b>Estilo do desenho</b><small>Imagem guarda um PNG em assets/. Letras vira texto no próprio Markdown (ótimo para a IA).</small></span>
               <select data-k="draw" class="st-select">
                 <option value="image" ${ctx.drawStyle() === "image" ? "selected" : ""}>Imagem (PNG)</option>
@@ -232,11 +324,21 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
         </section>
 
         <section class="st-sec" data-sec="atalhos">
-          <h3>Atalhos</h3>
-          <p class="st-lead">Os principais atalhos do teclado.</p>
-          <div class="st-keys">
-            ${SHORTCUTS.map(([k, d]) => `<div class="st-key"><kbd>${k}</kbd><span>${d}</span></div>`).join("")}
-          </div>
+          <header class="st-sec-head">
+            <span class="st-sec-ic"><svg class="ic"><use href="#i-code"/></svg></span>
+            <div class="st-sec-txt">
+              <h3>Atalhos</h3>
+              <p class="st-lead">Os principais atalhos do teclado.</p>
+            </div>
+          </header>
+          ${SHORTCUT_GROUPS.map(
+            (g) => `<h4 class="st-group">${g.title}</h4>
+          <div class="st-keys-card">
+            <div class="st-keys">
+              ${g.keys.map(([k, d]) => `<div class="st-key"><span>${d}</span><kbd>${k}</kbd></div>`).join("")}
+            </div>
+          </div>`
+          ).join("")}
         </section>
       </div>
     </div>`;
@@ -255,7 +357,20 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   // navegação lateral: rola até a seção e marca a que está à vista
   const items = host.querySelectorAll<HTMLElement>(".st-nav-item");
   const scroller = q(".st-scroll");
-  const mark = (id: string) => items.forEach((b) => b.classList.toggle("active", b.dataset.nav === id));
+  const headTitle = q("[data-st-title]");
+  const headIcon = host.querySelector<SVGUseElement>("[data-st-icon]")!;
+  const mark = (id: string) => {
+    items.forEach((b) => {
+      const active = b.dataset.nav === id;
+      b.classList.toggle("active", active);
+      b.setAttribute("aria-selected", String(active));
+    });
+    const n = NAV.find((x) => x.id === id);
+    if (n) {
+      headTitle.textContent = n.label;
+      headIcon.setAttribute("href", `#${n.icon}`);
+    }
+  };
   items.forEach((b) =>
     b.addEventListener("click", () => {
       mark(b.dataset.nav!);
@@ -278,9 +393,16 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   window.setTimeout(() => q(`[data-sec="${section}"]`).scrollIntoView({ block: "start" }), 0);
 
   // escrita
+  const toneDesc = q("[data-tone-desc]");
+  const paintTone = () => {
+    const id = host.querySelector<HTMLInputElement>('input[name="tone"]:checked')?.value as Tone | undefined;
+    toneDesc.textContent = TONES.find((t) => t.id === id)?.desc ?? "";
+  };
+  paintTone();
   host.querySelectorAll<HTMLInputElement>('input[name="tone"]').forEach((r) =>
     r.addEventListener("change", () => {
       ctx.patch({ tone: r.value as Tone });
+      paintTone();
       flash();
     })
   );
@@ -362,9 +484,16 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     ctx.translation.update({ polish: (e.target as HTMLInputElement).checked });
     flash();
   });
+  const provDesc = q("[data-prov-desc]");
+  const paintProvider = () => {
+    const id = host.querySelector<HTMLInputElement>('input[name="prov"]:checked')?.value as ProviderChoice | undefined;
+    provDesc.textContent = PROVIDERS.find((p) => p.id === id)?.desc ?? "";
+  };
+  paintProvider();
   host.querySelectorAll<HTMLInputElement>('input[name="prov"]').forEach((r) =>
     r.addEventListener("change", () => {
       ctx.translation.update({ provider: r.value as ProviderChoice });
+      paintProvider();
       flash();
     })
   );
