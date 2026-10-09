@@ -11,3 +11,6 @@ Thumbs.db
 public/ort/
 
 public/modelos/
+
+# worktrees de tarefas (tools/worktrees)
+.worktrees/
