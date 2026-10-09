@@ -56,7 +56,13 @@ export function colarFormas(slide: Slide, copiadas: Shape[], dx = 1.5, dy = 2.5)
 export function agruparFormas(slide: Slide, ids: string[]): Slide {
   if (ids.length < 2) return slide;
   const g = uid();
-  return mudou(slide, slide.shapes.map((s) => (ids.includes(s.id) ? { ...s, grupo: g } : s)));
+  const lista = slide.shapes;
+  const membros = lista.filter((s) => ids.includes(s.id)).map((s) => ({ ...s, grupo: g }));
+  // o grupo ocupa o lugar da forma que estava mais à frente
+  const ultimo = lista.reduce((acc, s, i) => (ids.includes(s.id) ? i : acc), -1);
+  const antes = lista.slice(0, ultimo + 1).filter((s) => !ids.includes(s.id));
+  const depois = lista.slice(ultimo + 1);
+  return mudou(slide, [...antes, ...membros, ...depois]);
 }
 
 export function desagruparFormas(slide: Slide, ids: string[]): Slide {

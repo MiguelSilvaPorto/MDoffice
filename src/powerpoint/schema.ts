@@ -6,7 +6,7 @@
 export type DeckAspect = "16:9" | "4:3";
 
 /** Papel da lâmina (muda o alinhamento/estilo base). */
-export type SlideLayout = "titulo" | "secao" | "conteudo" | "vazio";
+export type SlideLayout = "titulo" | "secao" | "conteudo" | "duas" | "soTitulo" | "vazio";
 
 /** Tema visual aplicado ao deck (fundo, acento, fontes). */
 export type ThemeId = "claro" | "escuro" | "contraste";
@@ -164,6 +164,41 @@ export interface Shape {
   alt?: string;
   /** a forma cresce para caber o texto (spAutoFit) */
   autofit?: boolean;
+  /** texto de orientação mostrado (só no editor) enquanto a caixa está vazia */
+  dica?: string;
+  /** dados da tabela (quando a forma é uma tabela) */
+  tabela?: Tabela;
+}
+
+/** Uma célula de tabela. */
+export interface CelulaTab {
+  paras: Para[];
+  fill?: Fill;
+  /** bordas da célula: esquerda, topo, direita, base (null = sem borda) */
+  bordas?: { l?: Line | null; t?: Line | null; r?: Line | null; b?: Line | null };
+  anchor?: "t" | "ctr" | "b";
+  /** margens internas em pt: esquerda, topo, direita, base */
+  ins?: [number, number, number, number];
+  /** colunas/linhas que esta célula ocupa (mesclagem), a partir dela */
+  colspan?: number;
+  rowspan?: number;
+  /** coberta por uma célula mesclada: não é desenhada */
+  coberta?: boolean;
+  /** estilo do texto que se digita nesta célula quando ela está vazia */
+  estilo?: Omit<Run, "text" | "br">;
+}
+
+/** Uma tabela: tamanhos em pt (o conjunto se ajusta à caixa da forma). */
+export interface Tabela {
+  colunas: number[];
+  linhas: number[];
+  celulas: CelulaTab[][];
+  /** opções de estilo (usadas ao aplicar um estilo pronto) */
+  cabecalho?: boolean;
+  faixas?: boolean;
+  primeiraColuna?: boolean;
+  /** último estilo pronto aplicado */
+  preset?: string;
 }
 
 /** Um caminho de geometria livre. Comandos: M x y · L x y · C x1 y1 x2 y2 x y · Q x1 y1 x y · A wR hR stAng swAng · Z */

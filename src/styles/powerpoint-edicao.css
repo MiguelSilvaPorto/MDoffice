@@ -960,3 +960,83 @@ button.ppr.cor {
   background-image: linear-gradient(to right, rgba(120, 120, 120, 0.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(120, 120, 120, 0.25) 1px, transparent 1px);
   background-size: 5% 100%, 100% 8.89%;
 }
+
+/* dica de uma caixa vazia ("Clique para adicionar o título"): só no editor */
+.pp-dica {
+  opacity: 0.4;
+  font-style: italic;
+  pointer-events: none;
+}
+
+/* ---------- tabelas ---------- */
+
+.pp-shape.pp-tabela {
+  display: block;
+  overflow: visible;
+  border: 0;
+  pointer-events: auto;
+}
+
+.pp-tab {
+  position: absolute;
+  left: 0;
+  top: 0;
+  table-layout: fixed;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.pp-tab td {
+  padding: 0;
+  overflow: hidden;
+}
+
+.pp-tab .pp-cel {
+  min-height: 1em;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  outline: none;
+}
+
+.pp-tab .pp-cel[data-editando] {
+  cursor: text;
+  pointer-events: auto;
+}
+
+.pp-tab .pp-cel > p {
+  margin: 0;
+  min-height: 1em;
+}
+
+.pp-celsel {
+  position: absolute;
+  box-sizing: border-box;
+  z-index: 48;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border: 2px solid var(--accent);
+}
+
+.pp-mover {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 14px;
+  height: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  line-height: 1;
+  color: #fff;
+  background: var(--fi-ppt, #d24a17);
+  border-radius: 3px;
+  cursor: move;
+  pointer-events: auto;
+  z-index: 52;
+}
+
+.pp-tg-rot { font-size: 12px; padding: 4px 6px; color: var(--text-muted, #666); }
+.pp-tg-grade { display: grid; gap: 2px; padding: 4px 6px 6px; }
+.pp-tg { width: 16px; height: 16px; border: 1px solid var(--border, #bbb); border-radius: 2px; cursor: pointer; }
+.pp-tg.on { background: var(--accent); border-color: var(--accent); }
+.ppr-opc { display: flex; align-items: center; gap: 4px; font-size: 12px; white-space: nowrap; }

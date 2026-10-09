@@ -1,6 +1,7 @@
 // Painel "Formatar" (à direita): tudo que a fita não cabe, com números exatos — preenchimento (sólido, gradiente com
 // paradas, imagem), contorno, sombra, cantos, tamanho e posição em cm, rotação, texto, recorte de imagem e fundo da lâmina.
 import { AJUSTES_POR_GEOM, raioDeCanto } from "../edicao/formato";
+import { ORDEM_LAYOUTS, ROTULOS_LAYOUT } from "../edicao/layouts";
 import type { Fill, Line, Shadow, Shape } from "../schema";
 import { abrirCores } from "./cores";
 import { cmParaPt, ptParaCm, type EstadoUI } from "./estado";
@@ -254,7 +255,7 @@ export class Painel {
           `<button type="button" class="btn small" data-click="fundo-todas">Aplicar a todas as lâminas</button>`,
         ].join("")
       ),
-      secao("layout", "Layout", linhaSel("Layout", "layout-sel", est.layout, [["titulo", "Capa"], ["secao", "Seção"], ["conteudo", "Conteúdo"], ["vazio", "Em branco"]])),
+      secao("layout", "Layout", linhaSel("Layout", "layout-sel", est.layout, ORDEM_LAYOUTS.map((id) => [id, ROTULOS_LAYOUT[id]] as [string, string]))),
       `<p class="pf-dica">Selecione uma forma na lâmina para formatar o preenchimento, a linha, os efeitos, o tamanho e o texto dela. <b>Clique e arraste</b> para desenhar com uma forma escolhida em <b>Inserir</b>.</p>`,
     ];
     return partes.join("");

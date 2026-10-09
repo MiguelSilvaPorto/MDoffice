@@ -16,6 +16,8 @@ export interface CtxRender {
   editavel: boolean;
   /** id da forma cujo texto está sendo editado agora (só ela tem contenteditable) */
   editando?: string | null;
+  /** quando a forma em edição é uma tabela: a célula (linha, coluna) */
+  celulaEdit?: [number, number] | null;
 }
 
 /** Forma que veio de um .pptx (tem geometria própria) — desenhada por este módulo. */
@@ -187,7 +189,7 @@ function razaoDeLinha(nome: string, negrito: boolean): number {
 // preenchimento e contorno
 // ---------------------------------------------------------------------------
 
-function rgba(hex: string, alpha = 1): string {
+export function rgba(hex: string, alpha = 1): string {
   if (alpha >= 1) return `#${hex}`;
   const h = hex.padEnd(6, "0");
   return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${n3(alpha)})`;
@@ -296,7 +298,7 @@ function marcadorDeSeta(id: string, tipo: string, cor: string, fim: boolean): st
   return `<marker id="${id}" viewBox="0 0 10 10" refX="${fim ? 8 : 2}" refY="5" markerWidth="5" markerHeight="5" markerUnits="strokeWidth" orient="${fim ? "auto" : "auto-start-reverse"}">${forma}</marker>`;
 }
 
-function cq(pt: number, ctx: CtxRender): string {
+export function cq(pt: number, ctx: CtxRender): string {
   return `${n3((pt * 100) / ctx.larguraPt)}cqw`;
 }
 
@@ -390,7 +392,7 @@ function htmlRun(r: Run, ctx: CtxRender): string {
   return `<span style="${est.join(";")}">${esc(r.text)}</span>`;
 }
 
-function htmlParagrafo(p: Para, i: number, ctx: CtxRender, contagem: { auto: number }): string {
+export function htmlParagrafo(p: Para, i: number, ctx: CtxRender, contagem: { auto: number }, dica?: string): string {
   const tam = p.runs[0]?.size ?? p.endSize;
   const fonte = p.runs[0]?.font ?? "sans-serif";
   const negrito = !!p.runs[0]?.bold;
@@ -421,7 +423,7 @@ function htmlParagrafo(p: Para, i: number, ctx: CtxRender, contagem: { auto: num
     if (b.font && !/wingdings|symbol/i.test(b.font)) e.push(`font-family:${pilhaDeFonte(b.font)}`);
     marcador = `<span style="${e.join(";")}">${esc(sim === "§" || sim === "Ø" || sim === "ü" ? "•" : sim)}</span>`;
   } else contagem.auto = 0;
-  const corpo = p.runs.length ? p.runs.map((r) => htmlRun(r, ctx)).join("") : "&#8203;";
+  const corpo = p.runs.length ? p.runs.map((r) => htmlRun(r, ctx)).join("") : dica ? `<span class="pp-dica">${esc(dica)}</span>` : "&#8203;";
   return `<p style="${est.join(";")}">${marcador}${corpo}</p>`;
 }
 
@@ -436,7 +438,10 @@ function htmlTexto(s: Shape, ctx: CtxRender): string {
   if (s.vert === "vert" || s.vert === "eaVert") est.push("writing-mode:vertical-rl");
   if (s.vert === "vert270") est.push("writing-mode:vertical-rl", "transform:rotate(180deg)");
   const contagem = { auto: 0 };
-  const paras = s.paras.map((p, i) => htmlParagrafo(p, i, ctx, contagem)).join("");
+  // a dica de uma caixa vazia só aparece no editor, e some quando o texto está em edição
+  const vazia = s.paras.every((p) => p.runs.length === 0);
+  const dica = vazia && ctx.editavel && ctx.editando !== s.id ? s.dica : undefined;
+  const paras = s.paras.map((p, i) => htmlParagrafo(p, i, ctx, contagem, i === 0 ? dica : undefined)).join("");
   const editavel = ctx.editavel && ctx.editando === s.id ? ` contenteditable="true" spellcheck="false" data-editando="1"` : "";
   return `<div class="pp-shape-text pp-rt"${editavel} style="${est.join(";")}">${paras}</div>`;
 }
@@ -455,6 +460,7 @@ function moldura(s: Shape, ctx: CtxRender): string {
 
 /** HTML de uma forma rica. O container recebe os eventos de seleção/arraste do palco. */
 export function htmlFormaRica(s: Shape, ctx: CtxRender): string {
+  if (s.tabela) return htmlTabela(s, ctx);
   const sel = ctx.selecionada === s.id;
   const est = [`left:${n3(s.box.x)}%`, `top:${n3(s.box.y)}%`, `width:${n3(s.box.w)}%`, `height:${n3(s.box.h)}%`];
   if (s.rot) est.push(`transform:rotate(${n3(s.rot)}deg)`);
@@ -507,4 +513,53 @@ export function parasComEstilo(paras: Para[], p: Partial<Pick<Shape, "fontFamily
       italic: p.italic ?? r.italic,
     })),
   }));
+}
+
+// ---------------------------------------------------------------------------
+// tabela
+// ---------------------------------------------------------------------------
+
+const TRACO_CSS: Record<string, string> = { dash: "dashed", lgDash: "dashed", sysDash: "dashed", dot: "dotted", sysDot: "dotted", dashDot: "dashed" };
+
+function bordaCss(l: Line | null | undefined, ctx: CtxRender): string {
+  if (!l || l.w <= 0) return "none";
+  return `${cq(Math.max(l.w, 0.5), ctx)} ${TRACO_CSS[l.dash ?? "solid"] ?? "solid"} ${rgba(l.color, l.alpha)}`;
+}
+
+/** Tabela: um <table> com as larguras e alturas em pt, bordas e preenchimento por célula e texto formatado. */
+export function htmlTabela(s: Shape, ctx: CtxRender): string {
+  const t = s.tabela!;
+  const w = t.colunas.reduce((a, b) => a + b, 0);
+  const est = [`left:${n3(s.box.x)}%`, `top:${n3(s.box.y)}%`, `width:${n3(s.box.w)}%`, `height:${n3(s.box.h)}%`];
+  if (s.rot) est.push(`transform:rotate(${n3(s.rot)}deg)`);
+  const classes = `pp-shape pp-rica pp-tabela${s.fixa ? " pp-fixa" : ""}${ctx.editando === s.id ? " pp-editando" : ""}${s.bloqueada ? " pp-bloqueada" : ""}`;
+  const cols = t.colunas.map((c) => `<col style="width:${cq(c, ctx)}">`).join("");
+  const linhas = t.celulas
+    .map((linha, r) => {
+      const tds = linha
+        .map((c, col) => {
+          if (c.coberta) return "";
+          const ins = c.ins ?? [5.4, 3.6, 5.4, 3.6];
+          const b = c.bordas ?? {};
+          const css = [
+            `padding:${cq(ins[1], ctx)} ${cq(ins[2], ctx)} ${cq(ins[3], ctx)} ${cq(ins[0], ctx)}`,
+            `vertical-align:${c.anchor === "ctr" ? "middle" : c.anchor === "b" ? "bottom" : "top"}`,
+            `border-left:${bordaCss(b.l, ctx)}`,
+            `border-top:${bordaCss(b.t, ctx)}`,
+            `border-right:${bordaCss(b.r, ctx)}`,
+            `border-bottom:${bordaCss(b.b, ctx)}`,
+          ];
+          const fundo = fundoValor(c.fill, ctx.media);
+          if (fundo) css.push(`background:${fundo}`);
+          const span = `${(c.colspan ?? 1) > 1 ? ` colspan="${c.colspan}"` : ""}${(c.rowspan ?? 1) > 1 ? ` rowspan="${c.rowspan}"` : ""}`;
+          const editando = ctx.editavel && ctx.editando === s.id && ctx.celulaEdit && ctx.celulaEdit[0] === r && ctx.celulaEdit[1] === col;
+          const contagem = { auto: 0 };
+          const paras = c.paras.map((p, i) => htmlParagrafo(p, i, ctx, contagem)).join("");
+          return `<td data-r="${r}" data-c="${col}"${span} style="${css.join(";")}"><div class="pp-cel pp-rt"${editando ? ' contenteditable="true" spellcheck="false" data-editando="1"' : ""}>${paras}</div></td>`;
+        })
+        .join("");
+      return `<tr style="height:${cq(t.linhas[r], ctx)}">${tds}</tr>`;
+    })
+    .join("");
+  return `<div class="${classes}" data-shape="${s.id}" data-kind="tabela" style="${est.join(";")}"><table class="pp-tab" style="width:${cq(w, ctx)}"><colgroup>${cols}</colgroup><tbody>${linhas}</tbody></table></div>`;
 }

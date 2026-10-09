@@ -3,6 +3,8 @@
 // PptxGenJS (que não sabe de gradiente, formas livres nem formatação por trecho).
 // O PptxGenJS continua montando o pacote (mestre, layout, tema, notas); este módulo só troca o conteúdo das lâminas.
 import { aspectSize, type CustPath, type DeckSetup, type Fill, type Line, type Para, type Run, type Shape, type Slide } from "../schema";
+import { envolventeDe } from "../edicao/geometria";
+import { donaDe } from "../edicao/tabela";
 import { coresTema } from "./theme";
 
 const EMU_POL = 914400;
@@ -72,7 +74,7 @@ export class Escritor {
     };
     const ctx: Ctx = { larg: this.largEmu, alt: this.altEmu, idImagem, setup: this.setup, seq: 1 };
     const bg = fillXml(s.bg ?? { kind: "solid", color: coresTema(this.setup).bg }, ctx);
-    const formas = s.shapes.map((f) => formaXml(f, ctx)).join("");
+    const formas = formasEmGrupos(s.shapes, ctx);
     const xml =
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
       `<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">` +
@@ -279,6 +281,8 @@ function formaXml(s: Shape, ctx: Ctx): string {
     }
   }
 
+  if (s.tabela) return tabelaXml(s, id, nome, x, y, w, h);
+
   const rica = s.geom !== undefined;
   const paras = s.paras?.length ? s.paras : s.text ? parasDeFormaSimples(s) : [];
   let preench: string;
@@ -291,5 +295,80 @@ function formaXml(s: Shape, ctx: Ctx): string {
   return (
     `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="${nome}"/><p:cNvSpPr${txBox}/><p:nvPr/></p:nvSpPr>` +
     `<p:spPr>${xfrm}${geomXml(s)}${preench}${ln}${sombraXml(s)}</p:spPr>${corpo}</p:sp>`
+  );
+}
+
+/** Formas seguidas com o mesmo `grupo` entram num <p:grpSp> (a transformação do grupo é a identidade). */
+function formasEmGrupos(formas: Shape[], ctx: Ctx): string {
+  let saida = "";
+  let i = 0;
+  while (i < formas.length) {
+    const g = formas[i].grupo;
+    let j = i + 1;
+    while (g && j < formas.length && formas[j].grupo === g) j++;
+    if (g && j - i >= 2) {
+      const membros = formas.slice(i, j);
+      const id = ++ctx.seq;
+      const caixa = envolventeDe(membros, { w: ctx.larg / 12700, h: ctx.alt / 12700 }) ?? { x: 0, y: 0, w: 0, h: 0 };
+      const x = Math.round((caixa.x / 100) * ctx.larg);
+      const y = Math.round((caixa.y / 100) * ctx.alt);
+      const w = Math.round((caixa.w / 100) * ctx.larg);
+      const h = Math.round((caixa.h / 100) * ctx.alt);
+      saida +=
+        `<p:grpSp><p:nvGrpSpPr><p:cNvPr id="${id}" name="Grupo ${id}"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>` +
+        `<p:grpSpPr><a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${w}" cy="${h}"/><a:chOff x="${x}" y="${y}"/><a:chExt cx="${w}" cy="${h}"/></a:xfrm></p:grpSpPr>` +
+        membros.map((m) => formaXml(m, ctx)).join("") +
+        `</p:grpSp>`;
+      i = j;
+    } else {
+      saida += formaXml(formas[i], ctx);
+      i++;
+    }
+  }
+  return saida;
+}
+
+// ---------------------------------------------------------------------------
+// tabela
+// ---------------------------------------------------------------------------
+
+function ladoXml(tag: string, ln: Line | null | undefined): string {
+  if (ln === undefined) return "";
+  return lnXml(ln ?? undefined).replace("<a:ln", `<a:${tag}`).replace("</a:ln>", `</a:${tag}>`);
+}
+
+function tabelaXml(s: Shape, id: number, nome: string, x: number, y: number, w: number, h: number): string {
+  const t = s.tabela!;
+  const ctx0 = { larg: 0, alt: 0, idImagem: () => undefined, setup: undefined as never, seq: 0 } as Ctx;
+  const grade = t.colunas.map((c) => `<a:gridCol w="${Math.round(c * EMU_PT)}"/>`).join("");
+  const linhas = t.celulas
+    .map((linha, r) => {
+      const tcs = linha
+        .map((c, col) => {
+          const attrs: string[] = [];
+          if ((c.colspan ?? 1) > 1) attrs.push(`gridSpan="${c.colspan}"`);
+          if ((c.rowspan ?? 1) > 1) attrs.push(`rowSpan="${c.rowspan}"`);
+          if (c.coberta) {
+            const d = donaDe(t, r, col);
+            if (col > d.c) attrs.push('hMerge="1"');
+            if (r > d.r) attrs.push('vMerge="1"');
+          }
+          const ins = c.ins ?? [5.4, 3.6, 5.4, 3.6];
+          const pr = [`marL="${Math.round(ins[0] * EMU_PT)}"`, `marT="${Math.round(ins[1] * EMU_PT)}"`, `marR="${Math.round(ins[2] * EMU_PT)}"`, `marB="${Math.round(ins[3] * EMU_PT)}"`, `anchor="${c.anchor ?? "t"}"`];
+          const b = c.bordas ?? {};
+          const lados = ladoXml("lnL", b.l) + ladoXml("lnR", b.r) + ladoXml("lnT", b.t) + ladoXml("lnB", b.b);
+          const fundo = c.fill ? fillXml(c.fill, ctx0) : "<a:noFill/>";
+          const paras = c.paras.length ? c.paras : [{ runs: [], align: "esquerda" as const, lvl: 0, marL: 0, indent: 0, spcBef: 0, spcAft: 0, endSize: 18 }];
+          return `<a:tc${attrs.length ? " " + attrs.join(" ") : ""}><a:txBody><a:bodyPr/><a:lstStyle/>${paras.map(paraXml).join("")}</a:txBody><a:tcPr ${pr.join(" ")}>${lados}${fundo}</a:tcPr></a:tc>`;
+        })
+        .join("");
+      return `<a:tr h="${Math.round(t.linhas[r] * EMU_PT)}">${tcs}</a:tr>`;
+    })
+    .join("");
+  const flags = `${t.cabecalho ? ' firstRow="1"' : ""}${t.faixas ? ' bandRow="1"' : ""}${t.primeiraColuna ? ' firstCol="1"' : ""}`;
+  return (
+    `<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="${id}" name="${nome}"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr>` +
+    `<p:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${w}" cy="${h}"/></p:xfrm>` +
+    `<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl><a:tblPr${flags}/><a:tblGrid>${grade}</a:tblGrid>${linhas}</a:tbl></a:graphicData></a:graphic></p:graphicFrame>`
   );
 }

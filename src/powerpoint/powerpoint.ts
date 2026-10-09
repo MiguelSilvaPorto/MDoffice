@@ -9,6 +9,7 @@ import { ajustarCor, comAjuste, comLinha, comOpacidade, comPreenchimento, comRai
 import { aspectSize, stageRatio } from "./schema";
 import type { Dim } from "./edicao/geometria";
 import { Historico } from "./edicao/historico";
+import { formasDoLayout, novaLamina } from "./edicao/layouts";
 import { migrarSlides, registrarMidia } from "./edicao/migrar";
 import {
   agruparFormas,
@@ -28,19 +29,20 @@ import {
 import { lerSelecao, restaurarSelecao, textoDaCaixa } from "./edicao/selecaoDom";
 import { alternarMarcador, estadoDoTrecho, estiloDosParas, estiloNoIntervalo, mudarRecuo, mudarTamanhoRelativo, parasDaSelecao, type EstiloRun, type RunPatch } from "./edicao/texto";
 import { DEFAULT_SETUP, deserialize, newSlide, serialize } from "./model";
+import { alturaDaLinha, ajustarAoTamanho, alinharVerticalmente, aplicarPreset, bordasCelulas, criarTabela, dividir, excluirColuna, excluirLinha, expandirSelecao, inserirColuna, inserirLinha, larguraDaColuna, mesclar, preencherCelulas, tamanhoTotal, type ModoBorda, type PresetTabela } from "./edicao/tabela";
 import { NotesPanel } from "./notes";
 import { deckFromMarkdown } from "./markdown";
 import { openDeckView } from "./presenter";
 import { aoCarregarFontes, fundoValor, htmlFormaRica, parasComEstilo, parasComTexto, registrarFontes, type CtxRender } from "./render/forma";
 import { shapeText } from "./shapes";
 import { clampIndex, duplicateSlide, insertSlide, moveSlide, removeSlide, replaceSlide, setLayout } from "./slides";
-import { Stage, type Ferramenta } from "./stage";
+import { Stage, type CelulasSel, type Ferramenta } from "./stage";
 import { THEMES, stageVars, themeOf } from "./themes";
 import { Fita } from "./ui/fita";
 import { Painel } from "./ui/painel";
 import { abrirPopup, fecharPopup } from "./ui/popup";
 import type { EstadoUI } from "./ui/estado";
-import type { Deck, DeckSetup, Fill, Shape, ShapeBox, Slide, SlideLayout, TextAlign } from "./schema";
+import type { Deck, DeckSetup, Fill, Para, Shape, ShapeBox, Slide, SlideLayout, TextAlign } from "./schema";
 
 marked.setOptions({ gfm: true, breaks: false });
 
@@ -109,6 +111,9 @@ export class PowerPointHost {
   private antesEdicao: Estado | null = null;
   private destinoImagem = "inserir";
   private lateral: "formatar" | "notas" = "formatar";
+  /** célula em edição (quando a forma em edição é uma tabela) e células selecionadas */
+  private celulaEdit: [number, number] | null = null;
+  private celulas: CelulasSel | null = null;
 
   private strip!: HTMLElement;
   private canvas!: HTMLElement;
@@ -133,12 +138,14 @@ export class PowerPointHost {
         ferramenta: this.ferramenta,
         fixasSelecionaveis: this.fixas,
         comGrupos: (ids) => comGrupos(this.atual(), ids),
+        celulas: this.celulasDaSelecao(),
       }),
       aoSelecionar: (ids) => this.selecionar(ids),
       aoTransformar: (patches, fase) => this.aoTransformar(patches, fase),
       aoEditarTexto: (id) => this.entrarEdicao(id),
       aoCriar: (c) => this.aoCriar(c),
       aoDuplicarParaArrastar: () => this.duplicarParaArrastar(),
+      aoCelulas: (sel) => this.selecionarCelulas(sel),
     });
     this.montar();
     // fonte da web carregou: as medidas de entrelinha mudam, então redesenha (sem derrubar quem está digitando)
@@ -311,7 +318,7 @@ export class PowerPointHost {
 
   private ctxRender(editavel: boolean): CtxRender {
     const { w, h } = this.dim();
-    return { larguraPt: w, alturaPt: h, media: this.setup.media ?? {}, selecionada: null, editavel, editando: editavel ? this.editando : null };
+    return { larguraPt: w, alturaPt: h, media: this.setup.media ?? {}, selecionada: null, editavel, editando: editavel ? this.editando : null, celulaEdit: editavel ? this.celulaEdit : null };
   }
 
   /** redesenha tudo: miniaturas + lâmina + fita + painel */
@@ -324,6 +331,7 @@ export class PowerPointHost {
     this.pintarStrip();
     this.notes.setText(slide.notes);
     this.atualizarStatus();
+    this.sincronizarTabelas();
     this.atualizarUI();
   }
 
@@ -432,7 +440,29 @@ export class PowerPointHost {
 
   private rtEmEdicao(): HTMLElement | null {
     if (!this.editando) return null;
-    return this.slideEl.querySelector<HTMLElement>(`[data-shape="${this.editando}"] .pp-rt`);
+    return this.slideEl.querySelector<HTMLElement>(`[data-shape="${this.editando}"] [data-editando]`);
+  }
+
+  /** Os parágrafos que a fita mostra: os do texto em edição, os da forma selecionada ou os da primeira célula escolhida. */
+  private parasPrincipais(): Para[] | undefined {
+    const f = this.principal();
+    if (!f) return undefined;
+    if (f.tabela) {
+      const c: [number, number] = this.celulaEdit ?? (this.celulas?.id === f.id ? [this.celulas.r0, this.celulas.c0] : [0, 0]);
+      return f.tabela.celulas[c[0]]?.[c[1]]?.paras;
+    }
+    return f.paras;
+  }
+
+  private celulasDaSelecao(): CelulasSel | null {
+    const f = this.principal();
+    return f?.tabela && this.celulas?.id === f.id ? this.celulas : null;
+  }
+
+  private selecionarCelulas(sel: CelulasSel | null): void {
+    if (this.editando && sel && this.celulaEdit && (sel.r0 !== this.celulaEdit[0] || sel.c0 !== this.celulaEdit[1] || sel.r1 !== sel.r0 || sel.c1 !== sel.c0)) this.sairEdicao();
+    this.celulas = sel;
+    this.atualizarUI();
   }
 
   private estadoUI(): EstadoUI {
@@ -440,7 +470,8 @@ export class PowerPointHost {
     const forma = formas[formas.length - 1];
     let trecho: EstadoUI["trecho"] = null;
     let paragrafo: EstadoUI["paragrafo"];
-    if (forma?.paras) {
+    const paras = this.parasPrincipais();
+    if (paras) {
       let ini = -1;
       let fim = -1;
       const rt = this.rtEmEdicao();
@@ -449,9 +480,9 @@ export class PowerPointHost {
         ini = sel.ini;
         fim = sel.fim;
       }
-      trecho = estadoDoTrecho(forma.paras, ini, fim);
-      const idx = parasDaSelecao(forma.paras, ini, fim);
-      paragrafo = forma.paras[idx[0] ?? 0];
+      trecho = estadoDoTrecho(paras, ini, fim);
+      const idx = parasDaSelecao(paras, ini, fim);
+      paragrafo = paras[idx[0] ?? 0];
     }
     const d = this.dim();
     return {
@@ -479,6 +510,7 @@ export class PowerPointHost {
       temGrupo: formas.some((s) => !!s.grupo),
       largura: forma ? (forma.box.w / 100) * d.w : 0,
       altura: forma ? (forma.box.h / 100) * d.h : 0,
+      celulas: this.celulasDaSelecao(),
     };
   }
 
@@ -491,6 +523,7 @@ export class PowerPointHost {
     if (igual) return;
     if (this.editando && !(ids.length === 1 && ids[0] === this.editando)) this.sairEdicao();
     this.selecao = ids;
+    if (this.celulas && !(ids.length === 1 && ids[0] === this.celulas.id)) this.celulas = null;
     this.atualizarUI();
   }
 
@@ -500,7 +533,17 @@ export class PowerPointHost {
       return;
     }
     if (patches.size) {
-      this.substituirSlide({ ...this.atual(), shapes: this.atual().shapes.map((s) => (patches.has(s.id) ? { ...s, ...patches.get(s.id)! } : s)) });
+      const d = this.dim();
+      this.substituirSlide({
+        ...this.atual(),
+        shapes: this.atual().shapes.map((s) => {
+          if (!patches.has(s.id)) return s;
+          const novo = { ...s, ...patches.get(s.id)! };
+          // tabela redimensionada: as colunas e linhas escalam junto
+          if (novo.tabela && (novo.box.w !== s.box.w || novo.box.h !== s.box.h)) novo.tabela = ajustarAoTamanho(novo.tabela, (novo.box.w / 100) * d.w, (novo.box.h / 100) * d.h);
+          return novo;
+        }),
+      });
       this.markDirty();
       this.pintarRapido();
     }
@@ -570,15 +613,19 @@ export class PowerPointHost {
   }
 
   // ------------------------------------------------------------------
-  // edição de texto dentro das formas
+  // edição de texto dentro das formas e das células de tabela
   // ------------------------------------------------------------------
 
-  private entrarEdicao(id: string): void {
+  private entrarEdicao(id: string, cel?: [number, number]): void {
     const s = this.atual().shapes.find((x) => x.id === id);
-    if (!s || s.paras === undefined || s.bloqueada) return;
+    if (!s || s.bloqueada || (s.paras === undefined && !s.tabela)) return;
     this.antesEdicao = this.estado();
     this.editando = id;
     this.selecao = [id];
+    if (s.tabela) {
+      this.celulaEdit = cel ?? (this.celulas?.id === id ? [this.celulas.r0, this.celulas.c0] : [0, 0]);
+      this.celulas = { id, r0: this.celulaEdit[0], c0: this.celulaEdit[1], r1: this.celulaEdit[0], c1: this.celulaEdit[1] };
+    } else this.celulaEdit = null;
     this.pintar();
     const rt = this.rtEmEdicao();
     if (rt) {
@@ -595,6 +642,7 @@ export class PowerPointHost {
   private sairEdicao(): void {
     if (!this.editando) return;
     this.editando = null;
+    this.celulaEdit = null;
     if (this.antesEdicao && this.antesEdicao.slides !== this.slides) this.hist.registrar(this.antesEdicao);
     this.antesEdicao = null;
     window.getSelection()?.removeAllRanges();
@@ -618,18 +666,41 @@ export class PowerPointHost {
         e.preventDefault();
         e.stopPropagation();
         this.sairEdicao();
+        return;
+      }
+      // dentro de uma tabela: Tab anda entre as células (e cria linha no fim)
+      if (e.key === "Tab" && this.celulaEdit) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.moverCelula(e.shiftKey ? -1 : 1, true);
       }
     });
   }
 
-  private estiloDeDigitacao(s: Shape): EstiloRun {
+  private estiloDeDigitacao(s: Shape, cel?: [number, number] | null): EstiloRun {
+    const c = cel && s.tabela ? s.tabela.celulas[cel[0]]?.[cel[1]] : undefined;
+    if (c?.estilo) return { ...c.estilo };
     return { size: s.fontSize, bold: s.bold, italic: s.italic, underline: false, strike: false, color: s.color || "000000", font: s.fontFamily || "Arial" };
   }
 
   private aoDigitar(id: string, rt: HTMLElement): void {
     const s = this.atual().shapes.find((x) => x.id === id);
-    if (!s || !s.paras) return;
+    if (!s) return;
     const texto = textoDaCaixa(rt);
+    if (s.tabela && this.celulaEdit) {
+      const [r, c] = this.celulaEdit;
+      const cel = s.tabela.celulas[r]?.[c];
+      if (!cel) return;
+      const paras = parasComTexto(cel.paras, texto, this.estiloDeDigitacao(s, this.celulaEdit));
+      if (paras === cel.paras) return;
+      const t = { ...s.tabela, celulas: s.tabela.celulas.map((linha, i) => (i === r ? linha.map((x, j) => (j === c ? { ...x, paras } : x)) : linha)) };
+      this.substituirSlide({ ...this.atual(), shapes: this.atual().shapes.map((x) => (x.id === id ? { ...x, tabela: t } : x)) });
+      this.markDirty();
+      this.fita.atualizar();
+      requestAnimationFrame(() => this.sincronizarTabelas());
+      return;
+    }
+    if (!s.paras) return;
     const paras = parasComTexto(s.paras, texto, this.estiloDeDigitacao(s));
     if (paras === s.paras) return;
     // não redesenha: o cursor precisa continuar onde está
@@ -638,40 +709,58 @@ export class PowerPointHost {
     this.fita.atualizar();
   }
 
-  /** Aplica um estilo ao trecho selecionado (ou a todo o texto das formas selecionadas). */
-  private estiloDoTexto(patch: RunPatch): void {
+  /**
+   * Aplica uma mudança de texto ao alvo certo: ao trecho selecionado dentro da caixa em edição, ou a todo o texto das formas
+   * selecionadas (nas tabelas, às células escolhidas — ou a todas quando nenhuma foi escolhida).
+   */
+  private mapearTextos(fn: (paras: Para[], sel: { ini: number; fim: number } | null) => Para[], chave: string, extra?: (s: Shape, sel: { ini: number; fim: number } | null) => Partial<Shape>): void {
     const rt = this.rtEmEdicao();
     const sel = rt ? lerSelecao(rt) : null;
-    const ini = sel ? sel.ini : -1;
-    const fim = sel ? sel.fim : -1;
-    const ids = this.editando ? [this.editando] : this.selecao;
+    const editandoId = this.editando;
+    const celEdit = this.celulaEdit;
+    const alvoIds = editandoId ? [editandoId] : this.selecao;
     this.editar(
-      (sl) =>
-        patchFormas(sl, ids, (s) => {
-          if (!s.paras) return {};
-          const extra: Partial<Shape> = {};
-          if (ini < 0 || ini === fim) {
-            if (patch.font !== undefined) extra.fontFamily = patch.font;
-            if (patch.size !== undefined) extra.fontSize = patch.size;
-            if (patch.color !== undefined) extra.color = patch.color;
-            if (patch.bold !== undefined) extra.bold = patch.bold;
-            if (patch.italic !== undefined) extra.italic = patch.italic;
+      (sl) => ({
+        ...sl,
+        shapes: sl.shapes.map((s) => {
+          if (!alvoIds.includes(s.id)) return s;
+          if (s.tabela) {
+            const t = s.tabela;
+            const escolha = editandoId && celEdit ? { r0: celEdit[0], c0: celEdit[1], r1: celEdit[0], c1: celEdit[1] } : this.celulas?.id === s.id ? this.celulas : null;
+            const e = escolha ? expandirSelecao(t, escolha) : { r0: 0, c0: 0, r1: t.linhas.length - 1, c1: t.colunas.length - 1 };
+            const celulas = t.celulas.map((linha, r) => linha.map((c, col) => (r >= e.r0 && r <= e.r1 && col >= e.c0 && col <= e.c1 && !c.coberta ? { ...c, paras: fn(c.paras, editandoId ? sel : null) } : c)));
+            return { ...s, tabela: { ...t, celulas } };
           }
-          return { paras: estiloNoIntervalo(s.paras, ini, fim, patch), ...extra };
+          if (!s.paras) return s;
+          return { ...s, paras: fn(s.paras, editandoId ? sel : null), ...(extra ? extra(s, editandoId ? sel : null) : {}) };
         }),
-      "estilo-texto"
+      }),
+      chave
     );
     this.refocar(sel);
   }
 
+  /** Aplica um estilo ao trecho selecionado (ou a todo o texto). */
+  private estiloDoTexto(patch: RunPatch): void {
+    this.mapearTextos(
+      (paras, sel) => estiloNoIntervalo(paras, sel ? sel.ini : -1, sel ? sel.fim : -1, patch),
+      "estilo-texto",
+      (_s, sel) => {
+        const extra: Partial<Shape> = {};
+        if (!sel || sel.ini === sel.fim) {
+          if (patch.font !== undefined) extra.fontFamily = patch.font;
+          if (patch.size !== undefined) extra.fontSize = patch.size;
+          if (patch.color !== undefined) extra.color = patch.color;
+          if (patch.bold !== undefined) extra.bold = patch.bold;
+          if (patch.italic !== undefined) extra.italic = patch.italic;
+        }
+        return extra;
+      }
+    );
+  }
+
   private mudarTamanhoTexto(sobe: boolean): void {
-    const rt = this.rtEmEdicao();
-    const sel = rt ? lerSelecao(rt) : null;
-    const ini = sel ? sel.ini : -1;
-    const fim = sel ? sel.fim : -1;
-    const ids = this.editando ? [this.editando] : this.selecao;
-    this.editar((sl) => patchFormas(sl, ids, (s) => (s.paras ? { paras: mudarTamanhoRelativo(s.paras, ini, fim, sobe) } : {})), "tamanho-texto");
-    this.refocar(sel);
+    this.mapearTextos((paras, sel) => mudarTamanhoRelativo(paras, sel ? sel.ini : -1, sel ? sel.fim : -1, sobe), "tamanho-texto");
   }
 
   /** Depois de redesenhar durante a edição: devolve o foco e a seleção do texto. */
@@ -684,20 +773,97 @@ export class PowerPointHost {
   }
 
   /** Propriedades de parágrafo nas formas selecionadas (ou só nos parágrafos tocados pela seleção de texto). */
-  private estiloDosParagrafos(fn: (paras: NonNullable<Shape["paras"]>, idx: number[]) => NonNullable<Shape["paras"]>): void {
-    const rt = this.rtEmEdicao();
-    const sel = rt ? lerSelecao(rt) : null;
-    const ids = this.editando ? [this.editando] : this.selecao;
+  private estiloDosParagrafos(fn: (paras: Para[], idx: number[]) => Para[]): void {
+    this.mapearTextos((paras, sel) => fn(paras, sel ? parasDaSelecao(paras, sel.ini, sel.fim) : paras.map((_, i) => i)), "paragrafo");
+  }
+
+  // ------------------------------------------------------------------
+  // tabelas
+  // ------------------------------------------------------------------
+
+  /** A tabela selecionada (a principal), se houver. */
+  private tabelaAtual(): Shape | undefined {
+    const f = this.principal();
+    return f?.tabela ? f : undefined;
+  }
+
+  /** Muda a tabela da forma selecionada e acerta o tamanho da forma. */
+  private editarTabela(fn: (t: NonNullable<Shape["tabela"]>) => NonNullable<Shape["tabela"]>, chave = ""): void {
+    const f = this.tabelaAtual();
+    if (!f?.tabela) return;
+    const d = this.dim();
     this.editar(
-      (sl) =>
-        patchFormas(sl, ids, (s) => {
-          if (!s.paras) return {};
-          const idx = sel ? parasDaSelecao(s.paras, sel.ini, sel.fim) : s.paras.map((_, i) => i);
-          return { paras: fn(s.paras, idx) };
+      (sl) => ({
+        ...sl,
+        shapes: sl.shapes.map((s) => {
+          if (s.id !== f.id || !s.tabela) return s;
+          const t = fn(s.tabela);
+          const tot = tamanhoTotal(t);
+          return { ...s, tabela: t, box: { ...s.box, w: (tot.w / d.w) * 100, h: (tot.h / d.h) * 100 } };
         }),
-      "paragrafo"
+      }),
+      chave
     );
-    this.refocar(sel);
+  }
+
+  /** A seleção de células atual (ou a célula inteira da tabela se nada foi escolhido). */
+  private selDaTabela(): { r0: number; c0: number; r1: number; c1: number } {
+    const f = this.tabelaAtual();
+    if (this.celulaEdit) return { r0: this.celulaEdit[0], c0: this.celulaEdit[1], r1: this.celulaEdit[0], c1: this.celulaEdit[1] };
+    if (this.celulas && f && this.celulas.id === f.id) return this.celulas;
+    const t = f?.tabela;
+    return { r0: 0, c0: 0, r1: (t?.linhas.length ?? 1) - 1, c1: (t?.colunas.length ?? 1) - 1 };
+  }
+
+  /** Mede as tabelas na tela: se o texto fez alguma linha crescer, a caixa da forma acompanha (a seleção fica certa). */
+  private sincronizarTabelas(): void {
+    const tabs = this.atual().shapes.filter((s) => s.tabela);
+    if (!tabs.length) return;
+    const raiz = this.slideEl.getBoundingClientRect();
+    if (!raiz.height) return;
+    let mudou = false;
+    const shapes = this.atual().shapes.map((s) => {
+      if (!s.tabela) return s;
+      const el = this.slideEl.querySelector<HTMLElement>(`[data-shape="${s.id}"] table`);
+      if (!el) return s;
+      const hPct = (el.getBoundingClientRect().height / raiz.height) * 100;
+      if (hPct > s.box.h + 0.15) {
+        mudou = true;
+        return { ...s, box: { ...s.box, h: hPct } };
+      }
+      return s;
+    });
+    if (mudou) {
+      this.substituirSlide({ ...this.atual(), shapes });
+      requestAnimationFrame(() => this.stage.desenharSelecao());
+    }
+  }
+
+  /** Anda para a célula seguinte/anterior (Tab); no fim de uma tabela, Tab cria uma linha nova. */
+  private moverCelula(passo: number, editar: boolean): void {
+    const f = this.tabelaAtual();
+    if (!f?.tabela) return;
+    const t = f.tabela;
+    const atual = this.celulaEdit ?? (this.celulas?.id === f.id ? ([this.celulas.r0, this.celulas.c0] as [number, number]) : ([0, 0] as [number, number]));
+    // lista das células "donas" (não cobertas) na ordem de leitura
+    const lista: [number, number][] = [];
+    t.celulas.forEach((linha, r) => linha.forEach((c, col) => !c.coberta && lista.push([r, col])));
+    let i = lista.findIndex(([r, c]) => r === atual[0] && c === atual[1]);
+    if (i < 0) i = 0;
+    let prox = i + passo;
+    const wasEditing = !!this.editando;
+    if (wasEditing) this.sairEdicao();
+    if (prox >= lista.length) {
+      this.editarTabela((x) => inserirLinha(x, x.linhas.length, x.linhas.length - 1));
+      const nova = this.tabelaAtual()!.tabela!;
+      prox = lista.length;
+      lista.push([nova.linhas.length - 1, 0]);
+    }
+    if (prox < 0) prox = 0;
+    const [r, c] = lista[Math.min(prox, lista.length - 1)];
+    this.celulas = { id: f.id, r0: r, c0: c, r1: r, c1: c };
+    if (editar || wasEditing) this.entrarEdicao(f.id, [r, c]);
+    else this.atualizarUI();
   }
 
   // ------------------------------------------------------------------
@@ -709,6 +875,9 @@ export class PowerPointHost {
     const ids = this.selecao;
     const d = this.dim();
     const principal = this.principal();
+
+    // tabela selecionada: preenchimento, contorno e alinhamento vertical valem para as células escolhidas
+    if (principal?.tabela && this.comandoDeTabela(cmd, value)) return;
 
     // ---- comandos com valor no nome ----
     if (cmd.startsWith("grad-cor:") || cmd.startsWith("grad-pos:")) return this.gradienteParada(cmd, value);
@@ -756,9 +925,13 @@ export class PowerPointHost {
       // ---- lâmina ----
       case "slide-new": {
         this.registrar();
-        const r = insertSlide(this.deck, this.indice);
-        this.slides = r.deck.slides;
-        this.indice = r.index;
+        // a lâmina nova herda o fundo e as decorações fixas da atual e já vem com as caixas do layout escolhido
+        const layout = (value as SlideLayout) || (sl.shapes.length ? "conteudo" : "conteudo");
+        const nova = novaLamina(layout, this.estilo(), sl);
+        const lista = this.slides.slice();
+        lista.splice(this.indice + 1, 0, nova);
+        this.slides = lista;
+        this.indice = this.indice + 1;
         this.selecao = [];
         this.editando = null;
         this.markDirty();
@@ -793,7 +966,11 @@ export class PowerPointHost {
       case "layout":
       case "layout-sel": {
         this.registrar();
-        this.slides = setLayout(this.deck, this.indice, (value ?? "conteudo") as SlideLayout).slides;
+        const novo = (value ?? "conteudo") as SlideLayout;
+        this.slides = setLayout(this.deck, this.indice, novo).slides;
+        // lâmina sem caixas próprias (só decoração): recebe as caixas do layout
+        const atual = this.atual();
+        if (!atual.shapes.some((f) => !f.fixa)) this.substituirSlide({ ...atual, shapes: [...atual.shapes, ...formasDoLayout(novo, this.estilo())] });
         this.markDirty();
         this.pintar();
         return;
@@ -852,6 +1029,10 @@ export class PowerPointHost {
         return;
 
       // ---- inserir ----
+      case "tabela-inserir": {
+        const [linhas, colunas] = String(value ?? "3,3").split(",").map(Number);
+        return this.inserirTabela(Math.max(1, linhas || 3), Math.max(1, colunas || 3));
+      }
       case "forma-inserir":
         this.ferramenta = { tipo: "forma", id: String(value ?? "5") };
         this.stage.desenharSelecao();
@@ -1161,6 +1342,134 @@ export class PowerPointHost {
     }
   }
 
+  /** Cria uma tabela no meio da lâmina. */
+  private inserirTabela(linhas: number, colunas: number): void {
+    const d = this.dim();
+    const est = this.estilo();
+    const wPt = Math.min(d.w * 0.84, Math.max(colunas * 90, d.w * 0.4));
+    const hPt = Math.min(d.h * 0.7, linhas * 34);
+    const tipo = { size: 16, bold: false, italic: false, underline: false, strike: false, color: est.corTexto, font: est.fonte };
+    const t = criarTabela(linhas, colunas, wPt, hPt, tipo, est.acento);
+    const tot = tamanhoTotal(t);
+    const forma: Shape = {
+      id: Math.random().toString(36).slice(2, 10),
+      kind: "forma",
+      box: { x: 50 - (tot.w / d.w) * 50, y: Math.max(6, 50 - (tot.h / d.h) * 50), w: (tot.w / d.w) * 100, h: (tot.h / d.h) * 100 },
+      text: "",
+      fontFamily: est.fonte,
+      fontSize: 16,
+      color: est.corTexto,
+      bold: false,
+      italic: false,
+      align: "esquerda",
+      fill: "",
+      src: "",
+      rot: 0,
+      geom: "rect",
+      name: "Tabela",
+      tabela: t,
+    };
+    this.registrar();
+    this.substituirSlide({ ...this.atual(), shapes: [...this.atual().shapes, forma] });
+    this.selecao = [forma.id];
+    this.celulas = { id: forma.id, r0: 0, c0: 0, r1: 0, c1: 0 };
+    this.markDirty();
+    this.pintar();
+  }
+
+  /** Comandos que mudam de significado quando a forma selecionada é uma tabela. Devolve true se tratou. */
+  private comandoDeTabela(cmd: string, value?: string): boolean {
+    const sel = this.selDaTabela();
+    switch (cmd) {
+      case "preench": {
+        const fill: Fill | null = value === "none" ? null : { kind: "solid", color: String(value), alpha: 1 };
+        this.editarTabela((t) => preencherCelulas(t, sel, fill));
+        return true;
+      }
+      case "contorno":
+      case "ln-cor":
+        this.editarTabela((t) => bordasCelulas(t, sel, value === "none" ? "nenhuma" : "todas", { color: String(value === "none" ? "000000" : value), alpha: 1, w: 1, dash: "solid" }));
+        return true;
+      case "v-topo":
+      case "v-meio":
+      case "v-base":
+        this.editarTabela((t) => alinharVerticalmente(t, sel, cmd === "v-topo" ? "t" : cmd === "v-meio" ? "ctr" : "b"));
+        return true;
+      case "tabela-linha-acima":
+        this.editarTabela((t) => inserirLinha(t, sel.r0, sel.r0));
+        return true;
+      case "tabela-linha-abaixo":
+        this.editarTabela((t) => inserirLinha(t, sel.r1 + 1, sel.r1));
+        return true;
+      case "tabela-col-esquerda":
+        this.editarTabela((t) => inserirColuna(t, sel.c0, sel.c0));
+        return true;
+      case "tabela-col-direita":
+        this.editarTabela((t) => inserirColuna(t, sel.c1 + 1, sel.c1));
+        return true;
+      case "tabela-del-linha":
+        this.editarTabela((t) => {
+          let n = t;
+          for (let r = sel.r1; r >= sel.r0; r--) n = excluirLinha(n, r);
+          return n;
+        });
+        this.celulas = null;
+        this.atualizarUI();
+        return true;
+      case "tabela-del-coluna":
+        this.editarTabela((t) => {
+          let n = t;
+          for (let c = sel.c1; c >= sel.c0; c--) n = excluirColuna(n, c);
+          return n;
+        });
+        this.celulas = null;
+        this.atualizarUI();
+        return true;
+      case "tabela-mesclar":
+        this.editarTabela((t) => mesclar(t, sel));
+        return true;
+      case "tabela-dividir":
+        this.editarTabela((t) => dividir(t, sel.r0, sel.c0));
+        return true;
+      case "tabela-preset":
+        this.editarTabela((t) => aplicarPreset(t, String(value) as PresetTabela, this.estilo().acento, this.estilo().corTexto));
+        return true;
+      case "tabela-cabecalho":
+      case "tabela-faixas":
+      case "tabela-primeira-coluna": {
+        const chave = cmd === "tabela-cabecalho" ? "cabecalho" : cmd === "tabela-faixas" ? "faixas" : "primeiraColuna";
+        const preset = (value === "1" ? "ligar" : "desligar") as string;
+        void preset;
+        this.editarTabela((t) => ({ ...t, [chave]: value === "1" }));
+        return true;
+      }
+      case "tabela-reaplicar":
+        this.editarTabela((t) => aplicarPreset(t, String(value ?? t.preset ?? "acento") as PresetTabela, this.estilo().acento, this.estilo().corTexto));
+        return true;
+      case "tabela-bordas": {
+        const [modo, cor, w] = String(value).split("|");
+        this.editarTabela((t) => bordasCelulas(t, sel, modo as ModoBorda, { color: cor || "000000", alpha: 1, w: Number(w) || 1, dash: "solid" }));
+        return true;
+      }
+      case "tabela-largura-coluna":
+        this.editarTabela((t) => larguraDaColuna(t, sel.c0, (Number(value) / 2.54) * 72), "tabela-larg");
+        return true;
+      case "tabela-altura-linha":
+        this.editarTabela((t) => alturaDaLinha(t, sel.r0, (Number(value) / 2.54) * 72), "tabela-alt");
+        return true;
+      case "tabela-excluir":
+        this.run("excluir");
+        return true;
+      case "tabela-limpar":
+        this.editarTabela((t) => ({
+          ...t,
+          celulas: t.celulas.map((linha, r) => linha.map((c, col) => (r >= sel.r0 && r <= sel.r1 && col >= sel.c0 && col <= sel.c1 ? { ...c, paras: c.paras.map((p) => ({ ...p, runs: [] })) } : c))),
+        }));
+        return true;
+    }
+    return false;
+  }
+
   private gradienteParada(cmd: string, value?: string): void {
     const i = Number(cmd.split(":")[1]);
     const campo = cmd.startsWith("grad-cor") ? "color" : "pos";
@@ -1358,11 +1667,34 @@ export class PowerPointHost {
       else if (this.selecao.length) this.consumir(e, () => this.selecionar([]));
       return;
     }
+    if (this.tabelaAtual() && this.celulas && this.selecao.length === 1) {
+      const tab = this.tabelaAtual()!.tabela!;
+      const c = this.celulas;
+      if (e.key === "Delete" || e.key === "Backspace") return this.consumir(e, () => this.run("tabela-limpar"));
+      if (e.key === "Tab") return this.consumir(e, () => this.moverCelula(e.shiftKey ? -1 : 1, false));
+      if (e.key.startsWith("Arrow")) {
+        const dr = e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : 0;
+        const dc = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+        const r = Math.max(0, Math.min(tab.linhas.length - 1, c.r0 + dr));
+        const col = Math.max(0, Math.min(tab.colunas.length - 1, c.c0 + dc));
+        return this.consumir(e, () => {
+          this.celulas = { id: c.id, r0: r, c0: col, r1: e.shiftKey ? Math.max(r, c.r1) : r, c1: e.shiftKey ? Math.max(col, c.c1) : col };
+          this.atualizarUI();
+        });
+      }
+      if (e.key === "Escape") return this.consumir(e, () => { this.celulas = null; this.atualizarUI(); });
+      // digitar uma letra começa a escrever na célula
+      if (e.key.length === 1 && !ctrl && !e.altKey) {
+        const id = c.id;
+        this.entrarEdicao(id, [c.r0, c.c0]);
+        return;
+      }
+    }
     if (e.key === "Delete" || e.key === "Backspace") {
       if (this.selecao.length) this.consumir(e, () => this.run("excluir"));
       return;
     }
-    if ((e.key === "Enter" || e.key === "F2") && this.selecao.length === 1) return this.consumir(e, () => this.entrarEdicao(this.selecao[0]));
+    if ((e.key === "Enter" || e.key === "F2") && this.selecao.length === 1) return this.consumir(e, () => this.entrarEdicao(this.selecao[0], this.celulas?.id === this.selecao[0] ? [this.celulas.r0, this.celulas.c0] : undefined));
     if (e.key === "Tab" && this.atual().shapes.length) {
       const lista = this.atual().shapes.filter((s) => !s.fixa || this.fixas);
       const i = lista.findIndex((s) => s.id === this.selecao[this.selecao.length - 1]);

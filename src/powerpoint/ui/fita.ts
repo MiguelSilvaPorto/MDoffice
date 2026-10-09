@@ -1,12 +1,14 @@
 // A fita da apresentação, no desenho do PowerPoint: abas (Página Inicial, Inserir, Formato da Forma, Design, Exibir),
 // grupos com o nome embaixo, botões grandes e pequenos. Tudo é despachado por `run(comando, valor)` para o host.
 import { SOMBRAS_PRONTAS } from "../edicao/formato";
+import { ROTULOS_PRESET, type PresetTabela } from "../edicao/tabela";
 import type { SlideLayout } from "../schema";
 import { abrirCores } from "./cores";
 import { FONTES_COMUNS, TAMANHOS, cmParaPt, ptParaCm, type EstadoUI } from "./estado";
 import { abrirGaleria, iconeDeForma } from "./galeria";
 import { abrirPopup, fecharPopup } from "./popup";
 import { GALERIA } from "../edicao/criar";
+import { ORDEM_LAYOUTS, ROTULOS_LAYOUT } from "../edicao/layouts";
 
 export interface HooksFita {
   estado: () => EstadoUI;
@@ -26,16 +28,12 @@ const ABAS = [
   { id: "inicio", nome: "Página Inicial" },
   { id: "inserir", nome: "Inserir" },
   { id: "formato", nome: "Formato da Forma" },
+  { id: "tabela", nome: "Layout da Tabela" },
   { id: "design", nome: "Design" },
   { id: "exibir", nome: "Exibir" },
 ];
 
-const LAYOUTS: [SlideLayout, string][] = [
-  ["titulo", "Capa"],
-  ["secao", "Seção"],
-  ["conteudo", "Conteúdo"],
-  ["vazio", "Em branco"],
-];
+const LAYOUTS: [SlideLayout, string][] = ORDEM_LAYOUTS.map((id) => [id, ROTULOS_LAYOUT[id]]);
 
 const ESTILOS_RAPIDOS: { nome: string; cmd: string }[] = [
   { nome: "Destaque cheio", cmd: "estilo:cheio" },
@@ -54,7 +52,7 @@ export class Fita {
     this.el = host;
     host.innerHTML = `
       <div class="ppr-abas" role="tablist">
-        ${ABAS.map((a) => `<button type="button" class="ppr-aba${a.id === "inicio" ? " on" : ""}" role="tab" data-aba="${a.id}"${a.id === "formato" ? " hidden" : ""}>${a.nome}</button>`).join("")}
+        ${ABAS.map((a) => `<button type="button" class="ppr-aba${a.id === "inicio" ? " on" : ""}" role="tab" data-aba="${a.id}"${a.id === "formato" || a.id === "tabela" ? " hidden" : ""}>${a.nome}</button>`).join("")}
         <span class="ppr-enche"></span>
         <button type="button" class="ppr-aba ppr-cfg" data-cmd="configure" title="Configurar apresentação">${ic("i-gear")}<span>Configurar</span></button>
       </div>
@@ -62,6 +60,7 @@ export class Fita {
         <div class="ppr-painel" data-painel="inicio">${this.inicio()}</div>
         <div class="ppr-painel" data-painel="inserir" hidden>${this.inserir()}</div>
         <div class="ppr-painel" data-painel="formato" hidden>${this.formato()}</div>
+        <div class="ppr-painel" data-painel="tabela" hidden>${this.tabela()}</div>
         <div class="ppr-painel" data-painel="design" hidden>${this.design()}</div>
         <div class="ppr-painel" data-painel="exibir" hidden>${this.exibir()}</div>
       </div>`;
@@ -100,7 +99,7 @@ export class Fita {
       ),
       grupo(
         "Lâminas",
-        `${grande("slide-new", ic("i-plus"), "Nova", "Nova lâmina depois da atual")}
+        `${grande("slide-novo", ic("i-plus"), "Nova lâmina", "Nova lâmina depois da atual: escolha o layout", true)}
          <div class="ppr-col">
            ${pequeno("layout", ic("i-columns"), "Layout", "Layout da lâmina", true)}
            ${pequeno("slide-dup", ic("i-dup"), "Duplicar", "Duplicar lâmina")}
@@ -165,7 +164,8 @@ export class Fita {
 
   private inserir(): string {
     return [
-      grupo("Lâminas", `${grande("slide-new", ic("i-plus"), "Nova lâmina", "Nova lâmina depois da atual")}`),
+      grupo("Lâminas", `${grande("slide-novo", ic("i-plus"), "Nova lâmina", "Nova lâmina depois da atual: escolha o layout", true)}`),
+      grupo("Tabelas", `${grande("tabela-grade", ic("i-grid"), "Tabela", "Inserir uma tabela", true)}`),
       grupo(
         "Texto",
         `${grande("ferramenta:texto", ic("i-doc"), "Caixa de texto", "Desenhe uma caixa de texto na lâmina")}`
@@ -183,6 +183,53 @@ export class Fita {
            ${pequeno("forma-rapida:3", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[3], 18)}</span>`, "Conector", "Desenhar um conector angular")}
          </div>`
       ),
+    ].join("");
+  }
+
+  private tabela(): string {
+    return [
+      grupo(
+        "Linhas e Colunas",
+        `<div class="ppr-col">
+           ${pequeno("tabela-linha-acima", ic("i-table-row-add"), "Inserir acima", "Inserir linha acima")}
+           ${pequeno("tabela-linha-abaixo", ic("i-table-row-add"), "Inserir abaixo", "Inserir linha abaixo")}
+           ${pequeno("tabela-del-linha", ic("i-table-row-del"), "Excluir linha", "Excluir as linhas escolhidas")}
+         </div>
+         <div class="ppr-col">
+           ${pequeno("tabela-col-esquerda", ic("i-table-col-add"), "Inserir à esquerda", "Inserir coluna à esquerda")}
+           ${pequeno("tabela-col-direita", ic("i-table-col-add"), "Inserir à direita", "Inserir coluna à direita")}
+           ${pequeno("tabela-del-coluna", ic("i-table-col-del"), "Excluir coluna", "Excluir as colunas escolhidas")}
+         </div>`
+      ),
+      grupo(
+        "Mesclar",
+        `<div class="ppr-col">
+           ${pequeno("tabela-mesclar", ic("i-table-merge"), "Mesclar células", "Juntar as células escolhidas em uma")}
+           ${pequeno("tabela-dividir", ic("i-table-split"), "Dividir célula", "Desfazer a mesclagem")}
+         </div>`
+      ),
+      grupo(
+        "Estilos de Tabela",
+        `<div class="ppr-col">
+           ${pequeno("tabela-estilos", "", "Estilos", "Estilos prontos de tabela", true)}
+           ${pequeno("tabela-bordas-menu", ic("i-border"), "Bordas", "Bordas das células escolhidas", true)}
+           ${pequeno("preench", ic("i-bucket"), "Sombreamento", "Cor de fundo das células escolhidas", true)}
+         </div>
+         <div class="ppr-col">
+           <label class="ppr-opc"><input type="checkbox" data-opc="cabecalho"> Linha de cabeçalho</label>
+           <label class="ppr-opc"><input type="checkbox" data-opc="faixas"> Linhas em faixas</label>
+           <label class="ppr-opc"><input type="checkbox" data-opc="primeiraColuna"> Primeira coluna</label>
+         </div>`
+      ),
+      grupo(
+        "Alinhamento",
+        `<div class="ppr-col">
+           ${pequeno("v-topo", "", "Alinhar em cima", "Alinhar o texto ao topo da célula")}
+           ${pequeno("v-meio", "", "Centralizar", "Centralizar o texto verticalmente")}
+           ${pequeno("v-base", "", "Alinhar embaixo", "Alinhar o texto à base da célula")}
+         </div>`
+      ),
+      grupo("Tabela", `${grande("tabela-excluir", ic("i-trash"), "Excluir tabela", "Excluir a tabela inteira")}`),
     ].join("");
   }
 
@@ -303,6 +350,13 @@ export class Fita {
 
   private aoMudar(e: Event): void {
     const t = e.target as HTMLElement;
+    const opc = t.closest<HTMLInputElement>("input[data-opc]");
+    if (opc) {
+      const k = opc.dataset.opc!;
+      this.hooks.run(k === "cabecalho" ? "tabela-cabecalho" : k === "faixas" ? "tabela-faixas" : "tabela-primeira-coluna", opc.checked ? "1" : "0");
+      this.hooks.run("tabela-reaplicar");
+      return;
+    }
     const sel = t.closest<HTMLSelectElement>("[data-sel]");
     if (sel) {
       this.hooks.run(sel.dataset.sel === "font" ? "fonte" : "tamanho", sel.value);
@@ -322,6 +376,51 @@ export class Fita {
       case "galeria":
         abrirGaleria(ancora, (item) => run("forma-inserir", String(GALERIA.indexOf(item))));
         return;
+      case "tabela-grade": {
+        const N = 8;
+        let cel = "";
+        for (let r = 1; r <= 6; r++) for (let c = 1; c <= N; c++) cel += `<span class="pp-tg" data-tg="${r},${c}"></span>`;
+        const el = abrirPopup(ancora, `<div class="pp-tg-rot">Inserir tabela</div><div class="pp-tg-grade" style="grid-template-columns:repeat(${N},16px)">${cel}</div>`, { classe: "pp-pop-menu" });
+        const rot = el.querySelector<HTMLElement>(".pp-tg-rot")!;
+        el.addEventListener("mouseover", (ev) => {
+          const t = (ev.target as HTMLElement).closest<HTMLElement>("[data-tg]");
+          if (!t) return;
+          const [rr, cc] = t.dataset.tg!.split(",").map(Number);
+          el.querySelectorAll<HTMLElement>("[data-tg]").forEach((x) => {
+            const [r, c] = x.dataset.tg!.split(",").map(Number);
+            x.classList.toggle("on", r <= rr && c <= cc);
+          });
+          rot.textContent = `${rr} × ${cc} (linhas × colunas)`;
+        });
+        el.addEventListener("click", (ev) => {
+          const t = (ev.target as HTMLElement).closest<HTMLElement>("[data-tg]");
+          if (!t) return;
+          fecharPopup();
+          run("tabela-inserir", t.dataset.tg);
+        });
+        return;
+      }
+      case "tabela-estilos": {
+        const el = abrirPopup(ancora, (Object.keys(ROTULOS_PRESET) as PresetTabela[]).map((k) => `<button type="button" class="pp-pop-item" data-preset="${k}">${ROTULOS_PRESET[k]}</button>`).join(""), { classe: "pp-pop-menu" });
+        el.addEventListener("click", (ev) => {
+          const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-preset]");
+          if (!b) return;
+          fecharPopup();
+          run("tabela-preset", b.dataset.preset);
+        });
+        return;
+      }
+      case "tabela-bordas-menu": {
+        const itens: [string, string][] = [["todas", "Todas as bordas"], ["externas", "Bordas externas"], ["internas", "Bordas internas"], ["topo", "Borda superior"], ["base", "Borda inferior"], ["esquerda", "Borda esquerda"], ["direita", "Borda direita"], ["nenhuma", "Sem borda"]];
+        const el = abrirPopup(ancora, itens.map(([k, n]) => `<button type="button" class="pp-pop-item" data-borda="${k}">${n}</button>`).join(""), { classe: "pp-pop-menu" });
+        el.addEventListener("click", (ev) => {
+          const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-borda]");
+          if (!b) return;
+          fecharPopup();
+          run("tabela-bordas", `${b.dataset.borda}|1C212B|1`);
+        });
+        return;
+      }
       case "cor-texto":
         abrirCores(ancora, { atual: est.trecho && est.trecho.color !== "misto" ? est.trecho.color : null, paleta: est.paleta, titulo: "Cor da fonte" }, (c) => {
           if (c) run("cor-texto", c);
@@ -344,6 +443,16 @@ export class Fita {
           if (!b) return;
           fecharPopup();
           run("sombra-pronta", b.dataset.sombra);
+        });
+        return;
+      }
+      case "slide-novo": {
+        const el = abrirPopup(ancora, LAYOUTS.map(([id, n]) => `<button type="button" class="pp-pop-item" data-novo="${id}">${n}</button>`).join(""), { classe: "pp-pop-menu" });
+        el.addEventListener("click", (ev) => {
+          const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-novo]");
+          if (!b) return;
+          fecharPopup();
+          run("slide-new", b.dataset.novo);
         });
         return;
       }
@@ -488,6 +597,21 @@ export class Fita {
       abaFormato.hidden = !tem;
       if (!tem && this.aba === "formato") this.irParaAba("inicio");
     }
+    const abaTab = this.el.querySelector<HTMLElement>('[data-aba="tabela"]');
+    const temTab = !!st.forma?.tabela;
+    if (abaTab) {
+      if (abaTab.hidden === temTab) {
+        abaTab.hidden = !temTab;
+        if (temTab && this.aba !== "tabela") this.irParaAba("tabela");
+      }
+      if (!temTab && this.aba === "tabela") this.irParaAba("inicio");
+    }
+    if (st.forma?.tabela) {
+      for (const k of ["cabecalho", "faixas", "primeiraColuna"] as const) {
+        const i = this.el.querySelector<HTMLInputElement>(`input[data-opc="${k}"]`);
+        if (i) i.checked = !!st.forma.tabela[k];
+      }
+    }
     const on = (cmd: string, v: boolean) => {
       for (const b of this.el.querySelectorAll<HTMLElement>(`[data-cmd="${cmd}"]`)) b.classList.toggle("on", v);
     };
@@ -495,7 +619,7 @@ export class Fita {
       for (const b of this.el.querySelectorAll<HTMLButtonElement>(`[data-cmd="${cmd}"]`)) b.disabled = d;
     };
     const t = st.trecho;
-    const temTexto = !!st.forma && st.forma.paras !== undefined;
+    const temTexto = !!st.forma && (st.forma.paras !== undefined || !!st.forma.tabela);
     on("negrito", t?.bold === true);
     on("italico", t?.italic === true);
     on("sublinhado", t?.underline === true);

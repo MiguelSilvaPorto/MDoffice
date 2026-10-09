@@ -137,5 +137,33 @@ const para = (runs, extra = {}) => ({ runs, align: "esquerda", lvl: 0, marL: 0, 
   ok("forma sem canto ignora o raio", F.comRaioDeCanto(s, 25) === s);
 }
 
+// ---------------------------------------------------------------- tabelas
+{
+  const TB = await empacotar("src/powerpoint/edicao/tabela.ts", "tabela.mjs");
+  const est = { size: 16, bold: false, italic: false, underline: false, strike: false, color: "000000", font: "Arial" };
+  const t = TB.criarTabela(3, 3, 300, 90, est, "2563EB");
+  ok("tabela 3x3 com tamanho certo", t.linhas.length === 3 && t.colunas.length === 3 && perto(TB.tamanhoTotal(t).w, 300) && perto(TB.tamanhoTotal(t).h, 90, 60));
+  ok("estilo cabeçalho colorido pinta a 1ª linha", t.celulas[0][0].fill?.color === "2563EB" && t.celulas[1][0].fill);
+  const l = TB.inserirLinha(t, 1);
+  ok("inserir linha", l.linhas.length === 4 && l.celulas.length === 4 && l.celulas[1].length === 3);
+  const c = TB.inserirColuna(t, 3);
+  ok("inserir coluna no fim", c.colunas.length === 4 && c.celulas.every((x) => x.length === 4));
+  ok("excluir linha/coluna", TB.excluirLinha(t, 0).linhas.length === 2 && TB.excluirColuna(t, 0).colunas.length === 2);
+  ok("não exclui a última linha", TB.excluirLinha(TB.excluirLinha(TB.excluirLinha(t, 0), 0), 0).linhas.length === 1);
+  const m = TB.mesclar(t, { r0: 0, c0: 0, r1: 1, c1: 1 });
+  ok("mesclar 2x2", m.celulas[0][0].colspan === 2 && m.celulas[0][0].rowspan === 2 && m.celulas[1][1].coberta && !m.celulas[2][2].coberta);
+  ok("dono de célula coberta", TB.donaDe(m, 1, 1).r === 0 && TB.donaDe(m, 1, 1).c === 0);
+  const ml = TB.inserirLinha(m, 1);
+  ok("inserir linha dentro da mesclagem a estica", ml.celulas[0][0].rowspan === 3 && ml.celulas[1][0].coberta);
+  const me = TB.excluirLinha(m, 1);
+  ok("excluir linha dentro da mesclagem a encolhe", me.celulas[0][0].rowspan === undefined && me.linhas.length === 2);
+  const d = TB.dividir(m, 0, 0);
+  ok("dividir desfaz a mesclagem", d.celulas[0][0].colspan === undefined && !d.celulas[1][1].coberta);
+  const b = TB.bordasCelulas(t, { r0: 0, c0: 0, r1: 0, c1: 0 }, "todas", { color: "FF0000", alpha: 1, w: 2, dash: "solid" });
+  ok("borda vale dos dois lados da divisa", b.celulas[0][0].bordas.r.color === "FF0000" && b.celulas[0][1].bordas.l.color === "FF0000");
+  const aj = TB.ajustarAoTamanho(t, 600, 180);
+  ok("ajustar ao tamanho escala colunas e linhas", perto(TB.tamanhoTotal(aj).w, 600) && perto(TB.tamanhoTotal(aj).h, 180));
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);

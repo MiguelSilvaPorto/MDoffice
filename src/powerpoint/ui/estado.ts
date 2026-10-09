@@ -1,6 +1,6 @@
 // O que a fita e o painel precisam saber do que está selecionado (o host calcula e entrega).
 import type { EstadoTrecho } from "../edicao/texto";
-import type { Ferramenta } from "../stage";
+import type { CelulasSel, Ferramenta } from "../stage";
 import type { DeckSetup, Fill, Para, Shape, SlideLayout } from "../schema";
 
 export interface EstadoUI {
@@ -35,6 +35,8 @@ export interface EstadoUI {
   /** unidade de medida do painel */
   largura: number;
   altura: number;
+  /** células escolhidas na tabela selecionada */
+  celulas: CelulasSel | null;
 }
 
 export const FONTES_COMUNS = [

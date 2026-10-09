@@ -1,6 +1,6 @@
 // Formas de uma lâmina do .pptx -> Shape do modelo: posição exata (com grupos aplicados), geometria, preenchimento,
 // contorno, sombra, imagem recortada e texto formatado. Placeholders herdam do layout e do mestre.
-import type { CustPath, Fill, GradStop, Line, Shadow, Shape } from "../schema";
+import type { CelulaTab, CustPath, Fill, GradStop, Line, Shadow, Shape, Tabela } from "../schema";
 import { corDentro, resolverCor, type ContextoCor, type CorResolvida, type Tema } from "./cores";
 import { mimeDe, paraDataUrl, Pacote, type Relacao } from "./pacote";
 import { estiloDoMestre, lerParagrafos, lerRProps, textoPuro, type RProps } from "./texto";
@@ -386,7 +386,7 @@ function gdValores(av: No | undefined): Record<string, number> {
   return out;
 }
 
-async function lerForma(no: No, c: CtxForma, grupos: Grupo[], fixa: boolean, visual: "sp" | "pic" | "cxn"): Promise<Shape | undefined> {
+async function lerForma(no: No, c: CtxForma, grupos: Grupo[], fixa: boolean, visual: "sp" | "pic" | "cxn", grupoId?: string): Promise<Shape | undefined> {
   const nv = filho(no, visual === "sp" ? "nvSpPr" : visual === "pic" ? "nvPicPr" : "nvCxnSpPr");
   const cNv = filho(nv, "cNvPr");
   if (cNv?.a.hidden === "1") {
@@ -437,6 +437,7 @@ async function lerForma(no: No, c: CtxForma, grupos: Grupo[], fixa: boolean, vis
   if (xf.flipH) forma.flipH = true;
   if (xf.flipV) forma.flipV = true;
   if (fixa) forma.fixa = true;
+  if (grupoId) forma.grupo = grupoId;
   const adj = gdValores(filho(prst, "avLst"));
   if (Object.keys(adj).length) forma.adj = adj;
   if (cust) {
@@ -566,34 +567,46 @@ async function lerForma(no: No, c: CtxForma, grupos: Grupo[], fixa: boolean, vis
 }
 
 /** Lê os filhos de uma árvore de formas (spTree ou grpSp) na ordem do documento. */
-export async function lerArvore(arvore: No, c: CtxForma, fixa = false, grupos: Grupo[] = []): Promise<Shape[]> {
+export async function lerArvore(arvore: No, c: CtxForma, fixa = false, grupos: Grupo[] = [], grupoId?: string): Promise<Shape[]> {
   const out: Shape[] = [];
   for (const no of arvore.c) {
     switch (no.n) {
       case "sp": {
         // placeholders do layout/mestre decoram só quando vistos de dentro deles (fixa) e são vazios: ignorados
         if (fixa && caminho(no, "nvSpPr/nvPr/ph")) break;
-        const f = await lerForma(no, c, grupos, fixa, "sp");
+        const f = await lerForma(no, c, grupos, fixa, "sp", grupoId);
         if (f) out.push(f);
         break;
       }
       case "pic": {
-        const f = await lerForma(no, c, grupos, fixa, "pic");
+        const f = await lerForma(no, c, grupos, fixa, "pic", grupoId);
         if (f) out.push(f);
         break;
       }
       case "cxnSp": {
-        const f = await lerForma(no, c, grupos, fixa, "cxn");
+        const f = await lerForma(no, c, grupos, fixa, "cxn", grupoId);
         if (f) out.push(f);
         break;
       }
       case "grpSp": {
         const g = lerGrupo(filho(no, "grpSpPr"));
-        out.push(...(await lerArvore(no, c, fixa, g ? [...grupos, g] : grupos)));
+        // o grupo mais externo manda: clicar em qualquer parte dele seleciona o conjunto, como no PowerPoint
+        const id = grupoId ?? `g${++c.seq.n}`;
+        const dentro = await lerArvore(no, c, fixa, g ? [...grupos, g] : grupos, id);
+        // grupo com uma forma só não é grupo
+        if (dentro.length < 2 && !grupoId) for (const f of dentro) delete f.grupo;
+        out.push(...dentro);
         break;
       }
       case "graphicFrame": {
         const uri = caminho(no, "graphic/graphicData")?.a.uri ?? "";
+        if (uri.includes("table")) {
+          const t = await lerTabela(no, c, grupos, fixa, grupoId);
+          if (t) {
+            out.push(t);
+            break;
+          }
+        }
         c.avisos.add(
           uri.includes("table") ? "Tabela: ainda não é exibida" : uri.includes("chart") ? "Gráfico: ainda não é exibido" : uri.includes("diagram") ? "Diagrama SmartArt: ainda não é exibido" : "Objeto incorporado: ainda não é exibido"
         );
@@ -601,7 +614,7 @@ export async function lerArvore(arvore: No, c: CtxForma, fixa = false, grupos: G
       }
       case "AlternateContent": {
         const alt = filho(no, "Fallback") ?? filho(no, "Choice");
-        if (alt) out.push(...(await lerArvore(alt, c, fixa, grupos)));
+        if (alt) out.push(...(await lerArvore(alt, c, fixa, grupos, grupoId)));
         break;
       }
     }
@@ -610,3 +623,80 @@ export async function lerArvore(arvore: No, c: CtxForma, fixa = false, grupos: G
 }
 
 export { lerRProps };
+
+// ---------------------------------------------------------------------------
+// tabela
+// ---------------------------------------------------------------------------
+
+async function lerTabela(no: No, c: CtxForma, grupos: Grupo[], fixa: boolean, grupoId?: string): Promise<Shape | undefined> {
+  const tbl = caminho(no, "graphic/graphicData/tbl");
+  let xf = lerXfrm(no);
+  if (!tbl || !xf) return undefined;
+  for (let i = grupos.length - 1; i >= 0; i--) xf = aplicarGrupo(xf, grupos[i]);
+  const colunas = filhos(filho(tbl, "tblGrid"), "gridCol").map((g) => num(g, "w") / EMU_PT);
+  const trs = filhos(tbl, "tr");
+  if (!colunas.length || !trs.length) return undefined;
+  const linhas = trs.map((tr) => num(tr, "h") / EMU_PT);
+  const cc = ctxCor(c);
+  const celulas: CelulaTab[][] = [];
+  for (const tr of trs) {
+    const linha: CelulaTab[] = [];
+    for (const tc of filhos(tr, "tc")) {
+      const tcPr = filho(tc, "tcPr");
+      const paras = lerParagrafos(filho(tc, "txBody"), cc, { camadas: [c.textoPadrao], numeroSlide: c.numeroSlide });
+      const cel: CelulaTab = { paras: paras.length ? paras : [{ runs: [], align: "esquerda", lvl: 0, marL: 0, indent: 0, spcBef: 0, spcAft: 0, endSize: 18 }] };
+      const fill = await lerPreenchimento(tcPr, c);
+      if (fill && fill.kind !== "none") cel.fill = fill;
+      const b: NonNullable<CelulaTab["bordas"]> = {};
+      for (const [tag, lado] of [["lnL", "l"], ["lnT", "t"], ["lnR", "r"], ["lnB", "b"]] as const) {
+        const ln = lerContorno(filho(tcPr, tag), cc);
+        if (ln !== undefined) b[lado] = ln;
+      }
+      if (Object.keys(b).length) cel.bordas = b;
+      const anchor = tcPr?.a.anchor;
+      cel.anchor = anchor === "ctr" ? "ctr" : anchor === "b" ? "b" : "t";
+      const m = (k: string, pad: number) => (tcPr?.a[k] !== undefined ? Number(tcPr.a[k]) : pad) / EMU_PT;
+      cel.ins = [m("marL", 91440), m("marT", 45720), m("marR", 91440), m("marB", 45720)];
+      const gs = num(tc, "gridSpan", 1);
+      const rs = num(tc, "rowSpan", 1);
+      if (gs > 1) cel.colspan = gs;
+      if (rs > 1) cel.rowspan = rs;
+      if (tc.a.hMerge === "1" || tc.a.vMerge === "1") cel.coberta = true;
+      const prim = paras.find((p) => p.runs.length)?.runs[0];
+      if (prim) {
+        const { text: _t, br: _b, ...e } = prim;
+        void _t;
+        void _b;
+        cel.estilo = e;
+      }
+      linha.push(cel);
+    }
+    while (linha.length < colunas.length) linha.push({ paras: [{ runs: [], align: "esquerda", lvl: 0, marL: 0, indent: 0, spcBef: 0, spcAft: 0, endSize: 18 }], coberta: true });
+    celulas.push(linha.slice(0, colunas.length));
+  }
+  const pr = filho(tbl, "tblPr");
+  const tabela: Tabela = { colunas, linhas, celulas, cabecalho: pr?.a.firstRow === "1", faixas: pr?.a.bandRow === "1", primeiraColuna: pr?.a.firstCol === "1" };
+  const nv = filho(filho(no, "nvGraphicFramePr"), "cNvPr");
+  if (pr?.a.firstRow === "1" && !celulas[0].some((x) => x.fill)) c.avisos.add("Tabela: o estilo do tema (cores do cabeçalho e faixas) não é aplicado; as células mostram só o que foi formatado nelas");
+  const shape: Shape = {
+    id: `s${++c.seq.n}`,
+    kind: "forma",
+    box: { x: (xf.x / c.larg) * 100, y: (xf.y / c.alt) * 100, w: (xf.w / c.larg) * 100, h: (xf.h / c.alt) * 100 },
+    text: "",
+    fontFamily: c.tema.fonteMenor,
+    fontSize: 18,
+    color: "000000",
+    bold: false,
+    italic: false,
+    align: "esquerda",
+    fill: "",
+    src: "",
+    rot: xf.rot,
+    name: nv?.a.name ?? "Tabela",
+    geom: "rect",
+    tabela,
+  };
+  if (fixa) shape.fixa = true;
+  if (grupoId) shape.grupo = grupoId;
+  return shape;
+}

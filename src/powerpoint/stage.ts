@@ -35,6 +35,16 @@ export interface ContextoPalco {
   fixasSelecionaveis: boolean;
   /** expande ids para incluir o grupo de cada um */
   comGrupos: (ids: string[]) => string[];
+  /** células selecionadas de uma tabela */
+  celulas: CelulasSel | null;
+}
+
+export interface CelulasSel {
+  id: string;
+  r0: number;
+  c0: number;
+  r1: number;
+  c1: number;
 }
 
 export interface StageHooks {
@@ -49,6 +59,8 @@ export interface StageHooks {
   aoCriar: (criacao: { box: ShapeBox; clique: boolean; x0: number; y0: number; x1: number; y1: number }) => void;
   /** Ctrl+arrastar: duplica a seleção e devolve os ids das cópias */
   aoDuplicarParaArrastar: () => string[];
+  /** clique ou arraste sobre células de uma tabela (null = limpar) */
+  aoCelulas: (sel: CelulasSel | null) => void;
 }
 
 type Modo =
@@ -56,7 +68,8 @@ type Modo =
   | { t: "redim"; ids: string[]; alca: Alca; inicial: Map<string, { box: ShapeBox; rot: number }>; x0: number; y0: number; moldura: ShapeBox }
   | { t: "girar"; ids: string[]; inicial: Map<string, { box: ShapeBox; rot: number }>; centro: { x: number; y: number }; angulo0: number }
   | { t: "retangulo"; x0: number; y0: number; soma: boolean; base: string[] }
-  | { t: "criar"; x0: number; y0: number };
+  | { t: "criar"; x0: number; y0: number }
+  | { t: "celulas"; id: string; r0: number; c0: number };
 
 export class Stage {
   private frame: HTMLElement | null = null;
@@ -123,7 +136,7 @@ export class Stage {
   desenharSelecao(): void {
     const el = this.slideEl;
     if (!el) return;
-    el.querySelectorAll(".pp-sel, .pp-guia, .pp-marquee").forEach((n) => n.remove());
+    el.querySelectorAll(".pp-sel, .pp-guia, .pp-marquee, .pp-celsel").forEach((n) => n.remove());
     const ctx = this.hooks.contexto();
     const sel = ctx.shapes.filter((s) => ctx.selecao.includes(s.id));
     const html: string[] = [];
@@ -138,12 +151,28 @@ export class Stage {
     if (sel.length === 1 && !ctx.editando) {
       const s = sel[0];
       caixa(s.box, s.rot, s.bloqueada ? "bloqueada" : "", !s.bloqueada);
+      if (s.tabela) html[html.length - 1] = html[html.length - 1].replace(/<\/div>$/, `<span class="pp-mover" data-mover title="Mover a tabela">✥</span></div>`);
     } else if (sel.length === 1 && ctx.editando === sel[0].id) {
       caixa(sel[0].box, sel[0].rot, "editando", false);
     } else if (sel.length > 1) {
       for (const s of sel) caixa(s.box, s.rot, "item", false);
       const m = envolventeDe(sel, ctx.dim)!;
       caixa(m, 0, "multi", sel.some((s) => !s.bloqueada));
+    }
+    if (ctx.celulas) {
+      const cs = ctx.celulas;
+      const raiz = el.getBoundingClientRect();
+      const a = el.querySelector<HTMLElement>(`[data-shape="${cs.id}"] td[data-r="${cs.r0}"][data-c="${cs.c0}"]`);
+      const z = el.querySelector<HTMLElement>(`[data-shape="${cs.id}"] td[data-r="${cs.r1}"][data-c="${cs.c1}"]`) ?? a;
+      if (a && z) {
+        const ra = a.getBoundingClientRect();
+        const rz = z.getBoundingClientRect();
+        const x0 = Math.min(ra.left, rz.left);
+        const y0 = Math.min(ra.top, rz.top);
+        const x1 = Math.max(ra.right, rz.right);
+        const y1 = Math.max(ra.bottom, rz.bottom);
+        html.push(`<div class="pp-celsel" style="left:${((x0 - raiz.left) / raiz.width) * 100}%;top:${((y0 - raiz.top) / raiz.height) * 100}%;width:${((x1 - x0) / raiz.width) * 100}%;height:${((y1 - y0) / raiz.height) * 100}%"></div>`);
+      }
     }
     for (const g of this.guias) {
       html.push(g.eixo === "v" ? `<div class="pp-guia v" style="left:${g.pos}%"></div>` : `<div class="pp-guia h" style="top:${g.pos}%"></div>`);
@@ -172,7 +201,7 @@ export class Stage {
     const p = this.pontoEmPct(e);
 
     // texto em edição: o clique é do cursor de texto
-    if (ctx.editando && alvo.closest(`[data-shape="${ctx.editando}"] .pp-rt`)) return;
+    if (ctx.editando && alvo.closest(`[data-shape="${ctx.editando}"] [data-editando]`)) return;
 
     // ferramenta de criação ativa: começa a desenhar
     if (ctx.ferramenta) {
@@ -205,6 +234,16 @@ export class Stage {
       return;
     }
 
+    // alça ✥ de uma tabela: arrasta a seleção inteira
+    if (alvo.closest("[data-mover]") && ctx.selecao.length) {
+      const mover = ctx.shapes.filter((s) => ctx.selecao.includes(s.id) && !s.bloqueada);
+      if (mover.length) {
+        this.slideEl.setPointerCapture(e.pointerId);
+        this.modo = { t: "mover", ids: mover.map((s) => s.id), inicial: new Map(mover.map((s) => [s.id, { ...s.box }])), x0: p.x, y0: p.y, moveu: false, duplicou: false, clicouEm: mover[0].id };
+        e.preventDefault();
+        return;
+      }
+    }
     const formaEl = alvo.closest<HTMLElement>(".pp-shape[data-shape]");
     const id = formaEl?.dataset.shape;
     const forma = id ? ctx.shapes.find((s) => s.id === id) : undefined;
@@ -215,6 +254,24 @@ export class Stage {
       const soma = e.shiftKey || e.ctrlKey || e.metaKey;
       this.modo = { t: "retangulo", x0: p.x, y0: p.y, soma, base: soma ? [...ctx.selecao] : [] };
       if (!soma && ctx.selecao.length) this.hooks.aoSelecionar([]);
+      e.preventDefault();
+      return;
+    }
+
+    // clique numa célula de tabela: seleciona a tabela e a célula (arrastar escolhe várias); mover a tabela é pela alça ✥
+    const td = alvo.closest<HTMLElement>("td[data-r]");
+    if (forma.tabela && td && !alvo.closest("[data-mover]") && !e.ctrlKey && !e.metaKey) {
+      const r = Number(td.dataset.r);
+      const c = Number(td.dataset.c);
+      if (ctx.selecao.length !== 1 || ctx.selecao[0] !== forma.id) this.hooks.aoSelecionar([forma.id]);
+      this.slideEl.setPointerCapture(e.pointerId);
+      if (e.shiftKey && ctx.celulas?.id === forma.id) {
+        this.hooks.aoCelulas({ id: forma.id, r0: Math.min(ctx.celulas.r0, r), c0: Math.min(ctx.celulas.c0, c), r1: Math.max(ctx.celulas.r1, r), c1: Math.max(ctx.celulas.c1, c) });
+        this.modo = { t: "celulas", id: forma.id, r0: ctx.celulas.r0, c0: ctx.celulas.c0 };
+      } else {
+        this.hooks.aoCelulas({ id: forma.id, r0: r, c0: c, r1: r, c1: c });
+        this.modo = { t: "celulas", id: forma.id, r0: r, c0: c };
+      }
       e.preventDefault();
       return;
     }
@@ -388,6 +445,18 @@ export class Stage {
       return;
     }
 
+    if (modo.t === "celulas") {
+      const sob = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>("td[data-r]");
+      const dono = sob?.closest<HTMLElement>(".pp-shape[data-shape]");
+      if (sob && dono?.dataset.shape === modo.id) {
+        const r = Number(sob.dataset.r);
+        const c = Number(sob.dataset.c);
+        this.hooks.aoCelulas({ id: modo.id, r0: Math.min(modo.r0, r), c0: Math.min(modo.c0, c), r1: Math.max(modo.r0, r), c1: Math.max(modo.c0, c) });
+        this.desenharSelecao();
+      }
+      return;
+    }
+
     if (modo.t === "criar") {
       let x1 = p.x;
       let y1 = p.y;
@@ -436,6 +505,10 @@ export class Stage {
     }
     if (modo.t === "retangulo") {
       this.rect = null;
+      this.desenharSelecao();
+      return;
+    }
+    if (modo.t === "celulas") {
       this.desenharSelecao();
       return;
     }
