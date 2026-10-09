@@ -27,8 +27,6 @@ $ErrorActionPreference = 'Continue'
 # a copia principal e a pasta pai de tools\worktrees
 $principal = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path.TrimEnd('\')
 
-function Git { & git -C $principal @args 2>&1 | ForEach-Object { "$_" } }
-
 $gitCommon = ("$(& git -C $principal rev-parse --git-common-dir 2>$null)").Trim()
 if (-not $gitCommon) { exit 0 }
 if (-not [System.IO.Path]::IsPathRooted($gitCommon)) { $gitCommon = Join-Path $principal $gitCommon }
