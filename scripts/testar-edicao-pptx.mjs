@@ -196,5 +196,46 @@ const H = await empacotar("src/powerpoint/edicao/historico.ts", "historico.mjs")
   ok("edição nova depois de desfazer limpa o refazer", !h4.podeRefazer);
 }
 
+// ---------------------------------------------------------------- modelos (botão Template)
+const M = await empacotar("src/powerpoint/edicao/modelos.ts", "modelos.mjs");
+{
+  const ids = M.MODELOS.map((m) => m.id);
+  ok("modelos: ids únicos e campos preenchidos", new Set(ids).size === ids.length && M.MODELOS.every((m) => m.nome && m.descricao && m.fonte && m.tema));
+  const mk = (shapes, bg) => ({ md: "", layout: "conteudo", notes: "", shapes, bg });
+  const run = (color, font) => ({ text: "Oi", size: 18, bold: false, italic: false, underline: false, strike: false, color, font });
+  const para = (r) => ({ runs: [r], align: "esquerda", lvl: 0, marL: 0, indent: 0, spcBef: 0, spcAft: 0, endSize: 18 });
+  const caixa = (extra = {}) => ({ id: "t", kind: "texto", box: { x: 8, y: 10, w: 80, h: 20 }, text: "Oi", fontFamily: "Segoe UI", fontSize: 18, color: "1C212B", bold: false, italic: false, align: "esquerda", fill: "", src: "", rot: 0, ...extra });
+  const base = [
+    mk([caixa({ paras: [para(run("1C212B", "Segoe UI"))] })], { kind: "solid", color: "FFFFFF" }),
+    mk([caixa({ id: "f", kind: "forma", color: "FFFFFF", fill: "4F46E5", fillX: { kind: "solid", color: "4F46E5" }, ln: { color: "4F46E5", alpha: 1, w: 1, dash: "solid" } })]),
+    mk([caixa({ id: "c", fontFamily: "Consolas", color: "FF0000", text: "X" })]),
+  ];
+  const de = { theme: "claro", bg: "", fontFamily: "Segoe UI" };
+  const noite = M.MODELOS.find((m) => m.id === "meia-noite");
+  const r = M.aplicarModelo(base, de, noite);
+  const rT = r[0].shapes[0];
+  const rF = r[1].shapes[0];
+  const rC = r[2].shapes[0];
+  ok("modelo troca a cor do texto e a fonte", rT.color === "F4F5F8" && rT.paras[0].runs[0].color === "F4F5F8" && rT.paras[0].runs[0].font === "Inter" && rT.fontFamily === "Inter");
+  ok("modelo troca o acento no preenchimento e no contorno", rF.fill === "818CF8" && rF.fillX.color === "818CF8" && rF.ln.color === "818CF8");
+  ok("texto branco da forma de acento continua branco", rF.color === "FFFFFF");
+  ok("modelo troca o fundo da lâmina", r[0].bg.color === "151B26");
+  ok("cor e fonte próprias ficam como estão", rC.color === "FF0000" && rC.fontFamily === "Consolas");
+  ok("aplicar não mexe nas lâminas originais", base[0].shapes[0].color === "1C212B" && base[0].bg.color === "FFFFFF");
+  const duas = M.aplicarModelo(r, { theme: "escuro", bg: "151B26", fontFamily: "Inter" }, noite);
+  ok("aplicar o mesmo modelo de novo não muda nada", JSON.stringify(duas) === JSON.stringify(r));
+  const cont = M.MODELOS.find((m) => m.id === "contraste");
+  const rc = M.aplicarModelo(base, de, cont);
+  ok("contraste recalculado no texto da forma de acento", rc[1].shapes[0].color === "1C212B" && rc[1].shapes[0].fillX.color === "FFD400");
+  const cl = M.MODELOS.find((m) => m.id === "classico");
+  const basePapel = [mk([caixa({ fontFamily: "Georgia", paras: [para(run("1C212B", "Georgia"))] })], { kind: "solid", color: "F7F3EA" })];
+  const rp = M.aplicarModelo(basePapel, { theme: "claro", bg: "F7F3EA", fontFamily: "Georgia" }, cl);
+  ok("fundo e fonte personalizados voltam ao padrão do modelo", rp[0].bg.color === "FFFFFF" && rp[0].shapes[0].fontFamily === "Segoe UI");
+  const cel = (color) => ({ paras: [para(run(color, "Segoe UI"))], fill: { kind: "solid", color: "4F46E5" } });
+  const tab = [mk([caixa({ id: "tb", tabela: { colunas: [50], linhas: [20], celulas: [[cel("1C212B")]] } })])];
+  const rt = M.aplicarModelo(tab, de, noite);
+  ok("tabela: texto e preenchimento das células trocam junto", rt[0].shapes[0].tabela.celulas[0][0].paras[0].runs[0].color === "F4F5F8" && rt[0].shapes[0].tabela.celulas[0][0].fill.color === "818CF8");
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);

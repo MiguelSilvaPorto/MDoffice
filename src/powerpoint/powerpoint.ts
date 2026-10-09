@@ -12,6 +12,7 @@ import type { Dim } from "./edicao/geometria";
 import { Historico } from "./edicao/historico";
 import { formasDoLayout, novaLamina } from "./edicao/layouts";
 import { migrarSlides, registrarMidia } from "./edicao/migrar";
+import { MODELOS, aplicarModelo, type ModeloPPT } from "./edicao/modelos";
 import {
   agruparFormas,
   alinharFormas,
@@ -68,11 +69,12 @@ function sanitize(html: string): string {
   return DOMPurify.sanitize(html, { ADD_ATTR: ["target", "rel"] });
 }
 
-/** Estado desfazível: as lâminas (imutáveis), a lâmina atual e a seleção. */
+/** Estado desfazível: as lâminas (imutáveis), a lâmina atual, a seleção e o setup do deck. */
 interface Estado {
   slides: Slide[];
   indice: number;
   selecao: string[];
+  setup: DeckSetup;
 }
 
 /** Formas copiadas (valem entre abas de apresentação). */
@@ -375,7 +377,7 @@ export class PowerPointHost {
   }
 
   private estado(): Estado {
-    return { slides: this.slides, indice: this.indice, selecao: this.selecao };
+    return { slides: this.slides, indice: this.indice, selecao: this.selecao, setup: this.setup };
   }
 
   /**
@@ -386,6 +388,8 @@ export class PowerPointHost {
   private restaurar(e: Estado, manterEdicao: string | null = null): void {
     this.slides = e.slides;
     this.indice = clampIndex(e.indice, e.slides.length);
+    this.setup = e.setup;
+    this.pane.style.setProperty("--slide-ratio", String(stageRatio(this.setup)));
     const ids = new Set(this.atual().shapes.map((s) => s.id));
     this.selecao = e.selecao.filter((id) => ids.has(id));
     this.editando = null;
@@ -1115,6 +1119,11 @@ export class PowerPointHost {
       case "theme":
         if (value && THEMES.some((t) => t.id === value)) this.setSetup({ theme: value as DeckSetup["theme"] });
         return;
+      case "modelo": {
+        const modelo = MODELOS.find((m) => m.id === value);
+        if (modelo) this.usarModelo(modelo);
+        return;
+      }
       case "present":
         return this.present();
       case "configure":
@@ -2174,6 +2183,13 @@ export class PowerPointHost {
     if (setup.aspect) this.pane.style.setProperty("--slide-ratio", String(stageRatio(this.setup)));
     this.markDirty();
     this.pintar();
+  }
+
+  /** Aplica um modelo (tema + fundo + fonte) ao deck inteiro, trocando as cores do tema antigo. */
+  private usarModelo(modelo: ModeloPPT): void {
+    this.registrar();
+    this.slides = aplicarModelo(this.slides, { theme: this.setup.theme, bg: this.setup.bg, fontFamily: this.setup.fontFamily }, modelo);
+    this.setSetup({ theme: modelo.tema, bg: modelo.bg, fontFamily: modelo.fonte });
   }
 
   /** Estatísticas para o rodapé do app. */
