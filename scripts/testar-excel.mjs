@@ -84,7 +84,7 @@ ajustarExtensoes(saidaJs);
 const mod = async (caminho) => import(pathToFileURL(join(saidaJs, caminho)).href);
 const { calcular } = await mod("formula.js");
 const { dataParaSerial, serialParaData, numeroDe, dataDe, formatarNumero } = await mod("values.js");
-const { nomeColuna, indiceColuna, partes, ref, intervalo } = await mod("refs.js");
+const { nomeColuna, indiceColuna, partes, ref, intervalo, somaLarguras, somaAlturas, indiceEm } = await mod("refs.js");
 const { novaFolha, livroDeExemplo } = await mod("model.js");
 const { livroParaXlsx } = await mod("xlsxexport/index.js");
 const { xlsxParaLivro } = await mod("xlsximport/index.js");
@@ -106,6 +106,20 @@ igual("partes('$B$4')", partes("$B$4"), null);
 igual("ref(3,1)", ref(3, 1), "B4");
 igual("intervalo('C2:E9')", intervalo("C2:E9"), { l1: 1, c1: 2, l2: 8, c2: 4 });
 igual("intervalo normalizado", intervalo("E9:C2"), { l1: 1, c1: 2, l2: 8, c2: 4 });
+
+// ------------------------------------------------------------------
+console.log("\nMedidas da grade (base da grade \"infinita\")");
+// a soma é esparsa: as medidas personalizadas entram como diferença do padrão
+igual("somaLarguras com personalizada", somaLarguras({ 2: 200 }, 9, 104), 10 * 104 + (200 - 104));
+igual("somaLarguras além do ajuste", somaLarguras({ 2: 200 }, 10, 104), 11 * 104 + (200 - 104));
+igual("somaAlturas com personalizada", somaAlturas({ 0: 60 }, 2, 25), 60 + 25 + 25);
+igual("somaAlturas até -1", somaAlturas({}, -1, 25), 0);
+// indiceEm: busca a linha/coluna que contém a posição
+igual("indiceEm na coluna 0", indiceEm({}, 0, 104, 60), 0);
+igual("indiceEm na coluna 2", indiceEm({}, 250, 104, 60), 2);
+igual("indiceEm com coluna larga", indiceEm({ 1: 400 }, 500, 104, 60), 1);
+igual("indiceEm além do fim satura no último", indiceEm({}, 999999, 104, 60), 59);
+igual("indiceEm negativo", indiceEm({}, -50, 104, 60), 0);
 
 // ------------------------------------------------------------------
 console.log("\nValores: número, data e formatação");

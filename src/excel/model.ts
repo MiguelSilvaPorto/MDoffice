@@ -2,7 +2,7 @@
 // as operações de aba (nova, duplicar, excluir, mover, renomear).
 // Mesmo papel do src/powerpoint/model.ts.
 
-import { LIMITE_CELULAS, type Celula, type ConfigPlanilha, type Folha, type Livro } from "./schema";
+import { type Celula, type ConfigPlanilha, type Folha, type Livro } from "./schema";
 
 export const CONFIG_PADRAO: ConfigPlanilha = {
   grade: true,
@@ -126,18 +126,9 @@ export const VAZIA: Celula = { texto: "" };
 /** A célula está de fato vazia (pode ser apagada para aliviar o arquivo)? */
 export const ehVazia = (c: Celula | undefined): boolean => !c || (!c.texto && !c.estilo);
 
-/** Quantas células com conteúdo a aba tem. */
-export function contarCelulas(f: Folha): number {
-  return Object.keys(f.celulas).length;
-}
-
 /** Quantas células com texto a aba tem (sem contar as que só têm estilo). */
 export function contarPreenchidas(f: Folha): number {
   return Object.values(f.celulas).filter((c) => !!c.texto).length;
-}
-
-export function estaCheia(f: Folha): boolean {
-  return contarCelulas(f) >= LIMITE_CELULAS;
 }
 
 /** Texto de uma célula (o que se vê quando abre a barra de fórmulas). */

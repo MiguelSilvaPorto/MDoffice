@@ -71,7 +71,7 @@ class El {
     this.children = [];
     this.attrs = {};
     this.dataset = {};
-    this.style = new Proxy({ setProperty() {} }, {
+    this.style = new Proxy({ setProperty() {}, removeProperty() {} }, {
       set(t, k, v) { t[k] = v; return true; },
       get(t, k) { return t[k] ?? ""; },
     });
@@ -81,7 +81,28 @@ class El {
     this.hidden = false;
     this.value = "";
     this.type = "text";
+    // classList mínimo (o motor liga/desliga "sem-grade" etc.)
+    this._classes = new Set();
+    this.classList = {
+      add: (...cs) => { for (const c of cs) this._classes.add(c); this._sincClasse(); },
+      remove: (...cs) => { for (const c of cs) this._classes.delete(c); this._sincClasse(); },
+      contains: (c) => this._classes.has(c),
+      toggle: (c, v) => {
+        const ligar = v === undefined ? !this._classes.has(c) : !!v;
+        if (ligar) this._classes.add(c); else this._classes.delete(c);
+        this._sincClasse();
+        return ligar;
+      },
+    };
+    // área visível simulada (o motor desenha só o que cabe na tela)
+    this.clientWidth = 800;
+    this.clientHeight = 600;
+    this.scrollTop = 0;
+    this.scrollLeft = 0;
+    this.scrollHeight = 0;
+    this.scrollWidth = 0;
   }
+  _sincClasse() { this._cls = [...this._classes].join(" "); }
   get innerHTML() { return this._innerHTML; }
   set innerHTML(v) {
     this._innerHTML = v;
@@ -102,10 +123,38 @@ class El {
   }
   get textContent() { return this._text; }
   set textContent(v) { this._text = v; this._innerHTML = ""; this.children = []; }
-  set className(v) { this._value_class = v; this._cls = v; }
+  set className(v) { this._cls = v; if (this._classes) this._classes = new Set(String(v).split(/\s+/).filter(Boolean)); }
   get className() { return this._cls ?? ""; }
+  get tagName() { return String(this.tag).toUpperCase(); }
   append(...f) { for (const x of f) { this.children.push(x); x.pai = this; } }
   addEventListener(t, fn) { (this.listeners[t] ||= []).push(fn); }
+  removeEventListener(t, fn) {
+    const l = this.listeners[t];
+    if (l) this.listeners[t] = l.filter((f) => f !== fn);
+  }
+  contains(el) {
+    let p = el;
+    while (p) {
+      if (p === this) return true;
+      p = p.pai ?? null;
+    }
+    return false;
+  }
+  insertAdjacentElement(pos, el) {
+    const pai = this.pai;
+    if (!pai) return null;
+    const i = pai.children.indexOf(this);
+    const idx = pos === "afterbegin" || pos === "beforebegin" ? i : i + 1;
+    pai.children.splice(idx, 0, el);
+    el.pai = pai;
+    return el;
+  }
+  getBoundingClientRect() {
+    return { top: 0, left: 0, right: 800, bottom: 60, width: 800, height: 60, x: 0, y: 0 };
+  }
+  setPointerCapture() {}
+  releasePointerCapture() {}
+  dispatchEvent() { return true; }
   dispatch(t, ev = {}) {
     for (const fn of this.listeners[t] ?? []) fn({ preventDefault() {}, stopPropagation() {}, target: this, ...ev });
   }
@@ -114,6 +163,19 @@ class El {
   setSelectionRange() {}
   scrollIntoView() {}
   setAttribute(k, v) { this.attrs[k] = String(v); }
+  closest(sel) {
+    const m = /^\[([\w-]+)(?:="([^"]*)")?\]$/.exec(String(sel).trim());
+    let el = this;
+    while (el) {
+      if (m) {
+        const nome = m[1];
+        const valor = nome.startsWith("data-") ? el.dataset[nome.slice(5)] : el.attrs[nome];
+        if (m[2] === undefined ? valor !== undefined : String(valor) === m[2]) return el;
+      }
+      el = el.pai ?? null;
+    }
+    return null;
+  }
   // o motor desenha as células com insertAdjacentHTML; aqui equivale a
   // acrescentar as tags ao final (o _innerHTML não é relido para não duplicar)
   insertAdjacentHTML(_pos, html) {
@@ -167,23 +229,33 @@ class El {
 }
 
 const docEl = new El("body");
-docEl.classList = "";
-const docClass = { add() {}, remove() {}, contains: () => false };
+// Simula o App: o painel do Excel marca a classe "xlsx-open" no body.
+let modalAberto = false;
 globalThis.document = {
   body: docEl,
   createElement: (t) => new El(t),
-  querySelector: () => new El(),
+  querySelector: (sel) =>
+    String(sel).includes(".modal-backdrop") ? (modalAberto ? new El("div") : null) : null,
   querySelectorAll: () => [],
   getElementById: () => null,
   addEventListener() {},
   removeEventListener() {},
 };
+// A janela guarda os ouvintes de verdade: o motor registra nela o atalho de
+// desfazer/refazer, que precisa valer com o foco em qualquer ponto da planilha.
+const ouvintesJanela = {};
 globalThis.window = {
-  addEventListener() {},
+  addEventListener(t, fn) { (ouvintesJanela[t] ||= []).push(fn); },
+  removeEventListener() {},
+  dispatch(t, ev = {}) {
+    for (const fn of ouvintesJanela[t] ?? []) fn({ preventDefault() {}, stopPropagation() {}, ...ev });
+  },
   setTimeout: (fn, ms) => setTimeout(fn, ms),
   clearTimeout: (t) => clearTimeout(t),
   matchMedia: () => ({ matches: false }),
   getComputedStyle: () => ({}),
+  innerWidth: 1280,
+  innerHeight: 800,
 };
 globalThis.requestAnimationFrame = (fn) => setTimeout(fn, 0);
 // o Node moderno já tem "navigator" (só leitura): só criamos se não existir
@@ -191,8 +263,8 @@ if (!globalThis.navigator) globalThis.navigator = { clipboard: { writeText: asyn
 globalThis.atob = (s) => Buffer.from(s, "base64").toString("binary");
 globalThis.btoa = (s) => Buffer.from(s, "binary").toString("base64");
 globalThis.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
+globalThis.CustomEvent = globalThis.CustomEvent ?? class CustomEvent { constructor(type, init) { this.type = type; this.detail = init?.detail; } };
 document.documentElement = { dataset: {} };
-void docClass;
 
 // ---------- carrega o motor ----------
 const { ExcelHost } = await import(pathToFileURL(caminhoHost).href);
@@ -274,6 +346,131 @@ const s = host.stats();
 ok("conta abas", s.abas === 1);
 ok("conta células preenchidas", s.celulas >= 3, JSON.stringify(s));
 ok("zoom 100", s.zoom === 100);
+
+console.log("\nGrade infinita: a navegação cresce a grade");
+host.load({
+  livro: { folhas: [{ nome: "G", celulas: {}, colunas: {}, linhas: {}, mesclas: [] }], ativa: 0 },
+  config: antes.config,
+  linha: 0,
+  coluna: 0,
+});
+ok("a grade nasce com 1000 linhas", host.limLinhas === 1000, String(host.limLinhas));
+// 51 PageDowns = 1020 linhas: passa da borda inicial de 1000
+for (let i = 0; i < 51; i++) {
+  grade.dispatch("keydown", { key: "PageDown", ctrlKey: false, shiftKey: false, altKey: false });
+}
+ok("a grade cresceu além das 1000 linhas", host.limLinhas > 1000, String(host.limLinhas));
+ok("a célula ativa desceu além de 1000", st().linha >= 1000, String(st().linha));
+digitar("fundo");
+const celulasNovas = Object.values(st().livro.folhas[0].celulas);
+ok("digitação gravou na região nova da grade", celulasNovas.some((c) => c.texto === "fundo"));
+
+console.log("\nGrade infinita: rolar perto do fim cresce a grade");
+host.load({
+  livro: { folhas: [{ nome: "G", celulas: {}, colunas: {}, linhas: {}, mesclas: [] }], ativa: 0 },
+  config: antes.config,
+  linha: 0,
+  coluna: 0,
+});
+const limiteAntes = host.limLinhas;
+grade.scrollHeight = 25_000; // 1000 linhas de 25px
+grade.scrollTop = 24_600; // já no fim visível
+grade.dispatch("scroll");
+ok("a rolagem até o fim cresceu a grade", host.limLinhas > limiteAntes, `${limiteAntes} -> ${host.limLinhas}`);
+
+console.log("\nGrade infinita: conteúdo distante faz a grade nascer maior");
+host.load({
+  livro: {
+    folhas: [{ nome: "Fundo", celulas: { A2500: { texto: "lá embaixo" }, D3000: { texto: "x" } }, colunas: {}, linhas: {}, mesclas: [] }],
+    ativa: 0,
+  },
+  config: antes.config,
+  linha: 0,
+  coluna: 0,
+});
+ok("a grade cresceu para caber a linha 3000", host.limLinhas >= 3000, String(host.limLinhas));
+ok("a célula distante continua no livro", st().livro.folhas[0].celulas.A2500?.texto === "lá embaixo");
+
+console.log("\nClicar na letra seleciona a coluna inteira");
+grade.scrollTop = 0;
+grade.scrollLeft = 0;
+grade.scrollHeight = 0;
+grade.scrollWidth = 0;
+host.load({
+  livro: {
+    folhas: [{ nome: "S", celulas: { A1: { texto: "10" }, A2: { texto: "20" } }, colunas: {}, linhas: {}, mesclas: [] }],
+    ativa: 0,
+  },
+  config: antes.config,
+  linha: 0,
+  coluna: 0,
+});
+const cabColunas = pane.querySelector(".xl-cab-colunas");
+const botoesCol = cabColunas.querySelectorAll("[data-colcab]");
+ok("o cabeçalho desenhou letras de coluna", botoesCol.length > 0, String(botoesCol.length));
+cabColunas.onclick({ target: botoesCol[0] });
+ok(
+  "a seleção cobre a coluna até o fim da grade",
+  host.sel.l1 === 0 && host.sel.l2 === host.limLinhas - 1 && host.sel.c1 === 0 && host.sel.c2 === 0,
+  JSON.stringify(host.sel)
+);
+
+console.log("\nClicar no número seleciona a linha inteira");
+const cabLinhas = pane.querySelector(".xl-cab-linhas");
+const botoesLin = cabLinhas.querySelectorAll("[data-lincab]");
+ok("o cabeçalho desenhou números de linha", botoesLin.length > 0, String(botoesLin.length));
+cabLinhas.onclick({ target: botoesLin[0] });
+ok(
+  "a seleção cobre a linha até o fim da grade",
+  host.sel.c1 === 0 && host.sel.c2 === host.limColunas - 1 && host.sel.l1 === 0 && host.sel.l2 === 0,
+  JSON.stringify(host.sel)
+);
+
+console.log("\nCtrl+Z e Ctrl+Y valem com o foco em qualquer ponto da planilha");
+host.load({
+  livro: { folhas: [{ nome: "U", celulas: {}, colunas: {}, linhas: {}, mesclas: [] }], ativa: 0 },
+  config: antes.config,
+  linha: 0,
+  coluna: 0,
+});
+document.body.classList.add("xlsx-open");
+
+// grava um valor (foco na grade) para ter o que desfazer
+digitar("10");
+ok("A1 guardou antes de desfazer", st().livro.folhas[0].celulas.A1?.texto === "10");
+
+// o foco está num botão da fita: a tecla chega pela janela
+const botaoFalso = new El("button");
+window.dispatch("keydown", { key: "z", ctrlKey: true, target: botaoFalso });
+ok("Ctrl+Z com o foco fora da grade desfaz", (st().livro.folhas[0].celulas.A1?.texto ?? "") === "");
+
+window.dispatch("keydown", { key: "y", ctrlKey: true, target: botaoFalso });
+ok("Ctrl+Y com o foco fora da grade refaz", st().livro.folhas[0].celulas.A1?.texto === "10");
+
+window.dispatch("keydown", { key: "z", ctrlKey: true, target: botaoFalso });
+window.dispatch("keydown", { key: "z", ctrlKey: true, shiftKey: true, target: botaoFalso });
+ok("Ctrl+Shift+Z também refaz", st().livro.folhas[0].celulas.A1?.texto === "10");
+
+// num campo de texto, o atalho da planilha não age (o desfazer é do texto)
+window.dispatch("keydown", { key: "z", ctrlKey: true, target: entrada });
+ok("Ctrl+Z dentro de campo de texto não mexe na planilha", st().livro.folhas[0].celulas.A1?.texto === "10");
+
+// fora da planilha (Início ou Configurações por cima), não mexe
+document.body.classList.add("home-open");
+window.dispatch("keydown", { key: "z", ctrlKey: true, target: botaoFalso });
+ok("com o Início aberto, Ctrl+Z não mexe na planilha", st().livro.folhas[0].celulas.A1?.texto === "10");
+document.body.classList.remove("home-open");
+
+// com um diálogo aberto, também não
+modalAberto = true;
+window.dispatch("keydown", { key: "z", ctrlKey: true, target: botaoFalso });
+ok("com diálogo aberto, Ctrl+Z não mexe na planilha", st().livro.folhas[0].celulas.A1?.texto === "10");
+modalAberto = false;
+
+// e a grade continua atendendo o atalho dela
+grade.dispatch("keydown", { key: "z", ctrlKey: true });
+ok("Ctrl+Z com o foco na grade continua desfazendo", (st().livro.folhas[0].celulas.A1?.texto ?? "") === "");
+document.body.classList.remove("xlsx-open");
 
 console.log("\nResumo");
 ok("resumo menciona abas", host.resumo().includes("aba"), host.resumo());

@@ -110,16 +110,49 @@ export function alturaLinha(linhas: Record<number, number>, linha: number, padra
 
 /** Soma das larguras das colunas de 0 até `ate` (inclusivo). */
 export function somaLarguras(colunas: Record<number, number>, ate: number, padrao: number): number {
-  let total = 0;
-  for (let c = 0; c <= ate; c++) total += larguraColuna(colunas, c, padrao);
-  return total;
+  return somaMedidas(colunas, ate, padrao);
 }
 
 /** Soma das alturas das linhas de 0 até `ate` (inclusivo). */
 export function somaAlturas(linhas: Record<number, number>, ate: number, padrao: number): number {
-  let total = 0;
-  for (let l = 0; l <= ate; l++) total += alturaLinha(linhas, l, padrao);
+  return somaMedidas(linhas, ate, padrao);
+}
+
+/**
+ * Soma de medidas (largura ou altura) de 0 até `ate`.
+ *
+ * Como a grade é "infinita", varrer linha a linha seria impensável: quase tudo usa
+ * o tamanho padrão e só algumas linhas/colunas foram ajustadas à mão. Por isso o
+ * cálculo é `quantidade × padrão` mais a diferença das medidas personalizadas —
+ * proporcional a quantas linhas/colunas você ajustou, não ao tamanho da grade.
+ */
+function somaMedidas(medidas: Record<number, number>, ate: number, padrao: number): number {
+  if (ate < 0) return 0;
+  let total = (ate + 1) * padrao;
+  for (const chave of Object.keys(medidas)) {
+    const i = Number(chave);
+    if (i <= ate && i >= 0) {
+      const v = medidas[i];
+      if (v > 0 && v !== padrao) total += v - padrao;
+    }
+  }
   return total;
+}
+
+/**
+ * Índice da linha/coluna que contém a posição `pos` (em px, sem zoom).
+ * Busca binária sobre a soma esparsa — funciona na grade infinita sem varrer tudo.
+ */
+export function indiceEm(medidas: Record<number, number>, pos: number, padrao: number, max: number): number {
+  if (pos <= 0) return 0;
+  let lo = 0;
+  let hi = Math.max(0, max - 1);
+  while (lo < hi) {
+    const meio = (lo + hi + 1) >> 1;
+    if (somaMedidas(medidas, meio - 1, padrao) <= pos) lo = meio;
+    else hi = meio - 1;
+  }
+  return lo;
 }
 
 /** Índice (em px) da coluna — usado para posicionar a seleção sobre a grade. */

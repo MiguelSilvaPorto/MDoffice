@@ -14,10 +14,12 @@ import {
   CABECALHO_COL_PX,
   CABECALHO_LINHA_PX,
   COLUNA_PX,
-  LIMITE_CELULAS,
+  COLUNAS_INICIAIS,
+  LIMITE_COLAR,
+  LIMITE_COLUNAS,
+  LIMITE_LINHAS,
+  LINHAS_INICIAIS,
   LINHA_PX,
-  MAX_COLUNAS,
-  MAX_LINHAS,
   type Alinhamento,
   type Celula,
   type ConfigPlanilha,
@@ -30,6 +32,7 @@ import {
   dentro,
   deslocarFormula,
   faixa,
+  indiceEm,
   intervalo,
   nomeColuna,
   partes,
@@ -58,7 +61,6 @@ import {
   CONFIG_PADRAO,
   duplicarFolha,
   ehVazia,
-  estaCheia,
   inserirFolha,
   livroDeExemplo,
   moverFolha,
@@ -120,6 +122,15 @@ export class ExcelHost {
   private coluna = 0;
   /** seleção retangular (quando é só a célula ativa, l1=c1=l2=c2) */
   private sel: Intervalo = { l1: 0, c1: 0, l2: 0, c2: 0 };
+
+  /**
+   * Tamanho atual da grade. A grade é "infinita": começa em COLUNAS_INICIAIS ×
+   * LINHAS_INICIAS e cresce sozinha (dobrando) quando você chega perto da borda —
+   * até os limites do próprio Excel. Assim a rolagem nunca "acaba", mas o
+   * navegador também nunca tenta desenhar uma área absurda de uma vez.
+   */
+  private limColunas = COLUNAS_INICIAIS;
+  private limLinhas = LINHAS_INICIAIS;
 
   private edicao: Edicao | null = null;
   /** célula que o ponteiro está sobre (para o realce ao passar o mouse) */
@@ -207,12 +218,21 @@ export class ExcelHost {
   }
 
   private ligarEventos(): void {
-    // ao rolar, os cabeçalhos fixos precisam ser redesenhados (eles não rolam)
-    this.grade.addEventListener("scroll", () => this.pintarCabecalhos());
+    // ao rolar, os cabeçalhos fixos precisam ser redesenhados (eles não rolam);
+    // e, se a rolagem chegou perto do fim, a grade cresce (rolagem "infinita")
+    this.grade.addEventListener("scroll", () => {
+      this.crescerNaRolagem();
+      this.pintarCabecalhos();
+    });
     window.addEventListener("resize", () => this.pintar());
 
     // ---- navegação por teclado ----
     this.grade.addEventListener("keydown", (e) => this.teclaDaGrade(e));
+
+    // Desfazer/refazer (Ctrl+Z/Ctrl+Y) valem em qualquer ponto da planilha, não
+    // só com o foco na grade — o atalho fica na janela. Os campos de texto não
+    // chegam aqui: neles o Ctrl+Z é o desfazer do próprio texto.
+    window.addEventListener("keydown", (e) => this.atalhoDaPlanilha(e));
 
     // ---- mouse: clique seleciona, arrastar estende, alça preenche ----
     let arrastando = false;
@@ -342,7 +362,7 @@ export class ExcelHost {
 
   /** Converte as coordenadas de um elemento [data-cel] em posição de célula. */
   private posicaoDe(linha: number, col: number): { linha: number; col: number } | null {
-    if (linha < 0 || linha >= MAX_LINHAS || col < 0 || col >= MAX_COLUNAS) return null;
+    if (linha < 0 || linha >= this.limLinhas || col < 0 || col >= this.limColunas) return null;
     return { linha, col };
   }
 
@@ -361,28 +381,18 @@ export class ExcelHost {
 
   /** Índice da coluna na posição horizontal do conteúdo (nula se passou do fim). */
   private colunaEm(x: number): number {
-    const f = this.folha;
     const z = this.escala();
-    let acc = CABECALHO_COL_PX;
-    for (let c = 0; c < MAX_COLUNAS; c++) {
-      const w = larguraColuna(f.colunas, c, COLUNA_PX) * z;
-      if (x < acc + w) return c;
-      acc += w;
-    }
-    return MAX_COLUNAS - 1;
+    const f = this.folha;
+    const c = Math.max(0, indiceEm(f.colunas, (x - CABECALHO_COL_PX) / z, COLUNA_PX, this.limColunas));
+    return Math.min(c, this.limColunas - 1);
   }
 
   /** Índice da linha na posição vertical do conteúdo. */
   private linhaEm(y: number): number {
-    const f = this.folha;
     const z = this.escala();
-    let acc = CABECALHO_LINHA_PX;
-    for (let l = 0; l < MAX_LINHAS; l++) {
-      const alt = alturaLinha(f.linhas, l, LINHA_PX) * z;
-      if (y < acc + alt) return l;
-      acc += alt;
-    }
-    return MAX_LINHAS - 1;
+    const f = this.folha;
+    const l = Math.max(0, indiceEm(f.linhas, (y - CABECALHO_LINHA_PX) / z, LINHA_PX, this.limLinhas));
+    return Math.min(l, this.limLinhas - 1);
   }
 
   private get folha(): Folha {
@@ -478,8 +488,8 @@ export class ExcelHost {
     const z = this.escala();
     const cabL = CABECALHO_LINHA_PX;
     const cabC = CABECALHO_COL_PX;
-    const largTotal = somaLarguras(f.colunas, MAX_COLUNAS - 1, COLUNA_PX) * z;
-    const altTotal = somaAlturas(f.linhas, MAX_LINHAS - 1, LINHA_PX) * z;
+    const largTotal = somaLarguras(f.colunas, this.limColunas - 1, COLUNA_PX) * z;
+    const altTotal = somaAlturas(f.linhas, this.limLinhas - 1, LINHA_PX) * z;
 
     // mostrar/ocultar as linhas da grade é uma classe: o CSS cuida das bordas
     this.grade.classList.toggle("sem-grade", !this.config.grade);
@@ -508,12 +518,15 @@ export class ExcelHost {
     const cabL = CABECALHO_LINHA_PX;
     const cabC = CABECALHO_COL_PX;
 
+    // Só a faixa visível é desenhada (a grade é infinita: varrer o total seria inviável).
     // Letras de coluna: a faixa começa em x=cabC e não rola, então a posição
     // de cada letra é relativa a ela (descontando a rolagem horizontal).
     const scrollX = this.grade.scrollLeft;
     const visLargura = this.grade.clientWidth - cabC;
+    const primC = Math.max(0, indiceEm(f.colunas, scrollX / z, COLUNA_PX, this.limColunas) - 1);
+    const ultC = Math.min(this.limColunas - 1, indiceEm(f.colunas, (scrollX + visLargura) / z, COLUNA_PX, this.limColunas) + 1);
     const cols: string[] = [];
-    for (let c = 0; c < MAX_COLUNAS; c++) {
+    for (let c = primC; c <= ultC; c++) {
       const x = xColuna(f.colunas, c, COLUNA_PX) * z - scrollX;
       const w = larguraColuna(f.colunas, c, COLUNA_PX) * z;
       if (x + w < 0 || x > visLargura) continue;
@@ -523,23 +536,24 @@ export class ExcelHost {
       );
     }
     this.cabecalhoColunas.innerHTML = cols.join("");
-    // selecionar coluna inteira
+    // selecionar coluna inteira (até o fim da grade — como no Excel)
     this.cabecalhoColunas.onclick = (e) => {
       const alvo = (e.target as HTMLElement).closest<HTMLElement>("[data-colcab]");
       if (!alvo) return;
       const c = Number(alvo.dataset.colcab);
-      const ult = this.ultimaLinhaUsada();
       this.linha = 0;
       this.coluna = c;
-      this.sel = { l1: 0, c1: c, l2: ult, c2: c };
+      this.sel = { l1: 0, c1: c, l2: this.limLinhas - 1, c2: c };
       this.pintar();
       this.opts.onStatus?.();
     };
 
     const scrollY = this.grade.scrollTop;
     const visAltura = this.grade.clientHeight;
+    const primL = Math.max(0, indiceEm(f.linhas, (scrollY - cabL) / z, LINHA_PX, this.limLinhas) - 1);
+    const ultL = Math.min(this.limLinhas - 1, indiceEm(f.linhas, (scrollY - cabL + visAltura) / z, LINHA_PX, this.limLinhas) + 1);
     const lins: string[] = [];
-    for (let l = 0; l < MAX_LINHAS; l++) {
+    for (let l = primL; l <= ultL; l++) {
       const y = cabL + yLinha(f.linhas, l, LINHA_PX) * z - scrollY;
       const alt = alturaLinha(f.linhas, l, LINHA_PX) * z;
       if (y + alt < 0 || y > visAltura) continue;
@@ -549,14 +563,14 @@ export class ExcelHost {
       );
     }
     this.cabecalhoLinhas.innerHTML = lins.join("");
+    // selecionar linha inteira (até o fim da grade — como no Excel)
     this.cabecalhoLinhas.onclick = (e) => {
       const alvo = (e.target as HTMLElement).closest<HTMLElement>("[data-lincab]");
       if (!alvo) return;
       const l = Number(alvo.dataset.lincab);
-      const ultCol = this.ultimaColunaUsada();
       this.linha = l;
       this.coluna = 0;
-      this.sel = { l1: l, c1: 0, l2: l, c2: ultCol };
+      this.sel = { l1: l, c1: 0, l2: l, c2: this.limColunas - 1 };
       this.pintar();
       this.opts.onStatus?.();
     };
@@ -572,14 +586,21 @@ export class ExcelHost {
     const visLargura = this.grade.clientWidth - cabC;
     const visAltura = this.grade.clientHeight - cabL;
 
-    // Só desenha o que cabe na tela (permite rolar 1000 linhas sem pesar).
+    // Só desenha o que cabe na tela — a grade é infinita, então a faixa visível é
+    // calculada por busca binária em vez de varrer o total.
     // A posição é em coordenadas do CONTEÚDO; a rolagem só decide o que entra.
+    // O conteúdo começa depois dos cabeçalhos (cabL/cabC), por isso o desconto.
+    const primL = Math.max(0, indiceEm(f.linhas, Math.max(0, scrollY - cabL) / z, LINHA_PX, this.limLinhas) - 1);
+    const ultL = Math.min(this.limLinhas - 1, indiceEm(f.linhas, (scrollY - cabL + visAltura) / z, LINHA_PX, this.limLinhas) + 1);
+    const primC = Math.max(0, indiceEm(f.colunas, Math.max(0, scrollX - cabC) / z, COLUNA_PX, this.limColunas) - 1);
+    const ultC = Math.min(this.limColunas - 1, indiceEm(f.colunas, (scrollX - cabC + visLargura) / z, COLUNA_PX, this.limColunas) + 1);
+
     const partes: string[] = [];
-    for (let l = 0; l < MAX_LINHAS; l++) {
+    for (let l = primL; l <= ultL; l++) {
       const y = cabL + yLinha(f.linhas, l, LINHA_PX) * z;
       const alt = alturaLinha(f.linhas, l, LINHA_PX) * z;
       if (y + alt - scrollY < 0 || y - scrollY > visAltura) continue;
-      for (let c = 0; c < MAX_COLUNAS; c++) {
+      for (let c = primC; c <= ultC; c++) {
         const x = cabC + xColuna(f.colunas, c, COLUNA_PX) * z;
         const larg = larguraColuna(f.colunas, c, COLUNA_PX) * z;
         if (x + larg - scrollX < 0 || x - scrollX > visLargura) continue;
@@ -759,11 +780,11 @@ export class ExcelHost {
       return h("div", { class: `xl-realce ${classe}`, style: `left:${x}px;top:${y}px;width:${larg}px;height:${alt}px` });
     };
 
-    // fundo da seleção retangular
+    // fundo da seleção: uma caixa só (a grade é infinita — uma por célula seria
+    // impensável numa coluna inteira) e, como no Excel, a mescla que atravessa a
+    // borda da seleção não é esticada para fora dela
     if (this.sel.l1 !== this.sel.l2 || this.sel.c1 !== this.sel.c2) {
-      for (const g of this.mesclasVisiveis(this.sel)) {
-        this.superficie.append(caixa(g.l1, g.c1, g.l2, g.c2, "sel"));
-      }
+      this.superficie.append(caixa(this.sel.l1, this.sel.c1, this.sel.l2, this.sel.c2, "sel"));
     }
 
     // célula sob o mouse
@@ -779,20 +800,6 @@ export class ExcelHost {
       div.append(h("span", { class: "xl-alca-preench", title: "Arrastar para preencher as células abaixo/direita" }));
       this.superficie.append(div);
     }
-  }
-
-  /** Retângulos visíveis de uma seleção, já contando as células mescladas. */
-  private mesclasVisiveis(sel: Intervalo): Intervalo[] {
-    const partes: Intervalo[] = [];
-    const visto = new Set<string>();
-    for (const { linha, col } of percorrer(sel)) {
-      const m = this.mesclaDe(linha, col);
-      const chave = `${m.l1},${m.c1},${m.l2},${m.c2}`;
-      if (visto.has(chave)) continue;
-      visto.add(chave);
-      partes.push(m);
-    }
-    return partes;
   }
 
   /**
@@ -843,6 +850,29 @@ export class ExcelHost {
   private pintarCabecalhos(): void {
     this.desenharCabecalhos();
     // o realce da célula ativa fica em coordenadas de conteúdo: nada a fazer
+  }
+
+  /**
+   * Rolou até perto do fim da grade? Ela cresce mais (dobrando até o limite do
+   * Excel). É o que dá a sensação de grade "infinita": a rolagem nunca encontra
+   * uma parede — só uma faixa maior.
+   */
+  private crescerNaRolagem(): void {
+    const g = this.grade;
+    const folga = 600; // px antes do fim em que já vale a pena crescer
+    const colunaInteira = this.sel.l1 === 0 && this.sel.c1 === this.sel.c2 && this.sel.l2 === this.limLinhas - 1;
+    const linhaInteira = this.sel.c1 === 0 && this.sel.l1 === this.sel.l2 && this.sel.c2 === this.limColunas - 1;
+    if (this.limLinhas < this.tetoLinhas() && g.scrollTop + g.clientHeight >= g.scrollHeight - folga) {
+      this.limLinhas = Math.min(this.tetoLinhas(), this.limLinhas * 2);
+      if (colunaInteira) this.sel = { ...this.sel, l2: this.limLinhas - 1 };
+      this.pintar();
+      return;
+    }
+    if (this.limColunas < LIMITE_COLUNAS && g.scrollLeft + g.clientWidth >= g.scrollWidth - folga) {
+      this.limColunas = Math.min(LIMITE_COLUNAS, this.limColunas * 2);
+      if (linhaInteira) this.sel = { ...this.sel, c2: this.limColunas - 1 };
+      this.pintar();
+    }
   }
 
   /** Última linha/coluna com conteúdo (para "selecionar coluna inteira" e Ctrl+End). */
@@ -919,10 +949,6 @@ export class ExcelHost {
       this.sujo();
       return;
     }
-    if (estaCheia(f) && !atual) {
-      this.avisoLimite();
-      return;
-    }
 
     // detecta número, moeda, porcentagem e data para já marcar o formato
     const estilo: Estilo = { ...(atual?.estilo ?? {}) };
@@ -953,10 +979,6 @@ export class ExcelHost {
     if (texto === "") {
       if (atual && ehVazia({ ...atual, texto: "" })) delete f.celulas[r];
     } else {
-      if (estaCheia(f) && !atual) {
-        this.avisoLimite();
-        return;
-      }
       f.celulas[r] = ehFormula(texto)
         ? { texto, formula: true, estilo }
         : { texto, estilo };
@@ -968,7 +990,7 @@ export class ExcelHost {
     this.opts.onStatus?.();
     const t = document.getElementById("toasts");
     if (t && !t.querySelector(".xl-limite")) {
-      const d = h("div", { class: "toast err xl-limite", text: `Limite de ${LIMITE_CELULAS} células por aba.` });
+      const d = h("div", { class: "toast err xl-limite", text: `Grande demais: o limite é de ${LIMITE_COLAR.toLocaleString("pt-BR")} células de uma vez.` });
       t.append(d);
       requestAnimationFrame(() => d.classList.add("show"));
       window.setTimeout(() => {
@@ -999,9 +1021,14 @@ export class ExcelHost {
 
   /** Copia a seleção (ou a linha inteira) para um retângulo de valores. */
   private valoresDaSelecao(): { valores: string[][]; origem: { linha: number; col: number } } {
-    const sel = this.sel.l1 === this.sel.l2 && this.sel.c1 === this.sel.c2
-      ? { ...this.sel, l2: Math.min(this.sel.l1 + 1, MAX_LINHAS - 1), c2: Math.min(this.sel.c1 + 1, MAX_COLUNAS - 1) }
-      : this.sel;
+    let sel = this.sel;
+    if (sel.l1 === sel.l2 && sel.c1 === sel.c2) {
+      sel = { ...sel, l2: Math.min(sel.l1 + 1, this.limLinhas - 1), c2: Math.min(sel.c1 + 1, this.limColunas - 1) };
+    }
+    // Coluna/linha inteira (letra/número): copia só até onde há conteúdo — colar
+    // centenas de milhares de linhas vazias não ajuda ninguém.
+    if (sel.l1 === 0 && sel.l2 >= this.limLinhas - 1) sel = { ...sel, l2: Math.max(sel.l1, this.ultimaLinhaUsada()) };
+    if (sel.c1 === 0 && sel.c2 >= this.limColunas - 1) sel = { ...sel, c2: Math.max(sel.c1, this.ultimaColunaUsada()) };
     const valores: string[][] = [];
     for (let l = sel.l1; l <= sel.l2; l++) {
       const linha: string[] = [];
@@ -1033,12 +1060,20 @@ export class ExcelHost {
 
     // planilha colada: cada linha e cada coluna vão para uma célula
     const linhas = texto.replace(/\r/g, "").replace(/\n$/, "").split("\n");
+    const largura = Math.max(...linhas.map((l) => l.split("\t").length));
+    const total = linhas.length * largura;
+    if (total > LIMITE_COLAR) {
+      this.avisoLimite();
+      return;
+    }
+    // a grade cresce para caber a colagem (respeitando os limites do Excel)
+    this.garantirLimites(this.sel.l1 + linhas.length - 1, this.sel.c1 + largura - 1);
     let mudou = false;
     linhas.forEach((linhaTxt, iL) => {
       linhaTxt.split("\t").forEach((celulaTxt, iC) => {
         const l = this.sel.l1 + iL;
         const c = this.sel.c1 + iC;
-        if (l >= MAX_LINHAS || c >= MAX_COLUNAS) return;
+        if (l >= LIMITE_LINHAS || c >= LIMITE_COLUNAS) return;
         this.escreverValor(l, c, celulaTxt.replace(/\r/g, ""));
         mudou = true;
       });
@@ -1139,7 +1174,8 @@ export class ExcelHost {
     if (ctrl && e.key.toLowerCase() === "v") return; // deixa o evento "paste" tratar
     if (ctrl && e.key.toLowerCase() === "z") {
       e.preventDefault();
-      this.desfazer();
+      if (e.shiftKey) this.refazer();
+      else this.desfazer();
       return;
     }
     if (ctrl && e.key.toLowerCase() === "y") {
@@ -1163,6 +1199,39 @@ export class ExcelHost {
       e.preventDefault();
       this.editarCelula(e.key);
     }
+  }
+
+  /**
+   * Ctrl+Z desfaz e Ctrl+Y / Ctrl+Shift+Z refazem com o foco em QUALQUER ponto
+   * do app enquanto a planilha está à frente — fita, guias de aba, cabeçalhos,
+   * barra de status. Antes o atalho só existia na grade: depois de clicar numa
+   * guia ou num cabeçalho, o Ctrl+Z parava de funcionar.
+   *
+   * Ficam de fora os campos de texto (digitar na célula ou na barra de
+   * fórmulas tem o desfazer do próprio texto) e os diálogos abertos.
+   */
+  private atalhoDaPlanilha(e: KeyboardEvent): void {
+    if (e.defaultPrevented) return; // a grade já tratou deste evento
+    const ctrl = e.ctrlKey || e.metaKey;
+    if (!ctrl || e.altKey) return;
+    const k = e.key.toLowerCase();
+    if (k !== "z" && k !== "y") return;
+
+    // dentro de um campo de texto, o desfazer é do próprio texto
+    const alvo = e.target as HTMLElement | null;
+    if (alvo) {
+      const tag = alvo.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || alvo.isContentEditable) return;
+    }
+
+    // só com a planilha à frente: Início, Configurações ou um diálogo a escondem
+    const corpo = document.body.classList;
+    if (!corpo.contains("xlsx-open") || corpo.contains("home-open") || corpo.contains("settings-open")) return;
+    if (document.querySelector(".modal-backdrop")) return;
+
+    e.preventDefault();
+    if (k === "y" || e.shiftKey) this.refazer();
+    else this.desfazer();
   }
 
   private teclaDaEntrada(e: KeyboardEvent): void {
@@ -1211,13 +1280,60 @@ export class ExcelHost {
       this.pintarBarraFormula();
       this.focarGrade();
     }
+    // Ctrl+Z/Ctrl+Y com a barra sem alteração pendente: desfaz a planilha.
+    // (Com texto digitado na barra, vale o desfazer do próprio campo.)
+    const ctrl = e.ctrlKey || e.metaKey;
+    if (ctrl && !e.altKey) {
+      const k = e.key.toLowerCase();
+      const semAlteracao = this.barraFormula.value === this.valorBruto(this.linha, this.coluna);
+      if ((k === "z" || k === "y") && semAlteracao) {
+        e.preventDefault();
+        if (k === "y" || e.shiftKey) this.refazer();
+        else this.desfazer();
+        return;
+      }
+    }
     e.stopPropagation();
+  }
+
+  /**
+   * Garante que a grade alcance a linha/coluna pedidas, crescendo (dobrando) até
+   * os limites do Excel. É o que faz a grade parecer infinita: você desce, digita,
+   * cola ou rola além da borda atual e ela simplesmente continua.
+   */
+  private garantirLimites(linha: number, coluna: number): void {
+    const colunaInteira = this.sel.l1 === 0 && this.sel.c1 === this.sel.c2 && this.sel.l2 === this.limLinhas - 1;
+    const linhaInteira = this.sel.c1 === 0 && this.sel.l1 === this.sel.l2 && this.sel.c2 === this.limColunas - 1;
+    let mudou = false;
+    while (linha >= this.limLinhas && this.limLinhas < this.tetoLinhas()) {
+      this.limLinhas = Math.min(this.tetoLinhas(), this.limLinhas * 2);
+      mudou = true;
+    }
+    while (coluna >= this.limColunas && this.limColunas < LIMITE_COLUNAS) {
+      this.limColunas = Math.min(LIMITE_COLUNAS, this.limColunas * 2);
+      mudou = true;
+    }
+    if (!mudou) return;
+    // a coluna/linha inteira selecionada acompanha o crescimento (como no Excel)
+    if (colunaInteira) this.sel = { ...this.sel, l2: this.limLinhas - 1 };
+    if (linhaInteira) this.sel = { ...this.sel, c2: this.limColunas - 1 };
+    this.pintar();
+  }
+
+  /**
+   * Teto de linhas considerando o zoom: o navegador aguenta ~30 milhões de px de
+   * rolagem; a 200% isso são ~600 mil linhas (que já é "infinito" para quem usa).
+   */
+  private tetoLinhas(): number {
+    const z = this.escala();
+    return Math.max(LINHAS_INICIAIS, Math.min(LIMITE_LINHAS, Math.floor(30_000_000 / (LINHA_PX * z))));
   }
 
   /** Move (ou estende, com Shift) a célula ativa. */
   private mover(linha: number, coluna: number, estender: boolean): void {
-    const l = Math.max(0, Math.min(MAX_LINHAS - 1, linha));
-    const c = Math.max(0, Math.min(MAX_COLUNAS - 1, coluna));
+    this.garantirLimites(Math.max(0, linha), Math.max(0, coluna));
+    const l = Math.max(0, Math.min(this.limLinhas - 1, linha));
+    const c = Math.max(0, Math.min(this.limColunas - 1, coluna));
     if (estender) {
       this.sel = {
         l1: Math.min(this.sel.l1, l),
@@ -1354,11 +1470,34 @@ export class ExcelHost {
   private estiloAtual(): Estilo | null {
     const f = this.folha;
     const primeira = f.celulas[ref(this.sel.l1, this.sel.c1)]?.estilo;
+    // Seleção enorme: compara só as células que existem (a regra é a mesma,
+    // mas sem varrer milhões de posições vazias).
+    if (this.selecaoEnorme()) {
+      for (const chave of Object.keys(f.celulas)) {
+        const p = partes(chave);
+        if (!p || !dentro(this.sel, p.linha, p.col)) continue;
+        if (JSON.stringify(f.celulas[chave]?.estilo ?? {}) !== JSON.stringify(primeira ?? {})) return null;
+      }
+      return primeira ?? null;
+    }
     for (const { linha, col } of percorrer(this.sel)) {
       const e = f.celulas[ref(linha, col)]?.estilo;
       if (JSON.stringify(e ?? {}) !== JSON.stringify(primeira ?? {})) return null;
     }
     return primeira ?? null;
+  }
+
+  /**
+   * Seleção que cobre a grade toda (coluna/linha inteira, ou área gigante).
+   * As operações que varrem a seleção usam isto para não visitar célula a célula
+   * uma área que pode ter centenas de milhares de linhas.
+   */
+  private selecaoEnorme(): boolean {
+    const area = (this.sel.l2 - this.sel.l1 + 1) * (this.sel.c2 - this.sel.c1 + 1);
+    if (area > 20_000) return true;
+    if (this.sel.l1 === 0 && this.sel.l2 >= this.limLinhas - 1) return true;
+    if (this.sel.c1 === 0 && this.sel.c2 >= this.limColunas - 1) return true;
+    return false;
   }
 
   private temMesclaNaSelecao(): boolean {
@@ -1375,11 +1514,25 @@ export class ExcelHost {
   private aplicarEstilo(patch: Partial<Estilo>): void {
     this.guardarPilha();
     const f = this.folha;
-    for (const { linha, col } of percorrer(this.sel)) {
+    // Seleção enorme (coluna/linha inteira): só mexe nas células que existem,
+    // em vez de criar uma vazia para cada posição selecionada.
+    const alvos: { linha: number; col: number }[] = [];
+    if (this.selecaoEnorme()) {
+      for (const chave of Object.keys(f.celulas)) {
+        const p = partes(chave);
+        if (p && dentro(this.sel, p.linha, p.col)) alvos.push(p);
+      }
+    } else {
+      for (const p of percorrer(this.sel)) alvos.push(p);
+    }
+    for (const { linha, col } of alvos) {
       const r = ref(linha, col);
       const cel = f.celulas[r];
       if (!cel) {
         if (!Object.keys(patch).length) continue;
+        // As células vazias de uma seleção pequena nascem com o estilo para já
+        // valerem quando alguém digitar nelas (numa coluna inteira isso seria
+        // impensável — ali a formatação vale para o que existe).
         f.celulas[r] = { texto: "", estilo: { ...patch } };
       } else {
         const novo = { ...(cel.estilo ?? {}), ...patch };
@@ -1408,9 +1561,19 @@ export class ExcelHost {
   private limparSelecao(): void {
     this.guardarPilha();
     const f = this.folha;
-    for (const { linha, col } of percorrer(this.sel)) {
-      delete f.celulas[ref(linha, col)];
-      this.cache.delete(ref(linha, col));
+    // Seleção enorme: apaga só o que existe dentro dela (sem varrer a grade toda)
+    if (this.selecaoEnorme()) {
+      for (const chave of Object.keys(f.celulas)) {
+        const p = partes(chave);
+        if (!p || !dentro(this.sel, p.linha, p.col)) continue;
+        delete f.celulas[chave];
+        this.cache.delete(chave);
+      }
+    } else {
+      for (const { linha, col } of percorrer(this.sel)) {
+        delete f.celulas[ref(linha, col)];
+        this.cache.delete(ref(linha, col));
+      }
     }
     this.sujo();
     this.pintar();
@@ -1428,11 +1591,21 @@ export class ExcelHost {
     const f = this.folha;
     const altOrigem = origem.l2 - origem.l1 + 1;
     const largOrigem = origem.c2 - origem.c1 + 1;
+    // O arrasto da alça é limitado pela tela, mas uma coluna/linha inteira
+    // selecionada poderia gerar uma varredura enorme — corta no teto de colagem.
+    let feitas = 0;
 
     for (let l = this.sel.l1; l <= this.sel.l2; l++) {
       for (let c = this.sel.c1; c <= this.sel.c2; c++) {
         // as células do retângulo inicial já estão certas: não são tocadas
         if (l >= origem.l1 && l <= origem.l2 && c >= origem.c1 && c <= origem.c2) continue;
+        if (++feitas > LIMITE_COLAR) {
+          this.avisoLimite();
+          this.sujo();
+          this.pintar();
+          this.opts.onStatus?.();
+          return;
+        }
         // a origem "anda em círculo" dentro do retângulo inicial
         const ol = direcao === "baixo" ? origem.l1 + ((l - origem.l1) % altOrigem) : l;
         const oc = direcao === "direita" ? origem.c1 + ((c - origem.c1) % largOrigem) : c;
@@ -1469,8 +1642,15 @@ export class ExcelHost {
       const estilo = this.folha.celulas[ref(this.linha, this.coluna)]?.estilo;
       if (estilo?.numero) this.aplicarNumero(estilo.numero);
     } else {
-      const destino = { linha: sel.l2 + 1, col: sel.c1 };
-      const faixaRef = faixa(sel);
+      // coluna/linha inteira selecionada: soma só até onde há conteúdo (senão
+      // a fórmula varreria centenas de milhares de células vazias)
+      let ateL = sel.l2;
+      let ateC = sel.c2;
+      if (sel.l1 === 0 && sel.l2 >= this.limLinhas - 1) ateL = Math.max(sel.l1, this.ultimaLinhaUsada());
+      if (sel.c1 === 0 && sel.c2 >= this.limColunas - 1) ateC = Math.max(sel.c1, this.ultimaColunaUsada());
+      const alvo = { l1: sel.l1, c1: sel.c1, l2: ateL, c2: ateC };
+      const destino = { linha: alvo.l2 + 1, col: alvo.c1 };
+      const faixaRef = faixa(alvo);
       this.escrever(destino.linha, destino.col, `=${aba}(${faixaRef})`);
       this.linha = destino.linha;
       this.coluna = destino.col;
@@ -1665,6 +1845,8 @@ export class ExcelHost {
     this.coluna = 0;
     this.sel = { l1: 0, c1: 0, l2: 0, c2: 0 };
     this.cache.clear();
+    // a aba nova pode ter conteúdo mais longe do que a grade atual alcança
+    this.garantirLimites(this.ultimaLinhaUsada(), this.ultimaColunaUsada());
     this.pintar();
     this.opts.onStatus?.();
   }
@@ -1828,10 +2010,12 @@ export class ExcelHost {
 
   private ajustarLargura(): void {
     const f = this.folha;
-    // mede o maior texto da seleção e define a largura
+    // mede o maior texto da seleção e define a largura; linhas vazias (além do
+    // conteúdo) não mudam a medida, então a varredura para no que foi usado
+    const ateL = Math.min(this.sel.l2, this.ultimaLinhaUsada());
     for (let c = this.sel.c1; c <= this.sel.c2; c++) {
       let maior = 6;
-      for (let l = this.sel.l1; l <= this.sel.l2; l++) {
+      for (let l = this.sel.l1; l <= ateL; l++) {
         const texto = this.valorExibido(l, c);
         const fonte = f.celulas[ref(l, c)]?.estilo;
         const tamanho = (fonte?.negrito ? 8.2 : 7.4) + (fonte?.casas ?? 0);
@@ -1845,9 +2029,10 @@ export class ExcelHost {
 
   private ajustarAltura(): void {
     const f = this.folha;
+    const ateC = Math.min(this.sel.c2, this.ultimaColunaUsada());
     for (let l = this.sel.l1; l <= this.sel.l2; l++) {
       let maior = LINHA_PX;
-      for (let c = this.sel.c1; c <= this.sel.c2; c++) {
+      for (let c = this.sel.c1; c <= ateC; c++) {
         const texto = this.valorExibido(l, c);
         const cel = f.celulas[ref(l, c)];
         if (!texto) continue;
@@ -1863,6 +2048,19 @@ export class ExcelHost {
 
   private setZoom(z: number): void {
     this.config = { ...this.config, zoom: Math.max(50, Math.min(200, z)) };
+    // o teto de linhas depende do zoom (o navegador limita a altura rolável);
+    // se o zoom subiu, a grade pode precisar encolher
+    const teto = this.tetoLinhas();
+    if (this.limLinhas > teto) {
+      this.limLinhas = teto;
+      this.sel = {
+        l1: Math.min(this.sel.l1, teto - 1),
+        l2: Math.min(this.sel.l2, teto - 1),
+        c1: this.sel.c1,
+        c2: this.sel.c2,
+      };
+      this.linha = Math.min(this.linha, teto - 1);
+    }
     this.pintar();
     this.opts.onStatus?.();
   }
@@ -1909,8 +2107,12 @@ export class ExcelHost {
       ativa: data.livro?.ativa ?? 0,
     };
     this.config = { ...CONFIG_PADRAO, ...(data.config ?? {}) };
-    this.linha = Math.min(data.linha ?? 0, MAX_LINHAS - 1);
-    this.coluna = Math.min(data.coluna ?? 0, MAX_COLUNAS - 1);
+    // a grade volta ao tamanho inicial e cresce para caber o conteúdo carregado
+    this.limColunas = COLUNAS_INICIAIS;
+    this.limLinhas = LINHAS_INICIAIS;
+    this.garantirLimites(this.ultimaLinhaUsada(), this.ultimaColunaUsada());
+    this.linha = Math.min(data.linha ?? 0, this.limLinhas - 1);
+    this.coluna = Math.min(data.coluna ?? 0, this.limColunas - 1);
     this.sel = { l1: this.linha, c1: this.coluna, l2: this.linha, c2: this.coluna };
     this.cache.clear();
     this.pilhaDesfazer = [];
@@ -1941,6 +2143,10 @@ export class ExcelHost {
     this.config = snap.config;
     this.ultimoEstado = serialized;
     this.cache.clear();
+    // a grade volta ao tamanho inicial e cresce para caber o que foi restaurado
+    this.limColunas = COLUNAS_INICIAIS;
+    this.limLinhas = LINHAS_INICIAIS;
+    this.garantirLimites(this.ultimaLinhaUsada(), this.ultimaColunaUsada());
     this.clamparSelecao();
     this.pintar();
     this.opts.onStatus?.();

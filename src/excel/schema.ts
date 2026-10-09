@@ -64,9 +64,17 @@ export const COLUNA_PX = 104;
 export const LINHA_PX = 25;
 export const CABECALHO_COL_PX = 46;
 export const CABECALHO_LINHA_PX = 26;
-/** How grande a área rolável é (o Excel usa 16384 colunas e 1048576 linhas; aqui basta para trabalhar). */
-export const MAX_COLUNAS = 60;
-export const MAX_LINHAS = 1000;
 
-/** Limite de células por aba: evita travar a tela com digitação descontrolada. */
-export const LIMITE_CELULAS = 60_000;
+/**
+ * Limites do Excel de verdade — a grade é "infinita": ela nasce pequena e cresce
+ * sozinha conforme você desce/direita (ou cola), até estes tetos.
+ */
+export const LIMITE_COLUNAS = 16_384;
+export const LIMITE_LINHAS = 1_048_576;
+
+/** Tamanho com que a grade nasce; cresce sob demanda (dobrando) até o limite. */
+export const COLUNAS_INICIAIS = 60;
+export const LINHAS_INICIAIS = 1000;
+
+/** Teto de células que uma única colagem pode criar (proteção contra conteúdo gigante). */
+export const LIMITE_COLAR = 200_000;
