@@ -1,9 +1,11 @@
 // mdCreator — ponto de partida. Tudo do app está em src/app/ (e nos motores md/, word/, powerpoint/, broker/).
 import "./styles.css";
 import { toast } from "./util";
+import { ligarMovimentoDeSaida } from "./movimento";
 import { App } from "./app/app";
 
 const app = new App();
+ligarMovimentoDeSaida();
 // Garante que a janela nunca seja deslocada/rolada (mantém o topo sempre visível)
 window.addEventListener("scroll", () => {
   if (window.scrollY !== 0 || window.scrollX !== 0) {

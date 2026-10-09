@@ -37,3 +37,5 @@
 @import "./styles/deep.css";
 @import "./styles/ai-docs.css";
 @import "./styles/fileicons.css";
+/* por último: o movimento ajusta o "tempo" dos componentes já definidos acima */
+@import "./styles/movimento.css";
