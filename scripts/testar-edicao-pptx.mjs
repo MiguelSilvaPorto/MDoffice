@@ -165,5 +165,36 @@ const para = (runs, extra = {}) => ({ runs, align: "esquerda", lvl: 0, marL: 0, 
   ok("ajustar ao tamanho escala colunas e linhas", perto(TB.tamanhoTotal(aj).w, 600) && perto(TB.tamanhoTotal(aj).h, 180));
 }
 
+// ---------------------------------------------------------------- histórico (desfazer/refazer)
+const H = await empacotar("src/powerpoint/edicao/historico.ts", "historico.mjs");
+{
+  const h = new H.Historico(10);
+  const s = (n) => ({ n });
+  ok("histórico vazio não desfaz nem refaz", h.desfazer(s(0)) === null && h.refazer(s(0)) === null && !h.podeDesfazer);
+  h.registrar(s(0));
+  ok("registrar habilita o desfazer", h.podeDesfazer);
+  const volta = h.desfazer(s(1));
+  ok("desfazer devolve o estado anterior", volta?.n === 0);
+  ok("depois de desfazer, dá para refazer", h.podeRefazer && !h.podeDesfazer);
+  ok("refazer devolve o estado que estava na tela", h.refazer(s(0))?.n === 1);
+  // mesma chave dentro de ~1 s vira um passo só (digitação seguida)
+  const h2 = new H.Historico(10);
+  h2.registrar(s(0), "digitar:a");
+  h2.registrar(s(1), "digitar:a");
+  h2.registrar(s(2), "digitar:a");
+  ok("digitação seguida na mesma caixa vira um passo só", h2.desfazer(s(3))?.n === 0 && !h2.podeDesfazer);
+  // chaves diferentes viram passos separados
+  const h3 = new H.Historico(10);
+  h3.registrar(s(0), "digitar:a");
+  h3.registrar(s(1), "mover:a");
+  ok("ações diferentes viram passos separados", h3.desfazer(s(2))?.n === 1 && h3.desfazer(s(1))?.n === 0);
+  // uma edição nova apaga o futuro (não dá para refazer por cima)
+  const h4 = new H.Historico(10);
+  h4.registrar(s(0));
+  h4.desfazer(s(1));
+  h4.registrar(s(0));
+  ok("edição nova depois de desfazer limpa o refazer", !h4.podeRefazer);
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);

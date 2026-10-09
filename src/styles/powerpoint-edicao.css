@@ -64,10 +64,14 @@
 
 .ppr-painel {
   display: flex;
-  flex-wrap: wrap;
+  /* uma linha só: os grupos rolam na horizontal em vez de quebrar (o topo
+     fica com altura previsível e sobra espaço para a lâmina) */
+  flex-wrap: nowrap;
   align-items: stretch;
   padding: 6px 8px 4px;
   min-height: 92px;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .ppr-painel[hidden] {
@@ -1080,6 +1084,74 @@ button.ppr.cor {
   background: var(--panel-2);
 }
 
+/* esconder/mostrar com animação: a largura encolhe até 0 e o conteúdo desliza para fora sem reorganizar */
+.pp-side {
+  overflow: hidden;
+}
+
+.pp-side > :not(.pp-side-resize) {
+  min-width: var(--pp-side-w, 260px);
+}
+
+.pp-side-anima .pp-side {
+  transition: width 0.26s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.26s cubic-bezier(0.4, 0, 0.2, 1), border-width 0.26s, opacity 0.2s;
+}
+
 .pp-side-oculto .pp-side {
-  display: none;
+  width: 0;
+  min-width: 0;
+  border-left-width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pp-side-aba {
+  display: block;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(100%, -50%);
+  transition: opacity 0.2s, transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pp-side-oculto .pp-side-aba {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(0, -50%);
+  transition-delay: 0.12s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pp-side-anima .pp-side,
+  .pp-side-aba {
+    transition: none !important;
+  }
+}
+
+/* aba na borda direita para trazer o painel de volta (só aparece quando ele está escondido) */
+/* (a visibilidade e o deslize da aba estão no bloco de animação acima) */
+.pp-side-aba {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  writing-mode: vertical-rl;
+  padding: 14px 6px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--fi-ppt, #d24a17);
+  border: 0;
+  border-radius: 6px 0 0 6px;
+  cursor: pointer;
+  z-index: 60;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+
+.pp-side-btn {
+  border: 1px solid var(--border);
+}
+
+#pp-stage {
+  position: relative;
 }

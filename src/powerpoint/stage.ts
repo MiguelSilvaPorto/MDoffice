@@ -20,7 +20,9 @@ import {
 import type { Shape, ShapeBox } from "./schema";
 
 const ZOOM_MIN = 40;
-const ZOOM_MAX = 300;
+/** Até 400%: a lâmina é HTML (vetorial), então ampliar não perde nitidez. */
+const ZOOM_MAX = 400;
+const ZOOM_PASSO = 10;
 
 /** Ferramenta de criação ativa (arrastar na lâmina para desenhar). */
 export type Ferramenta = { tipo: "forma"; id: string } | { tipo: "texto" } | null;
@@ -110,22 +112,77 @@ export class Stage {
     return this.modo !== null;
   }
 
-  setZoom(valor: number): number {
-    this.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(valor)));
-    if (this.frame) this.frame.style.transform = `scale(${this.zoom / 100})`;
+  /**
+   * Aplica o zoom pela LARGURA do quadro (não por `transform: scale`).
+   * A diferença importa: `transform` não afeta o layout, então a 400% a lâmina
+   * extrapolaria sem criar área de rolagem — não daria para ver o resto dela.
+   * Mexendo na largura, o palco rola de verdade.
+   *
+   * `ancora` é o ponto (em coordenadas da tela) que deve PERMANECER parado
+   * durante o zoom — normalmente o ponteiro do mouse. Sem ela, o zoom ancora
+   * no centro do que está visível, que é o esperado para os botões e o slider.
+   */
+  setZoom(valor: number, ancora?: { x: number; y: number }): number {
+    const novo = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(valor)));
+    if (novo === this.zoom) return this.zoom;
+
+    const frame = this.frame;
+    const caixa = this.canvasDe(frame);
+    const foco = ancora ?? (caixa ? this.centroVisivel(caixa) : null);
+
+    // posição do ponto de referência DENTRO da lâmina, em fração (0..1)
+    let fx = 0.5;
+    let fy = 0.5;
+    if (frame && foco) {
+      const antes = frame.getBoundingClientRect();
+      if (antes.width > 0 && antes.height > 0) {
+        fx = (foco.x - antes.left) / antes.width;
+        fy = (foco.y - antes.top) / antes.height;
+      }
+    }
+
+    this.zoom = novo;
+    frame?.style.setProperty("--pp-zoom", String(this.zoom / 100));
+
+    // desloca a rolagem para o mesmo ponto continuar debaixo da referência
+    if (frame && caixa && foco) {
+      const depois = frame.getBoundingClientRect();
+      if (depois.width > 0) {
+        const alvoX = depois.left + fx * depois.width;
+        const alvoY = depois.top + fy * depois.height;
+        caixa.scrollLeft += alvoX - foco.x;
+        caixa.scrollTop += alvoY - foco.y;
+      }
+    }
     return this.zoom;
   }
 
-  zoomIn(): number {
-    return this.setZoom(this.zoom + 10);
+  /** O elemento que rola o palco (o quadro pode estar dentro de um wrapper). */
+  private canvasDe(frame: HTMLElement | null): HTMLElement | null {
+    if (!frame) return null;
+    return frame.closest<HTMLElement>(".pp-canvas") ?? frame.parentElement;
   }
 
-  zoomOut(): number {
-    return this.setZoom(this.zoom - 10);
+  private centroVisivel(caixa: HTMLElement): { x: number; y: number } {
+    const r = caixa.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+
+  zoomIn(ancora?: { x: number; y: number }): number {
+    return this.setZoom(this.zoom + ZOOM_PASSO, ancora);
+  }
+
+  zoomOut(ancora?: { x: number; y: number }): number {
+    return this.setZoom(this.zoom - ZOOM_PASSO, ancora);
   }
 
   zoomReset(): number {
     return this.setZoom(100);
+  }
+
+  /** Limites do zoom, para o controle da barra de status se montar sozinho. */
+  static get limites(): { min: number; max: number; passo: number } {
+    return { min: ZOOM_MIN, max: ZOOM_MAX, passo: ZOOM_PASSO };
   }
 
   // ------------------------------------------------------------------

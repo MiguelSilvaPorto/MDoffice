@@ -60,6 +60,7 @@ export const commandsMethods = {
     add("Escrever", "Inserir tabela", () => this.act("table"));
     add("Escrever", "Inserir diagrama", () => this.act("mermaid"));
     add("Escrever", "Inserir modelo para IA", () => this.act("ai-template"));
+    add("Escrever", "Criar skill ou regras do agente (SKILL.md, AGENTS.md, CLAUDE.md)", () => this.act("ai-docs"), undefined, "skill agente claude agents regras instrucoes");
     add("Escrever", "Dicionário pessoal…", () => this.showDictionary());
 
     add("Ver", "Alternar tema claro/escuro", () => this.applyTheme(document.documentElement.dataset.theme !== "dark"), undefined, "escuro dark");

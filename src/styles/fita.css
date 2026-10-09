@@ -1,0 +1,96 @@
+/* ==========================================================================
+   Controles da faixa de opções (o "topo" do editor):
+   - recolher: botão no canto das abas, duplo clique numa aba ou Ctrl+F1;
+   - ajustar o tamanho: arrastar a borda de baixo (cursor de redimensionar).
+   Vale para as fitas do Word (.wd-), do Excel (.xl-) e das Apresentações (.ppr-).
+   ========================================================================== */
+
+/* ---------- recolher ---------- */
+
+.fita-recolher {
+  align-self: center;
+  margin-left: auto;
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+  flex: none;
+}
+
+.fita-recolher:hover {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--fg) 9%, transparent);
+}
+
+.fita-recolher .ic {
+  width: 15px;
+  height: 15px;
+  transition: transform 0.15s ease;
+}
+
+.fita-recolhida .fita-recolher .ic {
+  transform: rotate(180deg);
+}
+
+/* recolhida: os painéis somem e o contorno da faixa fica numa linha só */
+.wd-ribbon.fita-recolhida .wd-ribbon-panels,
+.xl-ribbon.fita-recolhida .xl-panels,
+.pp-ribbon.fita-recolhida .ppr-paineis {
+  display: none;
+}
+
+.xl-ribbon.fita-recolhida,
+.pp-ribbon.ppr.fita-recolhida {
+  border-bottom: 0;
+}
+
+/* ---------- ajustar o tamanho (borda de baixo) ---------- */
+
+.fita-resize {
+  flex: none;
+  height: 5px;
+  position: relative;
+  z-index: 40;
+  cursor: row-resize;
+  touch-action: none;
+}
+
+/* área de pega maior que a faixa visível: 4px extras sobre o vazio do palco
+   (não cobre o conteúdo da fita, nem a barra de rolagem do painel) */
+.fita-resize::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: -4px;
+}
+
+.fita-resize::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 2px;
+  height: 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background 0.12s ease;
+}
+
+.fita-resize:hover::after,
+.fita-resize.arrastando::after,
+.fita-resize:focus-visible::after {
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.fita-resize:focus-visible {
+  outline: none;
+}

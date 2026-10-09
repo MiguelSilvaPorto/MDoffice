@@ -369,7 +369,16 @@ export function aplicarTextoDigitado(paras: Para[], texto: string, estiloNovo: E
       void _b;
       return { ...resto, text: "" };
     }
-    // parágrafo vazio: o estilo do último trecho do parágrafo anterior, ou o de digitação da forma
+    // parágrafo vazio: herda o estilo do último trecho do parágrafo anterior (Enter no fim da linha),
+    // ou o de digitação da forma
+    for (let i = pi - 1; i >= 0; i--) {
+      const ultimo = celulas[i].filter((c) => !c.run.br).pop();
+      if (ultimo) {
+        const { br: _b, ...resto } = ultimo.run;
+        void _b;
+        return { ...resto, text: "" };
+      }
+    }
     return { ...estiloNovo, text: "" };
   };
   for (const ch of inserido) {

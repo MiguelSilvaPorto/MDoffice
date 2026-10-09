@@ -63,6 +63,7 @@ const SHORTCUTS: [string, string][] = [
   ["Ctrl+Alt+T", "Tradução automática"],
   ["Ctrl+Shift+F", "Modo foco (Esc sai)"],
   ["Ctrl+Shift+D", "Desenhar"],
+  ["Ctrl+F1", "Recolher/expandir a faixa de opções"],
   ["F7", "Revisar texto"],
   ["F1", "Boas-vindas e ajuda"],
 ];

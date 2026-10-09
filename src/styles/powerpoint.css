@@ -46,7 +46,6 @@ body.home-open #powerpoint-pane {
   flex: none;
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: thin;
 }
 
 .pt-group {
@@ -315,7 +314,6 @@ body.home-open #powerpoint-pane {
   background: var(--panel);
   border-bottom: 1px solid var(--border);
   flex: none;
-  scrollbar-width: thin;
   align-items: flex-start;
 }
 
@@ -461,31 +459,67 @@ body.home-open #powerpoint-pane {
   transform: scale(0.98);
 }
 
-/* área central: a lâmina se ajusta à ALTURA disponível (nada de cortar embaixo) */
+/* faixa de lâminas na vertical (Exibir > Mostrar > Faixa vertical): a faixa vira
+   uma coluna à esquerda, com rolagem própria, e o palco ocupa o resto da largura */
+.pp-left.faixa-vertical {
+  flex-direction: row;
+}
+
+.pp-left.faixa-vertical .pp-strip {
+  flex-direction: column;
+  align-items: stretch;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-bottom: 0;
+  border-right: 1px solid var(--border);
+}
+
+.pp-left.faixa-vertical .pp-thumb {
+  width: 112px;
+}
+
+.pp-left.faixa-vertical .pp-thumb-add {
+  width: 112px;
+}
+
+.pp-left.faixa-vertical .pp-thumb:hover {
+  transform: translateX(1px);
+}
+
+.pp-left.faixa-vertical .pp-thumb.arrastando {
+  opacity: 0.45;
+}
+
+.pp-left.faixa-vertical .pp-thumb.alvo-antes {
+  box-shadow: 0 -3px 0 var(--accent);
+}
+
+.pp-left.faixa-vertical .pp-thumb.alvo-depois {
+  box-shadow: 0 3px 0 var(--accent);
+}
+
+/* área central: a lâmina se ajusta à janela (zoom 100%) e rola quando ampliada */
 .pp-canvas {
   flex: 1;
   min-height: 0;
   overflow: auto;
   display: grid;
-  place-items: center;
+  /* `safe` evita o corte no topo/esquerda quando o item é maior que a área —
+     sem isso, a 400% não daria para rolar até o começo da lâmina */
+  place-items: safe center;
   padding: 16px;
+  container-type: size;
 }
 
-/* O quadro preenche o palco sem ser cortado: cresce até o limite de largura OU
-   de altura do container, sempre respeitando a proporção da lâmina. */
+/* O quadro mede "tamanho que cabe" × zoom. Assim o layout (e a rolagem)
+   acompanham o zoom, e o texto em `cqw` escala junto, como no PowerPoint. */
 .pp-frame {
+  --pp-fit: min(100%, 1040px, calc(100cqh * var(--slide-ratio, 1.7778)));
+  width: calc(var(--pp-fit) * var(--pp-zoom, 1));
   aspect-ratio: var(--slide-ratio, 16 / 9);
-  height: 100%;
-  width: auto;
-  max-width: 100%;
-  max-height: 100%;
-  transform-origin: center center;
   flex: none;
   overflow: hidden;
-}
-
-.pp-canvas {
-  container-type: size;
 }
 
 /* A lâmina é um container de tamanho: o texto das formas usa `cqw`, então

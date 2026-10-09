@@ -25,6 +25,8 @@ export interface EstadoUI {
   fixas: boolean;
   encaixe: boolean;
   grade: boolean;
+  /** faixa de lâminas na lateral (vertical) em vez do topo (horizontal) */
+  faixaVertical: boolean;
   /** cores mais usadas no deck */
   paleta: string[];
   fontes: string[];

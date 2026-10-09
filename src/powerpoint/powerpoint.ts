@@ -4,6 +4,7 @@
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { $ } from "../util";
+import { ligarAjusteAlturaFita, ligarRecolherFita } from "../fita";
 import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, novaImagem, type EstiloDeck, type ItemGaleria } from "./edicao/criar";
 import { ajustarCor, comAjuste, comLinha, comOpacidade, comPreenchimento, comRaioDeCanto, comSombra, gradiente, SOMBRAS_PRONTAS, solido, corPrincipal } from "./edicao/formato";
 import { aspectSize, stageRatio } from "./schema";
@@ -109,7 +110,6 @@ export class PowerPointHost {
   private faixaVertical = lerFlag("mdc.pp.faixaVertical", false);
   private hist = new Historico<Estado>(100);
   private pendente: Estado | null = null;
-  private antesEdicao: Estado | null = null;
   private destinoImagem = "inserir";
   private lateral: "formatar" | "notas" = "formatar";
   /** célula em edição (quando a forma em edição é uma tabela) e células selecionadas */
@@ -189,6 +189,7 @@ export class PowerPointHost {
             <textarea class="pp-notes" data-notes placeholder="O que falar nesta lâmina..."></textarea>
           </div>
         </aside>
+        <button type="button" class="pp-side-aba" data-side-toggle title="Mostrar o painel Formatar/Notas" aria-label="Mostrar o painel Formatar/Notas">« Formatar</button>
       </div>
       <div class="pp-status">
         <span data-pos>Lâmina 1 / 1</span>
@@ -210,6 +211,23 @@ export class PowerPointHost {
     this.notesEl = $<HTMLTextAreaElement>("[data-notes]", this.pane);
 
     this.fita = new Fita($("#pp-ribbon", this.pane), { estado: () => this.estadoUI(), run: (c, v) => this.run(c, v) });
+    // recolher a faixa (botão no canto das abas, duplo clique numa aba ou Ctrl+F1),
+    // ajustar o tamanho pela borda de baixo e, quando ela não cabe na janela,
+    // a roda do mouse rola os grupos na horizontal
+    const abasFita = $(".ppr-abas", this.fita.el);
+    const paineisFita = $(".ppr-paineis", this.fita.el);
+    ligarRecolherFita({ el: this.fita.el, abas: abasFita, paineis: paineisFita });
+    ligarAjusteAlturaFita({ el: this.fita.el });
+    paineisFita.addEventListener(
+      "wheel",
+      (e) => {
+        const p = paineisFita.querySelector<HTMLElement>(".ppr-painel:not([hidden])");
+        if (!p || p.scrollWidth <= p.clientWidth || Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
+        e.preventDefault();
+        p.scrollLeft += e.deltaY;
+      },
+      { passive: false }
+    );
     this.painel = new Painel($("[data-formatar]", this.pane), { estado: () => this.estadoUI(), run: (c, v) => this.run(c, v) });
 
     this.stage.attach(this.frame, this.slideEl);
@@ -228,15 +246,17 @@ export class PowerPointHost {
     const range = this.pane.querySelector<HTMLInputElement>("[data-zoomrange]");
     range?.addEventListener("input", () => this.setZoom(+range.value));
 
-    // Ctrl + roda do mouse amplia/reduz direto no palco (como no PowerPoint).
-    // Sem Ctrl, a roda continua rolando a lâmina normalmente.
+    // Ctrl + roda do mouse amplia/reduz mirando o PONTEIRO: o ponto que está
+    // debaixo do cursor continua debaixo dele (como no PowerPoint). Sem Ctrl,
+    // a roda só rola a lâmina normalmente.
     this.canvas.addEventListener(
       "wheel",
       (e) => {
         if (!e.ctrlKey && !e.metaKey) return;
         e.preventDefault();
+        const ponto = { x: e.clientX, y: e.clientY };
         // dy < 0 = roda para cima = ampliar
-        this.setZoom(this.stage.zoomAtual + (e.deltaY < 0 ? 10 : -10));
+        this.setZoom(this.stage.zoomAtual + (e.deltaY < 0 ? 10 : -10), ponto);
       },
       { passive: false }
     );
@@ -277,12 +297,18 @@ export class PowerPointHost {
     const largura = Number(guardado("pp-side-w"));
     if (largura >= 200 && largura <= 600) this.pane.style.setProperty("--pp-side-w", `${largura}px`);
     const aplicar = (oculto: boolean) => {
+      // a animação só vale no esconder/mostrar (arrastar a borda não deve "deslizar")
+      this.pane.classList.add("pp-side-anima");
       this.pane.classList.toggle("pp-side-oculto", oculto);
       for (const b of this.pane.querySelectorAll<HTMLElement>(".pp-side-btn")) b.setAttribute("aria-pressed", String(!oculto));
       guardar("pp-side-oculto", oculto ? "1" : "0");
-      requestAnimationFrame(() => this.stage.desenharSelecao());
+      window.setTimeout(() => {
+        this.pane.classList.remove("pp-side-anima");
+        this.stage.desenharSelecao();
+      }, 300);
     };
     aplicar(guardado("pp-side-oculto") === "1");
+    this.pane.classList.remove("pp-side-anima");
     for (const b of this.pane.querySelectorAll<HTMLElement>("[data-side-toggle]")) b.addEventListener("click", () => aplicar(!this.pane.classList.contains("pp-side-oculto")));
     const alca = this.pane.querySelector<HTMLElement>("[data-side-resize]")!;
     alca.addEventListener("pointerdown", (e) => {
@@ -352,14 +378,21 @@ export class PowerPointHost {
     return { slides: this.slides, indice: this.indice, selecao: this.selecao };
   }
 
-  private restaurar(e: Estado): void {
+  /**
+   * Volta a um estado do histórico. Se `manterEdicao` (o id que estava em edição)
+   * ainda existir, volta a editar a mesma forma — o desfazer durante a digitação
+   * não tira o usuário da caixa de texto.
+   */
+  private restaurar(e: Estado, manterEdicao: string | null = null): void {
     this.slides = e.slides;
     this.indice = clampIndex(e.indice, e.slides.length);
     const ids = new Set(this.atual().shapes.map((s) => s.id));
     this.selecao = e.selecao.filter((id) => ids.has(id));
     this.editando = null;
     this.markDirty();
-    this.pintar();
+    const alvo = manterEdicao ? this.atual().shapes.find((s) => s.id === manterEdicao) : undefined;
+    if (alvo && !alvo.bloqueada && (alvo.paras !== undefined || alvo.tabela)) this.entrarEdicao(alvo.id);
+    else this.pintar();
   }
 
   private registrar(chave = ""): void {
@@ -722,7 +755,6 @@ export class PowerPointHost {
   private entrarEdicao(id: string, cel?: [number, number]): void {
     const s = this.atual().shapes.find((x) => x.id === id);
     if (!s || s.bloqueada || (s.paras === undefined && !s.tabela)) return;
-    this.antesEdicao = this.estado();
     this.editando = id;
     this.selecao = [id];
     if (s.tabela) {
@@ -746,8 +778,6 @@ export class PowerPointHost {
     if (!this.editando) return;
     this.editando = null;
     this.celulaEdit = null;
-    if (this.antesEdicao && this.antesEdicao.slides !== this.slides) this.hist.registrar(this.antesEdicao);
-    this.antesEdicao = null;
     window.getSelection()?.removeAllRanges();
     this.pintar();
   }
@@ -796,6 +826,8 @@ export class PowerPointHost {
       if (!cel) return;
       const paras = parasComTexto(cel.paras, texto, this.estiloDeDigitacao(s, this.celulaEdit));
       if (paras === cel.paras) return;
+      // o desfazer da digitação entra no histórico global (Ctrl+Z na apresentação)
+      this.registrar(`digitar:${id}:${r}:${c}`);
       const t = { ...s.tabela, celulas: s.tabela.celulas.map((linha, i) => (i === r ? linha.map((x, j) => (j === c ? { ...x, paras } : x)) : linha)) };
       this.substituirSlide({ ...this.atual(), shapes: this.atual().shapes.map((x) => (x.id === id ? { ...x, tabela: t } : x)) });
       this.markDirty();
@@ -806,6 +838,8 @@ export class PowerPointHost {
     if (!s.paras) return;
     const paras = parasComTexto(s.paras, texto, this.estiloDeDigitacao(s));
     if (paras === s.paras) return;
+    // o desfazer da digitação entra no histórico global (Ctrl+Z na apresentação)
+    this.registrar(`digitar:${id}`);
     // não redesenha: o cursor precisa continuar onde está
     this.substituirSlide({ ...this.atual(), shapes: this.atual().shapes.map((x) => (x.id === id ? { ...x, paras, text: texto } : x)) });
     this.markDirty();
@@ -1091,15 +1125,13 @@ export class PowerPointHost {
 
       // ---- desfazer, refazer, área de transferência ----
       case "desfazer": {
-        const e = this.editando ? null : this.hist.desfazer(this.estado());
-        if (e) this.restaurar(e);
-        else if (this.editando) document.execCommand("undo");
+        const e = this.hist.desfazer(this.estado());
+        if (e) this.restaurar(e, this.editando);
         return;
       }
       case "refazer": {
-        const e = this.editando ? null : this.hist.refazer(this.estado());
-        if (e) this.restaurar(e);
-        else if (this.editando) document.execCommand("redo");
+        const e = this.hist.refazer(this.estado());
+        if (e) this.restaurar(e, this.editando);
         return;
       }
       case "copiar":
@@ -1740,12 +1772,22 @@ export class PowerPointHost {
   private aoTecla(e: KeyboardEvent): void {
     if (!this.ativo() || e.defaultPrevented) return;
     const alvo = e.target as HTMLElement;
-    const digitando = !!alvo.closest("input, textarea, select") || (alvo.isContentEditable && !!this.editando);
+    const digitando = !!alvo.closest("input, textarea, select") || alvo.isContentEditable;
     const ctrl = e.ctrlKey || e.metaKey;
     const k = e.key.toLowerCase();
 
-    // dentro de uma caixa de texto em edição: só os atalhos de formatação são nossos (o resto é do navegador)
+    // dentro de uma caixa de texto em edição: os atalhos de formatação e o desfazer/refazer são nossos
     if (this.editando && alvo.isContentEditable) {
+      if (ctrl && k === "z" && !e.shiftKey) {
+        e.preventDefault();
+        this.run("desfazer");
+        return;
+      }
+      if (ctrl && (k === "y" || (k === "z" && e.shiftKey))) {
+        e.preventDefault();
+        this.run("refazer");
+        return;
+      }
       if (ctrl && !e.shiftKey && (k === "b" || k === "i" || k === "u")) {
         e.preventDefault();
         this.run(k === "b" ? "negrito" : k === "i" ? "italico" : "sublinhado");
@@ -1960,8 +2002,8 @@ export class PowerPointHost {
     };
   }
 
-  private setZoom(z: number): void {
-    this.stage.setZoom(z);
+  private setZoom(z: number, ancora?: { x: number; y: number }): void {
+    this.stage.setZoom(z, ancora);
     this.atualizarStatus();
     this.fita.atualizar();
   }

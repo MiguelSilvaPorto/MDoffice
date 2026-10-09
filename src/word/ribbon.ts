@@ -3,6 +3,7 @@ import type { WordEditor, FormatState } from "./editor";
 import { FONT_FAMILIES, FONT_SIZES } from "./schema";
 import { DEFAULT_SETUP, type PageSetup } from "./model";
 import { h } from "../util";
+import { ligarAjusteAlturaFita, ligarRecolherFita } from "../fita";
 
 export interface RibbonHooks {
   editor: WordEditor;
@@ -302,6 +303,12 @@ export class Ribbon {
     });
     window.addEventListener("resize", () => this.updateNavButtons());
     setTimeout(() => this.updateNavButtons(), 80);
+
+    // recolher a faixa: botão no canto das abas, duplo clique numa aba ou Ctrl+F1
+    const tabsEl = host.querySelector<HTMLElement>(".wd-ribbon-tabs");
+    if (tabsEl && panelsContainer) ligarRecolherFita({ el: host, abas: tabsEl, paineis: panelsContainer });
+    // ajustar o tamanho da faixa arrastando a borda de baixo
+    ligarAjusteAlturaFita({ el: host });
   }
 
   private setPainter(mode: "off" | "once" | "sticky"): void {

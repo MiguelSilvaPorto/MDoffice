@@ -6,7 +6,7 @@ import { $ } from "../util";
 export const keysMethods = {
   setupKeys(this: App): void {
     window.addEventListener("keydown", (e) => {
-      if (e.key === "F1") {
+      if (e.key === "F1" && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         this.showWelcome();
         return;

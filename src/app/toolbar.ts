@@ -4,6 +4,9 @@ import type { App } from "./app";
 import { deckSummary } from "../powerpoint/presenter";
 import { $, $$, toast, loadJSON, saveJSON } from "../util";
 import { TABLE_SNIPPET, AI_TEMPLATE } from "./constants";
+import { abrirAiDocs } from "../aiDocs/dialog";
+import { newTab } from "../tabs";
+import { copyText } from "../util";
 
 export const toolbarMethods = {
   act(this: App, name: string): void {
@@ -102,6 +105,23 @@ export const toolbarMethods = {
       case "ai-template":
         this.editor.insert(AI_TEMPLATE);
         break;
+      case "ai-docs": {
+        // novo documento .md com o texto pronto (o nome sugerido é o do arquivo: SKILL.md, AGENTS.md...)
+        const criar = (nome: string, md: string) => {
+          const tab = newTab(this.editor.createState(md), { path: null, isDraft: false, statusSaved: "Novo arquivo" });
+          tab.title = nome;
+          this.tabs.push(tab);
+          this.selectTab(tab.id);
+          toast(`${nome} criado — salve com Ctrl+Shift+S na pasta do projeto, com esse nome.`, "ok", 4200);
+        };
+        abrirAiDocs({
+          // numa planilha, apresentação ou documento Word o texto vai para um documento novo
+          inserir: (md) => (this.tab.kind && this.tab.kind !== "doc" ? criar("Documento", md) : this.editor.insert(md)),
+          novo: criar,
+          copiar: copyText,
+        });
+        break;
+      }
       case "image":
         void this.insertImageFromDialog();
         break;

@@ -81,10 +81,13 @@ body.home-open #excel-pane {
 
 .xl-panel {
   display: flex;
-  flex-wrap: wrap;
+  /* uma linha só: os grupos rolam na horizontal em vez de quebrar */
+  flex-wrap: nowrap;
   align-items: stretch;
   padding: 6px 8px 4px;
   min-height: 86px;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .xl-panel[hidden] {

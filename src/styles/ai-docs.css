@@ -1,0 +1,246 @@
+/* ---------- Skills e regras para IA ---------- */
+
+.modal.aid-modal {
+  width: min(1180px, 95vw);
+  height: min(720px, calc(100vh - 150px));
+  margin-top: 40px;
+}
+
+.aid-topo {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.aid-topo h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.aid-sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.aid-tipos {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+  padding: 3px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+.aid-tipo {
+  padding: 5px 12px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.aid-tipo.on {
+  color: var(--fg);
+  background: var(--panel);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  font-weight: 600;
+}
+
+.aid-corpo {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(300px, 0.9fr) minmax(320px, 1.1fr);
+}
+
+.aid-form {
+  overflow-y: auto;
+  padding: 14px 18px 18px;
+  border-right: 1px solid var(--border);
+}
+
+.aid-resumo {
+  margin: 0 0 12px;
+  padding: 9px 11px;
+  font-size: 12.5px;
+  color: var(--muted);
+  background: var(--panel-2);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+}
+
+.aid-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 13px;
+}
+
+.aid-rot {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.aid-in {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 9px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  resize: vertical;
+}
+
+.aid-in:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: -1px;
+}
+
+.aid-ajuda {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.aid-previa {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--panel-2);
+}
+
+.aid-previa-barra {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.aid-arquivo {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.aid-enche {
+  flex: 1;
+}
+
+.aid-vista {
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.aid-vista.on {
+  color: var(--fg);
+  border-color: var(--border);
+  background: var(--panel);
+}
+
+.aid-md,
+.aid-render {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 18px;
+}
+
+.aid-md pre {
+  margin: 0;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.aid-front {
+  margin-bottom: 14px;
+  padding: 9px 12px;
+  font-size: 12.5px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.aid-front b {
+  color: var(--accent);
+}
+
+.aid-rodape {
+  border-top: 1px solid var(--border);
+  padding: 10px 18px 12px;
+}
+
+.aid-dicas {
+  list-style: none;
+  margin: 0 0 9px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 84px;
+  overflow-y: auto;
+}
+
+.aid-dica {
+  font-size: 12px;
+  padding-left: 18px;
+  position: relative;
+}
+
+.aid-dica::before {
+  position: absolute;
+  left: 0;
+}
+
+.aid-dica.ok::before {
+  content: "✓";
+  color: #2ea043;
+}
+
+.aid-dica.aviso::before {
+  content: "!";
+  color: #d29922;
+  font-weight: 700;
+}
+
+.aid-dica.erro::before {
+  content: "✕";
+  color: #f85149;
+}
+
+.aid-acoes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 820px) {
+  .aid-corpo {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+}
+
+.aid-render h1 { font-size: 1.45em; }
+.aid-render h2 { font-size: 1.15em; margin-top: 1.1em; }
+.aid-render { font-size: 13.5px; }
