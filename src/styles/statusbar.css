@@ -37,6 +37,22 @@
   color: var(--fg);
 }
 
+/* Indicador de backup: verde em dia, amarelo degradado, vermelho com arquivo só no backup */
+.path-btn.st-backup {
+  direction: ltr;
+  padding: 2px 5px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.path-btn.st-backup.degradado {
+  text-shadow: 0 0 8px color-mix(in srgb, #eab308 70%, transparent);
+}
+
+.path-btn.st-backup.perigo {
+  text-shadow: 0 0 8px color-mix(in srgb, var(--danger) 80%, transparent);
+}
+
 /* ---------- toasts ---------- */
 
 #toasts {

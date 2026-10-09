@@ -81,10 +81,10 @@ export const keysMethods = {
       } else if (e.shiftKey && k === "e") {
         e.preventDefault();
         this.openExport();
-      } else if (k === "b" && this.tab.kind !== "word") {
+      } else if (k === "b" && this.tab.kind !== "word" && this.tab.kind !== "xlsx") {
         e.preventDefault();
         this.act("bold");
-      } else if (k === "i" && this.tab.kind !== "word") {
+      } else if (k === "i" && this.tab.kind !== "word" && this.tab.kind !== "xlsx") {
         e.preventDefault();
         this.act("italic");
       }

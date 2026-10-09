@@ -1,6 +1,7 @@
 // Painel lateral: abas de painéis (Início, Projetos, Estrutura, Contexto IA), busca e
 // árvore de projetos (pastas com documentos .md).
 import * as files from "./files";
+import { fileIcon, kindOfPath, type FileKind } from "./fileIcons";
 import { $, baseName, docDirOf, h, loadJSON, saveJSON, stripExt } from "./util";
 
 export type SidePanel = "projects" | "outline" | "context";
@@ -11,6 +12,8 @@ export interface OpenDocInfo {
   label: string;
   dirty: boolean;
   active: boolean;
+  /** tipo do documento (Markdown, Word, Excel, PowerPoint) */
+  kind: FileKind;
 }
 
 export interface SidebarHooks {
@@ -29,6 +32,8 @@ export interface SidebarHooks {
   outlineFilter: (query: string) => void;
   /** Abre o menu de contexto (x, y) de um item. */
   contextMenu: (x: number, y: number, items: { label: string; run: () => void }[]) => void;
+  /** Abre o menu do botão "⋯" de um arquivo, ancorado no elemento. */
+  fileMenu: (anchor: HTMLElement, path: string) => void;
   /** Abre ou alterna o Início (Hub de documentos) na área de edição. */
   onHome: () => void;
 }
@@ -200,7 +205,7 @@ export class Sidebar {
       if (hit.path !== lastPath) {
         lastPath = hit.path;
         const title = h("div", { class: "ch-file", title: hit.path });
-        title.innerHTML = '<svg class="ic pj-doc-ic"><use href="#i-doc"/></svg>';
+        title.innerHTML = fileIcon(kindOfPath(hit.path));
         title.append(h("span", { text: stripExt(hit.name) }));
         host.append(title);
       }
@@ -351,7 +356,7 @@ export class Sidebar {
         title: node.path,
       });
       row.style.paddingLeft = `${24 + depth * 14}px`;
-      row.innerHTML = '<svg class="ic pj-doc-ic"><use href="#i-doc"/></svg>';
+      row.innerHTML = fileIcon(kindOfPath(node.path));
       row.append(h("span", { class: "pj-name", text: stripExt(node.name) }));
       if (info) {
         row.append(
@@ -362,6 +367,22 @@ export class Sidebar {
           })
         );
       }
+
+      // Botão "⋯": abre as ações do arquivo sem precisar do clique direito.
+      const more = h("span", {
+        class: "pj-more",
+        title: "Ações do arquivo",
+        role: "button",
+        "aria-label": `Ações de ${node.name}`,
+      });
+      more.innerHTML = '<svg class="ic"><use href="#i-more"/></svg>';
+      more.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.hooks.fileMenu(more, node.path);
+      });
+      row.append(more);
+
       row.addEventListener("click", () => this.hooks.openPath(node.path));
       row.addEventListener("contextmenu", (e) => {
         e.preventDefault();
@@ -382,9 +403,9 @@ export class Sidebar {
     const q = this.query;
     const openDocs = this.hooks.openDocs().filter((d) => !q || d.label.toLowerCase().includes(q));
     const section = (title: string) => host.append(h("div", { class: "sb-label", text: title }));
-    const item = (name: string, sub: string, opts: { active?: boolean; dirty?: boolean; onClick: () => void; title?: string }) => {
+    const item = (name: string, sub: string, opts: { kind: FileKind; active?: boolean; dirty?: boolean; onClick: () => void; title?: string }) => {
       const row = h("button", { class: `hm-item${opts.active ? " active" : ""}`, type: "button", title: opts.title ?? sub });
-      row.innerHTML = '<svg class="ic pj-doc-ic"><use href="#i-doc"/></svg>';
+      row.innerHTML = fileIcon(opts.kind);
       const text = h("span", { class: "hm-text" });
       text.append(h("span", { class: "hm-name", text: name }), h("span", { class: "hm-sub", text: sub }));
       row.append(text);
@@ -397,6 +418,7 @@ export class Sidebar {
       section("Abertos agora");
       for (const d of openDocs) {
         item(d.label, d.path ? docDirOf(d.path) : "ainda não salvo", {
+          kind: d.kind,
           active: d.active,
           dirty: d.dirty,
           onClick: () => this.hooks.activateTab(d.id),
@@ -410,7 +432,7 @@ export class Sidebar {
       .slice(0, 8);
     if (recents.length) {
       section("Recentes");
-      for (const p of recents) item(stripExt(baseName(p)), docDirOf(p), { onClick: () => this.hooks.openPath(p) });
+      for (const p of recents) item(stripExt(baseName(p)), docDirOf(p), { kind: kindOfPath(p), onClick: () => this.hooks.openPath(p) });
     }
     let drafts: files.DraftInfo[] = [];
     try {
@@ -420,7 +442,7 @@ export class Sidebar {
     }
     if (drafts.length) {
       section("Rascunhos do app");
-      for (const d of drafts) item(stripExt(baseName(d.path)), "guardado no app", { onClick: () => this.hooks.openPath(d.path) });
+      for (const d of drafts) item(stripExt(baseName(d.path)), "guardado no app", { kind: kindOfPath(d.path), onClick: () => this.hooks.openPath(d.path) });
     }
     if (!host.childElementCount) host.append(h("div", { class: "sb-note", text: q ? "Nada encontrado." : "Nada por aqui ainda. Escreva algo ou abra um arquivo." }));
   }

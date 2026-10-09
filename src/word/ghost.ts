@@ -5,6 +5,7 @@ import { Plugin, PluginKey, TextSelection, type EditorState } from "prosemirror-
 import { Decoration, DecorationSet, type EditorView } from "prosemirror-view";
 import { DocumentIndex } from "../broker/ghost/documentIndex";
 import { predictFromLine } from "../broker/ghost/predict";
+import { refineSuggestion, REFINE } from "../broker/ghost/refine";
 import type { GhostSuggestion } from "../broker/ghost/types";
 import { consumeTyped, cycleSuggestion, altLabel, outcomeOf } from "../broker/ghost/suggestion";
 import { accepted, rejected } from "../broker/personal/feedback";
@@ -50,7 +51,28 @@ export function ghostPlugin(hooks: WordGhostHooks): Plugin {
   const index = new DocumentIndex();
   let predictTimer: number | undefined;
   let indexTimer: number | undefined;
+  let llmTimer: number | undefined;
   const reindex = (state: EditorState): void => index.update(state.doc.textBetween(0, state.doc.content.size, "\n", " "));
+
+  /** Depois de uma pausa no meio de uma palavra, a IA local escolhe entre os candidatos (se estiver ligada). */
+  const refineLater = (v: EditorView, retry = true): void => {
+    window.clearTimeout(llmTimer);
+    llmTimer = window.setTimeout(async () => {
+      if (!hooks.enabled()) return;
+      const doc = v.state.doc;
+      const head = v.state.selection.head;
+      const ctx = around(v.state);
+      if (!ctx || /^[\p{L}0-9_-]/u.test(ctx.after)) return;
+      const r = await refineSuggestion(ctx.before, head, index, key.getState(v.state) ?? null);
+      if (!r) return;
+      // a pessoa continuou digitando enquanto a IA pensava: o resultado já não vale; pede de novo uma vez
+      if (!v.state.doc.eq(doc) || v.state.selection.head !== head) {
+        if (retry) refineLater(v, false);
+        return;
+      }
+      setSuggestion(v, r);
+    }, REFINE.pauseMs);
+  };
 
   return new Plugin<GhostSuggestion | null>({
     key,
@@ -139,11 +161,13 @@ export function ghostPlugin(hooks: WordGhostHooks): Plugin {
             const cur = key.getState(v.state);
             if (pred?.text === cur?.text && pred?.pos === cur?.pos && pred?.alts?.length === cur?.alts?.length) return;
             setSuggestion(v, pred);
+            refineLater(v);
           }, 90);
         },
         destroy() {
           window.clearTimeout(predictTimer);
           window.clearTimeout(indexTimer);
+          window.clearTimeout(llmTimer);
         },
       };
     },

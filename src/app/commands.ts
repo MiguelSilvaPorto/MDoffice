@@ -13,12 +13,19 @@ export const commandsMethods = {
       items.push({ group, label, run, hint, keywords });
 
     add("Documento", "Novo documento (nova aba)", () => void this.newDoc(), "Ctrl+T", "criar");
+    add("Documento", "Nova planilha Excel (.xlsx)", () => void this.newExcelDoc(), undefined, "planilha excel tabela");
+    add("Documento", "Novo documento Word (.docx)", () => void this.newWordDoc(), undefined, "word documento");
+    add("Documento", "Nova apresentação PowerPoint (.pptx)", () => void this.newPowerPointDoc(), undefined, "apresentacao slides");
     add("Documento", "Abrir arquivo…", () => void this.openDocDialog(), "Ctrl+O");
+    add("Documento", "Importar do Office (Word, Excel, PowerPoint)…", () => void this.importOfficeDialog(), undefined, "docx xlsx xlsm pptx excel word abrir importar");
     add("Documento", "Salvar", () => void this.save(false), "Ctrl+S");
     add("Documento", "Salvar como…", () => void this.save(true), "Ctrl+Shift+S");
+    add("Documento", this.settings.autosaveOn ? "Desativar salvamento automático" : "Ativar salvamento automático", () => this.toggleAutosave(), undefined, "autosave salvar automático ligar desligar");
     add("Documento", "Renomear documento", () => this.tabBar.beginRename(this.tab.id), "F2", "nome título");
-    add("Documento", "Histórico de versões", () => void this.openHistory(), undefined, "versoes restaurar voltar anterior");
+    add("Documento", "Histórico de versões", () => void this.openHistory(), undefined, "versoes restaurar voltar anterior alteracoes backup");
     add("Documento", "Salvar versão agora", () => void this.saveVersionNow(), undefined, "historico marcar");
+    add("Documento", "Backup agora", () => void this.backupNow(this.path, "manual").then(() => toast("Cópia de backup gravada.", "ok", 2600)), undefined, "backup copia seguranca");
+    add("Documento", "Arquivos só no backup", () => this.openMissingBackups(), undefined, "sumiu apagado restaurar recuperar");
     add("Buscar", "Buscar no conteúdo dos documentos", () => this.sidebar.focusSearch(), undefined, "procurar texto pesquisar projetos");
     add("Configurações", "Abrir configurações", () => this.showSettings(), undefined, "preferencias ajustes tom historico");
     add("Configurações", "Tom do texto: formal", () => this.setTonePref("formal"));
@@ -91,6 +98,14 @@ export const commandsMethods = {
   toggleTranslation(this: App): void {
     if (this.tab.kind === "word") {
       toast("A tradução ao vivo ainda é só para Markdown. Em documentos Word use Exportar e escolha o idioma Inglês.", "info", 5200);
+      return;
+    }
+    if (this.tab.kind === "xlsx") {
+      toast(
+        "A tradução ao vivo ainda é só para Markdown. Em planilhas, as fórmulas e os valores ficam como estão.",
+        "info",
+        5200
+      );
       return;
     }
     const on = !this.translation.settings.enabled;

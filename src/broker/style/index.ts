@@ -4,7 +4,7 @@
 import { isInsideMask, maskNonProse } from "../mask";
 import type { WritingIssue } from "../types";
 import { abbreviationsAndGlued, repeatedWords, doubleSpaces, spaceBeforePunct, spaceAfterPunct, spaceAfterSentence, repeatedPunct } from "./spacing";
-import { commasAroundExpressions, safeSentenceBreak, longRunWithoutPunct, adversativeComma, introConnectiveComma, missingFinalPeriod } from "./punctuation";
+import { commasAroundExpressions, safeSentenceBreak, longRunWithoutPunct, adversativeComma, introConnectiveComma, missingFinalPeriod, subordinateComma } from "./punctuation";
 import { lowercaseAfterPeriod, paragraphStartLowercase } from "./capitalization";
 import { phrases } from "./phrases";
 import { informalRegister, aGente } from "./register";
@@ -27,6 +27,7 @@ const RULES: Rule[] = [
   paragraphStartLowercase,
   phrases,
   adversativeComma,
+  subordinateComma,
   introConnectiveComma,
   missingFinalPeriod,
   informalRegister,

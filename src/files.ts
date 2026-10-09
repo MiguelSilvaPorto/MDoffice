@@ -9,15 +9,45 @@ export const IMG_FILTER = {
 };
 
 export const DOCX_FILTER = { name: "Documento do Word", extensions: ["docx"] };
+export const PPTX_FILTER = { name: "Apresentação do PowerPoint", extensions: ["pptx"] };
+export const XLSX_FILTER = { name: "Planilha do Excel", extensions: ["xlsx"] };
+
+/** Formatos do Office que o app abre (modernos + os antigos, que só avisam). */
+export const OFFICE_FILTER = {
+  name: "Documentos do Office",
+  extensions: ["docx", "xlsx", "xlsm", "pptx", "doc", "xls", "ppt"],
+};
 
 export async function pickOpenDoc(): Promise<string | null> {
   const p = await dlgOpen({
     multiple: false,
     directory: false,
     filters: [
-      { name: "Todos os documentos", extensions: [...MD_FILTER.extensions, "docx"] },
+      { name: "Todos os documentos", extensions: [...MD_FILTER.extensions, "docx", "pptx", "xlsx", "xlsm"] },
       MD_FILTER,
       DOCX_FILTER,
+      PPTX_FILTER,
+      XLSX_FILTER,
+    ],
+  });
+  return typeof p === "string" ? p : null;
+}
+
+/**
+ * Caixa "Importar do Office": abre direto nos documentos do Word, Excel e PowerPoint.
+ *
+ * Os formatos antigos (.doc, .xls, .ppt) aparecem na lista para você não se perder —
+ * escolher um deles mostra a explicação de como salvar no formato novo.
+ */
+export async function pickImportOffice(): Promise<string | null> {
+  const p = await dlgOpen({
+    multiple: false,
+    directory: false,
+    filters: [
+      OFFICE_FILTER,
+      DOCX_FILTER,
+      { name: "Planilha do Excel (inclui .xlsm)", extensions: ["xlsx", "xlsm", "xls"] },
+      PPTX_FILTER,
     ],
   });
   return typeof p === "string" ? p : null;
@@ -123,7 +153,7 @@ export async function listDrafts(): Promise<DraftInfo[]> {
 }
 
 /** Caminho livre para um novo rascunho na pasta do app. */
-export async function draftPath(base: string, ext: "md" | "docx" = "md"): Promise<string> {
+export async function draftPath(base: string, ext: "md" | "docx" | "pptx" | "xlsx" = "md"): Promise<string> {
   return await invoke<string>("draft_path", { base, ext });
 }
 

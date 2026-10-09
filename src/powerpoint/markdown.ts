@@ -30,7 +30,7 @@ export function deckFromMarkdown(texto: string, setup: DeckSetup = DEFAULT_SETUP
     // heurística simples de papel: só título = capa; começa com ## = seção
     const soTitulo = /^\s*#\s+[^\n]+$/.test(md);
     const layout = i === 0 || soTitulo ? (i === 0 ? "titulo" : "secao") : "conteudo";
-    return { md, layout, notes: notas ? notas[1].trim() : "" };
+    return { md, layout, notes: notas ? notas[1].trim() : "", shapes: [] };
   });
   return { titulo: tituloDe(texto), slides };
 }

@@ -56,10 +56,29 @@ produzir documentos bonitos e funcionais — inclusive para enviar à IA.
   verde entrou) e **Restaurar** troca o texto numa ação só (`Ctrl+Z` desfaz; o texto de antes é
   guardado como "Antes de restaurar"). Dá para **salvar versão com nome** e o histórico acompanha
   o arquivo quando você renomeia ou usa Salvar como.
+- **Histórico → Alterações (log de mudanças)**: além das versões, o app guarda **só a instrução
+  de cada mudança** (o que saiu e o que entrou — o diff), não o arquivo inteiro. É leve, roda
+  enquanto você digita e ainda assim dá para voltar a qualquer pausa. A cada 20 alterações entra
+  um **marco** (o texto completo), que é o ponto de partida para reconstruir as versões rápido.
+  A aba **Alterações** mostra a linha do tempo com o resumo (`+12 −3`) e o diff de cada mudança;
+  **Restaurar** devolve o documento àquele ponto. Vale também para Word, PowerPoint e Excel
+  (todos são serializados em texto antes de virar o arquivo).
+- **Backup em disco**: uma cópia de verdade dos arquivos, gravada em **duas pastas ao mesmo
+  tempo** — a que você escolher e a da própria aplicação —, para o texto sobreviver mesmo se
+  você apagar o arquivo sem querer, fechar o app com força ou limpar os dados do app. As cópias
+  saem **ao salvar**, **ao sair de um documento com alterações** e **uma vez por dia** (mesmo sem
+  salvar). O caminho original é espelhado (`C:\Docs\Projeto\notas.md` →
+  `…/backups/C_/Docs/Projeto/notas.md/2026-10-09_10-42-13.md`). Antes de sobrescrever um arquivo,
+  o app guarda a versão anterior; se algum arquivo **sumir do disco**, a barra inferior fica
+  vermelha e há uma tela para **restaurar** a cópia. A **política de limpeza** tem perfis (Leve 7
+  dias, **Equilibrado** 30 dias + 50 cópias, Máxima segurança 1 ano) e um modo personalizado.
+  Nada é apagado sem passar pela política, e nunca se perde a última cópia. A primeira vez que
+  você abre o app ele pergunta se quer ativar. A aba **Backup** do Histórico lista as cópias com
+  data e tamanho, e permite restaurar ou apagar cada uma.
 - **Configurações numa aba**: **⋯ → Configurações** (ou `Ctrl+K`) abre uma aba ao lado dos
   documentos, com menu lateral (Escrita, Tradução, Histórico, Aparência, Atalhos). Cada ajuste vale
   na hora, sem botão Salvar: tom do texto, correção automática, sugestões ao digitar, dicionário
-  pessoal, motor e glossário da tradução, histórico, tema, painéis e estilo do desenho.
+  pessoal, motor e glossário da tradução, histórico e backup, tema, painéis e estilo do desenho.
 - **Tom do texto** (em Configurações → Escrita): *formal* (aponta “pra”, “tá”, “a gente”, “coisa”…),
   *neutro* (só o claramente informal) ou *informal* (não mexe no registro, só ortografia e
   pontuação). Vale para o assistente, a correção automática e o português enviado à tradução.
@@ -141,16 +160,27 @@ produzir documentos bonitos e funcionais — inclusive para enviar à IA.
   **Alt+↓ / Alt+↑** trocam entre até 3 opções (o indicador “1/3” mostra quantas há) e **Esc**
   descarta. Ela completa a palavra que você está digitando (a partir de 1–3 letras, conforme a
   confiança) e prevê a próxima palavra ou até 3 (“de acordo com o”). Só aparece quando há
-  confiança. Vem de três fontes juntas: um **modelo do português** embutido
+  confiança e quando poupa digitação (faltam pelo menos 3 letras, pois o Tab também custa uma tecla). Vem de três fontes juntas: um **modelo do português** embutido
   (`public/ngrams/pt.json`, só contagens de palavras e sequências de 2–3 palavras, gerado de
-  textos da Wikipédia em português), **o próprio documento** (o que você repete passa a ser
+  ~53 MB de páginas da web em português — FineWeb-2 — que se parecem muito mais com o que as pessoas escrevem
+  do que a Wikipédia), **o próprio documento** (o que você repete passa a ser
   sugerido) e uma **memória dos seus documentos recentes** (guardada só neste computador; em
   Configurações há “Esquecer o que aprendeu”). Em textos de teste, quem aceita só as sugestões
   certas digita 17–21% menos teclas num documento novo (antes: 5–12%), e mais ainda em
   documentos que repetem termos. Para refazer o modelo e medir:
-  `node scripts/fetch-corpus.mjs corpus.txt 100 6000`,
+  `node scripts/fetch-corpus-web.mjs corpus.txt 200 6000`,
   `node scripts/build-ngrams.mjs public/ngrams/pt.json corpus.txt --vocab=24000 --trimin=8` e
   `GHOST_MODEL=public/ngrams/pt.json ALT=1 npx tsx scripts/eval-ghost.mts texto.txt`.
+- **IA ajuda nas sugestões enquanto você digita** (Configurações → “IA ajuda nas sugestões enquanto digito”, ligada
+  por padrão; desligue quando não achar necessário): numa pausa curta no meio de uma palavra, o modelo de
+  palavras entrega 6 candidatos e a IA local (Gemma) escolhe o que combina com a frase. No teste, com 3 letras
+  digitadas, a primeira escolha passou de 45% para 71% de acerto, e só aparece quando a IA tem 70% de certeza ou mais
+  (85% de acerto). Chega cerca de 0,4–0,8 s depois da pausa. Vale só para completar palavra (para a próxima palavra
+  a IA não é precisa o bastante). Precisa da IA local e da GPU; sem elas nada muda.
+- **Ícone por tipo de arquivo**: cada documento tem um quadradinho com a cor e um desenho do tipo — a marca **M↓** (Markdown, verde-azulado),
+  um **W** (Word, azul), uma **tabela** (Excel, verde) e um **gráfico de pizza** (PowerPoint, laranja) — nas abas, no painel lateral (árvore de projetos,
+  Início, resultados de busca), no menu “+” e na lista do Início. Vale o tipo real do arquivo (pela extensão), nunca um
+  palpite pelo nome. O código está em `src/fileIcons.ts` e `src/styles/fileicons.css`.
 - **Aprende com você (só neste computador)**: as sugestões de palavras guardam o que você aceita e
   recusa (Tab, Esc, digitar outra coisa) e ajustam a confiança; há um **perfil do seu estilo** (tamanho
   das frases, vírgulas, como abre as frases) que alimenta a revisão — a regra “seu estilo” avisa uma
@@ -167,6 +197,24 @@ produzir documentos bonitos e funcionais — inclusive para enviar à IA.
   milissegundos, numa só thread, só com o computador parado, e pausa se você digitar ou a aba sumir.
   Sinônimos: lista escolhida a dedo + (opcional, “menos certas”) o dicionário aberto do LibreOffice
   (`scripts/build-synonyms.mjs`, derivado do TeP 2.0).
+- **IA local (Gemma 3 270M, embutida no instalador)**: na revisão inteligente, um modelo de linguagem
+  pequeno confere cada troca de palavra (pontua a frase com e sem a troca), descarta as que deixam o texto
+  pior e escreve o resultado no motivo. Roda **só na GPU** (WebGPU), em **uma thread**, só com o computador
+  parado, em lotes de frases (gasta cerca de 3× menos CPU que frase a frase) e **sai da memória** depois de
+  90 s sem uso. Sem WebGPU ou com a opção desligada em Configurações, tudo continua funcionando só com as
+  regras (o motor de CPU do navegador não tem o operador dos modelos em 4 bits). Os pesos (273 MB, fora do
+  git) vêm de `npm run prep:modelo` (o `npm run build` já roda) e vão para `public/modelos/`. Para trocar
+  de modelo: `scripts/baixar-modelo.mjs` e `src/broker/llm/config.ts`. O Gemma é fornecido sob os
+  [Termos de Uso do Gemma](https://ai.google.dev/gemma/terms) (o aviso vai junto, em `AVISO-GEMMA.txt`).
+  Dados que alimentam o app: páginas da web em português do FineWeb-2 (modelo de palavras, só contagens) e o
+  dicionário de sinônimos do LibreOffice (derivado do TeP 2.0), ambos usados só para gerar arquivos locais.
+- **A correção automática não fecha frase no meio**: enquanto você pensa e para de digitar, ela só mexe
+  em espaços, maiúsculas, abreviações e vírgulas — não coloca ponto final nem quebra frase. O ponto final
+  entra ao **concluir o parágrafo** (Enter duas vezes) e nunca depois de palavra solta (“de”, “para”, “e”,
+  “que”…), que é frase incompleta. Ao **salvar (Ctrl+S)** vale o mesmo: o parágrafo em que o cursor está não
+  é fechado com ponto e a palavra que você está digitando não é trocada (antes, salvar no meio de “médico” virava
+  “médic.” e o resto da palavra ia para depois do ponto). Em frases longas, o app sugere vírgula antes de “pois”, “embora”,
+  “enquanto”, “já que”, “visto que”… e de “porque” (só em frase bem comprida).
 - **Ponto e vírgula automáticos**: o assistente avisa (e o **“Corrigir tudo”** aplica) quando
   falta o **ponto final** no fim do parágrafo, quando falta **vírgula antes** de “mas, porém,
   contudo, entretanto, todavia”, **depois** de conectivos que abrem a frase (“Além disso,”,
@@ -227,6 +275,12 @@ produzir documentos bonitos e funcionais — inclusive para enviar à IA.
 - **Pastas para IA**: clique com o botão direito na área de escrita e escolha *Pasta*.
   Selecione diretórios, confira a árvore e escreva seu pedido. Caminhos e nomes são
   inseridos no Markdown; o app não lê o conteúdo dos arquivos.
+- **Importar do Office**: na tela **Início** (ou pelo menu **⋯ → Importar do Office**, ou
+  `Ctrl+K`), abra um `.docx`, `.xlsx`, `.xlsm` ou `.pptx` direto nas pastas do Office. O
+  filtro já vem nos formatos certos, e os arquivos antigos (`.doc`, `.xls`, `.ppt`)
+  aparecem na lista com a explicação de como salvar no formato novo. Planilhas `.xlsm`
+  abrem normalmente — as macros não são preservadas, então ao salvar o app sugere um nome
+  `.xlsx` para não sobrescrever o original.
 
 ## Requisitos
 
@@ -262,6 +316,8 @@ Outros comandos:
 | `npm run app`       | Inicia o app (dev)                               |
 | `npm run app:build` | Compila o app de produção                        |
 | `npm run check`     | Checagem de tipos do TypeScript                  |
+| `npm run test:log`  | Testa o log de alterações (patch, desfazer)      |
+| `npm run test:backup` | Testa o contrato do backup em disco            |
 | `npm run build`     | Build só do frontend (gera `dist/`)              |
 | `npm run prep:dicionario` | Copia o dicionário pt-BR para `public/dicionario/` |
 | `npm run icon`      | Regenera os ícones a partir de `scripts/gen-icon.mjs` |

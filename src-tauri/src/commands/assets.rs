@@ -1,5 +1,6 @@
 //! Pasta `assets/` ao lado do documento: imagens, desenhos (PNG + JSON) e cópia entre documentos.
 
+use super::backup;
 use super::util::{io_err, slugify, split_name, unique_path};
 use base64::engine::general_purpose::STANDARD as B64;
 use base64::Engine as _;
@@ -56,7 +57,12 @@ pub fn asset_write(doc: String, name: String, data: String) -> Result<String, St
 /// Atualiza apenas arquivos que estejam diretamente abaixo de `assets/`.
 /// Usado para gravar PNG e JSON do mesmo desenho sem criar cópias a cada edição.
 #[tauri::command]
-pub fn asset_update(doc: String, relative: String, data: String) -> Result<(), String> {
+pub fn asset_update(
+    app: tauri::AppHandle,
+    doc: String,
+    relative: String,
+    data: String,
+) -> Result<(), String> {
     let mut parts = Path::new(&relative).components();
     if parts.next() != Some(Component::Normal(std::ffi::OsStr::new("assets"))) {
         return Err("O arquivo precisa estar dentro de assets/.".to_string());
@@ -70,6 +76,8 @@ pub fn asset_update(doc: String, relative: String, data: String) -> Result<(), S
         .ok_or_else(|| "Documento sem pasta de destino.".to_string())?;
     let target = parent.join(relative.replace('/', std::path::MAIN_SEPARATOR_STR));
     let bytes = B64.decode(data.as_bytes()).map_err(|e| e.to_string())?;
+    // guarda a versão anterior do desenho antes de sobrescrever (backup ligado)
+    backup::protect_before_write(&app, &target.to_string_lossy(), &bytes);
     fs::write(target, bytes).map_err(io_err)
 }
 

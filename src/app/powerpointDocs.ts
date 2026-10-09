@@ -1,0 +1,349 @@
+// Documentos de apresentação (.pptx) dentro do app: criar, abrir, salvar e fechar
+// com segurança. Espelha src/app/wordDocs.ts (mesmos nomes, mesma ordem).
+
+import type { App } from "./app";
+import * as files from "../files";
+import { newTab, tabLabel, type DocTab } from "../tabs";
+import { moveHistory } from "../history";
+import { moveCommits } from "../snapshots";
+import { type PowerPointTabData } from "../powerpoint/powerpoint";
+import { deckToPptx } from "../powerpoint/pptxexport";
+import { pptxToDeck } from "../powerpoint/pptximport";
+import { deckToMarkdown } from "../powerpoint/markdown";
+import { DEFAULT_SETUP } from "../powerpoint/model";
+import type { Deck, DeckSetup } from "../powerpoint/schema";
+import { bytesToBase64 } from "../util";
+import { $, h, toast, baseName, joinPath, fmtTime, slugify, docDirOf } from "../util";
+
+export const powerpointDocsMethods = {
+  /** Cria uma aba de apresentação (sem ativá-la). */
+  addPptTab(this: App, data: PowerPointTabData, init: Partial<DocTab> = {}): DocTab {
+    const tab = newTab(this.editor.createState(""), {
+      kind: "ppt",
+      ppt: data,
+      title: "Apresentação",
+      statusSaved: "Nova apresentação",
+      ...init,
+    });
+    this.tabs.push(tab);
+    return tab;
+  },
+
+  async newPowerPointDoc(this: App): Promise<void> {
+    const tab = this.addPptTab(this.pptHost.createTab());
+    await this.switchTo(tab.id);
+    this.pptHost.focus();
+    toast("Apresentação criada — use Ctrl+Shift+S para salvar como .pptx numa pasta sua.", "ok", 3800);
+  },
+
+  /** Lê os bytes de um .pptx do disco (data URL -> Uint8Array). */
+  async readPptx(this: App, path: string): Promise<{ deck: Deck; setup: DeckSetup }> {
+    const url = await files.readDataUrl(path);
+    const bin = atob(url.slice(url.indexOf(",") + 1));
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return await pptxToDeck(bytes, DEFAULT_SETUP);
+  },
+
+  async addPptxTab(this: App, path: string, isDraft = false): Promise<DocTab> {
+    const { deck, setup } = await this.readPptx(path);
+    return this.addPptTab(this.pptHost.createTab(deckToMarkdown(deck), setup), {
+      path,
+      isDraft,
+      title: null,
+      statusSaved: isDraft ? "Rascunho guardado no app" : `Aberto às ${fmtTime()}`,
+    });
+  },
+
+  async openPptx(this: App, path: string): Promise<boolean> {
+    try {
+      const tab = await this.addPptxTab(path);
+      this.addRecent(path);
+      const current = this.tab;
+      const reuse = current.kind !== "ppt" && current.kind !== "word" && !current.path && !current.dirty && this.textOf(current).length === 0;
+      await this.switchTo(tab.id);
+      if (reuse && this.tab === tab) {
+        this.tabs = this.tabs.filter((t) => t !== current);
+        this.afterTabChange();
+      }
+      return true;
+    } catch (e) {
+      toast("Não foi possível abrir a apresentação: " + e, "err", 7000);
+      return false;
+    }
+  },
+
+  enterPpt(this: App, target: DocTab): void {
+    document.body.classList.add("ppt-open");
+    $("#powerpoint-pane").hidden = false;
+    this.pptHost.load(target.ppt!);
+    this.outline?.useCollapsed(target.outlineCollapsed);
+    this.afterTabChange();
+    // o log de alterações começa do texto que está abrindo
+    this.markText(this.pptSerialized(target));
+  },
+
+  leavePpt(this: App): void {
+    document.body.classList.remove("ppt-open");
+  },
+
+  onPptChange(this: App): void {
+    if (this.tab.kind !== "ppt") return;
+    const was = this.dirty;
+    this.dirty = true;
+    if (!was) this.refreshTitle();
+    this.setSaveState();
+    this.autosaveSoon();
+    // log de alterações (a apresentação também serializa em texto)
+    this.recordSerializedChange(this.pptSerialized(this.tab));
+  },
+
+  /** Grava o .pptx de uma aba (a ativa lê do motor; as outras, do estado guardado). */
+  async writePptx(this: App, tab: DocTab, path: string): Promise<void> {
+    const live = tab === this.tab;
+    const data = live ? this.pptHost.snapshot() : tab.ppt!;
+    const deck: Deck = { titulo: tabLabel(tab), slides: data.slides };
+    const bytes = await deckToPptx(deck, data.setup, tabLabel(tab));
+    await files.saveBinary(path, bytesToBase64(bytes));
+  },
+
+  pptSerialized(this: App, tab: DocTab): string {
+    return tab === this.tab ? this.pptHost.serialized() : JSON.stringify({ v: 1, setup: tab.ppt!.setup, slides: tab.ppt!.slides });
+  },
+
+  /** Documento novo ainda sem arquivo: cria o rascunho (.pptx) na pasta do app. */
+  async ensurePptFile(this: App): Promise<boolean> {
+    const tab = this.tab;
+    if (tab.path) return true;
+    try {
+      tab.path = await files.draftPath(slugify(tabLabel(tab)) || "apresentacao", "pptx");
+      tab.isDraft = true;
+      await this.writePptx(tab, tab.path);
+      tab.dirty = false;
+      tab.statusSaved = "Rascunho guardado no app";
+      this.afterSave(tab);
+      this.saveSession();
+      return true;
+    } catch (e) {
+      toast("Não consegui guardar o rascunho: " + e, "err", 6000);
+      return false;
+    }
+  },
+
+  /**
+   * Salvamento automático. Mesma regra do Word: rascunhos do app são regravados
+   * sempre; arquivos SEUS só são gravados em Salvar — o motor converte a
+   * apresentação em caixas de texto e recursos que ele ainda não entende podem
+   * ser simplificados. O histórico guarda cópias de qualquer jeito.
+   */
+  async autosavePpt(this: App): Promise<void> {
+    const tab = this.tab;
+    if (tab.kind !== "ppt" || !tab.dirty) return;
+    if (tab.path && !tab.isDraft) {
+      this.recordVersion(tab.path, this.pptHost.serialized());
+      return;
+    }
+    try {
+      if (!tab.path) {
+        tab.path = await files.draftPath(slugify(tabLabel(tab)) || "apresentacao", "pptx");
+        tab.isDraft = true;
+      }
+      await this.writePptx(tab, tab.path);
+      tab.dirty = false;
+      tab.statusSaved = `Rascunho atualizado às ${fmtTime()}`;
+      this.recordVersion(tab.path, this.pptSerialized(tab));
+      // uma cópia em disco por dia, mesmo sem salvar
+      this.backupOnceADay(tab.path);
+      this.afterSave(tab);
+      this.saveSession();
+    } catch {
+      /* sem acesso a arquivos (navegador): segue sem salvar */
+    }
+  },
+
+  async savePpt(this: App, saveAs: boolean): Promise<boolean> {
+    const tab = this.tab;
+    try {
+      const previous = tab.path;
+      const wasDraft = tab.isDraft;
+      if (saveAs || !tab.path || wasDraft) {
+        const suggested = `${tabLabel(tab)}.pptx`;
+        let defaultPath = suggested;
+        try {
+          defaultPath = joinPath(await files.defaultDocsDir(), suggested);
+        } catch {
+          /* só o nome */
+        }
+        const picked = await files.pickSaveAny(defaultPath, "Apresentação do PowerPoint", ["pptx"]);
+        if (!picked) return false;
+        tab.path = /\.pptx$/i.test(picked) ? picked : `${picked.replace(/\.[a-zA-Z0-9]+$/, "")}.pptx`;
+        tab.isDraft = false;
+        tab.title = null;
+      }
+      await this.writePptx(tab, tab.path!);
+      if (wasDraft && previous && previous !== tab.path) void files.deleteDraft(previous).catch(() => {});
+      if (previous && previous !== tab.path) {
+        void moveHistory(previous, tab.path!);
+        void moveCommits(previous, tab.path!);
+      }
+      tab.dirty = false;
+      tab.statusSaved = `Salvo às ${fmtTime()}`;
+      this.recordVersion(tab.path!, this.pptSerialized(tab), true);
+      // cópia real em disco
+      void this.backupNow(tab.path!, "salvar");
+      void this.exportLog(tab.path!);
+      this.addRecent(tab.path!);
+      this.setPreviewPath(tab.path);
+      this.afterTabChange();
+      if (!this.pptxNotice) {
+        this.pptxNotice = true;
+        toast("Salvo como .pptx. A apresentação vira caixas de texto posicionadas; animações e efeitos que o mdCreator ainda não entende não são exportados.", "info", 7500);
+      } else toast(`Apresentação salva em ${baseName(tab.path!)}`, "ok", 2600);
+      return true;
+    } catch (e) {
+      toast("Erro ao salvar: " + e, "err", 7000);
+      return false;
+    }
+  },
+
+  /** Antes de fechar uma aba de apresentação: rascunhos ficam guardados; arquivos seus perguntam. */
+  async prepareClosePpt(this: App, tab: DocTab): Promise<boolean> {
+    if (!tab.dirty) return true;
+    if (tab.isDraft || !tab.path) {
+      try {
+        if (tab === this.tab) await this.autosavePpt();
+        else {
+          if (!tab.path) {
+            tab.path = await files.draftPath(slugify(tabLabel(tab)) || "apresentacao", "pptx");
+            tab.isDraft = true;
+          }
+          await this.writePptx(tab, tab.path);
+        }
+      } catch {
+        /* segue: nada a fazer sem acesso a arquivos */
+      }
+      return true;
+    }
+    const choice = await this.askSaveChanges(tabLabel(tab));
+    if (choice === "cancel") return false;
+    if (choice === "save") {
+      if (tab !== this.tab) {
+        await this.switchTo(tab.id);
+        if (this.tab !== tab) return false;
+      }
+      if (!(await this.savePpt(false))) return false;
+    }
+    return true;
+  },
+
+  /** Escolhe uma imagem do computador e a insere na lâmina atual. */
+  async pickPptImage(this: App): Promise<void> {
+    try {
+      const picked = await files.pickImageFile();
+      if (!picked) return;
+      let src = await files.readDataUrl(picked);
+      // mantém a imagem dentro da pasta assets/ do documento (o mesmo do Word)
+      if (this.tab.path) {
+        try {
+          const rel = await files.copyAsset(this.tab.path, picked);
+          if (rel) src = await files.readDataUrl(`${docDirOf(this.tab.path)}/${rel}`);
+        } catch {
+          /* sem pasta: usa o data URL mesmo assim */
+        }
+      }
+      this.pptHost.insertImage(src);
+    } catch (e) {
+      toast("Não consegui abrir a imagem: " + e, "err", 5000);
+    }
+  },
+
+  /** Abre o diálogo "Configurar apresentação" e aplica o resultado. */
+  async configurePpt(this: App): Promise<void> {
+    const novo = await this.askPptSetup(this.pptHost.setup_());
+    if (novo) this.pptHost.setSetup(novo);
+  },
+
+  /** Diálogo "Configurar apresentação": proporção, número, rodapé, fonte e tema. */
+  askPptSetup(this: App, setup: DeckSetup): Promise<DeckSetup | null> {
+    return new Promise((resolve) => {
+      const rascunho: DeckSetup = { ...setup };
+      const backdrop = h("div", { class: "modal-backdrop" });
+      const modal = h("div", { class: "modal pg-modal" });
+      modal.innerHTML = `
+        <header class="wm-head"><h2>Configurar apresentação</h2></header>
+        <div class="wm-body">
+          <label class="pg-row"><span>Proporção</span>
+            <select data-k="aspect">
+              <option value="16:9">16:9 (tela cheia)</option>
+              <option value="4:3">4:3 (projetor antigo)</option>
+            </select>
+          </label>
+          <label class="pg-row"><span>Tema</span>
+            <select data-k="theme">
+              <option value="claro">Claro</option>
+              <option value="escuro">Escuro</option>
+              <option value="contraste">Alto contraste</option>
+            </select>
+          </label>
+          <label class="pg-row"><span>Fonte padrão</span>
+            <select data-k="fontFamily">
+              <option>Segoe UI</option><option>Calibri</option><option>Arial</option>
+              <option>Georgia</option><option>Times New Roman</option><option>Verdana</option><option>Consolas</option>
+            </select>
+          </label>
+          <label class="pg-row"><span>Tamanho (pt)</span>
+            <input type="number" data-k="fontSize" min="8" max="96" step="1">
+          </label>
+          <label class="pg-row"><span>Rodapé</span>
+            <input type="text" data-k="footer" placeholder="Nome da empresa, por exemplo">
+          </label>
+          <label class="pg-row"><span class="pg-check">
+            <input type="checkbox" data-k="showNumber"> Mostrar o número da lâmina
+          </label>
+        </div>
+        <footer class="wm-foot">
+          <button class="btn" data-cancel>Cancelar</button>
+          <span class="dr-spacer"></span>
+          <button class="btn primary" data-ok>Aplicar</button>
+        </footer>`;
+      backdrop.append(modal);
+      document.body.append(backdrop);
+
+      // preenche com os valores atuais
+      type Campo = HTMLSelectElement | HTMLInputElement;
+      const ler = (campo: Campo): unknown => {
+        const k = campo.dataset.k as keyof DeckSetup;
+        if (campo instanceof HTMLInputElement && campo.type === "checkbox") return campo.checked;
+        if (campo instanceof HTMLInputElement && campo.type === "number") return +campo.value;
+        return campo.value;
+      };
+      modal.querySelectorAll<Campo>("[data-k]").forEach((campo) => {
+        const k = campo.dataset.k as keyof DeckSetup;
+        if (campo instanceof HTMLInputElement && campo.type === "checkbox") campo.checked = !!rascunho[k];
+        else campo.value = String(rascunho[k] ?? "");
+      });
+
+      const done = (v: DeckSetup | null) => {
+        document.removeEventListener("keydown", onKey, true);
+        backdrop.remove();
+        resolve(v);
+      };
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          done(null);
+        }
+      };
+      document.addEventListener("keydown", onKey, true);
+      modal.querySelector("[data-cancel]")!.addEventListener("click", () => done(null));
+      modal.querySelector<HTMLButtonElement>("[data-ok]")!.addEventListener("click", () => {
+        modal.querySelectorAll<Campo>("[data-k]").forEach((campo) => {
+          (rascunho as unknown as Record<string, unknown>)[campo.dataset.k!] = ler(campo);
+        });
+        done(rascunho);
+      });
+      modal.querySelector<HTMLElement>("[data-ok]")!.focus();
+    });
+  },
+};

@@ -1,5 +1,6 @@
 // Abas de documentos (estilo Chrome): uma fileira horizontal, uma aba por documento.
 import type { EditorState } from "@codemirror/state";
+import { fileIcon, kindOfPath, kindOfTab, FILE_KIND_LABEL, type FileKind } from "./fileIcons";
 import type { CursorPos } from "./md/editor";
 import type { WritingIssue } from "./broker/writing";
 import { baseName, h, stripExt, uid } from "./util";
@@ -8,9 +9,13 @@ import { baseName, h, stripExt, uid } from "./util";
 export interface DocTab {
   id: string;
   /** "settings" é a aba de Configurações (não tem texto); o resto são documentos. */
-  kind?: "doc" | "settings" | "word";
+  kind?: "doc" | "settings" | "word" | "ppt" | "xlsx";
   /** Dados do documento Word (só nas abas kind "word"). */
   word?: import("./word/host").WordTabData;
+  /** Dados da apresentação (só nas abas kind "ppt"). */
+  ppt?: import("./powerpoint/powerpoint").PowerPointTabData;
+  /** Dados da planilha (só nas abas kind "xlsx"). */
+  xlsx?: import("./excel/host").ExcelTabData;
   path: string | null;
   title: string | null;
   isDraft: boolean;
@@ -50,6 +55,15 @@ export function newTab(state: EditorState, init: Partial<DocTab> = {}): DocTab {
 export function tabLabel(t: DocTab): string {
   if (t.kind === "settings") return "Configurações";
   return t.path ? stripExt(baseName(t.path)) : t.title ?? "Sem título";
+}
+
+/** Ícone da aba por tipo de documento. */
+export function tabIcon(kind: DocTab["kind"]): string {
+  if (kind === "settings") return "i-gear";
+  if (kind === "word") return "i-word";
+  if (kind === "ppt") return "i-eye";
+  if (kind === "xlsx") return "i-grid";
+  return "i-doc";
 }
 
 export interface TabBarHooks {
@@ -115,7 +129,10 @@ export class TabBar {
       title: t.path ? `${t.path}\nDuplo clique ou F2 para renomear` : `${label} (ainda não salvo)\nDuplo clique ou F2 para renomear`,
     });
     const icon = h("span", { class: "tab-ic" });
-    icon.innerHTML = `<svg class="ic"><use href="#${settings ? "i-gear" : t.kind === "word" ? "i-word" : "i-doc"}"/></svg>`;
+    // o tipo REAL do documento: Word, Excel, PowerPoint ou Markdown (os arquivos .md pela extensão)
+    const fk: FileKind = t.kind && t.kind !== "doc" ? kindOfTab(t.kind) : "md";
+    icon.innerHTML = fileIcon(fk);
+    el.title = `${FILE_KIND_LABEL[fk]}\n${el.title}`;
     const name = h("span", { class: "tab-name", text: label });
     const dot = h("span", { class: "tab-dot", title: "Alterações ainda não gravadas" });
     const close = h("button", { class: "tab-x", type: "button", title: "Fechar aba (Ctrl+W)", "aria-label": `Fechar ${label}` });

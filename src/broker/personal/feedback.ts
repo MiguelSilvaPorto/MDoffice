@@ -125,6 +125,12 @@ export function setGhostMode(m: GhostMode): void {
   }
 }
 
+/** Ajuste do tamanho mínimo da sugestão de completar palavra: discreto exige mais letras; agressivo, menos. */
+export function minSuffixDelta(): number {
+  const m = getGhostMode();
+  return m === "discreto" ? 1 : m === "agressivo" ? -1 : 0;
+}
+
 /** Fator para os limiares de confiança: >1 deixa a sugestão mais exigente; <1, mais solta. */
 export function thresholdScale(mode: "next" | "prefix"): number {
   const base = MODE_SCALE[getGhostMode()];

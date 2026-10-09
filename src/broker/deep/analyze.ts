@@ -34,6 +34,8 @@ export interface Proposal {
   /** palavra-base que se repete */
   lemma: string;
   confidence: Confidence;
+  /** nota da IA local: quanto a frase com a troca é mais (+) ou menos (−) natural que a original */
+  lmDelta?: number;
   /** por que esta troca cabe aqui */
   reason: string;
   /** a frase em volta, para mostrar a troca em contexto */
@@ -56,6 +58,8 @@ export interface DeepResult {
   groups: Group[];
   words: number;
   at: number;
+  /** onde a IA local conferiu as trocas ("webgpu"), ou nada se ela não estava disponível */
+  lm?: string;
 }
 
 export interface DeepOptions {
@@ -260,11 +264,19 @@ export function* analyzeDeep(segments: Segment[], opts: DeepOptions = {}): Gener
       count: list.length,
       every,
       proposals,
-      why: `“${shown}” aparece ${list.length} vezes neste texto (uma a cada ${every} palavras). Para não ficar repetitivo, sugiro variar em ${proposals.length} ${proposals.length === 1 ? "trecho" : "trechos"}, usando ${listPt(forms.slice(0, 4))} — só onde a troca combina com a palavra de antes e a de depois, na mesma forma da original. ${proposals.length < list.length ? `As outras ${list.length - proposals.length} ficam como estão.` : ""}`.trim(),
+      why: describeGroup(shown, list.length, every, proposals),
     });
     yield;
   }
   return out;
+}
+
+/** O texto que explica por que a palavra deve variar e o que se propõe. */
+export function describeGroup(shown: string, count: number, every: number, proposals: Proposal[]): string {
+  const uso = new Map<string, number>();
+  for (const p of proposals) uso.set(p.replacement.toLowerCase(), (uso.get(p.replacement.toLowerCase()) ?? 0) + 1);
+  const forms = [...uso.entries()].sort((a, b) => b[1] - a[1]).map(([w]) => `“${w}”`);
+  return `“${shown}” aparece ${count} vezes neste texto (uma a cada ${every} palavras). Para não ficar repetitivo, sugiro variar em ${proposals.length} ${proposals.length === 1 ? "trecho" : "trechos"}, usando ${listPt(forms.slice(0, 4))} — só onde a troca combina com a palavra de antes e a de depois, na mesma forma da original. ${proposals.length < count ? `As outras ${count - proposals.length} ficam como estão.` : ""}`.trim();
 }
 
 function listPt(items: string[]): string {

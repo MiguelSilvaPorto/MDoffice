@@ -1,10 +1,14 @@
 // Abas: abrir, fechar, trocar, reordenar, menus e sessão (reabre as abas ao iniciar).
 
 import type { App } from "./app";
+import { fileIcon } from "../fileIcons";
 import { rememberDocument } from "../broker/ghost/memory";
 import * as files from "../files";
 import { newTab, tabLabel, type DocTab } from "../tabs";
 import { plainText } from "../word/schema";
+import { deckToMarkdown } from "../powerpoint/markdown";
+import type { PowerPointTabData } from "../powerpoint/powerpoint";
+import type { ExcelTabData } from "../excel/host";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { $, h, toast, baseName, docDirOf, stripExt, copyText, loadJSON, saveJSON, fmtTime } from "../util";
 
@@ -18,7 +22,13 @@ export const tabsMethods = {
       for (const p of saved.paths) {
         try {
           const wasDraft = saved.drafts?.includes(p) ?? false;
-          const tab = /\.docx$/i.test(p) ? await this.addDocxTab(p, wasDraft) : this.addTabFor(p, await files.loadDoc(p), wasDraft);
+          const tab = /\.docx$/i.test(p)
+            ? await this.addDocxTab(p, wasDraft)
+            : /\.pptx$/i.test(p)
+              ? await this.addPptxTab(p, wasDraft)
+              : /\.xlsx$/i.test(p) || /\.xlsm$/i.test(p)
+                ? await this.addXlsxTab(p, wasDraft)
+                : this.addTabFor(p, await files.loadDoc(p), wasDraft);
           restored++;
           if (p === saved.active) activateTab = tab;
         } catch {
@@ -102,6 +112,8 @@ export const tabsMethods = {
 
   textOf(this: App, tab: DocTab): string {
     if (tab.kind === "word") return tab === this.tab ? this.wordHost.text() : plainText(tab.word!.state.doc);
+    if (tab.kind === "ppt") return tab === this.tab ? this.pptHost.text() : pptMarkdown(tab.ppt!);
+    if (tab.kind === "xlsx") return tab === this.tab ? this.excelHost.text() : planilhaTexto(tab.xlsx!);
     return tab === this.tab ? this.editor.getText() : tab.state.doc.toString();
   },
 
@@ -109,6 +121,10 @@ export const tabsMethods = {
   snapshotTab(this: App): void {
     if (this.tab.kind === "word") {
       this.wordHost.snapshot(this.tab.word!);
+    } else if (this.tab.kind === "ppt") {
+      this.tab.ppt = this.pptHost.snapshot();
+    } else if (this.tab.kind === "xlsx") {
+      this.tab.xlsx = this.excelHost.snapshot();
     } else {
       this.tab.state = this.editor.getState();
       this.tab.scrollTop = this.editor.scrollTop();
@@ -124,10 +140,26 @@ export const tabsMethods = {
       this.tab = target;
     }
     if (target.kind === "word") {
+      this.leavePpt();
+      this.leaveXlsx();
       this.enterWord(target);
       return;
     }
+    if (target.kind === "ppt") {
+      this.leaveWord();
+      this.leaveXlsx();
+      this.enterPpt(target);
+      return;
+    }
+    if (target.kind === "xlsx") {
+      this.leaveWord();
+      this.leavePpt();
+      this.enterXlsx(target);
+      return;
+    }
     this.leaveWord();
+    this.leavePpt();
+    this.leaveXlsx();
     this.editor.loadState(target.state, target.scrollTop);
     this.outline?.useCollapsed(target.outlineCollapsed);
     this.outline?.setCursorLine(target.cursor.line);
@@ -137,6 +169,9 @@ export const tabsMethods = {
     this.updateWritingBadge();
     this.checkWritingSoon();
     this.translationDocChanged(true);
+    // o log de alterações começa do texto que está abrindo (senão a primeira tecla
+    // viraria um patch gigante entre dois documentos diferentes)
+    this.markText(this.editor.getText());
     await this.preview.render(this.editor.getText());
     this.editor.focus();
   },
@@ -188,7 +223,11 @@ export const tabsMethods = {
     if (!target || target === this.tab || this.switching) return;
     this.switching = true;
     try {
+      // lê o "sujo" ANTES do autosave (ele limpa a marca)
+      const tinhaAlteracoes = this.dirty;
       await this.autosave(); // grava a aba de onde estamos saindo
+      // cópia em disco ao sair de um documento com alterações
+      this.backupOnLeave(this.path, tinhaAlteracoes);
       await this.activate(target);
     } finally {
       this.switching = false;
@@ -219,6 +258,10 @@ export const tabsMethods = {
     const isCurrent = tab === this.tab;
     if (tab.kind === "word") {
       if (!(await this.prepareCloseWord(tab))) return;
+    } else if (tab.kind === "ppt") {
+      if (!(await this.prepareClosePpt(tab))) return;
+    } else if (tab.kind === "xlsx") {
+      if (!(await this.prepareCloseExcel(tab))) return;
     } else if (isCurrent) await this.autosave();
     else if (tab.dirty && tab.path) {
       try {
@@ -231,6 +274,8 @@ export const tabsMethods = {
     // rascunho vazio não vale a pena guardar
     if (tab.isDraft && tab.path && !this.textOf(tab).trim()) void files.deleteDraft(tab.path).catch(() => {});
     else if (tab.path) this.closedTabs.push(tab.path);
+    // guarda uma cópia em disco do que foi alterado nesta aba antes de ela sair
+    if (tab.path) void this.backupNow(tab.path, "fechar aba");
     const index = this.tabs.indexOf(tab);
     this.tabs = this.tabs.filter((t) => t !== tab);
     if (!this.tabs.length) this.tabs.push(newTab(this.editor.createState("")));
@@ -307,42 +352,40 @@ export const tabsMethods = {
       this.selectTab(tab.id);
       toast(`${rotulo} criada — use Ctrl+Shift+S para salvar numa pasta sua.`, "ok", 3800);
     };
-    const modeloPlanilha = [
-      "# Planilha",
-      "",
-      "| Item | Valor | Quantidade | Total |",
-      "| --- | ---: | ---: | ---: |",
-      "| Exemplo | 10,00 | 2 | 20,00 |",
-      "|  |  |  |  |",
-      "",
-      "> Dica: as colunas com `---:` ficam alinhadas à direita, como número de planilha.",
-    ].join("\n");
     const modeloDeck = [
-      "# Apresentação",
+      "# Capa",
       "",
-      "## Subtítulo da capa",
+      "Nome da empresa",
       "",
       "Seu nome · data",
       "",
+      "> [notas] Abertura: cumprimente e apresente o tema.",
+      "",
       "---",
       "",
-      "## Slide 2",
+      "## O que vamos ver",
       "",
       "- Primeiro ponto",
       "- Segundo ponto",
+      "- Terceiro ponto",
+      "",
+      "> [notas] Leve um slide por ideia.",
       "",
       "---",
       "",
-      "## Slide 3",
+      "## Próximos passos",
       "",
-      "Fim — aperte F5 para apresentar.",
+      "- Ação e responsável",
+      "- Prazo",
+      "",
+      "> [notas] Combine o próximo passo com a equipe.",
     ].join("\n");
     this.openMenu(anchor, (menu) => {
       menu.classList.add("recents-menu");
-      this.ddItem(menu, { icon: "i-doc", label: "Documento Markdown", hint: ".md", onPick: () => void this.newDoc() });
-      this.ddItem(menu, { icon: "i-word", label: "Documento Word (.docx)", hint: "páginas, fontes, tabelas", onPick: () => void this.newWordDoc() });
-      this.ddItem(menu, { icon: "i-grid", label: "Planilha", hint: "Excel (tabela)", onPick: () => criar("Planilha", modeloPlanilha) });
-      this.ddItem(menu, { icon: "i-eye", label: "Apresentação", hint: "PowerPoint (slides, F5)", onPick: () => criar("Apresentação", modeloDeck) });
+      this.ddItem(menu, { iconHtml: fileIcon("md"), label: "Documento Markdown", hint: ".md", onPick: () => void this.newDoc() });
+      this.ddItem(menu, { iconHtml: fileIcon("word"), label: "Documento Word (.docx)", hint: "páginas, fontes, tabelas", onPick: () => void this.newWordDoc() });
+      this.ddItem(menu, { iconHtml: fileIcon("excel"), label: "Planilha", hint: "Excel (.xlsx)", onPick: () => void this.newExcelDoc() });
+      this.ddItem(menu, { iconHtml: fileIcon("ppt"), label: "Apresentação", hint: "PowerPoint (slides, F5)", onPick: () => void this.newPowerPointDoc() });
     });
   },
 
@@ -428,3 +471,29 @@ export const tabsMethods = {
     saveJSON("mdc.recents", this.recents);
   },
 };
+
+/** Projeção em texto de uma aba de apresentação (histórico, IA, corretor). */
+function pptMarkdown(data: PowerPointTabData): string {
+  return deckToMarkdown({ titulo: "", slides: data.slides });
+}
+
+/** Projeção em texto de uma aba de planilha (histórico, IA, corretor). */
+function planilhaTexto(data: ExcelTabData): string {
+  const linhas: string[] = [];
+  for (const f of data.livro.folhas) {
+    linhas.push(`## ${f.nome}`);
+    const preenchidas = Object.entries(f.celulas).filter(([, c]) => !!c.texto);
+    if (!preenchidas.length) {
+      linhas.push("(aba vazia)", "");
+      continue;
+    }
+    const largura = Math.max(...preenchidas.map(([r]) => r.replace(/\d/g, "").length));
+    const primeiro = preenchidas[0][1].texto;
+    linhas.push(primeiro);
+    linhas.push("---");
+    for (const [, c] of preenchidas.slice(1)) linhas.push(c.texto);
+    linhas.push("");
+    void largura;
+  }
+  return linhas.join("\n");
+}

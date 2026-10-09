@@ -4,6 +4,7 @@ import type { App } from "./app";
 import * as files from "../files";
 import { newTab, tabLabel, type DocTab } from "../tabs";
 import { moveHistory } from "../history";
+import { moveCommits } from "../snapshots";
 import { type WordTabData } from "../word/host";
 import { importDocx } from "../word/docxImport";
 import { exportDocx } from "../word/docxExport";
@@ -69,6 +70,8 @@ export const wordDocsMethods = {
     this.wordHost.load(target.word!);
     this.outline?.useCollapsed(target.outlineCollapsed);
     this.afterTabChange();
+    // o log de alterações começa do texto que está abrindo
+    this.markText(this.wordSerialized(target));
     this.wordHost.focus();
   },
 
@@ -84,6 +87,8 @@ export const wordDocsMethods = {
     this.setSaveState();
     this.outlineSoon();
     this.autosaveSoon();
+    // log de alterações: o Word também é serializado em texto, então o patch serve
+    this.recordSerializedChange(this.wordSerialized(this.tab));
   },
 
   /** Contagens do documento Word mudaram: rodapé e destaque da seção atual. */
@@ -136,6 +141,7 @@ export const wordDocsMethods = {
    * (comentários, revisões, campos). O histórico guarda cópias de qualquer jeito.
    */
   async autosaveWord(this: App): Promise<void> {
+    if (!this.settings.autosaveOn) return;
     const tab = this.tab;
     if (tab.kind !== "word" || !tab.dirty) return;
     if (tab.path && !tab.isDraft) {
@@ -151,6 +157,8 @@ export const wordDocsMethods = {
       tab.dirty = false;
       tab.statusSaved = `Rascunho atualizado às ${fmtTime()}`;
       this.recordVersion(tab.path, this.wordSerialized(tab));
+      // uma cópia em disco por dia, mesmo sem salvar (cobre o "esqueci de salvar")
+      this.backupOnceADay(tab.path);
       this.afterSave(tab);
       this.saveSession();
     } catch {
@@ -179,10 +187,16 @@ export const wordDocsMethods = {
       }
       await this.writeDocx(tab, tab.path!);
       if (wasDraft && previous && previous !== tab.path) void files.deleteDraft(previous).catch(() => {});
-      if (previous && previous !== tab.path) void moveHistory(previous, tab.path!);
+      if (previous && previous !== tab.path) {
+        void moveHistory(previous, tab.path!);
+        void moveCommits(previous, tab.path!);
+      }
       tab.dirty = false;
       tab.statusSaved = `Salvo às ${fmtTime()}`;
       this.recordVersion(tab.path!, this.wordSerialized(tab), true);
+      // cópia real em disco (o .docx é binário: a cópia é do arquivo inteiro)
+      void this.backupNow(tab.path!, "salvar");
+      void this.exportLog(tab.path!);
       this.addRecent(tab.path!);
       this.setPreviewPath(tab.path);
       this.afterTabChange();

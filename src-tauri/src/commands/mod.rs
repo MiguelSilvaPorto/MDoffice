@@ -6,8 +6,11 @@
 //! - `projects` estrutura de pastas (contexto para IA) e lista de documentos
 //! - `search`   busca dentro dos documentos
 //! - `bundle`   pacote ZIP para IA
+//! - `backup`   cópias datadas dos documentos em disco, proteção antes de sobrescrever
+//!              e o índice de espaço
 
 pub mod assets;
+pub mod backup;
 pub mod bundle;
 pub mod drafts;
 pub mod files;

@@ -8,7 +8,7 @@ import { DocumentIndex, SENTENCE_START } from "./documentIndex";
 import { getLanguageModel, type LangModel, START, COMMA, NUMBER } from "./model";
 import { predictLegacy } from "./legacy";
 import { personalIndex } from "./memory";
-import { preference, thresholdScale } from "../personal/feedback";
+import { preference, thresholdScale, minSuffixDelta } from "../personal/feedback";
 import { agreementFactor } from "./agreement";
 import { fixTypo } from "./typo";
 
@@ -20,13 +20,15 @@ const seen = (c: number): number => (c >= 2 ? Math.min(c, 5) : c * MIX.single);
 
 export const THRESHOLDS = {
   /** próxima palavra, depois de um espaço */
-  next: 0.15,
+  next: 0.26,
   /** continuar a sugestão com mais uma palavra (até 3 no total) */
   chain: 0.45,
   /** completar a palavra com 1 letra digitada / 2 / 3 ou mais */
-  prefix1: 0.6,
-  prefix2: 0.3,
-  prefix3: 0.2,
+  prefix1: 0.82,
+  prefix2: 0.5,
+  prefix3: 0.36,
+  /** completar a palavra só vale a pena se faltar pelo menos isto de letras (o Tab também custa uma tecla) */
+  minSuffix: 3,
   /** quantas palavras no máximo numa sugestão */
   maxWords: 3,
   /** oferece corrigir a palavra recém-digitada quando parece erro de digitação */
@@ -38,6 +40,9 @@ export const THRESHOLDS = {
   /** confiança mínima para uma alternativa */
   alt: 0.06,
 };
+
+/** Quantas letras, no mínimo, a sugestão de completar palavra precisa poupar (depende do modo de intensidade). */
+const minChars = (): number => Math.max(1, THRESHOLDS.minSuffix + minSuffixDelta());
 
 /** Analisa a linha e a posição do cursor e devolve a sugestão de texto fantasma, se houver. */
 export function predictCompletion(doc: Text, pos: number, index: DocumentIndex): GhostSuggestion | null {
@@ -306,7 +311,9 @@ function predictWithModel(model: LangModel, before: string, index: DocumentIndex
   const out: string[] = [];
   const words: string[] = [];
   for (let i = 0; i < list.length; i++) {
-    const text = suggestFrom(model, index, ctx, list[i], i === 0);
+    let text = suggestFrom(model, index, ctx, list[i], i === 0);
+    // faltam poucas letras: digitar custa quase o mesmo que o Tab, então a sugestão só atrapalha
+    if (text && ctx.prefix !== null && text.trimEnd().length < minChars()) text = null;
     if (i === 0) {
       if (!text) return null;
       out.push(text);
@@ -355,3 +362,59 @@ function suggestFrom(model: LangModel, index: DocumentIndex, ctx: Ctx, first: Ra
   }
   return ctx.prefix !== null ? words[0] + (words.length > 1 ? " " + words.slice(1).join(" ") : "") : words.join(" ");
 }
+
+/** Uma candidata do n-grama (com a chance dela). */
+export interface RerankCand {
+  /** a palavra como deve aparecer */
+  word: string;
+  /** a palavra em minúsculas */
+  lc: string;
+  p: number;
+  /** id no modelo do idioma (-1 se só existe no documento) */
+  id: number;
+}
+
+/** O ponto do cursor visto como uma escolha entre candidatas (para a IA local reordenar). */
+export interface RerankPoint {
+  mode: "next" | "prefix";
+  /** o que foi digitado da palavra atual (modo prefixo) */
+  prefix: string | null;
+  /** o texto antes da palavra atual (sem o prefixo) */
+  context: string;
+  /** a palavra anterior (para aprender com o uso) */
+  prev: string;
+  list: RerankCand[];
+}
+
+/**
+ * Candidatas do n-grama para o ponto do cursor, sem os cortes de confiança. A IA local reordena essa lista
+ * (ver refine.ts) e o experimento que mede o ganho (scripts/) usa a mesma função.
+ */
+export function candidatesAt(before: string, index: DocumentIndex, k = 8): RerankPoint | null {
+  const model = getLanguageModel();
+  if (!model) return null;
+  const ctx = readContext(before);
+  if (!ctx) return null;
+  const list = rank(model, index, ctx.tokens, ctx.prefix, k);
+  if (!list.length) return null;
+  return {
+    mode: ctx.prefix === null ? "next" : "prefix",
+    prefix: ctx.prefix,
+    context: ctx.prefix === null ? before : before.slice(0, before.length - ctx.prefix.length),
+    prev: ctx.tokens.length ? ctx.tokens[ctx.tokens.length - 1] : SENTENCE_START,
+    list: list.map((r) => ({ word: r.best.display, lc: r.best.lc, p: r.p, id: r.best.id })),
+  };
+}
+
+/** O texto que falta para completar `prefix` com a candidata (respeita MAIÚSCULAS e nomes próprios). */
+export function completionSuffix(prefix: string, cand: RerankCand): string {
+  const model = getLanguageModel();
+  const n = prefix.length;
+  let disp = cand.word;
+  if (prefix === prefix.toUpperCase() && n > 1) disp = disp.toUpperCase();
+  else if (prefix[0] !== prefix[0].toLowerCase() && disp[0] === disp[0].toLowerCase() && cand.id >= 0 && model?.caps.has(cand.id)) disp = disp[0].toUpperCase() + disp.slice(1);
+  return disp.slice(n);
+}
+
+/** Quantas letras, no mínimo, uma sugestão de completar palavra precisa poupar (já considera o modo de intensidade). */
+export const minSuffixChars = minChars;

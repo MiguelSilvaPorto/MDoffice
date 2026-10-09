@@ -343,6 +343,50 @@
   font-size: 10px;
 }
 
+/* Botão "⋯" de cada arquivo: some até o hover da linha (ou o foco por teclado),
+   para não competir visualmente com o nome do arquivo. */
+.pj-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-left: auto;
+  margin-right: 2px;
+  border-radius: 5px;
+  color: var(--sb-muted);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.12s ease, background-color 0.12s ease;
+}
+
+.pj-more .ic {
+  width: 14px;
+  height: 14px;
+}
+
+.pj-doc:hover .pj-more,
+.pj-more:focus-visible,
+.pj-more:hover {
+  opacity: 1;
+}
+
+.pj-more:hover {
+  background: color-mix(in srgb, var(--sb-hover) 70%, transparent);
+  color: var(--sb-fg);
+}
+
+/* quando existe o ✓/●, ele deixa de empurrar o nome e fica antes do ⋯ */
+.pj-state + .pj-more {
+  margin-left: 0;
+}
+
+/* no item ativo o ⋯ precisa de contraste sobre o fundo destacado */
+.pj-doc.active .pj-more {
+  color: var(--sb-active-fg);
+}
+
 .hm-text {
   display: flex;
   flex: 1;

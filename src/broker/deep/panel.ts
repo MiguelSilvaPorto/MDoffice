@@ -135,7 +135,7 @@ export function openDeepPanel(opts: DeepPanelOptions): DeepPanelHandle {
     }
     const total = result.groups.reduce((a, g) => a + g.proposals.length, 0);
     const done = result.groups.reduce((a, g) => a + g.proposals.filter((p) => st(p) === "applied").length, 0);
-    sum.textContent = `${total} sugestões de troca em ${result.groups.length} palavras repetidas (texto de ${result.words} palavras)${done ? ` — ${done} aplicada(s)` : ""}. Nada muda sem você aceitar.`;
+    sum.textContent = `${total} sugestões de troca em ${result.groups.length} palavras repetidas (texto de ${result.words} palavras)${done ? ` — ${done} aplicada(s)` : ""}. ${result.lm ? `Cada troca foi conferida pela IA local (${result.lm === "webgpu" ? "na GPU" : result.lm}).` : "IA local indisponível: as trocas seguem só as regras."} Nada muda sem você aceitar.`;
     acceptAll.disabled = !result.groups.some((g) => g.proposals.some((p) => st(p) === "pending" && p.confidence === "alta"));
     for (const g of result.groups) {
       const card = h("section", { class: "dp-group" });

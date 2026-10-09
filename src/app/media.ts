@@ -59,7 +59,9 @@ export const mediaMethods = {
   },
 
   async handleDropped(this: App, paths: string[]): Promise<void> {
-    const mdPath = paths.find((p) => isMarkdownPath(p) || /\.docx$/i.test(p));
+    const mdPath = paths.find(
+      (p) => isMarkdownPath(p) || /\.docx$/i.test(p) || /\.pptx$/i.test(p) || /\.xlsx$/i.test(p) || /\.xlsm$/i.test(p)
+    );
     const images = paths.filter(isImagePath);
     if (mdPath) await this.openPath(mdPath);
     if (!images.length) return;

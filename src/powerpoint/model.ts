@@ -1,12 +1,15 @@
-// Dados do deck que não são conteúdo: proporção, tema, número e rodapé.
+// Dados do deck que não são conteúdo: proporção, tema, número, rodapé e fontes.
 // (mesmo papel do src/word/model.ts: default + serialize/deserialize)
-import { ASPECTS, aspectSize, type Deck, type DeckSetup, type Slide, type SlideLayout } from "./schema";
+import { ASPECTS, aspectSize, stageRatio, type Deck, type DeckSetup, type Slide, type SlideLayout } from "./schema";
 
 export const DEFAULT_SETUP: DeckSetup = {
   aspect: "16:9",
   theme: "escuro",
   showNumber: true,
   footer: "",
+  fontFamily: "Segoe UI",
+  fontSize: 18,
+  bg: "",
 };
 
 export interface DeckSnapshot {
@@ -26,7 +29,11 @@ export function deserialize(texto: string): DeckSnapshot | null {
   try {
     const snap = JSON.parse(texto) as DeckSnapshot;
     if (!snap || !Array.isArray(snap.slides)) return null;
-    return { v: 1, setup: { ...DEFAULT_SETUP, ...snap.setup }, slides: snap.slides };
+    return {
+      v: 1,
+      setup: { ...DEFAULT_SETUP, ...snap.setup },
+      slides: snap.slides.map((s) => ({ ...s, notes: s.notes ?? "", shapes: s.shapes ?? [] })),
+    };
   } catch {
     return null;
   }
@@ -42,12 +49,11 @@ export function resumo(deck: Deck, setup: DeckSetup): string {
   return `${n} lâmina${n === 1 ? "" : "s"} · ${setup.aspect}`;
 }
 
-/** Posição de leitura da lâmina no palco (16:9 etc.), em % — usada pela view. */
-export function stageRatio(setup: DeckSetup): number {
-  const a = ASPECTS.find((x) => x.id === setup.aspect) ?? ASPECTS[0];
-  return a.w / a.h;
+/** Cria uma lâmina nova com o layout pedido. */
+export function newSlide(layout: SlideLayout = "conteudo"): Slide {
+  return { md: "", layout, notes: "", shapes: [] };
 }
 
 export const SETUP_PADRAO = DEFAULT_SETUP;
-export { aspectSize };
+export { aspectSize, stageRatio, ASPECTS };
 export type { Deck, DeckSetup, Slide, SlideLayout };

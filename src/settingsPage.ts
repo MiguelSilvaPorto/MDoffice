@@ -1,7 +1,12 @@
 // Página de Configurações (abre como uma aba, ao lado dos documentos). Cada ajuste vale na hora.
 import { toast } from "./util";
+import * as backup from "./backup";
+import { pickFolders } from "./files";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { clearGhostMemory } from "./broker/ghost/memory";
 import { profileSummary } from "./broker/personal/profile";
+import { llmEnabled, llmUseGpu, llmTypingSetting, setLlmEnabled, setLlmUseGpu, setLlmTyping } from "./broker/llm/config";
+import { llmAvailable, llmDevice } from "./broker/llm/client";
 import { getGhostMode, setGhostMode, clearFeedback, feedbackSummary, type GhostMode } from "./broker/personal/feedback";
 import type { Translation, ProviderChoice } from "./translate/controller";
 import type { Tone } from "./broker/writing";
@@ -99,12 +104,18 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
             ${toggle("autofix", "Correção automática", "Ponto final, vírgulas, maiúsculas, espaços e palavras erradas entram sozinhos (Ctrl+Z desfaz).", ctx.autoFix())}
             ${toggle("copilot", "Sugestões enquanto digita", "Mostra a continuação da frase em cinza. Tab aceita; Alt+Seta aceita uma palavra.", ctx.copilot())}
             <div class="st-row">
-              <span class="st-text"><b>Intensidade das sugestões</b><small>Discreta: aparece menos e mais certeira. Agressiva: aparece mais, com mais erros.</small></span>
+              <span class="st-text"><b>Intensidade das sugestões</b><small>Só aparece quando poupa digitação de verdade. Discreta: 4+ letras e só com muita certeza. Equilibrada: 3+ letras. Agressiva: 2+ letras, aparece mais e erra mais.</small></span>
               <select class="st-select" data-sel="ghostmode">
                 <option value="discreto">Discreta</option>
                 <option value="equilibrado">Equilibrada</option>
                 <option value="agressivo">Agressiva</option>
               </select>
+            </div>
+            ${toggle("llm", "IA local na revisão inteligente", "Um modelo de linguagem pequeno (Gemma 3 270M, que já vem no app) confere cada troca de palavra sugerida. Roda em uma thread só, usa a GPU, trabalha só com o computador parado e sai da memória quando não está em uso. Nada sai do seu computador.", llmEnabled())}
+            ${toggle("llmtyping", "IA ajuda nas sugestões enquanto digito", "Numa pausa curta no meio de uma palavra, a IA local escolhe, entre os candidatos do modelo de palavras, o que combina com a frase (acerta bem mais). Só aparece quando a IA tem bastante certeza. Precisa da IA local e da GPU; carrega na primeira vez (alguns segundos) e sai da memória depois de 90 s parado.", llmTypingSetting())}
+            ${toggle("llmgpu", "Usar a GPU para a IA local", "A IA local só funciona na GPU (WebGPU). Se você desligar, ela fica inativa e a revisão usa só as regras.", llmUseGpu())}
+            <div class="st-row">
+              <span class="st-text"><b>Estado da IA local</b><small data-llm-status>verificando…</small></span>
             </div>
             <div class="st-row">
               <span class="st-text"><b>Seu estilo de escrita</b><small data-style-summary></small></span>
@@ -147,19 +158,56 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
         </section>
 
         <section class="st-sec" data-sec="historico">
-          <h3>Histórico de versões</h3>
-          <p class="st-lead">Cópias do documento guardadas no app para você voltar atrás.</p>
+          <h3>Histórico e salvamento</h3>
+          <p class="st-lead">Salvamento contínuo, cópias do documento guardadas no app e o log de alterações para voltar atrás.</p>
           <div class="st-list">
+            ${toggle("autosave", "Salvamento automático", "Grava o documento sozinho enquanto você escreve. Desligue se quiser salvar apenas com Ctrl+S.", s.autosaveOn)}
             ${toggle("hist", "Guardar versões dos documentos", "Uma cópia automática a cada 5 minutos (se o texto mudou) e ao salvar.", s.historyOn)}
             <div class="st-row">
               <span class="st-text"><b>Versões por documento</b><small>As marcadas por você (★) nunca são apagadas sozinhas.</small></span>
               <select data-k="hist-max" class="st-select">${[20, 40, 60, 100, 200].map((n) => `<option value="${n}" ${s.historyMax === n ? "selected" : ""}>${n} versões</option>`).join("")}</select>
             </div>
+            ${toggle("commits", "Guardar o log de alterações", "Guarda só a instrução de cada mudança (o que saiu e o que entrou), não o arquivo inteiro. Dá para voltar a qualquer ponto pela aba Alterações do histórico.", s.commitsOn)}
             <div class="st-row">
               <span class="st-text"><b>Este documento</b><small data-hist-count></small></span>
               <span class="st-btns">
                 <button class="btn small st-btn" data-act="hist-open">Abrir histórico</button>
                 <button class="btn small st-btn danger" data-act="hist-clear">Apagar</button>
+              </span>
+            </div>
+          </div>
+
+          <h4>Backup em disco</h4>
+          <p class="st-lead">Uma cópia de verdade do arquivo, gravada em duas pastas ao mesmo tempo. Se uma falhar (HD desconectado, sem permissão), a outra ainda salva.</p>
+          <div class="st-list">
+            ${toggle("backup", "Guardar cópia dos documentos em disco", "Ao salvar, ao sair de um documento com alterações e uma vez por dia. Também vale para Word, PowerPoint e Excel.", s.backupOn)}
+            ${toggle("backupwarn", "Avisar quando o original sumir", "Se você apagar um arquivo do disco, o app avisa na barra inferior e deixa restaurar pela cópia.", s.backupWarnMissing)}
+            <div class="st-row">
+              <span class="st-text"><b>Pasta escolhida por você</b><small data-backup-root>—</small></span>
+              <span class="st-btns">
+                <button class="btn small st-btn" data-act="backup-dir">Escolher pasta…</button>
+                <button class="btn small st-btn" data-act="backup-open">Abrir</button>
+              </span>
+            </div>
+            <div class="st-row">
+              <span class="st-text"><b>Política de limpeza</b><small>Quanto cada documento guarda antes de as cópias mais antigas saírem. As marcadas à mão nunca saem.</small></span>
+              <select data-k="backup-profile" class="st-select">
+                ${backup.PERFIS.map((p) => `<option value="${p.id}" ${s.backupProfile === p.id ? "selected" : ""}>${p.nome}</option>`).join("")}
+              </select>
+            </div>
+            <p class="st-note" data-backup-profile-desc></p>
+            <div class="st-row" data-backup-custom ${s.backupProfile === "personalizado" ? "" : "hidden"}>
+              <span class="st-text"><b>Cópias por documento</b><small>0 = guardar quantas existirem, sem limite de quantidade.</small></span>
+              <select data-k="backup-copies" class="st-select">${[10, 20, 50, 100, 200, 500, 0].map((n) => `<option value="${n}" ${s.backupCopies === n ? "selected" : ""}>${n === 0 ? "sem limite" : `${n} cópias`}</option>`).join("")}</select>
+            </div>
+            <div class="st-row" data-backup-custom2 ${s.backupProfile === "personalizado" ? "" : "hidden"}>
+              <span class="st-text"><b>Prazo</b><small>0 = não apagar por tempo (só pela quantidade acima).</small></span>
+              <select data-k="backup-days" class="st-select">${[7, 30, 90, 365, 0].map((n) => `<option value="${n}" ${s.backupDays === n ? "selected" : ""}>${n === 0 ? "sem prazo" : n === 365 ? "1 ano" : `${n} dias`}</option>`).join("")}</select>
+            </div>
+            <div class="st-row">
+              <span class="st-text"><b>Espaço usado</b><small data-backup-size>calculando…</small></span>
+              <span class="st-btns">
+                <button class="btn small st-btn" data-act="backup-prune">Limpar cópias antigas</button>
               </span>
             </div>
           </div>
@@ -247,6 +295,31 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     const n = ctx.dictionaryCount();
     q("[data-dict-count]").textContent = n ? `${n} palavra(s) que você mandou ignorar` : "Nenhuma palavra ainda — clique numa palavra sublinhada e escolha “Adicionar ao dicionário”.";
   };
+  const paintLlm = async () => {
+    const el = q("[data-llm-status]");
+    const gpu = (navigator as unknown as { gpu?: { requestAdapter: () => Promise<unknown> } }).gpu;
+    const [modelo, adapter] = await Promise.all([llmAvailable(), gpu ? gpu.requestAdapter().catch(() => null) : Promise.resolve(null)]);
+    if (!llmEnabled()) el.textContent = "Desligada.";
+    else if (!modelo) el.textContent = "O modelo não está nesta cópia do app (rode \"npm run prep:modelo\" antes de gerar o instalador).";
+    else if (!adapter) el.textContent = "Este computador não oferece WebGPU, então a IA local fica inativa. As revisões seguem só com as regras.";
+    else if (!llmUseGpu()) el.textContent = "A GPU está desligada nas configurações: a IA local fica inativa.";
+    else el.textContent = `Pronta (GPU${llmDevice() ? ", em uso agora" : ""}). Carrega ao fazer uma revisão e sai da memória após 90 s parada.`;
+  };
+  void paintLlm();
+  sw("llm").addEventListener("change", (e) => {
+    setLlmEnabled((e.target as HTMLInputElement).checked);
+    void paintLlm();
+    flash();
+  });
+  sw("llmtyping").addEventListener("change", (e) => {
+    setLlmTyping((e.target as HTMLInputElement).checked);
+    flash();
+  });
+  sw("llmgpu").addEventListener("change", (e) => {
+    setLlmUseGpu((e.target as HTMLInputElement).checked);
+    void paintLlm();
+    flash();
+  });
   const paintStyle = () => {
     const p = profileSummary();
     const fb = feedbackSummary();
@@ -346,7 +419,11 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     ctx.translation.clearCache();
   });
 
-  // histórico
+  // histórico e salvamento
+  sw("autosave").addEventListener("change", (e) => {
+    ctx.patch({ autosaveOn: (e.target as HTMLInputElement).checked });
+    flash();
+  });
   sw("hist").addEventListener("change", (e) => {
     ctx.patch({ historyOn: (e.target as HTMLInputElement).checked });
     flash();
@@ -362,6 +439,85 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   on('[data-act="hist-clear"]', "click", async () => {
     await ctx.clearHistory();
     paintHist();
+  });
+
+  // backup em disco
+  let backupRoot = s.backupRoot;
+  const paintBackupProfile = () => {
+    const perfil = ctx.settings().backupProfile;
+    const p = backup.PERFIS.find((x) => x.id === perfil);
+    q("[data-backup-profile-desc]").textContent = p ? p.desc : "";
+    const custom = perfil === "personalizado";
+    q("[data-backup-custom]").hidden = !custom;
+    q("[data-backup-custom2]").hidden = !custom;
+  };
+  const paintBackupRoot = () => {
+    q("[data-backup-root]").textContent = backupRoot || "Nenhuma pasta escolhida (o backup fica só na pasta do app)";
+  };
+  const paintBackupSize = () =>
+    void backup.indice().then((idx) => {
+      const el = q("[data-backup-size]");
+      el.textContent = idx.copies
+        ? `${backup.tamanhoLegivel(idx.bytes)} em ${idx.copies} cópia(s), de ${idx.files.length} documento(s)`
+        : "Nenhuma cópia ainda.";
+    });
+  paintBackupProfile();
+  paintBackupRoot();
+  paintBackupSize();
+
+  sw("backup").addEventListener("change", (e) => {
+    ctx.patch({ backupOn: (e.target as HTMLInputElement).checked });
+    flash();
+  });
+  sw("backupwarn").addEventListener("change", (e) => {
+    ctx.patch({ backupWarnMissing: (e.target as HTMLInputElement).checked });
+    flash();
+  });
+  sw("backup-profile").addEventListener("change", (e) => {
+    const valor = (e.target as HTMLSelectElement).value as AppSettings["backupProfile"];
+    ctx.patch({ backupProfile: valor });
+    paintBackupProfile();
+    flash();
+  });
+  sw("backup-copies").addEventListener("change", (e) => {
+    ctx.patch({ backupCopies: Number((e.target as HTMLSelectElement).value) || 0 });
+    flash();
+  });
+  sw("backup-days").addEventListener("change", (e) => {
+    ctx.patch({ backupDays: Number((e.target as HTMLSelectElement).value) || 0 });
+    flash();
+  });
+  on('[data-act="backup-dir"]', "click", async () => {
+    try {
+      const escolhida = await pickFolders();
+      if (!escolhida.length) return;
+      backupRoot = await backup.prepararPasta(escolhida[0]);
+      ctx.patch({ backupRoot });
+      paintBackupRoot();
+      flash();
+      toast("Pasta de backup definida.", "ok", 2600);
+    } catch (e) {
+      toast("Não foi possível usar essa pasta: " + e, "err", 5000);
+    }
+  });
+  on('[data-act="backup-open"]', "click", async () => {
+    try {
+      const pasta = backupRoot || (await backup.pastaDoApp());
+      await revealItemInDir(pasta);
+    } catch {
+      toast("Não foi possível abrir a pasta.", "err", 4000);
+    }
+  });
+  on('[data-act="backup-prune"]', "click", async () => {
+    const atual = ctx.settings();
+    const numeros = backup.numerosDoPerfil(atual.backupProfile, atual.backupCopies, atual.backupDays);
+    try {
+      const n = await backup.limpar(numeros.copias, numeros.dias);
+      toast(n ? `${n} cópia(s) antiga(s) apagada(s).` : "Nada a apagar com a política atual.", "ok", 3200);
+      paintBackupSize();
+    } catch (e) {
+      toast("Não foi possível limpar: " + e, "err", 5000);
+    }
   });
 
   // aparência

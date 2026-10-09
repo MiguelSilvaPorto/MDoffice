@@ -5,6 +5,18 @@ import { checkText, checkStyle, stats as writingStats, spellIsReady, spellHasFai
 import { openReviewModal } from "../broker/review";
 import { $, toast, saveJSON } from "../util";
 
+/**
+ * A correção automática (sem a pessoa pedir) não mexe em pontuação de frase: não fecha frase com ponto nem quebra frase
+ * comprida. Quem está pensando no meio da frase não pode ter o texto fechado por baixo da mão. Esses avisos continuam
+ * aparecendo e entram quando a pessoa aceita ("Corrigir tudo", clique no aviso) ou ao concluir o parágrafo (ponto final).
+ */
+function autoNaoMexe(i: WritingIssue, text: string): boolean {
+  if (/nova frase/i.test(i.message)) return true;
+  const fix = i.fix ?? "";
+  // qualquer correção que acrescente um ponto final / ponto de frase
+  return /^\.\s/.test(fix) || (fix.endsWith(".") && !text.slice(i.from, i.to).endsWith("."));
+}
+
 export const assistantMethods = {
   runIdleFix(this: App): void {
     if (!this.autoFix || !this.autoFixArmed) return;
@@ -20,7 +32,8 @@ export const assistantMethods = {
     while (last < doc.lines && doc.line(last + 1).text.trim() !== "") last++;
     const from = doc.line(first).from;
     const to = doc.line(last).to;
-    const fresh = checkStyle(doc.toString()).filter((i) => i.fix && i.from >= from && i.to <= to);
+    const texto = doc.toString();
+    const fresh = checkStyle(texto).filter((i) => i.fix && i.from >= from && i.to <= to && !autoNaoMexe(i, texto));
     if (!fresh.length) return;
     this.editor.replaceRanges(
       fresh.map((i) => ({ from: i.from, to: i.to, insert: i.fix! })),
@@ -96,6 +109,29 @@ export const assistantMethods = {
     return issue.kind === "spell" ? issue.auto : issue.fix;
   },
 
+  /**
+   * Correções automáticas ao salvar (Ctrl+S). Quem salva muitas vezes enquanto escreve não pode ter o texto mexido por
+   * baixo da mão: o parágrafo em que o cursor está NÃO é fechado com ponto nem quebrado em frases (a pessoa ainda está
+   * escrevendo), nada que toque a palavra sob o cursor é trocado e a ortografia só corrige palavras que ficaram para trás.
+   */
+  applySaveFixes(this: App): number {
+    const view = this.editor.view;
+    const doc = view.state.doc;
+    const pos = view.state.selection.main.head;
+    const texto = doc.toString();
+    // o parágrafo do cursor
+    const parFrom = this.paragraphStartAt(pos);
+    let last = doc.lineAt(pos);
+    while (last.number < doc.lines && doc.line(last.number + 1).text.trim() !== "") last = doc.line(last.number + 1);
+    const parTo = last.to;
+    const fresh = checkStyle(texto).filter((i) => {
+      if (i.from <= pos && pos <= i.to) return false; // a palavra que está sendo digitada
+      if (i.from >= parFrom && i.to <= parTo && autoNaoMexe(i, texto)) return false; // fechar frase no parágrafo em andamento
+      return true;
+    });
+    return this.applyFixes(fresh) + this.autoFixWords(0, texto.length, true);
+  },
+
   /** Aplica as correções disponíveis numa só ação (um único desfazer). */
   applyFixes(this: App, issues: WritingIssue[]): number {
     const aplicaveis = issues.filter((i) => this.replacementFor(i) !== undefined);
@@ -161,14 +197,18 @@ export const assistantMethods = {
     const vazia = texto === "";
     const bloco = /^(#|!\[|\||```|>|[-*+]\s|\d+\.\s)/.test(texto);
     if (!vazia && !bloco) return 0;
-    const ultimaAcima = vazia ? line.number - 2 : line.number - 1;
+    // Linha vazia: só vale se a de cima também está vazia (a pessoa apertou Enter duas vezes). Com uma linha só ainda
+    // é o mesmo parágrafo. Em qualquer caso, o parágrafo que acabou é o último texto acima.
+    let ultimaAcima = line.number - 1;
+    if (vazia && (ultimaAcima < 1 || doc.line(ultimaAcima).text.trim() !== "")) return 0;
+    while (ultimaAcima >= 1 && doc.line(ultimaAcima).text.trim() === "") ultimaAcima--;
     if (ultimaAcima < 1) return 0;
-    if (vazia && doc.line(ultimaAcima).text.trim() !== "") return 0;
     let first = ultimaAcima;
     while (first > 1 && doc.line(first - 1).text.trim() !== "") first--;
     const from = doc.line(first).from;
     const to = doc.line(ultimaAcima).to;
-    const fresh = checkStyle(doc.toString()).filter((i) => i.from >= from && i.to <= to);
+    const todoTexto = doc.toString();
+    const fresh = checkStyle(todoTexto).filter((i) => i.from >= from && i.to <= to && !/nova frase/i.test(i.message));
     return this.applyFixes(fresh) + this.autoFixWords(from, to);
   },
 

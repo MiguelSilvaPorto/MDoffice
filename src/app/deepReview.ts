@@ -7,6 +7,7 @@ import { analyzeDeep, type DeepResult, type Proposal, type Segment } from "../br
 import { runSliced } from "../broker/deep/scheduler";
 import { loadThesaurus } from "../broker/deep/thesaurus";
 import { openDeepPanel } from "../broker/deep/panel";
+import { refineWithLm } from "../broker/deep/refine";
 import { acceptedTotal } from "../broker/personal/feedback";
 import { getLanguageModel, loadLanguageModel } from "../broker/ghost/model";
 import { toast } from "../util";
@@ -39,6 +40,8 @@ export const deepReviewMethods = {
     if (this.deepCache?.key === key) return this.deepCache.result;
     const job = runSliced(analyzeDeep(segments, { includeBroad: broad }), { background });
     const result = await job.promise;
+    // segunda opinião da IA local (só na GPU; sem ela, as trocas ficam como as regras propuseram)
+    if (result) await refineWithLm(result, { background });
     if (result) this.deepCache = { key, result };
     return result;
   },

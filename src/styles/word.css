@@ -8,6 +8,7 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
   background: var(--panel);
 }
 
@@ -25,26 +26,166 @@ body.settings-open #word-pane {
   display: none;
 }
 
-/* Fita no estilo do Word: grupos com o nome embaixo, botões grandes e galeria de estilos. */
+/* Fita no estilo do Word Online: abas superiores e barra de ferramentas sem quebra */
 .wd-ribbon {
   display: flex;
-  flex-wrap: wrap; /* quando falta largura, os grupos descem para a 2ª linha: nada fica escondido */
-  align-items: stretch;
-  gap: 6px 0;
-  margin: 6px 8px 0;
-  padding: 6px 4px 4px;
+  flex-direction: column;
+  margin: 4px 8px 0;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   flex: none;
+  overflow: hidden;
+  user-select: none;
+}
+
+.wd-ribbon-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 6px 0;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+
+.wd-rtab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  user-select: none;
+}
+
+.wd-rtab:hover {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--panel) 60%, transparent);
+}
+
+.wd-rtab.active {
+  color: var(--fg);
+  background: var(--panel);
+  border-color: var(--border);
+  font-weight: 600;
+  margin-bottom: -1px;
+  z-index: 2;
+}
+
+.wd-rtab.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 8px;
+  right: 8px;
+  height: 2.5px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+}
+
+.wd-rtab-contextual {
+  color: #0f6cbd;
+}
+[data-theme="dark"] .wd-rtab-contextual {
+  color: #60a5fa;
+}
+.wd-rtab-contextual.active::after {
+  background: #0f6cbd;
+}
+[data-theme="dark"] .wd-rtab-contextual.active::after {
+  background: #60a5fa;
+}
+
+.wd-ribbon-panels {
+  display: flex;
+  align-items: center;
+  min-height: 66px;
+  background: var(--panel);
+  position: relative;
+  flex: none;
+}
+
+.wd-rpanel {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px 3px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  flex-wrap: nowrap !important;
+  scroll-behavior: smooth;
+}
+
+.wd-rpanel::-webkit-scrollbar {
+  display: none;
+}
+
+.wd-ribbon-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 48px;
+  padding: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  opacity: 0.92;
+  transition: opacity 0.12s ease, background 0.12s ease;
+}
+
+.wd-ribbon-nav:hover {
+  opacity: 1;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.wd-ribbon-nav.prev {
+  left: 2px;
+}
+
+.wd-ribbon-nav.next {
+  right: 2px;
+}
+
+.wd-ribbon-nav .ic {
+  width: 14px;
+  height: 14px;
+}
+
+.wd-ribbon-nav[hidden] {
+  display: none !important;
+}
+
+.wd-rpanel[hidden] {
+  display: none !important;
 }
 
 .rb-group {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 0 8px;
+  padding: 0 6px;
   border-right: 1px solid var(--border);
   flex: none;
 }
@@ -64,16 +205,16 @@ body.settings-open #word-pane {
 .rb-body {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   flex: 1;
-  min-height: 62px;
+  min-height: 52px;
 }
 
 .rb-glabel {
-  padding-top: 2px;
+  padding-top: 1px;
   color: var(--muted, var(--fg));
   opacity: 0.75;
-  font-size: 11px;
+  font-size: 10px;
   text-align: center;
   white-space: nowrap;
 }
@@ -120,16 +261,16 @@ body.settings-open #word-pane {
 
 .rb.big {
   flex-direction: column;
-  gap: 3px;
-  min-width: 52px;
-  height: 56px;
-  padding: 4px 6px;
-  font-size: 12px;
+  gap: 2px;
+  min-width: 46px;
+  height: 50px;
+  padding: 3px 5px;
+  font-size: 11.5px;
 }
 
 .rb.big .ic {
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
 }
 
 .rb:hover:not(:disabled) {
@@ -187,26 +328,26 @@ body.settings-open #word-pane {
 }
 
 .rb-select.font {
-  width: 134px;
+  width: 124px;
 }
 
 .rb-select.size {
-  width: 56px;
+  width: 52px;
 }
 
 .rb-select.lh {
-  width: 128px;
-  margin-left: 4px;
+  width: 114px;
+  margin-left: 2px;
 }
 
 /* galeria de estilos moderna do Word */
 .rb-styles {
   display: flex;
   align-items: center;
-  gap: 6px;
-  max-width: min(380px, 34vw);
+  gap: 3px;
+  max-width: min(340px, 30vw);
   overflow-x: auto;
-  padding: 2px 4px;
+  padding: 2px;
   scrollbar-width: none;
 }
 
@@ -217,9 +358,9 @@ body.settings-open #word-pane {
   justify-content: center;
   gap: 1px;
   flex: none;
-  width: 96px;
-  height: 52px;
-  padding: 3px 6px;
+  width: 80px;
+  height: 48px;
+  padding: 2px 3px;
   color: var(--fg);
   background: var(--panel);
   border: 1px solid var(--border);
@@ -326,24 +467,30 @@ body.settings-open #word-pane {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 8px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   min-width: 170px;
+  z-index: 1000;
+  user-select: none;
 }
 
 .wd-menu-item {
   display: flex;
   align-items: center;
-  padding: 6px 12px;
+  gap: 6px;
+  padding: 6px 10px;
   font-size: 13px;
   color: var(--fg);
   background: transparent;
   border: 0;
-  border-radius: 4px;
+  border-radius: 5px;
   text-align: left;
   cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.1s ease;
 }
 
-.wd-menu-item:hover {
+.wd-menu-item:hover,
+.wd-menu-item.active {
   background: var(--accent-soft);
   color: var(--accent);
 }

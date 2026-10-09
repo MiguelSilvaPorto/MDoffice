@@ -4,14 +4,22 @@
   box-sizing: border-box;
 }
 
-html,
-body {
+html {
   height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
 }
 
 body {
+  height: 100%;
+  width: 100%;
   margin: 0;
+  padding: 0;
   overflow: hidden;
+  position: fixed;
+  inset: 0;
   background: var(--bg);
   color: var(--fg);
   font-family: var(--ui-font);
@@ -54,7 +62,11 @@ button {
 #app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: absolute;
+  inset: 0;
 }
 
 .ic {

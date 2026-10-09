@@ -51,121 +51,171 @@ export class Ribbon {
   /** Pincel de formatação: desligado, para uma seleção ("once") ou fixo ("sticky"). */
   private painter: "off" | "once" | "sticky" = "off";
   private showParaMarks = false;
+  private activeTab = "home";
 
   constructor(host: HTMLElement, hooks: RibbonHooks) {
     this.el = host;
     this.hooks = hooks;
     host.innerHTML = `
-      ${group("Desfazer", `
-        <div class="rb-col">
-          ${btn("undo", icon("i-undo"), "Desfazer (Ctrl+Z)")}
-          ${btn("redo", icon("i-redo"), "Refazer (Ctrl+Y)")}
-        </div>`)}
-      ${group("Área de Transferência", `
-        ${btn("paste", icon("i-paste") + "<span>Colar</span>", "Colar (Ctrl+V)", "big")}
-        <div class="rb-col">
-          <div class="rb-row">
-            ${btn("cut", "✂", "Recortar (Ctrl+X)")}
-            ${btn("copy", icon("i-copy"), "Copiar (Ctrl+C)")}
-          </div>
-          <div class="rb-row">
-            ${btn("format-painter", icon("i-brush"), "Pincel de Formatação (copiar e aplicar estilo)")}
-          </div>
-        </div>`)}
-      ${group("Fonte", `
-        <div class="rb-rows">
-          <div class="rb-row">
-            <select class="rb-select font" data-sel="font" title="Fonte" aria-label="Fonte">
-              ${FONT_FAMILIES.map((f) => `<option value="${f}" style="font-family:'${f}'">${f}</option>`).join("")}
-            </select>
-            <select class="rb-select size" data-sel="size" title="Tamanho da letra" aria-label="Tamanho da letra">
-              ${FONT_SIZES.map((s) => `<option value="${s}">${s}</option>`).join("")}
-            </select>
-            ${btn("size-up", "A<small>▲</small>", "Aumentar tamanho da fonte")}
-            ${btn("size-down", "A<small>▼</small>", "Diminuir tamanho da fonte")}
-            ${btn("change-case", "Aa ▾", "Maiúsculas / Minúsculas")}
-            ${btn("clear", "A<small>✕</small>", "Limpar formatação")}
-          </div>
-          <div class="rb-row">
-            ${btn("bold", "<b>N</b>", "Negrito (Ctrl+B)")}
-            ${btn("italic", "<i>I</i>", "Itálico (Ctrl+I)")}
-            ${btn("underline", "<u>S</u>", "Sublinhado (Ctrl+U)")}
-            ${btn("strike", "<s>ab</s>", "Tachado")}
-            ${btn("sub", "x<small>₂</small>", "Subscrito (Ctrl+,)")}
-            ${btn("sup", "x<small>²</small>", "Sobrescrito (Ctrl+.)")}
-            ${btn("highlight", `<span class="rb-a hl">ab</span><span class="rb-bar" data-bar="highlight"></span>`, "Cor do Realce do Texto", "colorbtn")}
-            ${btn("color", `<span class="rb-a">A</span><span class="rb-bar" data-bar="color"></span>`, "Cor da Fonte", "colorbtn")}
-          </div>
-        </div>`)}
-      ${group("Parágrafo", `
-        <div class="rb-rows">
-          <div class="rb-row">
-            ${btn("bullet", "•≡", "Marcadores (Ctrl+Shift+L)")}
-            ${btn("ordered", "1.≡", "Numeração")}
-            ${btn("multilevel", "1.a.i", "Lista de Vários Níveis")}
-            ${btn("outdent", "⇤", "Diminuir Recuo")}
-            ${btn("indent", "⇥", "Aumentar Recuo")}
-            ${btn("para-marks", icon("i-pilcrow"), "Mostrar/Ocultar Marcas de Parágrafo (¶)")}
-          </div>
-          <div class="rb-row">
-            ${btn("align-left", icon("i-align-left"), "Alinhar à Esquerda (Ctrl+L)")}
-            ${btn("align-center", icon("i-align-center"), "Centralizar (Ctrl+E)")}
-            ${btn("align-right", icon("i-align-right"), "Alinhar à Direita (Ctrl+R)")}
-            ${btn("align-justify", icon("i-align-justify"), "Justificar (Ctrl+J)")}
-            <select class="rb-select lh" data-sel="lh" title="Espaçamento de Linha e Parágrafo" aria-label="Espaçamento de Linha">
-              <option value="">Linhas: padrão</option>
-              <option value="1">1,0</option>
-              <option value="1.15">1,15</option>
-              <option value="1.5">1,5</option>
-              <option value="2">2,0</option>
-              <option value="2.5">2,5</option>
-            </select>
-            ${btn("shading", icon("i-bucket"), "Sombreamento do Parágrafo", "colorbtn")}
-            ${btn("border-bottom", icon("i-border"), "Bordas")}
-          </div>
-        </div>`)}
-      ${group("Estilos", `
-        <div class="rb-styles">
-          ${STYLES.map(([k, name, sub]) => `<button type="button" class="rb-style st-${k}" data-cmd="style:${k}" data-block="${k}" title="${name}"><span>${name}</span><small>${sub}</small></button>`).join("")}
-        </div>`)}
-      ${group("Inserir", `
-        ${btn("table", icon("i-grid") + "<span>Tabela</span>", "Inserir tabela", "big")}
-        ${btn("image", icon("i-image") + "<span>Imagem</span>", "Inserir imagem", "big")}
-        <div class="rb-col">
-          ${btn("link", "🔗", "Inserir link")}
-          ${btn("pagebreak", "⤓", "Quebra de página (Ctrl+Enter)")}
-          ${btn("rule", "―", "Linha horizontal")}
-        </div>`)}
-      ${group("Editando", `
-        <div class="rb-col">
-          ${btn("find", icon("i-search") + "<span>Localizar</span>", "Localizar texto (Ctrl+F)")}
-          ${btn("replace", icon("i-replace") + "<span>Substituir</span>", "Substituir texto (Ctrl+H)")}
-          ${btn("select-all", "<span>Selecionar ▾</span>", "Selecionar Tudo (Ctrl+A)")}
-        </div>`)}
-      ${group("Voz", `
-        ${btn("dictate", icon("i-mic") + "<span>Ditar</span>", "Ditar texto por voz", "big")}`)}
-      ${group("Revisão de Texto", `
-        ${btn("editor-panel", icon("i-feather") + "<span>Editor</span>", "Editor de ortografia e escrita", "big")}`)}
-      ${group("Suplementos", `
-        ${btn("addons", icon("i-addons") + "<span>Suplementos</span>", "Suplementos do Office", "big")}`)}
-      ${group("Tabela", `
-        <div class="rb-rows">
-          <div class="rb-row">
-            ${btn("t-row-before", "↑+", "Linha acima")}
-            ${btn("t-row-after", "↓+", "Linha abaixo")}
-            ${btn("t-row-del", "−L", "Excluir linha")}
-            ${btn("t-merge", "⊞", "Mesclar células")}
-            ${btn("t-shade", "▨", "Sombrear célula")}
-          </div>
-          <div class="rb-row">
-            ${btn("t-col-before", "←+", "Coluna à esquerda")}
-            ${btn("t-col-after", "→+", "Coluna à direita")}
-            ${btn("t-col-del", "−C", "Excluir coluna")}
-            ${btn("t-split", "⊟", "Dividir célula")}
-            ${btn("t-del", "🗑", "Excluir tabela")}
-          </div>
-        </div>`, "rb-table", true)}
-      ${group("Documento", btn("page", icon("i-doc") + "<span>Página</span>", "Tamanho, margens, cabeçalho e rodapé", "big"), "rb-end")}`;
+      <div class="wd-ribbon-tabs" role="tablist" aria-label="Guias da Faixa de Opções">
+        <button type="button" class="wd-rtab active" data-tab="home" role="tab" aria-selected="true">Início</button>
+        <button type="button" class="wd-rtab" data-tab="insert" role="tab" aria-selected="false">Inserir</button>
+        <button type="button" class="wd-rtab" data-tab="layout" role="tab" aria-selected="false">Layout</button>
+        <button type="button" class="wd-rtab" data-tab="review" role="tab" aria-selected="false">Revisão</button>
+        <button type="button" class="wd-rtab wd-rtab-contextual" data-tab="table" role="tab" aria-selected="false" hidden>Tabela</button>
+      </div>
+      <div class="wd-ribbon-panels">
+        <button type="button" class="wd-ribbon-nav prev" title="Rolar para esquerda" hidden aria-label="Rolar para esquerda">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button type="button" class="wd-ribbon-nav next" title="Rolar para direita" hidden aria-label="Rolar para direita">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <div class="wd-rpanel active" data-panel="home">
+          ${group("Desfazer", `
+            <div class="rb-col">
+              ${btn("undo", icon("i-undo"), "Desfazer (Ctrl+Z)")}
+              ${btn("redo", icon("i-redo"), "Refazer (Ctrl+Y)")}
+            </div>`)}
+          ${group("Área de Transferência", `
+            ${btn("paste", icon("i-paste") + "<span>Colar</span>", "Colar (Ctrl+V)", "big")}
+            <div class="rb-col">
+              <div class="rb-row">
+                ${btn("cut", icon("i-cut"), "Recortar (Ctrl+X)")}
+                ${btn("copy", icon("i-copy"), "Copiar (Ctrl+C)")}
+              </div>
+              <div class="rb-row">
+                ${btn("format-painter", icon("i-brush"), "Pincel de Formatação (copiar e aplicar estilo)")}
+              </div>
+            </div>`)}
+          ${group("Fonte", `
+            <div class="rb-rows">
+              <div class="rb-row">
+                <select class="rb-select font" data-sel="font" title="Fonte" aria-label="Fonte">
+                  ${FONT_FAMILIES.map((f) => `<option value="${f}" style="font-family:'${f}'">${f}</option>`).join("")}
+                </select>
+                <select class="rb-select size" data-sel="size" title="Tamanho da letra" aria-label="Tamanho da letra">
+                  ${FONT_SIZES.map((s) => `<option value="${s}">${s}</option>`).join("")}
+                </select>
+                ${btn("size-up", "A<small>▲</small>", "Aumentar tamanho da fonte")}
+                ${btn("size-down", "A<small>▼</small>", "Diminuir tamanho da fonte")}
+                ${btn("change-case", "Aa ▾", "Maiúsculas / Minúsculas")}
+                ${btn("clear", icon("i-clear-format"), "Limpar formatação")}
+              </div>
+              <div class="rb-row">
+                ${btn("bold", "<b>N</b>", "Negrito (Ctrl+B)")}
+                ${btn("italic", "<i>I</i>", "Itálico (Ctrl+I)")}
+                ${btn("underline", "<u>S</u>", "Sublinhado (Ctrl+U)")}
+                ${btn("strike", "<s>ab</s>", "Tachado")}
+                ${btn("sub", "x<small>₂</small>", "Subscrito (Ctrl+,)")}
+                ${btn("sup", "x<small>²</small>", "Sobrescrito (Ctrl+.)")}
+                ${btn("highlight", `<span class="rb-a hl">ab</span><span class="rb-bar" data-bar="highlight"></span>`, "Cor do Realce do Texto", "colorbtn")}
+                ${btn("color", `<span class="rb-a">A</span><span class="rb-bar" data-bar="color"></span>`, "Cor da Fonte", "colorbtn")}
+              </div>
+            </div>`)}
+          ${group("Parágrafo", `
+            <div class="rb-rows">
+              <div class="rb-row">
+                ${btn("bullet", icon("i-list"), "Marcadores (Ctrl+Shift+L)")}
+                ${btn("ordered", icon("i-list-num"), "Numeração (1, 2, 3)")}
+                ${btn("multilevel", icon("i-list-multi"), "Lista de Vários Níveis")}
+                ${btn("outdent", icon("i-outdent"), "Diminuir Recuo")}
+                ${btn("indent", icon("i-indent"), "Aumentar Recuo")}
+                ${btn("para-marks", icon("i-pilcrow"), "Mostrar/Ocultar Marcas de Parágrafo (¶)")}
+              </div>
+              <div class="rb-row">
+                ${btn("align-left", icon("i-align-left"), "Alinhar à Esquerda (Ctrl+L)")}
+                ${btn("align-center", icon("i-align-center"), "Centralizar (Ctrl+E)")}
+                ${btn("align-right", icon("i-align-right"), "Alinhar à Direita (Ctrl+R)")}
+                ${btn("align-justify", icon("i-align-justify"), "Justificar (Ctrl+J)")}
+                ${btn("line-spacing", icon("i-line-spacing") + "<small>▾</small>", "Espaçamento de Linha e Parágrafo")}
+                ${btn("shading", icon("i-bucket"), "Sombreamento do Parágrafo", "colorbtn")}
+                ${btn("border-bottom", icon("i-border"), "Bordas")}
+              </div>
+            </div>`)}
+          ${group("Estilos", `
+            <div class="rb-styles">
+              ${STYLES.map(([k, name, sub]) => `<button type="button" class="rb-style st-${k}" data-cmd="style:${k}" data-block="${k}" title="${name}"><span>${name}</span><small>${sub}</small></button>`).join("")}
+            </div>`)}
+          ${group("Editando", `
+            <div class="rb-col">
+              ${btn("find", icon("i-search") + "<span>Localizar</span>", "Localizar texto (Ctrl+F)")}
+              ${btn("replace", icon("i-replace") + "<span>Substituir</span>", "Substituir texto (Ctrl+H)")}
+              ${btn("select-all", "<span>Selecionar ▾</span>", "Selecionar Tudo (Ctrl+A)")}
+            </div>`)}
+          ${group("Voz", `
+            ${btn("dictate", icon("i-mic") + "<span>Ditar</span>", "Ditar texto por voz", "big")}`)}
+        </div>
+
+        <div class="wd-rpanel" data-panel="insert" hidden>
+          ${group("Páginas", `
+            ${btn("pagebreak", icon("i-pagebreak") + "<span>Quebra</span>", "Quebra de página (Ctrl+Enter)", "big")}`)}
+          ${group("Tabelas", `
+            ${btn("table", icon("i-grid") + "<span>Tabela</span>", "Inserir tabela", "big")}`)}
+          ${group("Ilustrações", `
+            ${btn("image", icon("i-image") + "<span>Imagem</span>", "Inserir imagem deste computador (Ctrl+V cola direto)", "big")}`)}
+          ${group("Links", `
+            ${btn("link", icon("i-link") + "<span>Link</span>", "Inserir link da web", "big")}`)}
+          ${group("Divisões", `
+            ${btn("rule", icon("i-hr") + "<span>Linha</span>", "Linha horizontal divisória", "big")}`)}
+        </div>
+
+        <div class="wd-rpanel" data-panel="layout" hidden>
+          ${group("Configurar Página", `
+            ${btn("page", icon("i-doc") + "<span>Página</span>", "Tamanho do papel, margens, orientação, cabeçalho e rodapé", "big")}`)}
+        </div>
+
+        <div class="wd-rpanel" data-panel="review" hidden>
+          ${group("Revisão de Texto", `
+            ${btn("editor-panel", icon("i-feather") + "<span>Editor</span>", "Editor de ortografia e escrita", "big")}`)}
+          ${group("Voz", `
+            ${btn("dictate", icon("i-mic") + "<span>Ditar</span>", "Ditar texto por voz", "big")}`)}
+          ${group("Suplementos", `
+            ${btn("addons", icon("i-addons") + "<span>Suplementos</span>", "Suplementos do Office", "big")}`)}
+        </div>
+
+        <div class="wd-rpanel" data-panel="table" hidden>
+          ${group("Linhas", `
+            <div class="rb-col">
+              <div class="rb-row">
+                ${btn("t-row-before", icon("i-table-row-add") + "<span>Acima</span>", "Inserir linha acima")}
+                ${btn("t-row-after", icon("i-table-row-add") + "<span>Abaixo</span>", "Inserir linha abaixo")}
+              </div>
+              <div class="rb-row">
+                ${btn("t-row-del", icon("i-table-row-del") + "<span>Excluir</span>", "Excluir linha")}
+              </div>
+            </div>`)}
+          ${group("Colunas", `
+            <div class="rb-col">
+              <div class="rb-row">
+                ${btn("t-col-before", icon("i-table-col-add") + "<span>Esquerda</span>", "Inserir coluna à esquerda")}
+                ${btn("t-col-after", icon("i-table-col-add") + "<span>Direita</span>", "Inserir coluna à direita")}
+              </div>
+              <div class="rb-row">
+                ${btn("t-col-del", icon("i-table-col-del") + "<span>Excluir</span>", "Excluir coluna")}
+              </div>
+            </div>`)}
+          ${group("Mesclar e Sombrear", `
+            <div class="rb-col">
+              <div class="rb-row">
+                ${btn("t-merge", icon("i-table-merge") + "<span>Mesclar</span>", "Mesclar células selecionadas")}
+                ${btn("t-split", icon("i-table-split") + "<span>Dividir</span>", "Dividir célula")}
+              </div>
+              <div class="rb-row">
+                ${btn("t-shade", icon("i-bucket") + "<span>Sombrear</span>", "Sombrear célula")}
+              </div>
+            </div>`)}
+          ${group("Excluir", `
+            ${btn("t-del", icon("i-trash") + "<span>Excluir Tabela</span>", "Excluir tabela inteira", "big")}`)}
+        </div>
+      </div>
+    `;
+
+    host.querySelectorAll<HTMLButtonElement>(".wd-rtab").forEach((tabBtn) => {
+      tabBtn.addEventListener("click", () => {
+        if (tabBtn.dataset.tab) this.switchTab(tabBtn.dataset.tab);
+      });
+    });
 
     host.addEventListener("mousedown", (e) => {
       const t = e.target as HTMLElement;
@@ -209,6 +259,49 @@ export class Ribbon {
           break;
       }
     });
+
+    // Rolagem horizontal com a roda do mouse (scroll) sobre a fita
+    const panelsContainer = host.querySelector<HTMLElement>(".wd-ribbon-panels");
+    if (panelsContainer) {
+      panelsContainer.addEventListener(
+        "wheel",
+        (e: WheelEvent) => {
+          const activePanel = panelsContainer.querySelector<HTMLElement>(".wd-rpanel:not([hidden])");
+          if (!activePanel) return;
+          if (Math.abs(e.deltaY) > 0 || Math.abs(e.deltaX) > 0) {
+            e.preventDefault();
+            const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+            activePanel.scrollLeft += delta;
+            this.updateNavButtons();
+          }
+        },
+        { passive: false }
+      );
+    }
+
+    // Botões de navegação lateral (< e >)
+    const prevBtn = host.querySelector<HTMLButtonElement>(".wd-ribbon-nav.prev");
+    const nextBtn = host.querySelector<HTMLButtonElement>(".wd-ribbon-nav.next");
+    prevBtn?.addEventListener("click", () => {
+      const activePanel = host.querySelector<HTMLElement>(".wd-rpanel:not([hidden])");
+      if (activePanel) {
+        activePanel.scrollBy({ left: -240, behavior: "smooth" });
+        setTimeout(() => this.updateNavButtons(), 250);
+      }
+    });
+    nextBtn?.addEventListener("click", () => {
+      const activePanel = host.querySelector<HTMLElement>(".wd-rpanel:not([hidden])");
+      if (activePanel) {
+        activePanel.scrollBy({ left: 240, behavior: "smooth" });
+        setTimeout(() => this.updateNavButtons(), 250);
+      }
+    });
+
+    host.querySelectorAll<HTMLElement>(".wd-rpanel").forEach((panel) => {
+      panel.addEventListener("scroll", () => this.updateNavButtons(), { passive: true });
+    });
+    window.addEventListener("resize", () => this.updateNavButtons());
+    setTimeout(() => this.updateNavButtons(), 80);
   }
 
   private setPainter(mode: "off" | "once" | "sticky"): void {
@@ -218,11 +311,37 @@ export class Ribbon {
     if (mode === "off") this.hooks.editor.clearCopiedFormat();
   }
 
+  switchTab(tab: string): void {
+    this.activeTab = tab;
+    this.el.querySelectorAll<HTMLButtonElement>(".wd-rtab").forEach((b) => {
+      const active = b.dataset.tab === tab;
+      b.classList.toggle("active", active);
+      b.setAttribute("aria-selected", String(active));
+    });
+    this.el.querySelectorAll<HTMLElement>(".wd-rpanel").forEach((p) => {
+      p.hidden = p.dataset.panel !== tab;
+    });
+    this.updateNavButtons();
+  }
+
+  private updateNavButtons(): void {
+    const panels = this.el.querySelector<HTMLElement>(".wd-ribbon-panels");
+    if (!panels) return;
+    const panel = panels.querySelector<HTMLElement>(".wd-rpanel:not([hidden])");
+    const prevBtn = panels.querySelector<HTMLButtonElement>(".wd-ribbon-nav.prev");
+    const nextBtn = panels.querySelector<HTMLButtonElement>(".wd-ribbon-nav.next");
+    if (!panel || !prevBtn || !nextBtn) return;
+    const maxScroll = panel.scrollWidth - panel.clientWidth;
+    prevBtn.hidden = panel.scrollLeft <= 5;
+    nextBtn.hidden = panel.scrollLeft >= maxScroll - 5 || maxScroll <= 2;
+  }
+
   // ---------- estado visual ----------
 
   update(): void {
     const st = this.hooks.editor.query();
-    const on = (cmd: string, active: boolean) => this.el.querySelector(`[data-cmd="${cmd}"]`)?.classList.toggle("active", active);
+    const on = (cmd: string, active: boolean) =>
+      this.el.querySelectorAll(`[data-cmd="${cmd}"]`).forEach((b) => b.classList.toggle("active", active));
     on("bold", st.bold);
     on("italic", st.italic);
     on("underline", st.underline);
@@ -235,24 +354,35 @@ export class Ribbon {
     on("align-justify", st.align === "justify");
     on("bullet", st.list === "bullet");
     on("ordered", st.list === "ordered");
-    const dis = (cmd: string, d: boolean) => ((this.el.querySelector(`[data-cmd="${cmd}"]`) as HTMLButtonElement | null)!.disabled = d);
+    const dis = (cmd: string, d: boolean) =>
+      this.el.querySelectorAll<HTMLButtonElement>(`[data-cmd="${cmd}"]`).forEach((b) => (b.disabled = d));
     dis("undo", !st.canUndo);
     dis("redo", !st.canRedo);
     const sel = (name: string, v: string) => {
-      const s = this.el.querySelector<HTMLSelectElement>(`[data-sel="${name}"]`)!;
-      if (v === "" || [...s.options].some((o) => o.value === v)) s.value = v;
+      this.el.querySelectorAll<HTMLSelectElement>(`[data-sel="${name}"]`).forEach((s) => {
+        if (v === "" || [...s.options].some((o) => o.value === v)) s.value = v;
+      });
     };
     this.el.querySelectorAll<HTMLElement>("[data-block]").forEach((b) => b.classList.toggle("active", b.dataset.block === st.block));
     sel("font", st.fontFamily ?? this.hooks.editor.setup.defaultFont);
     sel("size", String(st.fontSize ?? this.hooks.editor.setup.defaultSize));
     sel("lh", st.lineHeight ? String(st.lineHeight) : "");
     const bar = (n: string, c: string | null, fallback: string) => {
-      const e = this.el.querySelector<HTMLElement>(`[data-bar="${n}"]`);
-      if (e) e.style.background = c ?? fallback;
+      this.el.querySelectorAll<HTMLElement>(`[data-bar="${n}"]`).forEach((e) => {
+        e.style.background = c ?? fallback;
+      });
     };
     bar("color", st.color, "currentColor");
     bar("highlight", st.highlight, "#ffff00");
-    (this.el.querySelector(".rb-table") as HTMLElement).hidden = !st.inTable;
+
+    const tableTab = this.el.querySelector<HTMLButtonElement>('.wd-rtab[data-tab="table"]');
+    if (tableTab) {
+      tableTab.hidden = !st.inTable;
+      if (!st.inTable && this.activeTab === "table") {
+        this.switchTab("home");
+      }
+    }
+    this.updateNavButtons();
   }
 
   // ---------- comandos ----------
@@ -343,6 +473,9 @@ export class Ribbon {
       case "multilevel": {
         return ed.list("ordered");
       }
+      case "line-spacing": {
+        return this.lineSpacingMenu(anchor);
+      }
       case "shading": {
         return this.palette(anchor, COLORS, true, (c) => ed.paragraphShading(c), "Sem sombreamento");
       }
@@ -409,6 +542,31 @@ export class Ribbon {
       b.addEventListener("click", () => {
         this.closePop();
         this.hooks.editor.changeCase(mode);
+      });
+      pop.append(b);
+    }
+    this.place(pop, anchor);
+  }
+
+  private lineSpacingMenu(anchor: HTMLElement): void {
+    const pop = h("div", { class: "wd-pal wd-menu-pop" });
+    const current = this.hooks.editor.query().lineHeight || 1.15;
+    const options: [number, string][] = [
+      [1.0, "1,0"],
+      [1.15, "1,15 (Padrão)"],
+      [1.5, "1,5"],
+      [2.0, "2,0"],
+      [2.5, "2,5"],
+      [3.0, "3,0"],
+    ];
+    for (const [val, label] of options) {
+      const isSelected = Math.abs(current - val) < 0.05;
+      const b = h("button", { class: `wd-menu-item${isSelected ? " active" : ""}`, type: "button" });
+      b.innerHTML = `<span style="width:16px;display:inline-block;color:var(--accent);font-weight:bold">${isSelected ? "✓" : ""}</span><span>${label}</span>`;
+      b.addEventListener("mousedown", (e) => e.preventDefault());
+      b.addEventListener("click", () => {
+        this.closePop();
+        this.hooks.editor.lineHeight(val === 1.15 ? null : val);
       });
       pop.append(b);
     }

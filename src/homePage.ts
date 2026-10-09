@@ -1,10 +1,13 @@
 import * as files from "./files";
+import { fileIcon, kindOfPath } from "./fileIcons";
 import { $, h, fmtTime, baseName, stripExt, docDirOf } from "./util";
 
 export interface HomeCtx {
   createDoc: (tipo: "word" | "excel" | "md" | "ppt") => void;
   createTemplate: (template: "abnt" | "relatorio" | "orcamento" | "ia") => void;
   openExisting: () => void;
+  /** Importar documento do Office (.docx, .xlsx, .xlsm, .pptx). */
+  importOffice: () => void;
   openPath: (path: string) => void;
   recents: () => { path: string; name: string; at: number }[];
   drafts: () => Promise<files.DraftInfo[]>;
@@ -20,7 +23,7 @@ export function detectFormat(path: string): "word" | "excel" | "md" | "ppt" {
   const p = path.toLowerCase();
   const ext = p.split(".").pop() ?? "";
   if (ext === "docx" || ext === "doc") return "word";
-  if (ext === "xlsx" || ext === "xls" || ext === "csv") return "excel";
+  if (ext === "xlsx" || ext === "xls" || ext === "xlsm" || ext === "csv") return "excel";
   if (ext === "pptx" || ext === "ppt") return "ppt";
   if (p.includes("slide") || p.includes("apresenta") || p.includes("deck")) return "ppt";
   if (p.includes("planilha") || p.includes("tabela") || p.includes("orcamento") || p.includes("financeiro")) return "excel";
@@ -52,6 +55,16 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
   `;
   header.append(heroLeft);
 
+  const headerActions = h("div", { class: "home-header-actions" });
+  const importBtn = h("button", {
+    class: "btn home-import-btn",
+    type: "button",
+    title: "Importar documento do Word (.docx), Excel (.xlsx/.xlsm) ou PowerPoint (.pptx)",
+  });
+  importBtn.innerHTML = '<svg class="ic"><use href="#i-import"/></svg><span>Importar do Office</span>';
+  importBtn.addEventListener("click", () => ctx.importOffice());
+  headerActions.append(importBtn);
+
   if (ctx.hasOpenTabs) {
     const resumeBtn = h("button", {
       class: "btn home-resume-btn",
@@ -60,8 +73,9 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
     });
     resumeBtn.innerHTML = '<svg class="ic"><use href="#i-doc"/></svg><span>Continuar editando</span>';
     resumeBtn.addEventListener("click", () => ctx.closeHome());
-    header.append(resumeBtn);
+    headerActions.append(resumeBtn);
   }
+  header.append(headerActions);
   wrap.append(header);
 
   // Estado do filtro ativo (all, word, excel, md, ppt)
@@ -168,9 +182,16 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
     </svg>`;
 
   const cardWord = makeCard("word", "DOCX", "Word", "Documento de Texto", "Texto formatado, cabeçalhos, páginas A4, normas ABNT e exportação .docx.", svgWord);
-  const cardExcel = makeCard("excel", "XLSX", "Excel", "Planilha & Tabelas", "Tabelas estruturadas com colunas alinhadas, fórmulas e dados tabulares.", svgExcel);
+  const cardExcel = makeCard(
+    "excel",
+    "XLSX",
+    "Excel",
+    "Planilha & Tabelas",
+    "Grade de verdade com fórmulas calculadas, R$/%/data, várias abas, mesclas e arquivo .xlsx que abre no Excel.",
+    svgExcel
+  );
   const cardMd = makeCard("md", "MARKDOWN", "Markdown", "Texto Rápido & IA", "Escrita rápida, leve e focada, com visualização dupla simultânea em tempo real.", svgMd);
-  const cardPpt = makeCard("ppt", "PPTX", "PowerPoint", "Apresentação de Slides", "Lâminas separadas por (---) com modo tela cheia F5 e exportação PDF.", svgPpt);
+  const cardPpt = makeCard("ppt", "PPTX", "PowerPoint", "Apresentação de Slides", "Editor de lâminas com fita de formatação, caixas de texto posicionadas, notas do apresentador e exportação .pptx de verdade.", svgPpt);
 
   grid.append(cardWord, cardExcel, cardMd, cardPpt);
   secCards.append(grid);
@@ -195,9 +216,10 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
 
   addChip("i-word", "Trabalho ABNT", "Modelo acadêmico completo nas normas ABNT", () => ctx.createTemplate("abnt"));
   addChip("i-doc", "Relatório Executivo", "Resumo executivo, metas, resultados e conclusão", () => ctx.createTemplate("relatorio"));
-  addChip("i-grid", "Planilha Orçamentária", "Tabela de receitas, despesas e totais", () => ctx.createTemplate("orcamento"));
+  addChip("i-grid", "Planilha Orçamentária", "Planilha Excel com receitas, despesas e totais calculados", () => ctx.createTemplate("orcamento"));
   addChip("i-spark", "Pedido para IA", "Template estruturado para orientar IAs e LLMs", () => ctx.createTemplate("ia"));
-  addChip("i-open", "Abrir arquivo do PC", "Abrir arquivo existente do disco (Ctrl+O)", () => ctx.openExisting());
+  addChip("i-import", "Importar do Office", "Abrir Word (.docx), Excel (.xlsx/.xlsm) e PowerPoint (.pptx) do seu computador", () => ctx.importOffice());
+  addChip("i-open", "Abrir arquivo do PC", "Abrir qualquer arquivo existente do disco (Ctrl+O)", () => ctx.openExisting());
 
   secTemplates.append(chips);
   wrap.append(secTemplates);
@@ -324,13 +346,12 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
       filtered.forEach((item) => {
         const row = h("div", { class: "home-file-row" });
         const fmt = detectFormat(item.path);
-        const iconSymbol = fmt === "word" ? "i-word" : fmt === "excel" ? "i-grid" : fmt === "ppt" ? "i-eye" : "i-doc";
         const iconClass = `file-icon-${fmt}`;
 
         row.innerHTML = `
           <div class="home-file-col-main">
             <div class="home-file-icon ${iconClass}">
-              <svg class="ic"><use href="#${iconSymbol}"/></svg>
+              ${fileIcon(kindOfPath(item.path))}
             </div>
             <div class="home-file-info">
               <span class="home-file-name" title="${item.name}">${item.name}</span>
@@ -381,7 +402,7 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
         row.innerHTML = `
           <div class="home-file-col-main">
             <div class="home-file-icon file-icon-draft">
-              <svg class="ic"><use href="#i-doc"/></svg>
+              ${fileIcon(kindOfPath(draft.path))}
             </div>
             <div class="home-file-info">
               <span class="home-file-name" title="${name}">${name}</span>

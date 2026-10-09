@@ -5,6 +5,7 @@ import * as files from "../files";
 import { checkStyle } from "../broker/writing";
 import { type DocTab } from "../tabs";
 import { moveHistory } from "../history";
+import { moveCommits } from "../snapshots";
 import { $, toast, baseName, docDirOf, joinPath, saveJSON, fmtTime, slugify } from "../util";
 
 export const documentsMethods = {
@@ -24,6 +25,8 @@ export const documentsMethods = {
     if (this.autoFix) this.idleFixSoon();
     // mantém o desenho de letras aberto em sincronia com o texto do editor
     this.preview.syncTextEditorWith(this.editor.getText());
+    // log de alterações: guarda a instrução da mudança (o texto antigo → o novo)
+    this.recordChange();
   },
 
   /** Avisa a tradução ao vivo que o texto (ou a aba) mudou. */
@@ -56,37 +59,50 @@ export const documentsMethods = {
   },
 
   async autosave(this: App): Promise<void> {
-    if (this.tab.kind === "word") return this.autosaveWord();
-    const tab = this.tab;
-    if (!tab.dirty) return;
-    const text = this.editor.getText();
-    // Documento novo (sem arquivo ainda): cria o rascunho e passa a salvar nele — é o
-    // "salva conforme eu escrevo". Se não houver acesso a arquivos (navegador), cai
-    // no servidor de desenvolvimento, que grava em temp/rascunho.md do projeto.
-    if (!tab.path) {
-      try {
-        if (await this.ensureSaved()) return;
-      } catch {
-        /* sem arquivos: segue para o salvamento pelo servidor */
-      }
-      const salvou = await files.saveDraftFallback("rascunho", text);
-      if (salvou) {
-        tab.dirty = false;
-        tab.statusSaved = `Salvo automaticamente em temp/ às ${fmtTime()}`;
-        this.afterSave(tab);
-      }
-      return;
-    }
+    if (!this.settings.autosaveOn) return;
+    if (this.saving) return;
+    this.saving = true;
+    this.updateAutosaveUI();
     try {
-      await files.saveDoc(tab.path, text);
-      this.recordVersion(tab.path, text);
-      // se o texto mudou enquanto gravava, continua "sujo" (o próximo autosave pega)
-      if (tab !== this.tab || this.editor.getText() === text) tab.dirty = false;
-      tab.statusSaved = tab.isDraft ? `Rascunho atualizado às ${fmtTime()}` : `Salvo automaticamente às ${fmtTime()}`;
-      this.afterSave(tab);
-    } catch {
-      // não conseguiu gravar pelo app (navegador): guarda em temp/ do projeto
-      await files.saveDraftFallback("rascunho", text);
+      if (this.tab.kind === "word") return await this.autosaveWord();
+      if (this.tab.kind === "ppt") return await this.autosavePpt();
+      if (this.tab.kind === "xlsx") return await this.autosaveExcel();
+      const tab = this.tab;
+      if (!tab.dirty) return;
+      const text = this.editor.getText();
+      // Documento novo (sem arquivo ainda): cria o rascunho e passa a salvar nele — é o
+      // "salva conforme eu escrevo". Se não houver acesso a arquivos (navegador), cai
+      // no servidor de desenvolvimento, que grava em temp/rascunho.md do projeto.
+      if (!tab.path) {
+        try {
+          if (await this.ensureSaved()) return;
+        } catch {
+          /* sem arquivos: segue para o salvamento pelo servidor */
+        }
+        const salvou = await files.saveDraftFallback("rascunho", text);
+        if (salvou) {
+          tab.dirty = false;
+          tab.statusSaved = `Salvo automaticamente em temp/ às ${fmtTime()}`;
+          this.afterSave(tab);
+        }
+        return;
+      }
+      try {
+        await files.saveDoc(tab.path, text);
+        this.recordVersion(tab.path, text);
+        // uma cópia por dia mesmo sem salvar: cobre o "esqueci de salvar"
+        this.backupOnceADay(tab.path);
+        // se o texto mudou enquanto gravava, continua "sujo" (o próximo autosave pega)
+        if (tab !== this.tab || this.editor.getText() === text) tab.dirty = false;
+        tab.statusSaved = tab.isDraft ? `Rascunho atualizado às ${fmtTime()}` : `Salvo automaticamente às ${fmtTime()}`;
+        this.afterSave(tab);
+      } catch {
+        // não conseguiu gravar pelo app (navegador): guarda em temp/ do projeto
+        await files.saveDraftFallback("rascunho", text);
+      }
+    } finally {
+      this.saving = false;
+      this.updateAutosaveUI();
     }
   },
 
@@ -103,6 +119,8 @@ export const documentsMethods = {
 
   async save(this: App, saveAs = false): Promise<boolean> {
     if (this.tab.kind === "word") return this.saveWord(saveAs);
+    if (this.tab.kind === "ppt") return this.savePpt(saveAs);
+    if (this.tab.kind === "xlsx") return this.saveExcel(saveAs);
     try {
       const previousPath = this.path;
       const wasDraft = this.isDraft;
@@ -122,16 +140,20 @@ export const documentsMethods = {
 
       // correção automática: ponto, vírgulas, maiúsculas, trocas formais e palavras erradas
       if (this.autoFix) {
-        const count =
-          this.applyFixes(checkStyle(this.editor.getText())) +
-          this.autoFixWords(0, this.editor.getText().length, false);
+        const count = this.applySaveFixes();
         if (count) toast(`Correção automática: ${count} ajuste${count === 1 ? "" : "s"} antes de salvar.`, "ok", 2600);
       }
 
       const content = this.editor.getText();
       await files.saveDoc(this.path, content);
-      if (previousPath && previousPath !== this.path) void moveHistory(previousPath, this.path);
+      if (previousPath && previousPath !== this.path) {
+        void moveHistory(previousPath, this.path);
+        void moveCommits(previousPath, this.path);
+      }
       this.recordVersion(this.path, content, true);
+      // cópia real em disco (é o backup que sobrevive a limpar os dados do app)
+      void this.backupNow(this.path, "salvar");
+      void this.exportLog(this.path);
 
       // saiu do rascunho para uma pasta do usuário: leva as imagens junto
       if (wasDraft && previousPath && docDirOf(this.path) !== docDirOf(previousPath)) {
@@ -167,6 +189,12 @@ export const documentsMethods = {
     if (picked) await this.openPath(picked);
   },
 
+  /** Importar do Office: abre direto nos documentos do Word, Excel e PowerPoint. */
+  async importOfficeDialog(this: App): Promise<void> {
+    const picked = await files.pickImportOffice();
+    if (picked) await this.openPath(picked);
+  },
+
   /** Abre o arquivo numa aba (se já estiver aberto, só vai até ela). */
   async openPath(this: App, path: string): Promise<boolean> {
     const already = this.tabs.find((t) => t.path && t.path.toLowerCase() === path.toLowerCase());
@@ -175,8 +203,34 @@ export const documentsMethods = {
       return true;
     }
     if (/\.docx$/i.test(path)) return await this.openDocx(path);
+    if (/\.pptx$/i.test(path)) return await this.openPptx(path);
+    if (/\.xlsx$/i.test(path)) return await this.openXlsx(path);
+    if (/\.xlsm$/i.test(path)) {
+      // .xlsm é a mesma planilha do .xlsx, com macros — que o app não preserva
+      const ok = await this.openXlsx(path);
+      if (ok) {
+        toast(
+          "Planilha .xlsm aberta. As macros não são preservadas: ao salvar, escolha um nome .xlsx para não sobrescrever o original.",
+          "info",
+          8000
+        );
+      }
+      return ok;
+    }
+    if (/\.xls$/i.test(path)) {
+      toast("O formato antigo .xls não é aceito. Abra no Excel e salve como .xlsx.", "info", 5500);
+      return false;
+    }
+    if (/\.csv$/i.test(path)) {
+      toast("Arquivo .csv não é aceito como planilha. Abra no Excel e salve como .xlsx.", "info", 5500);
+      return false;
+    }
     if (/\.doc$/i.test(path)) {
       toast("O formato antigo .doc não é aceito. Abra no Word e salve como .docx.", "info", 5500);
+      return false;
+    }
+    if (/\.ppt$/i.test(path)) {
+      toast("O formato antigo .ppt não é aceito. Abra no PowerPoint e salve como .pptx.", "info", 5500);
       return false;
     }
     try {
@@ -262,11 +316,14 @@ export const documentsMethods = {
       toast(`Nome definido: "${value}". Ele será usado quando o documento for salvo.`, "ok", 3600);
       return;
     }
-    const target = /\.[a-zA-Z0-9]+$/.test(value) ? value : `${value}${this.tab.kind === "word" ? ".docx" : ".md"}`;
+    const ext =
+      this.tab.kind === "word" ? ".docx" : this.tab.kind === "ppt" ? ".pptx" : this.tab.kind === "xlsx" ? ".xlsx" : ".md";
+    const target = /\.[a-zA-Z0-9]+$/.test(value) ? value : `${value}${ext}`;
     try {
       const previous = this.path;
       const newPath = await files.renameFile(this.path, target);
       void moveHistory(this.path, newPath);
+      void moveCommits(this.path, newPath);
       this.path = newPath;
       this.recents = this.recents.map((r) => (r.path === previous ? { ...r, path: newPath } : r));
       saveJSON("mdc.recents", this.recents);

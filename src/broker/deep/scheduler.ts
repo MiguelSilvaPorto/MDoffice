@@ -74,3 +74,11 @@ export function runSliced<T>(gen: Generator<void, T>, opts: { background?: boole
   idle(step);
   return job;
 }
+
+/** Espera a pessoa ficar parada (sem teclado/mouse por um tempo) e a aba estar visível. Para trabalhos em segundo plano. */
+export async function waitCalm(): Promise<void> {
+  listen();
+  while ((typeof document !== "undefined" && document.hidden) || performance.now() - lastInput < CALM_MS) {
+    await new Promise((r) => setTimeout(r, 400));
+  }
+}

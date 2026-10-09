@@ -1,0 +1,829 @@
+/* ==========================================================================
+   Apresentações (PowerPoint): pane, fita (pt-), palco, lâminas, formas, notas
+   Mesma receita do motor do Word (word.css): tokens + prefixo próprio.
+   ========================================================================== */
+
+#powerpoint-pane {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg);
+}
+
+body.ppt-open #powerpoint-pane {
+  display: flex;
+}
+
+body.ppt-open #editor-wrap,
+body.ppt-open #splitter,
+body.ppt-open #preview-wrap {
+  display: none;
+}
+
+body.settings-open #powerpoint-pane {
+  display: none;
+}
+
+/* ---------- fita (mesma receita da fita do Word, prefixo pt-) ---------- */
+
+/* A fita cabe numa linha só: encolhe os grupos antes de quebrar (como o Word faz).
+   `flex-wrap: wrap` continua como reserva para janelas muito estreitas. */
+.pp-ribbon {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 4px 0;
+  margin: 5px 8px 0;
+  padding: 5px 4px 3px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  flex: none;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.pt-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0 6px;
+  border-right: 1px solid var(--border);
+  flex: none;
+}
+
+.pt-group:last-child {
+  border-right: 0;
+}
+
+/* "Configurar" é o último grupo. Sem `margin-left:auto`, os grupos ficam
+   igualmente distribuídos e a fita permanece numa linha só mesmo quando o
+   espaço é apertado (o vão some em vez de empurrar o grupo para baixo). */
+.pt-group.pt-end {
+  padding-left: 8px;
+}
+
+/* O corpo de todos os grupos tem a MESMA altura, para os rótulos ficarem
+   alinhados numa linha só — é isso que evita a fita quebrar em duas. */
+.pt-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  flex: 1;
+  height: 58px;
+}
+
+.pt-glabel {
+  padding-top: 2px;
+  color: var(--muted);
+  opacity: 0.75;
+  font-size: 10.5px;
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.1;
+}
+
+.pt-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* "Apresentar" e "Notas" empilhados: economiza largura na fita */
+.pt-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+}
+
+.pt-stack .pt.big {
+  height: 30px;
+  min-width: 64px;
+  flex-direction: row;
+  gap: 5px;
+}
+
+.pt-stack .pt.big .ic {
+  width: 17px;
+  height: 17px;
+}
+
+.pt-row,
+.pt-col {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pt-col {
+  flex-direction: column;
+  justify-content: center;
+}
+
+.pt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 5px;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 12.5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pt .ic {
+  width: 16px;
+  height: 16px;
+}
+
+.pt.big {
+  flex-direction: column;
+  gap: 2px;
+  min-width: 48px;
+  height: 50px;
+  padding: 3px 5px;
+  font-size: 11.5px;
+}
+
+.pt.big .ic {
+  width: 23px;
+  height: 23px;
+}
+
+.pt:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.pt.active {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+.pt:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.pt small {
+  font-size: 9px;
+}
+
+.pt.colorbtn {
+  flex-direction: column;
+  gap: 1px;
+  padding-top: 2px;
+}
+
+.pt-a {
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pt-bar {
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.pt-select {
+  height: 26px;
+  padding: 0 5px;
+  color: var(--fg);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  max-width: 104px;
+}
+
+.pt-select.font {
+  width: 100px;
+  text-overflow: ellipsis;
+}
+
+.pt-select.size {
+  width: 50px;
+}
+
+/* galeria de layouts de lâmina */
+.pt-layouts {
+  display: flex;
+  gap: 3px;
+}
+
+.pt-layout {
+  width: 40px;
+  padding: 2px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pt-layout:hover {
+  border-color: var(--accent);
+}
+
+.pt-layout.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.pt-layout-mini {
+  height: 25px;
+  border-radius: 2px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: center;
+}
+
+.pt-layout-mini span {
+  display: block;
+  height: 3px;
+  border-radius: 1px;
+  background: var(--muted);
+}
+
+.pt-layout-mini span:nth-child(1) {
+  width: 70%;
+  height: 5px;
+}
+
+.pt-layout-mini span:nth-child(2) {
+  width: 100%;
+}
+
+.pt-layout-mini span:nth-child(3) {
+  width: 85%;
+}
+
+.pt-layout small {
+  font-size: 9.5px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.1;
+}
+
+/* ---------- palco ---------- */
+
+#pp-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.pp-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* faixa de lâminas (miniaturas) */
+/* faixa de lâminas: altura fixa, miniaturas com a mesma proporção do palco */
+.pp-strip {
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  flex: none;
+  scrollbar-width: thin;
+  align-items: flex-start;
+}
+
+.pp-thumb {
+  position: relative;
+  flex: none;
+  width: 128px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.25;
+  transition: transform 0.12s ease;
+}
+
+.pp-thumb:hover {
+  transform: translateY(-1px);
+}
+
+.pp-thumb.active .pp-thumb-box {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.pp-thumb:hover .pp-thumb-box {
+  border-color: var(--accent);
+}
+
+.pp-thumb-box {
+  position: relative;
+  aspect-ratio: var(--slide-ratio, 16 / 9);
+  overflow: hidden;
+  /* herda o tema da lâmina: miniatura escura em deck escuro */
+  background: var(--slide-bg, #ffffff);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 8.5px;
+  line-height: 1.3;
+  color: var(--slide-fg, #1c212b);
+  padding: 6px;
+}
+
+.pp-thumb-box img {
+  max-width: 100%;
+}
+
+.pp-thumb-box h1 {
+  font-size: 12px;
+  margin: 0 0 2px;
+}
+
+.pp-thumb-box h2,
+.pp-thumb-box h3 {
+  font-size: 9px;
+  margin: 2px 0;
+}
+
+.pp-thumb-box p,
+.pp-thumb-box li {
+  margin: 1px 0;
+}
+
+/* texto das formas na miniatura */
+.pp-thumb-txt {
+  display: block;
+  overflow: hidden;
+}
+
+.pp-thumb-del {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: none;
+  padding: 0;
+}
+
+.pp-thumb-num {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  font-size: 9px;
+  color: var(--muted);
+  background: var(--panel);
+  padding: 0 3px;
+  border-radius: 3px;
+}
+
+.pp-thumb:hover .pp-thumb-del {
+  display: block;
+}
+
+.pp-thumb-del:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* Botão "+" no fim da faixa de lâminas: mesma proporção da miniatura,
+   para a fileira continuar alinhada. */
+.pp-thumb-add {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 128px;
+  aspect-ratio: var(--slide-ratio, 16 / 9);
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.pp-thumb-add .ic {
+  width: 20px;
+  height: 20px;
+}
+
+.pp-thumb-add:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  border-style: solid;
+  background: var(--accent-soft);
+}
+
+.pp-thumb-add:active {
+  transform: scale(0.98);
+}
+
+/* área central: a lâmina se ajusta à ALTURA disponível (nada de cortar embaixo) */
+.pp-canvas {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+/* O quadro preenche o palco sem ser cortado: cresce até o limite de largura OU
+   de altura do container, sempre respeitando a proporção da lâmina. */
+.pp-frame {
+  aspect-ratio: var(--slide-ratio, 16 / 9);
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  max-height: 100%;
+  transform-origin: center center;
+  flex: none;
+  overflow: hidden;
+}
+
+.pp-canvas {
+  container-type: size;
+}
+
+/* A lâmina é um container de tamanho: o texto das formas usa `cqw`, então
+   os pt escalam junto com a lâmina (igual no PowerPoint). */
+.pp-slide {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--slide-bg, #ffffff);
+  color: var(--slide-fg, #1c212b);
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.22);
+  border-radius: 2px;
+  overflow: hidden;
+  container-type: inline-size;
+  container-name: lamina;
+}
+
+.pp-slide.layout-titulo,
+.pp-slide.layout-secao {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* formas posicionadas */
+.pp-shape {
+  position: absolute;
+  display: flex;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 2px;
+}
+
+.pp-shape:hover {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.pp-shape.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.pp-shape[data-kind="forma"] {
+  border-radius: 3px;
+}
+
+.pp-shape-text {
+  width: 100%;
+  height: 100%;
+  padding: 6px 8px;
+  outline: none;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.pp-shape-text:empty::before {
+  content: attr(data-placeholder);
+  opacity: 0.4;
+}
+
+.pp-shape-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+}
+
+/* alças de redimensionamento */
+.pp-handle {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 9px;
+  height: 9px;
+  background: var(--accent);
+  border: 1px solid var(--panel);
+  border-radius: 2px;
+  cursor: nwse-resize;
+  display: none;
+}
+
+.pp-shape.selected .pp-handle {
+  display: block;
+}
+
+.pp-slide.layout-titulo .pp-md {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* conteúdo em markdown: tudo relativo à largura da lâmina (1.25cqw ≈ 18 pt),
+   então a lâmina pode encolher ou crescer sem cortar o texto */
+.pp-md {
+  width: 100%;
+  height: 100%;
+  padding: 8% 9%;
+  overflow: auto;
+  font-size: 1.25cqw;
+}
+
+.pp-md h1 {
+  font-size: 3.25em;
+  margin: 0 0 0.4em;
+  line-height: 1.1;
+}
+
+.pp-md h2 {
+  font-size: 2.1em;
+  margin: 0.6em 0 0.4em;
+  line-height: 1.2;
+}
+
+.pp-md h3 {
+  font-size: 1.55em;
+  margin: 0.5em 0 0.3em;
+}
+
+.pp-md p,
+.pp-md li {
+  font-size: 1em;
+  line-height: 1.45;
+}
+
+.pp-md ul,
+.pp-md ol {
+  margin: 0.3em 0;
+  padding-left: 1.3em;
+}
+
+.pp-md table {
+  border-collapse: collapse;
+  font-size: 0.9em;
+  width: 100%;
+}
+
+.pp-md th,
+.pp-md td {
+  border: 1px solid currentColor;
+  padding: 0.3em 0.6em;
+  text-align: left;
+}
+
+.pp-md img {
+  max-width: 100%;
+}
+
+.pp-md code {
+  font-family: Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.pp-md pre {
+  background: rgba(127, 127, 127, 0.15);
+  padding: 8px;
+  border-radius: 4px;
+  overflow: auto;
+}
+
+/* número e rodapé */
+.pp-num {
+  position: absolute;
+  right: 3%;
+  bottom: 3%;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.pp-footer {
+  position: absolute;
+  left: 3%;
+  bottom: 3%;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* ---------- painel lateral: notas ---------- */
+
+.pp-side {
+  width: 260px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  min-height: 0;
+}
+
+.pp-side-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+  flex: none;
+}
+
+.pp-side-hint {
+  font-size: 10.5px;
+  opacity: 0.75;
+}
+
+.pp-notes {
+  flex: 1;
+  min-height: 0;
+  padding: 10px;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pp-notes::placeholder {
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+/* ---------- barra de status ---------- */
+
+/* barra de status do palco (aqui mora o zoom, que saiu da fita) */
+.pp-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 12px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  font-size: 11.5px;
+  color: var(--muted);
+  flex: none;
+}
+
+.pp-status .spacer {
+  flex: 1;
+}
+
+.pp-zoom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pp-zoom button {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.pp-zoom input[type="range"] {
+  width: 104px;
+  accent-color: var(--accent);
+}
+
+.pp-zoom-val {
+  min-width: 38px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- popups (paleta de fonte/cor) ---------- */
+
+.pp-pop {
+  position: fixed;
+  z-index: 320;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 6px;
+  min-width: 168px;
+}
+
+.pp-swatches {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.pp-sw {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  padding: 0;
+}
+
+.pp-sw:hover {
+  transform: scale(1.12);
+  border-color: var(--accent);
+}
+
+.pp-sw.none {
+  background:
+    linear-gradient(to bottom right, transparent 44%, var(--danger) 44%, var(--danger) 56%, transparent 56%),
+    var(--panel);
+}
+
+.pp-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pp-menu-item:hover {
+  background: var(--accent-soft);
+}
+
+.pp-menu-item.on {
+  font-weight: 600;
+}
+
+.pp-menu-sep {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--border);
+}

@@ -5,7 +5,7 @@ import { welcomeHtml } from "../md/preview";
 import { setTone } from "../broker/writing";
 import { newTab } from "../tabs";
 import { listVersions, clearHistory } from "../history";
-import { openPresentation } from "../power/host";
+import { openPresentation } from "../powerpoint/presenter";
 import { renderSettingsPage, type SettingsSection } from "../settingsPage";
 import { renderHomePage } from "../homePage";
 import { $, h, toast, loadJSON, saveJSON } from "../util";
@@ -48,6 +48,23 @@ export const pagesMethods = {
           setTone(p.tone);
           void this.runWritingCheck();
           this.translationDocChanged(true);
+        }
+        if (p.autosaveOn !== undefined) {
+          this.setSaveState();
+        }
+        // mudou algo do backup: o Rust passa a valer com a nova política
+        if (
+          p.backupOn !== undefined ||
+          p.backupRoot !== undefined ||
+          p.backupProfile !== undefined ||
+          p.backupCopies !== undefined ||
+          p.backupDays !== undefined
+        ) {
+          void this.syncBackupConfig();
+        }
+        if (p.backupWarnMissing !== undefined || p.backupOn !== undefined) {
+          this.setBackupState("ok", "");
+          if (this.settings.backupOn) void this.checkMissing();
         }
       },
       translation: this.translation,

@@ -9,3 +9,5 @@ app-icon.png
 .DS_Store
 Thumbs.db
 public/ort/
+
+public/modelos/

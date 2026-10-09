@@ -1,6 +1,7 @@
 // mdCreator — o app: guarda o estado (abas, editor, painéis) e liga as peças.
 // O trabalho de cada assunto está nos arquivos ao lado (tabs, documents, wordDocs, assistant…).
 import { loadLanguageModel } from "../broker/ghost/model";
+import { kindOfTab } from "../fileIcons";
 import { MdEditor, type CursorPos } from "../md/editor";
 import { Preview } from "../md/preview";
 import * as files from "../files";
@@ -12,15 +13,23 @@ import { Sidebar } from "../sidebar";
 import { OutlinePanel } from "../outline";
 import { Translation } from "../translate/controller";
 import { WordHost } from "../word/host";
+import { PowerPointHost } from "../powerpoint/powerpoint";
+import { ExcelHost } from "../excel/host";
 import { loadSettings, type AppSettings } from "../settings";
+import * as backup from "../backup";
+
+/** Caixa nativa de escolher pasta (usada pelo diálogo do backup). */
+const pickFoldersNative = () => files.pickFolders();
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
-import { $, toast, debounce, copyText, loadJSON, toBase64Utf8 } from "../util";
+import { $, toast, debounce, copyText, loadJSON, toBase64Utf8, h, saveJSON } from "../util";
 import { type Recent, type LinkedFolder } from "./types";
 import { tabsMethods } from "./tabs";
 import { pagesMethods } from "./pages";
 import { homeContextMethods } from "./homeContext";
 import { documentsMethods } from "./documents";
 import { wordDocsMethods } from "./wordDocs";
+import { powerpointDocsMethods } from "./powerpointDocs";
+import { excelDocsMethods } from "./excelDocs";
 import { assistantMethods } from "./assistant";
 import { dictionaryMethods } from "./dictionary";
 import { mdToolsMethods } from "./mdTools";
@@ -48,12 +57,23 @@ export class App {
   sidebar!: Sidebar;
   outline!: OutlinePanel;
   wordHost!: WordHost;
+  pptHost!: PowerPointHost;
+  excelHost!: ExcelHost;
   docxNotice = false;
+  pptxNotice = false;
+  xlsxNotice = false;
   translation!: Translation;
   /** Todas as abas abertas (na ordem da fileira) e a que está ativa. */
   tabs: DocTab[] = [];
   tab!: DocTab;
   closedTabs: string[] = [];
+  /** Estado do backup em disco, mostrado na barra inferior. */
+  backupState: "ok" | "degradado" | "perigo" = "ok";
+  /** true enquanto o salvamento automático está gravando. */
+  saving = false;
+  backupDetail = "";
+  /** Documentos com backup cujo original sumiu do disco. */
+  missingBackups: backup.BackupEntry[] = [];
   switching = false;
   recents: Recent[] = [];
   linkedFolders: LinkedFolder[] = [];
@@ -179,7 +199,7 @@ export class App {
       openPath: (p) => void this.openPath(p),
       activateTab: (id) => void this.switchTo(id),
       openDocs: () =>
-        this.tabs.map((t) => ({ id: t.id, path: t.path, label: tabLabel(t), dirty: t.dirty, active: t === this.tab })),
+        this.tabs.map((t) => ({ id: t.id, path: t.path, label: tabLabel(t), dirty: t.dirty, active: t === this.tab, kind: kindOfTab(t.kind) })),
       recents: () => this.recents.map((r) => r.path),
       pickFolders: () => files.pickFolders(),
       defaultDir: () => files.defaultDocsDir(),
@@ -189,11 +209,17 @@ export class App {
       searchContent: (q, roots) => this.searchContent(q, roots),
       openAt: (p, line) => void this.openAt(p, line),
       contextMenu: (x, y, items) => this.openMenuAt(x, y, items),
+      fileMenu: (anchor, path) => this.openFileMenu(anchor, path),
       onHome: () => this.toggleHome(),
     });
     this.outline = new OutlinePanel($("#outline"), {
       getText: () => (this.tab.kind === "word" ? this.wordHost.outline().text : this.editor.getText()),
-      goto: (line) => (this.tab.kind === "word" ? this.wordHost.gotoLine(line) : this.editor.gotoLine(line)),
+      goto: (line) =>
+        this.tab.kind === "word"
+          ? this.wordHost.gotoLine(line)
+          : this.tab.kind === "xlsx"
+            ? toast("A estrutura de títulos não se aplica a planilhas.", "info", 2600)
+            : this.editor.gotoLine(line),
       edit: (from, to, insert) => {
         if (this.tab.kind === "word") toast("Reorganizar seções ainda não funciona em documentos Word.", "info", 3200);
         else this.editor.replaceRange(from, to, insert);
@@ -224,6 +250,18 @@ export class App {
       onReview: () => this.openReview(),
       onAddons: () => toast("Painel de Suplementos do mdOffice.", "info", 2400),
     });
+    this.pptHost = new PowerPointHost({
+      pane: $("#powerpoint-pane"),
+      onDirty: () => this.onPptChange(),
+      onPickImage: () => void this.pickPptImage(),
+      onConfigure: () => void this.configurePpt(),
+    });
+    this.excelHost = new ExcelHost({
+      pane: $("#excel-pane"),
+      onDirty: () => this.onExcelChange(),
+      onStatus: () => this.excelStatus(),
+      onConfigure: () => void this.configureExcel(),
+    });
     $("#ol-collapse").addEventListener("click", () => this.outline.collapseAll(true));
     $("#ol-expand").addEventListener("click", () => this.outline.collapseAll(false));
     $("#ctx-add").addEventListener("click", () => void this.chooseFolders());
@@ -252,11 +290,23 @@ export class App {
     this.startDeepWatcher();
     setTone(this.settings.tone);
     $("#st-history").addEventListener("click", () => void this.openHistory());
+    // backup em disco: configuração no Rust, indicador na barra e checagem de originais
+    void this.setupBackup();
+    document.querySelector("#st-backup")?.addEventListener("click", () => {
+      // vermelho: arquivos que só existem no backup; fora disso, o histórico do documento
+      if (this.backupState === "perigo") this.openMissingBackups();
+      else void this.openHistory();
+    });
     $("#st-path").addEventListener("click", () => {
       if (this.path) void revealItemInDir(this.path).catch(() => {});
     });
     window.addEventListener("blur", () => void this.autosave());
-    window.addEventListener("beforeunload", () => void this.autosave());
+    window.addEventListener("beforeunload", () => {
+      void this.autosave();
+      // última cópia em disco antes de fechar (o async pode não terminar, mas o
+      // salvamento automático já gravou o arquivo; isto é a rede de segurança)
+      if (this.dirty) void this.backupNow(this.path, "fechar");
+    });
     await this.setupDragDrop();
 
     this.refreshTitle();
@@ -276,6 +326,143 @@ export class App {
   }
 
   checkWritingSoon = debounce(() => void this.runWritingCheck(), 900);
+
+  /** Manda a configuração atual do backup para o Rust (é ele quem grava). */
+  async syncBackupConfig(): Promise<void> {
+    const s = this.settings;
+    const numeros = backup.numerosDoPerfil(s.backupProfile, s.backupCopies, s.backupDays);
+    try {
+      await backup.gravarConfig({
+        enabled: s.backupOn,
+        protect: true,
+        user_root: s.backupRoot || null,
+        max_copies: numeros.copias,
+        max_days: numeros.dias,
+      });
+    } catch {
+      /* sem acesso ao backend (navegador): o backup em disco não existe lá */
+    }
+  }
+
+  /**
+   * Coloca o backup em dia: manda a configuração para o Rust, mostra o indicador na
+   * barra inferior, pergunta na primeira execução e procura originais que sumiram.
+   */
+  async setupBackup(): Promise<void> {
+    // no navegador (desenvolvimento) não existe pasta para gravar: desliga em silêncio
+    if (!backup.temBackend()) {
+      const el = document.querySelector<HTMLElement>("#st-backup");
+      if (el) el.hidden = true;
+      return;
+    }
+    await this.syncBackupConfig();
+
+    // pergunta uma única vez, na primeira execução
+    if (!this.settings.backupAsked) await this.askBackup();
+    // relê: a resposta acima pode ter mudado a configuração
+    this.setBackupState("ok", "");
+    if (this.settings.backupOn) {
+      await this.checkMissing();
+      // e de novo de tempos em tempos, para pegar quem apagou por fora
+      window.setInterval(() => void this.checkMissing(), 30 * 60 * 1000);
+    }
+  }
+
+  /**
+   * Primeira execução: pergunta se quer ativar o backup e onde guardar.
+   *
+   * Só aparece uma vez. O botão "Agora não" desliga — nada é gravado fora do
+   * histórico de dentro do app, e dá para ligar depois em Configurações.
+   */
+  async askBackup(this: App): Promise<void> {
+    const backdrop = h("div", { class: "modal-backdrop" });
+    const modal = h("div", { class: "modal bk-ask" });
+    modal.innerHTML = `
+      <header class="wm-head">
+        <svg class="ic"><use href="#i-shield"/></svg>
+        <h2>Guardar cópia de segurança dos seus arquivos?</h2>
+      </header>
+      <div class="bk-ask-body">
+        <p>O <b>mdCreator</b> pode guardar uma cópia de cada documento que você escrever,
+        em uma pasta do seu computador. Assim, mesmo se apagar o arquivo sem querer,
+        fechar o app com força ou perder o documento, o texto continua lá.</p>
+        <ul class="bk-ask-list">
+          <li><b>Cópia a cada salvamento</b> e uma por dia, mesmo que você esqueça de salvar.</li>
+          <li><b>Antes de sobrescrever</b> qualquer arquivo, o app guarda a versão anterior.</li>
+          <li><b>Vale para Word, PowerPoint e Excel</b> também — não só Markdown.</li>
+          <li>Você escolhe quanto tempo guardar e pode apagar quando quiser.</li>
+        </ul>
+        <p class="bk-ask-pasta">Onde guardar?</p>
+        <div class="bk-ask-choose">
+          <span class="muted" data-pasta>Nenhuma pasta escolhida (só a pasta do próprio app)</span>
+          <button class="btn small" data-escolher>Escolher pasta…</button>
+        </div>
+      </div>
+      <footer class="wm-foot">
+        <span class="muted">Dá para mudar isso depois em <b>⋯ → Configurações</b>.</span>
+        <span class="dr-spacer"></span>
+        <button class="btn" data-nao>Agora não</button>
+        <button class="btn primary" data-sim>Ativar backup</button>
+      </footer>`;
+    backdrop.append(modal);
+    document.body.append(backdrop);
+
+    const q = <T extends HTMLElement>(s: string) => modal.querySelector<T>(s)!;
+    let raiz = this.settings.backupRoot;
+    const pintar = () => {
+      q("[data-pasta]").textContent = raiz || "Nenhuma pasta escolhida (só a pasta do próprio app)";
+    };
+    pintar();
+
+    const fechar = () => {
+      document.removeEventListener("keydown", onKey, true);
+      backdrop.remove();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        fechar();
+      }
+    };
+    document.addEventListener("keydown", onKey, true);
+    backdrop.addEventListener("mousedown", (e) => {
+      if (e.target === backdrop) fechar();
+    });
+
+    q("[data-escolher]").addEventListener("click", async () => {
+      try {
+        const escolhida = await pickFoldersNative();
+        if (!escolhida.length) return;
+        raiz = await backup.prepararPasta(escolhida[0]);
+        pintar();
+      } catch {
+        toast("Não foi possível usar essa pasta.", "err");
+      }
+    });
+
+    const gravar = async (ligado: boolean) => {
+      this.settings = {
+        ...this.settings,
+        backupOn: ligado,
+        backupRoot: ligado ? raiz : "",
+        backupAsked: true,
+      };
+      saveJSON("mdc.settings", this.settings);
+      fechar();
+      if (!ligado) {
+        // avisa o Rust para ele não proteger arquivos nem gravar cópias
+        await this.syncBackupConfig();
+        toast("Backup em disco desligado. O histórico de versões continua funcionando.", "info", 5000);
+        return;
+      }
+      await this.setupBackup();
+      toast("Backup ativado. As cópias ficam nas duas pastas, mesmo que uma falhe.", "ok", 5000);
+    };
+
+    q("[data-sim]").addEventListener("click", () => void gravar(true));
+    q("[data-nao]").addEventListener("click", () => void gravar(false));
+  }
 
   autoFixSoon = debounce(() => this.runAutoFix(), 700);
 
@@ -302,6 +489,8 @@ type PagesMethodsType = typeof pagesMethods;
 type HomeContextMethodsType = typeof homeContextMethods;
 type DocumentsMethodsType = typeof documentsMethods;
 type WordDocsMethodsType = typeof wordDocsMethods;
+type PowerPointDocsMethodsType = typeof powerpointDocsMethods;
+type ExcelDocsMethodsType = typeof excelDocsMethods;
 type AssistantMethodsType = typeof assistantMethods;
 type DictionaryMethodsType = typeof dictionaryMethods;
 type MdToolsMethodsType = typeof mdToolsMethods;
@@ -316,5 +505,5 @@ type CommandsMethodsType = typeof commandsMethods;
 type KeysMethodsType = typeof keysMethods;
 type LayoutMethodsType = typeof layoutMethods;
 type DeepReviewMethodsType = typeof deepReviewMethods;
-export interface App extends TabsMethodsType, PagesMethodsType, HomeContextMethodsType, DocumentsMethodsType, WordDocsMethodsType, AssistantMethodsType, DictionaryMethodsType, MdToolsMethodsType, HistorySearchMethodsType, MediaMethodsType, DrawingMethodsType, AiContextMethodsType, MenusMethodsType, ToolbarMethodsType, WindowControlsMethodsType, CommandsMethodsType, KeysMethodsType, LayoutMethodsType, DeepReviewMethodsType {}
-Object.assign(App.prototype, tabsMethods, pagesMethods, homeContextMethods, documentsMethods, wordDocsMethods, assistantMethods, dictionaryMethods, mdToolsMethods, historySearchMethods, mediaMethods, drawingMethods, aiContextMethods, menusMethods, toolbarMethods, windowControlsMethods, commandsMethods, keysMethods, layoutMethods, deepReviewMethods);
+export interface App extends TabsMethodsType, PagesMethodsType, HomeContextMethodsType, DocumentsMethodsType, WordDocsMethodsType, PowerPointDocsMethodsType, ExcelDocsMethodsType, AssistantMethodsType, DictionaryMethodsType, MdToolsMethodsType, HistorySearchMethodsType, MediaMethodsType, DrawingMethodsType, AiContextMethodsType, MenusMethodsType, ToolbarMethodsType, WindowControlsMethodsType, CommandsMethodsType, KeysMethodsType, LayoutMethodsType, DeepReviewMethodsType {}
+Object.assign(App.prototype, tabsMethods, pagesMethods, homeContextMethods, documentsMethods, wordDocsMethods, powerpointDocsMethods, excelDocsMethods, assistantMethods, dictionaryMethods, mdToolsMethods, historySearchMethods, mediaMethods, drawingMethods, aiContextMethods, menusMethods, toolbarMethods, windowControlsMethods, commandsMethods, keysMethods, layoutMethods, deepReviewMethods);

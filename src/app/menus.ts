@@ -1,7 +1,8 @@
 // Menus suspensos (⋯, clique direito) e seus itens.
 
 import type { App } from "./app";
-import { $, h } from "../util";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { $, copyText, h } from "../util";
 
 export const menusMethods = {
   /** Menu suspenso solto (botão direito) numa posição da tela. */
@@ -22,6 +23,32 @@ export const menusMethods = {
       }
     };
     document.addEventListener("mousedown", dismiss, true);
+  },
+
+  /**
+   * Menu de ações de um arquivo da barra lateral (o botão "⋯" de cada linha).
+   * Mesma lista do clique direito, para o botão alcançar por teclado/toque.
+   */
+  openFileMenu(this: App, anchor: HTMLElement, path: string): void {
+    const aberto = this.tabs.some((t) => (t.path ?? "").toLowerCase() === path.toLowerCase());
+    this.openMenu(anchor, (menu) => {
+      this.ddItem(menu, { icon: "i-open", label: "Abrir", onPick: () => void this.openPath(path) });
+      this.ddSep(menu);
+      this.ddItem(menu, { icon: "i-folder", label: "Mostrar na pasta", onPick: () => void revealItemInDir(path).catch(() => {}) });
+      this.ddItem(menu, { icon: "i-copy", label: "Copiar caminho", onPick: () => void copyText(path) });
+      if (aberto) {
+        this.ddSep(menu);
+        const alvo = this.tabs.find((t) => (t.path ?? "").toLowerCase() === path.toLowerCase());
+        this.ddItem(menu, {
+          icon: "i-doc",
+          label: "Renomear",
+          hint: "F2",
+          onPick: () => {
+            if (alvo) this.tabBar.beginRename(alvo.id);
+          },
+        });
+      }
+    });
   },
 
   closeMenus(this: App): void {
@@ -51,10 +78,11 @@ export const menusMethods = {
 
   ddItem(this: App, 
     menu: HTMLElement,
-    opts: { icon?: string; label: string; hint?: string; checked?: boolean; onPick: () => void }
+    opts: { icon?: string; iconHtml?: string; label: string; hint?: string; checked?: boolean; onPick: () => void }
   ): void {
     const btn = h("button", { class: "dd-item", type: "button" });
-    if (opts.icon) btn.innerHTML = `<svg class="ic"><use href="#${opts.icon}"/></svg>`;
+    if (opts.iconHtml) btn.innerHTML = opts.iconHtml;
+    else if (opts.icon) btn.innerHTML = `<svg class="ic"><use href="#${opts.icon}"/></svg>`;
     btn.append(h("span", { text: opts.label }));
     if (opts.hint) btn.append(h("span", { class: "dd-hint", text: opts.hint }));
     if (opts.checked) btn.insertAdjacentHTML("beforeend", '<svg class="ic dd-check"><use href="#i-check"/></svg>');

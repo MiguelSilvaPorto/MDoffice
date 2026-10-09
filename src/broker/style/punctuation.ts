@@ -85,6 +85,20 @@ export function introConnectiveComma({ mask, push }: RuleCtx): void {
   }
 }
 
+/**
+ * Palavras que NUNCA terminam uma frase (artigos, preposições, conjunções, pronomes relativos…): se o parágrafo
+ * acaba numa delas, a frase está incompleta e o ponto final não entra.
+ */
+export const NAO_TERMINAM_FRASE = new Set([
+  "a", "o", "as", "os", "um", "uma", "uns", "umas", "ao", "aos", "à", "às",
+  "de", "do", "da", "dos", "das", "dum", "duma", "em", "no", "na", "nos", "nas", "num", "numa",
+  "por", "pelo", "pela", "pelos", "pelas", "per", "para", "pra", "com", "sem", "sob", "sobre", "entre", "até", "desde", "perante", "após", "contra", "ante",
+  "e", "ou", "mas", "nem", "que", "se", "como", "quando", "porque", "pois", "porém", "onde", "qual", "quais", "cujo", "cuja", "cujos", "cujas", "quanto", "quanta", "quantos", "quantas",
+  "seu", "sua", "seus", "suas", "meu", "minha", "meus", "minhas", "teu", "tua", "nosso", "nossa", "nossos", "nossas",
+  "este", "esta", "estes", "estas", "esse", "essa", "esses", "essas", "aquele", "aquela", "aqueles", "aquelas",
+  "também", "ainda", "já", "mais", "menos", "muito", "pouco", "todo", "toda", "todos", "todas", "cada", "outro", "outra", "outros", "outras", "ser", "estar", "ter", "haver", "foi", "são", "está", "estão", "tem", "têm", "vai", "vão", "pode", "podem", "deve", "devem",
+]);
+
 /** Ponto final faltando no fim do parágrafo. */
 export function missingFinalPeriod({ text, mask, push }: RuleCtx): void {
   // ponto final faltando em parágrafos
@@ -107,13 +121,55 @@ export function missingFinalPeriod({ text, mask, push }: RuleCtx): void {
         proxima === "" ||
         proximaCrua === "" ||
         /^([#>|`]|!\[|[-*+]\s|\d+\.\s|```)/.test(proximaCrua);
-      if (!skip && fimDeParagrafo && words >= 3 && !endsOk && /[\p{L}\d]$/u.test(trimmed)) {
+      const ultima = (/([\p{L}]+)$/u.exec(trimmed)?.[1] ?? "").toLowerCase();
+      // frase incompleta (termina em "de", "para", "e", "que"…): ainda está sendo escrita, não fecha com ponto
+      if (!skip && fimDeParagrafo && words >= 3 && !endsOk && /[\p{L}\d]$/u.test(trimmed) && !NAO_TERMINAM_FRASE.has(ultima)) {
         const lineEnd = offset + raw.trimEnd().length;
         const wm = /[\p{L}\d]+$/u.exec(text.slice(offset, lineEnd));
         const start = lineEnd - (wm ? wm[0].length : 1);
         push(start, lineEnd, "Falta o ponto final no fim do parágrafo", `${text.slice(start, lineEnd)}.`, []);
       }
       offset += raw.length + 1;
+    }
+  }
+}
+
+/**
+ * Vírgula antes de conjunções que abrem uma oração subordinada, em frases mais longas ("..., pois", "..., embora").
+ * Só entra onde quase sempre pede vírgula: "pois", "embora", "enquanto", "já que", "visto que", "uma vez que", "ainda que",
+ * "mesmo que", "de modo que", "de forma que"; e "porque" só em frase bem comprida (curtas costumam ficar sem vírgula).
+ */
+export function subordinateComma({ mask, push }: RuleCtx): void {
+  const CONJ: [string, number][] = [
+    ["pois", 3],
+    ["embora", 4],
+    ["enquanto", 6],
+    ["já que", 4],
+    ["visto que", 4],
+    ["uma vez que", 4],
+    ["ainda que", 4],
+    ["mesmo que", 5],
+    ["de modo que", 5],
+    ["de forma que", 5],
+    ["porque", 11],
+  ];
+  const sentenceRx = /[^.!?\n]+/g;
+  let s: RegExpExecArray | null;
+  while ((s = sentenceRx.exec(mask)) !== null) {
+    const sentence = s[0];
+    for (const [conj, minBefore] of CONJ) {
+      const rx = new RegExp(`(?<=[\\p{L}\\d])(\\s+)(${conj})(?=\\s+[\\p{L}])`, "giu");
+      let m: RegExpExecArray | null;
+      while ((m = rx.exec(sentence)) !== null) {
+        const before = sentence.slice(0, m.index);
+        const prevWord = (/([\p{L}]+)$/u.exec(before)?.[1] ?? "").toLowerCase();
+        if (["e", "ou", "nem", "mas", "só", "mesmo", "até"].includes(prevWord)) continue; // "e porque…", "só porque…", "até que…"
+        const nBefore = (before.match(/[\p{L}][\p{L}'-]*/gu) ?? []).length;
+        if (nBefore < minBefore) continue;
+        if (/,\s*$/.test(before)) continue;
+        const start = s.index + m.index;
+        push(start, start + m[1].length + m[2].length, `Costuma vir vírgula antes de “${m[2]}”`, `, ${m[2]}`, [], false);
+      }
     }
   }
 }

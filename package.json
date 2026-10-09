@@ -8,12 +8,16 @@
     "app": "tauri dev",
     "app:build": "tauri build",
     "dev": "node scripts/copiar-dicionario.mjs && vite",
-    "build": "node scripts/copiar-dicionario.mjs && tsc && vite build",
+    "build": "node scripts/copiar-dicionario.mjs && node scripts/baixar-modelo.mjs && tsc && vite build",
     "check": "tsc --noEmit",
+    "test:excel": "node scripts/testar-excel.mjs && node scripts/testar-grade-excel.mjs",
+    "test:log": "node scripts/testar-snapshots.mts",
+    "test:backup": "node scripts/testar-backup.mts && node scripts/testar-backup-e2e.cjs",
     "preview": "vite preview",
     "tauri": "tauri",
     "icon": "node scripts/gen-icon.mjs && tauri icon app-icon.png",
-    "prep:dicionario": "node scripts/copiar-dicionario.mjs"
+    "prep:dicionario": "node scripts/copiar-dicionario.mjs",
+    "prep:modelo": "node scripts/baixar-modelo.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.6.0",
@@ -34,6 +38,7 @@
     "jszip": "^3.10.2",
     "marked": "^12.0.0",
     "mermaid": "^11.3.0",
+    "pptxgenjs": "^4.0.1",
     "prosemirror-commands": "^1.7.2",
     "prosemirror-dropcursor": "^1.8.4",
     "prosemirror-gapcursor": "^1.4.1",

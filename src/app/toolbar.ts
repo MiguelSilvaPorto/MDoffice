@@ -1,7 +1,7 @@
 // Barra de ferramentas e menu ⋯: ações, botões e estilo do desenho.
 
 import type { App } from "./app";
-import { deckSummary } from "../power/host";
+import { deckSummary } from "../powerpoint/presenter";
 import { $, $$, toast, loadJSON, saveJSON } from "../util";
 import { TABLE_SNIPPET, AI_TEMPLATE } from "./constants";
 
@@ -14,6 +14,26 @@ export const toolbarMethods = {
       }
       if (name === "draw") {
         toast("O desenho ainda não está disponível em documentos Word.", "info", 3200);
+        return;
+      }
+    }
+    if (this.tab.kind === "ppt") {
+      if (name === "image") {
+        void this.pickPptImage();
+        return;
+      }
+      if (name === "draw") {
+        toast("O desenho ainda não está disponível em apresentações.", "info", 3200);
+        return;
+      }
+    }
+    if (this.tab.kind === "xlsx") {
+      if (name === "image") {
+        toast("Imagens dentro da planilha ainda não são suportadas pelo motor.", "info", 3800);
+        return;
+      }
+      if (name === "draw") {
+        toast("O desenho ainda não está disponível em planilhas.", "info", 3200);
         return;
       }
     }
@@ -105,6 +125,7 @@ export const toolbarMethods = {
 
   buildMoreMenu(this: App, menu: HTMLElement): void {
     this.ddItem(menu, { icon: "i-saveas", label: "Salvar como…", hint: "Ctrl+Shift+S", onPick: () => void this.save(true) });
+    this.ddItem(menu, { icon: "i-import", label: "Importar do Office…", hint: ".docx .xlsx .xlsm .pptx", onPick: () => void this.importOfficeDialog() });
     this.ddSep(menu);
     this.ddItem(menu, { icon: "i-copy", label: "Copiar para a IA", hint: "Ctrl+Shift+C", onPick: () => void this.copyForAI() });
     this.ddItem(menu, { icon: "i-export", label: "Exportar…", hint: "Ctrl+Shift+E", onPick: () => this.openExport() });
@@ -137,6 +158,13 @@ export const toolbarMethods = {
       label: "Reparar alinhamentos",
       hint: "conserta <div> sobrando",
       onPick: () => this.repairAlignments(),
+    });
+    this.ddItem(menu, {
+      icon: "i-check",
+      label: "Salvamento automático",
+      hint: this.settings.autosaveOn ? "ligado" : "desligado",
+      checked: this.settings.autosaveOn,
+      onPick: () => this.toggleAutosave(),
     });
     this.ddItem(menu, {
       icon: "i-check",
@@ -217,6 +245,9 @@ export const toolbarMethods = {
             break;
           case "save-as":
             void this.save(true);
+            break;
+          case "toggle-autosave":
+            this.toggleAutosave();
             break;
           case "copy-ai":
             void this.copyForAI();

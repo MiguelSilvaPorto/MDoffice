@@ -2,7 +2,7 @@
 
 import type { App } from "./app";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { $, baseName, docDirOf, clamp } from "../util";
+import { $, baseName, docDirOf, clamp, toast, saveJSON } from "../util";
 
 export const layoutMethods = {
   renderOutline(this: App): void {
@@ -10,6 +10,10 @@ export const layoutMethods = {
   },
 
   updateStats(this: App): void {
+    if (this.tab.kind === "xlsx") {
+      this.excelStatus();
+      return;
+    }
     if (this.tab.kind === "word") {
       const w = this.wordHost.stats();
       $("#st-words").textContent = `${w.words} ${w.words === 1 ? "palavra" : "palavras"}`;
@@ -34,12 +38,73 @@ export const layoutMethods = {
 
   setSaveState(this: App): void {
     const el = $("#save-state");
-    el.textContent = this.dirty
-      ? "Alterações não salvas"
-      : this.isDraft
-        ? "Rascunho (no app)"
-        : this.statusSaved;
+    const autosaveOn = this.settings.autosaveOn;
+    if (!autosaveOn) {
+      el.textContent = this.dirty
+        ? "Alterações não salvas (Auto-salvar desligado)"
+        : "Salvo (Auto-salvar desligado)";
+    } else {
+      el.textContent = this.dirty
+        ? "Alterações não salvas"
+        : this.isDraft
+          ? "Rascunho (no app)"
+          : this.statusSaved;
+    }
     el.classList.toggle("dirty", this.dirty);
+    this.updateAutosaveUI();
+  },
+
+  updateAutosaveUI(this: App): void {
+    const btn = document.querySelector<HTMLButtonElement>("#tb-autosave-btn");
+    const badge = document.querySelector<HTMLElement>("#tb-autosave-badge");
+    const text = document.querySelector<HTMLElement>("#tb-autosave-text");
+    const iconUse = document.querySelector<SVGUseElement>("#tb-autosave-ic use");
+    if (!btn || !badge || !text) return;
+
+    const on = this.settings.autosaveOn;
+    btn.setAttribute("aria-checked", on ? "true" : "false");
+    btn.classList.toggle("is-active", on);
+
+    badge.classList.toggle("is-on", on);
+    badge.classList.toggle("is-off", !on);
+    badge.classList.toggle("is-dirty", on && this.dirty);
+
+    if (!on) {
+      btn.title = "Salvamento Automático: Desativado (clique para ligar)";
+      badge.title = "Salvamento Automático desligado. Pressione Ctrl+S para salvar.";
+      text.textContent = "Desativado";
+      if (iconUse) iconUse.setAttribute("href", "#i-cloud-off");
+    } else {
+      btn.title = "Salvamento Automático: Ativado (clique para desligar)";
+      if (this.saving) {
+        badge.title = "Salvando documento…";
+        text.textContent = "Salvando…";
+        if (iconUse) iconUse.setAttribute("href", "#i-cloud");
+      } else if (this.dirty) {
+        badge.title = "Alterações pendentes — salvamento automático ativo";
+        text.textContent = "Salvando…";
+        if (iconUse) iconUse.setAttribute("href", "#i-cloud");
+      } else {
+        badge.title = this.statusSaved || "Todas as alterações foram salvas";
+        text.textContent = "Salvo";
+        if (iconUse) iconUse.setAttribute("href", "#i-check");
+      }
+    }
+  },
+
+  toggleAutosave(this: App, force?: boolean): void {
+    const next = force !== undefined ? force : !this.settings.autosaveOn;
+    this.settings.autosaveOn = next;
+    saveJSON("mdc.settings", this.settings);
+    this.setSaveState();
+    if (next) {
+      toast("Salvamento automático ativado", "ok", 2400);
+      if (this.dirty) {
+        void this.autosave();
+      }
+    } else {
+      toast("Salvamento automático desativado. Salve com Ctrl+S.", "info", 2800);
+    }
   },
 
   refreshTitle(this: App): void {

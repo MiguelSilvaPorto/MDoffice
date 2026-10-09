@@ -1,5 +1,6 @@
 //! Ler e gravar arquivos, renomear, criar pastas e ler imagens como data URL.
 
+use super::backup;
 use super::util::{io_err, slugify, split_name, unique_path};
 use base64::engine::general_purpose::STANDARD as B64;
 use base64::Engine as _;
@@ -9,18 +10,25 @@ use std::path::{Path, PathBuf};
 /// Lê um arquivo de texto (.md, .markdown, .txt…) como UTF-8.
 #[tauri::command]
 pub fn load_text(path: String) -> Result<String, String> {
-    fs::read_to_string(&path).map_err(io_err)
+    let bytes = fs::read(&path).map_err(io_err)?;
+    // anota o conteúdo para a proteção antes de sobrescrever saber o que está no disco
+    backup::note_disk_content(&path, &bytes);
+    String::from_utf8(bytes).map_err(|e| e.to_string())
 }
 
 /// Grava texto, criando a pasta de destino se necessário.
+///
+/// Antes de sobrescrever um arquivo existente, guarda a versão anterior (quando o backup
+/// está ligado e o conteúdo do disco mudou por fora do app).
 #[tauri::command]
-pub fn save_text(path: String, content: String) -> Result<(), String> {
+pub fn save_text(app: tauri::AppHandle, path: String, content: String) -> Result<(), String> {
     let p = PathBuf::from(&path);
     if let Some(dir) = p.parent() {
         if !dir.as_os_str().is_empty() && !dir.exists() {
             fs::create_dir_all(dir).map_err(io_err)?;
         }
     }
+    backup::protect_before_write(&app, &path, content.as_bytes());
     fs::write(&p, content).map_err(io_err)
 }
 
@@ -63,6 +71,11 @@ pub fn unique_md_path(dir: String, base: String) -> Result<String, String> {
 #[tauri::command]
 pub fn rename_file(from: String, to: String) -> Result<String, String> {
     let src = Path::new(&from);
+    // guarda o conteúdo antes de renomear, para o caminho novo já valer como conhecido
+    let conteudo = if src.is_file() { fs::read(src).ok() } else { None };
+    if let Some(b) = &conteudo {
+        backup::note_disk_content(&from, b);
+    }
     if !src.is_file() {
         return Err("O arquivo do documento não foi encontrado.".to_string());
     }
@@ -87,7 +100,12 @@ pub fn rename_file(from: String, to: String) -> Result<String, String> {
     }
     let (stem, ext) = split_name(&clean);
     let target = unique_path(parent, &stem, &ext);
+    // o caminho antigo deixa de valer: a proteção passa a valer para o novo nome
+    backup::forget_write(&from);
     fs::rename(src, &target).map_err(io_err)?;
+    if let Some(b) = &conteudo {
+        backup::note_disk_content(&target.to_string_lossy(), b);
+    }
     Ok(target.to_string_lossy().to_string())
 }
 
@@ -115,7 +133,7 @@ pub fn create_folder(parent: String, name: String) -> Result<String, String> {
 
 /// Grava bytes (base64) num arquivo, criando a pasta de destino se preciso (DOCX, PDF…).
 #[tauri::command]
-pub fn save_binary(path: String, data: String) -> Result<(), String> {
+pub fn save_binary(app: tauri::AppHandle, path: String, data: String) -> Result<(), String> {
     let bytes = B64.decode(data.as_bytes()).map_err(|e| e.to_string())?;
     let p = PathBuf::from(&path);
     if let Some(dir) = p.parent() {
@@ -123,5 +141,6 @@ pub fn save_binary(path: String, data: String) -> Result<(), String> {
             fs::create_dir_all(dir).map_err(io_err)?;
         }
     }
+    backup::protect_before_write(&app, &path, &bytes);
     fs::write(&p, bytes).map_err(io_err)
 }

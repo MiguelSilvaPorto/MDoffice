@@ -34,6 +34,23 @@ pub fn run() {
             commands::files::create_folder,
             commands::files::save_binary,
             commands::search::search_markdown,
+            commands::backup::backup_config,
+            commands::backup::backup_save_config,
+            commands::backup::backup_app_root,
+            commands::backup::backup_prepare_root,
+            commands::backup::backup_roots,
+            commands::backup::backup_write,
+            commands::backup::backup_list,
+            commands::backup::backup_restore,
+            commands::backup::backup_delete,
+            commands::backup::backup_prune,
+            commands::backup::backup_forget,
+            commands::backup::backup_index,
+            commands::backup::backup_missing,
+            commands::backup::backup_aged,
+            commands::backup::backup_save_history,
+            commands::backup::backup_load_history,
+            commands::backup::backup_clear_history,
         ])
         .run(tauri::generate_context!())
         .expect("erro ao iniciar o mdCreator");

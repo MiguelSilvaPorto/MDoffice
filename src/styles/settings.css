@@ -179,6 +179,11 @@ body.settings-open #preview-wrap {
   cursor: default;
 }
 
+/* o atributo `hidden` precisa vencer o display:flex acima */
+.st-row[hidden] {
+  display: none;
+}
+
 .st-row + .st-row {
   border-top: 1px solid var(--border);
 }

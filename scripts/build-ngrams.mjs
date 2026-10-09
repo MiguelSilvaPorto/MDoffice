@@ -23,6 +23,27 @@ const COMMA = ",";
 const NUM = "#";
 const WORD = /[A-Za-zÀ-ÿ]+(?:-[A-Za-zÀ-ÿ]+)*|\d+(?:[.,]\d+)*|,/g;
 
+// Pré-passagem: o texto da web tem muita gente escrevendo sem acento ("voce", "nao", "relatorio"). Quando a grafia sem
+// acento é bem mais rara (15x ou mais) que a acentuada, ela é erro de digitação: conta como a palavra certa e não entra
+// no vocabulário (assim a correção de digitação do app ainda reconhece "voce" como erro). "esta/está", "pais/país" ficam,
+// porque as duas grafias são palavras de verdade e têm frequência parecida.
+const fixAccent = new Map();
+{
+  const pre = new Map();
+  for (const f of inputs) {
+    const m = fs.readFileSync(f, "utf8").toLowerCase().match(/[a-zà-ÿ]+/g) ?? [];
+    for (const w of m) pre.set(w, (pre.get(w) ?? 0) + 1);
+  }
+  const strip = (w) => w.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  for (const [a, ca] of pre) {
+    const plain = strip(a);
+    if (plain === a || plain.length < 3) continue;
+    const cp = pre.get(plain) ?? 0;
+    if (cp > 0 && ca >= 15 * cp && ca >= 30) fixAccent.set(plain, a);
+  }
+  console.error(`grafias sem acento tratadas como erro: ${fixAccent.size} (ex.: ${[...fixAccent.entries()].slice(0, 12).map(([p, a]) => p + "→" + a).join(", ")})`);
+}
+
 const uni = new Map();
 const bi = new Map();
 const tri = new Map();
@@ -58,7 +79,7 @@ for (const f of inputs) {
           c[1]++;
           capSeen.set(low, c);
         }
-        toks.push(low);
+        toks.push(fixAccent.get(low) ?? low);
       });
       for (let i = 0; i < toks.length; i++) {
         inc(uni, toks[i]);

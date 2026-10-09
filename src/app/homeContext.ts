@@ -16,25 +16,19 @@ export const homeContextMethods = {
           void this.newWordDoc();
           return;
         }
+        if (tipo === "ppt") {
+          // apresentação de verdade: abre o motor de PowerPoint, não um .md
+          void this.newPowerPointDoc();
+          return;
+        }
+        if (tipo === "excel") {
+          // planilha de verdade: abre o motor de Excel, não um .md
+          void this.newExcelDoc();
+          return;
+        }
         let titulo = "Documento";
         let texto = "";
-        if (tipo === "excel") {
-          titulo = "Planilha Excel";
-          texto = [
-            "# Planilha de Dados",
-            "",
-            "| ID | Descrição do Item | Categoria | Quantidade | Valor Unit. (R$) | Total (R$) |",
-            "| :-: | :--- | :--- | ---: | ---: | ---: |",
-            "| 01 | Item de Exemplo A | Serviços | 2 | 125,00 | 250,00 |",
-            "| 02 | Item de Exemplo B | Suprimentos | 5 | 45,00 | 225,00 |",
-            "| 03 | Licença de Sistema | Tecnologia | 1 | 380,00 | 380,00 |",
-            "| 04 | Suporte Mensal | Operação | 1 | 150,00 | 150,00 |",
-            "| **—** | **Total Geral** | **—** | **9** | **—** | **1.005,00** |",
-            "",
-            "> 📊 **Dica do Excel:** Colunas com alinhamento numérico à direita (`---:`) organizam valores monetários e quantidades. Você pode copiar tabelas para o Excel ou colar do Excel no editor.",
-            "",
-          ].join("\n");
-        } else if (tipo === "md") {
+        if (tipo === "md") {
           titulo = "Documento Markdown";
           texto = [
             "# Novo Documento Markdown",
@@ -46,40 +40,6 @@ export const homeContextMethods = {
             "- [ ] Tradução automática com um clique (`Ctrl+Alt+T`)",
             "- [ ] Desenho à mão livre ou vetorial (`Ctrl+Shift+D`)",
             "- [ ] Revisão ortográfica e estilo ABNT",
-            "",
-          ].join("\n");
-        } else if (tipo === "ppt") {
-          titulo = "Apresentação PowerPoint";
-          texto = [
-            "# Apresentação mdOffice",
-            "",
-            "## Subtítulo da sua Apresentação",
-            "",
-            "Apresentador · Data",
-            "",
-            "---",
-            "",
-            "## 1. Visão Geral",
-            "",
-            "- Apresentação moderna construída em slides simples",
-            "- Cada lâmina é separada por uma linha de três traços (`---`)",
-            "- Aperte **F5** a qualquer momento para entrar em tela cheia!",
-            "",
-            "---",
-            "",
-            "## 2. Principais Metas",
-            "",
-            "1. **Clareza:** Slides objetivos com tipografia elegante",
-            "2. **Agilidade:** Foco no conteúdo sem perder tempo com alinhamento manual",
-            "3. **Exportação:** Exporte para PDF com uma lâmina por página (Ctrl+P)",
-            "",
-            "---",
-            "",
-            "## 3. Conclusão",
-            "",
-            "Obrigado!",
-            "",
-            "> Aperte **F5** para iniciar o modo de apresentação agora mesmo.",
             "",
           ].join("\n");
         }
@@ -151,18 +111,10 @@ export const homeContextMethods = {
             "",
           ].join("\n");
         } else if (template === "orcamento") {
-          rotulo = "Planilha Orçamentária";
-          texto = [
-            "# Orçamento e Custos do Projeto",
-            "",
-            "| Categoria | Descrição | Previsão (R$) | Realizado (R$) | Diferença (R$) |",
-            "| :--- | :--- | ---: | ---: | ---: |",
-            "| Pessoal | Desenvolvimento | 15.000,00 | 14.200,00 | + 800,00 |",
-            "| Infraestrutura | Servidores & Nuvem | 3.500,00 | 3.100,00 | + 400,00 |",
-            "| Marketing | Lançamento | 5.000,00 | 5.000,00 | 0,00 |",
-            "| **Total** | | **23.500,00** | **22.300,00** | **+ 1.200,00** |",
-            "",
-          ].join("\n");
+          // orçamento é planilha de verdade: abre o motor com as contas já montadas
+          this.hideHome();
+          void this.criarOrcamento();
+          return;
         } else if (template === "ia") {
           rotulo = "Pedido para IA";
           texto = AI_TEMPLATE;
@@ -177,6 +129,11 @@ export const homeContextMethods = {
       openExisting: () => {
         this.hideHome();
         void this.openDocDialog();
+      },
+
+      importOffice: () => {
+        this.hideHome();
+        void this.importOfficeDialog();
       },
 
       openPath: (path) => {

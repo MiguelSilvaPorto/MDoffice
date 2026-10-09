@@ -1,0 +1,113 @@
+/* ---------- ícones por tipo de arquivo (src/fileIcons.ts) ---------- */
+
+:root {
+  --fi-md: #0f8f84;
+  --fi-word: #2563b0;
+  --fi-excel: #1b8a4b;
+  --fi-ppt: #d24a17;
+}
+
+[data-theme="dark"] {
+  --fi-md: #14b8a6;
+  --fi-word: #3b82d6;
+  --fi-excel: #28a860;
+  --fi-ppt: #e8602a;
+}
+
+.fi {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  overflow: visible;
+}
+
+.fi-md {
+  --fi: var(--fi-md);
+}
+
+.fi-word {
+  --fi: var(--fi-word);
+}
+
+.fi-excel {
+  --fi: var(--fi-excel);
+}
+
+.fi-ppt {
+  --fi: var(--fi-ppt);
+}
+
+.fi-tile {
+  fill: var(--fi);
+}
+
+/* desenho branco dentro do quadradinho */
+.fi-line {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fi-thin {
+  stroke-width: 1.4;
+}
+
+.fi-solid {
+  fill: #fff;
+  stroke: none;
+}
+
+/* nas linhas do painel lateral: um pouco maior e sempre com a cor do tipo (o "apagado" do ícone genérico não vale aqui) */
+.pj-doc .fi,
+.hm-item .fi,
+.ch-file .fi {
+  width: 16px;
+  height: 16px;
+  opacity: 0.95;
+}
+
+.pj-doc:hover .fi,
+.pj-doc.active .fi,
+.hm-item:hover .fi,
+.hm-item.active .fi {
+  opacity: 1;
+}
+
+.tab-ic .fi {
+  width: 16px;
+  height: 16px;
+}
+
+/* a aba ativa não pinta o ícone de roxo: o tipo manda */
+.tab.active .tab-ic .fi {
+  color: inherit;
+}
+
+/* lista do Início */
+.home-file-icon .fi {
+  width: 22px;
+  height: 22px;
+}
+
+/* o ícone do tipo já é colorido: a caixa em volta fica neutra */
+.home-file-icon.file-icon-word,
+.home-file-icon.file-icon-excel,
+.home-file-icon.file-icon-md,
+.home-file-icon.file-icon-ppt,
+.home-file-icon.file-icon-draft {
+  background: transparent;
+}
+
+/* itens dos menus (por exemplo "+ Novo") */
+.dd-item .fi {
+  width: 17px;
+  height: 17px;
+}
+
+/* a etiqueta "MARKDOWN" da página Início usa a mesma cor do ícone do tipo */
+.badge-md {
+  background: color-mix(in srgb, var(--fi-md) 14%, transparent);
+  color: var(--fi-md);
+}

@@ -30,4 +30,7 @@
 @import "./styles/settings.css";
 @import "./styles/home.css";
 @import "./styles/word.css";
+@import "./styles/powerpoint.css";
+@import "./styles/excel.css";
 @import "./styles/deep.css";
+@import "./styles/fileicons.css";

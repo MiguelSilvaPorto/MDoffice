@@ -1,7 +1,9 @@
-// A tela de apresentação (modo tela cheia). Recebe o modelo do deck e desenha
-// uma lâmina por vez — mesma separação do motor do Word (view separada do modelo).
+// A tela de apresentação (modo tela cheia, F5). Recebe o modelo do deck e desenha
+// uma lâmina por vez. Também é a porta de entrada que o App chama para apresentar
+// um documento Markdown qualquer — por isso concentra openPresentation/deckSummary.
 import { marked } from "marked";
 import DOMPurify from "dompurify";
+import { deckFromMarkdown } from "./markdown";
 import { DEFAULT_SETUP, stageRatio } from "./model";
 import type { Deck, DeckSetup } from "./schema";
 
@@ -100,4 +102,20 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     e.stopPropagation();
     fechar();
   });
+}
+
+// ---------------------------------------------------------------------------
+// API que o App chama (equivalente ao antigo src/power/host.ts, fundido aqui)
+// ---------------------------------------------------------------------------
+
+/** Apresenta o documento atual (o app chama isto no F5 / menu). */
+export function openPresentation(texto: string, titulo = "Apresentação"): void {
+  const deck = deckFromMarkdown(texto, DEFAULT_SETUP);
+  openDeckView(deck, DEFAULT_SETUP, titulo);
+}
+
+/** Resumo para o menu/botão: quantas lâminas o documento tem. */
+export function deckSummary(texto: string): string {
+  const deck = deckFromMarkdown(texto, DEFAULT_SETUP);
+  return `${deck.slides.length} lâmina${deck.slides.length === 1 ? "" : "s"}`;
 }

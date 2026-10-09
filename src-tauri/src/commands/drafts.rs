@@ -46,7 +46,7 @@ fn prune_drafts(dir: &Path) {
     let cutoff = std::time::SystemTime::now() - std::time::Duration::from_secs(15 * 24 * 60 * 60);
     for entry in entries.flatten() {
         let path = entry.path();
-        if path.extension().map(|e| e != "md" && e != "docx").unwrap_or(true) {
+        if path.extension().map(|e| e != "md" && e != "docx" && e != "pptx" && e != "xlsx").unwrap_or(true) {
             continue;
         }
         if let Ok(meta) = entry.metadata() {
@@ -76,7 +76,7 @@ pub fn list_drafts(app: tauri::AppHandle) -> Result<Vec<DraftInfo>, String> {
     };
     for entry in entries.flatten() {
         let path = entry.path();
-        if path.extension().map(|e| e != "md" && e != "docx").unwrap_or(true) {
+        if path.extension().map(|e| e != "md" && e != "docx" && e != "pptx" && e != "xlsx").unwrap_or(true) {
             continue;
         }
         let modified_ms = entry
@@ -102,6 +102,8 @@ pub fn draft_path(app: tauri::AppHandle, base: String, ext: Option<String>) -> R
     prune_drafts(&dir);
     let ext = match ext.as_deref() {
         Some("docx") => "docx",
+        Some("pptx") => "pptx",
+        Some("xlsx") => "xlsx",
         _ => "md",
     };
     let target = unique_path(&dir, &slugify(&base), ext);
