@@ -240,7 +240,7 @@ export const powerpointDocsMethods = {
   },
 
   /** Escolhe uma imagem do computador e a insere na lâmina atual. */
-  async pickPptImage(this: App): Promise<void> {
+  async pickPptImage(this: App, destino?: string): Promise<void> {
     try {
       const picked = await files.pickImageFile();
       if (!picked) return;
@@ -254,7 +254,7 @@ export const powerpointDocsMethods = {
           /* sem pasta: usa o data URL mesmo assim */
         }
       }
-      this.pptHost.insertImage(src);
+      this.pptHost.insertImage(src, destino);
     } catch (e) {
       toast("Não consegui abrir a imagem: " + e, "err", 5000);
     }

@@ -28,14 +28,38 @@ function retanguloArredondado(w: number, h: number, r: number): string {
   return `M${f(r)} 0H${f(w - r)}A${f(r)} ${f(r)} 0 0 1 ${f(w)} ${f(r)}V${f(h - r)}A${f(r)} ${f(r)} 0 0 1 ${f(w - r)} ${f(h)}H${f(r)}A${f(r)} ${f(r)} 0 0 1 0 ${f(h - r)}V${f(r)}A${f(r)} ${f(r)} 0 0 1 ${f(r)} 0Z`;
 }
 
+/** Balão de fala: retângulo (com cantos opcionais) e uma ponta que aponta para (adj1, adj2) a partir do centro. */
+function balao(w: number, h: number, adj1: number, adj2: number, raio: number): string {
+  const r = Math.max(0, Math.min(raio, w / 2, h / 2));
+  const tx = w / 2 + (w * adj1) / 100000;
+  const ty = h / 2 + (h * adj2) / 100000;
+  const dxn = (tx - w / 2) / w;
+  const dyn = (ty - h / 2) / h;
+  const lado = Math.abs(dyn) >= Math.abs(dxn) ? (dyn > 0 ? "b" : "t") : dxn > 0 ? "r" : "l";
+  const bw = Math.min(w, h) / 6;
+  const xc = Math.max(r + bw, Math.min(w - r - bw, tx));
+  const yc = Math.max(r + bw, Math.min(h - r - bw, ty));
+  const arco = (x: number, y: number) => (r > 0 ? `A${f(r)} ${f(r)} 0 0 1 ${f(x)} ${f(y)}` : `L${f(x)} ${f(y)}`);
+  let d = `M${f(r)} 0`;
+  if (lado === "t") d += `L${f(xc - bw)} 0L${f(tx)} ${f(ty)}L${f(xc + bw)} 0`;
+  d += `L${f(w - r)} 0${arco(w, r)}`;
+  if (lado === "r") d += `L${f(w)} ${f(yc - bw)}L${f(tx)} ${f(ty)}L${f(w)} ${f(yc + bw)}`;
+  d += `L${f(w)} ${f(h - r)}${arco(w - r, h)}`;
+  if (lado === "b") d += `L${f(xc + bw)} ${f(h)}L${f(tx)} ${f(ty)}L${f(xc - bw)} ${f(h)}`;
+  d += `L${f(r)} ${f(h)}${arco(0, h - r)}`;
+  if (lado === "l") d += `L0 ${f(yc + bw)}L${f(tx)} ${f(ty)}L0 ${f(yc - bw)}`;
+  d += `L0 ${f(r)}${arco(r, 0)}Z`;
+  return d;
+}
+
 /** Presets conhecidos (para avisar quando um não existe). */
 export const PRESETS_CONHECIDOS = new Set([
   "rect", "roundRect", "ellipse", "triangle", "rtTriangle", "diamond", "parallelogram", "trapezoid", "pentagon", "hexagon",
-  "octagon", "chevron", "homePlate", "rightArrow", "leftArrow", "upArrow", "downArrow", "star5", "plus", "donut", "frame",
-  "line", "straightConnector1", "bentConnector2", "bentConnector3", "curvedConnector3", "round1Rect", "round2SameRect",
-  "snip1Rect", "snip2SameRect", "flowChartProcess", "flowChartAlternateProcess", "flowChartTerminator", "flowChartDecision",
-  "teardrop", "noSmoking", "mathPlus", "mathMinus", "mathMultiply", "cloud", "heart", "lightningBolt", "sun", "moon", "smileyFace",
-  "wedgeRectCallout", "wedgeRoundRectCallout", "ribbon", "leftRightArrow", "upDownArrow", "can", "cube", "arc", "blockArc", "pie",
+  "octagon", "chevron", "homePlate", "rightArrow", "leftArrow", "upArrow", "downArrow", "leftRightArrow", "upDownArrow", "star5",
+  "plus", "donut", "frame", "line", "straightConnector1", "bentConnector2", "bentConnector3", "curvedConnector3", "round1Rect",
+  "round2SameRect", "snip1Rect", "snip2SameRect", "flowChartProcess", "flowChartAlternateProcess", "flowChartTerminator",
+  "flowChartDecision", "teardrop", "noSmoking", "mathPlus", "mathMinus", "mathMultiply", "heart", "can", "wedgeRectCallout",
+  "wedgeRoundRectCallout",
 ]);
 
 /** Traçados de um preset, em pt. `adj` traz os ajustes do arquivo (1/100000). */
@@ -213,10 +237,8 @@ export function tracadoDoPreset(prst: string, w: number, h: number, adj: Record<
       return [{ d: `M0 0C${f(x)} 0 ${f(x)} ${f(h / 2)} ${f(x)} ${f(h / 2)}S${f(x)} ${f(h)} ${f(w)} ${f(h)}`, preenche: false }];
     }
     case "wedgeRectCallout":
-    case "wedgeRoundRectCallout": {
-      const r = prst === "wedgeRoundRectCallout" ? (ss * a("adj3", 16667)) / 100000 : 0;
-      return [{ d: retanguloArredondado(w, h, r), preenche: true }];
-    }
+    case "wedgeRoundRectCallout":
+      return [{ d: balao(w, h, a("adj1", -20833), a("adj2", 62500), prst === "wedgeRoundRectCallout" ? (ss * a("adj3", 16667)) / 100000 : 0), preenche: true }];
     case "heart":
       return [{ d: `M${f(w / 2)} ${f(h)}C${f(-w * 0.15)} ${f(h * 0.4)} ${f(w * 0.2)} ${f(-h * 0.15)} ${f(w / 2)} ${f(h * 0.3)}C${f(w * 0.8)} ${f(-h * 0.15)} ${f(w * 1.15)} ${f(h * 0.4)} ${f(w / 2)} ${f(h)}Z`, preenche: true }];
     default:

@@ -253,7 +253,7 @@ export class App {
     this.pptHost = new PowerPointHost({
       pane: $("#powerpoint-pane"),
       onDirty: () => this.onPptChange(),
-      onPickImage: () => void this.pickPptImage(),
+      onPickImage: (destino) => void this.pickPptImage(destino),
       onConfigure: () => void this.configurePpt(),
     });
     this.excelHost = new ExcelHost({

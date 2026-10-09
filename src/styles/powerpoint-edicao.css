@@ -1,0 +1,962 @@
+/* ==========================================================================
+   Apresentações: fita com abas, painel Formatar, popups, seleção no palco.
+   (a fita antiga .pt-* ficou em powerpoint.css; a de agora é .ppr-*)
+   ========================================================================== */
+
+/* ---------- fita ---------- */
+
+.pp-ribbon.ppr {
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+  background: var(--panel);
+}
+
+.ppr-abas {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 4px 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.ppr-enche {
+  flex: 1;
+}
+
+.ppr-aba {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px 7px;
+  color: var(--fg);
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ppr-aba[hidden] {
+  display: none;
+}
+
+.ppr-aba:hover {
+  background: color-mix(in srgb, var(--fg) 7%, transparent);
+}
+
+.ppr-aba.on {
+  color: var(--fi-ppt, #d24a17);
+  border-bottom-color: var(--fi-ppt, #d24a17);
+  font-weight: 600;
+}
+
+.ppr-aba .ic {
+  width: 15px;
+  height: 15px;
+}
+
+.ppr-painel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  padding: 6px 8px 4px;
+  min-height: 92px;
+}
+
+.ppr-painel[hidden] {
+  display: none;
+}
+
+.ppr-grupo {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0 8px;
+  border-right: 1px solid var(--border);
+  flex: none;
+}
+
+.ppr-grupo:last-child {
+  border-right: 0;
+}
+
+.ppr-corpo {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  flex: 1;
+}
+
+.ppr-rotulo {
+  padding-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.ppr-linhas {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+.ppr-linha,
+.ppr-col {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ppr-col {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 1px;
+}
+
+.ppr {
+  /* botões da fita */
+}
+
+button.ppr {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+button.ppr .ic {
+  width: 16px;
+  height: 16px;
+}
+
+button.ppr:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--fi-ppt, #d24a17) 13%, transparent);
+  border-color: color-mix(in srgb, var(--fi-ppt, #d24a17) 35%, transparent);
+}
+
+button.ppr:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+button.ppr.on {
+  background: color-mix(in srgb, var(--fi-ppt, #d24a17) 22%, transparent);
+  border-color: color-mix(in srgb, var(--fi-ppt, #d24a17) 55%, transparent);
+}
+
+button.ppr.txt {
+  justify-content: flex-start;
+  height: 24px;
+  font-size: 12px;
+}
+
+button.ppr.big {
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 3px;
+  min-width: 58px;
+  height: auto;
+  padding: 6px 6px 3px;
+  font-size: 12px;
+}
+
+button.ppr.big .ic {
+  width: 28px;
+  height: 28px;
+}
+
+button.ppr.big > span:not(.car):not(.ppr-gal-ic) {
+  line-height: 1.1;
+  text-align: center;
+  white-space: normal;
+  max-width: 76px;
+}
+
+button.ppr .car {
+  font-size: 9px;
+  opacity: 0.7;
+  margin-left: -2px;
+}
+
+button.ppr.big .car {
+  margin: -2px 0 0;
+}
+
+.ppr-sel {
+  height: 24px;
+  padding: 0 4px;
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.ppr-sel.fonte {
+  width: 140px;
+}
+
+.ppr-sel.tam {
+  width: 58px;
+}
+
+.ppr-a {
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ppr button .ppr-barra,
+button.ppr .ppr-barra {
+  display: block;
+  width: 16px;
+  height: 3px;
+  margin-top: 1px;
+  border-radius: 1px;
+  background: var(--muted);
+}
+
+button.ppr.cor {
+  flex-direction: column;
+  gap: 0;
+  padding: 0 5px;
+}
+
+.ppr-sep {
+  width: 1px;
+  height: 18px;
+  margin: 0 3px;
+  background: var(--border);
+}
+
+.ppr-v,
+.ppr-seta {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.ppr-gal-ic {
+  display: inline-flex;
+  color: var(--fi-ppt, #d24a17);
+}
+
+.ppr-gal-ic svg {
+  display: block;
+}
+
+.ppr-sombra-ic {
+  width: 14px;
+  height: 12px;
+  border: 1px solid var(--fg);
+  border-radius: 2px;
+  box-shadow: 3px 3px 0 color-mix(in srgb, var(--fg) 40%, transparent);
+}
+
+.ppr-zoom {
+  min-width: 42px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.ppr-medida {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.ppr-medida input {
+  width: 62px;
+  height: 22px;
+  padding: 0 4px;
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.ppr-estilos {
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  gap: 4px;
+  align-content: center;
+}
+
+.ppr-estilo {
+  height: 28px;
+  padding: 3px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.ppr-estilo:hover {
+  border-color: var(--fi-ppt, #d24a17);
+}
+
+.ppr-estilo span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+}
+
+.ppr-estilo-cheio {
+  background: #0ba050;
+  border: 1px solid #07703a;
+}
+
+.ppr-estilo-contorno {
+  border: 2px solid #0ba050;
+}
+
+.ppr-estilo-gradiente {
+  background: linear-gradient(#3cc47b, #067a3a);
+}
+
+.ppr-estilo-cartao {
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  border: 1px solid #e5e7eb;
+}
+
+.ppr-estilo-escuro {
+  background: #0f2738;
+}
+
+.ppr-estilo-suave {
+  background: #d7f2e3;
+  border: 1px solid #0ba050;
+}
+
+/* ---------- popups ---------- */
+
+.pp-popup {
+  position: fixed;
+  z-index: 300;
+  min-width: 190px;
+  max-width: 330px;
+  max-height: 78vh;
+  overflow: auto;
+  padding: 8px;
+  color: var(--fg);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  font-size: 12.5px;
+}
+
+.pp-pop-t {
+  margin: 6px 0 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.pp-pop-t:first-child {
+  margin-top: 0;
+}
+
+.pp-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pp-swatches.grade {
+  display: grid;
+  grid-template-columns: repeat(7, 22px);
+}
+
+.pp-sw {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--fg) 25%, transparent);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.pp-sw:hover {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.pp-pop-hex {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pp-pop-hex input[type="color"] {
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: none;
+}
+
+.pp-pop-hex input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  padding: 0 6px;
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: inherit;
+}
+
+.pp-pop-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  color: var(--fg);
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pp-pop-item:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.pp-pop-item:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pp-pop-item.on {
+  font-weight: 700;
+}
+
+.pp-pop-menu {
+  min-width: 210px;
+}
+
+.pp-pop-galeria {
+  max-width: 320px;
+}
+
+.pp-galeria {
+  display: grid;
+  grid-template-columns: repeat(7, 36px);
+  gap: 3px;
+}
+
+.pp-gal-item {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.pp-gal-item:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.pp-gradientes {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.pp-grad {
+  width: 34px;
+  height: 22px;
+  padding: 2px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.pp-grad span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+}
+
+.pp-grad .g-baixo {
+  background: linear-gradient(#bbb, #333);
+}
+.pp-grad .g-cima {
+  background: linear-gradient(#333, #bbb);
+}
+.pp-grad .g-direita {
+  background: linear-gradient(90deg, #bbb, #333);
+}
+.pp-grad .g-esquerda {
+  background: linear-gradient(90deg, #333, #bbb);
+}
+.pp-grad .g-diagonal {
+  background: linear-gradient(135deg, #bbb, #333);
+}
+.pp-grad .g-radial {
+  background: radial-gradient(circle, #bbb, #333);
+}
+
+.pp-linhas-op {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 3px;
+}
+
+.pp-op {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 3px 7px;
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.pp-op:hover,
+.pp-op.on {
+  border-color: var(--accent);
+}
+
+.pp-op span {
+  display: block;
+  width: 36px;
+  background: var(--fg);
+}
+
+.ppr-sombra-previa {
+  display: inline-block;
+  width: 24px;
+  height: 16px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+/* ---------- painel lateral ---------- */
+
+.pp-side {
+  width: 300px;
+}
+
+.pp-side-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+
+.pp-side-tabs button {
+  flex: 1;
+  padding: 8px 6px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.pp-side-tabs button.on {
+  color: var(--fg);
+  border-bottom-color: var(--fi-ppt, #d24a17);
+  font-weight: 600;
+}
+
+.pp-side-corpo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.pp-side-corpo[hidden] {
+  display: none;
+}
+
+.pp-painel {
+  display: block;
+  padding-bottom: 14px;
+}
+
+.pf-titulo {
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+}
+
+.pf-dica {
+  margin: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.pf-secao {
+  border-bottom: 1px solid var(--border);
+}
+
+.pf-secao > summary {
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pf-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px 12px 10px;
+}
+
+.pf-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.pf-linha > span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.pf-campo {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pf-campo input[type="number"],
+.pf-campo select,
+.pf-parada input[type="number"] {
+  width: 84px;
+  height: 24px;
+  padding: 0 5px;
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.pf-campo select {
+  width: 128px;
+}
+
+.pf-campo input[type="range"] {
+  width: 110px;
+}
+
+.pf-campo small,
+.pf-parada small {
+  min-width: 22px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.pf-cor {
+  width: 34px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--fg) 30%, transparent);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.pf-cor[data-vazio] {
+  background: repeating-linear-gradient(45deg, #ddd 0 4px, #fff 4px 8px);
+}
+
+.pf-check {
+  justify-content: flex-start;
+}
+
+.pf-check input {
+  margin: 0;
+}
+
+.pf-radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 12px;
+}
+
+.pf-radios label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.pf-parada {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pf-parada .pf-campo {
+  flex: 1;
+}
+
+.pf-x {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.pf-x:disabled {
+  opacity: 0.3;
+}
+
+.pf-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ---------- seleção no palco ---------- */
+
+/* quem pega o mouse: formas preenchidas, imagens e o texto; o vazio de uma forma sem fundo deixa passar */
+.pp-shape.pp-rica {
+  pointer-events: auto;
+}
+
+.pp-shape.pp-rica.pp-sem-fundo {
+  pointer-events: none;
+}
+
+.pp-shape.pp-rica .pp-geo {
+  pointer-events: none;
+}
+
+.pp-shape.pp-rica .pp-geo path {
+  pointer-events: visiblePainted;
+}
+
+.pp-shape.pp-rica.pp-sem-fundo .pp-rt span {
+  pointer-events: auto;
+}
+
+.pp-shape.pp-rica .pp-rt {
+  pointer-events: none;
+}
+
+.pp-shape.pp-rica .pp-rt span {
+  pointer-events: auto;
+}
+
+.pp-shape.pp-rica.pp-editando .pp-rt {
+  pointer-events: auto;
+  cursor: text;
+  outline: none;
+}
+
+.pp-slide .pp-fixa {
+  pointer-events: none;
+}
+
+.pp-slide.pp-fixas-on .pp-fixa {
+  pointer-events: auto;
+}
+
+.pp-slide.criando,
+.pp-slide.criando * {
+  cursor: crosshair !important;
+}
+
+.pp-sel {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1.5px solid var(--fi-ppt, #d24a17);
+  pointer-events: none;
+  z-index: 50;
+}
+
+.pp-sel.item {
+  border-width: 1px;
+  border-style: dashed;
+  opacity: 0.8;
+}
+
+.pp-sel.multi {
+  border-style: solid;
+  border-color: var(--accent);
+}
+
+.pp-sel.bloqueada {
+  border-style: dotted;
+}
+
+.pp-sel.editando {
+  border-style: dashed;
+}
+
+.pp-alca {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -5px 0 0 -5px;
+  background: #fff;
+  border: 1.5px solid var(--fi-ppt, #d24a17);
+  border-radius: 2px;
+  pointer-events: auto;
+  z-index: 51;
+}
+
+.pp-alca[data-alca="nw"] {
+  left: 0;
+  top: 0;
+  cursor: nwse-resize;
+}
+.pp-alca[data-alca="n"] {
+  left: 50%;
+  top: 0;
+  cursor: ns-resize;
+}
+.pp-alca[data-alca="ne"] {
+  left: 100%;
+  top: 0;
+  cursor: nesw-resize;
+}
+.pp-alca[data-alca="e"] {
+  left: 100%;
+  top: 50%;
+  cursor: ew-resize;
+}
+.pp-alca[data-alca="se"] {
+  left: 100%;
+  top: 100%;
+  cursor: nwse-resize;
+}
+.pp-alca[data-alca="s"] {
+  left: 50%;
+  top: 100%;
+  cursor: ns-resize;
+}
+.pp-alca[data-alca="sw"] {
+  left: 0;
+  top: 100%;
+  cursor: nesw-resize;
+}
+.pp-alca[data-alca="w"] {
+  left: 0;
+  top: 50%;
+  cursor: ew-resize;
+}
+
+.pp-gira {
+  position: absolute;
+  left: 50%;
+  top: -26px;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  background: #fff;
+  border: 1.5px solid var(--fi-ppt, #d24a17);
+  border-radius: 50%;
+  cursor: grab;
+  pointer-events: auto;
+  z-index: 51;
+}
+
+.pp-gira-haste {
+  position: absolute;
+  left: 50%;
+  top: -15px;
+  width: 0;
+  height: 15px;
+  border-left: 1.5px solid var(--fi-ppt, #d24a17);
+}
+
+.pp-guia {
+  position: absolute;
+  z-index: 49;
+  pointer-events: none;
+  background: #e11d8c;
+}
+
+.pp-guia.v {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.pp-guia.h {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.pp-marquee {
+  position: absolute;
+  z-index: 52;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid var(--accent);
+}
+
+.pp-grade {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background-image: linear-gradient(to right, rgba(120, 120, 120, 0.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(120, 120, 120, 0.25) 1px, transparent 1px);
+  background-size: 5% 100%, 100% 8.89%;
+}

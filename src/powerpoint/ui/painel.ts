@@ -1,0 +1,265 @@
+// Painel "Formatar" (à direita): tudo que a fita não cabe, com números exatos — preenchimento (sólido, gradiente com
+// paradas, imagem), contorno, sombra, cantos, tamanho e posição em cm, rotação, texto, recorte de imagem e fundo da lâmina.
+import { AJUSTES_POR_GEOM, raioDeCanto } from "../edicao/formato";
+import type { Fill, Line, Shadow, Shape } from "../schema";
+import { abrirCores } from "./cores";
+import { cmParaPt, ptParaCm, type EstadoUI } from "./estado";
+
+export interface HooksPainel {
+  estado: () => EstadoUI;
+  run: (cmd: string, valor?: string) => void;
+}
+
+const n1 = (v: number) => String(Math.round(v * 100) / 100);
+
+const secao = (id: string, titulo: string, corpo: string, aberta = true) =>
+  `<details class="pf-secao" data-sec="${id}"${aberta ? " open" : ""}><summary>${titulo}</summary><div class="pf-corpo">${corpo}</div></details>`;
+
+const linhaNum = (rotulo: string, act: string, valor: number | "", passo: number, min: number | null, max: number | null, un = "") =>
+  `<label class="pf-linha"><span>${rotulo}</span><span class="pf-campo"><input type="number" data-act="${act}" value="${valor === "" ? "" : n1(valor)}" step="${passo}"${min !== null ? ` min="${min}"` : ""}${max !== null ? ` max="${max}"` : ""}>${un ? `<small>${un}</small>` : ""}</span></label>`;
+
+const linhaCor = (rotulo: string, act: string, cor: string | null) =>
+  `<div class="pf-linha"><span>${rotulo}</span><span class="pf-campo"><button type="button" class="pf-cor" data-cor-act="${act}" title="Escolher cor" style="${cor ? `background:#${cor}` : ""}"${cor ? "" : ' data-vazio="1"'}></button><small>${cor ? "#" + cor : "—"}</small></span></div>`;
+
+const linhaSel = (rotulo: string, act: string, valor: string, opcoes: [string, string][]) =>
+  `<label class="pf-linha"><span>${rotulo}</span><span class="pf-campo"><select data-act="${act}">${opcoes.map(([v, n]) => `<option value="${v}"${v === valor ? " selected" : ""}>${n}</option>`).join("")}</select></span></label>`;
+
+const linhaCheck = (rotulo: string, act: string, marcado: boolean) =>
+  `<label class="pf-linha pf-check"><input type="checkbox" data-act="${act}"${marcado ? " checked" : ""}><span>${rotulo}</span></label>`;
+
+const radios = (nome: string, act: string, atual: string, opcoes: [string, string][]) =>
+  `<div class="pf-radios" role="radiogroup">${opcoes.map(([v, n]) => `<label><input type="radio" name="${nome}" data-act="${act}" value="${v}"${v === atual ? " checked" : ""}><span>${n}</span></label>`).join("")}</div>`;
+
+export class Painel {
+  private assinatura = "";
+
+  constructor(private el: HTMLElement, private hooks: HooksPainel) {
+    el.addEventListener("change", (e) => this.aoMudar(e));
+    el.addEventListener("input", (e) => {
+      // controles deslizantes e números aplicam enquanto arrastam; o resto só no "change"
+      const t = e.target as HTMLInputElement;
+      if (t.type === "range") this.disparar(t);
+    });
+    el.addEventListener("click", (e) => this.aoClicar(e));
+    el.addEventListener("keydown", (e) => {
+      const t = e.target as HTMLElement;
+      if (e.key === "Enter" && t.matches("input[data-act]")) (t as HTMLInputElement).blur();
+    });
+  }
+
+  private disparar(t: HTMLInputElement | HTMLSelectElement): void {
+    const act = t.dataset.act!;
+    if (t instanceof HTMLInputElement && t.type === "checkbox") this.hooks.run(act, t.checked ? "1" : "0");
+    else this.hooks.run(act, t.value);
+  }
+
+  private aoMudar(e: Event): void {
+    const t = e.target as HTMLInputElement | HTMLSelectElement;
+    if (!t.dataset?.act) return;
+    this.disparar(t);
+  }
+
+  private aoClicar(e: MouseEvent): void {
+    const t = e.target as HTMLElement;
+    const cor = t.closest<HTMLElement>("[data-cor-act]");
+    if (cor) {
+      const est = this.hooks.estado();
+      const act = cor.dataset.corAct!;
+      abrirCores(
+        cor,
+        { atual: /^#?[0-9A-Fa-f]{6}$/.test(cor.nextElementSibling?.textContent ?? "") ? (cor.nextElementSibling!.textContent ?? "").replace("#", "") : null, paleta: est.paleta },
+        (c) => {
+          if (c) this.hooks.run(act, c);
+        }
+      );
+      return;
+    }
+    const b = t.closest<HTMLElement>("[data-click]");
+    if (b) this.hooks.run(b.dataset.click!, b.dataset.valor);
+  }
+
+  /** Redesenha o painel quando o que ele mostra mudou (sem atrapalhar quem está digitando num campo). */
+  atualizar(): void {
+    const est = this.hooks.estado();
+    const sig = this.assinar(est);
+    if (sig === this.assinatura) return;
+    const ativo = document.activeElement;
+    if (ativo && this.el.contains(ativo) && ativo instanceof HTMLInputElement && ativo.type !== "checkbox" && ativo.type !== "radio" && ativo.type !== "range") {
+      // está digitando: guarda a assinatura nova só depois que sair do campo
+      return;
+    }
+    this.assinatura = sig;
+    const abertas = new Map<string, boolean>();
+    for (const d of this.el.querySelectorAll<HTMLDetailsElement>("details[data-sec]")) abertas.set(d.dataset.sec!, d.open);
+    this.el.innerHTML = this.html(est);
+    for (const d of this.el.querySelectorAll<HTMLDetailsElement>("details[data-sec]")) {
+      const a = abertas.get(d.dataset.sec!);
+      if (a !== undefined) d.open = a;
+    }
+  }
+
+  private assinar(est: EstadoUI): string {
+    const f = est.forma;
+    return JSON.stringify([
+      est.formas.map((s) => [s.id, s.box, s.rot, s.fillX, s.ln, s.shadow, s.opacity, s.adj, s.anchor, s.ins, s.wrap, s.vert, s.crop, s.flipH, s.flipV, s.bloqueada, s.autofit]),
+      f ? f.geom : "",
+      est.formas.length ? "" : [est.bg, est.layout, est.setup.theme],
+    ]);
+  }
+
+  // ------------------------------------------------------------------
+  // conteúdo
+  // ------------------------------------------------------------------
+
+  private html(est: EstadoUI): string {
+    const f = est.forma;
+    if (!f) return this.htmlLamina(est);
+    const multiplas = est.formas.length > 1;
+    const partes: string[] = [];
+    partes.push(`<div class="pf-titulo">${multiplas ? `${est.formas.length} formas selecionadas` : f.name || (f.kind === "imagem" ? "Imagem" : "Forma")}</div>`);
+    if (f.kind === "imagem") partes.push(secao("imagem", "Imagem", this.htmlImagem(f)));
+    if (f.kind !== "imagem" && !(f.geom === "line" || f.geom?.endsWith("Connector3") || f.geom === "straightConnector1")) partes.push(secao("preench", "Preenchimento", this.htmlPreenchimento(f)));
+    partes.push(secao("linha", "Linha", this.htmlLinha(f)));
+    partes.push(secao("efeitos", "Efeitos", this.htmlEfeitos(f)));
+    const ajustes = this.htmlAjustes(f);
+    if (ajustes) partes.push(secao("ajustes", "Ajustes da forma", ajustes));
+    partes.push(secao("tamanho", "Tamanho e posição", this.htmlTamanho(f, est)));
+    if (f.paras !== undefined) partes.push(secao("texto", "Texto", this.htmlTexto(f)));
+    return partes.join("");
+  }
+
+  private htmlPreenchimento(f: Shape): string {
+    const fx = f.fillX;
+    const tipo = !fx || fx.kind === "none" ? "none" : fx.kind;
+    const partes = [radios("pf", "pf-tipo", tipo, [["none", "Sem"], ["solid", "Sólido"], ["gradient", "Gradiente"], ["image", "Imagem"]])];
+    if (fx?.kind === "solid") {
+      partes.push(linhaCor("Cor", "pf-cor", fx.color ?? "000000"));
+      partes.push(linhaNum("Transparência", "pf-transp", Math.round((1 - (fx.alpha ?? 1)) * 100), 5, 0, 100, "%"));
+    } else if (fx?.kind === "gradient") {
+      partes.push(linhaSel("Tipo", "grad-tipo", fx.radial ? "radial" : "linear", [["linear", "Linear"], ["radial", "Radial"]]));
+      if (!fx.radial) partes.push(linhaNum("Ângulo", "grad-angulo", fx.angle ?? 0, 15, 0, 360, "°"));
+      (fx.stops ?? []).forEach((p, i) => {
+        partes.push(`<div class="pf-parada"><span class="pf-campo"><button type="button" class="pf-cor" data-cor-act="grad-cor:${i}" style="background:#${p.color}" title="Cor da parada ${i + 1}"></button><small>#${p.color}</small></span><input type="number" data-act="grad-pos:${i}" value="${n1(p.pos)}" min="0" max="100" step="5" aria-label="Posição da parada ${i + 1}"><small>%</small><button type="button" class="pf-x" data-click="grad-del" data-valor="${i}" title="Remover parada"${(fx.stops?.length ?? 0) <= 2 ? " disabled" : ""}>×</button></div>`);
+      });
+      partes.push(`<button type="button" class="btn small" data-click="grad-add">+ Parada de gradiente</button>`);
+      partes.push(`<button type="button" class="btn small" data-click="grad-inverter">Inverter cores</button>`);
+    } else if (fx?.kind === "image") {
+      partes.push(`<button type="button" class="btn small" data-click="preench-imagem">Trocar imagem…</button>`);
+      partes.push(linhaNum("Transparência", "pf-transp", Math.round((1 - (fx.alpha ?? 1)) * 100), 5, 0, 100, "%"));
+    }
+    return partes.join("");
+  }
+
+  private htmlLinha(f: Shape): string {
+    const l: Line | undefined = f.ln;
+    const partes = [radios("ln", "ln-tipo", l ? "solid" : "none", [["none", "Sem linha"], ["solid", "Linha"]])];
+    if (l) {
+      partes.push(linhaCor("Cor", "ln-cor", l.color));
+      partes.push(linhaNum("Espessura", "ln-w", l.w, 0.25, 0, 100, "pt"));
+      partes.push(linhaNum("Transparência", "ln-transp", Math.round((1 - l.alpha) * 100), 5, 0, 100, "%"));
+      partes.push(linhaSel("Traço", "ln-dash", l.dash ?? "solid", [["solid", "Contínuo"], ["dash", "Tracejado"], ["dot", "Pontilhado"], ["dashDot", "Traço e ponto"], ["lgDash", "Traço longo"], ["sysDash", "Traço curto"]]));
+      const pontas: [string, string][] = [["", "Nenhuma"], ["triangle", "Triângulo"], ["arrow", "Seta aberta"], ["stealth", "Seta fina"], ["diamond", "Losango"], ["oval", "Círculo"]];
+      partes.push(linhaSel("Início", "ln-head", l.head ?? "", pontas));
+      partes.push(linhaSel("Fim", "ln-tail", l.tail ?? "", pontas));
+      partes.push(linhaSel("Pontas da linha", "ln-cap", l.cap ?? "flat", [["flat", "Retas"], ["round", "Arredondadas"], ["square", "Quadradas"]]));
+    }
+    return partes.join("");
+  }
+
+  private htmlEfeitos(f: Shape): string {
+    const s: Shadow | undefined = f.shadow;
+    const partes = [linhaCheck("Sombra", "sd-on", !!s)];
+    if (s) {
+      partes.push(linhaCor("Cor", "sd-cor", s.color));
+      partes.push(linhaNum("Transparência", "sd-transp", Math.round((1 - s.alpha) * 100), 5, 0, 100, "%"));
+      partes.push(linhaNum("Desfoque", "sd-blur", s.blur, 1, 0, 100, "pt"));
+      partes.push(linhaNum("Distância", "sd-dist", s.dist, 1, 0, 100, "pt"));
+      partes.push(linhaNum("Ângulo", "sd-dir", s.dir, 15, 0, 360, "°"));
+    }
+    partes.push(linhaNum("Opacidade da forma", "opac", Math.round((f.opacity ?? 1) * 100), 5, 0, 100, "%"));
+    return partes.join("");
+  }
+
+  private htmlAjustes(f: Shape): string {
+    const canto = raioDeCanto(f);
+    const partes: string[] = [];
+    if (canto !== null) partes.push(`<label class="pf-linha"><span>Raio dos cantos</span><span class="pf-campo"><input type="range" data-act="canto" min="0" max="50" step="0.5" value="${canto}"><small>${n1(canto)}%</small></span></label>`);
+    const lista = AJUSTES_POR_GEOM[f.geom ?? ""] ?? [];
+    for (const a of lista) {
+      if ((f.geom === "roundRect" || f.geom === "round1Rect") && a.chave === "adj") continue;
+      const v = f.adj?.[a.chave] ?? a.padrao;
+      partes.push(`<label class="pf-linha"><span>${a.rotulo}</span><span class="pf-campo"><input type="range" data-act="ajuste:${a.chave}" min="${a.min}" max="${a.max}" step="${Math.max(1, (a.max - a.min) / 200)}" value="${v}"></span></label>`);
+    }
+    return partes.join("");
+  }
+
+  private htmlTamanho(f: Shape, est: EstadoUI): string {
+    const d = { w: est.setup.widthIn ? est.setup.widthIn * 72 : 960, h: est.setup.heightIn ? est.setup.heightIn * 72 : 540 };
+    const x = ptParaCm((f.box.x / 100) * d.w);
+    const y = ptParaCm((f.box.y / 100) * d.h);
+    const w = ptParaCm((f.box.w / 100) * d.w);
+    const h = ptParaCm((f.box.h / 100) * d.h);
+    const multi = est.formas.length > 1;
+    return [
+      linhaNum("Largura", "pos-w", multi ? "" : w, 0.1, 0.05, 200, "cm"),
+      linhaNum("Altura", "pos-h", multi ? "" : h, 0.1, 0.05, 200, "cm"),
+      linhaNum("Posição horizontal", "pos-x", multi ? "" : x, 0.1, null, null, "cm"),
+      linhaNum("Posição vertical", "pos-y", multi ? "" : y, 0.1, null, null, "cm"),
+      linhaNum("Rotação", "rot", multi ? "" : f.rot, 1, 0, 360, "°"),
+      `<div class="pf-botoes"><button type="button" class="btn small" data-click="espelhar" data-valor="h">⇋ Espelhar H</button><button type="button" class="btn small" data-click="espelhar" data-valor="v">⥮ Espelhar V</button></div>`,
+      linhaCheck("Bloquear posição e tamanho", "bloquear-forma", !!f.bloqueada),
+    ].join("");
+  }
+
+  private htmlTexto(f: Shape): string {
+    const ins = f.ins ?? [7.2, 3.6, 7.2, 3.6];
+    return [
+      `<div class="pf-linha"><span>Alinhamento vertical</span></div>`,
+      radios("anc", "anchor", f.anchor ?? "t", [["t", "Topo"], ["ctr", "Meio"], ["b", "Base"]]),
+      linhaSel("Direção", "vert", f.vert ?? "", [["", "Horizontal"], ["vert", "Girar 90°"], ["vert270", "Girar 270°"]]),
+      linhaNum("Margem esquerda", "marg:0", ptParaCm(ins[0]), 0.05, 0, 20, "cm"),
+      linhaNum("Margem superior", "marg:1", ptParaCm(ins[1]), 0.05, 0, 20, "cm"),
+      linhaNum("Margem direita", "marg:2", ptParaCm(ins[2]), 0.05, 0, 20, "cm"),
+      linhaNum("Margem inferior", "marg:3", ptParaCm(ins[3]), 0.05, 0, 20, "cm"),
+      linhaCheck("Quebrar o texto na forma", "wrap", f.wrap !== false),
+    ].join("");
+  }
+
+  private htmlImagem(f: Shape): string {
+    const c = f.crop ?? [0, 0, 0, 0];
+    return [
+      `<div class="pf-linha"><span>Recorte (% da imagem)</span></div>`,
+      linhaNum("Esquerda", "crop:0", c[0], 1, 0, 95, "%"),
+      linhaNum("Topo", "crop:1", c[1], 1, 0, 95, "%"),
+      linhaNum("Direita", "crop:2", c[2], 1, 0, 95, "%"),
+      linhaNum("Base", "crop:3", c[3], 1, 0, 95, "%"),
+      `<div class="pf-botoes"><button type="button" class="btn small" data-click="crop-reset">Redefinir recorte</button><button type="button" class="btn small" data-click="imagem-trocar">Trocar imagem…</button></div>`,
+      linhaSel("Formato", "img-forma", f.geom === "ellipse" ? "ellipse" : f.geom === "roundRect" ? "roundRect" : "rect", [["rect", "Retângulo"], ["roundRect", "Cantos arredondados"], ["ellipse", "Círculo/elipse"]]),
+    ].join("");
+  }
+
+  private htmlLamina(est: EstadoUI): string {
+    const f = est.bg;
+    const tipo = !f ? "tema" : f.kind === "none" ? "tema" : f.kind;
+    const partes = [
+      `<div class="pf-titulo">Lâmina ${est.indice + 1} de ${est.total}</div>`,
+      secao(
+        "fundo",
+        "Fundo",
+        [
+          radios("bg", "bg-tipo", tipo, [["tema", "Do tema"], ["solid", "Sólido"], ["gradient", "Gradiente"], ["image", "Imagem"]]),
+          f?.kind === "solid" ? linhaCor("Cor", "bg-cor", f.color ?? "FFFFFF") : "",
+          f?.kind === "gradient" ? `${linhaCor("Cor inicial", "bg-grad-cor:0", f.stops?.[0]?.color ?? "FFFFFF")}${linhaCor("Cor final", "bg-grad-cor:1", f.stops?.[f.stops.length - 1]?.color ?? "000000")}${linhaNum("Ângulo", "bg-grad-angulo", f.angle ?? 90, 15, 0, 360, "°")}` : "",
+          f?.kind === "image" ? `<button type="button" class="btn small" data-click="fundo-imagem">Trocar imagem…</button>` : "",
+          `<button type="button" class="btn small" data-click="fundo-todas">Aplicar a todas as lâminas</button>`,
+        ].join("")
+      ),
+      secao("layout", "Layout", linhaSel("Layout", "layout-sel", est.layout, [["titulo", "Capa"], ["secao", "Seção"], ["conteudo", "Conteúdo"], ["vazio", "Em branco"]])),
+      `<p class="pf-dica">Selecione uma forma na lâmina para formatar o preenchimento, a linha, os efeitos, o tamanho e o texto dela. <b>Clique e arraste</b> para desenhar com uma forma escolhida em <b>Inserir</b>.</p>`,
+    ];
+    return partes.join("");
+  }
+}
+
+export type { Fill };
+export { cmParaPt };

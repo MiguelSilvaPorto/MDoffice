@@ -2,6 +2,7 @@
 // sólido/gradiente/imagem, contorno, sombra, imagem recortada e texto formatado por parágrafo e trecho.
 // Todas as medidas saem em `cqw` (a lâmina é um container de tamanho), então a lâmina escala inteira.
 import type { EmbeddedFont, Fill, Line, Para, Run, Shape } from "../schema";
+import { aplicarTextoDigitado, type EstiloRun } from "../edicao/texto";
 import { PRESETS_CONHECIDOS, tracadoDoPreset, tracadoLivre, type Traçado } from "./presets";
 
 export interface CtxRender {
@@ -13,6 +14,8 @@ export interface CtxRender {
   selecionada?: string | null;
   /** texto editável (palco) ou só desenho (miniaturas) */
   editavel: boolean;
+  /** id da forma cujo texto está sendo editado agora (só ela tem contenteditable) */
+  editando?: string | null;
 }
 
 /** Forma que veio de um .pptx (tem geometria própria) — desenhada por este módulo. */
@@ -434,7 +437,7 @@ function htmlTexto(s: Shape, ctx: CtxRender): string {
   if (s.vert === "vert270") est.push("writing-mode:vertical-rl", "transform:rotate(180deg)");
   const contagem = { auto: 0 };
   const paras = s.paras.map((p, i) => htmlParagrafo(p, i, ctx, contagem)).join("");
-  const editavel = ctx.editavel ? ` contenteditable="true" spellcheck="false"` : "";
+  const editavel = ctx.editavel && ctx.editando === s.id ? ` contenteditable="true" spellcheck="false" data-editando="1"` : "";
   return `<div class="pp-shape-text pp-rt"${editavel} style="${est.join(";")}">${paras}</div>`;
 }
 
@@ -456,7 +459,8 @@ export function htmlFormaRica(s: Shape, ctx: CtxRender): string {
   const est = [`left:${n3(s.box.x)}%`, `top:${n3(s.box.y)}%`, `width:${n3(s.box.w)}%`, `height:${n3(s.box.h)}%`];
   if (s.rot) est.push(`transform:rotate(${n3(s.rot)}deg)`);
   if (s.opacity !== undefined && s.opacity < 1) est.push(`opacity:${n3(s.opacity)}`);
-  const classes = `pp-shape pp-rica${sel ? " selected" : ""}${s.fixa ? " pp-fixa" : ""}`;
+  const semFundo = s.kind !== "imagem" && (!s.fillX || s.fillX.kind === "none");
+  const classes = `pp-shape pp-rica${sel ? " selected" : ""}${s.fixa ? " pp-fixa" : ""}${ctx.editando === s.id ? " pp-editando" : ""}${semFundo ? " pp-sem-fundo" : ""}${s.bloqueada ? " pp-bloqueada" : ""}`;
   const attrs = `class="${classes}" data-shape="${s.id}" data-kind="${s.kind}" style="${est.join(";")}"`;
   if (s.kind === "imagem" && s.src) {
     const url = urlDaMidia(s.src, ctx.media);
@@ -465,108 +469,27 @@ export function htmlFormaRica(s: Shape, ctx: CtxRender): string {
     const fh = Math.max(0.01, 1 - (c[1] + c[3]) / 100);
     const img = `<img src="${url}" alt="" draggable="false" style="position:absolute;left:${n3((-c[0] / 100 / fw) * 100)}%;top:${n3((-c[1] / 100 / fh) * 100)}%;width:${n3(100 / fw)}%;height:${n3(100 / fh)}%;max-width:none;display:block"/>`;
     const contorno = s.ln ? svgDaForma({ ...s, fillX: undefined }, ctx, true) : "";
-    return `<div ${attrs}><div class="pp-pic" style="${moldura(s, ctx)}">${img}</div>${contorno}<span class="pp-handle"></span></div>`;
+    return `<div ${attrs}><div class="pp-pic" style="${moldura(s, ctx)}">${img}</div>${contorno}</div>`;
   }
-  return `<div ${attrs}>${svgDaForma(s, ctx)}${htmlTexto(s, ctx)}<span class="pp-handle"></span></div>`;
+  return `<div ${attrs}>${svgDaForma(s, ctx)}${htmlTexto(s, ctx)}</div>`;
 }
 
 // ---------------------------------------------------------------------------
 // edição: manter a formatação quando o texto ou o estilo da forma mudam
 // ---------------------------------------------------------------------------
 
-/** Estilo único (o do primeiro trecho) aplicado a um texto novo: usado quando a edição mexe nas quebras de parágrafo. */
-function parasComEstiloUnico(paras: Para[], texto: string): Para[] {
-  const linhas = texto.split("\n");
-  return linhas.map((linha, i) => {
-    const modelo = paras[Math.min(i, paras.length - 1)];
-    const r0 = modelo.runs[0] ?? paras.find((p) => p.runs.length)?.runs[0];
-    const run: Run | undefined = linha
-      ? r0
-        ? { ...r0, text: linha, br: undefined }
-        : { text: linha, size: modelo.endSize, bold: false, italic: false, underline: false, strike: false, color: "000000", font: "sans-serif" }
-      : undefined;
-    return { ...modelo, runs: run ? [run] : [] };
-  });
-}
-
-/**
- * Texto novo sobre os parágrafos existentes, mexendo só no que mudou: acha o trecho alterado (prefixo e sufixo
- * em comum) e troca apenas ali, então cores, fontes e tamanhos do resto do texto continuam como estavam.
- * Quando a edição cria ou apaga parágrafos, cai no estilo único do primeiro trecho de cada parágrafo.
- */
-export function parasComTexto(paras: Para[], texto: string): Para[] {
-  const textoDe = (p: Para) => p.runs.map((r) => r.text).join("");
-  const antigo = paras.map(textoDe).join("\n");
-  if (antigo === texto) return paras;
-  let p = 0;
-  while (p < antigo.length && p < texto.length && antigo[p] === texto[p]) p++;
-  let q = 0;
-  while (q < antigo.length - p && q < texto.length - p && antigo[antigo.length - 1 - q] === texto[texto.length - 1 - q]) q++;
-  const removido = antigo.slice(p, antigo.length - q);
-  const inserido = texto.slice(p, texto.length - q);
-  // linhas novas no FIM do texto: os parágrafos antigos ficam intactos e os novos herdam o estilo do último
-  if (removido === "" && p === antigo.length && inserido.startsWith("\n")) {
-    const ultimo = paras[paras.length - 1];
-    const modelo = [...ultimo.runs].reverse().find((r) => !r.br);
-    const extras = inserido
-      .slice(1)
-      .split("\n")
-      .map<Para>((linha) => ({ ...ultimo, runs: linha && modelo ? [{ ...modelo, text: linha }] : [] }));
-    return [...paras, ...extras];
-  }
-  if (removido.includes("\n") || inserido.includes("\n")) return parasComEstiloUnico(paras, texto);
-
-  // parágrafo onde a mudança começa
-  let inicio = 0;
-  let alvo = -1;
-  for (let i = 0; i < paras.length; i++) {
-    const len = textoDe(paras[i]).length;
-    if (p >= inicio && p <= inicio + len) {
-      alvo = i;
-      break;
-    }
-    inicio += len + 1;
-  }
-  if (alvo < 0) return parasComEstiloUnico(paras, texto);
-  const par = paras[alvo];
-  const a0 = p - inicio;
-  const b0 = a0 + removido.length;
-  if (b0 > textoDe(par).length) return parasComEstiloUnico(paras, texto);
-
-  const novos: Run[] = [];
-  let off = 0;
-  let inseriu = false;
-  const modeloRun = par.runs.find((r) => !r.br) ?? par.runs[0];
-  for (const r of par.runs) {
-    const rs = off;
-    const re = off + r.text.length;
-    off = re;
-    // parte do trecho que sobra antes e depois da área removida
-    const antes = r.text.slice(0, Math.max(0, Math.min(r.text.length, a0 - rs)));
-    const depois = r.text.slice(Math.max(0, Math.min(r.text.length, b0 - rs)));
-    // a inserção vai no trecho que termina em a0 (digitar prolonga o trecho anterior); no começo do parágrafo, no primeiro
-    const recebe = !inseriu && (a0 <= re || r === par.runs[par.runs.length - 1]) && (a0 > rs || a0 === 0 || r === par.runs[0]);
-    if (recebe) {
-      inseriu = true;
-      const t = antes + inserido + (b0 > re ? "" : depois);
-      if (t) novos.push({ ...r, text: t });
-      else if (r.br) novos.push(r);
-    } else {
-      const t = antes + depois;
-      if (r.br) {
-        if (rs >= a0 && re <= b0 && removido) continue;
-        novos.push(r);
-      } else if (t) novos.push({ ...r, text: t });
-    }
-  }
-  if (!inseriu && inserido) {
-    novos.push(
-      modeloRun
-        ? { ...modeloRun, text: inserido, br: undefined }
-        : { text: inserido, size: par.endSize, bold: false, italic: false, underline: false, strike: false, color: "000000", font: "sans-serif" }
-    );
-  }
-  return paras.map((x, i) => (i === alvo ? { ...x, runs: novos } : x));
+/** Texto novo (digitado) sobre os parágrafos existentes, mexendo só no que mudou (ver edicao/texto.ts). */
+export function parasComTexto(paras: Para[], texto: string, estiloNovo?: EstiloRun): Para[] {
+  const base: EstiloRun = estiloNovo ?? {
+    size: paras[0]?.endSize ?? 18,
+    bold: false,
+    italic: false,
+    underline: false,
+    strike: false,
+    color: paras.flatMap((p) => p.runs).find((r) => !r.br)?.color ?? "000000",
+    font: paras.flatMap((p) => p.runs).find((r) => !r.br)?.font ?? "sans-serif",
+  };
+  return aplicarTextoDigitado(paras, texto, base);
 }
 
 /** Aplica fonte, tamanho, cor, negrito, itálico ou alinhamento a todos os trechos de uma forma rica. */

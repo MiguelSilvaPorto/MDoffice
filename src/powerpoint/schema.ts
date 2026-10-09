@@ -156,6 +156,14 @@ export interface Shape {
   fixa?: boolean;
   /** tamanho da forma em pt (para o traço e a geometria ficarem em escala exata) */
   sizePt?: [number, number];
+  /** formas com o mesmo id de grupo se selecionam e se movem juntas */
+  grupo?: string;
+  /** travada: aparece, mas não se move nem se redimensiona pelo palco */
+  bloqueada?: boolean;
+  /** texto alternativo (acessibilidade) */
+  alt?: string;
+  /** a forma cresce para caber o texto (spAutoFit) */
+  autofit?: boolean;
 }
 
 /** Um caminho de geometria livre. Comandos: M x y · L x y · C x1 y1 x2 y2 x y · Q x1 y1 x y · A wR hR stAng swAng · Z */
