@@ -84,6 +84,8 @@ export class TabBar {
   private strip: HTMLElement;
   private hooks: TabBarHooks;
   private renaming = false;
+  /** ids já desenhados: a aba que aparece pela primeira vez entra animada */
+  private vistas = new Set<string>();
 
   constructor(host: HTMLElement, hooks: TabBarHooks) {
     this.hooks = hooks;
@@ -112,7 +114,18 @@ export class TabBar {
   render(tabs: DocTab[], activeId: string): void {
     if (this.renaming) return;
     this.strip.textContent = "";
-    for (const t of tabs) this.strip.append(this.buildTab(t, t.id === activeId, tabs.length));
+    for (const t of tabs) {
+      const el = this.buildTab(t, t.id === activeId, tabs.length);
+      // a aba que aparece pela primeira vez entra animada (o render reconstrói todas)
+      if (!this.vistas.has(t.id)) {
+        el.classList.add("entrando");
+        this.vistas.add(t.id);
+      }
+      this.strip.append(el);
+    }
+    // esquece as abas que já fecharam (se voltarem, entram animadas de novo)
+    const abertas = new Set(tabs.map((t) => t.id));
+    for (const id of this.vistas) if (!abertas.has(id)) this.vistas.delete(id);
     this.el.classList.toggle("single", tabs.length === 1);
     this.strip.querySelector<HTMLElement>(".tab.active")?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }

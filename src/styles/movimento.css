@@ -1,0 +1,300 @@
+/* ==========================================================================
+   Movimento — o "tempo" da interface.
+   Durações, curvas e as animações de entrada/saída das superfícies (modais,
+   menus, painéis, abas, toasts). A regra: movimento curto e direcional, que
+   reforça de onde a coisa veio — nada de enfeite gratuito.
+   Este arquivo é importado por último: ele ajusta o tempo dos componentes.
+   ========================================================================== */
+
+:root {
+  /* durações */
+  --mov-1: 110ms; /* micro: hover, foco, cor */
+  --mov-2: 180ms; /* padrão: itens, abas, menus */
+  --mov-3: 280ms; /* caixas que entram: modais e painéis */
+  /* curvas */
+  --curva: cubic-bezier(0.22, 0.61, 0.36, 1); /* saída suave (padrão) */
+  --curva-entrada: cubic-bezier(0.16, 1, 0.3, 1); /* entra rápido e assenta */
+  --curva-saida: cubic-bezier(0.55, 0, 1, 0.45); /* some sem drama */
+}
+
+/* ---------- passos ---------- */
+
+@keyframes mdc-fundo {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes mdc-surgir {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+}
+
+@keyframes mdc-menu {
+  from {
+    opacity: 0;
+    transform: translateY(-7px) scale(0.975);
+  }
+}
+
+@keyframes mdc-aba {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+}
+
+@keyframes mdc-ponto {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+@keyframes mdc-sumi {
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+}
+
+@keyframes mdc-sumi-fundo {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes mdc-pulso {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ---------- modais e diálogos ---------- */
+
+.modal-backdrop {
+  animation: mdc-fundo var(--mov-3) var(--curva) both;
+}
+
+.modal-backdrop > :not(style):not(script) {
+  animation: mdc-surgir var(--mov-3) var(--curva-entrada) both;
+}
+
+/* a despedida: o JS devolve o backdrop com a classe "saindo" antes de removê-lo */
+.modal-backdrop.saindo {
+  animation: mdc-sumi-fundo var(--mov-2) var(--curva-saida) both;
+  pointer-events: none;
+}
+
+.modal-backdrop.saindo > :not(style):not(script) {
+  animation: mdc-sumi var(--mov-2) var(--curva-saida) both;
+}
+
+/* a paleta (Ctrl+K) nasce no alto da tela e o painel já é o filho direto animado */
+
+/* ---------- menus, popups e folhas flutuantes ---------- */
+
+.dropdown,
+.pp-popup,
+.wd-menu-pop,
+.xl-menu,
+.cm-issue-popup,
+.editor-context-menu {
+  animation: mdc-menu var(--mov-2) var(--curva-entrada) both;
+}
+
+.dropdown.saindo,
+.pp-popup.saindo,
+.wd-menu-pop.saindo,
+.xl-menu.saindo,
+.cm-issue-popup.saindo,
+.editor-context-menu.saindo {
+  animation: mdc-sumi var(--mov-1) var(--curva-saida) both;
+  pointer-events: none;
+}
+
+/* ---------- painéis do app (Início, Configurações, Word, Excel, PowerPoint) ---------- */
+
+#home-page:not([hidden]),
+#settings-page:not([hidden]),
+#word-pane:not([hidden]),
+#excel-pane:not([hidden]),
+#powerpoint-pane:not([hidden]) {
+  animation: mdc-surgir var(--mov-3) var(--curva-entrada) both;
+}
+
+/* painéis do painel lateral e guias das faixas de opções */
+.sb-panel:not([hidden]),
+.wd-rpanel:not([hidden]),
+.xl-panel:not([hidden]),
+.ppr-painel:not([hidden]) {
+  animation: mdc-surgir var(--mov-2) var(--curva-entrada) both;
+}
+
+/* a barra lateral volta com um passo curto quando é reexibida */
+#sidebar {
+  animation: mdc-surgir var(--mov-3) var(--curva-entrada) both;
+}
+
+/* os cards do Início entram em cascata, um atrás do outro */
+.home-grid .home-card {
+  animation: mdc-surgir var(--mov-3) var(--curva-entrada) both;
+}
+
+.home-grid .home-card:nth-child(2) {
+  animation-delay: 45ms;
+}
+
+.home-grid .home-card:nth-child(3) {
+  animation-delay: 90ms;
+}
+
+.home-grid .home-card:nth-child(4) {
+  animation-delay: 135ms;
+}
+
+.home-grid .home-card:nth-child(5) {
+  animation-delay: 180ms;
+}
+
+/* barras que aparecem e somem (tradução, etc.) */
+#preview-bar:not([hidden]) {
+  animation: mdc-surgir var(--mov-2) var(--curva-entrada) both;
+}
+
+/* ---------- abas ---------- */
+
+.tab.entrando {
+  animation: mdc-aba var(--mov-2) var(--curva-entrada) both;
+}
+
+/* o ponto de "alterações não gravadas" nasce crescendo */
+.tab.dirty .tab-dot {
+  animation: mdc-ponto var(--mov-2) var(--curva-entrada) both;
+}
+
+/* ---------- toasts ---------- */
+
+.toast {
+  transform: translateX(22px) scale(0.97);
+  transition: opacity var(--mov-2) var(--curva), transform var(--mov-2) var(--curva-entrada);
+}
+
+.toast.show {
+  transform: none;
+}
+
+/* ---------- resposta ao toque (botões, itens, abas, cartões) ---------- */
+
+:where(.btn, .tbtn, .sb-tab, .sb-mini, .tab, .tab-new, .tab-recents, .path-btn, .win-btn,
+    .dd-item, .palette-item, .seg-btn, .pj-doc, .pj-folder, .pj-sub, .hm-item, .recent,
+    .outline-item, .home-resume-btn, .st-card, .swatch, .color-input) {
+  transition:
+    background-color var(--mov-1) var(--curva),
+    color var(--mov-1) var(--curva),
+    border-color var(--mov-1) var(--curva),
+    box-shadow var(--mov-2) var(--curva),
+    opacity var(--mov-2) var(--curva),
+    transform var(--mov-1) var(--curva);
+}
+
+.btn:not(:disabled):hover,
+.tbtn:hover,
+.sb-mini:hover,
+.tab-new:hover,
+.tab-recents:hover,
+.path-btn:hover,
+.win-btn:hover,
+.dd-item:hover,
+.palette-item:hover,
+.seg-btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:not(:disabled):active,
+.tbtn:active,
+.sb-mini:active,
+.tab-new:active,
+.tab-recents:active,
+.path-btn:active,
+.dd-item:active,
+.palette-item:active,
+.seg-btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* cartões de escolha das Configurações: um dedo de elevação */
+.st-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.st-card:active {
+  transform: translateY(0) scale(0.995);
+}
+
+/* divisor arrastável entre editor e pré-visualização */
+#splitter {
+  transition: background-color var(--mov-1) var(--curva);
+}
+
+#splitter:hover {
+  background: var(--accent-soft);
+}
+
+/* todos os botões (inclusive os das faixas de opções) trocam de cor no mesmo ritmo */
+button {
+  transition:
+    background-color var(--mov-1) var(--curva),
+    color var(--mov-1) var(--curva),
+    border-color var(--mov-1) var(--curva),
+    box-shadow var(--mov-2) var(--curva),
+    opacity var(--mov-2) var(--curva);
+}
+
+/* o botão principal ganha uma sombra da própria cor */
+.btn.primary:not(:disabled):hover {
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 38%, transparent);
+}
+
+/* "Salvando…" pulsa de leve enquanto o arquivo é gravado */
+.tb-autosave-badge.is-dirty .tb-autosave-ic {
+  animation: mdc-pulso 1.4s ease-in-out infinite;
+}
+
+input,
+select,
+textarea {
+  transition: border-color var(--mov-1) var(--curva), background-color var(--mov-1) var(--curva), box-shadow var(--mov-2) var(--curva);
+}
+
+/* ---------- a troca de tema não "pisca" ---------- */
+
+:where(body, #topbar, #tabbar, #sidebar, #statusbar, #body, #toolbar, #home-page, #settings-page,
+    #editor-wrap, #preview-wrap, .modal, .dropdown, .palette, .pp-popup, .wd-menu-pop, .xl-menu) {
+  transition:
+    background-color var(--mov-2) var(--curva),
+    color var(--mov-2) var(--curva),
+    border-color var(--mov-2) var(--curva);
+}
+
+/* ---------- foco visível, suave e sem mexer no layout ---------- */
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: 2px;
+}
+
+/* ---------- quem pede menos movimento, recebe menos movimento ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
