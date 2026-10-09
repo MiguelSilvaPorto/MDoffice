@@ -282,6 +282,22 @@ produzir documentos bonitos e funcionais — inclusive para enviar à IA.
   abrem normalmente — as macros não são preservadas, então ao salvar o app sugere um nome
   `.xlsx` para não sobrescrever o original.
 
+- **Apresentações (.pptx) abertas com fidelidade**: o importador lê cada lâmina como o PowerPoint a
+  monta — formas posicionadas com precisão (grupos, rotação e espelhamento), retângulos arredondados, elipses, setas e
+  formas livres, preenchimento sólido, em gradiente e com imagem (inclusive recortada e esticada além da forma),
+  contornos, sombras, imagens com recorte, fundos da lâmina, decorações do **layout e do mestre**, cores do tema
+  (com as transformações `lumMod`, `tint`, `alpha`…), texto formatado **por trecho** (fonte, tamanho, cor, negrito,
+  entrelinha, espaçamento, marcadores e numeração, texto vertical), notas do apresentador e a ordem real das lâminas.
+  Os pesos de fonte (“Montserrat Black”, “Open Sans Bold”) viram a mesma família no peso certo, e Montserrat, Roboto e
+  Open Sans já vêm no app (licença OFL), então o texto quebra nas mesmas linhas. A exportação faz o caminho inverso,
+  em XML do PowerPoint escrito pelo próprio app, e **devolve ao arquivo as fontes embutidas** originais. Medido em 5
+  apresentações reais (64 lâminas): a diferença média para a renderização de referência ficou em torno de 2%, e o
+  arquivo exportado, reaberto por um leitor independente, é idêntico ao original em quase todas as lâminas.
+  O que o app **ainda não** reproduz é avisado ao abrir (nunca some em silêncio): tabelas, gráficos, SmartArt,
+  imagens EMF/WMF, animações e transições, e as fontes embutidas **comprimidas** (formato MicroType Express, patenteado:
+  veja `src/powerpoint/pptximport/mtx.ts`) aparecem na tela com a família equivalente, mas voltam intactas ao salvar.
+  Teste automático: `npm run test:pptx -- <pasta com .pptx>`.
+
 ## Requisitos
 
 - [Rust](https://rustup.rs) (stable) + toolchain do Visual Studio (C++ build tools)
@@ -389,7 +405,10 @@ src/                  frontend (TypeScript, sem framework) — um "motor" por pa
 │  └─ markdown.css    estilos do documento (app e HTML exportado)
 ├─ word/              motor do Word (.docx): schema, editor, paginação, fita
 │  └─ docx/           importação do .docx (estilos, blocos, mídia, página)
-├─ power/             motor de apresentações (slides)
+├─ powerpoint/        motor de apresentações (.pptx): modelo, palco, fita, notas, apresentar
+│  ├─ pptximport/     leitor do .pptx (pacote, tema/cores, formas, texto com herança, fontes)
+│  ├─ render/         desenho das formas em SVG + HTML (geometrias, preenchimentos, texto por trecho)
+│  └─ pptxexport/     gravação (esqueleto do PptxGenJS + lâminas escritas em XML fiel por rica.ts)
 ├─ broker/            sugestão e correção (português, offline)
 │  ├─ writing.ts      fachada; peças: tone, mask, spell, stats, check, neighbor
 │  ├─ data/ · style/  listas de palavras/frases e regras de estilo (ABNT, tom…)

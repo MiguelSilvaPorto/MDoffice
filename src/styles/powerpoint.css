@@ -828,3 +828,80 @@ body.home-open #powerpoint-pane {
   margin: 4px 2px;
   background: var(--border);
 }
+/* ---------- formas vindas de um .pptx (render/forma.ts): geometria SVG + texto formatado ---------- */
+
+.pp-shape.pp-rica {
+  display: block;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+}
+
+.pp-shape.pp-rica:hover {
+  outline: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.pp-shape.pp-rica.selected {
+  outline: 2px solid var(--accent);
+  box-shadow: none;
+}
+
+.pp-geo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.pp-pic {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.pp-pic img {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* texto formatado: a formatação de cada parágrafo e trecho vem inline; aqui só o esqueleto */
+.pp-shape-text.pp-rt {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: visible;
+  white-space: pre-wrap;
+  word-break: normal;
+  overflow-wrap: break-word;
+  cursor: text;
+  font-synthesis: weight style;
+}
+
+.pp-shape-text.pp-rt > p {
+  margin: 0;
+  min-height: 1em;
+}
+
+/* decorações do layout/mestre: não recebem clique nem seleção */
+.pp-shape.pp-fixa {
+  pointer-events: none;
+}
+
+/* miniatura de lâmina importada: a lâmina inteira em escala menor */
+.pp-thumb-box.pp-thumb-rica {
+  padding: 0;
+  container-type: inline-size;
+  font-size: inherit;
+  line-height: normal;
+}
+
+.pp-thumb-rica p {
+  margin: 0;
+}
+
+.pp-thumb-rica .pp-shape-text {
+  pointer-events: none;
+}

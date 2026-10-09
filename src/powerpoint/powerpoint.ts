@@ -30,7 +30,8 @@ import {
 import { Stage } from "./stage";
 import { THEMES, formaComTema, semHash, stageVars, themeOf } from "./themes";
 import { TopBarTools, type FormatState } from "./topbartools";
-import { stageRatio } from "./schema";
+import { stageRatio, aspectSize } from "./schema";
+import { aoCarregarFontes, ehRica, fundoValor, htmlFormaRica, parasComEstilo, parasComTexto, registrarFontes, type CtxRender } from "./render/forma";
 import type { Deck, DeckSetup, Shape, Slide, SlideLayout, TextAlign } from "./schema";
 
 marked.setOptions({ gfm: true, breaks: false });
@@ -91,6 +92,8 @@ export class PowerPointHost {
       onSelect: (id) => this.selecionar(id),
     });
     this.montar();
+    // fonte da web carregou: as medidas de entrelinha mudam, então redesenha
+    aoCarregarFontes(() => this.pintar());
   }
 
   // ------------------------------------------------------------------
@@ -174,6 +177,7 @@ export class PowerPointHost {
     const vars = stageVars(this.setup);
     for (const [k, v] of Object.entries(vars)) this.slideEl.style.setProperty(k, v);
     this.slideEl.className = `pp-slide layout-${slide.layout}`;
+    this.slideEl.style.background = fundoValor(slide.bg, this.setup.media ?? {});
 
     this.pintarSlide(slide);
     this.pintarStrip();
@@ -208,9 +212,16 @@ export class PowerPointHost {
     }
   }
 
-  private htmlForma(s: Shape): string {
+  /** medidas e imagens que o desenho das formas ricas precisa */
+  private ctxRender(editavel: boolean): CtxRender {
+    const { w, h } = aspectSize(this.setup);
+    return { larguraPt: w * 72, alturaPt: h * 72, media: this.setup.media ?? {}, selecionada: this.selecionada, editavel };
+  }
+
+  private htmlForma(s: Shape, editavel = true): string {
+    if (ehRica(s)) return htmlFormaRica(s, this.ctxRender(editavel));
     const box = `left:${s.box.x}%;top:${s.box.y}%;width:${s.box.w}%;height:${s.box.h}%;transform:rotate(${s.rot}deg)`;
-    const comum = `class="pp-shape${s.id === this.selecionada ? " selected" : ""}" data-shape="${s.id}" data-kind="${s.kind}" style="${box}"`;
+    const comum = `class="pp-shape${editavel && s.id === this.selecionada ? " selected" : ""}" data-shape="${s.id}" data-kind="${s.kind}" style="${box}"`;
     if (s.kind === "imagem") {
       return `<div ${comum}><img class="pp-shape-img" src="${s.src}" alt=""><span class="pp-handle"></span></div>`;
     }
@@ -225,7 +236,7 @@ const PT_PARA_CQW = 100 / (13.333 * 72);
 const rel = Math.max(0.4, Math.min(12, s.fontSize * PT_PARA_CQW));
 const estilo = `font-family:'${s.fontFamily}';font-size:${rel.toFixed(3)}cqw;color:#${semHash(s.color, "1C212B")};text-align:${ALIGN_CSS[s.align]};${s.bold ? "font-weight:700;" : ""}${s.italic ? "font-style:italic;" : ""}`;
     return `<div ${comum}>
-      <div class="pp-shape-text" contenteditable="true" spellcheck="false" data-placeholder="Digite aqui..." style="${estilo}">${escapeHtml(shapeText(s))}</div>
+      <div class="pp-shape-text"${editavel ? ' contenteditable="true"' : ""} spellcheck="false" data-placeholder="Digite aqui..." style="${estilo}">${escapeHtml(shapeText(s))}</div>
       <span class="pp-handle"></span>
     </div>`;
   }
@@ -241,7 +252,14 @@ const estilo = `font-family:'${s.fontFamily}';font-size:${rel.toFixed(3)}cqw;col
       btn.title = `Lâmina ${i + 1}`;
       const inner = document.createElement("div");
       inner.className = "pp-thumb-box";
-      if (s.shapes.length) {
+      if (s.shapes.some(ehRica)) {
+        // lâmina importada: a miniatura é a própria lâmina desenhada em escala menor
+        const ctx = this.ctxRender(false);
+        ctx.selecionada = null;
+        inner.classList.add("pp-thumb-rica");
+        inner.style.background = fundoValor(s.bg, this.setup.media ?? {}) || "#fff";
+        inner.innerHTML = s.shapes.map((f) => (ehRica(f) ? htmlFormaRica(f, ctx) : "")).join("");
+      } else if (s.shapes.length) {
         // mostra as formas em miniatura (texto e cor; imagens viram um bloco)
         inner.innerHTML = s.shapes
           .map((f) => {
@@ -500,8 +518,25 @@ const estilo = `font-family:'${s.fontFamily}';font-size:${rel.toFixed(3)}cqw;col
   }
 
   private mudarForma(id: string, patch: Partial<Shape>): void {
+    // forma importada de .pptx: o texto e o estilo mudam os trechos formatados, sem perder o resto da formatação
+    const atual = this.atual().shapes.find((x) => x.id === id);
+    let redesenhar = false;
+    if (atual?.paras?.length) {
+      patch = { ...patch };
+      if (patch.text !== undefined) patch.paras = parasComTexto(atual.paras, patch.text);
+      const estilo: Partial<Pick<Shape, "fontFamily" | "fontSize" | "color" | "bold" | "italic" | "align">> = {};
+      for (const k of ["fontFamily", "fontSize", "color", "bold", "italic", "align"] as const) if (patch[k] !== undefined) (estilo as Record<string, unknown>)[k] = patch[k];
+      if (Object.keys(estilo).length) {
+        patch.paras = parasComEstilo(patch.paras ?? atual.paras, estilo);
+        redesenhar = true;
+      }
+    }
     this.substituirSlide(patchShape(this.atual(), id, patch));
     this.markDirty();
+    if (redesenhar) {
+      this.pintar();
+      return;
+    }
     // durante o arraste o palco já atualizou o DOM; evitamos redesenhar para não piscar
     if (!this.stage.element) this.pintar();
     else {
@@ -620,6 +655,17 @@ const estilo = `font-family:'${s.fontFamily}';font-size:${rel.toFixed(3)}cqw;col
     };
   }
 
+  /** Aba a partir de um deck já pronto (importado de .pptx): preserva as formas, os fundos e a mídia. */
+  createTabFromDeck(deck: Deck, setupInicial: DeckSetup): PowerPointTabData {
+    const setup = { ...DEFAULT_SETUP, ...setupInicial };
+    return {
+      setup,
+      slides: deck.slides.length ? deck.slides.map((x) => ({ ...x, notes: x.notes ?? "", shapes: x.shapes ?? [] })) : this.modeloInicial(setup),
+      indice: 0,
+      selecionada: null,
+    };
+  }
+
   load(data: PowerPointTabData): void {
     this.setup = { ...DEFAULT_SETUP, ...data.setup };
     this.slides = data.slides?.length ? data.slides.map((s) => ({ ...s, notes: s.notes ?? "", shapes: s.shapes ?? [] })) : [newSlide()];
@@ -628,6 +674,8 @@ const estilo = `font-family:'${s.fontFamily}';font-size:${rel.toFixed(3)}cqw;col
     this.pane.style.setProperty("--slide-ratio", String(stageRatio(this.setup)));
     this.stage.zoomReset();
     this.pintar();
+    // fontes embutidas do .pptx: ao carregarem, redesenha com as métricas certas
+    if (this.setup.fonts?.length) void registrarFontes(this.setup.fonts).then(() => this.pintar());
   }
 
   snapshot(): PowerPointTabData {
@@ -715,7 +763,9 @@ const estilo = `font-family:'${s.fontFamily}';font-size:${rel.toFixed(3)}cqw;col
 
   /** Modo apresentação (F5) com o deck em edição. */
   present(): void {
-    openDeckView(this.deck, this.setup, "Apresentação");
+    const ctx = this.ctxRender(false);
+    ctx.selecionada = null;
+    openDeckView(this.deck, this.setup, "Apresentação", (slide) => slide.shapes.map((f) => (ehRica(f) ? htmlFormaRica(f, ctx) : this.htmlForma(f, false))).join(""));
   }
 
   irPara(i: number): void {

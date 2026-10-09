@@ -9,7 +9,6 @@ import { snapshot } from "../history";
 import { recordCommit, countCommits, ANCHOR_EVERY } from "../snapshots";
 import { openHistoryDialog } from "../historyUi";
 import { openMissingDialog } from "../backupUi";
-import { deckToMarkdown } from "../powerpoint/markdown";
 import { $, h, toast, baseName, saveJSON, loadJSON } from "../util";
 
 /**
@@ -254,7 +253,7 @@ export const historySearchMethods = {
         this.wordHost.load(this.wordHost.createTab(doc, setup));
       } else if (tab.kind === "ppt") {
         const { deck, setup } = await this.readPptx(path);
-        this.pptHost.load(this.pptHost.createTab(deckToMarkdown(deck), setup));
+        this.pptHost.load(this.pptHost.createTabFromDeck(deck, setup));
       } else if (tab.kind === "xlsx") {
         const { livro, config } = await this.readXlsx(path);
         this.excelHost.load({ livro, config, linha: 0, coluna: 0 });

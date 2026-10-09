@@ -5,7 +5,8 @@ import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { deckFromMarkdown } from "./markdown";
 import { DEFAULT_SETUP, stageRatio } from "./model";
-import type { Deck, DeckSetup } from "./schema";
+import type { Deck, DeckSetup, Slide } from "./schema";
+import { fundoValor } from "./render/forma";
 
 marked.setOptions({ gfm: true, breaks: false });
 
@@ -15,7 +16,7 @@ function sanitize(html: string): string {
 
 /** Abre o modo apresentação. Setas/Espaço/Enter/clique avançam, Backspace volta,
  *  N mostra/oculta as notas, Esc sai. Ctrl+P imprime uma lâmina por página (PDF). */
-export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titulo?: string): void {
+export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titulo?: string, desenharFormas?: (slide: Slide) => string): void {
   if (!deck.slides.length) {
     alert("Este documento não tem conteúdo para apresentar.\n\nSepare as lâminas com uma linha de três traços (---).");
     return;
@@ -47,6 +48,15 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
 
   const pintar = async () => {
     const slide = deck.slides[atual];
+    // lâmina com formas (importada de .pptx ou montada no palco): desenha as formas, como no palco, em escala cheia
+    if (slide.shapes.length && desenharFormas) {
+      const fundo = fundoValor(slide.bg, setup.media ?? {});
+      stage.innerHTML = `<section class="slide-rica" style="${fundo ? `background:${fundo};` : ""}">${desenharFormas(slide)}</section>`;
+      contador.textContent = `${atual + 1} / ${deck.slides.length}`;
+      notas.textContent = slide.notes;
+      notas.hidden = !mostrarNotas || !slide.notes;
+      return;
+    }
     const html = await marked.parse(slide.md, { gfm: true, async: true });
     const numero = setup.showNumber ? `<span class="slide-num">${atual + 1}</span>` : "";
     stage.innerHTML = `<section class="slide layout-${slide.layout}">${sanitize(String(html))}${numero}</section>`;

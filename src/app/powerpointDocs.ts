@@ -9,7 +9,7 @@ import { moveCommits } from "../snapshots";
 import { type PowerPointTabData } from "../powerpoint/powerpoint";
 import { deckToPptx } from "../powerpoint/pptxexport";
 import { pptxToDeck } from "../powerpoint/pptximport";
-import { deckToMarkdown } from "../powerpoint/markdown";
+import { serialize } from "../powerpoint/model";
 import { DEFAULT_SETUP } from "../powerpoint/model";
 import type { Deck, DeckSetup } from "../powerpoint/schema";
 import { bytesToBase64 } from "../util";
@@ -37,7 +37,7 @@ export const powerpointDocsMethods = {
   },
 
   /** Lê os bytes de um .pptx do disco (data URL -> Uint8Array). */
-  async readPptx(this: App, path: string): Promise<{ deck: Deck; setup: DeckSetup }> {
+  async readPptx(this: App, path: string): Promise<{ deck: Deck; setup: DeckSetup; avisos?: string[] }> {
     const url = await files.readDataUrl(path);
     const bin = atob(url.slice(url.indexOf(",") + 1));
     const bytes = new Uint8Array(bin.length);
@@ -46,13 +46,16 @@ export const powerpointDocsMethods = {
   },
 
   async addPptxTab(this: App, path: string, isDraft = false): Promise<DocTab> {
-    const { deck, setup } = await this.readPptx(path);
-    return this.addPptTab(this.pptHost.createTab(deckToMarkdown(deck), setup), {
+    const { deck, setup, avisos } = await this.readPptx(path);
+    const tab = this.addPptTab(this.pptHost.createTabFromDeck(deck, setup), {
       path,
       isDraft,
       title: null,
       statusSaved: isDraft ? "Rascunho guardado no app" : `Aberto às ${fmtTime()}`,
     });
+    // o que o motor ainda não reproduz (tabelas, gráficos...) é dito, nunca escondido
+    if (avisos?.length) toast(`Aberto com limitações: ${avisos.slice(0, 3).join("; ")}${avisos.length > 3 ? "…" : ""}`, "info", 9000);
+    return tab;
   },
 
   async openPptx(this: App, path: string): Promise<boolean> {
@@ -108,7 +111,7 @@ export const powerpointDocsMethods = {
   },
 
   pptSerialized(this: App, tab: DocTab): string {
-    return tab === this.tab ? this.pptHost.serialized() : JSON.stringify({ v: 1, setup: tab.ppt!.setup, slides: tab.ppt!.slides });
+    return tab === this.tab ? this.pptHost.serialized() : serialize(tab.ppt!.setup, tab.ppt!.slides);
   },
 
   /** Documento novo ainda sem arquivo: cria o rascunho (.pptx) na pasta do app. */

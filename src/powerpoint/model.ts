@@ -20,7 +20,12 @@ export interface DeckSnapshot {
 
 /** Texto (JSON) guardado no rascunho/histórico — mesma ideia do WordSnapshot. */
 export function serialize(setup: DeckSetup, slides: Slide[]): string {
-  const snap: DeckSnapshot = { v: 1, setup, slides };
+  // imagens e fontes embutidas são pesadas e nunca mudam na edição: ficam fora do histórico/log (que guarda uma cópia a cada mudança)
+  const { media: _media, fonts: _fonts, fontsRaw: _raw, ...leve } = setup;
+  void _media;
+  void _fonts;
+  void _raw;
+  const snap: DeckSnapshot = { v: 1, setup: leve as DeckSetup, slides };
   return JSON.stringify(snap);
 }
 

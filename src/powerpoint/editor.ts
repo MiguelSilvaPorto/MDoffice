@@ -22,7 +22,7 @@ export class TextEditor {
     this.shapeId = shapeId;
     this.onChange = onChange ?? null;
     // agora que estamos no elemento certo, conecta os handlers
-    el.oninput = () => this.registrar(el.innerText.replace(/ /g, " "));
+    el.oninput = () => this.registrar(el.innerText.replace(/\u00a0/g, " ").replace(/\u200b/g, ""));
     el.onkeydown = (e) => this.tecla(e);
   }
 
@@ -37,7 +37,7 @@ export class TextEditor {
 
   /** Texto atual da forma em edição. */
   texto(): string {
-    return this.el ? this.el.innerText.replace(/ /g, " ") : "";
+    return this.el ? this.el.innerText.replace(/\u00a0/g, " ").replace(/\u200b/g, "") : "";
   }
 
   private registrar(texto: string): void {
@@ -107,7 +107,7 @@ export class TextEditor {
     if (!this.el) return;
     this.el.focus();
     document.execCommand(comando, false, valor);
-    this.registrar(this.el.innerText.replace(/ /g, " "));
+    this.registrar(this.el.innerText.replace(/\u00a0/g, " ").replace(/\u200b/g, ""));
   }
 
   /** Estado do texto selecionado (a fita usa para acender os botões). */

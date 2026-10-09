@@ -326,3 +326,19 @@
   color: var(--muted);
   text-align: center;
 }
+
+/* lâmina com formas (importada de .pptx): proporção fixa, tudo escala com a largura (cqw) */
+.slide-rica {
+  position: relative;
+  aspect-ratio: var(--slide-ratio, 16 / 9);
+  width: min(100%, calc((100vh - 120px) * var(--slide-ratio, 1.7778)));
+  background: #fff;
+  overflow: hidden;
+  container-type: inline-size;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+}
+
+.slide-rica .pp-shape {
+  pointer-events: none;
+}
