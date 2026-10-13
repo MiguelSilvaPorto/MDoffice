@@ -166,9 +166,23 @@ export const aiContextMethods = {
     });
     editorHost.addEventListener("contextmenu", (e) => {
       e.preventDefault();
-      const cursor = this.editor.selectionPos().from;
+      const sel = this.editor.selectionPos();
+      const cursor = sel.from;
       document.querySelector(".editor-context-menu")?.remove();
       const menu = h("div", { class: "editor-context-menu" });
+      // com texto selecionado, o Copiar vem primeiro: é o que a pessoa quer com a seleção na mão
+      if (sel.to > sel.from) {
+        const copyButton = h("button", { class: "context-menu-item" });
+        copyButton.innerHTML = '<svg class="ic"><use href="#i-copy"/></svg><span>Copiar</span><kbd>Ctrl+C</kbd>';
+        copyButton.addEventListener("click", () => {
+          menu.remove();
+          const trecho = this.editor.view.state.sliceDoc(sel.from, sel.to);
+          void copyText(trecho).then((ok) => {
+            if (!ok) toast("Não foi possível copiar.", "err", 3000);
+          });
+        });
+        menu.append(copyButton);
+      }
       const folderButton = h("button", { class: "context-menu-item" });
       folderButton.innerHTML = '<svg class="ic"><use href="#i-folder"/></svg><span>Pasta</span><kbd>contexto</kbd>';
       folderButton.addEventListener("click", () => {
