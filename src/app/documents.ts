@@ -4,6 +4,8 @@ import type { App } from "./app";
 import * as files from "../files";
 import { checkStyle, observarEdicao, temPendenteRitmo } from "../broker/writing";
 import { registrarDesfazerAplicadas } from "../broker/aprendizado";
+import { registrarDesfeitaSePendente } from "../broker/spell/decisao";
+import { enviarLimiar } from "../broker/spell";
 import { type DocTab } from "../tabs";
 import { moveHistory } from "../history";
 import { moveCommits } from "../snapshots";
@@ -16,8 +18,13 @@ export const documentsMethods = {
     // a correção automática só age depois que você digita (não mexe em documento aberto)
     this.autoFixArmed = true;
     // uma varredura automática desfeita (Ctrl+Z) ensina o ritmo a esperar mais antes de
-    // agir e desconta o que o corretor aprendeu com as trocas que ela aplicou sozinha
-    if (temPendenteRitmo() && observarEdicao(this.editor.getText())) registrarDesfazerAplicadas();
+    // agir, desconta o que o corretor aprendeu com as trocas que ela aplicou sozinha e
+    // fecha o veredito de confiança (o limiar sobe: menos auto-aplicações daqui pra frente)
+    if (temPendenteRitmo() && observarEdicao(this.editor.getText())) {
+      registrarDesfazerAplicadas();
+      registrarDesfeitaSePendente();
+      enviarLimiar();
+    }
     if (!wasDirty) this.refreshTitle();
     this.setSaveState();
     this.updatePreview();

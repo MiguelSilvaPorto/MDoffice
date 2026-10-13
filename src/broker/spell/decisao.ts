@@ -76,23 +76,57 @@ interface Calibragem {
 
 const KEY = "mdc.corretor.decisao";
 
+/** Sem localStorage (testes, modo privado), a calibragem vive na memória do módulo. */
+let memoria: Calibragem = { ok: 0, ruim: 0 };
+
 function ler(): Calibragem {
   try {
-    const raw = typeof localStorage === "undefined" ? null : localStorage.getItem(KEY);
-    if (!raw) return { ok: 0, ruim: 0 };
-    const c = JSON.parse(raw) as Partial<Calibragem>;
-    return { ok: Math.max(0, Number(c.ok) || 0), ruim: Math.max(0, Number(c.ruim) || 0) };
+    if (typeof localStorage !== "undefined") {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return { ...memoria };
+      const c = JSON.parse(raw) as Partial<Calibragem>;
+      return { ok: Math.max(0, Number(c.ok) || 0), ruim: Math.max(0, Number(c.ruim) || 0) };
+    }
   } catch {
-    return { ok: 0, ruim: 0 };
+    /* armazenamento bloqueado: usa a memória */
   }
+  return { ...memoria };
 }
 
 function gravar(c: Calibragem): void {
+  memoria = { ...c };
   try {
     if (typeof localStorage !== "undefined") localStorage.setItem(KEY, JSON.stringify(c));
   } catch {
-    /* sem armazenamento */
+    /* sem armazenamento: a memória já guardou */
   }
+}
+
+/** Contadores atuais (diagnóstico e testes). */
+export function calibragem(): Calibragem {
+  return ler();
+}
+
+/** Há uma auto-aplicação esperando veredito (desfez × manteve)? */
+let pendenteAuto = false;
+
+/** A correção automática acabou de aplicar algo: o veredito vem no próximo desfazer/varredura. */
+export function registrarAplicacaoAuto(): void {
+  pendenteAuto = true;
+}
+
+/** Fecha o veredito como MANTIDA (outra varredura começou sem desfazer a anterior). */
+export function registrarMantidaSePendente(): void {
+  if (!pendenteAuto) return;
+  pendenteAuto = false;
+  registrarMantida();
+}
+
+/** Fecha o veredito como DESFEITA (Ctrl+Z depois de uma auto-aplicação). */
+export function registrarDesfeitaSePendente(): void {
+  if (!pendenteAuto) return;
+  pendenteAuto = false;
+  registrarDesfeita();
 }
 
 /** Registra que uma auto-aplicação foi mantida (o texto seguiu corrigido). */
@@ -111,6 +145,7 @@ export function registrarDesfeita(): void {
 
 /** Esquece o histórico de calibragem (usado pelo "esquecer o que aprendeu"). */
 export function limparCalibragem(): void {
+  pendenteAuto = false;
   gravar({ ok: 0, ruim: 0 });
 }
 

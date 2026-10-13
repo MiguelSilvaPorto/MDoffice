@@ -1801,6 +1801,60 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   ("oira" → "o ira"), depois o acento pelo uso ("ira" → "irá") — o `corrigir` do runner roda em
   rodadas, então a segunda correção vem na rodada seguinte.
 
+### 2026-10-13 · calibragem do limiar · dominância de uso no lugar do fator escondido
+- **Local:** o bloco do `certo`, em `sugerirPalavra`
+- **Linha:** `muitoMaisFrequente = distancia === 2 && c1 >= 10 * max(c2, 1)` →
+  `dominaFrequencia = c1 > 0 && c1 >= 5 * max(c2, 1)` (sem condição de distância)
+- **Porquê:** a decisão por probabilidade (tarefa anterior) apertou o auto-aplicar e deixou
+  **"atensao" → "atenção"** cair para sugestão — o `testar-correcoes.mts` acusou (31/32). Medido no
+  corpus: "atenção" 1.896 contra "tensão" 242 = **7,8×**, e os dois com a MESMA distância (1, depois
+  de normalizar acento), então nem o fator antigo (10×, só a duas edições) nem o vencedor-por-
+  distância pegavam. Com 5× e sem exigir distância 2, o caso claro volta a ser corrigido sozinho e
+  os pares equilibrados continuam indo para a decisão por margem. Corpus de volta a **32/32 casos
+  corrigidos e 32/32 textos corretos preservados**.
+
+## src/broker/spell/decisao.ts
+
+### 2026-10-13 · calibragem do limiar · veredito da auto-aplicação e memória
+- **Local:** `ler`/`gravar`, `calibragem`, `registrarAplicacaoAuto`, `registrarMantidaSePendente`,
+  `registrarDesfeitaSePendente`, `limparCalibragem`
+- **Linha:** `ler()`/`gravar()` passam a usar uma **memória do módulo** quando não há
+  `localStorage`; novos: o veredito pendente (`pendenteAuto`) e o leitor `calibragem()`
+- **Porquê:** o limiar adaptativo existia, mas ninguém o alimentava — e, sem `localStorage`
+  (modo privado, testes), a calibragem simplesmente não existia. Agora a auto-aplicação abre um
+  veredito e ele fecha como **mantida** (outra varredura começou sem desfazer) ou **desfeita**
+  (Ctrl+Z), contando **uma vez por leva**; a memória garante que a conta funcione em qualquer
+  ambiente, e `calibragem()` existe para diagnóstico e testes.
+
+## src/app/assistant.ts
+
+### 2026-10-13 · calibragem do limiar · os dois pontos de "mantida"
+- **Local:** `runIdleFix` (varredura sem troca de palavras) e `applyFixes` (leva automática)
+- **Linha:** `limparAplicadasAuto();` → `limparAplicadasAuto(); registrarMantidaSePendente();
+  enviarLimiar();` e `marcarAplicadasAuto(pares)` → `registrarMantidaSePendente();
+  registrarAplicacaoAuto(); marcarAplicadasAuto(pares); enviarLimiar();`
+- **Porquê:** é exatamente o que o `aprendizado.ts` já define como "ficou de pé": uma varredura
+  nova que não desfaz a anterior prova que a anterior sobreviveu. Fechar o veredito nesses dois
+  pontos dá o sinal de "mantida" sem inventar um temporizador novo; o `enviarLimiar()` leva o
+  limiar recém-calculado ao worker na hora.
+
+## src/app/documents.ts
+
+### 2026-10-13 · calibragem do limiar · o Ctrl+Z fecha o veredito
+- **Local:** `onDocChange`, no gancho que já detectava o desfazer da varredura
+- **Linha:** `if (…) registrarDesfazerAplicadas();` → bloco com `registrarDesfazerAplicadas();
+  registrarDesfeitaSePendente(); enviarLimiar();`
+- **Porquê:** o mesmo Ctrl+Z que desconta o aprendizado é o sinal mais forte de que a
+  auto-aplicação errou — é ele que deve subir o limiar (menos auto-aplicações dali em diante).
+
+## scripts/testar-correcao.mjs
+
+### 2026-10-13 · calibragem do limiar · 6 verificações
+- **Local:** fim do bloco "contexto e decisão"
+- **Linha:** `novo`
+- **Porquê:** cobre o veredito contando uma vez por leva, o desfazer como "ruim", o limiar subindo
+  com muitas desfeitas (0,85) e descendo com muitas mantidas (0,59), e o zero voltando ao padrão.
+
 ---
 
 ## Próximos registros

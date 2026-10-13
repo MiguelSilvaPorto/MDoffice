@@ -248,14 +248,15 @@ function sugerirPalavra(
     // Quando o primeiro está mais PERTO da palavra errada do que o segundo, a
     // escolha não depende de frequência: é o candidato mais próximo que ganha.
     const vencePorDistancia = distancia <= 1 && distanciaSegundo > distancia;
-    // Duas edições de distância: só compensa quando o primeiro é MUITO mais
-    // frequente — é o que decide "responsavo" → "responsável" (1556 ocorrências)
-    // contra "responsivo" (27), que está mais perto mas quase não se escreve.
-    const muitoMaisFrequente = distancia === 2 && c1 > 0 && c1 >= 10 * Math.max(c2, 1);
+    // Dois candidatos igualmente próximos (ou o vencedor até mais longe): aí quem
+    // decide é o USO. 5× separa com folga "atenção" (1.896) de "tensão" (242) e
+    // "responsável" (1.556) de "responsivo" (27), sem abrir a porta para pares
+    // equilibrados (esses seguem para a decisão por probabilidade).
+    const dominaFrequencia = c1 > 0 && c1 >= 5 * Math.max(c2, 1);
     // Classes de CERTEZA: acento/cedilha, erro clássico, o mais próximo (sem empate),
-    // muito mais frequente a duas edições e o candidato único. Fora delas, quem decide
-    // é a probabilidade com margem — empate vira sugestão, nunca aplicação.
-    const certo = !!soAcento || !!classico || vencePorDistancia || muitoMaisFrequente || !segundo;
+    // uso dominante e o candidato único. Fora delas, quem decide é a probabilidade com
+    // margem — empate vira sugestão, nunca aplicação.
+    const certo = !!soAcento || !!classico || vencePorDistancia || dominaFrequencia || !segundo;
     decisao = decidir(
       { pontos: ordenadas.map(([, nota]) => nota), certo, contexto: notaContexto(primeiro[0], anterior, contexto) },
       tau

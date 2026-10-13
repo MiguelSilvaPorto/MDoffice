@@ -249,6 +249,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   chance — e o auto-aplicar deixa de ser regra fixa: decide por **probabilidade com margem**
   (vencedor × segundo colocado), empate vira sugestão e o limiar se calibra com o histórico de
   desfazer.
+- **O limiar do corretor se calibra com o uso**: desfazer uma correção que o app aplicou sozinho
+  sobe o limiar (o corretor fica mais exigente); as que ficam de pé o descem. O limiar em vigor vai
+  para o worker a cada veredito, e a calibragem funciona até sem armazenamento local.
+- **Correção automática de novo nos casos claros**: a decisão por probabilidade tinha deixado
+  passar para "só sugestão" erros óbvios como **"atensao" → "atenção"**; a dominância de uso (5×)
+  voltou a aplicá-los sozinha — medido no corpus: **32/32 casos corrigidos e 32/32 textos
+  corretos preservados**.
 
 **Ferramentas (dev)**
 

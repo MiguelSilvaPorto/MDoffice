@@ -4,6 +4,8 @@ import type { App } from "./app";
 import { checkText, checkStyle, marcarAplicacao, planejarVarredura, stats as writingStats, spellIsReady, spellHasFailed, type WritingIssue } from "../broker/writing";
 import { openReviewModal } from "../broker/review";
 import { limparAplicadasAuto, marcarAplicadasAuto, registrarCorrecao } from "../broker/aprendizado";
+import { registrarAplicacaoAuto, registrarMantidaSePendente } from "../broker/spell/decisao";
+import { enviarLimiar } from "../broker/spell";
 import { $, toast, saveJSON } from "../util";
 
 /** Chave estável de um aviso de estilo (mensagem + trecho), para o "Ignorar neste texto". */
@@ -26,6 +28,8 @@ export const assistantMethods = {
     if (!correcoes.length) return;
     // esta varredura não troca palavras: o que estava pendente de outra ficou de pé
     limparAplicadasAuto();
+    registrarMantidaSePendente();
+    enviarLimiar();
     this.editor.replaceRanges(correcoes, -1);
     marcarAplicacao(texto);
   },
@@ -191,7 +195,14 @@ export const assistantMethods = {
       registrarCorrecao(i.word, certo);
       if (automatico) pares.push([i.word, certo]);
     }
-    if (automatico && pares.length) marcarAplicadasAuto(pares);
+    if (automatico && pares.length) {
+      // a leva anterior ficou de pé (uma nova varredura só chega depois de o texto continuar
+      // corrigido): fecha o veredito dela como MANTIDA antes de abrir o da nova
+      registrarMantidaSePendente();
+      registrarAplicacaoAuto();
+      marcarAplicadasAuto(pares);
+      enviarLimiar();
+    }
     return aplicaveis.length;
   },
 

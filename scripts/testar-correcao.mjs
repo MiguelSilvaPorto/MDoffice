@@ -318,6 +318,26 @@ const DEC = await empacotar("src/broker/spell/decisao.ts", "decisao.mjs");
   ok("decisão: limiar padrão sem histórico", DEC.tauAtual() === DEC.TAU_INICIAL, String(DEC.tauAtual()));
   const probs = DEC.probabilidades([1, 0]);
   ok("decisão: softmax concentra no vencedor", probs[0] > 0.9 && Math.abs(probs[0] + probs[1] - 1) < 1e-9);
+
+  // calibragem do limiar (no teste não há localStorage: o módulo usa a memória)
+  DEC.limparCalibragem();
+  ok("calibragem: começa zerada e no limiar padrão", DEC.tauAtual() === DEC.TAU_INICIAL && DEC.calibragem().ok === 0 && DEC.calibragem().ruim === 0);
+  DEC.registrarAplicacaoAuto();
+  DEC.registrarMantidaSePendente();
+  DEC.registrarMantidaSePendente(); // sem veredito aberto, não conta de novo
+  ok("calibragem: o veredito conta uma vez só", DEC.calibragem().ok === 1 && DEC.calibragem().ruim === 0, JSON.stringify(DEC.calibragem()));
+  DEC.registrarAplicacaoAuto();
+  DEC.registrarDesfeitaSePendente();
+  ok("calibragem: desfazer conta como ruim", DEC.calibragem().ruim === 1);
+  DEC.limparCalibragem();
+  for (let i = 0; i < 40; i++) DEC.registrarDesfeita();
+  const tauAlto = DEC.tauAtual();
+  ok("calibragem: muitas desfeitas sobem o limiar", tauAlto > DEC.TAU_INICIAL && tauAlto <= 0.85, String(tauAlto));
+  DEC.limparCalibragem();
+  for (let i = 0; i < 60; i++) DEC.registrarMantida();
+  const tauBaixo = DEC.tauAtual();
+  ok("calibragem: muitas mantidas descem o limiar", tauBaixo < DEC.TAU_INICIAL && tauBaixo >= 0.55, String(tauBaixo));
+  DEC.limparCalibragem();
 }
 
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
