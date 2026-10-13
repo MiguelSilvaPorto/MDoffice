@@ -223,6 +223,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   formato (com o canto dobrado) e a marca dentro — M↓ no Markdown, W no Word, a planilha no Excel
   e o gráfico de pizza no PowerPoint —, no lugar do quadradinho com a letra solta; vale nas abas,
   nas listas, nos menus, na busca e no Início.
+- **Citação ABNT atualizada para a NBR 10520:2023**: o corretor aceita Caixa Mista `(Silva, 2020)` e passa a sugestão (não erro) para quem escreve em CAIXA ALTA; "et al." opcional.
 
 **Ferramentas (dev)**
 

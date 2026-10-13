@@ -75,6 +75,39 @@ igual("frase colada ganha o ponto", "O relatorio ficou pronto O proximo item tam
 igual("frase colada antes de nome próprio não arrisca", "falei O Pedro ontem", "Falei O Pedro ontem.");
 igual("quebra de frase comprida só entra no “Corrigir tudo”", "um dois três quatro cinco seis sete oito nove dez onze e doze", "Um dois três quatro cinco seis sete oito nove dez onze. E doze.");
 
+// ---------------------------------------------------------------- ABNT: citação autor-data (NBR 10520:2023)
+{
+  const citacao = (texto) => S.checkStyle(texto).filter((i) => i.word.startsWith("("));
+  const misto = citacao("Como defende (Silva, 2020), o tema segue atual");
+  ok("ABNT 2023: caixa mista (Silva, 2020) não é acusada", misto.length === 0, misto.map((i) => i.message).join(" | "));
+  const alta = citacao("Como defende (SILVA, 2020), o tema segue atual");
+  ok(
+    "ABNT 2023: caixa alta (SILVA, 2020) vira sugestão de caixa mista",
+    alta.length === 1 && alta[0].fix === undefined && alta[0].suggestions[0] === "(Silva, 2020)",
+    JSON.stringify(alta)
+  );
+  const sigla = citacao("Segundo (IBGE, 2020), a taxa subiu");
+  ok("ABNT 2023: sigla curta (IBGE, 2020) não é acusada", sigla.length === 0, sigla.map((i) => i.message).join(" | "));
+  igual(
+    "ABNT 2023: sugestão de caixa mista não entra na correção automática",
+    "Como defende (SILVA, 2020), o tema segue atual.",
+    "Como defende (SILVA, 2020), o tema segue atual."
+  );
+}
+{
+  const etAl = (texto) => S.checkStyle(texto).filter((i) => i.word.startsWith("et"));
+  const comPonto = etAl("Silva et al. defendem essa ideia.");
+  const semPonto = etAl("Silva et al defendem essa ideia.");
+  ok("ABNT 2023: “et al.” é aceito", comPonto.length === 0, comPonto.map((i) => i.message).join(" | "));
+  ok("ABNT 2023: “et al” (sem ponto) também é aceito", semPonto.length === 0, semPonto.map((i) => i.message).join(" | "));
+  const errado = etAl("Silva et. al defendem essa ideia.");
+  ok(
+    "ABNT 2023: “et. al” volta para “et al.” citando a norma",
+    errado.length === 1 && errado[0].fix === "et al." && errado[0].message.includes("10520:2023"),
+    JSON.stringify(errado)
+  );
+}
+
 // ---------------------------------------------------------------- política da varredura
 const T = "eu comprei pao mas esqueci o leite";
 const fimT = T.length;

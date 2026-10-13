@@ -1405,6 +1405,41 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   porque a colagem deduzida vem com `fix` (o runner aplica `fix ?? auto`); é ele também que
   garante que o texto correto não seja mexido — 31/31 dos dois lados.
 
+## src/broker/style/abnt.ts
+
+### 2026-10-13 · este commit · citação autor-data na NBR 10520:2023
+- **Local:** `abntCitation` (+ novo auxiliar `autorCaixaMista`)
+- **Linha:** a regra passou de acusar qualquer autor fora de CAIXA ALTA
+  (`autor !== autor.toUpperCase()` → `fix` “(SILVA, 2020)”, aplicado na varredura/salvar) para
+  **sugerir** a caixa mista: sem `fix` (só `suggestions` “(Silva, 2020)”), para nunca entrar
+  sozinha; a mensagem agora cita a **NBR 10520:2023** (a CAIXA ALTA era da 10520:2002)
+- **Porquê:** a 10520:2002 foi substituída pela 10520:2023, que usa Caixa Mista no sistema
+  autor-data; a regra antiga marcava como errado quem escrevia no formato vigente (falso
+  positivo ativo) e “corrigia” para o formato antigo. A caixa mista passa a ser aceita em
+  silêncio e a caixa alta vira sugestão; siglas curtas (ABNT, IBGE, ONU…) ficam como estão
+  para o auxiliar não trocar sigla por nome.
+
+### 2026-10-13 · este commit · “et al.” opcional na NBR 10520:2023
+- **Local:** `abntEtAl`
+- **Linha:** regex `(?<![\p{L}])(et\.?\s*al)(?!\.)(?![\p{L}])` →
+  `(?<![\p{L}])(et\.\s*al|etal)(\.?)(?![.\p{L}])`; mensagem `[ABNT] A expressão latina correta é
+  “et al.” (com ponto no final)` → `[ABNT NBR 10520:2023] A grafia da expressão latina é
+  “et al.” (ponto só em “al.”); o uso é opcional`
+- **Porquê:** a 10520:2023 torna o uso de “et al.” **opcional** (mais de 3 autores): “et al.” e
+  “et al” passam a ser aceitos, e a regra só normaliza a grafia com ponto depois de “et”
+  (“et. al”, “etal”) — quem escreve sem o ponto final não é mais acusado.
+
+## scripts/testar-correcao.mjs
+
+### 2026-10-13 · este commit · casos da citação ABNT
+- **Local:** nova seção “ABNT: citação autor-data (NBR 10520:2023)”
+- **Linha:** novo bloco com 7 verificações: `(Silva, 2020)` não é acusada; `(SILVA, 2020)` vira
+  sugestão (sem `fix`, com `(Silva, 2020)` em `suggestions`); `(IBGE, 2020)` (sigla curta) não é
+  acusada; a sugestão não entra na correção automática; “et al.” e “et al” aceitos; “et. al”
+  volta para “et al.” com a norma na mensagem
+- **Porquê:** a regra mudou de norma (10520:2023) — sem os casos novos, o teste não protegia o
+  falso positivo que a tarefa veio corrigir nem a nova forma aceita.
+
 ---
 
 ## Próximos registros

@@ -91,25 +91,41 @@ export function abntAcronymPlural({ mask, push }: RuleCtx): void {
   }
 }
 
+/** “SILVA” → “Silva”; “silva” → “Silva”; caixa mista fica como está. Siglas curtas (até 4 letras) não são tocadas. */
+function autorCaixaMista(token: string): string {
+  if (token === token.toUpperCase()) {
+    // ABNT, IBGE, ONU, USP…: nome curto em caixa alta costuma ser sigla — não arrisca
+    if (token.length < 5) return token;
+    return token[0] + token.slice(1).toLowerCase();
+  }
+  if (token === token.toLowerCase()) {
+    if (token.length < 3) return token;
+    return token[0].toUpperCase() + token.slice(1).toLowerCase();
+  }
+  return token;
+}
+
 export function abntCitation({ mask, push }: RuleCtx): void {
   let m: RegExpExecArray | null;
-  // 5. Citações autor-data (ABNT NBR 10520)
+  // 5. Citações autor-data (ABNT NBR 10520:2023): sobrenome em caixa mista — “(Silva, 2020)”.
+  // A 10520:2023 substituiu a 10520:2002 (que pedia CAIXA ALTA); na transição as duas formas são
+  // aceitas: a CAIXA ALTA vira só sugestão e nunca é aplicada sozinha (aqui não existe `fix`).
   const citacaoAutorRx = /\(([A-ZÁÉÍÓÚa-záéíóúçãõâêô]+(?:\s*;\s*[A-ZÁÉÍÓÚa-záéíóúçãõâêô]+)*),\s*(\d{4}(?:,\s*p\.\s*\d+)?)\)/gu;
   while ((m = citacaoAutorRx.exec(mask)) !== null) {
     const autor = m[1];
-    const resto = m[2];
-    if (autor !== autor.toUpperCase() && autor.length >= 3) {
-      const autorUpper = autor.toUpperCase();
-      const fix = `(${autorUpper}, ${resto})`;
-      push(
-        m.index,
-        m.index + m[0].length,
-        `[ABNT NBR 10520] Sobrenome do autor entre parênteses deve estar em maiúsculas: “${autorUpper}”`,
-        fix,
-        [fix],
-        false
-      );
-    }
+    const novoAutor = autor.split(/\s*;\s*/).map(autorCaixaMista).join("; ");
+    if (novoAutor === autor) continue; // já está em caixa mista ou é sigla: não acusa
+    const sugestao = `(${novoAutor}, ${m[2]})`;
+    const eraCaixaAlta = autor === autor.toUpperCase();
+    push(
+      m.index,
+      m.index + m[0].length,
+      eraCaixaAlta
+        ? `[ABNT NBR 10520:2023] O sobrenome do autor no sistema autor-data vai em caixa mista (a CAIXA ALTA era da NBR 10520:2002): “${sugestao}”`
+        : `[ABNT NBR 10520:2023] Sobrenome do autor no sistema autor-data em caixa mista: “${sugestao}”`,
+      undefined,
+      [sugestao]
+    );
   }
 }
 
@@ -133,13 +149,14 @@ export function abntPage({ mask, push }: RuleCtx): void {
 
 export function abntEtAl({ mask, push }: RuleCtx): void {
   let m: RegExpExecArray | null;
-  // "et al." com ponto em al. (et. al. ou et al sem ponto)
-  const etAlRx = /(?<![\p{L}])(et\.?\s*al)(?!\.)(?![\p{L}])/giu;
+  // "et al." (ABNT NBR 10520:2023): com mais de 3 autores o uso é opcional e as duas formas
+  // escritas — “et al.” e “et al” — valem; só a grafia com ponto depois de “et” é normalizada.
+  const etAlRx = /(?<![\p{L}])(et\.\s*al|etal)(\.?)(?![.\p{L}])/giu;
   while ((m = etAlRx.exec(mask)) !== null) {
     push(
       m.index,
       m.index + m[0].length,
-      `[ABNT] A expressão latina correta é “et al.” (com ponto no final)`,
+      `[ABNT NBR 10520:2023] A grafia da expressão latina é “et al.” (ponto só em “al.”); o uso é opcional`,
       "et al.",
       ["et al."],
       true
