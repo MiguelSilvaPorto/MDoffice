@@ -1,9 +1,45 @@
 //! Utilitários comuns dos comandos (nomes de arquivo seguros, erros de E/S).
 
+use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub(crate) fn io_err(e: std::io::Error) -> String {
     e.to_string()
+}
+
+/// Agora em milissegundos desde 1970 (0 se o relógio do sistema estiver fora do normal).
+pub(crate) fn now_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
+}
+
+/// Grava um arquivo de forma atômica (temporário + rename): ou sai o conteúdo novo
+/// inteiro, ou o antigo continua lá.
+pub(crate) fn write_atomic(path: &Path, bytes: &[u8]) -> Result<(), String> {
+    if let Some(dir) = path.parent() {
+        fs::create_dir_all(dir).map_err(io_err)?;
+    }
+    let tmp = path.with_extension(format!("tmp{}", now_ms()));
+    fs::write(&tmp, bytes).map_err(io_err)?;
+    fs::rename(&tmp, path).map_err(io_err)?;
+    Ok(())
+}
+
+/// Raiz do projeto em desenvolvimento (pasta que tem package.json e src-tauri).
+pub(crate) fn project_root() -> Option<PathBuf> {
+    let mut dir = std::env::current_dir().ok()?;
+    for _ in 0..5 {
+        if dir.join("package.json").exists() && dir.join("src-tauri").exists() {
+            return Some(dir);
+        }
+        if !dir.pop() {
+            break;
+        }
+    }
+    None
 }
 
 /// Deixa o nome de arquivo simples e seguro (sem acentos, espaços ou símbolos).

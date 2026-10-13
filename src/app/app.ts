@@ -45,6 +45,7 @@ import { commandsMethods } from "./commands";
 import { keysMethods } from "./keys";
 import { layoutMethods } from "./layout";
 import { deepReviewMethods } from "./deepReview";
+import { trashMethods } from "./trash";
 
 export class App {
   editor!: MdEditor;
@@ -213,6 +214,7 @@ export class App {
       openAt: (p, line) => void this.openAt(p, line),
       contextMenu: (x, y, items) => this.openMenuAt(x, y, items),
       fileMenu: (anchor, path) => this.openFileMenu(anchor, path),
+      fileMenuAt: (x, y, path) => this.openFileMenuAt(x, y, path),
       onHome: () => this.toggleHome(),
     });
     this.outline = new OutlinePanel($("#outline"), {
@@ -297,6 +299,8 @@ export class App {
     $("#st-history").addEventListener("click", () => void this.openHistory());
     // backup em disco: configuração no Rust, indicador na barra e checagem de originais
     void this.setupBackup();
+    // lixeira: apaga de vez o que passou dos 30 dias (silencioso)
+    void this.purgeTrash();
     document.querySelector("#st-backup")?.addEventListener("click", () => {
       // vermelho: arquivos que só existem no backup; fora disso, o histórico do documento
       if (this.backupState === "perigo") this.openMissingBackups();
@@ -517,5 +521,6 @@ type CommandsMethodsType = typeof commandsMethods;
 type KeysMethodsType = typeof keysMethods;
 type LayoutMethodsType = typeof layoutMethods;
 type DeepReviewMethodsType = typeof deepReviewMethods;
-export interface App extends TabsMethodsType, PagesMethodsType, HomeContextMethodsType, DocumentsMethodsType, WordDocsMethodsType, PowerPointDocsMethodsType, ExcelDocsMethodsType, AssistantMethodsType, DictionaryMethodsType, MdToolsMethodsType, HistorySearchMethodsType, MediaMethodsType, DrawingMethodsType, AiContextMethodsType, MenusMethodsType, ToolbarMethodsType, WindowControlsMethodsType, CommandsMethodsType, KeysMethodsType, LayoutMethodsType, DeepReviewMethodsType {}
-Object.assign(App.prototype, tabsMethods, pagesMethods, homeContextMethods, documentsMethods, wordDocsMethods, powerpointDocsMethods, excelDocsMethods, assistantMethods, dictionaryMethods, mdToolsMethods, historySearchMethods, mediaMethods, drawingMethods, aiContextMethods, menusMethods, toolbarMethods, windowControlsMethods, commandsMethods, keysMethods, layoutMethods, deepReviewMethods);
+type TrashMethodsType = typeof trashMethods;
+export interface App extends TabsMethodsType, PagesMethodsType, HomeContextMethodsType, DocumentsMethodsType, WordDocsMethodsType, PowerPointDocsMethodsType, ExcelDocsMethodsType, AssistantMethodsType, DictionaryMethodsType, MdToolsMethodsType, HistorySearchMethodsType, MediaMethodsType, DrawingMethodsType, AiContextMethodsType, MenusMethodsType, ToolbarMethodsType, WindowControlsMethodsType, CommandsMethodsType, KeysMethodsType, LayoutMethodsType, DeepReviewMethodsType, TrashMethodsType {}
+Object.assign(App.prototype, tabsMethods, pagesMethods, homeContextMethods, documentsMethods, wordDocsMethods, powerpointDocsMethods, excelDocsMethods, assistantMethods, dictionaryMethods, mdToolsMethods, historySearchMethods, mediaMethods, drawingMethods, aiContextMethods, menusMethods, toolbarMethods, windowControlsMethods, commandsMethods, keysMethods, layoutMethods, deepReviewMethods, trashMethods);

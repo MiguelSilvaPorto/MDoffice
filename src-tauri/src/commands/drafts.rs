@@ -1,23 +1,9 @@
 //! Rascunhos do app (salvamento automático) e a pasta padrão de documentos.
 
-use super::util::{io_err, slugify, unique_path};
+use super::util::{io_err, project_root, slugify, unique_path};
 use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
-
-/// Raiz do projeto em desenvolvimento (pasta que tem package.json e src-tauri).
-fn project_root() -> Option<PathBuf> {
-    let mut dir = std::env::current_dir().ok()?;
-    for _ in 0..5 {
-        if dir.join("package.json").exists() && dir.join("src-tauri").exists() {
-            return Some(dir);
-        }
-        if !dir.pop() {
-            break;
-        }
-    }
-    None
-}
 
 /// Pasta do salvamento automático (rascunhos).
 /// Preferimos `temp/` dentro do PRÓPRIO PROJETO — é a pasta que você vê no editor durante

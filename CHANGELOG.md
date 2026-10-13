@@ -226,6 +226,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   trocar o ícone da janela em tempo de execução.
 - `Cargo.lock` sincronizado com a feature **`image-png`** (crates `image`, `png`, `byteorder-lite`,
   `moxcms`), validado com `cargo check --locked`.
+- **Lixeira de documentos** (`trash_move`/`trash_purge`): o arquivo sai da pasta do projeto e
+  fica em `lixeira/` na pasta de dados do app, com um índice do caminho original; a limpeza
+  apaga de vez só o que passou de **30 dias** (roda na abertura e a cada arquivo movido). O
+  aviso de backup sabe que o arquivo está na lixeira e não trata como "sumido".
 
 **Frontend**
 
@@ -279,6 +283,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Interruptor das Configurações alinhado**: bolinha com folga igual nos quatro lados e igual
   entre ligado/desligado (geometria inteira: 40×24 px, bolinha de 18 px e folga de 3 px), sem o
   desalinhamento de meio pixel que aparecia em 100%, 125% e 150% de escala do Windows.
+- **Mover para a lixeira**: último item do menu do arquivo (botão "⋯" e clique direito, agora o
+  **mesmo menu** nos dois), com diálogo de confirmação. Antes de mover, salva o que estiver
+  aberto nas abas do documento, fecha-as e limpa a lista de Recentes — nada é apagado na hora:
+  o arquivo fica **30 dias** na lixeira do app (dá para recuperar pela pasta) e depois some de vez.
 
 **Ferramentas (dev)**
 

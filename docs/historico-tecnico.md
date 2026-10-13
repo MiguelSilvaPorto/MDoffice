@@ -85,6 +85,13 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ## src/styles/base.css
 
+### 2026-10-13 · este commit · botão de ação destrutiva
+- **Local:** depois de `.btn.primary:hover`
+- **Linha:** novas regras `.btn.danger` (fundo `--danger`, texto `--accent-fg`) e `.btn.danger:hover`
+- **Porquê:** o diálogo do "Mover para a lixeira" precisava de um botão com cara de ação
+  destrutiva: mesmo desenho do primário, trocando o acento pelo vermelho do tema (vale nos dois
+  temas, porque `--accent-fg` inverte junto).
+
 ### 2026-10-13 · e392858 · barras de rolagem no tom do app
 - **Local:** bloco `::-webkit-scrollbar`
 - **Linha:** `width: 11px` + thumb 35% → `width: 10px`, thumb 42% (70% no hover), trilho
@@ -365,6 +372,14 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ## src/app/app.ts
 
+### 2026-10-13 · este commit · liga a lixeira
+- **Local:** hooks da lateral, `start()` e o `Object.assign(App.prototype, …)`
+- **Linha:** `fileMenuAt: (x, y, path) => this.openFileMenuAt(x, y, path)` nos hooks;
+  `void this.purgeTrash();` logo depois do `void this.setupBackup();`; `trashMethods` no mixin e
+  `TrashMethodsType` no `interface App`
+- **Porquê:** a ação "Mover para a lixeira" pendura no App como o resto (métodos em
+  `src/app/trash.ts`); a limpeza dos 30 dias roda na abertura, junto do setup do backup.
+
 ### 2026-10-13 · 8c0a7cf · ícone aplicado na abertura
 - **Local:** `start()`, logo depois de `applyTheme`
 - **Linha:** `void aplicarIconeApp();` (novo)
@@ -401,6 +416,12 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ## package.json
 
+### 2026-10-13 · este commit · script do teste da lixeira
+- **Local:** scripts
+- **Linha:** nova linha `"test:lixeira": "node scripts/testar-lixeira.mts"`
+- **Porquê:** o contrato da lixeira (comandos, registro, menu, prazo) entra na suíte como os
+  outros testes do projeto.
+
 ### 2026-10-13 · 8c0a7cf · script de ícones sem o gerador antigo
 - **Local:** scripts
 - **Linha:** `"icon": "node scripts/gen-icon.mjs && tauri icon app-icon.png"` → `"icon": "tauri icon app-icon.png"`
@@ -424,6 +445,12 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o app passa a usar o ícone novo (documento "M↓" com painéis azul/laranja): o claro
   é o fixo do `.exe`/instalador; os dois ficam disponíveis para a escolha em Configurações.
 ## src/sidebar.ts
+
+### 2026-10-13 · este commit · clique direito abre o menu do arquivo
+- **Local:** `contextmenu` das linhas de documento e o `SidebarHooks`
+- **Linha:** lista própria `[Abrir, Mostrar na pasta]` → `this.hooks.fileMenuAt(e.clientX, e.clientY, node.path)`
+- **Porquê:** o ⋯ e o clique direito devem abrir o MESMO menu (o comentário do `menus.ts` já dizia
+  isso); agora o clique direito também tem ícones, Copiar caminho, Renomear e a lixeira.
 
 ### 2026-10-13 · movimento da barra lateral · pílula do seletor e árvore crescendo
 - **Local:** `posicionarPilula()`, `expandir()` e as chamadas em `show()`, `setHomeActive()`,
@@ -568,6 +595,12 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ## src-tauri/src/lib.rs
 
+### 2026-10-13 · este commit · registro dos comandos da lixeira
+- **Local:** `generate_handler!`
+- **Linha:** `commands::trash::trash_move,` e `commands::trash::trash_purge,` (novas linhas, logo
+  depois de `commands::search::search_markdown,`)
+- **Porquê:** sem registro o frontend não alcança o comando — a ponte `files.ts` existiria à toa.
+
 ### 2026-10-13 · este commit · migração da pasta de dados (novo código)
 - **Local:** `migrar_pasta_de_dados()` e `copiar_pasta_de_dados()`
 - **Linha:** novo código (cópia recursiva de `%LOCALAPPDATA%\com.mdcreator.desktop` para
@@ -693,6 +726,114 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   `.st-select`
 - **Porquê:** o botão precisa se comportar como botão (clique, foco, truncar rótulo longo) sem
   perder o desenho do seletor do app.
+
+## src-tauri/src/commands/trash.rs
+
+### 2026-10-13 · este commit · lixeira de documentos (novo arquivo)
+- **Local:** arquivo inteiro: `TrashEntry`, `trash_folder`, `mover`, `limpar`, `free_name`,
+  `trash_move`, `trash_purge` e `trashed_paths`
+- **Linha:** novo arquivo; retenção em `RETENTION_DAYS: u64 = 30`; pasta `lixeira/` com índice
+  `index.json` (nome, caminho original, quando foi movido, caminho dentro da lixeira)
+- **Porquê:** a ação "Mover para a lixeira" não podia apagar nada: o arquivo sai da pasta do
+  projeto e fica recuperável por 30 dias. Decisões de propósito: `rename` com plano B de
+  copiar+apagar (a pasta de dados pode estar em outro disco); nome original preservado (ganha
+  `-1`, `-2`… se repetir); a limpeza só apaga arquivo DENTRO da lixeira (mesma proteção de
+  rascunho/backup) e esquece do índice o que sumiu da pasta (recuperado por fora, pelo
+  Explorer); no desenvolvimento a pasta fica em `temp/lixeira`, como os rascunhos.
+
+## src-tauri/src/commands/util.rs
+
+### 2026-10-13 · este commit · helpers que a lixeira precisou
+- **Local:** fim do arquivo
+- **Linha:** `now_ms()`, `write_atomic()` e `project_root()` (novos; vieram de `backup.rs` e
+  `drafts.rs` sem mudança de código)
+- **Porquê:** os três já existiam dentro de outros módulos e a lixeira usa os mesmos (instante,
+  gravação atômica do índice e "estou no projeto em dev?"). Em `util.rs` — o módulo dos
+  utilitários comuns dos comandos — eles não duplicam.
+
+## src-tauri/src/commands/drafts.rs
+
+### 2026-10-13 · este commit · raiz do projeto vem do util
+- **Local:** imports do topo
+- **Linha:** `fn project_root()` local (removida) → `project_root` no `use super::util::{…}`
+- **Porquê:** a lixeira precisa da mesma detecção de "rodando no projeto (dev)"; a função era
+  privada aqui e passou a ser compartilhada.
+
+## src-tauri/src/commands/backup.rs
+
+### 2026-10-13 · este commit · ajuda a lixeira e usa os helpers do util
+- **Local:** imports, `backup_missing` e o início do `mod tests`
+- **Linha:** `fn now_ms`/`fn write_atomic` (removidas; vieram de `super::util`); no filtro do
+  `backup_missing`, `!Path::new(p).exists()` → `… && !na_lixeira.contains(&p.to_lowercase())`;
+  `use std::time::SystemTime;` dentro do `mod tests`
+- **Porquê:** arquivo que está na lixeira não "sumiu" — sem o filtro, mover para a lixeira fazia
+  o app avisar (e oferecer restauração de) um "original sumido" que o usuário tirou de
+  propósito. O import local do teste é porque o `SystemTime` do topo saiu junto com o `now_ms`.
+
+## src-tauri/src/commands/mod.rs
+
+### 2026-10-13 · este commit · módulo trash
+- **Local:** lista de módulos e o cabeçalho
+- **Linha:** nova linha `pub mod trash;` (entre `search` e `util`) + linha no cabeçalho
+- **Porquê:** os comandos ficam separados por assunto, como os vizinhos.
+
+## src-tauri/src/commands/tests.rs
+
+### 2026-10-13 · este commit · testes da lixeira
+- **Local:** dois testes novos no fim do arquivo
+- **Linha:** `lixeira_move_guarda_e_so_apaga_depois_de_30_dias` e
+  `lixeira_nao_sobrescreve_nem_aceita_o_que_ja_esta_na_pasta`
+- **Porquê:** garantem o combinado: o arquivo sai da pasta, o nome fica preservado, nada é
+  apagado antes de 30 dias (e é depois disso), dois arquivos de mesmo nome convivem, mover algo
+  que já está na lixeira (ou uma pasta) é recusado, e o índice esquece o que foi recuperado por
+  fora. Os instantes são fixos — o teste não depende do relógio da máquina.
+
+## src/files.ts
+
+### 2026-10-13 · este commit · ponte da lixeira
+- **Local:** depois de `deleteDraft`
+- **Linha:** `interface TrashEntry` + `moveToTrash()` e `purgeTrash()` (novos `invoke`)
+- **Porquê:** o frontend fala com o Rust pelos comandos `trash_move`/`trash_purge`, como todo o
+  resto do app; o tipo espelha os campos do Rust (`name`, `original`, `moved_at`, `trash_path`).
+
+## src/app/trash.ts
+
+### 2026-10-13 · este commit · a ação da lixeira (novo arquivo)
+- **Local:** arquivo inteiro: `askMoveToTrash`, `saveTabsFor`, `moveToTrash`, `purgeTrash`
+- **Linha:** novo arquivo (métodos do App, como os vizinhos de `src/app/`)
+- **Porquê:** é a regra da funcionalidade: confirmação (molde do `askSaveChanges`), salvar o que
+  está aberto ANTES de mover (senão alteração pendente se perderia junto com o arquivo), fechar
+  as abas já salvas e limpar os Recentes. A aba perde o `path` antes de fechar para o fechamento
+  não gravar backup nem guardar "reabrir" de um documento que saiu de propósito — e
+  `closedTabs`/Recentes são filtrados para o Ctrl+Shift+T não tentar reabrir o que foi movido.
+  `purgeTrash` roda na abertura (silencioso): o prazo de 30 dias não depende de ninguém clicar.
+
+## src/app/menus.ts
+
+### 2026-10-13 · este commit · menu do arquivo unificado e com a lixeira
+- **Local:** `fileMenuBuild`, `openFileMenuAt`, `openMenuPos` e `ddItem`
+- **Linha:** itens do "⋯" viram `fileMenuBuild` (compartilhado); novo `openFileMenuAt` posiciona
+  o MESMO menu no clique direito; `openMenuAt` extrai `openMenuPos`; `ddItem` ganha `danger`
+- **Porquê:** o comentário do próprio arquivo já dizia que o ⋯ e o clique direito eram "a mesma
+  lista", mas o clique direito abria outra, sem ícones e sem Renomear. Agora é uma só, com
+  "Mover para a lixeira" no fim (vermelho de propósito: é ação destrutiva).
+
+## src/styles/editor.css
+
+### 2026-10-13 · este commit · item de menu vermelho
+- **Local:** depois de `.dd-item:hover`
+- **Linha:** `.dd-item.danger` e `.dd-item.danger .ic` (novas)
+- **Porquê:** no menu do arquivo, "Mover para a lixeira" sai em vermelho (texto e ícone) para não
+  se confundir com as ações comuns.
+
+## scripts/testar-lixeira.mts
+
+### 2026-10-13 · este commit · contrato da lixeira (novo arquivo)
+- **Local:** arquivo inteiro
+- **Linha:** novo (`npm run test:lixeira`)
+- **Porquê:** o comportamento é testado no `cargo test`; aqui se confere o contrato entre as
+  pontas: comandos existem e estão registrados, ponte no `files.ts`, prazo de 30 dias, item no
+  menu, clique direito unificado, confirmação e a limpeza na abertura.
 
 ---
 

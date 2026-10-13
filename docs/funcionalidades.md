@@ -13,8 +13,8 @@ de cada mudança de linha.
 | **PowerPoint** | Apresentações `.pptx`: abrir/salvar com fidelidade, editar formas e apresentar (F5) | [powerpoint.md](powerpoint.md) |
 
 Além dos módulos, o app tem recursos que valem para todos eles (abas, tela de Início,
-histórico de versões, backup em disco, configurações, busca de comandos e modo foco) —
-esses ficam na categoria **Geral** do [changelog](../CHANGELOG.md).
+histórico de versões, backup em disco, lixeira de documentos, configurações, busca de
+comandos e modo foco) — esses ficam na categoria **Geral** do [changelog](../CHANGELOG.md).
 
 ## Documentos relacionados
 

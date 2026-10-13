@@ -172,6 +172,27 @@ export async function deleteDraft(path: string): Promise<void> {
   await invoke("delete_draft", { path });
 }
 
+export interface TrashEntry {
+  /** nome do arquivo dentro da lixeira (ganha -1, -2… se já houver um igual) */
+  name: string;
+  /** caminho original do arquivo, para saber de onde ele veio */
+  original: string;
+  /** quando foi movido (ms desde 1970) */
+  moved_at: number;
+  /** caminho do arquivo dentro da lixeira (para achar no Explorer) */
+  trash_path: string;
+}
+
+/** Move um documento para a lixeira do app (fica guardado 30 dias). */
+export async function moveToTrash(path: string): Promise<TrashEntry> {
+  return await invoke<TrashEntry>("trash_move", { path });
+}
+
+/** Apaga definitivamente o que passou dos 30 dias na lixeira. Devolve quantos saíram. */
+export async function purgeTrash(): Promise<number> {
+  return await invoke<number>("trash_purge");
+}
+
 /**
  * Salvamento automático quando o app roda no NAVEGADOR (dev): o navegador não pode
  * escrever arquivos, então o texto vai para o servidor de desenvolvimento, que grava

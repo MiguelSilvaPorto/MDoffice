@@ -142,6 +142,16 @@ button {
   filter: brightness(1.08);
 }
 
+.btn.danger {
+  background: var(--danger);
+  color: var(--accent-fg);
+  font-weight: 600;
+}
+
+.btn.danger:hover {
+  filter: brightness(1.08);
+}
+
 .btn:disabled {
   opacity: 0.4;
   cursor: default;

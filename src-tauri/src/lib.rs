@@ -77,6 +77,8 @@ pub fn run() {
             commands::files::create_folder,
             commands::files::save_binary,
             commands::search::search_markdown,
+            commands::trash::trash_move,
+            commands::trash::trash_purge,
             commands::backup::backup_config,
             commands::backup::backup_save_config,
             commands::backup::backup_app_root,

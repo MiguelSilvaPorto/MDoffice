@@ -34,6 +34,8 @@ export interface SidebarHooks {
   contextMenu: (x: number, y: number, items: { label: string; run: () => void }[]) => void;
   /** Abre o menu do botão "⋯" de um arquivo, ancorado no elemento. */
   fileMenu: (anchor: HTMLElement, path: string) => void;
+  /** Abre o menu do arquivo na posição do clique direito (os mesmos itens do "⋯"). */
+  fileMenuAt: (x: number, y: number, path: string) => void;
   /** Abre ou alterna o Início (Hub de documentos) na área de edição. */
   onHome: () => void;
 }
@@ -586,10 +588,8 @@ export class Sidebar {
       row.addEventListener("click", () => this.hooks.openPath(node.path));
       row.addEventListener("contextmenu", (e) => {
         e.preventDefault();
-        this.hooks.contextMenu(e.clientX, e.clientY, [
-          { label: "Abrir", run: () => this.hooks.openPath(node.path) },
-          { label: "Mostrar na pasta", run: () => this.hooks.reveal(node.path) },
-        ]);
+        // mesmo menu do "⋯" (com a lixeira), só que na posição do clique
+        this.hooks.fileMenuAt(e.clientX, e.clientY, node.path);
       });
       host.append(row);
     });

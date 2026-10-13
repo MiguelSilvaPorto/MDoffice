@@ -126,6 +126,15 @@
   background: var(--accent-soft);
 }
 
+/* ação destrutiva (ex.: mover para a lixeira): vermelha, inclusive o ícone */
+.dd-item.danger {
+  color: var(--danger);
+}
+
+.dd-item.danger .ic {
+  color: var(--danger);
+}
+
 .dd-item .ic {
   width: 15px;
   height: 15px;

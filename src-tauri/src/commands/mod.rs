@@ -6,6 +6,7 @@
 //! - `projects` estrutura de pastas (contexto para IA) e lista de documentos
 //! - `search`   busca dentro dos documentos
 //! - `bundle`   pacote ZIP para IA
+//! - `trash`    lixeira: documento fora da pasta, guardado por 30 dias antes de sumir
 //! - `backup`   cópias datadas dos documentos em disco, proteção antes de sobrescrever
 //!              e o índice de espaço
 
@@ -16,6 +17,7 @@ pub mod drafts;
 pub mod files;
 pub mod projects;
 pub mod search;
+pub mod trash;
 mod util;
 
 #[cfg(test)]

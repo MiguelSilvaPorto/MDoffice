@@ -15,9 +15,9 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Component, Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::UNIX_EPOCH;
 
-use super::util::io_err;
+use super::util::{io_err, now_ms, write_atomic};
 
 // nomes reservados dentro da pasta de backup
 const ORIGEM: &str = ".origem.txt";
@@ -208,13 +208,6 @@ fn ext_of(original: &str) -> String {
         .unwrap_or_else(|| "dat".to_string())
 }
 
-fn now_ms() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_millis() as u64)
-        .unwrap_or(0)
-}
-
 /// Data/hora local no formato do nome de arquivo (`2026-10-09_10-42-13`).
 ///
 /// Converte o tempo Unix para o fuso do Windows usando a API do próprio sistema, sem
@@ -324,16 +317,6 @@ fn sanitize_stamp(stamp: &str) -> String {
         return format!("manual-{}", now_ms() / 1000);
     }
     clean
-}
-
-fn write_atomic(path: &Path, bytes: &[u8]) -> Result<(), String> {
-    if let Some(dir) = path.parent() {
-        fs::create_dir_all(dir).map_err(io_err)?;
-    }
-    let tmp = path.with_extension(format!("tmp{}", now_ms()));
-    fs::write(&tmp, bytes).map_err(io_err)?;
-    fs::rename(&tmp, path).map_err(io_err)?;
-    Ok(())
 }
 
 // ---------- listagem ----------
@@ -913,6 +896,8 @@ pub fn backup_index(app: tauri::AppHandle) -> Result<BackupIndex, String> {
 #[tauri::command]
 pub fn backup_missing(app: tauri::AppHandle) -> Result<Vec<BackupEntry>, String> {
     let roots = active_roots(&app);
+    // arquivo que está na lixeira não "sumiu" — foi movido de propósito
+    let na_lixeira = super::trash::trashed_paths(&app);
     let mut originais: Vec<String> = Vec::new();
     for root in &roots {
         let mut pastas: Vec<PathBuf> = Vec::new();
@@ -928,7 +913,7 @@ pub fn backup_missing(app: tauri::AppHandle) -> Result<Vec<BackupEntry>, String>
     }
     Ok(originais
         .iter()
-        .filter(|p| !Path::new(p).exists())
+        .filter(|p| !Path::new(p).exists() && !na_lixeira.contains(&p.to_lowercase()))
         .map(|p| merge_entries(&roots, p))
         .collect())
 }
@@ -965,6 +950,7 @@ fn walk_dirs(root: &Path, depth: usize, out: &mut Vec<PathBuf>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::SystemTime;
 
     fn copia(name: &str, at: u64, protection: bool) -> BackupFile {
         BackupFile {

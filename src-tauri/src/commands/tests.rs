@@ -4,8 +4,10 @@ use super::assets::copy_assets;
 use super::bundle::export_portable_bundle;
 use super::files::{rename_file, unique_md_path};
 use super::projects::scan_folder;
+use super::trash::{limpar, mover, read_index};
 use std::fs;
 use std::io::Read;
+use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[test]
@@ -182,4 +184,80 @@ fn pacote_portatil_leva_markdown_imagem_json_e_modelo_de_instrucao() {
     assert!(guide.contains("O que quero que você faça?"));
     assert!(guide.contains("Como quero o resultado?"));
     fs::remove_dir_all(&root).expect("limpa arquivos de teste");
+}
+
+#[test]
+fn lixeira_move_guarda_e_so_apaga_depois_de_30_dias() {
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("relógio válido")
+        .as_nanos();
+    let docs = std::env::temp_dir().join(format!("mdoffice-trash-docs-{nonce}"));
+    let root = std::env::temp_dir().join(format!("mdoffice-trash-{nonce}"));
+    fs::create_dir_all(&docs).expect("cria pasta de documentos");
+    let doc = docs.join("notas.md");
+    fs::write(&doc, "# notas").expect("cria documento");
+
+    // instante fixo: o teste não depende do relógio da máquina
+    let t0 = 1_000_000_000_000u64;
+    let item = mover(&root, &doc, t0).expect("move para a lixeira");
+    assert!(!doc.exists(), "o documento sai da pasta original");
+    assert!(Path::new(&item.trash_path).exists(), "o arquivo passa a viver na lixeira");
+    assert_eq!(item.name, "notas.md", "o nome original é preservado");
+    assert!(item.original.to_lowercase().ends_with("notas.md"));
+
+    // ainda dentro do prazo: nada é apagado
+    let apagados = limpar(&root, t0 + 29 * 24 * 60 * 60 * 1000).expect("limpeza dentro do prazo");
+    assert_eq!(apagados, 0);
+    assert!(Path::new(&item.trash_path).exists(), "antes dos 30 dias o arquivo fica");
+
+    // passou dos 30 dias: apagado de vez
+    let apagados = limpar(&root, t0 + 31 * 24 * 60 * 60 * 1000).expect("limpeza depois do prazo");
+    assert_eq!(apagados, 1);
+    assert!(!Path::new(&item.trash_path).exists(), "depois do prazo o arquivo some de vez");
+    fs::remove_dir_all(&docs).expect("limpa documentos de teste");
+    fs::remove_dir_all(&root).expect("limpa lixeira de teste");
+}
+
+#[test]
+fn lixeira_nao_sobrescreve_nem_aceita_o_que_ja_esta_na_pasta() {
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("relógio válido")
+        .as_nanos();
+    let docs = std::env::temp_dir().join(format!("mdoffice-trash-nomes-{nonce}"));
+    let root = std::env::temp_dir().join(format!("mdoffice-trash-root-{nonce}"));
+    fs::create_dir_all(&docs).expect("cria pasta de documentos");
+
+    // dois arquivos com o mesmo nome convivem: o segundo ganha sufixo
+    let primeiro = docs.join("igual.md");
+    fs::write(&primeiro, "primeiro").expect("cria o primeiro");
+    let item1 = mover(&root, &primeiro, 1).expect("move o primeiro");
+    fs::write(&primeiro, "segundo").expect("cria o segundo");
+    let item2 = mover(&root, &primeiro, 2).expect("move o segundo");
+    assert_eq!(item1.name, "igual.md");
+    assert_eq!(item2.name, "igual-1.md");
+    assert_eq!(
+        fs::read_to_string(&item1.trash_path).expect("lê o primeiro"),
+        "primeiro",
+        "não pode sobrescrever o que já estava na lixeira"
+    );
+
+    // mover algo que já está dentro da lixeira é recusado (não cria lixo de lixo)
+    let erro = mover(&root, Path::new(&item1.trash_path), 3).expect_err("recusa o que já está lá");
+    assert!(erro.contains("já está na lixeira"), "veio: {erro}");
+
+    // pasta não é arquivo: recusado
+    let erro = mover(&root, &docs, 4).expect_err("recusa pasta");
+    assert!(erro.contains("Só dá para mover arquivos"), "veio: {erro}");
+
+    // recuperado por fora (pelo Explorer): sai do índice na próxima limpeza, sem erro
+    fs::remove_file(&item2.trash_path).expect("remove por fora");
+    let apagados = limpar(&root, 5).expect("limpeza");
+    assert_eq!(apagados, 0);
+    let lista = read_index(&root);
+    assert_eq!(lista.len(), 1, "só o que continua guardado fica no índice");
+    assert_eq!(lista[0].name, "igual.md");
+    fs::remove_dir_all(&docs).expect("limpa documentos de teste");
+    fs::remove_dir_all(&root).expect("limpa lixeira de teste");
 }
