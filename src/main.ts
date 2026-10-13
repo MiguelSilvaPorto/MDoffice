@@ -15,7 +15,24 @@ window.addEventListener("scroll", () => {
 
 // gancho de depuração (útil para inspecionar/testar o app em execução)
 (window as unknown as Record<string, unknown>).__mdcreator = { app };
-void app.start().catch((e) => {
-  console.error(e);
-  toast("Erro ao iniciar o mdCreator: " + e, "err", 8000);
-});
+
+/**
+ * Tira a tela de carregamento (o `#boot` do index.html).
+ *
+ * Some em QUALQUER desfecho do start: se o app falhar, a tela sairia do caminho
+ * do aviso de erro — e o aviso é justamente o que a pessoa precisa ver.
+ */
+function tirarTelaDeCarregamento(): void {
+  const tela = document.getElementById("boot");
+  if (!tela) return;
+  tela.classList.add("boot-saindo");
+  window.setTimeout(() => tela.remove(), 200);
+}
+
+void app
+  .start()
+  .catch((e) => {
+    console.error(e);
+    toast("Erro ao iniciar o mdCreator: " + e, "err", 8000);
+  })
+  .finally(tirarTelaDeCarregamento);

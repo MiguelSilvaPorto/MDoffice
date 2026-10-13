@@ -4,8 +4,109 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>mdOffice — editor de documentos</title>
+    <script>
+      // Aplica o tema guardado ANTES de qualquer pintura. Sem isto o WebView
+      // começa no claro (data-theme="light" no <html>) e quem usa o escuro vê um
+      // clarão branco até o JS do app rodar.
+      try {
+        var tema = localStorage.getItem("mdc.theme");
+        if (tema === "dark" || tema === "light") document.documentElement.dataset.theme = tema;
+      } catch (e) {
+        /* sem armazenamento: fica no claro */
+      }
+    </script>
+    <!--
+      Tela de carregamento. Fica AQUI, no próprio HTML, e não em src/styles/:
+      o pacote do app (CSS + JS) só chega depois, e nesse intervalo o WebView
+      pintaria o HTML cru sem estilo — os ícones do sprite aparecem gigantes e a
+      interface fica irreconhecível. Por isso o mínimo de estilo que cobre a tela
+      vem embutido, e a marca é SVG inline (não precisa de rede).
+      Ela é removida em src/main.ts assim que o app termina de iniciar.
+    -->
+    <style>
+      #boot {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        background: #f4f5f8;
+        color: #1c212b;
+        font-family: Inter, "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+      }
+      [data-theme="dark"] #boot {
+        background: #0e1014;
+        color: #e6e8ee;
+      }
+      #boot .boot-mark {
+        display: block;
+        width: 52px;
+        height: 52px;
+      }
+      #boot .boot-name {
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+        opacity: 0.9;
+      }
+      #boot .boot-bar {
+        width: 132px;
+        height: 3px;
+        border-radius: 999px;
+        background: rgba(127, 127, 127, 0.25);
+        overflow: hidden;
+      }
+      #boot .boot-bar i {
+        display: block;
+        width: 40%;
+        height: 100%;
+        border-radius: 999px;
+        background: #4f46e5;
+        animation: boot-corre 1.1s ease-in-out infinite;
+      }
+      [data-theme="dark"] #boot .boot-bar i {
+        background: #818cf8;
+      }
+      @keyframes boot-corre {
+        0% {
+          transform: translateX(-110%);
+        }
+        100% {
+          transform: translateX(330%);
+        }
+      }
+      /* quem pediu menos movimento recebe a barra cheia, sem animação */
+      @media (prefers-reduced-motion: reduce) {
+        #boot .boot-bar i {
+          animation: none;
+          width: 100%;
+        }
+      }
+      /* saída suave: some sem piscar */
+      #boot.boot-saindo {
+        opacity: 0;
+        transition: opacity 0.18s ease;
+      }
+    </style>
   </head>
   <body>
+    <!-- Tela de carregamento: cobre o HTML cru até o app ficar pronto (ver o <head>). -->
+    <div id="boot" role="status" aria-live="polite" aria-label="Carregando o mdOffice">
+      <svg class="boot-mark" viewBox="0 0 54 54" fill="none" aria-hidden="true">
+        <rect x="6" y="8" width="32" height="38" rx="5" fill="#0D4E7A" />
+        <rect x="12" y="15" width="20" height="3" rx="1.5" fill="#7DD3FC" fill-opacity="0.8" />
+        <rect x="12" y="21" width="20" height="3" rx="1.5" fill="#7DD3FC" fill-opacity="0.8" />
+        <rect x="12" y="27" width="14" height="3" rx="1.5" fill="#7DD3FC" fill-opacity="0.8" />
+        <rect x="12" y="33" width="18" height="3" rx="1.5" fill="#7DD3FC" fill-opacity="0.8" />
+        <rect x="18" y="16" width="30" height="30" rx="6" fill="#4F46E5" />
+      </svg>
+      <span class="boot-name">mdOffice</span>
+      <span class="boot-bar"><i></i></span>
+    </div>
+
     <!-- Ícones (sprite SVG) -->
     <svg style="display: none" aria-hidden="true">
       <symbol id="i-new" viewBox="0 0 24 24"><path d="M6 2h8l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 2v5h5"/><path d="M12 11v6M9 14h6"/></symbol>
