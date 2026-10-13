@@ -26,13 +26,13 @@
 | Format | 7/11 | Undo & clipboard | 2/3 |
 | Arrange | 7/9 | Automation | 1/2 |
 | Text | 14/25 | Platforms | 1/3 |
-| Tables | 7/8 | **Total** | **88/191** |
-| Charts | 0/5 | | |
+| Tables | 7/8 | **Total** | **92/191** |
+| Charts | 4/5 | | |
 | SmartArt | 0/2 | | |
 | Pictures | 6/11 | | |
 
 As maiores lacunas são as áreas que o DeckCraft marca como o coração da troca do PowerPoint:
-**gráficos, SmartArt, mídia, transições, animações, apresentação (presenter view/ink) e masters**.
+**SmartArt, mídia, transições, animações, apresentação (presenter view/ink) e masters**.
 Do outro lado, o mdCreator já tem boa parte do **editor** (formas, texto, tabelas, formatos,
 organização, desfazer) e um **import/export .pptx de alta fidelidade** — e coisas que o DeckCraft
 não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico).
@@ -198,15 +198,15 @@ não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico)
 - [x] **Cell fill, borders, margins, alignment** — P1 · parcial: preenchimento, bordas e alinhamento vertical; margens de célula não
 - [x] **Keyboard navigation between cells** — P0 · tem: Tab/Shift+Tab, setas e digitação direta
 
-## Charts (0/5)
+## Charts (4/5)
 
-- [ ] **Insert chart (column, bar, line, area, pie, doughnut, scatter)** — P0 · falta
+- [x] **Insert chart (column, bar, line, area, pie, doughnut, scatter)** — P0 · tem: **Inserir > Gráfico** (colunas, barras, linhas, área, pizza, rosca e dispersão), desenhado em SVG
 - [ ] **Other chart types (radar, stock, combo, waterfall, funnel, treemap, sunburst, histogram, box)** — P2 · falta
-- [ ] **Edit chart data** — P0 · falta
-- [ ] **Chart elements (title, legend, labels, axes, gridlines)** — P1 · falta
-- [ ] **Chart styles and colours** — P2 · falta
+- [x] **Edit chart data** — P0 · tem: tabela de dados no painel (categorias × séries, adicionar/remover categoria e série)
+- [x] **Chart elements (title, legend, labels, axes, gridlines)** — P1 · parcial: título, legenda, rótulos de dados, eixos e grade; sem formatação individual de cada elemento
+- [x] **Chart styles and colours** — P2 · parcial: cor por série (a paleta do deck entra na criação); sem estilos prontos
 
-> Gráficos de um .pptx importado aparecem como aviso e não são reproduzidos; o arquivo os mantém no round-trip.
+> O gráfico é desenhado em SVG pelo motor; no .pptx exportado ele vira **imagem** (o `c:chart` nativo ainda não é escrito). Gráficos de um .pptx importado continuam como aviso, e o arquivo os mantém no round-trip.
 
 ## SmartArt (0/2)
 

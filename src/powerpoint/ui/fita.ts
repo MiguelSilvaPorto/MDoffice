@@ -1,6 +1,7 @@
 // A fita da apresentação, no desenho do PowerPoint: abas (Página Inicial, Inserir, Formato da Forma, Design, Exibir),
 // grupos com o nome embaixo, botões grandes e pequenos. Tudo é despachado por `run(comando, valor)` para o host.
 import { SOMBRAS_PRONTAS } from "../edicao/formato";
+import { GRAFICO_TIPOS } from "../edicao/grafico";
 import { ROTULOS_PRESET, type PresetTabela } from "../edicao/tabela";
 import type { SlideLayout } from "../schema";
 import { abrirCores } from "./cores";
@@ -168,6 +169,7 @@ export class Fita {
     return [
       grupo("Lâminas", `${grande("slide-novo", ic("i-plus"), "Nova lâmina", "Nova lâmina depois da atual: escolha o layout", true)}`),
       grupo("Tabelas", `${grande("tabela-grade", ic("i-grid"), "Tabela", "Inserir uma tabela", true)}`),
+      grupo("Gráficos", `${grande("grafico-menu", ic("i-chart"), "Gráfico", "Inserir um gráfico (colunas, barras, linhas, pizza…)", true)}`),
       grupo(
         "Texto",
         `${grande("ferramenta:texto", ic("i-doc"), "Caixa de texto", "Desenhe uma caixa de texto na lâmina")}`
@@ -406,6 +408,21 @@ export class Fita {
           if (!t) return;
           fecharPopup();
           run("tabela-inserir", t.dataset.tg);
+        });
+        return;
+      }
+      case "grafico-menu": {
+        const el = abrirPopup(
+          ancora,
+          `<div class="pp-pop-rot">Inserir gráfico</div>` +
+            GRAFICO_TIPOS.map((t) => `<button type="button" class="pp-pop-item" data-graf="${t.id}">${t.nome}</button>`).join(""),
+          { classe: "pp-pop-menu" }
+        );
+        el.addEventListener("click", (ev) => {
+          const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-graf]");
+          if (!b) return;
+          fecharPopup();
+          run("grafico-inserir", b.dataset.graf);
         });
         return;
       }

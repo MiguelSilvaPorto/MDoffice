@@ -237,5 +237,50 @@ const M = await empacotar("src/powerpoint/edicao/modelos.ts", "modelos.mjs");
   ok("tabela: texto e preenchimento das células trocam junto", rt[0].shapes[0].tabela.celulas[0][0].paras[0].runs[0].color === "F4F5F8" && rt[0].shapes[0].tabela.celulas[0][0].fill.color === "818CF8");
 }
 
+// ---------------------------------------------------------------- gráficos
+const GC = await empacotar("src/powerpoint/edicao/grafico.ts", "grafico.mjs");
+{
+  const g = GC.graficoPadrao("colunas");
+  ok("gráfico novo: 4 categorias e 2 séries", g.categorias.length === 4 && g.series.length === 2);
+  const n = GC.normalizarGrafico({ tipo: "linhas", categorias: ["A", "B"], series: [{ nome: "", valores: [1, NaN, 5] }] });
+  ok("normalizar: um valor por categoria, nome preenchido e número inválido vira 0", n.series[0].valores.length === 2 && n.series[0].nome === "Série 1" && n.series[0].valores[1] === 0);
+  const esc = GC.escalaDeValores({ tipo: "colunas", categorias: ["A", "B"], series: [{ nome: "S", valores: [3, 9] }] });
+  ok("escala de colunas começa em zero e cobre o máximo", esc.min === 0 && esc.max >= 9 && esc.ticks.length >= 3, JSON.stringify(esc));
+  const emp = GC.escalaDeValores({ tipo: "colunas", empilhado: true, categorias: ["A"], series: [{ nome: "S1", valores: [5] }, { nome: "S2", valores: [7] }] });
+  ok("escala empilhada soma as séries", emp.max >= 12, JSON.stringify(emp));
+  const neg = GC.escalaDeValores({ tipo: "linhas", categorias: ["A", "B"], series: [{ nome: "S", valores: [-4, 6] }] });
+  ok("escala de linhas aceita negativos", neg.min <= -4 && neg.max >= 6, JSON.stringify(neg));
+  ok("paleta: o acento do deck entra na primeira série", GC.paletaDeSeries(3, "123456")[0] === "123456");
+  ok("paleta: as cores próprias do gráfico mandam", GC.paletaDeSeries(2, "123456", ["ABCDEF"])[0] === "ABCDEF");
+  const v = GC.setValor(g, 1, 0, 42);
+  ok("setValor muda só o valor pedido", v.series[0].valores[1] === 42 && v.series[1].valores[1] === 5 && g.series[0].valores[1] === 6);
+  const c = GC.setCategoria(g, 2, "X");
+  ok("setCategoria muda só a categoria pedida", c.categorias[2] === "X" && c.categorias[0] === "Categoria 1");
+  const mais = GC.addCategoria(GC.addSerie(g));
+  ok("addCategoria/addSerie mantêm linhas e colunas alinhadas", mais.categorias.length === 5 && mais.series.length === 3 && mais.series.every((s) => s.valores.length === 5));
+  const menos = GC.delCategoria(GC.delSerie(g, 0), 0);
+  ok("delCategoria/delSerie tiram a linha e a coluna", menos.categorias.length === 3 && menos.series.length === 1 && menos.series[0].valores.length === 3);
+  ok("nunca fica sem série", GC.delSerie(menos, 0).series.length === 1);
+  ok("nunca fica sem categoria", GC.delCategoria({ ...g, categorias: ["A"], series: [{ nome: "S", valores: [1] }] }, 0).categorias.length === 1);
+  const box = GC.caixaDoGrafico(960, 540);
+  ok("caixa do gráfico centrada e dentro da lâmina", box.x > 0 && box.y > 0 && box.x + box.w < 100 && box.y + box.h < 100, JSON.stringify(box));
+}
+
+// ---------------------------------------------------------------- gráficos: desenho (SVG)
+const GR = await empacotar("src/powerpoint/render/grafico.ts", "grafico-render.mjs");
+{
+  const ctx = { larguraPt: 960, alturaPt: 540, media: {}, editavel: false };
+  const forma = { id: "g1", kind: "forma", box: { x: 20, y: 20, w: 40, h: 40 }, text: "", fontFamily: "A", fontSize: 16, color: "000000", bold: false, italic: false, align: "centro", fill: "", src: "", rot: 0, geom: "rect", grafico: GC.graficoPadrao("colunas") };
+  const svg = GR.svgDoGrafico(forma, ctx, "export");
+  ok("SVG do gráfico: viewBox em pt e medidas em pt no modo export", svg.startsWith("<svg") && svg.includes('viewBox="0 0 384 216"') && !svg.includes("cqw"));
+  ok("SVG do gráfico: desenha barras, eixos e título", (svg.match(/<rect/g) ?? []).length >= 8 && svg.includes("<line") && svg.includes("Título do gráfico"));
+  const tela = GR.svgDoGrafico(forma, ctx, "tela");
+  ok("SVG do gráfico: no modo tela as medidas saem em cqw", tela.includes("cqw"));
+  const pizza = GR.svgDoGrafico({ ...forma, grafico: { ...GC.graficoPadrao("pizza"), legenda: true } }, ctx, "export");
+  ok("SVG da pizza: um setor por categoria", (pizza.match(/<path/g) ?? []).length >= 4);
+  const vazio = GR.svgDoGrafico({ ...forma, grafico: undefined }, ctx, "export");
+  ok("forma sem gráfico não desenha nada", vazio === "");
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);

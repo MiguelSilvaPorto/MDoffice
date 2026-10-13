@@ -3,6 +3,7 @@
 // Todas as medidas saem em `cqw` (a lâmina é um container de tamanho), então a lâmina escala inteira.
 import type { EmbeddedFont, Fill, Line, Para, Run, Shape } from "../schema";
 import { aplicarTextoDigitado, type EstiloRun } from "../edicao/texto";
+import { htmlGrafico } from "./grafico";
 import { PRESETS_CONHECIDOS, tracadoDoPreset, tracadoLivre, type Traçado } from "./presets";
 
 export interface CtxRender {
@@ -461,6 +462,7 @@ function moldura(s: Shape, ctx: CtxRender): string {
 /** HTML de uma forma rica. O container recebe os eventos de seleção/arraste do palco. */
 export function htmlFormaRica(s: Shape, ctx: CtxRender): string {
   if (s.tabela) return htmlTabela(s, ctx);
+  if (s.grafico) return htmlGrafico(s, ctx);
   const sel = ctx.selecionada === s.id;
   const est = [`left:${n3(s.box.x)}%`, `top:${n3(s.box.y)}%`, `width:${n3(s.box.w)}%`, `height:${n3(s.box.h)}%`];
   if (s.rot) est.push(`transform:rotate(${n3(s.rot)}deg)`);

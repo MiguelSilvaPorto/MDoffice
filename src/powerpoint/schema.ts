@@ -168,6 +168,8 @@ export interface Shape {
   dica?: string;
   /** dados da tabela (quando a forma é uma tabela) */
   tabela?: Tabela;
+  /** dados do gráfico (quando a forma é um gráfico; o desenho é feito em SVG) */
+  grafico?: Grafico;
 }
 
 /** Uma célula de tabela. */
@@ -199,6 +201,35 @@ export interface Tabela {
   primeiraColuna?: boolean;
   /** último estilo pronto aplicado */
   preset?: string;
+}
+
+/** Tipo de gráfico desenhado pelo motor. */
+export type GraficoTipo = "colunas" | "barras" | "linhas" | "area" | "pizza" | "rosca" | "dispersao";
+
+/** Uma série de dados do gráfico: um nome e um valor por categoria. */
+export interface GraficoSerie {
+  nome: string;
+  valores: number[];
+}
+
+/**
+ * Dados de um gráfico. O motor desenha o gráfico em SVG (não há `c:chart` nativo);
+ * na exportação para .pptx ele vira uma imagem, para o arquivo não perder o desenho.
+ */
+export interface Grafico {
+  tipo: GraficoTipo;
+  categorias: string[];
+  series: GraficoSerie[];
+  /** título mostrado no alto do gráfico */
+  titulo?: string;
+  /** mostra a legenda (padrão: com 2 ou mais séries) */
+  legenda?: boolean;
+  /** mostra os valores nas barras/pontos */
+  rotulos?: boolean;
+  /** barras/área empilhadas em vez de lado a lado */
+  empilhado?: boolean;
+  /** cores das séries (hex sem #); vazio = paleta derivada do deck */
+  cores?: string[];
 }
 
 /** Um caminho de geometria livre. Comandos: M x y · L x y · C x1 y1 x2 y2 x y · Q x1 y1 x y · A wR hR stAng swAng · Z */

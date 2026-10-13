@@ -4,6 +4,7 @@
 
 import type { Deck, DeckSetup, Slide } from "../schema";
 import { ehRica } from "../render/forma";
+import { prepararGraficos } from "../render/grafico";
 import { escreverLamina } from "./slides";
 import { Escritor } from "./rica";
 import { escreverNotas } from "./notes";
@@ -12,6 +13,8 @@ import { aplicarTema, fonteTema } from "./theme";
 /** Gera os bytes do arquivo .pptx a partir do deck. */
 export async function deckToPptx(deck: Deck, setup: DeckSetup, titulo = "Apresentação"): Promise<Uint8Array> {
   const { default: PptxGenJS } = await import("pptxgenjs");
+  // os gráficos do app viram imagem no arquivo (o motor não escreve `c:chart` nativo): o desenho não se perde
+  deck = await prepararGraficos(deck, setup);
 
   // nova instância a cada exportação: o PptxGenJS reutiliza lâminas se reaproveitado
   const pptx = new PptxGenJS() as unknown as {

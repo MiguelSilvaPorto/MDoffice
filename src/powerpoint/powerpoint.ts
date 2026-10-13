@@ -30,6 +30,24 @@ import {
 } from "./edicao/operacoes";
 import { lerSelecao, restaurarSelecao, textoDaCaixa } from "./edicao/selecaoDom";
 import { alternarMarcador, estadoDoTrecho, estiloDosParas, estiloNoIntervalo, mudarRecuo, mudarTamanhoRelativo, parasDaSelecao, type EstiloRun, type RunPatch } from "./edicao/texto";
+import {
+  addCategoria,
+  addSerie,
+  caixaDoGrafico,
+  comCores,
+  comOpcao,
+  comTipo,
+  comTitulo,
+  delCategoria,
+  delSerie,
+  GRAFICO_TIPOS,
+  graficoPadrao,
+  normalizarGrafico,
+  paletaDeSeries,
+  setCategoria,
+  setSerieNome,
+  setValor,
+} from "./edicao/grafico";
 import { DEFAULT_SETUP, deserialize, newSlide, serialize } from "./model";
 import { alturaDaLinha, ajustarAoTamanho, alinharVerticalmente, aplicarPreset, bordasCelulas, criarTabela, dividir, excluirColuna, excluirLinha, expandirSelecao, inserirColuna, inserirLinha, larguraDaColuna, mesclar, preencherCelulas, tamanhoTotal, type ModoBorda, type PresetTabela } from "./edicao/tabela";
 import { NotesPanel } from "./notes";
@@ -44,7 +62,7 @@ import { Fita } from "./ui/fita";
 import { Painel } from "./ui/painel";
 import { abrirPopup, fecharPopup } from "./ui/popup";
 import type { EstadoUI } from "./ui/estado";
-import type { Deck, DeckSetup, Fill, Para, Shape, ShapeBox, Slide, SlideLayout, TextAlign } from "./schema";
+import type { Deck, DeckSetup, Fill, GraficoTipo, Para, Shape, ShapeBox, Slide, SlideLayout, TextAlign } from "./schema";
 
 marked.setOptions({ gfm: true, breaks: false });
 
@@ -1019,6 +1037,8 @@ export class PowerPointHost {
 
     // tabela selecionada: preenchimento, contorno e alinhamento vertical valem para as células escolhidas
     if (principal?.tabela && this.comandoDeTabela(cmd, value)) return;
+    // gráfico selecionado: tipo, dados, título e opções valem para ele
+    if (principal?.grafico && this.comandoDeGrafico(cmd, value)) return;
 
     // ---- comandos com valor no nome ----
     if (cmd.startsWith("grad-cor:") || cmd.startsWith("grad-pos:")) return this.gradienteParada(cmd, value);
@@ -1180,6 +1200,10 @@ export class PowerPointHost {
       case "tabela-inserir": {
         const [linhas, colunas] = String(value ?? "3,3").split(",").map(Number);
         return this.inserirTabela(Math.max(1, linhas || 3), Math.max(1, colunas || 3));
+      }
+      case "grafico-inserir": {
+        const tipo = (GRAFICO_TIPOS.some((t) => t.id === value) ? value : "colunas") as GraficoTipo;
+        return this.inserirGrafico(tipo);
       }
       case "forma-inserir":
         this.ferramenta = { tipo: "forma", id: String(value ?? "5") };
@@ -1531,6 +1555,124 @@ export class PowerPointHost {
     this.celulas = { id: forma.id, r0: 0, c0: 0, r1: 0, c1: 0 };
     this.markDirty();
     this.pintar();
+  }
+
+  /** Cria um gráfico no meio da lâmina (o desenho é em SVG; os dados se editam no painel). */
+  private inserirGrafico(tipo: GraficoTipo): void {
+    const d = this.dim();
+    const est = this.estilo();
+    const grafico = normalizarGrafico({ ...graficoPadrao(tipo), cores: paletaDeSeries(2, est.acento) });
+    const nome = GRAFICO_TIPOS.find((t) => t.id === tipo)?.nome ?? "Colunas";
+    const forma: Shape = {
+      id: Math.random().toString(36).slice(2, 10),
+      kind: "forma",
+      box: caixaDoGrafico(d.w, d.h),
+      text: "",
+      fontFamily: est.fonte,
+      fontSize: 16,
+      color: est.corTexto,
+      bold: false,
+      italic: false,
+      align: "centro",
+      fill: "",
+      src: "",
+      rot: 0,
+      geom: "rect",
+      name: `Gráfico de ${nome.toLowerCase()}`,
+      grafico,
+    };
+    this.registrar();
+    this.substituirSlide({ ...this.atual(), shapes: [...this.atual().shapes, forma] });
+    this.selecao = [forma.id];
+    this.markDirty();
+    this.pintar();
+  }
+
+  // ------------------------------------------------------------------
+  // gráficos
+  // ------------------------------------------------------------------
+
+  /** O gráfico selecionado (a forma principal), se houver. */
+  private graficoAtual(): Shape | undefined {
+    const f = this.principal();
+    return f?.grafico ? f : undefined;
+  }
+
+  /** Muda os dados ou as opções do gráfico selecionado (uma entrada no desfazer por chamada). */
+  private editarGrafico(fn: (g: NonNullable<Shape["grafico"]>) => NonNullable<Shape["grafico"]>, chave = ""): void {
+    const f = this.graficoAtual();
+    if (!f?.grafico) return;
+    this.editar(
+      (sl) => ({
+        ...sl,
+        shapes: sl.shapes.map((s) => (s.id !== f.id || !s.grafico ? s : { ...s, grafico: normalizarGrafico(fn(s.grafico)) })),
+      }),
+      chave
+    );
+  }
+
+  /** Comandos do gráfico selecionado. Devolve true quando tratou. */
+  private comandoDeGrafico(cmd: string, value?: string): boolean {
+    if (!this.graficoAtual()) return false;
+    switch (cmd) {
+      case "grafico-tipo": {
+        if (!GRAFICO_TIPOS.some((t) => t.id === value)) return true;
+        this.editarGrafico((g) => comTipo(g, value as GraficoTipo), "grafico-tipo");
+        return true;
+      }
+      case "grafico-titulo":
+        this.editarGrafico((g) => comTitulo(g, String(value ?? "")), "grafico-titulo");
+        return true;
+      case "grafico-legenda":
+        this.editarGrafico((g) => comOpcao(g, "legenda", value === "1"));
+        return true;
+      case "grafico-rotulos":
+        this.editarGrafico((g) => comOpcao(g, "rotulos", value === "1"));
+        return true;
+      case "grafico-empilhado":
+        this.editarGrafico((g) => comOpcao(g, "empilhado", value === "1"));
+        return true;
+      case "grafico-add-cat":
+        this.editarGrafico((g) => addCategoria(g), "grafico-cat");
+        return true;
+      case "grafico-del-cat":
+        this.editarGrafico((g) => delCategoria(g, Number(value)), "grafico-cat");
+        return true;
+      case "grafico-add-serie":
+        this.editarGrafico((g) => addSerie(g), "grafico-serie");
+        return true;
+      case "grafico-del-serie":
+        this.editarGrafico((g) => delSerie(g, Number(value)), "grafico-serie");
+        return true;
+    }
+    if (cmd.startsWith("grafico-cor:")) {
+      const j = Number(cmd.slice("grafico-cor:".length));
+      const cor = String(value ?? "").replace(/^#/, "");
+      if (!/^[0-9A-Fa-f]{6}$/.test(cor)) return true;
+      this.editarGrafico((g) => {
+        const cores = paletaDeSeries(g.series.length, undefined, g.cores);
+        cores[j] = cor.toUpperCase();
+        return comCores(g, cores);
+      }, "grafico-cor");
+      return true;
+    }
+    if (cmd.startsWith("grafico-cat:")) {
+      const i = Number(cmd.slice("grafico-cat:".length));
+      this.editarGrafico((g) => setCategoria(g, i, String(value ?? "")), `grafico-cat-${i}`);
+      return true;
+    }
+    if (cmd.startsWith("grafico-serie:")) {
+      const j = Number(cmd.slice("grafico-serie:".length));
+      this.editarGrafico((g) => setSerieNome(g, j, String(value ?? "")), `grafico-serie-${j}`);
+      return true;
+    }
+    if (cmd.startsWith("grafico-val:")) {
+      const [i, j] = cmd.slice("grafico-val:".length).split(":").map(Number);
+      const v = Number(String(value ?? "").replace(",", "."));
+      this.editarGrafico((g) => setValor(g, i, j, Number.isFinite(v) ? v : 0), `grafico-val-${i}-${j}`);
+      return true;
+    }
+    return false;
   }
 
   /** Comandos que mudam de significado quando a forma selecionada é uma tabela. Devolve true se tratou. */
