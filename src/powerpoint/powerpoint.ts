@@ -37,7 +37,7 @@ import { deckFromMarkdown } from "./markdown";
 import { openDeckView } from "./presenter";
 import { aoCarregarFontes, fundoValor, htmlFormaRica, parasComEstilo, parasComTexto, registrarFontes, type CtxRender } from "./render/forma";
 import { shapeText } from "./shapes";
-import { clampIndex, duplicateSlide, insertSlide, moveSlide, removeSlide, replaceSlide, setLayout } from "./slides";
+import { clampIndex, duplicateSlide, insertSlide, moveSlide, removeSlide, replaceSlide, resetSlide, setLayout } from "./slides";
 import { Stage, type CelulasSel, type Ferramenta } from "./stage";
 import { THEMES, stageVars, themeOf } from "./themes";
 import { Fita } from "./ui/fita";
@@ -474,10 +474,11 @@ export class PowerPointHost {
     for (const [k, v] of Object.entries(stageVars(this.setup))) this.strip.style.setProperty(k, v);
     const ctx = this.ctxRender(false);
     this.slides.forEach((s, i) => {
+      const oculta = s.show === false;
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = `pp-thumb${i === this.indice ? " active" : ""}`;
-      btn.title = `Lâmina ${i + 1}`;
+      btn.className = `pp-thumb${i === this.indice ? " active" : ""}${oculta ? " oculta" : ""}`;
+      btn.title = `Lâmina ${i + 1}${s.nome ? ` — ${s.nome}` : ""}${oculta ? " (oculta na apresentação)" : ""}`;
       const inner = document.createElement("div");
       inner.className = "pp-thumb-box";
       if (s.shapes.length) {
@@ -493,6 +494,22 @@ export class PowerPointHost {
       num.textContent = String(i + 1);
       inner.append(num);
       btn.append(inner);
+      // lâmina oculta: olho marcado por cima da miniatura (o apresentador pula ela)
+      if (oculta) {
+        const olho = document.createElement("span");
+        olho.className = "pp-thumb-oculta";
+        olho.title = "Oculta na apresentação";
+        olho.setAttribute("aria-hidden", "true");
+        olho.innerHTML = '<svg class="ic"><use href="#i-eye"/></svg>';
+        btn.append(olho);
+      }
+      // nome próprio da lâmina: aparece embaixo da miniatura, como no PowerPoint
+      if (s.nome) {
+        const cap = document.createElement("span");
+        cap.className = "pp-thumb-nome";
+        cap.textContent = s.nome;
+        btn.append(cap);
+      }
       btn.addEventListener("click", () => this.irPara(i));
       // arrastar para reordenar
       btn.draggable = true;
@@ -554,7 +571,10 @@ export class PowerPointHost {
 
   private atualizarStatus(): void {
     const pos = this.pane.querySelector("[data-pos]");
-    if (pos) pos.textContent = `Lâmina ${this.indice + 1} / ${this.slides.length}`;
+    if (pos) {
+      const s = this.atual();
+      pos.textContent = `Lâmina ${this.indice + 1} / ${this.slides.length}${s.nome ? ` — ${s.nome}` : ""}${s.show === false ? " (oculta)" : ""}`;
+    }
     const zv = this.pane.querySelector("[data-zoomval]");
     if (zv) zv.textContent = `${this.stage.zoomAtual}%`;
     const range = this.pane.querySelector<HTMLInputElement>("[data-zoomrange]");
@@ -629,6 +649,7 @@ export class PowerPointHost {
       indice: this.indice,
       total: this.slides.length,
       layout: this.atual().layout,
+      oculta: this.atual().show === false,
       formas,
       forma,
       editando: !!this.editando,
@@ -1100,6 +1121,38 @@ export class PowerPointHost {
         this.indice = r.index;
         this.selecao = [];
         this.editando = null;
+        this.markDirty();
+        this.pintar();
+        return;
+      }
+      case "slide-ocultar": {
+        // alterna oculta/mostra: a lâmina continua no editor, mas o apresentador pula ela
+        this.editar((s) => {
+          if (s.show !== false) return { ...s, show: false };
+          const n = { ...s };
+          delete n.show;
+          return n;
+        });
+        return;
+      }
+      case "slide-nome": {
+        const nome = window.prompt("Nome da lâmina (vazio volta a usar só o número):", sl.nome ?? "");
+        if (nome === null) return;
+        const limpo = nome.trim();
+        if (limpo === (sl.nome ?? "")) return;
+        this.editar((s) => {
+          const n = { ...s };
+          if (limpo) n.nome = limpo;
+          else delete n.nome;
+          return n;
+        });
+        return;
+      }
+      case "slide-reset": {
+        // uma ação só no desfazer: tira as formas próprias (as fixas ficam) e reaplica as caixas do layout
+        this.registrar();
+        this.slides = resetSlide(this.deck, this.indice, formasDoLayout(this.atual().layout, this.estilo())).slides;
+        this.selecao = [];
         this.markDirty();
         this.pintar();
         return;

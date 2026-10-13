@@ -106,6 +106,11 @@ export class Fita {
            ${pequeno("layout", ic("i-columns"), "Layout", "Layout da lâmina", true)}
            ${pequeno("slide-dup", ic("i-dup"), "Duplicar", "Duplicar lâmina")}
            ${pequeno("slide-del", ic("i-trash"), "Excluir", "Excluir lâmina")}
+         </div>
+         <div class="ppr-col">
+           ${pequeno("slide-nome", ic("i-text"), "Renomear", "Dar um nome à lâmina (aparece na miniatura e no .pptx)")}
+           ${pequeno("slide-ocultar", ic("i-eye"), "Ocultar", "Ocultar ou mostrar a lâmina na apresentação")}
+           ${pequeno("slide-reset", ic("i-replace"), "Redefinir", "Redefinir a lâmina: tira as formas próprias e reaplica as caixas do layout")}
          </div>`
       ),
       grupo(
@@ -665,6 +670,10 @@ export class Fita {
     on("alt-grade", st.grade);
     on("alt-fixas", st.fixas);
     on("alt-faixa", st.faixaVertical);
+    on("slide-ocultar", st.oculta);
+    // o botão alterna: com a lâmina oculta, ele passa a oferecer "Mostrar"
+    const rotuloOcultar = this.el.querySelector<HTMLElement>('[data-cmd="slide-ocultar"] span');
+    if (rotuloOcultar) rotuloOcultar.textContent = st.oculta ? "Mostrar" : "Ocultar";
     on("ferramenta:texto", st.ferramenta?.tipo === "texto");
     for (const c of ["negrito", "italico", "sublinhado", "tachado", "maior", "menor", "cor-texto", "marcadores", "numeracao", "recuo-menos", "recuo-mais", "espaco", "alinhar-esquerda", "alinhar-centro", "alinhar-direita", "alinhar-justificado", "v-topo", "v-meio", "v-base"]) dis(c, !temTexto);
     dis("desfazer", !st.podeDesfazer);

@@ -28,6 +28,10 @@ export interface Slide {
   shapes: Shape[];
   /** fundo próprio da lâmina (veio de um .pptx); vazio = fundo do tema/deck */
   bg?: Fill;
+  /** oculta na apresentação (F5): continua editável, mas o apresentador pula a lâmina */
+  show?: boolean;
+  /** nome próprio da lâmina (aparece na miniatura e vira o `name` do `p:cSld` no .pptx) */
+  nome?: string;
 }
 
 /** O deck inteiro. */

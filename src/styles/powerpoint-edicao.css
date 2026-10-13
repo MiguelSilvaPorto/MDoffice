@@ -1211,6 +1211,68 @@ button.ppr.cor {
 .pp-thumb.alvo-antes { box-shadow: -3px 0 0 var(--accent); }
 .pp-thumb.alvo-depois { box-shadow: 3px 0 0 var(--accent); }
 
+/* ---------- lâminas: ocultar e renomear ---------- */
+
+/* lâmina oculta (Página Inicial > Lâminas > Ocultar): a miniatura fica apagada e
+   marcada com o olho cortado; ela continua no editor, mas a apresentação pula */
+.pp-thumb.oculta .pp-thumb-box {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+
+.pp-thumb.oculta:hover .pp-thumb-box,
+.pp-thumb.oculta.active .pp-thumb-box {
+  opacity: 0.75;
+}
+
+.pp-thumb-oculta {
+  position: absolute;
+  left: 3px;
+  top: 2px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--muted);
+  z-index: 1;
+}
+
+.pp-thumb-oculta .ic {
+  width: 10px;
+  height: 10px;
+}
+
+/* o traço por cima do olho diz "oculta" sem precisar de um ícone novo no sprite */
+.pp-thumb-oculta::after {
+  content: "";
+  position: absolute;
+  width: 13px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: currentColor;
+  transform: rotate(-45deg);
+}
+
+/* nome próprio da lâmina (Renomear), embaixo da miniatura */
+.pp-thumb-nome {
+  display: block;
+  margin: 2px 2px 0;
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pp-thumb.active .pp-thumb-nome {
+  color: var(--fg);
+  font-weight: 600;
+}
+
 /* ---------- painel lateral: esconder e redimensionar ---------- */
 
 .pp-side {
