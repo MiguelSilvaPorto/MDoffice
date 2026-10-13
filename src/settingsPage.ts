@@ -321,7 +321,26 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
           </header>
           <h4 class="st-group">Tema e janela</h4>
           <div class="st-list">
-            ${toggle("dark", "Tema escuro", "Cores escuras na interface, no editor e na pré-visualização.", ctx.dark(), "i-moon")}
+            <div class="st-temas" role="radiogroup" aria-label="Tema do app">
+              <label class="st-tema" title="Fundo claro e texto escuro">
+                <input type="radio" name="tema" value="claro" ${ctx.dark() ? "" : "checked"}>
+                <span class="st-tema-previa" data-tema="claro" aria-hidden="true">
+                  <span class="st-tema-linha"></span>
+                  <span class="st-tema-linha curta"></span>
+                  <span class="st-tema-ponto"></span>
+                </span>
+                <span class="st-tema-nome"><svg class="ic"><use href="#i-sun"/></svg>Claro</span>
+              </label>
+              <label class="st-tema" title="Fundo escuro e texto claro">
+                <input type="radio" name="tema" value="escuro" ${ctx.dark() ? "checked" : ""}>
+                <span class="st-tema-previa" data-tema="escuro" aria-hidden="true">
+                  <span class="st-tema-linha"></span>
+                  <span class="st-tema-linha curta"></span>
+                  <span class="st-tema-ponto"></span>
+                </span>
+                <span class="st-tema-nome"><svg class="ic"><use href="#i-moon"/></svg>Escuro</span>
+              </label>
+            </div>
             ${toggle("sidebar", "Painel lateral", "Projetos, busca, estrutura e contexto para a IA.", !ctx.flag("no-sidebar"), "i-sidebar")}
             ${toggle("preview", "Pré-visualização", "O resultado formatado ao lado do texto.", !ctx.flag("no-preview"), "i-columns")}
             <div class="st-row">
@@ -665,10 +684,13 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   });
 
   // aparência
-  sw("dark").addEventListener("change", (e) => {
-    ctx.setDark((e.target as HTMLInputElement).checked);
-    flash();
-  });
+  host.querySelectorAll<HTMLInputElement>('input[name="tema"]').forEach((r) =>
+    r.addEventListener("change", () => {
+      if (!r.checked) return;
+      ctx.setDark(r.value === "escuro");
+      flash();
+    })
+  );
   sw("sidebar").addEventListener("change", () => {
     ctx.toggleFlag("no-sidebar");
     flash();

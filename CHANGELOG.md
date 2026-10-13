@@ -271,6 +271,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Início/Projetos/Estrutura/Contexto; mostrar/esconder a barra **recolhe a largura** em vez de
   sumir de uma vez; a troca de painel entra com um passo curto (sem o "pop" com escala) e abrir
   uma pasta na árvore **cresce** a altura (fechar já animava).
+- **Escolha do tema em dois cartões** (Configurações ▸ Aparência): **Claro** e **Escuro** lado a
+  lado, cada um com uma prévia do tema, clicáveis — o interruptor "Tema escuro" saiu.
 - **Interruptor das Configurações alinhado**: bolinha com folga igual nos quatro lados e igual
   entre ligado/desligado (geometria inteira: 40×24 px, bolinha de 18 px e folga de 3 px), sem o
   desalinhamento de meio pixel que aparecia em 100%, 125% e 150% de escala do Windows.

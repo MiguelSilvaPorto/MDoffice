@@ -634,6 +634,39 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o cache do otimizador passou a morar em `.vite/`, na raiz do projeto (ver
   vite.config.ts), para não ser compartilhado entre a cópia principal e as worktrees.
 
+## src/settingsPage.ts
+
+### 2026-10-13 · tema em cartões · dois cartões no lugar do interruptor
+- **Local:** seção Aparência, lista "Tema e janela"; e o bloco de ligações "aparência"
+- **Linha:** `${toggle("dark", …)}` → `<div class="st-temas" role="radiogroup">…</div>` (dois
+  `<label class="st-tema">` com rádio `name="tema"`, prévia e nome); `sw("dark").addEventListener(…)`
+  → `host.querySelectorAll('input[name="tema"]').forEach(…)` chamando `ctx.setDark(r.value === "escuro")`
+- **Porquê:** o tema era um interruptor liga/desliga ("Tema escuro" aceso = escuro), que não mostra
+  o que cada opção faz e esconde a alternativa. Os dois cartões ficam **lado a lado**, clicáveis,
+  com uma prévia de cada tema — a escolha vira explícita (Claro × Escuro) e o estado marcado usa o
+  mesmo padrão do seletor de ícone do app.
+
+## src/styles/settings.css
+
+### 2026-10-13 · tema em cartões · cartões com prévia do tema
+- **Local:** bloco novo "escolha do tema em dois cartões", depois de `.st-seg-desc`
+- **Linha:** `novo` (`.st-temas`, `.st-tema`, `.st-tema-previa[data-tema]`, `.st-tema-linha`,
+  `.st-tema-ponto`, `.st-tema-nome`)
+- **Porquê:** `.st-temas` é um grid de **duas colunas iguais** (lado a lado em qualquer largura);
+  cada cartão é um `<label>` com o rádio escondido, e o estado escolhido aparece com borda/realce
+  do acento (`:has(input:checked)`). As prévias usam **cores fixas** (#ffffff/#1c212b no claro,
+  #0e1014/#f4f5f8 no escuro) de propósito: os dois cartões aparecem ao mesmo tempo, então não
+  podem herdar as variáveis do tema atual. As transições usam os tokens do `movimento.css`.
+
+## scripts/testar-layout.mts
+
+### 2026-10-13 · tema em cartões · regressões cobertas
+- **Local:** bloco "configurações: tema em dois cartões"
+- **Linha:** 5 verificações novas
+- **Porquê:** garante que os cartões continuem lado a lado (grid de duas colunas), com o estado
+  marcado, as prévias fixas dos dois temas, o interruptor antigo fora da página e a ligação que
+  grava o tema (`ctx.setDark`).
+
 ---
 
 ## Próximos registros

@@ -83,5 +83,25 @@ checa("o botão ativo do seletor deixa o fundo para a pílula", /\.sb-tab\.activ
 checa("o Início destaca a aba só pela cor (sem pintar o fundo)", !/\.sb-tab\[data-side="home"\]\.active[^{]*\{[^}]*background/.test(home));
 checa("a troca de painel usa o passo curto (mdc-painel), sem escala", /\.sb-panel:not\(\[hidden\]\)[^{]*\{[^}]*mdc-painel/.test(mov));
 
+// 5. Configurações ▸ Aparência: o tema é escolhido em dois cartões lado a lado (o interruptor
+//    "Tema escuro" saiu), com prévia de cada tema.
+console.log("configurações: tema em dois cartões");
+
+const cfg = ler("src/settingsPage.ts");
+const set = ler("src/styles/settings.css");
+checa("os dois cartões de tema ficam lado a lado", /\.st-temas\s*\{[^}]*grid-template-columns:\s*1fr\s+1fr/.test(set), "grid de duas colunas ausente em .st-temas");
+checa("o cartão escolhido fica marcado", /\.st-tema:has\(input:checked\)\s*\{/.test(set), "estado :has(input:checked) ausente em .st-tema");
+checa(
+  "as prévias têm as cores fixas dos dois temas",
+  /\.st-tema-previa\[data-tema="claro"\]\s*\{[^}]*background:\s*#ffffff/.test(set) && /\.st-tema-previa\[data-tema="escuro"\]\s*\{[^}]*background:\s*#0e1014/.test(set),
+  "prévia do claro/escuro ausente"
+);
+checa("o interruptor antigo do tema saiu da página", !/data-k="dark"/.test(cfg), 'ainda existe data-k="dark"');
+checa(
+  "os cartões gravam o tema ao clicar",
+  /input\[name="tema"\]/.test(cfg) && /ctx\.setDark\(r\.value === "escuro"\)/.test(cfg),
+  "ligação dos cartões ausente em settingsPage.ts"
+);
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);
