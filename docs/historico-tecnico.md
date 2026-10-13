@@ -159,6 +159,11 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** nova linha `["Ctrl+F1", "Recolher/expandir a faixa de opções"]`
 - **Porquê:** documentar o atalho criado junto com o recolher da fita.
 
+### 2026-10-13 · 8c0a7cf · escolha do ícone do app
+- **Local:** `SettingsCtx` (tipo), grupo "Ícone do app" na seção Aparência e o handler de `input[name="appicon"]`
+- **Linha:** novo par `appIcon`/`setAppIcon` no contexto; controle segmentado com os dois PNGs; handler que chama `ctx.setAppIcon(...)`
+- **Porquê:** o app passou a ter dois ícones (claro/escuro) — a escolha precisava de um lugar, e Aparência já reúne tema e janela.
+
 ## src/styles/settings.css
 
 ### 2026-10-13 · este commit · ícones menores na trilha das Configurações
@@ -168,6 +173,12 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** depois do redesign da tela, os chips de ícone da lateral ficaram grandes demais e
   pesavam mais que o texto; menores, a hierarquia volta ao nome/descrição sem perder o destaque
   do item ativo (chip sólido no acento).
+
+### 2026-10-13 · 8c0a7cf · miniatura no controle segmentado
+- **Local:** depois de `.st-seg-item:has(input:checked)`
+- **Linha:** nova regra `.st-seg-icone` (18px, cantos 4px, margem à direita)
+- **Porquê:** o seletor de ícone mostra os próprios PNGs; sem a regra a imagem entra no tamanho
+  natural e desalinha o controle.
 
 ## src/powerpoint/edicao/grafico.ts
 
@@ -237,6 +248,71 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** a tela precisa sair **mesmo quando o app falha**. Se ficasse só no caminho de sucesso,
   uma falha no `start()` deixaria a tela na frente do aviso de erro — e o aviso é justamente o que
   a pessoa precisa ler. O `finally` cobre os dois casos; a saída é suave (180 ms) para não piscar.
+
+## src/app/appIcon.ts
+
+### 2026-10-13 · 8c0a7cf · ícone do app (novo arquivo)
+- **Local:** módulo inteiro (`appIconAtual`, `aplicarIconeApp`, `definirIconeApp`)
+- **Linha:** novo arquivo
+- **Porquê:** ler/guardar a escolha do ícone (`mdc.appicon`) e aplicá-la na janela pela API do
+  Tauri (`setIcon` + `Image.fromBytes`), sem quebrar no navegador (tudo em try/catch; sem
+  escolha ainda, segue o tema: claro no claro, escuro no escuro).
+
+## src/app/app.ts
+
+### 2026-10-13 · 8c0a7cf · ícone aplicado na abertura
+- **Local:** `start()`, logo depois de `applyTheme`
+- **Linha:** `void aplicarIconeApp();` (novo)
+- **Porquê:** o ícone escolhido precisa valer já na abertura — antes disso a janela usa o ícone
+  fixo do build.
+
+## src/app/pages.ts
+
+### 2026-10-13 · 8c0a7cf · contexto das Configurações
+- **Local:** objeto devolvido pelo contexto da tela (junto de `openHistory`/`repairAlignments`)
+- **Linha:** `appIcon: () => appIconAtual()` e `setAppIcon: (v) => definirIconeApp(v)` (novos)
+- **Porquê:** a tela de Configurações não conhece o app; ela fala por este contexto.
+
+## src-tauri/Cargo.toml
+
+### 2026-10-13 · 8c0a7cf · decodificação de PNG
+- **Local:** dependência `tauri`
+- **Linha:** `features = []` → `features = ["image-png"]`
+- **Porquê:** `Image.fromBytes`/`setIcon` só decodificam PNG com esse recurso ligado; sem ele a
+  troca de ícone falha em silêncio.
+
+## src-tauri/capabilities/default.json
+
+### 2026-10-13 · 8c0a7cf · permissão do setIcon
+- **Local:** lista `permissions`
+- **Linha:** nova linha `"core:window:allow-set-icon"`
+- **Porquê:** a API `setIcon` não vem no `core:window:default`; sem a permissão o Tauri recusa a
+  chamada.
+
+## package.json
+
+### 2026-10-13 · 8c0a7cf · script de ícones sem o gerador antigo
+- **Local:** scripts
+- **Linha:** `"icon": "node scripts/gen-icon.mjs && tauri icon app-icon.png"` → `"icon": "tauri icon app-icon.png"`
+- **Porquê:** o `app-icon.png` agora vem dos pacotes novos (claro/escuro); o gerador antigo
+  desenhava o ícone anterior e sobrescreveria a fonte.
+
+## scripts/gen-icon.mjs
+
+### 2026-10-13 · 8c0a7cf · removido
+- **Local:** arquivo inteiro
+- **Linha:** arquivo removido
+- **Porquê:** desenhava o ícone antigo (indigo/violeta). Com os pacotes novos como fonte, mantê-lo
+  era uma armadilha: rodar `npm run icon` recriaria o ícone velho.
+
+## app-icon.png · src-tauri/icons/ · public/icones/
+
+### 2026-10-13 · 8c0a7cf · ícones novos
+- **Local:** fonte do build (`app-icon.png`), pacote gerado (`src-tauri/icons/*`) e PNGs do tempo
+  de execução (`public/icones/mdoffice-claro.png` e `mdoffice-escuro.png`)
+- **Linha:** arquivos substituídos/novos (pacote gerado com `tauri icon app-icon.png`)
+- **Porquê:** o app passa a usar o ícone novo (documento "M↓" com painéis azul/laranja): o claro
+  é o fixo do `.exe`/instalador; os dois ficam disponíveis para a escolha em Configurações.
 
 ---
 

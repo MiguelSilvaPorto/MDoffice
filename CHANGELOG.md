@@ -193,20 +193,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Backend**
 
-- Tauri com o recurso **`image-png`** (decodifica o PNG do ícone) e a permissão
-  **`core:window:allow-set-icon`**, para o app trocar o ícone da janela em tempo de execução.
+- (nada no momento)
 
 **Frontend**
 
-- **Ícone do app escolhível** (Configurações ▸ Aparência): claro ou escuro, trocando na hora o
-  ícone da janela e da barra de tarefas; sem escolha ainda, segue o tema (claro no claro,
-  escuro no escuro).
+- (nada no momento)
 
 **Ferramentas (dev)**
 
-- **Ícones do build regerados** dos pacotes novos (`app-icon.png` do pacote claro e
-  `src-tauri/icons/*` via `npm run icon`); o script `icon` virou `tauri icon app-icon.png` e o
-  `gen-icon.mjs` (desenho antigo) foi removido.
+- (nada no momento)
 
 ### Adicionado (na main)
 
@@ -215,6 +210,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - Comandos Rust/Tauri: **arquivos** (abrir/salvar), **assets** (copiar imagens com nome limpo),
   **rascunhos**, **projetos** (árvore), **busca** no conteúdo, **pacote IA** (.zip) e **backup**.
 - Testes dos comandos (`commands/tests.rs`).
+- Tauri com o recurso **`image-png`** e a permissão **`core:window:allow-set-icon`**, para o app
+  trocar o ícone da janela em tempo de execução.
 
 **Frontend**
 
@@ -247,6 +244,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   lugar do HTML cru (ícones gigantes) que aparecia nesse intervalo. O tema guardado passa a
   valer **antes** da primeira pintura, então quem usa o escuro não vê mais o clarão branco.
 - **Skills e regras** para IA e o menu **+** separando Markdown, Word, Planilha e Apresentação.
+- **Ícone do app escolhível** (Configurações ▸ Aparência): claro ou escuro, trocando na hora o
+  ícone da janela e da barra de tarefas; sem escolha ainda, segue o tema.
 
 **Ferramentas (dev)**
 
@@ -258,3 +257,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   no `status.ps1` e no corpo do commit; `-Branch` confere a worktree certa.
 - `fechar.ps1` **bloqueia** o fechamento quando a tarefa não tocou no `CHANGELOG.md` ou no
   `docs/historico-tecnico.md` (mostra o que faltou e como registrar; nada vai para a `main`).
+- **Ícones do build regerados** dos pacotes novos (`app-icon.png` do pacote claro +
+  `src-tauri/icons/*` via `npm run icon`); o script `icon` virou `tauri icon app-icon.png` e o
+  `gen-icon.mjs` (desenho antigo) foi removido.
