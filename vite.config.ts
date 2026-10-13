@@ -64,12 +64,45 @@ function ortPlugin(): Plugin {
   };
 }
 
+/**
+ * "A página está viva?"
+ *
+ * Quando o conteúdo da janela trava, o processo do app continua de pé e a janela
+ * continua respondendo mensagens — de fora não há como saber que a página morreu.
+ * Então ela mesma avisa de tempos em tempos, e o servidor de dev guarda o horário;
+ * o watchdog (tools\watchdog.ps1) pergunta aqui e reinicia o app quando o aviso fica
+ * velho demais.
+ *
+ * Mora no servidor de dev de propósito: é ferramenta de desenvolvimento — não existe
+ * na versão final e não precisa de nada no lado Rust.
+ */
+function batimentoPlugin(): Plugin {
+  let vistoEm = 0;
+  return {
+    name: "mdc-batimento",
+    configureServer(server) {
+      server.middlewares.use("/__vivo", (req, res) => {
+        // consulta do watchdog: há quanto tempo a página não avisa
+        if ((req.url ?? "").startsWith("/estado")) {
+          res.setHeader("content-type", "application/json");
+          res.setHeader("cache-control", "no-store");
+          res.end(JSON.stringify({ vistoEm, idade: vistoEm ? (Date.now() - vistoEm) / 1000 : null }));
+          return;
+        }
+        vistoEm = Date.now();
+        res.statusCode = 204;
+        res.end();
+      });
+    },
+  };
+}
+
 // Configuração pensada para o Tauri 2:
 // - porta fixa 1420 (definida em tauri.conf.json > build.devUrl)
 // - não limpar o terminal para não esconder logs do cargo
 export default defineConfig({
   clearScreen: false,
-  plugins: [tempSavePlugin(), ortPlugin()],
+  plugins: [tempSavePlugin(), ortPlugin(), batimentoPlugin()],
   // Cache do otimizador POR PASTA. O padrão (`node_modules/.vite`) é compartilhado,
   // porque `node_modules` é um junction apontando para a cópia principal: o servidor
   // de dev de uma worktree e o da cópia principal escrevem no MESMO cache e trocam o

@@ -341,3 +341,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   pasta: o padrão (`node_modules/.vite`) é compartilhado entre a cópia principal e as worktrees e o
   hash que o valida inclui a raiz do projeto, então cada troca de pasta invalidava o cache e
   recarregava os clientes conectados.
+- **Watchdog percebe a página travada**: o processo do app continuar de pé não quer dizer app
+  funcionando — depois de muitos recarregamentos o **conteúdo da janela** morre e a janela segue
+  respondendo mensagens do sistema, então o watchdog (que só olhava se o processo existia) nunca
+  percebia. Agora a página avisa ao servidor de dev que está viva (a cada 5 s, só em
+  desenvolvimento) e o `watchdog.ps1` reinicia o app quando o aviso fica velho
+  (`-TravadoSegundos`, padrão 90) — com prazo maior para o primeiro aviso, que depende do
+  carregamento do dicionário e do modelo (`-TravadoNaSubidaSegundos`, padrão 180). O
+  `tools/watchdog.ps1` também ganhou BOM de UTF-8: sem ele o PowerShell 5.1 lê o arquivo como
+  ANSI e os acentos saíam corrompidos no log.

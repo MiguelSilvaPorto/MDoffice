@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   Vigia o código do mdOffice e mantém o app em execução (watchdog de desenvolvimento).
@@ -16,7 +16,14 @@
     3. encerra a árvore do app (npm/tauri, processo do app e quem estiver na porta do Vite)
        e sobe de novo com o comando configurado;
     4. se o processo do app morrer por conta própria, sobe de novo (com -SemLevantarSeCair,
-       essa parte fica desligada e ele só reinicia em mudanças de código).
+       essa parte fica desligada e ele só reinicia em mudanças de código);
+    5. se a PÁGINA travar — processo vivo, janela de pé, conteúdo morto — reinicia o app. É o
+       caso que o item 4 não pega, e acontece depois de muitos recarregamentos.
+
+  Para saber se a página responde ele pergunta ao servidor de dev
+  (http://localhost:<PortaVite>/__vivo/estado) quando foi o último aviso de vida. O aviso sai
+  de src/app/batimento.ts a cada 5 s e só existe em desenvolvimento — sem servidor no ar, ele
+  não julga (aí o item 4 continua valendo).
 
   O log fica em tools\watchdog.log (e a saída do app em tools\watchdog-app*.log).
   Nada é copiado nem commitado: é só uma ferramenta local.
@@ -48,11 +55,22 @@
 .PARAMETER ProcessoApp
   Nome do processo do app, encerrado no reinício (padrão: mdOffice).
 
+.PARAMETER TravadoSegundos
+  Quanto tempo a página pode ficar sem avisar (depois de já ter avisado uma vez) antes de
+  contar como travada (padrão: 90). O aviso sai a cada 5 s; quando a janela está minimizada o
+  navegador limita os timers a cerca de um por minuto, então o padrão tem folga de sobra. Use
+  0 para desligar a checagem de travamento.
+
+.PARAMETER TravadoNaSubidaSegundos
+  Prazo, desde a subida do app, para a página dar o PRIMEIRO aviso (padrão: 180). É maior
+  porque a página carrega dicionário e modelo antes de conseguir avisar.
+
 .PARAMETER Simular
   Não encerra nem inicia nada: só registra o que faria. Bom para conferir a detecção.
 
 .PARAMETER SemLevantarSeCair
-  Desliga o "levantar de novo se cair": só reinicia quando o código muda.
+  Desliga o "levantar de novo se cair": só reinicia quando o código muda. Vale também para a
+  página travada — o app só é mexido quando o código muda.
 
 .EXAMPLE
   tools\watchdog.cmd
@@ -77,6 +95,8 @@ param(
   [double]$EsperaAposIniciarSegundos = 12,
   [int]$PortaVite = 1420,
   [string]$ProcessoApp = "mdoffice",
+  [int]$TravadoSegundos = 90,
+  [int]$TravadoNaSubidaSegundos = 180,
   [string]$Log = "",
   [switch]$Simular,
   [switch]$SemLevantarSeCair
@@ -177,11 +197,65 @@ function IniciarApp {
   Registrar "app iniciado (processo $($script:pidApp)): $Comando"
 }
 
+# --- a página ainda responde? -------------------------------------------------
+#
+# O processo vivo não quer dizer app funcionando: depois de muitos recarregamentos o
+# conteúdo da janela pode morrer e a janela continuar de pé. Quem responde por isso é o
+# aviso de vida que a página manda ao servidor de dev (src/app/batimento.ts).
+
+function EstadoDaPagina {
+  # Sem servidor de dev no ar não há como julgar — o "caiu" cobre esse caso.
+  try {
+    return Invoke-RestMethod -Uri "http://localhost:$PortaVite/__vivo/estado" -TimeoutSec 3
+  } catch {
+    return $null
+  }
+}
+
+$script:vistoNaSubida = $null
+$script:subiuEm = Get-Date
+$script:ultimaPergunta = [datetime]::MinValue
+$script:estadoPagina = $null
+
+# Anota o estado do servidor no instante em que o app sobe: um aviso igual a este é
+# anterior à subida e não conta como "a página está viva".
+function MarcarSubida {
+  $script:subiuEm = Get-Date
+  $script:ultimaPergunta = [datetime]::MinValue
+  $script:estadoPagina = $null
+  $estado = EstadoDaPagina
+  $script:vistoNaSubida = if ($estado) { $estado.vistoEm } else { $null }
+}
+
+function PaginaTravada {
+  if ($TravadoSegundos -le 0) { return $false }
+
+  # a pergunta é barata, mas não precisa ser feita a cada ciclo
+  if (((Get-Date) - $script:ultimaPergunta).TotalSeconds -ge 5) {
+    $script:ultimaPergunta = Get-Date
+    $script:estadoPagina = EstadoDaPagina
+  }
+  $estado = $script:estadoPagina
+  if (-not $estado) { return $false }
+
+  if ($null -ne $estado.vistoEm -and $estado.vistoEm -ne $script:vistoNaSubida) {
+    # já avisou nesta encarnação: o silêncio é que denuncia
+    return ($null -ne $estado.idade -and [double]$estado.idade -gt $TravadoSegundos)
+  }
+  # ainda não avisou desde que subiu: pode estar carregando (dicionário, modelo)
+  return (((Get-Date) - $script:subiuEm).TotalSeconds -gt $TravadoNaSubidaSegundos)
+}
+
 # --- laço principal ----------------------------------------------------------
 
 Registrar "watchdog iniciado - raiz: $Raiz"
 Registrar "vigia: $($Vigiar -join ', ')"
 Registrar ("debounce: {0}s · intervalo: {1}s · carência após subir: {2}s · porta: {3}" -f $DebounceSegundos, $IntervaloSegundos, $EsperaAposIniciarSegundos, $PortaVite)
+if ($TravadoSegundos -gt 0) {
+  Registrar ("página travada: sem aviso por mais de {0}s (primeiro aviso: até {1}s depois de subir)" -f $TravadoSegundos, $TravadoNaSubidaSegundos)
+} else {
+  Registrar "checagem de página travada: desligada"
+}
 if ($Simular) { Registrar "modo SIMULAR: nada será encerrado nem iniciado" }
 if ($SemLevantarSeCair) { Registrar "SemLevantarSeCair: só reinicia quando o código muda" }
 
@@ -190,6 +264,7 @@ $total = (ArquivosVigiados).Count
 Registrar "linha de base: $total arquivo(s) vigiado(s)"
 
 $iniciadoEm = Get-Date
+MarcarSubida
 IniciarApp
 
 $ultimaMudanca = $null
@@ -218,6 +293,7 @@ try {
         PararApp
         IniciarApp
         $iniciadoEm = Get-Date
+        MarcarSubida
         $impressao = Impressao
       }
     }
@@ -229,6 +305,21 @@ try {
         $script:pidApp = $null
         IniciarApp
         $iniciadoEm = Get-Date
+        MarcarSubida
+        $impressao = Impressao
+      }
+    }
+
+    # A página parou de responder? (processo vivo, janela de pé, conteúdo morto)
+    # Com -SemLevantarSeCair isso fica desligado: é o mesmo espírito do item 4 — o
+    # watchdog só mexe no app quando o código muda.
+    if (-not $SemLevantarSeCair -and ($Simular -or $script:pidApp)) {
+      if (PaginaTravada) {
+        Registrar "a página parou de responder - reiniciando o app"
+        PararApp
+        IniciarApp
+        $iniciadoEm = Get-Date
+        MarcarSubida
         $impressao = Impressao
       }
     }

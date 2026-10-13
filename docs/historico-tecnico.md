@@ -688,6 +688,12 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** `__mdcreator` → `__mdoffice` (e `__mdcreatorTextBoard` → `__mdofficeTextBoard`)
 - **Porquê:** o nome do gancho acompanha o produto.
 
+### 2026-10-13 · (este commit) · liga o aviso de vida da página
+- **Local:** logo depois de `new App()` e `ligarMovimentoDeSaida()`
+- **Linha:** `ligarBatimento();` (novo)
+- **Porquê:** é o primeiro ponto de código do app, antes de qualquer carregamento pesado — o aviso
+  já vale enquanto dicionário e modelo ainda estão subindo. Sem efeito fora do desenvolvimento.
+
 ## README.md · docs/ (vários)
 
 ### 2026-10-13 · este commit · nome do app na documentação
@@ -715,6 +721,15 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   invalidava o cache inteiro e disparava re-otimização + recarga. Em `.vite/`, cada pasta tem o seu.
   O Vite já ignora o `cacheDir` no observador de arquivos (`escapePath(cacheDir) + "/**"`), então
   não foi preciso somar nada em `server.watch.ignored`.
+
+### 2026-10-13 · (este commit) · o canal "estou vivo"
+- **Local:** `batimentoPlugin()`, no `plugins` do `defineConfig`
+- **Linha:** `novo` — middleware em `/__vivo`: `POST` marca o horário (a página avisando que está
+  viva) e `GET /__vivo/estado` devolve `{ vistoEm, idade }` para o watchdog
+- **Porquê:** quando o conteúdo da janela trava, o processo do app continua de pé e a janela
+  continua respondendo — de fora não há como perguntar "você responde?". Com a página avisando, o
+  silêncio vira sintoma. Mora no servidor de dev de propósito: é ferramenta de desenvolvimento,
+  não existe na versão final e não exige nada do lado Rust.
 
 ## .gitignore
 
@@ -1204,6 +1219,38 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   `cantos-redondos` no CSS e a remoção da classe no `applyCantos`
 - **Porquê:** o erro era justamente "mexer no que já estava certo" — o teste agora falha se alguém
   voltar a criar regras para o redondo ou afrouxar o quadrado.
+
+## src/app/batimento.ts
+
+### 2026-10-13 · (este commit) · "estou vivo" (novo arquivo)
+- **Local:** `ligarBatimento()`
+- **Linha:** novo arquivo
+- **Porquê:** avisa o servidor de dev a cada 5 s que a página está viva — é o sinal que o watchdog
+  usa para perceber uma página travada. O aviso sai mesmo com a janela minimizada de propósito:
+  escondida, o navegador limita os timers a cerca de um por minuto, e é por isso que o watchdog só
+  fala em travamento depois de bem mais que isso. Fora do desenvolvimento não faz nada
+  (`import.meta.env.DEV`), então não sobra rastro na versão final.
+
+## tools/watchdog.ps1
+
+### 2026-10-13 · (este commit) · percebe a página travada
+- **Local:** `EstadoDaPagina`, `MarcarSubida`, `PaginaTravada` e um bloco novo no laço principal
+- **Linha:** novo — o watchdog já reiniciava quando o processo do app caía; agora também quando o
+  **conteúdo** morre (processo vivo, janela de pé)
+- **Porquê:** era o caso que escapava. Ele pergunta ao servidor de dev quando a página avisou pela
+  última vez e reinicia o app quando o aviso passa de `-TravadoSegundos` (padrão 90). Sem servidor
+  no ar ele não julga (aí vale o "caiu") e com `-SemLevantarSeCair` a checagem fica desligada, no
+  mesmo espírito: o app só é mexido quando o código muda.
+- **Local:** parâmetros `-TravadoSegundos` e `-TravadoNaSubidaSegundos`
+- **Linha:** novos (90 e 180)
+- **Porquê:** dois prazos porque são dois casos. Depois de a página ter avisado uma vez, o silêncio
+  é sintoma e 90 s já dá folga sobre o limite de 1 aviso/minuto da janela escondida. **Antes** do
+  primeiro aviso não se pode acusar travamento: a página ainda está carregando dicionário e modelo
+  — daí 180 s. Um `vistoEm` igual ao anotado na subida é aviso anterior à subida e não conta.
+- **Local:** arquivo inteiro
+- **Linha:** gravado com **BOM de UTF-8**
+- **Porquê:** o PowerShell 5.1 lê arquivo sem BOM como ANSI. Sem o BOM os acentos do script viravam
+  lixo já na memória e o log saía corrompido ("página" virava "pÃ¡gina") — foi um teste que pegou.
 
 ---
 

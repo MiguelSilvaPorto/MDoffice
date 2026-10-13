@@ -3,9 +3,13 @@ import "./styles.css";
 import { toast } from "./util";
 import { ligarMovimentoDeSaida } from "./movimento";
 import { App } from "./app/app";
+import { ligarBatimento } from "./app/batimento";
 
 const app = new App();
 ligarMovimentoDeSaida();
+// Em desenvolvimento, avisa o servidor de dev que a página está viva: é assim que o
+// watchdog percebe uma página travada (o processo continua de pé) e reinicia o app.
+ligarBatimento();
 // Garante que a janela nunca seja deslocada/rolada (mantém o topo sempre visível)
 window.addEventListener("scroll", () => {
   if (window.scrollY !== 0 || window.scrollX !== 0) {
