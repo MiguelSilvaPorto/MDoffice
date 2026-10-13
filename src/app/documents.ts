@@ -256,7 +256,7 @@ export const documentsMethods = {
 
   /**
    * Garante que o documento tenha um arquivo, sem interromper o usuário:
-   * salva automaticamente em Documentos/mdCreator (com aviso no rodapé/toast).
+   * salva automaticamente em Documentos/mdOffice (com aviso no rodapé/toast).
    * Funciona mesmo com backends antigos (não depende de comandos novos).
    */
   async ensureSaved(this: App): Promise<boolean> {

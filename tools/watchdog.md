@@ -14,7 +14,7 @@ tools\watchdog.cmd
 Deixe a janela aberta (pode minimizar). O log do vigia fica em `tools\watchdog.log`; a saída do
 app, em `tools\watchdog-app.log` e `tools\watchdog-app.err.log`.
 
-> Rode na pasta que estiver com o app aberto: a cópia principal (`A:\Projetos\mdCreator`) ou uma
+> Rode na pasta que estiver com o app aberto: a cópia principal (a pasta do projeto) ou uma
 > worktree em desenvolvimento. O script descobre a raiz sozinho pela pasta onde está.
 
 ## Opções úteis
@@ -39,7 +39,7 @@ app, em `tools\watchdog-app.log` e `tools\watchdog-app.err.log`.
 1. Tira uma "impressão" dos arquivos (caminho + data + tamanho) a cada ~1 s.
 2. Quando algo muda, espera `-DebounceSegundos` (3 s) de calma — assim um `git rebase` que troca
    dezenas de arquivos gera **um** reinício, não dezenas.
-3. Encerra a árvore do app (`npm run app`, o processo `mdcreator` e quem estiver na porta 1420) e
+3. Encerra a árvore do app (`npm run app`, o processo `mdOffice` e quem estiver na porta 1420) e
    sobe de novo com `-Comando`.
 4. Depois de subir, espera `-EsperaAposIniciarSegundos` (12 s) antes de aceitar outro reinício.
 5. Se o processo do app morrer sozinho, levanta de novo em 3 s (desligue com `-SemLevantarSeCair`).

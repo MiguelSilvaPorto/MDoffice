@@ -10,7 +10,7 @@
 ![plataforma](https://img.shields.io/badge/plataforma-Windows-lightgrey)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
-[GitHub](https://github.com/MiguelSilvaPorto/mdcreator) ·
+[GitHub](https://github.com/MiguelSilvaPorto/mdoffice) ·
 [Funcionalidades](docs/funcionalidades.md) ·
 [Changelog](CHANGELOG.md) ·
 [Estrutura do projeto](docs/estrutura-do-projeto.md)

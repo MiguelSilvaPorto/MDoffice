@@ -16,7 +16,7 @@ export const dictionaryMethods = {
       <div class="wm-body">
         <p>As palavras desta lista <b>não são mais marcadas</b> como erro — nomes, marcas, termos técnicos…</p>
         <div class="dict-add">
-          <input type="text" class="dict-input" placeholder="digite uma palavra (ex.: mdCreator)" />
+          <input type="text" class="dict-input" placeholder="digite uma palavra (ex.: mdOffice)" />
           <button class="btn primary" data-add>Adicionar</button>
         </div>
         <div class="dict-list"></div>

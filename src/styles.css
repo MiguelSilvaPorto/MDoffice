@@ -1,5 +1,5 @@
 /* ==========================================================================
-   mdCreator — interface do app. Importa os estilos do documento (também usados
+   mdOffice — interface do app. Importa os estilos do documento (também usados
    no HTML exportado) e acrescenta o "chrome" da aplicação.
    ========================================================================== */
 @import "./md/markdown.css";

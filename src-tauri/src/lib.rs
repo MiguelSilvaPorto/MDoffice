@@ -2,6 +2,49 @@ use tauri::Manager;
 
 mod commands;
 
+/// O identificador do app mudou (`com.mdcreator.desktop` → `com.mdoffice.desktop`), e com
+/// ele a pasta de dados (`%LOCALAPPDATA%\...`). Na primeira execução com o nome novo,
+/// copia a pasta antiga (rascunhos, backups e preferências do WebView) para a nova.
+///
+/// Roda no `main`, ANTES do Tauri criar a janela: depois disso a pasta nova já existiria
+/// (criada pelo WebView) e a cópia não teria como acontecer.
+pub fn migrar_pasta_de_dados() {
+    #[cfg(windows)]
+    {
+        let Ok(base) = std::env::var("LOCALAPPDATA") else { return };
+        let base = std::path::PathBuf::from(base);
+        let antiga = base.join("com.mdcreator.desktop");
+        let nova = base.join("com.mdoffice.desktop");
+        if nova.exists() || !antiga.exists() {
+            return;
+        }
+        let _ = copiar_pasta_de_dados(&antiga, &nova);
+    }
+}
+
+/// Cópia recursiva de melhor esforço: o que estiver travado/estranho é ignorado.
+#[cfg(windows)]
+fn copiar_pasta_de_dados(de: &std::path::Path, para: &std::path::Path) -> std::io::Result<()> {
+    // cache do WebView não vai: é o grosso do tamanho e se recria sozinho
+    const PULAR: [&str; 5] = ["Cache", "Code Cache", "GPUCache", "ShaderCache", "CacheStorage"];
+    std::fs::create_dir_all(para)?;
+    for item in std::fs::read_dir(de)? {
+        let Ok(item) = item else { continue };
+        let nome = item.file_name();
+        let nome_txt = nome.to_string_lossy();
+        if PULAR.iter().any(|p| p.eq_ignore_ascii_case(&nome_txt)) {
+            continue;
+        }
+        let destino = para.join(&nome);
+        if item.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+            let _ = copiar_pasta_de_dados(&item.path(), &destino);
+        } else {
+            let _ = std::fs::copy(item.path(), &destino);
+        }
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -53,5 +96,5 @@ pub fn run() {
             commands::backup::backup_clear_history,
         ])
         .run(tauri::generate_context!())
-        .expect("erro ao iniciar o mdCreator");
+        .expect("erro ao iniciar o mdOffice");
 }

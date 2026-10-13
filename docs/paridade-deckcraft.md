@@ -1,6 +1,6 @@
-# Paridade: mdCreator × DeckCraft — checklist de pendências
+# Paridade: mdOffice × DeckCraft — checklist de pendências
 
-> **Comparação:** o motor de apresentações do **mdCreator** contra o **[DeckCraft](https://github.com/storytold/deckcraft)**
+> **Comparação:** o motor de apresentações do **mdOffice** contra o **[DeckCraft](https://github.com/storytold/deckcraft)**
 > — a reimplementação open-source do PowerPoint em Rust puro (ArtCraft), em alpha.
 > **Base do checklist:** `docs/parity-checklist.md` do DeckCraft (191 features medidas contra o
 > PowerPoint for Mac 16.113, em 10/10/2026), cruzado com a paleta de comandos real do app.
@@ -8,12 +8,12 @@
 
 **Como ler**
 
-- `- [x]` — **existe no mdCreator** (quando for o caso, a nota diz o que é parcial)
+- `- [x]` — **existe no mdOffice** (quando for o caso, a nota diz o que é parcial)
 - `- [ ]` — **não existe** (é pendência)
 - `P0/P1/P2` — prioridade que o DeckCraft dá à feature (P0 = essencial para trocar do PowerPoint)
-- A nota curta traz a evidência do lado do mdCreator (motor/fita/painel) e o que falta
+- A nota curta traz a evidência do lado do mdOffice (motor/fita/painel) e o que falta
 
-**Resumo por área** (itens do DeckCraft já cobertos pelo mdCreator):
+**Resumo por área** (itens do DeckCraft já cobertos pelo mdOffice):
 
 | Área | Cobertos | Área | Cobertos |
 |---|---:|---|---:|
@@ -33,7 +33,7 @@
 
 As maiores lacunas são as áreas que o DeckCraft marca como o coração da troca do PowerPoint:
 **SmartArt, animações, gravação (áudio/tela), apresentação (presenter view/ink) e masters**.
-Do outro lado, o mdCreator já tem boa parte do **editor** (formas, texto, tabelas, formatos,
+Do outro lado, o mdOffice já tem boa parte do **editor** (formas, texto, tabelas, formatos,
 organização, desfazer) e um **import/export .pptx de alta fidelidade** — e coisas que o DeckCraft
 não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico).
 
@@ -304,7 +304,7 @@ não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico)
 
 ---
 
-## O que o mdCreator tem que o DeckCraft não tem
+## O que o mdOffice tem que o DeckCraft não tem
 
 - **Suíte completa**: Word (.docx), Excel (.xlsx) e Markdown no mesmo app — o DeckCraft é só apresentações.
 - **IA local**: corretor de português, sugestões enquanto digita (modelo de n-gramas + Gemma local), revisão inteligente com sinônimos.
@@ -317,7 +317,7 @@ não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico)
 
 ## Arquitetura e plataformas (contexto)
 
-| | mdCreator | DeckCraft |
+| | mdOffice | DeckCraft |
 |---|---|---|
 | Linguagem/UI | TypeScript + Tauri 2 (WebView2) | Rust puro + egui/wgpu |
 | Modelo de slide | HTML/SVG por forma (fidelidade de import ~2%) | Rasterizador próprio (vello_cpu) |

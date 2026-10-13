@@ -99,7 +99,7 @@ pub fn backup_save_config(app: tauri::AppHandle, config: BackupConfig) -> Result
     store_config(&app, &config)
 }
 
-/// Pasta de backup da própria aplicação (`…\AppData\Local\com.mdcreator.desktop\backups`).
+/// Pasta de backup da própria aplicação (`…\AppData\Local\com.mdoffice.desktop\backups`).
 #[tauri::command]
 pub fn backup_app_root(app: tauri::AppHandle) -> Result<String, String> {
     let dir = data_dir(&app)?.join("backups");
@@ -1064,7 +1064,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let p = std::env::temp_dir().join(format!("mdcreator-backup-{nome}-{n}"));
+        let p = std::env::temp_dir().join(format!("mdoffice-backup-{nome}-{n}"));
         fs::create_dir_all(&p).unwrap();
         p
     }

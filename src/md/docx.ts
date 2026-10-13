@@ -497,7 +497,7 @@ export async function buildDocx(opts: DocxOptions): Promise<Uint8Array> {
   const LETTER = { width: 12240, height: 15840 };
   const doc = new Document({
     title: opts.title,
-    creator: "mdCreator",
+    creator: "mdOffice",
     styles: {
       default: { document: { run: { font: FONT, size: 22 } } },
       paragraphStyles: [1, 2, 3, 4].map((n) => ({

@@ -30,9 +30,9 @@ export async function deckToPptx(deck: Deck, setup: DeckSetup, titulo = "Apresen
     write: (o: { outputType: "arraybuffer" }) => Promise<ArrayBuffer>;
   };
 
-  pptx.author = "mdCreator";
+  pptx.author = "mdOffice";
   pptx.title = titulo;
-  pptx.subject = "Apresentação criada no mdCreator";
+  pptx.subject = "Apresentação criada no mdOffice";
   aplicarTema(pptx, setup);
 
   const slides: Slide[] = deck.slides.length ? deck.slides : [{ md: "", layout: "conteudo", notes: "", shapes: [] }];

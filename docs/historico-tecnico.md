@@ -462,6 +462,54 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** a feature `image-png` do Tauri puxa o crate `image`; sem essas entradas no lock um
   build com `--locked` falha. Validado com `cargo check --locked` (2m33s).
 
+## src-tauri/tauri.conf.json
+
+### 2026-10-13 · este commit · identificador com.mdoffice.desktop
+- **Local:** `identifier`
+- **Linha:** `com.mdcreator.desktop` → `com.mdoffice.desktop`
+- **Porquê:** o identificador é o nome técnico do app (pasta de dados, WebView, instalador);
+  deixá-lo com o nome antigo mantinha o "mdCreator" vivo por baixo do produto.
+
+## src-tauri/src/lib.rs
+
+### 2026-10-13 · este commit · migração da pasta de dados (novo código)
+- **Local:** `migrar_pasta_de_dados()` e `copiar_pasta_de_dados()`
+- **Linha:** novo código (cópia recursiva de `%LOCALAPPDATA%\com.mdcreator.desktop` para
+  `com.mdoffice.desktop`, pulando caches do WebView)
+- **Porquê:** trocar o identificador muda a pasta de dados; sem a cópia, rascunhos, backups e
+  preferências ficariam para trás. É a única referência de propósito ao nome antigo no código.
+
+## src-tauri/src/main.rs
+
+### 2026-10-13 · este commit · migra antes de abrir a janela
+- **Local:** `main()`
+- **Linha:** novo `mdoffice_lib::migrar_pasta_de_dados();` antes de `run()`
+- **Porquê:** o Tauri cria as janelas (e a pasta nova, pelo WebView) **antes** do `setup`; a
+  cópia só funciona rodando aqui, antes de tudo.
+
+## src-tauri/Cargo.toml · package.json
+
+### 2026-10-13 · este commit · nomes técnicos
+- **Local:** `[package] name` / `[lib] name` / `"name"`
+- **Linha:** `mdcreator`/`mdcreator_lib` → `mdoffice`/`mdoffice_lib`; `"mdcreator"` → `"mdoffice"`
+- **Porquê:** o binário de dev e o pacote passam a se chamar mdoffice (o watchdog que encerra o
+  processo foi atualizado junto).
+
+## src/main.ts
+
+### 2026-10-13 · este commit · gancho de depuração
+- **Local:** `window.__mdcreator`
+- **Linha:** `__mdcreator` → `__mdoffice` (e `__mdcreatorTextBoard` → `__mdofficeTextBoard`)
+- **Porquê:** o nome do gancho acompanha o produto.
+
+## README.md · docs/ (vários)
+
+### 2026-10-13 · este commit · nome do app na documentação
+- **Local:** README, paridade, mapas de UI e textos do app
+- **Linha:** "mdCreator" → "mdOffice" (348 trocas em 38 arquivos)
+- **Porquê:** o produto se chama mdOffice; a história do README mantém de propósito o nome
+  antigo **mdEditor** (a origem), que é outra palavra.
+
 ---
 
 ## Próximos registros

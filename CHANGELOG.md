@@ -211,6 +211,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - Comandos Rust/Tauri: **arquivos** (abrir/salvar), **assets** (copiar imagens com nome limpo),
   **rascunhos**, **projetos** (árvore), **busca** no conteúdo, **pacote IA** (.zip) e **backup**.
+- **App renomeado no lado nativo**: crate `mdoffice`, lib `mdoffice_lib`, identificador
+  `com.mdoffice.desktop` e binário/processo `mdoffice`. Na primeira execução com o nome novo,
+  uma **migração** copia a pasta de dados antiga (`%LOCALAPPDATA%\com.mdcreator.desktop` →
+  `com.mdoffice.desktop`) — rascunhos, backups e preferências não se perdem.
 - Testes dos comandos (`commands/tests.rs`).
 - Tauri com o recurso **`image-png`** e a permissão **`core:window:allow-set-icon`**, para o app
   trocar o ícone da janela em tempo de execução.
@@ -226,6 +230,9 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   à ArtCraft, licença **MIT**, docs de [estrutura](docs/estrutura-do-projeto.md) e
   [funcionalidades por módulo](docs/funcionalidades.md), e este **changelog + o
   [histórico técnico](docs/historico-tecnico.md)** (entregues neste mesmo commit).
+- **Nome unificado em mdOffice**: textos e títulos de janela, metadados gravados em
+  `.docx`/`.xlsx`/`.pptx`, nome do pacote (`mdoffice`) e as centenas de referências ao antigo
+  "mdCreator" na documentação.
 - **Tela de Início** com os quatro formatos (Word, Excel, MD, PowerPoint) e botão lateral fixo.
 - **Painel de projetos**: árvore de pastas com `.md` em cartões (contagem de documentos/pastas,
   esqueleto ao carregar, busca com o termo destacado), animações de abrir/fechar e indicador de

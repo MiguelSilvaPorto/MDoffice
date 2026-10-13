@@ -107,7 +107,7 @@ export const layoutMethods = {
   refreshTitle(this: App): void {
     const name = this.path ? baseName(this.path) : `${this.title ?? "Sem título"}.md`;
     this.renderTabs();
-    const title = `${this.dirty ? "• " : ""}${name} — mdCreator`;
+    const title = `${this.dirty ? "• " : ""}${name} — mdOffice`;
     document.title = title;
     // Fora do Tauri (ex.: preview no navegador) a API não existe: seguimos em silêncio.
     try {

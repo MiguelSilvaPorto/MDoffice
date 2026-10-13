@@ -1,7 +1,7 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 <#
 .SYNOPSIS
-  Vigia o código do mdCreator e mantém o app em execução (watchdog de desenvolvimento).
+  Vigia o código do mdOffice e mantém o app em execução (watchdog de desenvolvimento).
 
 .DESCRIPTION
   Reinicia o app automaticamente sempre que algum arquivo vigiado muda e o levanta de novo
@@ -46,7 +46,7 @@
   Porta do servidor de desenvolvimento, para liberar antes de subir de novo (padrão: 1420).
 
 .PARAMETER ProcessoApp
-  Nome do processo do app, encerrado no reinício (padrão: mdcreator).
+  Nome do processo do app, encerrado no reinício (padrão: mdOffice).
 
 .PARAMETER Simular
   Não encerra nem inicia nada: só registra o que faria. Bom para conferir a detecção.
@@ -76,7 +76,7 @@ param(
   [double]$DebounceSegundos = 3,
   [double]$EsperaAposIniciarSegundos = 12,
   [int]$PortaVite = 1420,
-  [string]$ProcessoApp = "mdcreator",
+  [string]$ProcessoApp = "mdoffice",
   [string]$Log = "",
   [switch]$Simular,
   [switch]$SemLevantarSeCair

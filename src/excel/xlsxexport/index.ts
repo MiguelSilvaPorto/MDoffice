@@ -423,7 +423,7 @@ export async function livroParaXlsx(livro: Livro, opcoes: OpcoesXlsx = {}): Prom
     grade: opcoes.grade ?? CONFIG_PADRAO.grade,
   };
   const titulo = opcoes.titulo || "Planilha";
-  const autor = opcoes.autor || "mdCreator";
+  const autor = opcoes.autor || "mdOffice";
   const agora = isoAgora();
 
   const tab = montarEstilos(livro);
@@ -493,7 +493,7 @@ export async function livroParaXlsx(livro: Livro, opcoes: OpcoesXlsx = {}): Prom
   zip.file(
     "docProps/app.xml",
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>mdCreator</Application><DocSecurity>0</DocSecurity></Properties>`
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>mdOffice</Application><DocSecurity>0</DocSecurity></Properties>`
   );
 
   return await zip.generateAsync({

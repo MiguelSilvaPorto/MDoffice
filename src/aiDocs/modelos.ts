@@ -158,7 +158,7 @@ const regras: Modelo = {
   resumo: "Instruções fixas que a IA lê no começo de toda conversa sobre o projeto: comandos, estilo, limites.",
   campos: [
     { id: "alvo", rotulo: "Arquivo", tipo: "escolha", opcoes: ALVOS, ajuda: "AGENTS.md é aceito por vários agentes; CLAUDE.md é o do Claude Code; GEMINI.md o do Gemini CLI." },
-    { id: "projeto", rotulo: "Nome do projeto", tipo: "texto", placeholder: "mdCreator", ajuda: "Aparece no título." },
+    { id: "projeto", rotulo: "Nome do projeto", tipo: "texto", placeholder: "mdOffice", ajuda: "Aparece no título." },
     { id: "resumo", rotulo: "O que é o projeto", tipo: "area", placeholder: "Editor de documentos (Markdown, Word, Excel e PowerPoint) em Tauri + TypeScript.", ajuda: "Duas frases: o que é e para quem." },
     { id: "stack", rotulo: "Tecnologias", tipo: "lista", placeholder: "Tauri 2 + Rust\nTypeScript + Vite, sem framework", ajuda: "Uma por linha." },
     { id: "comandos", rotulo: "Comandos úteis", tipo: "lista", placeholder: "npm run dev — abre o app\nnpx tsc --noEmit — confere os tipos", ajuda: "Formato: comando — o que faz." },
@@ -169,7 +169,7 @@ const regras: Modelo = {
   ],
   exemplo: {
     alvo: "AGENTS.md",
-    projeto: "mdCreator",
+    projeto: "mdOffice",
     resumo: "Editor de documentos (Markdown, Word, Excel e PowerPoint) em Tauri + TypeScript, feito para uso offline.",
     stack: "Tauri 2 + Rust\nTypeScript + Vite, sem framework de interface",
     comandos: "npm run dev — abre o app em modo de desenvolvimento\nnpx tsc --noEmit — confere os tipos\nnpm run test:pptx-edicao — testa a edição de apresentações",

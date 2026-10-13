@@ -34,7 +34,7 @@ export const aiContextMethods = {
           <button class="btn icon" data-close title="Fechar (Esc)"><svg class="ic"><use href="#i-close"/></svg></button>
         </header>
         <div class="folder-modal-body">
-          <p class="folder-note">Confira a estrutura selecionada e diga o que você quer pedir à IA. O mdCreator inclui caminhos e nomes no Markdown; não lê o conteúdo dos arquivos.</p>
+          <p class="folder-note">Confira a estrutura selecionada e diga o que você quer pedir à IA. O mdOffice inclui caminhos e nomes no Markdown; não lê o conteúdo dos arquivos.</p>
           <div class="folder-snapshots"></div>
           <label class="folder-prompt-label" for="folder-prompt">O que você quer falar/pedir quando selecionar estas pastas?</label>
           <textarea id="folder-prompt" placeholder="Ex.: Analise a organização deste projeto e sugira onde implementar autenticação…"></textarea>

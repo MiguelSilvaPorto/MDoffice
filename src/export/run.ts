@@ -42,7 +42,7 @@ export async function runExport(ctx: ExportCtx, prefs: ExportPrefs, say: (t: str
     if (doc.incomplete) {
       const proceed = await ask(
         "Alguns trechos não puderam ser traduzidos (limite do tradutor ou falta de conexão). Exportar assim mesmo, deixando esses trechos em português?",
-        { title: "mdCreator", kind: "warning", okLabel: "Exportar assim", cancelLabel: "Cancelar" }
+        { title: "mdOffice", kind: "warning", okLabel: "Exportar assim", cancelLabel: "Cancelar" }
       );
       if (!proceed) return false;
     }

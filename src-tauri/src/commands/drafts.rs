@@ -122,7 +122,7 @@ pub fn delete_draft(app: tauri::AppHandle, path: String) -> Result<(), String> {
     fs::remove_file(target).map_err(io_err)
 }
 
-/// Pasta padrão para novos documentos: `Documentos/mdCreator` (criada se preciso).
+/// Pasta padrão para novos documentos: `Documentos/mdOffice` (criada se preciso).
 #[tauri::command]
 pub fn default_docs_dir(app: tauri::AppHandle) -> Result<String, String> {
     use tauri::Manager;
@@ -130,7 +130,7 @@ pub fn default_docs_dir(app: tauri::AppHandle) -> Result<String, String> {
         .path()
         .document_dir()
         .map_err(|e| e.to_string())?
-        .join("mdCreator");
+        .join("mdOffice");
     if !dir.exists() {
         fs::create_dir_all(&dir).map_err(io_err)?;
     }

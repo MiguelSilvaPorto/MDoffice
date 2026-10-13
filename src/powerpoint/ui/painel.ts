@@ -293,7 +293,7 @@ export class Painel {
     partes.push(
       `<div class="pf-botoes"><button type="button" class="btn small" data-click="grafico-add-cat">+ Categoria</button><button type="button" class="btn small" data-click="grafico-add-serie">+ Série</button></div>`
     );
-    partes.push(`<p class="pf-dica">O gráfico é desenhado na lâmina e vai para o .pptx como imagem; para editar os dados depois, continue no mdCreator.</p>`);
+    partes.push(`<p class="pf-dica">O gráfico é desenhado na lâmina e vai para o .pptx como imagem; para editar os dados depois, continue no mdOffice.</p>`);
     return partes.join("");
   }
 

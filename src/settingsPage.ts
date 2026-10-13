@@ -240,8 +240,8 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
             <input type="email" data-k="email" placeholder="voce@exemplo.com" autocomplete="off" spellcheck="false" value="${tr.email.replace(/"/g, "&quot;")}">
           </label>
           <label class="st-field">
-            <span class="st-field-label"><b>Glossário</b><small>Um termo por linha. <code>mdCreator</code> mantém o nome; <code>rascunho = draft</code> força a tradução.</small></span>
-            <textarea data-k="gloss" rows="6" spellcheck="false" placeholder="mdCreator&#10;rascunho = draft"></textarea>
+            <span class="st-field-label"><b>Glossário</b><small>Um termo por linha. <code>mdOffice</code> mantém o nome; <code>rascunho = draft</code> força a tradução.</small></span>
+            <textarea data-k="gloss" rows="6" spellcheck="false" placeholder="mdOffice&#10;rascunho = draft"></textarea>
           </label>
           <div class="st-inline"><button class="btn small st-btn" data-act="clear-tr">Limpar memória de traduções</button></div>
         </section>

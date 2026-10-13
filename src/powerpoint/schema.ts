@@ -1,4 +1,4 @@
-// Modelo de dados do motor de APRESENTAÇÕES (PowerPoint) do mdCreator.
+// Modelo de dados do motor de APRESENTAÇÕES (PowerPoint) do mdOffice.
 // Espelha o motor do Word (src/word): schema → model → markdown → view → host.
 // Só tipos e constantes: nenhum DOM, nenhum I/O, nenhuma dependência externa.
 

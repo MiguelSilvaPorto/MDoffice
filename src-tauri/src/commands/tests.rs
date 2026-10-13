@@ -14,7 +14,7 @@ fn inspeciona_arvore_sem_entrar_em_pastas_de_dependencias() {
         .duration_since(UNIX_EPOCH)
         .expect("relógio válido")
         .as_nanos();
-    let root = std::env::temp_dir().join(format!("mdcreator-tree-{nonce}"));
+    let root = std::env::temp_dir().join(format!("mdoffice-tree-{nonce}"));
     fs::create_dir_all(root.join("src/components")).expect("cria subpastas");
     fs::create_dir_all(root.join("node_modules/pacote")).expect("cria pasta ignorada");
     fs::write(root.join("src/main.rs"), "// teste").expect("cria arquivo");
@@ -41,8 +41,8 @@ fn copia_assets_ao_sair_do_rascunho_sem_sobrescrever() {
         .duration_since(UNIX_EPOCH)
         .expect("relógio válido")
         .as_nanos();
-    let from_dir = std::env::temp_dir().join(format!("mdcreator-assets-from-{nonce}"));
-    let to_dir = std::env::temp_dir().join(format!("mdcreator-assets-to-{nonce}"));
+    let from_dir = std::env::temp_dir().join(format!("mdoffice-assets-from-{nonce}"));
+    let to_dir = std::env::temp_dir().join(format!("mdoffice-assets-to-{nonce}"));
     fs::create_dir_all(from_dir.join("assets")).expect("cria assets origem");
     fs::create_dir_all(to_dir.join("assets")).expect("cria assets destino");
     fs::write(from_dir.join("assets/desenho-a.png"), [1u8, 2, 3]).expect("imagem origem");
@@ -79,7 +79,7 @@ fn renomeia_documento_sem_sobrescrever() {
         .duration_since(UNIX_EPOCH)
         .expect("relógio válido")
         .as_nanos();
-    let dir = std::env::temp_dir().join(format!("mdcreator-rename-{nonce}"));
+    let dir = std::env::temp_dir().join(format!("mdoffice-rename-{nonce}"));
     fs::create_dir_all(&dir).expect("cria pasta");
     let original = dir.join("antigo.md");
     fs::write(&original, "conteúdo").expect("cria arquivo");
@@ -115,7 +115,7 @@ fn sugere_caminho_md_livre_sem_sobrescrever() {
         .duration_since(UNIX_EPOCH)
         .expect("relógio válido")
         .as_nanos();
-    let dir = std::env::temp_dir().join(format!("mdcreator-mdpath-{nonce}"));
+    let dir = std::env::temp_dir().join(format!("mdoffice-mdpath-{nonce}"));
     let first = unique_md_path(
         dir.to_string_lossy().to_string(),
         "Meu Documento Ácido".to_string(),
@@ -142,7 +142,7 @@ fn pacote_portatil_leva_markdown_imagem_json_e_modelo_de_instrucao() {
         .duration_since(UNIX_EPOCH)
         .expect("relógio válido")
         .as_nanos();
-    let root = std::env::temp_dir().join(format!("mdcreator-bundle-{nonce}"));
+    let root = std::env::temp_dir().join(format!("mdoffice-bundle-{nonce}"));
     let assets = root.join("assets");
     fs::create_dir_all(&assets).expect("cria pasta assets");
     fs::write(assets.join("desenho-teste.png"), [137, 80, 78, 71])

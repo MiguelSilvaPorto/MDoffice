@@ -123,7 +123,7 @@ export const excelDocsMethods = {
     const data = live ? this.excelHost.snapshot() : tab.xlsx!;
     const bytes = await livroParaXlsx(data.livro, {
       titulo: tabLabel(tab),
-      autor: "mdCreator",
+      autor: "mdOffice",
       grade: data.config.grade,
       casas: data.config.casas,
     });

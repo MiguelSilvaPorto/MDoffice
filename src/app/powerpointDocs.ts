@@ -200,7 +200,7 @@ export const powerpointDocsMethods = {
       this.afterTabChange();
       if (!this.pptxNotice) {
         this.pptxNotice = true;
-        toast("Salvo como .pptx. A apresentação vira caixas de texto posicionadas; animações e efeitos que o mdCreator ainda não entende não são exportados.", "info", 7500);
+        toast("Salvo como .pptx. A apresentação vira caixas de texto posicionadas; animações e efeitos que o mdOffice ainda não entende não são exportados.", "info", 7500);
       } else toast(`Apresentação salva em ${baseName(tab.path!)}`, "ok", 2600);
       return true;
     } catch (e) {

@@ -1,4 +1,4 @@
-// mdCreator — o app: guarda o estado (abas, editor, painéis) e liga as peças.
+// mdOffice — o app: guarda o estado (abas, editor, painéis) e liga as peças.
 // O trabalho de cada assunto está nos arquivos ao lado (tabs, documents, wordDocs, assistant…).
 import { loadLanguageModel } from "../broker/ghost/model";
 import { kindOfTab } from "../fileIcons";
@@ -391,7 +391,7 @@ export class App {
         <h2>Guardar cópia de segurança dos seus arquivos?</h2>
       </header>
       <div class="bk-ask-body">
-        <p>O <b>mdCreator</b> pode guardar uma cópia de cada documento que você escrever,
+        <p>O <b>mdOffice</b> pode guardar uma cópia de cada documento que você escrever,
         em uma pasta do seu computador. Assim, mesmo se apagar o arquivo sem querer,
         fechar o app com força ou perder o documento, o texto continua lá.</p>
         <ul class="bk-ask-list">

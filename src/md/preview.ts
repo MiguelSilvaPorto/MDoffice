@@ -97,7 +97,7 @@ export function welcomeHtml(): string {
   return `
   <div class="welcome">
     <div class="welcome-logo">M↓</div>
-    <h1>Bem-vindo ao mdCreator</h1>
+    <h1>Bem-vindo ao mdOffice</h1>
     <p>Escreva Markdown à esquerda; o resultado aparece formatado ao lado.</p>
     <ul>
       <li><b>Escrever</b> — a barra acima tem o essencial (negrito, listas, tabela, link e o <b>Modelo IA</b>). O botão <b>⋯</b> mostra o resto.</li>
@@ -370,7 +370,7 @@ export class Preview {
       cb.parentElement?.classList.add("task-list-item");
     });
 
-    // Desenhos nativos do mdCreator têm um editor acessível no próprio preview.
+    // Desenhos nativos do mdOffice têm um editor acessível no próprio preview.
     this.el.querySelectorAll<HTMLImageElement>("img").forEach((img) => {
       const src = img.getAttribute("src") || "";
       const alt = img.getAttribute("alt") || "";

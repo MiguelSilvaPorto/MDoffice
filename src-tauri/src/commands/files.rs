@@ -55,7 +55,7 @@ pub fn read_file_data_url(path: String) -> Result<String, String> {
 }
 
 /// Sugere um caminho `.md` livre dentro de `dir` (acrescenta -1, -2… se já existir).
-/// Usado para salvar automaticamente documentos novos em Documentos/mdCreator.
+/// Usado para salvar automaticamente documentos novos em Documentos/mdOffice.
 #[tauri::command]
 pub fn unique_md_path(dir: String, base: String) -> Result<String, String> {
     let d = PathBuf::from(&dir);

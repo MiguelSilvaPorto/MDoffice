@@ -94,8 +94,8 @@ export function createTextDrawEditor(opts: TextEditorOptions): TextEditorHandle 
   const canvas = panel.querySelector<HTMLCanvasElement>(".dr-canvas")!;
   const wrap = panel.querySelector<HTMLElement>(".draw-canvas-wrap")!;
   const board = new TextBoard(canvas, wrap, { doc: opts.doc ?? null });
-  // gancho de depuração/teste (mesmo padrão do window.__mdcreator.app)
-  (window as unknown as { __mdcreatorTextBoard?: TextBoard }).__mdcreatorTextBoard = board;
+  // gancho de depuração/teste (mesmo padrão do window.__mdoffice.app)
+  (window as unknown as { __mdofficeTextBoard?: TextBoard }).__mdofficeTextBoard = board;
 
   const traceSelect = panel.querySelector<HTMLSelectElement>(".txt-trace")!;
   traceSelect.value = style;

@@ -1,4 +1,4 @@
-// mdCreator — ponto de partida. Tudo do app está em src/app/ (e nos motores md/, word/, powerpoint/, broker/).
+// mdOffice — ponto de partida. Tudo do app está em src/app/ (e nos motores md/, word/, powerpoint/, broker/).
 import "./styles.css";
 import { toast } from "./util";
 import { ligarMovimentoDeSaida } from "./movimento";
@@ -14,7 +14,7 @@ window.addEventListener("scroll", () => {
 });
 
 // gancho de depuração (útil para inspecionar/testar o app em execução)
-(window as unknown as Record<string, unknown>).__mdcreator = { app };
+(window as unknown as Record<string, unknown>).__mdoffice = { app };
 
 /**
  * Tira a tela de carregamento (o `#boot` do index.html).
@@ -33,6 +33,6 @@ void app
   .start()
   .catch((e) => {
     console.error(e);
-    toast("Erro ao iniciar o mdCreator: " + e, "err", 8000);
+    toast("Erro ao iniciar o mdOffice: " + e, "err", 8000);
   })
   .finally(tirarTelaDeCarregamento);

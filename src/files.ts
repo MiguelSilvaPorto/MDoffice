@@ -207,7 +207,7 @@ export async function copyAssets(fromDoc: string, toDoc: string): Promise<number
   return await invoke<number>("copy_assets", { fromDoc, toDoc });
 }
 
-/** Pasta padrão de documentos (…/Documentos/mdCreator), criada se não existir. */
+/** Pasta padrão de documentos (…/Documentos/mdOffice), criada se não existir. */
 export async function defaultDocsDir(): Promise<string> {
   return await invoke<string>("default_docs_dir");
 }

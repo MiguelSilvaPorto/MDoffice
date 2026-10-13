@@ -1,10 +1,10 @@
 # Mapa de painéis, diálogos e telas do DeckCraft
 
-> Especificação escrita do zero para recriar a interface no mdCreator. Nenhum trecho de código foi copiado.
+> Especificação escrita do zero para recriar a interface no mdOffice. Nenhum trecho de código foi copiado.
 
 Este documento descreve a interface do DeckCraft (referência open-source) observada na leitura do
 código-fonte, para servir de planta na reconstrução dos painéis, diálogos, menus contextuais, telas
-e atalhos no mdCreator. Os rótulos entre aspas são os textos que o usuário vê na tela.
+e atalhos no mdOffice. Os rótulos entre aspas são os textos que o usuário vê na tela.
 
 ## Resumo
 
@@ -118,14 +118,14 @@ padrão) com um X no cabeçalho que o fecha. Com **nada selecionado**, mostra s�
 | Transparency | slider 0–100% | transparência da imagem | |
 | Reset Picture | botão | desfaz todos os ajustes | |
 
-**Notas para recriar no mdCreator:** o `src/powerpoint/ui/painel.ts` já é um painel único à
+**Notas para recriar no mdOffice:** o `src/powerpoint/ui/painel.ts` já é um painel único à
 direita com seções em sanfona ("Preenchimento", "Linha", "Efeitos", "Ajustes da forma", "Tamanho e
 posição", "Texto", "Imagem", "Gráfico") e resolve o mesmo terreno. Falta o que o DeckCraft tem de
 diferente: as **abas de ícones** no topo (Fill & Line / Effects / Size & Properties / Text
 Options / Picture) e o **editor de gradiente dentro do painel** (amostras prontas, tipo, direção,
 ângulo, barra de paradas com cor/posição/transparência). O "Texto Alternativo" do DeckCraft vive
-no painel, enquanto o mdCreator não tem campo de alt text; e o painel do DeckCraft não formata
-gráfico (isso fica na aba Chart Design) — o mdCreator tem a seção "Gráfico", que pode ser mantida.
+no painel, enquanto o mdOffice não tem campo de alt text; e o painel do DeckCraft não formata
+gráfico (isso fica na aba Chart Design) — o mdOffice tem a seção "Gráfico", que pode ser mantida.
 
 ## Painel "Formatar Fundo" (Format Background)
 
@@ -147,11 +147,11 @@ contextual do palco ou da miniatura ("Format Background…") ou pela aba **Slide
 | Apply to All | botão | aplica o fundo atual a todas as lâminas | desabilitado quando não há nada a aplicar |
 | Reset Background | botão | volta o fundo ao padrão | |
 
-**Notas para recriar no mdCreator:** o painel do mdCreator já tem a seção "Fundo" com Do tema /
+**Notas para recriar no mdOffice:** o painel do mdOffice já tem a seção "Fundo" com Do tema /
 Sólido / Gradiente / Imagem e "Aplicar a todas as lâminas", o que cobre o essencial. Faltam os
 tipos **padrão/textura** (com as amostras e as duas cores) e a caixa **"Hide background
-graphics"**; o "Reset Background" do DeckCraft equivale a escolher "Do tema" no mdCreator. O
-gradiente do mdCreator usa só duas cores e ângulo, enquanto o DeckCraft tem barra de paradas —
+graphics"**; o "Reset Background" do DeckCraft equivale a escolher "Do tema" no mdOffice. O
+gradiente do mdOffice usa só duas cores e ângulo, enquanto o DeckCraft tem barra de paradas —
 vale decidir se a profundidade entra agora ou fica para depois.
 
 ## Painel "Animações" (Animation Pane)
@@ -174,7 +174,7 @@ vale decidir se a profundidade entra agora ou fica para depois.
 | nome do objeto | texto | nome da forma animada | clicar seleciona a forma na lâmina |
 | barra de tempo | barra colorida | duração (largura) e atraso (deslocamento) | verde = entrada, amarelo = ênfase, vermelho = saída, azul = caminho |
 
-**Notas para recriar no mdCreator:** o mdCreator **não tem** painel de animações nem animações de
+**Notas para recriar no mdOffice:** o mdOffice **não tem** painel de animações nem animações de
 objeto (a área "Animations" está zerada no checklist de paridade). Se for entrar, este painel é o
 modelo mínimo viável: lista com ordem de clique, ícone por classe, nome e a barrinha de tempo —
 sem timeline avançada. A aba **Animations** da fita do DeckCraft (galeria de efeitos, Add
@@ -207,12 +207,12 @@ mais atrás.
 | linha | área clicável e arrastável | seleciona, ou arrasta para reordenar entre os irmãos | Ctrl/⌘+clique alterna; Shift+clique pega uma faixa de linhas do mesmo nível; arrastar mostra uma linha de inserção azul |
 | fundo | realce | linha selecionada e linha sob o ponteiro | objetos dentro de grupo oculto aparecem apagados |
 
-**Notas para recriar no mdCreator:** o mdCreator **não tem** painel de seleção; a seleção é feita
+**Notas para recriar no mdOffice:** o mdOffice **não tem** painel de seleção; a seleção é feita
 só no palco. É uma adição de alto valor e baixo risco, porque o modelo já tem nome, oculto e
 bloqueado por forma (`s.bloqueada` aparece no painel de formatação). O que o DeckCraft faz e vale
 copiar: ordem "da frente para trás", grupos dobrando, olho e cadeado por linha, renomear no lugar
 e arrastar para reordenar; o que pode ficar para depois: as setas "Bring Forward/Send Backward" no
-cabeçalho (a fita do mdCreator já tem a ordem no grupo Organizar).
+cabeçalho (a fita do mdOffice já tem a ordem no grupo Organizar).
 
 ## Painel "Comentários" (Comments)
 
@@ -238,7 +238,7 @@ status, pela aba **Review** → "Show Comments" ou ao postar um comentário novo
 | Resolve / Reopen | botão pequeno | marca o comentário como resolvido ou reabre | o rótulo alterna |
 | 🗑 | botão pequeno | apaga o comentário | |
 
-**Notas para recriar no mdCreator:** o mdCreator **não tem** comentários (1/4 na área Review do
+**Notas para recriar no mdOffice:** o mdOffice **não tem** comentários (1/4 na área Review do
 checklist). O painel do DeckCraft é enxuto e serve de referência direta: cartão com avatar,
 autor/data, texto, respostas, campo de resposta com Enter e os botões Resolve e apagar. Note que
 no DeckCraft os comentários são **por lâmina** e o painel só lista a lâmina atual; o botão
@@ -255,7 +255,7 @@ no DeckCraft os comentários são **por lâmina** e o painel só lista a lâmina
 | texto de introdução | rótulo | "Pick a look for your slides. Ideas are generated on your device." | deixa claro que é offline |
 | amostras de tema | miniaturas clicáveis | mostra a lâmina atual em cada tema embutido | clicar aplica o tema; o ponteiro ganha realce e o nome aparece em dica |
 
-**Notas para recriar no mdCreator:** o mdCreator **não tem** Design Ideas; o mais próximo são os 6
+**Notas para recriar no mdOffice:** o mdOffice **não tem** Design Ideas; o mais próximo são os 6
 modelos e os 3 temas abertos por popup na fita. Se a ideia for reaproveitar, o caminho curto é
 uma lista de miniaturas da lâmina atual com cada tema/modelo — exatamente o que o DeckCraft faz —
 em vez de sugestões geradas. Cuidado com o custo de renderizar uma miniatura por tema a cada
@@ -273,10 +273,10 @@ Modo Mestre de Lâminas.
 |---|---|---|---|
 | área de texto | campo multilinha | notas do apresentador da lâmina atual | dica "Click to add notes"; grava ao sair do campo; redimensionável (36–400 pt de altura) |
 
-**Notas para recriar no mdCreator:** o mdCreator já tem o painel "Notas" na aba lateral do
+**Notas para recriar no mdOffice:** o mdOffice já tem o painel "Notas" na aba lateral do
 editor, com a mesma função. A diferença de arranjo é que o DeckCraft o põe **embaixo do palco**
-(como o PowerPoint) e o mantém redimensionável; o mdCreator o põe na coluna da direita, junto do
-painel de formatação. Manter a solução do mdCreator é aceitável; se quiser paridade visual, a
+(como o PowerPoint) e o mantém redimensionável; o mdOffice o põe na coluna da direita, junto do
+painel de formatação. Manter a solução do mdOffice é aceitável; se quiser paridade visual, a
 versão inferior é a do DeckCraft.
 
 ## Barra de controle de mídia (flutuante sobre o palco)
@@ -295,7 +295,7 @@ canto inferior do objeto.
 | tempo | rótulo | posição atual no formato mm:ss,cc | |
 | erro | texto vermelho | "No sound: …" quando a saída de áudio falha | |
 
-**Notas para recriar no mdCreator:** o mdCreator não tem mídia (0/7 na área Media), então isto é
+**Notas para recriar no mdOffice:** o mdOffice não tem mídia (0/7 na área Media), então isto é
 referência para quando a feature entrar. O desenho é deliberadamente pequeno: play/pause, saltos
 de ¼ de segundo, uma barra de busca com marcas de corte e o tempo — sem volume, sem velocidade.
 Na lâmina em apresentação, o mesmo controle não aparece; o clique na mídia toca/pausa.
@@ -313,7 +313,7 @@ Na lâmina em apresentação, o mesmo controle não aparece; o clique na mídia 
 | Insert | botão principal (acento) | cria a tabela |
 | Cancel | botão | fecha sem criar |
 
-**Notas para recriar no mdCreator:** o mdCreator já insere tabela por **seletor de grade** em
+**Notas para recriar no mdOffice:** o mdOffice já insere tabela por **seletor de grade** em
 popup na fita, sem diálogo. O diálogo do DeckCraft é o complemento para números exatos; se for
 adotado, o par natural é grade + "Insert Table…", como o DeckCraft faz.
 
@@ -329,7 +329,7 @@ adotado, o par natural é grade + "Insert Table…", como o DeckCraft faz.
 | Maximize content (else ensure fit) | caixa de seleção | escala o conteúdo para aproveitar o novo tamanho, em vez de só caber |
 | OK / Cancel | botões | aplica ou fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator troca 16:9/4:3 direto na fita, sem diálogo; não há
+**Notas para recriar no mdOffice:** o mdOffice troca 16:9/4:3 direto na fita, sem diálogo; não há
 presets nomeados nem campo de tamanho exato. Este diálogo é o modelo para quando o tamanho custom
 entrar, e a distinção "maximizar × garantir que caiba" é a decisão de UX mais importante dele.
 
@@ -348,7 +348,7 @@ entrar, e a distinção "maximizar × garantir que caiba" é a decisão de UX ma
 | Don't show on title slide | caixa de seleção | esconde tudo na lâmina de título |
 | Apply / Apply to All / Cancel | botões | aplica à lâmina atual, a todas, ou fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator tem rodapé e número da lâmina, mas **sem campo de
+**Notas para recriar no mdOffice:** o mdOffice tem rodapé e número da lâmina, mas **sem campo de
 data** e sem "não mostrar na lâmina de título". O diálogo do DeckCraft é o alvo; a data fixa ×
 automática é a parte que costuma faltar nos modelos de dados, então vale checar o `.pptx` antes.
 
@@ -365,7 +365,7 @@ automática é a parte que costuma faltar nos modelos de dados, então vale chec
 | ScreenTip: | campo de texto | dica de tela do link |
 | OK / Cancel | botões | aplica ou fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator **não tem** hiperlink. O diálogo do DeckCraft é
+**Notas para recriar no mdOffice:** o mdOffice **não tem** hiperlink. O diálogo do DeckCraft é
 pequeno e completo: três modos, a lista de lâminas com os títulos reais (não só números) e a dica
 de tela. A lista de lâminas deve vir do modelo (`title()` de cada lâmina) para o usuário
 reconhecer o destino.
@@ -385,7 +385,7 @@ reconhecer o destino.
 | Use timings, if present | caixa de seleção | usa os tempos ensaiados |
 | OK / Cancel | botões | aplica ou fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator não tem "Configurar apresentação"; o modo
+**Notas para recriar no mdOffice:** o mdOffice não tem "Configurar apresentação"; o modo
 apresentação é um F5 simples. Este diálogo é a referência para quando entrar (a apresentação em
 janela e o quiosque são as opções que mudam comportamento, não só dados).
 
@@ -400,7 +400,7 @@ um menu com os mesmos valores).
 | Fit | botão | ajusta à janela |
 | OK / Cancel | botões | fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator já tem zoom com slider e Ctrl+roda no palco
+**Notas para recriar no mdOffice:** o mdOffice já tem zoom com slider e Ctrl+roda no palco
 (40–400%), mas sem lista de percentuais nem botão "ajustar à janela" no mesmo lugar. O diálogo é
 opcional; se entrar, os mesmos valores do DeckCraft são um bom padrão.
 
@@ -415,7 +415,7 @@ opcional; se entrar, os mesmos valores do DeckCraft são um bom padrão.
 | Post | botão principal | publica; só funciona com texto não vazio |
 | Cancel | botão | fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator não tem comentários. Quando entrar, este diálogo
+**Notas para recriar no mdOffice:** o mdOffice não tem comentários. Quando entrar, este diálogo
 é o mínimo: uma caixa e um botão; depois de postar, o painel de comentários abre sozinho.
 
 ## Diálogo "Texto Alternativo" (Alt Text)
@@ -430,7 +430,7 @@ opcional; se entrar, os mesmos valores do DeckCraft são um bom padrão.
 | Mark as decorative | caixa de seleção | marca como decorativo |
 | OK / Cancel | botões | aplica ou fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator não tem alt text. O DeckCraft oferece o mesmo
+**Notas para recriar no mdOffice:** o mdOffice não tem alt text. O DeckCraft oferece o mesmo
 campo em dois lugares (diálogo e painel de formatação) — escolher um só evita duas fontes de
 verdade; a explicação em forma de pergunta e a caixa "decorativo" são bons guias de redação.
 
@@ -444,7 +444,7 @@ verdade; a explicação em forma de pergunta e a caixa "decorativo" são bons gu
 | (área de texto) | campo multilinha (10 linhas, monoespaçado) | o texto do roteiro |
 | Insert / Cancel | botões | cria as lâminas ou fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator gera deck a partir de Markdown no "Apresentar",
+**Notas para recriar no mdOffice:** o mdOffice gera deck a partir de Markdown no "Apresentar",
 mas não tem o comando no editor. Este diálogo é o caminho direto para trazer o recurso, com a
 mesma regra de indentação (título × marcador) e um campo grande e monoespaçado.
 
@@ -457,7 +457,7 @@ mesma regra de indentação (título × marcador) e um campo grande e monoespaç
 | Name: | campo de texto | novo nome (pré-preenchido com o atual) |
 | Rename / Cancel | botões | renomeia ou fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator não tem seções. Seções entram no checklist de
+**Notas para recriar no mdOffice:** o mdOffice não tem seções. Seções entram no checklist de
 paridade como P1 e este diálogo é o menor dos pedaços da feature (o resto é o cabeçalho na lista de
 miniaturas e os comandos de mover/remover).
 
@@ -471,7 +471,7 @@ renomeia no lugar.
 | Name: | campo de texto | novo nome da forma (pré-preenchido) |
 | Rename / Cancel | botões | renomeia ou fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator já renomeia a lâmina por `window.prompt`; para
+**Notas para recriar no mdOffice:** o mdOffice já renomeia a lâmina por `window.prompt`; para
 formas não há renomear. Este diálogo é trivial e casa com o painel de Seleção sugerido acima —
 o nome precisa existir no modelo para valer a pena.
 
@@ -484,7 +484,7 @@ o nome precisa existir no modelo para valer a pena.
 | Name: | campo de texto | novo nome do layout |
 | Rename / Cancel | botões | renomeia ou fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator lê mestre/layout mas não os edita; este diálogo
+**Notas para recriar no mdOffice:** o mdOffice lê mestre/layout mas não os edita; este diálogo
 só faz sentido junto do Modo Mestre de Lâminas.
 
 ## Diálogo "Parágrafo" (Paragraph)
@@ -500,7 +500,7 @@ só faz sentido junto do Modo Mestre de Lâminas.
 | Line spacing (lines): | campo de texto | espaçamento entre linhas (padrão 1,0) |
 | OK / Cancel | botões | aplica ou fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator tem espaçamento de linha e recuos no painel de
+**Notas para recriar no mdOffice:** o mdOffice tem espaçamento de linha e recuos no painel de
 formatação, mas sem o diálogo com todos os números juntos. A referência útil aqui é a unidade:
 polegadas para recuo, pontos para espaçamento, "linhas" para entrelinha — mistura que o
 PowerPoint/DeckCraft mantém e que o usuário já conhece.
@@ -516,8 +516,8 @@ aba **File** → "About DeckCraft".
 | (conteúdo) | logo, nome, versão, frase, links | comunidade (Discord), site, código no GitHub, licença e ano |
 | Close | botão | fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator tem a aba **Sobre** nas Configurações; a ideia de
-separar "Sobre / Contribuidores / Modelos" em abas é aproveitável (o mdCreator tem IA local, então
+**Notas para recriar no mdOffice:** o mdOffice tem a aba **Sobre** nas Configurações; a ideia de
+separar "Sobre / Contribuidores / Modelos" em abas é aproveitável (o mdOffice tem IA local, então
 "Modelos" é uma aba natural). A janela do DeckCraft cresce (640×380) só nas abas com tabela — um
 detalhe que evita rolagem desnecessária.
 
@@ -538,8 +538,8 @@ detalhe que evita rolagem desnecessária.
 | Your name (comments): | campo de texto | nome usado nos comentários |
 | Done | botão | fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator já tem uma aba de **Configurações** bem maior que
-esta (escrita, tradução, histórico, aparência, atalhos). O que o DeckCraft tem e o mdCreator pode
+**Notas para recriar no mdOffice:** o mdOffice já tem uma aba de **Configurações** bem maior que
+esta (escrita, tradução, histórico, aparência, atalhos). O que o DeckCraft tem e o mdOffice pode
 não ter: escala da interface e o campo do nome para comentários; e o DeckCraft **não** tem
 "autosave" nem "unidades" aqui, apesar de o checklist cobrar.
 
@@ -559,7 +559,7 @@ de comandos "Export…".
 | Include hidden slides | caixa de seleção | só no PDF |
 | Export / Cancel | botões | executa ou fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator exporta .pptx e imprime via sistema, mas não tem
+**Notas para recriar no mdOffice:** o mdOffice exporta .pptx e imprime via sistema, mas não tem
 PNG/JPEG por lâmina nem "tópicos em texto", e não oferece notas/handouts. Este diálogo é o mapa
 direto do que falta na exportação; o combo de layout de impressão vale reaproveitar também na
 página **Imprimir**.
@@ -574,7 +574,7 @@ página **Imprimir**.
 | Punctuation / Currency / Math / Greek / Arrows / Shapes | 6 grupos de botões | cada botão insere o caractere no texto | a inserção começa a edição de texto se preciso |
 | Close | botão | fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator não tem diálogo de símbolos. É uma adição
+**Notas para recriar no mdOffice:** o mdOffice não tem diálogo de símbolos. É uma adição
 barata e útil; a divisão em seis grupos do DeckCraft cobre o uso comum sem virar uma tabela
 gigante, e a grade de botões quadrados de 26 pt é um bom alvo de toque.
 
@@ -588,7 +588,7 @@ gigante, e a grade de botões quadrados de 26 pt é um bom alvo de toque.
 | (campo) | campo de texto de uma linha | a equação digitada |
 | Insert / Cancel | botões | insere uma caixa de texto com a equação em 28 pt itálico, ou fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator não tem equações (P2 no checklist). O DeckCraft
+**Notas para recriar no mdOffice:** o mdOffice não tem equações (P2 no checklist). O DeckCraft
 resolve de forma modesta — converte uma forma linear em texto com sobrescritos e símbolos — o que
 é honesto para um recurso P2 e evita um editor de fórmulas completo.
 
@@ -603,7 +603,7 @@ resolve de forma modesta — converte uma forma linear em texto com sobrescritos
 | (vazio) | rótulo | "The spelling check is complete. No issues found." |
 | Close | botão | fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator não tem verificação ortográfica no PowerPoint.
+**Notas para recriar no mdOffice:** o mdOffice não tem verificação ortográfica no PowerPoint.
 O DeckCraft usa uma lista embutida (sem idiomas) e devolve lâmina + palavra — um bom começo antes
 de pensar em corretor de verdade; a lista com "Go to" é o padrão de resultado que o Verificador de
 Acessibilidade repete.
@@ -620,7 +620,7 @@ Acessibilidade repete.
 | (vazio) | rótulo | "No accessibility issues found. …" |
 | Close | botão | fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator não tem verificador de acessibilidade. É o par
+**Notas para recriar no mdOffice:** o mdOffice não tem verificador de acessibilidade. É o par
 natural do alt text: sem alt text e sem contraste verificado, o .pptx exportado fica pior do que o
 PowerPoint aceita. A lista com "Go to" que seleciona a forma é o comportamento que dá utilidade ao
 diálogo.
@@ -635,9 +635,9 @@ diálogo.
 | (lista) | 10 idiomas clicáveis | English (US/UK), Español, Français, Deutsch, Italiano, Português, 日本語, 中文, العربية |
 | OK / Cancel | botões | fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator tem tradução de documentos por IA, não marcação de
+**Notas para recriar no mdOffice:** o mdOffice tem tradução de documentos por IA, não marcação de
 idioma no texto. O diálogo do DeckCraft é hoje um esqueleto (a escolha não muda o documento), o
-que serve de aviso: se entrar no mdCreator, precisa gravar o idioma no trecho, senão vira botão
+que serve de aviso: se entrar no mdOffice, precisa gravar o idioma no trecho, senão vira botão
 sem efeito.
 
 ## Diálogo "Apresentações Personalizadas" (Custom Shows)
@@ -651,7 +651,7 @@ sem efeito.
 | Slides (e.g. 1,3,5): | campo de texto | lista de lâminas (padrão "1") |
 | Create / Cancel | botões | cria ou fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator não tem apresentações personalizadas (P2 no
+**Notas para recriar no mdOffice:** o mdOffice não tem apresentações personalizadas (P2 no
 checklist). O diálogo é simples, mas a lista de lâminas por texto livre ("1,3,5") é a parte
 frágil: sem validação, erros de digitação viram lâminas erradas.
 
@@ -668,9 +668,9 @@ frágil: sem validação, erros de digitação viram lâminas erradas.
 | OK / Cancel | botões | aplica ou fecha |
 | (sem gráfico) | rótulo | "Select a chart first." e botão Close |
 
-**Notas para recriar no mdCreator:** o mdCreator edita dados de gráfico **no próprio painel**
+**Notas para recriar no mdOffice:** o mdOffice edita dados de gráfico **no próprio painel**
 (+ Categoria / + Série), sem diálogo, e avisa que o gráfico vai para o .pptx como imagem. O
-diálogo do DeckCraft é a alternativa "planilha"; se o mdCreator quiser planilha, esta grade é o
+diálogo do DeckCraft é a alternativa "planilha"; se o mdOffice quiser planilha, esta grade é o
 modelo, com a regra primeira linha = séries e primeira coluna = categorias.
 
 ## Diálogo "Cortar Mídia" (Trim Media)
@@ -685,7 +685,7 @@ modelo, com a regra primeira linha = séries e primeira coluna = categorias.
 | Fade out (s): | campo de texto | esmaecimento de saída |
 | OK / Cancel | botões | aplica ou fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator não tem mídia nem corte. Quando a mídia entrar, o
+**Notas para recriar no mdOffice:** o mdOffice não tem mídia nem corte. Quando a mídia entrar, o
 diálogo de quatro campos é o suficiente para o essencial; os valores aparecem como marcas na barra
 de controle de mídia do palco, o que dá retorno visual ao que foi cortado.
 
@@ -700,7 +700,7 @@ de controle de mídia do palco, o que dá retorno visual ao que foi cortado.
 | (área de texto) | campo multilinha (5 linhas) | um item por linha (padrão "Plan / Build / Launch") |
 | Insert / Cancel | botões | cria o diagrama ou fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator não tem SmartArt (0/2). O diálogo do DeckCraft é
+**Notas para recriar no mdOffice:** o mdOffice não tem SmartArt (0/2). O diálogo do DeckCraft é
 um "SmartArt mínimo" — seis tipos e um campo de texto —, o que é uma forma barata de cobrir o
 recurso sem árvore de layouts. Os seis tipos cobrem o uso comum; listas e processos são o começo.
 
@@ -715,7 +715,7 @@ recurso sem árvore de layouts. Os seis tipos cobrem o uso comum; listas e proce
 | Save | botão principal (acento) | salva tudo e sai (Enter) |
 | Cancel | botão | volta à janela |
 
-**Notas para recriar no mdCreator:** o mdCreator já tem autosave, rascunhos e backup, o que reduz o
+**Notas para recriar no mdOffice:** o mdOffice já tem autosave, rascunhos e backup, o que reduz o
 peso da pergunta; mesmo assim, fechar com alterações pendentes merece a mesma tríade
 Salvar / Não salvar / Cancelar, com a contagem de documentos no texto quando houver mais de um.
 
@@ -730,9 +730,9 @@ Salvar / Não salvar / Cancelar, com a contagem de documentos no texto quando ho
 | Save | botão principal (acento) | salva e fecha (Enter) |
 | Cancel | botão | mantém aberta |
 
-**Notas para recriar no mdCreator:** é o irmão do diálogo anterior, mas por documento — no
-mdCreator, com abas estilo Chrome, é este o formato que faz sentido ao fechar uma aba. Atenção ao
-caso "nunca salvo": no DeckCraft, salvar manda para "Save As"; o mdCreator deve fazer o mesmo.
+**Notas para recriar no mdOffice:** é o irmão do diálogo anterior, mas por documento — no
+mdOffice, com abas estilo Chrome, é este o formato que faz sentido ao fechar uma aba. Atenção ao
+caso "nunca salvo": no DeckCraft, salvar manda para "Save As"; o mdOffice deve fazer o mesmo.
 
 ---
 
@@ -765,7 +765,7 @@ caso "nunca salvo": no DeckCraft, salvar manda para "Save As"; o mdCreator deve 
 | Format Background… | abre o painel de fundo |
 | New Comment | abre o diálogo de comentário |
 
-**Notas para recriar no mdCreator:** o menu de contexto do palco do mdCreator tem 10–11 itens
+**Notas para recriar no mdOffice:** o menu de contexto do palco do mdOffice tem 10–11 itens
 (Editar texto, Recortar, Copiar, Colar, Duplicar, Excluir, Trazer para a frente, Enviar para trás,
 Agrupar, Desagrupar / Colar, Selecionar tudo), sem submenus nem formatação. O DeckCraft troca
 "Duplicar/Excluir" por submenus de ordem e acrescenta link, alt text, forma padrão e
@@ -791,7 +791,7 @@ clicada não estiver selecionada, ela é selecionada antes.
 | Format Background… | abre o painel de fundo |
 | Hide Slide / Show Slide | oculta ou mostra (o rótulo alterna) |
 
-**Notas para recriar no mdCreator:** o mdCreator não tem menu de contexto na faixa de miniaturas
+**Notas para recriar no mdOffice:** o mdOffice não tem menu de contexto na faixa de miniaturas
 (nem seções, nem ocultar lâmina). Este menu é o alvo direto quando esses comandos existirem; note
 que o DeckCraft **seleciona a lâmina antes** de abrir o menu, o que evita comandos aplicados à
 lâmina errada — detalhe fácil de esquecer.
@@ -806,7 +806,7 @@ lâmina errada — detalhe fácil de esquecer.
 | Move Section Up | sobe a seção |
 | Move Section Down | desce a seção |
 
-**Notas para recriar no mdCreator:** depende de seções, que o mdCreator não tem. A dupla
+**Notas para recriar no mdOffice:** depende de seções, que o mdOffice não tem. A dupla
 "Remove Section" × "Remove Section & Slides" é o cuidado que evita perda de conteúdo por engano —
 o modelo de dados precisa distinguir seção de lâminas.
 
@@ -823,7 +823,7 @@ o modelo de dados precisa distinguir seção de lâminas.
 | Show / Hide | mostra ou oculta (o rótulo alterna) |
 | Lock / Unlock | trava ou destrava (o rótulo alterna) |
 
-**Notas para recriar no mdCreator:** só existe quando o painel de Seleção existir; é o mesmo
+**Notas para recriar no mdOffice:** só existe quando o painel de Seleção existir; é o mesmo
 conjunto de ações das setas do cabeçalho e do olho/cadeado, oferecido como menu para quem procura
 no clique direito.
 
@@ -839,11 +839,11 @@ no clique direito.
 | Move Down | desce na ordem |
 | Remove | apaga a animação |
 
-**Notas para recriar no mdCreator:** depende do painel de animações; é o mínimo para reordenar e
+**Notas para recriar no mdOffice:** depende do painel de animações; é o mínimo para reordenar e
 mudar o disparo sem sair da lista, e cobre os mesmos campos que a fita (Start/Duration/Delay).
 
 **Observação geral:** não há menu contextual na fita nem nas abas do DeckCraft — clicar com o
-botão direito numa aba não abre nada. Se o mdCreator quiser um (por exemplo, para personalizar a
+botão direito numa aba não abre nada. Se o mdOffice quiser um (por exemplo, para personalizar a
 fita), será uma adição, não uma paridade.
 
 ---
@@ -951,9 +951,9 @@ A área da página tem margens generosas (48/36/22/32) e largura máxima de 1180
 | User Information | texto | explica que não há conta e que tudo fica no dispositivo |
 | Product Information | logo, nome, versão, licença | e o cartão "About DeckCraft", mais os links de Discord e GitHub |
 
-**Notas para recriar no mdCreator:** a tela **Início** do mdCreator já cobre "novo, recentes,
+**Notas para recriar no mdOffice:** a tela **Início** do mdOffice já cobre "novo, recentes,
 rascunhos, busca"; o que o Backstage acrescenta é a **mesma tela servir de aba Arquivo com
-apresentação aberta**, com Info, Save As, Print e Export no mesmo menu lateral. Para o mdCreator,
+apresentação aberta**, com Info, Save As, Print e Export no mesmo menu lateral. Para o mdOffice,
 vale trazer as páginas **Info** (propriedades do documento — hoje uma pendência P2) e **Print**
 (escopo + layout + prévia), que são as que têm função que ainda não existe em lugar nenhum; a
 página **Export** pode reaproveitar o diálogo de exportação existente. O padrão de teclado
@@ -980,7 +980,7 @@ página **Export** pode reaproveitar o diálogo de exportação existente. O pad
 6. **Painel de tarefas** (direita) quando aberto.
 7. **Barra de status** (28 pt) — descrita adiante.
 
-**Notas para recriar no mdCreator:** o arranjo é o mesmo que o mdCreator já usa (miniaturas à
+**Notas para recriar no mdOffice:** o arranjo é o mesmo que o mdOffice já usa (miniaturas à
 esquerda, palco no centro, painel à direita, notas na direita). O que difere: no DeckCraft as
 **notas ficam embaixo do palco** e o painel da direita é só de tarefas; e o palco mostra a área de
 colagem ao redor da lâmina. O "+ New Slide" no fim da lista de miniaturas é um detalhe bom de
@@ -999,7 +999,7 @@ copiar.
 | título | campo de texto em negrito | editar e sair do campo grava o título da lâmina; ganhar o foco vai para a lâmina |
 | corpo | campo multilinha por forma de texto | um parágrafo por linha, com tabulações pelo nível da lista |
 
-**Notas para recriar no mdCreator:** o mdCreator não tem vista de estrutura no PowerPoint (tem o
+**Notas para recriar no mdOffice:** o mdOffice não tem vista de estrutura no PowerPoint (tem o
 painel Estrutura do app, para Markdown/Word). A implementação do DeckCraft é modesta e direta —
 título e corpo como campos de texto — e é um bom modelo caso a vista entre.
 
@@ -1016,9 +1016,9 @@ título e corpo como campos de texto — e é um bom modelo caso a vista entre.
 | ⌘/Ctrl + roda | gesto | amplia/reduz a grade (0,5×–3×) |
 | clique direito | menu | o mesmo menu da miniatura de lâmina |
 
-**Notas para recriar no mdCreator:** o mdCreator tem uma faixa de miniaturas com reordenar, não uma
+**Notas para recriar no mdOffice:** o mdOffice tem uma faixa de miniaturas com reordenar, não uma
 vista separada. A Classificação do DeckCraft é praticamente a mesma faixa em grade, com zoom pelo
-gesto; se o mdCreator quiser a vista, o trabalho é o layout em grade e o zoom, não a interação.
+gesto; se o mdOffice quiser a vista, o trabalho é o layout em grade e o zoom, não a interação.
 
 ## Tela "Página de Notas" (Notes Page)
 
@@ -1028,7 +1028,7 @@ gesto; se o mdCreator quiser a vista, o trabalho é o layout em grade e o zoom, 
 cima e a área de notas embaixo (dica "Click to add text", texto escuro sobre branco). PageUp e
 PageDown trocam de lâmina.
 
-**Notas para recriar no mdCreator:** o mdCreator não tem Página de Notas; a exportação de notas
+**Notas para recriar no mdOffice:** o mdOffice não tem Página de Notas; a exportação de notas
 também não existe. É o par natural da impressão de notas no Backstage (o DeckCraft reusa a mesma
 ideia no layout "Notes Pages" do PDF).
 
@@ -1047,7 +1047,7 @@ ideia no layout "Notes Pages" do PDF).
 Clicar na lâmina avança; Esc sai. Não entra em tela cheia do sistema, nem mostra o painel de
 controles flutuante da apresentação.
 
-**Notas para recriar no mdCreator:** o mdCreator não tem vista de leitura dentro da janela (o F5
+**Notas para recriar no mdOffice:** o mdOffice não tem vista de leitura dentro da janela (o F5
 vai direto para a tela cheia). A barra inferior é o único elemento novo; como o motor de
 apresentação já existe, a vista é um modo de desenho, não um segundo motor.
 
@@ -1069,7 +1069,7 @@ transição/animação. Entra em tela cheia do sistema (na Exibição de Leitura
 | links e ações | — | o ponteiro vira mãozinha sobre links; clique segue o link (lâmina, URL ou sair) |
 | mídia | — | toca ao clicar (ou sozinha, se configurada); o botão de play/pause dos GIFs fica no canto do objeto |
 
-**Notas para recriar no mdCreator:** o modo apresentação do mdCreator já cobre o essencial
+**Notas para recriar no mdOffice:** o modo apresentação do mdOffice já cobre o essencial
 (teclado, B/W, notas com N, Ctrl+P para PDF). O que falta do lado do DeckCraft: a **caneta**
 (desenhar na lâmina), os **controles flutuantes** na base, o **ensaio de tempos** e a mídia
 tocando de verdade. A barra flutuante que só aparece quando o mouse se mexe é o detalhe que
@@ -1093,7 +1093,7 @@ título "Presenter View — DeckCraft". Não aparece na Exibição de Leitura.
 
 Fechar a janela do apresentador desliga o modo apresentador (a apresentação segue).
 
-**Notas para recriar no mdCreator:** o mdCreator mostra as notas **na própria tela cheia** (tecla
+**Notas para recriar no mdOffice:** o mdOffice mostra as notas **na própria tela cheia** (tecla
 N). A janela separada é a diferença de arquitetura: exige segunda janela (no Tauri é possível) e
 traz cronômetro e prévia da próxima lâmina. Se a segunda janela for cara, dá para chegar perto com
 um painel sobreposto na tela cheia; o que não pode faltar é a tríade notas + próxima lâmina +
@@ -1109,7 +1109,7 @@ escolhido; a fita mostra a aba contextual **Slide Master** (Insert Layout, Delet
 Placeholder com Content/Text/Picture/Chart/Table/Media, Themes, Background Styles, Close Master
 View); a barra de status mostra "Slide Master" no lugar do contador.
 
-**Notas para recriar no mdCreator:** o mdCreator lê mestre/layout do .pptx mas não os edita
+**Notas para recriar no mdOffice:** o mdOffice lê mestre/layout do .pptx mas não os edita
 (pendência P0). Esta tela é o alvo: a lista de mestres/layouts no painel de miniaturas, a edição
 no palco e a aba contextual com quatro ações (inserir/renomear/apagar layout e inserir
 placeholder) já entregam o essencial.
@@ -1130,10 +1130,10 @@ sem barra de título:
 | Enter | tecla | executa o comando selecionado |
 | Esc | tecla | fecha |
 
-**Notas para recriar no mdCreator:** o mdCreator já tem a paleta em **Ctrl+K** (`src/palette.ts`),
+**Notas para recriar no mdOffice:** o mdOffice já tem a paleta em **Ctrl+K** (`src/palette.ts`),
 que também busca documentos. A diferença é que a do DeckCraft é **só de comandos** e mostra o
 atalho de cada um à direita — detalhe que ensina os atalhos ao usuário. Vale considerar mostrar o
-atalho na paleta do mdCreator e revisar a tecla (Ctrl+K × Ctrl+Shift+P) por consistência com o
+atalho na paleta do mdOffice e revisar a tecla (Ctrl+K × Ctrl+Shift+P) por consistência com o
 resto do app.
 
 ---
@@ -1185,11 +1185,11 @@ Uma faixa flutuante aparece centralizada a 44 pt da base por 8 s, com uma frase 
 O uso principal é avisar que as fontes do arquivo não estão instaladas. Diferente da mensagem da
 barra de status, o toast não depende da barra existir.
 
-**Notas para recriar no mdCreator:** a barra de status do mdCreator tem "Lâmina N / M", o botão
+**Notas para recriar no mdOffice:** a barra de status do mdOffice tem "Lâmina N / M", o botão
 "Painel" e o zoom (− slider % +). O DeckCraft acrescenta o **idioma**, as **mensagens
 transitórias** e, principalmente, os **botões de visão/comentários/notas** — que dão acesso de um
-clique a recursos hoje espalhados. A barra de título do DeckCraft é mais rica que a do mdCreator
-(Home, Save, Undo, Redo, Play, Search, Present, Comments, tema); o mdCreator tem uma barra
+clique a recursos hoje espalhados. A barra de título do DeckCraft é mais rica que a do mdOffice
+(Home, Save, Undo, Redo, Play, Search, Present, Comments, tema); o mdOffice tem uma barra
 superior própria (novo, abrir, salvar, autosave, desenhar, exportar, ⋯), então a recomendação é
 acrescentar só o que falta de função (Undo/Redo já existem por atalho) e adotar o padrão de
 título "nome — Edited" e o toast para avisos de fonte.
@@ -1287,10 +1287,10 @@ porque o DeckCraft trata os dois como o mesmo modificador.
 | Tab / Shift+Tab (dentro de tabela) | próxima / célula anterior; Tab na última cria linha | edição de texto em tabela |
 | duplo / triplo clique | seleciona a palavra / o parágrafo | edição de texto |
 
-**Notas para recriar no mdCreator:** o mdCreator já cobre a maioria dos atalhos de edição e de
+**Notas para recriar no mdOffice:** o mdOffice já cobre a maioria dos atalhos de edição e de
 documento (Ctrl+Z/Y, Ctrl+C/X/V/D, Ctrl+G, setas, F5, Ctrl+K para a paleta). As lacunas que o
 DeckCraft preenche e valem mapear: **⌘Shift+P** (ou manter Ctrl+K), **Alt+F** para a aba Arquivo,
 **F7** para ortografia, **⌘Alt+M** para comentário, **Alt+F9 / Shift+F9** para guias e grade,
-**⌘F1** para recolher a fita e **⌘0** para ajustar à janela. Na apresentação, o mdCreator já tem
+**⌘F1** para recolher a fita e **⌘0** para ajustar à janela. Na apresentação, o mdOffice já tem
 as teclas de navegação, B/W, N e Esc; o que falta são **⌘P** (caneta), **E** (apagar traços),
 **Home/End** e o **salto por número + Enter**.
