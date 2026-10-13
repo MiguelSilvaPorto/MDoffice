@@ -28,3 +28,18 @@ As ferramentas ficam em `tools\worktrees\` (PowerShell) e são de uso **obrigat�
 - **O push é automático — não o faça à mão.** O `fechar.ps1` já envia a `main` ao GitHub depois de entregar. Se o envio falhar, ou se alguém fechar com `-SemPush`, o monitor (`monitor-push.ps1`, tarefa agendada instalada por `instalar-monitor.ps1`) envia quando todas as worktrees tiverem terminado. Ele nunca força push: se a `main` e o GitHub divergirem, avisa no log (`.git\mdoffice-monitor.log`) e espera o usuário resolver.
 - **Não mexa em worktree de outro agente.** `tools\worktrees\status.ps1` mostra worktrees, estado da `main` e limpeza pendente.
 - **Proteção opcional:** `tools\worktrees\instalar-protecao.ps1` instala um hook que bloqueia commit direto na `main`.
+
+## Changelogs e documentação
+
+Toda tarefa mantém a documentação em dia — o `fechar.ps1` **bloqueia o fechamento** até os
+dois arquivos abaixo serem tocados (não dá para entregar sem eles):
+
+- **`CHANGELOG.md`** — por categoria (**MD\***, **PowerPoint**, **Excel**, **Word**, **Geral**),
+  dividido em **Backend** e **Frontend**. Enquanto a tarefa não entra na `main`, a entrada fica
+  em **Não adicionado**; ao fechar, ela passa para **Adicionado**. **Nunca promova** para
+  "Adicionado" algo que ainda não entrou na `main` (vale para worktrees e PRs).
+- **`docs/historico-tecnico.md`** — o porquê de cada mudança de linha: arquivo, local
+  (função/bloco), linha (`antes → depois`) e o motivo. Entradas antigas podem ser
+  reescritas/consolidadas; o que não pode é perder o porquê.
+- **`docs/funcionalidades.md` + `docs/<modulo>.md`** e o **`README.md`** — quando a tarefa muda
+  o que o app faz (ou como rodar), atualize o documento do módulo correspondente.

@@ -7,6 +7,10 @@
 # Se o push falhar (sem rede), nada se perde: o monitor-push.ps1 envia depois.
 #
 # FLUXO
+#   0.5. changelogs: exige que a tarefa tenha tocado CHANGELOG.md e
+#        docs/historico-tecnico.md (antes de mexer no rebase, para o diff valer);
+#        sem a documentacao na categoria que mexeu, o script PARA (nao fecha)
+#   0.7. se veio de um conflito de rebase ja resolvido, continua o rebase
 #   1. commita o que estiver pendente (exige -Mensagem quando ha alteracao)
 #   2. se a main andou (outra tarefa fechou antes), integra a main nesta worktree
 #      com REBASE: a historia fica LINEAR, sem commit de merge ("merge: integra a
@@ -88,7 +92,35 @@ if ($naoResolvidos.Count -gt 0) {
   throw "Ainda ha conflitos NAO RESOLVIDOS nesta worktree:`n$($naoResolvidos | Out-String)`nResolva os arquivos, rode: git add <arquivos> (ou git add -A), e execute este script de novo."
 }
 
-# -- 0.5) rebase em andamento (conflito ja resolvido): continua ----------------
+# -- 0.5) changelogs: sem eles a tarefa NAO fecha -------------------------------
+# Roda ANTES de continuar o rebase: depois dele o HEAD muda e, se outro trabalho
+# ja tiver posto o mesmo conteudo, os changelogs deixam de aparecer no diff da
+# tarefa. Com rebase em andamento, o topo original esta em orig-head.
+$ladoTarefa = 'HEAD'
+foreach ($sub in 'rebase-merge', 'rebase-apply') {
+  $arquivoOrig = Join-Path $gitDir "$sub\orig-head"
+  if (Test-Path $arquivoOrig) {
+    $ladoTarefa = "$(Get-Content $arquivoOrig -Raw)".Trim()
+    break
+  }
+}
+if (-not $ladoTarefa) { $ladoTarefa = 'HEAD' }
+$tocados = @(Exec -PermitirFalha { git -C $raiz diff --name-only "main...$ladoTarefa" } | Where-Object { "$_".Trim() })
+$pendentes = @(Exec -PermitirFalha { git -C $raiz status --porcelain -uall } | Where-Object { "$_".Trim() } | ForEach-Object {
+  $rel = "$_".Substring(3).Trim()
+  if ($rel -match ' -> ') { $rel = ($rel -split ' -> ')[-1] }
+  $rel.Trim('"')
+})
+$tocados = @($tocados + $pendentes | ForEach-Object { "$_".Trim() } | Select-Object -Unique)
+$faltando = @()
+if ($tocados -notcontains 'CHANGELOG.md') { $faltando += 'CHANGELOG.md' }
+if ($tocados -notcontains 'docs/historico-tecnico.md') { $faltando += 'docs/historico-tecnico.md' }
+if ($faltando.Count -gt 0) {
+  throw "Faltou a documentacao: esta tarefa nao tocou $($faltando -join ' nem ').`nRegistre a mudanca na categoria que mexeu:`n  - CHANGELOG.md: entrada em 'Nao adicionado' (ou mova para 'Adicionado' se ja estava) na categoria certa, backend/frontend;`n  - docs/historico-tecnico.md: arquivo, local, linha (antes -> depois) e o porque.`nDepois rode o fechar.ps1 de novo (com -Mensagem, se houver alteracao nova). Nada foi para a main."
+}
+Write-Host "Changelogs tocados: CHANGELOG.md + docs/historico-tecnico.md."
+
+# -- 0.7) rebase em andamento (conflito ja resolvido): continua ----------------
 $emRebase = (Test-Path (Join-Path $gitDir 'rebase-merge')) -or (Test-Path (Join-Path $gitDir 'rebase-apply'))
 if ($emRebase) {
   Write-Host "Continuando a integracao da main (git rebase --continue)..."

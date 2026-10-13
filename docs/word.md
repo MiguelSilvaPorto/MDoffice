@@ -1,0 +1,52 @@
+# Word — documentos `.docx`
+
+O motor do Word edita o documento **direto na folha** (sem Markdown no meio) e abre/salva
+arquivos `.docx` de verdade.
+
+## Documento e páginas
+
+- **Novo documento Word**: **+ → Documento Word** cria o documento já editável na folha;
+  **Abrir** aceita `.docx` do Word.
+- Folha **A4/Carta** com margens configuráveis (tamanho, orientação, margens, cabeçalho,
+  rodapé e “Página X de Y”) em **Layout → Configurar Página**.
+- **Páginas de verdade**: o texto flui de uma página para a outra e parágrafos longos se
+  dividem entre elas (paginação calculada, não é só uma folha rolando).
+- **Zoom** (barra inferior) e régua de trabalho na coluna de escrita.
+
+## Fita (no desenho do Word Online)
+
+- Abas **Início**, **Inserir**, **Layout** e **Revisão** (e a aba contextual **Tabela**
+  quando o cursor está numa tabela).
+- **Fonte**: família e tamanho, negrito/itálico/sublinhado/riscado, sub/sobrescrito,
+  **cor da letra** e **destaque** (marca-texto), limpar formatação.
+- **Parágrafo**: marcadores e numeração com níveis, recuo, entrelinha, alinhamento
+  (esquerda, centro, direita e **justificado**).
+- **Estilos**: Texto normal, Título 1–4, Citação e Código (caixas de estilo com prévia).
+- **Área de transferência**: colar, recortar, copiar e **pincel de formatação**
+  (uma vez ou fixo), desfazer/refazer.
+- **Páginas**: quebra de página, cabeçalho e rodapé, números de página.
+- **Ilustrações**: imagens (inserir, colar ou arrastar), links, **tabelas** (inserir,
+  linhas/colunas, mesclar, dividir, sombrear, bordas) e marcas de parágrafo.
+- **Revisão de texto**: corretor de português (sublinhados e sugestões) e voz/suplementos.
+
+## Escrita assistida (também no Word)
+
+- O **corretor de português** sublinha erros e abre sugestões ao clicar; o **texto fantasma**
+  (sugestões enquanto digita) funciona aqui também, com **Tab/Alt+→/Alt+↓**.
+- **Revisar texto** (`F7`) e a **revisão inteligente** analisam o documento Word como o
+  Markdown (regras, sinônimos e a IA local).
+- O **histórico de versões**, as **abas**, a **Estrutura** e a busca valem igual ao Markdown.
+
+## Salvar e exportar
+
+- **Salvar .docx de verdade** (`Ctrl+S`) — o arquivo abre no Word.
+- **Exportar PDF** imprime a própria folha (com páginas, cabeçalho e rodapé).
+- **Importar do Office**: abre `.docx` direto das pastas do Office (e explica os formatos
+  antigos `.doc`).
+
+## Limitações conhecidas
+
+O motor avisa (nunca some em silêncio) o que ainda **não** entende e pode simplificar ao
+salvar: comentários, revisões, campos e caixas de texto; e ainda não há tradução ao vivo
+(use **Exportar → Inglês**), desenho, notas de rodapé, colunas e tabelas dentro de tabelas
+com mesclagem complexa. O histórico guarda cópias antes de qualquer alteração.

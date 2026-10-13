@@ -3,7 +3,8 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Editor Markdown com desenho e imagens para documentos enviados à IA",
+  "description": "mdOffice - suite de documentos em portugues: Markdown, Word, Excel e PowerPoint, com escrita assistida e IA local",
+  "license": "MIT",
   "scripts": {
     "app": "tauri dev",
     "app:build": "tauri build",

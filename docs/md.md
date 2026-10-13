@@ -1,0 +1,117 @@
+# MD\* — o editor de Markdown
+
+O motor original do app: escrever em Markdown com pré-visualização ao vivo, desenhar
+dentro do documento e contar com uma escrita assistida de português que roda offline.
+
+## Editor e pré-visualização
+
+- Editor com **realce de sintaxe** (CodeMirror 6) e **pré-visualização ao vivo** lado a lado.
+- **Coluna de escrita limitada** (`980px`, centralizada) para as linhas não ficarem gigantes
+  em monitores largos — igual à pré-visualização. A divisória do meio acompanha o mouse 1:1.
+- **Salvamento automático** a cada alteração; barra de status com palavras/caracteres/linhas,
+  painel de recentes e índice (estrutura) navegável, tema claro/escuro.
+- **Busca no conteúdo**: a caixa **Buscar** do painel lateral procura dentro dos documentos
+  dos seus projetos (ignora acento e maiúscula) e nas abas abertas, mesmo sem salvar; clique
+  no resultado para abrir já na linha.
+- **Campos selecionáveis no preview**: as caixas de tarefa (`- [ ]`) são clicáveis na
+  pré-visualização e ligam/desligam direto no Markdown.
+- **Tabelas, listas de tarefas, linhas, links, código e diagramas Mermaid** na barra de ferramentas.
+
+## Documentos e imagens
+
+- **Imagens**: insira pelo botão *Imagem*, **cole com `Ctrl+V`** ou **arraste o arquivo** para
+  a janela. Tudo é copiado para `assets/` com nome limpo (sem acentos/espaços).
+- **Rascunhos na pasta do app**: documento criado e ainda não salvo **não vai para Documentos** —
+  fica na pasta de dados do app, com as imagens em `assets/`. Ao reabrir, o último rascunho é
+  restaurado; ao usar **Salvar como**, o documento **e as imagens** vão juntos e o rascunho sai.
+- **Como o documento é organizado**: par `.md` + pasta `assets/`, referências relativas —
+  pode mover/zipar junto sem quebrar nada ([detalhes](estrutura-do-projeto.md)).
+
+## Formatação
+
+- **Formatação estilo Word**: **alinhamento** — esquerda, **centralizado**, **direita** e
+  **justificado** (com hifenização) —, **destaque** (marca-texto) e **alinhamento de tabelas**
+  (`:---`, `:---:`, `---:`). O alinhamento usa `<div align="…">` e age **só nas linhas
+  selecionadas**; **Reparar alinhamentos** conserta documentos antigos.
+
+## Desenho assistido (prancheta)
+
+- *Desenhar* cria a imagem e abre o canvas embutido no preview, sem popup.
+- A caneta reconhece traços tortos e corrige linhas, retângulos, elipses/círculos e polígonos;
+  também encaixa alinhamentos. Formas, texto, cores, seleção/mover, borracha e desfazer/refazer.
+- **Mover e copiar objetos**: **⌖ Selecionar** move com ímã de alinhamento; **Alt+arrastar**
+  copia, **Ctrl+C/Ctrl+V** cola, **Ctrl+D** duplica e as **setas** ajustam fino (Shift = 10px).
+- **Zoom** de 50% a 300% (barra **− / % / +** e **Ctrl + roda**), com cliques/traços precisos.
+- Cada desenho é **PNG 2x** em `assets/` com um sidecar JSON para edição posterior.
+
+## Desenho em letras e símbolos
+
+- No menu **▾** ao lado de *Desenhar* você escolhe **Imagem (PNG)** ou **Letras e símbolos**:
+  tudo é desenhado numa grade de caracteres — caixas (`┌─┐│└┘`), linhas, textos, **campos
+  selecionáveis** `[ ]` e **tabelas**, com traço simples, duplo (`╔═╗`) ou ASCII (`+| -`).
+- **Modelos prontos** (Caixa com título e campo, Fluxo A ▶ B, Tabela 3 × 2) com um clique.
+- **Apagar fácil**: arrastar marcando uma área e **Del**; botão direito (ou borracha) apaga
+  só o trecho; **Remover** apaga o desenho inteiro.
+- **Tempo real (ida e volta)**: o bloco ` ```text ` é atualizado no editor à esquerda na hora,
+  e editar o bloco no editor recarrega o quadro — *Concluir* nunca sobrescreve o que você escreveu.
+
+## Diagramas
+
+- **Construtor "quase desenhado"** (◈): escolha o tipo (Fluxo / Sequência / Estados) e preencha
+  os campos — ou **clique direto no diagrama** para adicionar passo, decisão e fim; apagar um
+  passo do meio religa o fluxo. Também dá para escrever o código Mermaid à mão.
+
+## Escrita assistida (português, offline)
+
+- **Assistente de escrita**: sublinha em **vermelho** palavras fora do dicionário pt-BR e em
+  **amarelo** problemas de estilo/gramática (abreviações de internet, palavras grudadas,
+  repetições, pontuação, frase começando em minúscula…). **Clique na palavra** para ver
+  sugestões e sinônimos; **Revisar texto** (`F7`) agrupa os avisos, estatísticas e
+  **“Corrigir tudo (estilo)”**; dicionário pessoal e “ignorar palavra”.
+- **Correção automática** (liga/desliga): palavras erradas com certeza, maiúsculas, espaços,
+  pontuação repetida e abreviações entram sozinhas ao pausar; ao **terminar o parágrafo** o
+  parágrafo ganha ponto/vírgulas; ao **salvar**, o documento é revisado. Cada correção é um
+  passo único de `Ctrl+Z`.
+- **Ponto e vírgula automáticos**: ponto final no fim do parágrafo, vírgula antes de
+  “mas/porém/contudo…”, depois de conectivos que abrem a frase e maiúscula no começo.
+- **Modo formal**: “pra/tá/a gente” → linguagem formal, com o verbo ajustado pela frase
+  (“a gente vai” → “nós vamos”); modo **informal** e **neutro** também disponíveis.
+- **Espaço esquecido** e **“Você quis dizer…?”**: palavras coladas viram duas; palavras a uma
+  letra de uma comum ganham sugestão.
+- **“Formatar texto”** (comando): varredura automática de pontuação com ritmo aprendido.
+
+## Sugestões enquanto você digita
+
+- A continuação aparece em cinza depois do cursor: **Tab** aceita tudo, **Alt+→** palavra por
+  palavra, **Alt+↓/↑** alternam até 3 opções e **Esc** descarta. Vem de três fontes: modelo
+  do português embutido, o próprio documento e uma memória dos seus textos recentes.
+- **IA ajuda nas sugestões** (Configurações): numa pausa, a IA local escolhe entre candidatos
+  o que combina com a frase — só para completar palavra e só quando tem confiança.
+- **Aprende com você**: aceita/recusa ajustam a confiança, há um **perfil do seu estilo** e um
+  **modo de intensidade** (discreta, equilibrada, agressiva).
+
+## Revisão inteligente e IA local
+
+- **Revisão inteligente** (Ctrl+K): analisa o documento e propõe trocas para palavras repetidas
+  demais, **na mesma forma** (tempo, plural, gênero), com **diff** e **o porquê**; só propõe
+  com contexto e nada muda sem aceitar. Roda em fatias, numa thread, com o computador parado.
+- **IA local (Gemma 3 270M, embutida)**: confere cada troca (pontua a frase com e sem) e
+  descarta as que pioram o texto. Roda **só na GPU** (WebGPU), sai da memória depois de 90 s
+  sem uso; sem GPU, tudo continua funcionando com as regras.
+
+## Tradução automática
+
+- **PT-BR → inglês** (`Ctrl+Alt+T`): pré-visualização lado a lado (ou só um idioma), o inglês
+  acompanha o que você digita e só os trechos alterados são traduzidos de novo (memória local).
+  Código, links, imagens, tabelas e diagramas ficam intactos; **glossário** em Ajustes.
+- Dois motores: **online grátis** (MyMemory) e **offline** (modelo ≈120 MB baixado uma vez);
+  no automático, se o limite do online acabar, passa para o offline.
+
+## Exportar e IA
+
+- **Exportar** (`Ctrl+Shift+E`): página web, PDF, Word (.docx), Markdown, texto, **pacote para
+  IA** (.zip) ou **copiar formatado** — em português, inglês ou os dois (bilíngue em colunas).
+- **Pacote IA (.zip)**: Markdown + imagens + JSONs dos desenhos + `INSTRUCOES_PARA_IA.md`.
+- **Modelo IA**: esqueleto estruturado (Objetivo, Contexto, Requisitos, Formato) para pedir
+  coisas à IA. **Copiar p/ IA**: copia o Markdown pronto e lembra de anexar as imagens.
+- **Exportar HTML**: um arquivo só, com CSS embutido e imagens em base64.
