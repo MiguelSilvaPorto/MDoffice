@@ -302,6 +302,28 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** a linha separava uma seção da seguinte. Com uma seção por vez, a visível é sempre a
   última da coluna, e a linha virava um risco solto no fim do conteúdo.
 
+## src/fileIcons.ts
+
+### 2026-10-13 · este commit · ícones de tipo viram folha de documento
+- **Local:** `FOLHA` (novo) e `GLYPH`, usados por `fileIcon()`
+- **Linha:** `<rect class="fi-tile" x="2" y="2" width="20" height="20" rx="5">` com as marcas
+  ocupando a caixa toda → `FOLHA` (path da folha com o canto dobrado + `fi-fold`) e marcas
+  redesenhadas menores, abaixo da dobra (M↓, W, a planilha e a pizza)
+- **Porquê:** o quadradinho colorido lia como "etiqueta de app" e a marca solta (principalmente o
+  M↓) parecia um botão de baixar, não um documento. A folha na cor do formato com a marca dentro é
+  a metáfora que todo mundo já conhece de arquivo (Windows/Office) e continua diferenciando os
+  quatro tipos pela forma. As proporções foram ajustadas em prévia (16 a 48 px) para a folha
+  preencher a caixa como o quadradinho antigo e a marca continuar legível a 16 px.
+
+## src/styles/fileicons.css
+
+### 2026-10-13 · este commit · a dobra da folha
+- **Local:** `.fi-fold` (novo) e o comentário do `.fi-line`
+- **Linha:** `novo` — `.fi-fold { fill: #fff; opacity: 0.38 }`
+- **Porquê:** o `fi-tile` deixou de ser o quadradinho e virou a folha; a dobra é um triângulo branco
+  translúcido por cima da cor do tipo — funciona nas quatro cores e nos dois temas sem pedir uma
+  variável de cor nova. O desenho branco continua no `.fi-line`, agora dentro da folha.
+
 ## src/powerpoint/edicao/grafico.ts
 
 ### 2026-10-13 · 8fe85d0 · gráficos (novo arquivo)

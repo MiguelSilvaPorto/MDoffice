@@ -41,7 +41,13 @@
   fill: var(--fi);
 }
 
-/* desenho branco dentro do quadradinho */
+/* o canto dobrado da folha: um branco leve sobre a cor do tipo */
+.fi-fold {
+  fill: #fff;
+  opacity: 0.38;
+}
+
+/* desenho branco dentro da folha */
 .fi-line {
   fill: none;
   stroke: #fff;
