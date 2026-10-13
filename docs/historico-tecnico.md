@@ -1358,6 +1358,53 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   `35,35,79`) e a faixa extra parecia "duas coisas selecionadas". Com o cursor sozinho, o
   destaque da linha continua (como no VS Code).
 
+## src/broker/spell.worker.ts
+
+### 2026-10-13 · (este commit) · palavra que o dicionário aceita e ninguém escreve
+- **Local:** `PREFIXOS` (novo, ao lado de `POSICAO`), `valeComoPalavra` e `cortesDeColagem`
+  (novos) e o bloco de dicionário no `check`
+- **Linha:** `if (typo.check(word)) continue;` → um bloco que, quando o dicionário aceita,
+  ainda pergunta por colagem e só então continua
+- **Porquê:** "oira" é forma do verbo "oirar" — o dicionário aceita, então o corretor não
+  tinha o que acusar e quem escreveu "oira" querendo "o ira" ficava sem aviso nenhum. O que
+  separa a palavra obscura da palavra normal não é o dicionário, é o USO: ela não aparece no
+  corpus de texto escrito e nenhuma palavra do corpus começa igual (a família não é usada).
+- **Local:** `cortesDeColagem`, condição do corte
+- **Linha:** primeiro teste aceitava qualquer corte em duas palavras válidas; ficou só a
+  palavrinha de UMA letra colada na seguinte
+- **Porquê:** com o corte livre a regra acusava palavra rara de verdade — o teste do próprio
+  projeto pegou "xilofone" virando "xi lo fone" (e o "opacidade" → "opa cidade" aparecia na
+  medição). Estreitada ao caso clássico ("o ira", "o que", "a vida"), a medição em 2803
+  palavras de texto real do projeto deu **zero acusações**.
+
+## src/broker/spell.ts
+
+### 2026-10-13 · (este commit) · `duvida` no `SpellHit`
+- **Local:** `interface SpellHit`
+- **Linha:** campo novo `duvida?: boolean`
+- **Porquê:** separar a colagem DEDUZIDA (o dicionário aceita a palavra: é pergunta) da colagem
+  clássica ("coisasque", que já vem com `best` e é aplicada sozinha). O `check.ts` usa a marca
+  para decidir se oferece a correção sem nunca aplicá-la sozinha.
+
+## src/broker/check.ts
+
+### 2026-10-13 · (este commit) · a colagem deduzida entra como correção disponível
+- **Local:** o `issues.push` do ramo de ortografia
+- **Linha:** `fix: hit.duvida ? hit.suggestions[0] : undefined` (novo)
+- **Porquê:** a acusação precisa aparecer na revisão com o botão "Corrigir" (e valer no
+  "corrigir tudo"), mas nunca sozinha: `fix` de ortografia **não** entra na varredura
+  automática — quem aplica automático é `auto` (`replacementFor` usa `auto` para ortografia e
+  `fix` para estilo). Sem `auto`, a regra pergunta em vez de decidir.
+
+## test/docs/gramatical.md
+
+### 2026-10-13 · (este commit) · caso 31: palavras coladas
+- **Local:** `## Caso 31`
+- **Linha:** caso novo — errado "e oira verifica", esperado "e o ira verifica"
+- **Porquê:** o corpus é o contrato do corretor e este era o furo relatado. O caso só passa
+  porque a colagem deduzida vem com `fix` (o runner aplica `fix ?? auto`); é ele também que
+  garante que o texto correto não seja mexido — 31/31 dos dois lados.
+
 ---
 
 ## Próximos registros

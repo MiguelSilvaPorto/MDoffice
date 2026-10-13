@@ -53,6 +53,14 @@ export async function checkText(text: string, ignore: Set<string>): Promise<Writ
           suggestions,
           // a correção automática só vale se o contexto não discordar da escolha do dicionário
           auto: hit.best && suggestions[0] === hit.suggestions[0] ? hit.best : hit.glued ? hit.best : undefined,
+          // Palavras coladas entram como correção DISPONÍVEL (aparece na revisão com o
+          // botão "Corrigir", e vale no "corrigir tudo"), mas nunca sozinhas: mesmo com
+          // o sinal forte da colagem, é uma pergunta. Sem `auto` a varredura automática
+          // não encosta nela — ela só aplica `fix` de estilo.
+          //
+          // Vale só para a colagem DEDUZIDA (o dicionário aceita a palavra): a colagem
+          // clássica ("coisasque") já vem com `auto` e segue como sempre foi.
+          fix: hit.duvida ? hit.suggestions[0] : undefined,
         });
         continue;
       }

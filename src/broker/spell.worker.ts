@@ -13,10 +13,12 @@ import { candidatos, construirIndice, montarFrequencia, normalizar as norm, type
 interface SpellHit {
   word: string;
   suggestions: string[];
-  /** faltou espaço entre palavras (ex.: “coisasque” → “coisas que”) */
+  /** faltou espaço entre palavras (ex.: "coisasque" → "coisas que") */
   glued?: boolean;
   /** correção em que dá para confiar (aplicada sozinha pela correção automática) */
   best?: string;
+  /** colagem DEDUZIDA: o dicionário aceita, mas a família não é usada na língua */
+  duvida?: boolean;
 }
 
 type TypoLike = {
@@ -223,8 +225,52 @@ PALAVRAS_LISTA.forEach((w, i) => {
   if (!POSICAO.has(n)) POSICAO.set(n, i);
 });
 
+/**
+ * As três primeiras letras de cada palavra que aparece em texto escrito.
+ *
+ * Serve para saber se a FAMÍLIA de uma palavra é usada: "virava" vem de "virar", e
+ * "vira"/"virou"/"virei" aparecem o tempo todo — então "vir" está aqui. Já "oira" vem
+ * do verbo "oirar", que ninguém escreve, e "oir" não está.
+ */
+const PREFIXOS = new Set<string>();
+PALAVRAS_LISTA.forEach((w) => {
+  const n = norm(w);
+  if (n.length >= 3) PREFIXOS.add(n.slice(0, 3));
+});
+
 /** Palavrinhas de uma letra que podem aparecer coladas (“eu e você”, “a casa”). */
 const UMA_LETRA = new Set(["a", "e", "o", "é"]);
+
+/** Uma letra solta que é palavra, ou uma palavra do dicionário. */
+function valeComoPalavra(p: string): boolean {
+  const l = p.toLowerCase();
+  if (l.length === 1) return UMA_LETRA.has(l);
+  return l.length >= 2 && !!typo?.check(l);
+}
+
+/**
+ * A palavra está no dicionário, mas é do português que ninguém escreve?
+ *
+ * "oira" é forma do verbo "oirar": o dicionário aceita, então não havia o que acusar —
+ * e quem escreveu "oira" querendo "o ira" ficava sem aviso nenhum. O jeito de perceber
+ * é perguntar pelo USO: a palavra não aparece no corpus de texto escrito e nenhuma
+ * palavra do corpus começa como ela (a família dela não é usada).
+ *
+ * Só vale para o caso clássico: a palavrinha de UMA letra colada na seguinte — "oira"
+ * ("o ira"), "oque" ("o que"), "avida" ("a vida"). Abrir para cortes maiores começa a
+ * acusar palavra rara de verdade: "xilofone" virava "xi lo fone" e "opacidade" virava
+ * "opa cidade" (foi o teste do próprio projeto que pegou o "xilofone").
+ */
+function cortesDeColagem(palavra: string): string[] {
+  const n = norm(palavra);
+  if (n.length < 4 || n.length > 20) return [];
+  if (POSICAO.has(n)) return []; // aparece em texto escrito: é palavra de verdade
+  if (PREFIXOS.has(n.slice(0, 3))) return []; // a família dela é usada: não é obscura
+  const primeira = palavra.slice(0, 1);
+  if (!UMA_LETRA.has(primeira.toLowerCase())) return [];
+  const resto = palavra.slice(1);
+  return valeComoPalavra(resto) ? [`${primeira} ${resto}`] : [];
+}
 
 interface Peca {
   texto: string;
@@ -415,8 +461,14 @@ self.addEventListener("message", (event: MessageEvent) => {
       if (!word) continue;
       const lower = word.toLowerCase();
       if (PALAVRAS_OK.has(lower)) continue;
-      if (typo.check(word)) continue;
-      if (lower !== word && typo.check(lower)) continue;
+      if (typo.check(word) || (lower !== word && typo.check(lower))) {
+        // O dicionário aceita — mas e o resto da língua? "oira" é forma do verbo
+        // "oirar": existe, e ninguém usa. Se a família dela não aparece em texto
+        // escrito e ela corta em duas palavras válidas, o mais provável é colagem.
+        const colada = cortesDeColagem(word);
+        if (colada.length) hits.push({ word, glued: true, duvida: true, suggestions: colada, best: undefined });
+        continue;
+      }
       if (JARGAO.test(word)) continue;
       const r = sugerirPalavra(word);
       // só faltou acento ou cedilha ("missao" → "missão")? Isso vale mais que supor palavras coladas ("miss ao")

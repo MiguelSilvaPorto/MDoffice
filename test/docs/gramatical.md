@@ -379,3 +379,15 @@ O relatorio ficou estenso e a equipe nao conseguiu revisar mas o prazo continua
 ````text
 O relatório ficou extenso e a equipe não conseguiu revisar, mas o prazo continua.
 ````
+
+## Caso 31 — palavras coladas: faltou o espaço entre elas
+
+### Errado
+````text
+O texto ficou pronto e oira verifica se segue as regras.
+````
+
+### Esperado
+````text
+O texto ficou pronto e o ira verifica se segue as regras.
+````

@@ -8,6 +8,12 @@ export interface SpellHit {
   glued?: boolean;
   /** correção em que dá para confiar (aplicada sozinha pela correção automática) */
   best?: string;
+  /**
+   * Colagem DEDUZIDA: o dicionário aceita a palavra, mas a família dela não aparece em
+   * texto escrito ("oira" é forma do verbo "oirar"). É pergunta, não certeza — por isso
+   * não vem com `best`, e a correção fica só como disponível.
+   */
+  duvida?: boolean;
 }
 
 let spellWorker: Worker | null = null;

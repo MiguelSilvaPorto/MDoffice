@@ -63,6 +63,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Busca no conteúdo** (projetos e abas abertas).
 - **Corretor de português offline**: sublinhados vermelho/amarelo, sugestões e sinônimos ao
   clicar, `F7` (revisar), “Corrigir tudo (estilo)”, dicionário pessoal e ignorar palavra.
+- **Palavra que o dicionário aceita e ninguém escreve**: o dicionário conhece muita forma que
+  não é usada — "oira" é do verbo "oirar" — e aí nada era acusado, mesmo com a pessoa querendo
+  escrever "o ira". Agora, quando a palavra não aparece no corpus de texto escrito, a família
+  dela também não (nenhuma palavra do corpus começa igual) e ela é a palavrinha de uma letra
+  colada na seguinte, o corretor pergunta **"faltou um espaço?"** e oferece o corte. É pergunta,
+  não correção automática: fica na revisão com o botão "Corrigir", nunca sozinha no texto.
+  Medido: **nenhuma acusação em 2803 palavras** de texto real do projeto.
 - **Correção automática**: palavras erradas com certeza, maiúsculas, espaços, pontuação,
   abreviações; ao terminar o parágrafo e ao salvar; cada correção é um passo de `Ctrl+Z`.
 - **Ponto e vírgula automáticos** e **modo formal** (“a gente” com o verbo conjugado);
