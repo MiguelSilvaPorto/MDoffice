@@ -212,6 +212,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Zoom até 400%** ancorado no ponteiro; faixa de lâminas no topo ou na vertical.
 - **Configurar apresentação**: proporção, tema, fonte padrão, tamanho, rodapé e número.
 - Testes: `test:pptx` (ida e volta de arquivos reais) e `test:pptx-edicao`.
+- **Checklist de paridade revisado** contra o código atual e contra o projeto **DeckCraft** real
+  (232 comandos): itens que já existem passam a aparecer como feitos (Transições, ocultar/
+  renomear/redefinir lâmina, marca-texto, sobrescrito/versalete, mudar caixa, ir para lâmina,
+  tela preta/branca), o resumo vai a **102/191** e entra o **mapa de edição** — 14 áreas do que o
+  DeckCraft edita e falta aqui, com os ganhos rápidos e os próximos passos reordenados
+  (`docs/paridade-deckcraft.md`).
 
 ---
 

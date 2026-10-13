@@ -1611,6 +1611,20 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   de reprodução das medições. É o recorte do **fantasma/sugestão**; o corretor continua em
   `docs/pesquisa-correcao-offline.md`.
 
+## docs/paridade-deckcraft.md · docs/powerpoint.md
+
+### 2026-10-13 · este commit · checklist de paridade revisado contra o código e o DeckCraft real
+- **Local:** itens da checklist, tabela de resumo, seção nova "Mapa de edição" e "Próximos
+  passos"; em `powerpoint.md`, a lista de abas da fita e a linha do modo apresentação
+- **Linha:** 12 itens corrigidos (`[ ]` → `[x]` em Reset, Change shape e Save as template; notas
+  de Transições, ocultar lâmina, marca-texto, sobrescrito/versalete, mudar caixa, ir para lâmina,
+  tela B/W, largura de coluna "sem UI", mkv e F5 × botão Apresentar); resumo `99/191` →
+  `102/191`; seção nova com as 14 áreas de edição e os ganhos rápidos; próximos passos reordenados
+- **Porquê:** o checklist dizia que Transições, ocultar/redefinir lâmina, marca-texto e outros
+  não existiam — todos existem no código. A varredura do **projeto DeckCraft real** (232 comandos
+  de engine + 36 de UI, não só o checklist dele) mostrou o tamanho real das lacunas de edição e
+  a ordem que faz sentido atacar; sem isso, a próxima tarefa seria escolhida no escuro.
+
 ---
 
 ## Próximos registros

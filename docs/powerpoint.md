@@ -41,13 +41,14 @@ avisado ao abrir (nunca some em silêncio).
 
 ## Apresentar (F5)
 
-- **Modo apresentação completo**: avançar/voltar lâmina, **tela preta/branca**, **fade** entre
-  lâminas, mídia tocando e as **notas do apresentador**.
+- **Modo apresentação completo**: avançar/voltar lâmina, **tela preta/branca**, **transições**
+  entre lâminas, mídia tocando e as **notas do apresentador**.
 
 ## Interface do módulo
 
-- **Fita** com abas (Página Inicial, Inserir, Formato da Forma, Layout da Tabela, Design,
-  Exibir), recolhível e ajustável, com rolagem horizontal quando não cabe.
+- **Fita** com abas (Página Inicial, Inserir, **Transições**, Design e Exibir; **Formato da Forma**
+  e **Layout da Tabela** aparecem quando a seleção pede), recolhível e ajustável, com rolagem
+  horizontal quando não cabe.
 - **Painel Formatar/Notas** à direita: pode ser escondido, redimensionado e reaberto pela aba
   “« Formatar”; as notas ficam na aba **Notas**.
 - **Zoom até 400%** ancorado no ponteiro (Ctrl + roda do mouse), com rolagem de verdade.

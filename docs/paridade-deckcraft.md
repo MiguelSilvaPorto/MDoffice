@@ -4,7 +4,9 @@
 > — a reimplementação open-source do PowerPoint em Rust puro (ArtCraft), em alpha.
 > **Base do checklist:** `docs/parity-checklist.md` do DeckCraft (191 features medidas contra o
 > PowerPoint for Mac 16.113, em 10/10/2026), cruzado com a paleta de comandos real do app.
-> **Última revisão deste documento:** 13/10/2026.
+> **Última revisão deste documento:** 13/10/2026 — itens re-verificados **contra o código do
+> mdOffice** e contra o **projeto DeckCraft real** (232 comandos de engine + 36 de UI), não só
+> contra o checklist dele; o mapa de edição abaixo nasceu dessa varredura.
 
 **Como ler**
 
@@ -18,15 +20,15 @@
 | Área | Cobertos | Área | Cobertos |
 |---|---:|---|---:|
 | Application shell | 10/11 | Media | 4/7 |
-| Files | 7/18 | Transitions | 3/5 |
-| Slides | 5/9 | Animations | 0/8 |
+| Files | 8/18 | Transitions | 3/5 |
+| Slides | 6/9 | Animations | 0/8 |
 | Views | 6/10 | Slide show | 3/10 |
 | Masters & themes | 6/14 | Review | 1/4 |
-| Shapes | 5/14 | Draw | 0/2 |
+| Shapes | 6/14 | Draw | 0/2 |
 | Format | 7/11 | Undo & clipboard | 2/3 |
 | Arrange | 7/9 | Automation | 1/2 |
 | Text | 14/25 | Platforms | 1/3 |
-| Tables | 7/8 | **Total** | **99/191** |
+| Tables | 7/8 | **Total** | **102/191** |
 | Charts | 4/5 | | |
 | SmartArt | 0/2 | | |
 | Pictures | 6/11 | | |
@@ -37,12 +39,40 @@ Do outro lado, o mdOffice já tem boa parte do **editor** (formas, texto, tabela
 organização, desfazer) e um **import/export .pptx de alta fidelidade** — e coisas que o DeckCraft
 não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico).
 
+## Mapa de edição (o que o DeckCraft edita e falta aqui)
+
+> Levantado em **13/10/2026** direto do projeto DeckCraft (232 comandos de engine + 36 de UI):
+> só o que é **edição de conteúdo**, na ordem do que pesa mais para o editor de slides.
+
+| # | Área | O DeckCraft edita | Aqui | Esforço |
+|---|---|---|---|---|
+| 1 | **Animações** | 64 efeitos (entrada/ênfase/saída/trajetórias), início/duração/atraso, build por parágrafo, painel, pincel | **zero** — o `p:timing` nem é lido | grande |
+| 2 | **Morph e transições** | Morph (objetos/palavras/caracteres) + 48 transições com opções por efeito | 7 efeitos; sem Morph nem opções por tipo | grande |
+| 3 | **Formas** | merge (união/fragmentar/interseção/subtrair), editar pontos, forma livre/curva/rabisco, conector colado em pontos de conexão, botões de ação | nada disso | grande |
+| 4 | **Mestre e layouts** | vista de mestre: editar master, criar/renomear/excluir layouts e placeholders | 6 layouts + "Editar elementos do layout" na própria lâmina | média-grande |
+| 5 | **Gráfico nativo** | `c:chart` real (segue editável no PowerPoint), 12+ tipos | 7 tipos com editor de dados, mas **exporta como imagem** | grande |
+| 6 | **Comentários** | threads com responder/resolver/excluir | nada | média |
+| 7 | **Apresentação** | presenter view (próximo slide, cronômetro), ensaiar tempos, caneta/laser, apresentar da lâmina atual, shows personalizados | F5 simples com notas (**N**); sempre da 1ª lâmina | média |
+| 8 | **Texto avançado** | Format Painter, símbolos/emoji, hyperlink, data/hora e campos, colunas, contorno/sombra de texto, WordArt, RTL/CJK | formatação por trecho já é boa; falta o resto | média |
+| 9 | **Imagens** | correções (brilho/contraste/saturação/cinza), recorte com alças/proporção, EMF/WMF, GIF com play/pause | recorte básico pelos 4 lados e trocar imagem | média |
+| 10 | **Lâminas** | seções, copiar/colar entre decks, reutilizar slides, lâminas a partir de estrutura, layout com re-mapeamento de placeholders | nada disso | média |
+| 11 | **Tabelas** | distribuir linhas/colunas, largura/altura exatas, estilos prontos, desenhar tabela | largura/altura **sem controle na fita**; distribuir não existe | pequena |
+| 12 | **Views** | página de notas, estrutura (outline), classificador dedicado, modo leitura, réguas | vista normal + zoom | média |
+| 13 | **SmartArt** | 6 layouts básicos (viram grupo de formas) | nada (o importador avisa) | média |
+| 14 | **Mídia** | fade in/out, poster frame, mais codecs | corte/volume/loop/continuar em outras lâminas | pequena |
+
+**Ganhos rápidos** (a infraestrutura já existe; falta só a porta de entrada): controle de
+largura de coluna/altura de linha na tabela (os comandos já existem no host), lâminas a partir de
+estrutura (`deckFromMarkdown` já existe), Format Painter, galeria de símbolos/emoji, data/hora e
+número como campos, "apresentar da lâmina atual", Alt Text (o campo já existe no schema),
+correções simples de imagem e réguas.
+
 ---
 
 ## Application shell (10/11)
 
-- [x] **Start screen (new, templates/themes, recent)** — P0 · parcial: tela **Início** com os 4 formatos, recentes, rascunhos e busca; temas/modelos ficam dentro do editor (botão **Template** na fita do PowerPoint, 6 modelos)
-- [x] **Ribbon with Home/Insert/Draw/Design/Transitions/Animations/Slide Show/Review/View tabs** — P0 · parcial: fita com **6 abas** (Página Inicial, Inserir, Formato da Forma, Layout da Tabela, Design, Exibir); faltam Draw, Transitions, Animations, Slide Show, Review e Record
+- [x] **Start screen (new, templates/themes, recent)** — P0 · parcial: tela **Início** com os 4 formatos, recentes, rascunhos e busca; temas/modelos ficam dentro do editor (botão **Template** na fita do PowerPoint: 6 modelos + os do usuário)
+- [x] **Ribbon with Home/Insert/Draw/Design/Transitions/Animations/Slide Show/Review/View tabs** — P0 · parcial: fita com **7 abas** (Página Inicial, Inserir, **Transições**, Design e Exibir, mais **Formato da Forma** e **Layout da Tabela** quando a seleção pede); faltam Draw, Animations, Slide Show, Review e Record
 - [x] **Contextual tabs (Shape Format, Picture Format, Table Design/Layout, Chart Design)** — P0 · parcial: **Formato da Forma** e **Layout da Tabela** aparecem conforme a seleção; faltam Picture Format e Chart Design
 - [x] **Quick Access toolbar / title bar commands** — P1 · parcial: barra superior do app (novo, abrir, salvar, salvamento automático, desenhar, exportar, ⋯)
 - [ ] **Native menu bar (macOS) with every command** — P1 · falta (app Windows/Tauri; sem barra de menus nativa)
@@ -53,7 +83,7 @@ não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico)
 - [x] **Multiple open presentations** — P1 · tem: abas estilo Chrome com estado por documento
 - [x] **Preferences (autosave, units, defaults)** — P2 · tem: aba **Configurações** (escrita, tradução, histórico/backup, aparência, atalhos)
 
-## Files (7/18)
+## Files (8/18)
 
 - [x] **New blank presentation** — P0 · tem: card PowerPoint no Início / menu "+"
 - [ ] **Native file format (open/save)** — P0 · falta: o formato de trabalho é o **.pptx**; não há um formato próprio (o DeckCraft tem `.deckcraft`)
@@ -61,7 +91,7 @@ não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico)
 - [x] **Save as PowerPoint .pptx** — P0 · tem: exportador em XML próprio, devolve fontes embutidas e o que não modela
 - [ ] **Open/save .potx/.ppsx/.pptm variants** — P2 · falta
 - [ ] **Legacy .ppt (binary) import** — P2 · falta (o app avisa para salvar no formato novo)
-- [ ] **Save as template** — P1 · falta (há modelos internos, mas não salvar o deck como template)
+- [x] **Save as template** — P1 · parcial: salvar o **visual** do deck atual como modelo do usuário (tema, fundo, fonte, cores) — não as lâminas
 - [x] **Autosave and crash recovery** — P0 · tem: salvamento automático + rascunhos + backup em disco + histórico de versões
 - [ ] **Document properties** — P2 · falta (título/autor/assunto não são editados nem gravados no .pptx)
 - [x] **Export to PDF (slides, notes pages, handouts; text layer, links, bookmarks)** — P0 · parcial: no modo apresentação, **Ctrl+P** imprime a lâmina (vira PDF pelo sistema); sem notas/handouts nem camada de texto
@@ -74,14 +104,14 @@ não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico)
 - [x] **Drag and drop files onto the window** — P1 · tem (imagens e documentos)
 - [ ] **OpenDocument .odp open/save** — P2 · falta
 
-## Slides (5/9)
+## Slides (6/9)
 
 - [x] **New slide by layout** — P0 · tem: "Nova lâmina" pergunta o layout
-- [x] **Duplicate, delete, hide slides** — P0 · parcial: duplicar e excluir; **ocultar lâmina** não existe
+- [x] **Duplicate, delete, hide slides** — P0 · tem: duplicar, excluir e **ocultar/mostrar** (a miniatura marca e o F5 pula)
 - [x] **Reorder slides (thumbnails, sorter)** — P0 · tem: arrastar as miniaturas (faixa horizontal ou vertical)
 - [ ] **Sections (add, rename, remove, move, collapse)** — P1 · falta
 - [x] **Slide layouts (11 standard)** — P0 · parcial: **6 layouts** (Capa, Cabeçalho da seção, Título e conteúdo, Duas colunas, Somente o título, Em branco)
-- [ ] **Reset slide** — P1 · falta
+- [x] **Reset slide** — P1 · tem: botão **Redefinir**
 - [x] **Slides from outline** — P2 · parcial: o app cria um deck a partir de Markdown (`deckFromMarkdown`, usado em "Apresentar"); não há o comando no editor de slides
 - [ ] **Copy/paste slides between decks** — P1 · falta (copiar/colar formas existe; lâminas entre decks não)
 - [ ] **Zoom (summary, section and slide zoom)** — P2 · falta (o zoom existente é o de visualização do palco)
@@ -92,7 +122,7 @@ não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico)
 - [ ] **Outline view** — P1 · falta no PowerPoint (o app tem o painel **Estrutura** para Markdown/Word)
 - [x] **Slide Sorter** — P0 · parcial: faixa de miniaturas com reordenar; não é uma view separada
 - [ ] **Notes Page** — P1 · falta
-- [x] **Reading View** — P1 · parcial: **F5** abre a apresentação em tela cheia; não há view "de leitura" dentro da janela
+- [x] **Reading View** — P1 · parcial: o botão **Apresentar** abre a apresentação em tela cheia; não há view "de leitura" dentro da janela
 - [x] **Zoom, fit to window** — P0 · tem: zoom do palco (40–400%, com Ctrl+roda ancorado no ponteiro)
 - [x] **Rulers, gridlines, guides** — P1 · parcial: **grade** e **guias de encaixe**; sem réguas
 - [x] **Smart guides** — P1 · tem: guias de encaixe ao mover/redimensionar
@@ -101,7 +131,7 @@ não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico)
 
 ## Masters & themes (6/14)
 
-- [ ] **Slide Master view (edit master and layouts)** — P0 · falta (o app **lê** mestre/layout do .pptx e mantém as decorações, mas não os edita)
+- [ ] **Slide Master view (edit master and layouts)** — P0 · falta (o app **lê** mestre/layout do .pptx e mantém as decorações; dá para mexer nelas na própria lâmina com **Editar elementos do layout**, mas não há vista de mestre)
 - [ ] **Insert/rename/delete layouts, insert placeholders** — P1 · falta
 - [ ] **Handout and Notes masters** — P2 · falta
 - [x] **Built-in themes (original designs)** — P0 · tem: 3 temas (claro/escuro/contraste) + 6 modelos de deck
@@ -116,7 +146,7 @@ não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico)
 - [ ] **Browse themes from .pptx/.thmx** — P2 · falta
 - [ ] **Designer layout suggestions (offline)** — P2 · falta
 
-## Shapes (5/14)
+## Shapes (6/14)
 
 - [x] **Preset shapes (lines, rectangles, basic, arrows, equation, flowchart, stars, callouts)** — P0 · parcial: ~40 na galeria; o render/importação cobrem ~60 geometrias (o DeckCraft tem 150+)
 - [ ] **Action buttons** — P2 · falta
@@ -126,7 +156,7 @@ não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico)
 - [ ] **Freeform, curve and scribble tools** — P1 · falta (o importador lê formas livres; não há ferramenta para desenhar)
 - [ ] **Edit points** — P1 · falta
 - [ ] **Merge shapes (union, combine, fragment, intersect, subtract)** — P1 · falta
-- [ ] **Change shape** — P1 · falta
+- [x] **Change shape** — P1 · parcial: trocar a geometria de **imagens** (retângulo, cantos arredondados, elipse) no painel; formas comuns sem UI
 - [x] **Text boxes** — P0 · tem
 - [ ] **WordArt** — P1 · falta
 - [ ] **Text warp transforms** — P2 · falta
@@ -163,9 +193,9 @@ não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico)
 
 - [x] **In-place text editing (caret, selection, mouse, keyboard)** — P0 · tem: edição direta na forma, com formatação por trecho
 - [x] **Font, size, bold, italic, underline, strikethrough** — P0 · tem (fontes do sistema + embutidas do .pptx, com os pesos certos)
-- [x] **Font colour, highlight** — P0 · parcial: cor sim; **marca-texto** não
-- [x] **Superscript, subscript, caps, character spacing** — P1 · parcial: o modelo e o round-trip preservam (`baseline`, `caps`, `spc`); sem controles na fita/painel
-- [x] **Change case, grow/shrink font, clear formatting** — P1 · parcial: aumentar/diminuir fonte; sem mudar caixa nem limpar formatação
+- [x] **Font colour, highlight** — P0 · tem: cor e **marca-texto** (cores clássicas)
+- [x] **Superscript, subscript, caps, character spacing** — P1 · tem: Sobrescrito/Subscrito/Versalete/Espaçamento na fita (o round-trip preserva `baseline`, `caps`, `spc`)
+- [x] **Change case, grow/shrink font, clear formatting** — P1 · tem: A▲/A▼, **Aa** (maiúsculas/minúsculas/Primeira Letra) e **Limpar formatação**
 - [ ] **Text outline and text effects** — P2 · falta
 - [x] **Paragraph alignment, indents, spacing, line spacing** — P0 · tem
 - [x] **Bullets and numbering** — P0 · tem
@@ -194,7 +224,7 @@ não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico)
 - [x] **Table styles and style options** — P0 · tem: presets + cabeçalho/faixas/primeira coluna
 - [x] **Insert/delete rows and columns** — P0 · tem
 - [x] **Merge and split cells** — P1 · tem
-- [x] **Distribute rows/columns, sizes** — P1 · parcial: largura de coluna e altura de linha exatas; sem distribuir
+- [x] **Distribute rows/columns, sizes** — P1 · parcial: os comandos de largura de coluna/altura de linha exatas existem, mas **sem controle na fita/painel**; distribuir não existe
 - [x] **Cell fill, borders, margins, alignment** — P1 · parcial: preenchimento, bordas e alinhamento vertical; margens de célula não
 - [x] **Keyboard navigation between cells** — P0 · tem: Tab/Shift+Tab, setas e digitação direta
 
@@ -230,7 +260,7 @@ não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico)
 ## Media (4/7)
 
 - [x] **Insert audio (any common format)** — P0 · tem: **Inserir > Áudio** (mp3, wav, m4a, aac, ogg, flac), com o arquivo guardado no deck
-- [x] **Insert video** — P1 · tem: **Inserir > Vídeo** (mp4, webm, ogv, mov, m4v); a capa é o primeiro quadro do vídeo
+- [x] **Insert video** — P1 · tem: **Inserir > Vídeo** (mp4, webm, ogv, mov, m4v, **mkv**); a capa é o primeiro quadro do vídeo
 - [x] **Audio/video playback in the show** — P0 · tem: reprodução no F5 com controles opcionais, volume e corte (início/fim)
 - [x] **Trim, fade in/out, volume, loop, play across slides** — P2 · parcial: corte, volume, repetir e **continuar em outras lâminas**; sem fade de entrada/saída
 - [ ] **Record audio / screen recording** — P2 · falta
@@ -262,8 +292,8 @@ não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico)
 
 ## Slide show (3/10)
 
-- [x] **Full-screen show from start / current** — P0 · tem: **F5**
-- [x] **Navigation (keys, click, go to slide, blank screen)** — P0 · parcial: setas, espaço, PageUp/Down, clique; sem "ir para lâmina" nem tela em branco
+- [x] **Full-screen show from start / current** — P0 · parcial: o botão **Apresentar** abre a tela cheia (sempre da 1ª lâmina visível); o **F5** global apresenta o Markdown do editor; sem "apresentar da lâmina atual"
+- [x] **Navigation (keys, click, go to slide, blank screen)** — P0 · tem: setas, espaço, PageUp/Down, clique, **nº + Enter** (ir para lâmina) e **B/W** (tela preta/branca)
 - [x] **Presenter view (notes, next slide, timer)** — P0 · parcial: as notas aparecem na tela com **N**; sem janela do apresentador, próximo slide ou cronômetro
 - [ ] **Pen and highlighter ink during the show** — P1 · falta
 - [ ] **Laser pointer** — P2 · falta
@@ -327,15 +357,18 @@ não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico)
 
 ## Próximos passos sugeridos
 
-Ordem sugerida para aproximar o motor do DeckCraft (impacto × esforço):
+Ordem sugerida depois da revisão de **13/10/2026** (impacto × esforço, foco no editor):
 
-1. **Transições + animações básicas** (fade/push/wipe; aparecer/desaparecer) e reprodução no F5.
-2. **Gráficos** (inserir, tipos comuns e editar dados) — o que mais aparece em decks de trabalho.
-3. **Presenter view de verdade** (janela com notas, próximo slide e cronômetro).
-4. **Exportar PDF e PNG do deck** sem depender do Ctrl+P, com notas/folhetos.
-5. **Rápidos de lâmina**: ocultar, renomear, reset, seções e mais layouts (11).
-6. **Mídia** (áudio/vídeo no slide e no show).
-7. **Imagem**: SVG/EMF no import, correções (brilho/contraste) e crop com proporção.
-8. **Texto**: marca-texto, sobrescrito/subscrito na UI, mudar caixa, limpar formatação, tabulações e colunas.
-9. **Formas**: mesclar, editar pontos, forma livre e conector com cola.
-10. **Clipboard**: colar mantendo a formatação (paste special) e lâminas entre decks.
+1. **Animações** — um recorte de entrada/saída (aparecer, surgir, desaparecer) com painel simples,
+   prévia e round-trip do `p:timing`; é a maior lacuna de edição.
+2. **Ganhos rápidos** — largura/altura de coluna e linha na fita, lâminas a partir de estrutura,
+   Format Painter, símbolos/emoji, data/hora, "apresentar da lâmina atual" e Alt Text.
+3. **Presenter view de verdade** (notas, próximo slide e cronômetro) e ensaiar tempos.
+4. **Formas** — mesclar (booleanas), editar pontos, forma livre/rabisco e conector com cola.
+5. **Mestre** — vista para editar master/layouts e placeholders; depois os 11 layouts.
+6. **Gráfico nativo `c:chart`** no `.pptx` + tipos extras (radar, ações, cascata) e estilos prontos.
+7. **Exportar PDF e PNG do deck** sem depender do Ctrl+P, com notas e folhetos.
+8. **Texto avançado** — tabulações, colunas, contorno/sombra de texto, WordArt e inserir hyperlink.
+9. **Imagens** — correções (brilho/contraste/saturação), recorte com proporção e EMF/WMF no import.
+10. **Lâminas e revisão** — seções, copiar/colar lâminas entre decks, comentários e SmartArt;
+    **Morph** como evolução das transições.
