@@ -8,11 +8,17 @@
       // Aplica o tema guardado ANTES de qualquer pintura. Sem isto o WebView
       // começa no claro (data-theme="light" no <html>) e quem usa o escuro vê um
       // clarão branco até o JS do app rodar.
+      // O nível de animação e os cantos entram no <html> pelo mesmo motivo: sem
+      // isto a primeira pintura usa o tempo/raio padrão e "pula" ao aplicar.
       try {
         var tema = localStorage.getItem("mdc.theme");
         if (tema === "dark" || tema === "light") document.documentElement.dataset.theme = tema;
+        var anim = localStorage.getItem("mdc.animacao");
+        if (anim === "discreta" || anim === "completa") document.documentElement.classList.add("anim-" + anim);
+        var cantos = localStorage.getItem("mdc.cantos");
+        if (cantos === "quadrados" || cantos === "redondos") document.documentElement.classList.add("cantos-" + cantos);
       } catch (e) {
-        /* sem armazenamento: fica no claro */
+        /* sem armazenamento: fica no padrão */
       }
     </script>
     <!--

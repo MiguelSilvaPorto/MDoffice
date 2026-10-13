@@ -39,3 +39,5 @@
 @import "./styles/fileicons.css";
 /* por último: o movimento ajusta o "tempo" dos componentes já definidos acima */
 @import "./styles/movimento.css";
+/* e os cantos (quadrado/redondo) fecham o visual das superfícies */
+@import "./styles/cantos.css";

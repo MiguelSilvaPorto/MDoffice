@@ -1,0 +1,66 @@
+/* ==========================================================================
+   Cantos — "mais quadrado" ou "mais redondo" (Configurações ▸ Aparência).
+   Duas camadas de PREFERÊNCIA: "quadrados" aperta os raios das superfícies e
+   "redondos" arredonda um pouco mais que o padrão antigo (que fica no meio).
+   Os `!important` são de propósito, porque a camada precisa vencer os raios
+   definidos componente a componente (e os mais específicos, como
+   `.tb-quick-actions .btn.icon`). As listas são curadas: só o que tem raio
+   uniforme entra — pílulas (999px) e bolinhas (50%) ficam de fora, e as abas
+   do topo têm regra direcional própria.
+   ========================================================================== */
+
+/* tier 1: controles pequenos (botões, abas de ferramenta, itens de lista) */
+
+html.cantos-quadrados :where(
+    .btn, .tbtn, .tab-recents, .rc-row, .rc-item, .rc-x, .sb-tab, .sb-pill, .sb-mini, .side-add,
+    .recent, .recent-btn, .recent-x, .outline-item, .hm-item, .pj-folder, .pj-folder-ic, .pj-more,
+    #tb-sidebar, .palette-btn, .tb-pill-btn, .tb-icon-btn, .tb-saved-path, .tb-autosave-badge,
+    .tab-input, .st-seg-item, .st-seg-icone, .st-nav-ic, .st-row-ic, .st-select, .st-key,
+    .st-key kbd, .color-input, .draw-text-input, .palette-item, .home-resume-btn, .home-import-btn,
+    .home-chip-btn, .home-tab-pill, .home-search-box, .home-file-icon, .path-btn, .fita-recolher,
+    .dd-item, .home-badge, .home-card-new-pill, .home-filter-clear-btn, .home-filter-active-bar,
+    .pj-skel-bar, mark.pj-mark, .st-opcao-previa
+  ) {
+  border-radius: 4px !important;
+}html.cantos-redondos :where(
+    .btn, .tbtn, .tab-recents, .rc-row, .rc-item, .rc-x, .sb-tab, .sb-pill, .sb-mini, .side-add,
+    .recent, .recent-btn, .recent-x, .outline-item, .hm-item, .pj-folder, .pj-folder-ic, .pj-more,
+    #tb-sidebar, .palette-btn, .tb-pill-btn, .tb-icon-btn, .tb-saved-path, .tb-autosave-badge,
+    .tab-input, .st-seg-item, .st-seg-icone, .st-nav-ic, .st-row-ic, .st-select, .st-key,
+    .st-key kbd, .color-input, .draw-text-input, .palette-item, .home-resume-btn, .home-import-btn,
+    .home-chip-btn, .home-tab-pill, .home-search-box, .home-file-icon, .path-btn, .fita-recolher,
+    .dd-item, .home-badge, .home-card-new-pill, .home-filter-clear-btn, .home-filter-active-bar,
+    .pj-skel-bar, mark.pj-mark, .st-opcao-previa
+  ) {
+  border-radius: 10px !important;
+}
+
+/* tier 2: superfícies (cartões, listas, menus, modais, popups) */
+
+html.cantos-quadrados :where(
+    .st-list, .st-keys-card, .st-nav-item, .st-opcao, .st-seg, .st-brand-ic, .st-sec-ic,
+    .pj-empty-ic, .dropdown, .modal, .palette, .home-card, .home-file-row, .toast,
+    .tb-autosave-wrap, .tb-split-draw, .dr-canvas, .st-field textarea, .pp-popup, .wd-menu-pop,
+    .xl-menu, .cm-issue-popup, .editor-context-menu, .pp-tpl, .pp-tpl-previa, .st-seg-desc
+  ) {
+  border-radius: 6px !important;
+}
+
+html.cantos-redondos :where(
+    .st-list, .st-keys-card, .st-nav-item, .st-opcao, .st-seg, .st-brand-ic, .st-sec-ic,
+    .pj-empty-ic, .dropdown, .modal, .palette, .home-card, .home-file-row, .toast,
+    .tb-autosave-wrap, .tb-split-draw, .dr-canvas, .st-field textarea, .pp-popup, .wd-menu-pop,
+    .xl-menu, .cm-issue-popup, .editor-context-menu, .pp-tpl, .pp-tpl-previa, .st-seg-desc
+  ) {
+  border-radius: 16px !important;
+}
+
+/* as abas do topo têm raio só nas pontas de cima */
+
+html.cantos-quadrados .tab {
+  border-radius: 5px 5px 0 0 !important;
+}
+
+html.cantos-redondos .tab {
+  border-radius: 14px 14px 0 0 !important;
+}

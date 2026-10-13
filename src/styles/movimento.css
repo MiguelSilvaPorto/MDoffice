@@ -17,6 +17,94 @@
   --curva-saida: cubic-bezier(0.55, 0, 1, 0.45); /* some sem drama */
 }
 
+/* ---------- níveis de animação (Configurações ▸ Aparência) ----------
+   Sem classe = padrão (os valores do :root). "discreta" encurta tudo e tira o
+   enfeite; "completa" alonga e dá mais relevo. Os `!important` das regras de
+   baixo são de propósito: esta é a camada de preferência do usuário e precisa
+   vencer os tempos definidos componente a componente. */
+
+html.anim-discreta {
+  --mov-1: 60ms;
+  --mov-2: 100ms;
+  --mov-3: 140ms;
+}
+
+html.anim-completa {
+  --mov-1: 140ms;
+  --mov-2: 240ms;
+  --mov-3: 380ms;
+}
+
+/* discreta: sem elevação, sem cascata e sem entradas — só cor e opacidade */
+
+html.anim-discreta :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .win-btn, .dd-item, .palette-item, .seg-btn, .st-card):hover {
+  transform: none !important;
+}
+
+html.anim-discreta :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .win-btn, .dd-item, .palette-item, .seg-btn):active {
+  transform: none !important;
+}
+
+html.anim-discreta :where(
+    .pj-entrada,
+    .tab.entrando,
+    .home-grid .home-card,
+    .sb-panel:not([hidden]),
+    .wd-rpanel:not([hidden]),
+    .xl-panel:not([hidden]),
+    .ppr-painel:not([hidden]),
+    #home-page:not([hidden]),
+    #settings-page:not([hidden]),
+    #word-pane:not([hidden]),
+    #excel-pane:not([hidden]),
+    #powerpoint-pane:not([hidden]),
+    #preview-bar:not([hidden]),
+    .modal-backdrop,
+    .modal-backdrop > :not(style):not(script),
+    .dropdown,
+    .pp-popup,
+    .wd-menu-pop,
+    .xl-menu,
+    .cm-issue-popup,
+    .editor-context-menu
+  ) {
+  animation: none !important;
+}
+
+/* completa: mais relevo e cascata mais espaçada */
+
+html.anim-completa :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .win-btn, .dd-item, .palette-item, .seg-btn):hover {
+  transform: translateY(-2px) !important;
+}
+
+html.anim-completa :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .win-btn, .dd-item, .palette-item, .seg-btn):active {
+  transform: translateY(0) scale(0.96) !important;
+}
+
+html.anim-completa .st-card:hover {
+  transform: translateY(-2px) !important;
+}
+
+html.anim-completa .pj-entrada {
+  animation-delay: calc(var(--i, 0) * 22ms) !important;
+}
+
+html.anim-completa .home-grid .home-card:nth-child(2) {
+  animation-delay: 70ms !important;
+}
+
+html.anim-completa .home-grid .home-card:nth-child(3) {
+  animation-delay: 140ms !important;
+}
+
+html.anim-completa .home-grid .home-card:nth-child(4) {
+  animation-delay: 210ms !important;
+}
+
+html.anim-completa .home-grid .home-card:nth-child(5) {
+  animation-delay: 280ms !important;
+}
+
 /* ---------- passos ---------- */
 
 @keyframes mdc-fundo {

@@ -359,16 +359,21 @@ body.settings-open #preview-wrap {
   border-radius: 0 10px 10px 0;
 }
 
-/* ---------- escolha do tema em dois cartões (lado a lado) ---------- */
+/* ---------- cartões de escolha (tema, animação, cantos) ---------- */
 
-.st-temas {
+.st-opcoes {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  padding: 13px 16px;
+  padding: 0 0 4px;
 }
 
-.st-tema {
+/* três opções (animação): lado a lado, um pouco mais estreitas */
+.st-opcoes.tres {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.st-opcao {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -385,29 +390,28 @@ body.settings-open #preview-wrap {
     box-shadow var(--mov-2) var(--curva);
 }
 
-.st-tema:hover {
+.st-opcao:hover {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
-.st-tema input {
+.st-opcao input {
   position: absolute;
   opacity: 0;
   pointer-events: none;
 }
 
-.st-tema:has(input:focus-visible) {
+.st-opcao:has(input:focus-visible) {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-.st-tema:has(input:checked) {
+.st-opcao:has(input:checked) {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 8%, var(--panel-2));
   box-shadow: 0 0 0 1px var(--accent), 0 6px 16px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
-/* mini-prévia de cada tema: cores fixas (os dois cartões aparecem ao mesmo tempo) */
-.st-tema-previa {
+.st-opcao-previa {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -418,43 +422,7 @@ body.settings-open #preview-wrap {
   overflow: hidden;
 }
 
-.st-tema-previa[data-tema="claro"] {
-  color: #1c212b;
-  background: #ffffff;
-  border-color: #d8dbe2;
-}
-
-.st-tema-previa[data-tema="escuro"] {
-  color: #f4f5f8;
-  background: #0e1014;
-  border-color: #2a2f3a;
-}
-
-.st-tema-linha {
-  height: 4px;
-  border-radius: 3px;
-  background: currentColor;
-  opacity: 0.72;
-}
-
-.st-tema-linha.curta {
-  width: 55%;
-  opacity: 0.38;
-}
-
-.st-tema-ponto {
-  width: 12px;
-  height: 12px;
-  margin-top: auto;
-  border-radius: 4px;
-  background: #4f46e5;
-}
-
-.st-tema-previa[data-tema="escuro"] .st-tema-ponto {
-  background: #818cf8;
-}
-
-.st-tema-nome {
+.st-opcao-nome {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -463,19 +431,146 @@ body.settings-open #preview-wrap {
   font-weight: 550;
 }
 
-.st-tema-nome .ic {
+.st-opcao-nome .ic {
   width: 15px;
   height: 15px;
   color: var(--muted);
 }
 
-.st-tema:has(input:checked) .st-tema-nome {
+.st-opcao:has(input:checked) .st-opcao-nome {
   font-weight: 650;
   color: var(--accent);
 }
 
-.st-tema:has(input:checked) .st-tema-nome .ic {
+.st-opcao:has(input:checked) .st-opcao-nome .ic {
   color: var(--accent);
+}
+
+/* mini-prévia do tema: cores fixas (os dois cartões aparecem ao mesmo tempo) */
+
+.st-opcao-previa[data-tema="claro"] {
+  color: #1c212b;
+  background: #ffffff;
+  border-color: #d8dbe2;
+}
+
+.st-opcao-previa[data-tema="escuro"] {
+  color: #f4f5f8;
+  background: #0e1014;
+  border-color: #2a2f3a;
+}
+
+.st-opcao-linha {
+  height: 4px;
+  border-radius: 3px;
+  background: currentColor;
+  opacity: 0.72;
+}
+
+.st-opcao-linha.curta {
+  width: 55%;
+  opacity: 0.38;
+}
+
+.st-opcao-ponto {
+  width: 12px;
+  height: 12px;
+  margin-top: auto;
+  border-radius: 4px;
+  background: #4f46e5;
+}
+
+.st-opcao-previa[data-tema="escuro"] .st-opcao-ponto {
+  background: #818cf8;
+}
+
+/* mini-prévia da animação: a bolinha mostra o ritmo de cada nível */
+
+.st-anim-previa {
+  position: relative;
+  display: block;
+  padding: 0;
+  border-color: var(--border);
+  background: var(--panel);
+  container-type: inline-size;
+}
+
+.st-anim-bola {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* discreta: sem deslocamento, só aparece e some */
+.st-anim-previa[data-anim="discreta"] .st-anim-bola {
+  animation: prev-discreta 2.4s ease-in-out infinite;
+}
+
+/* padrão: vai e volta num ritmo calmo */
+.st-anim-previa[data-anim="padrao"] .st-anim-bola {
+  animation: prev-anim 2.4s var(--curva-entrada) infinite;
+}
+
+/* completa: vai e volta com folga (passa do ponto e volta) */
+.st-anim-previa[data-anim="completa"] .st-anim-bola {
+  animation: prev-anim 2.4s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+
+@keyframes prev-discreta {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes prev-anim {
+  0%,
+  10% {
+    transform: translateX(0);
+  }
+  55% {
+    transform: translateX(calc(100cqw - 24px));
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* mini-prévia dos cantos: duas barras dentro de uma caixa com o raio da opção */
+
+.st-canto-previa {
+  justify-content: center;
+  border-color: var(--border);
+  background: var(--panel);
+  transition: border-radius var(--mov-2) var(--curva);
+}
+
+.st-canto-previa[data-cantos="quadrados"] {
+  border-radius: 4px;
+}
+
+.st-canto-previa[data-cantos="redondos"] {
+  border-radius: 16px;
+}
+
+.st-canto-barra {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--accent);
+  opacity: 0.85;
+}
+
+.st-canto-barra.curta {
+  width: 55%;
+  opacity: 0.45;
 }
 
 /* ---------- listas de ajustes ---------- */

@@ -2,7 +2,8 @@
 
 import type { App } from "./app";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { $, baseName, docDirOf, clamp, toast, saveJSON } from "../util";
+import type { FormatoCantos, NivelAnimacao } from "../settingsPage";
+import { $, baseName, docDirOf, clamp, loadJSON, toast, saveJSON } from "../util";
 
 export const layoutMethods = {
   renderOutline(this: App): void {
@@ -172,6 +173,33 @@ export const layoutMethods = {
       void this.preview.render(this.editor.getText());
       this.translationDocChanged(true);
     }
+  },
+
+  /** Nível de animação guardado (sem valor salvo = padrão). */
+  initialAnimacao(this: App): NivelAnimacao {
+    const salvo = loadJSON<string>("mdc.animacao", "padrao");
+    return salvo === "discreta" || salvo === "completa" ? salvo : "padrao";
+  },
+
+  /** Formato dos cantos guardado (sem valor salvo = redondo). */
+  initialCantos(this: App): FormatoCantos {
+    return loadJSON<string>("mdc.cantos", "redondos") === "quadrados" ? "quadrados" : "redondos";
+  },
+
+  /** Aplica o nível de animação no <html> (as regras ficam em styles/movimento.css). */
+  applyAnimacao(this: App, nivel: NivelAnimacao): void {
+    const el = document.documentElement;
+    el.classList.toggle("anim-discreta", nivel === "discreta");
+    el.classList.toggle("anim-completa", nivel === "completa");
+    saveJSON("mdc.animacao", nivel);
+  },
+
+  /** Aplica o formato dos cantos no <html> (as regras ficam em styles/cantos.css). */
+  applyCantos(this: App, cantos: FormatoCantos): void {
+    const el = document.documentElement;
+    el.classList.toggle("cantos-quadrados", cantos === "quadrados");
+    el.classList.toggle("cantos-redondos", cantos === "redondos");
+    saveJSON("mdc.cantos", cantos);
   },
 
   setupSplitter(this: App): void {

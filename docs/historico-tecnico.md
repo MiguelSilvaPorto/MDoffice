@@ -914,6 +914,90 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** campo `bytes` no tipo e novo wrapper de `drafts_folder_path`
 - **Porquê:** o cartão de rascunhos mostra o total e o botão abre a pasta certa em dev e instalado.
 
+## src/settingsPage.ts
+
+### 2026-10-13 · animação e cantos · três cartões de animação e dois de cantos
+- **Local:** seção Aparência; `SettingsCtx`; o bloco de ligações "aparência"
+- **Linha:** o grupo "Tema e janela" virou **Tema** (2 cartões, fora da lista), **Animação**
+  (3 cartões `name="animacao"`), **Cantos** (2 cartões `name="cantos"`) e **Janela** (a lista de
+  interruptores de antes); novos tipos `NivelAnimacao`/`FormatoCantos` e os pares
+  `animacao()/setAnimacao()`, `cantos()/setCantos()` no `SettingsCtx`
+- **Porquê:** o pedido é escolher o nível de animação em três degraus e o formato dos cantos em
+  dois. Cada grupo é um `radiogroup` de cartões (mesmo padrão do tema), com prévia: a da animação
+  mostra o ritmo numa bolinha que anda, e a dos cantos mostra o raio numa caixinha.
+
+## src/styles/settings.css
+
+### 2026-10-13 · animação e cantos · cartões e prévias
+- **Local:** bloco "cartões de escolha (tema, animação, cantos)"
+- **Linha:** `.st-temas/.st-tema*` → `.st-opcoes/.st-opcao*` (nomes neutros, agora que servem a três
+  grupos); `.st-opcoes.tres` (grade de 3); `.st-anim-previa` + `@keyframes prev-anim/prev-discreta`;
+  `.st-canto-previa[data-cantos]`
+- **Porquê:** o mesmo cartão serve para tema, animação e cantos — renomear evita três cópias. A
+  prévia da animação usa `container-type: inline-size` e `translateX(calc(100cqw - 24px))` para a
+  bolinha atravessar a largura real do cartão (porcentagem em `translateX` seria da bolinha, não
+  da caixa).
+
+## src/styles/cantos.css (novo arquivo)
+
+### 2026-10-13 · animação e cantos · camada de raios
+- **Local:** arquivo inteiro (dois tiers + as abas do topo)
+- **Linha:** novo arquivo
+- **Porquê:** os raios estão espalhados por ~15 arquivos (2-16px), cada um no seu componente. Em vez
+  de trocar 150 linhas, esta camada (importada por último) redefine os raios das superfícies mais
+  visíveis em dois tiers — controles pequenos e caixas — com `!important` de propósito: é uma
+  preferência do usuário e precisa vencer os raios mais específicos (ex.: `.tb-quick-actions .btn.icon`).
+  Ficaram de fora as formas funcionais (pílulas de 999px, bolinhas de 50%) e as abas do topo, que
+  têm regra direcional própria.
+
+## src/styles/movimento.css
+
+### 2026-10-13 · animação e cantos · os três níveis
+- **Local:** logo depois do `:root`
+- **Linha:** `html.anim-discreta { --mov-1/2/3 }` e `html.anim-completa { … }` (sem classe = padrão);
+  gating: `html.anim-discreta … { animation: none !important }` (sem entradas/cascata) e
+  `transform: none !important` no hover/active; `html.anim-completa` com `translateY(-2px)`,
+  `scale(0.96)` e cascata mais espaçada
+- **Porquê:** os tempos já são variáveis (`--mov-*`), então o nível só precisa redefini-las — o resto
+  do app acompanha. Os `!important` são a camada de preferência: as regras de hover/entrada têm
+  especificidade maior que `html.anim-*`.
+
+## index.html
+
+### 2026-10-13 · animação e cantos · classes antes da primeira pintura
+- **Local:** script inline do `<head>`
+- **Linha:** leitura de `mdc.animacao` e `mdc.cantos` e as classes no `<html>` (novo)
+- **Porquê:** mesmo motivo do tema: aplicar depois do boot faria a primeira pintura sair no tempo e
+  no raio padrão e "pular" ao aplicar. Ficam no `<html>` (e não no `<body>`) porque o script roda
+  antes de o corpo existir.
+
+## src/styles.css
+
+### 2026-10-13 · animação e cantos · cantos.css por último
+- **Local:** fim da lista de `@import`
+- **Linha:** `@import "./styles/cantos.css";` (novo)
+- **Porquê:** a camada de raios precisa vir depois de todos os componentes (inclusive do movimento,
+  que também mexe em raios de alguns elementos).
+
+## src/app/layout.ts · src/app/pages.ts · src/app/app.ts
+
+### 2026-10-13 · animação e cantos · guardar, aplicar e ler no boot
+- **Local:** `initialAnimacao()`, `initialCantos()`, `applyAnimacao()`, `applyCantos()` (layout.ts);
+  o objeto do `SettingsCtx` (pages.ts); a abertura (app.ts, ao lado do `applyTheme`)
+- **Linha:** novos métodos + `animacao/setAnimacao/cantos/setCantos` no ctx +
+  `this.applyAnimacao(this.initialAnimacao()); this.applyCantos(this.initialCantos());`
+- **Porquê:** o nível e os cantos são preferências como o tema: guardadas em `mdc.animacao`/
+  `mdc.cantos`, aplicadas como classe no `<html>` e lidas na abertura. `applyCantos` grava sempre —
+  inclusive "redondos", para o padrão ficar explícito no armazenamento.
+
+## scripts/testar-layout.mts
+
+### 2026-10-13 · animação e cantos · regressões cobertas
+- **Local:** bloco "configurações: aparência em cartões"
+- **Linha:** 11 verificações (as 5 do tema atualizadas + 6 novas)
+- **Porquê:** as grades de 2 e de 3, o estado marcado, as prévias, os tempos dos três níveis, o
+  gating do discreto, o relevo do completo, os raios dos cantos, as abas e a leitura no boot.
+
 ---
 
 ## Próximos registros

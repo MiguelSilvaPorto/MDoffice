@@ -22,6 +22,12 @@ import type { AppIcon } from "./app/appIcon";
 
 export type SettingsSection = "escrita" | "traducao" | "historico" | "armazenamento" | "aparencia" | "atalhos";
 
+/** Nível de animação do app (Configurações ▸ Aparência). */
+export type NivelAnimacao = "discreta" | "padrao" | "completa";
+
+/** Formato dos cantos do app (Configurações ▸ Aparência). */
+export type FormatoCantos = "quadrados" | "redondos";
+
 export interface SettingsCtx {
   settings: () => AppSettings;
   patch: (p: Partial<AppSettings>) => void;
@@ -34,6 +40,12 @@ export interface SettingsCtx {
   openDictionary: () => void;
   dark: () => boolean;
   setDark: (dark: boolean) => void;
+  /** Nível de animação do app: discreta, padrão ou completa. */
+  animacao: () => NivelAnimacao;
+  setAnimacao: (v: NivelAnimacao) => void;
+  /** Formato dos cantos: quadrados ou redondos. */
+  cantos: () => FormatoCantos;
+  setCantos: (v: FormatoCantos) => void;
   flag: (cls: "no-sidebar" | "no-preview") => boolean;
   toggleFlag: (cls: "no-sidebar" | "no-preview") => void;
   drawStyle: () => "image" | "text";
@@ -396,28 +408,70 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
               <p class="st-lead">Tema e o que aparece na janela.</p>
             </div>
           </header>
-          <h4 class="st-group">Tema e janela</h4>
+          <h4 class="st-group">Tema</h4>
+          <div class="st-opcoes" role="radiogroup" aria-label="Tema do app">
+            <label class="st-opcao" title="Fundo claro e texto escuro">
+              <input type="radio" name="tema" value="claro" ${ctx.dark() ? "" : "checked"}>
+              <span class="st-opcao-previa" data-tema="claro" aria-hidden="true">
+                <span class="st-opcao-linha"></span>
+                <span class="st-opcao-linha curta"></span>
+                <span class="st-opcao-ponto"></span>
+              </span>
+              <span class="st-opcao-nome"><svg class="ic"><use href="#i-sun"/></svg>Claro</span>
+            </label>
+            <label class="st-opcao" title="Fundo escuro e texto claro">
+              <input type="radio" name="tema" value="escuro" ${ctx.dark() ? "checked" : ""}>
+              <span class="st-opcao-previa" data-tema="escuro" aria-hidden="true">
+                <span class="st-opcao-linha"></span>
+                <span class="st-opcao-linha curta"></span>
+                <span class="st-opcao-ponto"></span>
+              </span>
+              <span class="st-opcao-nome"><svg class="ic"><use href="#i-moon"/></svg>Escuro</span>
+            </label>
+          </div>
+
+          <h4 class="st-group">Animação</h4>
+          <div class="st-opcoes tres" role="radiogroup" aria-label="Nível de animação">
+            <label class="st-opcao" title="Sem enfeite: só cor e opacidade, tudo rápido">
+              <input type="radio" name="animacao" value="discreta" ${ctx.animacao() === "discreta" ? "checked" : ""}>
+              <span class="st-opcao-previa st-anim-previa" data-anim="discreta" aria-hidden="true"><span class="st-anim-bola"></span></span>
+              <span class="st-opcao-nome">Discreta</span>
+            </label>
+            <label class="st-opcao" title="O equilíbrio de sempre: entradas curtas e suaves">
+              <input type="radio" name="animacao" value="padrao" ${ctx.animacao() === "padrao" ? "checked" : ""}>
+              <span class="st-opcao-previa st-anim-previa" data-anim="padrao" aria-hidden="true"><span class="st-anim-bola"></span></span>
+              <span class="st-opcao-nome">Padrão</span>
+            </label>
+            <label class="st-opcao" title="Movimento mais longo, com mais relevo e cascata">
+              <input type="radio" name="animacao" value="completa" ${ctx.animacao() === "completa" ? "checked" : ""}>
+              <span class="st-opcao-previa st-anim-previa" data-anim="completa" aria-hidden="true"><span class="st-anim-bola"></span></span>
+              <span class="st-opcao-nome">Completa</span>
+            </label>
+          </div>
+          <p class="st-note">Vale para o app inteiro: entradas, cascatas, elevação ao passar o mouse e a troca de painéis.</p>
+
+          <h4 class="st-group">Cantos</h4>
+          <div class="st-opcoes" role="radiogroup" aria-label="Formato dos cantos">
+            <label class="st-opcao" title="Cantos retos, cara de ferramenta">
+              <input type="radio" name="cantos" value="quadrados" ${ctx.cantos() === "quadrados" ? "checked" : ""}>
+              <span class="st-opcao-previa st-canto-previa" data-cantos="quadrados" aria-hidden="true">
+                <span class="st-canto-barra"></span>
+                <span class="st-canto-barra curta"></span>
+              </span>
+              <span class="st-opcao-nome">Quadrado</span>
+            </label>
+            <label class="st-opcao" title="Cantos bem suaves, arredondados">
+              <input type="radio" name="cantos" value="redondos" ${ctx.cantos() === "redondos" ? "checked" : ""}>
+              <span class="st-opcao-previa st-canto-previa" data-cantos="redondos" aria-hidden="true">
+                <span class="st-canto-barra"></span>
+                <span class="st-canto-barra curta"></span>
+              </span>
+              <span class="st-opcao-nome">Redondo</span>
+            </label>
+          </div>
+
+          <h4 class="st-group">Janela</h4>
           <div class="st-list">
-            <div class="st-temas" role="radiogroup" aria-label="Tema do app">
-              <label class="st-tema" title="Fundo claro e texto escuro">
-                <input type="radio" name="tema" value="claro" ${ctx.dark() ? "" : "checked"}>
-                <span class="st-tema-previa" data-tema="claro" aria-hidden="true">
-                  <span class="st-tema-linha"></span>
-                  <span class="st-tema-linha curta"></span>
-                  <span class="st-tema-ponto"></span>
-                </span>
-                <span class="st-tema-nome"><svg class="ic"><use href="#i-sun"/></svg>Claro</span>
-              </label>
-              <label class="st-tema" title="Fundo escuro e texto claro">
-                <input type="radio" name="tema" value="escuro" ${ctx.dark() ? "checked" : ""}>
-                <span class="st-tema-previa" data-tema="escuro" aria-hidden="true">
-                  <span class="st-tema-linha"></span>
-                  <span class="st-tema-linha curta"></span>
-                  <span class="st-tema-ponto"></span>
-                </span>
-                <span class="st-tema-nome"><svg class="ic"><use href="#i-moon"/></svg>Escuro</span>
-              </label>
-            </div>
             ${toggle("sidebar", "Painel lateral", "Projetos, busca, estrutura e contexto para a IA.", !ctx.flag("no-sidebar"), "i-sidebar")}
             ${toggle("preview", "Pré-visualização", "O resultado formatado ao lado do texto.", !ctx.flag("no-preview"), "i-columns")}
             <div class="st-row">
@@ -908,6 +962,20 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     r.addEventListener("change", () => {
       if (!r.checked) return;
       ctx.setDark(r.value === "escuro");
+      flash();
+    })
+  );
+  host.querySelectorAll<HTMLInputElement>('input[name="animacao"]').forEach((r) =>
+    r.addEventListener("change", () => {
+      if (!r.checked) return;
+      ctx.setAnimacao(r.value === "discreta" ? "discreta" : r.value === "completa" ? "completa" : "padrao");
+      flash();
+    })
+  );
+  host.querySelectorAll<HTMLInputElement>('input[name="cantos"]').forEach((r) =>
+    r.addEventListener("change", () => {
+      if (!r.checked) return;
+      ctx.setCantos(r.value === "quadrados" ? "quadrados" : "redondos");
       flash();
     })
   );

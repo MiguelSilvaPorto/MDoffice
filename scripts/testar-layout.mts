@@ -83,25 +83,54 @@ checa("o botão ativo do seletor deixa o fundo para a pílula", /\.sb-tab\.activ
 checa("o Início destaca a aba só pela cor (sem pintar o fundo)", !/\.sb-tab\[data-side="home"\]\.active[^{]*\{[^}]*background/.test(home));
 checa("a troca de painel usa o passo curto (mdc-painel), sem escala", /\.sb-panel:not\(\[hidden\]\)[^{]*\{[^}]*mdc-painel/.test(mov));
 
-// 5. Configurações ▸ Aparência: o tema é escolhido em dois cartões lado a lado (o interruptor
-//    "Tema escuro" saiu), com prévia de cada tema.
-console.log("configurações: tema em dois cartões");
+// 5. Configurações ▸ Aparência: tema, nível de animação (3 cartões) e cantos (2 cartões),
+//    todos em cartões clicáveis lado a lado, com prévia.
+console.log("configurações: aparência em cartões (tema, animação e cantos)");
 
 const cfg = ler("src/settingsPage.ts");
 const set = ler("src/styles/settings.css");
-checa("os dois cartões de tema ficam lado a lado", /\.st-temas\s*\{[^}]*grid-template-columns:\s*1fr\s+1fr/.test(set), "grid de duas colunas ausente em .st-temas");
-checa("o cartão escolhido fica marcado", /\.st-tema:has\(input:checked\)\s*\{/.test(set), "estado :has(input:checked) ausente em .st-tema");
+const cts = ler("src/styles/cantos.css");
+const boot = ler("index.html");
+checa(
+  "os cartões ficam lado a lado (grade de 2 e de 3)",
+  /\.st-opcoes\s*\{[^}]*grid-template-columns:\s*1fr\s+1fr/.test(set) && /\.st-opcoes\.tres\s*\{[^}]*repeat\(3,\s*1fr\)/.test(set),
+  "grade de 2 ou de 3 colunas ausente"
+);
+checa("o cartão escolhido fica marcado", /\.st-opcao:has\(input:checked\)\s*\{/.test(set), "estado :has(input:checked) ausente em .st-opcao");
 checa(
   "as prévias têm as cores fixas dos dois temas",
-  /\.st-tema-previa\[data-tema="claro"\]\s*\{[^}]*background:\s*#ffffff/.test(set) && /\.st-tema-previa\[data-tema="escuro"\]\s*\{[^}]*background:\s*#0e1014/.test(set),
+  /\.st-opcao-previa\[data-tema="claro"\]\s*\{[^}]*background:\s*#ffffff/.test(set) && /\.st-opcao-previa\[data-tema="escuro"\]\s*\{[^}]*background:\s*#0e1014/.test(set),
   "prévia do claro/escuro ausente"
 );
 checa("o interruptor antigo do tema saiu da página", !/data-k="dark"/.test(cfg), 'ainda existe data-k="dark"');
 checa(
-  "os cartões gravam o tema ao clicar",
-  /input\[name="tema"\]/.test(cfg) && /ctx\.setDark\(r\.value === "escuro"\)/.test(cfg),
-  "ligação dos cartões ausente em settingsPage.ts"
+  "os cartões gravam tema, animação e cantos",
+  /input\[name="tema"\]/.test(cfg) &&
+    /ctx\.setDark\(/.test(cfg) &&
+    /input\[name="animacao"\]/.test(cfg) &&
+    /ctx\.setAnimacao\(/.test(cfg) &&
+    /input\[name="cantos"\]/.test(cfg) &&
+    /ctx\.setCantos\(/.test(cfg),
+  "ligação de um dos grupos ausente em settingsPage.ts"
 );
+checa(
+  "os três níveis de animação têm tempo próprio",
+  /html\.anim-discreta\s*\{[^}]*--mov-2:\s*100ms/.test(mov) && /html\.anim-completa\s*\{[^}]*--mov-2:\s*240ms/.test(mov),
+  "durações de discreta/completa ausentes em movimento.css"
+);
+checa("o nível discreto tira entradas e elevação", /html\.anim-discreta[^{]*\{[^}]*animation:\s*none\s*!important/.test(mov), "regra animation: none ausente");
+checa("o nível completo dá mais relevo", /html\.anim-completa[^{]*\{[^}]*translateY\(-2px\)\s*!important/.test(mov), "regra translateY(-2px) ausente");
+checa(
+  "os cantos quadrados/redondos trocam os raios",
+  /html\.cantos-quadrados[^{]*\{[^}]*border-radius:\s*4px\s*!important/.test(cts) && /html\.cantos-redondos[^{]*\{[^}]*border-radius:\s*10px\s*!important/.test(cts),
+  "camada de raios ausente em cantos.css"
+);
+checa(
+  "as abas do topo seguem os cantos",
+  /html\.cantos-quadrados \.tab\s*\{[^}]*5px 5px 0 0/.test(cts) && /html\.cantos-redondos \.tab\s*\{[^}]*14px 14px 0 0/.test(cts),
+  "regra direcional das abas ausente"
+);
+checa("o boot aplica animação e cantos antes da primeira pintura", /mdc\.animacao/.test(boot) && /mdc\.cantos/.test(boot), "index.html não lê as duas chaves");
 
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

@@ -277,6 +277,8 @@ export class App {
     this.renderLinkedFolders();
     this.renderOutline();
     this.applyTheme(this.initialDark(), false);
+    this.applyAnimacao(this.initialAnimacao());
+    this.applyCantos(this.initialCantos());
     void aplicarIconeApp(); // ícone da janela escolhido em Configurações > Aparência
     this.setupToolbar();
     this.setupWindowControls();
