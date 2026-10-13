@@ -93,18 +93,44 @@
   font-weight: 600;
 }
 
+/* O rótulo reserva a largura do NEGRITO: a aba ativa fica em negrito sem mudar de
+   tamanho. Sem isso, a faixa inteira "pula" na horizontal a cada troca de aba. */
+.ppr-aba-rot {
+  display: inline-grid;
+}
+
+.ppr-aba-rot::after {
+  content: attr(data-nome);
+  grid-area: 1 / 1;
+  font-weight: 600;
+  height: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .ppr-aba .ic {
   width: calc(15px * var(--fita-e));
   height: calc(15px * var(--fita-e));
   flex: none;
 }
 
+/* Todos os painéis dividem a MESMA célula: a área fica com a altura do painel mais
+   alto e trocar de aba não faz a faixa (nem o palco) subir e descer. O painel inativo
+   continua no lugar — invisível, fora do clique e da leitura — e volta a animar quando
+   entra (ver movimento.css). */
+.ppr-paineis {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .ppr-painel {
+  grid-area: 1 / 1;
   display: flex;
   /* uma linha só: os grupos rolam na horizontal em vez de quebrar (o topo
      fica com altura previsível e sobra espaço para a lâmina) */
   flex-wrap: nowrap;
   align-items: stretch;
+  min-width: 0;
   padding: var(--pe-6) var(--pe-8) var(--pe-4);
   min-height: calc(92px * var(--fita-e));
   overflow-x: auto;
@@ -112,7 +138,8 @@
 }
 
 .ppr-painel[hidden] {
-  display: none;
+  display: flex;
+  visibility: hidden;
 }
 
 .ppr-grupo {
