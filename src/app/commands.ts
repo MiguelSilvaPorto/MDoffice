@@ -4,6 +4,7 @@ import type { App } from "./app";
 import { tabLabel } from "../tabs";
 import { openPalette, type PaletteItem } from "../palette";
 import { $, toast, baseName, docDirOf, stripExt, loadJSON, saveJSON } from "../util";
+import { teclaVisivel } from "./keymap";
 
 export const commandsMethods = {
   /** Busca de comandos (Ctrl+K). */
@@ -12,16 +13,16 @@ export const commandsMethods = {
     const add = (group: string, label: string, run: () => void, hint?: string, keywords?: string) =>
       items.push({ group, label, run, hint, keywords });
 
-    add("Documento", "Novo documento (nova aba)", () => void this.newDoc(), "Ctrl+T", "criar");
+    add("Documento", "Novo documento (nova aba)", () => void this.newDoc(), teclaVisivel("nova-aba"), "criar");
     add("Documento", "Nova planilha Excel (.xlsx)", () => void this.newExcelDoc(), undefined, "planilha excel tabela");
     add("Documento", "Novo documento Word (.docx)", () => void this.newWordDoc(), undefined, "word documento");
     add("Documento", "Nova apresentação PowerPoint (.pptx)", () => void this.newPowerPointDoc(), undefined, "apresentacao slides");
-    add("Documento", "Abrir arquivo…", () => void this.openDocDialog(), "Ctrl+O");
+    add("Documento", "Abrir arquivo…", () => void this.openDocDialog(), teclaVisivel("abrir"));
     add("Documento", "Importar do Office (Word, Excel, PowerPoint)…", () => void this.importOfficeDialog(), undefined, "docx xlsx xlsm pptx excel word abrir importar");
-    add("Documento", "Salvar", () => void this.save(false), "Ctrl+S");
-    add("Documento", "Salvar como…", () => void this.save(true), "Ctrl+Shift+S");
+    add("Documento", "Salvar", () => void this.save(false), teclaVisivel("salvar"));
+    add("Documento", "Salvar como…", () => void this.save(true), teclaVisivel("salvar-como"));
     add("Documento", this.settings.autosaveOn ? "Desativar salvamento automático" : "Ativar salvamento automático", () => this.toggleAutosave(), undefined, "autosave salvar automático ligar desligar");
-    add("Documento", "Renomear documento", () => this.tabBar.beginRename(this.tab.id), "F2", "nome título");
+    add("Documento", "Renomear documento", () => this.tabBar.beginRename(this.tab.id), teclaVisivel("renomear"), "nome título");
     add("Documento", "Histórico de versões", () => void this.openHistory(), undefined, "versoes restaurar voltar anterior alteracoes backup");
     add("Documento", "Salvar versão agora", () => void this.saveVersionNow(), undefined, "historico marcar");
     add("Documento", "Backup agora", () => void this.backupNow(this.path, "manual").then(() => toast("Cópia de backup gravada.", "ok", 2600)), undefined, "backup copia seguranca");
@@ -31,10 +32,10 @@ export const commandsMethods = {
     add("Configurações", "Tom do texto: formal", () => this.setTonePref("formal"));
     add("Configurações", "Tom do texto: neutro", () => this.setTonePref("neutro"));
     add("Configurações", "Tom do texto: informal", () => this.setTonePref("informal"));
-    add("Documento", "Fechar aba", () => void this.closeTab(this.activeTabId()), "Ctrl+W");
-    add("Documento", "Reabrir aba fechada", () => void this.reopenClosedTab(), "Ctrl+Shift+T");
+    add("Documento", "Fechar aba", () => void this.closeTab(this.activeTabId()), teclaVisivel("fechar-aba"));
+    add("Documento", "Reabrir aba fechada", () => void this.reopenClosedTab(), teclaVisivel("reabrir-aba"));
 
-    add("Exportar", "Exportar…", () => this.openExport(), "Ctrl+Shift+E");
+    add("Exportar", "Exportar…", () => this.openExport(), teclaVisivel("exportar"));
     add("Exportar", "Exportar como PDF", () => this.openExport("pdf"), undefined, "imprimir");
     add("Exportar", "Exportar como Word (.docx)", () => this.openExport("docx"), undefined, "doc");
     add("Exportar", "Exportar como página web (.html)", () => this.openExport("html"), undefined, "site");
@@ -42,20 +43,20 @@ export const commandsMethods = {
     add("Exportar", "Exportar texto simples", () => this.openExport("txt"), undefined, "txt");
     add("Exportar", "Pacote para IA (.zip)", () => this.openExport("zip"), undefined, "zip");
     add("Exportar", "Copiar formatado (colar no Word)", () => this.openExport("copy"));
-    add("Exportar", "Copiar Markdown para a IA", () => void this.copyForAI(), "Ctrl+Shift+C");
+    add("Exportar", "Copiar Markdown para a IA", () => void this.copyForAI(), teclaVisivel("copiar-ia"));
 
     const tr = this.translation;
-    add("Tradução", tr.settings.enabled ? "Desligar tradução automática" : "Ligar tradução automática (PT-BR → inglês)", () => this.toggleTranslation(), "Ctrl+Alt+T", "traduzir english");
+    add("Tradução", tr.settings.enabled ? "Desligar tradução automática" : "Ligar tradução automática (PT-BR → inglês)", () => this.toggleTranslation(), teclaVisivel("traducao"), "traduzir english");
     add("Tradução", "Ajustes da tradução (offline, glossário…)", () => this.showSettings("traducao"), undefined, "motor modelo glossario");
     add("Tradução", "Ver só português", () => this.showLanguage("pt"));
     add("Tradução", "Ver só inglês", () => this.showLanguage("en"));
     add("Tradução", "Ver português e inglês juntos", () => this.showLanguage("both"));
 
-    add("Escrever", "Revisar texto", () => this.openReview(), "F7", "ortografia gramática");
+    add("Escrever", "Revisar texto", () => this.openReview(), teclaVisivel("revisar"), "ortografia gramática");
     add("Escrever", "Revisão inteligente (palavras repetidas)", () => this.openDeepReview(), undefined, "sinônimos repetição diff trocar palavras");
-    add("Escrever", "Apresentar (slides)", () => this.openSlides(), "F5", "apresentação slides powerpoint deck");
-    add("Escrever", "Modo foco", () => this.toggleFocus(), "Ctrl+Shift+F", "concentrar zen");
-    add("Escrever", "Desenhar", () => void this.openDraw(), "Ctrl+Shift+D");
+    add("Escrever", "Apresentar (slides)", () => this.openSlides(), teclaVisivel("slides"), "apresentação slides powerpoint deck");
+    add("Escrever", "Modo foco", () => this.toggleFocus(), teclaVisivel("modo-foco"), "concentrar zen");
+    add("Escrever", "Desenhar", () => void this.openDraw(), teclaVisivel("desenhar"));
     add("Escrever", "Inserir imagem", () => void this.insertImageFromDialog());
     add("Escrever", "Inserir tabela", () => this.act("table"));
     add("Escrever", "Inserir diagrama", () => this.act("mermaid"));
@@ -70,7 +71,7 @@ export const commandsMethods = {
     add("Ver", "Início (Hub de criação: Word, Excel, MD, PowerPoint)", () => this.showHome(), undefined, "home inicio novo hub criar");
     add("Ver", "Painel: Projetos", () => this.openSidePanel("projects"));
     add("Ver", "Painel: Estrutura do documento", () => this.openSidePanel("outline"));
-    add("Ver", "Boas-vindas e ajuda", () => this.showWelcome(), "F1");
+    add("Ver", "Boas-vindas e ajuda", () => this.showWelcome(), teclaVisivel("ajuda"));
 
     this.tabs.forEach((t, i) => {
       if (t !== this.tab) add("Ir para a aba", tabLabel(t), () => void this.switchTo(t.id), i < 9 ? `Ctrl+${i + 1}` : undefined);

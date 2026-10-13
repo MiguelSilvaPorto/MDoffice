@@ -108,6 +108,16 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   Apresentações) ganharam **recolher** (botão, duplo clique na aba ou Ctrl+F1) e **ajustar o
   tamanho** arrastando a borda de baixo — com a escolha guardada e sincronizada entre as fitas.
 
+### 2026-10-13 · (este commit) · a tecla da fita vem da tabela
+- **Local:** o ouvinte de `keydown` e o `title` do botão de recolher
+- **Linha:** `if (!e.ctrlKey || e.key !== "F1") return;` → `if (emCaptura() || !combina("fita", e)) return;`;
+  `"Recolher a faixa de opções (Ctrl+F1)"` → `` `Recolher a faixa de opções (${teclaVisivel("fita")})` ``
+- **Porquê:** a ação continua aqui (é quem conhece o estado recolhido/expandido), mas a tecla passou a
+  ser a da tabela — é o que permite trocá-la na aba Atalhos. O `emCaptura()` evita que Ctrl+F1 seja
+  recolhido enquanto a pessoa está justamente escolhendo uma tecla. A entrada ficou marcada como
+  `externo` no `keymap.ts`, então o `keys.ts` não a despacha (ninguém dispara duas vezes) e a linha
+  continua editável na lista. O aviso `EVENTO_MUDOU` reaplica o `title` do botão quando a tecla muda.
+
 ## src/styles/fita.css
 
 ### 2026-10-13 · e392858 · estilos dos controles da fita (novo arquivo)
@@ -169,6 +179,15 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** `if (e.key === "F1")` → `if (e.key === "F1" && !e.ctrlKey && !e.metaKey)`
 - **Porquê:** o `Ctrl+F1` passou a recolher/expandir a fita; sem a guarda, ele abria a tela de
   boas-vindas junto.
+
+### 2026-10-13 · (este commit) · despacha pela tabela, não por if/else
+- **Local:** `setupKeys` inteiro
+- **Linha:** ~75 linhas de `if (k === "s") … else if (k === "t") …` → um ouvinte que consulta
+  `atalhoDoEvento(this, e)` e executa a ação do atalho
+- **Porquê:** era essa cadeia que prendia as teclas. As condições que existiam espalhadas viraram
+  regras do `keymap.ts`: com modal aberto o atalho não dispara (só os marcados com `comModal`);
+  `negrito`/`itálico` só valem fora do Word e da planilha; F2 só sem modal. O `Escape` do modo foco
+  ficou aqui de propósito — é a tecla universal de "cancelar", não uma escolha do app.
 
 ## src/app/tabs.ts
 
@@ -508,6 +527,12 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** com a barra recolhendo em 280 ms, a medida do CodeMirror feita no clique fica com a
   largura antiga; a segunda medida, depois da transição, evita o texto "pulando" de linha.
 
+### 2026-10-13 · (este commit) · o atalho mostrado é o que está valendo
+- **Local:** as 15 chamadas de `add(…)` que passavam a tecla como texto
+- **Linha:** `"Ctrl+S"` → `teclaVisivel("salvar")` (e assim por diante)
+- **Porquê:** a busca de comandos mostra o atalho ao lado de cada item; escrito à mão, ele ficaria
+  desatualizado assim que a pessoa trocasse a tecla.
+
 ## src/styles/sidebar.css
 
 ### 2026-10-13 · movimento da barra lateral · recolher pela largura
@@ -711,6 +736,23 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   com uma prévia de cada tema — a escolha vira explícita (Claro × Escuro) e o estado marcado usa o
   mesmo padrão do seletor de ícone do app.
 
+### 2026-10-13 · (este commit) · a aba Atalhos vira editor de atalhos
+- **Local:** a seção `data-sec="atalhos"` (antes alimentada por `SHORTCUT_GROUPS`) e um bloco novo
+  no fim de `renderSettingsPage`
+- **Linha:** `SHORTCUT_GROUPS` foi removida; cada linha agora é
+  `<button data-tecla="id"><kbd>…</kbd></button>` mais um `[data-voltar]`; o bloco novo cuida da
+  escuta (`aoTeclar`), do aviso e do restaurar
+- **Porquê:** a lista virou o lugar onde se escolhe a tecla. A escuta é feita em **captura** no
+  `document` e chama `emCaptura(true)`, senão a própria tecla que a pessoa aperta para escolher
+  dispararia a ação (trocar "Nova aba" para Ctrl+T abriria uma aba no meio da troca). A recusa por
+  conflito mantém a escuta ligada, para a pessoa tentar outra tecla na hora.
+- **Local:** começo de `renderSettingsPage` e a guarda no começo de `aoTeclar`
+- **Linha:** `emCaptura(false)` na entrada; e, no `aoTeclar`, sair antes do `preventDefault` quando
+  `host.offsetParent === null` ou o botão já não está conectado
+- **Porquê:** sair da página no meio de uma troca deixaria a escuta ligada e o app inteiro sem
+  atalhos. A guarda desarma e deixa a tecla seguir o caminho normal — sem engolir a primeira tecla
+  depois da saída.
+
 ## src/styles/settings.css
 
 ### 2026-10-13 · tema em cartões · cartões com prévia do tema
@@ -722,6 +764,15 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   do acento (`:has(input:checked)`). As prévias usam **cores fixas** (#ffffff/#1c212b no claro,
   #0e1014/#f4f5f8 no escuro) de propósito: os dois cartões aparecem ao mesmo tempo, então não
   podem herdar as variáveis do tema atual. As transições usam os tokens do `movimento.css`.
+
+### 2026-10-13 · (este commit) · as teclas clicáveis
+- **Local:** bloco novo, antes de "telas estreitas"
+- **Linha:** `novo` (`.st-key-teclas`, `.st-key-btn`, `.st-key-btn:hover kbd`,
+  `.st-key-btn.escutando kbd` + `@keyframes st-escutando`, `.st-key-voltar`, `.st-list-note.ruim`)
+- **Porquê:** o `kbd` era só um rótulo; agora é um botão que parece o mesmo `kbd` (sem borda nem
+  fundo próprios), e a linha em escuta pisca em acento para deixar claro que a vez é de quem digita.
+  O botão de voltar só aparece nas linhas que foram trocadas. A animação não precisa de guarda de
+  `prefers-reduced-motion`: o `movimento.css` já zera animações nesse caso, para todo o app.
 
 ## scripts/testar-layout.mts
 
@@ -1069,6 +1120,44 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   `.st-btn.danger.confirmando`
 - **Porquê:** as listas de cópias e de "outros documentos" são montadas em tempo de execução; o
   selo de "proteção" e o estado "Confirmar?" do apagar precisam de desenho próprio.
+
+## src/app/keymap.ts
+
+### 2026-10-13 · (este commit) · atalhos configuráveis (novo arquivo)
+- **Local:** tabela `ATALHOS`, `combina`, `comboDeEvento`, `atalhoDoEvento`, `trocarTecla`,
+  `voltarAoPadrao`, `voltarTudoAoPadrao`, `emCaptura`
+- **Linha:** novo arquivo
+- **Porquê:** os atalhos eram uma cadeia de `if` dentro do `keys.ts` — funcionavam, mas a aba
+  Atalhos só podia MOSTRAR a lista, nunca trocar uma tecla. Aqui cada ação se declara uma vez
+  (tecla de fábrica, grupo, rótulo, o que faz e as condições) e vira fonte única: o `keys.ts`
+  despacha por esta tabela, a fita pergunta a tecla de `fita` e as listas do app leem daqui.
+- **Local:** `trocarTecla`
+- **Linha:** novo
+- **Porquê:** recusa conflito em vez de aceitar duas ações na mesma tecla — as duas disparariam
+  juntas e não haveria como saber qual era qual. A recusa nomeia o outro atalho.
+- **Local:** `comboDeEvento` / `nomeDaTecla`
+- **Linha:** novo
+- **Porquê:** tecla sem modificador só é aceita se for F1–F12. Letra ou dígito solto viraria um
+  atalho que dispara enquanto a pessoa escreve no documento (o ouvinte é do `window`, e o evento
+  sobe do editor até ele).
+- **Local:** `desmontar` + `combina`, no caso de `digitos: true`
+- **Linha:** novo
+- **Porquê:** "Ctrl+1…9" não é uma tecla só. A entrada guarda a família (`Ctrl+1`) e o `combina`
+  aceita qualquer dígito de 1 a 9 com os mesmos modificadores — assim essa linha também pode ser
+  trocada, em vez de ficar fixa na lista.
+- **Local:** `EVENTO_MUDOU` (disparado por `gravar`)
+- **Linha:** novo
+- **Porquê:** quem mostra a tecla fora da aba (a dica do botão da fita) precisa acompanhar a troca;
+  sem o aviso a interface passaria a mentir depois de uma troca.
+
+## src/app/menus.ts · src/app/tabs.ts · src/app/toolbar.ts · src/tabs.ts
+
+### 2026-10-13 · (este commit) · as dicas de tecla saem da tabela
+- **Local:** 12 pontos com `hint:` e os dois `title:` de botão (novo botão de aba e × de fechar)
+- **Linha:** `hint: "Ctrl+W"` → `hint: teclaVisivel("fechar-aba")` (e assim por diante);
+  `title: "Fechar aba (Ctrl+W)"` → `title: "Fechar aba (" + teclaVisivel("fechar-aba") + ")"`
+- **Porquê:** com o atalho trocável, uma tecla escrita à mão na dica fica velha na primeira troca.
+  Agora as dicas leem a tecla em vigor; se ela mudar, a próxima abertura do menu já mostra a nova.
 
 ---
 

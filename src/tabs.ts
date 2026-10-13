@@ -1,6 +1,7 @@
 // Abas de documentos (estilo Chrome): uma fileira horizontal, uma aba por documento.
 import type { EditorState } from "@codemirror/state";
 import { fileIcon, kindOfPath, kindOfTab, FILE_KIND_LABEL, type FileKind } from "./fileIcons";
+import { teclaVisivel } from "./app/keymap";
 import type { CursorPos } from "./md/editor";
 import type { WritingIssue } from "./broker/writing";
 import { baseName, h, stripExt, uid } from "./util";
@@ -91,7 +92,7 @@ export class TabBar {
     this.hooks = hooks;
     this.el = host;
     this.strip = h("div", { class: "tab-strip", role: "tablist" });
-    const plus = h("button", { class: "tab-new", type: "button", title: "Novo (Ctrl+T) — documento, planilha ou apresentação", "aria-label": "Novo" });
+    const plus = h("button", { class: "tab-new", type: "button", title: "Novo (" + teclaVisivel("nova-aba") + ") — documento, planilha ou apresentação", "aria-label": "Novo" });
     plus.innerHTML = '<svg class="ic"><use href="#i-plus"/></svg>';
     plus.addEventListener("click", () => hooks.onNewMenu(plus));
     const recents = h("button", { class: "tab-recents", type: "button", title: "Recentes e rascunhos" });
@@ -148,7 +149,7 @@ export class TabBar {
     el.title = `${FILE_KIND_LABEL[fk]}\n${el.title}`;
     const name = h("span", { class: "tab-name", text: label });
     const dot = h("span", { class: "tab-dot", title: "Alterações ainda não gravadas" });
-    const close = h("button", { class: "tab-x", type: "button", title: "Fechar aba (Ctrl+W)", "aria-label": `Fechar ${label}` });
+    const close = h("button", { class: "tab-x", type: "button", title: "Fechar aba (" + teclaVisivel("fechar-aba") + ")", "aria-label": `Fechar ${label}` });
     close.innerHTML = '<svg class="ic"><use href="#i-close"/></svg>';
     close.addEventListener("mousedown", (e) => e.stopPropagation());
     close.addEventListener("click", (e) => {

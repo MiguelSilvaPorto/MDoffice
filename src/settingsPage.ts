@@ -19,7 +19,19 @@ import type { Tone } from "./broker/writing";
 import type { AppSettings } from "./settings";
 import type { AppIcon } from "./app/appIcon";
 import type { AbaHistorico } from "./historyUi";
-
+import {
+  ATALHOS,
+  GRUPOS as GRUPOS_DE_ATALHOS,
+  comboDeEvento,
+  emCaptura,
+  foiTrocada,
+  quantasTrocadas,
+  teclaPadrao,
+  teclaVisivel,
+  trocarTecla,
+  voltarAoPadrao,
+  voltarTudoAoPadrao,
+} from "./app/keymap";
 
 export type SettingsSection = "escrita" | "traducao" | "historico" | "armazenamento" | "aparencia" | "atalhos";
 
@@ -124,44 +136,6 @@ const PROVIDERS: { id: ProviderChoice; title: string; desc: string }[] = [
   { id: "offline", title: "Offline", desc: "Modelo no seu PC, sem limite e sem internet (baixa cerca de 120 MB uma vez)." },
 ];
 
-const SHORTCUT_GROUPS: { title: string; keys: [string, string][] }[] = [
-  {
-    title: "Abas",
-    keys: [
-      ["Ctrl+T", "Nova aba"],
-      ["Ctrl+W", "Fechar aba"],
-      ["Ctrl+Shift+T", "Reabrir a última aba fechada"],
-      ["Ctrl+Tab / Ctrl+1…9", "Trocar de aba"],
-    ],
-  },
-  {
-    title: "Arquivo",
-    keys: [
-      ["Ctrl+O / Ctrl+S", "Abrir / salvar"],
-      ["Ctrl+Shift+S", "Salvar como"],
-      ["Ctrl+Shift+E", "Exportar"],
-      ["F2", "Renomear o documento"],
-    ],
-  },
-  {
-    title: "Escrita e IA",
-    keys: [
-      ["Ctrl+K", "Buscar comandos"],
-      ["F7", "Revisar texto"],
-      ["Ctrl+Alt+T", "Tradução automática"],
-      ["Ctrl+Shift+D", "Desenhar"],
-    ],
-  },
-  {
-    title: "Janela e ajuda",
-    keys: [
-      ["Ctrl+Shift+F", "Modo foco (Esc sai)"],
-      ["Ctrl+F1", "Recolher/expandir a faixa de opções"],
-      ["F1", "Boas-vindas e ajuda"],
-    ],
-  },
-];
-
 /** Chip de ícone que ancora cada linha de ajuste. */
 function rowIcon(icon: string): string {
   return `<span class="st-row-ic"><svg class="ic"><use href="#${icon}"/></svg></span>`;
@@ -187,6 +161,9 @@ function dd(chave: string, opcoes: [string, string][], atual: string): string {
 }
 
 export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section: SettingsSection = "escrita"): void {
+  // Se a página for redesenhada no meio de uma troca de tecla, a escuta antiga não
+  // vale mais — e deixá-la ligada calaria os atalhos do app inteiro.
+  emCaptura(false);
   const s = ctx.settings();
   const tr = ctx.translation.settings;
   const off = ctx.translation.offline;
@@ -580,17 +557,33 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
             <span class="st-sec-ic"><svg class="ic"><use href="#i-code"/></svg></span>
             <div class="st-sec-txt">
               <h3>Atalhos</h3>
-              <p class="st-lead">Os principais atalhos do teclado.</p>
+              <p class="st-lead">Clique na tecla de um atalho e pressione a que você quer no lugar.</p>
             </div>
           </header>
-          ${SHORTCUT_GROUPS.map(
-            (g) => `<h4 class="st-group">${g.title}</h4>
+          ${GRUPOS_DE_ATALHOS.map((grupo) => {
+            const doGrupo = ATALHOS.filter((a) => a.grupo === grupo);
+            if (!doGrupo.length) return "";
+            return `<h4 class="st-group">${grupo}</h4>
           <div class="st-keys-card">
             <div class="st-keys">
-              ${g.keys.map(([k, d]) => `<div class="st-key"><span>${d}</span><kbd>${k}</kbd></div>`).join("")}
+              ${doGrupo
+                .map(
+                  (a) => `<div class="st-key" data-at="${a.id}">
+                <span>${a.rotulo}</span>
+                <span class="st-key-teclas">
+                  <button class="st-key-btn" data-tecla="${a.id}" title="Clique para trocar a tecla"><kbd>${teclaVisivel(a.id)}</kbd></button>
+                  <button class="st-key-voltar" data-voltar="${a.id}" title="Voltar ao padrão (${a.padrao})" aria-label="Voltar ao padrão" ${foiTrocada(a.id) ? "" : "hidden"}><svg class="ic"><use href="#i-undo"/></svg></button>
+                </span>
+              </div>`
+                )
+                .join("")}
             </div>
-          </div>`
-          ).join("")}
+          </div>`;
+          }).join("")}
+          <p class="st-list-note" data-at-nota></p>
+          <div class="st-btns">
+            <button class="st-btn" data-at-restaurar ${quantasTrocadas() ? "" : "hidden"}>Restaurar todos os atalhos</button>
+          </div>
         </section>
       </div>
     </div>
@@ -1289,4 +1282,111 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       flash();
     })
   );
+
+  // ---------------------------------------------------------------- atalhos
+  //
+  // Cada linha é um atalho de verdade: clicar na tecla entra em modo de escuta e a
+  // próxima combinação pressionada vira a nova. Enquanto a escuta dura, o
+  // `emCaptura(true)` cala o resto do app — sem isso, tentar trocar "Nova aba" para
+  // Ctrl+T abriria uma aba no meio da troca.
+  const notaAtalhos = q("[data-at-nota]");
+  const botaoRestaurar = q<HTMLButtonElement>("[data-at-restaurar]");
+  let escutando: { id: string; botao: HTMLButtonElement } | null = null;
+  let limparNota: number | undefined;
+
+  const avisar = (texto: string, ruim = true): void => {
+    notaAtalhos.textContent = texto;
+    notaAtalhos.classList.toggle("ruim", ruim);
+    window.clearTimeout(limparNota);
+    limparNota = window.setTimeout(() => {
+      notaAtalhos.textContent = "";
+      notaAtalhos.classList.remove("ruim");
+    }, 4000);
+  };
+
+  /** Redesenha a linha conforme o que está valendo agora. */
+  const pintarLinha = (id: string): void => {
+    const linha = host.querySelector<HTMLElement>(`[data-at="${id}"]`);
+    if (!linha) return;
+    linha.querySelector("kbd")!.textContent = teclaVisivel(id);
+    const voltar = linha.querySelector<HTMLButtonElement>("[data-voltar]");
+    if (voltar) voltar.hidden = !foiTrocada(id);
+  };
+
+  const rotuloDe = (id: string): string => ATALHOS.find((a) => a.id === id)?.rotulo ?? "";
+
+  const encerrarEscuta = (): void => {
+    if (!escutando) return;
+    const id = escutando.id;
+    escutando.botao.classList.remove("escutando");
+    escutando = null;
+    emCaptura(false);
+    document.removeEventListener("keydown", aoTeclar, true);
+    pintarLinha(id); // devolve o texto da tecla no botão
+  };
+
+  function aoTeclar(e: KeyboardEvent): void {
+    if (!escutando) return;
+    // A página saiu da frente (outra aba, outro documento) ou foi redesenhada: a
+    // escuta perdeu a validade. Sai antes do `preventDefault` para a tecla seguir o
+    // caminho normal — assim nada é engolido à toa.
+    if (host.offsetParent === null || !escutando.botao.isConnected) {
+      encerrarEscuta();
+      return;
+    }
+    // a tecla é daqui: não pode chegar ao editor nem aos atalhos do app
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.key === "Escape") {
+      encerrarEscuta();
+      return;
+    }
+    const combo = comboDeEvento(e);
+    if (!combo) {
+      avisar("Essa tecla sozinha atrapalharia a digitação — use Ctrl ou Alt junto. As teclas F1 a F12 valem sozinhas.");
+      return;
+    }
+    const motivo = trocarTecla(escutando.id, combo);
+    if (motivo) {
+      avisar(motivo);
+      return;
+    }
+    const id = escutando.id;
+    encerrarEscuta();
+    botaoRestaurar.hidden = quantasTrocadas() === 0;
+    avisar(`${rotuloDe(id)} agora é ${combo}.`, false);
+  }
+
+  host.querySelectorAll<HTMLButtonElement>("[data-tecla]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const id = b.dataset.tecla!;
+      if (escutando?.id === id) {
+        encerrarEscuta();
+        return;
+      }
+      encerrarEscuta();
+      escutando = { id, botao: b };
+      b.classList.add("escutando");
+      b.querySelector("kbd")!.textContent = "pressione…";
+      emCaptura(true);
+      document.addEventListener("keydown", aoTeclar, true);
+    })
+  );
+
+  host.querySelectorAll<HTMLButtonElement>("[data-voltar]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const id = b.dataset.voltar!;
+      voltarAoPadrao(id);
+      pintarLinha(id);
+      botaoRestaurar.hidden = quantasTrocadas() === 0;
+      avisar(`${rotuloDe(id)} voltou ao padrão (${teclaPadrao(id)}).`, false);
+    })
+  );
+
+  botaoRestaurar.addEventListener("click", () => {
+    voltarTudoAoPadrao();
+    for (const a of ATALHOS) pintarLinha(a.id);
+    botaoRestaurar.hidden = true;
+    avisar("Todos os atalhos voltaram ao padrão.", false);
+  });
 }

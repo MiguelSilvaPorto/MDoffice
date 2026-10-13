@@ -3,6 +3,7 @@
 import type { App } from "./app";
 import { deckSummary } from "../powerpoint/presenter";
 import { $, $$, toast, loadJSON, saveJSON } from "../util";
+import { teclaVisivel } from "./keymap";
 import { TABLE_SNIPPET, AI_TEMPLATE } from "./constants";
 import { abrirAiDocs } from "../aiDocs/dialog";
 import { newTab } from "../tabs";
@@ -146,11 +147,11 @@ export const toolbarMethods = {
   buildMoreMenu(this: App, menu: HTMLElement): void {
     // Menu "Mais opções": só AÇÕES. Tudo que é ajuste (tema, painéis, correção,
     // sugestões, salvamento, tradução…) vive nas Configurações.
-    this.ddItem(menu, { icon: "i-saveas", label: "Salvar como…", hint: "Ctrl+Shift+S", onPick: () => void this.save(true) });
+    this.ddItem(menu, { icon: "i-saveas", label: "Salvar como…", hint: teclaVisivel("salvar-como"), onPick: () => void this.save(true) });
     this.ddItem(menu, { icon: "i-import", label: "Importar do Office…", hint: ".docx .xlsx .xlsm .pptx", onPick: () => void this.importOfficeDialog() });
     this.ddSep(menu);
-    this.ddItem(menu, { icon: "i-copy", label: "Copiar para a IA", hint: "Ctrl+Shift+C", onPick: () => void this.copyForAI() });
-    this.ddItem(menu, { icon: "i-export", label: "Exportar…", hint: "Ctrl+Shift+E", onPick: () => this.openExport() });
+    this.ddItem(menu, { icon: "i-copy", label: "Copiar para a IA", hint: teclaVisivel("copiar-ia"), onPick: () => void this.copyForAI() });
+    this.ddItem(menu, { icon: "i-export", label: "Exportar…", hint: teclaVisivel("exportar"), onPick: () => this.openExport() });
     this.ddItem(menu, { icon: "i-zip", label: "Pacote para IA (.zip)", hint: "tudo junto", onPick: () => this.openExport("zip") });
     this.ddSep(menu);
     this.ddItem(menu, { icon: "i-folder", label: "Vincular pastas (contexto)…", onPick: () => void this.chooseFolders() });
@@ -159,10 +160,10 @@ export const toolbarMethods = {
     }
     this.ddSep(menu);
     this.ddItem(menu, { icon: "i-spark", label: "Configurações", hint: `tom ${this.settings.tone}`, onPick: () => this.showSettings() });
-    this.ddItem(menu, { icon: "i-check", label: "Revisar texto", hint: "F7", onPick: () => this.openReview() });
+    this.ddItem(menu, { icon: "i-check", label: "Revisar texto", hint: teclaVisivel("revisar"), onPick: () => this.openReview() });
     this.ddItem(menu, { icon: "i-eye", label: "Apresentar (slides)", hint: `F5 · ${deckSummary(this.editor.getText())}`, onPick: () => this.openSlides() });
     this.ddSep(menu);
-    this.ddItem(menu, { icon: "i-help", label: "Boas-vindas e ajuda", hint: "F1", onPick: () => this.showWelcome() });
+    this.ddItem(menu, { icon: "i-help", label: "Boas-vindas e ajuda", hint: teclaVisivel("ajuda"), onPick: () => this.showWelcome() });
   },
 
   buildDrawStyleMenu(this: App, menu: HTMLElement): void {

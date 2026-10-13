@@ -240,6 +240,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Abas estilo Chrome**: `Ctrl+T`/`Ctrl+W`/`Ctrl+Tab`/`Ctrl+1…9`, reabrir a última fechada,
   arrastar para reordenar, menu de contexto; fechar nunca pergunta (vira rascunho em Recentes);
   fechar o **último documento** volta para a tela de Início.
+- **Atalhos configuráveis** (Configurações ▸ Atalhos): antes a aba só mostrava a lista — não havia
+  como escolher outra tecla. Agora cada atalho é um item de verdade: clique na tecla e pressione a
+  nova. Tem aviso de conflito (diz qual atalho já usa aquela tecla), recusa tecla solta (letra sem
+  Ctrl/Alt atrapalharia a digitação; F1–F12 valem sozinhas), voltar ao padrão por linha ou de uma
+  vez, e Esc para desistir. A lista passou a trazer **todos** os atalhos do app — entraram negrito,
+  itálico, apresentar, copiar para a IA e ir para a aba N — e as dicas de tecla espalhadas pelo app
+  (menus de contexto, botões, busca de comandos) acompanham a troca.
 - **Documentação do projeto renovada**: README com a história (mdEditor → mdOffice) e o crédito
   à ArtCraft, licença **MIT**, docs de [estrutura](docs/estrutura-do-projeto.md) e
   [funcionalidades por módulo](docs/funcionalidades.md), e este **changelog + o

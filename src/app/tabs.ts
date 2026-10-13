@@ -2,6 +2,7 @@
 
 import type { App } from "./app";
 import { fileIcon, kindOfPath } from "../fileIcons";
+import { teclaVisivel } from "./keymap";
 import { rememberDocument } from "../broker/ghost/memory";
 import * as files from "../files";
 import { newTab, tabLabel, type DocTab } from "../tabs";
@@ -325,7 +326,7 @@ export const tabsMethods = {
     const tab = this.tabs.find((t) => t.id === id);
     if (!tab) return;
     const items: { label: string; hint?: string; run: () => void; sep?: boolean }[] = [
-      { label: "Renomear", hint: "F2", run: () => this.tabBar.beginRename(id) },
+      { label: "Renomear", hint: teclaVisivel("renomear"), run: () => this.tabBar.beginRename(id) },
       { label: "Duplicar aba", run: () => void this.duplicateTab(tab) },
     ];
     if (tab.path) {
@@ -335,7 +336,7 @@ export const tabsMethods = {
       );
     }
     items.push(
-      { label: "Fechar", hint: "Ctrl+W", run: () => void this.closeTab(id), sep: true },
+      { label: "Fechar", hint: teclaVisivel("fechar-aba"), run: () => void this.closeTab(id), sep: true },
       { label: "Fechar as outras", run: () => void this.closeOthers(tab) },
       { label: "Fechar as da direita", run: () => void this.closeOthers(tab, true) }
     );
@@ -464,9 +465,9 @@ export const tabsMethods = {
         for (const d of drafts) row(d.path, "Rascunho do app", d.modified_ms, null);
       }
 
-      this.ddItem(foot, { icon: "i-open", label: "Abrir arquivo…", hint: "Ctrl+O", onPick: () => void this.openDocDialog() });
+      this.ddItem(foot, { icon: "i-open", label: "Abrir arquivo…", hint: teclaVisivel("abrir"), onPick: () => void this.openDocDialog() });
       if (this.closedTabs.length) {
-        this.ddItem(foot, { icon: "i-undo", label: "Reabrir aba fechada", hint: "Ctrl+Shift+T", onPick: () => void this.reopenClosedTab() });
+        this.ddItem(foot, { icon: "i-undo", label: "Reabrir aba fechada", hint: teclaVisivel("reabrir-aba"), onPick: () => void this.reopenClosedTab() });
       }
     });
   },

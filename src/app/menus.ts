@@ -3,6 +3,7 @@
 import type { App } from "./app";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { $, copyText, h } from "../util";
+import { teclaVisivel } from "./keymap";
 
 export const menusMethods = {
   /** Menu suspenso solto (botão direito) numa posição da tela. */
@@ -49,7 +50,7 @@ export const menusMethods = {
         this.ddItem(menu, {
           icon: "i-doc",
           label: "Renomear",
-          hint: "F2",
+          hint: teclaVisivel("renomear"),
           onPick: () => {
             const alvo = this.tabs.find((t) => (t.path ?? "").toLowerCase() === path.toLowerCase());
             if (alvo) this.tabBar.beginRename(alvo.id);

@@ -8,6 +8,8 @@
 //
 // As duas preferências ficam guardadas e valem para as três fitas (Word, Excel e Apresentações).
 
+import { EVENTO_MUDOU, combina, emCaptura, teclaVisivel } from "./app/keymap";
+
 export interface OpcoesRecolherFita {
   /** raiz da faixa: recebe a classe `fita-recolhida` */
   el: HTMLElement;
@@ -72,7 +74,9 @@ export function ligarRecolherFita(o: OpcoesRecolherFita): { alternar: () => void
   const aplicar = (): void => {
     const escondida = recolhida && !temporaria;
     o.el.classList.toggle("fita-recolhida", escondida);
-    const titulo = escondida ? "Fixar a faixa de opções (Ctrl+F1)" : "Recolher a faixa de opções (Ctrl+F1)";
+    const titulo = escondida
+      ? `Fixar a faixa de opções (${teclaVisivel("fita")})`
+      : `Recolher a faixa de opções (${teclaVisivel("fita")})`;
     botao.title = titulo;
     botao.setAttribute("aria-label", titulo);
     botao.setAttribute("aria-expanded", String(!escondida));
@@ -130,9 +134,11 @@ export function ligarRecolherFita(o: OpcoesRecolherFita): { alternar: () => void
     aplicar();
   });
 
-  // Ctrl+F1 alterna (só quando a fita está à vista)
+  // Ctrl+F1 alterna (só quando a fita está à vista). A tecla vem do `keymap.ts`,
+  // como todas as outras: é o que deixa ela aparecer — e ser trocada — na aba
+  // Atalhos das Configurações.
   document.addEventListener("keydown", (e) => {
-    if (!e.ctrlKey || e.key !== "F1") return;
+    if (emCaptura() || !combina("fita", e)) return;
     if (!o.el.isConnected || o.el.offsetParent === null) return;
     e.preventDefault();
     e.stopPropagation();
@@ -145,6 +151,9 @@ export function ligarRecolherFita(o: OpcoesRecolherFita): { alternar: () => void
     temporaria = false;
     aplicar();
   });
+
+  // trocaram a tecla na aba Atalhos: a dica do botão precisa acompanhar
+  document.addEventListener(EVENTO_MUDOU, () => aplicar());
 
   aplicar();
   return { alternar: () => fixar(!recolhida) };
