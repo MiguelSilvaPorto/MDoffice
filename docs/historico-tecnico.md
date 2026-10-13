@@ -331,6 +331,93 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** arquivos substituídos/novos (pacote gerado com `tauri icon app-icon.png`)
 - **Porquê:** o app passa a usar o ícone novo (documento "M↓" com painéis azul/laranja): o claro
   é o fixo do `.exe`/instalador; os dois ficam disponíveis para a escolha em Configurações.
+## src/sidebar.ts
+
+### 2026-10-13 · movimento da barra lateral · pílula do seletor e árvore crescendo
+- **Local:** `posicionarPilula()`, `expandir()` e as chamadas em `show()`, `setHomeActive()`,
+  `renderProjects()` e `renderNodes()`
+- **Linha:** `novo` (os dois métodos); `this.posicionarPilula();` no fim de `show()`;
+  `if (box && alvo === root) this.expandir(box);` depois de `host.append(box)`
+- **Porquê:** o fundo do painel ativo pulava de botão em botão e a pasta aberta aparecia já no
+  tamanho final (só o fechar animava). A pílula usa `offsetLeft/offsetTop` do botão ativo — o
+  seletor virou `position: relative` para ser o `offsetParent` — e desliza pelo CSS; o `expandir`
+  é o inverso do `recolher` (`max-height` 0 → `scrollHeight`, soltando a altura no fim para o
+  conteúdo poder crescer depois).
+- **Local:** `init()`
+- **Linha:** `document.getElementById("sidebar")?.toggleAttribute("inert", …)` (novo)
+- **Porquê:** a barra não sai mais do DOM ao ser recolhida, então os botões continuariam na ordem
+  do Tab e nos leitores de tela; `inert` resolve sem mexer na animação.
+
+## src/app/commands.ts
+
+### 2026-10-13 · movimento da barra lateral · inert e nova medida do editor
+- **Local:** `toggle()`
+- **Linha:** `document.getElementById("sidebar")?.toggleAttribute("inert", on);` e
+  `window.setTimeout(() => this.editor?.view?.requestMeasure(), 320);` (novos)
+- **Porquê:** com a barra recolhendo em 280 ms, a medida do CodeMirror feita no clique fica com a
+  largura antiga; a segunda medida, depois da transição, evita o texto "pulando" de linha.
+
+## src/styles/sidebar.css
+
+### 2026-10-13 · movimento da barra lateral · recolher pela largura
+- **Local:** `#sidebar` e `body.no-sidebar #sidebar`
+- **Linha:** `body.no-sidebar #sidebar { display: none }` → `{ width: 0; opacity: 0;
+  transform: translateX(-12px); border-right-color: transparent; pointer-events: none }`
+  (e `overflow: hidden` na regra base)
+- **Porquê:** `display: none` não anima: a barra aparecia/sumia de um quadro para o outro e o
+  editor dava um salto. Recolher a largura deixa o corpo acompanhar o movimento; o
+  `overflow: hidden` recorta o conteúdo enquanto ela fecha.
+
+## src/styles/movimento.css
+
+### 2026-10-13 · movimento da barra lateral · passo curto e pílula
+- **Local:** `@keyframes mdc-painel`, a regra de `.sb-panel:not([hidden])` e as transições de
+  `#sidebar` e `.sb-pill`
+- **Linha:** `.sb-panel… { animation: mdc-surgir … }` → `animation: mdc-painel …` (opacidade +
+  `translateY(-6px)`, sem escala); `#sidebar { animation: mdc-surgir … }` → `transition:
+  width/opacity/transform/border-color`; `.sb-pill { transition: transform … }` (novo)
+- **Porquê:** o `mdc-surgir` (14 px + `scale(0.98)`) foi feito para caixas que nascem no meio da
+  tela; numa lista alta que só troca de conteúdo o zoom chama mais atenção do que o próprio
+  painel. A barra deixou de ter animação de entrada (agora é transição de estado) e a pílula
+  ganhou o deslize.
+
+## src/styles/workspace.css
+
+### 2026-10-13 · movimento da barra lateral · pílula do seletor de painéis
+- **Local:** `.sb-tabs`, `.sb-tab`, `.sb-tab.active` e `.sb-pill` (novo)
+- **Linha:** `.sb-tabs { position: relative }` e `.sb-tab { position: relative; z-index: 1 }`
+  (novos); `.sb-tab.active { background: var(--sb-active) }` → `background: transparent`;
+  `.sb-pill` (novo bloco)
+- **Porquê:** o destaque do painel ativo era o fundo do próprio botão — trocar de painel
+  "piscava" de um botão para o outro. A pílula é um elemento só (posicionado pelo `sidebar.ts`),
+  então o fundo **anda** entre os botões; os botões ficam por cima dela (`z-index`) e o `.active`
+  só cuida da cor do ícone.
+
+## src/styles/home.css
+
+### 2026-10-13 · movimento da barra lateral · Início sem fundo próprio
+- **Local:** regra `.sb-tab[data-side="home"].active, body.home-open …`
+- **Linha:** removido `background: var(--accent-soft) !important;` (fica só
+  `color: var(--accent) !important`)
+- **Porquê:** com a pílula deslizando, o fundo do botão de Início brigava com ela (dois "ativos"
+  com cores diferentes). O Início continua se distinguindo pela cor do ícone.
+
+## index.html
+
+### 2026-10-13 · movimento da barra lateral · pílula no HTML
+- **Local:** dentro de `.sb-tabs`
+- **Linha:** `<span class="sb-pill" aria-hidden="true"></span>` (novo, primeiro filho)
+- **Porquê:** a pílula precisa existir antes do primeiro desenho para poder deslizar;
+  `aria-hidden` porque é só o fundo do botão ativo (o estado está no `aria-selected` de cada aba).
+
+## scripts/testar-layout.mts
+
+### 2026-10-13 · movimento da barra lateral · regressões cobertas
+- **Local:** bloco "barra lateral: movimento"
+- **Linha:** 8 verificações novas
+- **Porquê:** são regras que quebram fácil sem ninguém notar (o `display: none` voltar, a pílula
+  perder a âncora, o `.active` voltar a pintar o fundo). O teste é estático e roda em
+  `npm run test:layout`.
 
 ---
 

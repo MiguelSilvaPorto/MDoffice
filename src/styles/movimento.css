@@ -32,6 +32,15 @@
   }
 }
 
+/* painéis que trocam dentro de um mesmo lugar (painel lateral, faixas): um passo curto,
+   sem escala — a lista é alta e o "pop" chamava mais atenção do que o conteúdo */
+@keyframes mdc-painel {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
 @keyframes mdc-menu {
   from {
     opacity: 0;
@@ -130,12 +139,23 @@
 .wd-rpanel:not([hidden]),
 .xl-panel:not([hidden]),
 .ppr-painel:not([hidden]) {
-  animation: mdc-surgir var(--mov-2) var(--curva-entrada) both;
+  animation: mdc-painel var(--mov-2) var(--curva-entrada) both;
 }
 
-/* a barra lateral volta com um passo curto quando é reexibida */
+/* a barra lateral recolhe e volta deslizando (a largura é o que o corpo sente) */
 #sidebar {
-  animation: mdc-surgir var(--mov-3) var(--curva-entrada) both;
+  transition:
+    width var(--mov-3) var(--curva-entrada),
+    opacity var(--mov-2) var(--curva),
+    transform var(--mov-3) var(--curva-entrada),
+    border-color var(--mov-2) var(--curva);
+}
+
+/* a pílula do seletor de painéis desliza de um botão para o outro */
+.sb-pill {
+  transition:
+    transform var(--mov-2) var(--curva-entrada),
+    opacity var(--mov-1) var(--curva);
 }
 
 /* os cards do Início entram em cascata, um atrás do outro */

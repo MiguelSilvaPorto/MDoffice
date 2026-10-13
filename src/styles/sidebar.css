@@ -14,12 +14,18 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
   background: var(--panel);
   border-right: 1px solid var(--border);
 }
 
+/* escondida: recolhe a largura em vez de sumir de uma vez (a transição fica em movimento.css) */
 body.no-sidebar #sidebar {
-  display: none;
+  width: 0;
+  opacity: 0;
+  transform: translateX(-12px);
+  border-right-color: transparent;
+  pointer-events: none;
 }
 
 .side-sec {

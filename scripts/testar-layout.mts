@@ -62,5 +62,26 @@ checa("o painel inativo não some do layout", /\.ppr-painel\[hidden\]\s*\{[^}]*d
 checa("o painel inativo fica invisível (clique/foco/leitura)", /\.ppr-painel\[hidden\]\s*\{[^}]*visibility:\s*hidden/.test(pp), "visibility ausente em .ppr-painel[hidden]");
 checa("o rótulo da aba reserva a largura do negrito", /\.ppr-aba-rot::after\s*\{[^}]*font-weight:\s*600/.test(pp) && /\.ppr-aba-rot::after\s*\{[^}]*visibility:\s*hidden/.test(pp), "regra .ppr-aba-rot::after ausente");
 
+// 4. Barra lateral: recolher animado (largura), pílula deslizante no seletor de painéis e
+//    troca de painel sem o "pop" com escala.
+console.log("barra lateral: movimento");
+
+const html = ler("index.html");
+const sb = ler("src/styles/sidebar.css");
+const ws = ler("src/styles/workspace.css");
+const mov = ler("src/styles/movimento.css");
+checa("index.html tem a pílula dentro do seletor de painéis", /class="sb-tabs"[^>]*>\s*<span class="sb-pill"/.test(html), "span.sb-pill ausente em .sb-tabs");
+checa(
+  "a barra lateral recolhe pela largura (não some de uma vez)",
+  /body\.no-sidebar #sidebar\s*\{[^}]*width:\s*0/.test(sb) && !/body\.no-sidebar #sidebar\s*\{[^}]*display:\s*none/.test(sb),
+  "regra width: 0 ausente (ou ainda com display: none)"
+);
+checa("a barra lateral tem transição de largura", /#sidebar\s*\{[^}]*transition:[^}]*width/.test(mov), "transition de width ausente em #sidebar");
+checa("a pílula desliza (transição de transform)", /\.sb-pill\s*\{[^}]*transition:[^}]*transform/.test(mov), "transition de transform ausente em .sb-pill");
+checa("a pílula fica ancorada no seletor", /\.sb-tabs\s*\{[^}]*position:\s*relative/.test(ws) && /\.sb-pill\s*\{[^}]*position:\s*absolute/.test(ws));
+checa("o botão ativo do seletor deixa o fundo para a pílula", /\.sb-tab\.active\s*\{[^}]*background:\s*transparent/.test(ws));
+checa("o Início destaca a aba só pela cor (sem pintar o fundo)", !/\.sb-tab\[data-side="home"\]\.active[^{]*\{[^}]*background/.test(home));
+checa("a troca de painel usa o passo curto (mdc-painel), sem escala", /\.sb-panel:not\(\[hidden\]\)[^{]*\{[^}]*mdc-painel/.test(mov));
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

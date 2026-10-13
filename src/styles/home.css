@@ -23,11 +23,10 @@ body.home-open #settings-page {
   display: none !important;
 }
 
-/* Destaque no botão de Início da barra lateral */
+/* Destaque no botão de Início da barra lateral (o fundo é a pílula que desliza) */
 .sb-tab[data-side="home"].active,
 body.home-open .sb-tab[data-side="home"] {
   color: var(--accent) !important;
-  background: var(--accent-soft) !important;
 }
 
 .home-wrap {

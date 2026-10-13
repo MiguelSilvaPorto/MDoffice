@@ -125,5 +125,10 @@ export const commandsMethods = {
     if (cls === "no-preview" || cls === "no-sidebar") {
       this.editor?.view?.requestMeasure();
     }
+    if (cls === "no-sidebar") {
+      // a barra continua no DOM (recolhe animando): "inert" a tira do Tab e dos leitores de tela
+      document.getElementById("sidebar")?.toggleAttribute("inert", on);
+      window.setTimeout(() => this.editor?.view?.requestMeasure(), 320);
+    }
   },
 };

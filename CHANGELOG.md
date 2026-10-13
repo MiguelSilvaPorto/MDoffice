@@ -248,6 +248,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Skills e regras** para IA e o menu **+** separando Markdown, Word, Planilha e Apresentação.
 - **Ícone do app escolhível** (Configurações ▸ Aparência): claro ou escuro, trocando na hora o
   ícone da janela e da barra de tarefas; sem escolha ainda, segue o tema.
+- **Barra lateral com movimento de verdade**: a pílula do seletor de painéis **desliza** entre
+  Início/Projetos/Estrutura/Contexto; mostrar/esconder a barra **recolhe a largura** em vez de
+  sumir de uma vez; a troca de painel entra com um passo curto (sem o "pop" com escala) e abrir
+  uma pasta na árvore **cresce** a altura (fechar já animava).
 
 **Ferramentas (dev)**
 

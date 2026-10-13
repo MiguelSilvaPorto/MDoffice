@@ -65,6 +65,8 @@ export class Sidebar {
   async init(): Promise<void> {
     const saved = loadJSON<string>(SIDE_KEY, "projects");
     this.active = (["projects", "outline", "context"] as string[]).includes(saved) ? (saved as SidePanel) : "projects";
+    // barra recolhida já na abertura: tira do Tab e dos leitores de tela (a animação é só visual)
+    document.getElementById("sidebar")?.toggleAttribute("inert", document.body.classList.contains("no-sidebar"));
     document.querySelectorAll<HTMLElement>(".sb-tab").forEach((b) =>
       b.addEventListener("click", () => {
         if (b.dataset.side === "home") {
@@ -137,7 +139,19 @@ export class Sidebar {
     });
     document.querySelectorAll<HTMLElement>(".sb-panel").forEach((p) => (p.hidden = p.id !== `sp-${panel}`));
     ($("#sb-search") as HTMLInputElement).placeholder = panel === "outline" ? "Buscar título" : "Buscar";
+    this.posicionarPilula();
     this.render();
+  }
+
+  /** Move a pílula do seletor de painéis para o botão ativo (ela desliza no CSS). */
+  private posicionarPilula(alvo?: HTMLElement | null): void {
+    const pilula = document.querySelector<HTMLElement>(".sb-pill");
+    if (!pilula) return;
+    const ativo =
+      alvo ?? document.querySelector<HTMLElement>('.sb-tab.active:not([data-side="home"])') ?? document.querySelector<HTMLElement>(".sb-tab.active");
+    if (!ativo) return;
+    pilula.style.transform = `translate(${ativo.offsetLeft}px, ${ativo.offsetTop}px)`;
+    pilula.classList.add("on");
   }
 
   setHomeActive(active: boolean): void {
@@ -145,6 +159,7 @@ export class Sidebar {
     if (homeBtn) {
       homeBtn.classList.toggle("active", active);
       homeBtn.setAttribute("aria-selected", String(active));
+      this.posicionarPilula(active ? homeBtn : undefined);
     }
   }
 
@@ -360,6 +375,34 @@ export class Sidebar {
     requestAnimationFrame(() => box.classList.add("pj-fechando"));
   }
 
+  /** Abre uma caixa da árvore crescendo a altura (o inverso do recolher). */
+  private expandir(box: HTMLElement): void {
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const altura = box.scrollHeight;
+    if (!altura) return;
+    box.style.maxHeight = "0px";
+    box.style.opacity = "0";
+    let feito = false;
+    const fim = () => {
+      if (feito) return;
+      feito = true;
+      box.removeEventListener("transitionend", aoTerminar);
+      window.clearTimeout(relogio);
+      // solta a altura para o conteúdo poder crescer depois (um refresh, por exemplo)
+      box.style.removeProperty("max-height");
+      box.style.removeProperty("opacity");
+    };
+    const aoTerminar = (e: TransitionEvent) => {
+      if (e.target === box && e.propertyName === "max-height") fim();
+    };
+    const relogio = window.setTimeout(fim, 360);
+    box.addEventListener("transitionend", aoTerminar);
+    requestAnimationFrame(() => {
+      box.style.maxHeight = `${altura}px`;
+      box.style.opacity = "1";
+    });
+  }
+
   private renderProjects(): void {
     const host = $("#projects-tree");
     host.textContent = "";
@@ -457,6 +500,7 @@ export class Sidebar {
       });
       host.append(row);
       if (box) host.append(box);
+      if (box && alvo === root) this.expandir(box);
     });
     if (this.query.length >= 2) this.renderHits(host);
   }
@@ -496,6 +540,7 @@ export class Sidebar {
         });
         host.append(row);
         if (box) host.append(box);
+        if (box && alvo === node.path) this.expandir(box);
         return;
       }
 
