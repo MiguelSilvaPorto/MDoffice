@@ -4,6 +4,7 @@ import * as backup from "./backup";
 import { pickFolders } from "./files";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { clearGhostMemory } from "./broker/ghost/memory";
+import { limparAprendizado } from "./broker/aprendizado";
 import { profileSummary } from "./broker/personal/profile";
 import { llmEnabled, llmUseGpu, llmTypingSetting, setLlmEnabled, setLlmUseGpu, setLlmTyping } from "./broker/llm/config";
 import { llmAvailable, llmDevice } from "./broker/llm/client";
@@ -468,8 +469,9 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   on('[data-act="forget-ghost"]', "click", () => {
     clearGhostMemory();
     clearFeedback();
+    limparAprendizado();
     paintStyle();
-    toast("As sugestões esqueceram o que aprenderam dos seus documentos.", "ok", 2600);
+    toast("As sugestões e o corretor esqueceram o que aprenderam dos seus textos.", "ok", 2600);
   });
   on('[data-act="dict"]', "click", () => {
     ctx.openDictionary();

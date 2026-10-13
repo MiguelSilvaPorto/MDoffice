@@ -1,5 +1,7 @@
 // Cliente do dicionário (worker): carrega em segundo plano e responde as palavras erradas.
 
+import { aoAprender, correcoesConfiadas } from "./aprendizado";
+
 export interface SpellHit {
   word: string;
   suggestions: string[];
@@ -51,6 +53,7 @@ function ensureSpellWorker(): Worker | null {
     const data = event.data as { type: string; id?: number; hits?: SpellHit[]; error?: string };
     if (data.type === "ready") {
       spellReady = true;
+      enviarAprendizado();
       for (const cb of spellReadyCallbacks.splice(0)) cb();
       return;
     }
@@ -71,8 +74,16 @@ function ensureSpellWorker(): Worker | null {
   return spellWorker;
 }
 
-/** Aguarda o dicionário ficar pronto (espera curta: o resto roda em segundo plano). */
-async function waitForSpell(timeoutMs = 3000): Promise<boolean> {
+/** Manda para o worker as trocas já aprendidas (ele não lê localStorage). */
+function enviarAprendizado(): void {
+  if (!spellWorker || !spellReady) return;
+  spellWorker.postMessage({ type: "aprender", correcoes: correcoesConfiadas() });
+}
+
+// Sempre que uma correção nova é aceita, o corretor passa a conhecê-la.
+aoAprender(enviarAprendizado);
+
+/** Aguarda o dicionário ficar pronto (espera curta: o resto roda em segundo plano). */async function waitForSpell(timeoutMs = 3000): Promise<boolean> {
   if (spellReady) return true;
   if (spellFailed) return false;
   const started = Date.now();

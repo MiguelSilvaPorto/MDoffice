@@ -264,6 +264,59 @@ for (const caso of casos) {
   }
 }
 
+// ---------------------------------------------------------------- aprendizado
+
+// Prova de ponta a ponta: uma troca que a pessoa aceita passa a ser conhecida
+// pelo corretor. Antes de aceitar, a palavra inventada não tem correção
+// confiável; depois de aceita algumas vezes, o corretor aplica sozinho.
+console.log("\n=== aprendizado com o uso ===");
+{
+  // Um bundle só: empacotar `check.ts` e `aprendizado.ts` separadamente daria a
+  // cada um a sua própria cópia do módulo, e o registro não chegaria ao corretor.
+  const entrada = join(tmp, "junto.ts");
+  const caminho = (p: string) => join(raiz, p).replace(/\\/g, "/");
+  fs.writeFileSync(
+    entrada,
+    `export { checkText } from "${caminho("src/broker/check.ts")}";\n` +
+      `export { registrarCorrecao, correcoesConfiadas, limparAprendizado } from "${caminho("src/broker/aprendizado.ts")}";\n`
+  );
+  const J = await (async () => {
+    const saida = join(tmp, "junto.mjs");
+    await build({
+      entryPoints: [entrada],
+      bundle: true,
+      platform: "node",
+      format: "esm",
+      outfile: saida,
+      logLevel: "error",
+    });
+    return import(pathToFileURL(saida).href);
+  })();
+  const checkJunto = J.checkText as typeof checkText;
+
+  const inventada = "xilofraste";
+  const correta = "xilofone";
+  const frase = `O ${inventada} chegou ontem.`;
+
+  const antes = await corrigir(frase, checkJunto);
+  const conhecidaAntes = antes.texto.includes(correta);
+  console.log(`  antes de aceitar:  ${JSON.stringify(antes.texto.trim())}`);
+
+  J.registrarCorrecao(inventada, correta);
+  const depoisDeUma = await corrigir(frase, checkJunto);
+  console.log(`  após 1 aceite:     ${JSON.stringify(depoisDeUma.texto.trim())}`);
+
+  J.registrarCorrecao(inventada, correta);
+  await new Promise((r) => setTimeout(r, 300));
+  const depoisDeDuas = await corrigir(frase, checkJunto);
+  const conhecidaDepois = depoisDeDuas.texto.includes(correta);
+  console.log(`  após 2 aceites:    ${JSON.stringify(depoisDeDuas.texto.trim())}`);
+
+  const ok = !conhecidaAntes && conhecidaDepois;
+  console.log(ok ? "  ok   o corretor passou a aplicar a troca aprendida" : "  FALHA o aprendizado não chegou ao corretor");
+  if (!ok) falhas.push({ caso: { numero: 0, titulo: "aprendizado com o uso", errado: frase, esperado: frase }, obtido: depoisDeDuas.texto });
+}
+
 console.log(`\n${passaram}/${casos.length} casos corrigidos`);
 console.log(`${limpos}/${casos.length} textos corretos preservados` + (sujeiras.length ? `  (${sujeiras.length} sujaram)` : ""));
 if (falhas.length) {

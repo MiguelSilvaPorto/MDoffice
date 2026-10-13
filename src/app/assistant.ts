@@ -3,6 +3,7 @@
 import type { App } from "./app";
 import { checkText, checkStyle, stats as writingStats, spellIsReady, spellHasFailed, type WritingIssue } from "../broker/writing";
 import { openReviewModal } from "../broker/review";
+import { registrarCorrecao } from "../broker/aprendizado";
 import { $, toast, saveJSON } from "../util";
 
 /**
@@ -139,6 +140,9 @@ export const assistantMethods = {
     this.editor.replaceRanges(
       aplicaveis.map((i) => ({ from: i.from, to: i.to, insert: this.replacementFor(i)! }))
     );
+    // Aprende com o que foi aceito: a próxima vez que a mesma troca aparecer,
+    // o corretor já a conhece (e, repetida o bastante, aplica sozinho).
+    for (const i of aplicaveis) registrarCorrecao(i.word, this.replacementFor(i)!);
     return aplicaveis.length;
   },
 

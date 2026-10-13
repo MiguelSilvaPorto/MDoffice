@@ -123,6 +123,12 @@ function variantesAcento(palavra: string): string[] {
   return achadas;
 }
 
+/**
+ * Trocas que a pessoa já aceitou o bastante para virar correção conhecida
+ * (vêm do aprendizado; o worker não lê localStorage, então a interface envia).
+ */
+const APRENDIDAS = new Map<string, string>();
+
 /** Erros clássicos de escrita em português (mapa direto, com correção confiável). */
 const ERROS_COMUNS: Record<string, string> = {
   "excessão": "exceção",
@@ -167,6 +173,10 @@ function sugerirPalavra(palavra: string): { sugestoes: string[]; best?: string; 
   // 0) erro clássico conhecido: certeza total
   const classico = ERROS_COMUNS[p];
   if (classico) anotar(classico, 1.5, 0);
+  // 0b) troca APRENDIDA: a pessoa já aceitou esta correção outras vezes.
+  // Vale tanto quanto um erro clássico — é o que faz o corretor melhorar com o uso.
+  const aprendida = APRENDIDAS.get(p);
+  if (aprendida) anotar(aprendida, 1.5, 0);
   // 1) só acento/cedilha: nota máxima
   for (const v of variantesAcento(palavra)) anotar(v, 1, 0);
   // 2) parecidas de verdade (índice de trigramas + distância de edição + frequência)
@@ -321,7 +331,7 @@ const JARGAO = new RegExp(
 );
 
 self.addEventListener("message", (event: MessageEvent) => {
-  const data = event.data as { type: string; id?: number; words?: string[]; base?: string };
+  const data = event.data as { type: string; id?: number; words?: string[]; base?: string; correcoes?: [string, string][] };
 
   if (data.type === "init") {
     void (async () => {
@@ -353,6 +363,16 @@ self.addEventListener("message", (event: MessageEvent) => {
         self.postMessage({ type: "failed", error: String(err) });
       }
     })();
+    return;
+  }
+
+  if (data.type === "aprender") {
+    // A interface manda as trocas já confiáveis (o worker não tem localStorage).
+    APRENDIDAS.clear();
+    for (const par of (data.correcoes ?? []) as [string, string][]) {
+      if (!Array.isArray(par) || par.length !== 2) continue;
+      APRENDIDAS.set(norm(par[0]), par[1]);
+    }
     return;
   }
 
