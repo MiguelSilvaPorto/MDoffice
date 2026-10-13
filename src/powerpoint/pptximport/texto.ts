@@ -17,6 +17,8 @@ export interface RProps {
   caps?: boolean;
   spc?: number;
   baseline?: number;
+  /** cor do marca-texto (<a:highlight>) */
+  highlight?: CorResolvida;
   link?: string;
 }
 
@@ -73,6 +75,16 @@ export function lerRProps(no: No | undefined, ctx: ContextoCor): RProps {
       const cor = resolverCor(c, ctx);
       if (cor) {
         r.cor = cor;
+        break;
+      }
+    }
+  }
+  const marca = filho(no, "highlight");
+  if (marca) {
+    for (const c of marca.c) {
+      const cor = resolverCor(c, ctx);
+      if (cor) {
+        r.highlight = cor;
         break;
       }
     }
@@ -202,6 +214,7 @@ export function lerParagrafos(corpo: No | undefined, ctx: ContextoCor, op: Opcoe
       if (m.caps) run.caps = true;
       if (m.spc) run.spc = m.spc;
       if (m.baseline) run.baseline = m.baseline;
+      if (m.highlight) run.highlight = m.highlight.hex;
       if (m.link) run.link = m.link;
       if (br) run.br = true;
       return run;

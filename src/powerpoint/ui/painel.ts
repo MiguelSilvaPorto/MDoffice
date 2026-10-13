@@ -109,6 +109,8 @@ export class Painel {
     return JSON.stringify([
       est.formas.map((s) => [s.id, s.box, s.rot, s.fillX, s.ln, s.shadow, s.opacity, s.adj, s.anchor, s.ins, s.wrap, s.vert, s.crop, s.flipH, s.flipV, s.bloqueada, s.autofit, s.grafico]),
       f ? f.geom : "",
+      // o espaçamento de caracteres do painel segue o trecho escolhido no texto
+      est.trecho && est.trecho.spc !== "misto" ? est.trecho.spc : null,
       est.formas.length ? "" : [est.bg, est.layout, est.setup.theme],
     ]);
   }
@@ -131,7 +133,7 @@ export class Painel {
     const ajustes = this.htmlAjustes(f);
     if (ajustes) partes.push(secao("ajustes", "Ajustes da forma", ajustes));
     partes.push(secao("tamanho", "Tamanho e posição", this.htmlTamanho(f, est)));
-    if (f.paras !== undefined) partes.push(secao("texto", "Texto", this.htmlTexto(f)));
+    if (f.paras !== undefined) partes.push(secao("texto", "Texto", this.htmlTexto(f, est)));
     return partes.join("");
   }
 
@@ -218,12 +220,14 @@ export class Painel {
     ].join("");
   }
 
-  private htmlTexto(f: Shape): string {
+  private htmlTexto(f: Shape, est: EstadoUI): string {
     const ins = f.ins ?? [7.2, 3.6, 7.2, 3.6];
+    const spc = est.trecho && est.trecho.spc !== "misto" ? est.trecho.spc : 0;
     return [
       `<div class="pf-linha"><span>Alinhamento vertical</span></div>`,
       radios("anc", "anchor", f.anchor ?? "t", [["t", "Topo"], ["ctr", "Meio"], ["b", "Base"]]),
       linhaSel("Direção", "vert", f.vert ?? "", [["", "Horizontal"], ["vert", "Girar 90°"], ["vert270", "Girar 270°"]]),
+      linhaNum("Espaçamento entre caracteres", "espacamento", spc, 0.25, -50, 50, "pt"),
       linhaNum("Margem esquerda", "marg:0", ptParaCm(ins[0]), 0.05, 0, 20, "cm"),
       linhaNum("Margem superior", "marg:1", ptParaCm(ins[1]), 0.05, 0, 20, "cm"),
       linhaNum("Margem direita", "marg:2", ptParaCm(ins[2]), 0.05, 0, 20, "cm"),

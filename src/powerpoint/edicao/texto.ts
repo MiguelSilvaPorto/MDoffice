@@ -5,7 +5,7 @@ import type { Bullet, Para, Run, TextAlign } from "../schema";
 
 export type EstiloRun = Omit<Run, "text" | "br">;
 
-export type RunPatch = Partial<Pick<Run, "size" | "bold" | "italic" | "underline" | "strike" | "color" | "font" | "caps" | "spc" | "baseline" | "alpha">>;
+export type RunPatch = Partial<Pick<Run, "size" | "bold" | "italic" | "underline" | "strike" | "color" | "font" | "caps" | "spc" | "baseline" | "highlight" | "alpha">>;
 
 export interface ParaPatch {
   align?: TextAlign;
@@ -130,8 +130,86 @@ function igualEstilo(a: Run, b: Run): boolean {
     !!a.caps === !!b.caps &&
     (a.spc ?? 0) === (b.spc ?? 0) &&
     (a.baseline ?? 0) === (b.baseline ?? 0) &&
+    (a.highlight ?? "") === (b.highlight ?? "") &&
     a.link === b.link
   );
+}
+
+// ---------------------------------------------------------------------------
+// texto avançado por trecho: caixa das letras e "limpar formatação"
+// ---------------------------------------------------------------------------
+
+export type TipoCaixa = "maiusculas" | "minusculas" | "primeira";
+
+/** Texto na caixa pedida, com o alfabeto do português (acentos certos: "informação" → "INFORMAÇÃO"). */
+function naCaixa(t: string, tipo: TipoCaixa): string {
+  if (tipo === "maiusculas") return t.toLocaleUpperCase("pt-BR");
+  if (tipo === "minusculas") return t.toLocaleLowerCase("pt-BR");
+  // Primeira Letra: cada palavra começa com maiúscula e o resto fica minúsculo
+  let saida = "";
+  let inicio = true;
+  for (const ch of t.toLocaleLowerCase("pt-BR")) {
+    const letra = /[\p{L}\p{N}]/u.test(ch);
+    saida += inicio && letra ? ch.toLocaleUpperCase("pt-BR") : ch;
+    inicio = !letra;
+  }
+  return saida;
+}
+
+/**
+ * Aplica `fn` aos trechos tocados por [ini, fim), dividindo-os nas bordas. Com `ini < 0` (ou seleção vazia,
+ * `ini === fim`) vale para todo o texto, como em `estiloNoIntervalo`.
+ */
+function transformarNoIntervalo(paras: Para[], ini: number, fim: number, fn: (r: Run) => Run): Para[] {
+  const todos = ini < 0 || ini === fim;
+  let off = 0;
+  return paras.map((p) => {
+    const runs: Run[] = [];
+    for (const r of p.runs) {
+      const rs = off;
+      const re = off + r.text.length;
+      off = re;
+      if (r.br) {
+        runs.push(r);
+        continue;
+      }
+      const a = todos ? rs : Math.max(rs, ini);
+      const b = todos ? re : Math.min(re, fim);
+      if (todos || (b > a && a < re && b > rs)) {
+        if (todos || (a === rs && b === re)) runs.push(fn(r));
+        else {
+          // divide o trecho em até três partes: antes, dentro e depois da seleção
+          if (a > rs) runs.push({ ...r, text: r.text.slice(0, a - rs) });
+          runs.push(fn({ ...r, text: r.text.slice(a - rs, b - rs) }));
+          if (b < re) runs.push({ ...r, text: r.text.slice(b - rs) });
+        }
+      } else runs.push(r);
+    }
+    off += 1; // separador de parágrafo
+    return { ...p, runs: juntarIguais(runs) };
+  });
+}
+
+/** Transforma a caixa do texto do trecho selecionado: MAIÚSCULAS, minúsculas ou Primeira Letra. */
+export function mudarCaixaTexto(paras: Para[], ini: number, fim: number, tipo: TipoCaixa): Para[] {
+  return transformarNoIntervalo(paras, ini, fim, (r) => ({ ...r, text: naCaixa(r.text, tipo) }));
+}
+
+/**
+ * "Limpar formatação": devolve o trecho ao estilo de digitação da forma (o mesmo que o texto novo herda) e tira o
+ * que a formatação avançada acrescentou — marca-texto, sobrescrito/subscrito, versalete e espaçamento de caracteres.
+ * O link continua (não é formatação do desenho da letra).
+ */
+export function limparEstiloNoIntervalo(paras: Para[], ini: number, fim: number, estilo: EstiloRun): Para[] {
+  return transformarNoIntervalo(paras, ini, fim, (r) => {
+    const limpo: Run = { ...estilo, text: r.text };
+    delete limpo.highlight;
+    delete limpo.caps;
+    delete limpo.spc;
+    delete limpo.baseline;
+    if (r.link) limpo.link = r.link;
+    return limpo;
+  });
 }
 
 /** Estado do estilo no trecho: valor comum, ou "misto" quando há diferença (a fita mostra assim). */
@@ -143,6 +221,14 @@ export interface EstadoTrecho {
   size: number | "misto";
   font: string | "misto";
   color: string | "misto";
+  /** versalete */
+  caps: boolean | "misto";
+  /** espaçamento entre letras em pt */
+  spc: number | "misto";
+  /** sobrescrito (+) / subscrito (-) em % */
+  baseline: number | "misto";
+  /** cor do marca-texto ("" = sem marca-texto) */
+  highlight: string | "misto";
 }
 
 export function estadoDoTrecho(paras: Para[], ini: number, fim: number): EstadoTrecho | null {
@@ -173,7 +259,19 @@ export function estadoDoTrecho(paras: Para[], ini: number, fim: number): EstadoT
       off += 1;
     }
     if (achado) {
-      return { bold: achado.bold, italic: achado.italic, underline: achado.underline, strike: achado.strike, size: achado.size, font: achado.font, color: achado.color };
+      return {
+        bold: achado.bold,
+        italic: achado.italic,
+        underline: achado.underline,
+        strike: achado.strike,
+        size: achado.size,
+        font: achado.font,
+        color: achado.color,
+        caps: !!achado.caps,
+        spc: achado.spc ?? 0,
+        baseline: achado.baseline ?? 0,
+        highlight: achado.highlight ?? "",
+      };
     }
   }
   if (!runs.length) return null;
@@ -186,6 +284,10 @@ export function estadoDoTrecho(paras: Para[], ini: number, fim: number): EstadoT
     size: comum((r) => r.size),
     font: comum((r) => r.font),
     color: comum((r) => r.color),
+    caps: comum((r) => !!r.caps),
+    spc: comum((r) => r.spc ?? 0),
+    baseline: comum((r) => r.baseline ?? 0),
+    highlight: comum((r) => r.highlight ?? ""),
   };
 }
 

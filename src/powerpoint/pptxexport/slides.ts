@@ -13,6 +13,10 @@ type PptxSlide = {
   shapes?: Record<string, unknown>;
   /** cor de fundo da lâmina (aceita pelo PptxGenJS) */
   background?: { color: string };
+  /** oculta na apresentação: o PptxGenJS grava `show="0"` no `p:sld` da lâmina */
+  hidden?: boolean;
+  /** nome interno da lâmina (o PptxGenJS grava no `name` do p:cSld; vazio = sem nome) */
+  _name?: string;
 };
 
 /** Uma linha de texto com o estilo que ela herda do markdown. */
@@ -103,4 +107,43 @@ export function escreverLamina(slide: PptxSlide, s: Slide, setup: DeckSetup): vo
     );
     y += altura * (b.bullet ? 1.05 : 1.15);
   }
+}
+
+/**
+ * Passa para a lâmina do PptxGenJS o que o modelo sabe e ele não: se está oculta
+ * (ele grava `show="0"` no `p:sld` — é o que o PowerPoint lê) e se tem nome próprio.
+ * O nome vai depois, na pós-processagem do pacote: o PptxGenJS não escapa `&` nem
+ * aspas no `name`, e o padrão "Slide N" dele não é nome escolhido e sujaria o round-trip.
+ */
+export function marcarLamina(slide: PptxSlide, s: Slide): void {
+  slide.hidden = s.show === false;
+  slide._name = "";
+}
+
+/** Põe o nome da lâmina no `name` do `p:cSld` do XML (substitui o valor que já existir). */
+export function comNomeDaCld(xml: string, nome: string): string {
+  const esc = nome.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return xml.replace(/<p:cSld\b[^>]*>/, (tag) => (/\bname="/.test(tag) ? tag.replace(/\bname="[^"]*"/, () => `name="${esc}"`) : tag.replace("<p:cSld", () => `<p:cSld name="${esc}"`)));
+}
+
+/**
+ * Põe `show="0"` no `p:sld` da lâmina oculta. O PptxGenJS já faz isso nas lâminas que
+ * escreve; este é para as lâminas ricas, cujo XML é trocado pelo do Escritor.
+ */
+export function comOcultaNoSld(xml: string): string {
+  return xml.replace(/<p:sld\b[^>]*>/, (tag) => (/\bshow=/.test(tag) ? tag : tag.replace(/(\/?>)$/, (fim) => ` show="0"${fim}`)));
+}
+
+/**
+ * Marca `show="0"` nos `p:sldId` (na ordem das lâminas) das lâminas ocultas.
+ * O `p:sldId` é o lugar combinado com o importador; o `show="0"` do `p:sld`
+ * (que o PptxGenJS já grava) continua sendo o que o PowerPoint lê.
+ */
+export function comOcultasNoSldId(pres: string, ocultas: number[]): string {
+  if (!ocultas.length) return pres;
+  let i = 0;
+  return pres.replace(/<p:sldId\b[^>]*>/g, (tag) => {
+    if (!ocultas.includes(i++) || /\bshow=/.test(tag)) return tag;
+    return tag.replace(/(\/?>)$/, (fim) => ` show="0"${fim}`);
+  });
 }

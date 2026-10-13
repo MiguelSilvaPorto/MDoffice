@@ -119,6 +119,69 @@ const para = (runs, extra = {}) => ({ runs, align: "esquerda", lvl: 0, marL: 0, 
   const par = T.estiloDosParas([para([run("a")]), para([run("b")])], [1], { align: "centro", lnSpc: { pct: 1.5 } });
   ok("propriedades de parágrafo só nos índices dados", par[0].align === "esquerda" && par[1].align === "centro" && par[1].lnSpc.pct === 1.5);
   ok("parasDaSelecao: cursor no 2º parágrafo", T.parasDaSelecao([para([run("abc")]), para([run("de")])], 5, 5).join() === "1");
+
+  // marca-texto, sobrescrito/subscrito, versalete e espaçamento de caracteres
+  const marca = T.estiloNoIntervalo(ps, 4, 9, { highlight: "FFFF00", baseline: 30, caps: true, spc: 1.5 });
+  ok(
+    "formatação avançada divide o trecho e não vaza para os vizinhos",
+    marca[0].runs.length === 3 && marca[0].runs[1].highlight === "FFFF00" && marca[0].runs[1].baseline === 30 && marca[0].runs[1].caps === true && marca[0].runs[1].spc === 1.5 && marca[0].runs[0].highlight === undefined,
+    JSON.stringify(marca[0].runs.map((r) => [r.text, r.highlight]))
+  );
+  const estMarca = T.estadoDoTrecho(marca, 4, 9);
+  ok("estado do trecho: marca-texto, sobrescrito, versalete e espaçamento", estMarca.highlight === "FFFF00" && estMarca.baseline === 30 && estMarca.caps === true && estMarca.spc === 1.5);
+  ok("estado misto do marca-texto quando só parte do trecho tem", T.estadoDoTrecho(marca, 0, 12).highlight === "misto");
+  const voltaMarca = T.estiloNoIntervalo(marca, 4, 9, { highlight: "", baseline: 0, caps: false, spc: 0 });
+  ok("tirar a formatação avançada junta os trechos de novo", voltaMarca[0].runs.length === 1 && voltaMarca[0].runs[0].text === "Olá mundo bonito");
+
+  // mudar caixa
+  ok("MAIÚSCULAS com acentos certos", T.mudarCaixaTexto([para([run("informação jurídica")])], -1, -1, "maiusculas")[0].runs[0].text === "INFORMAÇÃO JURÍDICA");
+  ok("minúsculas com acentos certos", T.mudarCaixaTexto([para([run("SÃO PAULO")])], -1, -1, "minusculas")[0].runs[0].text === "são paulo");
+  const titulo = T.mudarCaixaTexto([para([run("olá mundo (teste)")])], -1, -1, "primeira");
+  ok("Primeira Letra põe maiúscula em cada palavra", titulo[0].runs[0].text === "Olá Mundo (Teste)", titulo[0].runs[0].text);
+  const soTrecho = T.mudarCaixaTexto([para([run("um dois três")])], 3, 7, "maiusculas");
+  ok("mudar caixa só no trecho selecionado", soTrecho[0].runs.map((r) => r.text).join("") === "um DOIS três", JSON.stringify(soTrecho[0].runs.map((r) => r.text)));
+
+  // limpar formatação
+  const digitacao = { size: 18, bold: false, italic: false, underline: false, strike: false, color: "1C212B", font: "Segoe UI" };
+  const sujo = [para([run("abc", { bold: true, color: "FF0000", size: 40, font: "Comic Sans MS", caps: true, spc: 3, baseline: -25, highlight: "00FF00" }), run("def", { color: "1C212B", font: "Segoe UI" })])];
+  const limpo = T.limparEstiloNoIntervalo(sujo, 0, 3, digitacao);
+  const l = limpo[0].runs[0];
+  ok("limpar formatação volta ao estilo de digitação", l.bold === false && l.color === "1C212B" && l.size === 18 && l.font === "Segoe UI", JSON.stringify(l));
+  ok("limpar formatação tira marca-texto, sobrescrito, versalete e espaçamento", l.highlight === undefined && l.baseline === undefined && l.caps === undefined && l.spc === undefined);
+  ok("limpar formatação não mexe no resto do texto", limpo[0].runs.map((r) => r.text).join("") === "abcdef" && limpo[0].runs.length === 1);
+}
+
+// ---------------------------------------------------------------- marca-texto no .pptx (escrita e leitura)
+const R = await empacotar("src/powerpoint/pptxexport/rica.ts", "rica.mjs");
+const TI = await empacotar("src/powerpoint/pptximport/texto.ts", "imptexto.mjs");
+{
+  const setup = { aspect: "16:9", theme: "claro", showNumber: false, footer: "", fontFamily: "Segoe UI", fontSize: 18, bg: "" };
+  const caixa = {
+    id: "f1",
+    kind: "texto",
+    box: { x: 5, y: 5, w: 40, h: 20 },
+    text: "Oi",
+    fontFamily: "Segoe UI",
+    fontSize: 18,
+    color: "000000",
+    bold: false,
+    italic: false,
+    align: "esquerda",
+    fill: "",
+    src: "",
+    rot: 0,
+    geom: "rect",
+    paras: [para([run("Oi", { highlight: "FFFF00", baseline: 30, caps: true, spc: 2 })])],
+  };
+  const xml = new R.Escritor(setup).lamina({ md: "", layout: "conteudo", notes: "", shapes: [caixa] }).xml;
+  ok("exporta o marca-texto no trecho", xml.includes('<a:highlight><a:srgbClr val="FFFF00"/></a:highlight>'));
+  ok("marca-texto sai antes das fontes (ordem que o OOXML exige)", xml.indexOf("<a:highlight>") < xml.indexOf("<a:latin"));
+  ok("o resto da formatação avançada continua saindo", xml.includes('baseline="30000"') && xml.includes('cap="all"') && xml.includes('spc="200"'));
+
+  const ctx = { tema: { cores: { dk1: "000000", lt1: "FFFFFF", accent1: "4F46E5" }, fonteMaior: "Calibri Light", fonteMenor: "Calibri", preenchimentos: [], contornos: [], efeitos: [], fundos: [] }, mapa: { bg1: "lt1", tx1: "dk1" } };
+  const comMarca = { n: "rPr", a: {}, c: [{ n: "highlight", a: {}, c: [{ n: "srgbClr", a: { val: "00B050" }, c: [], t: "" }], t: "" }], t: "" };
+  ok("importa a cor do marca-texto", TI.lerRProps(comMarca, ctx).highlight?.hex === "00B050");
+  ok("run sem <a:highlight> não ganha marca-texto", TI.lerRProps({ n: "rPr", a: {}, c: [], t: "" }, ctx).highlight === undefined);
 }
 
 // ---------------------------------------------------------------- formato

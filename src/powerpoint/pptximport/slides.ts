@@ -4,10 +4,29 @@
 import { newSlide } from "../model";
 import { textoParaMarkdown } from "./slides-md";
 import { paragrafos } from "./xml";
+import { filho, filhos, type No } from "./xmltree";
 
 /** Converte os parágrafos de um XML de lâmina em Markdown. */
 export function xmlParaMarkdown(xml: string): string {
   return textoParaMarkdown(paragrafos(xml));
+}
+
+/**
+ * Lâminas declaradas no `p:sldIdLst` do presentation.xml, na ordem: o `r:id` de cada
+ * relação e se ela está oculta (`show="0"`).
+ */
+export function laminasDoPresentation(pres: No | undefined): { rId: string; oculta: boolean }[] {
+  return filhos(filho(pres, "sldIdLst"), "sldId").map((id) => ({ rId: id.a["r:id"] ?? "", oculta: id.a.show === "0" }));
+}
+
+/**
+ * Nome próprio da lâmina gravado no `p:cSld` ("" quando o arquivo não tem).
+ * O "Slide N" é o nome padrão que o PptxGenJS dá a toda lâmina — não é nome escolhido
+ * pelo usuário e não deve virar nome na importação.
+ */
+export function nomeDaCld(raiz: No | undefined): string {
+  const nome = (filho(raiz, "cSld")?.a.name ?? "").trim();
+  return /^Slide \d+$/.test(nome) ? "" : nome;
 }
 
 /** Descobre a ordem real dos slides pela ordem em que aparecem no presentation.xml. */

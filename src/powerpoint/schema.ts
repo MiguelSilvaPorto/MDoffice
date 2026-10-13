@@ -28,6 +28,10 @@ export interface Slide {
   shapes: Shape[];
   /** fundo próprio da lâmina (veio de um .pptx); vazio = fundo do tema/deck */
   bg?: Fill;
+  /** oculta na apresentação (F5): continua editável, mas o apresentador pula a lâmina */
+  show?: boolean;
+  /** nome próprio da lâmina (aparece na miniatura e vira o `name` do `p:cSld` no .pptx) */
+  nome?: string;
 }
 
 /** O deck inteiro. */
@@ -311,6 +315,8 @@ export interface Run {
   spc?: number;
   /** sobrescrito (+) / subscrito (-) em % */
   baseline?: number;
+  /** cor do marca-texto (hex sem #); ausente = sem marca-texto */
+  highlight?: string;
   link?: string;
   /** quebra de linha dentro do parágrafo (vertical tab) */
   br?: boolean;

@@ -354,6 +354,9 @@ function svgDaForma(s: Shape, ctx: CtxRender, soContorno = false): string {
 // texto
 // ---------------------------------------------------------------------------
 
+/** Opacidade do marca-texto na tela: assim o texto continua legível no tema escuro (no .pptx a cor vai cheia). */
+const ALFA_MARCA_TEXTO = 0.55;
+
 function numeracao(auto: string, n: number): string {
   const letra = (k: number, maius: boolean) => {
     let t = "";
@@ -390,6 +393,7 @@ function htmlRun(r: Run, ctx: CtxRender): string {
   if (r.caps) est.push("text-transform:uppercase");
   if (r.spc) est.push(`letter-spacing:${cq(r.spc, ctx)}`);
   if (r.baseline) est.push(`font-size:${cq(r.size * 0.65, ctx)}`, "position:relative", `top:${r.baseline > 0 ? "-0.45em" : "0.25em"}`);
+  if (r.highlight) est.push(`background:${rgba(r.highlight, ALFA_MARCA_TEXTO)}`);
   return `<span style="${est.join(";")}">${esc(r.text)}</span>`;
 }
 
