@@ -189,7 +189,7 @@
 /* ---------- resposta ao toque (botões, itens, abas, cartões) ---------- */
 
 :where(.btn, .tbtn, .sb-tab, .sb-mini, .tab, .tab-new, .tab-recents, .path-btn, .win-btn,
-    .dd-item, .palette-item, .seg-btn, .pj-doc, .pj-folder, .pj-sub, .hm-item, .recent,
+    .dd-item, .palette-item, .seg-btn, .pj-doc, .pj-folder, .pj-sub, .ch-hit, .hm-item, .recent,
     .outline-item, .home-resume-btn, .st-card, .swatch, .color-input) {
   transition:
     background-color var(--mov-1) var(--curva),
@@ -294,6 +294,7 @@ textarea {
   *::before,
   *::after {
     animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
   }

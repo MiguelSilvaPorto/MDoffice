@@ -358,7 +358,7 @@
 .ch-text mark {
   padding: 0 1px;
   color: inherit;
-  background: rgba(250, 204, 21, 0.35);
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
   border-radius: 3px;
 }
 

@@ -190,69 +190,164 @@
 .hm-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   width: 100%;
-  padding: 4px 10px;
+  padding: 5px 8px;
   color: var(--sb-fg);
   background: transparent;
   border: 0;
-  border-radius: 7px;
+  border-radius: 9px;
   font: inherit;
   text-align: left;
   cursor: pointer;
   box-sizing: border-box;
 }
 
+/* --- cartão do projeto --- */
+
 .pj-folder {
-  margin-top: 5px;
-  min-height: 32px;
-  padding: 5px 10px;
-  font-size: 13px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  color: var(--sb-fg);
+  gap: 10px;
+  min-height: 48px;
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 11px;
 }
 
-.pj-folder:hover,
-.pj-sub:hover,
-.hm-item:hover {
+.pj-folder:hover {
   background: var(--sb-hover);
 }
 
-.pj-ic {
-  width: 16px;
-  height: 16px;
-  color: var(--sb-folder);
-  flex: none;
+.pj-folder.selected {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
-.pj-sub {
-  min-height: 28px;
-  font-size: 12.5px;
-  font-weight: 600;
+.pj-folder.expanded {
+  background: color-mix(in srgb, var(--sb-hover) 55%, transparent);
+}
+
+.pj-folder.expanded .pj-folder-ic {
+  background: color-mix(in srgb, var(--sb-folder) 21%, transparent);
+}
+
+.pj-folder.expanded:hover {
+  background: var(--sb-hover);
+}
+
+.pj-folder-ic {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  color: var(--sb-folder);
+  background: color-mix(in srgb, var(--sb-folder) 14%, transparent);
+  border-radius: 10px;
+  transition: background-color var(--mov-1) var(--curva), transform var(--mov-2) var(--curva-entrada);
+}
+
+.pj-folder-ic .ic {
+  width: 17px;
+  height: 17px;
+}
+
+.pj-folder:hover .pj-folder-ic {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--sb-folder) 21%, transparent);
+}
+
+.pj-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.pj-subinfo {
+  color: var(--sb-muted);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pj-chev {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin-left: auto;
+  color: var(--sb-muted);
+  transform: rotate(-90deg);
+  transition: transform var(--mov-2) var(--curva-entrada), color var(--mov-1) var(--curva);
+}
+
+.pj-chev.open {
+  transform: rotate(0);
+}
+
+.pj-folder:hover .pj-chev {
   color: var(--sb-fg);
 }
 
-.pj-sub-ic {
-  width: 14px;
-  height: 14px;
-  color: var(--sb-folder);
-  flex: none;
+/* --- subpastas --- */
+
+.pj-sub {
+  min-height: 29px;
+  padding-left: 6px;
+  font-size: 12.5px;
+  font-weight: 550;
 }
 
+.pj-sub:hover {
+  background: var(--sb-hover);
+}
+
+.pj-chev-s {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  color: var(--sb-muted);
+  transition: transform var(--mov-2) var(--curva-entrada), color var(--mov-1) var(--curva);
+}
+
+.pj-chev-s.open {
+  transform: rotate(90deg);
+}
+
+.pj-sub-ic {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: var(--sb-folder);
+}
+
+/* --- documentos --- */
+
 .pj-doc {
-  min-height: 28px;
-  padding: 4px 10px;
+  min-height: 30px;
+  padding: 5px 8px 5px 26px;
   font-size: 12.5px;
   font-weight: 400;
-  color: color-mix(in srgb, var(--sb-fg) 82%, transparent);
-  border-radius: 6px;
-  transition: background 0.1s ease, color 0.1s ease;
+  color: color-mix(in srgb, var(--sb-fg) 84%, transparent);
+}
+
+.pj-doc .fi {
+  transition: transform var(--mov-1) var(--curva);
 }
 
 .pj-doc:hover {
   background: var(--sb-hover);
   color: var(--sb-fg);
+}
+
+.pj-doc:hover .fi {
+  transform: scale(1.07);
+}
+
+.pj-doc:active {
+  transform: scale(0.987);
 }
 
 .pj-name {
@@ -263,84 +358,182 @@
   white-space: nowrap;
 }
 
-.pj-chev {
-  margin-left: auto;
-  color: var(--sb-muted);
-  transform: rotate(-90deg);
-  transition: transform 0.12s ease;
-}
-
-.pj-chev.open {
-  transform: rotate(0);
-}
-
-.pj-chev-s {
-  width: 12px;
-  height: 12px;
-  color: var(--sb-muted);
-  transition: transform 0.12s ease;
-  flex: none;
-}
-
-.pj-chev-s.open {
-  transform: rotate(90deg);
-}
+/* --- ramos (pastas abertas) --- */
 
 .pj-children {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 1px;
-  margin: 2px 0 6px;
-  position: relative;
+  margin: 1px 0 6px;
+  padding-left: 14px;
+  overflow: hidden;
+  transition: max-height var(--mov-2) var(--curva), margin var(--mov-2) var(--curva), opacity var(--mov-1) var(--curva);
 }
 
 .pj-children::before {
   content: "";
   position: absolute;
-  left: 17px;
-  top: 3px;
-  bottom: 5px;
+  left: 12px;
+  top: 2px;
+  bottom: 4px;
   width: 1px;
-  background: color-mix(in srgb, var(--sb-line) 65%, transparent);
+  background: color-mix(in srgb, var(--sb-line) 80%, transparent);
   pointer-events: none;
+  transition: opacity var(--mov-1) var(--curva);
 }
 
-.pj-doc-ic {
-  width: 14px;
-  height: 14px;
+.pj-children.pj-fechando {
+  max-height: 0 !important;
+  margin-top: 0;
+  margin-bottom: 0;
+  opacity: 0;
+}
+
+.pj-children.pj-fechando::before {
+  opacity: 0;
+}
+
+/* --- estado vazio e carregamento --- */
+
+.pj-vazio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 26px;
   color: var(--sb-muted);
+  font-size: 12px;
+}
+
+.pj-vazio .ic {
   flex: none;
+  width: 15px;
+  height: 15px;
   opacity: 0.8;
 }
 
-.pj-doc:hover .pj-doc-ic {
-  opacity: 1;
-  color: var(--sb-fg);
+.pj-skel-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px 7px 26px;
 }
+
+.pj-skel-ic,
+.pj-skel-bar {
+  border-radius: 6px;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--sb-muted) 10%, transparent) 30%,
+    color-mix(in srgb, var(--sb-muted) 22%, transparent) 50%,
+    color-mix(in srgb, var(--sb-muted) 10%, transparent) 70%
+  );
+  background-size: 300% 100%;
+  animation: pj-brilho 1.4s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 120ms);
+}
+
+.pj-skel-ic {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.pj-skel-bar {
+  width: var(--w, 55%);
+  height: 9px;
+}
+
+@keyframes pj-brilho {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+.pj-empty {
+  align-items: center;
+  text-align: center;
+  gap: 7px;
+  padding: 30px 16px;
+}
+
+.pj-empty b {
+  font-size: 13px;
+}
+
+.pj-empty p {
+  max-width: 210px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.pj-empty-ic {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 4px;
+  color: var(--sb-folder);
+  background: color-mix(in srgb, var(--sb-folder) 13%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--sb-folder) 38%, transparent);
+  border-radius: 17px;
+}
+
+.pj-empty-ic .ic {
+  width: 25px;
+  height: 25px;
+}
+
+/* trecho destacado da busca */
+mark.pj-mark {
+  padding: 0 1px;
+  color: inherit;
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+  border-radius: 4px;
+}
+
+/* --- estado aberto / alterado --- */
 
 .pj-doc.active,
 .hm-item.active {
   color: var(--sb-active-fg);
   background: var(--sb-active);
-  font-weight: 520;
+  font-weight: 550;
+  box-shadow: inset 2.5px 0 0 var(--accent);
 }
 
-.pj-doc.active .pj-doc-ic,
-.hm-item.active .pj-doc-ic {
-  color: var(--sb-active-fg);
+.pj-doc.active .fi,
+.hm-item.active .fi {
   opacity: 1;
 }
 
 .pj-state {
+  display: inline-flex;
+  align-items: center;
   flex: none;
-  margin-left: auto;
   color: var(--sb-ok);
-  font-size: 13px;
+}
+
+.pj-state .ic {
+  width: 12px;
+  height: 12px;
 }
 
 .pj-state.dirty {
   color: var(--accent);
-  font-size: 10px;
+}
+
+.pj-dot {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 16%, transparent);
+  animation: mdc-pulso 1.6s ease-in-out infinite;
 }
 
 /* Botão "⋯" de cada arquivo: some até o hover da linha (ou o foco por teclado),
@@ -350,15 +543,15 @@
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   margin-left: auto;
-  margin-right: 2px;
-  border-radius: 5px;
+  margin-right: 1px;
+  border-radius: 7px;
   color: var(--sb-muted);
   opacity: 0;
   cursor: pointer;
-  transition: opacity 0.12s ease, background-color 0.12s ease;
+  transition: opacity var(--mov-1) var(--curva), background-color var(--mov-1) var(--curva), color var(--mov-1) var(--curva);
 }
 
 .pj-more .ic {
@@ -367,6 +560,7 @@
 }
 
 .pj-doc:hover .pj-more,
+.pj-doc.active .pj-more,
 .pj-more:focus-visible,
 .pj-more:hover {
   opacity: 1;
@@ -385,6 +579,41 @@
 /* no item ativo o ⋯ precisa de contraste sobre o fundo destacado */
 .pj-doc.active .pj-more {
   color: var(--sb-active-fg);
+}
+
+/* --- entradas animadas da árvore --- */
+
+@keyframes pj-entrar {
+  from {
+    opacity: 0;
+    transform: translateY(-7px);
+  }
+}
+
+.pj-entrada {
+  animation: pj-entrar var(--mov-2) var(--curva-entrada) both;
+  animation-delay: calc(var(--i, 0) * 14ms);
+}
+
+.pj-folder.pj-entrada {
+  animation-delay: calc(var(--i, 0) * 24ms);
+}
+
+/* --- botão de atualizar (gira enquanto recarrega) --- */
+
+#proj-refresh.girando {
+  color: var(--accent);
+  background: var(--sb-hover);
+}
+
+#proj-refresh.girando .ic {
+  animation: pj-girar 0.7s linear infinite;
+}
+
+@keyframes pj-girar {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .hm-text {
