@@ -195,9 +195,11 @@ function runXml(r: Run): string {
   if (r.caps) attrs.push(`cap="all"`);
   if (r.spc) attrs.push(`spc="${Math.round(r.spc * 100)}"`);
   if (r.baseline) attrs.push(`baseline="${Math.round(r.baseline * 1000)}"`);
+  // o <a:highlight> vem depois do preenchimento e antes das fontes (ordem que o OOXML exige)
+  const marca = r.highlight ? `<a:highlight>${corXml(r.highlight)}</a:highlight>` : "";
   const fonte = esc(r.font);
   return (
-    `<a:r><a:rPr ${attrs.join(" ")}><a:solidFill>${corXml(r.color, r.alpha ?? 1)}</a:solidFill>` +
+    `<a:r><a:rPr ${attrs.join(" ")}><a:solidFill>${corXml(r.color, r.alpha ?? 1)}</a:solidFill>${marca}` +
     `<a:latin typeface="${fonte}"/><a:ea typeface="${fonte}"/><a:cs typeface="${fonte}"/></a:rPr><a:t>${esc(r.text)}</a:t></a:r>`
   );
 }

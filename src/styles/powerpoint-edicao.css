@@ -311,6 +311,21 @@ button.ppr.big .car {
   line-height: 1;
 }
 
+/* "ab" do marca-texto, como no Word: um destaque amarelo no próprio rótulo */
+.ppr-a.ppr-hl {
+  padding: 0 2px;
+  background: #ffff00;
+  color: #000;
+  border-radius: 2px;
+}
+
+/* versalete: o "bc" do rótulo "Abc" sai em maiúsculas pequenas */
+.ppr-va {
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
 .ppr button .ppr-barra,
 button.ppr .ppr-barra {
   display: block;
