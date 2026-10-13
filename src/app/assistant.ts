@@ -78,6 +78,50 @@ export const assistantMethods = {
     if (this.autoFix && this.autoFixArmed) this.autoFixSoon();
   },
 
+  /**
+   * "Formatar texto": arruma o documento inteiro de uma vez.
+   *
+   * Roda a verificação na hora (não usa o resultado da última), então pega o que
+   * apareceu desde então. Aplica só o que é DETERMINÍSTICO — espaçamento,
+   * maiúsculas, pontuação obrigatória, abreviações, concordância e ortografia.
+   * Fica de fora o que precisa de leitura humana: quebrar frase comprida e
+   * trocar palavra por sinônimo, que são propostas, não correções.
+   *
+   * Tudo vai numa transação só: Ctrl+Z desfaz de uma vez.
+   */
+  async formatarTexto(this: App): Promise<void> {
+    // Só o editor Markdown tem as ferramentas de formatação; Word e PowerPoint
+    // têm as próprias. Atenção: nas abas Markdown comuns `kind` é indefinido,
+    // então a checagem é por EXCLUSÃO, não por igualdade.
+    const tipo = this.tab.kind;
+    if (tipo === "word" || tipo === "ppt" || tipo === "settings") {
+      toast("A formatação do texto está disponível no editor Markdown.", "info", 3400);
+      return;
+    }
+    const texto = this.editor.getText();
+    if (!texto.trim()) {
+      toast("Não há texto para formatar.", "info", 2600);
+      return;
+    }
+    let issues: WritingIssue[] = [];
+    try {
+      issues = await checkText(texto, new Set([...this.ignoreWords, ...this.ignoredHere]));
+    } catch {
+      toast("Não foi possível verificar o texto agora.", "err", 3200);
+      return;
+    }
+    const aplicaveis = issues.filter((i) => this.replacementFor(i) !== undefined);
+    if (!aplicaveis.length) {
+      toast("O texto já está formatado.", "ok", 2600);
+      return;
+    }
+    const quantos = this.applyFixes(aplicaveis);
+    this.editor.setIssues(issues);
+    this.updateWritingBadge();
+    toast(`${quantos} ajuste(s) de formatação aplicado(s). Ctrl+Z desfaz.`, "ok", 4200);
+    this.checkWritingSoon();
+  },
+
   /** Liga/desliga a correção automática (guardada entre sessões). */
   setAutoFix(this: App, on: boolean): void {
     this.autoFix = on;
