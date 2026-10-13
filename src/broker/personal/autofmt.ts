@@ -63,13 +63,18 @@ export function marcarAplicacao(antes: string): void {
   save();
 }
 
-/** O texto mudou: se voltou exatamente ao que era antes da varredura, ela foi desfeita. */
-export function observarEdicao(texto: string): void {
-  if (!st.pendente) return;
-  if (texto !== st.pendente.antes) return;
+/**
+ * O texto mudou: se voltou exatamente ao que era antes da varredura, ela foi desfeita.
+ * Devolve `true` nesse caso — quem chama usa isso para descontar o que a varredura
+ * havia aprendido (ver `aprendizado.ts`).
+ */
+export function observarEdicao(texto: string): boolean {
+  if (!st.pendente) return false;
+  if (texto !== st.pendente.antes) return false;
   ajustar(-0.12);
   st.pendente = null;
   save();
+  return true;
 }
 
 /** Há veredito pendente? (evita comparar o texto à toa a cada tecla) */

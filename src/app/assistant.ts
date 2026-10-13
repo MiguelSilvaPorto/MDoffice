@@ -3,7 +3,7 @@
 import type { App } from "./app";
 import { checkText, checkStyle, marcarAplicacao, planejarVarredura, stats as writingStats, spellIsReady, spellHasFailed, type WritingIssue } from "../broker/writing";
 import { openReviewModal } from "../broker/review";
-import { registrarCorrecao } from "../broker/aprendizado";
+import { limparAplicadasAuto, marcarAplicadasAuto, registrarCorrecao } from "../broker/aprendizado";
 import { $, toast, saveJSON } from "../util";
 
 /** Chave estável de um aviso de estilo (mensagem + trecho), para o "Ignorar neste texto". */
@@ -24,6 +24,8 @@ export const assistantMethods = {
     const par = this.paragrafoDoCursor(pos);
     const correcoes = planejarVarredura(texto, { pos, from: 0, to: texto.length, parFrom: par.from, parTo: par.to, parConcluido: par.concluido });
     if (!correcoes.length) return;
+    // esta varredura não troca palavras: o que estava pendente de outra ficou de pé
+    limparAplicadasAuto();
     this.editor.replaceRanges(correcoes, -1);
     marcarAplicacao(texto);
   },
@@ -169,16 +171,27 @@ export const assistantMethods = {
     return correcoes.length + this.autoFixWords(0, texto.length, true);
   },
 
-  /** Aplica as correções disponíveis numa só ação (um único desfazer). */
-  applyFixes(this: App, issues: WritingIssue[]): number {
+  /**
+   * Aplica as correções disponíveis numa só ação (um único desfazer).
+   * `automatico` diz que quem mandou foi a correção automática: além de aprender as
+   * trocas, elas ficam anotadas para o Ctrl+Z seguinte valer como recusa.
+   */
+  applyFixes(this: App, issues: WritingIssue[], automatico = false): number {
     const aplicaveis = issues.filter((i) => this.replacementFor(i) !== undefined);
     if (!aplicaveis.length) return 0;
     this.editor.replaceRanges(
       aplicaveis.map((i) => ({ from: i.from, to: i.to, insert: this.replacementFor(i)! }))
     );
     // Aprende com o que foi aceito: a próxima vez que a mesma troca aparecer,
-    // o corretor já a conhece (e, repetida o bastante, aplica sozinho).
-    for (const i of aplicaveis) registrarCorrecao(i.word, this.replacementFor(i)!);
+    // o corretor já a conhece (e, repetida o bastante, aplica sozinho). Cada decisão
+    // também conta para a CLASSE de erro (transposição, tecla vizinha, acento…).
+    const pares: [string, string][] = [];
+    for (const i of aplicaveis) {
+      const certo = this.replacementFor(i)!;
+      registrarCorrecao(i.word, certo);
+      if (automatico) pares.push([i.word, certo]);
+    }
+    if (automatico && pares.length) marcarAplicadasAuto(pares);
     return aplicaveis.length;
   },
 
@@ -193,7 +206,8 @@ export const assistantMethods = {
   /**
    * Corrige sozinho as palavras erradas em que dá para confiar ("responsavo" → "responsável").
    * Nunca mexe na palavra em que o cursor está (ela pode estar pela metade) e confere se o
-   * texto naquele ponto continua igual antes de trocar.
+   * texto naquele ponto continua igual antes de trocar. O Ctrl+Z seguinte vale como recusa
+   * (o ritmo espera mais e o par aprendido é descontado).
    */
   autoFixWords(this: App, from: number, to: number, soDepoisDoCursor = true): number {
     const view = this.editor.view;
@@ -208,7 +222,12 @@ export const assistantMethods = {
         (!soDepoisDoCursor || pos > i.to) &&
         doc.sliceString(i.from, i.to) === i.word
     );
-    return this.applyFixes(alvos);
+    if (!alvos.length) return 0;
+    const antes = this.editor.getText();
+    const quantos = this.applyFixes(alvos, true);
+    // com o veredito aberto, o Ctrl+Z que desfizer estas trocas também ensina
+    if (quantos) marcarAplicacao(antes);
+    return quantos;
   },
 
   /** Enquanto se digita: aplica só o que é seguro (maiúsculas, espaços, abreviações) + palavras. */
@@ -250,6 +269,8 @@ export const assistantMethods = {
     const todoTexto = doc.toString();
     const correcoes = planejarVarredura(todoTexto, { pos: view.state.selection.main.head, from, to, parFrom: from, parTo: to, parConcluido: true });
     if (correcoes.length) {
+      // a varredura de estilo não troca palavras: o pendente anterior ficou de pé
+      limparAplicadasAuto();
       this.editor.replaceRanges(correcoes, -1);
       marcarAplicacao(todoTexto);
     }

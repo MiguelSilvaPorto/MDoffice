@@ -1625,6 +1625,139 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   de engine + 36 de UI, não só o checklist dele) mostrou o tamanho real das lacunas de edição e
   a ordem que faz sentido atacar; sem isso, a próxima tarefa seria escolhida no escuro.
 
+## src/broker/spell/classeErro.ts
+
+### 2026-10-13 · este commit · aprendizado por classe de erro (novo arquivo)
+- **Local:** arquivo novo — `ClasseErro`, `PESOS_BASE`, `classificarErro`, `registrarClasse`,
+  `pesoDaClasse`, `bonusDaClasse`, `resumoClasses`, `limparClasses`
+- **Linha:** novo arquivo
+- **Porquê:** o aprendizado por par exato ("estenso → extenso") demora: a mesma troca precisa
+  aparecer duas vezes. A **classe** do erro (transposição, tecla vizinha no ABNT2, acento,
+  dígrafo, falta de letra, letra a mais, troca simples) aparece em dezenas de palavras desde a
+  primeira sessão — com contadores por classe, o corretor sobe a nota de um candidato da classe
+  que a pessoa costuma aceitar mesmo sem conhecer o par. A classificação é pura (testável fora
+  do navegador); os contadores vão para `localStorage` (`mdc.corretor.classes`) como
+  `{ ok, nao }` por classe — só números, nada do documento.
+
+## src/broker/aprendizado.ts
+
+### 2026-10-13 · este commit · placar do par e recusa (desfazer/digitar por cima)
+- **Local:** `Registro.n`, `PESO_DESFAZER`, `PESO_RECUSAR_SUGESTAO`, `PISO`, `ajustar`,
+  `registrarCorrecao`, `registrarRecusaAoDesfazer`, `registrarRecusaDeSugestao`
+- **Linha:** `n` era a contagem de aceites e só subia (`existente.n++` / `{ n: 1 }`) →
+  passa a ser um **placar**: aceite soma 1, desfazer tira 2, recusar a sugestão tira 1, com
+  piso −2; `registrarCorrecao` continua somando; entram as duas funções de recusa
+- **Porquê:** quem recusava não ensinava nada — o app podia repetir para sempre uma troca que a
+  pessoa desfez. Desfazer vale mais que ignorar (a troca chegou a ser aplicada). O piso evita
+  que uma sequência de recusas torne o par irrecuperável (e a ordenação/descarte por placar
+  mantém o teto de 3.000 pares).
+
+### 2026-10-13 · este commit · veredito do Ctrl+Z para o que a varredura aplicou
+- **Local:** `aplicadasAuto`, `marcarAplicadasAuto`, `limparAplicadasAuto`,
+  `registrarDesfazerAplicadas`, `confiancaDoPar`, `totalAprendido`, `limparAprendizado`
+- **Linha:** novo bloco em memória com as trocas da última correção automática; `totalAprendido`
+  passa a contar os pares com placar ≥ 1; `limparAprendizado` também zera o veredito pendente e
+  os contadores por classe
+- **Porquê:** o Ctrl+Z de uma varredura já era detectado pelo ritmo (`personal/autofmt.ts`), mas
+  ninguém sabia **quais** trocas a varredura havia aplicado. O bloco fica só em memória (nada do
+  documento é gravado) e é preenchido pelo assistente; quando o texto volta ao estado anterior,
+  cada par pendente vira recusa. `totalAprendido` deixa de contar pares que estão no vermelho.
+
+### 2026-10-13 · este commit · cada decisão alimenta a classe de erro
+- **Local:** imports e chamadas de `registrarClasse` em `registrarCorrecao`,
+  `registrarRecusaAoDesfazer` e `registrarRecusaDeSugestao`
+- **Linha:** novo (`registrarClasse(errado, certo, aceitou)` a cada decisão)
+- **Porquê:** centraliza a decisão em um módulo só: quem chama não precisa lembrar de anotar a
+  classe, e as três formas de decisão (aceitar, desfazer, recusar a sugestão) ficam contadas.
+
+### 2026-10-13 · este commit · par vindo do texto fantasma
+- **Local:** `registrarRecusaDeSugestao(palavra, contexto)`
+- **Linha:** nova
+- **Porquê:** a recusa de uma sugestão de **correção** do fantasma ("resultdo" → "resultado")
+  nunca chegava ao aprendizado; agora ela desconta o par e a classe. `palavra` é a sugerida (o
+  "certo"); `contexto` é o que estava escrito (o "errado") — a ordem combina com a do fantasma.
+
+## src/broker/personal/autofmt.ts
+
+### 2026-10-13 · este commit · `observarEdicao` informa se a varredura foi desfeita
+- **Local:** `observarEdicao`
+- **Linha:** `(): void` → `(): boolean` (devolve `true` só quando o texto volta ao de antes)
+- **Porquê:** o ritmo já sabia reconhecer o Ctrl+Z da varredura; quem chama (`app/documents.ts`)
+  agora usa essa resposta para também descontar o que a varredura havia aprendido.
+
+## src/app/documents.ts
+
+### 2026-10-13 · este commit · o Ctrl+Z da varredura desconta o aprendizado
+- **Local:** `onDocChange`
+- **Linha:** `if (temPendenteRitmo()) observarEdicao(...)` →
+  `if (temPendenteRitmo() && observarEdicao(...)) registrarDesfazerAplicadas()`
+- **Porquê:** era aqui que a recusa era conhecida e jogada fora. Um único ponto cobre o Ctrl+Z
+  da varredura de pausa, do parágrafo concluído e do salvamento — sem mudar nada quando a
+  edição é digitação normal (o texto não voltou ao de antes).
+
+## src/app/assistant.ts
+
+### 2026-10-13 · este commit · `applyFixes` sabe quando é automático
+- **Local:** `applyFixes` (`automatico = false`), `autoFixWords`, `runIdleFix`,
+  `autoFixFinishedParagraph`
+- **Linha:** `applyFixes(issues)` → `applyFixes(issues, automatico)`; `autoFixWords` passa
+  `true` e, depois de aplicar, chama `marcarAplicacao(antes)`; as varreduras de estilo limpam
+  o pendente (`limparAplicadasAuto()`)
+- **Porquê:** só a aplicação automática pode ser recusada com Ctrl+Z — a que a pessoa pediu
+  ("Formatar texto", revisão) é aceite explícito e não entra no pendente. `marcarAplicacao`
+  também nas trocas de palavra: sem um veredito aberto, o Ctrl+Z de uma correção de palavra
+  não seria reconhecido (era o caso mais comum: a palavra é corrigida sozinha enquanto se
+  digita).
+
+## src/broker/ghost/suggestion.ts
+
+### 2026-10-13 · este commit · par "o que estava escrito → o que o app propôs"
+- **Local:** `parDaCorrecao`
+- **Linha:** nova função
+- **Porquê:** uma sugestão de correção do fantasma guarda só o texto proposto e quantas letras
+  ela substitui; para aprender, é preciso o par inteiro. A função lê o que a sugestão
+  substitui (do documento antes da mudança) e devolve `[errado, certo]` — a mesma forma usada
+  pelo corretor.
+
+## src/broker/ghost/field.ts
+
+### 2026-10-13 · este commit · aceite e recusa da correção do fantasma (Markdown)
+- **Local:** `recusarCorrecao`, `parDaCorrecaoNoDoc`; blocos de `tr.docChanged` e `clearGhostText`
+- **Linha:** `if (o) rejected(o, false)` → seguido de `recusarCorrecao(...)`; `acceptGhostText`
+  ganha `registrarCorrecao(par[0], par[1])`; Esc numa correção vira recusa explícita
+- **Porquê:** quando o fantasma mostrava uma correção ("resultdo" → "resultado"), digitar por
+  cima não ensinava nada e aceitar com Tab também não. Agora os dois caminhos alimentam o
+  mesmo aprendizado do corretor (o par e a classe). A previsão de próxima palavra continua
+  como antes: `rejected`/`accepted` sem par.
+
+## src/word/ghost.ts
+
+### 2026-10-13 · este commit · os mesmos ganchos no documento Word
+- **Local:** `parDaCorrecaoDoc`, `recusarCorrecao`, `accept` e o `apply` do plugin
+- **Linha:** novos ganchos de aceite (`registrarCorrecao`) e recusa
+  (`registrarRecusaDeSugestao`) sobre o par lido de `tr.before`/`view.state.doc`
+- **Porquê:** o fantasma do Word é o mesmo preditor do Markdown; sem isso, o aprendizado
+  dependeria do editor em que a pessoa está.
+
+## src/broker/personal/rerank.ts
+
+### 2026-10-13 · este commit · classe do erro como desempate fino
+- **Local:** `rerankSuggestions`
+- **Linha:** `ev = suggestions.map((s) => evidence(...))` → `evidence(...) + bonusDaClasse(errado, s)`
+- **Porquê:** o reordenamento por contexto só troca a primeira sugestão com evidência clara
+  (≥ 0,03 e 2× a original); a classe entra com no máximo ±0,03 e **zero** para quem ainda não
+  tem histórico — ou seja, ninguém muda de comportamento antes de aceitar/recusar alguma coisa,
+  e depois o corretor já reconhece o tipo de erro mesmo sem conhecer o par exato.
+
+## scripts/testar-correcao.mjs
+
+### 2026-10-13 · este commit · casos de recusa e de classe
+- **Local:** novas seções "aprendizado com recusas" e "classes de erro"; no ritmo, o retorno de
+  `observarEdicao`
+- **Linha:** novos `ok(...)` (com `localStorage` de mentira para conferir o que seria gravado)
+- **Porquê:** o comportamento novo é invisível na tela; sem os casos, uma regressão no placar
+  (desfazer que não desconta, confiança que não volta a sugestão) passaria despercebida.
+
 ---
 
 ## Próximos registros

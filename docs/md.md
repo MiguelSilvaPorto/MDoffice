@@ -76,7 +76,7 @@ dentro do documento e contar com uma escrita assistida de português que roda of
 - **Correção automática** (liga/desliga): palavras erradas com certeza, maiúsculas, espaços,
   pontuação repetida e abreviações entram sozinhas ao pausar; ao **terminar o parágrafo** o
   parágrafo ganha ponto/vírgulas; ao **salvar**, o documento é revisado. Cada correção é um
-  passo único de `Ctrl+Z`.
+  passo único de `Ctrl+Z` — e **desfazer ensina**: a troca desfeita volta a ser só sugestão.
 - **Ponto e vírgula automáticos**: ponto final no fim do parágrafo, vírgula antes de
   “mas/porém/contudo…”, depois de conectivos que abrem a frase e depois das **aberturas
   adverbiais** (“Com o tempo,”, “Hoje em dia,”, “No começo,”…) — inclusive quando elas
@@ -96,8 +96,11 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   do português embutido, o próprio documento e uma memória dos seus textos recentes.
 - **IA ajuda nas sugestões** (Configurações): numa pausa, a IA local escolhe entre candidatos
   o que combina com a frase — só para completar palavra e só quando tem confiança.
-- **Aprende com você**: aceita/recusa ajustam a confiança, há um **perfil do seu estilo** e um
-  **modo de intensidade** (discreta, equilibrada, agressiva).
+- **Aprende com você**: aceitar e recusar ajustam a confiança — recusar uma correção do
+  fantasma (digitando por cima ou com `Esc`) também conta —, e o corretor reconhece **classes
+  de erro** (transposição, tecla vizinha, acento, dígrafo) para acertar antes de conhecer o par
+  exato. Há um **perfil do seu estilo** e um **modo de intensidade** (discreta, equilibrada,
+  agressiva).
 
 ## Revisão inteligente e IA local
 

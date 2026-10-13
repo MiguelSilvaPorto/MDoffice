@@ -155,6 +155,121 @@ ok("ritmo: zerar volta ao padrão", R.ritmoDePausa() === 3500);
   ok("memória: mutação de fora não vaza", depois[0].message !== "mutado por engano");
 }
 
+// ---------------------------------------------------------------- aprendizado com recusas
+// Armazenamento de mentira (o navegador tem localStorage; o Node, não): permite
+// conferir o que SERIA gravado — inclusive que só vão números.
+let armazem = new Map();
+globalThis.localStorage = {
+  getItem: (k) => armazem.get(k) ?? null,
+  setItem: (k, v) => void armazem.set(k, v),
+  removeItem: (k) => void armazem.delete(k),
+};
+const L = await empacotar("src/broker/aprendizado.ts", "aprendizado.mjs");
+const CE = await empacotar("src/broker/spell/classeErro.ts", "classe.mjs");
+
+const confia = (errado, certo) => L.correcoesConfiadas().some(([e, c]) => e === errado && c === certo);
+{
+  L.limparAprendizado();
+  ok("aprendizado: começa vazio", L.totalAprendido() === 0 && L.correcoesConfiadas().length === 0);
+
+  L.registrarCorrecao("estenso", "extenso");
+  ok("aprendizado: um aceite ainda não confia", !confia("estenso", "extenso"));
+  L.registrarCorrecao("estenso", "extenso");
+  ok("aprendizado: dois aceites viram correção confiável", confia("estenso", "extenso"));
+
+  // Desfazer o que o app aplicou sozinho desconta o par: confiável volta a ser sugestão.
+  L.marcarAplicadasAuto([["estenso", "extenso"]]);
+  const descontados = L.registrarDesfazerAplicadas();
+  ok("aprendizado: o Ctrl+Z desconta o par aplicado sozinho", descontados === 1 && !confia("estenso", "extenso"));
+  ok("aprendizado: o par desfeito volta a ser sugestão", L.confiancaDoPar("estenso", "extenso") === 0);
+  L.registrarCorrecao("estenso", "extenso");
+  L.registrarCorrecao("estenso", "extenso");
+  ok("aprendizado: aceitar de novo recupera a confiança", confia("estenso", "extenso"));
+}
+{
+  // Recusar a sugestão (digitar por cima) pesa menos e já nasce descontando.
+  L.limparAprendizado();
+  L.registrarRecusaDeSugestao("extenso", "estenso"); // palavra sugerida, o que estava escrito
+  ok("aprendizado: recusar a sugestão já desconta", L.confiancaDoPar("estenso", "extenso") === -1);
+  L.registrarCorrecao("estenso", "extenso");
+  L.registrarCorrecao("estenso", "extenso");
+  ok("aprendizado: depois de uma recusa, dois aceites ainda não bastam", !confia("estenso", "extenso"));
+  L.registrarCorrecao("estenso", "extenso");
+  ok("aprendizado: com um aceite a mais, o par volta a ser confiável", confia("estenso", "extenso"));
+}
+{
+  // Recusa repetida não afunda o par para sempre: tem piso (dá para reaprender).
+  L.limparAprendizado();
+  for (let i = 0; i < 10; i++) L.registrarRecusaAoDesfazer("falado", "falido");
+  ok("aprendizado: recusa repetida respeita o piso", L.confiancaDoPar("falado", "falido") === -2);
+}
+{
+  // Trocas que ficaram de pé (a varredura seguinte não mexeu nelas) não viram recusa.
+  L.limparAprendizado();
+  L.registrarCorrecao("maneria", "maneira");
+  L.registrarCorrecao("maneria", "maneira");
+  L.marcarAplicadasAuto([["maneria", "maneira"]]);
+  L.limparAplicadasAuto();
+  ok("aprendizado: sem Ctrl+Z, o que foi aplicado continua aprendido", L.registrarDesfazerAplicadas() === 0 && confia("maneria", "maneira"));
+  L.registrarRecusaAoDesfazer(", mas", "mas");
+  ok("aprendizado: recusa de pontuação é ignorada", L.confiancaDoPar(", mas", "mas") === 0);
+  ok("aprendizado: o armazenamento guarda só o par e o placar", (() => {
+    const bruto = JSON.parse(armazem.get("mdc.corretor.aprendido") ?? "[]");
+    return Array.isArray(bruto) && bruto.every((r) => typeof r.n === "number" && typeof r.errado === "string" && typeof r.certo === "string");
+  })());
+}
+{
+  // O veredito do ritmo avisa o aprendizado: `observarEdicao` devolve true quando
+  // o texto volta exatamente ao de antes da varredura.
+  R.limparRitmo();
+  R.marcarAplicacao("texto de antes");
+  ok("ritmo: avisa quando a varredura foi desfeita", R.observarEdicao("texto de antes") === true);
+  ok("ritmo: edição normal não avisa desfazer", R.observarEdicao("outra coisa") === false);
+  R.limparRitmo();
+}
+
+// ---------------------------------------------------------------- classes de erro
+{
+  // O pacote de `aprendizado.ts` tem a própria cópia dos contadores; aqui começa
+  // limpo para conferir os pesos de partida e, depois, o efeito de cada decisão.
+  CE.limparClasses();
+  const classe = (e, c) => CE.classificarErro(e, c)?.classe;
+  ok("classe: transposição de letras vizinhas", classe("maneria", "maneira") === "transposicao");
+  ok("classe: tecla vizinha no ABNT2", classe("casa", "cada") === "tecla-vizinha");
+  ok("classe: tecla vizinha na diagonal (s/x)", classe("estenso", "extenso") === "tecla-vizinha");
+  ok("classe: só acento", classe("cafe", "café") === "acento");
+  ok("classe: acento/cedilha", classe("cacador", "caçador") === "acento");
+  ok("classe: dígrafo ss/ç", classe("excessao", "exceção") === "digrafo");
+  ok("classe: dígrafo x/ch", classe("chicara", "xícara") === "digrafo");
+  ok("classe: falta de letra", classe("conhecimeto", "conhecimento") === "falta-letra");
+  ok("classe: letra a mais", classe("conhecimento", "conhecimeto") === "letra-a-mais");
+  ok("classe: troca simples", classe("agora", "apora") === "troca-simples");
+  ok("classe: palavras muito diferentes caem em “outra”", classe("casa", "prédio") === "outra");
+  ok("classe: nada a classificar devolve null", CE.classificarErro("casa", "casa") === null && CE.classificarErro("casa", "casa.") === null);
+
+  const c = CE.classificarErro("maneria", "maneira");
+  ok("classe: devolve um peso plausível", c.peso === CE.PESOS_BASE.transposicao && c.peso > 0 && c.peso <= 1);
+  ok("classe: sem histórico, o peso é o de partida", CE.pesoDaClasse("transposicao") === CE.PESOS_BASE.transposicao);
+  ok("classe: sem histórico, não há bônus", CE.bonusDaClasse("maneria", "maneira") === 0);
+
+  // Contadores por classe: aceitar uma classe sobe o peso dela; recusar desce.
+  for (let i = 0; i < 6; i++) CE.registrarClasse("maneria", "maneira", true);
+  const pesoTransposicao = CE.pesoDaClasse("transposicao");
+  ok("classe: a classe que a pessoa aceita sobe", pesoTransposicao > CE.PESOS_BASE.transposicao, `${pesoTransposicao}`);
+  ok("classe: o candidato da classe aceita ganha bônus", CE.bonusDaClasse("maneria", "maneira") > 0);
+  for (let i = 0; i < 6; i++) CE.registrarClasse("cafe", "café", false);
+  ok("classe: a classe recusada desce", CE.pesoDaClasse("acento") < CE.PESOS_BASE.acento);
+  ok("classe: o candidato da classe recusada perde", CE.bonusDaClasse("cafe", "café") < 0);
+  const resumo = CE.resumoClasses();
+  ok("classe: o resumo traz só contadores", resumo.length >= 2 && resumo.every((r) => Number.isInteger(r.ok) && Number.isInteger(r.nao)));
+  ok("classe: só números vão para o armazenamento", (() => {
+    const bruto = JSON.parse(armazem.get("mdc.corretor.classes") ?? "{}");
+    return Object.values(bruto).every((v) => typeof v.ok === "number" && typeof v.nao === "number");
+  })());
+  CE.limparClasses();
+  ok("classe: zerar volta ao peso de partida", CE.pesoDaClasse("transposicao") === CE.PESOS_BASE.transposicao && CE.pesoDaClasse("acento") === CE.PESOS_BASE.acento);
+}
+
 // ---------------------------------------------------------------- desempenho
 {
   const frase = "eu comprei pao mas esqueci o leite e depois voltei a padaria no entanto estava fechada ";

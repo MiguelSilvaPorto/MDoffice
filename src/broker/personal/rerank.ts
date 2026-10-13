@@ -1,10 +1,13 @@
 // Reordena as sugestões do corretor pelo CONTEXTO: entre "resultado", "resultados" e "resultada", vale a que o modelo
 // do idioma e o que a pessoa costuma escrever dizem que cabe depois da palavra anterior e antes da seguinte.
 // Quem manda continua sendo o dicionário (a ordem dele pesa); o contexto desempata e corrige quando está claro.
+// A CLASSE do erro entra como desempate fino: um candidato cuja classe (transposição, tecla vizinha, acento…)
+// é a que a pessoa costuma aceitar sobe um pouco, mesmo sem o par exato ter aparecido antes.
 
 import { getLanguageModel, START, type LangModel } from "../ghost/model";
 import { personalIndex } from "../ghost/memory";
 import type { DocumentIndex } from "../ghost/documentIndex";
+import { bonusDaClasse } from "../spell/classeErro";
 
 const WORD = /[\p{L}][\p{L}'-]*/gu;
 
@@ -48,13 +51,14 @@ export function evidence(model: LangModel, doc: DocumentIndex | null, prev: stri
 /**
  * Devolve as sugestões do corretor, com a que o contexto mais sustenta na frente — mas só quando a evidência é clara:
  * a melhor pelo contexto precisa ter sustentação própria e pelo menos o dobro da que o dicionário pôs em primeiro.
- * Sem evidência, a ordem do dicionário fica como está.
+ * Sem evidência, a ordem do dicionário fica como está. A classe do erro só desempata (±0,03): sozinha não promove.
  */
 export function rerankSuggestions(text: string, from: number, to: number, suggestions: string[], doc: DocumentIndex | null = null): string[] {
   const model = getLanguageModel();
   if (!model || suggestions.length < 2) return suggestions;
   const { prev, next } = ctxWords(text, from, to);
-  const ev = suggestions.map((s) => evidence(model, doc, prev, next, s.toLowerCase()));
+  const errado = text.slice(from, to);
+  const ev = suggestions.map((s) => evidence(model, doc, prev, next, s.toLowerCase()) + bonusDaClasse(errado, s));
   let best = 0;
   ev.forEach((v, i) => {
     if (v > ev[best]) best = i;

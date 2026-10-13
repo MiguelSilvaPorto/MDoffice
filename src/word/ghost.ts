@@ -7,14 +7,29 @@ import { DocumentIndex } from "../broker/ghost/documentIndex";
 import { predictFromLine } from "../broker/ghost/predict";
 import { refineSuggestion, REFINE } from "../broker/ghost/refine";
 import type { GhostSuggestion } from "../broker/ghost/types";
-import { consumeTyped, cycleSuggestion, altLabel, outcomeOf } from "../broker/ghost/suggestion";
+import { consumeTyped, cycleSuggestion, altLabel, outcomeOf, parDaCorrecao } from "../broker/ghost/suggestion";
 import { accepted, rejected } from "../broker/personal/feedback";
+import { registrarCorrecao, registrarRecusaDeSugestao } from "../broker/aprendizado";
 
 export interface WordGhostHooks {
   enabled: () => boolean;
 }
 
 const key = new PluginKey<GhostSuggestion | null>("word-ghost");
+
+/** O par "o que estava escrito → o que o app propôs" da sugestão de correção, lido do documento. */
+function parDaCorrecaoDoc(s: GhostSuggestion, doc: { textBetween(from: number, to: number, bloco?: string | null): string }): [string, string] | null {
+  if (!s.replace) return null;
+  const from = s.pos - s.replace;
+  if (from < 0) return null;
+  return parDaCorrecao(s, doc.textBetween(from, s.pos, " "));
+}
+
+/** Recusa a correção que o fantasma mostrou (o par fica anotado no aprendizado). */
+function recusarCorrecao(s: GhostSuggestion, doc: { textBetween(from: number, to: number, bloco?: string | null): string }): void {
+  const par = parDaCorrecaoDoc(s, doc);
+  if (par) registrarRecusaDeSugestao(par[1], par[0]);
+}
 
 /** Texto do parágrafo até o cursor / depois dele (objetos como imagem viram um caractere neutro). */
 function around(state: EditorState): { before: string; after: string } | null {
@@ -40,6 +55,9 @@ function accept(view: EditorView, wordOnly: boolean): boolean {
   const insert = m ? m[1] : cur.text;
   const rest = cur.text.slice(insert.length);
   const pos = cur.pos - (cur.replace ?? 0); // correção: troca o que foi digitado
+  // correção do fantasma aceita: vira troca aprendida para o corretor também
+  const par = parDaCorrecaoDoc(cur, view.state.doc);
+  if (par) registrarCorrecao(par[0], par[1]);
   const tr = view.state.tr.insertText(insert, pos, cur.pos);
   tr.setSelection(TextSelection.create(tr.doc, pos + insert.length));
   tr.setMeta(key, { set: rest ? { text: rest, pos: pos + insert.length } : null });
@@ -97,10 +115,14 @@ export function ghostPlugin(hooks: WordGhostHooks): Plugin {
             }
           });
           if (pure && at === cur.pos) {
-            if (!cur.text.toLowerCase().startsWith(typed.toLowerCase())) {
+            const bate = cur.text.toLowerCase().startsWith(typed.toLowerCase());
+            if (!bate) {
               const o = outcomeOf(cur);
               if (o) rejected(o, false); // digitou outra coisa: essa sugestão não serviu
             }
+            // correção do fantasma: digitar por cima (ou começar a digitar o que ela
+            // propunha) sem aceitar conta como recusa do par
+            if (cur.replace) recusarCorrecao(cur, tr.before);
             return consumeTyped(cur, typed);
           }
           return null;
@@ -133,8 +155,11 @@ export function ghostPlugin(hooks: WordGhostHooks): Plugin {
           return true;
         }
         if (e.key === "Escape") {
-          const o = outcomeOf(key.getState(view.state)!);
+          const cur = key.getState(view.state)!;
+          const o = outcomeOf(cur);
           if (o) rejected(o, true);
+          // Esc numa correção do fantasma: a pessoa recusou a troca de forma explícita
+          if (cur.replace) recusarCorrecao(cur, view.state.doc);
           setSuggestion(view, null);
           return true;
         }

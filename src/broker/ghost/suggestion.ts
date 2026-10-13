@@ -39,3 +39,17 @@ export function outcomeOf(s: GhostSuggestion): Outcome | null {
   if (!word || !s.prev || !s.mode) return null;
   return { prev: s.prev, word, mode: s.mode };
 }
+
+/**
+ * O par "o que estava escrito → o que o app propôs" de uma sugestão de CORREÇÃO
+ * (o texto fantasma que troca a palavra recém-digitada), ou null quando não é correção.
+ * `trecho` é o texto que a sugestão substitui, lido do documento antes da mudança
+ * (`cur.pos - replace` até `cur.pos`).
+ */
+export function parDaCorrecao(s: GhostSuggestion, trecho: string): [string, string] | null {
+  if (!s.replace) return null;
+  const errado = trecho.trim();
+  const certo = s.text.trim();
+  if (!errado || !certo || errado.toLowerCase() === certo.toLowerCase()) return null;
+  return [errado, certo];
+}
