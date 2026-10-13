@@ -203,6 +203,31 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** novo arquivo
 - **Porquê:** ampliar o corretor com pontuação, concordância e abreviações.
 
+## index.html
+
+### 2026-10-13 · 6bee7a2 · tela de carregamento e tema antes da pintura
+- **Local:** `<head>` (script inline + `<style>` do `#boot`) e início do `<body>` (marca do `#boot`)
+- **Linha:** `novo` — o `<head>` só tinha `charset`, `viewport` e `title`
+- **Porquê:** o CSS do app chega junto com o pacote JS. Entre a primeira pintura e a chegada do
+  pacote, o WebView mostrava o **HTML cru**: os ícones do sprite em tamanho natural, texto solto e
+  caixas empilhadas. A tela de carregamento precisa estar no próprio HTML (estilo embutido e marca
+  em SVG inline) para existir antes de qualquer requisição.
+- **Local:** `<script>` inline do `<head>`
+- **Linha:** `novo`
+- **Porquê:** o `<html>` nascia com `data-theme="light"` fixo e o tema guardado só era aplicado
+  quando o JS do app rodava — quem usa o escuro via um clarão branco. Ler o `mdc.theme` do
+  `localStorage` antes da primeira pintura resolve, e a própria tela de carregamento já nasce no
+  tema certo.
+
+## src/main.ts
+
+### 2026-10-13 · 6bee7a2 · tirar a tela de carregamento em qualquer desfecho
+- **Local:** fim do arquivo, `tirarTelaDeCarregamento()` e o `app.start()`
+- **Linha:** `void app.start().catch(...)` → `void app.start().catch(...).finally(tirarTelaDeCarregamento)`
+- **Porquê:** a tela precisa sair **mesmo quando o app falha**. Se ficasse só no caminho de sucesso,
+  uma falha no `start()` deixaria a tela na frente do aviso de erro — e o aviso é justamente o que
+  a pessoa precisa ler. O `finally` cobre os dois casos; a saída é suave (180 ms) para não piscar.
+
 ---
 
 ## Próximos registros

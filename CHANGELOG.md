@@ -234,6 +234,9 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Importar do Office** (`.docx`, `.xlsx`, `.xlsm`, `.pptx`) com explicação dos formatos antigos.
 - **Ícone por tipo de arquivo** (M↓, W, tabela, gráfico de pizza) nas abas, listas e busca.
 - Tema claro/escuro, animações consistentes da interface e painel lateral redimensionável.
+- **Tela de carregamento** na abertura: cobre a janela enquanto o pacote do app não chega, no
+  lugar do HTML cru (ícones gigantes) que aparecia nesse intervalo. O tema guardado passa a
+  valer **antes** da primeira pintura, então quem usa o escuro não vê mais o clarão branco.
 - **Skills e regras** para IA e o menu **+** separando Markdown, Word, Planilha e Apresentação.
 
 **Ferramentas (dev)**
