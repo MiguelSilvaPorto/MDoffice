@@ -288,6 +288,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Seção Armazenamento** nas Configurações: resumo com barra proporcional (versões, log,
   backup, rascunhos, outros), cartões com o tamanho de cada parte e limpeza — versões, log,
   rascunhos, cópias antigas e a pasta da versão anterior (mdCreator); atalhos para as pastas.
+- **Copiar no menu do botão direito** do editor: com texto selecionado, o menu ganha o item
+  **Copiar** (Ctrl+C) antes de "Pasta (contexto)", copiando exatamente o trecho escolhido.
 - **Barra lateral com movimento de verdade**: a pílula do seletor de painéis **desliza** entre
   Início/Projetos/Estrutura/Contexto; mostrar/esconder a barra **recolhe a largura** em vez de
   sumir de uma vez; a troca de painel entra com um passo curto (sem o "pop" com escala) e abrir

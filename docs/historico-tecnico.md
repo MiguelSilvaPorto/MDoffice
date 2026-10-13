@@ -1252,6 +1252,16 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o PowerShell 5.1 lê arquivo sem BOM como ANSI. Sem o BOM os acentos do script viravam
   lixo já na memória e o log saía corrompido ("página" virava "pÃ¡gina") — foi um teste que pegou.
 
+## src/app/aiContext.ts
+
+### 2026-10-13 · 642f315 · Copiar no menu de contexto
+- **Local:** `setupEditorInteractions`, handler do `contextmenu` no `#editor`
+- **Linha:** `const cursor = this.editor.selectionPos().from` → `const sel = this.editor.selectionPos()`
+  + bloco novo: quando `sel.to > sel.from`, o menu ganha o item **Copiar** (ícone `i-copy`, `Ctrl+C`)
+  antes do "Pasta"; o clique copia `sliceDoc(sel.from, sel.to)` via `copyText`
+- **Porquê:** com texto selecionado, o menu só oferecia "Pasta (contexto)" — copiar é a ação mais
+  óbvia com a seleção na mão. O item só aparece quando há seleção (sem seleção o menu fica como era).
+
 ---
 
 ## Próximos registros
