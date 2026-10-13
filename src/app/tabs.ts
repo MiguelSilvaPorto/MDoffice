@@ -278,7 +278,12 @@ export const tabsMethods = {
     if (tab.path) void this.backupNow(tab.path, "fechar aba");
     const index = this.tabs.indexOf(tab);
     this.tabs = this.tabs.filter((t) => t !== tab);
-    if (!this.tabs.length) this.tabs.push(newTab(this.editor.createState("")));
+    // Fechou o último documento: o app volta para o Início (o Hub de criação)
+    // em vez de deixar um documento vazio aberto esperando. A aba vazia continua
+    // existindo porque o app inteiro assume que sempre há uma aba ativa — o que
+    // muda é o que aparece na tela.
+    const fechouTudo = !this.tabs.length;
+    if (fechouTudo) this.tabs.push(newTab(this.editor.createState("")));
     if (isCurrent) {
       this.switching = true;
       try {
@@ -289,6 +294,8 @@ export const tabsMethods = {
     } else {
       this.afterTabChange();
     }
+    // depois de ativar: `activate` mexe na tela e o Início tem que ficar por cima
+    if (fechouTudo) this.showHome();
   },
 
   async reopenClosedTab(this: App): Promise<void> {
