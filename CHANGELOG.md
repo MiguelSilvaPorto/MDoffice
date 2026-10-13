@@ -214,6 +214,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - Testes dos comandos (`commands/tests.rs`).
 - Tauri com o recurso **`image-png`** e a permissão **`core:window:allow-set-icon`**, para o app
   trocar o ícone da janela em tempo de execução.
+- `Cargo.lock` sincronizado com a feature **`image-png`** (crates `image`, `png`, `byteorder-lite`,
+  `moxcms`), validado com `cargo check --locked`.
 
 **Frontend**
 

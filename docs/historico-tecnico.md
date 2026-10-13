@@ -445,6 +445,14 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** novas regras CSS com divisor sutil à esquerda, limite de largura com ellipsis e responsividade
 - **Porquê:** integrar visualmente o caminho salvo ao grupo do salvamento automático de forma elegante e discreta.
 
+## src-tauri/Cargo.lock
+
+### 2026-10-13 · 0f81e98 · crates do image-png
+- **Local:** entradas `image`, `png 0.18`, `byteorder-lite`, `moxcms`
+- **Linha:** novas entradas (resolução do Cargo; 36 linhas)
+- **Porquê:** a feature `image-png` do Tauri puxa o crate `image`; sem essas entradas no lock um
+  build com `--locked` falha. Validado com `cargo check --locked` (2m33s).
+
 ---
 
 ## Próximos registros
