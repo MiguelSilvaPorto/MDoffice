@@ -24,6 +24,8 @@ export interface DocTab {
   statusSaved: string;
   autoFixArmed: boolean;
   ignoredHere: Set<string>;
+  /** Avisos de ESTILO dispensados neste documento ("Ignorar neste texto"), por mensagem + trecho. */
+  ignoredStyle: Set<string>;
   issues: WritingIssue[];
   /** Estado do CodeMirror: texto, seleção e histórico de desfazer só desta aba. */
   state: EditorState;
@@ -43,6 +45,7 @@ export function newTab(state: EditorState, init: Partial<DocTab> = {}): DocTab {
     statusSaved: "Novo documento",
     autoFixArmed: false,
     ignoredHere: new Set(),
+    ignoredStyle: new Set(),
     issues: [],
     state,
     scrollTop: 0,

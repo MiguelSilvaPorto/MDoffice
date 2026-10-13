@@ -212,6 +212,9 @@ export class MdEditor {
   /** Chamado quando o usuário manda ignorar uma palavra NESTE texto (temporário). */
   onIgnoreHere: ((word: string) => void) | null = null;
 
+  /** Chamado quando o usuário manda ignorar um AVISO DE ESTILO neste texto (ex.: frase comprida). */
+  onIgnoreStyle: ((issue: WritingIssue) => void) | null = null;
+
   /** Chamado quando o usuário manda ignorar uma palavra (dicionário pessoal, para sempre). */
   onIgnoreWord: ((word: string) => void) | null = null;
 
@@ -266,6 +269,16 @@ export class MdEditor {
     return false;
   }
 
+  /** Trecho do texto com a correção já aplicada ("…antes. Depois…"), para o chip do aviso. */
+  private fixPreview(view: EditorView, issue: WritingIssue): string {
+    const doc = view.state.doc;
+    const fix = issue.fix ?? "";
+    const from = Math.max(0, issue.from - 30);
+    const to = Math.min(doc.length, issue.to + 36);
+    const trecho = `${doc.sliceString(from, issue.from)}${fix}${doc.sliceString(issue.to, to)}`.replace(/\s+/g, " ").trim();
+    return `${from > 0 ? "…" : ""}${trecho}${to < doc.length ? "…" : ""}`;
+  }
+
   private showIssuePopup(issue: WritingIssue, view: EditorView): void {
     this.closeIssuesPopup();
     const pop = document.createElement("div");
@@ -281,6 +294,7 @@ export class MdEditor {
       b.type = "button";
       b.className = ghost ? "cm-issue-chip ghost" : "cm-issue-chip";
       b.textContent = text;
+      b.title = text; // o chip pode encurtar com "…"; a dica mostra o texto todo
       b.addEventListener("click", (e) => {
         e.preventDefault();
         onClick();
@@ -305,6 +319,23 @@ export class MdEditor {
       pop.append(row);
     }
 
+    // Aviso de estilo com correção calculada e sem lista de trocas (ex.: quebrar frase comprida):
+    // mostra o trecho JÁ corrigido, para aplicar num clique — a regra sabe onde quebrar.
+    if (!issue.suggestions.length && issue.kind === "style" && issue.fix !== undefined) {
+      const row = document.createElement("div");
+      row.className = "cm-issue-row";
+      const label = document.createElement("span");
+      label.className = "cm-issue-label";
+      label.textContent = "Corrigir:";
+      row.append(label);
+      addChip(row, this.fixPreview(view, issue), () => {
+        view.dispatch({ changes: { from: issue.from, to: issue.to, insert: issue.fix! } });
+        this.closeIssuesPopup();
+        this.onIssuesChanged?.();
+      });
+      pop.append(row);
+    }
+
     const otherWords = synonymsFor(issue.word);
     if (otherWords.length) {
       const row = document.createElement("div");
@@ -325,24 +356,37 @@ export class MdEditor {
 
     const actions = document.createElement("div");
     actions.className = "cm-issue-row";
-    addChip(
-      actions,
-      "Ignorar palavra",
-      () => {
-        this.onIgnoreHere?.(issue.word);
-        this.closeIssuesPopup();
-      },
-      true
-    );
-    addChip(
-      actions,
-      "Adicionar ao dicionário",
-      () => {
-        this.onIgnoreWord?.(issue.word);
-        this.closeIssuesPopup();
-      },
-      true
-    );
+    if (issue.kind === "spell") {
+      addChip(
+        actions,
+        "Ignorar palavra",
+        () => {
+          this.onIgnoreHere?.(issue.word);
+          this.closeIssuesPopup();
+        },
+        true
+      );
+      addChip(
+        actions,
+        "Adicionar ao dicionário",
+        () => {
+          this.onIgnoreWord?.(issue.word);
+          this.closeIssuesPopup();
+        },
+        true
+      );
+    } else {
+      // aviso de estilo não vive de dicionário: a ação certa é sumir com ele NESTE texto
+      addChip(
+        actions,
+        "Ignorar neste texto",
+        () => {
+          this.onIgnoreStyle?.(issue);
+          this.closeIssuesPopup();
+        },
+        true
+      );
+    }
     pop.append(actions);
 
     // camada fixa da página: não é cortada pelo editor nem atrapalha o texto por baixo

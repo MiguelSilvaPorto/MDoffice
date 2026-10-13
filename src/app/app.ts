@@ -289,6 +289,7 @@ export class App {
     this.editor.view.contentDOM.addEventListener("paste", (e) => void this.onPaste(e as ClipboardEvent));
     this.editor.onIssuesChanged = () => this.checkWritingSoon();
     this.editor.onIgnoreWord = (word) => this.ignoreWord(word);
+    this.editor.onIgnoreStyle = (issue) => this.ignoreStyleIssue(issue);
     this.editor.onIgnoreHere = (word) => {
       this.ignoredHere.add(word.toLowerCase());
       toast(`“${word}” ignorada neste texto (nos outros documentos ela continua sendo verificada).`, "info", 3600);

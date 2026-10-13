@@ -251,6 +251,10 @@
 }
 
 .cm-issue-chip {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   padding: 3px 9px;
   color: var(--fg);
   background: var(--accent-soft);

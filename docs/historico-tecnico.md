@@ -1516,6 +1516,58 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   formato inválido devolve null) e a decisão cobre certeza, vencedor folgado, empate técnico, margem
   mínima, candidato único, sem candidato, limiar padrão e softmax.
 
+## src/md/editor.ts
+
+### 2026-10-13 · este commit · popup do aviso mostra a correção pronta
+- **Local:** `showIssuePopup` (linha "Corrigir:" e bloco das ações), `fixPreview` (novo) e o campo
+  `onIgnoreStyle`
+- **Linha:** avisos de estilo com `fix` e sem `suggestions` (ex.: "Frase muito comprida") ganharam a
+  linha **"Corrigir:"** com um chip mostrando o texto **já corrigido** (janela de ~30/36 caracteres
+  em volta da troca, com "…"); o clique aplica o `fix`. As ações deixaram de ser sempre de
+  dicionário: `spell` mantém "Ignorar palavra"/"Adicionar ao dicionário"; `style` passa a ter só
+  **"Ignorar neste texto"** (`onIgnoreStyle`)
+- **Porquê:** o popup dizia o problema e não mostrava a solução que a regra já calculava — a quebra
+  de frase monta o ". E" na hora de avisar, mas o chip só existia quando a regra mandava
+  `suggestions`. E "Ignorar palavra"/"Adicionar ao dicionário" num aviso de estilo eram botões
+  mortos: o `ignoredHere` só filtra a ortografia, o estilo não consulta o dicionário. O `title` do
+  chip ficou com o texto completo porque o preview pode encurtar com "…".
+
+## src/app/assistant.ts
+
+### 2026-10-13 · este commit · "Ignorar neste texto" para avisos de estilo
+- **Local:** `styleKey` (novo), o filtro no `runWritingCheck` e `ignoreStyleIssue` (novo)
+- **Linha:** `this.issues = await checkText(...)` → `const achados = await checkText(...)` +
+  `this.issues = achados.filter((i) => i.kind !== "style" || !this.tab.ignoredStyle.has(styleKey(i)))`;
+  `ignoreStyleIssue` guarda `styleKey(issue)` no `tab.ignoredStyle` e roda a verificação de novo
+- **Porquê:** o "Ignorar palavra" do popup não tinha efeito nenhum sobre avisos de estilo (a lista
+  de ignoradas só alimenta a ortografia). A chave é `mensagem + trecho` — estável entre rechecagens
+  e independente da posição (que muda a cada edição) — e o conjunto vive na ABA: dispensar um aviso
+  num documento não silencia os outros.
+
+## src/tabs.ts
+
+### 2026-10-13 · este commit · `ignoredStyle` por aba
+- **Local:** interface `DocTab` e `newTab`
+- **Linha:** novo campo `ignoredStyle: Set<string>`, ao lado do `ignoredHere`, iniciado vazio
+- **Porquê:** guardar, por documento, os avisos de estilo que a pessoa dispensou. Fica só na memória
+  (como o `ignoredHere`), sem entrar na sessão salva.
+
+## src/app/app.ts
+
+### 2026-10-13 · este commit · ponte do "Ignorar neste texto"
+- **Local:** junto dos outros ganchos do assistente (`this.editor.onIgnoreWord = ...`)
+- **Linha:** nova linha `this.editor.onIgnoreStyle = (issue) => this.ignoreStyleIssue(issue);`
+- **Porquê:** o popup é do editor, mas a lista de avisos e as abas ficam com o App; o gancho leva o
+  aviso inteiro (e não só o texto) porque a chave do "ignorar" é mensagem + trecho.
+
+## src/styles/slides.css
+
+### 2026-10-13 · este commit · chip do aviso encurta com "…"
+- **Local:** `.cm-issue-chip`
+- **Linha:** `max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap`
+- **Porquê:** o chip "Corrigir:" pode trazer um trecho longo; sem limite ele empurrava a largura do
+  popup (máx. 440px). O `title` do chip guarda o texto completo para quem passar o mouse.
+
 ---
 
 ## Próximos registros

@@ -6,6 +6,9 @@ import { openReviewModal } from "../broker/review";
 import { registrarCorrecao } from "../broker/aprendizado";
 import { $, toast, saveJSON } from "../util";
 
+/** Chave estável de um aviso de estilo (mensagem + trecho), para o "Ignorar neste texto". */
+const styleKey = (i: WritingIssue): string => `${i.message}\u0000${i.word.trim().toLowerCase()}`;
+
 export const assistantMethods = {
   /**
    * Varredura da pausa: passado o tempo do ritmo aprendido, aplica sozinha as correções seguras
@@ -63,7 +66,9 @@ export const assistantMethods = {
     }
     const text = this.editor.getText();
     try {
-      this.issues = await checkText(text, new Set([...this.ignoreWords, ...this.ignoredHere]));
+      const achados = await checkText(text, new Set([...this.ignoreWords, ...this.ignoredHere]));
+      // "Ignorar neste texto" só vale para avisos de estilo; ortografia continua no dicionário/ignoradas.
+      this.issues = achados.filter((i) => i.kind !== "style" || !this.tab.ignoredStyle.has(styleKey(i)));
     } catch {
       this.issues = [];
     }
@@ -273,6 +278,13 @@ export const assistantMethods = {
     toast(`“${word}” foi adicionada ao dicionário pessoal.`, "ok", 3000);
     void this.runWritingCheck();
     this.wordHost?.recheckSpelling();
+  },
+
+  /** "Ignorar neste texto": dispensa um aviso de ESTILO neste documento (dicionário não se aplica). */
+  ignoreStyleIssue(this: App, issue: WritingIssue): void {
+    this.tab.ignoredStyle.add(styleKey(issue));
+    toast("Aviso dispensado neste texto (nos outros documentos ele continua aparecendo).", "info", 3600);
+    void this.runWritingCheck();
   },
 
   openReview(this: App): void {

@@ -68,8 +68,11 @@ dentro do documento e contar com uma escrita assistida de português que roda of
 - **Assistente de escrita**: sublinha em **vermelho** palavras fora do dicionário pt-BR e em
   **amarelo** problemas de estilo/gramática (abreviações de internet, palavras grudadas,
   repetições, pontuação, frase começando em minúscula…). **Clique na palavra** para ver
-  sugestões e sinônimos; **Revisar texto** (`F7`) agrupa os avisos, estatísticas e
-  **“Corrigir tudo (estilo)”**; dicionário pessoal e “ignorar palavra”.
+  sugestões e sinônimos; nos avisos de estilo (ex.: **frase muito comprida**) o popup mostra o
+  trecho **já corrigido** — a frase quebrada, a vírgula que falta — para aplicar num clique, e
+  **“Ignorar neste texto”** dispensa aquele aviso só neste documento. **Revisar texto** (`F7`)
+  agrupa os avisos, estatísticas e **“Corrigir tudo (estilo)”**; dicionário pessoal e
+  “ignorar palavra”.
 - **Correção automática** (liga/desliga): palavras erradas com certeza, maiúsculas, espaços,
   pontuação repetida e abreviações entram sozinhas ao pausar; ao **terminar o parágrafo** o
   parágrafo ganha ponto/vírgulas; ao **salvar**, o documento é revisado. Cada correção é um

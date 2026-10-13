@@ -32,7 +32,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **Avisos de estilo com a correção pronta no popup**: clicar num aviso como **"Frase muito
+  comprida"** agora mostra o trecho **já corrigido** ("… do novo projeto. E combinamos de …") com
+  um clique para aplicar — antes o popup só dizia "comece nova frase aqui". Nesses avisos os botões
+  de dicionário ("Ignorar palavra", "Adicionar ao dicionário") dão lugar a **"Ignorar neste
+  texto"**, que dispensa o aviso somente naquele documento (nos outros ele continua).
 
 ### Adicionado (na main)
 
