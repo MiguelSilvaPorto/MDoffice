@@ -230,6 +230,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   fica em `lixeira/` na pasta de dados do app, com um índice do caminho original; a limpeza
   apaga de vez só o que passou de **30 dias** (roda na abertura e a cada arquivo movido). O
   aviso de backup sabe que o arquivo está na lixeira e não trata como "sumido".
+- Comandos do painel de **Armazenamento**: `storage_report` (tamanho da pasta de dados e da
+  pasta da versão anterior) e `storage_remove_legacy` (remove a pasta `com.mdcreator.desktop`
+  depois da migração); `drafts_folder_path` e o tamanho de cada rascunho (`bytes`). Com teste
+  Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
 
@@ -274,6 +278,9 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Skills e regras** para IA e o menu **+** separando Markdown, Word, Planilha e Apresentação.
 - **Ícone do app escolhível** (Configurações ▸ Aparência): claro ou escuro, trocando na hora o
   ícone da janela e da barra de tarefas; sem escolha ainda, segue o tema.
+- **Seção Armazenamento** nas Configurações: resumo com barra proporcional (versões, log,
+  backup, rascunhos, outros), cartões com o tamanho de cada parte e limpeza — versões, log,
+  rascunhos, cópias antigas e a pasta da versão anterior (mdCreator); atalhos para as pastas.
 - **Barra lateral com movimento de verdade**: a pílula do seletor de painéis **desliza** entre
   Início/Projetos/Estrutura/Contexto; mostrar/esconder a barra **recolhe a largura** em vez de
   sumir de uma vez; a troca de painel entra com um passo curto (sem o "pop" com escala) e abrir

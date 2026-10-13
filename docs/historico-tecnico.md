@@ -221,6 +221,11 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** novo par `appIcon`/`setAppIcon` no contexto; controle segmentado com os dois PNGs; handler que chama `ctx.setAppIcon(...)`
 - **Porquê:** o app passou a ter dois ícones (claro/escuro) — a escolha precisava de um lugar, e Aparência já reúne tema e janela.
 
+### 2026-10-13 · a799d63 · seção Armazenamento
+- **Local:** `SettingsSection`/`NAV`, seção `data-sec="armazenamento"` e o bloco `paintArmazenamento` + handlers `arm-*`
+- **Linha:** nova seção entre Histórico e Aparência: barra proporcional, cartões (versões, log, backup, rascunhos, outros), bloco "Da versão anterior" (aparece só quando a pasta antiga existe) e ações com confirmação (`ask`)
+- **Porquê:** não dava para ver onde o espaço estava indo (IndexedDB, backup, rascunhos e a pasta legada da renomeação); o painel mostra o tamanho de cada parte e deixa limpar com um clique.
+
 ### 2026-10-13 · (este commit) · configurações em abas
 - **Local:** `renderSettingsPage`, o bloco da navegação lateral (antes "navegação lateral: rola até
   a seção e marca a que está à vista")
@@ -258,6 +263,11 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** nova regra `.st-seg-icone` (18px, cantos 4px, margem à direita)
 - **Porquê:** o seletor de ícone mostra os próprios PNGs; sem a regra a imagem entra no tamanho
   natural e desalinha o controle.
+
+### 2026-10-13 · a799d63 · barra do Armazenamento
+- **Local:** antes de `/* ---------- telas estreitas ---------- */`
+- **Linha:** novas regras `.st-arm-barra` (segmentos com largura proporcional) e `.st-arm-legenda` (cores + valores)
+- **Porquê:** o painel de Armazenamento precisava mostrar a proporção de cada parte num relance; as classes existentes de lista não cobrem uma barra empilhada.
 
 ### 2026-10-13 · (este commit) · o css das abas
 - **Local:** `#settings-page`
@@ -834,6 +844,75 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o comportamento é testado no `cargo test`; aqui se confere o contrato entre as
   pontas: comandos existem e estão registrados, ponte no `files.ts`, prazo de 30 dias, item no
   menu, clique direito unificado, confirmação e a limpeza na abertura.
+
+## src-tauri/src/commands/storage.rs
+
+### 2026-10-13 · a799d63 · relatório e limpeza do legado (novo arquivo)
+- **Local:** módulo inteiro (`soma_pasta`, `pasta_legada`, `storage_report`, `storage_remove_legacy`)
+- **Linha:** novo arquivo
+- **Porquê:** o painel de Armazenamento precisa saber quanto a pasta de dados e a pasta da versão
+  anterior ocupam, e poder remover a antiga (`%LOCALAPPDATA%\com.mdcreator.desktop`) — que ficou
+  para trás na renomeação e chegou a 586 MB. A remoção só roda quando a pasta nova existe e o
+  caminho é o construído pelo próprio código (sem entrada do usuário).
+
+## src-tauri/src/commands/drafts.rs
+
+### 2026-10-13 · a799d63 · tamanho do rascunho e pasta
+- **Local:** `DraftInfo`/`list_drafts`; novo `drafts_folder_path`
+- **Linha:** novo campo `bytes: u64` (do metadata) e novo comando que devolve a pasta
+- **Porquê:** o cartão de rascunhos mostra o total em disco e o botão "Abrir pasta" precisa do
+  caminho mesmo quando não há rascunho nenhum (a pasta muda entre dev e app instalado).
+
+## src-tauri/src/commands/mod.rs
+
+### 2026-10-13 · a799d63 · módulo storage
+- **Local:** lista de módulos
+- **Linha:** nova linha `pub mod storage;`
+- **Porquê:** registrar o módulo novo dos comandos de armazenamento.
+
+## src-tauri/src/lib.rs
+
+### 2026-10-13 · a799d63 · comandos registrados
+- **Local:** `generate_handler!`
+- **Linha:** `storage_report`, `storage_remove_legacy` e `drafts_folder_path` (novos)
+- **Porquê:** sem registro, o frontend recebe "command not found".
+
+## src-tauri/src/commands/tests.rs
+
+### 2026-10-13 · a799d63 · teste do soma_pasta
+- **Local:** novo teste `soma_o_tamanho_de_uma_pasta_recursivamente`
+- **Linha:** novo teste (pasta com arquivo + subpasta; pasta inexistente = 0)
+- **Porquê:** o relatório inteiro depende dessa soma; um erro ali mostraria números errados no painel.
+
+## src/storage.ts
+
+### 2026-10-13 · a799d63 · ponte do armazenamento (novo arquivo)
+- **Local:** `relatorio()` e `removerLegado()`
+- **Linha:** novo arquivo
+- **Porquê:** manter o padrão dos outros módulos (backup.ts, history.ts): a tela fala com o
+  backend por funções tipadas, não por `invoke` espalhado.
+
+## src/history.ts
+
+### 2026-10-13 · a799d63 · resumo e limpeza geral
+- **Local:** depois de `clearHistory`
+- **Linha:** novos `resumoVersoes()` (conta docs/versões e soma o texto ×2) e `limparVersoesTudo()`
+- **Porquê:** o painel precisa do total do histórico inteiro (e não só de um documento) e de um
+  botão que apague tudo.
+
+## src/snapshots.ts
+
+### 2026-10-13 · a799d63 · resumo e limpeza geral
+- **Local:** depois de `clearCommits`
+- **Linha:** novos `resumoLog()` (soma patches + âncoras ×2) e `limparLogTudo()`
+- **Porquê:** mesmo motivo das versões: total do log e limpeza de todos os documentos.
+
+## src/files.ts
+
+### 2026-10-13 · a799d63 · rascunhos com tamanho e pasta
+- **Local:** `DraftInfo` e novo `draftsFolder()`
+- **Linha:** campo `bytes` no tipo e novo wrapper de `drafts_folder_path`
+- **Porquê:** o cartão de rascunhos mostra o total e o botão abre a pasta certa em dev e instalado.
 
 ---
 
