@@ -305,6 +305,9 @@ export class App {
     $("#st-path").addEventListener("click", () => {
       if (this.path) void revealItemInDir(this.path).catch(() => {});
     });
+    document.querySelector("#tb-saved-path")?.addEventListener("click", () => {
+      if (this.path) void revealItemInDir(this.path).catch(() => {});
+    });
     window.addEventListener("blur", () => void this.autosave());
     window.addEventListener("beforeunload", () => {
       void this.autosave();

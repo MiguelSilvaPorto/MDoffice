@@ -220,9 +220,61 @@
   color: var(--muted);
 }
 
+/* Caminho salvo à direita do badge */
+.tb-saved-path {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--border);
+  padding: 1px 5px 1px 5px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--ui-font);
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--muted);
+  max-width: 170px;
+  outline: none;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.tb-saved-path:hover {
+  background: var(--panel);
+  color: var(--fg);
+}
+
+.tb-saved-path:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.tb-saved-path .tb-saved-path-ic {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  opacity: 0.8;
+}
+
+.tb-saved-path-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 980px) {
   .tb-autosave-label {
     display: none;
+  }
+}
+
+@media (max-width: 780px) {
+  .tb-saved-path {
+    max-width: 110px;
   }
 }
 

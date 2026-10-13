@@ -284,6 +284,11 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o ícone escolhido precisa valer já na abertura — antes disso a janela usa o ícone
   fixo do build.
 
+### 2026-10-13 · este commit · revelação do arquivo ao clicar no caminho salvo do topo
+- **Local:** `start()` (event listeners)
+- **Linha:** `document.querySelector("#tb-saved-path")?.addEventListener("click", ...)`
+- **Porquê:** permitir revelar o arquivo salvo no explorador de arquivos (via `revealItemInDir`), espelhando a funcionalidade do rodapé.
+
 ## src/app/pages.ts
 
 ### 2026-10-13 · 8c0a7cf · contexto das Configurações
@@ -418,6 +423,27 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** são regras que quebram fácil sem ninguém notar (o `display: none` voltar, a pílula
   perder a âncora, o `.active` voltar a pintar o fundo). O teste é estático e roda em
   `npm run test:layout`.
+
+## index.html
+
+### 2026-10-13 · este commit · atalho de pasta e caminho salvo no topbar
+- **Local:** `.tb-autosave-wrap` (logo após o `#tb-autosave-badge`)
+- **Linha:** inclusão do `<button class="tb-saved-path" id="tb-saved-path">`
+- **Porquê:** fornecer ao usuário feedback visual rápido de onde o arquivo foi salvo (ou rascunho criado) e permitir abrir diretamente no explorador ao clicar.
+
+## src/app/layout.ts
+
+### 2026-10-13 · este commit · exibição dinâmica de status "Salvando…" e caminho salvo
+- **Local:** `updateAutosaveUI()` e `refreshPath()`
+- **Linha:** `this.saving || this.dirty` refletido imediatamente no texto e ícone de nuvem; atualização de `#tb-saved-path` ao terminar de salvar
+- **Porquê:** ao editar o documento, o badge indica "Salvando…" com o ícone correspondente; quando as alterações são gravadas, o badge volta para "Salvo" e exibe o caminho do arquivo à direita do badge.
+
+## src/styles/topbar.css
+
+### 2026-10-13 · este commit · estilização do botão de caminho salvo
+- **Local:** regras para `.tb-saved-path`, `.tb-saved-path-ic` e `.tb-saved-path-text`
+- **Linha:** novas regras CSS com divisor sutil à esquerda, limite de largura com ellipsis e responsividade
+- **Porquê:** integrar visualmente o caminho salvo ao grupo do salvamento automático de forma elegante e discreta.
 
 ---
 

@@ -76,12 +76,8 @@ export const layoutMethods = {
       if (iconUse) iconUse.setAttribute("href", "#i-cloud-off");
     } else {
       btn.title = "Salvamento Automático: Ativado (clique para desligar)";
-      if (this.saving) {
-        badge.title = "Salvando documento…";
-        text.textContent = "Salvando…";
-        if (iconUse) iconUse.setAttribute("href", "#i-cloud");
-      } else if (this.dirty) {
-        badge.title = "Alterações pendentes — salvamento automático ativo";
+      if (this.saving || this.dirty) {
+        badge.title = this.saving ? "Salvando documento…" : "Salvando alterações pendentes…";
         text.textContent = "Salvando…";
         if (iconUse) iconUse.setAttribute("href", "#i-cloud");
       } else {
@@ -90,6 +86,7 @@ export const layoutMethods = {
         if (iconUse) iconUse.setAttribute("href", "#i-check");
       }
     }
+    this.refreshPath();
   },
 
   toggleAutosave(this: App, force?: boolean): void {
@@ -123,16 +120,37 @@ export const layoutMethods = {
   },
 
   refreshPath(this: App): void {
-    const btn = $("#st-path") as HTMLButtonElement;
+    const btn = $("#st-path") as HTMLButtonElement | null;
+    const topBtn = document.querySelector<HTMLButtonElement>("#tb-saved-path");
+    const topText = document.querySelector<HTMLElement>("#tb-saved-path-text");
+
     if (!this.path) {
-      btn.hidden = true;
+      if (btn) btn.hidden = true;
+      if (topBtn) topBtn.hidden = true;
       return;
     }
-    btn.hidden = false;
-    btn.textContent = this.isDraft ? "Rascunho do app" : docDirOf(this.path);
-    btn.title = this.isDraft
+
+    const dirText = this.isDraft ? "Rascunho do app" : docDirOf(this.path);
+    const fullTitle = this.isDraft
       ? `Rascunho guardado em: ${docDirOf(this.path)} (clique para abrir a pasta)`
-      : `Mostrar ${baseName(this.path)} na pasta`;
+      : `${this.path} (clique para mostrar na pasta)`;
+
+    if (btn) {
+      btn.hidden = false;
+      btn.textContent = dirText;
+      btn.title = this.isDraft
+        ? `Rascunho guardado em: ${docDirOf(this.path)} (clique para abrir a pasta)`
+        : `Mostrar ${baseName(this.path)} na pasta`;
+    }
+
+    if (topBtn && topText) {
+      // Exibe na topbar à direita quando salvo ou quando tem caminho do arquivo
+      const on = this.settings.autosaveOn;
+      const isSaving = on && (this.saving || this.dirty);
+      topBtn.hidden = isSaving;
+      topText.textContent = dirText || baseName(this.path);
+      topBtn.title = fullTitle;
+    }
   },
 
   initialDark(this: App): boolean {
