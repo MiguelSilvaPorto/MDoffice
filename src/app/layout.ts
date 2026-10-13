@@ -215,6 +215,47 @@ export const layoutMethods = {
 
     let dragging = false;
     let grabOffset = 0;
+    // Arrastar para além do limite da direita fecha a pré-visualização em vez de travar
+    // no mínimo. O "além" é medido em pixels depois do limite, para encostar no mínimo
+    // continuar sendo só redimensionar.
+    const FECHAR_APOS = 40;
+    let fechando = false;
+    const fecharPreview = (pointerId: number) => {
+      if (fechando) return;
+      fechando = true;
+      dragging = false;
+      try {
+        if (sp.hasPointerCapture(pointerId)) sp.releasePointerCapture(pointerId);
+      } catch {
+        /* ignora */
+      }
+      document.body.classList.remove("resizing");
+      // guarda a largura mínima: ao reabrir, a prévia volta do tamanho que estava
+      const v = body.style.getPropertyValue("--lg");
+      if (v) localStorage.setItem("mdc.split", v);
+      let feito = false;
+      const concluir = () => {
+        if (feito) return;
+        feito = true;
+        window.clearTimeout(relogio);
+        previewPane.removeEventListener("animationend", aoTerminar);
+        document.body.classList.remove("preview-saindo");
+        if (!document.body.classList.contains("no-preview")) this.toggle("no-preview");
+        fechando = false;
+        toast("Pré-visualização fechada. Para reabrir: Configurações → Aparência → Pré-visualização.", "info", 3600);
+      };
+      const aoTerminar = (ev: AnimationEvent) => {
+        if (ev.target === previewPane) concluir();
+      };
+      let relogio = 0;
+      if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+        concluir();
+        return;
+      }
+      document.body.classList.add("preview-saindo");
+      previewPane.addEventListener("animationend", aoTerminar);
+      relogio = window.setTimeout(concluir, 320);
+    };
     sp.addEventListener("pointerdown", (e) => {
       dragging = true;
       const rect = sp.getBoundingClientRect();
@@ -232,6 +273,10 @@ export const layoutMethods = {
       const bounds = region();
       const center = e.clientX - grabOffset;
       const ratio = (center - bounds.left - bounds.divider / 2) / bounds.free;
+      if ((ratio - bounds.maxRatio) * bounds.free > FECHAR_APOS) {
+        fecharPreview(e.pointerId);
+        return;
+      }
       applyRatio(ratio);
     });
     const stop = (e: PointerEvent) => {

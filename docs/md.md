@@ -7,7 +7,9 @@ dentro do documento e contar com uma escrita assistida de português que roda of
 
 - Editor com **realce de sintaxe** (CodeMirror 6) e **pré-visualização ao vivo** lado a lado.
 - **Coluna de escrita limitada** (`980px`, centralizada) para as linhas não ficarem gigantes
-  em monitores largos — igual à pré-visualização. A divisória do meio acompanha o mouse 1:1.
+  em monitores largos — igual à pré-visualização. A divisória do meio acompanha o mouse 1:1;
+  arrastada **para além do limite da direita**, fecha a pré-visualização (que volta em
+  **Configurações → Aparência → Pré-visualização**).
 - **Salvamento automático** a cada alteração; barra de status com palavras/caracteres/linhas,
   painel de recentes e índice (estrutura) navegável, tema claro/escuro.
 - **Busca no conteúdo**: a caixa **Buscar** do painel lateral procura dentro dos documentos

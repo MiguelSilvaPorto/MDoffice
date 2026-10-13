@@ -184,6 +184,20 @@
   animation: mdc-surgir var(--mov-2) var(--curva-entrada) both;
 }
 
+/* a pré-visualização fecha deslizando para a direita quando o arrasto passa do limite */
+@keyframes mdc-sumi-lado {
+  to {
+    opacity: 0;
+    transform: translateX(22px);
+  }
+}
+
+body.preview-saindo #preview-wrap,
+body.preview-saindo #splitter {
+  animation: mdc-sumi-lado var(--mov-2) var(--curva-saida) both;
+  pointer-events: none;
+}
+
 /* ---------- abas ---------- */
 
 .tab.entrando {

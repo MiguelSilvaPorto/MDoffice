@@ -441,6 +441,13 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   painel. A barra deixou de ter animação de entrada (agora é transição de estado) e a pílula
   ganhou o deslize.
 
+### 2026-10-13 · este commit · despedida lateral da pré-visualização
+- **Local:** bloco novo logo depois de `#preview-bar:not([hidden])`
+- **Linha:** novo `@keyframes mdc-sumi-lado` + `body.preview-saindo #preview-wrap,
+  body.preview-saindo #splitter { animation: mdc-sumi-lado …; pointer-events: none; }`
+- **Porquê:** o fechamento pelo arrasto é um gesto contínuo; sem a saída o painel sumia de um
+  quadro para o outro. O `pointer-events: none` impede pegar o divisor no meio da animação.
+
 ## src/styles/workspace.css
 
 ### 2026-10-13 · movimento da barra lateral · pílula do seletor de painéis
@@ -492,6 +499,17 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Local:** `updateAutosaveUI()` e `refreshPath()`
 - **Linha:** `this.saving || this.dirty` refletido imediatamente no texto e ícone de nuvem; atualização de `#tb-saved-path` ao terminar de salvar
 - **Porquê:** ao editar o documento, o badge indica "Salvando…" com o ícone correspondente; quando as alterações são gravadas, o badge volta para "Salvo" e exibe o caminho do arquivo à direita do badge.
+
+### 2026-10-13 · este commit · arrastar além do limite fecha a pré-visualização
+- **Local:** `setupSplitter` — checagem no `pointermove` e novo `fecharPreview`
+- **Linha:** novo `FECHAR_APOS = 40`; antes do `applyRatio`:
+  `if ((ratio - bounds.maxRatio) * bounds.free > FECHAR_APOS) { fecharPreview(...); return; }`;
+  `fecharPreview` solta o ponteiro, guarda `mdc.split` e adiciona `preview-saindo`
+- **Porquê:** o arrasto travava no mínimo da prévia e não havia gesto para fechar. Passar 40 px
+  do limite (encostar no mínimo segue sendo só redimensionar) fecha a prévia com saída suave,
+  fallback por tempo e fechamento idempotente. A classe `preview-saindo` vai no
+  **`document.body`**, como os demais flags do layout — a primeira versão a pôs no `#body` e a
+  animação não rodava (o painel só sumia pelo timeout, sem deslizar).
 
 ## src/styles/topbar.css
 

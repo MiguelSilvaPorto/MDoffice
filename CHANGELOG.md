@@ -75,6 +75,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   em português, inglês ou bilíngue.
 - **Modelo IA** e **Copiar p/ IA** para pedir coisas à IA com contexto.
 - **Skills e regras**: janela que gera `SKILL.md`, `AGENTS.md` e `CLAUDE.md` a partir de modelos.
+- **Divisória editor/prévia**: arrastar para além do limite da direita fecha a pré-visualização
+  (saída suave e aviso de como reabrir); encostar no mínimo continua só redimensionando.
 
 ---
 
