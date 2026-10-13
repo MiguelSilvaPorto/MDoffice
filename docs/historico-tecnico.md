@@ -1301,6 +1301,52 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   decisão, estilo/norma) e ordena o trabalho em quatro ondas — começando pelas correções de rumo
   baratas (citação no padrão 10520:2023, n-gramas no ranqueamento, sinal negativo no aprendizado,
   margem de confiança) e terminando no motor ABNT e no perfil `.docx`.
+## src/broker/data/phrases.ts
+
+### 2026-10-13 · este commit · expressões adverbiais que pedem vírgula
+- **Local:** novo `ADVERBIAIS_VIRGULA` (depois de `INTRO_CONNECTIVES`)
+- **Linha:** novo array com “hoje em dia”, “com o tempo”, “no começo”, “no início”, “no fim”,
+  “de início”, “a princípio”, “por enquanto”, “às vezes”, “de vez em quando”, “na maioria das
+  vezes”, “em geral”, “na verdade”, “na prática”, “sem dúvida”, “com certeza”, “mais tarde”,
+  “mais cedo”, “em seguida”, “logo depois”, “por último”, “no futuro”, “no passado”, “de agora
+  em diante”, “daqui a pouco”, “atualmente”, “antigamente”, “ultimamente”
+- **Porquê:** a lista é curta de propósito — só o que quase sempre pede vírgula depois (“Com o
+  tempo, era…”). Entram aqui, e não no `INTRO_CONNECTIVES`, porque o caso delas é outro: também
+  valem **retomando a oração** no meio do trecho, e quem chega com complemento (“no começo de
+  tudo”, “com o tempo livre”) fica de fora na hora, pelo guarda da regra.
+
+## src/broker/style/punctuation.ts
+
+### 2026-10-13 · este commit · vírgula das aberturas adverbiais
+- **Local:** novo `adverbialComma` + `CONTINUA_EXPRESSAO` + `trechoDesenvolvido`
+- **Linha:** novo (a regra não existia); dispara em dois contextos: (1) abrindo a frase
+  (`(?:^|[.!?]\s+|\n)(expr)(?=\s+[\p{L}])`) → `expr,`; (2) retomando a oração, quando o
+  pronome-sujeito vem logo depois e já há 6+ palavras desde a última pontuação → `expr,`
+- **Porquê:** medido no texto real do usuário: a varredura automática aplicava **só maiúscula e
+  ponto final** — nenhuma vírgula — e o trecho de 30 palavras ficava sem pontuação interna.
+  As duas vírgulas agora entram sozinhas (“Com o tempo,”, “…revisar hoje em dia, eu quero…”).
+  O guarda `CONTINUA_EXPRESSAO` evita o falso positivo de expressão com complemento
+  (“No começo de tudo”, “Com o tempo livre”), em que a vírgula cairia no lugar errado.
+
+### 2026-10-13 · este commit · quebra sugerida em trecho longo (antes do pronome)
+- **Local:** `longRunWithoutPunct` + novo `pontoSeguro` + `ANTES_DO_PRONOME`
+- **Linha:** o trecho de 25+ palavras sem pontuação, que só avisava, agora procura um ponto
+  seguro (antes de pronome-sujeito que **abre oração**) e vira sugestão `quebra-frase`
+  (`. Eu resolvi…`); sem ponto seguro, segue só o aviso. `pontoSeguro` descarta pronome depois
+  de subordinante/preposição/advérbio (“que eu”, “sem eu”, “depois eu”…), exige 8+ palavras na
+  oração e pula quando quem manda é a vírgula do adverbial
+- **Porquê:** sem candidato a quebra, o aviso não dava saída — o usuário via o trecho sublinhado
+  e a correção automática “desistia”. A quebra fica como sugestão (classe `quebra-frase`, fora da
+  varredura automática de propósito: reestruturar frase é decisão de leitura) e entra no
+  **“Corrigir tudo (estilo)”** do `F7`, num clique.
+
+## src/broker/style/index.ts
+
+### 2026-10-13 · este commit · registro da regra de adverbiais
+- **Local:** import e lista `RULES`
+- **Linha:** `adverbialComma` entra depois de `introConnectiveComma` e antes de `missingFinalPeriod`
+- **Porquê:** mesma ordem das outras regras de vírgula de abertura; se duas regras avisarem o
+  mesmo trecho, vale a primeira da lista.
 
 ---
 

@@ -75,7 +75,11 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   parágrafo ganha ponto/vírgulas; ao **salvar**, o documento é revisado. Cada correção é um
   passo único de `Ctrl+Z`.
 - **Ponto e vírgula automáticos**: ponto final no fim do parágrafo, vírgula antes de
-  “mas/porém/contudo…”, depois de conectivos que abrem a frase e maiúscula no começo.
+  “mas/porém/contudo…”, depois de conectivos que abrem a frase e depois das **aberturas
+  adverbiais** (“Com o tempo,”, “Hoje em dia,”, “No começo,”…) — inclusive quando elas
+  **retomam a oração** no meio de um trecho (“…revisar hoje em dia, eu quero…”). Trechos de
+  25+ palavras sem pontuação viram uma **sugestão de quebra** antes do pronome-sujeito
+  (“…de verdade → . Eu resolvi…”), aplicável pelo **“Corrigir tudo (estilo)”**.
 - **Modo formal**: “pra/tá/a gente” → linguagem formal, com o verbo ajustado pela frase
   (“a gente vai” → “nós vamos”); modo **informal** e **neutro** também disponíveis.
 - **Espaço esquecido** e **“Você quis dizer…?”**: palavras coladas viram duas; palavras a uma

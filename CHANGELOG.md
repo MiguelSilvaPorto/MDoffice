@@ -77,6 +77,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Skills e regras**: janela que gera `SKILL.md`, `AGENTS.md` e `CLAUDE.md` a partir de modelos.
 - **Divisória editor/prévia**: arrastar para além do limite da direita fecha a pré-visualização
   (saída suave e aviso de como reabrir); encostar no mínimo continua só redimensionando.
+- **Vírgulas em trechos longos**: a correção automática passa a inserir a vírgula depois das
+  **aberturas adverbiais** (“Com o tempo,”, “Hoje em dia,”, “No começo,”, “Atualmente,”…) e
+  quando elas **retomam a oração** no meio de um trecho (“…revisar hoje em dia, eu quero…”).
+  Trechos de **25+ palavras sem pontuação** agora ganham uma **sugestão de quebra** antes do
+  pronome-sujeito (“…de verdade → . Eu resolvi…”), aplicável no “Corrigir tudo (estilo)” do
+  `F7`. Guardas evitam o falso positivo de expressão com complemento (“No começo de tudo”,
+  “Com o tempo livre” ficam sem vírgula). Antes, no texto típico, a varredura só aplicava
+  maiúscula inicial e ponto final — nenhuma vírgula.
 
 ---
 

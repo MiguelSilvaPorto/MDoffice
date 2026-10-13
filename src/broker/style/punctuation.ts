@@ -1,7 +1,7 @@
 // Vírgulas, quebra de frases longas e ponto final.
 
 import type { RuleCtx } from "./types";
-import { PHRASES, INTRO_CONNECTIVES } from "../data/phrases";
+import { PHRASES, INTRO_CONNECTIVES, ADVERBIAIS_VIRGULA } from "../data/phrases";
 
 /** Expressões que pedem vírgula dos DOIS lados. */
 export function commasAroundExpressions({ text, mask, push }: RuleCtx): void {
@@ -55,11 +55,28 @@ export function safeSentenceBreak({ mask, push }: RuleCtx): void {
 /** Trecho comprido sem nenhuma pontuação. */
 export function longRunWithoutPunct({ mask, push }: RuleCtx): void {
   let m: RegExpExecArray | null;
-  // trecho comprido sem NENHUMA pontuação: falta vírgula/ponto entre as orações
-  // (não tenta adivinhar onde: só avisa — quebrar orações precisa de leitura humana)
+  // trecho comprido sem NENHUMA pontuação: falta vírgula/ponto entre as orações.
+  // Quando dá para achar um ponto seguro (antes de um pronome-sujeito que abre
+  // oração), vira uma sugestão de quebra; senão, só avisa — quebrar orações no
+  // escuro precisa de leitura humana.
   const semPontoRx = /(?<![\p{L}\d])[\p{L}\d]+(?:\s+[\p{L}\d]+){24,}/gu;
   while ((m = semPontoRx.exec(mask)) !== null) {
     const inicio = m.index;
+    const esperto = pontoSeguro(m[0]);
+    if (esperto) {
+      const from = inicio + esperto.espaco;
+      const pron = esperto.pronome;
+      push(
+        from,
+        from + 1 + pron.length,
+        "Trecho muito longo sem pontuação: comece uma frase nova aqui",
+        `. ${pron[0].toUpperCase()}${pron.slice(1)}`,
+        [],
+        false,
+        "quebra-frase"
+      );
+      continue;
+    }
     const fim = inicio + Math.min(m[0].length, 60);
     push(
       inicio,
@@ -96,6 +113,87 @@ export function introConnectiveComma({ mask, push }: RuleCtx): void {
       push(start, start + matched.length, `Depois de “${matched}” costuma vir uma vírgula`, `${matched},`, [`${matched},`]);
     }
   }
+}
+
+/**
+ * Palavra que pode continuar a expressão ("no começo DE tudo", "com o tempo LIVRE"):
+ * nesses casos a vírgula depois da expressão entraria no lugar errado.
+ */
+const CONTINUA_EXPRESSAO = new Set([
+  "de", "do", "da", "dos", "das", "para", "pra", "por", "com", "sem", "em", "no", "na", "nos", "nas",
+  "que", "qual", "quais", "cujo", "cuja", "cujos", "cujas",
+  "mais", "menos", "muito", "muita", "muitos", "muitas", "pouco", "pouca", "poucos", "poucas",
+  "todo", "toda", "todos", "todas",
+  "livre", "livres", "passado", "passada", "futuro", "futura", "inteiro", "inteira",
+  "curto", "curta", "longo", "longa", "vago", "vaga", "disponível", "suficiente", "necessário",
+]);
+
+/** Há pelo menos `min` palavras desde a última pontuação até `pos`? (oração já desenvolvida) */
+function trechoDesenvolvido(mask: string, pos: number, min: number): boolean {
+  let inicio = pos;
+  while (inicio > 0 && !/[.!?\n]/.test(mask[inicio - 1])) inicio--;
+  return (mask.slice(inicio, pos).match(/[\p{L}\d]+/gu) ?? []).length >= min;
+}
+
+/**
+ * Vírgula depois das expressões adverbiais de tempo/modo:
+ *  - abrindo a frase: "Com o tempo, era…";
+ *  - retomando a oração num trecho já desenvolvido: "…revisar hoje em dia, eu quero…".
+ */
+export function adverbialComma({ mask, push }: RuleCtx): void {
+  let m: RegExpExecArray | null;
+  for (const expr of ADVERBIAIS_VIRGULA) {
+    // 1) abrindo a frase
+    const abertura = new RegExp(`(?:^|[.!?]\\s+|\\n)(${expr})(?=\\s+[\\p{L}])`, "giu");
+    while ((m = abertura.exec(mask)) !== null) {
+      const matched = m[1];
+      const start = m.index + (m[0].length - matched.length);
+      const fim = start + matched.length;
+      if (mask.slice(fim, fim + 1) === ",") continue;
+      const seguinte = (/[\p{L}]+/u.exec(mask.slice(fim))?.[0] ?? "").toLowerCase();
+      if (CONTINUA_EXPRESSAO.has(seguinte)) continue;
+      push(start, fim, `Depois de “${matched}” costuma vir uma vírgula`, `${matched},`, [`${matched},`]);
+    }
+    // 2) retomando a oração (pronome-sujeito logo depois), num trecho já desenvolvido
+    const meio = new RegExp(`\\s(${expr})\\s(?=(a gente|vocês|você|eles|elas|nós|ele|ela|eu|tu)(?=\\s+[\\p{L}]))`, "giu");
+    while ((m = meio.exec(mask)) !== null) {
+      const matched = m[1];
+      const start = m.index + 1;
+      if (!trechoDesenvolvido(mask, start, 6)) continue;
+      push(start, start + matched.length, `Depois de “${matched}” costuma vir uma vírgula`, `${matched},`, [`${matched},`]);
+    }
+  }
+}
+
+/**
+ * Palavras que, antes do pronome, indicam que ele NÃO abre oração nova
+ * (subordinação, preposição, coordenação, advérbio…): o ponto não entra ali.
+ */
+const ANTES_DO_PRONOME = new Set([
+  "que", "se", "para", "pra", "por", "de", "do", "da", "dos", "das", "com", "sem", "em", "no", "na", "nos", "nas",
+  "ao", "aos", "à", "às", "um", "uma", "quando", "porque", "enquanto", "como", "conforme", "segundo", "só", "até",
+  "mas", "e", "ou", "nem", "entre", "sobre", "me", "te", "lhe", "nos", "vos", "também", "ainda", "já", "não", "nem",
+  "talvez", "sempre", "nunca", "depois", "antes", "então", "aí", "aqui", "ali", "lá", "hoje", "ontem", "amanhã", "agora",
+]);
+
+/**
+ * Ponto seguro dentro de um trecho comprido: antes de um pronome-sujeito que abre
+ * oração nova (o pronome não pode vir logo depois de subordinante/preposição) e
+ * já depois de a oração se desenvolver. Fica de fora quando quem manda é a
+ * vírgula dos adverbiais ("…hoje em dia, eu…").
+ */
+function pontoSeguro(run: string): { espaco: number; pronome: string } | null {
+  const rx = /(?<=[\p{L}\d])(\s+)(a gente|vocês|você|eles|elas|nós|ele|ela|eu|tu)(?=\s+[\p{L}])/giu;
+  let m: RegExpExecArray | null;
+  while ((m = rx.exec(run)) !== null) {
+    const antes = run.slice(0, m.index);
+    const palavra = (/([\p{L}]+)$/u.exec(antes)?.[1] ?? "").toLowerCase();
+    if (ANTES_DO_PRONOME.has(palavra)) continue;
+    if ((antes.match(/[\p{L}\d]+/gu) ?? []).length < 8) continue;
+    if (ADVERBIAIS_VIRGULA.some((e) => antes.toLowerCase().endsWith(e))) continue; // a vírgula do adverbial cuida
+    return { espaco: m.index, pronome: m[2] };
+  }
+  return null;
 }
 
 /**

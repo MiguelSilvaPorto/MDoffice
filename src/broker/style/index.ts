@@ -5,7 +5,7 @@ import { MASCA, maskNonProse } from "../mask";
 import { getTone } from "../tone";
 import type { WritingIssue } from "../types";
 import { abbreviationsAndGlued, repeatedWords, doubleSpaces, spaceBeforePunct, spaceAfterPunct, spaceAfterSentence, repeatedPunct } from "./spacing";
-import { commasAroundExpressions, safeSentenceBreak, longRunWithoutPunct, adversativeComma, introConnectiveComma, missingFinalPeriod, subordinateComma } from "./punctuation";
+import { commasAroundExpressions, safeSentenceBreak, longRunWithoutPunct, adversativeComma, introConnectiveComma, adverbialComma, missingFinalPeriod, subordinateComma } from "./punctuation";
 import { duplicatedPunct, frasesColadas } from "./limpeza";
 import { lowercaseAfterPeriod, paragraphStartLowercase } from "./capitalization";
 import { phrases } from "./phrases";
@@ -34,6 +34,7 @@ const RULES: Rule[] = [
   adversativeComma,
   subordinateComma,
   introConnectiveComma,
+  adverbialComma,
   missingFinalPeriod,
   informalRegister,
   aGente,

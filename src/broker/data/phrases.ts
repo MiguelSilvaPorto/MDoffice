@@ -43,3 +43,44 @@ export const INTRO_CONNECTIVES = [
   "todavia",
   "entretanto",
 ];
+
+/**
+ * Expressões de tempo/modo que pedem vírgula DEPOIS quando abrem a frase
+ * ("Com o tempo, era…") ou quando retomam a oração num trecho já desenvolvido
+ * ("…revisar hoje em dia, eu quero…").
+ *
+ * A lista é curta de propósito: só o que quase sempre pede vírgula. Quem chega
+ * com complemento ("no começo de tudo", "com o tempo livre") fica de fora na
+ * hora — quem cuida disso é o guarda de continuação da regra.
+ */
+export const ADVERBIAIS_VIRGULA = [
+  "hoje em dia",
+  "com o tempo",
+  "no começo",
+  "no início",
+  "no fim",
+  "no final",
+  "de início",
+  "a princípio",
+  "por enquanto",
+  "às vezes",
+  "de vez em quando",
+  "na maioria das vezes",
+  "em geral",
+  "na verdade",
+  "na prática",
+  "sem dúvida",
+  "com certeza",
+  "mais tarde",
+  "mais cedo",
+  "em seguida",
+  "logo depois",
+  "por último",
+  "no futuro",
+  "no passado",
+  "de agora em diante",
+  "daqui a pouco",
+  "atualmente",
+  "antigamente",
+  "ultimamente",
+];
