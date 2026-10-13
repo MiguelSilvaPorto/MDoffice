@@ -202,6 +202,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 **Frontend**
 
 - **Salvamento automático com feedback imediato e caminho do arquivo**: enquanto o documento é editado ou gravado, o badge exibe "Salvando…" com ícone de nuvem pulsando; assim que o salvamento é concluído, o badge volta para "Salvo" e exibe logo à sua direita o caminho da pasta/arquivo salvo com botão de atalho para abrir/revelar no explorador de arquivos.
+- **Menu de Recentes redesenhado**: cada linha tem o **ícone do tipo** do arquivo, o nome com o
+  **"há quanto tempo"** ao lado e a pasta na segunda linha (os rascunhos aparecem como
+  "Rascunho do app"); as ações ("Abrir arquivo…", "Reabrir aba fechada") ficam **fixas no rodapé**
+  enquanto só a lista rola, e o × de tirar da lista aparece no hover, no lugar do tempo.
 
 **Ferramentas (dev)**
 

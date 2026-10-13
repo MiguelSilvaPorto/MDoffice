@@ -47,6 +47,19 @@ export function fmtTime(d: Date = new Date()): string {
   return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
 
+/** "Há quanto tempo", em forma curta, para listas (Recentes e rascunhos). */
+export function fmtAgo(at: number): string {
+  if (!Number.isFinite(at) || at <= 0) return "";
+  const s = Math.round((Date.now() - at) / 1000);
+  if (s < 60) return "agora";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `há ${m} min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `há ${h} h`;
+  const d = Math.floor(h / 24);
+  return d === 1 ? "ontem" : `há ${d} dias`;
+}
+
 export function toast(msg: string, kind: "info" | "ok" | "err" = "info", ms = 3600): void {
   const root = document.getElementById("toasts");
   if (!root) return;

@@ -170,6 +170,38 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** em vez de manter/abrir um "Sem título", volta para a tela de Início
 - **Porquê:** fechar o último documento deixava um "Sem título" aberto em vez de voltar ao Início.
 
+### 2026-10-13 · este commit · menu de Recentes redesenhado
+- **Local:** `openRecentsMenu`
+- **Linha:** linhas `dd-item two-line`/`dd-row` (nome + pasta, sem ícone) → linhas `rc-item` com o
+  ícone do tipo (`fileIcon(kindOfPath)`), o nome com `fmtAgo` ao lado e a pasta (ou "Rascunho do
+  app") embaixo; a lista virou um corpo rolável (`rc-body`) com as ações fixas num rodapé
+  (`rc-foot`), e o × virou um botão `i-close` que ocupa o lugar do tempo no hover.
+- **Porquê:** o menu estava bagunçado: sem ícone não dava para reconhecer o tipo do arquivo, todas
+  as linhas eram só texto apertado, a lista inteira rolava e levava "Abrir arquivo…" para fora da
+  vista, e não havia nenhuma noção de **quando** o arquivo foi usado por último. O × separado do
+  texto evita o encavalamento da seta com o caminho.
+
+## src/util.ts
+
+### 2026-10-13 · este commit · `fmtAgo` para listas
+- **Local:** ao lado de `fmtTime`
+- **Linha:** `novo` — `fmtAgo(at)` devolve "agora", "há N min", "há N h", "ontem" ou "há N dias"
+- **Porquê:** o menu de Recentes passou a mostrar há quanto tempo cada arquivo foi usado/guardado
+  (`at` dos recentes e `modified_ms` dos rascunhos). O `ago` do `historyUi` é local e devolve
+  "agora há pouco", longo demais para a linha do menu; a forma curta fica aqui, compartilhável.
+
+## src/styles/tabs.css
+
+### 2026-10-13 · este commit · estilos do menu de Recentes
+- **Local:** bloco "menu de recentes"
+- **Linha:** `.dd-row`, `.dd-item.two-line`, `.tl-name`, `.tl-dir`, `.dd-x` → `.dropdown.recents-menu`
+  (coluna flex de 372px, `max-height: min(72vh, 620px)`, corpo rolável + rodapé fixo), `.rc-item`,
+  `.rc-line`, `.rc-name`, `.rc-sub` (com `direction: rtl` para mostrar o **fim** do caminho),
+  `.rc-time`, `.rc-x` e `.rc-empty`
+- **Porquê:** acompanhar o novo desenho: só o corpo rola, o tempo alinha à direita na linha do nome
+  e o × ganha um alvo de 24px que aparece no hover. As classes antigas saíram porque só este menu
+  as usava (verificado por busca no repositório).
+
 ## src/settingsPage.ts
 
 ### 2026-10-13 · e392858 · atalho novo na lista

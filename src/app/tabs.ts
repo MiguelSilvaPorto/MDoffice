@@ -1,7 +1,7 @@
 // Abas: abrir, fechar, trocar, reordenar, menus e sessão (reabre as abas ao iniciar).
 
 import type { App } from "./app";
-import { fileIcon } from "../fileIcons";
+import { fileIcon, kindOfPath } from "../fileIcons";
 import { rememberDocument } from "../broker/ghost/memory";
 import * as files from "../files";
 import { newTab, tabLabel, type DocTab } from "../tabs";
@@ -10,7 +10,7 @@ import { deckToMarkdown } from "../powerpoint/markdown";
 import type { PowerPointTabData } from "../powerpoint/powerpoint";
 import type { ExcelTabData } from "../excel/host";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
-import { $, h, toast, baseName, docDirOf, stripExt, copyText, loadJSON, saveJSON, fmtTime } from "../util";
+import { $, h, toast, baseName, docDirOf, stripExt, copyText, loadJSON, saveJSON, fmtTime, fmtAgo } from "../util";
 
 export const tabsMethods = {
   /** Reabre as abas da sessão anterior; sem sessão, cai no rascunho mais recente. */
@@ -349,7 +349,6 @@ export const tabsMethods = {
     await this.switchTo(copy.id);
   },
 
-  /** Menu "Recentes": arquivos recentes que não estão abertos e rascunhos guardados no app. */
   /** Menu do "+" das abas: escolher o tipo de arquivo novo (documento, planilha ou apresentação). */
   openNewMenu(this: App, anchor: HTMLElement): void {
     const criar = (rotulo: string, texto: string) => {
@@ -396,6 +395,7 @@ export const tabsMethods = {
     });
   },
 
+  /** Menu "Recentes": arquivos recentes que não estão abertos e rascunhos guardados no app. */
   async openRecentsMenu(this: App, anchor: HTMLElement): Promise<void> {
     const open = new Set(this.tabs.map((t) => (t.path ?? "").toLowerCase()));
     let drafts: files.DraftInfo[] = [];
@@ -406,17 +406,35 @@ export const tabsMethods = {
     }
     this.openMenu(anchor, (menu) => {
       menu.classList.add("recents-menu");
-      const recents = this.recents.filter((r) => !open.has(r.path.toLowerCase()));
-      const row = (p: string, forget: (() => void) | null) => {
-        const btn = h("button", { class: "dd-item two-line", type: "button", title: p });
-        btn.append(h("span", { class: "tl-name", text: stripExt(baseName(p)) }), h("span", { class: "tl-dir", text: docDirOf(p) }));
+
+      // O corpo rola (a lista pode passar da tela); o rodapé de ações fica fixo embaixo.
+      const body = h("div", { class: "rc-body" });
+      const foot = h("div", { class: "rc-foot" });
+      menu.append(body, foot);
+
+      // Uma linha: ícone do tipo, nome com o "há quanto tempo" ao lado e, embaixo,
+      // onde está (pasta ou "Rascunho do app"). Ao passar o mouse, o tempo dá lugar
+      // ao × de tirar da lista.
+      const row = (p: string, sub: string, when: number, forget: (() => void) | null) => {
+        const btn = h("button", { class: "rc-item", type: "button", title: p });
+        btn.innerHTML = fileIcon(kindOfPath(p));
+        btn.append(
+          h("span", { class: "rc-main" }, [
+            h("span", { class: "rc-line" }, [
+              h("span", { class: "rc-name", text: stripExt(baseName(p)) }),
+              h("span", { class: "rc-time", text: fmtAgo(when) }),
+            ]),
+            h("span", { class: "rc-sub", text: sub, title: p }),
+          ])
+        );
         btn.addEventListener("click", () => {
           this.closeMenus();
           void this.openPath(p);
         });
-        const wrap = h("div", { class: "dd-row" }, [btn]);
+        const wrap = h("div", { class: "rc-row" }, [btn]);
         if (forget) {
-          const x = h("button", { class: "dd-x", type: "button", title: "Tirar da lista", text: "×" });
+          const x = h("button", { class: "rc-x", type: "button", title: "Tirar da lista" });
+          x.innerHTML = '<svg class="ic"><use href="#i-close"/></svg>';
           x.addEventListener("click", (e) => {
             e.stopPropagation();
             forget();
@@ -424,25 +442,31 @@ export const tabsMethods = {
           });
           wrap.append(x);
         }
-        menu.append(wrap);
+        body.append(wrap);
       };
-      menu.append(h("div", { class: "dd-title", text: "Arquivos recentes" }));
-      if (!recents.length) this.ddNote(menu, "Nenhum arquivo recente fora das abas abertas.");
+
+      const recents = this.recents.filter((r) => !open.has(r.path.toLowerCase()));
+      body.append(h("div", { class: "dd-title", text: "Arquivos recentes" }));
+      if (!recents.length) {
+        const vazio = h("div", { class: "rc-empty" });
+        vazio.innerHTML = '<svg class="ic"><use href="#i-clock"/></svg><span>Nenhum arquivo recente fora das abas abertas.</span>';
+        body.append(vazio);
+      }
       for (const r of recents) {
-        row(r.path, () => {
+        row(r.path, docDirOf(r.path), r.at, () => {
           this.recents = this.recents.filter((x) => x.path !== r.path);
           saveJSON("mdc.recents", this.recents);
         });
       }
       if (drafts.length) {
-        this.ddSep(menu);
-        menu.append(h("div", { class: "dd-title", text: "Rascunhos guardados no app" }));
-        for (const d of drafts) row(d.path, null);
+        this.ddSep(body);
+        body.append(h("div", { class: "dd-title", text: "Rascunhos guardados no app" }));
+        for (const d of drafts) row(d.path, "Rascunho do app", d.modified_ms, null);
       }
-      this.ddSep(menu);
-      this.ddItem(menu, { icon: "i-open", label: "Abrir arquivo…", hint: "Ctrl+O", onPick: () => void this.openDocDialog() });
+
+      this.ddItem(foot, { icon: "i-open", label: "Abrir arquivo…", hint: "Ctrl+O", onPick: () => void this.openDocDialog() });
       if (this.closedTabs.length) {
-        this.ddItem(menu, { icon: "i-undo", label: "Reabrir aba fechada", hint: "Ctrl+Shift+T", onPick: () => void this.reopenClosedTab() });
+        this.ddItem(foot, { icon: "i-undo", label: "Reabrir aba fechada", hint: "Ctrl+Shift+T", onPick: () => void this.reopenClosedTab() });
       }
     });
   },

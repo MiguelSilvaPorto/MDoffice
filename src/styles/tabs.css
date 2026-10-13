@@ -227,70 +227,161 @@
 
 /* menu de recentes */
 .dropdown.recents-menu {
-  min-width: 340px;
-  max-width: 440px;
-  max-height: 70vh;
-  overflow: auto;
-}
-
-.dd-row {
   display: flex;
-  align-items: center;
-  border-radius: 8px;
+  flex-direction: column;
+  width: 372px;
+  max-width: calc(100vw - 16px);
+  max-height: min(72vh, 620px);
+  padding: 0;
+  overflow: hidden;
 }
 
-.dd-row:hover {
+/* só o corpo rola: o rodapé ("Abrir arquivo…", "Reabrir…") fica sempre à vista */
+.recents-menu .rc-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.recents-menu .rc-foot {
+  flex: none;
+  padding: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.rc-row {
+  position: relative;
+  border-radius: 9px;
+  transition: background-color 0.12s ease;
+}
+
+.rc-row:hover {
   background: var(--accent-soft);
 }
 
-.dd-item.two-line {
+.rc-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 7px 10px;
+  color: var(--fg);
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rc-item .fi {
+  width: 18px;
+  height: 18px;
+}
+
+.rc-main {
+  display: flex;
   flex-direction: column;
-  align-items: flex-start;
   gap: 1px;
+  flex: 1;
   min-width: 0;
 }
 
-.dd-item.two-line:hover {
-  background: transparent;
+/* nome e "há quanto tempo" na mesma linha; o tempo encosta na direita */
+.rc-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
 }
 
-.tl-name {
-  max-width: 100%;
+.rc-name {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 550;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
-.tl-dir {
-  max-width: 100%;
+.rc-sub {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* num caminho comprido, o que importa é o FIM (a pasta), não o começo */
   direction: rtl;
   text-align: left;
   color: var(--muted);
   font-size: 11px;
+  line-height: 1.3;
 }
 
-.dd-x {
+.rc-time {
   flex: none;
-  width: 22px;
-  height: 22px;
-  margin-right: 6px;
   color: var(--muted);
-  background: transparent;
-  border: 0;
-  border-radius: 6px;
-  cursor: pointer;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transition: opacity 0.12s ease;
+}
+
+/* no hover, o tempo dá lugar ao × de "tirar da lista" */
+.rc-row:hover .rc-time,
+.rc-row:has(.rc-x:focus-visible) .rc-time {
   opacity: 0;
 }
 
-.dd-row:hover .dd-x {
-  opacity: 1;
+.rc-x {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  transform: translateY(-50%);
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease, color 0.12s ease, background-color 0.12s ease;
 }
 
-.dd-x:hover {
+.rc-x .ic {
+  width: 14px;
+  height: 14px;
+}
+
+.rc-row:hover .rc-x,
+.rc-x:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.rc-x:hover {
   color: #fff;
   background: var(--danger);
+}
+
+.rc-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 10px;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.rc-empty .ic {
+  width: 15px;
+  height: 15px;
+  flex: none;
 }
