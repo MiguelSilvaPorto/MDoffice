@@ -70,6 +70,24 @@ function ortPlugin(): Plugin {
 export default defineConfig({
   clearScreen: false,
   plugins: [tempSavePlugin(), ortPlugin()],
+  // Cache do otimizador POR PASTA. O padrão (`node_modules/.vite`) é compartilhado,
+  // porque `node_modules` é um junction apontando para a cópia principal: o servidor
+  // de dev de uma worktree e o da cópia principal escrevem no MESMO cache e trocam o
+  // hash de configuração um do outro (o hash inclui a raiz do projeto). Cada troca
+  // faz o Vite re-otimizar tudo e mandar os clientes conectados recarregarem.
+  cacheDir: ".vite",
+  optimizeDeps: {
+    // Só o que o Vite JAMAIS veria sozinho: os pacotes usados dentro dos workers.
+    // O scanner de dependências não lê arquivo de worker, então `typo-js` só era
+    // descoberto quando o corretor subia — ~20s depois de abrir o app — e aí o Vite
+    // re-otimizava e mandava o app inteiro recarregar, no meio do uso.
+    // `@huggingface/transformers` (IA local e tradução offline) tinha o mesmo destino.
+    //
+    // O resto o scanner acha: ele segue os `import()` dinâmicos e o esbuild já embute
+    // os pacotes que os outros carregam sob demanda (os `@codemirror/lang-*` que os
+    // blocos de código puxam, por exemplo, viram chunks no próprio cache).
+    include: ["typo-js", "@huggingface/transformers"],
+  },
   server: {
     port: 1420,
     strictPort: true,

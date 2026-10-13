@@ -606,6 +606,34 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o produto se chama mdOffice; a história do README mantém de propósito o nome
   antigo **mdEditor** (a origem), que é outra palavra.
 
+## vite.config.ts
+
+### 2026-10-13 · (este commit) · sem recarga no meio do uso
+- **Local:** `defineConfig`, logo depois de `plugins`
+- **Linha:** `novo` — `cacheDir: ".vite"` e `optimizeDeps.include: ["typo-js", "@huggingface/transformers"]`
+- **Porquê (o `include`):** o scanner de dependências do Vite não entra em arquivo de worker, então
+  `typo-js` (corretor ortográfico) e `@huggingface/transformers` (IA local e tradução offline) só
+  entravam no grafo quando o worker subia. Nesse instante o Vite re-otimizava as dependências e
+  mandava os clientes recarregarem com o app já aberto — e a recarga refaz o boot inteiro
+  (dicionário, modelo, sessão), o que trava o app. Medido: no servidor de dev a recarga caía ~23 s
+  depois de abrir a página; com o `include`, nenhuma (e o `typo-js` passou a ser servido do cache,
+  `/.vite/deps/typo-js.js`).
+- **Porquê (o `cacheDir`):** o padrão é `node_modules/.vite` e o `node_modules` das worktrees é um
+  *junction* para o da cópia principal, então todos os servidores de dev dividem o mesmo cache. O
+  hash que valida esse cache inclui `root: config.root` (está em `getConfigHash`, no próprio Vite),
+  e a raiz de uma worktree é diferente da raiz da cópia principal: cada alternância entre pastas
+  invalidava o cache inteiro e disparava re-otimização + recarga. Em `.vite/`, cada pasta tem o seu.
+  O Vite já ignora o `cacheDir` no observador de arquivos (`escapePath(cacheDir) + "/**"`), então
+  não foi preciso somar nada em `server.watch.ignored`.
+
+## .gitignore
+
+### 2026-10-13 · (este commit) · o cache do Vite saiu do node_modules
+- **Local:** depois de `public/ort/`
+- **Linha:** nova linha `.vite/`
+- **Porquê:** o cache do otimizador passou a morar em `.vite/`, na raiz do projeto (ver
+  vite.config.ts), para não ser compartilhado entre a cópia principal e as worktrees.
+
 ---
 
 ## Próximos registros

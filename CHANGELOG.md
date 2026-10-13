@@ -288,3 +288,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Ícones do build regerados** dos pacotes novos (`app-icon.png` do pacote claro +
   `src-tauri/icons/*` via `npm run icon`); o script `icon` virou `tauri icon app-icon.png` e o
   `gen-icon.mjs` (desenho antigo) foi removido.
+- **Servidor de dev sem recarga no meio do uso**: as dependências usadas **dentro dos workers**
+  (`typo-js`, do corretor, e `@huggingface/transformers`, da IA local e da tradução offline) entraram
+  em `optimizeDeps.include`. O Vite não lê arquivo de worker ao procurar dependências, então só
+  descobria esses pacotes quando o worker subia — ~20 s depois de abrir o app — e reagia
+  re-otimizando tudo e recarregando o app inteiro. O cache do otimizador passou para `.vite/`, por
+  pasta: o padrão (`node_modules/.vite`) é compartilhado entre a cópia principal e as worktrees e o
+  hash que o valida inclui a raiz do projeto, então cada troca de pasta invalidava o cache e
+  recarregava os clientes conectados.
