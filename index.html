@@ -15,8 +15,8 @@
         if (tema === "dark" || tema === "light") document.documentElement.dataset.theme = tema;
         var anim = localStorage.getItem("mdc.animacao");
         if (anim === "discreta" || anim === "completa") document.documentElement.classList.add("anim-" + anim);
-        var cantos = localStorage.getItem("mdc.cantos");
-        if (cantos === "quadrados" || cantos === "redondos") document.documentElement.classList.add("cantos-" + cantos);
+        // "redondos" é o desenho original do app: não leva classe nenhuma
+        if (localStorage.getItem("mdc.cantos") === "quadrados") document.documentElement.classList.add("cantos-quadrados");
       } catch (e) {
         /* sem armazenamento: fica no padrão */
       }

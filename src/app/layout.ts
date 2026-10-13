@@ -197,8 +197,10 @@ export const layoutMethods = {
   /** Aplica o formato dos cantos no <html> (as regras ficam em styles/cantos.css). */
   applyCantos(this: App, cantos: FormatoCantos): void {
     const el = document.documentElement;
+    // "redondos" é o desenho original do app: não leva classe nenhuma, para não
+    // mexer no que já estava certo (botões-pílula, o botão Desenhar, os cartões)
     el.classList.toggle("cantos-quadrados", cantos === "quadrados");
-    el.classList.toggle("cantos-redondos", cantos === "redondos");
+    el.classList.remove("cantos-redondos");
     saveJSON("mdc.cantos", cantos);
   },
 

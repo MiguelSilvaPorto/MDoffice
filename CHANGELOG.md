@@ -297,6 +297,9 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Aparência com nível de animação e cantos** (Configurações ▸ Aparência): **Animação** em três
   cartões — Discreta, Padrão e Completa, cada um com a prévia do ritmo — e **Cantos** em dois
   (Quadrado e Redondo). Valem para o app inteiro e ficam guardados.
+- **Cantos: correção do Redondo e do Quadrado**: o Redondo arredondava além do desenho original
+  (o botão Desenhar virava pílula) e agora **não mexe em nada** — é o app como ele já era; o
+  Quadrado passou a apertar de verdade (2 px nos controles, 3 px nas caixas).
 - **Interruptor das Configurações alinhado**: bolinha com folga igual nos quatro lados e igual
   entre ligado/desligado (geometria inteira: 40×24 px, bolinha de 18 px e folga de 3 px), sem o
   desalinhamento de meio pixel que aparecia em 100%, 125% e 150% de escala do Windows.

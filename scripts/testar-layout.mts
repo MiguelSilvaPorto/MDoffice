@@ -121,13 +121,19 @@ checa(
 checa("o nível discreto tira entradas e elevação", /html\.anim-discreta[^{]*\{[^}]*animation:\s*none\s*!important/.test(mov), "regra animation: none ausente");
 checa("o nível completo dá mais relevo", /html\.anim-completa[^{]*\{[^}]*translateY\(-2px\)\s*!important/.test(mov), "regra translateY(-2px) ausente");
 checa(
-  "os cantos quadrados/redondos trocam os raios",
-  /html\.cantos-quadrados[^{]*\{[^}]*border-radius:\s*4px\s*!important/.test(cts) && /html\.cantos-redondos[^{]*\{[^}]*border-radius:\s*10px\s*!important/.test(cts),
-  "camada de raios ausente em cantos.css"
+  "o quadrado aperta de verdade (2 px nos controles, 3 px nas caixas)",
+  /html\.cantos-quadrados[^{]*\{[^}]*border-radius:\s*2px\s*!important/.test(cts) && /html\.cantos-quadrados[^{]*\{[^}]*border-radius:\s*3px\s*!important/.test(cts),
+  "raios do quadrado ausentes em cantos.css"
+);
+checa("o redondo não sobrescreve nada (é o desenho original)", !/cantos-redondos/.test(cts), "ainda existe regra de cantos-redondos em cantos.css");
+checa(
+  "o redondo também não deixa classe no <html>",
+  /classList\.remove\("cantos-redondos"\)/.test(ler("src/app/layout.ts")),
+  "applyCantos deveria remover a classe dos redondos"
 );
 checa(
   "as abas do topo seguem os cantos",
-  /html\.cantos-quadrados \.tab\s*\{[^}]*5px 5px 0 0/.test(cts) && /html\.cantos-redondos \.tab\s*\{[^}]*14px 14px 0 0/.test(cts),
+  /html\.cantos-quadrados \.tab\s*\{[^}]*2px 2px 0 0/.test(cts),
   "regra direcional das abas ausente"
 );
 checa("o boot aplica animação e cantos antes da primeira pintura", /mdc\.animacao/.test(boot) && /mdc\.cantos/.test(boot), "index.html não lê as duas chaves");

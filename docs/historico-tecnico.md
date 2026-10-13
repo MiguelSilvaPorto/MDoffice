@@ -1159,6 +1159,52 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** com o atalho trocável, uma tecla escrita à mão na dica fica velha na primeira troca.
   Agora as dicas leem a tecla em vigor; se ela mudar, a próxima abertura do menu já mostra a nova.
 
+## src/styles/cantos.css
+
+### 2026-10-13 · cantos (correção) · redondo não sobrescreve; quadrado aperta de verdade
+- **Local:** as duas listas `html.cantos-*` e a regra das abas
+- **Linha:** `html.cantos-redondos … { border-radius: 10px/16px !important }` → **removido**;
+  `html.cantos-quadrados … { border-radius: 4px/6px !important }` → `2px` (controles) e `3px`
+  (caixas); `.tab` de `5px 5px 0 0` → `2px 2px 0 0`
+- **Porquê:** o cartão "Redondo" era o padrão e mesmo assim reescrevia os raios de ~60 componentes —
+  o botão Desenhar (container `.tb-split-draw`, 8px com `overflow: hidden`) virou pílula com 16px.
+  Arredondar o que já estava certo era o erro; agora o Redondo é o desenho original do app
+  (componente a componente) e só o Quadrado tem regras. E o Quadrado estava tímido (4/6px, ainda
+  visivelmente arredondado em botões de 28px): passou a 2/3px.
+
+## src/app/layout.ts
+
+### 2026-10-13 · cantos (correção) · redondo não deixa classe
+- **Local:** `applyCantos()`
+- **Linha:** `classList.toggle("cantos-redondos", …)` → `classList.remove("cantos-redondos")`
+- **Porquê:** sem regras de CSS para o redondo, a classe só serviria de resíduo; remover garante que
+  nenhuma sobra de uma versão anterior fique no `<html>`.
+
+## index.html
+
+### 2026-10-13 · cantos (correção) · boot só para o quadrado
+- **Local:** script inline do `<head>`
+- **Linha:** `if (cantos === "quadrados" || cantos === "redondos") …add("cantos-" + cantos)` →
+  `if (localStorage.getItem("mdc.cantos") === "quadrados") …add("cantos-quadrados")`
+- **Porquê:** acompanha o `applyCantos`: o redondo não tem classe.
+
+## src/settingsPage.ts
+
+### 2026-10-13 · cantos (correção) · títulos dos cartões
+- **Local:** grupo Cantos
+- **Linha:** "Cantos retos, cara de ferramenta" → "Cantos retos de verdade (2 a 3 px)"; "Cantos bem
+  suaves, arredondados" → "Cantos suaves, como o app já era"
+- **Porquê:** o rótulo precisa dizer a verdade do que cada cartão faz.
+
+## scripts/testar-layout.mts
+
+### 2026-10-13 · cantos (correção) · regressões cobertas
+- **Local:** bloco "configurações: aparência em cartões"
+- **Linha:** as duas verificações de raio viraram três: o quadrado em 2/3px, a ausência de
+  `cantos-redondos` no CSS e a remoção da classe no `applyCantos`
+- **Porquê:** o erro era justamente "mexer no que já estava certo" — o teste agora falha se alguém
+  voltar a criar regras para o redondo ou afrouxar o quadrado.
+
 ---
 
 ## Próximos registros

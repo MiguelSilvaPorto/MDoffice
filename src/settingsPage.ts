@@ -515,7 +515,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
 
           <h4 class="st-group">Cantos</h4>
           <div class="st-opcoes" role="radiogroup" aria-label="Formato dos cantos">
-            <label class="st-opcao" title="Cantos retos, cara de ferramenta">
+            <label class="st-opcao" title="Cantos retos de verdade (2 a 3 px)">
               <input type="radio" name="cantos" value="quadrados" ${ctx.cantos() === "quadrados" ? "checked" : ""}>
               <span class="st-opcao-previa st-canto-previa" data-cantos="quadrados" aria-hidden="true">
                 <span class="st-canto-barra"></span>
@@ -523,7 +523,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
               </span>
               <span class="st-opcao-nome">Quadrado</span>
             </label>
-            <label class="st-opcao" title="Cantos bem suaves, arredondados">
+            <label class="st-opcao" title="Cantos suaves, como o app já era">
               <input type="radio" name="cantos" value="redondos" ${ctx.cantos() === "redondos" ? "checked" : ""}>
               <span class="st-opcao-previa st-canto-previa" data-cantos="redondos" aria-hidden="true">
                 <span class="st-canto-barra"></span>
