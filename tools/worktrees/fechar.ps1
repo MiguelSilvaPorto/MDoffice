@@ -9,9 +9,11 @@
 # FLUXO
 #   1. commita o que estiver pendente (exige -Mensagem quando ha alteracao)
 #   2. se a main andou (outra tarefa fechou antes), integra a main nesta worktree
-#      CONFLITO: o script PARA, lista os arquivos e deixa o merge EM ANDAMENTO aqui.
-#      Resolva, rode "git add" e execute este script de novo. Nada vai para a main
-#      com conflito.
+#      com REBASE: a historia fica LINEAR, sem commit de merge ("merge: integra a
+#      main" nao existe mais).
+#      CONFLITO: o script PARA, lista os arquivos e deixa o rebase EM ANDAMENTO
+#      aqui. Resolva, rode "git add" e execute este script de novo. Nada vai para
+#      a main com conflito.
 #   3. avanca a main (git merge --ff-only) - so entra na main trabalho que ja contem a main
 #   4. push da main para o origin (desligue com -SemPush)
 #   5. agenda em segundo plano a remocao da worktree e da branch local (log em
@@ -48,7 +50,20 @@ if (-not $repo.EmWorktree) {
 }
 $raiz = $repo.Atual
 $principal = $repo.Principal
-$branch = "$(Exec { git -C $raiz symbolic-ref --short HEAD })".Trim()
+
+# Durante um rebase o HEAD fica "solto" (detached): o nome da branch esta no
+# arquivo head-name do proprio rebase. Sem isso, o script nem comecava a
+# continuar o rebase ("fatal: ref HEAD is not a symbolic ref").
+$gitDir = "$(Exec { git -C $raiz rev-parse --absolute-git-dir })".Trim()
+$branch = ''
+foreach ($sub in 'rebase-merge', 'rebase-apply') {
+  $arquivoHead = Join-Path $gitDir "$sub\head-name"
+  if (Test-Path $arquivoHead) {
+    $branch = "$(Get-Content $arquivoHead -Raw)".Trim() -replace '^refs/heads/', ''
+    break
+  }
+}
+if (-not $branch) { $branch = "$(Exec { git -C $raiz symbolic-ref --short HEAD })".Trim() }
 if ($branch -eq 'main') { throw "A branch atual e a main - isso nao deveria acontecer numa worktree." }
 
 # -- 0) conflito nao resolvido? (devolve o controle para resolver) --------------
@@ -56,6 +71,22 @@ $ruido = { "$_".Trim() -and ("$_" -notmatch '^\s*warning:') -and ("$_" -notmatch
 $naoResolvidos = @(Exec -PermitirFalha { git -C $raiz diff --name-only --diff-filter=U } | Where-Object $ruido)
 if ($naoResolvidos.Count -gt 0) {
   throw "Ainda ha conflitos NAO RESOLVIDOS nesta worktree:`n$($naoResolvidos | Out-String)`nResolva os arquivos, rode: git add <arquivos> (ou git add -A), e execute este script de novo."
+}
+
+# -- 0.5) rebase em andamento (conflito ja resolvido): continua ----------------
+$emRebase = (Test-Path (Join-Path $gitDir 'rebase-merge')) -or (Test-Path (Join-Path $gitDir 'rebase-apply'))
+if ($emRebase) {
+  Write-Host "Continuando a integracao da main (git rebase --continue)..."
+  $saidaRebase = Exec -PermitirFalha { git -C $raiz -c core.editor=true rebase --continue }
+  if ($LASTEXITCODE -ne 0) {
+    $conflitosRebase = @(Exec -PermitirFalha { git -C $raiz diff --name-only --diff-filter=U } | Where-Object $ruido)
+    $dicaVazia = ""
+    if ("$($saidaRebase | Out-String)" -match 'nothing to commit|now empty|No changes') {
+      $dicaVazia = "`nSe a resolucao deixou o commit vazio, rode: git rebase --skip"
+    }
+    throw "CONFLITO ao continuar a integracao da main - o rebase ficou EM ANDAMENTO nesta worktree.`nArquivos em conflito:`n$($conflitosRebase | Out-String)`n--- saida do git ---`n$($saidaRebase | Out-String)$dicaVazia`nResolva os arquivos, rode: git add <arquivos> (ou git add -A), e execute este script de novo. Nada foi para a main."
+  }
+  Write-Host "Main integrada (rebase concluido)."
 }
 
 # -- 1) commit do que faltar (ou conclusao de um merge em andamento) -----------
@@ -117,13 +148,13 @@ try {
   for ($tentativa = 1; $tentativa -le 3 -and -not $entregue; $tentativa++) {
     $null = Exec -PermitirFalha { git -C $raiz merge-base --is-ancestor main HEAD }
     if ($LASTEXITCODE -ne 0) {
-      Write-Host "A main avancou - integrando na worktree (git merge main)..."
-      $null = Exec -PermitirFalha { git -C $raiz merge main -m "merge: integra a main" }
+      Write-Host "A main avancou - integrando na worktree (git rebase main)..."
+      $saidaRebase = Exec -PermitirFalha { git -C $raiz rebase main }
       if ($LASTEXITCODE -ne 0) {
         $conflitos = @(Exec -PermitirFalha { git -C $raiz diff --name-only --diff-filter=U } | Where-Object $ruido)
-        throw "CONFLITO ao integrar a main - o merge ficou EM ANDAMENTO nesta worktree.`nArquivos em conflito:`n$($conflitos | Out-String)`nResolva os arquivos, rode: git add <arquivos> (ou git add -A), e execute este script de novo. Nada foi para a main."
+        throw "CONFLITO ao integrar a main - o rebase ficou EM ANDAMENTO nesta worktree.`nArquivos em conflito:`n$($conflitos | Out-String)`n--- saida do git ---`n$($saidaRebase | Out-String)`nResolva os arquivos, rode: git add <arquivos> (ou git add -A), e execute este script de novo. Nada foi para a main."
       }
-      Write-Host "Main integrada."
+      Write-Host "Main integrada (rebase)."
     }
 
     # a copia principal precisa estar na main para o fast-forward valer
