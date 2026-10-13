@@ -137,6 +137,24 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   um "pop gigante" que não dizia o que fazia. Agora ficam do tamanho do conteúdo, com título,
   explicação e fechar por Esc, X ou clique no fundo.
 
+## index.html
+
+### 2026-10-13 · este commit · ícone do Desenhar e rótulo do menu
+- **Local:** `<symbol id="i-draw">` e o botão `.tb-draw-caret`
+- **Linha:** caneta sozinha → caneta **com o traço desenhado** (`M3 21.3c2.7-1.7…`);
+  `aria-haspopup="menu"` + `aria-label` no caret
+- **Porquê:** o ícone antigo (um triângulo de caneta) não dizia "desenhar"; o novo mostra a
+  caneta e o traço, e o menu de tipo de desenho ganhou rótulo acessível.
+
+## src/styles/topbar.css
+
+### 2026-10-13 · este commit · botão Desenhar como ação principal
+- **Local:** `.tb-split-draw`, `.tb-draw-main`, `.tb-draw-caret`
+- **Linha:** `background: var(--accent-soft)` + borda fina → `background: var(--accent)` com
+  divisor `color-mix(accent-fg 30%)`, sombra leve, hover/active e anel de foco
+- **Porquê:** o botão parecia inacabado (fundo lavado, parecia desabilitado) e o divisor branco
+  fixo do caret sumia no tema claro; agora é a ação principal da barra, com o divisor do tema.
+
 ## src/app/keys.ts
 
 ### 2026-10-13 · e392858 · Ctrl+F1 não abre mais a ajuda

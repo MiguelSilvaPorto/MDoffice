@@ -43,6 +43,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 **Frontend**
 
 - Editor CodeMirror 6 com realce de sintaxe e pré-visualização ao vivo lado a lado.
+- **Botão Desenhar** como ação principal: dividido (desenhar + tipo de desenho), sólido no
+  acento, ícone de caneta desenhando, divisor que acompanha o tema e estados de hover/active/foco.
 - Coluna de escrita limitada e centralizada, com a divisória acompanhando o mouse 1:1.
 - Salvamento automático a cada alteração, barra de status (palavras/caracteres/linhas).
 - **Desenho assistido (prancheta)**: caneta que reconhece e corrige traços, formas, texto,

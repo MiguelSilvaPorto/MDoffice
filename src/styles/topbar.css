@@ -312,40 +312,57 @@
   border-radius: 7px;
 }
 
+/* Botão "Desenhar": ação principal dividida (desenhar + tipo de desenho).
+   Sólido no acento, com divisor que acompanha o tema e estados de hover/active. */
 .tb-split-draw {
-  border-radius: 7px;
+  border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
 }
 
 .tb-split-draw .btn {
   height: 28px;
   font-size: 12px;
+  border: 0;
   border-radius: 0;
+  transition: background 0.12s ease, color 0.12s ease;
 }
 
 .tb-draw-main {
-  padding: 0 8px 0 9px;
-  background: var(--accent-soft);
-  color: var(--fg);
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
-  font-weight: 550;
+  padding: 0 9px 0 10px;
+  gap: 6px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
 }
 
-.tb-draw-main:hover {
-  background: color-mix(in srgb, var(--accent) 25%, transparent);
+.tb-draw-main .ic {
+  width: 15px;
+  height: 15px;
+  stroke-width: 1.7;
+}
+
+.tb-draw-main:hover,
+.tb-draw-caret:hover {
+  background: color-mix(in srgb, var(--accent) 85%, var(--accent-fg));
+}
+
+.tb-draw-main:active,
+.tb-draw-caret:active {
+  background: color-mix(in srgb, var(--accent) 78%, var(--accent-fg));
 }
 
 .tb-draw-caret {
-  background: var(--accent-soft);
-  color: var(--fg);
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
-  border-left: 1px solid color-mix(in srgb, var(--accent) 30%, transparent) !important;
-  width: 20px !important;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-left: 1px solid color-mix(in srgb, var(--accent-fg) 30%, transparent) !important;
+  width: 22px !important;
   padding: 0 !important;
 }
 
-.tb-draw-caret:hover {
-  background: color-mix(in srgb, var(--accent) 25%, transparent);
+.tb-split-draw .btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: 2px;
 }
 
 .win-divider {
