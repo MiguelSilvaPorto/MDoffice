@@ -134,11 +134,6 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     </aside>
     <div class="st-scroll">
       <div class="st-col">
-        <div class="st-headbar">
-          <span class="st-heading"><svg class="ic"><use href="#i-feather" data-st-icon/></svg><b data-st-title>Escrita</b></span>
-          <span class="st-saved" aria-live="polite"></span>
-        </div>
-
         <section class="st-sec" data-sec="escrita">
           <header class="st-sec-head">
             <span class="st-sec-ic"><svg class="ic"><use href="#i-feather"/></svg></span>
@@ -365,7 +360,12 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
           ).join("")}
         </section>
       </div>
-    </div>`;
+    </div>
+
+    <!-- Confirmação do ajuste. Fica solta no canto, e não numa barra fixa no topo:
+         a barra repetia o nome da seção que aparece logo abaixo dela, e o "Salvo"
+         precisa estar à vista onde a pessoa acabou de clicar — não no alto. -->
+    <span class="st-saved" aria-live="polite"></span>`;
 
   const q = <T extends HTMLElement>(sel: string) => host.querySelector<T>(sel)!;
   const saved = q(".st-saved");
@@ -378,43 +378,26 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   const on = (sel: string, ev: string, fn: (e: Event) => void) => q(sel).addEventListener(ev, fn);
   const sw = (key: string) => q<HTMLInputElement>(`[data-k="${key}"]`);
 
-  // navegação lateral: rola até a seção e marca a que está à vista
+  // As seções são ABAS: só uma fica à vista por vez. Antes elas ficavam todas
+  // empilhadas na mesma página e a navegação lateral apenas rolava até a seção —
+  // para mudar um ajuste de "Aparência" era preciso atravessar as cinco.
   const items = host.querySelectorAll<HTMLElement>(".st-nav-item");
+  const secoes = host.querySelectorAll<HTMLElement>(".st-sec");
   const scroller = q(".st-scroll");
-  const headTitle = q("[data-st-title]");
-  const headIcon = host.querySelector<SVGUseElement>("[data-st-icon]")!;
   const mark = (id: string) => {
     items.forEach((b) => {
       const active = b.dataset.nav === id;
       b.classList.toggle("active", active);
       b.setAttribute("aria-selected", String(active));
     });
-    const n = NAV.find((x) => x.id === id);
-    if (n) {
-      headTitle.textContent = n.label;
-      headIcon.setAttribute("href", `#${n.icon}`);
-    }
   };
-  items.forEach((b) =>
-    b.addEventListener("click", () => {
-      mark(b.dataset.nav!);
-      q(`[data-sec="${b.dataset.nav}"]`).scrollIntoView({ behavior: "smooth", block: "start" });
-    })
-  );
-  scroller.addEventListener(
-    "scroll",
-    () => {
-      let cur = NAV[0].id as string;
-      host.querySelectorAll<HTMLElement>(".st-sec").forEach((sec) => {
-        if (sec.offsetTop - scroller.scrollTop < 120) cur = sec.dataset.sec!;
-      });
-      if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 4) cur = NAV[NAV.length - 1].id;
-      mark(cur);
-    },
-    { passive: true }
-  );
-  mark(section);
-  window.setTimeout(() => q(`[data-sec="${section}"]`).scrollIntoView({ block: "start" }), 0);
+  const abrir = (id: string) => {
+    for (const sec of secoes) sec.hidden = sec.dataset.sec !== id;
+    scroller.scrollTop = 0; // cada aba abre do começo, não onde a anterior parou
+    mark(id);
+  };
+  items.forEach((b) => b.addEventListener("click", () => abrir(b.dataset.nav!)));
+  abrir(section);
 
   // escrita
   const toneDesc = q("[data-tone-desc]");

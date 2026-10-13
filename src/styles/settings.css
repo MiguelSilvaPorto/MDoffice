@@ -4,6 +4,7 @@
    ========================================================================== */
 
 #settings-page {
+  position: relative; /* a confirmação "Salvo" fica ancorada no canto de baixo */
   display: none;
   flex: 1;
   min-width: 0;
@@ -166,71 +167,51 @@ body.settings-open #preview-wrap {
   flex: 1;
   min-width: 0;
   overflow: auto;
-  scroll-behavior: smooth;
-  scroll-padding-top: 64px;
 }
 
 .st-col {
   max-width: 880px;
   margin: 0 auto;
-  padding: 0 36px 160px;
+  /* 160px era o respiro do fim da página longa; com uma aba por vez, o conteúdo
+     termina logo e o valor virava um vazio grande embaixo do último cartão */
+  padding: 0 36px 64px;
 }
 
-.st-headbar {
-  position: sticky;
-  top: 0;
-  z-index: 4;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 16px 0 12px;
-  background: var(--bg);
-}
-
-/* esmaece a borda do conteúdo que passa por baixo do cabeçalho fixo */
-.st-headbar::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 100%;
-  height: 14px;
-  background: linear-gradient(var(--bg), transparent);
-  pointer-events: none;
-}
-
-.st-heading {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--fg);
-  font-size: 13.5px;
-  font-weight: 650;
-}
-
-.st-heading .ic {
-  width: 16px;
-  height: 16px;
-  color: var(--accent);
-}
-
+/* Confirmação do ajuste: uma pílula solta embaixo, no centro. Antes ela morava numa
+   barra fixa no topo, junto do nome da seção — que agora é o próprio cabeçalho da
+   aba, logo abaixo. E o "Salvo" precisa estar à vista de quem acabou de clicar no
+   interruptor, não lá em cima.
+   No centro, e não no canto: o canto de baixo-direita é dos avisos do app
+   (#toasts, z-index 100), e a pílula sumiria atrás deles. */
 .st-saved {
-  margin-left: auto;
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 5;
+  padding: 7px 13px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.13);
   color: var(--ok);
   font-size: 12px;
   font-weight: 600;
-  min-height: 16px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* sem nada a dizer, não existe: nada de pílula vazia parada no canto */
+.st-saved:empty {
+  display: none;
 }
 
 /* ---------- seções ---------- */
 
+/* Uma seção por vez (abas): a visível é sempre a última da coluna, então a linha
+   que separava uma seção da seguinte viraria um risco solto no fim do conteúdo. */
 .st-sec {
   padding: 22px 0 34px;
-  border-bottom: 1px solid var(--border);
-}
-
-.st-sec:last-child {
-  border-bottom: 0;
 }
 
 .st-sec-head {

@@ -247,6 +247,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   valendo na hora; redesign com trilha lateral e cartões.
 - **Configurações**: ícones menores na trilha lateral (chips de 32 → 26 px e glifos de 16 → 14;
   marca de 40 → 34), deixando a trilha mais leve sem mudar a estrutura.
+- **Configurações em abas**: cada seção aparece sozinha, em vez da página única que rolava pelas
+  cinco. Trocar de seção abre sempre do topo e rolar não troca mais de aba; o nome da seção ficou
+  só no cabeçalho dela (a barra fixa do topo repetia o mesmo nome). A confirmação **"Salvo"** virou
+  uma pílula no pé da página, fora do canto reservado aos avisos do app.
 - **Busca de comandos** (`Ctrl+K`), **modo foco** (`Ctrl+Shift+F`) e atalhos documentados.
 - **Importar do Office** (`.docx`, `.xlsx`, `.xlsm`, `.pptx`) com explicação dos formatos antigos.
 - **Ícone por tipo de arquivo** (M↓, W, tabela, gráfico de pizza) nas abas, listas e busca.

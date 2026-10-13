@@ -182,6 +182,19 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** novo par `appIcon`/`setAppIcon` no contexto; controle segmentado com os dois PNGs; handler que chama `ctx.setAppIcon(...)`
 - **Porquê:** o app passou a ter dois ícones (claro/escuro) — a escolha precisava de um lugar, e Aparência já reúne tema e janela.
 
+### 2026-10-13 · (este commit) · configurações em abas
+- **Local:** `renderSettingsPage`, o bloco da navegação lateral (antes "navegação lateral: rola até
+  a seção e marca a que está à vista")
+- **Linha:** o ouvinte de `scroll` do `.st-scroll` (que marcava a seção à vista) e o
+  `scrollIntoView` do clique → um `abrir(id)` que liga/desliga `sec.hidden` conforme
+  `sec.dataset.sec !== id`, zera a rolagem e chama `mark(id)`
+- **Linha:** o `mark(id)` deixou de escrever em `[data-st-title]`/`[data-st-icon]`; o `.st-headbar`
+  saiu do HTML e o `.st-saved` foi para fora dele, no fim do template
+- **Porquê:** as cinco seções ficavam empilhadas na mesma página e a trilha lateral só rolava até
+  elas — para mudar um ajuste em "Aparência" era preciso atravessar as cinco. Com uma seção por
+  vez, o nome fixo no topo passou a repetir o cabeçalho da própria aba, logo abaixo dele, então
+  saiu; e a confirmação "Salvo" precisava estar à vista de quem acabou de clicar no interruptor.
+
 ## src/styles/settings.css
 
 ### 2026-10-13 · este commit · interruptor com folga inteira (bolinha centrada)
@@ -206,6 +219,39 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** nova regra `.st-seg-icone` (18px, cantos 4px, margem à direita)
 - **Porquê:** o seletor de ícone mostra os próprios PNGs; sem a regra a imagem entra no tamanho
   natural e desalinha o controle.
+
+### 2026-10-13 · (este commit) · o css das abas
+- **Local:** `#settings-page`
+- **Linha:** `display: none` → `position: relative; display: none`
+- **Porquê:** a confirmação "Salvo" passou a ser uma pílula ancorada no pé da página; sem
+  `position: relative` no contêiner ela se posicionaria em relação à janela.
+- **Local:** `.st-scroll`
+- **Linha:** `scroll-behavior: smooth` e `scroll-padding-top: 64px` removidos
+- **Porquê:** os dois existiam para a rolagem por âncora até a seção (`scrollIntoView`), que não
+  existe mais. O `smooth` ainda faria a troca de aba animar a rolagem até o topo em vez de pular.
+- **Local:** `.st-col`
+- **Linha:** `padding: 0 36px 160px` → `padding: 0 36px 64px`
+- **Porquê:** os 160px eram o respiro do fim da página longa; com uma aba por vez o conteúdo termina
+  logo e o valor virava um vazio grande embaixo do último cartão.
+- **Local:** `.st-headbar`, `.st-headbar::after`, `.st-heading`, `.st-heading .ic`
+- **Linha:** removidos
+- **Porquê:** a barra fixa dizia em que seção a rolagem estava — e repetia o nome que o cabeçalho da
+  própria seção já mostra logo abaixo. Sem rolagem entre seções, ela só ocupava ~44px no topo de
+  toda aba.
+- **Local:** `.st-saved`
+- **Linha:** `margin-left: auto; color; font-size; font-weight; min-height: 16px` → `position:
+  absolute; left: 50%; bottom: 18px; transform: translateX(-50%); padding: 7px 13px; border;
+  border-radius: 999px; background; box-shadow; color; font-size; font-weight; white-space;
+  pointer-events: none`, mais `.st-saved:empty { display: none }`
+- **Porquê:** agora é uma pílula solta no pé da página, à vista de quem acabou de mexer num ajuste
+  (a barra ficava lá em cima). No centro, e não no canto de baixo-direita, porque esse canto é dos
+  avisos do app (`#toasts`, `z-index: 100`) — ali ela sumiria atrás deles. O `:empty` evita uma
+  pílula vazia parada na tela, e `pointer-events: none` garante que ela nunca intercepte um clique.
+- **Local:** `.st-sec` e `.st-sec:last-child`
+- **Linha:** `.st-sec` perdeu o `border-bottom: 1px solid var(--border)`; a regra `.st-sec:last-child`
+  foi removida
+- **Porquê:** a linha separava uma seção da seguinte. Com uma seção por vez, a visível é sempre a
+  última da coluna, e a linha virava um risco solto no fim do conteúdo.
 
 ## src/powerpoint/edicao/grafico.ts
 
