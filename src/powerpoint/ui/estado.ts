@@ -8,6 +8,8 @@ export interface EstadoUI {
   indice: number;
   total: number;
   layout: SlideLayout;
+  /** a lâmina atual está oculta na apresentação */
+  oculta: boolean;
   /** formas selecionadas */
   formas: Shape[];
   /** a principal (a última escolhida) */

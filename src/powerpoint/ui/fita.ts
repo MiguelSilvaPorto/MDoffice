@@ -1,6 +1,7 @@
 // A fita da apresentação, no desenho do PowerPoint: abas (Página Inicial, Inserir, Formato da Forma, Design, Exibir),
 // grupos com o nome embaixo, botões grandes e pequenos. Tudo é despachado por `run(comando, valor)` para o host.
 import { SOMBRAS_PRONTAS } from "../edicao/formato";
+import { GRAFICO_TIPOS } from "../edicao/grafico";
 import { ROTULOS_PRESET, type PresetTabela } from "../edicao/tabela";
 import type { SlideLayout } from "../schema";
 import { abrirCores } from "./cores";
@@ -43,6 +44,20 @@ const ESTILOS_RAPIDOS: { nome: string; cmd: string }[] = [
   { nome: "Cartão branco com sombra", cmd: "estilo:cartao" },
   { nome: "Escuro", cmd: "estilo:escuro" },
   { nome: "Suave", cmd: "estilo:suave" },
+];
+
+/** Cores clássicas do marca-texto (as mesmas do PowerPoint), hex sem #. */
+const CORES_MARCA_TEXTO = ["FFFF00", "00FF00", "00FFFF", "FF99CC", "FFC000", "C9DAF8", "D9EAD3", "F4CCCC"];
+
+/** Presets de espaçamento entre caracteres em pt (negativo = letras mais juntas). */
+const ESPACAMENTOS: [string, string][] = [
+  ["-1.5", "Muito reduzido (-1,5 pt)"],
+  ["-0.75", "Reduzido (-0,75 pt)"],
+  ["0", "Nenhum"],
+  ["0.75", "Ampliado (0,75 pt)"],
+  ["1.5", "Muito ampliado (1,5 pt)"],
+  ["3", "3 pt"],
+  ["5", "5 pt"],
 ];
 
 export class Fita {
@@ -106,6 +121,11 @@ export class Fita {
            ${pequeno("layout", ic("i-columns"), "Layout", "Layout da lâmina", true)}
            ${pequeno("slide-dup", ic("i-dup"), "Duplicar", "Duplicar lâmina")}
            ${pequeno("slide-del", ic("i-trash"), "Excluir", "Excluir lâmina")}
+         </div>
+         <div class="ppr-col">
+           ${pequeno("slide-nome", ic("i-text"), "Renomear", "Dar um nome à lâmina (aparece na miniatura e no .pptx)")}
+           ${pequeno("slide-ocultar", ic("i-eye"), "Ocultar", "Ocultar ou mostrar a lâmina na apresentação")}
+           ${pequeno("slide-reset", ic("i-replace"), "Redefinir", "Redefinir a lâmina: tira as formas próprias e reaplica as caixas do layout")}
          </div>`
       ),
       grupo(
@@ -123,6 +143,15 @@ export class Fita {
              ${btn("sublinhado", "<u>S</u>", "Sublinhado (Ctrl+U)", "fmt")}
              ${btn("tachado", "<s>ab</s>", "Tachado", "fmt")}
              ${btn("cor-texto", `<span class="ppr-a">A</span><span class="ppr-barra" data-barra="cor-texto"></span>`, "Cor da fonte", "fmt cor", true)}
+             ${btn("marca-texto", `<span class="ppr-a ppr-hl">ab</span><span class="ppr-barra" data-barra="marca-texto"></span>`, "Marca-texto", "fmt cor", true)}
+           </div>
+           <div class="ppr-linha">
+             ${btn("sobrescrito", "x<sup>2</sup>", "Sobrescrito", "fmt")}
+             ${btn("subscrito", "x<sub>2</sub>", "Subscrito", "fmt")}
+             ${btn("versalete", `A<span class="ppr-va">bc</span>`, "Versalete (maiúsculas pequenas)", "fmt")}
+             ${btn("caixa", "Aa", "Mudar a caixa do texto: MAIÚSCULAS, minúsculas ou Primeira Letra", "fmt", true)}
+             ${btn("espacamento", `<span class="ppr-seta">A↔</span>`, "Espaçamento entre caracteres", "fmt", true)}
+             ${btn("limpar-formatacao", ic("i-clear-format"), "Limpar formatação", "fmt")}
            </div>
          </div>`
       ),
@@ -168,6 +197,7 @@ export class Fita {
     return [
       grupo("Lâminas", `${grande("slide-novo", ic("i-plus"), "Nova lâmina", "Nova lâmina depois da atual: escolha o layout", true)}`),
       grupo("Tabelas", `${grande("tabela-grade", ic("i-grid"), "Tabela", "Inserir uma tabela", true)}`),
+      grupo("Gráficos", `${grande("grafico-menu", ic("i-chart"), "Gráfico", "Inserir um gráfico (colunas, barras, linhas, pizza…)", true)}`),
       grupo(
         "Texto",
         `${grande("ferramenta:texto", ic("i-doc"), "Caixa de texto", "Desenhe uma caixa de texto na lâmina")}`
@@ -409,6 +439,21 @@ export class Fita {
         });
         return;
       }
+      case "grafico-menu": {
+        const el = abrirPopup(
+          ancora,
+          `<div class="pp-pop-rot">Inserir gráfico</div>` +
+            GRAFICO_TIPOS.map((t) => `<button type="button" class="pp-pop-item" data-graf="${t.id}">${t.nome}</button>`).join(""),
+          { classe: "pp-pop-menu" }
+        );
+        el.addEventListener("click", (ev) => {
+          const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-graf]");
+          if (!b) return;
+          fecharPopup();
+          run("grafico-inserir", b.dataset.graf);
+        });
+        return;
+      }
       case "tabela-estilos": {
         const el = abrirPopup(ancora, (Object.keys(ROTULOS_PRESET) as PresetTabela[]).map((k) => `<button type="button" class="pp-pop-item" data-preset="${k}">${ROTULOS_PRESET[k]}</button>`).join(""), { classe: "pp-pop-menu" });
         el.addEventListener("click", (ev) => {
@@ -451,6 +496,21 @@ export class Fita {
         abrirCores(ancora, { atual: est.trecho && est.trecho.color !== "misto" ? est.trecho.color : null, paleta: est.paleta, titulo: "Cor da fonte" }, (c) => {
           if (c) run("cor-texto", c);
         });
+        return;
+      case "marca-texto":
+        abrirCores(
+          ancora,
+          {
+            atual: est.trecho && est.trecho.highlight !== "misto" && est.trecho.highlight ? est.trecho.highlight : null,
+            paleta: est.paleta,
+            semCor: "Sem marca-texto",
+            titulo: "Marca-texto",
+            extra: `<div class="pp-pop-t">Cores do marca-texto</div>
+              <div class="pp-swatches">${CORES_MARCA_TEXTO.map((c) => `<button type="button" class="pp-sw" data-extra="marca:${c}" style="background:#${c}" title="#${c}" aria-label="#${c}"></button>`).join("")}</div>`,
+          },
+          (c) => run("marca-texto", c ?? ""),
+          (x) => run("marca-texto", x.startsWith("marca:") ? x.slice(6) : x)
+        );
         return;
       case "preench":
         this.menuPreenchimento(ancora);
@@ -500,6 +560,37 @@ export class Fita {
           if (!b) return;
           fecharPopup();
           run("entrelinha", b.dataset.esp);
+        });
+        return;
+      }
+      case "espacamento": {
+        const atual = est.trecho && est.trecho.spc !== "misto" ? est.trecho.spc : null;
+        const el = abrirPopup(
+          ancora,
+          `<div class="pp-pop-rot">Espaçamento entre caracteres</div>` +
+            ESPACAMENTOS.map(([v, n]) => `<button type="button" class="pp-pop-item${atual !== null && Math.abs(atual - Number(v)) < 0.01 ? " on" : ""}" data-esp-car="${v}">${n}</button>`).join(""),
+          { classe: "pp-pop-menu" }
+        );
+        el.addEventListener("click", (ev) => {
+          const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-esp-car]");
+          if (!b) return;
+          fecharPopup();
+          run("espacamento", b.dataset.espCar);
+        });
+        return;
+      }
+      case "caixa": {
+        const opcoes: [string, string][] = [
+          ["maiusculas", "MAIÚSCULAS"],
+          ["minusculas", "minúsculas"],
+          ["primeira", "Primeira Letra"],
+        ];
+        const el = abrirPopup(ancora, opcoes.map(([v, n]) => `<button type="button" class="pp-pop-item" data-caixa="${v}">${n}</button>`).join(""), { classe: "pp-pop-menu" });
+        el.addEventListener("click", (ev) => {
+          const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-caixa]");
+          if (!b) return;
+          fecharPopup();
+          run("caixa", b.dataset.caixa);
         });
         return;
       }
@@ -650,6 +741,11 @@ export class Fita {
     on("italico", t?.italic === true);
     on("sublinhado", t?.underline === true);
     on("tachado", t?.strike === true);
+    on("marca-texto", !!(t && t.highlight !== "misto" && t.highlight));
+    const base = t && t.baseline !== "misto" ? t.baseline : 0;
+    on("sobrescrito", base > 0);
+    on("subscrito", base < 0);
+    on("versalete", t?.caps === true);
     const al = st.paragrafo?.align;
     on("alinhar-esquerda", al === "esquerda");
     on("alinhar-centro", al === "centro");
@@ -665,8 +761,12 @@ export class Fita {
     on("alt-grade", st.grade);
     on("alt-fixas", st.fixas);
     on("alt-faixa", st.faixaVertical);
+    on("slide-ocultar", st.oculta);
+    // o botão alterna: com a lâmina oculta, ele passa a oferecer "Mostrar"
+    const rotuloOcultar = this.el.querySelector<HTMLElement>('[data-cmd="slide-ocultar"] span');
+    if (rotuloOcultar) rotuloOcultar.textContent = st.oculta ? "Mostrar" : "Ocultar";
     on("ferramenta:texto", st.ferramenta?.tipo === "texto");
-    for (const c of ["negrito", "italico", "sublinhado", "tachado", "maior", "menor", "cor-texto", "marcadores", "numeracao", "recuo-menos", "recuo-mais", "espaco", "alinhar-esquerda", "alinhar-centro", "alinhar-direita", "alinhar-justificado", "v-topo", "v-meio", "v-base"]) dis(c, !temTexto);
+    for (const c of ["negrito", "italico", "sublinhado", "tachado", "marca-texto", "sobrescrito", "subscrito", "versalete", "caixa", "espacamento", "limpar-formatacao", "maior", "menor", "cor-texto", "marcadores", "numeracao", "recuo-menos", "recuo-mais", "espaco", "alinhar-esquerda", "alinhar-centro", "alinhar-direita", "alinhar-justificado", "v-topo", "v-meio", "v-base"]) dis(c, !temTexto);
     dis("desfazer", !st.podeDesfazer);
     dis("refazer", !st.podeRefazer);
     dis("colar", !st.temCopia);
@@ -705,6 +805,8 @@ export class Fita {
     // barra de cor
     const barra = this.el.querySelector<HTMLElement>('[data-barra="cor-texto"]');
     if (barra) barra.style.background = t && t.color !== "misto" ? `#${t.color}` : "var(--muted)";
+    const barraMarca = this.el.querySelector<HTMLElement>('[data-barra="marca-texto"]');
+    if (barraMarca) barraMarca.style.background = t && t.highlight !== "misto" && t.highlight ? `#${t.highlight}` : "var(--muted)";
     const z = this.el.querySelector<HTMLElement>("[data-zoomtxt]");
     if (z) z.textContent = `${st.zoom}%`;
     // tamanho em cm (se não está digitando nele)

@@ -4,7 +4,8 @@
 
 import type { Deck, DeckSetup, Slide } from "../schema";
 import { ehRica } from "../render/forma";
-import { escreverLamina } from "./slides";
+import { prepararGraficos } from "../render/grafico";
+import { comNomeDaCld, comOcultaNoSld, comOcultasNoSldId, escreverLamina, marcarLamina } from "./slides";
 import { Escritor } from "./rica";
 import { escreverNotas } from "./notes";
 import { aplicarTema, fonteTema } from "./theme";
@@ -12,6 +13,8 @@ import { aplicarTema, fonteTema } from "./theme";
 /** Gera os bytes do arquivo .pptx a partir do deck. */
 export async function deckToPptx(deck: Deck, setup: DeckSetup, titulo = "Apresentação"): Promise<Uint8Array> {
   const { default: PptxGenJS } = await import("pptxgenjs");
+  // os gráficos do app viram imagem no arquivo (o motor não escreve `c:chart` nativo): o desenho não se perde
+  deck = await prepararGraficos(deck, setup);
 
   // nova instância a cada exportação: o PptxGenJS reutiliza lâminas se reaproveitado
   const pptx = new PptxGenJS() as unknown as {
@@ -35,6 +38,8 @@ export async function deckToPptx(deck: Deck, setup: DeckSetup, titulo = "Apresen
   const ricas: number[] = [];
   slides.forEach((s, i) => {
     const slide = pptx.addSlide() as Parameters<typeof escreverLamina>[0] & Parameters<typeof escreverNotas>[0];
+    // oculta (show="0") e nome da lâmina valem para os dois caminhos (PptxGenJS e Escritor)
+    marcarLamina(slide, s);
     if (s.bg || s.shapes.some(ehRica)) {
       ricas.push(i);
     } else {
@@ -48,7 +53,9 @@ export async function deckToPptx(deck: Deck, setup: DeckSetup, titulo = "Apresen
   // arraybuffer: no Tauri não existe download de browser (o writeFile() do
   // PptxGenJS não funciona aqui — ver achado F18 no plano)
   const buf = await pptx.write({ outputType: "arraybuffer" });
-  if (!ricas.length && !setup.fontsRaw?.length) return new Uint8Array(buf);
+  // sem lâminas ricas, fontes, nomes ou lâminas ocultas, o pacote do PptxGenJS já está pronto
+  const precisaPos = ricas.length > 0 || setup.fontsRaw?.length || slides.some((s) => s.nome?.trim() || s.show === false);
+  if (!precisaPos) return new Uint8Array(buf);
   return await trocarLaminas(new Uint8Array(buf), slides, ricas, setup);
 }
 
@@ -75,6 +82,26 @@ async function trocarLaminas(bytes: Uint8Array, slides: Slide[], ricas: number[]
       .join("");
     rels = rels.replace("</Relationships>", () => novas + "</Relationships>");
     zip.file(relPath, rels);
+  }
+  // nome e oculta das lâminas: vale para os dois caminhos — o PptxGenJS grava "Slide N"
+  // e não escreve no XML trocado pelo Escritor; o show="0" do p:sld some quando a lâmina é rica
+  for (let i = 0; i < slides.length; i++) {
+    const nome = slides[i].nome?.trim();
+    const oculta = slides[i].show === false;
+    if (!nome && !oculta) continue;
+    const parte = `ppt/slides/slide${i + 1}.xml`;
+    let xml = await zip.file(parte)?.async("string");
+    if (!xml) continue;
+    if (nome) xml = comNomeDaCld(xml, nome);
+    if (oculta) xml = comOcultaNoSld(xml);
+    zip.file(parte, xml);
+  }
+  // lâmina oculta: o PptxGenJS já marcou o p:sld (é o que o PowerPoint lê);
+  // aqui marcamos também o p:sldId, que é de onde o nosso importador lê
+  const ocultas = slides.map((s, i) => (s.show === false ? i : -1)).filter((i) => i >= 0);
+  if (ocultas.length) {
+    const pres = await zip.file("ppt/presentation.xml")?.async("string");
+    if (pres) zip.file("ppt/presentation.xml", comOcultasNoSldId(pres, ocultas));
   }
   const exts = new Set<string>();
   for (const m of escritor.midias) {

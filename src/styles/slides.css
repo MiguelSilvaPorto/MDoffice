@@ -19,6 +19,24 @@
   cursor: pointer;
 }
 
+/* troca de lâmina: fade curto na entrada. Cada lâmina nova anima por conta própria,
+   então trocar rápido não espera a anterior terminar. */
+.slides-stage > section {
+  animation: slides-entrada var(--mov-2, 180ms) ease-out both;
+}
+
+@keyframes slides-entrada {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slides-stage > section {
+    animation: none;
+  }
+}
+
 .slide {
   width: min(1100px, 92vw);
   max-height: 100%;
@@ -68,8 +86,9 @@
 
 .slides-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 14px;
+  gap: 8px 14px;
   padding: 10px 16px;
   background: rgba(255, 255, 255, 0.06);
   border-top: 1px solid rgba(255, 255, 255, 0.12);
@@ -84,9 +103,33 @@
   opacity: 0.75;
 }
 
+/* número sendo digitado para "ir para a lâmina" (nº + Enter) */
+.slides-goto {
+  padding: 2px 10px;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+
 .slides-help {
   opacity: 0.6;
   margin-left: auto;
+  text-align: right;
+}
+
+/* tela preta/branca (teclas B e W): cobre a apresentação até qualquer tecla ou clique voltar */
+.slides-tela {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+}
+
+.slides-tela.preta {
+  background: #000;
+}
+
+.slides-tela.branca {
+  background: #fff;
 }
 
 /* impressão: uma lâmina por página (imprimir → salvar como PDF) */
@@ -103,6 +146,15 @@
 
   .slides-bar {
     display: none !important;
+  }
+
+  .slides-tela {
+    display: none !important;
+  }
+
+  /* o papel não anima: garante a lâmina 100% opaca mesmo se o Ctrl+P vier no meio do fade */
+  .slides-stage > section {
+    animation: none;
   }
 
   .slides-stage {
@@ -143,6 +195,10 @@
 .slides-overlay.tema-claro .slides-notes {
   background: rgba(0, 0, 0, 0.05);
   color: #14181f;
+}
+
+.slides-overlay.tema-claro .slides-goto {
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .slide {

@@ -119,6 +119,69 @@ const para = (runs, extra = {}) => ({ runs, align: "esquerda", lvl: 0, marL: 0, 
   const par = T.estiloDosParas([para([run("a")]), para([run("b")])], [1], { align: "centro", lnSpc: { pct: 1.5 } });
   ok("propriedades de parágrafo só nos índices dados", par[0].align === "esquerda" && par[1].align === "centro" && par[1].lnSpc.pct === 1.5);
   ok("parasDaSelecao: cursor no 2º parágrafo", T.parasDaSelecao([para([run("abc")]), para([run("de")])], 5, 5).join() === "1");
+
+  // marca-texto, sobrescrito/subscrito, versalete e espaçamento de caracteres
+  const marca = T.estiloNoIntervalo(ps, 4, 9, { highlight: "FFFF00", baseline: 30, caps: true, spc: 1.5 });
+  ok(
+    "formatação avançada divide o trecho e não vaza para os vizinhos",
+    marca[0].runs.length === 3 && marca[0].runs[1].highlight === "FFFF00" && marca[0].runs[1].baseline === 30 && marca[0].runs[1].caps === true && marca[0].runs[1].spc === 1.5 && marca[0].runs[0].highlight === undefined,
+    JSON.stringify(marca[0].runs.map((r) => [r.text, r.highlight]))
+  );
+  const estMarca = T.estadoDoTrecho(marca, 4, 9);
+  ok("estado do trecho: marca-texto, sobrescrito, versalete e espaçamento", estMarca.highlight === "FFFF00" && estMarca.baseline === 30 && estMarca.caps === true && estMarca.spc === 1.5);
+  ok("estado misto do marca-texto quando só parte do trecho tem", T.estadoDoTrecho(marca, 0, 12).highlight === "misto");
+  const voltaMarca = T.estiloNoIntervalo(marca, 4, 9, { highlight: "", baseline: 0, caps: false, spc: 0 });
+  ok("tirar a formatação avançada junta os trechos de novo", voltaMarca[0].runs.length === 1 && voltaMarca[0].runs[0].text === "Olá mundo bonito");
+
+  // mudar caixa
+  ok("MAIÚSCULAS com acentos certos", T.mudarCaixaTexto([para([run("informação jurídica")])], -1, -1, "maiusculas")[0].runs[0].text === "INFORMAÇÃO JURÍDICA");
+  ok("minúsculas com acentos certos", T.mudarCaixaTexto([para([run("SÃO PAULO")])], -1, -1, "minusculas")[0].runs[0].text === "são paulo");
+  const titulo = T.mudarCaixaTexto([para([run("olá mundo (teste)")])], -1, -1, "primeira");
+  ok("Primeira Letra põe maiúscula em cada palavra", titulo[0].runs[0].text === "Olá Mundo (Teste)", titulo[0].runs[0].text);
+  const soTrecho = T.mudarCaixaTexto([para([run("um dois três")])], 3, 7, "maiusculas");
+  ok("mudar caixa só no trecho selecionado", soTrecho[0].runs.map((r) => r.text).join("") === "um DOIS três", JSON.stringify(soTrecho[0].runs.map((r) => r.text)));
+
+  // limpar formatação
+  const digitacao = { size: 18, bold: false, italic: false, underline: false, strike: false, color: "1C212B", font: "Segoe UI" };
+  const sujo = [para([run("abc", { bold: true, color: "FF0000", size: 40, font: "Comic Sans MS", caps: true, spc: 3, baseline: -25, highlight: "00FF00" }), run("def", { color: "1C212B", font: "Segoe UI" })])];
+  const limpo = T.limparEstiloNoIntervalo(sujo, 0, 3, digitacao);
+  const l = limpo[0].runs[0];
+  ok("limpar formatação volta ao estilo de digitação", l.bold === false && l.color === "1C212B" && l.size === 18 && l.font === "Segoe UI", JSON.stringify(l));
+  ok("limpar formatação tira marca-texto, sobrescrito, versalete e espaçamento", l.highlight === undefined && l.baseline === undefined && l.caps === undefined && l.spc === undefined);
+  ok("limpar formatação não mexe no resto do texto", limpo[0].runs.map((r) => r.text).join("") === "abcdef" && limpo[0].runs.length === 1);
+}
+
+// ---------------------------------------------------------------- marca-texto no .pptx (escrita e leitura)
+const R = await empacotar("src/powerpoint/pptxexport/rica.ts", "rica.mjs");
+const TI = await empacotar("src/powerpoint/pptximport/texto.ts", "imptexto.mjs");
+{
+  const setup = { aspect: "16:9", theme: "claro", showNumber: false, footer: "", fontFamily: "Segoe UI", fontSize: 18, bg: "" };
+  const caixa = {
+    id: "f1",
+    kind: "texto",
+    box: { x: 5, y: 5, w: 40, h: 20 },
+    text: "Oi",
+    fontFamily: "Segoe UI",
+    fontSize: 18,
+    color: "000000",
+    bold: false,
+    italic: false,
+    align: "esquerda",
+    fill: "",
+    src: "",
+    rot: 0,
+    geom: "rect",
+    paras: [para([run("Oi", { highlight: "FFFF00", baseline: 30, caps: true, spc: 2 })])],
+  };
+  const xml = new R.Escritor(setup).lamina({ md: "", layout: "conteudo", notes: "", shapes: [caixa] }).xml;
+  ok("exporta o marca-texto no trecho", xml.includes('<a:highlight><a:srgbClr val="FFFF00"/></a:highlight>'));
+  ok("marca-texto sai antes das fontes (ordem que o OOXML exige)", xml.indexOf("<a:highlight>") < xml.indexOf("<a:latin"));
+  ok("o resto da formatação avançada continua saindo", xml.includes('baseline="30000"') && xml.includes('cap="all"') && xml.includes('spc="200"'));
+
+  const ctx = { tema: { cores: { dk1: "000000", lt1: "FFFFFF", accent1: "4F46E5" }, fonteMaior: "Calibri Light", fonteMenor: "Calibri", preenchimentos: [], contornos: [], efeitos: [], fundos: [] }, mapa: { bg1: "lt1", tx1: "dk1" } };
+  const comMarca = { n: "rPr", a: {}, c: [{ n: "highlight", a: {}, c: [{ n: "srgbClr", a: { val: "00B050" }, c: [], t: "" }], t: "" }], t: "" };
+  ok("importa a cor do marca-texto", TI.lerRProps(comMarca, ctx).highlight?.hex === "00B050");
+  ok("run sem <a:highlight> não ganha marca-texto", TI.lerRProps({ n: "rPr", a: {}, c: [], t: "" }, ctx).highlight === undefined);
 }
 
 // ---------------------------------------------------------------- formato
@@ -235,6 +298,51 @@ const M = await empacotar("src/powerpoint/edicao/modelos.ts", "modelos.mjs");
   const tab = [mk([caixa({ id: "tb", tabela: { colunas: [50], linhas: [20], celulas: [[cel("1C212B")]] } })])];
   const rt = M.aplicarModelo(tab, de, noite);
   ok("tabela: texto e preenchimento das células trocam junto", rt[0].shapes[0].tabela.celulas[0][0].paras[0].runs[0].color === "F4F5F8" && rt[0].shapes[0].tabela.celulas[0][0].fill.color === "818CF8");
+}
+
+// ---------------------------------------------------------------- gráficos
+const GC = await empacotar("src/powerpoint/edicao/grafico.ts", "grafico.mjs");
+{
+  const g = GC.graficoPadrao("colunas");
+  ok("gráfico novo: 4 categorias e 2 séries", g.categorias.length === 4 && g.series.length === 2);
+  const n = GC.normalizarGrafico({ tipo: "linhas", categorias: ["A", "B"], series: [{ nome: "", valores: [1, NaN, 5] }] });
+  ok("normalizar: um valor por categoria, nome preenchido e número inválido vira 0", n.series[0].valores.length === 2 && n.series[0].nome === "Série 1" && n.series[0].valores[1] === 0);
+  const esc = GC.escalaDeValores({ tipo: "colunas", categorias: ["A", "B"], series: [{ nome: "S", valores: [3, 9] }] });
+  ok("escala de colunas começa em zero e cobre o máximo", esc.min === 0 && esc.max >= 9 && esc.ticks.length >= 3, JSON.stringify(esc));
+  const emp = GC.escalaDeValores({ tipo: "colunas", empilhado: true, categorias: ["A"], series: [{ nome: "S1", valores: [5] }, { nome: "S2", valores: [7] }] });
+  ok("escala empilhada soma as séries", emp.max >= 12, JSON.stringify(emp));
+  const neg = GC.escalaDeValores({ tipo: "linhas", categorias: ["A", "B"], series: [{ nome: "S", valores: [-4, 6] }] });
+  ok("escala de linhas aceita negativos", neg.min <= -4 && neg.max >= 6, JSON.stringify(neg));
+  ok("paleta: o acento do deck entra na primeira série", GC.paletaDeSeries(3, "123456")[0] === "123456");
+  ok("paleta: as cores próprias do gráfico mandam", GC.paletaDeSeries(2, "123456", ["ABCDEF"])[0] === "ABCDEF");
+  const v = GC.setValor(g, 1, 0, 42);
+  ok("setValor muda só o valor pedido", v.series[0].valores[1] === 42 && v.series[1].valores[1] === 5 && g.series[0].valores[1] === 6);
+  const c = GC.setCategoria(g, 2, "X");
+  ok("setCategoria muda só a categoria pedida", c.categorias[2] === "X" && c.categorias[0] === "Categoria 1");
+  const mais = GC.addCategoria(GC.addSerie(g));
+  ok("addCategoria/addSerie mantêm linhas e colunas alinhadas", mais.categorias.length === 5 && mais.series.length === 3 && mais.series.every((s) => s.valores.length === 5));
+  const menos = GC.delCategoria(GC.delSerie(g, 0), 0);
+  ok("delCategoria/delSerie tiram a linha e a coluna", menos.categorias.length === 3 && menos.series.length === 1 && menos.series[0].valores.length === 3);
+  ok("nunca fica sem série", GC.delSerie(menos, 0).series.length === 1);
+  ok("nunca fica sem categoria", GC.delCategoria({ ...g, categorias: ["A"], series: [{ nome: "S", valores: [1] }] }, 0).categorias.length === 1);
+  const box = GC.caixaDoGrafico(960, 540);
+  ok("caixa do gráfico centrada e dentro da lâmina", box.x > 0 && box.y > 0 && box.x + box.w < 100 && box.y + box.h < 100, JSON.stringify(box));
+}
+
+// ---------------------------------------------------------------- gráficos: desenho (SVG)
+const GR = await empacotar("src/powerpoint/render/grafico.ts", "grafico-render.mjs");
+{
+  const ctx = { larguraPt: 960, alturaPt: 540, media: {}, editavel: false };
+  const forma = { id: "g1", kind: "forma", box: { x: 20, y: 20, w: 40, h: 40 }, text: "", fontFamily: "A", fontSize: 16, color: "000000", bold: false, italic: false, align: "centro", fill: "", src: "", rot: 0, geom: "rect", grafico: GC.graficoPadrao("colunas") };
+  const svg = GR.svgDoGrafico(forma, ctx, "export");
+  ok("SVG do gráfico: viewBox em pt e medidas em pt no modo export", svg.startsWith("<svg") && svg.includes('viewBox="0 0 384 216"') && !svg.includes("cqw"));
+  ok("SVG do gráfico: desenha barras, eixos e título", (svg.match(/<rect/g) ?? []).length >= 8 && svg.includes("<line") && svg.includes("Título do gráfico"));
+  const tela = GR.svgDoGrafico(forma, ctx, "tela");
+  ok("SVG do gráfico: no modo tela as medidas saem em cqw", tela.includes("cqw"));
+  const pizza = GR.svgDoGrafico({ ...forma, grafico: { ...GC.graficoPadrao("pizza"), legenda: true } }, ctx, "export");
+  ok("SVG da pizza: um setor por categoria", (pizza.match(/<path/g) ?? []).length >= 4);
+  const vazio = GR.svgDoGrafico({ ...forma, grafico: undefined }, ctx, "export");
+  ok("forma sem gráfico não desenha nada", vazio === "");
 }
 
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");

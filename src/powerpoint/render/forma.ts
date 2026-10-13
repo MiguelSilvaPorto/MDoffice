@@ -3,6 +3,7 @@
 // Todas as medidas saem em `cqw` (a lâmina é um container de tamanho), então a lâmina escala inteira.
 import type { EmbeddedFont, Fill, Line, Para, Run, Shape } from "../schema";
 import { aplicarTextoDigitado, type EstiloRun } from "../edicao/texto";
+import { htmlGrafico } from "./grafico";
 import { PRESETS_CONHECIDOS, tracadoDoPreset, tracadoLivre, type Traçado } from "./presets";
 
 export interface CtxRender {
@@ -353,6 +354,9 @@ function svgDaForma(s: Shape, ctx: CtxRender, soContorno = false): string {
 // texto
 // ---------------------------------------------------------------------------
 
+/** Opacidade do marca-texto na tela: assim o texto continua legível no tema escuro (no .pptx a cor vai cheia). */
+const ALFA_MARCA_TEXTO = 0.55;
+
 function numeracao(auto: string, n: number): string {
   const letra = (k: number, maius: boolean) => {
     let t = "";
@@ -389,6 +393,7 @@ function htmlRun(r: Run, ctx: CtxRender): string {
   if (r.caps) est.push("text-transform:uppercase");
   if (r.spc) est.push(`letter-spacing:${cq(r.spc, ctx)}`);
   if (r.baseline) est.push(`font-size:${cq(r.size * 0.65, ctx)}`, "position:relative", `top:${r.baseline > 0 ? "-0.45em" : "0.25em"}`);
+  if (r.highlight) est.push(`background:${rgba(r.highlight, ALFA_MARCA_TEXTO)}`);
   return `<span style="${est.join(";")}">${esc(r.text)}</span>`;
 }
 
@@ -461,6 +466,7 @@ function moldura(s: Shape, ctx: CtxRender): string {
 /** HTML de uma forma rica. O container recebe os eventos de seleção/arraste do palco. */
 export function htmlFormaRica(s: Shape, ctx: CtxRender): string {
   if (s.tabela) return htmlTabela(s, ctx);
+  if (s.grafico) return htmlGrafico(s, ctx);
   const sel = ctx.selecionada === s.id;
   const est = [`left:${n3(s.box.x)}%`, `top:${n3(s.box.y)}%`, `width:${n3(s.box.w)}%`, `height:${n3(s.box.h)}%`];
   if (s.rot) est.push(`transform:rotate(${n3(s.rot)}deg)`);
