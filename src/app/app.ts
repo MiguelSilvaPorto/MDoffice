@@ -256,6 +256,7 @@ export class App {
       pane: $("#powerpoint-pane"),
       onDirty: () => this.onPptChange(),
       onPickImage: (destino) => void this.pickPptImage(destino),
+      onPickMedia: (tipo) => void this.pickPptMedia(tipo),
       onConfigure: () => void this.configurePpt(),
     });
     this.excelHost = new ExcelHost({

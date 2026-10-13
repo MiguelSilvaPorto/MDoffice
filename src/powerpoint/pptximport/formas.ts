@@ -324,6 +324,22 @@ async function registrarImagem(rId: string | undefined, c: CtxForma): Promise<st
   return `media:${id}`;
 }
 
+/** Lê o arquivo de áudio/vídeo de uma relação (`videoFile`/`audioFile`) e devolve o data URL. */
+async function registrarMidiaDoPacote(rId: string | undefined, c: CtxForma): Promise<string | undefined> {
+  if (!rId) return undefined;
+  const rel = c.rels.get(rId);
+  if (!rel || rel.externo) return undefined;
+  let id = c.midiaIds.get(rel.alvo);
+  if (!id) {
+    const bytes = await c.pac.bytes(rel.alvo);
+    if (!bytes) return undefined;
+    id = `m${c.midiaIds.size + 1}`;
+    c.midiaIds.set(rel.alvo, id);
+    c.midia[id] = paraDataUrl(bytes, mimeDe(rel.alvo));
+  }
+  return `media:${id}`;
+}
+
 // ---------------------------------------------------------------------------
 // geometria livre
 // ---------------------------------------------------------------------------
@@ -476,6 +492,22 @@ async function lerForma(no: No, c: CtxForma, grupos: Grupo[], fixa: boolean, vis
     if (sr) {
       const crop: [number, number, number, number] = [num(sr, "l") / 1000, num(sr, "t") / 1000, num(sr, "r") / 1000, num(sr, "b") / 1000];
       if (crop.some((v) => v !== 0)) forma.crop = crop;
+    }
+    // mídia: o nvPr aponta para o áudio/vídeo (a imagem acima é a capa)
+    const vf = caminho(nv, "nvPr/videoFile");
+    const af = caminho(nv, "nvPr/audioFile");
+    const refMidia = vf ?? af;
+    if (refMidia) {
+      const tipo = vf ? "video" : "audio";
+      const arquivo = await registrarMidiaDoPacote(refMidia.a["r:link"] ?? refMidia.a["r:embed"], c);
+      if (arquivo) {
+        const poster = forma.src;
+        forma.src = arquivo;
+        forma.midia = { tipo, poster };
+        forma.name = nome || (tipo === "video" ? "Vídeo" : "Áudio");
+      } else {
+        c.avisos.add(`${tipo === "video" ? "Vídeo" : "Áudio"} importado como imagem (o arquivo de mídia não pôde ser lido)`);
+      }
     }
   }
 

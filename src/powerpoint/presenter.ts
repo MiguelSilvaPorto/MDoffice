@@ -70,6 +70,58 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   rotulo.textContent = titulo || deck.titulo;
   if (setup.footer) rotulo.textContent += ` · ${setup.footer}`;
 
+  // ---- mídia (áudio/vídeo) ----
+  // Cada lâmina nova recria o palco; os players com `continuar` são movidos para um "bolso"
+  // (o nó continua vivo, tocando) e voltam ao palco quando a lâmina deles aparece de novo.
+  const midiasNoBolso = new Map<string, HTMLMediaElement>();
+  const soltarMidias = () => {
+    for (const el of stage.querySelectorAll<HTMLMediaElement>("[data-midia-id]")) {
+      const id = el.dataset.midiaId!;
+      if (el.dataset.continuar === "1") {
+        midiasNoBolso.set(id, el);
+        el.remove();
+      } else {
+        el.pause();
+      }
+    }
+  };
+  const tocarMidias = () => {
+    for (const el of stage.querySelectorAll<HTMLMediaElement>("[data-midia-id]")) {
+      const id = el.dataset.midiaId!;
+      const salvo = midiasNoBolso.get(id);
+      if (salvo && salvo !== el) {
+        // o player que já estava tocando volta no lugar do marcador (posição preservada)
+        el.replaceWith(salvo);
+        midiasNoBolso.delete(id);
+        continue;
+      }
+      const vol = Number(el.dataset.vol ?? "1");
+      el.volume = Number.isFinite(vol) ? Math.max(0, Math.min(1, vol)) : 1;
+      const ini = Number(el.dataset.ini ?? "0");
+      const fim = el.dataset.fim ? Number(el.dataset.fim) : null;
+      const posiciona = () => {
+        try {
+          el.currentTime = ini;
+        } catch {
+          /* vídeo sem metadados ainda */
+        }
+      };
+      if (ini > 0.05) {
+        if (el.readyState >= 1) posiciona();
+        else el.addEventListener("loadedmetadata", posiciona, { once: true });
+      }
+      if (fim !== null && Number.isFinite(fim)) {
+        el.addEventListener("timeupdate", () => {
+          if (el.currentTime >= fim) {
+            if (el.loop) posiciona();
+            else el.pause();
+          }
+        });
+      }
+      if (el.dataset.auto === "1") void el.play().catch(() => {});
+    }
+  };
+
   /** Monta o conteúdo de uma lâmina num elemento próprio (o palco só troca as camadas). */
   const conteudoDa = async (slide: Slide): Promise<HTMLElement> => {
     const secao = document.createElement("section");
@@ -153,7 +205,9 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     const slide = deck.slides[ordem[atual]];
     const conteudo = await conteudoDa(slide);
     if (seq !== pinturaSeq) return; // uma troca mais recente já assumiu a pintura
+    soltarMidias();
     mostrar(conteudo, animar ? slide.transicao : undefined);
+    tocarMidias();
     contador.textContent = `${atual + 1} / ${ordem.length}`;
     notas.textContent = slide.notes;
     notas.hidden = !mostrarNotas || !slide.notes;
@@ -198,6 +252,8 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   const fechar = () => {
     document.removeEventListener("keydown", onKey, true);
     encerrarTransicao();
+    for (const el of stage.querySelectorAll<HTMLMediaElement>("audio,video")) el.pause();
+    for (const el of midiasNoBolso.values()) el.pause();
     overlay.remove();
     document.body.classList.remove("apresentando");
   };
@@ -281,6 +337,7 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     }
     const alvo = e.target as HTMLElement;
     if (alvo.closest("a")) return;
+    if (alvo.closest("audio,video")) return; // controles da mídia: o clique é do player
     if (alvo.closest("[data-close]")) {
       fechar();
       return;

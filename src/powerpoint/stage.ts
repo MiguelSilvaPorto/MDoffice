@@ -260,6 +260,9 @@ export class Stage {
     // texto em edição: o clique é do cursor de texto
     if (ctx.editando && alvo.closest(`[data-shape="${ctx.editando}"] [data-editando]`)) return;
 
+    // controles da mídia (player de áudio/vídeo): o clique é do player, não do palco
+    if (alvo.closest("[data-player]")) return;
+
     // ferramenta de criação ativa: começa a desenhar
     if (ctx.ferramenta) {
       this.slideEl.setPointerCapture(e.pointerId);

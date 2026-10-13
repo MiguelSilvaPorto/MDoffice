@@ -31,6 +31,8 @@ import {
 import { lerSelecao, restaurarSelecao, textoDaCaixa } from "./edicao/selecaoDom";
 import { alternarMarcador, estadoDoTrecho, estiloDosParas, estiloNoIntervalo, limparEstiloNoIntervalo, mudarCaixaTexto, mudarRecuo, mudarTamanhoRelativo, parasDaSelecao, type EstiloRun, type RunPatch, type TipoCaixa } from "./edicao/texto";
 import { comTransicao, direcaoDe, duracaoDe, normalizarTransicao } from "./edicao/transicao";
+import { caixaDaMidia, comCorteDaMidia, comOpcaoMidia, comVolumeDaMidia, midiaPadrao, normalizarMidia, MIDIA_ROTULOS, tipoDeArquivo } from "./edicao/midia";
+import { capturarQuadro, cartaoParaPng } from "./render/midia";
 import {
   addCategoria,
   addSerie,
@@ -80,6 +82,8 @@ export interface PowerPointHostOptions {
   pane: HTMLElement;
   /** pede uma imagem ao usuário; `destino` diz o que fazer com ela (inserir, preencher, fundo, trocar) */
   onPickImage?: (destino?: string) => void;
+  /** pede um áudio/vídeo ao usuário; `tipo` diz se é "audio" ou "video" (ou "trocar" na troca de arquivo) */
+  onPickMedia?: (tipo?: string) => void;
   onConfigure?: () => void;
   onDirty?: () => void;
 }
@@ -132,6 +136,7 @@ export class PowerPointHost {
   private hist = new Historico<Estado>(100);
   private pendente: Estado | null = null;
   private destinoImagem = "inserir";
+  private destinoMidia: string | null = null;
   private lateral: "formatar" | "notas" = "formatar";
   /** célula em edição (quando a forma em edição é uma tabela) e células selecionadas */
   private celulaEdit: [number, number] | null = null;
@@ -1103,6 +1108,8 @@ export class PowerPointHost {
     if (principal?.tabela && this.comandoDeTabela(cmd, value)) return;
     // gráfico selecionado: tipo, dados, título e opções valem para ele
     if (principal?.grafico && this.comandoDeGrafico(cmd, value)) return;
+    // mídia selecionada: reprodução, corte e opções valem para ela
+    if (principal?.midia && this.comandoDeMidia(cmd, value)) return;
 
     // ---- comandos com valor no nome ----
     if (cmd.startsWith("grad-cor:") || cmd.startsWith("grad-pos:")) return this.gradienteParada(cmd, value);
@@ -1340,6 +1347,9 @@ export class PowerPointHost {
       case "image":
         this.destinoImagem = "inserir";
         return void this.opts.onPickImage?.("inserir");
+      case "midia":
+        this.destinoMidia = String(value ?? "video");
+        return void this.opts.onPickMedia?.(this.destinoMidia);
       case "preench-imagem":
       case "imagem-trocar":
       case "fundo-imagem":
@@ -2311,6 +2321,128 @@ export class PowerPointHost {
     window.setTimeout(fim, ms + 150);
   }
 
+  // ------------------------------------------------------------------
+  // mídia (áudio/vídeo)
+  // ------------------------------------------------------------------
+
+  /**
+   * Insere um áudio/vídeo na lâmina (o App chama isto depois de escolher o arquivo).
+   * O arquivo vira `media:ID`; a capa é o primeiro quadro do vídeo ou um cartão do motor.
+   */
+  async insertMedia(src: string, tipo?: string, nome?: string): Promise<void> {
+    const trocar = tipo === "trocar" || this.destinoMidia === "trocar";
+    this.destinoMidia = null;
+    const tipoFinal = tipo === "audio" || tipo === "video" ? tipo : (tipoDeArquivo(nome ?? "") ?? "video");
+    const ref = registrarMidia(this.setup, src);
+    const cartao = cartaoParaPng(midiaPadrao(tipoFinal, nome));
+    const poster = tipoFinal === "video" ? ((await capturarQuadro(src)) ?? cartao) : cartao;
+    if (trocar) {
+      const alvo = this.principal();
+      if (alvo?.midia) {
+        this.editar(
+          (s) =>
+            patchFormas(s, this.selecao, (f) =>
+              f.midia ? { src: ref, midia: normalizarMidia({ ...f.midia, tipo: tipoFinal, poster: poster ?? f.midia.poster, nome: nome ?? f.midia.nome }) } : {}
+            ),
+          "midia-arquivo"
+        );
+        return;
+      }
+    }
+    const midia = normalizarMidia({ ...midiaPadrao(tipoFinal, nome), poster: poster ?? undefined });
+    const forma: Shape = {
+      id: Math.random().toString(36).slice(2, 10),
+      kind: "imagem",
+      box: caixaDaMidia(tipoFinal, this.dim().w, this.dim().h),
+      text: "",
+      fontFamily: this.estilo().fonte,
+      fontSize: 16,
+      color: this.estilo().corTexto,
+      bold: false,
+      italic: false,
+      align: "centro",
+      fill: "",
+      src: ref,
+      rot: 0,
+      geom: "rect",
+      name: `${MIDIA_ROTULOS[tipoFinal]}${nome ? `: ${nome}` : ""}`,
+      midia,
+    };
+    this.registrar();
+    this.substituirSlide({ ...this.atual(), shapes: [...this.atual().shapes, forma] });
+    this.selecao = [forma.id];
+    this.markDirty();
+    this.pintar();
+  }
+
+  /** A mídia selecionada (a forma principal), se houver. */
+  private midiaAtual(): Shape | undefined {
+    const f = this.principal();
+    return f?.midia ? f : undefined;
+  }
+
+  /** Muda as opções da mídia selecionada (uma entrada no desfazer por chamada). */
+  private editarMidia(fn: (m: NonNullable<Shape["midia"]>) => NonNullable<Shape["midia"]>, chave = ""): void {
+    const f = this.midiaAtual();
+    if (!f?.midia) return;
+    this.editar(
+      (sl) => ({
+        ...sl,
+        shapes: sl.shapes.map((s) => (s.id !== f.id || !s.midia ? s : { ...s, midia: normalizarMidia(fn(s.midia)) })),
+      }),
+      chave
+    );
+  }
+
+  /** Comandos da mídia selecionada. Devolve true quando tratou. */
+  private comandoDeMidia(cmd: string, value?: string): boolean {
+    const f = this.midiaAtual();
+    if (!f?.midia) return false;
+    switch (cmd) {
+      case "midia-auto":
+        this.editarMidia((m) => comOpcaoMidia(m, "auto", value === "1"));
+        return true;
+      case "midia-loop":
+        this.editarMidia((m) => comOpcaoMidia(m, "loop", value === "1"));
+        return true;
+      case "midia-controles":
+        this.editarMidia((m) => comOpcaoMidia(m, "controles", value === "1"));
+        return true;
+      case "midia-continuar":
+        this.editarMidia((m) => comOpcaoMidia(m, "continuar", value === "1"));
+        return true;
+      case "midia-volume": {
+        const v = Number(String(value ?? "").replace(",", "."));
+        this.editarMidia((m) => comVolumeDaMidia(m, Number.isFinite(v) ? v / 100 : 1), "midia-vol");
+        return true;
+      }
+      case "midia-trocar":
+        this.destinoMidia = "trocar";
+        this.opts.onPickMedia?.("trocar");
+        return true;
+      case "midia-reproduzir": {
+        // prévia no palco: toca/pausa o player da forma
+        const el = this.slideEl.querySelector<HTMLMediaElement>(`[data-shape="${f.id}"] [data-player]`);
+        if (el) {
+          if (el.paused) void el.play().catch(() => {});
+          else el.pause();
+        }
+        return true;
+      }
+    }
+    if (cmd === "midia-corte:inicio" || cmd === "midia-corte:fim") {
+      const v = Number(String(value ?? "").replace(",", "."));
+      const noInicio = cmd.endsWith("inicio");
+      this.editarMidia((m) => {
+        const inicio = noInicio ? (Number.isFinite(v) ? v : 0) : (m.corte?.inicio ?? 0);
+        const fim = noInicio ? m.corte?.fim : Number.isFinite(v) && v > 0 ? v : undefined;
+        return comCorteDaMidia(m, inicio, fim);
+      }, "midia-corte");
+      return true;
+    }
+    return false;
+  }
+
   /** Quando a lâmina não tem formas, clicar no markdown edita o texto. */
   private editarMarkdown(): void {
     const md = this.slideEl.querySelector<HTMLElement>(".pp-md");
@@ -2524,7 +2656,7 @@ export class PowerPointHost {
   /** Modo apresentação (F5) com o deck em edição. */
   present(): void {
     if (this.editando) this.sairEdicao();
-    const ctx = this.ctxRender(false);
+    const ctx: CtxRender = { ...this.ctxRender(false), apresentando: true };
     openDeckView(this.deck, this.setup, "Apresentação", (slide) => slide.shapes.map((f) => htmlFormaRica(f, ctx)).join(""));
   }
 

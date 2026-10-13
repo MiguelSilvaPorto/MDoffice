@@ -2,6 +2,7 @@
 // paradas, imagem), contorno, sombra, cantos, tamanho e posição em cm, rotação, texto, recorte de imagem e fundo da lâmina.
 import { AJUSTES_POR_GEOM, raioDeCanto } from "../edicao/formato";
 import { GRAFICO_TIPOS, paletaDeSeries } from "../edicao/grafico";
+import { MIDIA_ROTULOS } from "../edicao/midia";
 import { ORDEM_LAYOUTS, ROTULOS_LAYOUT } from "../edicao/layouts";
 import type { Fill, Line, Shadow, Shape } from "../schema";
 import { abrirCores } from "./cores";
@@ -107,7 +108,7 @@ export class Painel {
   private assinar(est: EstadoUI): string {
     const f = est.forma;
     return JSON.stringify([
-      est.formas.map((s) => [s.id, s.box, s.rot, s.fillX, s.ln, s.shadow, s.opacity, s.adj, s.anchor, s.ins, s.wrap, s.vert, s.crop, s.flipH, s.flipV, s.bloqueada, s.autofit, s.grafico]),
+      est.formas.map((s) => [s.id, s.box, s.rot, s.fillX, s.ln, s.shadow, s.opacity, s.adj, s.anchor, s.ins, s.wrap, s.vert, s.crop, s.flipH, s.flipV, s.bloqueada, s.autofit, s.grafico, s.midia, s.src]),
       f ? f.geom : "",
       // o espaçamento de caracteres do painel segue o trecho escolhido no texto
       est.trecho && est.trecho.spc !== "misto" ? est.trecho.spc : null,
@@ -126,6 +127,7 @@ export class Painel {
     const partes: string[] = [];
     partes.push(`<div class="pf-titulo">${multiplas ? `${est.formas.length} formas selecionadas` : f.name || (f.kind === "imagem" ? "Imagem" : "Forma")}</div>`);
     if (f.grafico) partes.push(secao("grafico", "Gráfico", this.htmlGrafico(f)));
+    if (f.midia) partes.push(secao("midia", "Mídia", this.htmlMidia(f)));
     if (f.kind === "imagem") partes.push(secao("imagem", "Imagem", this.htmlImagem(f)));
     if (f.kind !== "imagem" && !(f.geom === "line" || f.geom?.endsWith("Connector3") || f.geom === "straightConnector1")) partes.push(secao("preench", "Preenchimento", this.htmlPreenchimento(f)));
     partes.push(secao("linha", "Linha", this.htmlLinha(f)));
@@ -293,6 +295,26 @@ export class Painel {
     );
     partes.push(`<p class="pf-dica">O gráfico é desenhado na lâmina e vai para o .pptx como imagem; para editar os dados depois, continue no mdCreator.</p>`);
     return partes.join("");
+  }
+
+  /** Mídia (áudio/vídeo): reprodução na apresentação, volume e corte do trecho. */
+  private htmlMidia(f: Shape): string {
+    const m = f.midia!;
+    const vol = Math.round((m.volume ?? 1) * 100);
+    const corte = m.corte ?? { inicio: 0 };
+    return [
+      `<div class="pf-linha"><span>Tipo</span><span class="pf-campo"><b>${MIDIA_ROTULOS[m.tipo]}</b></span></div>`,
+      m.nome ? `<div class="pf-linha"><span>Arquivo</span><span class="pf-campo"><small>${escAttr(m.nome)}</small></span></div>` : "",
+      linhaCheck("Reproduzir automaticamente", "midia-auto", !!m.auto),
+      linhaCheck("Repetir", "midia-loop", !!m.loop),
+      linhaCheck("Mostrar controles na apresentação", "midia-controles", !!m.controles),
+      linhaCheck("Continuar em outras lâminas", "midia-continuar", !!m.continuar),
+      linhaNum("Volume", "midia-volume", vol, 5, 0, 100, "%"),
+      linhaNum("Início do trecho", "midia-corte:inicio", corte.inicio, 0.5, 0, null, "s"),
+      linhaNum("Fim do trecho", "midia-corte:fim", corte.fim ?? "", 0.5, 0, null, "s"),
+      `<div class="pf-botoes"><button type="button" class="btn small" data-click="midia-reproduzir">▶ Reproduzir aqui</button><button type="button" class="btn small" data-click="midia-trocar">Trocar arquivo…</button></div>`,
+      `<p class="pf-dica">A mídia toca no modo apresentação (F5). A capa é o primeiro quadro do vídeo, e o arquivo vai junto no .pptx exportado.</p>`,
+    ].join("");
   }
 
   private htmlLamina(est: EstadoUI): string {

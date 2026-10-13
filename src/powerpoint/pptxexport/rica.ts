@@ -4,6 +4,7 @@
 // O PptxGenJS continua montando o pacote (mestre, layout, tema, notas); este módulo só troca o conteúdo das lâminas.
 import { aspectSize, type CustPath, type DeckSetup, type Fill, type Line, type Para, type Run, type Shape, type Slide } from "../schema";
 import { envolventeDe } from "../edicao/geometria";
+import { extDeMime } from "../edicao/midia";
 import { donaDe } from "../edicao/tabela";
 import { coresTema } from "./theme";
 
@@ -14,18 +15,23 @@ const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 const emu = (n: number) => Math.round(n);
 const hex = (c: string) => (c || "000000").replace(/^#/, "").toUpperCase().padEnd(6, "0").slice(0, 6);
 
-/** Imagens que a lâmina usa: cada uma ganha um arquivo em ppt/media e uma relação na lâmina. */
+/** Tipo de relação que um arquivo de ppt/media pode ter numa lâmina. */
+export type RelTipo = "image" | "video" | "audio" | "media";
+
+/** Arquivos que a lâmina usa: cada um ganha um arquivo em ppt/media e uma relação na lâmina. */
 export interface Midia {
   /** nome do arquivo dentro de ppt/media */
   arquivo: string;
   bytes: Uint8Array;
   ext: string;
+  /** imagem, vídeo, áudio (para o tipo da relação) */
+  tipo: RelTipo;
 }
 
 export interface SaidaLamina {
   xml: string;
   /** relações (id -> arquivo em ppt/media) que o XML usa */
-  imagens: { id: string; arquivo: string }[];
+  imagens: { id: string; arquivo: string; tipo: RelTipo }[];
 }
 
 /** Contexto de escrita de todo o deck: mídia deduplicada entre as lâminas. */
@@ -49,11 +55,25 @@ export class Escritor {
     const r = data ? /^data:([^;,]+);base64,(.*)$/s.exec(data) : null;
     if (!r) return undefined;
     const mime = r[1];
-    const ext = mime === "image/jpeg" ? "jpeg" : mime === "image/svg+xml" ? "svg" : mime === "image/gif" ? "gif" : mime === "image/webp" ? "webp" : mime === "image/bmp" ? "bmp" : "png";
+    const tipo: RelTipo = mime.startsWith("video/") ? "video" : mime.startsWith("audio/") ? "audio" : "image";
+    const ext =
+      tipo === "image"
+        ? mime === "image/jpeg"
+          ? "jpeg"
+          : mime === "image/svg+xml"
+            ? "svg"
+            : mime === "image/gif"
+              ? "gif"
+              : mime === "image/webp"
+                ? "webp"
+                : mime === "image/bmp"
+                  ? "bmp"
+                  : "png"
+        : extDeMime(mime);
     const bin = atob(r[2]);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    m = { arquivo: `mdc${this.midias.length + 1}.${ext}`, bytes, ext };
+    m = { arquivo: `mdc${this.midias.length + 1}.${ext}`, bytes, ext, tipo };
     this.midias.push(m);
     this.porFonte.set(src, m);
     return m;
@@ -61,18 +81,26 @@ export class Escritor {
 
   /** XML completo de uma lâmina. */
   lamina(s: Slide): SaidaLamina {
-    const imagens: { id: string; arquivo: string }[] = [];
-    const idImagem = (src: string): string | undefined => {
+    const imagens: { id: string; arquivo: string; tipo: RelTipo }[] = [];
+    const idDe = (src: string, tipo: RelTipo): string | undefined => {
       const m = this.arquivoDe(src);
       if (!m) return undefined;
-      let ex = imagens.find((i) => i.arquivo === m.arquivo);
+      let ex = imagens.find((i) => i.arquivo === m.arquivo && i.tipo === tipo);
       if (!ex) {
-        ex = { id: `rIdM${imagens.length + 1}`, arquivo: m.arquivo };
+        ex = { id: `rIdM${imagens.length + 1}`, arquivo: m.arquivo, tipo };
         imagens.push(ex);
       }
       return ex.id;
     };
-    const ctx: Ctx = { larg: this.largEmu, alt: this.altEmu, idImagem, setup: this.setup, seq: 1 };
+    const ctx: Ctx = {
+      larg: this.largEmu,
+      alt: this.altEmu,
+      idImagem: (src) => idDe(src, "image"),
+      idMidia: (src, tipo) => idDe(src, tipo === "video" ? "video" : "audio"),
+      idMedia: (src) => idDe(src, "media"),
+      setup: this.setup,
+      seq: 1,
+    };
     const bg = fillXml(s.bg ?? { kind: "solid", color: coresTema(this.setup).bg }, ctx);
     const formas = formasEmGrupos(s.shapes, ctx);
     const xml =
@@ -91,6 +119,10 @@ interface Ctx {
   larg: number;
   alt: number;
   idImagem: (src: string) => string | undefined;
+  /** relação do arquivo de mídia (vídeo/áudio) para o `videoFile`/`audioFile` */
+  idMidia: (src: string, tipo: "video" | "audio") => string | undefined;
+  /** relação "media" (MS 2007) do mesmo arquivo, para o `p14:media` embutir o arquivo */
+  idMedia: (src: string) => string | undefined;
   setup: DeckSetup;
   seq: number;
 }
@@ -269,6 +301,28 @@ function formaXml(s: Shape, ctx: Ctx): string {
     `<a:xfrm${s.rot ? ` rot="${Math.round(s.rot * 60000)}"` : ""}${s.flipH ? ` flipH="1"` : ""}${s.flipV ? ` flipV="1"` : ""}>` +
     `<a:off x="${x}" y="${y}"/><a:ext cx="${w}" cy="${h}"/></a:xfrm>`;
 
+  if (s.midia && s.src) {
+    const idMidia = ctx.idMidia(s.src, s.midia.tipo);
+    const idMedia = ctx.idMedia(s.src);
+    const poster = s.midia.poster ? ctx.idImagem(s.midia.poster) : undefined;
+    if (idMidia && idMedia && poster) {
+      // <p:pic> de mídia: o arquivo vai como relação de vídeo/áudio (r:link) e como "media" (r:embed),
+      // e a capa (blip) é o que o PowerPoint mostra na lâmina
+      const tag = s.midia.tipo === "video" ? "a:videoFile" : "a:audioFile";
+      const extLst =
+        `<p:extLst><p:ext uri="{DAA4B4D4-6D71-4841-9C94-3DE7FCFB9230}">` +
+        `<p14:media xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" r:embed="${idMedia}"/>` +
+        `</p:ext></p:extLst>`;
+      return (
+        `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="${nome}"><a:hlinkClick r:id="" action="ppaction://media"/></p:cNvPr>` +
+        `<p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>` +
+        `<p:nvPr><${tag} r:link="${idMidia}"/>${extLst}</p:nvPr></p:nvPicPr>` +
+        `<p:blipFill><a:blip r:embed="${poster}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>` +
+        `<p:spPr>${xfrm}${geomXml(s)}<a:noFill/><a:ln><a:noFill/></a:ln></p:spPr></p:pic>`
+      );
+    }
+  }
+
   if (s.kind === "imagem" && s.src) {
     const rid = ctx.idImagem(s.src);
     if (rid) {
@@ -341,7 +395,7 @@ function ladoXml(tag: string, ln: Line | null | undefined): string {
 
 function tabelaXml(s: Shape, id: number, nome: string, x: number, y: number, w: number, h: number): string {
   const t = s.tabela!;
-  const ctx0 = { larg: 0, alt: 0, idImagem: () => undefined, setup: undefined as never, seq: 0 } as Ctx;
+  const ctx0 = { larg: 0, alt: 0, idImagem: () => undefined, idMidia: () => undefined, idMedia: () => undefined, setup: undefined as never, seq: 0 } as Ctx;
   const grade = t.colunas.map((c) => `<a:gridCol w="${Math.round(c * EMU_PT)}"/>`).join("");
   const linhas = t.celulas
     .map((linha, r) => {

@@ -17,8 +17,8 @@
 
 | Área | Cobertos | Área | Cobertos |
 |---|---:|---|---:|
-| Application shell | 10/11 | Media | 0/7 |
-| Files | 7/18 | Transitions | 0/5 |
+| Application shell | 10/11 | Media | 4/7 |
+| Files | 7/18 | Transitions | 3/5 |
 | Slides | 5/9 | Animations | 0/8 |
 | Views | 6/10 | Slide show | 3/10 |
 | Masters & themes | 6/14 | Review | 1/4 |
@@ -26,13 +26,13 @@
 | Format | 7/11 | Undo & clipboard | 2/3 |
 | Arrange | 7/9 | Automation | 1/2 |
 | Text | 14/25 | Platforms | 1/3 |
-| Tables | 7/8 | **Total** | **92/191** |
+| Tables | 7/8 | **Total** | **99/191** |
 | Charts | 4/5 | | |
 | SmartArt | 0/2 | | |
 | Pictures | 6/11 | | |
 
 As maiores lacunas são as áreas que o DeckCraft marca como o coração da troca do PowerPoint:
-**SmartArt, mídia, transições, animações, apresentação (presenter view/ink) e masters**.
+**SmartArt, animações, gravação (áudio/tela), apresentação (presenter view/ink) e masters**.
 Do outro lado, o mdCreator já tem boa parte do **editor** (formas, texto, tabelas, formatos,
 organização, desfazer) e um **import/export .pptx de alta fidelidade** — e coisas que o DeckCraft
 não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico).
@@ -227,25 +227,27 @@ não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico)
 - [x] **Paste image from clipboard** — P0 · tem: Ctrl+V cola imagem
 - [ ] **Insert screenshot** — P2 · falta
 
-## Media (0/7)
+## Media (4/7)
 
-- [ ] **Insert audio (any common format)** — P0 · falta
-- [ ] **Insert video** — P1 · falta
-- [ ] **Audio/video playback in the show** — P0 · falta
-- [ ] **Trim, fade in/out, volume, loop, play across slides** — P2 · falta
+- [x] **Insert audio (any common format)** — P0 · tem: **Inserir > Áudio** (mp3, wav, m4a, aac, ogg, flac), com o arquivo guardado no deck
+- [x] **Insert video** — P1 · tem: **Inserir > Vídeo** (mp4, webm, ogv, mov, m4v); a capa é o primeiro quadro do vídeo
+- [x] **Audio/video playback in the show** — P0 · tem: reprodução no F5 com controles opcionais, volume e corte (início/fim)
+- [x] **Trim, fade in/out, volume, loop, play across slides** — P2 · parcial: corte, volume, repetir e **continuar em outras lâminas**; sem fade de entrada/saída
 - [ ] **Record audio / screen recording** — P2 · falta
 - [ ] **Icons, 3-D models, stock content** — P2 · falta
 - [ ] **Embedded objects (OLE): insert; foreign objects kept on round trip** — P2 · falta (o importador avisa e mantém o que não modela)
 
-## Transitions (0/5)
+> O áudio/vídeo vira parte do `.pptx` exportado (relação de vídeo/áudio + `p14:media` e a capa no `blip`); a importação lê os arquivos de mídia de volta para o modelo.
 
-- [ ] **Transition gallery (fade, push, wipe, split, cover, uncover, zoom, morph…)** — P0 · falta
-- [ ] **Effect options and duration** — P0 · falta
-- [ ] **Advance on click / after time, apply to all** — P0 · falta
+## Transitions (3/5)
+
+- [x] **Transition gallery (fade, push, wipe, split, cover, uncover, zoom, morph…)** — P0 · parcial: 7 tipos (**Sem, Fade, Push, Wipe, Split, Cover e Uncover**), com prévia na fita; sem Zoom nem Morph
+- [x] **Effect options and duration** — P0 · tem: direção (quando o tipo aceita) e duração (0,5 s / 1 s / 2 s)
+- [x] **Advance on click / after time, apply to all** — P0 · parcial: avanço no clique e **Aplicar a todas**; sem avanço automático por tempo (o XML cru do .pptx é preservado)
 - [ ] **Transition sounds** — P2 · falta
 - [ ] **Morph** — P1 · falta
 
-> Transições de um .pptx importado não são reproduzidas (avisadas ao abrir).
+> A transição toca no F5 (e na prévia) e faz o round-trip no `.pptx` (`p:transition` com `spd`/`p14:dur`/`dir`); efeitos desconhecidos ficam guardados crus.
 
 ## Animations (0/8)
 

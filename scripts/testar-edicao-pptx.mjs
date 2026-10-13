@@ -424,5 +424,58 @@ const EXP = await empacotar("src/powerpoint/pptxexport/slides.ts", "slides-exp.m
   ok("transição: o XML cru volta como veio", EXP.inserirTransicao(lamina(""), undefined, bruta) === lamina(bruta));
 }
 
+// ---------------------------------------------------------------- mídia (áudio/vídeo)
+const MD = await empacotar("src/powerpoint/edicao/midia.ts", "midia.mjs");
+{
+  ok("tipo pelo arquivo: vídeo, áudio e desconhecido", MD.tipoDeArquivo("filme.MP4") === "video" && MD.tipoDeArquivo("som.mp3") === "audio" && MD.tipoDeArquivo("nota.txt") === null);
+  ok("extensão pelo MIME", MD.extDeMime("video/mp4") === "mp4" && MD.extDeMime("audio/mpeg") === "mp3" && MD.extDeMime("video/webm") === "webm");
+  const v = MD.midiaPadrao("video", "aula.mp4");
+  const a = MD.midiaPadrao("audio", "trilha.mp3");
+  ok("vídeo começa com auto e controles; áudio espera o clique", v.auto === true && v.controles === true && a.auto === false && a.tipo === "audio");
+  const n = MD.normalizarMidia({ tipo: "video", volume: 3, corte: { inicio: -2, fim: -1 } });
+  ok("normalizar: volume 0-1 e corte coerente", n.volume === 1 && n.corte.inicio === 0 && n.corte.fim >= 0.1, JSON.stringify(n.corte));
+  const c = MD.comCorteDaMidia(v, 1.5, 4);
+  ok("corte: início e fim guardados", c.corte.inicio === 1.5 && c.corte.fim === 4);
+  ok("trecho: fim nulo quando não há corte", MD.trechoDaMidia(v).fim === null && MD.trechoDaMidia(c).inicio === 1.5);
+  ok("volume pela porcentagem do painel", MD.comVolumeDaMidia(v, 0.35).volume === 0.35 && MD.comVolumeDaMidia(v, 5).volume === 1);
+  ok("opções ligam e desligam", MD.comOpcaoMidia(v, "loop", true).loop === true && MD.comOpcaoMidia(v, "auto", false).auto === false);
+  const bx = MD.caixaDaMidia("video", 960, 540);
+  ok("caixa do vídeo centrada e dentro da lâmina", bx.x > 0 && bx.y > 0 && bx.x + bx.w < 100 && bx.y + bx.h < 100, JSON.stringify(bx));
+}
+
+// ---------------------------------------------------------------- mídia: XML do .pptx
+const ESCR = await empacotar("src/powerpoint/pptxexport/rica.ts", "rica.mjs");
+{
+  const setup = {
+    aspect: "16:9",
+    theme: "claro",
+    showNumber: false,
+    footer: "",
+    fontFamily: "Segoe UI",
+    fontSize: 18,
+    bg: "",
+    media: {
+      v1: "data:video/mp4;base64,QUJD",
+      a1: "data:audio/mpeg;base64,QUJD",
+      p1: "data:image/png;base64,QUJD",
+    },
+  };
+  const formaMidia = (tipo, src, poster) => ({
+    id: "mv", kind: "imagem", box: { x: 10, y: 10, w: 50, h: 40 }, text: "", fontFamily: "Segoe UI", fontSize: 16,
+    color: "000000", bold: false, italic: false, align: "centro", fill: "", src, rot: 0, geom: "rect",
+    midia: { tipo, auto: true, poster },
+  });
+  const escritor = new ESCR.Escritor(setup);
+  const video = escritor.lamina({ md: "", layout: "conteudo", notes: "", shapes: [formaMidia("video", "media:v1", "media:p1")] });
+  ok("vídeo: p:pic com videoFile, p14:media e ação de mídia", video.xml.includes("<a:videoFile") && video.xml.includes("p14:media") && video.xml.includes("ppaction://media"));
+  ok("vídeo: relações de vídeo, media e imagem para a capa", video.imagens.some((i) => i.tipo === "video") && video.imagens.some((i) => i.tipo === "media") && video.imagens.some((i) => i.tipo === "image"));
+  ok("vídeo: arquivo .mp4 em ppt/media", escritor.midias.some((m) => m.ext === "mp4" && m.tipo === "video"));
+  const escritor2 = new ESCR.Escritor(setup);
+  const audio = escritor2.lamina({ md: "", layout: "conteudo", notes: "", shapes: [formaMidia("audio", "media:a1", "media:p1")] });
+  ok("áudio: p:pic com audioFile", audio.xml.includes("<a:audioFile") && audio.imagens.some((i) => i.tipo === "audio"));
+  const semCapa = new ESCR.Escritor(setup).lamina({ md: "", layout: "conteudo", notes: "", shapes: [formaMidia("video", "media:v1", undefined)] });
+  ok("mídia sem capa não quebra a lâmina", typeof semCapa.xml === "string" && semCapa.xml.includes("<p:sp"));
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);

@@ -260,6 +260,29 @@ export const powerpointDocsMethods = {
     }
   },
 
+  /** Escolhe um áudio/vídeo do computador e o insere na lâmina atual (ou troca o da mídia selecionada). */
+  async pickPptMedia(this: App, tipo?: string): Promise<void> {
+    try {
+      const picked = await files.pickMediaFile();
+      if (!picked) return;
+      const nome = picked.split(/[\\/]/).pop() ?? "";
+      let src = await files.readDataUrl(picked);
+      // mantém o arquivo dentro da pasta assets/ do documento (o mesmo das imagens)
+      if (this.tab.path) {
+        try {
+          const rel = await files.copyAsset(this.tab.path, picked);
+          if (rel) src = await files.readDataUrl(`${docDirOf(this.tab.path)}/${rel}`);
+        } catch {
+          /* sem pasta: usa o data URL mesmo assim */
+        }
+      }
+      if (src.length > 80 * 1024 * 1024) toast("O arquivo de mídia é grande — o .pptx exportado vai ficar pesado.", "err", 5000);
+      await this.pptHost.insertMedia(src, tipo, nome);
+    } catch (e) {
+      toast("Não consegui abrir a mídia: " + e, "err", 5000);
+    }
+  },
+
   /** Abre o diálogo "Configurar apresentação" e aplica o resultado. */
   async configurePpt(this: App): Promise<void> {
     const novo = await this.askPptSetup(this.pptHost.setup_());

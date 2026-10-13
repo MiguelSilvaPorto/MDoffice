@@ -238,6 +238,13 @@ export class Fita {
          ${grande("image", ic("i-image"), "Imagem", "Inserir imagem do computador")}`
       ),
       grupo(
+        "Mídia",
+        `<div class="ppr-col">
+           ${pequeno("midia:video", ic("i-video"), "Vídeo", "Inserir um vídeo do computador")}
+           ${pequeno("midia:audio", ic("i-audio"), "Áudio", "Inserir um áudio do computador")}
+         </div>`
+      ),
+      grupo(
         "Linhas",
         `<div class="ppr-col">
            ${pequeno("forma-rapida:0", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[0], 18)}</span>`, "Linha", "Desenhar uma linha")}
@@ -433,6 +440,7 @@ export class Fita {
     else if (cmd.startsWith("layout:")) this.hooks.run("layout", cmd.slice(7));
     else if (cmd.startsWith("forma-rapida:")) this.hooks.run("forma-inserir", cmd.slice(13));
     else if (cmd.startsWith("ferramenta:")) this.hooks.run("ferramenta", cmd.slice(11));
+    else if (cmd.startsWith("midia:")) this.hooks.run("midia", cmd.slice(6));
     else if (cmd.startsWith("estilo:")) this.hooks.run("estilo", cmd.slice(7));
     else if (cmd.startsWith("transicao-direcao:")) this.hooks.run("transicao-direcao", cmd.slice(18));
     else if (cmd.startsWith("transicao-duracao:")) this.hooks.run("transicao-duracao", cmd.slice(18));

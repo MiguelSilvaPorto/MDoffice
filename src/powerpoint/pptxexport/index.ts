@@ -5,6 +5,7 @@
 import type { Deck, DeckSetup, Slide } from "../schema";
 import { ehRica } from "../render/forma";
 import { prepararGraficos } from "../render/grafico";
+import { prepararMidia } from "../render/midia";
 import { comNomeDaCld, comOcultaNoSld, comOcultasNoSldId, escreverLamina, inserirTransicao, marcarLamina } from "./slides";
 import { Escritor } from "./rica";
 import { escreverNotas } from "./notes";
@@ -15,6 +16,8 @@ export async function deckToPptx(deck: Deck, setup: DeckSetup, titulo = "Apresen
   const { default: PptxGenJS } = await import("pptxgenjs");
   // os gráficos do app viram imagem no arquivo (o motor não escreve `c:chart` nativo): o desenho não se perde
   deck = await prepararGraficos(deck, setup);
+  // a mídia precisa de uma capa rasterizada (o `blip` do PowerPoint é uma imagem)
+  deck = await prepararMidia(deck, setup);
 
   // nova instância a cada exportação: o PptxGenJS reutiliza lâminas se reaproveitado
   const pptx = new PptxGenJS() as unknown as {
@@ -66,7 +69,35 @@ export { propsDaForma, caixaEmPol } from "./shapes";
 export { markdownEmBlocos } from "./slides";
 export { xmlTransicao, inserirTransicao, velocidadeDe } from "./slides";
 
-const MIME_EXT: Record<string, string> = { png: "image/png", jpeg: "image/jpeg", jpg: "image/jpeg", gif: "image/gif", svg: "image/svg+xml", webp: "image/webp", bmp: "image/bmp" };
+const MIME_EXT: Record<string, string> = {
+  png: "image/png",
+  jpeg: "image/jpeg",
+  jpg: "image/jpeg",
+  gif: "image/gif",
+  svg: "image/svg+xml",
+  webp: "image/webp",
+  bmp: "image/bmp",
+  mp4: "video/mp4",
+  m4v: "video/x-m4v",
+  webm: "video/webm",
+  ogv: "video/ogg",
+  mov: "video/quicktime",
+  mkv: "video/x-matroska",
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+  m4a: "audio/mp4",
+  aac: "audio/aac",
+  ogg: "audio/ogg",
+  flac: "audio/flac",
+};
+
+/** Tipo da relação de cada arquivo de mídia no .pptx (imagem, vídeo, áudio ou "media" do Office). */
+const REL_TIPO: Record<string, string> = {
+  image: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
+  video: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/video",
+  audio: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/audio",
+  media: "http://schemas.microsoft.com/office/2007/relationships/media",
+};
 
 /** Troca o conteúdo das lâminas "ricas" do pacote gerado pelo PptxGenJS pelo XML fiel do Escritor. */
 async function trocarLaminas(bytes: Uint8Array, slides: Slide[], ricas: number[], setup: DeckSetup): Promise<Uint8Array> {
@@ -79,7 +110,7 @@ async function trocarLaminas(bytes: Uint8Array, slides: Slide[], ricas: number[]
     const relPath = `ppt/slides/_rels/slide${i + 1}.xml.rels`;
     let rels = (await zip.file(relPath)?.async("string")) ?? `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`;
     const novas = saida.imagens
-      .map((im) => `<Relationship Id="${im.id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${im.arquivo}"/>`)
+      .map((im) => `<Relationship Id="${im.id}" Type="${REL_TIPO[im.tipo] ?? REL_TIPO.image}" Target="../media/${im.arquivo}"/>`)
       .join("");
     rels = rels.replace("</Relationships>", () => novas + "</Relationships>");
     zip.file(relPath, rels);

@@ -4,6 +4,7 @@
 import type { EmbeddedFont, Fill, Line, Para, Run, Shape } from "../schema";
 import { aplicarTextoDigitado, type EstiloRun } from "../edicao/texto";
 import { htmlGrafico } from "./grafico";
+import { htmlMidia } from "./midia";
 import { PRESETS_CONHECIDOS, tracadoDoPreset, tracadoLivre, type Traçado } from "./presets";
 
 export interface CtxRender {
@@ -19,6 +20,8 @@ export interface CtxRender {
   editando?: string | null;
   /** quando a forma em edição é uma tabela: a célula (linha, coluna) */
   celulaEdit?: [number, number] | null;
+  /** desenho do modo apresentação (F5): mídia toca com auto/loop/controles */
+  apresentando?: boolean;
 }
 
 /** Forma que veio de um .pptx (tem geometria própria) — desenhada por este módulo. */
@@ -467,6 +470,7 @@ function moldura(s: Shape, ctx: CtxRender): string {
 export function htmlFormaRica(s: Shape, ctx: CtxRender): string {
   if (s.tabela) return htmlTabela(s, ctx);
   if (s.grafico) return htmlGrafico(s, ctx);
+  if (s.midia) return htmlMidia(s, ctx);
   const sel = ctx.selecionada === s.id;
   const est = [`left:${n3(s.box.x)}%`, `top:${n3(s.box.y)}%`, `width:${n3(s.box.w)}%`, `height:${n3(s.box.h)}%`];
   if (s.rot) est.push(`transform:rotate(${n3(s.rot)}deg)`);

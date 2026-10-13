@@ -7,6 +7,10 @@ export const IMG_FILTER = {
   name: "Imagens",
   extensions: ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "avif"],
 };
+export const MEDIA_FILTER = {
+  name: "Áudio e vídeo",
+  extensions: ["mp4", "webm", "ogv", "mov", "m4v", "mp3", "wav", "m4a", "aac", "ogg", "oga", "flac"],
+};
 
 export const DOCX_FILTER = { name: "Documento do Word", extensions: ["docx"] };
 export const PPTX_FILTER = { name: "Apresentação do PowerPoint", extensions: ["pptx"] };
@@ -70,6 +74,12 @@ export async function pickSaveBundle(defaultPath: string): Promise<string | null
 
 export async function pickImageFile(): Promise<string | null> {
   const p = await dlgOpen({ multiple: false, directory: false, filters: [IMG_FILTER] });
+  return typeof p === "string" ? p : null;
+}
+
+/** Escolhe um áudio ou vídeo do computador (filtro único, com os formatos que o app toca). */
+export async function pickMediaFile(): Promise<string | null> {
+  const p = await dlgOpen({ multiple: false, directory: false, filters: [MEDIA_FILTER] });
   return typeof p === "string" ? p : null;
 }
 

@@ -191,6 +191,8 @@ export interface Shape {
   dica?: string;
   /** dados da tabela (quando a forma é uma tabela) */
   tabela?: Tabela;
+  /** áudio/vídeo (quando a forma é uma mídia; `src` guarda o arquivo e `midia.poster` a capa) */
+  midia?: Midia;
   /** dados do gráfico (quando a forma é um gráfico; o desenho é feito em SVG) */
   grafico?: Grafico;
 }
@@ -224,6 +226,33 @@ export interface Tabela {
   primeiraColuna?: boolean;
   /** último estilo pronto aplicado */
   preset?: string;
+}
+
+/** Tipo de mídia que uma forma pode tocar. */
+export type MidiaTipo = "audio" | "video";
+
+/**
+ * Áudio ou vídeo numa forma. O arquivo fica em `Shape.src` (media:ID do deck ou data URL);
+ * `poster` é a capa (data URL de imagem) usada na lâmina, nas miniaturas e no .pptx.
+ */
+export interface Midia {
+  tipo: MidiaTipo;
+  /** começa sozinho quando a lâmina entra na apresentação */
+  auto?: boolean;
+  /** repete quando chega ao fim (respeitando o corte) */
+  loop?: boolean;
+  /** mostra os controles durante a apresentação */
+  controles?: boolean;
+  /** continua tocando ao sair da lâmina (padrão: para) */
+  continuar?: boolean;
+  /** volume 0-1 (padrão 1) */
+  volume?: number;
+  /** corte: trecho que toca, em segundos (fim vazio = até o fim do arquivo) */
+  corte?: { inicio: number; fim?: number };
+  /** capa (data URL de imagem); vazio = cartão gerado pelo motor */
+  poster?: string;
+  /** nome original do arquivo (para diagnóstico e para o cartão da capa) */
+  nome?: string;
 }
 
 /** Tipo de gráfico desenhado pelo motor. */
