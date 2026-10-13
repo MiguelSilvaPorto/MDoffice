@@ -14,11 +14,11 @@ O projeto busca oferecer uma alternativa acessível, na qual a assistência de I
 
 As ferramentas ficam em `tools\worktrees\` (PowerShell) e são de uso **obrigatório** para todos:
 
-1. **Abrir** (na cópia principal): `tools\worktrees\abrir.ps1 feat/minha-tarefa`
-   Cria `.worktrees\feat-minha-tarefa` a partir da `main`, com `node_modules` e os arquivos pesados ligados por *junction*. Prefixos de branch: `feat`, `fix`, `docs`, `refactor`, `chore`, `test`, `perf`. Uma worktree por tarefa; solicitação nova, worktree nova.
+1. **Abrir** (na cópia principal): `tools\worktrees\abrir.ps1 feat/minha-tarefa -Porque "por que a tarefa existe" -Proposito "o que ela entrega"`
+   Cria `.worktrees\feat-minha-tarefa` a partir da `main`, com `node_modules` e os arquivos pesados ligados por *junction*. Prefixos de branch: `feat`, `fix`, `docs`, `refactor`, `chore`, `test`, `perf`. Uma worktree por tarefa; solicitação nova, worktree nova. `-Porque` e `-Proposito` (opcionais, também aceitam `-Branch nome`) ficam guardados na branch: aparecem no `status.ps1` e no corpo do commit do `fechar.ps1`.
 2. **Trabalhar** só dentro da worktree: editar, validar (`npx tsc --noEmit`) e commitar acontecem lá, nunca na cópia principal.
 3. **Fechar** (de dentro da worktree): `tools\worktrees\fechar.ps1 -Mensagem "feat(escopo): descrição"`
-   Commita o que faltar, integra a `main` na worktree (por **rebase**, então a história fica linear, sem commit de merge), entrega o trabalho na `main`, envia a `main` ao GitHub e agenda a remoção da worktree e da branch local. **Sempre use o `fechar.ps1`** — ele resolve sozinho os problemas comuns (main que andou, trava entre fechamentos simultâneos, links de `node_modules`, pasta presa, worktree órfã). Não improvise `git merge`, `git checkout main` ou remoção manual da pasta.
+   Commita o que faltar, integra a `main` na worktree (por **rebase**, então a história fica linear, sem commit de merge), entrega o trabalho na `main`, envia a `main` ao GitHub e agenda a remoção da worktree e da branch local. Aceita `-Porque`/`-Proposito` (completam a descrição da branch, que vai no corpo do commit) e `-Branch nome` (confere se é a worktree certa). **Sempre use o `fechar.ps1`** — ele resolve sozinho os problemas comuns (main que andou, trava entre fechamentos simultâneos, links de `node_modules`, pasta presa, worktree órfã). Não improvise `git merge`, `git checkout main` ou remoção manual da pasta.
 
 ### Regras
 

@@ -28,11 +28,13 @@ else { Write-Host "  limpa (sem alteracoes soltas)" }
 
 Write-Host ""
 Write-Host "== Main vs origin =="
-$temOrigin = "$(Exec -PermitirFalha { git -C $principal remote get-url origin })".Trim()
+# sem origin (ou com git reclamando), o texto de erro nao pode virar "nome do remote"
+$saidaOrigin = Exec -PermitirFalha { git -C $principal remote get-url origin }
+$temOrigin = if ($LASTEXITCODE -eq 0) { "$($saidaOrigin | Select-Object -First 1)".Trim() } else { '' }
 if ($temOrigin) {
   $cont = Exec -PermitirFalha { git -C $principal rev-list --left-right --count 'origin/main...main' }
-  if ("$cont".Trim()) {
-    $p = "$cont".Trim() -split '\s+'
+  $p = @("$cont".Trim() -split '\s+')
+  if ($LASTEXITCODE -eq 0 -and $p.Count -ge 2 -and $p[0] -match '^\d+$' -and $p[1] -match '^\d+$') {
     Write-Host ("  main esta {0} commit(s) a frente e {1} atras do origin/main (ultimo fetch)" -f $p[1], $p[0])
     if ([int]$p[1] -gt 0) { Write-Host "  (o fechar.ps1 e o monitor-push.ps1 enviam sozinhos)" }
   } else {
@@ -45,7 +47,14 @@ if ($temOrigin) {
 Write-Host ""
 Write-Host "== Branches locais de tarefa =="
 $branches = @(Exec -PermitirFalha { git -C $principal branch --list 'feat/*' 'fix/*' 'docs/*' 'refactor/*' 'chore/*' 'test/*' 'perf/*' } | Where-Object { "$_".Trim() })
-if ($branches.Count -gt 0) { $branches | ForEach-Object { Write-Host "  $_" } } else { Write-Host "  (nenhuma)" }
+if ($branches.Count -gt 0) {
+  foreach ($b in $branches) {
+    $nome = "$b".Trim().TrimStart('*').Trim()
+    Write-Host "  $nome"
+    $desc = Get-DescricaoBranch -Pasta $principal -Branch $nome
+    if ($desc) { Write-Host "      tarefa: $desc" }
+  }
+} else { Write-Host "  (nenhuma)" }
 
 Write-Host ""
 Write-Host "== Limpeza pendente =="
@@ -61,12 +70,15 @@ foreach ($caminho in $registradas) {
   if (Test-Path $caminho) {
     $s = @(& git -C $caminho status --porcelain 2>$null | Where-Object { "$_".Trim() })
     $null = & git -C $caminho merge-base --is-ancestor HEAD main 2>$null
+    $bwt = Get-BranchAtual -Pasta $caminho
+    $desc = Get-DescricaoBranch -Pasta $principal -Branch $bwt
+    $linhaDesc = if ($desc) { "`n      tarefa: $desc" } else { "" }
     if ($s.Count -eq 0 -and $LASTEXITCODE -eq 0) {
-      $pendencias += "PODE LIMPAR : $(Split-Path $caminho -Leaf)  (limpa e ja entregue na main; limpar.ps1 -Nome <branch> -ApagarBranch)"
+      $pendencias += "PODE LIMPAR : $(Split-Path $caminho -Leaf)  (limpa e ja entregue na main; limpar.ps1 -Nome <branch> -ApagarBranch)$linhaDesc"
     } elseif ($s.Count -gt 0) {
-      $pendencias += "EM ANDAMENTO: $(Split-Path $caminho -Leaf)  ($($s.Count) alteracao(oes) sem commit)"
+      $pendencias += "EM ANDAMENTO: $(Split-Path $caminho -Leaf)  ($($s.Count) alteracao(oes) sem commit)$linhaDesc"
     } else {
-      $pendencias += "A ENTREGAR  : $(Split-Path $caminho -Leaf)  (commits que a main ainda nao tem - fechar.ps1)"
+      $pendencias += "A ENTREGAR  : $(Split-Path $caminho -Leaf)  (commits que a main ainda nao tem - fechar.ps1)$linhaDesc"
     }
   }
 }

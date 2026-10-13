@@ -29,11 +29,17 @@
 #   tools\worktrees\fechar.ps1 -SemIntegrar     (so commita aqui; nao mexe na main nem limpa)
 #   tools\worktrees\fechar.ps1 -ManterWorktree  (entrega na main mas nao agenda a limpeza)
 #   tools\worktrees\fechar.ps1 -ParadaHoras 24  (aviso de outras worktrees paradas; padrao 12h)
+#   tools\worktrees\fechar.ps1 -Porque "..." -Proposito "..."  (descricao da tarefa: entra no
+#     corpo do commit e fica guardada na branch; se o abrir.ps1 ja guardou, e so confirmacao)
+#   tools\worktrees\fechar.ps1 -Branch feat/minha-tarefa       (confere se e a worktree certa)
 #
 # ASCII-only de proposito (PowerShell 5.1 le .ps1 UTF-8 sem BOM como ANSI).
 [CmdletBinding()]
 param(
   [string]$Mensagem,
+  [string]$Branch,
+  [string]$Porque,
+  [string]$Proposito,
   [switch]$SemPush,
   [switch]$SemIntegrar,
   [switch]$ManterWorktree,
@@ -51,20 +57,29 @@ if (-not $repo.EmWorktree) {
 $raiz = $repo.Atual
 $principal = $repo.Principal
 
-# Durante um rebase o HEAD fica "solto" (detached): o nome da branch esta no
-# arquivo head-name do proprio rebase. Sem isso, o script nem comecava a
-# continuar o rebase ("fatal: ref HEAD is not a symbolic ref").
+# OBS: no PowerShell $Branch (parametro) e $branch (variavel) sao a MESMA variavel.
+# Por isso o -Branch e guardado aqui antes de $branch receber o nome da branch atual.
+$conferirBranch = "$Branch".Trim()
+
+# Durante um rebase o HEAD fica "solto" (detached): Get-BranchAtual resolve isso.
 $gitDir = "$(Exec { git -C $raiz rev-parse --absolute-git-dir })".Trim()
-$branch = ''
-foreach ($sub in 'rebase-merge', 'rebase-apply') {
-  $arquivoHead = Join-Path $gitDir "$sub\head-name"
-  if (Test-Path $arquivoHead) {
-    $branch = "$(Get-Content $arquivoHead -Raw)".Trim() -replace '^refs/heads/', ''
-    break
-  }
-}
-if (-not $branch) { $branch = "$(Exec { git -C $raiz symbolic-ref --short HEAD })".Trim() }
+$branch = Get-BranchAtual -Pasta $raiz
 if ($branch -eq 'main') { throw "A branch atual e a main - isso nao deveria acontecer numa worktree." }
+if ($conferirBranch -and ($conferirBranch -ne $branch)) {
+  throw "Voce esta na worktree da branch '$branch', mas -Branch pediu '$conferirBranch'. Entre na worktree certa (ou omita -Branch)."
+}
+
+# -- descricao da tarefa (Porque/Proposito): entra no corpo do commit ----------
+$linhasDescricao = @()
+if ($Porque) { $linhasDescricao += "Porque: $("$Porque".Trim())" }
+if ($Proposito) { $linhasDescricao += "Proposito: $("$Proposito".Trim())" }
+if ($linhasDescricao.Count -gt 0) {
+  $descricao = $linhasDescricao -join "`n"
+  $null = Exec { git -C $raiz config "branch.$branch.description" $descricao } "Nao consegui guardar a descricao da branch."
+} else {
+  $descricao = @(Exec -PermitirFalha { git -C $raiz config --get "branch.$branch.description" } | Where-Object { "$_".Trim() }) -join "`n"
+  $descricao = $descricao.Trim()
+}
 
 # -- 0) conflito nao resolvido? (devolve o controle para resolver) --------------
 $ruido = { "$_".Trim() -and ("$_" -notmatch '^\s*warning:') -and ("$_" -notmatch 'not a valid attribute name') }
@@ -103,8 +118,14 @@ if ($mudancas.Count -gt 0) {
     Write-Warning "Mensagem fora do padrao Conventional Commits (vai assim mesmo): $msgCommit"
   }
   $null = Exec { git -C $raiz add -A } "git add falhou."
-  $null = Exec { git -C $raiz commit -m $msgCommit } "git commit falhou."
-  Write-Host "Commit criado: $msgCommit"
+  if ($descricao) {
+    $null = Exec { git -C $raiz commit -m $msgCommit -m $descricao } "git commit falhou."
+    Write-Host "Commit criado: $msgCommit"
+    Write-Host "Descricao da tarefa no corpo do commit: $($descricao -replace "`n", ' | ')"
+  } else {
+    $null = Exec { git -C $raiz commit -m $msgCommit } "git commit falhou."
+    Write-Host "Commit criado: $msgCommit"
+  }
 } else {
   Write-Host "Nada pendente para commitar."
 }
@@ -195,6 +216,7 @@ if (-not $SemPush) {
 
 $ultimos = Exec -PermitirFalha { git -C $principal log --oneline -3 main }
 Write-Host ""
+if ($descricao) { Write-Host "Tarefa ($branch): $($descricao -replace "`n", ' | ')" }
 Write-Host "Ultimos commits da main:"
 if ($ultimos) { $ultimos | ForEach-Object { Write-Host "  $_" } }
 
