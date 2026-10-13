@@ -86,6 +86,7 @@ export const pagesMethods = {
         toast("Histórico deste documento apagado.", "info", 2400);
       },
       openHistory: () => void this.openHistory(),
+      repairAlignments: () => this.repairAlignments(),
     };
   },
 

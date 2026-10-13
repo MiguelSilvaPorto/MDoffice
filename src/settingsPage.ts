@@ -36,6 +36,8 @@ export interface SettingsCtx {
   historyCount: () => Promise<number>;
   clearHistory: () => Promise<void>;
   openHistory: () => void;
+  /** Conserta blocos de alinhamento quebrados no Markdown (ferramenta de manutenção). */
+  repairAlignments: () => void;
 }
 
 const NAV: { id: SettingsSection; label: string; desc: string; icon: string }[] = [
@@ -190,6 +192,15 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
               ${rowIcon("i-text")}
               <span class="st-text"><b>Dicionário pessoal</b><small data-dict-count></small></span>
               <button class="btn small st-btn" data-act="dict">Abrir dicionário…</button>
+            </div>
+          </div>
+
+          <h4 class="st-group">Manutenção do documento</h4>
+          <div class="st-list">
+            <div class="st-row">
+              ${rowIcon("i-align-left")}
+              <span class="st-text"><b>Reparar alinhamentos</b><small>Conserta blocos de alinhamento quebrados: tira o &lt;/div&gt; sobrando e fecha os &lt;div align&gt; que ficaram abertos.</small></span>
+              <button class="btn small st-btn" data-act="repair-align">Reparar agora</button>
             </div>
           </div>
         </section>
@@ -479,6 +490,9 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   });
   on('[data-act="dict"]', "click", () => {
     ctx.openDictionary();
+  });
+  on('[data-act="repair-align"]', "click", () => {
+    ctx.repairAlignments();
   });
 
   // tradução

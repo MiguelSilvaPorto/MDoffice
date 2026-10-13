@@ -144,78 +144,23 @@ export const toolbarMethods = {
   },
 
   buildMoreMenu(this: App, menu: HTMLElement): void {
+    // Menu "Mais opções": só AÇÕES. Tudo que é ajuste (tema, painéis, correção,
+    // sugestões, salvamento, tradução…) vive nas Configurações.
     this.ddItem(menu, { icon: "i-saveas", label: "Salvar como…", hint: "Ctrl+Shift+S", onPick: () => void this.save(true) });
     this.ddItem(menu, { icon: "i-import", label: "Importar do Office…", hint: ".docx .xlsx .xlsm .pptx", onPick: () => void this.importOfficeDialog() });
     this.ddSep(menu);
     this.ddItem(menu, { icon: "i-copy", label: "Copiar para a IA", hint: "Ctrl+Shift+C", onPick: () => void this.copyForAI() });
     this.ddItem(menu, { icon: "i-export", label: "Exportar…", hint: "Ctrl+Shift+E", onPick: () => this.openExport() });
     this.ddItem(menu, { icon: "i-zip", label: "Pacote para IA (.zip)", hint: "tudo junto", onPick: () => this.openExport("zip") });
-    this.ddItem(menu, {
-      icon: "i-globe",
-      label: "Tradução automática",
-      hint: "Ctrl+Alt+T",
-      checked: this.translation.settings.enabled,
-      onPick: () => this.toggleTranslation(),
-    });
     this.ddSep(menu);
     this.ddItem(menu, { icon: "i-folder", label: "Vincular pastas (contexto)…", onPick: () => void this.chooseFolders() });
     for (const folder of this.linkedFolders.slice(-3).reverse()) {
       this.ddItem(menu, { label: folder.name, hint: folder.path, onPick: () => void this.showFolderContext([folder.path]) });
     }
     this.ddSep(menu);
-    this.ddItem(menu, { icon: "i-clock", label: "Histórico de versões", onPick: () => void this.openHistory() });
     this.ddItem(menu, { icon: "i-spark", label: "Configurações", hint: `tom ${this.settings.tone}`, onPick: () => this.showSettings() });
     this.ddItem(menu, { icon: "i-check", label: "Revisar texto", hint: "F7", onPick: () => this.openReview() });
     this.ddItem(menu, { icon: "i-eye", label: "Apresentar (slides)", hint: `F5 · ${deckSummary(this.editor.getText())}`, onPick: () => this.openSlides() });
-    this.ddItem(menu, {
-      icon: "i-check",
-      label: "Dicionário pessoal…",
-      hint: `${this.ignoreWords.size} palavra(s)`,
-      onPick: () => this.showDictionary(),
-    });
-    this.ddItem(menu, {
-      icon: "i-align-left",
-      label: "Reparar alinhamentos",
-      hint: "conserta <div> sobrando",
-      onPick: () => this.repairAlignments(),
-    });
-    this.ddItem(menu, {
-      icon: "i-check",
-      label: "Salvamento automático",
-      hint: this.settings.autosaveOn ? "ligado" : "desligado",
-      checked: this.settings.autosaveOn,
-      onPick: () => this.toggleAutosave(),
-    });
-    this.ddItem(menu, {
-      icon: "i-check",
-      label: "Correção automática",
-      hint: "ao terminar o parágrafo e ao salvar",
-      checked: this.autoFix,
-      onPick: () => this.setAutoFix(!this.autoFix),
-    });
-    this.ddItem(menu, {
-      icon: "i-check",
-      label: "Sugestões inline (estilo Copilot)",
-      hint: "Tab aceita, Alt+Seta palavra",
-      checked: this.copilot,
-      onPick: () => this.setCopilot(!this.copilot),
-    });
-
-    this.ddSep(menu);
-    this.ddItem(menu, {
-      icon: "i-sidebar",
-      label: "Painel lateral",
-      checked: !document.body.classList.contains("no-sidebar"),
-      onPick: () => this.toggle("no-sidebar"),
-    });
-    this.ddItem(menu, {
-      icon: "i-eye",
-      label: "Pré-visualização",
-      checked: !document.body.classList.contains("no-preview"),
-      onPick: () => this.toggle("no-preview"),
-    });
-    const dark = document.documentElement.dataset.theme === "dark";
-    this.ddItem(menu, { icon: dark ? "i-sun" : "i-moon", label: "Tema escuro", checked: dark, onPick: () => this.applyTheme(!dark) });
     this.ddSep(menu);
     this.ddItem(menu, { icon: "i-help", label: "Boas-vindas e ajuda", hint: "F1", onPick: () => this.showWelcome() });
   },
