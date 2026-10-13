@@ -74,6 +74,9 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   colada na seguinte, o corretor pergunta **"faltou um espaço?"** e oferece o corte. É pergunta,
   não correção automática: fica na revisão com o botão "Corrigir", nunca sozinha no texto.
   Medido: **nenhuma acusação em 2803 palavras** de texto real do projeto.
+  (A medida é contra o **corpus completo** de texto escrito — o `freq-pt.json`, que o worker já
+  recebe. Com a lista curta de palavras frequentes, "aplicativo" não estava nela e virava
+  "a plicativo".)
 - **Correção automática**: palavras erradas com certeza, maiúsculas, espaços, pontuação,
   abreviações; ao terminar o parágrafo e ao salvar; cada correção é um passo de `Ctrl+Z`.
 - **Ponto e vírgula automáticos** e **modo formal** (“a gente” com o verbo conjugado);

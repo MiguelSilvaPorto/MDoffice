@@ -1377,6 +1377,32 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   medição). Estreitada ao caso clássico ("o ira", "o que", "a vida"), a medição em 2803
   palavras de texto real do projeto deu **zero acusações**.
 
+### 2026-10-13 · (este commit) · o corpus é o completo, não a lista curta
+- **Local:** `prepararIndice` (monta `corpus` e `familias`) e `cortesDeColagem` (passa a usá-los);
+  o `PREFIXOS` saiu
+- **Linha:** `POSICAO.has(n)` / `PREFIXOS.has(...)` → `corpus.has(n)` / `familias.has(...)`
+- **Porquê:** a regra nasceu consultando `PALAVRAS_LISTA` (a lista CURTA de palavras frequentes,
+  usada para julgar "frequente" nos cortes). Mas "aplicativo" não está nessa lista — e "apl" não
+  é prefixo dela — enquanto a lista COMPLETA (`freq-pt.json`, que o worker já recebia em
+  `prepararIndice`) tem "aplicativo", "aplicação", "aplicar". Resultado: o app acusou
+  **"aplicativo" → "a plicativo"**. Agora as duas perguntas — "esta palavra aparece em texto
+  escrito?" e "a família dela é usada?" — são feitas contra o corpus completo, o mesmo que a
+  medição usou (2803 palavras, zero acusações).
+- **Local:** primeira linha de `cortesDeColagem`
+- **Linha:** `if (!corpus || !familias) return [];` (novo)
+- **Porquê:** o corpus chega depois do dicionário. Sem ele a regra não opina — melhor não acusar
+  do que acusar sem dado.
+
+## test/docs/gramatical.md
+
+### 2026-10-13 · (este commit) · caso 32: "aplicativo" não pode virar duas
+- **Local:** `## Caso 32`
+- **Linha:** caso novo — errado "O aplicativo nao abre o documento.", esperado
+  "O aplicativo não abre o documento."
+- **Porquê:** o falso positivo relatado precisa de guarda no corpus. O caso vale duas vezes: a
+  correção do "nao" e, principalmente, o texto correto **não** ser mexido — é essa metade que
+  impede "aplicativo" de voltar a ser acusado.
+
 ## src/broker/spell.ts
 
 ### 2026-10-13 · (este commit) · `duvida` no `SpellHit`

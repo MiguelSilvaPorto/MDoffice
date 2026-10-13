@@ -391,3 +391,15 @@ O texto ficou pronto e oira verifica se segue as regras.
 ````text
 O texto ficou pronto e o ira verifica se segue as regras.
 ````
+
+## Caso 32 — palavra comum que nao pode virar duas ('aplicativo' nao e 'a plicativo')
+
+### Errado
+````text
+O aplicativo nao abre o documento.
+````
+
+### Esperado
+````text
+O aplicativo não abre o documento.
+````

@@ -75,9 +75,28 @@ let tau = TAU_INICIAL;
 /** Peso do contexto na nota do candidato: decide desempates, não passa por cima da certeza. */
 const PESO_CONTEXTO = 0.35;
 
+/**
+ * O corpus de texto escrito (lista completa do `freq-pt.json`): quais palavras
+ * aparecem de verdade e as três primeiras letras de cada uma.
+ *
+ * É o corpus COMPLETO, não a lista curta `PALAVRAS_LISTA` (que serve para julgar
+ * "frequente" nos cortes de palavras). A diferença importa: "aplicativo" não está na
+ * lista curta, mas está aqui, junto com "aplicação"/"aplicar" — com a lista curta a
+ * palavra virava "a plicativo".
+ */
+let corpus: Set<string> | null = null;
+let familias: Set<string> | null = null;
+
 function prepararIndice(palavras: string[], contagens: number[]): void {
   frequencia = montarFrequencia(palavras, contagens);
   indice = construirIndice(palavras);
+  corpus = new Set<string>();
+  familias = new Set<string>();
+  for (const w of palavras) {
+    const n = norm(w);
+    corpus.add(n);
+    if (n.length >= 3) familias.add(n.slice(0, 3));
+  }
 }
 
 /**
@@ -244,19 +263,6 @@ PALAVRAS_LISTA.forEach((w, i) => {
   if (!POSICAO.has(n)) POSICAO.set(n, i);
 });
 
-/**
- * As três primeiras letras de cada palavra que aparece em texto escrito.
- *
- * Serve para saber se a FAMÍLIA de uma palavra é usada: "virava" vem de "virar", e
- * "vira"/"virou"/"virei" aparecem o tempo todo — então "vir" está aqui. Já "oira" vem
- * do verbo "oirar", que ninguém escreve, e "oir" não está.
- */
-const PREFIXOS = new Set<string>();
-PALAVRAS_LISTA.forEach((w) => {
-  const n = norm(w);
-  if (n.length >= 3) PREFIXOS.add(n.slice(0, 3));
-});
-
 /** Palavrinhas de uma letra que podem aparecer coladas (“eu e você”, “a casa”). */
 const UMA_LETRA = new Set(["a", "e", "o", "é"]);
 
@@ -277,14 +283,17 @@ function valeComoPalavra(p: string): boolean {
  *
  * Só vale para o caso clássico: a palavrinha de UMA letra colada na seguinte — "oira"
  * ("o ira"), "oque" ("o que"), "avida" ("a vida"). Abrir para cortes maiores começa a
- * acusar palavra rara de verdade: "xilofone" virava "xi lo fone" e "opacidade" virava
- * "opa cidade" (foi o teste do próprio projeto que pegou o "xilofone").
+ * acusar palavra rara de verdade: "xilofone" virava "xi lo fone" (foi o teste do
+ * próprio projeto que pegou).
+ *
+ * Sem corpus carregado não opina: é melhor não acusar do que acusar sem dado.
  */
 function cortesDeColagem(palavra: string): string[] {
+  if (!corpus || !familias) return [];
   const n = norm(palavra);
   if (n.length < 4 || n.length > 20) return [];
-  if (POSICAO.has(n)) return []; // aparece em texto escrito: é palavra de verdade
-  if (PREFIXOS.has(n.slice(0, 3))) return []; // a família dela é usada: não é obscura
+  if (corpus.has(n)) return []; // aparece em texto escrito: é palavra de verdade
+  if (familias.has(n.slice(0, 3))) return []; // a família dela é usada: não é obscura
   const primeira = palavra.slice(0, 1);
   if (!UMA_LETRA.has(primeira.toLowerCase())) return [];
   const resto = palavra.slice(1);
