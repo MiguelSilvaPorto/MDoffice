@@ -239,9 +239,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Ferramentas (dev)**
 
-- **Pesquisa (documento)**: formalidade por regras e validação ABNT - o que é verificável e como (`docs/pesquisa-formalidade-abnt.md`).
-- **Pesquisa (documento)**: correção/sugestão sem IA - estado da arte, algoritmos e plano por fases (`docs/pesquisa-correcao-offline.md`).
-- **Pesquisa (documento)**: síntese com a ordem de execução (dores, camadas, ondas, métricas e limites) em `docs/pesquisa-sugestoes.md`.
+- (nada no momento)
 
 ### Adicionado (na main)
 
@@ -380,7 +378,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   respondendo mensagens do sistema, então o watchdog (que só olhava se o processo existia) nunca
   percebia. Agora a página avisa ao servidor de dev que está viva (a cada 5 s, só em
   desenvolvimento) e o `watchdog.ps1` reinicia o app quando o aviso fica velho
-  (`-TravadoSegundos`, padrão 90) — com prazo maior para o primeiro aviso, que depende do
+  (`-TravadoSegundos`, padrão 90) - com prazo maior para o primeiro aviso, que depende do
   carregamento do dicionário e do modelo (`-TravadoNaSubidaSegundos`, padrão 180). O
   `tools/watchdog.ps1` também ganhou BOM de UTF-8: sem ele o PowerShell 5.1 lê o arquivo como
   ANSI e os acentos saíam corrompidos no log.
+- **Pesquisa (documento)**: formalidade por regras e validação ABNT — o que é verificável e como
+  (`docs/pesquisa-formalidade-abnt.md`).
+- **Pesquisa (documento)**: correção/sugestão sem IA — estado da arte, algoritmos e plano por fases
+  (`docs/pesquisa-correcao-offline.md`).
+- **Pesquisa (documento)**: síntese com a ordem de execução (dores, camadas, ondas, métricas e
+  limites) em `docs/pesquisa-sugestoes.md`.
+- **Pesquisa (documento)**: sugestões sem IA — aquecimento, velocidade e sugestões longas: gargalos
+  medidos no motor atual (modelo, índice, latência, largura média de 1,35 palavra), estado da arte
+  com fontes e plano por fases V0–V4 (`docs/pesquisa-sugestoes-velocidade-tamanho.md`).

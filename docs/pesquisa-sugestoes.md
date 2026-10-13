@@ -1,8 +1,10 @@
 # Sugestões, formalidade e ABNT — síntese e ordem de execução
 
-> **Ponto de entrada** das duas pesquisas feitas para melhorar a assistência de escrita **sem IA**:
-> [correção/sugestão offline](pesquisa-correcao-offline.md) e
-> [formalidade e ABNT](pesquisa-formalidade-abnt.md). Aqui não há detalhe repetido: há o
+> **Ponto de entrada** das pesquisas feitas para melhorar a assistência de escrita **sem IA**:
+> [correção/sugestão offline](pesquisa-correcao-offline.md),
+> [formalidade e ABNT](pesquisa-formalidade-abnt.md) e
+> [sugestões: aquecimento, velocidade e sugestões longas](pesquisa-sugestoes-velocidade-tamanho.md).
+> Aqui não há detalhe repetido: há o
 > diagnóstico em uma página, a arquitetura alvo, **o que fazer primeiro** e como medir.
 
 ## 1. As três dores e o que as causa

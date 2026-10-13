@@ -1594,6 +1594,23 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o chip "Corrigir:" pode trazer um trecho longo; sem limite ele empurrava a largura do
   popup (máx. 440px). O `title` do chip guarda o texto completo para quem passar o mouse.
 
+## docs/pesquisa-sugestoes-velocidade-tamanho.md
+
+### 2026-10-13 · esta tarefa · sugestões sem IA: velocidade e sugestões longas (novo arquivo)
+- **Local:** documento inteiro
+- **Linha:** "novo arquivo"
+- **Porquê:** o usuário relatou que a sugestão "começa lenta e pega velocidade" e que "fica em
+  no máximo 3 palavras", pedindo pesquisa avançada sobre os dois pontos. O documento registra a
+  linha de base **medida** (modelo de 6,92 MB com ~200–270 ms de aquecimento; plano B com 100%
+  de 1 palavra; índice total de 31–77 ms na thread principal; `predictFromLine` p50 0,39 ms /
+  p90 1,32 ms; largura média de **1,35 palavra**, só 9,2% chegando ao teto de 3), liga cada
+  gargalo à constante/arquivo que o causa (`maxWords`, `chain`, `withPrefix`, `update()` total,
+  `thresholdScale`) e reúne, com fontes, as técnicas sem IA para resolver (KenLM, Kneser-Ney,
+  stupid backoff, DAWG/DAFSA, beam search com normalização de comprimento, tabela de frases,
+  PPM, worker/WASM), terminando no plano por fases V0–V4 com critérios de aceite e o apêndice
+  de reprodução das medições. É o recorte do **fantasma/sugestão**; o corretor continua em
+  `docs/pesquisa-correcao-offline.md`.
+
 ---
 
 ## Próximos registros
