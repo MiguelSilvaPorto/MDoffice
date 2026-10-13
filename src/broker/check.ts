@@ -1,6 +1,8 @@
 // Verificação completa: estilo + ortografia (dicionário) + “você quis dizer…?”.
 
 import { ABBREVIATIONS, GLUED } from "./data/abbreviations";
+import { concordanciaDeNumero } from "./concordancia";
+import { carregarFrequencia, contagem } from "./frequencia";
 import { maskNonProse } from "./mask";
 import { commonNeighbor } from "./neighbor";
 import { checkWords } from "./spell";
@@ -11,6 +13,9 @@ import { personalIndex } from "./ghost/memory";
 import { DocumentIndex } from "./ghost/documentIndex";
 
 export async function checkText(text: string, ignore: Set<string>): Promise<WritingIssue[]> {
+  // A frequência é a mesma tabela que o corretor usa. Espera curta: se não
+  // chegar, as regras que dependem dela ficam quietas e nada quebra.
+  await Promise.race([carregarFrequencia(), new Promise((r) => setTimeout(r, 1500))]);
   const issues = checkStyle(text);
   const mask = maskNonProse(text);
   const rx = /[\p{L}][\p{L}'-]{2,}/gu;
@@ -57,7 +62,7 @@ export async function checkText(text: string, ignore: Set<string>): Promise<Writ
       // É uma troca de PALAVRA, não de acento: por isso vem com `fix` (entra no
       // "Corrigir tudo", na pausa e ao salvar) e NÃO com `auto` — quem decide é
       // quem escreve, porque a palavra original também existe.
-      const near = commonNeighbor(token.word);
+      const near = commonNeighbor(token.word, contagem);
       if (near) {
         issues.push({
           from: token.from,
@@ -71,6 +76,20 @@ export async function checkText(text: string, ignore: Set<string>): Promise<Writ
       }
     }
   }
+
+  // Concordância de número entre artigo e substantivo ("Os documento foram...").
+  //
+  // Fica aqui, e não nas regras de estilo, porque depende do DICIONÁRIO: a única
+  // forma de saber que "documentos" é palavra real (e que "ques" não é) é
+  // perguntar a quem conhece o idioma. Por isso roda depois do checkWords.
+  issues.push(
+    ...(await concordanciaDeNumero(mask, async (propostas) => {
+      const hits = await checkWords(propostas);
+      // o que volta como hit é o que NÃO existe no dicionário
+      return new Set(hits.keys());
+    }))
+  );
+
   // Junta avisos que caem no MESMO trecho: palavra errada + falta do ponto final.
   // Assim a correção da palavra já sai com o ponto ("correçao" → "correção."), em vez de
   // um aviso anular o outro (antes eles se sobrepunham e só um era aplicado).

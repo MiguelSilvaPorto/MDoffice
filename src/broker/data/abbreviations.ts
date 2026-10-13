@@ -33,6 +33,10 @@ export const ABBREVIATIONS: Record<string, string> = {
   qm: "quem",
   qts: "quantos",
   sdds: "saudades",
+  hj: "hoje",
+  msg: "mensagem",
+  msgs: "mensagens",
+  qndo: "quando",
 };
 
 /** Palavras grudadas → separadas. */

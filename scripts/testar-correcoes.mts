@@ -224,7 +224,9 @@ const checkText = C.checkText as (t: string, ignore: Set<string>) => Promise<Wri
 await new Promise((r) => setTimeout(r, 1500));
 
 let passaram = 0;
+let limpos = 0;
 const falhas: { caso: Caso; obtido: string }[] = [];
+const sujeiras: { caso: Caso; obtido: string }[] = [];
 
 for (const caso of casos) {
   const r = await corrigir(caso.errado, checkText);
@@ -244,11 +246,32 @@ for (const caso of casos) {
       console.log(`        só avisos: ${naoAplicadas.length ? naoAplicadas.join("  ") : "(nenhum)"}`);
     }
   }
+
+  // Falso positivo: o texto JÁ CORRETO não pode ser mexido. Uma regra que
+  // "conserta" o que está certo é pior que uma que não acha o erro.
+  const limpo = await corrigir(caso.esperado, checkText);
+  if (limpo.texto.trim() !== caso.esperado.trim()) {
+    sujeiras.push({ caso, obtido: limpo.texto });
+    console.log(`  SUJEIRA Caso ${String(caso.numero).padStart(2)} — mexeu no texto correto`);
+    if (detalhe) {
+      console.log(`        correto:  ${JSON.stringify(caso.esperado.trim())}`);
+      console.log(`        virou:    ${JSON.stringify(limpo.texto.trim())}`);
+      const aplicadas = limpo.mudancas.map((m) => `${m.origem}:${JSON.stringify(caso.esperado.slice(m.from, m.to))}->${JSON.stringify(m.insert)}`);
+      console.log(`        aplicadas: ${aplicadas.join("  ")}`);
+    }
+  } else {
+    limpos++;
+  }
 }
 
-console.log(`\n${passaram}/${casos.length} casos passaram` + (falhas.length ? `  (${falhas.length} falharam)` : ""));
+console.log(`\n${passaram}/${casos.length} casos corrigidos`);
+console.log(`${limpos}/${casos.length} textos corretos preservados` + (sujeiras.length ? `  (${sujeiras.length} sujaram)` : ""));
 if (falhas.length) {
-  console.log("\nFalhas:");
+  console.log("\nNão corrigidos:");
   for (const f of falhas) console.log(`  Caso ${String(f.caso.numero).padStart(2)} — ${f.caso.titulo}`);
 }
-process.exit(falhas.length ? 1 : 0);
+if (sujeiras.length) {
+  console.log("\nFalsos positivos:");
+  for (const s of sujeiras) console.log(`  Caso ${String(s.caso.numero).padStart(2)} — ${s.caso.titulo}`);
+}
+process.exit(falhas.length || sujeiras.length ? 1 : 0);

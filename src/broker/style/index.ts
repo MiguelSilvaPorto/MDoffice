@@ -10,6 +10,7 @@ import { phrases } from "./phrases";
 import { informalRegister, aGente } from "./register";
 import { abntHours, abntHoursColon, abntUnits, abntMonths, abntAcronymPlural, abntCitation, abntPage, abntEtAl, abntDash, abntLatin } from "./abnt";
 import { personalLongSentence } from "./personal";
+import { fazerImpessoal } from "./concordancia";
 import type { Rule } from "./types";
 
 const RULES: Rule[] = [
@@ -32,6 +33,7 @@ const RULES: Rule[] = [
   missingFinalPeriod,
   informalRegister,
   aGente,
+  fazerImpessoal,
   abntHours,
   abntHoursColon,
   abntUnits,

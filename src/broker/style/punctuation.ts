@@ -6,8 +6,13 @@ import { PHRASES, INTRO_CONNECTIVES } from "../data/phrases";
 /** Expressões que pedem vírgula dos DOIS lados. */
 export function commasAroundExpressions({ text, mask, push }: RuleCtx): void {
   let m: RegExpExecArray | null;
-  // expressões que pedem vírgula dos DOIS lados (no meio da frase)
-  const entreVirgulas = /\b(ou seja|isto é|por exemplo|em outras palavras|ou melhor|no entanto|porém|contudo|entretanto|todavia|portanto|além disso|além do mais)\b/giu;
+  // Expressões explicativas/intercaladas: pedem vírgula dos dois lados.
+  //
+  // As conjunções adversativas ("porém", "contudo", "entretanto", "todavia")
+  // NÃO entram aqui de propósito: quem cuida delas é `adversativeComma`, que
+  // pede só a vírgula de antes. Com as duas regras ligadas, "mas" e "porém"
+  // recebiam vírgula antes E depois, o que não é a pontuação da conjunção.
+  const entreVirgulas = /\b(ou seja|isto é|por exemplo|em outras palavras|ou melhor|no entanto|portanto|além disso|além do mais)\b/giu;
   while ((m = entreVirgulas.exec(mask)) !== null) {
     const ini = m.index;
     const fim = ini + m[0].length;
