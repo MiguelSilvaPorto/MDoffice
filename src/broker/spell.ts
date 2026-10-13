@@ -1,6 +1,7 @@
 // Cliente do dicionário (worker): carrega em segundo plano e responde as palavras erradas.
 
 import { aoAprender, correcoesConfiadas } from "./aprendizado";
+import { tauAtual } from "./spell/decisao";
 
 export interface SpellHit {
   word: string;
@@ -14,6 +15,8 @@ export interface SpellHit {
    * não vem com `best`, e a correção fica só como disponível.
    */
   duvida?: boolean;
+  /** por que o corretor decidiu aplicar (ou não) sozinho — diagnóstico */
+  decisao?: { aplicar: boolean; confianca: number; margem: number; motivo: string };
 }
 
 let spellWorker: Worker | null = null;
@@ -60,6 +63,7 @@ function ensureSpellWorker(): Worker | null {
     if (data.type === "ready") {
       spellReady = true;
       enviarAprendizado();
+      enviarLimiar();
       for (const cb of spellReadyCallbacks.splice(0)) cb();
       return;
     }
@@ -86,6 +90,12 @@ function enviarAprendizado(): void {
   spellWorker.postMessage({ type: "aprender", correcoes: correcoesConfiadas() });
 }
 
+/** Manda o limiar de confiança calibrado (auto-aplicações desfeitas × mantidas). */
+export function enviarLimiar(): void {
+  if (!spellWorker || !spellReady) return;
+  spellWorker.postMessage({ type: "tau", valor: tauAtual() });
+}
+
 // Sempre que uma correção nova é aceita, o corretor passa a conhecê-la.
 aoAprender(enviarAprendizado);
 
@@ -99,14 +109,14 @@ aoAprender(enviarAprendizado);
   return spellReady;
 }
 
-export async function checkWords(words: string[]): Promise<Map<string, SpellHit>> {
+export async function checkWords(words: string[], contexto?: Record<string, string>): Promise<Map<string, SpellHit>> {
   const worker = ensureSpellWorker();
   if (!worker || spellFailed || !words.length) return new Map();
   if (!(await waitForSpell())) return new Map();
   const hits = await new Promise<SpellHit[]>((resolve) => {
     const id = spellId++;
     spellPending.set(id, resolve);
-    worker.postMessage({ type: "check", id, words });
+    worker.postMessage({ type: "check", id, words, ctx: contexto ?? {} });
   });
   return new Map(hits.map((h) => [h.word, h]));
 }

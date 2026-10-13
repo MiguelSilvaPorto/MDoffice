@@ -32,7 +32,18 @@ export async function checkText(text: string, ignore: Set<string>): Promise<Writ
     unique.add(word);
   }
   if (tokens.length) {
-    const wrong = await checkWords(Array.from(unique));
+    // Contexto para o corretor: qual palavra vem ANTES de cada uma (mesmo as curtas,
+    // que não entram na checagem) — é o que decide "vou para a **casa**" × "as **casas**".
+    // "<s>" marca o começo do texto/linha, como no corpus que treinou o modelo.
+    const palavrasDoTexto = [...mask.matchAll(/[\p{L}][\p{L}'-]*/gu)].map((m2) => ({ texto: m2[0], from: m2.index ?? 0, to: (m2.index ?? 0) + m2[0].length }));
+    const contexto: Record<string, string> = {};
+    let k = 0;
+    for (const token of tokens) {
+      while (k < palavrasDoTexto.length && palavrasDoTexto[k].to <= token.from) k++;
+      const anterior = k > 0 ? palavrasDoTexto[k - 1].texto.toLowerCase() : "<s>";
+      if (!(token.word in contexto)) contexto[token.word] = anterior;
+    }
+    const wrong = await checkWords(Array.from(unique), contexto);
     const docIdx = new DocumentIndex();
     docIdx.update(text); // o que está escrito neste documento ajuda a escolher a palavra certa
     for (const token of tokens) {

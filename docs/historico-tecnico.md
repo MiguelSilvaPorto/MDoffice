@@ -1440,6 +1440,82 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** a regra mudou de norma (10520:2023) — sem os casos novos, o teste não protegia o
   falso positivo que a tarefa veio corrigir nem a nova forma aceita.
 
+## scripts/gerar-contexto.mjs (novo) + public/ngrams/ctx-pt.json (novo)
+
+### 2026-10-13 · corretor com contexto · o recorte de bigramas do modelo
+- **Local:** arquivo novo (gerador) e arquivo de dados novo (1,9 MB)
+- **Linha:** `novo`
+- **Porquê:** o modelo completo tem 7,2 MB (os trigramas são 3,5 MB + 1,7 MB de totais) e o corretor
+  só precisa de `w`/`n` (vocabulário e unigramas, para o backoff) e `b`/`bt` (sucessores e total de
+  cada contexto). O recorte tem 1,9 MB e 29.157 contextos. `w`/`n` vão **completos**, sem o filtro
+  de `gerar-frequencia.mjs`, porque os índices de `b`/`bt` apontam para eles.
+
+## src/broker/spell/contexto.ts (novo)
+
+### 2026-10-13 · corretor com contexto · o quanto a palavra combina com a anterior
+- **Local:** `montarContexto`, `logProb`, `notaContexto`
+- **Linha:** `novo`
+- **Porquê:** era o que faltava para "acertar desde o começo": o ranqueamento só olhava distância de
+  edição + frequência da palavra isolada. A conta é bigrama com **suavização de Dirichlet** e
+  backoff para o unigrama (`(c + α·uni) / (total + α)`), e a nota vai de 0 a 1 pelo quanto a
+  sequência é mais provável que a palavra sozinha (20× = 1). Puro, para testar no Node.
+
+## src/broker/spell/decisao.ts (novo)
+
+### 2026-10-13 · corretor com contexto · aplicar sozinho por probabilidade, não por regra
+- **Local:** `probabilidades`, `decidir`, `registrarMantida`, `registrarDesfeita`, `tauAtual`, `limparCalibragem`
+- **Linha:** `novo`
+- **Porquê:** o auto-aplicar era um conjunto de condições fixas (`margem >= 0.05`, `10× mais
+  frequente`…). Agora as notas viram probabilidades e a decisão é `confiança ≥ τ` **e**
+  `vencedor ≥ 2× o segundo` — **empate vira sugestão, nunca aplicação** (é o que a pesquisa chama
+  de F2). A confiança é a fatia do vencedor contra o segundo (0,5 = empate), para a decisão não
+  ficar mais frouxa só porque vieram muitos candidatos. As classes de certeza (acento/cedilha, erro
+  clássico, mais próximo sem empate, muito mais frequente, candidato único) continuam aplicando
+  direto. O limiar começa em 0,62 e anda entre 0,55 e 0,85 conforme o histórico de desfazer ×
+  manter; a leitura já alimenta o worker, e o gancho de "desfez" é o próximo passo (fica em
+  `registrarDesfeita()`).
+
+## src/broker/spell.worker.ts
+
+### 2026-10-13 · corretor com contexto · contexto na nota e decisão no lugar do `best`
+- **Local:** `sugerirPalavra`, o carregamento do `init`, a mensagem `check` e a sonda `debug`
+- **Linha:** `anotar(cand, nota, …)` → soma `PESO_CONTEXTO · notaContexto(cand, anterior, contexto)`;
+  o bloco do `best` virou `decidir({pontos, certo, contexto}, tau)`; `check` aceita `ctx` e devolve
+  `decisao`; nova mensagem `tau`; `debug` ganhou `caza_com_contexto` × `caza_sem_contexto`
+- **Porquê:** o worker é quem tem o índice e o modelo; o contexto só podia entrar aqui. O `best`
+  continua sendo a resposta (compatível com quem já consome), mas agora sai da decisão
+  probabilística; o `decisao` no hit é para diagnóstico e testes. A sonda mostra o mesmo erro com e
+  sem contexto lado a lado.
+
+## src/broker/spell.ts
+
+### 2026-10-13 · corretor com contexto · contexto na chamada e limiar enviado
+- **Local:** `SpellHit`, `enviarLimiar`, `checkWords`
+- **Linha:** `checkWords(words)` → `checkWords(words, contexto?)` (manda `ctx` no `postMessage`);
+  `enviarLimiar()` (novo, no `ready`) manda `tauAtual()`; `SpellHit` ganhou `decisao?`
+- **Porquê:** a interface é quem sabe o contexto (o texto) e quem calibra o limiar (localStorage);
+  o worker não tem nem um nem outro.
+
+## src/broker/check.ts
+
+### 2026-10-13 · corretor com contexto · a palavra anterior de cada token
+- **Local:** `checkText`, antes do `checkWords`
+- **Linha:** `palavrasDoTexto` + `contexto` (novos): para cada token, acha a palavra anterior
+  **entre todas** as palavras do texto (mesmo as curtas, que não entram na checagem), com `<s>` no
+  começo
+- **Porquê:** o contexto vale para a frase inteira, não só para as palavras que o corretor checa —
+  "vou para a caza" precisa saber que antes vinha "para". O ponteiro percorre as duas listas em
+  ordem (uma vez só), sem custo perceptível.
+
+## scripts/testar-correcao.mjs
+
+### 2026-10-13 · corretor com contexto · 15 verificações novas
+- **Local:** bloco "contexto e decisão"
+- **Linha:** `novo`
+- **Porquê:** o modelo monta e pontua (sequência que existe puxa a nota, desconhecida não penaliza,
+  formato inválido devolve null) e a decisão cobre certeza, vencedor folgado, empate técnico, margem
+  mínima, candidato único, sem candidato, limiar padrão e softmax.
+
 ---
 
 ## Próximos registros

@@ -224,6 +224,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   e o gráfico de pizza no PowerPoint —, no lugar do quadradinho com a letra solta; vale nas abas,
   nas listas, nos menus, na busca e no Início.
 - **Citação ABNT atualizada para a NBR 10520:2023**: o corretor aceita Caixa Mista `(Silva, 2020)` e passa a sugestão (não erro) para quem escreve em CAIXA ALTA; "et al." opcional.
+- **Corretor com contexto e decisão por confiança**: as sugestões passam a usar os **bigramas** do
+  modelo de n-gramas (`public/ngrams/ctx-pt.json`) — "vou para a caza" vira "casa" com muito mais
+  chance — e o auto-aplicar deixa de ser regra fixa: decide por **probabilidade com margem**
+  (vencedor × segundo colocado), empate vira sugestão e o limiar se calibra com o histórico de
+  desfazer.
 
 **Ferramentas (dev)**
 

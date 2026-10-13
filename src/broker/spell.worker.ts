@@ -9,6 +9,8 @@
 import Typo from "typo-js";
 import { FREQUENTES, PALAVRAS_LISTA } from "./palavras";
 import { candidatos, construirIndice, montarFrequencia, normalizar as norm, type Frequencia, type Indice } from "./spell/candidatos";
+import { montarContexto, notaContexto, type ModeloCtx } from "./spell/contexto";
+import { decidir, TAU_INICIAL, type Decisao } from "./spell/decisao";
 
 interface SpellHit {
   word: string;
@@ -19,6 +21,8 @@ interface SpellHit {
   best?: string;
   /** colagem DEDUZIDA: o dicionário aceita, mas a família não é usada na língua */
   duvida?: boolean;
+  /** por que o corretor decidiu aplicar (ou não) sozinho — diagnóstico e testes */
+  decisao?: { aplicar: boolean; confianca: number; margem: number; motivo: string };
 }
 
 type TypoLike = {
@@ -63,6 +67,13 @@ function ajustarCaixa(original: string, sugestao: string): string {
  */
 let indice: Indice | null = null;
 let frequencia: Frequencia | null = null;
+/** Bigramas do corpus: o quanto cada candidato combina com a palavra anterior. */
+let contexto: ModeloCtx | null = null;
+/** Limiar de confiança em vigor (a interface calibra e manda por mensagem). */
+let tau = TAU_INICIAL;
+
+/** Peso do contexto na nota do candidato: decide desempates, não passa por cima da certeza. */
+const PESO_CONTEXTO = 0.35;
 
 function prepararIndice(palavras: string[], contagens: number[]): void {
   frequencia = montarFrequencia(palavras, contagens);
@@ -155,18 +166,25 @@ const ERROS_COMUNS: Record<string, string> = {
   "desperdicio": "desperdício",
 };
 
-/** Sugestões para uma palavra desconhecida + a correção em que dá para confiar. */
-function sugerirPalavra(palavra: string): { sugestoes: string[]; best?: string; notas: [string, number][]; distanciaTopo: number } {
+/** Sugestões para uma palavra desconhecida + a correção em que dá para confiar.
+ *  `anterior` é a palavra que veio antes (ou "<s>" no começo da frase): entra como
+ *  bônus de contexto na nota de cada candidato. */
+function sugerirPalavra(
+  palavra: string,
+  anterior?: string
+): { sugestoes: string[]; best?: string; decisao: Decisao; notas: [string, number][]; distanciaTopo: number } {
   const p = norm(palavra);
   const notas = new Map<string, number>();
   const distanciaDe = new Map<string, number>();
   const contagemDe = new Map<string, number>();
+  const bonus = (cand: string) => PESO_CONTEXTO * notaContexto(cand, anterior, contexto);
   // A frequência já vem do corpus de texto escrito, dentro da nota do candidato.
   // Não há bônus extra por listas antigas: elas trazem o viés de legenda de volta.
   const anotar = (cand: string, nota: number, distancia = 9, contagem = 0) => {
+    const comContexto = nota + bonus(cand);
     const atual = notas.get(cand);
-    if (atual === undefined || nota > atual) {
-      notas.set(cand, nota);
+    if (atual === undefined || comContexto > atual) {
+      notas.set(cand, comContexto);
       distanciaDe.set(cand, distancia);
       contagemDe.set(cand, contagem);
     }
@@ -190,30 +208,31 @@ function sugerirPalavra(palavra: string): { sugestoes: string[]; best?: string; 
   const primeiro = ordenadas[0];
   const segundo = ordenadas[1];
   let best: string | undefined;
+  let decisao: Decisao = { aplicar: false, confianca: 0, margem: 0, tau, motivo: "sem candidato" };
   if (primeiro) {
     const soAcento = norm(primeiro[0]) === p;
     const distancia = distanciaDe.get(primeiro[0]) ?? 9;
     const distanciaSegundo = segundo ? (distanciaDe.get(segundo[0]) ?? 9) : 9;
-    const margem = primeiro[1] - (segundo?.[1] ?? 0);
+    const c1 = contagemDe.get(primeiro[0]) ?? 0;
+    const c2 = contagemDe.get(segundo?.[0] ?? "") ?? 0;
     // Quando o primeiro está mais PERTO da palavra errada do que o segundo, a
     // escolha não depende de frequência: é o candidato mais próximo que ganha.
     const vencePorDistancia = distancia <= 1 && distanciaSegundo > distancia;
     // Duas edições de distância: só compensa quando o primeiro é MUITO mais
     // frequente — é o que decide "responsavo" → "responsável" (1556 ocorrências)
     // contra "responsivo" (27), que está mais perto mas quase não se escreve.
-    const c1 = contagemDe.get(primeiro[0]) ?? 0;
-    const c2 = contagemDe.get(segundo?.[0] ?? "") ?? 0;
-    const muitoMaisFrequente = c1 > 0 && c1 >= 10 * Math.max(c2, 1);
-    // Correção de acento/cedilha e erro clássico: sempre confiáveis.
-    if (soAcento || classico || vencePorDistancia || (distancia <= 1 && margem >= 0.05) || (distancia === 2 && muitoMaisFrequente)) {
-      best = ajustarCaixa(palavra, primeiro[0]);
-    }
-    // Uma ÚNICA sugestão: não há dúvida de qual é a palavra certa — aplica sozinho.
-    if (!best && !segundo && !soAcento) {
-      best = ajustarCaixa(palavra, primeiro[0]);
-    }
+    const muitoMaisFrequente = distancia === 2 && c1 > 0 && c1 >= 10 * Math.max(c2, 1);
+    // Classes de CERTEZA: acento/cedilha, erro clássico, o mais próximo (sem empate),
+    // muito mais frequente a duas edições e o candidato único. Fora delas, quem decide
+    // é a probabilidade com margem — empate vira sugestão, nunca aplicação.
+    const certo = !!soAcento || !!classico || vencePorDistancia || muitoMaisFrequente || !segundo;
+    decisao = decidir(
+      { pontos: ordenadas.map(([, nota]) => nota), certo, contexto: notaContexto(primeiro[0], anterior, contexto) },
+      tau
+    );
+    if (decisao.aplicar) best = ajustarCaixa(palavra, primeiro[0]);
   }
-  return { sugestoes, best, notas: ordenadas.slice(0, 8), distanciaTopo: primeiro ? (distanciaDe.get(primeiro[0]) ?? 9) : 9 };
+  return { sugestoes, best, decisao, notas: ordenadas.slice(0, 8), distanciaTopo: primeiro ? (distanciaDe.get(primeiro[0]) ?? 9) : 9 };
 }
 
 // ---------- palavras grudadas ("coisasque" → "coisas que") ----------
@@ -377,7 +396,17 @@ const JARGAO = new RegExp(
 );
 
 self.addEventListener("message", (event: MessageEvent) => {
-  const data = event.data as { type: string; id?: number; words?: string[]; base?: string; correcoes?: [string, string][] };
+  const data = event.data as {
+    type: string;
+    id?: number;
+    words?: string[];
+    base?: string;
+    correcoes?: [string, string][];
+    /** limiar de confiança calibrado na interface (mensagem "tau") */
+    valor?: number;
+    /** palavra -> palavra anterior, o contexto do bigrama (mensagem "check") */
+    ctx?: Record<string, string>;
+  };
 
   if (data.type === "init") {
     void (async () => {
@@ -404,6 +433,15 @@ self.addEventListener("message", (event: MessageEvent) => {
           /* sem a frequência: segue com o dicionário apenas */
         }
 
+        // O contexto (bigramas) é o que desempata candidatos parecidos pelo que a
+        // frase pede. Sem ele o corretor segue só com distância + frequência.
+        try {
+          const res = await fetch(new URL("ngrams/ctx-pt.json", base));
+          if (res.ok) contexto = montarContexto(await res.json());
+        } catch {
+          /* sem contexto: as notas ficam como antes */
+        }
+
         self.postMessage({ type: "ready" });
       } catch (err) {
         self.postMessage({ type: "failed", error: String(err) });
@@ -422,6 +460,13 @@ self.addEventListener("message", (event: MessageEvent) => {
     return;
   }
 
+  if (data.type === "tau") {
+    // A interface calibra o limiar (auto-aplicações desfeitas × mantidas) e manda aqui.
+    const valor = Number(data.valor);
+    if (Number.isFinite(valor) && valor > 0 && valor < 1) tau = valor;
+    return;
+  }
+
   if (data.type === "debug") {
     // Sonda de desenvolvimento: mostra o que o corretor responde para palavras
     // conhecidas e quanto custou montar o índice. Útil para comparar calibragens
@@ -435,10 +480,18 @@ self.addEventListener("message", (event: MessageEvent) => {
     const t3 = Date.now();
     const r4 = sugerirPalavra("excessao");
     const t4 = Date.now();
+    // O mesmo erro com e sem contexto: é a prova de que o bigrama está entrando
+    // ("vou para a caza" → casa; sem contexto, pode empatar com outras parecidas).
+    const r5 = sugerirPalavra("caza", "para");
+    const t5 = Date.now();
+    const r6 = sugerirPalavra("caza");
+    const t6 = Date.now();
     self.postMessage({
       type: "debug",
       id: data.id,
       indicePronto: !!indice,
+      contextoPronto: !!contexto,
+      tau,
       trigramas: indice?.baldes.size ?? 0,
       vocabulario: indice?.palavras.length ?? 0,
       freqSize: FREQUENTES.size,
@@ -446,12 +499,15 @@ self.addEventListener("message", (event: MessageEvent) => {
       improtante: { sugestoes: r2.sugestoes, best: r2.best, ms: t2 - t1 },
       estenso: { sugestoes: r3.sugestoes, best: r3.best, ms: t3 - t2 },
       excessao: { sugestoes: r4.sugestoes, best: r4.best, ms: t4 - t3 },
+      caza_com_contexto: { sugestoes: r5.sugestoes, best: r5.best, decisao: r5.decisao, ms: t5 - t4 },
+      caza_sem_contexto: { sugestoes: r6.sugestoes, best: r6.best, decisao: r6.decisao, ms: t6 - t5 },
     });
     return;
   }
 
   if (data.type === "check") {
     const words = data.words ?? [];
+    const ctx = (data.ctx ?? {}) as Record<string, string>;
     if (!typo) {
       self.postMessage({ type: "result", id: data.id, hits: [] });
       return;
@@ -470,10 +526,11 @@ self.addEventListener("message", (event: MessageEvent) => {
         continue;
       }
       if (JARGAO.test(word)) continue;
-      const r = sugerirPalavra(word);
+      const anterior = ctx[word];
+      const r = sugerirPalavra(word, anterior);
       // só faltou acento ou cedilha ("missao" → "missão")? Isso vale mais que supor palavras coladas ("miss ao")
       if (variantesAcento(word).length) {
-        hits.push({ word, suggestions: r.sugestoes, best: r.best });
+        hits.push({ word, suggestions: r.sugestoes, best: r.best, decisao: r.decisao });
         continue;
       }
       // faltou espaço? "coisasque" → "coisas que" (a certeza vem de as duas partes serem palavras comuns)
@@ -507,7 +564,7 @@ self.addEventListener("message", (event: MessageEvent) => {
         hits.push({ word, glued: true, suggestions: [...truncada, ...r.sugestoes.filter((x) => !truncada.includes(x))].slice(0, 6), best: undefined });
         continue;
       }
-      hits.push({ word, suggestions: r.sugestoes, best: r.best });
+      hits.push({ word, suggestions: r.sugestoes, best: r.best, decisao: r.decisao });
     }
     self.postMessage({ type: "result", id: data.id, hits });
   }

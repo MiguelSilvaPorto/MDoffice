@@ -166,5 +166,44 @@ ok("ritmo: zerar volta ao padrão", R.ritmoDePausa() === 3500);
   ok("desempenho: varredura de ~12 mil caracteres abaixo de 25 ms", ms < 25, `${ms.toFixed(1)} ms`);
 }
 
+// ---------------------------------------------------------------- contexto e decisão
+const CTX = await empacotar("src/broker/spell/contexto.ts", "contexto.mjs");
+const DEC = await empacotar("src/broker/spell/decisao.ts", "decisao.mjs");
+
+{
+  // modelo de teste: "vou → para" (forte), "para → casa" (forte), "para → casas" (raro)
+  const json = {
+    w: ["<s>", "casa", "casas", "caza", "para", "vou", "muito"],
+    n: [0, 900, 400, 0, 800, 300, 700],
+    b: {
+      5: [4, 700, 1, 5], // vou → para (700), vou → casa (5)
+      4: [1, 600, 2, 90], // para → casa (600), para → casas (90)
+    },
+    bt: { 4: 700, 5: 720 },
+  };
+  const m = CTX.montarContexto(json);
+  ok("contexto: monta o modelo com índices e total", !!m && m.indice.get("casa") === 1 && m.total === 3100);
+  const bom = CTX.notaContexto("casa", "para", m);
+  const ruim = CTX.notaContexto("casas", "para", m);
+  ok("contexto: a sequência que existe puxa a nota", bom > 0.3 && bom > ruim, `casa=${bom.toFixed(2)} casas=${ruim.toFixed(2)}`);
+  ok("contexto: sem contexto não há bônus", CTX.notaContexto("casa", undefined, m) === 0);
+  ok("contexto: contexto desconhecido não penaliza", CTX.notaContexto("casa", "zzz", m) === 0);
+  ok("contexto: formato inválido devolve null", CTX.montarContexto({ w: [] }) === null);
+
+  const certo = DEC.decidir({ pontos: [0.8, 0.78], certo: true });
+  ok("decisão: classe de certeza aplica mesmo com empate", certo.aplicar === true && certo.motivo === "classe de certeza");
+  const folgado = DEC.decidir({ pontos: [0.9, 0.5] });
+  ok("decisão: vencedor folgado aplica", folgado.aplicar === true && folgado.confianca > 0.62, JSON.stringify(folgado));
+  const empate = DEC.decidir({ pontos: [0.8, 0.79] });
+  ok("decisão: empate técnico vira sugestão", empate.aplicar === false, empate.motivo);
+  const semMargem = DEC.decidir({ pontos: [0.4, 0.25] });
+  ok("decisão: sem margem mínima não aplica", semMargem.aplicar === false && semMargem.motivo.includes("empate"), semMargem.motivo);
+  ok("decisão: candidato único com certeza aplica", DEC.decidir({ pontos: [0.5], certo: true }).aplicar === true);
+  ok("decisão: sem candidato não aplica", DEC.decidir({ pontos: [] }).aplicar === false);
+  ok("decisão: limiar padrão sem histórico", DEC.tauAtual() === DEC.TAU_INICIAL, String(DEC.tauAtual()));
+  const probs = DEC.probabilidades([1, 0]);
+  ok("decisão: softmax concentra no vencedor", probs[0] > 0.9 && Math.abs(probs[0] + probs[1] - 1) < 1e-9);
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);
