@@ -38,4 +38,8 @@ export const INTRO_CONNECTIVES = [
   "consequentemente",
   "além disto",
   "diante disso",
+  "porém",
+  "contudo",
+  "todavia",
+  "entretanto",
 ];

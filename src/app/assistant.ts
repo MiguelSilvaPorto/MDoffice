@@ -1,45 +1,41 @@
 // Assistente de escrita no Markdown: correção automática, avisos e revisão.
 
 import type { App } from "./app";
-import { checkText, checkStyle, stats as writingStats, spellIsReady, spellHasFailed, type WritingIssue } from "../broker/writing";
+import { checkText, checkStyle, marcarAplicacao, planejarVarredura, stats as writingStats, spellIsReady, spellHasFailed, type WritingIssue } from "../broker/writing";
 import { openReviewModal } from "../broker/review";
 import { registrarCorrecao } from "../broker/aprendizado";
 import { $, toast, saveJSON } from "../util";
 
-/**
- * A correção automática (sem a pessoa pedir) não mexe em pontuação de frase: não fecha frase com ponto nem quebra frase
- * comprida. Quem está pensando no meio da frase não pode ter o texto fechado por baixo da mão. Esses avisos continuam
- * aparecendo e entram quando a pessoa aceita ("Corrigir tudo", clique no aviso) ou ao concluir o parágrafo (ponto final).
- */
-function autoNaoMexe(i: WritingIssue, text: string): boolean {
-  if (/nova frase/i.test(i.message)) return true;
-  const fix = i.fix ?? "";
-  // qualquer correção que acrescente um ponto final / ponto de frase
-  return /^\.\s/.test(fix) || (fix.endsWith(".") && !text.slice(i.from, i.to).endsWith("."));
-}
-
 export const assistantMethods = {
+  /**
+   * Varredura da pausa: passado o tempo do ritmo aprendido, aplica sozinha as correções seguras
+   * do documento inteiro — vírgulas, limpeza (pontos/vírgulas duplicados, frases coladas) e o
+   * ponto final dos parágrafos concluídos. No parágrafo em que a pessoa está, o ponto só entra
+   * quando o cursor está no fim dele; a palavra sob o cursor nunca é tocada. Tudo numa transação
+   * (um Ctrl+Z desfaz a varredura inteira).
+   */
   runIdleFix(this: App): void {
     if (!this.autoFix || !this.autoFixArmed) return;
-    const view = this.editor.view;
-    const doc = view.state.doc;
-    const pos = view.state.selection.main.head;
+    const texto = this.editor.getText();
+    const pos = this.editor.view.state.selection.main.head;
+    const par = this.paragrafoDoCursor(pos);
+    const correcoes = planejarVarredura(texto, { pos, from: 0, to: texto.length, parFrom: par.from, parTo: par.to, parConcluido: par.concluido });
+    if (!correcoes.length) return;
+    this.editor.replaceRanges(correcoes, -1);
+    marcarAplicacao(texto);
+  },
+
+  /** Parágrafo em que o cursor está: limites e se ele está concluído (cursor no fim do texto dele). */
+  paragrafoDoCursor(this: App, pos: number): { from: number; to: number; concluido: boolean } {
+    const doc = this.editor.view.state.doc;
     const line = doc.lineAt(pos);
-    if (line.text.trim() === "") return; // linha vazia: o gatilho do parágrafo cuida
-    // parágrafo em que o cursor está (linhas seguidas não vazias)
     let first = line.number;
     while (first > 1 && doc.line(first - 1).text.trim() !== "") first--;
     let last = line.number;
     while (last < doc.lines && doc.line(last + 1).text.trim() !== "") last++;
-    const from = doc.line(first).from;
-    const to = doc.line(last).to;
-    const texto = doc.toString();
-    const fresh = checkStyle(texto).filter((i) => i.fix && i.from >= from && i.to <= to && !autoNaoMexe(i, texto));
-    if (!fresh.length) return;
-    this.editor.replaceRanges(
-      fresh.map((i) => ({ from: i.from, to: i.to, insert: i.fix! })),
-      -1
-    );
+    const fim = doc.line(last);
+    const ultimoTexto = fim.text.replace(/\s+$/, "").length;
+    return { from: doc.line(first).from, to: fim.to, concluido: pos >= fim.from + ultimoTexto };
   },
 
   /** Correção automática: não depende do dicionário, roda logo depois de você pausar. */
@@ -155,26 +151,17 @@ export const assistantMethods = {
   },
 
   /**
-   * Correções automáticas ao salvar (Ctrl+S). Quem salva muitas vezes enquanto escreve não pode ter o texto mexido por
-   * baixo da mão: o parágrafo em que o cursor está NÃO é fechado com ponto nem quebrado em frases (a pessoa ainda está
-   * escrevendo), nada que toque a palavra sob o cursor é trocado e a ortografia só corrige palavras que ficaram para trás.
+   * Correções automáticas ao salvar (Ctrl+S): mesma política da varredura — o parágrafo em que
+   * o cursor está só é fechado com ponto quando ele está concluído, nada que toque a palavra sob
+   * o cursor é trocado e a ortografia só corrige palavras que ficaram para trás.
    */
   applySaveFixes(this: App): number {
-    const view = this.editor.view;
-    const doc = view.state.doc;
-    const pos = view.state.selection.main.head;
-    const texto = doc.toString();
-    // o parágrafo do cursor
-    const parFrom = this.paragraphStartAt(pos);
-    let last = doc.lineAt(pos);
-    while (last.number < doc.lines && doc.line(last.number + 1).text.trim() !== "") last = doc.line(last.number + 1);
-    const parTo = last.to;
-    const fresh = checkStyle(texto).filter((i) => {
-      if (i.from <= pos && pos <= i.to) return false; // a palavra que está sendo digitada
-      if (i.from >= parFrom && i.to <= parTo && autoNaoMexe(i, texto)) return false; // fechar frase no parágrafo em andamento
-      return true;
-    });
-    return this.applyFixes(fresh) + this.autoFixWords(0, texto.length, true);
+    const pos = this.editor.view.state.selection.main.head;
+    const texto = this.editor.getText();
+    const par = this.paragrafoDoCursor(pos);
+    const correcoes = planejarVarredura(texto, { pos, from: 0, to: texto.length, parFrom: par.from, parTo: par.to, parConcluido: par.concluido });
+    if (correcoes.length) this.editor.replaceRanges(correcoes, -1);
+    return correcoes.length + this.autoFixWords(0, texto.length, true);
   },
 
   /** Aplica as correções disponíveis numa só ação (um único desfazer). */
@@ -256,8 +243,12 @@ export const assistantMethods = {
     const from = doc.line(first).from;
     const to = doc.line(ultimaAcima).to;
     const todoTexto = doc.toString();
-    const fresh = checkStyle(todoTexto).filter((i) => i.from >= from && i.to <= to && !/nova frase/i.test(i.message));
-    return this.applyFixes(fresh) + this.autoFixWords(from, to);
+    const correcoes = planejarVarredura(todoTexto, { pos: view.state.selection.main.head, from, to, parFrom: from, parTo: to, parConcluido: true });
+    if (correcoes.length) {
+      this.editor.replaceRanges(correcoes, -1);
+      marcarAplicacao(todoTexto);
+    }
+    return correcoes.length + this.autoFixWords(from, to);
   },
 
   updateWritingBadge(this: App): void {

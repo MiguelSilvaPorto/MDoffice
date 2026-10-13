@@ -3,7 +3,7 @@
 // (mesmo papel do src/word/host.ts)
 import { marked } from "marked";
 import DOMPurify from "dompurify";
-import { $ } from "../util";
+import { $, toast } from "../util";
 import { ligarAjusteAlturaFita, ligarRecolherFita } from "../fita";
 import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, novaImagem, type EstiloDeck, type ItemGaleria } from "./edicao/criar";
 import { ajustarCor, comAjuste, comLinha, comOpacidade, comPreenchimento, comRaioDeCanto, comSombra, gradiente, SOMBRAS_PRONTAS, solido, corPrincipal } from "./edicao/formato";
@@ -13,6 +13,7 @@ import { Historico } from "./edicao/historico";
 import { formasDoLayout, novaLamina } from "./edicao/layouts";
 import { migrarSlides, registrarMidia } from "./edicao/migrar";
 import { MODELOS, aplicarModelo, type ModeloPPT } from "./edicao/modelos";
+import { criarModeloUsuario, lerModelosUsuario, removerModeloUsuario } from "./modelosUsuario";
 import {
   agruparFormas,
   alinharFormas,
@@ -29,7 +30,28 @@ import {
   type ModoAlinhar,
 } from "./edicao/operacoes";
 import { lerSelecao, restaurarSelecao, textoDaCaixa } from "./edicao/selecaoDom";
-import { alternarMarcador, estadoDoTrecho, estiloDosParas, estiloNoIntervalo, mudarRecuo, mudarTamanhoRelativo, parasDaSelecao, type EstiloRun, type RunPatch } from "./edicao/texto";
+import { alternarMarcador, estadoDoTrecho, estiloDosParas, estiloNoIntervalo, limparEstiloNoIntervalo, mudarCaixaTexto, mudarRecuo, mudarTamanhoRelativo, parasDaSelecao, type EstiloRun, type RunPatch, type TipoCaixa } from "./edicao/texto";
+import { comTransicao, direcaoDe, duracaoDe, normalizarTransicao } from "./edicao/transicao";
+import { caixaDaMidia, comCorteDaMidia, comOpcaoMidia, comVolumeDaMidia, midiaPadrao, normalizarMidia, MIDIA_ROTULOS, tipoDeArquivo } from "./edicao/midia";
+import { capturarQuadro, cartaoParaPng } from "./render/midia";
+import {
+  addCategoria,
+  addSerie,
+  caixaDoGrafico,
+  comCores,
+  comOpcao,
+  comTipo,
+  comTitulo,
+  delCategoria,
+  delSerie,
+  GRAFICO_TIPOS,
+  graficoPadrao,
+  normalizarGrafico,
+  paletaDeSeries,
+  setCategoria,
+  setSerieNome,
+  setValor,
+} from "./edicao/grafico";
 import { DEFAULT_SETUP, deserialize, newSlide, serialize } from "./model";
 import { alturaDaLinha, ajustarAoTamanho, alinharVerticalmente, aplicarPreset, bordasCelulas, criarTabela, dividir, excluirColuna, excluirLinha, expandirSelecao, inserirColuna, inserirLinha, larguraDaColuna, mesclar, preencherCelulas, tamanhoTotal, type ModoBorda, type PresetTabela } from "./edicao/tabela";
 import { NotesPanel } from "./notes";
@@ -37,14 +59,14 @@ import { deckFromMarkdown } from "./markdown";
 import { openDeckView } from "./presenter";
 import { aoCarregarFontes, fundoValor, htmlFormaRica, parasComEstilo, parasComTexto, registrarFontes, type CtxRender } from "./render/forma";
 import { shapeText } from "./shapes";
-import { clampIndex, duplicateSlide, insertSlide, moveSlide, removeSlide, replaceSlide, setLayout } from "./slides";
+import { clampIndex, duplicateSlide, insertSlide, moveSlide, removeSlide, replaceSlide, resetSlide, setLayout } from "./slides";
 import { Stage, type CelulasSel, type Ferramenta } from "./stage";
 import { THEMES, stageVars, themeOf } from "./themes";
 import { Fita } from "./ui/fita";
 import { Painel } from "./ui/painel";
 import { abrirPopup, fecharPopup } from "./ui/popup";
 import type { EstadoUI } from "./ui/estado";
-import type { Deck, DeckSetup, Fill, Para, Shape, ShapeBox, Slide, SlideLayout, TextAlign } from "./schema";
+import type { Deck, DeckSetup, Fill, GraficoTipo, Para, Shape, ShapeBox, Slide, SlideLayout, TextAlign, Transicao, TransicaoDirecao, TransicaoTipo } from "./schema";
 
 marked.setOptions({ gfm: true, breaks: false });
 
@@ -61,6 +83,8 @@ export interface PowerPointHostOptions {
   pane: HTMLElement;
   /** pede uma imagem ao usuário; `destino` diz o que fazer com ela (inserir, preencher, fundo, trocar) */
   onPickImage?: (destino?: string) => void;
+  /** pede um áudio/vídeo ao usuário; `tipo` diz se é "audio" ou "video" (ou "trocar" na troca de arquivo) */
+  onPickMedia?: (tipo?: string) => void;
   onConfigure?: () => void;
   onDirty?: () => void;
 }
@@ -113,6 +137,7 @@ export class PowerPointHost {
   private hist = new Historico<Estado>(100);
   private pendente: Estado | null = null;
   private destinoImagem = "inserir";
+  private destinoMidia: string | null = null;
   private lateral: "formatar" | "notas" = "formatar";
   /** célula em edição (quando a forma em edição é uma tabela) e células selecionadas */
   private celulaEdit: [number, number] | null = null;
@@ -474,10 +499,11 @@ export class PowerPointHost {
     for (const [k, v] of Object.entries(stageVars(this.setup))) this.strip.style.setProperty(k, v);
     const ctx = this.ctxRender(false);
     this.slides.forEach((s, i) => {
+      const oculta = s.show === false;
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = `pp-thumb${i === this.indice ? " active" : ""}`;
-      btn.title = `Lâmina ${i + 1}`;
+      btn.className = `pp-thumb${i === this.indice ? " active" : ""}${oculta ? " oculta" : ""}`;
+      btn.title = `Lâmina ${i + 1}${s.nome ? ` — ${s.nome}` : ""}${oculta ? " (oculta na apresentação)" : ""}`;
       const inner = document.createElement("div");
       inner.className = "pp-thumb-box";
       if (s.shapes.length) {
@@ -493,6 +519,22 @@ export class PowerPointHost {
       num.textContent = String(i + 1);
       inner.append(num);
       btn.append(inner);
+      // lâmina oculta: olho marcado por cima da miniatura (o apresentador pula ela)
+      if (oculta) {
+        const olho = document.createElement("span");
+        olho.className = "pp-thumb-oculta";
+        olho.title = "Oculta na apresentação";
+        olho.setAttribute("aria-hidden", "true");
+        olho.innerHTML = '<svg class="ic"><use href="#i-eye"/></svg>';
+        btn.append(olho);
+      }
+      // nome próprio da lâmina: aparece embaixo da miniatura, como no PowerPoint
+      if (s.nome) {
+        const cap = document.createElement("span");
+        cap.className = "pp-thumb-nome";
+        cap.textContent = s.nome;
+        btn.append(cap);
+      }
       btn.addEventListener("click", () => this.irPara(i));
       // arrastar para reordenar
       btn.draggable = true;
@@ -554,7 +596,10 @@ export class PowerPointHost {
 
   private atualizarStatus(): void {
     const pos = this.pane.querySelector("[data-pos]");
-    if (pos) pos.textContent = `Lâmina ${this.indice + 1} / ${this.slides.length}`;
+    if (pos) {
+      const s = this.atual();
+      pos.textContent = `Lâmina ${this.indice + 1} / ${this.slides.length}${s.nome ? ` — ${s.nome}` : ""}${s.show === false ? " (oculta)" : ""}`;
+    }
     const zv = this.pane.querySelector("[data-zoomval]");
     if (zv) zv.textContent = `${this.stage.zoomAtual}%`;
     const range = this.pane.querySelector<HTMLInputElement>("[data-zoomrange]");
@@ -629,6 +674,7 @@ export class PowerPointHost {
       indice: this.indice,
       total: this.slides.length,
       layout: this.atual().layout,
+      oculta: this.atual().show === false,
       formas,
       forma,
       editando: !!this.editando,
@@ -651,6 +697,8 @@ export class PowerPointHost {
       largura: forma ? (forma.box.w / 100) * d.w : 0,
       altura: forma ? (forma.box.h / 100) * d.h : 0,
       celulas: this.celulasDaSelecao(),
+      transicao: normalizarTransicao(this.atual().transicao),
+      transicaoPreservada: !!this.atual().transicaoXml,
     };
   }
 
@@ -904,6 +952,46 @@ export class PowerPointHost {
     this.mapearTextos((paras, sel) => mudarTamanhoRelativo(paras, sel ? sel.ini : -1, sel ? sel.fim : -1, sobe), "tamanho-texto");
   }
 
+  /** Muda a caixa do texto selecionado (MAIÚSCULAS, minúsculas ou Primeira Letra). */
+  private mudarCaixa(tipo: TipoCaixa): void {
+    this.mapearTextos((paras, sel) => mudarCaixaTexto(paras, sel ? sel.ini : -1, sel ? sel.fim : -1, tipo), "caixa-texto");
+  }
+
+  /**
+   * "Limpar formatação": devolve o trecho selecionado ao estilo de digitação da forma (o mesmo que o texto novo
+   * herda) e tira marca-texto, sobrescrito/subscrito, versalete e espaçamento de caracteres.
+   */
+  private limparFormatacao(): void {
+    const rt = this.rtEmEdicao();
+    const sel = rt ? lerSelecao(rt) : null;
+    const editandoId = this.editando;
+    const celEdit = this.celulaEdit;
+    const alvoIds = editandoId ? [editandoId] : this.selecao;
+    const ini = editandoId && sel ? sel.ini : -1;
+    const fim = editandoId && sel ? sel.fim : -1;
+    this.editar(
+      (sl) => ({
+        ...sl,
+        shapes: sl.shapes.map((s) => {
+          if (!alvoIds.includes(s.id)) return s;
+          if (s.tabela) {
+            const t = s.tabela;
+            const escolha = editandoId && celEdit ? { r0: celEdit[0], c0: celEdit[1], r1: celEdit[0], c1: celEdit[1] } : this.celulas?.id === s.id ? this.celulas : null;
+            const e = escolha ? expandirSelecao(t, escolha) : { r0: 0, c0: 0, r1: t.linhas.length - 1, c1: t.colunas.length - 1 };
+            const celulas = t.celulas.map((linha, r) =>
+              linha.map((c, col) => (r >= e.r0 && r <= e.r1 && col >= e.c0 && col <= e.c1 && !c.coberta ? { ...c, paras: limparEstiloNoIntervalo(c.paras, ini, fim, this.estiloDeDigitacao(s, [r, col])) } : c))
+            );
+            return { ...s, tabela: { ...t, celulas } };
+          }
+          if (!s.paras) return s;
+          return { ...s, paras: limparEstiloNoIntervalo(s.paras, ini, fim, this.estiloDeDigitacao(s)) };
+        }),
+      }),
+      "limpar-formatacao"
+    );
+    this.refocar(sel);
+  }
+
   /** Depois de redesenhar durante a edição: devolve o foco e a seleção do texto. */
   private refocar(sel: { ini: number; fim: number } | null): void {
     if (!this.editando) return;
@@ -1019,6 +1107,10 @@ export class PowerPointHost {
 
     // tabela selecionada: preenchimento, contorno e alinhamento vertical valem para as células escolhidas
     if (principal?.tabela && this.comandoDeTabela(cmd, value)) return;
+    // gráfico selecionado: tipo, dados, título e opções valem para ele
+    if (principal?.grafico && this.comandoDeGrafico(cmd, value)) return;
+    // mídia selecionada: reprodução, corte e opções valem para ela
+    if (principal?.midia && this.comandoDeMidia(cmd, value)) return;
 
     // ---- comandos com valor no nome ----
     if (cmd.startsWith("grad-cor:") || cmd.startsWith("grad-pos:")) return this.gradienteParada(cmd, value);
@@ -1104,6 +1196,38 @@ export class PowerPointHost {
         this.pintar();
         return;
       }
+      case "slide-ocultar": {
+        // alterna oculta/mostra: a lâmina continua no editor, mas o apresentador pula ela
+        this.editar((s) => {
+          if (s.show !== false) return { ...s, show: false };
+          const n = { ...s };
+          delete n.show;
+          return n;
+        });
+        return;
+      }
+      case "slide-nome": {
+        const nome = window.prompt("Nome da lâmina (vazio volta a usar só o número):", sl.nome ?? "");
+        if (nome === null) return;
+        const limpo = nome.trim();
+        if (limpo === (sl.nome ?? "")) return;
+        this.editar((s) => {
+          const n = { ...s };
+          if (limpo) n.nome = limpo;
+          else delete n.nome;
+          return n;
+        });
+        return;
+      }
+      case "slide-reset": {
+        // uma ação só no desfazer: tira as formas próprias (as fixas ficam) e reaplica as caixas do layout
+        this.registrar();
+        this.slides = resetSlide(this.deck, this.indice, formasDoLayout(this.atual().layout, this.estilo())).slides;
+        this.selecao = [];
+        this.markDirty();
+        this.pintar();
+        return;
+      }
       case "slide-up":
         return this.moverLamina(-1);
       case "slide-down":
@@ -1124,10 +1248,46 @@ export class PowerPointHost {
         if (value && THEMES.some((t) => t.id === value)) this.setSetup({ theme: value as DeckSetup["theme"] });
         return;
       case "modelo": {
-        const modelo = MODELOS.find((m) => m.id === value);
+        const modelo = MODELOS.find((m) => m.id === value) ?? lerModelosUsuario().find((m) => m.id === value);
         if (modelo) this.usarModelo(modelo);
         return;
       }
+      case "modelo-criar": {
+        // salva o visual do deck atual como um modelo do usuário (fica no botão Template)
+        const modelo = criarModeloUsuario(this.slides, this.setup, String(value ?? ""));
+        toast(`Modelo "${modelo.nome}" salvo no botão Template.`, "ok", 4200);
+        return;
+      }
+      case "modelo-excluir":
+        removerModeloUsuario(String(value ?? ""));
+        toast("Modelo removido.", "ok", 3000);
+        return;
+
+      // ---- transição de entrada da lâmina ----
+      case "transicao": {
+        const tipo = String(value ?? "none") as TransicaoTipo;
+        this.mudarTransicao(normalizarTransicao({ ...(sl.transicao ?? {}), tipo } as Transicao));
+        return;
+      }
+      case "transicao-direcao":
+        this.mudarTransicao(comTransicao(sl.transicao, { direcao: String(value) as TransicaoDirecao }));
+        return;
+      case "transicao-duracao":
+        this.mudarTransicao(comTransicao(sl.transicao, { duracao: Number(String(value).replace(",", ".")) }));
+        return;
+      case "transicao-todas": {
+        const t = normalizarTransicao(sl.transicao);
+        const mudou = this.slides.some((x) => x.transicaoXml || JSON.stringify(x.transicao ?? null) !== JSON.stringify(t ?? null));
+        if (!mudou) return;
+        this.registrar("transicao-todas");
+        this.slides = this.slides.map((x) => ({ ...x, transicao: t, transicaoXml: undefined }));
+        this.markDirty();
+        this.pintar();
+        return;
+      }
+      case "transicao-previa":
+        return this.preverTransicao();
+
       case "present":
         return this.present();
       case "configure":
@@ -1181,6 +1341,10 @@ export class PowerPointHost {
         const [linhas, colunas] = String(value ?? "3,3").split(",").map(Number);
         return this.inserirTabela(Math.max(1, linhas || 3), Math.max(1, colunas || 3));
       }
+      case "grafico-inserir": {
+        const tipo = (GRAFICO_TIPOS.some((t) => t.id === value) ? value : "colunas") as GraficoTipo;
+        return this.inserirGrafico(tipo);
+      }
       case "forma-inserir":
         this.ferramenta = { tipo: "forma", id: String(value ?? "5") };
         this.stage.desenharSelecao();
@@ -1194,6 +1358,9 @@ export class PowerPointHost {
       case "image":
         this.destinoImagem = "inserir";
         return void this.opts.onPickImage?.("inserir");
+      case "midia":
+        this.destinoMidia = String(value ?? "video");
+        return void this.opts.onPickMedia?.(this.destinoMidia);
       case "preench-imagem":
       case "imagem-trocar":
       case "fundo-imagem":
@@ -1220,6 +1387,27 @@ export class PowerPointHost {
       }
       case "cor-texto":
         return this.estiloDoTexto({ color: String(value) });
+      case "marca-texto":
+        // vazio = "sem marca-texto" (o menu de cores manda "" nesse caso)
+        return this.estiloDoTexto({ highlight: String(value ?? "").replace(/^#/, "") });
+      case "sobrescrito": {
+        const t = this.estadoUI().trecho;
+        const atual = t && t.baseline !== "misto" ? t.baseline : 0;
+        return this.estiloDoTexto({ baseline: atual > 0 ? 0 : 30 });
+      }
+      case "subscrito": {
+        const t = this.estadoUI().trecho;
+        const atual = t && t.baseline !== "misto" ? t.baseline : 0;
+        return this.estiloDoTexto({ baseline: atual < 0 ? 0 : -25 });
+      }
+      case "versalete":
+        return this.estiloDoTexto({ caps: this.estadoUI().trecho?.caps !== true });
+      case "espacamento":
+        return this.estiloDoTexto({ spc: Number(String(value).replace(",", ".")) || 0 });
+      case "caixa":
+        return this.mudarCaixa(String(value) as TipoCaixa);
+      case "limpar-formatacao":
+        return this.limparFormatacao();
       case "marcadores":
         return this.estiloDosParagrafos((p, idx) => alternarMarcador(p, idx, "marcador"));
       case "numeracao":
@@ -1531,6 +1719,124 @@ export class PowerPointHost {
     this.celulas = { id: forma.id, r0: 0, c0: 0, r1: 0, c1: 0 };
     this.markDirty();
     this.pintar();
+  }
+
+  /** Cria um gráfico no meio da lâmina (o desenho é em SVG; os dados se editam no painel). */
+  private inserirGrafico(tipo: GraficoTipo): void {
+    const d = this.dim();
+    const est = this.estilo();
+    const grafico = normalizarGrafico({ ...graficoPadrao(tipo), cores: paletaDeSeries(2, est.acento) });
+    const nome = GRAFICO_TIPOS.find((t) => t.id === tipo)?.nome ?? "Colunas";
+    const forma: Shape = {
+      id: Math.random().toString(36).slice(2, 10),
+      kind: "forma",
+      box: caixaDoGrafico(d.w, d.h),
+      text: "",
+      fontFamily: est.fonte,
+      fontSize: 16,
+      color: est.corTexto,
+      bold: false,
+      italic: false,
+      align: "centro",
+      fill: "",
+      src: "",
+      rot: 0,
+      geom: "rect",
+      name: `Gráfico de ${nome.toLowerCase()}`,
+      grafico,
+    };
+    this.registrar();
+    this.substituirSlide({ ...this.atual(), shapes: [...this.atual().shapes, forma] });
+    this.selecao = [forma.id];
+    this.markDirty();
+    this.pintar();
+  }
+
+  // ------------------------------------------------------------------
+  // gráficos
+  // ------------------------------------------------------------------
+
+  /** O gráfico selecionado (a forma principal), se houver. */
+  private graficoAtual(): Shape | undefined {
+    const f = this.principal();
+    return f?.grafico ? f : undefined;
+  }
+
+  /** Muda os dados ou as opções do gráfico selecionado (uma entrada no desfazer por chamada). */
+  private editarGrafico(fn: (g: NonNullable<Shape["grafico"]>) => NonNullable<Shape["grafico"]>, chave = ""): void {
+    const f = this.graficoAtual();
+    if (!f?.grafico) return;
+    this.editar(
+      (sl) => ({
+        ...sl,
+        shapes: sl.shapes.map((s) => (s.id !== f.id || !s.grafico ? s : { ...s, grafico: normalizarGrafico(fn(s.grafico)) })),
+      }),
+      chave
+    );
+  }
+
+  /** Comandos do gráfico selecionado. Devolve true quando tratou. */
+  private comandoDeGrafico(cmd: string, value?: string): boolean {
+    if (!this.graficoAtual()) return false;
+    switch (cmd) {
+      case "grafico-tipo": {
+        if (!GRAFICO_TIPOS.some((t) => t.id === value)) return true;
+        this.editarGrafico((g) => comTipo(g, value as GraficoTipo), "grafico-tipo");
+        return true;
+      }
+      case "grafico-titulo":
+        this.editarGrafico((g) => comTitulo(g, String(value ?? "")), "grafico-titulo");
+        return true;
+      case "grafico-legenda":
+        this.editarGrafico((g) => comOpcao(g, "legenda", value === "1"));
+        return true;
+      case "grafico-rotulos":
+        this.editarGrafico((g) => comOpcao(g, "rotulos", value === "1"));
+        return true;
+      case "grafico-empilhado":
+        this.editarGrafico((g) => comOpcao(g, "empilhado", value === "1"));
+        return true;
+      case "grafico-add-cat":
+        this.editarGrafico((g) => addCategoria(g), "grafico-cat");
+        return true;
+      case "grafico-del-cat":
+        this.editarGrafico((g) => delCategoria(g, Number(value)), "grafico-cat");
+        return true;
+      case "grafico-add-serie":
+        this.editarGrafico((g) => addSerie(g), "grafico-serie");
+        return true;
+      case "grafico-del-serie":
+        this.editarGrafico((g) => delSerie(g, Number(value)), "grafico-serie");
+        return true;
+    }
+    if (cmd.startsWith("grafico-cor:")) {
+      const j = Number(cmd.slice("grafico-cor:".length));
+      const cor = String(value ?? "").replace(/^#/, "");
+      if (!/^[0-9A-Fa-f]{6}$/.test(cor)) return true;
+      this.editarGrafico((g) => {
+        const cores = paletaDeSeries(g.series.length, undefined, g.cores);
+        cores[j] = cor.toUpperCase();
+        return comCores(g, cores);
+      }, "grafico-cor");
+      return true;
+    }
+    if (cmd.startsWith("grafico-cat:")) {
+      const i = Number(cmd.slice("grafico-cat:".length));
+      this.editarGrafico((g) => setCategoria(g, i, String(value ?? "")), `grafico-cat-${i}`);
+      return true;
+    }
+    if (cmd.startsWith("grafico-serie:")) {
+      const j = Number(cmd.slice("grafico-serie:".length));
+      this.editarGrafico((g) => setSerieNome(g, j, String(value ?? "")), `grafico-serie-${j}`);
+      return true;
+    }
+    if (cmd.startsWith("grafico-val:")) {
+      const [i, j] = cmd.slice("grafico-val:".length).split(":").map(Number);
+      const v = Number(String(value ?? "").replace(",", "."));
+      this.editarGrafico((g) => setValor(g, i, j, Number.isFinite(v) ? v : 0), `grafico-val-${i}-${j}`);
+      return true;
+    }
+    return false;
   }
 
   /** Comandos que mudam de significado quando a forma selecionada é uma tabela. Devolve true se tratou. */
@@ -1995,6 +2301,159 @@ export class PowerPointHost {
     this.markDirty();
   }
 
+  /** Troca a transição da lâmina atual (a fita manda o tipo, a direção ou a duração). */
+  private mudarTransicao(t: Transicao | undefined): void {
+    const atual = this.atual();
+    if (!atual.transicaoXml && JSON.stringify(atual.transicao ?? null) === JSON.stringify(t ?? null)) return;
+    // escolher uma transição na fita substitui a que veio do .pptx (inclusive a preservada crua)
+    this.editar((s) => ({ ...s, transicao: t, transicaoXml: undefined }), "transicao");
+  }
+
+  /** Prévia da transição no palco, sem entrar no F5 (as animações estão em styles/slides.css). */
+  private preverTransicao(): void {
+    const t = normalizarTransicao(this.atual().transicao);
+    if (!t || t.tipo === "none" || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const el = this.slideEl;
+    const ms = Math.round(duracaoDe(t) * 1000);
+    const classe = t.tipo === "fade" ? "anim-fade-entra" : t.tipo === "wipe" ? "anim-wipe-entra" : t.tipo === "split" ? "anim-split-entra" : "anim-desliza-entra";
+    const dir = `trans-${direcaoDe(t)}`;
+    let pronto = false;
+    const fim = () => {
+      if (pronto) return;
+      pronto = true;
+      el.classList.remove(dir, classe);
+      el.style.removeProperty("--trans-dur");
+    };
+    el.classList.remove(dir, classe);
+    void el.offsetWidth; // reinicia a animação quando a prévia é pedida de novo
+    el.style.setProperty("--trans-dur", `${ms}ms`);
+    el.classList.add(dir, classe);
+    el.addEventListener("animationend", fim, { once: true });
+    window.setTimeout(fim, ms + 150);
+  }
+
+  // ------------------------------------------------------------------
+  // mídia (áudio/vídeo)
+  // ------------------------------------------------------------------
+
+  /**
+   * Insere um áudio/vídeo na lâmina (o App chama isto depois de escolher o arquivo).
+   * O arquivo vira `media:ID`; a capa é o primeiro quadro do vídeo ou um cartão do motor.
+   */
+  async insertMedia(src: string, tipo?: string, nome?: string): Promise<void> {
+    const trocar = tipo === "trocar" || this.destinoMidia === "trocar";
+    this.destinoMidia = null;
+    const tipoFinal = tipo === "audio" || tipo === "video" ? tipo : (tipoDeArquivo(nome ?? "") ?? "video");
+    const ref = registrarMidia(this.setup, src);
+    const cartao = cartaoParaPng(midiaPadrao(tipoFinal, nome));
+    const poster = tipoFinal === "video" ? ((await capturarQuadro(src)) ?? cartao) : cartao;
+    if (trocar) {
+      const alvo = this.principal();
+      if (alvo?.midia) {
+        this.editar(
+          (s) =>
+            patchFormas(s, this.selecao, (f) =>
+              f.midia ? { src: ref, midia: normalizarMidia({ ...f.midia, tipo: tipoFinal, poster: poster ?? f.midia.poster, nome: nome ?? f.midia.nome }) } : {}
+            ),
+          "midia-arquivo"
+        );
+        return;
+      }
+    }
+    const midia = normalizarMidia({ ...midiaPadrao(tipoFinal, nome), poster: poster ?? undefined });
+    const forma: Shape = {
+      id: Math.random().toString(36).slice(2, 10),
+      kind: "imagem",
+      box: caixaDaMidia(tipoFinal, this.dim().w, this.dim().h),
+      text: "",
+      fontFamily: this.estilo().fonte,
+      fontSize: 16,
+      color: this.estilo().corTexto,
+      bold: false,
+      italic: false,
+      align: "centro",
+      fill: "",
+      src: ref,
+      rot: 0,
+      geom: "rect",
+      name: `${MIDIA_ROTULOS[tipoFinal]}${nome ? `: ${nome}` : ""}`,
+      midia,
+    };
+    this.registrar();
+    this.substituirSlide({ ...this.atual(), shapes: [...this.atual().shapes, forma] });
+    this.selecao = [forma.id];
+    this.markDirty();
+    this.pintar();
+  }
+
+  /** A mídia selecionada (a forma principal), se houver. */
+  private midiaAtual(): Shape | undefined {
+    const f = this.principal();
+    return f?.midia ? f : undefined;
+  }
+
+  /** Muda as opções da mídia selecionada (uma entrada no desfazer por chamada). */
+  private editarMidia(fn: (m: NonNullable<Shape["midia"]>) => NonNullable<Shape["midia"]>, chave = ""): void {
+    const f = this.midiaAtual();
+    if (!f?.midia) return;
+    this.editar(
+      (sl) => ({
+        ...sl,
+        shapes: sl.shapes.map((s) => (s.id !== f.id || !s.midia ? s : { ...s, midia: normalizarMidia(fn(s.midia)) })),
+      }),
+      chave
+    );
+  }
+
+  /** Comandos da mídia selecionada. Devolve true quando tratou. */
+  private comandoDeMidia(cmd: string, value?: string): boolean {
+    const f = this.midiaAtual();
+    if (!f?.midia) return false;
+    switch (cmd) {
+      case "midia-auto":
+        this.editarMidia((m) => comOpcaoMidia(m, "auto", value === "1"));
+        return true;
+      case "midia-loop":
+        this.editarMidia((m) => comOpcaoMidia(m, "loop", value === "1"));
+        return true;
+      case "midia-controles":
+        this.editarMidia((m) => comOpcaoMidia(m, "controles", value === "1"));
+        return true;
+      case "midia-continuar":
+        this.editarMidia((m) => comOpcaoMidia(m, "continuar", value === "1"));
+        return true;
+      case "midia-volume": {
+        const v = Number(String(value ?? "").replace(",", "."));
+        this.editarMidia((m) => comVolumeDaMidia(m, Number.isFinite(v) ? v / 100 : 1), "midia-vol");
+        return true;
+      }
+      case "midia-trocar":
+        this.destinoMidia = "trocar";
+        this.opts.onPickMedia?.("trocar");
+        return true;
+      case "midia-reproduzir": {
+        // prévia no palco: toca/pausa o player da forma
+        const el = this.slideEl.querySelector<HTMLMediaElement>(`[data-shape="${f.id}"] [data-player]`);
+        if (el) {
+          if (el.paused) void el.play().catch(() => {});
+          else el.pause();
+        }
+        return true;
+      }
+    }
+    if (cmd === "midia-corte:inicio" || cmd === "midia-corte:fim") {
+      const v = Number(String(value ?? "").replace(",", "."));
+      const noInicio = cmd.endsWith("inicio");
+      this.editarMidia((m) => {
+        const inicio = noInicio ? (Number.isFinite(v) ? v : 0) : (m.corte?.inicio ?? 0);
+        const fim = noInicio ? m.corte?.fim : Number.isFinite(v) && v > 0 ? v : undefined;
+        return comCorteDaMidia(m, inicio, fim);
+      }, "midia-corte");
+      return true;
+    }
+    return false;
+  }
+
   /** Quando a lâmina não tem formas, clicar no markdown edita o texto. */
   private editarMarkdown(): void {
     const md = this.slideEl.querySelector<HTMLElement>(".pp-md");
@@ -2208,7 +2667,7 @@ export class PowerPointHost {
   /** Modo apresentação (F5) com o deck em edição. */
   present(): void {
     if (this.editando) this.sairEdicao();
-    const ctx = this.ctxRender(false);
+    const ctx: CtxRender = { ...this.ctxRender(false), apresentando: true };
     openDeckView(this.deck, this.setup, "Apresentação", (slide) => slide.shapes.map((f) => htmlFormaRica(f, ctx)).join(""));
   }
 

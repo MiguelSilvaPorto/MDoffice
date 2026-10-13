@@ -3,9 +3,10 @@
 // um documento Markdown qualquer — por isso concentra openPresentation/deckSummary.
 import { marked } from "marked";
 import DOMPurify from "dompurify";
+import { direcaoDe, duracaoDe } from "./edicao/transicao";
 import { deckFromMarkdown } from "./markdown";
 import { DEFAULT_SETUP, stageRatio } from "./model";
-import type { Deck, DeckSetup, Slide } from "./schema";
+import type { Deck, DeckSetup, Slide, Transicao, TransicaoTipo } from "./schema";
 import { fundoValor } from "./render/forma";
 
 marked.setOptions({ gfm: true, breaks: false });
@@ -14,11 +15,26 @@ function sanitize(html: string): string {
   return DOMPurify.sanitize(html, { ADD_ATTR: ["target", "rel"] });
 }
 
+/** Lâmina oculta (`show === false`) fica de fora da apresentação. O campo ainda
+ *  pode não existir no modelo, por isso a checagem é `=== false` (não `!slide.show`). */
+function oculta(slide: Slide): boolean {
+  return (slide as Slide & { show?: boolean }).show === false;
+}
+
 /** Abre o modo apresentação. Setas/Espaço/Enter/clique avançam, Backspace volta,
- *  N mostra/oculta as notas, Esc sai. Ctrl+P imprime uma lâmina por página (PDF). */
+ *  Home/End vão à primeira/última lâmina, digitar um número e Enter pula direto
+ *  para a lâmina, B/W alternam tela preta/branca, N mostra/oculta as notas, Esc
+ *  sai. Ctrl+P imprime uma lâmina por página (PDF). Lâminas ocultas não aparecem. */
 export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titulo?: string, desenharFormas?: (slide: Slide) => string): void {
   if (!deck.slides.length) {
     alert("Este documento não tem conteúdo para apresentar.\n\nSepare as lâminas com uma linha de três traços (---).");
+    return;
+  }
+  // a apresentação anda pela ordem das lâminas visíveis: `atual` é a posição nessa
+  // lista (e é o número que a barra mostra), não o índice em deck.slides
+  const ordem = deck.slides.map((_, i) => i).filter((i) => !oculta(deck.slides[i]));
+  if (!ordem.length) {
+    alert("Todas as lâminas estão ocultas — não há o que apresentar.\n\nMostre ao menos uma lâmina para usar o modo apresentação.");
     return;
   }
   const overlay = document.createElement("div");
@@ -26,10 +42,12 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   overlay.innerHTML = `
     <div class="slides-stage" data-stage></div>
     <div class="slides-notes" data-notes hidden></div>
+    <div class="slides-tela" data-tela hidden></div>
     <div class="slides-bar">
       <span class="slides-title" data-title></span>
       <span class="slides-count" data-count></span>
-      <span class="slides-help">← → navega · N notas · Esc sai · Ctrl+P exporta PDF</span>
+      <span class="slides-goto" data-goto hidden></span>
+      <span class="slides-help">← → ↑ ↓ / PgUp PgDn navega · Home/End início/fim · nº + Enter vai para a lâmina · B/W tela preta/branca · N notas · Esc sai · Ctrl+P PDF</span>
       <button class="btn" data-close>Fechar</button>
     </div>`;
   document.body.append(overlay);
@@ -40,52 +58,265 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   const contador = overlay.querySelector<HTMLElement>("[data-count]")!;
   const notas = overlay.querySelector<HTMLElement>("[data-notes]")!;
   const rotulo = overlay.querySelector<HTMLElement>("[data-title]")!;
+  const tela = overlay.querySelector<HTMLElement>("[data-tela]")!;
+  const goto = overlay.querySelector<HTMLElement>("[data-goto]")!;
   let atual = 0;
   let mostrarNotas = false;
+  let digitos = ""; // número sendo digitado para "ir para a lâmina"
+  let telaCor: "preta" | "branca" | null = null; // tela preta/branca (B/W)
+  let pinturaSeq = 0; // marked é assíncrono: uma pintura antiga não pode sobrescrever a nova
+  let encerrarAtual: (() => void) | null = null; // transição de lâmina em andamento
 
   rotulo.textContent = titulo || deck.titulo;
   if (setup.footer) rotulo.textContent += ` · ${setup.footer}`;
 
-  const pintar = async () => {
-    const slide = deck.slides[atual];
+  // ---- mídia (áudio/vídeo) ----
+  // Cada lâmina nova recria o palco; os players com `continuar` são movidos para um "bolso"
+  // (o nó continua vivo, tocando) e voltam ao palco quando a lâmina deles aparece de novo.
+  const midiasNoBolso = new Map<string, HTMLMediaElement>();
+  const soltarMidias = () => {
+    for (const el of stage.querySelectorAll<HTMLMediaElement>("[data-midia-id]")) {
+      const id = el.dataset.midiaId!;
+      if (el.dataset.continuar === "1") {
+        midiasNoBolso.set(id, el);
+        el.remove();
+      } else {
+        el.pause();
+      }
+    }
+  };
+  const tocarMidias = () => {
+    for (const el of stage.querySelectorAll<HTMLMediaElement>("[data-midia-id]")) {
+      const id = el.dataset.midiaId!;
+      const salvo = midiasNoBolso.get(id);
+      if (salvo && salvo !== el) {
+        // o player que já estava tocando volta no lugar do marcador (posição preservada)
+        el.replaceWith(salvo);
+        midiasNoBolso.delete(id);
+        continue;
+      }
+      const vol = Number(el.dataset.vol ?? "1");
+      el.volume = Number.isFinite(vol) ? Math.max(0, Math.min(1, vol)) : 1;
+      const ini = Number(el.dataset.ini ?? "0");
+      const fim = el.dataset.fim ? Number(el.dataset.fim) : null;
+      const posiciona = () => {
+        try {
+          el.currentTime = ini;
+        } catch {
+          /* vídeo sem metadados ainda */
+        }
+      };
+      if (ini > 0.05) {
+        if (el.readyState >= 1) posiciona();
+        else el.addEventListener("loadedmetadata", posiciona, { once: true });
+      }
+      if (fim !== null && Number.isFinite(fim)) {
+        el.addEventListener("timeupdate", () => {
+          if (el.currentTime >= fim) {
+            if (el.loop) posiciona();
+            else el.pause();
+          }
+        });
+      }
+      if (el.dataset.auto === "1") void el.play().catch(() => {});
+    }
+  };
+
+  /** Monta o conteúdo de uma lâmina num elemento próprio (o palco só troca as camadas). */
+  const conteudoDa = async (slide: Slide): Promise<HTMLElement> => {
+    const secao = document.createElement("section");
     // lâmina com formas (importada de .pptx ou montada no palco): desenha as formas, como no palco, em escala cheia
     if (slide.shapes.length && desenharFormas) {
+      secao.className = "slide-rica";
       const fundo = fundoValor(slide.bg, setup.media ?? {});
-      stage.innerHTML = `<section class="slide-rica" style="${fundo ? `background:${fundo};` : ""}">${desenharFormas(slide)}</section>`;
-      contador.textContent = `${atual + 1} / ${deck.slides.length}`;
-      notas.textContent = slide.notes;
-      notas.hidden = !mostrarNotas || !slide.notes;
-      return;
+      if (fundo) secao.style.background = fundo;
+      secao.innerHTML = desenharFormas(slide);
+      return secao;
     }
     const html = await marked.parse(slide.md, { gfm: true, async: true });
-    const numero = setup.showNumber ? `<span class="slide-num">${atual + 1}</span>` : "";
-    stage.innerHTML = `<section class="slide layout-${slide.layout}">${sanitize(String(html))}${numero}</section>`;
-    contador.textContent = `${atual + 1} / ${deck.slides.length}`;
+    secao.className = `slide layout-${slide.layout}`;
+    secao.innerHTML = sanitize(String(html)) + (setup.showNumber ? `<span class="slide-num">${atual + 1}</span>` : "");
+    return secao;
+  };
+
+  /** Movimento reduzido no sistema: troca direta, sem animação. */
+  const semMovimento = (): boolean => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+
+  /** Encerra a transição em andamento (a lâmina que saiu some na hora). */
+  const encerrarTransicao = (): void => {
+    const fim = encerrarAtual;
+    encerrarAtual = null;
+    fim?.();
+  };
+
+  const animacaoDe = (tipo: TransicaoTipo, entra: boolean): string | null => {
+    if (tipo === "fade") return entra ? "anim-fade-entra" : "anim-fade-sai";
+    if (tipo === "push") return entra ? "anim-desliza-entra" : "anim-desliza-sai";
+    if (tipo === "cover") return entra ? "anim-desliza-entra" : null; // a antiga fica parada
+    if (tipo === "uncover") return entra ? null : "anim-desliza-sai"; // a nova já está no lugar
+    if (tipo === "wipe") return entra ? "anim-wipe-entra" : null;
+    if (tipo === "split") return entra ? "anim-split-entra" : null;
+    return null;
+  };
+
+  /**
+   * Troca o conteúdo do palco. Com transição, a lâmina que sai fica numa camada por baixo e a que
+   * entra anima por cima (as animações estão em styles/slides.css). Uma transição nova cancela a anterior.
+   */
+  const mostrar = (novo: HTMLElement, t?: Transicao): void => {
+    encerrarTransicao();
+    const saindo = stage.querySelector<HTMLElement>(".slides-camada.entrando");
+    const camada = document.createElement("div");
+    camada.className = "slides-camada entrando";
+    camada.append(novo);
+    if (!saindo || !t || t.tipo === "none" || semMovimento()) {
+      stage.replaceChildren(camada);
+      return;
+    }
+    const ms = Math.round(duracaoDe(t) * 1000);
+    const dir = direcaoDe(t);
+    const anima = (el: HTMLElement, entra: boolean) => {
+      const nome = animacaoDe(t.tipo, entra);
+      el.style.setProperty("--trans-dur", `${ms}ms`);
+      el.classList.add(`trans-${dir}`);
+      if (nome) el.classList.add(nome);
+    };
+    saindo.classList.replace("entrando", "saindo");
+    anima(saindo, false);
+    anima(camada, true);
+    stage.replaceChildren(saindo, camada);
+    const fim = () => {
+      saindo.remove();
+      camada.className = "slides-camada entrando";
+      camada.style.removeProperty("--trans-dur");
+    };
+    const relogio = window.setTimeout(() => {
+      encerrarAtual = null;
+      fim();
+    }, ms + 120);
+    encerrarAtual = () => {
+      window.clearTimeout(relogio);
+      fim();
+    };
+  };
+
+  const pintar = async (animar = false): Promise<void> => {
+    const seq = ++pinturaSeq;
+    const slide = deck.slides[ordem[atual]];
+    const conteudo = await conteudoDa(slide);
+    if (seq !== pinturaSeq) return; // uma troca mais recente já assumiu a pintura
+    soltarMidias();
+    mostrar(conteudo, animar ? slide.transicao : undefined);
+    tocarMidias();
+    contador.textContent = `${atual + 1} / ${ordem.length}`;
     notas.textContent = slide.notes;
     notas.hidden = !mostrarNotas || !slide.notes;
   };
   void pintar();
 
-  const ir = (passo: number) => {
-    const proximo = Math.min(Math.max(0, atual + passo), deck.slides.length - 1);
+  const irPara = (pos: number) => {
+    if (digitos) limparDigitos(); // navegar (tecla ou clique) cancela o número pendente
+    const proximo = Math.min(Math.max(0, pos), ordem.length - 1);
     if (proximo === atual) return;
     atual = proximo;
-    void pintar();
+    // a transição é a da lâmina que está ENTRANDO
+    void pintar(true);
   };
+  const ir = (passo: number) => irPara(atual + passo);
+
+  const limparDigitos = () => {
+    digitos = "";
+    goto.hidden = true;
+  };
+  const mostrarDigitos = () => {
+    goto.textContent = `ir para lâmina ${digitos}`;
+    goto.hidden = false;
+  };
+  const limparTela = () => {
+    telaCor = null;
+    tela.hidden = true;
+    tela.classList.remove("preta", "branca");
+  };
+  const mostrarTela = (cor: "preta" | "branca") => {
+    // a mesma tecla desliga a tela; a outra tecla troca a cor
+    if (telaCor === cor) {
+      limparTela();
+      return;
+    }
+    telaCor = cor;
+    tela.hidden = false;
+    tela.classList.toggle("preta", cor === "preta");
+    tela.classList.toggle("branca", cor === "branca");
+  };
+
   const fechar = () => {
     document.removeEventListener("keydown", onKey, true);
+    encerrarTransicao();
+    for (const el of stage.querySelectorAll<HTMLMediaElement>("audio,video")) el.pause();
+    for (const el of midiasNoBolso.values()) el.pause();
     overlay.remove();
     document.body.classList.remove("apresentando");
   };
   const onKey = (e: KeyboardEvent) => {
-    if (e.key === "Escape") {
+    if (e.ctrlKey || e.metaKey || e.altKey) return; // atalhos do sistema (Ctrl+P etc.) passam direto
+    const tecla = e.key.toLowerCase();
+    // tela preta/branca: B e W alternam; qualquer outra tecla volta para a lâmina
+    if (telaCor) {
       e.preventDefault();
-      fechar();
+      if (tecla === "b") mostrarTela("preta");
+      else if (tecla === "w") mostrarTela("branca");
+      else limparTela();
       return;
     }
-    if (e.key.toLowerCase() === "n") {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      if (digitos) limparDigitos(); // o primeiro Esc cancela o número digitado
+      else fechar();
+      return;
+    }
+    if (/^\d$/.test(e.key)) {
+      e.preventDefault();
+      digitos += e.key;
+      mostrarDigitos();
+      return;
+    }
+    if (digitos) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        irPara(Number(digitos) - 1); // "0" cai na primeira; acima do total, na última
+        limparDigitos();
+        return;
+      }
+      if (e.key === "Backspace") {
+        e.preventDefault();
+        digitos = digitos.slice(0, -1);
+        if (digitos) mostrarDigitos();
+        else limparDigitos();
+        return;
+      }
+      limparDigitos(); // qualquer outra tecla cancela o número pendente
+    }
+    if (tecla === "n") {
       mostrarNotas = !mostrarNotas;
-      notas.hidden = !mostrarNotas || !deck.slides[atual].notes;
+      notas.hidden = !mostrarNotas || !deck.slides[ordem[atual]].notes;
+      return;
+    }
+    if (tecla === "b") {
+      mostrarTela("preta");
+      return;
+    }
+    if (tecla === "w") {
+      mostrarTela("branca");
+      return;
+    }
+    if (e.key === "Home") {
+      e.preventDefault();
+      irPara(0);
+      return;
+    }
+    if (e.key === "End") {
+      e.preventDefault();
+      irPara(ordem.length - 1);
       return;
     }
     if (["ArrowRight", "ArrowDown", " ", "PageDown", "Enter"].includes(e.key)) {
@@ -100,8 +331,13 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   };
   document.addEventListener("keydown", onKey, true);
   overlay.addEventListener("click", (e) => {
+    if (telaCor) {
+      limparTela(); // clique volta da tela preta/branca
+      return;
+    }
     const alvo = e.target as HTMLElement;
     if (alvo.closest("a")) return;
+    if (alvo.closest("audio,video")) return; // controles da mídia: o clique é do player
     if (alvo.closest("[data-close]")) {
       fechar();
       return;

@@ -11,6 +11,7 @@
     "build": "node scripts/copiar-dicionario.mjs && node scripts/baixar-modelo.mjs && tsc && vite build",
     "check": "tsc --noEmit",
     "test:excel": "node scripts/testar-excel.mjs && node scripts/testar-grade-excel.mjs",
+    "test:correcao": "node scripts/testar-correcao.mjs",
     "test:log": "node scripts/testar-snapshots.mts",
     "test:backup": "node scripts/testar-backup.mts && node scripts/testar-backup-e2e.cjs",
     "test:layout": "node scripts/testar-layout.mts",

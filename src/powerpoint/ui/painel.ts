@@ -1,6 +1,8 @@
 // Painel "Formatar" (à direita): tudo que a fita não cabe, com números exatos — preenchimento (sólido, gradiente com
 // paradas, imagem), contorno, sombra, cantos, tamanho e posição em cm, rotação, texto, recorte de imagem e fundo da lâmina.
 import { AJUSTES_POR_GEOM, raioDeCanto } from "../edicao/formato";
+import { GRAFICO_TIPOS, paletaDeSeries } from "../edicao/grafico";
+import { MIDIA_ROTULOS } from "../edicao/midia";
 import { ORDEM_LAYOUTS, ROTULOS_LAYOUT } from "../edicao/layouts";
 import type { Fill, Line, Shadow, Shape } from "../schema";
 import { abrirCores } from "./cores";
@@ -12,6 +14,10 @@ export interface HooksPainel {
 }
 
 const n1 = (v: number) => String(Math.round(v * 100) / 100);
+
+/** Texto para dentro de um atributo HTML (nomes de série, categorias e título do gráfico). */
+const escAttr = (t: string) =>
+  String(t ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 const secao = (id: string, titulo: string, corpo: string, aberta = true) =>
   `<details class="pf-secao" data-sec="${id}"${aberta ? " open" : ""}><summary>${titulo}</summary><div class="pf-corpo">${corpo}</div></details>`;
@@ -102,8 +108,10 @@ export class Painel {
   private assinar(est: EstadoUI): string {
     const f = est.forma;
     return JSON.stringify([
-      est.formas.map((s) => [s.id, s.box, s.rot, s.fillX, s.ln, s.shadow, s.opacity, s.adj, s.anchor, s.ins, s.wrap, s.vert, s.crop, s.flipH, s.flipV, s.bloqueada, s.autofit]),
+      est.formas.map((s) => [s.id, s.box, s.rot, s.fillX, s.ln, s.shadow, s.opacity, s.adj, s.anchor, s.ins, s.wrap, s.vert, s.crop, s.flipH, s.flipV, s.bloqueada, s.autofit, s.grafico, s.midia, s.src]),
       f ? f.geom : "",
+      // o espaçamento de caracteres do painel segue o trecho escolhido no texto
+      est.trecho && est.trecho.spc !== "misto" ? est.trecho.spc : null,
       est.formas.length ? "" : [est.bg, est.layout, est.setup.theme],
     ]);
   }
@@ -118,6 +126,8 @@ export class Painel {
     const multiplas = est.formas.length > 1;
     const partes: string[] = [];
     partes.push(`<div class="pf-titulo">${multiplas ? `${est.formas.length} formas selecionadas` : f.name || (f.kind === "imagem" ? "Imagem" : "Forma")}</div>`);
+    if (f.grafico) partes.push(secao("grafico", "Gráfico", this.htmlGrafico(f)));
+    if (f.midia) partes.push(secao("midia", "Mídia", this.htmlMidia(f)));
     if (f.kind === "imagem") partes.push(secao("imagem", "Imagem", this.htmlImagem(f)));
     if (f.kind !== "imagem" && !(f.geom === "line" || f.geom?.endsWith("Connector3") || f.geom === "straightConnector1")) partes.push(secao("preench", "Preenchimento", this.htmlPreenchimento(f)));
     partes.push(secao("linha", "Linha", this.htmlLinha(f)));
@@ -125,7 +135,7 @@ export class Painel {
     const ajustes = this.htmlAjustes(f);
     if (ajustes) partes.push(secao("ajustes", "Ajustes da forma", ajustes));
     partes.push(secao("tamanho", "Tamanho e posição", this.htmlTamanho(f, est)));
-    if (f.paras !== undefined) partes.push(secao("texto", "Texto", this.htmlTexto(f)));
+    if (f.paras !== undefined) partes.push(secao("texto", "Texto", this.htmlTexto(f, est)));
     return partes.join("");
   }
 
@@ -212,12 +222,14 @@ export class Painel {
     ].join("");
   }
 
-  private htmlTexto(f: Shape): string {
+  private htmlTexto(f: Shape, est: EstadoUI): string {
     const ins = f.ins ?? [7.2, 3.6, 7.2, 3.6];
+    const spc = est.trecho && est.trecho.spc !== "misto" ? est.trecho.spc : 0;
     return [
       `<div class="pf-linha"><span>Alinhamento vertical</span></div>`,
       radios("anc", "anchor", f.anchor ?? "t", [["t", "Topo"], ["ctr", "Meio"], ["b", "Base"]]),
       linhaSel("Direção", "vert", f.vert ?? "", [["", "Horizontal"], ["vert", "Girar 90°"], ["vert270", "Girar 270°"]]),
+      linhaNum("Espaçamento entre caracteres", "espacamento", spc, 0.25, -50, 50, "pt"),
       linhaNum("Margem esquerda", "marg:0", ptParaCm(ins[0]), 0.05, 0, 20, "cm"),
       linhaNum("Margem superior", "marg:1", ptParaCm(ins[1]), 0.05, 0, 20, "cm"),
       linhaNum("Margem direita", "marg:2", ptParaCm(ins[2]), 0.05, 0, 20, "cm"),
@@ -236,6 +248,72 @@ export class Painel {
       linhaNum("Base", "crop:3", c[3], 1, 0, 95, "%"),
       `<div class="pf-botoes"><button type="button" class="btn small" data-click="crop-reset">Redefinir recorte</button><button type="button" class="btn small" data-click="imagem-trocar">Trocar imagem…</button></div>`,
       linhaSel("Formato", "img-forma", f.geom === "ellipse" ? "ellipse" : f.geom === "roundRect" ? "roundRect" : "rect", [["rect", "Retângulo"], ["roundRect", "Cantos arredondados"], ["ellipse", "Círculo/elipse"]]),
+    ].join("");
+  }
+
+  /** Gráfico: tipo, título, opções e a tabela de dados (categorias × séries). */
+  private htmlGrafico(f: Shape): string {
+    const g = f.grafico!;
+    const partes: string[] = [];
+    partes.push(linhaSel("Tipo", "grafico-tipo", g.tipo, GRAFICO_TIPOS.map((t) => [t.id, t.nome] as [string, string])));
+    partes.push(
+      `<label class="pf-linha"><span>Título</span><span class="pf-campo"><input type="text" data-act="grafico-titulo" value="${escAttr(g.titulo ?? "")}" placeholder="Sem título"></span></label>`
+    );
+    partes.push(linhaCheck("Legenda", "grafico-legenda", g.legenda ?? g.series.length > 1));
+    partes.push(linhaCheck("Rótulos de dados", "grafico-rotulos", !!g.rotulos));
+    if (g.tipo === "colunas" || g.tipo === "barras" || g.tipo === "area") partes.push(linhaCheck("Empilhado", "grafico-empilhado", !!g.empilhado));
+
+    // tabela de dados: uma linha por série, uma coluna por categoria
+    const td = "padding:1px 2px;text-align:center;vertical-align:middle";
+    const inp = "width:52px;font-size:11px;padding:2px 3px";
+    const inpCat = "width:64px;font-size:11px;padding:2px 3px";
+    const cabec = g.categorias
+      .map(
+        (c, i) =>
+          `<th style="padding:1px 2px;text-align:center"><input type="text" style="${inpCat}" data-act="grafico-cat:${i}" value="${escAttr(c)}" aria-label="Categoria ${i + 1}"><div><button type="button" class="pf-x" data-click="grafico-del-cat" data-valor="${i}" title="Remover categoria"${g.categorias.length <= 1 ? " disabled" : ""}>×</button></div></th>`
+      )
+      .join("");
+    const cores = paletaDeSeries(g.series.length, undefined, g.cores);
+    const linhas = g.series
+      .map((s, j) => {
+        const cels = g.categorias
+          .map((_, i) => `<td style="${td}"><input type="number" style="${inp}" data-act="grafico-val:${i}:${j}" value="${n1(s.valores[i] ?? 0)}" step="1" aria-label="Valor da série ${j + 1}, categoria ${i + 1}"></td>`)
+          .join("");
+        return (
+          `<tr><th style="padding:1px 2px;text-align:left;white-space:nowrap">` +
+          `<button type="button" class="pf-cor" data-cor-act="grafico-cor:${j}" title="Cor da série" style="background:#${cores[j]}"></button>` +
+          `<input type="text" style="${inpCat}" data-act="grafico-serie:${j}" value="${escAttr(s.nome)}" aria-label="Nome da série ${j + 1}"></th>` +
+          `${cels}<td style="${td}"><button type="button" class="pf-x" data-click="grafico-del-serie" data-valor="${j}" title="Remover série"${g.series.length <= 1 ? " disabled" : ""}>×</button></td></tr>`
+        );
+      })
+      .join("");
+    partes.push(
+      `<div style="overflow:auto;max-width:100%"><table style="border-collapse:collapse;margin:2px 0"><thead><tr><th></th>${cabec}<th></th></tr></thead><tbody>${linhas}</tbody></table></div>`
+    );
+    partes.push(
+      `<div class="pf-botoes"><button type="button" class="btn small" data-click="grafico-add-cat">+ Categoria</button><button type="button" class="btn small" data-click="grafico-add-serie">+ Série</button></div>`
+    );
+    partes.push(`<p class="pf-dica">O gráfico é desenhado na lâmina e vai para o .pptx como imagem; para editar os dados depois, continue no mdCreator.</p>`);
+    return partes.join("");
+  }
+
+  /** Mídia (áudio/vídeo): reprodução na apresentação, volume e corte do trecho. */
+  private htmlMidia(f: Shape): string {
+    const m = f.midia!;
+    const vol = Math.round((m.volume ?? 1) * 100);
+    const corte = m.corte ?? { inicio: 0 };
+    return [
+      `<div class="pf-linha"><span>Tipo</span><span class="pf-campo"><b>${MIDIA_ROTULOS[m.tipo]}</b></span></div>`,
+      m.nome ? `<div class="pf-linha"><span>Arquivo</span><span class="pf-campo"><small>${escAttr(m.nome)}</small></span></div>` : "",
+      linhaCheck("Reproduzir automaticamente", "midia-auto", !!m.auto),
+      linhaCheck("Repetir", "midia-loop", !!m.loop),
+      linhaCheck("Mostrar controles na apresentação", "midia-controles", !!m.controles),
+      linhaCheck("Continuar em outras lâminas", "midia-continuar", !!m.continuar),
+      linhaNum("Volume", "midia-volume", vol, 5, 0, 100, "%"),
+      linhaNum("Início do trecho", "midia-corte:inicio", corte.inicio, 0.5, 0, null, "s"),
+      linhaNum("Fim do trecho", "midia-corte:fim", corte.fim ?? "", 0.5, 0, null, "s"),
+      `<div class="pf-botoes"><button type="button" class="btn small" data-click="midia-reproduzir">▶ Reproduzir aqui</button><button type="button" class="btn small" data-click="midia-trocar">Trocar arquivo…</button></div>`,
+      `<p class="pf-dica">A mídia toca no modo apresentação (F5). A capa é o primeiro quadro do vídeo, e o arquivo vai junto no .pptx exportado.</p>`,
     ].join("");
   }
 

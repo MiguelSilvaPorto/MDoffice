@@ -1,8 +1,10 @@
 // A fita da apresentação, no desenho do PowerPoint: abas (Página Inicial, Inserir, Formato da Forma, Design, Exibir),
 // grupos com o nome embaixo, botões grandes e pequenos. Tudo é despachado por `run(comando, valor)` para o host.
 import { SOMBRAS_PRONTAS } from "../edicao/formato";
+import { GRAFICO_TIPOS } from "../edicao/grafico";
 import { ROTULOS_PRESET, type PresetTabela } from "../edicao/tabela";
-import type { SlideLayout } from "../schema";
+import { DICAS_DIRECAO, DICAS_TRANSICAO, DIRECOES_TRANSICAO, DURACOES_TRANSICAO, ROTULOS_DIRECAO, ROTULOS_TRANSICAO, TIPOS_TRANSICAO, aceitaDirecao, direcaoDe, duracaoDe, formatarDuracao } from "../edicao/transicao";
+import type { SlideLayout, TransicaoDirecao, TransicaoTipo } from "../schema";
 import { abrirCores } from "./cores";
 import { FONTES_COMUNS, TAMANHOS, cmParaPt, ptParaCm, type EstadoUI } from "./estado";
 import { abrirGaleria, iconeDeForma } from "./galeria";
@@ -25,11 +27,39 @@ const grande = (cmd: string, icone: string, nome: string, titulo: string, menu =
 const pequeno = (cmd: string, icone: string, nome: string, titulo: string, menu = false) => btn(cmd, `${icone}<span>${nome}</span>`, titulo, "txt", menu);
 const grupo = (nome: string, corpo: string) => `<div class="ppr-grupo"><div class="ppr-corpo">${corpo}</div><div class="ppr-rotulo">${nome}</div></div>`;
 
+/** Setas da direção da transição (a lâmina entra por esse lado). */
+const FLECHAS_DIRECAO: Record<TransicaoDirecao, string> = { esquerda: "←", direita: "→", cima: "↑", baixo: "↓" };
+
+/** Prévia visual de cada transição: a lâmina que entra é o retângulo cheio, a que sai é o mais claro. */
+function previaTransicao(tipo: TransicaoTipo): string {
+  const moldura = `<rect x="1" y="1" width="30" height="18" rx="2" fill="none" stroke="currentColor" stroke-opacity=".45"/>`;
+  const bloco = (x: number, w: number, opacidade = 0.3) => `<rect x="${x}" y="1" width="${w}" height="18" rx="2" fill="currentColor" fill-opacity="${opacidade}"/>`;
+  const traco = (d: string) => `<path d="${d}" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const desenhos: Record<TransicaoTipo, string> = {
+    // troca direta: um risco no meio
+    none: moldura + traco("M7 16 25 4"),
+    // a nova aparece sobre a antiga
+    fade: moldura + bloco(1, 30, 0.16) + traco("M7 10h18M21 6.5 24.5 10 21 13.5"),
+    // as duas deslizam juntas
+    push: moldura + bloco(1, 15, 0.18) + bloco(16, 15, 0.42) + traco("M9 10h11M16 6.5 19.5 10 16 13.5"),
+    // a nova é revelada a partir da borda
+    wipe: moldura + bloco(1, 16, 0.42) + traco("M17 2v16M11 10h7M15 6.5 18.5 10 15 13.5"),
+    // abre do centro
+    split: moldura + bloco(1, 13, 0.42) + bloco(18, 13, 0.42) + traco("M15.5 4.5 13 10l2.5 5.5M16.5 4.5 19 10l-2.5 5.5"),
+    // a nova desliza por cima da antiga
+    cover: moldura + bloco(1, 16, 0.16) + bloco(15, 16, 0.42) + traco("M8 10h9M14 6.5 17.5 10 14 13.5"),
+    // a antiga sai e revela a nova
+    uncover: moldura + bloco(1, 17, 0.42) + bloco(17, 14, 0.16) + traco("M7 10h9M13 6.5 16.5 10 13 13.5"),
+  };
+  return `<svg class="ppr-trans-svg" viewBox="0 0 32 20" aria-hidden="true">${desenhos[tipo]}</svg>`;
+}
+
 const ABAS = [
   { id: "inicio", nome: "Página Inicial" },
   { id: "inserir", nome: "Inserir" },
   { id: "formato", nome: "Formato da Forma" },
   { id: "tabela", nome: "Layout da Tabela" },
+  { id: "transicoes", nome: "Transições" },
   { id: "design", nome: "Design" },
   { id: "exibir", nome: "Exibir" },
 ];
@@ -45,6 +75,20 @@ const ESTILOS_RAPIDOS: { nome: string; cmd: string }[] = [
   { nome: "Suave", cmd: "estilo:suave" },
 ];
 
+/** Cores clássicas do marca-texto (as mesmas do PowerPoint), hex sem #. */
+const CORES_MARCA_TEXTO = ["FFFF00", "00FF00", "00FFFF", "FF99CC", "FFC000", "C9DAF8", "D9EAD3", "F4CCCC"];
+
+/** Presets de espaçamento entre caracteres em pt (negativo = letras mais juntas). */
+const ESPACAMENTOS: [string, string][] = [
+  ["-1.5", "Muito reduzido (-1,5 pt)"],
+  ["-0.75", "Reduzido (-0,75 pt)"],
+  ["0", "Nenhum"],
+  ["0.75", "Ampliado (0,75 pt)"],
+  ["1.5", "Muito ampliado (1,5 pt)"],
+  ["3", "3 pt"],
+  ["5", "5 pt"],
+];
+
 export class Fita {
   readonly el: HTMLElement;
   private aba = "inicio";
@@ -53,7 +97,7 @@ export class Fita {
     this.el = host;
     host.innerHTML = `
       <div class="ppr-abas" role="tablist">
-        ${ABAS.map((a) => `<button type="button" class="ppr-aba${a.id === "inicio" ? " on" : ""}" role="tab" data-aba="${a.id}"${a.id === "formato" || a.id === "tabela" ? " hidden" : ""}>${a.nome}</button>`).join("")}
+        ${ABAS.map((a) => `<button type="button" class="ppr-aba${a.id === "inicio" ? " on" : ""}" role="tab" data-aba="${a.id}"${a.id === "formato" || a.id === "tabela" ? " hidden" : ""}><span class="ppr-aba-rot" data-nome="${a.nome}">${a.nome}</span></button>`).join("")}
         <span class="ppr-enche"></span>
         <button type="button" class="ppr-aba ppr-tpl" data-cmd="modelo" data-menu="1" title="Aplicar um modelo à apresentação (tema, cores e fonte)">${ic("i-addons")}<span>Template</span></button>
         <button type="button" class="ppr-aba ppr-cfg" data-cmd="configure" title="Configurar apresentação: proporção, tema, fonte e rodapé">${ic("i-gear")}<span>Configurar</span></button>
@@ -63,6 +107,7 @@ export class Fita {
         <div class="ppr-painel" data-painel="inserir" hidden>${this.inserir()}</div>
         <div class="ppr-painel" data-painel="formato" hidden>${this.formato()}</div>
         <div class="ppr-painel" data-painel="tabela" hidden>${this.tabela()}</div>
+        <div class="ppr-painel" data-painel="transicoes" hidden>${this.transicoes()}</div>
         <div class="ppr-painel" data-painel="design" hidden>${this.design()}</div>
         <div class="ppr-painel" data-painel="exibir" hidden>${this.exibir()}</div>
       </div>`;
@@ -106,6 +151,11 @@ export class Fita {
            ${pequeno("layout", ic("i-columns"), "Layout", "Layout da lâmina", true)}
            ${pequeno("slide-dup", ic("i-dup"), "Duplicar", "Duplicar lâmina")}
            ${pequeno("slide-del", ic("i-trash"), "Excluir", "Excluir lâmina")}
+         </div>
+         <div class="ppr-col">
+           ${pequeno("slide-nome", ic("i-text"), "Renomear", "Dar um nome à lâmina (aparece na miniatura e no .pptx)")}
+           ${pequeno("slide-ocultar", ic("i-eye"), "Ocultar", "Ocultar ou mostrar a lâmina na apresentação")}
+           ${pequeno("slide-reset", ic("i-replace"), "Redefinir", "Redefinir a lâmina: tira as formas próprias e reaplica as caixas do layout")}
          </div>`
       ),
       grupo(
@@ -123,6 +173,15 @@ export class Fita {
              ${btn("sublinhado", "<u>S</u>", "Sublinhado (Ctrl+U)", "fmt")}
              ${btn("tachado", "<s>ab</s>", "Tachado", "fmt")}
              ${btn("cor-texto", `<span class="ppr-a">A</span><span class="ppr-barra" data-barra="cor-texto"></span>`, "Cor da fonte", "fmt cor", true)}
+             ${btn("marca-texto", `<span class="ppr-a ppr-hl">ab</span><span class="ppr-barra" data-barra="marca-texto"></span>`, "Marca-texto", "fmt cor", true)}
+           </div>
+           <div class="ppr-linha">
+             ${btn("sobrescrito", "x<sup>2</sup>", "Sobrescrito", "fmt")}
+             ${btn("subscrito", "x<sub>2</sub>", "Subscrito", "fmt")}
+             ${btn("versalete", `A<span class="ppr-va">bc</span>`, "Versalete (maiúsculas pequenas)", "fmt")}
+             ${btn("caixa", "Aa", "Mudar a caixa do texto: MAIÚSCULAS, minúsculas ou Primeira Letra", "fmt", true)}
+             ${btn("espacamento", `<span class="ppr-seta">A↔</span>`, "Espaçamento entre caracteres", "fmt", true)}
+             ${btn("limpar-formatacao", ic("i-clear-format"), "Limpar formatação", "fmt")}
            </div>
          </div>`
       ),
@@ -168,6 +227,7 @@ export class Fita {
     return [
       grupo("Lâminas", `${grande("slide-novo", ic("i-plus"), "Nova lâmina", "Nova lâmina depois da atual: escolha o layout", true)}`),
       grupo("Tabelas", `${grande("tabela-grade", ic("i-grid"), "Tabela", "Inserir uma tabela", true)}`),
+      grupo("Gráficos", `${grande("grafico-menu", ic("i-chart"), "Gráfico", "Inserir um gráfico (colunas, barras, linhas, pizza…)", true)}`),
       grupo(
         "Texto",
         `${grande("ferramenta:texto", ic("i-doc"), "Caixa de texto", "Desenhe uma caixa de texto na lâmina")}`
@@ -176,6 +236,13 @@ export class Fita {
         "Ilustrações",
         `${grande("galeria", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[7], 30)}</span>`, "Formas", "Escolha uma forma e desenhe na lâmina", true)}
          ${grande("image", ic("i-image"), "Imagem", "Inserir imagem do computador")}`
+      ),
+      grupo(
+        "Mídia",
+        `<div class="ppr-col">
+           ${pequeno("midia:video", ic("i-video"), "Vídeo", "Inserir um vídeo do computador")}
+           ${pequeno("midia:audio", ic("i-audio"), "Áudio", "Inserir um áudio do computador")}
+         </div>`
       ),
       grupo(
         "Linhas",
@@ -275,6 +342,29 @@ export class Fita {
     ].join("");
   }
 
+  /** Aba Transições: galeria dos efeitos, direção, duração, aplicar a todas e prévia no palco. */
+  private transicoes(): string {
+    const galeria = TIPOS_TRANSICAO.map(
+      (t) =>
+        `<button type="button" class="ppr-trans-item" data-cmd="transicao:${t}" title="${DICAS_TRANSICAO[t]}" aria-label="${ROTULOS_TRANSICAO[t]}">${previaTransicao(t)}<span class="ppr-trans-nome">${ROTULOS_TRANSICAO[t]}</span></button>`
+    ).join("");
+    const direcoes = DIRECOES_TRANSICAO.map((d) => btn(`transicao-direcao:${d}`, `<span class="ppr-trans-dir">${FLECHAS_DIRECAO[d]}</span>`, `${ROTULOS_DIRECAO[d]}: ${DICAS_DIRECAO[d]}`, "trans-dir")).join("");
+    const duracoes = DURACOES_TRANSICAO.map((d) => btn(`transicao-duracao:${d.valor}`, d.rotulo, `Duração da transição: ${d.rotulo}`, "fmt")).join("");
+    return [
+      grupo(
+        "Transição",
+        `<div class="ppr-trans">${galeria}</div>
+         <span class="ppr-trans-nota" data-trans-nota hidden title="A transição deste arquivo não é representada pelo app: ela volta como veio na exportação">Original preservada</span>`
+      ),
+      grupo("Direção", `<div class="ppr-linha">${direcoes}</div>`),
+      grupo("Duração", `<div class="ppr-linha">${duracoes}<span class="ppr-trans-dur" data-trans-dur></span></div>`),
+      grupo(
+        "Aplicar",
+        `${grande("transicao-todas", ic("i-addons"), "Aplicar a todas", "Aplicar esta transição a todas as lâminas")}${grande("transicao-previa", ic("i-eye"), "Prévia", "Reproduzir a transição nesta lâmina, sem entrar no F5")}`
+      ),
+    ].join("");
+  }
+
   private design(): string {
     return [
       grupo(
@@ -350,7 +440,11 @@ export class Fita {
     else if (cmd.startsWith("layout:")) this.hooks.run("layout", cmd.slice(7));
     else if (cmd.startsWith("forma-rapida:")) this.hooks.run("forma-inserir", cmd.slice(13));
     else if (cmd.startsWith("ferramenta:")) this.hooks.run("ferramenta", cmd.slice(11));
+    else if (cmd.startsWith("midia:")) this.hooks.run("midia", cmd.slice(6));
     else if (cmd.startsWith("estilo:")) this.hooks.run("estilo", cmd.slice(7));
+    else if (cmd.startsWith("transicao-direcao:")) this.hooks.run("transicao-direcao", cmd.slice(18));
+    else if (cmd.startsWith("transicao-duracao:")) this.hooks.run("transicao-duracao", cmd.slice(18));
+    else if (cmd.startsWith("transicao:")) this.hooks.run("transicao", cmd.slice(10));
     else this.hooks.run(cmd);
   }
 
@@ -383,7 +477,10 @@ export class Fita {
         abrirGaleria(ancora, (item) => run("forma-inserir", String(GALERIA.indexOf(item))));
         return;
       case "modelo":
-        abrirModelos(ancora, (m) => run("modelo", m.id));
+        abrirModelos(ancora, (m) => run("modelo", m.id), {
+          criar: (nome) => run("modelo-criar", nome),
+          excluir: (id) => run("modelo-excluir", id),
+        });
         return;
       case "tabela-grade": {
         const N = 8;
@@ -406,6 +503,21 @@ export class Fita {
           if (!t) return;
           fecharPopup();
           run("tabela-inserir", t.dataset.tg);
+        });
+        return;
+      }
+      case "grafico-menu": {
+        const el = abrirPopup(
+          ancora,
+          `<div class="pp-pop-rot">Inserir gráfico</div>` +
+            GRAFICO_TIPOS.map((t) => `<button type="button" class="pp-pop-item" data-graf="${t.id}">${t.nome}</button>`).join(""),
+          { classe: "pp-pop-menu" }
+        );
+        el.addEventListener("click", (ev) => {
+          const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-graf]");
+          if (!b) return;
+          fecharPopup();
+          run("grafico-inserir", b.dataset.graf);
         });
         return;
       }
@@ -451,6 +563,21 @@ export class Fita {
         abrirCores(ancora, { atual: est.trecho && est.trecho.color !== "misto" ? est.trecho.color : null, paleta: est.paleta, titulo: "Cor da fonte" }, (c) => {
           if (c) run("cor-texto", c);
         });
+        return;
+      case "marca-texto":
+        abrirCores(
+          ancora,
+          {
+            atual: est.trecho && est.trecho.highlight !== "misto" && est.trecho.highlight ? est.trecho.highlight : null,
+            paleta: est.paleta,
+            semCor: "Sem marca-texto",
+            titulo: "Marca-texto",
+            extra: `<div class="pp-pop-t">Cores do marca-texto</div>
+              <div class="pp-swatches">${CORES_MARCA_TEXTO.map((c) => `<button type="button" class="pp-sw" data-extra="marca:${c}" style="background:#${c}" title="#${c}" aria-label="#${c}"></button>`).join("")}</div>`,
+          },
+          (c) => run("marca-texto", c ?? ""),
+          (x) => run("marca-texto", x.startsWith("marca:") ? x.slice(6) : x)
+        );
         return;
       case "preench":
         this.menuPreenchimento(ancora);
@@ -500,6 +627,37 @@ export class Fita {
           if (!b) return;
           fecharPopup();
           run("entrelinha", b.dataset.esp);
+        });
+        return;
+      }
+      case "espacamento": {
+        const atual = est.trecho && est.trecho.spc !== "misto" ? est.trecho.spc : null;
+        const el = abrirPopup(
+          ancora,
+          `<div class="pp-pop-rot">Espaçamento entre caracteres</div>` +
+            ESPACAMENTOS.map(([v, n]) => `<button type="button" class="pp-pop-item${atual !== null && Math.abs(atual - Number(v)) < 0.01 ? " on" : ""}" data-esp-car="${v}">${n}</button>`).join(""),
+          { classe: "pp-pop-menu" }
+        );
+        el.addEventListener("click", (ev) => {
+          const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-esp-car]");
+          if (!b) return;
+          fecharPopup();
+          run("espacamento", b.dataset.espCar);
+        });
+        return;
+      }
+      case "caixa": {
+        const opcoes: [string, string][] = [
+          ["maiusculas", "MAIÚSCULAS"],
+          ["minusculas", "minúsculas"],
+          ["primeira", "Primeira Letra"],
+        ];
+        const el = abrirPopup(ancora, opcoes.map(([v, n]) => `<button type="button" class="pp-pop-item" data-caixa="${v}">${n}</button>`).join(""), { classe: "pp-pop-menu" });
+        el.addEventListener("click", (ev) => {
+          const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-caixa]");
+          if (!b) return;
+          fecharPopup();
+          run("caixa", b.dataset.caixa);
         });
         return;
       }
@@ -650,6 +808,11 @@ export class Fita {
     on("italico", t?.italic === true);
     on("sublinhado", t?.underline === true);
     on("tachado", t?.strike === true);
+    on("marca-texto", !!(t && t.highlight !== "misto" && t.highlight));
+    const base = t && t.baseline !== "misto" ? t.baseline : 0;
+    on("sobrescrito", base > 0);
+    on("subscrito", base < 0);
+    on("versalete", t?.caps === true);
     const al = st.paragrafo?.align;
     on("alinhar-esquerda", al === "esquerda");
     on("alinhar-centro", al === "centro");
@@ -665,8 +828,12 @@ export class Fita {
     on("alt-grade", st.grade);
     on("alt-fixas", st.fixas);
     on("alt-faixa", st.faixaVertical);
+    on("slide-ocultar", st.oculta);
+    // o botão alterna: com a lâmina oculta, ele passa a oferecer "Mostrar"
+    const rotuloOcultar = this.el.querySelector<HTMLElement>('[data-cmd="slide-ocultar"] span');
+    if (rotuloOcultar) rotuloOcultar.textContent = st.oculta ? "Mostrar" : "Ocultar";
     on("ferramenta:texto", st.ferramenta?.tipo === "texto");
-    for (const c of ["negrito", "italico", "sublinhado", "tachado", "maior", "menor", "cor-texto", "marcadores", "numeracao", "recuo-menos", "recuo-mais", "espaco", "alinhar-esquerda", "alinhar-centro", "alinhar-direita", "alinhar-justificado", "v-topo", "v-meio", "v-base"]) dis(c, !temTexto);
+    for (const c of ["negrito", "italico", "sublinhado", "tachado", "marca-texto", "sobrescrito", "subscrito", "versalete", "caixa", "espacamento", "limpar-formatacao", "maior", "menor", "cor-texto", "marcadores", "numeracao", "recuo-menos", "recuo-mais", "espaco", "alinhar-esquerda", "alinhar-centro", "alinhar-direita", "alinhar-justificado", "v-topo", "v-meio", "v-base"]) dis(c, !temTexto);
     dis("desfazer", !st.podeDesfazer);
     dis("refazer", !st.podeRefazer);
     dis("colar", !st.temCopia);
@@ -678,6 +845,28 @@ export class Fita {
     dis("slide-del", st.total <= 1);
     for (const c of ["preench", "contorno", "sombra", "ordem", "z-topo", "z-fundo", "z-frente", "z-tras"]) dis(c, !tem);
     for (const b of this.el.querySelectorAll<HTMLElement>("[data-layout]")) b.classList.toggle("on", b.dataset.layout === st.layout);
+
+    // aba Transições: tipo, direção, duração e a prévia
+    const tr = st.transicao;
+    const tipo = tr?.tipo ?? "none";
+    // transição original preservada (não representada pelo app): nenhum tipo fica marcado
+    const marcado = st.transicaoPreservada && tipo === "none" ? "" : `transicao:${tipo}`;
+    for (const b of this.el.querySelectorAll<HTMLElement>("[data-cmd^='transicao:']")) b.classList.toggle("on", b.dataset.cmd === marcado);
+    const comDirecao = aceitaDirecao(tipo);
+    for (const b of this.el.querySelectorAll<HTMLButtonElement>("[data-cmd^='transicao-direcao:']")) {
+      b.disabled = !comDirecao;
+      b.classList.toggle("on", comDirecao && b.dataset.cmd === `transicao-direcao:${direcaoDe(tr)}`);
+    }
+    const dur = duracaoDe(tr);
+    for (const b of this.el.querySelectorAll<HTMLButtonElement>("[data-cmd^='transicao-duracao:']")) {
+      b.disabled = tipo === "none";
+      b.classList.toggle("on", tipo !== "none" && Number(b.dataset.cmd!.split(":")[1]) === dur);
+    }
+    const durTxt = this.el.querySelector<HTMLElement>("[data-trans-dur]");
+    if (durTxt) durTxt.textContent = tipo === "none" ? "" : formatarDuracao(dur);
+    const notaTrans = this.el.querySelector<HTMLElement>("[data-trans-nota]");
+    if (notaTrans) notaTrans.hidden = !st.transicaoPreservada;
+    dis("transicao-previa", tipo === "none");
 
     // seletores de fonte e tamanho
     const selFonte = this.el.querySelector<HTMLSelectElement>('[data-sel="font"]');
@@ -705,6 +894,8 @@ export class Fita {
     // barra de cor
     const barra = this.el.querySelector<HTMLElement>('[data-barra="cor-texto"]');
     if (barra) barra.style.background = t && t.color !== "misto" ? `#${t.color}` : "var(--muted)";
+    const barraMarca = this.el.querySelector<HTMLElement>('[data-barra="marca-texto"]');
+    if (barraMarca) barraMarca.style.background = t && t.highlight !== "misto" && t.highlight ? `#${t.highlight}` : "var(--muted)";
     const z = this.el.querySelector<HTMLElement>("[data-zoomtxt]");
     if (z) z.textContent = `${st.zoom}%`;
     // tamanho em cm (se não está digitando nele)

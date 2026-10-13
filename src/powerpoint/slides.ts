@@ -31,8 +31,14 @@ export function duplicateSlide(deck: Deck, at: number): { deck: Deck; index: num
     md: original.md,
     layout: original.layout,
     notes: original.notes,
+    // a cópia entra como a original (a transição e o que veio cru do .pptx acompanham)
+    ...(original.transicao ? { transicao: original.transicao } : {}),
+    ...(original.transicaoXml ? { transicaoXml: original.transicaoXml } : {}),
     // formas ganham id novo para não compartilhar seleção
     shapes: original.shapes.map((s) => ({ ...s, id: uid() })),
+    // a cópia nasce com o mesmo nome e o mesmo estado de exibição da original
+    ...(original.show === false ? { show: false } : {}),
+    ...(original.nome ? { nome: original.nome } : {}),
   };
   const index = at + 1;
   slides.splice(index, 0, copia);
@@ -67,6 +73,20 @@ export function setLayout(deck: Deck, at: number, layout: SlideLayout): Deck {
   if (!alvo || alvo.layout === layout) return deck;
   const slides = deck.slides.slice();
   slides[i] = { ...alvo, layout };
+  return { ...deck, slides };
+}
+
+/**
+ * Redefine a lâmina: tira as formas próprias (as decorações `fixa` do layout/mestre ficam)
+ * e devolve as caixas do layout atual. Quem chama passa as caixas já prontas
+ * (`formasDoLayout`) para não acoplar este módulo ao estilo do deck.
+ */
+export function resetSlide(deck: Deck, at: number, caixas: Shape[]): Deck {
+  const i = clampIndex(at, deck.slides.length);
+  const alvo = deck.slides[i];
+  if (!alvo) return deck;
+  const slides = deck.slides.slice();
+  slides[i] = { ...alvo, shapes: [...alvo.shapes.filter((f) => f.fixa), ...caixas] };
   return { ...deck, slides };
 }
 

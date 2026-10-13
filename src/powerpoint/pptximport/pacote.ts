@@ -100,6 +100,18 @@ const MIME: Record<string, string> = {
   tiff: "image/tiff",
   emf: "image/x-emf",
   wmf: "image/x-wmf",
+  mp4: "video/mp4",
+  m4v: "video/x-m4v",
+  webm: "video/webm",
+  ogv: "video/ogg",
+  mov: "video/quicktime",
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+  m4a: "audio/mp4",
+  aac: "audio/aac",
+  ogg: "audio/ogg",
+  oga: "audio/ogg",
+  flac: "audio/flac",
 };
 
 export function mimeDe(caminho: string): string {

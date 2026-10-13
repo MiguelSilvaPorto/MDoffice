@@ -50,5 +50,17 @@ for (const [arquivo, classe, painel] of motores) {
   checa(`${arquivo}: a regra do Início vem depois da que mostra o painel`, posEsconde > posMostra, "ordem no arquivo inverteria o resultado");
 }
 
+// 3. Fita do PowerPoint: trocar de aba não pode mexer no tamanho da faixa.
+//    Os painéis dividem a mesma célula (a altura vira a do mais alto) e o painel
+//    inativo continua no lugar, invisível; o rótulo da aba reserva a largura do negrito.
+console.log("fita do PowerPoint: tamanho estável entre abas");
+
+const pp = ler("src/styles/powerpoint-edicao.css");
+checa("os painéis dividem a mesma célula (altura constante)", /\.ppr-paineis\s*\{[^}]*display:\s*grid/.test(pp), "regra .ppr-paineis { display: grid } ausente");
+checa("cada painel fica na célula 1/1", /\.ppr-painel\s*\{[^}]*grid-area:\s*1\s*\/\s*1/.test(pp), "grid-area ausente em .ppr-painel");
+checa("o painel inativo não some do layout", /\.ppr-painel\[hidden\]\s*\{[^}]*display:\s*flex/.test(pp), "display: flex ausente em .ppr-painel[hidden]");
+checa("o painel inativo fica invisível (clique/foco/leitura)", /\.ppr-painel\[hidden\]\s*\{[^}]*visibility:\s*hidden/.test(pp), "visibility ausente em .ppr-painel[hidden]");
+checa("o rótulo da aba reserva a largura do negrito", /\.ppr-aba-rot::after\s*\{[^}]*font-weight:\s*600/.test(pp) && /\.ppr-aba-rot::after\s*\{[^}]*visibility:\s*hidden/.test(pp), "regra .ppr-aba-rot::after ausente");
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

@@ -37,6 +37,30 @@ function Get-Principal {
   }
 }
 
+# Nome da branch de uma worktree. Durante um rebase o HEAD fica "solto"
+# (detached), e o nome verdadeiro esta no head-name do proprio rebase.
+function Get-BranchAtual {
+  param([Parameter(Mandatory = $true)][string]$Pasta)
+  $gitDir = "$(Exec -PermitirFalha { git -C $Pasta rev-parse --absolute-git-dir })".Trim()
+  if ($gitDir) {
+    foreach ($sub in 'rebase-merge', 'rebase-apply') {
+      $arquivo = Join-Path $gitDir "$sub\head-name"
+      if (Test-Path $arquivo) {
+        return ("$(Get-Content $arquivo -Raw)".Trim() -replace '^refs/heads/', '')
+      }
+    }
+  }
+  return "$(Exec -PermitirFalha { git -C $Pasta symbolic-ref --short HEAD })".Trim()
+}
+
+# Descricao de uma branch ("Porque"/"Proposito"), guardada no config do repo.
+function Get-DescricaoBranch {
+  param([Parameter(Mandatory = $true)][string]$Pasta, [string]$Branch)
+  if (-not $Branch) { return '' }
+  $linhas = @(Exec -PermitirFalha { git -C $Pasta config --get "branch.$Branch.description" } | Where-Object { "$_".Trim() })
+  return ($linhas -join ' | ')
+}
+
 # Remove SO OS LINKS (junctions) de uma worktree, sem tocar no alvo. No Windows uma remocao
 # recursiva pode seguir o link e apagar o CONTEUDO do alvo real (node_modules, modelos...).
 function Remove-Ligacoes {

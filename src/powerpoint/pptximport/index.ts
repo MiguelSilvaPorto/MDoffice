@@ -6,8 +6,10 @@ import { DEFAULT_SETUP } from "../model";
 import { lerTema, MAPA_PADRAO, type Tema } from "./cores";
 import { lerArvore, lerPreenchimento, type CtxForma } from "./formas";
 import { Pacote, type Relacao } from "./pacote";
+import { lerTransicao } from "./slides";
 import { caminho, filho, filhos, num, type No } from "./xmltree";
 import { carregarFontes } from "./fontes";
+import { laminasDoPresentation, nomeDaCld } from "./slides";
 
 export interface ResultadoImport {
   deck: Deck;
@@ -97,11 +99,15 @@ export async function pptxToDeck(bytes: Uint8Array, setupBase: DeckSetup = DEFAU
   const alt = num(sz, "cy", 6858000);
   const relPres = await pac.relacoes("ppt/presentation.xml");
 
-  // ordem real das lâminas
+  // ordem real das lâminas (e quais estão ocultas: show="0" no p:sldId)
   const partes: string[] = [];
-  for (const id of filhos(filho(pres, "sldIdLst"), "sldId")) {
-    const r = relPres.get(id.a["r:id"] ?? "");
-    if (r && pac.existe(r.alvo)) partes.push(r.alvo);
+  const ocultas = new Set<string>();
+  for (const { rId, oculta } of laminasDoPresentation(pres)) {
+    const r = relPres.get(rId);
+    if (r && pac.existe(r.alvo)) {
+      partes.push(r.alvo);
+      if (oculta) ocultas.add(r.alvo);
+    }
   }
   if (!partes.length) {
     partes.push(
@@ -186,12 +192,23 @@ export async function pptxToDeck(bytes: Uint8Array, setupBase: DeckSetup = DEFAU
     if (!bg && mestre) bg = await lerFundo(caminho(mestre.raiz, "cSld/bg"), { ...base, parte: mestre.parte, rels: mestre.rels });
 
     const md = markdownDe(shapes);
+    const nome = nomeDaCld(sl.raiz);
+    // oculta: o show="0" costuma vir no p:sldId (presentation.xml); aceitamos também
+    // o show="0" no p:sld, que é o lugar do esquema e o que outros programas gravam
+    const oculta = ocultas.has(parte) || sl.raiz?.a.show === "0";
+    // transição de entrada: o que o modelo não representa volta cru (e vira aviso)
+    const transicao = lerTransicao((await pac.texto(parte)) ?? "");
+    for (const a of transicao.avisos) avisos.add(a);
     slides.push({
       md,
       layout: i === 0 ? "titulo" : "conteudo",
       notes: await lerNotas(pac, parte),
       shapes,
       ...(bg ? { bg } : {}),
+      ...(oculta ? { show: false } : {}),
+      ...(nome ? { nome } : {}),
+      ...(transicao.transicao ? { transicao: transicao.transicao } : {}),
+      ...(transicao.bruta ? { transicaoXml: transicao.bruta } : {}),
     });
   }
 
@@ -218,5 +235,6 @@ export async function pptxToDeck(bytes: Uint8Array, setupBase: DeckSetup = DEFAU
 }
 
 export { deckParaMarkdown } from "./slides-md";
-export { xmlParaMarkdown, notasDoSlide, ordemDosSlides } from "./slides";
+export { xmlParaMarkdown, notasDoSlide, ordemDosSlides, lerTransicao } from "./slides";
+export type { TransicaoLida } from "./slides";
 export { textosDe, paragrafos } from "./xml";

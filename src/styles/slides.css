@@ -19,6 +19,24 @@
   cursor: pointer;
 }
 
+/* troca de lâmina: fade curto na entrada. Cada lâmina nova anima por conta própria,
+   então trocar rápido não espera a anterior terminar. */
+.slides-stage > section {
+  animation: slides-entrada var(--mov-2, 180ms) ease-out both;
+}
+
+@keyframes slides-entrada {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slides-stage > section {
+    animation: none;
+  }
+}
+
 .slide {
   width: min(1100px, 92vw);
   max-height: 100%;
@@ -68,8 +86,9 @@
 
 .slides-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 14px;
+  gap: 8px 14px;
   padding: 10px 16px;
   background: rgba(255, 255, 255, 0.06);
   border-top: 1px solid rgba(255, 255, 255, 0.12);
@@ -84,9 +103,33 @@
   opacity: 0.75;
 }
 
+/* número sendo digitado para "ir para a lâmina" (nº + Enter) */
+.slides-goto {
+  padding: 2px 10px;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+
 .slides-help {
   opacity: 0.6;
   margin-left: auto;
+  text-align: right;
+}
+
+/* tela preta/branca (teclas B e W): cobre a apresentação até qualquer tecla ou clique voltar */
+.slides-tela {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+}
+
+.slides-tela.preta {
+  background: #000;
+}
+
+.slides-tela.branca {
+  background: #fff;
 }
 
 /* impressão: uma lâmina por página (imprimir → salvar como PDF) */
@@ -103,6 +146,15 @@
 
   .slides-bar {
     display: none !important;
+  }
+
+  .slides-tela {
+    display: none !important;
+  }
+
+  /* o papel não anima: garante a lâmina 100% opaca mesmo se o Ctrl+P vier no meio do fade */
+  .slides-stage > section {
+    animation: none;
   }
 
   .slides-stage {
@@ -143,6 +195,10 @@
 .slides-overlay.tema-claro .slides-notes {
   background: rgba(0, 0, 0, 0.05);
   color: #14181f;
+}
+
+.slides-overlay.tema-claro .slides-goto {
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .slide {
@@ -341,4 +397,173 @@
 
 .slide-rica .pp-shape {
   pointer-events: none;
+}
+
+/* ---------- transições de lâmina (F5 e prévia da fita) ----------
+   A direção diz de onde a lâmina entra: as variáveis abaixo alimentam as animações
+   de deslizar (push/cover/uncover) e o recorte do wipe. O F5 usa duas camadas (a que
+   sai e a que entra); a prévia da fita aplica a mesma animação à lâmina em edição. */
+
+.slides-stage {
+  position: relative;
+  overflow: hidden;
+}
+
+.slides-camada {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4vh 5vw;
+}
+
+/* a camada que sai não recebe cliques (o palco inteiro avança a apresentação) */
+.slides-camada.saindo {
+  pointer-events: none;
+}
+
+/* no uncover a antiga passa por cima e vai saindo, revelando a nova que já está no lugar */
+.slides-camada.saindo.trans-uncover {
+  z-index: 1;
+}
+
+.slides-camada.trans-esquerda,
+.pp-slide.trans-esquerda {
+  --tx-entra: -100%;
+  --ty-entra: 0%;
+  --tx-sai: 100%;
+  --ty-sai: 0%;
+  --recorte: 0 100% 0 0;
+}
+
+.slides-camada.trans-direita,
+.pp-slide.trans-direita {
+  --tx-entra: 100%;
+  --ty-entra: 0%;
+  --tx-sai: -100%;
+  --ty-sai: 0%;
+  --recorte: 0 0 0 100%;
+}
+
+.slides-camada.trans-cima,
+.pp-slide.trans-cima {
+  --tx-entra: 0%;
+  --ty-entra: -100%;
+  --tx-sai: 0%;
+  --ty-sai: 100%;
+  --recorte: 0 0 100% 0;
+}
+
+.slides-camada.trans-baixo,
+.pp-slide.trans-baixo {
+  --tx-entra: 0%;
+  --ty-entra: 100%;
+  --tx-sai: 0%;
+  --ty-sai: -100%;
+  --recorte: 100% 0 0 0;
+}
+
+.anim-fade-entra {
+  animation: trans-fade-entra var(--trans-dur, 700ms) ease both;
+}
+
+.anim-fade-sai {
+  animation: trans-fade-sai var(--trans-dur, 700ms) ease both;
+}
+
+.anim-desliza-entra {
+  animation: trans-desliza-entra var(--trans-dur, 700ms) cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.anim-desliza-sai {
+  animation: trans-desliza-sai var(--trans-dur, 700ms) cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.anim-wipe-entra {
+  animation: trans-wipe-entra var(--trans-dur, 700ms) ease both;
+}
+
+.anim-split-entra {
+  animation: trans-split-entra var(--trans-dur, 700ms) ease both;
+}
+
+@keyframes trans-fade-entra {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes trans-fade-sai {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes trans-desliza-entra {
+  from {
+    transform: translate3d(var(--tx-entra, 100%), var(--ty-entra, 0%), 0);
+  }
+
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes trans-desliza-sai {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(var(--tx-sai, -100%), var(--ty-sai, 0%), 0);
+  }
+}
+
+/* wipe: a lâmina nova é revelada a partir da borda da direção escolhida */
+@keyframes trans-wipe-entra {
+  from {
+    clip-path: inset(var(--recorte, 0 100% 0 0));
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* split: abre do centro para as laterais */
+@keyframes trans-split-entra {
+  from {
+    clip-path: inset(0 50% 0 50%);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* movimento reduzido no sistema: nada desliza, a lâmina só troca */
+@media (prefers-reduced-motion: reduce) {
+  .anim-fade-entra,
+  .anim-fade-sai,
+  .anim-desliza-entra,
+  .anim-desliza-sai,
+  .anim-wipe-entra,
+  .anim-split-entra {
+    animation: none;
+  }
+}
+
+/* impressão: as camadas voltam ao fluxo (uma lâmina por página) */
+@media print {
+  .slides-stage {
+    overflow: visible;
+  }
+
+  .slides-camada {
+    position: static;
+    inset: auto;
+    display: block;
+    padding: 0;
+  }
 }

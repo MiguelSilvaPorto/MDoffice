@@ -6,6 +6,8 @@
 #   tools\worktrees\abrir.ps1 fix/outro-bug -SemDeps
 #   tools\worktrees\abrir.ps1 feat/tarefa-antiga -Reabrir   (branch que ja existe)
 #   tools\worktrees\abrir.ps1 feat/x -Atualizar             (baixa a main do origin antes, se der)
+#   tools\worktrees\abrir.ps1 -Branch feat/minha-tarefa -Porque "corrige o bug X" -Proposito "entregar Y"
+#     (a descricao fica guardada na branch: aparece no status.ps1 e no corpo do commit do fechar.ps1)
 #
 # Roda da copia principal (o script recusa rodar de dentro de uma worktree).
 # A copia principal NUNCA sai da branch main e nunca recebe trabalho direto.
@@ -13,7 +15,10 @@
 # ASCII-only de proposito (PowerShell 5.1 le .ps1 UTF-8 sem BOM como ANSI).
 [CmdletBinding()]
 param(
-  [Parameter(Mandatory = $true, Position = 0)][string]$Nome,
+  [Parameter(Position = 0)][string]$Nome,
+  [string]$Branch,
+  [string]$Porque,
+  [string]$Proposito,
   [switch]$Reabrir,
   [switch]$SemDeps,
   [switch]$Atualizar
@@ -30,11 +35,20 @@ $principal = $repo.Principal
 $raizWorktrees = Join-Path $principal '.worktrees'
 
 # -- normaliza e valida o nome da branch --------------------------------------
-$branch = $Nome.Trim()
+$pedido = if ($Branch) { "$Branch".Trim() } else { "$Nome".Trim() }
+if (-not $pedido) {
+  throw "Diga o nome da branch: abrir.ps1 feat/minha-tarefa  (ou -Branch feat/minha-tarefa)"
+}
+if ($Nome -and $Branch -and ("$Nome".Trim() -ne "$Branch".Trim())) {
+  throw "Nome posicional ('$("$Nome".Trim())') e -Branch ('$("$Branch".Trim())') sao diferentes - use so um."
+}
+$branch = $pedido
 if ($branch -notmatch '/') { $branch = "feat/$branch" }
 if ($branch -notmatch '^(feat|fix|docs|refactor|chore|test|perf)/[a-z0-9][a-z0-9._-]*$') {
   throw "Nome de branch invalido: '$branch'. Use minusculas, sem espaco/acento, no padrao feat/alguma-coisa. Prefixos: feat, fix, docs, refactor, chore, test, perf."
 }
+$porque = if ($Porque) { "$Porque".Trim() } else { '' }
+$proposito = if ($Proposito) { "$Proposito".Trim() } else { '' }
 $slug = $branch -replace '/', '-'
 $destino = Join-Path $raizWorktrees $slug
 if (Test-Path $destino) { throw "Ja existe uma worktree em: $destino" }
@@ -98,6 +112,15 @@ if (-not $SemDeps) {
   }
 }
 
+# -- descricao da branch: por que ela existe e o que entrega -------------------
+$linhasDescricao = @()
+if ($porque) { $linhasDescricao += "Porque: $porque" }
+if ($proposito) { $linhasDescricao += "Proposito: $proposito" }
+if ($linhasDescricao.Count -gt 0) {
+  $descricao = $linhasDescricao -join "`n"
+  $null = Exec { git -C $principal config "branch.$branch.description" $descricao } "Nao consegui guardar a descricao da branch."
+}
+
 $commitBase = "$(Exec { git -C $principal rev-parse --short $base })".Trim()
 Write-Host ""
 Write-Host "OK - worktree pronta:"
@@ -107,6 +130,8 @@ Write-Host "  base   : $base (commit $commitBase)"
 if ($SemDeps) { Write-Host "  links  : nenhum (-SemDeps) - rode npm install na worktree se precisar" }
 elseif ($ligados.Count -gt 0) { Write-Host "  links  : $($ligados -join ', ') (junction para a copia principal; se a tarefa mexer no package.json, remova o link de node_modules e rode npm install)" }
 else { Write-Host "  links  : nada para ligar - rode npm install na worktree se precisar" }
+if ($porque) { Write-Host "  porque : $porque" }
+if ($proposito) { Write-Host "  proposito: $proposito" }
 Write-Host ""
 Write-Host "Trabalhe DENTRO dessa pasta (nunca na copia principal)."
 Write-Host "Para fechar a tarefa, de dentro da worktree: tools\worktrees\fechar.ps1 -Mensagem `"...`""

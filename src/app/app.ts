@@ -6,7 +6,7 @@ import { MdEditor, type CursorPos } from "../md/editor";
 import { Preview } from "../md/preview";
 import * as files from "../files";
 import { setTone } from "../broker/writing";
-import { warmUpSpell, onSpellReady, type WritingIssue } from "../broker/writing";
+import { warmUpSpell, onSpellReady, ritmoDePausa, type WritingIssue } from "../broker/writing";
 import { type ReviewHandle } from "../broker/review";
 import { TabBar, newTab, tabLabel, type DocTab } from "../tabs";
 import { Sidebar } from "../sidebar";
@@ -128,6 +128,8 @@ export class App {
   }
   /** Correção automática de estilo ligada (ponto, vírgulas, maiúsculas…). */
   autoFix = loadJSON<boolean>("mdc.autofix", true);
+  /** Temporizador da varredura da correção automática (reagendado a cada pausa, com o ritmo aprendido). */
+  private idleTimer: number | undefined;
   /** Sugestões inline e previsão de palavras (estilo Copilot) ligadas. */
   copilot = loadJSON<boolean>("mdc.copilot", true);
   reviewHandle: ReviewHandle | null = null;
@@ -254,6 +256,7 @@ export class App {
       pane: $("#powerpoint-pane"),
       onDirty: () => this.onPptChange(),
       onPickImage: (destino) => void this.pickPptImage(destino),
+      onPickMedia: (tipo) => void this.pickPptMedia(tipo),
       onConfigure: () => void this.configurePpt(),
     });
     this.excelHost = new ExcelHost({
@@ -466,10 +469,14 @@ export class App {
 
   autoFixSoon = debounce(() => this.runAutoFix(), 700);
 
-  // Alguns segundos depois de você parar de digitar, as correções "de fim de frase"
-  // (ponto final, vírgulas) são aplicadas sozinhas — o cursor fica ANTES do ponto, então
-  // se você continuar escrevendo o texto entra no lugar certo.
-  idleFixSoon = debounce(() => this.runIdleFix(), 3500);
+  // Depois que você para de digitar, a varredura aplica sozinha a pontuação e a limpeza
+  // (ponto final, vírgulas, pontos a mais, frases coladas). O tempo de espera é o do ritmo
+  // aprendido (correção desfeita faz esperar mais; mantida, pode agir mais cedo) — o cursor
+  // fica ANTES do ponto, então continuar escrevendo entra no lugar certo.
+  idleFixSoon = (): void => {
+    window.clearTimeout(this.idleTimer);
+    this.idleTimer = window.setTimeout(() => this.runIdleFix(), ritmoDePausa());
+  };
 
   /** Dicionário pessoal: palavras (nomes, termos técnicos…) que não devem ser marcadas. */
 

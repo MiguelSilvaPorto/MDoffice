@@ -1,13 +1,15 @@
 // O que a fita e o painel precisam saber do que está selecionado (o host calcula e entrega).
 import type { EstadoTrecho } from "../edicao/texto";
 import type { CelulasSel, Ferramenta } from "../stage";
-import type { DeckSetup, Fill, Para, Shape, SlideLayout } from "../schema";
+import type { DeckSetup, Fill, Para, Shape, SlideLayout, Transicao } from "../schema";
 
 export interface EstadoUI {
   temLamina: boolean;
   indice: number;
   total: number;
   layout: SlideLayout;
+  /** a lâmina atual está oculta na apresentação */
+  oculta: boolean;
   /** formas selecionadas */
   formas: Shape[];
   /** a principal (a última escolhida) */
@@ -32,6 +34,10 @@ export interface EstadoUI {
   fontes: string[];
   setup: DeckSetup;
   bg?: Fill;
+  /** transição de entrada da lâmina atual (normalizada) */
+  transicao?: Transicao;
+  /** a lâmina tem uma transição do .pptx que o app não representa (fica guardada crua) */
+  transicaoPreservada?: boolean;
   /** a seleção tem formas agrupadas */
   temGrupo: boolean;
   /** unidade de medida do painel */

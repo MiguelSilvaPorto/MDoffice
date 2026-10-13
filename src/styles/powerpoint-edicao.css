@@ -93,18 +93,44 @@
   font-weight: 600;
 }
 
+/* O rótulo reserva a largura do NEGRITO: a aba ativa fica em negrito sem mudar de
+   tamanho. Sem isso, a faixa inteira "pula" na horizontal a cada troca de aba. */
+.ppr-aba-rot {
+  display: inline-grid;
+}
+
+.ppr-aba-rot::after {
+  content: attr(data-nome);
+  grid-area: 1 / 1;
+  font-weight: 600;
+  height: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .ppr-aba .ic {
   width: calc(15px * var(--fita-e));
   height: calc(15px * var(--fita-e));
   flex: none;
 }
 
+/* Todos os painéis dividem a MESMA célula: a área fica com a altura do painel mais
+   alto e trocar de aba não faz a faixa (nem o palco) subir e descer. O painel inativo
+   continua no lugar — invisível, fora do clique e da leitura — e volta a animar quando
+   entra (ver movimento.css). */
+.ppr-paineis {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .ppr-painel {
+  grid-area: 1 / 1;
   display: flex;
   /* uma linha só: os grupos rolam na horizontal em vez de quebrar (o topo
      fica com altura previsível e sobra espaço para a lâmina) */
   flex-wrap: nowrap;
   align-items: stretch;
+  min-width: 0;
   padding: var(--pe-6) var(--pe-8) var(--pe-4);
   min-height: calc(92px * var(--fita-e));
   overflow-x: auto;
@@ -112,7 +138,8 @@
 }
 
 .ppr-painel[hidden] {
-  display: none;
+  display: flex;
+  visibility: hidden;
 }
 
 .ppr-grupo {
@@ -309,6 +336,21 @@ button.ppr.big .car {
 .ppr-a {
   font-weight: 700;
   line-height: 1;
+}
+
+/* "ab" do marca-texto, como no Word: um destaque amarelo no próprio rótulo */
+.ppr-a.ppr-hl {
+  padding: 0 2px;
+  background: #ffff00;
+  color: #000;
+  border-radius: 2px;
+}
+
+/* versalete: o "bc" do rótulo "Abc" sai em maiúsculas pequenas */
+.ppr-va {
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
 }
 
 .ppr button .ppr-barra,
@@ -604,6 +646,7 @@ button.ppr.cor {
   flex-direction: column;
   gap: 4px;
   padding: 4px;
+  position: relative;
   color: var(--fg);
   background: transparent;
   border: 1px solid var(--border);
@@ -658,6 +701,54 @@ button.ppr.cor {
 .pp-tpl-nome {
   font-size: 11.5px;
   text-align: center;
+}
+
+/* cartão "+" (salvar a apresentação atual como modelo) e o × dos modelos do usuário */
+
+.pp-tpl-mais .pp-tpl-previa-mais {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  padding: 0;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--fg) 4%, transparent);
+  border: 1px dashed var(--border);
+}
+
+.pp-tpl-mais-sinal {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.pp-tpl-mais:hover .pp-tpl-previa-mais {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.pp-tpl-x {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  display: none;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--bg) 75%, transparent);
+  border-radius: 50%;
+}
+
+.pp-tpl:hover .pp-tpl-x {
+  display: flex;
+}
+
+.pp-tpl-x:hover {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .pp-gradientes {
@@ -1207,9 +1298,143 @@ button.ppr.cor {
 .pp-tg.on { background: var(--accent); border-color: var(--accent); }
 .ppr-opc { display: flex; align-items: center; gap: 4px; font-size: 12px; white-space: nowrap; }
 
+/* ---------- aba Transições: galeria dos efeitos, direção e duração ---------- */
+
+.ppr-trans {
+  display: grid;
+  grid-template-columns: repeat(4, 46px);
+  gap: 4px;
+  align-content: center;
+}
+
+.ppr-trans-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 3px 2px;
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.ppr-trans-item:hover {
+  border-color: var(--fi-ppt, #d24a17);
+}
+
+.ppr-trans-item.on {
+  background: color-mix(in srgb, var(--fi-ppt, #d24a17) 18%, var(--panel-2));
+  border-color: var(--fi-ppt, #d24a17);
+}
+
+.ppr-trans-svg {
+  width: 32px;
+  height: 20px;
+  flex: none;
+}
+
+.ppr-trans-nome {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.ppr-trans-item.on .ppr-trans-nome {
+  color: var(--fg);
+}
+
+.ppr-trans-nota {
+  align-self: center;
+  max-width: 80px;
+  padding-left: var(--pe-5);
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.2;
+}
+
+.ppr-trans-dur {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+button.ppr.trans-dir {
+  min-width: 28px;
+  padding: 0 4px;
+}
+
+.ppr-trans-dir {
+  font-size: 15px;
+  line-height: 1;
+}
+
 .pp-thumb.arrastando { opacity: 0.45; }
 .pp-thumb.alvo-antes { box-shadow: -3px 0 0 var(--accent); }
 .pp-thumb.alvo-depois { box-shadow: 3px 0 0 var(--accent); }
+
+/* ---------- lâminas: ocultar e renomear ---------- */
+
+/* lâmina oculta (Página Inicial > Lâminas > Ocultar): a miniatura fica apagada e
+   marcada com o olho cortado; ela continua no editor, mas a apresentação pula */
+.pp-thumb.oculta .pp-thumb-box {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+
+.pp-thumb.oculta:hover .pp-thumb-box,
+.pp-thumb.oculta.active .pp-thumb-box {
+  opacity: 0.75;
+}
+
+.pp-thumb-oculta {
+  position: absolute;
+  left: 3px;
+  top: 2px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--muted);
+  z-index: 1;
+}
+
+.pp-thumb-oculta .ic {
+  width: 10px;
+  height: 10px;
+}
+
+/* o traço por cima do olho diz "oculta" sem precisar de um ícone novo no sprite */
+.pp-thumb-oculta::after {
+  content: "";
+  position: absolute;
+  width: 13px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: currentColor;
+  transform: rotate(-45deg);
+}
+
+/* nome próprio da lâmina (Renomear), embaixo da miniatura */
+.pp-thumb-nome {
+  display: block;
+  margin: 2px 2px 0;
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pp-thumb.active .pp-thumb-nome {
+  color: var(--fg);
+  font-weight: 600;
+}
 
 /* ---------- painel lateral: esconder e redimensionar ---------- */
 

@@ -8,7 +8,7 @@ export interface RuleCtx {
   /** texto com código, links e HTML escondidos (mesmo comprimento) */
   mask: string;
   /** registra um aviso de estilo */
-  push: (from: number, to: number, message: string, fix?: string, suggestions?: string[], safe?: boolean) => void;
+  push: (from: number, to: number, message: string, fix?: string, suggestions?: string[], safe?: boolean, classe?: WritingIssue["classe"]) => void;
 }
 
 export type Rule = (ctx: RuleCtx) => void;

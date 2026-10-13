@@ -4,7 +4,9 @@
 
 import type { Deck, DeckSetup, Slide } from "../schema";
 import { ehRica } from "../render/forma";
-import { escreverLamina } from "./slides";
+import { prepararGraficos } from "../render/grafico";
+import { prepararMidia } from "../render/midia";
+import { comNomeDaCld, comOcultaNoSld, comOcultasNoSldId, escreverLamina, inserirTransicao, marcarLamina } from "./slides";
 import { Escritor } from "./rica";
 import { escreverNotas } from "./notes";
 import { aplicarTema, fonteTema } from "./theme";
@@ -12,6 +14,10 @@ import { aplicarTema, fonteTema } from "./theme";
 /** Gera os bytes do arquivo .pptx a partir do deck. */
 export async function deckToPptx(deck: Deck, setup: DeckSetup, titulo = "Apresentação"): Promise<Uint8Array> {
   const { default: PptxGenJS } = await import("pptxgenjs");
+  // os gráficos do app viram imagem no arquivo (o motor não escreve `c:chart` nativo): o desenho não se perde
+  deck = await prepararGraficos(deck, setup);
+  // a mídia precisa de uma capa rasterizada (o `blip` do PowerPoint é uma imagem)
+  deck = await prepararMidia(deck, setup);
 
   // nova instância a cada exportação: o PptxGenJS reutiliza lâminas se reaproveitado
   const pptx = new PptxGenJS() as unknown as {
@@ -35,6 +41,8 @@ export async function deckToPptx(deck: Deck, setup: DeckSetup, titulo = "Apresen
   const ricas: number[] = [];
   slides.forEach((s, i) => {
     const slide = pptx.addSlide() as Parameters<typeof escreverLamina>[0] & Parameters<typeof escreverNotas>[0];
+    // oculta (show="0") e nome da lâmina valem para os dois caminhos (PptxGenJS e Escritor)
+    marcarLamina(slide, s);
     if (s.bg || s.shapes.some(ehRica)) {
       ricas.push(i);
     } else {
@@ -48,7 +56,9 @@ export async function deckToPptx(deck: Deck, setup: DeckSetup, titulo = "Apresen
   // arraybuffer: no Tauri não existe download de browser (o writeFile() do
   // PptxGenJS não funciona aqui — ver achado F18 no plano)
   const buf = await pptx.write({ outputType: "arraybuffer" });
-  if (!ricas.length && !setup.fontsRaw?.length) return new Uint8Array(buf);
+  // sem lâminas ricas, fontes, nomes, lâminas ocultas ou transições, o pacote do PptxGenJS já está pronto
+  const precisaPos = ricas.length > 0 || !!setup.fontsRaw?.length || slides.some((s) => s.nome?.trim() || s.show === false || s.transicao || s.transicaoXml);
+  if (!precisaPos) return new Uint8Array(buf);
   return await trocarLaminas(new Uint8Array(buf), slides, ricas, setup);
 }
 
@@ -57,8 +67,37 @@ export { escreverNotas } from "./notes";
 export { aplicarTema, coresTema, fonteTema } from "./theme";
 export { propsDaForma, caixaEmPol } from "./shapes";
 export { markdownEmBlocos } from "./slides";
+export { xmlTransicao, inserirTransicao, velocidadeDe } from "./slides";
 
-const MIME_EXT: Record<string, string> = { png: "image/png", jpeg: "image/jpeg", jpg: "image/jpeg", gif: "image/gif", svg: "image/svg+xml", webp: "image/webp", bmp: "image/bmp" };
+const MIME_EXT: Record<string, string> = {
+  png: "image/png",
+  jpeg: "image/jpeg",
+  jpg: "image/jpeg",
+  gif: "image/gif",
+  svg: "image/svg+xml",
+  webp: "image/webp",
+  bmp: "image/bmp",
+  mp4: "video/mp4",
+  m4v: "video/x-m4v",
+  webm: "video/webm",
+  ogv: "video/ogg",
+  mov: "video/quicktime",
+  mkv: "video/x-matroska",
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+  m4a: "audio/mp4",
+  aac: "audio/aac",
+  ogg: "audio/ogg",
+  flac: "audio/flac",
+};
+
+/** Tipo da relação de cada arquivo de mídia no .pptx (imagem, vídeo, áudio ou "media" do Office). */
+const REL_TIPO: Record<string, string> = {
+  image: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
+  video: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/video",
+  audio: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/audio",
+  media: "http://schemas.microsoft.com/office/2007/relationships/media",
+};
 
 /** Troca o conteúdo das lâminas "ricas" do pacote gerado pelo PptxGenJS pelo XML fiel do Escritor. */
 async function trocarLaminas(bytes: Uint8Array, slides: Slide[], ricas: number[], setup: DeckSetup): Promise<Uint8Array> {
@@ -71,15 +110,46 @@ async function trocarLaminas(bytes: Uint8Array, slides: Slide[], ricas: number[]
     const relPath = `ppt/slides/_rels/slide${i + 1}.xml.rels`;
     let rels = (await zip.file(relPath)?.async("string")) ?? `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`;
     const novas = saida.imagens
-      .map((im) => `<Relationship Id="${im.id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${im.arquivo}"/>`)
+      .map((im) => `<Relationship Id="${im.id}" Type="${REL_TIPO[im.tipo] ?? REL_TIPO.image}" Target="../media/${im.arquivo}"/>`)
       .join("");
     rels = rels.replace("</Relationships>", () => novas + "</Relationships>");
     zip.file(relPath, rels);
+  }
+  // nome e oculta das lâminas: vale para os dois caminhos — o PptxGenJS grava "Slide N"
+  // e não escreve no XML trocado pelo Escritor; o show="0" do p:sld some quando a lâmina é rica
+  for (let i = 0; i < slides.length; i++) {
+    const nome = slides[i].nome?.trim();
+    const oculta = slides[i].show === false;
+    if (!nome && !oculta) continue;
+    const parte = `ppt/slides/slide${i + 1}.xml`;
+    let xml = await zip.file(parte)?.async("string");
+    if (!xml) continue;
+    if (nome) xml = comNomeDaCld(xml, nome);
+    if (oculta) xml = comOcultaNoSld(xml);
+    zip.file(parte, xml);
+  }
+  // lâmina oculta: o PptxGenJS já marcou o p:sld (é o que o PowerPoint lê);
+  // aqui marcamos também o p:sldId, que é de onde o nosso importador lê
+  const ocultas = slides.map((s, i) => (s.show === false ? i : -1)).filter((i) => i >= 0);
+  if (ocultas.length) {
+    const pres = await zip.file("ppt/presentation.xml")?.async("string");
+    if (pres) zip.file("ppt/presentation.xml", comOcultasNoSldId(pres, ocultas));
   }
   const exts = new Set<string>();
   for (const m of escritor.midias) {
     zip.file(`ppt/media/${m.arquivo}`, m.bytes);
     exts.add(m.ext);
+  }
+  // transição de lâmina: entra em todas as lâminas que pedirem — nas ricas (que o Escritor
+  // acabou de trocar) e nas montadas pelo PptxGenJS, que não sabe escrever `p:transition`
+  for (let i = 0; i < slides.length; i++) {
+    const s = slides[i];
+    if (!s.transicao && !s.transicaoXml) continue;
+    const caminho = `ppt/slides/slide${i + 1}.xml`;
+    const xml = await zip.file(caminho)?.async("string");
+    if (!xml) continue;
+    const comTransicao = inserirTransicao(xml, s.transicao, s.transicaoXml);
+    if (comTransicao !== xml) zip.file(caminho, comTransicao);
   }
   let ct = (await zip.file("[Content_Types].xml")?.async("string")) ?? "";
   for (const ext of exts) {
