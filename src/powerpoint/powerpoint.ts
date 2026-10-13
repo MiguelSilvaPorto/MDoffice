@@ -30,6 +30,7 @@ import {
 } from "./edicao/operacoes";
 import { lerSelecao, restaurarSelecao, textoDaCaixa } from "./edicao/selecaoDom";
 import { alternarMarcador, estadoDoTrecho, estiloDosParas, estiloNoIntervalo, limparEstiloNoIntervalo, mudarCaixaTexto, mudarRecuo, mudarTamanhoRelativo, parasDaSelecao, type EstiloRun, type RunPatch, type TipoCaixa } from "./edicao/texto";
+import { comTransicao, direcaoDe, duracaoDe, normalizarTransicao } from "./edicao/transicao";
 import {
   addCategoria,
   addSerie,
@@ -62,7 +63,7 @@ import { Fita } from "./ui/fita";
 import { Painel } from "./ui/painel";
 import { abrirPopup, fecharPopup } from "./ui/popup";
 import type { EstadoUI } from "./ui/estado";
-import type { Deck, DeckSetup, Fill, GraficoTipo, Para, Shape, ShapeBox, Slide, SlideLayout, TextAlign } from "./schema";
+import type { Deck, DeckSetup, Fill, GraficoTipo, Para, Shape, ShapeBox, Slide, SlideLayout, TextAlign, Transicao, TransicaoDirecao, TransicaoTipo } from "./schema";
 
 marked.setOptions({ gfm: true, breaks: false });
 
@@ -690,6 +691,8 @@ export class PowerPointHost {
       largura: forma ? (forma.box.w / 100) * d.w : 0,
       altura: forma ? (forma.box.h / 100) * d.h : 0,
       celulas: this.celulasDaSelecao(),
+      transicao: normalizarTransicao(this.atual().transicao),
+      transicaoPreservada: !!this.atual().transicaoXml,
     };
   }
 
@@ -1241,6 +1244,32 @@ export class PowerPointHost {
         if (modelo) this.usarModelo(modelo);
         return;
       }
+
+      // ---- transição de entrada da lâmina ----
+      case "transicao": {
+        const tipo = String(value ?? "none") as TransicaoTipo;
+        this.mudarTransicao(normalizarTransicao({ ...(sl.transicao ?? {}), tipo } as Transicao));
+        return;
+      }
+      case "transicao-direcao":
+        this.mudarTransicao(comTransicao(sl.transicao, { direcao: String(value) as TransicaoDirecao }));
+        return;
+      case "transicao-duracao":
+        this.mudarTransicao(comTransicao(sl.transicao, { duracao: Number(String(value).replace(",", ".")) }));
+        return;
+      case "transicao-todas": {
+        const t = normalizarTransicao(sl.transicao);
+        const mudou = this.slides.some((x) => x.transicaoXml || JSON.stringify(x.transicao ?? null) !== JSON.stringify(t ?? null));
+        if (!mudou) return;
+        this.registrar("transicao-todas");
+        this.slides = this.slides.map((x) => ({ ...x, transicao: t, transicaoXml: undefined }));
+        this.markDirty();
+        this.pintar();
+        return;
+      }
+      case "transicao-previa":
+        return this.preverTransicao();
+
       case "present":
         return this.present();
       case "configure":
@@ -2249,6 +2278,37 @@ export class PowerPointHost {
   private mudarNotas(notes: string): void {
     this.substituirSlide({ ...this.atual(), notes });
     this.markDirty();
+  }
+
+  /** Troca a transição da lâmina atual (a fita manda o tipo, a direção ou a duração). */
+  private mudarTransicao(t: Transicao | undefined): void {
+    const atual = this.atual();
+    if (!atual.transicaoXml && JSON.stringify(atual.transicao ?? null) === JSON.stringify(t ?? null)) return;
+    // escolher uma transição na fita substitui a que veio do .pptx (inclusive a preservada crua)
+    this.editar((s) => ({ ...s, transicao: t, transicaoXml: undefined }), "transicao");
+  }
+
+  /** Prévia da transição no palco, sem entrar no F5 (as animações estão em styles/slides.css). */
+  private preverTransicao(): void {
+    const t = normalizarTransicao(this.atual().transicao);
+    if (!t || t.tipo === "none" || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const el = this.slideEl;
+    const ms = Math.round(duracaoDe(t) * 1000);
+    const classe = t.tipo === "fade" ? "anim-fade-entra" : t.tipo === "wipe" ? "anim-wipe-entra" : t.tipo === "split" ? "anim-split-entra" : "anim-desliza-entra";
+    const dir = `trans-${direcaoDe(t)}`;
+    let pronto = false;
+    const fim = () => {
+      if (pronto) return;
+      pronto = true;
+      el.classList.remove(dir, classe);
+      el.style.removeProperty("--trans-dur");
+    };
+    el.classList.remove(dir, classe);
+    void el.offsetWidth; // reinicia a animação quando a prévia é pedida de novo
+    el.style.setProperty("--trans-dur", `${ms}ms`);
+    el.classList.add(dir, classe);
+    el.addEventListener("animationend", fim, { once: true });
+    window.setTimeout(fim, ms + 150);
   }
 
   /** Quando a lâmina não tem formas, clicar no markdown edita o texto. */

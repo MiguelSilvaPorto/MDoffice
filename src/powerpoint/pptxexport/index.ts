@@ -5,7 +5,7 @@
 import type { Deck, DeckSetup, Slide } from "../schema";
 import { ehRica } from "../render/forma";
 import { prepararGraficos } from "../render/grafico";
-import { comNomeDaCld, comOcultaNoSld, comOcultasNoSldId, escreverLamina, marcarLamina } from "./slides";
+import { comNomeDaCld, comOcultaNoSld, comOcultasNoSldId, escreverLamina, inserirTransicao, marcarLamina } from "./slides";
 import { Escritor } from "./rica";
 import { escreverNotas } from "./notes";
 import { aplicarTema, fonteTema } from "./theme";
@@ -53,8 +53,8 @@ export async function deckToPptx(deck: Deck, setup: DeckSetup, titulo = "Apresen
   // arraybuffer: no Tauri não existe download de browser (o writeFile() do
   // PptxGenJS não funciona aqui — ver achado F18 no plano)
   const buf = await pptx.write({ outputType: "arraybuffer" });
-  // sem lâminas ricas, fontes, nomes ou lâminas ocultas, o pacote do PptxGenJS já está pronto
-  const precisaPos = ricas.length > 0 || setup.fontsRaw?.length || slides.some((s) => s.nome?.trim() || s.show === false);
+  // sem lâminas ricas, fontes, nomes, lâminas ocultas ou transições, o pacote do PptxGenJS já está pronto
+  const precisaPos = ricas.length > 0 || !!setup.fontsRaw?.length || slides.some((s) => s.nome?.trim() || s.show === false || s.transicao || s.transicaoXml);
   if (!precisaPos) return new Uint8Array(buf);
   return await trocarLaminas(new Uint8Array(buf), slides, ricas, setup);
 }
@@ -64,6 +64,7 @@ export { escreverNotas } from "./notes";
 export { aplicarTema, coresTema, fonteTema } from "./theme";
 export { propsDaForma, caixaEmPol } from "./shapes";
 export { markdownEmBlocos } from "./slides";
+export { xmlTransicao, inserirTransicao, velocidadeDe } from "./slides";
 
 const MIME_EXT: Record<string, string> = { png: "image/png", jpeg: "image/jpeg", jpg: "image/jpeg", gif: "image/gif", svg: "image/svg+xml", webp: "image/webp", bmp: "image/bmp" };
 
@@ -107,6 +108,17 @@ async function trocarLaminas(bytes: Uint8Array, slides: Slide[], ricas: number[]
   for (const m of escritor.midias) {
     zip.file(`ppt/media/${m.arquivo}`, m.bytes);
     exts.add(m.ext);
+  }
+  // transição de lâmina: entra em todas as lâminas que pedirem — nas ricas (que o Escritor
+  // acabou de trocar) e nas montadas pelo PptxGenJS, que não sabe escrever `p:transition`
+  for (let i = 0; i < slides.length; i++) {
+    const s = slides[i];
+    if (!s.transicao && !s.transicaoXml) continue;
+    const caminho = `ppt/slides/slide${i + 1}.xml`;
+    const xml = await zip.file(caminho)?.async("string");
+    if (!xml) continue;
+    const comTransicao = inserirTransicao(xml, s.transicao, s.transicaoXml);
+    if (comTransicao !== xml) zip.file(caminho, comTransicao);
   }
   let ct = (await zip.file("[Content_Types].xml")?.async("string")) ?? "";
   for (const ext of exts) {

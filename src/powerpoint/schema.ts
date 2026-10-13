@@ -11,6 +11,21 @@ export type SlideLayout = "titulo" | "secao" | "conteudo" | "duas" | "soTitulo" 
 /** Tema visual aplicado ao deck (fundo, acento, fontes). */
 export type ThemeId = "claro" | "escuro" | "contraste";
 
+/** Efeito da transição de entrada de uma lâmina (o mesmo nome que o PowerPoint mostra). */
+export type TransicaoTipo = "none" | "fade" | "push" | "wipe" | "split" | "cover" | "uncover";
+
+/** De onde a lâmina entra (ou de onde o efeito começa). */
+export type TransicaoDirecao = "esquerda" | "direita" | "cima" | "baixo";
+
+/** Como a lâmina entra quando o apresentador avança (escolhida na fita ou lida de um .pptx). */
+export interface Transicao {
+  tipo: TransicaoTipo;
+  /** direção do efeito; só vale nos tipos que aceitam (push, wipe, cover e uncover) */
+  direcao?: TransicaoDirecao;
+  /** duração em segundos (padrão: 0,7) */
+  duracao?: number;
+}
+
 /**
  * Uma lâmina. O conteúdo fica em Markdown (`md`) — é o que o app já sabe editar,
  * corrigir, exportar e mandar para a IA — e as notas do apresentador ficam em `notes`.
@@ -32,6 +47,10 @@ export interface Slide {
   show?: boolean;
   /** nome próprio da lâmina (aparece na miniatura e vira o `name` do `p:cSld` no .pptx) */
   nome?: string;
+  /** transição de entrada da lâmina (vazia = troca direta, sem transição) */
+  transicao?: Transicao;
+  /** `<p:transition>` original do .pptx quando o efeito não é modelado: volta como veio na exportação */
+  transicaoXml?: string;
 }
 
 /** O deck inteiro. */

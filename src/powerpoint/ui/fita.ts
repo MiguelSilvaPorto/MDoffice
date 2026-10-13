@@ -3,7 +3,8 @@
 import { SOMBRAS_PRONTAS } from "../edicao/formato";
 import { GRAFICO_TIPOS } from "../edicao/grafico";
 import { ROTULOS_PRESET, type PresetTabela } from "../edicao/tabela";
-import type { SlideLayout } from "../schema";
+import { DICAS_DIRECAO, DICAS_TRANSICAO, DIRECOES_TRANSICAO, DURACOES_TRANSICAO, ROTULOS_DIRECAO, ROTULOS_TRANSICAO, TIPOS_TRANSICAO, aceitaDirecao, direcaoDe, duracaoDe, formatarDuracao } from "../edicao/transicao";
+import type { SlideLayout, TransicaoDirecao, TransicaoTipo } from "../schema";
 import { abrirCores } from "./cores";
 import { FONTES_COMUNS, TAMANHOS, cmParaPt, ptParaCm, type EstadoUI } from "./estado";
 import { abrirGaleria, iconeDeForma } from "./galeria";
@@ -26,11 +27,39 @@ const grande = (cmd: string, icone: string, nome: string, titulo: string, menu =
 const pequeno = (cmd: string, icone: string, nome: string, titulo: string, menu = false) => btn(cmd, `${icone}<span>${nome}</span>`, titulo, "txt", menu);
 const grupo = (nome: string, corpo: string) => `<div class="ppr-grupo"><div class="ppr-corpo">${corpo}</div><div class="ppr-rotulo">${nome}</div></div>`;
 
+/** Setas da direção da transição (a lâmina entra por esse lado). */
+const FLECHAS_DIRECAO: Record<TransicaoDirecao, string> = { esquerda: "←", direita: "→", cima: "↑", baixo: "↓" };
+
+/** Prévia visual de cada transição: a lâmina que entra é o retângulo cheio, a que sai é o mais claro. */
+function previaTransicao(tipo: TransicaoTipo): string {
+  const moldura = `<rect x="1" y="1" width="30" height="18" rx="2" fill="none" stroke="currentColor" stroke-opacity=".45"/>`;
+  const bloco = (x: number, w: number, opacidade = 0.3) => `<rect x="${x}" y="1" width="${w}" height="18" rx="2" fill="currentColor" fill-opacity="${opacidade}"/>`;
+  const traco = (d: string) => `<path d="${d}" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const desenhos: Record<TransicaoTipo, string> = {
+    // troca direta: um risco no meio
+    none: moldura + traco("M7 16 25 4"),
+    // a nova aparece sobre a antiga
+    fade: moldura + bloco(1, 30, 0.16) + traco("M7 10h18M21 6.5 24.5 10 21 13.5"),
+    // as duas deslizam juntas
+    push: moldura + bloco(1, 15, 0.18) + bloco(16, 15, 0.42) + traco("M9 10h11M16 6.5 19.5 10 16 13.5"),
+    // a nova é revelada a partir da borda
+    wipe: moldura + bloco(1, 16, 0.42) + traco("M17 2v16M11 10h7M15 6.5 18.5 10 15 13.5"),
+    // abre do centro
+    split: moldura + bloco(1, 13, 0.42) + bloco(18, 13, 0.42) + traco("M15.5 4.5 13 10l2.5 5.5M16.5 4.5 19 10l-2.5 5.5"),
+    // a nova desliza por cima da antiga
+    cover: moldura + bloco(1, 16, 0.16) + bloco(15, 16, 0.42) + traco("M8 10h9M14 6.5 17.5 10 14 13.5"),
+    // a antiga sai e revela a nova
+    uncover: moldura + bloco(1, 17, 0.42) + bloco(17, 14, 0.16) + traco("M7 10h9M13 6.5 16.5 10 13 13.5"),
+  };
+  return `<svg class="ppr-trans-svg" viewBox="0 0 32 20" aria-hidden="true">${desenhos[tipo]}</svg>`;
+}
+
 const ABAS = [
   { id: "inicio", nome: "Página Inicial" },
   { id: "inserir", nome: "Inserir" },
   { id: "formato", nome: "Formato da Forma" },
   { id: "tabela", nome: "Layout da Tabela" },
+  { id: "transicoes", nome: "Transições" },
   { id: "design", nome: "Design" },
   { id: "exibir", nome: "Exibir" },
 ];
@@ -78,6 +107,7 @@ export class Fita {
         <div class="ppr-painel" data-painel="inserir" hidden>${this.inserir()}</div>
         <div class="ppr-painel" data-painel="formato" hidden>${this.formato()}</div>
         <div class="ppr-painel" data-painel="tabela" hidden>${this.tabela()}</div>
+        <div class="ppr-painel" data-painel="transicoes" hidden>${this.transicoes()}</div>
         <div class="ppr-painel" data-painel="design" hidden>${this.design()}</div>
         <div class="ppr-painel" data-painel="exibir" hidden>${this.exibir()}</div>
       </div>`;
@@ -305,6 +335,29 @@ export class Fita {
     ].join("");
   }
 
+  /** Aba Transições: galeria dos efeitos, direção, duração, aplicar a todas e prévia no palco. */
+  private transicoes(): string {
+    const galeria = TIPOS_TRANSICAO.map(
+      (t) =>
+        `<button type="button" class="ppr-trans-item" data-cmd="transicao:${t}" title="${DICAS_TRANSICAO[t]}" aria-label="${ROTULOS_TRANSICAO[t]}">${previaTransicao(t)}<span class="ppr-trans-nome">${ROTULOS_TRANSICAO[t]}</span></button>`
+    ).join("");
+    const direcoes = DIRECOES_TRANSICAO.map((d) => btn(`transicao-direcao:${d}`, `<span class="ppr-trans-dir">${FLECHAS_DIRECAO[d]}</span>`, `${ROTULOS_DIRECAO[d]}: ${DICAS_DIRECAO[d]}`, "trans-dir")).join("");
+    const duracoes = DURACOES_TRANSICAO.map((d) => btn(`transicao-duracao:${d.valor}`, d.rotulo, `Duração da transição: ${d.rotulo}`, "fmt")).join("");
+    return [
+      grupo(
+        "Transição",
+        `<div class="ppr-trans">${galeria}</div>
+         <span class="ppr-trans-nota" data-trans-nota hidden title="A transição deste arquivo não é representada pelo app: ela volta como veio na exportação">Original preservada</span>`
+      ),
+      grupo("Direção", `<div class="ppr-linha">${direcoes}</div>`),
+      grupo("Duração", `<div class="ppr-linha">${duracoes}<span class="ppr-trans-dur" data-trans-dur></span></div>`),
+      grupo(
+        "Aplicar",
+        `${grande("transicao-todas", ic("i-addons"), "Aplicar a todas", "Aplicar esta transição a todas as lâminas")}${grande("transicao-previa", ic("i-eye"), "Prévia", "Reproduzir a transição nesta lâmina, sem entrar no F5")}`
+      ),
+    ].join("");
+  }
+
   private design(): string {
     return [
       grupo(
@@ -381,6 +434,9 @@ export class Fita {
     else if (cmd.startsWith("forma-rapida:")) this.hooks.run("forma-inserir", cmd.slice(13));
     else if (cmd.startsWith("ferramenta:")) this.hooks.run("ferramenta", cmd.slice(11));
     else if (cmd.startsWith("estilo:")) this.hooks.run("estilo", cmd.slice(7));
+    else if (cmd.startsWith("transicao-direcao:")) this.hooks.run("transicao-direcao", cmd.slice(18));
+    else if (cmd.startsWith("transicao-duracao:")) this.hooks.run("transicao-duracao", cmd.slice(18));
+    else if (cmd.startsWith("transicao:")) this.hooks.run("transicao", cmd.slice(10));
     else this.hooks.run(cmd);
   }
 
@@ -778,6 +834,28 @@ export class Fita {
     dis("slide-del", st.total <= 1);
     for (const c of ["preench", "contorno", "sombra", "ordem", "z-topo", "z-fundo", "z-frente", "z-tras"]) dis(c, !tem);
     for (const b of this.el.querySelectorAll<HTMLElement>("[data-layout]")) b.classList.toggle("on", b.dataset.layout === st.layout);
+
+    // aba Transições: tipo, direção, duração e a prévia
+    const tr = st.transicao;
+    const tipo = tr?.tipo ?? "none";
+    // transição original preservada (não representada pelo app): nenhum tipo fica marcado
+    const marcado = st.transicaoPreservada && tipo === "none" ? "" : `transicao:${tipo}`;
+    for (const b of this.el.querySelectorAll<HTMLElement>("[data-cmd^='transicao:']")) b.classList.toggle("on", b.dataset.cmd === marcado);
+    const comDirecao = aceitaDirecao(tipo);
+    for (const b of this.el.querySelectorAll<HTMLButtonElement>("[data-cmd^='transicao-direcao:']")) {
+      b.disabled = !comDirecao;
+      b.classList.toggle("on", comDirecao && b.dataset.cmd === `transicao-direcao:${direcaoDe(tr)}`);
+    }
+    const dur = duracaoDe(tr);
+    for (const b of this.el.querySelectorAll<HTMLButtonElement>("[data-cmd^='transicao-duracao:']")) {
+      b.disabled = tipo === "none";
+      b.classList.toggle("on", tipo !== "none" && Number(b.dataset.cmd!.split(":")[1]) === dur);
+    }
+    const durTxt = this.el.querySelector<HTMLElement>("[data-trans-dur]");
+    if (durTxt) durTxt.textContent = tipo === "none" ? "" : formatarDuracao(dur);
+    const notaTrans = this.el.querySelector<HTMLElement>("[data-trans-nota]");
+    if (notaTrans) notaTrans.hidden = !st.transicaoPreservada;
+    dis("transicao-previa", tipo === "none");
 
     // seletores de fonte e tamanho
     const selFonte = this.el.querySelector<HTMLSelectElement>('[data-sel="font"]');

@@ -31,6 +31,9 @@ export function duplicateSlide(deck: Deck, at: number): { deck: Deck; index: num
     md: original.md,
     layout: original.layout,
     notes: original.notes,
+    // a cópia entra como a original (a transição e o que veio cru do .pptx acompanham)
+    ...(original.transicao ? { transicao: original.transicao } : {}),
+    ...(original.transicaoXml ? { transicaoXml: original.transicaoXml } : {}),
     // formas ganham id novo para não compartilhar seleção
     shapes: original.shapes.map((s) => ({ ...s, id: uid() })),
     // a cópia nasce com o mesmo nome e o mesmo estado de exibição da original

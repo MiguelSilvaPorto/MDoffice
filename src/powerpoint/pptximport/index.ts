@@ -6,6 +6,7 @@ import { DEFAULT_SETUP } from "../model";
 import { lerTema, MAPA_PADRAO, type Tema } from "./cores";
 import { lerArvore, lerPreenchimento, type CtxForma } from "./formas";
 import { Pacote, type Relacao } from "./pacote";
+import { lerTransicao } from "./slides";
 import { caminho, filho, filhos, num, type No } from "./xmltree";
 import { carregarFontes } from "./fontes";
 import { laminasDoPresentation, nomeDaCld } from "./slides";
@@ -195,6 +196,9 @@ export async function pptxToDeck(bytes: Uint8Array, setupBase: DeckSetup = DEFAU
     // oculta: o show="0" costuma vir no p:sldId (presentation.xml); aceitamos também
     // o show="0" no p:sld, que é o lugar do esquema e o que outros programas gravam
     const oculta = ocultas.has(parte) || sl.raiz?.a.show === "0";
+    // transição de entrada: o que o modelo não representa volta cru (e vira aviso)
+    const transicao = lerTransicao((await pac.texto(parte)) ?? "");
+    for (const a of transicao.avisos) avisos.add(a);
     slides.push({
       md,
       layout: i === 0 ? "titulo" : "conteudo",
@@ -203,6 +207,8 @@ export async function pptxToDeck(bytes: Uint8Array, setupBase: DeckSetup = DEFAU
       ...(bg ? { bg } : {}),
       ...(oculta ? { show: false } : {}),
       ...(nome ? { nome } : {}),
+      ...(transicao.transicao ? { transicao: transicao.transicao } : {}),
+      ...(transicao.bruta ? { transicaoXml: transicao.bruta } : {}),
     });
   }
 
@@ -229,5 +235,6 @@ export async function pptxToDeck(bytes: Uint8Array, setupBase: DeckSetup = DEFAU
 }
 
 export { deckParaMarkdown } from "./slides-md";
-export { xmlParaMarkdown, notasDoSlide, ordemDosSlides } from "./slides";
+export { xmlParaMarkdown, notasDoSlide, ordemDosSlides, lerTransicao } from "./slides";
+export type { TransicaoLida } from "./slides";
 export { textosDe, paragrafos } from "./xml";

@@ -1,8 +1,10 @@
 // Monta uma lâmina do .pptx a partir do modelo: formas posicionadas quando existem,
 // senão converte o Markdown em blocos de texto (título, listas, parágrafos).
+// Também escreve a transição de entrada (`p:transition`) na lâmina já montada.
 import { marked } from "marked";
 import DOMPurify from "dompurify";
-import { aspectSize, type DeckSetup, type Slide } from "../schema";
+import { aceitaDirecao, direcaoDe, duracaoDe, normalizarTransicao } from "../edicao/transicao";
+import { aspectSize, type DeckSetup, type Slide, type Transicao, type TransicaoDirecao, type TransicaoTipo } from "../schema";
 import { escreverForma } from "./shapes";
 import { coresTema } from "./theme";
 
@@ -146,4 +148,62 @@ export function comOcultasNoSldId(pres: string, ocultas: number[]): string {
     if (!ocultas.includes(i++) || /\bshow=/.test(tag)) return tag;
     return tag.replace(/(\/?>)$/, (fim) => ` show="0"${fim}`);
   });
+}
+
+// ---------------------------------------------------------------------------
+// transição de lâmina
+// ---------------------------------------------------------------------------
+
+/** Direção do modelo → atributo `dir` do OOXML (l = entra pela esquerda, ...). */
+const DIR_XML: Record<TransicaoDirecao, string> = { esquerda: "l", direita: "r", cima: "u", baixo: "d" };
+
+/** Efeito do modelo → elemento filho do `p:transition` (`pull` é o "Uncover" do PowerPoint). */
+const EFEITO_XML: Record<Exclude<TransicaoTipo, "none">, string> = { fade: "fade", push: "push", wipe: "wipe", split: "split", cover: "cover", uncover: "pull" };
+
+/** Velocidade (`spd`) equivalente à duração em segundos — a mesma tabela que o importador lê. */
+export function velocidadeDe(segundos: number): "fast" | "med" | "slow" {
+  return segundos <= 0.5 ? "fast" : segundos >= 1 ? "slow" : "med";
+}
+
+/**
+ * XML do `<p:transition>` de uma transição do modelo (vazio quando a lâmina não tem transição).
+ * Sai `spd` (leitores antigos) e `p14:dur` (a duração exata, em milissegundos); o PowerPoint
+ * embrulha o p14:dur num mc:AlternateContent — a forma direta também é lida por ele.
+ */
+export function xmlTransicao(t: Transicao | undefined): string {
+  const tr = normalizarTransicao(t);
+  if (!tr || tr.tipo === "none") return "";
+  const dur = duracaoDe(tr);
+  const dir = aceitaDirecao(tr.tipo) ? ` dir="${DIR_XML[direcaoDe(tr)]}"` : "";
+  return (
+    `<p:transition xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" spd="${velocidadeDe(dur)}" p14:dur="${Math.round(dur * 1000)}">` +
+    `<p:${EFEITO_XML[tr.tipo]}${dir}/></p:transition>`
+  );
+}
+
+const RE_TRANSICAO_XML = /<p:transition\b[^>]*(?:\/>|>[\s\S]*?<\/p:transition>)/;
+
+/** Tira a transição que a lâmina já tiver (inclusive embrulhada num mc:AlternateContent). */
+function removerTransicao(xml: string): string {
+  const semAlternado = xml.replace(/<mc:AlternateContent\b[^>]*(?:\/>|>[\s\S]*?<\/mc:AlternateContent>)/g, (bloco) => (RE_TRANSICAO_XML.test(bloco) ? "" : bloco));
+  return semAlternado.replace(new RegExp(RE_TRANSICAO_XML.source, "g"), "");
+}
+
+/** O `<p:transition>` entra depois do `p:clrMapOvr` e antes de `p:timing`/`p:extLst` (a ordem do esquema). */
+function posicionarTransicao(xml: string, transicao: string): string {
+  const clr = /<p:clrMapOvr\b[^>]*(?:\/>|>[\s\S]*?<\/p:clrMapOvr>)/.exec(xml);
+  if (clr) return xml.slice(0, clr.index + clr[0].length) + transicao + xml.slice(clr.index + clr[0].length);
+  const timing = /<p:timing\b/.exec(xml);
+  if (timing) return xml.slice(0, timing.index) + transicao + xml.slice(timing.index);
+  return xml.replace(/<\/p:sld>/, () => `${transicao}</p:sld>`);
+}
+
+/**
+ * Põe a transição no XML de uma lâmina do pacote exportado.
+ * Sem transição (e sem XML cru guardado), devolve o XML como veio.
+ */
+export function inserirTransicao(xml: string, t: Transicao | undefined, bruta?: string): string {
+  const nova = xmlTransicao(t) || bruta || "";
+  if (!nova) return xml;
+  return posicionarTransicao(removerTransicao(xml), nova);
 }

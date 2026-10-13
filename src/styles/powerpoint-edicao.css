@@ -1222,6 +1222,78 @@ button.ppr.cor {
 .pp-tg.on { background: var(--accent); border-color: var(--accent); }
 .ppr-opc { display: flex; align-items: center; gap: 4px; font-size: 12px; white-space: nowrap; }
 
+/* ---------- aba Transições: galeria dos efeitos, direção e duração ---------- */
+
+.ppr-trans {
+  display: grid;
+  grid-template-columns: repeat(4, 46px);
+  gap: 4px;
+  align-content: center;
+}
+
+.ppr-trans-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 3px 2px;
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.ppr-trans-item:hover {
+  border-color: var(--fi-ppt, #d24a17);
+}
+
+.ppr-trans-item.on {
+  background: color-mix(in srgb, var(--fi-ppt, #d24a17) 18%, var(--panel-2));
+  border-color: var(--fi-ppt, #d24a17);
+}
+
+.ppr-trans-svg {
+  width: 32px;
+  height: 20px;
+  flex: none;
+}
+
+.ppr-trans-nome {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.ppr-trans-item.on .ppr-trans-nome {
+  color: var(--fg);
+}
+
+.ppr-trans-nota {
+  align-self: center;
+  max-width: 80px;
+  padding-left: var(--pe-5);
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.2;
+}
+
+.ppr-trans-dur {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+button.ppr.trans-dir {
+  min-width: 28px;
+  padding: 0 4px;
+}
+
+.ppr-trans-dir {
+  font-size: 15px;
+  line-height: 1;
+}
+
 .pp-thumb.arrastando { opacity: 0.45; }
 .pp-thumb.alvo-antes { box-shadow: -3px 0 0 var(--accent); }
 .pp-thumb.alvo-depois { box-shadow: 3px 0 0 var(--accent); }

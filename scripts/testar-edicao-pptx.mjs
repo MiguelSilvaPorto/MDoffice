@@ -345,5 +345,84 @@ const GR = await empacotar("src/powerpoint/render/grafico.ts", "grafico-render.m
   ok("forma sem gráfico não desenha nada", vazio === "");
 }
 
+// ---------------------------------------------------------------- transições de lâmina
+const TR = await empacotar("src/powerpoint/edicao/transicao.ts", "transicao.mjs");
+{
+  const t = TR.normalizarTransicao({ tipo: "push" });
+  ok("transição: tipo conhecido ganha a direção padrão", t.tipo === "push" && t.direcao === "direita" && t.duracao === undefined, JSON.stringify(t));
+  ok("transição: fade e split não guardam direção", TR.normalizarTransicao({ tipo: "fade", direcao: "cima" }).direcao === undefined && TR.normalizarTransicao({ tipo: "split", direcao: "baixo" }).direcao === undefined);
+  ok("transição: tipo desconhecido vira sem transição", TR.normalizarTransicao({ tipo: "vortex" }) === undefined);
+  ok("transição: duração fora dos limites é aparada", TR.duracaoDe({ tipo: "fade", duracao: 99 }) === 10 && TR.duracaoDe({ tipo: "fade", duracao: 0 }) === 0.1);
+  ok("transição: duração padrão de 0,7 s", TR.duracaoDe({ tipo: "fade" }) === 0.7 && TR.formatarDuracao(0.7) === "0,7 s" && TR.formatarDuracao(1) === "1 s");
+  ok("transição: só push/wipe/cover/uncover aceitam direção", TR.aceitaDirecao("push") && TR.aceitaDirecao("wipe") && TR.aceitaDirecao("cover") && TR.aceitaDirecao("uncover") && !TR.aceitaDirecao("split") && !TR.aceitaDirecao("fade") && !TR.aceitaDirecao("none"));
+  const troca = TR.comTransicao({ tipo: "push", direcao: "esquerda", duracao: 1 }, { direcao: "baixo" });
+  ok("transição: comTransicao troca só o pedido", troca.tipo === "push" && troca.direcao === "baixo" && troca.duracao === 1, JSON.stringify(troca));
+  const sem = TR.normalizarTransicao({ tipo: "none", direcao: "cima", duracao: 2 });
+  ok("transição: 'sem' limpa direção e duração", sem.tipo === "none" && sem.direcao === undefined && sem.duracao === undefined);
+  ok("transição: comTransicao muda a duração mantendo o tipo", TR.comTransicao({ tipo: "wipe", direcao: "cima" }, { duracao: 2 }).duracao === 2);
+}
+
+// ---------------------------------------------------------------- round-trip do p:transition
+const IMP = await empacotar("src/powerpoint/pptximport/slides.ts", "slides-imp.mjs");
+const EXP = await empacotar("src/powerpoint/pptxexport/slides.ts", "slides-exp.mjs");
+{
+  // lâmina mínima, como o PptxGenJS e o Escritor a escrevem
+  const lamina = (extra) =>
+    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>${extra}</p:sld>`;
+  const alternado = (dentro) =>
+    `<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main"><mc:Choice Requires="p14">${dentro}</mc:Choice><mc:Fallback>${dentro.replace(/\s+p14:dur="\d+"/, "")}</mc:Fallback></mc:AlternateContent>`;
+
+  // sem transição
+  const nada = IMP.lerTransicao(lamina(""));
+  ok("transição: lâmina sem p:transition não inventa nada", !nada.transicao && !nada.bruta && nada.avisos.length === 0);
+
+  // fade como o PowerPoint grava (mc:AlternateContent + p14:dur em milissegundos)
+  const fade = IMP.lerTransicao(lamina(alternado(`<p:transition spd="med" p14:dur="700"><p:fade/></p:transition>`)));
+  ok("transição: fade com p14:dur vira 0,7 s", fade.transicao?.tipo === "fade" && fade.transicao.duracao === 0.7 && !fade.transicao.direcao, JSON.stringify(fade));
+
+  // spd sem p14:dur (fast = 0,5 s · med = 0,75 s · slow = 1 s)
+  const push = IMP.lerTransicao(lamina(`<p:transition spd="fast"><p:push dir="r"/></p:transition>`));
+  ok("transição: push com dir e spd=fast", push.transicao?.tipo === "push" && push.transicao.direcao === "direita" && push.transicao.duracao === 0.5, JSON.stringify(push.transicao));
+  const wipe = IMP.lerTransicao(lamina(`<p:transition><p:wipe dir="u"/></p:transition>`));
+  ok("transição: wipe sem spd não inventa duração", wipe.transicao?.tipo === "wipe" && wipe.transicao.direcao === "cima" && wipe.transicao.duracao === undefined, JSON.stringify(wipe.transicao));
+  const cover = IMP.lerTransicao(lamina(`<p:transition spd="slow"><p:cover dir="l"/></p:transition>`));
+  ok("transição: cover com dir", cover.transicao?.tipo === "cover" && cover.transicao.direcao === "esquerda" && cover.transicao.duracao === 1, JSON.stringify(cover.transicao));
+  const uncover = IMP.lerTransicao(lamina(`<p:transition spd="slow"><p:pull dir="l"/></p:transition>`));
+  ok("transição: pull (Uncover) vira uncover", uncover.transicao?.tipo === "uncover" && uncover.transicao.direcao === "esquerda", JSON.stringify(uncover.transicao));
+  const split = IMP.lerTransicao(lamina(`<p:transition spd="med"><p:split/></p:transition>`));
+  ok("transição: split padrão", split.transicao?.tipo === "split" && split.transicao.duracao === 0.75, JSON.stringify(split.transicao));
+  const semDir = IMP.lerTransicao(lamina(`<p:transition spd="med"><p:push/></p:transition>`));
+  ok("transição: sem dir vale o padrão do OOXML (esquerda)", semDir.transicao?.direcao === "esquerda", JSON.stringify(semDir.transicao));
+
+  // o que o modelo não representa: guarda o XML cru e avisa
+  const wedge = IMP.lerTransicao(lamina(`<p:transition spd="slow"><p:wedge/></p:transition>`));
+  ok("transição: efeito desconhecido fica guardado cru e avisa", !wedge.transicao && !!wedge.bruta && wedge.avisos.length === 1 && wedge.bruta.includes("<p:wedge/>"), JSON.stringify(wedge));
+  const som = IMP.lerTransicao(lamina(`<p:transition spd="med"><p:fade/><p:sndAc><p:stSnd/></p:sndAc></p:transition>`));
+  ok("transição: com som fica guardada crua", !som.transicao && !!som.bruta && som.avisos.length === 1, JSON.stringify(som.avisos));
+  const splitVert = IMP.lerTransicao(lamina(`<p:transition spd="med"><p:split orient="vert"/></p:transition>`));
+  ok("transição: split vertical fica guardado cru", !splitVert.transicao && !!splitVert.bruta && splitVert.avisos.length === 1);
+  const canto = IMP.lerTransicao(lamina(`<p:transition spd="med"><p:cover dir="lu"/></p:transition>`));
+  ok("transição: direção de canto fica guardada crua", !canto.transicao && !!canto.bruta);
+
+  // gravação: spd + p14:dur + dir, e a leitura devolve o mesmo modelo
+  const xmlPush = EXP.xmlTransicao({ tipo: "push", direcao: "esquerda", duracao: 2 });
+  ok("transição: push entra como <p:push dir=\"l\"> com spd=slow e p14:dur", xmlPush.includes('spd="slow"') && xmlPush.includes('p14:dur="2000"') && xmlPush.includes('<p:push dir="l"/>'), xmlPush);
+  ok("transição: 'sem' não escreve nada", EXP.xmlTransicao({ tipo: "none" }) === "" && EXP.xmlTransicao(undefined) === "");
+  ok("transição: spd acompanha a duração", EXP.velocidadeDe(0.5) === "fast" && EXP.velocidadeDe(0.7) === "med" && EXP.velocidadeDe(2) === "slow");
+  for (const tipo of ["fade", "push", "wipe", "split", "cover", "uncover"]) {
+    const modelo = TR.normalizarTransicao({ tipo, duracao: 1.5 });
+    const volta = IMP.lerTransicao(EXP.inserirTransicao(lamina(""), modelo));
+    ok(`transição: round-trip ${tipo}`, JSON.stringify(volta.transicao) === JSON.stringify(modelo), JSON.stringify([modelo, volta]));
+  }
+  // a transição entra depois do clrMapOvr (a ordem do esquema) e não duplica
+  const comTransicao = EXP.inserirTransicao(lamina(""), { tipo: "fade", duracao: 1 });
+  ok("transição: entra depois do p:clrMapOvr", /<\/p:clrMapOvr><p:transition/.test(comTransicao), comTransicao.slice(-260));
+  const trocada = EXP.inserirTransicao(comTransicao, { tipo: "wipe", direcao: "baixo" });
+  ok("transição: trocar não deixa a antiga no arquivo", (trocada.match(/<p:transition\b/g) ?? []).length === 1 && IMP.lerTransicao(trocada).transicao?.tipo === "wipe");
+  // o XML cru guardado volta como veio (inclusive o mc:AlternateContent)
+  const bruta = IMP.lerTransicao(lamina(alternado(`<p:transition spd="slow" p14:dur="2000"><p:wedge/></p:transition>`))).bruta;
+  ok("transição: o XML cru volta como veio", EXP.inserirTransicao(lamina(""), undefined, bruta) === lamina(bruta));
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);

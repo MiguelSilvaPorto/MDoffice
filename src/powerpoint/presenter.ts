@@ -3,9 +3,10 @@
 // um documento Markdown qualquer — por isso concentra openPresentation/deckSummary.
 import { marked } from "marked";
 import DOMPurify from "dompurify";
+import { direcaoDe, duracaoDe } from "./edicao/transicao";
 import { deckFromMarkdown } from "./markdown";
 import { DEFAULT_SETUP, stageRatio } from "./model";
-import type { Deck, DeckSetup, Slide } from "./schema";
+import type { Deck, DeckSetup, Slide, Transicao, TransicaoTipo } from "./schema";
 import { fundoValor } from "./render/forma";
 
 marked.setOptions({ gfm: true, breaks: false });
@@ -64,23 +65,95 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   let digitos = ""; // número sendo digitado para "ir para a lâmina"
   let telaCor: "preta" | "branca" | null = null; // tela preta/branca (B/W)
   let pinturaSeq = 0; // marked é assíncrono: uma pintura antiga não pode sobrescrever a nova
+  let encerrarAtual: (() => void) | null = null; // transição de lâmina em andamento
 
   rotulo.textContent = titulo || deck.titulo;
   if (setup.footer) rotulo.textContent += ` · ${setup.footer}`;
 
-  const pintar = async () => {
-    const seq = ++pinturaSeq;
-    const slide = deck.slides[ordem[atual]];
+  /** Monta o conteúdo de uma lâmina num elemento próprio (o palco só troca as camadas). */
+  const conteudoDa = async (slide: Slide): Promise<HTMLElement> => {
+    const secao = document.createElement("section");
     // lâmina com formas (importada de .pptx ou montada no palco): desenha as formas, como no palco, em escala cheia
     if (slide.shapes.length && desenharFormas) {
+      secao.className = "slide-rica";
       const fundo = fundoValor(slide.bg, setup.media ?? {});
-      stage.innerHTML = `<section class="slide-rica" style="${fundo ? `background:${fundo};` : ""}">${desenharFormas(slide)}</section>`;
-    } else {
-      const html = await marked.parse(slide.md, { gfm: true, async: true });
-      if (seq !== pinturaSeq) return; // uma troca mais recente já assumiu a pintura
-      const numero = setup.showNumber ? `<span class="slide-num">${atual + 1}</span>` : "";
-      stage.innerHTML = `<section class="slide layout-${slide.layout}">${sanitize(String(html))}${numero}</section>`;
+      if (fundo) secao.style.background = fundo;
+      secao.innerHTML = desenharFormas(slide);
+      return secao;
     }
+    const html = await marked.parse(slide.md, { gfm: true, async: true });
+    secao.className = `slide layout-${slide.layout}`;
+    secao.innerHTML = sanitize(String(html)) + (setup.showNumber ? `<span class="slide-num">${atual + 1}</span>` : "");
+    return secao;
+  };
+
+  /** Movimento reduzido no sistema: troca direta, sem animação. */
+  const semMovimento = (): boolean => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+
+  /** Encerra a transição em andamento (a lâmina que saiu some na hora). */
+  const encerrarTransicao = (): void => {
+    const fim = encerrarAtual;
+    encerrarAtual = null;
+    fim?.();
+  };
+
+  const animacaoDe = (tipo: TransicaoTipo, entra: boolean): string | null => {
+    if (tipo === "fade") return entra ? "anim-fade-entra" : "anim-fade-sai";
+    if (tipo === "push") return entra ? "anim-desliza-entra" : "anim-desliza-sai";
+    if (tipo === "cover") return entra ? "anim-desliza-entra" : null; // a antiga fica parada
+    if (tipo === "uncover") return entra ? null : "anim-desliza-sai"; // a nova já está no lugar
+    if (tipo === "wipe") return entra ? "anim-wipe-entra" : null;
+    if (tipo === "split") return entra ? "anim-split-entra" : null;
+    return null;
+  };
+
+  /**
+   * Troca o conteúdo do palco. Com transição, a lâmina que sai fica numa camada por baixo e a que
+   * entra anima por cima (as animações estão em styles/slides.css). Uma transição nova cancela a anterior.
+   */
+  const mostrar = (novo: HTMLElement, t?: Transicao): void => {
+    encerrarTransicao();
+    const saindo = stage.querySelector<HTMLElement>(".slides-camada.entrando");
+    const camada = document.createElement("div");
+    camada.className = "slides-camada entrando";
+    camada.append(novo);
+    if (!saindo || !t || t.tipo === "none" || semMovimento()) {
+      stage.replaceChildren(camada);
+      return;
+    }
+    const ms = Math.round(duracaoDe(t) * 1000);
+    const dir = direcaoDe(t);
+    const anima = (el: HTMLElement, entra: boolean) => {
+      const nome = animacaoDe(t.tipo, entra);
+      el.style.setProperty("--trans-dur", `${ms}ms`);
+      el.classList.add(`trans-${dir}`);
+      if (nome) el.classList.add(nome);
+    };
+    saindo.classList.replace("entrando", "saindo");
+    anima(saindo, false);
+    anima(camada, true);
+    stage.replaceChildren(saindo, camada);
+    const fim = () => {
+      saindo.remove();
+      camada.className = "slides-camada entrando";
+      camada.style.removeProperty("--trans-dur");
+    };
+    const relogio = window.setTimeout(() => {
+      encerrarAtual = null;
+      fim();
+    }, ms + 120);
+    encerrarAtual = () => {
+      window.clearTimeout(relogio);
+      fim();
+    };
+  };
+
+  const pintar = async (animar = false): Promise<void> => {
+    const seq = ++pinturaSeq;
+    const slide = deck.slides[ordem[atual]];
+    const conteudo = await conteudoDa(slide);
+    if (seq !== pinturaSeq) return; // uma troca mais recente já assumiu a pintura
+    mostrar(conteudo, animar ? slide.transicao : undefined);
     contador.textContent = `${atual + 1} / ${ordem.length}`;
     notas.textContent = slide.notes;
     notas.hidden = !mostrarNotas || !slide.notes;
@@ -92,7 +165,8 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     const proximo = Math.min(Math.max(0, pos), ordem.length - 1);
     if (proximo === atual) return;
     atual = proximo;
-    void pintar();
+    // a transição é a da lâmina que está ENTRANDO
+    void pintar(true);
   };
   const ir = (passo: number) => irPara(atual + passo);
 
@@ -123,6 +197,7 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
 
   const fechar = () => {
     document.removeEventListener("keydown", onKey, true);
+    encerrarTransicao();
     overlay.remove();
     document.body.classList.remove("apresentando");
   };
