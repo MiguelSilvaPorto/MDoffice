@@ -599,16 +599,6 @@ export class Fita {
         });
         return;
       }
-      case "slide-novo": {
-        const el = abrirPopup(ancora, LAYOUTS.map(([id, n]) => `<button type="button" class="pp-pop-item" data-novo="${id}">${n}</button>`).join(""), { classe: "pp-pop-menu" });
-        el.addEventListener("click", (ev) => {
-          const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-novo]");
-          if (!b) return;
-          fecharPopup();
-          run("slide-new", b.dataset.novo);
-        });
-        return;
-      }
       case "layout": {
         const el = abrirPopup(ancora, LAYOUTS.map(([id, n]) => `<button type="button" class="pp-pop-item${est.layout === id ? " on" : ""}" data-layout="${id}">${n}</button>`).join(""), { classe: "pp-pop-menu" });
         el.addEventListener("click", (ev) => {

@@ -74,7 +74,16 @@ export default defineConfig({
     port: 1420,
     strictPort: true,
     watch: {
-      ignored: ["**/src-tauri/**"],
+      // `src-tauri` é do Rust (quem recompila é o cargo).
+      //
+      // `.worktrees` e `dist` ficam de fora porque o servidor de dev não tem nada
+      // a ver com eles e a observação atrapalha os dois lados:
+      // - o `dist` de uma worktree carrega o modelo de IA (270 MB) e, quando a
+      //   worktree é removida, o arquivo fica travado e o observador morre com
+      //   EBUSY — o Vite cai junto e o app fecha sozinho;
+      // - observar a worktree de outra pessoa é justamente o que o AGENTS.md
+      //   pede para não fazer.
+      ignored: ["**/src-tauri/**", "**/.worktrees/**", "**/dist/**"],
     },
   },
   build: {
