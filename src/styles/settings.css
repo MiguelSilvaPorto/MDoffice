@@ -669,6 +669,61 @@ label.st-row:has(.st-switch:checked) .st-row-ic {
   display: none;
 }
 
+/* ---------- histórico: linhas de cópia, documentos expansíveis e estados ---------- */
+
+/* linha que é um botão (documento expansível): o visual do .st-row, sem o chrome do botão */
+button.st-row {
+  width: 100%;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  text-align: left;
+}
+
+button.st-row:hover {
+  background: var(--panel-2);
+}
+
+.st-chev {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: var(--muted);
+  transform: rotate(-90deg);
+  transition: transform var(--mov-2) var(--curva-entrada), color var(--mov-1) var(--curva);
+}
+
+.st-chev.open {
+  transform: rotate(0);
+}
+
+button.st-row:hover .st-chev {
+  color: var(--fg);
+}
+
+/* selo pequeno dentro do título (ex.: cópia de proteção) */
+.st-tag {
+  margin-left: 4px;
+  padding: 1px 6px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
+}
+
+/* botão de perigo armado (apagar pede dois cliques) */
+.st-btn.danger.confirmando {
+  color: #fff;
+  border-color: var(--danger);
+  background: var(--danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 22%, transparent);
+}
+
 /* ---------- interruptor ----------
    medidas inteiras de propósito: com folga fracionária (2,5px) o navegador
    arredonda a bolinha para um lado em cada estado e ela fica levemente fora

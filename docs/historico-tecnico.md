@@ -1019,6 +1019,56 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** 11 verificações (as 5 do tema atualizadas + 6 novas)
 - **Porquê:** as grades de 2 e de 3, o estado marcado, as prévias, os tempos dos três níveis, o
   gating do discreto, o relevo do completo, os raios dos cantos, as abas e a leitura no boot.
+## src/settingsPage.ts
+
+### 2026-10-13 · este commit · aba Histórico com resumo e recuperação dentro do app
+- **Local:** seção `data-sec="historico"` e o bloco `// Histórico e salvamento` do render
+- **Linha:** `<small data-hist-count>` + "Abrir histórico"/"Apagar" → resumo por camada
+  (`data-hist-versoes`, `data-hist-alteracoes`, `data-hist-copias`), listas `data-copias-doc` e
+  `data-copias-outros` (montadas com o novo helper `el()`), cópias com `[Restaurar]`/`[Apagar]`,
+  "Onde ficam os arquivos" e apagar em dois cliques (classe `confirmando`)
+- **Porquê:** a tela só mostrava a contagem de versões e mandava para o modal; não dizia o que
+  cada camada guardou nem onde, e o "Apagar" apagava só as versões (as alterações ficavam — o
+  botão prometia mais do que fazia).
+
+## src/app/pages.ts
+
+### 2026-10-13 · este commit · contexto do histórico (visão, apagar completo e recuperar)
+- **Local:** `settingsContext()`
+- **Linha:** `historyCount`/`clearHistory` → `historicoVisao()` (as três camadas + outros
+  documentos com backup + originais sumidos + pasta do app), `apagarHistoricoDoDoc()` (versões +
+  commits + `backup.apagarLog()`), `restaurarCopia()`, `abrirRecuperacao()`; `openHistory(aba)`
+- **Porquê:** o resumo e as ações das três camadas ficam num lugar só (o App conhece o documento
+  atual, as abas abertas e o que está em disco); a página de Configurações continua só desenhando.
+
+## src/app/historySearch.ts
+
+### 2026-10-13 · este commit · restaurar cópia de qualquer documento, com recarga tolerante a caixa
+- **Local:** `reloadCurrentFromDisk()` e o novo `restaurarCopia()`
+- **Linha:** `if (tab.path !== path)` → comparação em `.toLowerCase()`; novo
+  `restaurarCopia(path, root, name)`, que restaura, ativa a aba do documento (se estiver aberta)
+  e recarrega do disco
+- **Porquê:** o índice do backup pode devolver o mesmo caminho do Windows com maiúsculas
+  diferentes — a recarga não acontecia e o salvamento automático sobrescreveria a cópia
+  restaurada em silêncio. E recuperar a cópia de **outro** documento exige a aba certa ativa
+  antes de reler do disco.
+
+## src/historyUi.ts
+
+### 2026-10-13 · este commit · aba inicial do histórico
+- **Local:** `HistoryHooks`, tipo `AbaHistorico` e abertura do diálogo
+- **Linha:** novo `abaInicial?: AbaHistorico`; `void carregar()` → `trocarAba(atual)`
+- **Porquê:** os atalhos "Abrir aba Versões/Alterações/Backup" das Configurações precisam levar
+  direto ao ponto; antes o modal caía sempre em Versões.
+
+## src/styles/settings.css
+
+### 2026-10-13 · este commit · linhas de cópia, selo e estado armado do apagar
+- **Local:** bloco novo depois de `.st-list-note`
+- **Linha:** `button.st-row` (reset do botão da linha expansível), `.st-chev`, `.st-tag` e
+  `.st-btn.danger.confirmando`
+- **Porquê:** as listas de cópias e de "outros documentos" são montadas em tempo de execução; o
+  selo de "proteção" e o estado "Confirmar?" do apagar precisam de desenho próprio.
 
 ---
 

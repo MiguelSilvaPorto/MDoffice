@@ -301,6 +301,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **"há quanto tempo"** ao lado e a pasta na segunda linha (os rascunhos aparecem como
   "Rascunho do app"); as ações ("Abrir arquivo…", "Reabrir aba fechada") ficam **fixas no rodapé**
   enquanto só a lista rola, e o × de tirar da lista aparece no hover, no lugar do tempo.
+- **Histórico e salvamento (aba das Configurações)**: mostra **o que cada camada guardou** —
+  versões (quantas, quantas marcadas, a última e o nome dela), alterações (quantas e o último
+  resumo) e cópias em disco (quantas, tamanho e a última) — e as **cópias viram lista dentro do
+  app**, com **Restaurar** e **Apagar** por cópia, para o documento atual **e** para os outros
+  documentos com backup. Ganhou "onde ficam os arquivos" (as duas pastas com Abrir e o log
+  exportado em `.historico/historico.json`), o atalho para os **originais sumidos** e o
+  **Apagar completo** (versões + alterações + log exportado — as cópias em disco ficam; antes
+  o botão apagava só as versões). O "Abrir histórico" abre direto na aba certa.
 
 **Ferramentas (dev)**
 

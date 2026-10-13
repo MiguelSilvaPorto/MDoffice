@@ -22,7 +22,12 @@ export interface HistoryHooks {
    * Recarrega o documento aberto, senão o salvamento automático sobrescreveria a cópia.
    */
   reloadFromDisk?: () => Promise<void>;
+  /** Aba que abre à frente (as Configurações levam direto para a aba certa). */
+  abaInicial?: AbaHistorico;
 }
+
+/** As três camadas do histórico: cópias no app, log de mudanças e cópias em disco. */
+export type AbaHistorico = "versoes" | "alteracoes" | "backup";
 
 function ago(at: number): string {
   const s = Math.round((Date.now() - at) / 1000);
@@ -123,8 +128,8 @@ export function openHistoryDialog(hooks: HistoryHooks): void {
     save: q<HTMLButtonElement>("[data-save]"),
   };
   const view = hooks.project ?? ((t: string) => t);
-  type Aba = "versoes" | "alteracoes" | "backup";
-  let atual: Aba = "versoes";
+  type Aba = AbaHistorico;
+  let atual: Aba = hooks.abaInicial ?? "versoes";
   let versions: Version[] = [];
   let commits: Commit[] = [];
   let arquivosBackup: backup.BackupEntry | null = null;
@@ -349,7 +354,8 @@ export function openHistoryDialog(hooks: HistoryHooks): void {
     else if (atual === "alteracoes") await carregarCommits();
     else await carregarBackup();
   };
-  void carregar();
+  // abre já na aba pedida (as Configurações levam direto para Versões, Alterações ou Backup)
+  trocarAba(atual);
 
   // ---------- ações ----------
 

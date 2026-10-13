@@ -1,5 +1,5 @@
 // Página de Configurações (abre como uma aba, ao lado dos documentos). Cada ajuste vale na hora.
-import { toast } from "./util";
+import { toast, baseName } from "./util";
 import * as backup from "./backup";
 import { pickFolders, listDrafts, draftsFolder, deleteDraft } from "./files";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
@@ -18,6 +18,7 @@ import type { Translation, ProviderChoice } from "./translate/controller";
 import type { Tone } from "./broker/writing";
 import type { AppSettings } from "./settings";
 import type { AppIcon } from "./app/appIcon";
+import type { AbaHistorico } from "./historyUi";
 
 
 export type SettingsSection = "escrita" | "traducao" | "historico" | "armazenamento" | "aparencia" | "atalhos";
@@ -27,6 +28,40 @@ export type NivelAnimacao = "discreta" | "padrao" | "completa";
 
 /** Formato dos cantos do app (Configurações ▸ Aparência). */
 export type FormatoCantos = "quadrados" | "redondos";
+
+/** Uma cópia datada em disco, como as Configurações mostram (com a pasta de onde ela veio). */
+export interface CopiaDiscoResumo {
+  root: string;
+  name: string;
+  stamp: string;
+  bytes: number;
+  at: number;
+  protection: boolean;
+  /** de qual raiz veio: a pasta escolhida pelo usuário ou a pasta do app */
+  local: "usuario" | "app" | "outra";
+}
+
+/** Um documento (que não o atual) com cópias em backup. */
+export interface OutroDocBackup {
+  original: string;
+  copias: number;
+  bytes: number;
+  newest: number;
+}
+
+/** O que as três camadas de histórico guardaram, resumido para a tela. */
+export interface HistoricoVisao {
+  /** caminho do documento atual; null quando não há arquivo salvo */
+  doc: string | null;
+  nome: string;
+  versoes: { total: number; marcadas: number; ultimaEm: number | null; ultimoNome: string; ultimoTam: number };
+  alteracoes: { total: number; ultimaEm: number | null; ultimoResumo: string; ancora: boolean };
+  copias: { total: number; bytes: number; ultimaEm: number | null };
+  copiasDetalhe: CopiaDiscoResumo[];
+  outros: OutroDocBackup[];
+  sumidos: number;
+  raizApp: string;
+}
 
 export interface SettingsCtx {
   settings: () => AppSettings;
@@ -50,9 +85,15 @@ export interface SettingsCtx {
   toggleFlag: (cls: "no-sidebar" | "no-preview") => void;
   drawStyle: () => "image" | "text";
   setDrawStyle: (s: "image" | "text") => void;
-  historyCount: () => Promise<number>;
-  clearHistory: () => Promise<void>;
-  openHistory: () => void;
+  /** O que cada camada do histórico guardou e onde (versões, alterações, cópias). */
+  historicoVisao: () => Promise<HistoricoVisao>;
+  /** Apaga versões + alterações + log exportado DESTE documento (as cópias em disco ficam). */
+  apagarHistoricoDoDoc: () => Promise<void>;
+  /** Restaura uma cópia de disco no arquivo original e recarrega a aba, se estiver aberta. */
+  restaurarCopia: (path: string, root: string, name: string) => Promise<boolean>;
+  /** Abre o diálogo de originais sumidos (arquivos que só existem no backup). */
+  abrirRecuperacao: () => void;
+  openHistory: (aba?: AbaHistorico) => void;
   /** Conserta blocos de alinhamento quebrados no Markdown (ferramenta de manutenção). */
   repairAlignments: () => void;
   /** Ícone da janela escolhido (claro/escuro). */
@@ -271,28 +312,81 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
             <span class="st-sec-ic"><svg class="ic"><use href="#i-clock"/></svg></span>
             <div class="st-sec-txt">
               <h3>Histórico e salvamento</h3>
-              <p class="st-lead">Salvamento contínuo, cópias do documento guardadas no app e o log de alterações para voltar atrás.</p>
+              <p class="st-lead">O que já foi guardado deste documento, onde está e como voltar atrás — sem sair do app.</p>
             </div>
           </header>
 
-          <h4 class="st-group">Salvamento e versões</h4>
+          <h4 class="st-group">Este documento</h4>
+          <div class="st-list">
+            <div class="st-row">
+              ${rowIcon("i-clock")}
+              <span class="st-text"><b>Versões</b><small data-hist-versoes>verificando…</small></span>
+              <span class="st-btns"><button class="btn small st-btn" data-act="hist-versoes">Abrir aba Versões</button></span>
+            </div>
+            <div class="st-row">
+              ${rowIcon("i-code")}
+              <span class="st-text"><b>Alterações</b><small data-hist-alteracoes>verificando…</small></span>
+              <span class="st-btns"><button class="btn small st-btn" data-act="hist-alteracoes">Abrir aba Alterações</button></span>
+            </div>
+            <div class="st-row">
+              ${rowIcon("i-folder")}
+              <span class="st-text"><b>Cópias em disco</b><small data-hist-copias>verificando…</small></span>
+              <span class="st-btns"><button class="btn small st-btn" data-act="hist-backup">Abrir aba Backup</button></span>
+            </div>
+            <div class="st-row">
+              ${rowIcon("i-trash")}
+              <span class="st-text"><b>Apagar versões e alterações</b><small>Some o histórico <b>deste documento</b>: versões, alterações e o log exportado. As cópias em disco <b>não</b> são apagadas.</small></span>
+              <span class="st-btns"><button class="btn small st-btn danger" data-act="hist-apagar">Apagar…</button></span>
+            </div>
+          </div>
+
+          <h4 class="st-group">Cópias deste documento — recuperar aqui</h4>
+          <div class="st-list" data-copias-doc></div>
+
+          <h4 class="st-group">Outros documentos com backup — recuperar aqui</h4>
+          <div class="st-list" data-copias-outros></div>
+
+          <h4 class="st-group">Arquivo apagado do disco</h4>
+          <div class="st-list">
+            <div class="st-row">
+              ${rowIcon("i-help")}
+              <span class="st-text"><b>Originais sumidos</b><small data-hist-sumidos>verificando…</small></span>
+              <span class="st-btns"><button class="btn small st-btn" data-act="hist-recuperar">Ver e recuperar…</button></span>
+            </div>
+          </div>
+
+          <h4 class="st-group">Onde ficam os arquivos</h4>
+          <div class="st-list">
+            <div class="st-row">
+              ${rowIcon("i-folder-plus")}
+              <span class="st-text"><b>Pasta escolhida por você</b><small data-backup-root>—</small></span>
+              <span class="st-btns">
+                <button class="btn small st-btn" data-act="backup-dir">Trocar…</button>
+                <button class="btn small st-btn" data-act="backup-open">Abrir</button>
+              </span>
+            </div>
+            <div class="st-row">
+              ${rowIcon("i-folder")}
+              <span class="st-text"><b>Pasta do app</b><small data-backup-app>—</small></span>
+              <span class="st-btns"><button class="btn small st-btn" data-act="backup-open-app">Abrir</button></span>
+            </div>
+            <div class="st-row">
+              ${rowIcon("i-doc")}
+              <span class="st-text"><b>Log de alterações exportado</b><small>Vai junto de cada cópia, em <code>&lt;documento&gt;/.historico/historico.json</code> — sobrevive se os dados do app forem limpos.</small></span>
+            </div>
+            <p class="st-list-note">Versões e alterações ficam no banco local do app (não são arquivos soltos) e se recuperam pelas abas acima. As cópias em disco são arquivos datados de verdade, nas duas pastas.</p>
+          </div>
+
+          <h4 class="st-group">Salvamento</h4>
           <div class="st-list">
             ${toggle("autosave", "Salvamento automático", "Grava o documento sozinho enquanto você escreve. Desligue se quiser salvar apenas com Ctrl+S.", s.autosaveOn, "i-save")}
             ${toggle("hist", "Guardar versões dos documentos", "Uma cópia automática a cada 5 minutos (se o texto mudou) e ao salvar.", s.historyOn, "i-clock")}
             <div class="st-row">
               ${rowIcon("i-list")}
-              <span class="st-text"><b>Versões por documento</b><small>As marcadas por você (★) nunca são apagadas sozinhas.</small></span>
+              <span class="st-text"><b>Versões guardadas por documento</b><small>As marcadas por você (★) nunca são apagadas sozinhas.</small></span>
               ${dd("hist-max", [20, 40, 60, 100, 200].map((n) => [String(n), `${n} versões`] as [string, string]), String(s.historyMax))}
             </div>
             ${toggle("commits", "Guardar o log de alterações", "Guarda só a instrução de cada mudança (o que saiu e o que entrou), não o arquivo inteiro. Dá para voltar a qualquer ponto pela aba Alterações do histórico.", s.commitsOn, "i-code")}
-            <div class="st-row">
-              ${rowIcon("i-doc")}
-              <span class="st-text"><b>Este documento</b><small data-hist-count></small></span>
-              <span class="st-btns">
-                <button class="btn small st-btn" data-act="hist-open">Abrir histórico</button>
-                <button class="btn small st-btn danger" data-act="hist-clear">Apagar</button>
-              </span>
-            </div>
           </div>
 
           <h4 class="st-group">Backup em disco</h4>
@@ -300,14 +394,6 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
           <div class="st-list">
             ${toggle("backup", "Guardar cópia dos documentos em disco", "Ao salvar, ao sair de um documento com alterações e uma vez por dia. Também vale para Word, PowerPoint e Excel.", s.backupOn, "i-folder")}
             ${toggle("backupwarn", "Avisar quando o original sumir", "Se você apagar um arquivo do disco, o app avisa na barra inferior e deixa restaurar pela cópia.", s.backupWarnMissing, "i-eye")}
-            <div class="st-row">
-              ${rowIcon("i-folder-plus")}
-              <span class="st-text"><b>Pasta escolhida por você</b><small data-backup-root>—</small></span>
-              <span class="st-btns">
-                <button class="btn small st-btn" data-act="backup-dir">Escolher pasta…</button>
-                <button class="btn small st-btn" data-act="backup-open">Abrir</button>
-              </span>
-            </div>
             <div class="st-row">
               ${rowIcon("i-trash")}
               <span class="st-text"><b>Política de limpeza</b><small>Quanto cada documento guarda antes de as cópias mais antigas saírem. As marcadas à mão nunca saem.</small></span>
@@ -524,6 +610,13 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   };
   const on = (sel: string, ev: string, fn: (e: Event) => void) => q(sel).addEventListener(ev, fn);
   const sw = (key: string) => q<HTMLInputElement>(`[data-k="${key}"]`);
+  /** Cria um elemento já com classe e texto (as linhas do histórico são montadas na mão). */
+  const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, texto?: string): HTMLElementTagNameMap[K] => {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (texto !== undefined) node.textContent = texto;
+    return node;
+  };
 
   /** Liga um dropdown `dd()`: clicar abre o menu do app e a escolha atualiza o botão. */
   const ligarDd = (chave: string, opcoes: [string, string][], aoEscolher: (valor: string) => void): void => {
@@ -742,14 +835,199 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     ctx.patch({ historyMax: Number(valor) || 60 });
     flash();
   });
-  const paintHist = () =>
-    void ctx.historyCount().then((n) => (q("[data-hist-count]").textContent = n ? `${n} versão(ões) guardada(s)` : "Nenhuma versão ainda"));
-  paintHist();
-  on('[data-act="hist-open"]', "click", () => ctx.openHistory());
-  on('[data-act="hist-clear"]', "click", async () => {
-    await ctx.clearHistory();
-    paintHist();
+  // Histórico e salvamento: as três camadas (versões e alterações no banco do app, cópias
+  // datadas em disco) aparecem resumidas, e dá para recuperar versão, alteração e cópia
+  // sem sair do app. O "Apagar" limpa as duas camadas do app + o log exportado.
+  let visao: HistoricoVisao | null = null;
+  const copiasDeOutro = new Map<string, CopiaDiscoResumo[]>();
+  const expandidos = new Set<string>();
+
+  const quandoCurto = (at: number) =>
+    new Date(at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  const haQuanto = (at: number | null): string => {
+    if (!at) return "—";
+    const s = Math.round((Date.now() - at) / 1000);
+    if (s < 60) return "agora há pouco";
+    const m = Math.round(s / 60);
+    if (m < 60) return `há ${m} min`;
+    const h = Math.round(m / 60);
+    if (h < 24) return `há ${h} h`;
+    const d = Math.round(h / 24);
+    return d === 1 ? "ontem" : `há ${d} dias`;
+  };
+  const rotuloPasta = (local: CopiaDiscoResumo["local"]) =>
+    local === "usuario" ? "pasta escolhida" : local === "app" ? "pasta do app" : "outra pasta";
+  const localDaRaiz = (root: string): CopiaDiscoResumo["local"] => {
+    const r = root.toLowerCase();
+    const usuario = (ctx.settings().backupRoot ?? "").toLowerCase();
+    const app = (visao?.raizApp ?? "").toLowerCase();
+    if (usuario && r === usuario) return "usuario";
+    if (app && r === app) return "app";
+    return "outra";
+  };
+  const iconeLinha = (icone: string): HTMLElement => {
+    const span = el("span", "st-row-ic");
+    span.innerHTML = `<svg class="ic"><use href="#${icone}"/></svg>`;
+    return span;
+  };
+  /** Uma cópia datada com [Restaurar] e [Apagar] — restaurar devolve ao arquivo original. */
+  const linhaCopia = (doc: string, c: CopiaDiscoResumo): HTMLElement => {
+    const row = el("div", "st-row");
+    row.title = c.name;
+    row.append(iconeLinha(c.protection ? "i-shield" : "i-copy"));
+    const txt = el("span", "st-text");
+    const b = el("b");
+    b.append(document.createTextNode(`${quandoCurto(c.at)} `));
+    if (c.protection) b.append(el("em", "st-tag", "proteção"));
+    txt.append(b, el("small", undefined, `${backup.tamanhoLegivel(c.bytes)} · ${rotuloPasta(c.local)} · ${haQuanto(c.at)}`));
+    const btns = el("span", "st-btns");
+    const restaurar = el("button", "btn small st-btn", "Restaurar");
+    restaurar.type = "button";
+    restaurar.title = "Devolve esta cópia para o arquivo original (o estado de agora é guardado antes)";
+    restaurar.addEventListener("click", async () => {
+      restaurar.disabled = true;
+      if (await ctx.restaurarCopia(doc, c.root, c.name)) await pintarHistorico();
+      else restaurar.disabled = false;
+    });
+    const apagar = el("button", "btn small st-btn danger", "Apagar");
+    apagar.type = "button";
+    apagar.addEventListener("click", async () => {
+      try {
+        await backup.apagarCopia(doc, c.root, c.name);
+        toast("Cópia apagada.", "info", 2400);
+        await pintarHistorico();
+      } catch (e) {
+        toast("Não foi possível apagar: " + e, "err", 5000);
+      }
+    });
+    btns.append(restaurar, apagar);
+    row.append(txt, btns);
+    return row;
+  };
+
+  const pintarResumo = () => {
+    const v = visao;
+    if (!v) return;
+    const linhas = [q("[data-hist-versoes]"), q("[data-hist-alteracoes]"), q("[data-hist-copias]")];
+    if (!v.doc) {
+      for (const l of linhas) l.textContent = "Abra (ou salve) um documento para ver o histórico dele.";
+    } else {
+      linhas[0].textContent = v.versoes.total
+        ? `${v.versoes.total} versão(ões) · ${v.versoes.marcadas} marcada(s) · última ${haQuanto(v.versoes.ultimaEm)} (${v.versoes.ultimoNome})`
+        : "Nenhuma versão ainda — elas entram sozinhas a cada 5 min e ao salvar.";
+      linhas[1].textContent = v.alteracoes.total
+        ? `${v.alteracoes.total} mudança(s) · última ${haQuanto(v.alteracoes.ultimaEm)} (${v.alteracoes.ultimoResumo})`
+        : "Nenhuma mudança registrada ainda.";
+      linhas[2].textContent = v.copias.total
+        ? `${v.copias.total} cópia(s) · ${backup.tamanhoLegivel(v.copias.bytes)} · última ${haQuanto(v.copias.ultimaEm)}`
+        : "Nenhuma cópia em disco ainda — são gravadas ao salvar e ao sair de um documento com alterações.";
+    }
+    q("[data-backup-app]").textContent = v.raizApp || "só existe na janela do app";
+    q("[data-hist-sumidos]").textContent = v.sumidos
+      ? `${v.sumidos} arquivo(s) com o original apagado — a cópia está no backup.`
+      : "Nenhum arquivo apagado por enquanto.";
+    (q('[data-act="hist-recuperar"]') as HTMLButtonElement).disabled = !v.sumidos;
+    for (const sel of ['[data-act="hist-versoes"]', '[data-act="hist-alteracoes"]', '[data-act="hist-backup"]', '[data-act="hist-apagar"]']) {
+      (q(sel) as HTMLButtonElement).disabled = !v.doc;
+    }
+  };
+
+  const pintarCopiasDoc = () => {
+    const host = q("[data-copias-doc]");
+    host.textContent = "";
+    const v = visao;
+    if (!v?.doc) {
+      host.append(el("p", "st-list-note", "Abra (ou salve) um documento para ver as cópias dele."));
+      return;
+    }
+    if (!v.copiasDetalhe.length) {
+      host.append(el("p", "st-list-note", "Nenhuma cópia em disco ainda — elas são gravadas ao salvar, ao sair do documento com alterações e uma vez por dia."));
+      return;
+    }
+    for (const c of v.copiasDetalhe) host.append(linhaCopia(v.doc, c));
+  };
+
+  const alternarOutro = async (original: string) => {
+    if (expandidos.has(original)) {
+      expandidos.delete(original);
+    } else {
+      if (!copiasDeOutro.has(original)) {
+        const entry = await backup.listar(original);
+        copiasDeOutro.set(
+          original,
+          entry.copies.map((c) => ({ root: c.root, name: c.name, stamp: c.stamp, bytes: c.bytes, at: c.at, protection: c.protection, local: localDaRaiz(c.root) }))
+        );
+      }
+      expandidos.add(original);
+    }
+    pintarOutros();
+  };
+
+  const pintarOutros = () => {
+    const host = q("[data-copias-outros]");
+    host.textContent = "";
+    const lista = visao?.outros ?? [];
+    if (!lista.length) {
+      host.append(el("p", "st-list-note", "Nenhum outro documento com backup ainda."));
+      return;
+    }
+    for (const o of lista) {
+      const aberto = expandidos.has(o.original);
+      const row = el("button", "st-row st-row-clique") as HTMLButtonElement;
+      row.type = "button";
+      row.title = o.original;
+      row.append(iconeLinha("i-doc"));
+      const txt = el("span", "st-text");
+      txt.append(
+        el("b", undefined, baseName(o.original)),
+        el("small", undefined, `${o.copias} cópia(s) · ${backup.tamanhoLegivel(o.bytes)} · mais recente ${quandoCurto(o.newest)}`)
+      );
+      row.append(txt);
+      row.insertAdjacentHTML("beforeend", `<svg class="ic st-chev${aberto ? " open" : ""}"><use href="#i-chevron"/></svg>`);
+      row.addEventListener("click", () => void alternarOutro(o.original));
+      host.append(row);
+      if (!aberto) continue;
+      const copias = copiasDeOutro.get(o.original);
+      if (!copias) host.append(el("p", "st-list-note", "Carregando cópias…"));
+      else if (!copias.length) host.append(el("p", "st-list-note", "Nenhuma cópia encontrada."));
+      else for (const c of copias) host.append(linhaCopia(o.original, c));
+    }
+  };
+
+  async function pintarHistorico(): Promise<void> {
+    visao = await ctx.historicoVisao();
+    pintarResumo();
+    pintarCopiasDoc();
+    pintarOutros();
+  }
+  void pintarHistorico();
+
+  const btnApagar = q<HTMLButtonElement>('[data-act="hist-apagar"]');
+  let apagarArmado = false;
+  let apagarTimer: number | undefined;
+  const desarmarApagar = () => {
+    apagarArmado = false;
+    btnApagar.textContent = "Apagar…";
+    btnApagar.classList.remove("confirmando");
+  };
+  btnApagar.addEventListener("click", async () => {
+    if (!apagarArmado) {
+      apagarArmado = true;
+      btnApagar.textContent = "Confirmar?";
+      btnApagar.classList.add("confirmando");
+      window.clearTimeout(apagarTimer);
+      apagarTimer = window.setTimeout(desarmarApagar, 4000);
+      return;
+    }
+    window.clearTimeout(apagarTimer);
+    desarmarApagar();
+    await ctx.apagarHistoricoDoDoc();
+    await pintarHistorico();
   });
+  on('[data-act="hist-versoes"]', "click", () => ctx.openHistory("versoes"));
+  on('[data-act="hist-alteracoes"]', "click", () => ctx.openHistory("alteracoes"));
+  on('[data-act="hist-backup"]', "click", () => ctx.openHistory("backup"));
+  on('[data-act="hist-recuperar"]', "click", () => ctx.abrirRecuperacao());
 
   // backup em disco
   let backupRoot = s.backupRoot;
@@ -805,13 +1083,25 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       paintBackupRoot();
       flash();
       toast("Pasta de backup definida.", "ok", 2600);
+      await pintarHistorico();
     } catch (e) {
       toast("Não foi possível usar essa pasta: " + e, "err", 5000);
     }
   });
   on('[data-act="backup-open"]', "click", async () => {
+    if (!backupRoot) {
+      toast("Nenhuma pasta escolhida — use “Trocar…” para definir uma.", "info", 3400);
+      return;
+    }
     try {
-      const pasta = backupRoot || (await backup.pastaDoApp());
+      await revealItemInDir(backupRoot);
+    } catch {
+      toast("Não foi possível abrir a pasta.", "err", 4000);
+    }
+  });
+  on('[data-act="backup-open-app"]', "click", async () => {
+    try {
+      const pasta = visao?.raizApp || (await backup.pastaDoApp());
       await revealItemInDir(pasta);
     } catch {
       toast("Não foi possível abrir a pasta.", "err", 4000);
@@ -824,6 +1114,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       const n = await backup.limpar(numeros.copias, numeros.dias);
       toast(n ? `${n} cópia(s) antiga(s) apagada(s).` : "Nada a apagar com a política atual.", "ok", 3200);
       paintBackupSize();
+      await pintarHistorico();
     } catch (e) {
       toast("Não foi possível limpar: " + e, "err", 5000);
     }

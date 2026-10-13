@@ -5,11 +5,13 @@ import { welcomeHtml } from "../md/preview";
 import { setTone } from "../broker/writing";
 import { newTab } from "../tabs";
 import { listVersions, clearHistory } from "../history";
+import { listCommits, clearCommits } from "../snapshots";
+import * as backup from "../backup";
 import { openPresentation } from "../powerpoint/presenter";
-import { renderSettingsPage, type SettingsSection } from "../settingsPage";
+import { renderSettingsPage, type SettingsSection, type HistoricoVisao, type CopiaDiscoResumo } from "../settingsPage";
 import { renderHomePage } from "../homePage";
 import { appIconAtual, definirIconeApp } from "./appIcon";
-import { $, h, toast, loadJSON, saveJSON } from "../util";
+import { $, h, toast, loadJSON, saveJSON, baseName } from "../util";
 
 export const pagesMethods = {
   /** Abre a aba de Configurações (uma só): mostra a página no lugar do editor. */
@@ -85,12 +87,71 @@ export const pagesMethods = {
       toggleFlag: (cls) => this.toggle(cls),
       drawStyle: () => (loadJSON<string>("mdc.drawstyle", "image") === "text" ? "text" : "image"),
       setDrawStyle: (style) => this.setDrawStyle(style),
-      historyCount: async () => (this.path ? (await listVersions(this.path)).length : 0),
-      clearHistory: async () => {
-        if (this.path) await clearHistory(this.path);
-        toast("Histórico deste documento apagado.", "info", 2400);
+      historicoVisao: async (): Promise<HistoricoVisao> => {
+        const path = this.path;
+        const versoes = path ? await listVersions(path) : [];
+        const commits = path ? await listCommits(path) : [];
+        const ultima = versoes[0];
+        const ultimoCommit = commits[commits.length - 1];
+        const entry = path ? await backup.listar(path) : null;
+        const raizApp = backup.temBackend() ? await backup.pastaDoApp().catch(() => "") : "";
+        const raizUsuario = this.settings.backupRoot ?? "";
+        const indice = await backup.indice();
+        const local = (raizDaCopia: string): CopiaDiscoResumo["local"] => {
+          const r = raizDaCopia.toLowerCase();
+          if (raizUsuario && r === raizUsuario.toLowerCase()) return "usuario";
+          if (raizApp && r === raizApp.toLowerCase()) return "app";
+          return "outra";
+        };
+        return {
+          doc: path,
+          nome: path ? baseName(path) : "",
+          versoes: {
+            total: versoes.length,
+            marcadas: versoes.filter((v) => v.manual).length,
+            ultimaEm: ultima?.at ?? null,
+            ultimoNome: ultima ? ultima.label || (ultima.manual ? "marcada à mão" : "automática") : "",
+            ultimoTam: ultima?.text.length ?? 0,
+          },
+          alteracoes: {
+            total: commits.length,
+            ultimaEm: ultimoCommit?.at ?? null,
+            ultimoResumo: ultimoCommit ? (ultimoCommit.text !== undefined ? "marco do documento" : ultimoCommit.summary) : "",
+            ancora: ultimoCommit?.text !== undefined,
+          },
+          copias: {
+            total: entry?.copies.length ?? 0,
+            bytes: entry?.bytes ?? 0,
+            ultimaEm: entry?.copies[0]?.at ?? null,
+          },
+          copiasDetalhe: (entry?.copies ?? []).map((c) => ({
+            root: c.root,
+            name: c.name,
+            stamp: c.stamp,
+            bytes: c.bytes,
+            at: c.at,
+            protection: c.protection,
+            local: local(c.root),
+          })),
+          outros: indice.files
+            .filter((f) => f.original.toLowerCase() !== (path ?? "").toLowerCase())
+            .sort((a, b) => b.newest - a.newest)
+            .map((f) => ({ original: f.original, copias: f.copies, bytes: f.bytes, newest: f.newest })),
+          sumidos: (await backup.sumidos()).length,
+          raizApp,
+        };
       },
-      openHistory: () => void this.openHistory(),
+      apagarHistoricoDoDoc: async () => {
+        if (!this.path) return;
+        const path = this.path;
+        await clearHistory(path);
+        await clearCommits(path);
+        await backup.apagarLog(path);
+        toast("Versões e alterações deste documento apagadas. As cópias em disco ficaram.", "info", 3800);
+      },
+      restaurarCopia: (path, root, name) => this.restaurarCopia(path, root, name),
+      abrirRecuperacao: () => this.openMissingBackups(),
+      openHistory: (aba) => void this.openHistory(aba),
       repairAlignments: () => this.repairAlignments(),
       appIcon: () => appIconAtual(),
       setAppIcon: (v) => definirIconeApp(v),

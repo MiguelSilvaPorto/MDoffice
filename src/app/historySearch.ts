@@ -7,7 +7,7 @@ import { setTone, type Tone } from "../broker/writing";
 import { tabLabel } from "../tabs";
 import { snapshot } from "../history";
 import { recordCommit, countCommits, ANCHOR_EVERY } from "../snapshots";
-import { openHistoryDialog } from "../historyUi";
+import { openHistoryDialog, type AbaHistorico } from "../historyUi";
 import { openMissingDialog } from "../backupUi";
 import { $, h, toast, baseName, saveJSON, loadJSON } from "../util";
 
@@ -193,7 +193,7 @@ export const historySearchMethods = {
     el.className = `path-btn st-backup ${estado}`;
   },
 
-  async openHistory(this: App): Promise<void> {
+  async openHistory(this: App, aba?: AbaHistorico): Promise<void> {
     const kind = this.tab.kind;
     // garante que o documento tenha arquivo (o histórico é por arquivo)
     if (kind === "word" && !(await this.ensureWordFile())) return;
@@ -235,6 +235,7 @@ export const historySearchMethods = {
       },
       // cópia restaurada em disco: lê o arquivo de volta para o editor
       reloadFromDisk: () => this.reloadCurrentFromDisk(path),
+      abaInicial: aba,
     });
   },
 
@@ -246,7 +247,8 @@ export const historySearchMethods = {
    */
   async reloadCurrentFromDisk(this: App, path: string): Promise<void> {
     const tab = this.tab;
-    if (tab.path !== path) return;
+    // Windows: o mesmo arquivo pode vir com maiúsculas diferentes do índice de backup
+    if (!tab.path || tab.path.toLowerCase() !== path.toLowerCase()) return;
     try {
       if (tab.kind === "word") {
         const { doc, setup } = await this.readDocx(path);
@@ -269,6 +271,27 @@ export const historySearchMethods = {
     } catch (e) {
       toast("A cópia foi restaurada, mas não consegui recarregar a tela: " + e, "err", 6000);
     }
+  },
+
+  /**
+   * Restaura uma cópia de backup no arquivo original e mantém a tela coerente.
+   *
+   * Se o documento está aberto, a aba recarrega do disco (senão o salvamento automático
+   * sobrescreveria a cópia restaurada). Quando é outra aba, ela é ativada — como em
+   * qualquer troca de aba, as Configurações fecham e o documento restaurado aparece.
+   */
+  async restaurarCopia(this: App, path: string, root: string, name: string): Promise<boolean> {
+    try {
+      await backup.restaurar(path, root, name);
+    } catch (e) {
+      toast("Não foi possível restaurar: " + e, "err", 6000);
+      return false;
+    }
+    const aberta = this.tabs.find((t) => t.path && t.path.toLowerCase() === path.toLowerCase());
+    if (aberta && aberta.id !== this.tab.id) await this.switchTo(aberta.id);
+    await this.reloadCurrentFromDisk(path);
+    toast("Cópia restaurada no arquivo original.", "ok", 3600);
+    return true;
   },
 
   async saveVersionNow(this: App): Promise<void> {
