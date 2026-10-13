@@ -29,7 +29,7 @@ import {
   type ModoAlinhar,
 } from "./edicao/operacoes";
 import { lerSelecao, restaurarSelecao, textoDaCaixa } from "./edicao/selecaoDom";
-import { alternarMarcador, estadoDoTrecho, estiloDosParas, estiloNoIntervalo, mudarRecuo, mudarTamanhoRelativo, parasDaSelecao, type EstiloRun, type RunPatch } from "./edicao/texto";
+import { alternarMarcador, estadoDoTrecho, estiloDosParas, estiloNoIntervalo, limparEstiloNoIntervalo, mudarCaixaTexto, mudarRecuo, mudarTamanhoRelativo, parasDaSelecao, type EstiloRun, type RunPatch, type TipoCaixa } from "./edicao/texto";
 import { DEFAULT_SETUP, deserialize, newSlide, serialize } from "./model";
 import { alturaDaLinha, ajustarAoTamanho, alinharVerticalmente, aplicarPreset, bordasCelulas, criarTabela, dividir, excluirColuna, excluirLinha, expandirSelecao, inserirColuna, inserirLinha, larguraDaColuna, mesclar, preencherCelulas, tamanhoTotal, type ModoBorda, type PresetTabela } from "./edicao/tabela";
 import { NotesPanel } from "./notes";
@@ -925,6 +925,46 @@ export class PowerPointHost {
     this.mapearTextos((paras, sel) => mudarTamanhoRelativo(paras, sel ? sel.ini : -1, sel ? sel.fim : -1, sobe), "tamanho-texto");
   }
 
+  /** Muda a caixa do texto selecionado (MAIÚSCULAS, minúsculas ou Primeira Letra). */
+  private mudarCaixa(tipo: TipoCaixa): void {
+    this.mapearTextos((paras, sel) => mudarCaixaTexto(paras, sel ? sel.ini : -1, sel ? sel.fim : -1, tipo), "caixa-texto");
+  }
+
+  /**
+   * "Limpar formatação": devolve o trecho selecionado ao estilo de digitação da forma (o mesmo que o texto novo
+   * herda) e tira marca-texto, sobrescrito/subscrito, versalete e espaçamento de caracteres.
+   */
+  private limparFormatacao(): void {
+    const rt = this.rtEmEdicao();
+    const sel = rt ? lerSelecao(rt) : null;
+    const editandoId = this.editando;
+    const celEdit = this.celulaEdit;
+    const alvoIds = editandoId ? [editandoId] : this.selecao;
+    const ini = editandoId && sel ? sel.ini : -1;
+    const fim = editandoId && sel ? sel.fim : -1;
+    this.editar(
+      (sl) => ({
+        ...sl,
+        shapes: sl.shapes.map((s) => {
+          if (!alvoIds.includes(s.id)) return s;
+          if (s.tabela) {
+            const t = s.tabela;
+            const escolha = editandoId && celEdit ? { r0: celEdit[0], c0: celEdit[1], r1: celEdit[0], c1: celEdit[1] } : this.celulas?.id === s.id ? this.celulas : null;
+            const e = escolha ? expandirSelecao(t, escolha) : { r0: 0, c0: 0, r1: t.linhas.length - 1, c1: t.colunas.length - 1 };
+            const celulas = t.celulas.map((linha, r) =>
+              linha.map((c, col) => (r >= e.r0 && r <= e.r1 && col >= e.c0 && col <= e.c1 && !c.coberta ? { ...c, paras: limparEstiloNoIntervalo(c.paras, ini, fim, this.estiloDeDigitacao(s, [r, col])) } : c))
+            );
+            return { ...s, tabela: { ...t, celulas } };
+          }
+          if (!s.paras) return s;
+          return { ...s, paras: limparEstiloNoIntervalo(s.paras, ini, fim, this.estiloDeDigitacao(s)) };
+        }),
+      }),
+      "limpar-formatacao"
+    );
+    this.refocar(sel);
+  }
+
   /** Depois de redesenhar durante a edição: devolve o foco e a seleção do texto. */
   private refocar(sel: { ini: number; fim: number } | null): void {
     if (!this.editando) return;
@@ -1273,6 +1313,27 @@ export class PowerPointHost {
       }
       case "cor-texto":
         return this.estiloDoTexto({ color: String(value) });
+      case "marca-texto":
+        // vazio = "sem marca-texto" (o menu de cores manda "" nesse caso)
+        return this.estiloDoTexto({ highlight: String(value ?? "").replace(/^#/, "") });
+      case "sobrescrito": {
+        const t = this.estadoUI().trecho;
+        const atual = t && t.baseline !== "misto" ? t.baseline : 0;
+        return this.estiloDoTexto({ baseline: atual > 0 ? 0 : 30 });
+      }
+      case "subscrito": {
+        const t = this.estadoUI().trecho;
+        const atual = t && t.baseline !== "misto" ? t.baseline : 0;
+        return this.estiloDoTexto({ baseline: atual < 0 ? 0 : -25 });
+      }
+      case "versalete":
+        return this.estiloDoTexto({ caps: this.estadoUI().trecho?.caps !== true });
+      case "espacamento":
+        return this.estiloDoTexto({ spc: Number(String(value).replace(",", ".")) || 0 });
+      case "caixa":
+        return this.mudarCaixa(String(value) as TipoCaixa);
+      case "limpar-formatacao":
+        return this.limparFormatacao();
       case "marcadores":
         return this.estiloDosParagrafos((p, idx) => alternarMarcador(p, idx, "marcador"));
       case "numeracao":

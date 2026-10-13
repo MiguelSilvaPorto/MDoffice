@@ -284,6 +284,8 @@ export interface Run {
   spc?: number;
   /** sobrescrito (+) / subscrito (-) em % */
   baseline?: number;
+  /** cor do marca-texto (hex sem #); ausente = sem marca-texto */
+  highlight?: string;
   link?: string;
   /** quebra de linha dentro do parágrafo (vertical tab) */
   br?: boolean;
