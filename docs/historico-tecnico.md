@@ -1290,6 +1290,18 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   plano por fases F0–F4 com métricas — é o documento de referência para as próximas tarefas do
   corretor.
 
+## docs/pesquisa-sugestoes.md
+
+### 2026-10-13 · pesquisa (síntese) · ponto de entrada e ordem de execução
+- **Local:** documento novo
+- **Linha:** `novo`
+- **Porquê:** as duas pesquisas (correção offline e formalidade/ABNT) são densas e chegaram em
+  documentos separados; faltava o que responde "por onde começo e como sei que melhorou". A síntese
+  liga as duas, diz as causas em uma página, propõe as cinco camadas (léxico, candidatos, contexto,
+  decisão, estilo/norma) e ordena o trabalho em quatro ondas — começando pelas correções de rumo
+  baratas (citação no padrão 10520:2023, n-gramas no ranqueamento, sinal negativo no aprendizado,
+  margem de confiança) e terminando no motor ABNT e no perfil `.docx`.
+
 ---
 
 ## Próximos registros
