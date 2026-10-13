@@ -1262,6 +1262,21 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** com texto selecionado, o menu só oferecia "Pasta (contexto)" — copiar é a ação mais
   óbvia com a seleção na mão. O item só aparece quando há seleção (sem seleção o menu fica como era).
 
+## docs/pesquisa-formalidade-abnt.md
+
+### 2026-10-13 · (este commit) · pesquisa de formalidade e validação ABNT (novo arquivo)
+- **Local:** documento inteiro
+- **Linha:** “novo arquivo”
+- **Porquê:** registro dos dois pedidos do projeto — (1) deixar qualquer frase formal **sem IA** e
+  (2) verificar um trabalho acadêmico contra as regras ABNT, com relatório. O documento confirma o
+  que já existe (`data/informal.ts`, `tone.ts`, `style/abnt.ts` e os vizinhos de `style/`),
+  cataloga as transformações de formalidade com ordem de aplicação, riscos de sentido e métrica
+  (marcadores informais por 1.000 palavras), classifica o que das normas NBR 14724:2024,
+  10520:2023, 6023:2025, 6027:2012, 6024:2012, 6028:2021, 15287:2025, IBGE (tabelas) e 5892:2019
+  é verificável automaticamente no Markdown e no `.docx` exportado, entrega o catálogo inicial de
+  41 checagens, as ferramentas de apoio (abnTeX2/CSL, Vale, textlint, LanguageTool) e o plano por
+  fases — para as próximas tarefas de implementação terem base decidida e referências datadas.
+
 ---
 
 ## Próximos registros

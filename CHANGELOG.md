@@ -209,7 +209,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Ferramentas (dev)**
 
-- (nada no momento)
+- **Pesquisa (documento)**: formalidade por regras e validação ABNT — o que é verificável e como (`docs/pesquisa-formalidade-abnt.md`).
 
 ### Adicionado (na main)
 
