@@ -1,5 +1,5 @@
 // Editor Markdown baseado no CodeMirror 6.
-import { EditorView, keymap, lineNumbers, drawSelection, highlightActiveLine, highlightActiveLineGutter, placeholder, Decoration, type DecorationSet } from "@codemirror/view";
+import { EditorView, keymap, lineNumbers, drawSelection, highlightActiveLineGutter, placeholder, Decoration, ViewPlugin, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 import { EditorState, Compartment, Prec, StateEffect, StateField, type Extension } from "@codemirror/state";
 import { defaultKeymap, history, historyKeymap, indentWithTab, insertNewlineAndIndent } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
@@ -18,6 +18,29 @@ export interface CursorPos {
   line: number;
   col: number;
 }
+
+/**
+ * Destaque da linha do cursor — só quando a seleção está VAZIA. Com uma seleção,
+ * o destaque do `highlightActiveLine` caía por cima dela, somando as duas cores
+ * e parecendo "duas coisas selecionadas".
+ */
+const linhaDoCursor = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
+    constructor(view: EditorView) {
+      this.decorations = this.marcar(view);
+    }
+    update(update: ViewUpdate): void {
+      if (update.docChanged || update.selectionSet) this.decorations = this.marcar(update.view);
+    }
+    marcar(view: EditorView): DecorationSet {
+      const linhas = view.state.selection.ranges
+        .filter((r) => r.empty)
+        .map((r) => Decoration.line({ class: "cm-activeLine" }).range(view.state.doc.lineAt(r.head).from));
+      return Decoration.set(linhas);
+    }
+  }
+);
 
 // ---------- avisos de escrita (ortografia/estilo) ----------
 
@@ -66,7 +89,7 @@ export class MdEditor {
     return [
       lineNumbers(),
       highlightActiveLineGutter(),
-      highlightActiveLine(),
+      linhaDoCursor,
       drawSelection(),
       history(),
       indentOnInput(),

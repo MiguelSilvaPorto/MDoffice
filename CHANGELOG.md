@@ -43,6 +43,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 **Frontend**
 
 - Editor CodeMirror 6 com realce de sintaxe e pré-visualização ao vivo lado a lado.
+- **Seleção de texto sem pintura dupla**: o destaque da linha do cursor só aparece com a
+  seleção vazia — antes ele caía por cima da seleção e parecia "duas coisas selecionadas".
 - **Botão Desenhar** como ação principal: dividido (desenhar + tipo de desenho), sólido no
   acento, ícone de caneta desenhando, divisor que acompanha o tema e estados de hover/active/foco.
 - Coluna de escrita limitada e centralizada, com a divisória acompanhando o mouse 1:1.

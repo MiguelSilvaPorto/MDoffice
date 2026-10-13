@@ -1348,6 +1348,16 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** mesma ordem das outras regras de vírgula de abertura; se duas regras avisarem o
   mesmo trecho, vale a primeira da lista.
 
+## src/md/editor.ts
+
+### 2026-10-13 · este commit · seleção sem pintura dupla
+- **Local:** extensão `linhaDoCursor` (novo `ViewPlugin`), no lugar de `highlightActiveLine()`
+- **Linha:** `highlightActiveLine()` → plugin próprio que só marca a linha de seleções **vazias**
+- **Porquê:** o `highlightActiveLine` do CodeMirror marca a linha da ponta da seleção mesmo com
+  texto selecionado; o fundo dele somava ao da seleção (medido nos pixels: `33,33,70` virava
+  `35,35,79`) e a faixa extra parecia "duas coisas selecionadas". Com o cursor sozinho, o
+  destaque da linha continua (como no VS Code).
+
 ---
 
 ## Próximos registros
