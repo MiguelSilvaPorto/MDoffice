@@ -8,6 +8,7 @@
 // "improtante" vira "importante" e "otima" vira "ótima" — tudo isso em poucos milissegundos.
 import Typo from "typo-js";
 import { FREQUENTES, PALAVRAS_LISTA } from "./palavras";
+import { candidatos, construirIndice, montarFrequencia, normalizar as norm, type Frequencia, type Indice } from "./spell/candidatos";
 
 interface SpellHit {
   word: string;
@@ -40,8 +41,6 @@ const PALAVRAS_OK = new Set([
   "bugs", "to-do", "know-how", "ok", "okay", "top",
 ]);
 
-const norm = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
-
 /** Mantém a maiúscula do começo quando a sugestão é minúscula. */
 function ajustarCaixa(original: string, sugestao: string): string {
   const maiuscula =
@@ -52,130 +51,38 @@ function ajustarCaixa(original: string, sugestao: string): string {
   return sugestao;
 }
 
-function bigramas(s: string): string[] {
-  const out: string[] = [];
-  for (let i = 0; i < s.length - 1; i++) out.push(s.slice(i, i + 2));
-  return out;
-}
+// ---------- índice (vocabulário real, por trigramas) ----------
 
-/** Coeficiente de Sørensen–Dice sobre os bigramas (0..1). */
-function dice(a: string, b: string): number {
-  const ba = bigramas(a);
-  const bb = bigramas(b);
-  if (!ba.length || !bb.length) return a === b ? 1 : 0;
-  const cont = new Map<string, number>();
-  for (const g of ba) cont.set(g, (cont.get(g) ?? 0) + 1);
-  let iguais = 0;
-  for (const g of bb) {
-    const n = cont.get(g) ?? 0;
-    if (n > 0) {
-      iguais++;
-      cont.set(g, n - 1);
-    }
-  }
-  return (2 * iguais) / (ba.length + bb.length);
-}
+/**
+ * O vocabulário de sugestão vem do corpus de texto escrito, não da lista de
+ * legendas: é o que faz "extenso" existir como candidato e "esterno" não.
+ * O `.dic` continua sendo a autoridade de "isto é palavra?" (via typo-js);
+ * aqui é só a fonte de candidatos.
+ */
+let indice: Indice | null = null;
+let frequencia: Frequencia | null = null;
 
-/** Maior subsequência comum / maior tamanho (0..1) — pega trocas de letras de lugar. */
-function lcsRatio(a: string, b: string): number {
-  const n = a.length;
-  const m = b.length;
-  if (!n || !m) return 0;
-  let anterior = new Uint16Array(m + 1);
-  let atual = new Uint16Array(m + 1);
-  for (let i = 1; i <= n; i++) {
-    atual.fill(0);
-    for (let j = 1; j <= m; j++) {
-      atual[j] = a[i - 1] === b[j - 1] ? anterior[j - 1] + 1 : Math.max(anterior[j], atual[j - 1]);
-    }
-    const t = anterior;
-    anterior = atual;
-    atual = t;
-  }
-  return anterior[m] / Math.max(n, m);
-}
-
-/** Letras em comum / maior tamanho (filtro barato antes do cálculo caro). */
-function letrasEmComum(a: string, b: string): number {
-  const cont = new Int8Array(26);
-  for (let i = 0; i < a.length; i++) cont[a.charCodeAt(i) - 97]++;
-  let comuns = 0;
-  for (let i = 0; i < b.length; i++) {
-    const k = b.charCodeAt(i) - 97;
-    if (k >= 0 && k < 26 && cont[k] > 0) {
-      comuns++;
-      cont[k]--;
-    }
-  }
-  return comuns / Math.max(a.length, b.length, 1);
-}
-
-function parecenca(p: string, c: string): number {
-  return 0.45 * dice(p, c) + 0.55 * lcsRatio(p, c);
-}
-
-// ---------- índice (raízes do .dic + formas frequentes) ----------
-
-let indice: Map<string, string[]> | null = null;
-
-function construirIndice(): Map<string, string[]> {
-  if (indice) return indice;
-  const mapa = new Map<string, string[]>();
-  const adicionar = (palavra: string) => {
-    if (!/^[\p{Letter}]{4,}$/u.test(palavra)) return;
-    const n = norm(palavra);
-    for (const k of [n.slice(0, 3), n.slice(0, 2)]) {
-      let balde = mapa.get(k);
-      if (!balde) mapa.set(k, (balde = []));
-      balde.push(palavra);
-    }
-  };
-  if (dicTexto) {
-    const linhas = dicTexto.split("\n");
-    for (let i = 1; i < linhas.length; i++) {
-      const palavra = linhas[i].split("/")[0].split("\t")[0].trim();
-      adicionar(palavra);
-    }
-  }
-  // formas frequentes que não estão no .dic (ex.: "importante", "ótima", "reunião")
-  for (const w of PALAVRAS_LISTA) {
-    if (typo && !typo.check(w)) continue;
-    adicionar(w);
-  }
-
-  indice = mapa;
-  return mapa;
+function prepararIndice(palavras: string[], contagens: number[]): void {
+  frequencia = montarFrequencia(palavras, contagens);
+  indice = construirIndice(palavras);
 }
 
 /**
- * Palavras parecidas com a errada: passeia pelos baldes de 2 e 3 letras, filtra pelo
- * "tamanho parecido + muitas letras iguais" (barato) e só então calcula a nota de verdade.
+ * Palavras reais mais prováveis para a errada, já ordenadas.
+ * O trabalho pesado (índice de trigramas + distância de edição + frequência)
+ * fica em `spell/candidatos.ts`, que é puro e testável fora do worker.
  */
-function parecidas(palavra: string): { p: string; nota: number }[] {
-  const mapa = construirIndice();
-  const p = norm(palavra);
-  const vistas = new Set<string>();
-  const baratas: { p: string; chave: number }[] = [];
-  for (const chave of [p.slice(0, 3), p.slice(0, 2)]) {
-    const balde = mapa.get(chave);
-    if (!balde) continue;
-    for (const cand of balde) {
-      if (vistas.has(cand)) continue;
-      vistas.add(cand);
-      const c = norm(cand);
-      if (Math.abs(c.length - p.length) > 3) continue;
-      const barata = letrasEmComum(p, c);
-      let prefixo = 0;
-      while (prefixo < p.length && prefixo < c.length && p[prefixo] === c[prefixo]) prefixo++;
-      // quem começa igual à palavra entra sempre (é o sinal mais forte de acerto)
-      if (barata < 0.72 && prefixo < 5) continue;
-      baratas.push({ p: cand, chave: barata + (prefixo >= 5 ? 0.5 : 0) });
-    }
-  }
-  baratas.sort((a, b) => b.chave - a.chave);
-  const achadas = baratas.slice(0, 800).map((c) => ({ p: c.p, nota: parecenca(p, norm(c.p)) }));
-  achadas.sort((a, b) => b.nota - a.nota);
-  return achadas.slice(0, 40);
+function parecidas(palavra: string): { p: string; nota: number; distancia: number; contagem: number }[] {
+  if (!indice || !frequencia) return [];
+  const maxDist = norm(palavra).length <= 4 ? 1 : 2;
+  return candidatos(palavra, indice, frequencia, { limite: 20, maxDistancia: maxDist }).map((c) => ({
+    p: c.palavra,
+    // a nota do candidato vira uma fração de 0 a 0.9, para ficar abaixo das
+    // correções de acento (1.0) e dos erros clássicos (1.5)
+    nota: 0.9 * Math.min(1, Math.max(0, (c.nota + maxDist) / (3.7 + maxDist))),
+    distancia: c.distancia,
+    contagem: c.contagem,
+  }));
 }
 
 /** Formas válidas que só mudam acento/cedilha (o erro de escrita mais comum). */
@@ -241,38 +148,52 @@ const ERROS_COMUNS: Record<string, string> = {
 };
 
 /** Sugestões para uma palavra desconhecida + a correção em que dá para confiar. */
-function sugerirPalavra(palavra: string): { sugestoes: string[]; best?: string; notas: [string, number][] } {
+function sugerirPalavra(palavra: string): { sugestoes: string[]; best?: string; notas: [string, number][]; distanciaTopo: number } {
   const p = norm(palavra);
   const notas = new Map<string, number>();
-  const anotar = (cand: string, nota: number) => {
-    const pontos = nota + (FREQUENTES.has(norm(cand)) ? 0.25 : 0);
+  const distanciaDe = new Map<string, number>();
+  const contagemDe = new Map<string, number>();
+  // A frequência já vem do corpus de texto escrito, dentro da nota do candidato.
+  // Não há bônus extra por listas antigas: elas trazem o viés de legenda de volta.
+  const anotar = (cand: string, nota: number, distancia = 9, contagem = 0) => {
     const atual = notas.get(cand);
-    if (atual === undefined || pontos > atual) notas.set(cand, pontos);
+    if (atual === undefined || nota > atual) {
+      notas.set(cand, nota);
+      distanciaDe.set(cand, distancia);
+      contagemDe.set(cand, contagem);
+    }
   };
 
   // 0) erro clássico conhecido: certeza total
   const classico = ERROS_COMUNS[p];
-  if (classico) anotar(classico, 1.5);
+  if (classico) anotar(classico, 1.5, 0);
   // 1) só acento/cedilha: nota máxima
-  for (const v of variantesAcento(palavra)) anotar(v, 1);
-  // 2) parecidas de verdade
-  for (const c of parecidas(palavra)) anotar(c.p, c.nota);
+  for (const v of variantesAcento(palavra)) anotar(v, 1, 0);
+  // 2) parecidas de verdade (índice de trigramas + distância de edição + frequência)
+  for (const c of parecidas(palavra)) anotar(c.p, c.nota, c.distancia, c.contagem);
 
   const ordenadas = [...notas.entries()].sort((a, b) => b[1] - a[1]);
   const sugestoes = ordenadas.slice(0, 6).map(([w]) => ajustarCaixa(palavra, w));
 
-  const semBonus = (nota: number, cand: string) => nota - (FREQUENTES.has(norm(cand)) ? 0.25 : 0);
   const primeiro = ordenadas[0];
   const segundo = ordenadas[1];
   let best: string | undefined;
   if (primeiro) {
-    const basePrimeiro = semBonus(primeiro[1], primeiro[0]);
-    const baseSegundo = segundo ? semBonus(segundo[1], segundo[0]) : 0;
     const soAcento = norm(primeiro[0]) === p;
-    // só acento (ou erro clássico): sempre confiável.
-    // Parecida: precisa ser parecida E estar claramente na frente (a frequência entra aqui:
-    // é o que faz "atensao → atenção" ganhar de palpites raros tipo "atentato")
-    if (soAcento || classico || (basePrimeiro >= 0.7 && primeiro[1] - (segundo?.[1] ?? 0) >= 0.08)) {
+    const distancia = distanciaDe.get(primeiro[0]) ?? 9;
+    const distanciaSegundo = segundo ? (distanciaDe.get(segundo[0]) ?? 9) : 9;
+    const margem = primeiro[1] - (segundo?.[1] ?? 0);
+    // Quando o primeiro está mais PERTO da palavra errada do que o segundo, a
+    // escolha não depende de frequência: é o candidato mais próximo que ganha.
+    const vencePorDistancia = distancia <= 1 && distanciaSegundo > distancia;
+    // Duas edições de distância: só compensa quando o primeiro é MUITO mais
+    // frequente — é o que decide "responsavo" → "responsável" (1556 ocorrências)
+    // contra "responsivo" (27), que está mais perto mas quase não se escreve.
+    const c1 = contagemDe.get(primeiro[0]) ?? 0;
+    const c2 = contagemDe.get(segundo?.[0] ?? "") ?? 0;
+    const muitoMaisFrequente = c1 > 0 && c1 >= 10 * Math.max(c2, 1);
+    // Correção de acento/cedilha e erro clássico: sempre confiáveis.
+    if (soAcento || classico || vencePorDistancia || (distancia <= 1 && margem >= 0.05) || (distancia === 2 && muitoMaisFrequente)) {
       best = ajustarCaixa(palavra, primeiro[0]);
     }
     // Uma ÚNICA sugestão: não há dúvida de qual é a palavra certa — aplica sozinho.
@@ -280,7 +201,7 @@ function sugerirPalavra(palavra: string): { sugestoes: string[]; best?: string; 
       best = ajustarCaixa(palavra, primeiro[0]);
     }
   }
-  return { sugestoes, best, notas: ordenadas.slice(0, 8) };
+  return { sugestoes, best, notas: ordenadas.slice(0, 8), distanciaTopo: primeiro ? (distanciaDe.get(primeiro[0]) ?? 9) : 9 };
 }
 
 // ---------- palavras grudadas ("coisasque" → "coisas que") ----------
@@ -414,6 +335,19 @@ self.addEventListener("message", (event: MessageEvent) => {
         const [aff, dic] = await Promise.all([load("pt_BR.aff"), load("pt_BR.dic")]);
         dicTexto = dic;
         typo = new Typo("pt_BR", aff, dic, { platform: "any" }) as unknown as TypoLike;
+
+        // A ordem de frequência vem do corpus de texto escrito. Sem ela o corretor
+        // ainda funciona, mas volta a preferir palavra comum de legenda.
+        try {
+          const res = await fetch(new URL("ngrams/freq-pt.json", base));
+          if (res.ok) {
+            const f = (await res.json()) as { w?: string[]; n?: number[] };
+            if (Array.isArray(f.w) && Array.isArray(f.n)) prepararIndice(f.w, f.n);
+          }
+        } catch {
+          /* sem a frequência: segue com o dicionário apenas */
+        }
+
         self.postMessage({ type: "ready" });
       } catch (err) {
         self.postMessage({ type: "failed", error: String(err) });
@@ -423,29 +357,29 @@ self.addEventListener("message", (event: MessageEvent) => {
   }
 
   if (data.type === "debug") {
+    // Sonda de desenvolvimento: mostra o que o corretor responde para palavras
+    // conhecidas e quanto custou montar o índice. Útil para comparar calibragens
+    // sem abrir o app.
     const t0 = Date.now();
-    const mapa = construirIndice();
-    const t1 = Date.now();
     const r1 = sugerirPalavra("responsavo");
-    const t2 = Date.now();
+    const t1 = Date.now();
     const r2 = sugerirPalavra("improtante");
+    const t2 = Date.now();
+    const r3 = sugerirPalavra("estenso");
     const t3 = Date.now();
-    const r3 = sugerirPalavra("otima");
-    const t4 = Date.now();
     const r4 = sugerirPalavra("excessao");
-    const t5 = Date.now();
+    const t4 = Date.now();
     self.postMessage({
       type: "debug",
       id: data.id,
-      indiceMs: t1 - t0,
-      indiceSize: mapa.size,
+      indicePronto: !!indice,
+      trigramas: indice?.baldes.size ?? 0,
+      vocabulario: indice?.palavras.length ?? 0,
       freqSize: FREQUENTES.size,
-      temRespSemAcento: FREQUENTES.has("responsavel"),
-      baldes: ["res", "re", "imp", "im"].map((k) => [k, mapa.get(k)?.length ?? 0]),
-      responsavo: { sugestoes: r1.sugestoes, best: r1.best, notas: r1.notas, ms: t2 - t1 },
-      improtante: { sugestoes: r2.sugestoes, best: r2.best, ms: t3 - t2 },
-      otima: { sugestoes: r3.sugestoes, best: r3.best, ms: t4 - t3 },
-      excessao: { sugestoes: r4.sugestoes, best: r4.best, ms: t5 - t4 },
+      responsavo: { sugestoes: r1.sugestoes, best: r1.best, ms: t1 - t0 },
+      improtante: { sugestoes: r2.sugestoes, best: r2.best, ms: t2 - t1 },
+      estenso: { sugestoes: r3.sugestoes, best: r3.best, ms: t3 - t2 },
+      excessao: { sugestoes: r4.sugestoes, best: r4.best, ms: t4 - t3 },
     });
     return;
   }
@@ -481,14 +415,18 @@ self.addEventListener("message", (event: MessageEvent) => {
         const grudada = cortes[0];
         const junto = grudada.partes.join(" ");
         const outros = cortes.slice(1).map((c) => c.partes.join(" "));
-        const forte = grudada.todasFrequentes && grudada.partes.length === 2 && grudada.partes.every((p) => p.length >= 2) && word.length >= 6;
-        // corte fraco (só uma parte é palavra comum): primeiro as palavras parecidas, depois o corte
+        const duasPartes = grudada.partes.length === 2 && grudada.partes.every((p) => p.length >= 2);
+        const forte = grudada.todasFrequentes && duasPartes && word.length >= 6;
+        // Um corte de palavra só LIDERA quando não há correção de uma única
+        // edição: trocar uma letra é muito mais comum do que esquecer um espaço,
+        // e sem esta regra "estenso" virava "es tens o".
+        const lidera = forte && (r.distanciaTopo > 1 || camel);
         const resto = r.sugestoes.filter((x) => x !== junto && !outros.includes(x));
         hits.push({
           word,
           glued: true,
-          suggestions: (grudada.todasFrequentes || camel ? [junto, ...outros, ...resto] : [...resto.slice(0, 2), junto, ...outros, ...resto.slice(2)]).slice(0, 6),
-          best: forte ? junto : r.best,
+          suggestions: (lidera ? [junto, ...outros, ...resto] : [...resto.slice(0, 3), junto, ...outros, ...resto.slice(3)]).slice(0, 6),
+          best: lidera ? junto : r.best,
         });
         continue;
       }

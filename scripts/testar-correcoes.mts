@@ -88,7 +88,12 @@ function instalarAmbiente(): void {
     const u = new URL(String(url));
     const caminho = decodeURIComponent(u.pathname).replace(/^\/([A-Za-z]:)/, "$1");
     const conteudo = fs.readFileSync(caminho, "utf8");
-    return { ok: true, status: 200, text: async () => conteudo };
+    return {
+      ok: true,
+      status: 200,
+      text: async () => conteudo,
+      json: async () => JSON.parse(conteudo) as unknown,
+    };
   };
 
   g.document = { baseURI: base };

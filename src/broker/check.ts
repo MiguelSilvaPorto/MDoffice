@@ -53,6 +53,10 @@ export async function checkText(text: string, ignore: Set<string>): Promise<Writ
       }
       // A palavra existe no dicionário, mas pode ser um erro de uma letra
       // numa palavra muito comum (ex.: "maneria" → "maneira").
+      //
+      // É uma troca de PALAVRA, não de acento: por isso vem com `fix` (entra no
+      // "Corrigir tudo", na pausa e ao salvar) e NÃO com `auto` — quem decide é
+      // quem escreve, porque a palavra original também existe.
       const near = commonNeighbor(token.word);
       if (near) {
         issues.push({
@@ -62,6 +66,7 @@ export async function checkText(text: string, ignore: Set<string>): Promise<Writ
           kind: "style",
           message: `“${token.word}” existe, mas você quis dizer “${near}”?`,
           suggestions: [near],
+          fix: near,
         });
       }
     }

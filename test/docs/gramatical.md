@@ -112,12 +112,12 @@ O arquivo necessário também foi enviado ontem.
 
 ### Errado
 ````text
-Isso e improtante para resolver o poblema da equipe.
+Isso foi improtante para resolver o poblema da equipe.
 ````
 
 ### Esperado
 ````text
-Isso é importante para resolver o problema da equipe.
+Isso foi importante para resolver o problema da equipe.
 ````
 
 ## Caso 10 — ortografia: palavra válida mas errada no contexto
