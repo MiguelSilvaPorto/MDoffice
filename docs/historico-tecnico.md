@@ -184,6 +184,15 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ## src/styles/settings.css
 
+### 2026-10-13 · este commit · interruptor com folga inteira (bolinha centrada)
+- **Local:** `.st-switch` (altura), `.st-switch::after` (folga da bolinha) e `.st-switch:checked::after` (deslocamento)
+- **Linha:** altura `23px` → `24px`; `top`/`left` `2,5px` → `3px`; `translateX(17px)` → `translateX(16px)`
+- **Porquê:** com medidas fracionárias o navegador arredondava a bolinha para um lado em cada
+  estado — medido em 100%: folgas 3/19 desligado e 20/2 ligado, em vez de 3/3, e 4/3 na vertical —
+  e o desalinhamento reaparecia em 125% e 150% (as escalas mais comuns do Windows). Com medidas
+  inteiras (40 = 3 + 16 + 18 + 3; 24 = 3 + 18 + 3) as folgas ficam iguais nos quatro lados e
+  iguais entre ligado e desligado, em qualquer escala.
+
 ### 2026-10-13 · este commit · ícones menores na trilha das Configurações
 - **Local:** `.st-brand-ic` (marca) e `.st-nav-ic` (itens Escrita → Atalhos)
 - **Linha:** marca `40px · raio 12 · glifo 19px` → `34px · raio 11 · glifo 16px`; itens
