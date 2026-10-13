@@ -58,9 +58,11 @@ export async function checkText(text: string, ignore: Set<string>): Promise<Writ
           kind: "spell",
           message: hit.glued
             ? `“${token.word}” parece ter palavras coladas — faltou um espaço? Talvez “${hit.suggestions[0]}”`
-            : used >= 4
-              ? `“${token.word}” não está no dicionário, mas você a usa com frequência (${used} vezes nos seus textos) — se for um termo seu, adicione ao dicionário`
-              : `“${token.word}” não está no dicionário`,
+            : hit.duvida
+              ? `“${token.word}” existe, mas em texto escrito quase sempre é “${hit.suggestions[0]}” — faltou o acento?`
+              : used >= 4
+                ? `“${token.word}” não está no dicionário, mas você a usa com frequência (${used} vezes nos seus textos) — se for um termo seu, adicione ao dicionário`
+                : `“${token.word}” não está no dicionário`,
           suggestions,
           // a correção automática só vale se o contexto não discordar da escolha do dicionário
           auto: hit.best && suggestions[0] === hit.suggestions[0] ? hit.best : hit.glued ? hit.best : undefined,

@@ -87,15 +87,26 @@ const PESO_CONTEXTO = 0.35;
 let corpus: Set<string> | null = null;
 let familias: Set<string> | null = null;
 
+/**
+ * Quantas vezes cada forma aparece no corpus — COM acento, exatamente como escrita.
+ *
+ * É o que separa "ira" (raiva, quase não usada em texto escrito) de "irá" (o verbo,
+ * comum): o dicionário conhece as duas, e só o uso diz qual delas era.
+ */
+let contagensExatas: Map<string, number> | null = null;
+
 function prepararIndice(palavras: string[], contagens: number[]): void {
   frequencia = montarFrequencia(palavras, contagens);
   indice = construirIndice(palavras);
   corpus = new Set<string>();
   familias = new Set<string>();
-  for (const w of palavras) {
+  contagensExatas = new Map<string, number>();
+  for (let i = 0; i < palavras.length; i++) {
+    const w = palavras[i];
     const n = norm(w);
     corpus.add(n);
     if (n.length >= 3) familias.add(n.slice(0, 3));
+    contagensExatas.set(w.toLowerCase(), contagens[i] ?? 0);
   }
 }
 
@@ -298,6 +309,57 @@ function cortesDeColagem(palavra: string): string[] {
   if (!UMA_LETRA.has(primeira.toLowerCase())) return [];
   const resto = palavra.slice(1);
   return valeComoPalavra(resto) ? [`${primeira} ${resto}`] : [];
+}
+
+/** As formas acentuadas de cada letra — a base do "faltou o acento?". */
+const ACENTOS: Record<string, string[]> = {
+  a: ["á", "â", "ã", "à"],
+  e: ["é", "ê"],
+  i: ["í"],
+  o: ["ó", "ô", "õ"],
+  u: ["ú"],
+  c: ["ç"],
+};
+
+/** A partir de quantos usos a forma escrita é considerada de uso real. */
+const USO_REAL = 20;
+/** Quantas vezes a forma acentuada precisa ser mais usada que a escrita. */
+const VANTAGEM = 20;
+/** Piso de uso da forma acentuada, para não trocar raridade por raridade. */
+const PISO_ACENTO = 50;
+
+/**
+ * O dicionário aceita a forma escrita, mas em texto escrito ela quase não aparece e a
+ * acentuada é comum? Então faltou o acento ("ira" → "irá", "duvida" → "dúvida").
+ *
+ * O dicionário não decide isso: as duas formas existem ("ira" é raiva; "irá" é o verbo
+ * ir). Quem decide é o USO — e o aviso é pergunta, nunca correção sozinha, porque o
+ * acento troca o sentido e quem escreveu é quem sabe qual era.
+ *
+ * As medidas são as mesmas do "você quis dizer…" (`neighbor.ts`): a forma escrita tem
+ * de ser rara, a acentuada tem de ser bem mais usada e existir de verdade.
+ */
+function acentoMaisUsado(palavra: string): string | null {
+  if (!contagensExatas) return null;
+  const lower = palavra.toLowerCase();
+  const aqui = contagensExatas.get(lower) ?? 0;
+  if (aqui >= USO_REAL) return null; // a forma escrita é usada: não mexe
+  let melhor: string | null = null;
+  let melhorUso = 0;
+  for (let i = 0; i < lower.length; i++) {
+    for (const alt of ACENTOS[lower[i]] ?? []) {
+      const forma = lower.slice(0, i) + alt + lower.slice(i + 1);
+      if (!typo?.check(forma)) continue; // a sugestão precisa ser palavra de verdade
+      const uso = contagensExatas.get(forma) ?? 0;
+      if (uso < PISO_ACENTO) continue;
+      if (uso < VANTAGEM * Math.max(aqui, 1)) continue;
+      if (uso > melhorUso) {
+        melhor = forma;
+        melhorUso = uso;
+      }
+    }
+  }
+  return melhor;
 }
 
 interface Peca {
@@ -527,9 +589,14 @@ self.addEventListener("message", (event: MessageEvent) => {
       const lower = word.toLowerCase();
       if (PALAVRAS_OK.has(lower)) continue;
       if (typo.check(word) || (lower !== word && typo.check(lower))) {
-        // O dicionário aceita — mas e o resto da língua? "oira" é forma do verbo
-        // "oirar": existe, e ninguém usa. Se a família dela não aparece em texto
-        // escrito e ela corta em duas palavras válidas, o mais provável é colagem.
+        // O dicionário aceita — mas e o resto da língua?
+        // 1) Faltou o acento? "ira" (raiva) e "irá" (verbo) existem; o uso decide.
+        const comAcento = acentoMaisUsado(word);
+        if (comAcento) {
+          hits.push({ word, duvida: true, suggestions: [comAcento] });
+          continue;
+        }
+        // 2) Colou duas palavras? "oira" é forma do verbo "oirar": existe, e ninguém usa.
         const colada = cortesDeColagem(word);
         if (colada.length) hits.push({ word, glued: true, duvida: true, suggestions: colada, best: undefined });
         continue;

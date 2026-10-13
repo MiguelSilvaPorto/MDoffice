@@ -1758,6 +1758,49 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o comportamento novo é invisível na tela; sem os casos, uma regressão no placar
   (desfazer que não desconta, confiança que não volta a sugestão) passaria despercebida.
 
+## src/broker/spell.worker.ts
+
+### 2026-10-13 · (este commit) · acento decidido pelo uso
+- **Local:** `contagensExatas` (novo, montado em `prepararIndice`), `ACENTOS`, `USO_REAL`,
+  `VANTAGEM`, `PISO_ACENTO` e `acentoMaisUsado` (novos) e o ramo do dicionário no `check`
+- **Linha:** no ramo que já perguntava por colagem, entra antes:
+  `const comAcento = acentoMaisUsado(word)` → `hits.push({ word, duvida: true, suggestions: [comAcento] })`
+- **Porquê:** "ira" (raiva) e "irá" (verbo ir) são as DUAS palavras de verdade — o dicionário
+  aceita as duas, então o corretor não tinha o que acusar, e quem escreveu "ira" pensando em
+  "irá" ficava sem aviso (relatado assim). Quem decide é o USO: em texto escrito, "ira" não
+  aparece (0) e "irá" aparece 1794 vezes. As medidas são as mesmas que o `neighbor.ts` já usa
+  para "você quis dizer…" (`USO_REAL` 20, `VANTAGEM` 20×, piso 50) — a forma escrita tem de ser
+  rara, a acentuada tem de ser muito mais usada e existir no dicionário.
+- **Local:** `contagensExatas` (mapa palavra → usos, COM acento)
+- **Linha:** novo — `contagensExatas.set(w.toLowerCase(), contagens[i] ?? 0)`
+- **Porquê:** a tabela que o worker já recebia é normalizada em outros pontos (`POSICAO` usa
+  `norm`, que tira acento) e por isso não serve para comparar "ira" com "irá": as duas caem na
+  mesma chave. A contagem exata vem dos dados crus (`f.w`/`f.n`), que têm o acento.
+- **Local:** o hit do acento
+- **Linha:** `duvida: true` sem `best`
+- **Porquê:** pergunta, não decisão — o acento troca o sentido ("esta"/"está", "pais"/"país") e
+  quem escreveu é quem sabe. Com `duvida` o `check.ts` põe `fix` (aparece na revisão, vale no
+  "corrigir tudo") e não põe `auto` (a varredura automática não encosta).
+
+## src/broker/check.ts
+
+### 2026-10-13 · (este commit) · a mensagem do acento
+- **Local:** a mensagem do `issues.push` no ramo de ortografia
+- **Linha:** um terceiro caso: `hit.duvida` (sem `glued`) → `“X” existe, mas em texto escrito
+  quase sempre é “Y” — faltou o acento?`
+- **Porquê:** a mensagem da colagem ("faltou um espaço") mentiria aqui: a palavra não está
+  partida em duas, é a MESMA palavra sem o acento. Cada aviso precisa dizer o que fazer.
+
+## test/docs/gramatical.md
+
+### 2026-10-13 · (este commit) · caso 33 e o encadeamento do 31
+- **Local:** `## Caso 33` (novo) e o `### Esperado` do caso 31
+- **Linha:** caso novo — "O time ira viajar amanha de manha." → "O time irá viajar amanhã de
+  manhã."; e o caso 31 passou a esperar "e o **irá** verifica" (era "o ira")
+- **Porquê:** o caso 31 mostra o encadeamento completo do que foi relatado: primeiro a colagem
+  ("oira" → "o ira"), depois o acento pelo uso ("ira" → "irá") — o `corrigir` do runner roda em
+  rodadas, então a segunda correção vem na rodada seguinte.
+
 ---
 
 ## Próximos registros

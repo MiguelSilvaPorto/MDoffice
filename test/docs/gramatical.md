@@ -389,7 +389,7 @@ O texto ficou pronto e oira verifica se segue as regras.
 
 ### Esperado
 ````text
-O texto ficou pronto e o ira verifica se segue as regras.
+O texto ficou pronto e o irá verifica se segue as regras.
 ````
 
 ## Caso 32 — palavra comum que nao pode virar duas ('aplicativo' nao e 'a plicativo')
@@ -402,4 +402,16 @@ O aplicativo nao abre o documento.
 ### Esperado
 ````text
 O aplicativo não abre o documento.
+````
+
+## Caso 33 — acento pelo uso: 'ira' (raiva) onde era 'irá' (verbo)
+
+### Errado
+````text
+O time ira viajar amanha de manha.
+````
+
+### Esperado
+````text
+O time irá viajar amanhã de manhã.
 ````

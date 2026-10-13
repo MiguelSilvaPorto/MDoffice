@@ -77,6 +77,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   (A medida é contra o **corpus completo** de texto escrito — o `freq-pt.json`, que o worker já
   recebe. Com a lista curta de palavras frequentes, "aplicativo" não estava nela e virava
   "a plicativo".)
+- **Acento pelo uso**: o dicionário aceita as duas formas — "ira" é raiva, "irá" é o verbo — e
+  por isso nada era acusado. Agora, quando a forma escrita quase não aparece em texto escrito e a
+  acentuada é muito mais usada, o corretor pergunta **"faltou o acento?"** ("ira" → "irá",
+  "duvida" → "dúvida"). É pergunta, nunca correção sozinha: o acento troca o sentido. As medidas
+  são as mesmas do "você quis dizer…" — a forma escrita tem de ser rara, a acentuada tem de ser
+  bem mais usada e existir de verdade.
 - **Correção automática**: palavras erradas com certeza, maiúsculas, espaços, pontuação,
   abreviações; ao terminar o parágrafo e ao salvar; cada correção é um passo de `Ctrl+Z`.
 - **Ponto e vírgula automáticos** e **modo formal** (“a gente” com o verbo conjugado);
