@@ -646,6 +646,7 @@ button.ppr.cor {
   flex-direction: column;
   gap: 4px;
   padding: 4px;
+  position: relative;
   color: var(--fg);
   background: transparent;
   border: 1px solid var(--border);
@@ -700,6 +701,54 @@ button.ppr.cor {
 .pp-tpl-nome {
   font-size: 11.5px;
   text-align: center;
+}
+
+/* cartão "+" (salvar a apresentação atual como modelo) e o × dos modelos do usuário */
+
+.pp-tpl-mais .pp-tpl-previa-mais {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  padding: 0;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--fg) 4%, transparent);
+  border: 1px dashed var(--border);
+}
+
+.pp-tpl-mais-sinal {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.pp-tpl-mais:hover .pp-tpl-previa-mais {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.pp-tpl-x {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  display: none;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--bg) 75%, transparent);
+  border-radius: 50%;
+}
+
+.pp-tpl:hover .pp-tpl-x {
+  display: flex;
+}
+
+.pp-tpl-x:hover {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .pp-gradientes {

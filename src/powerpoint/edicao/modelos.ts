@@ -2,9 +2,9 @@
 // Aplicar um modelo ao deck troca as cores da paleta antiga pelas do novo tema nos textos,
 // preenchimentos, contornos e fundos — o que foi escolhido fora da paleta fica como está.
 // Funções puras: devolvem lâminas novas, sem mexer nas originais.
-import type { CelulaTab, Fill, Para, Run, Shape, Slide, ThemeId } from "../schema";
+import type { CelulaTab, DeckSetup, Fill, Para, Run, Shape, Slide, ThemeId } from "../schema";
 import { themeOf } from "../themes";
-import { corDeContraste } from "./criar";
+import { corDeContraste, estiloDoDeck } from "./criar";
 
 export interface ModeloPPT {
   id: string;
@@ -15,6 +15,10 @@ export interface ModeloPPT {
   bg: string;
   /** fonte padrão do texto do deck */
   fonte: string;
+  /** cores próprias (modelos criados pelo usuário): substituem as do tema */
+  cores?: { bg?: string; fg?: string; accent?: string; muted?: string };
+  /** criado pelo usuário: aparece junto dos presets, com opção de remover */
+  usuario?: boolean;
 }
 
 export const MODELOS: ModeloPPT[] = [
@@ -36,7 +40,15 @@ export interface EstiloAtual {
 /** Aplica o modelo às lâminas: troca as cores do tema antigo pelas do novo e ajusta a fonte. */
 export function aplicarModelo(slides: Slide[], de: EstiloAtual, modelo: ModeloPPT): Slide[] {
   const ta = themeOf(de.theme);
-  const tb = themeOf(modelo.tema);
+  const t0 = themeOf(modelo.tema);
+  // um modelo do usuário traz as próprias cores; os presets usam as do tema
+  const tb = {
+    ...t0,
+    bg: modelo.cores?.bg || modelo.bg || t0.bg,
+    fg: modelo.cores?.fg || t0.fg,
+    accent: modelo.cores?.accent || t0.accent,
+    muted: modelo.cores?.muted || t0.muted,
+  };
   const bgNovo = modelo.bg || tb.bg;
   const mapa = new Map<string, string>([
     [ta.fg.toUpperCase(), tb.fg],
@@ -77,4 +89,40 @@ export function aplicarModelo(slides: Slide[], de: EstiloAtual, modelo: ModeloPP
     tabela: s.tabela ? { ...s.tabela, celulas: s.tabela.celulas.map((linha) => linha.map(celula)) } : s.tabela,
   });
   return slides.map((sl) => ({ ...sl, bg: fill(sl.bg), shapes: sl.shapes.map(forma) }));
+}
+
+/** O fundo que mais aparece nas lâminas (hex sem #) — é o que o modelo do usuário guarda. */
+function fundoDoDeck(slides: Slide[], setup: DeckSetup): string {
+  const contagem = new Map<string, number>();
+  for (const sl of slides) {
+    const c = sl.bg?.kind === "solid" ? sl.bg.color : undefined;
+    if (c) contagem.set(c.toUpperCase(), (contagem.get(c.toUpperCase()) ?? 0) + 1);
+  }
+  const top = [...contagem.entries()].sort((a, b) => b[1] - a[1])[0];
+  return top?.[0] ?? setup.bg ?? "";
+}
+
+/**
+ * Salva o visual do deck atual como um modelo: tema, fundo, fonte e as cores que mais aparecem
+ * (texto e destaque). Aplicar depois reproduz essa cara em qualquer apresentação.
+ */
+export function modeloDoDeck(slides: Slide[], setup: DeckSetup, nome: string, id: string): ModeloPPT {
+  const t = themeOf(setup.theme);
+  const est = estiloDoDeck(slides, setup);
+  const bg = fundoDoDeck(slides, setup) || setup.bg || t.bg;
+  return {
+    id,
+    nome,
+    descricao: "Modelo criado por você a partir desta apresentação",
+    tema: setup.theme,
+    bg,
+    fonte: setup.fontFamily || est.fonte || t.font,
+    cores: {
+      bg,
+      fg: est.corTexto || t.fg,
+      accent: est.acento || t.accent,
+      muted: t.muted,
+    },
+    usuario: true,
+  };
 }

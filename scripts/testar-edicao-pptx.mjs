@@ -300,6 +300,33 @@ const M = await empacotar("src/powerpoint/edicao/modelos.ts", "modelos.mjs");
   ok("tabela: texto e preenchimento das células trocam junto", rt[0].shapes[0].tabela.celulas[0][0].paras[0].runs[0].color === "F4F5F8" && rt[0].shapes[0].tabela.celulas[0][0].fill.color === "818CF8");
 }
 
+// modelos criados pelo usuário: o visual do deck vira um modelo reaplicável
+{
+  const mk = (shapes, bg) => ({ md: "", layout: "conteudo", notes: "", shapes, bg });
+  const run = (color, font) => ({ text: "Oi", size: 18, bold: false, italic: false, underline: false, strike: false, color, font });
+  const para = (r) => ({ runs: [r], align: "esquerda", lvl: 0, marL: 0, indent: 0, spcBef: 0, spcAft: 0, endSize: 18 });
+  const caixa = (extra = {}) => ({ id: "t", kind: "texto", box: { x: 8, y: 10, w: 80, h: 20 }, text: "Oi", fontFamily: "Segoe UI", fontSize: 18, color: "1C212B", bold: false, italic: false, align: "esquerda", fill: "", src: "", rot: 0, ...extra });
+  // deck com cara própria: fundo bege, acento verde e fonte Georgia
+  const meuDeck = [
+    mk([caixa({ fontFamily: "Georgia", paras: [para(run("2B2B2B", "Georgia"))] })], { kind: "solid", color: "FDF6E3" }),
+    mk([caixa({ id: "f", kind: "forma", color: "FFFFFF", fill: "2E7D32", fillX: { kind: "solid", color: "2E7D32" }, ln: { color: "2E7D32", alpha: 1, w: 1, dash: "solid" } })], { kind: "solid", color: "FDF6E3" }),
+  ];
+  const setup = { aspect: "16:9", theme: "claro", showNumber: false, footer: "", fontFamily: "Georgia", fontSize: 18, bg: "" };
+  const modelo = M.modeloDoDeck(meuDeck, setup, "Meu modelo", "usuario-1");
+  ok("modelo do usuário: guarda fundo, fonte e acento do deck", modelo.usuario === true && modelo.bg === "FDF6E3" && modelo.fonte === "Georgia" && modelo.cores.accent === "2E7D32", JSON.stringify(modelo.cores));
+  // aplicar num deck com a cara padrão reproduz o visual guardado
+  const padrao = [
+    mk([caixa({ paras: [para(run("1C212B", "Segoe UI"))] })], { kind: "solid", color: "FFFFFF" }),
+    mk([caixa({ id: "f", kind: "forma", color: "FFFFFF", fill: "4F46E5", fillX: { kind: "solid", color: "4F46E5" } })]),
+  ];
+  const aplicado = M.aplicarModelo(padrao, { theme: "claro", bg: "", fontFamily: "Segoe UI" }, modelo);
+  ok(
+    "aplicar o modelo do usuário: fundo, texto, fonte e acento",
+    aplicado[0].bg.color === "FDF6E3" && aplicado[0].shapes[0].color === "2B2B2B" && aplicado[0].shapes[0].fontFamily === "Georgia" && aplicado[1].shapes[0].fillX.color === "2E7D32",
+    JSON.stringify([aplicado[0].bg, aplicado[0].shapes[0].color, aplicado[1].shapes[0].fillX.color])
+  );
+}
+
 // ---------------------------------------------------------------- gráficos
 const GC = await empacotar("src/powerpoint/edicao/grafico.ts", "grafico.mjs");
 {

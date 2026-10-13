@@ -3,7 +3,7 @@
 // (mesmo papel do src/word/host.ts)
 import { marked } from "marked";
 import DOMPurify from "dompurify";
-import { $ } from "../util";
+import { $, toast } from "../util";
 import { ligarAjusteAlturaFita, ligarRecolherFita } from "../fita";
 import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, novaImagem, type EstiloDeck, type ItemGaleria } from "./edicao/criar";
 import { ajustarCor, comAjuste, comLinha, comOpacidade, comPreenchimento, comRaioDeCanto, comSombra, gradiente, SOMBRAS_PRONTAS, solido, corPrincipal } from "./edicao/formato";
@@ -13,6 +13,7 @@ import { Historico } from "./edicao/historico";
 import { formasDoLayout, novaLamina } from "./edicao/layouts";
 import { migrarSlides, registrarMidia } from "./edicao/migrar";
 import { MODELOS, aplicarModelo, type ModeloPPT } from "./edicao/modelos";
+import { criarModeloUsuario, lerModelosUsuario, removerModeloUsuario } from "./modelosUsuario";
 import {
   agruparFormas,
   alinharFormas,
@@ -1247,10 +1248,20 @@ export class PowerPointHost {
         if (value && THEMES.some((t) => t.id === value)) this.setSetup({ theme: value as DeckSetup["theme"] });
         return;
       case "modelo": {
-        const modelo = MODELOS.find((m) => m.id === value);
+        const modelo = MODELOS.find((m) => m.id === value) ?? lerModelosUsuario().find((m) => m.id === value);
         if (modelo) this.usarModelo(modelo);
         return;
       }
+      case "modelo-criar": {
+        // salva o visual do deck atual como um modelo do usuário (fica no botão Template)
+        const modelo = criarModeloUsuario(this.slides, this.setup, String(value ?? ""));
+        toast(`Modelo "${modelo.nome}" salvo no botão Template.`, "ok", 4200);
+        return;
+      }
+      case "modelo-excluir":
+        removerModeloUsuario(String(value ?? ""));
+        toast("Modelo removido.", "ok", 3000);
+        return;
 
       // ---- transição de entrada da lâmina ----
       case "transicao": {

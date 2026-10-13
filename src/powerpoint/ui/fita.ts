@@ -477,7 +477,10 @@ export class Fita {
         abrirGaleria(ancora, (item) => run("forma-inserir", String(GALERIA.indexOf(item))));
         return;
       case "modelo":
-        abrirModelos(ancora, (m) => run("modelo", m.id));
+        abrirModelos(ancora, (m) => run("modelo", m.id), {
+          criar: (nome) => run("modelo-criar", nome),
+          excluir: (id) => run("modelo-excluir", id),
+        });
         return;
       case "tabela-grade": {
         const N = 8;
