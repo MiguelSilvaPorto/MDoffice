@@ -210,6 +210,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 **Ferramentas (dev)**
 
 - **Pesquisa (documento)**: formalidade por regras e validação ABNT — o que é verificável e como (`docs/pesquisa-formalidade-abnt.md`).
+- **Pesquisa (documento)**: correção/sugestão sem IA — estado da arte, algoritmos e plano por fases (`docs/pesquisa-correcao-offline.md`).
 
 ### Adicionado (na main)
 

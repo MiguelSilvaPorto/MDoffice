@@ -1277,6 +1277,19 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   41 checagens, as ferramentas de apoio (abnTeX2/CSL, Vale, textlint, LanguageTool) e o plano por
   fases — para as próximas tarefas de implementação terem base decidida e referências datadas.
 
+## docs/pesquisa-correcao-offline.md
+
+### 2026-10-13 · este commit · documento novo
+- **Local:** arquivo inteiro
+- **Linha:** novo arquivo
+- **Porquê:** o pedido "as sugestões parecem defasadas no começo; quero que corrija sozinho com
+  confiança com o tempo; quero um algoritmo muito melhor sem IA" não tinha um documento que
+  juntasse diagnóstico e direção. Este registra o porquê técnico de cada gargalo (ranking sem
+  contexto, decisão por regra fixa, aprendizado só de pares aceitos, tabelas pequenas), o estado
+  da arte sem IA com fontes e licenças, a decisão de troca por probabilidade com margem e o
+  plano por fases F0–F4 com métricas — é o documento de referência para as próximas tarefas do
+  corretor.
+
 ---
 
 ## Próximos registros
