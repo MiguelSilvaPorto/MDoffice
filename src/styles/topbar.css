@@ -78,9 +78,11 @@
   gap: 2px;
   background: var(--panel-2);
   border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 2px 4px 2px 6px;
-  height: 28px;
+  border-radius: 6px;
+  padding: 1px 3px 1px 5px;
+  /* discreta na barra: o contorno encolhe, mas a fonte NÃO — o texto continua
+     legível (10,5px é o menor tamanho confortável para rótulo) */
+  height: 22px;
   flex: none;
   user-select: none;
   box-sizing: border-box;
@@ -93,15 +95,15 @@
 .tb-autosave-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   background: transparent;
   border: none;
-  padding: 2px 4px;
+  padding: 1px 3px;
   border-radius: 4px;
   cursor: pointer;
   color: var(--fg);
   font-family: var(--ui-font);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 500;
   line-height: 1;
   outline: none;
@@ -118,8 +120,8 @@
 }
 
 .tb-autosave-track {
-  width: 24px;
-  height: 14px;
+  width: 20px;
+  height: 12px;
   border-radius: 999px;
   background: var(--muted);
   opacity: 0.55;
@@ -134,8 +136,8 @@
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
@@ -157,11 +159,11 @@
 
 .tb-autosave-toggle[aria-checked="true"] .tb-autosave-thumb,
 .tb-autosave-toggle.is-active .tb-autosave-thumb {
-  transform: translateX(10px);
+  transform: translateX(8px);
 }
 
 .tb-autosave-label {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 500;
   color: var(--fg);
   white-space: nowrap;
@@ -178,11 +180,11 @@
   background: transparent;
   border: none;
   border-left: 1px solid var(--border);
-  padding: 2px 5px 2px 6px;
+  padding: 1px 4px 1px 5px;
   border-radius: 4px;
   cursor: pointer;
   font-family: var(--ui-font);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 500;
   line-height: 1;
   color: var(--muted);
@@ -201,8 +203,8 @@
 }
 
 .tb-autosave-badge .tb-autosave-ic {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   flex: none;
 }
 
