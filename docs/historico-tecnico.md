@@ -159,6 +159,16 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** nova linha `["Ctrl+F1", "Recolher/expandir a faixa de opções"]`
 - **Porquê:** documentar o atalho criado junto com o recolher da fita.
 
+## src/styles/settings.css
+
+### 2026-10-13 · este commit · ícones menores na trilha das Configurações
+- **Local:** `.st-brand-ic` (marca) e `.st-nav-ic` (itens Escrita → Atalhos)
+- **Linha:** marca `40px · raio 12 · glifo 19px` → `34px · raio 11 · glifo 16px`; itens
+  `32px · raio 10 · glifo 16px` → `26px · raio 8 · glifo 14px`
+- **Porquê:** depois do redesign da tela, os chips de ícone da lateral ficaram grandes demais e
+  pesavam mais que o texto; menores, a hierarquia volta ao nome/descrição sem perder o destaque
+  do item ativo (chip sólido no acento).
+
 ## src/powerpoint/edicao/grafico.ts
 
 ### 2026-10-13 · 8fe85d0 · gráficos (novo arquivo)

@@ -55,16 +55,16 @@ body.settings-open #preview-wrap {
   display: grid;
   place-items: center;
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   color: var(--accent);
   background: var(--accent-soft);
-  border-radius: 12px;
+  border-radius: 11px;
 }
 
 .st-brand-ic .ic {
-  width: 19px;
-  height: 19px;
+  width: 16px;
+  height: 16px;
 }
 
 .st-brand-txt {
@@ -104,17 +104,17 @@ body.settings-open #preview-wrap {
   display: grid;
   place-items: center;
   flex: none;
-  width: 32px;
-  height: 32px;
+  width: 26px;
+  height: 26px;
   color: var(--muted);
   background: color-mix(in srgb, var(--muted) 12%, transparent);
-  border-radius: 10px;
+  border-radius: 8px;
   transition: background 0.13s ease, color 0.13s ease;
 }
 
 .st-nav-ic .ic {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .st-nav-txt {

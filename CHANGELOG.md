@@ -221,7 +221,9 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   [funcionalidades por módulo](docs/funcionalidades.md), e este **changelog + o
   [histórico técnico](docs/historico-tecnico.md)** (entregues neste mesmo commit).
 - **Tela de Início** com os quatro formatos (Word, Excel, MD, PowerPoint) e botão lateral fixo.
-- **Painel de projetos**: árvore de pastas com `.md`, busca e indicador de aberto.
+- **Painel de projetos**: árvore de pastas com `.md` em cartões (contagem de documentos/pastas,
+  esqueleto ao carregar, busca com o termo destacado), animações de abrir/fechar e indicador de
+  aberto/alterado por documento.
 - **Estrutura do texto**: árvore de títulos com seções que recolhem, destaque da seção atual,
   contagem de palavras/tarefas e ações (mover, promover, copiar, excluir).
 - **Histórico de versões** + **log de alterações** (diff leve, marcos) + aba **Backup**, com
@@ -230,6 +232,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   sumido e tela de restauração.
 - **Configurações numa aba** (Escrita, Tradução, Histórico, Aparência, Atalhos), com ajustes
   valendo na hora; redesign com trilha lateral e cartões.
+- **Configurações**: ícones menores na trilha lateral (chips de 32 → 26 px e glifos de 16 → 14;
+  marca de 40 → 34), deixando a trilha mais leve sem mudar a estrutura.
 - **Busca de comandos** (`Ctrl+K`), **modo foco** (`Ctrl+Shift+F`) e atalhos documentados.
 - **Importar do Office** (`.docx`, `.xlsx`, `.xlsm`, `.pptx`) com explicação dos formatos antigos.
 - **Ícone por tipo de arquivo** (M↓, W, tabela, gráfico de pizza) nas abas, listas e busca.
