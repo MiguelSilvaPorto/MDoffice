@@ -104,7 +104,7 @@ export function welcomeHtml(): string {
       <li><b>Desenhar</b> — clique em <b>Desenhar</b> e desenhe no próprio documento. O assistente endireita traços, regulariza ondulações e liga as formas. O <b>▾</b> ao lado alterna entre <i>imagem</i> e <i>letras e símbolos</i>.</li>
       <li><b>Imagem</b> — pelo botão <b>Imagem</b>, colando com <kbd>Ctrl</kbd>+<kbd>V</kbd> ou arrastando o arquivo. Tudo vai para <code>assets/</code> ao lado do <code>.md</code>.</li>
       <li><b>Mandar para a IA</b> — no menu <b>⋯</b>: <b>Copiar para a IA</b> (texto) ou <b>Pacote IA</b> (um ZIP com o documento, as imagens e um modelo de instruções).</li>
-      <li><b>Português corrigido</b> — <kbd>F7</kbd> (ou <b>⋯ → Revisar texto</b>) mostra ortografia e estilo. Com a <b>Correção automática</b> ligada (padrão no menu <b>⋯</b>), o app troca sozinho as palavras erradas em que tem certeza (ex.: <i>responsavo</i> → <b>responsável</b>) e, ao terminar o parágrafo ou salvar, ajusta ponto final, vírgulas, maiúsculas e trocas formais.</li>
+      <li><b>Português corrigido</b> — <kbd>F7</kbd> (ou <b>⋯ → Revisar texto</b>) mostra ortografia e estilo. Com a <b>Correção automática</b> ligada (padrão no menu <b>⋯</b>), o app troca sozinho as palavras erradas em que tem certeza (ex.: <i>responsavo</i> → <b>responsável</b>) e, ao pausar, ao terminar o parágrafo ou ao salvar, varre o documento e ajusta ponto final, vírgulas, pontos a mais e frases coladas (o ritmo da pausa se adapta ao seu uso).</li>
     </ul>
     <p class="hint"><kbd>F1</kbd> abre esta tela · <kbd>Ctrl</kbd>+<kbd>S</kbd> salva · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> desenha · botão direito no editor: pastas de contexto</p>
   </div>`;

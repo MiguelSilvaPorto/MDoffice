@@ -2,7 +2,7 @@
 
 import type { App } from "./app";
 import * as files from "../files";
-import { checkStyle } from "../broker/writing";
+import { checkStyle, observarEdicao, temPendenteRitmo } from "../broker/writing";
 import { type DocTab } from "../tabs";
 import { moveHistory } from "../history";
 import { moveCommits } from "../snapshots";
@@ -14,6 +14,8 @@ export const documentsMethods = {
     this.dirty = true;
     // a correção automática só age depois que você digita (não mexe em documento aberto)
     this.autoFixArmed = true;
+    // uma varredura automática desfeita (Ctrl+Z) ensina o ritmo a esperar mais antes de agir
+    if (temPendenteRitmo()) observarEdicao(this.editor.getText());
     if (!wasDirty) this.refreshTitle();
     this.setSaveState();
     this.updatePreview();

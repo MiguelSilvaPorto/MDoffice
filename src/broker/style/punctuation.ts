@@ -6,16 +6,23 @@ import { PHRASES, INTRO_CONNECTIVES } from "../data/phrases";
 /** Expressões que pedem vírgula dos DOIS lados. */
 export function commasAroundExpressions({ text, mask, push }: RuleCtx): void {
   let m: RegExpExecArray | null;
-  // expressões que pedem vírgula dos DOIS lados (no meio da frase)
-  const entreVirgulas = /\b(ou seja|isto é|por exemplo|em outras palavras|ou melhor|no entanto|porém|contudo|entretanto|todavia|portanto|além disso|além do mais)\b/giu;
+  // expressões que pedem vírgula dos DOIS lados (no meio da frase); os limites são por letra/dígito
+  // (e não \b, que não enxerga acentos: “isto é” nunca casava)
+  const entreVirgulas = /(?<![\p{L}\d])(ou seja|isto é|por exemplo|em outras palavras|ou melhor|no entanto|porém|contudo|entretanto|todavia|portanto|além disso|além do mais)(?![\p{L}\d])/giu;
   while ((m = entreVirgulas.exec(mask)) !== null) {
     const ini = m.index;
     const fim = ini + m[0].length;
-    const antes = text.slice(Math.max(0, ini - 1), ini);
+    // o espaço antes da expressão entra no trecho trocado (senão sobrava “ ,”)
+    const espacoAntes = /[^\S\n]/.test(text.slice(Math.max(0, ini - 1), ini));
+    const de = ini - (espacoAntes ? 1 : 0);
+    const antes = text.slice(Math.max(0, de - 1), de);
     const depois = text.slice(fim, fim + 1);
-    if (antes === "," || depois === "," || antes === "\n" || antes === "") continue;
-    if (ini === 0 || text.slice(Math.max(0, ini - 1), ini) === "\n") continue; // começo de linha: outra regra cuida
-    push(ini, fim, `Em volta de “${m[0]}” costumam vir vírgulas`, `, ${m[0]},`, [], false);
+    if (!/[\p{L}\d)\]"'»]$/u.test(antes)) continue; // começo de linha/pontuação: outra regra cuida
+    if (depois === ",") continue; // já tem vírgula depois
+    if (depois === "" || depois === "\n") continue; // fim de linha: a vírgula ficaria solta
+    // “Além disso” maiúsculo depois de palavra minúscula é frase nova: quem cuida é a regra de frases coladas
+    if (/[A-ZÁÀÂÃÉÊÍÓÔÕÚ]/.test(m[0][0]) && /[\p{Ll}\d]/u.test(antes)) continue;
+    push(de, fim, `Em volta de “${m[0]}” costumam vir vírgulas`, `, ${m[0]},`, [], false);
   }
 }
 
@@ -34,7 +41,7 @@ export function safeSentenceBreak({ mask, push }: RuleCtx): void {
       push(ini, fim, "Antes de “como” (exemplos) costuma vir vírgula", `, ${conj}`, [], false);
     } else {
       const comMaiuscula = conj[0].toUpperCase() + conj.slice(1);
-      push(ini, fim, "Frase muito comprida: comece nova frase aqui", `. ${comMaiuscula}`, [], false);
+      push(ini, fim, "Frase muito comprida: comece nova frase aqui", `. ${comMaiuscula}`, [], false, "quebra-frase");
     }
   }
 }
@@ -127,7 +134,7 @@ export function missingFinalPeriod({ text, mask, push }: RuleCtx): void {
         const lineEnd = offset + raw.trimEnd().length;
         const wm = /[\p{L}\d]+$/u.exec(text.slice(offset, lineEnd));
         const start = lineEnd - (wm ? wm[0].length : 1);
-        push(start, lineEnd, "Falta o ponto final no fim do parágrafo", `${text.slice(start, lineEnd)}.`, []);
+        push(start, lineEnd, "Falta o ponto final no fim do parágrafo", `${text.slice(start, lineEnd)}.`, [], false, "ponto-final");
       }
       offset += raw.length + 1;
     }

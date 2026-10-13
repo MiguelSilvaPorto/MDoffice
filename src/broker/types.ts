@@ -14,6 +14,12 @@ export interface WritingIssue {
   safe?: boolean;
   /** correção de ortografia em que dá para confiar (aplicada sozinha pela correção automática) */
   auto?: string;
+  /**
+   * Categoria para a política da correção automática:
+   * "ponto-final" = fecha o parágrafo com ponto (só entra quando o parágrafo acabou);
+   * "quebra-frase" = reestrutura a frase (nunca entra sozinha; só pelo aviso/“Corrigir tudo”).
+   */
+  classe?: "ponto-final" | "quebra-frase";
 }
 
 export interface WritingStats {

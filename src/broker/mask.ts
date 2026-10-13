@@ -1,7 +1,7 @@
 // Esconde trechos que não devem ser corrigidos (código, links, HTML, front-matter).
 
 /** Esconde trechos que não devem ser corrigidos (código, links, front-matter). */
-const MASCA = "·";
+export const MASCA = "·";
 const mascara = (n: number) => MASCA.repeat(Math.max(0, n));
 
 export function maskNonProse(text: string): string {

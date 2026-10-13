@@ -8,6 +8,7 @@ import { profileSummary } from "./broker/personal/profile";
 import { llmEnabled, llmUseGpu, llmTypingSetting, setLlmEnabled, setLlmUseGpu, setLlmTyping } from "./broker/llm/config";
 import { llmAvailable, llmDevice } from "./broker/llm/client";
 import { getGhostMode, setGhostMode, clearFeedback, feedbackSummary, type GhostMode } from "./broker/personal/feedback";
+import { limparRitmo, resumoRitmo } from "./broker/writing";
 import type { Translation, ProviderChoice } from "./translate/controller";
 import type { Tone } from "./broker/writing";
 import type { AppSettings } from "./settings";
@@ -453,9 +454,11 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     }
     const pct = (n: number) => `${Math.round((100 * n) / Math.max(1, p.sentences))}%`;
     const ab = p.openers.slice(0, 3).map(([w, n]) => `“${w}” (${pct(n)})`).join(", ");
+    const rt = resumoRitmo();
     el.textContent =
       `Frases de ${Math.round(p.avgSentence)} palavras em média (90% até ${p.p90}); ${p.commasPer100.toFixed(1).replace(".", ",")} vírgulas a cada 100 palavras; palavras de ${p.avgWordLen.toFixed(1).replace(".", ",")} letras. Costuma abrir frases com ${ab}.` +
-      (fb.decisions >= 30 ? ` Você aceita ${Math.round(fb.acceptNext * 100)}% das sugestões de próxima palavra e ${Math.round(fb.acceptPrefix * 100)}% das de completar palavra.` : "");
+      (fb.decisions >= 30 ? ` Você aceita ${Math.round(fb.acceptNext * 100)}% das sugestões de próxima palavra e ${Math.round(fb.acceptPrefix * 100)}% das de completar palavra.` : "") +
+      (rt.decisoes >= 5 ? ` A correção automática espera ~${(rt.pausa / 1000).toFixed(1).replace(".", ",")} s de pausa para agir (aprende com os seus desfazer).` : "");
   };
   paintStyle();
   const modeSel = q<HTMLSelectElement>("[data-sel=ghostmode]");
@@ -468,8 +471,9 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   on('[data-act="forget-ghost"]', "click", () => {
     clearGhostMemory();
     clearFeedback();
+    limparRitmo();
     paintStyle();
-    toast("As sugestões esqueceram o que aprenderam dos seus documentos.", "ok", 2600);
+    toast("As sugestões e a correção automática esqueceram o que aprenderam.", "ok", 2600);
   });
   on('[data-act="dict"]', "click", () => {
     ctx.openDictionary();
