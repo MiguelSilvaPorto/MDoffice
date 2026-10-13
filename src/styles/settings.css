@@ -646,6 +646,22 @@ label.st-row:has(.st-switch:checked) .st-row-ic {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
+/* Dropdown do app no lugar do <select> nativo: a lista do sistema não segue o tema.
+   O visual do botão é o do .st-select; aqui só o comportamento de botão. */
+button.st-dd {
+  display: inline-flex;
+  align-items: center;
+  max-width: 230px;
+  cursor: pointer;
+  text-align: left;
+}
+
+button.st-dd [data-dd-txt] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ---------- botões das linhas ---------- */
 
 .st-btns {

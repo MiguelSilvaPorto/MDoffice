@@ -42,6 +42,8 @@ export interface SettingsCtx {
   /** Ícone da janela escolhido (claro/escuro). */
   appIcon: () => AppIcon;
   setAppIcon: (v: AppIcon) => void;
+  /** Abre o menu suspenso do app (o mesmo do ⋯) ancorado no elemento. */
+  menu: (ancora: HTMLElement, opcoes: { rotulo: string; ativo?: boolean; escolher: () => void }[]) => void;
 }
 
 const NAV: { id: SettingsSection; label: string; desc: string; icon: string }[] = [
@@ -116,6 +118,16 @@ function toggle(id: string, label: string, desc: string, on: boolean, icon: stri
   </label>`;
 }
 
+/**
+ * Botão que abre o menu do app no lugar de um `<select>` nativo: a lista do
+ * `<select>` é desenhada pelo sistema (cinza claro) e não segue o tema.
+ * `opcoes` = [valor, rótulo]; `atual` marca a escolhida no menu.
+ */
+function dd(chave: string, opcoes: [string, string][], atual: string): string {
+  const rotulo = opcoes.find((o) => o[0] === atual)?.[1] ?? opcoes[0]?.[1] ?? "";
+  return `<button type="button" class="st-select st-dd" data-dd="${chave}" data-valor="${atual}" aria-haspopup="menu"><span data-dd-txt>${rotulo}</span></button>`;
+}
+
 export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section: SettingsSection = "escrita"): void {
   const s = ctx.settings();
   const tr = ctx.translation.settings;
@@ -157,11 +169,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
             <div class="st-row">
               ${rowIcon("i-focus")}
               <span class="st-text"><b>Intensidade das sugestões</b><small>Só aparece quando poupa digitação de verdade. Discreta: 4+ letras e só com muita certeza. Equilibrada: 3+ letras. Agressiva: 2+ letras, aparece mais e erra mais.</small></span>
-              <select class="st-select" data-sel="ghostmode">
-                <option value="discreto">Discreta</option>
-                <option value="equilibrado">Equilibrada</option>
-                <option value="agressivo">Agressiva</option>
-              </select>
+              ${dd("ghostmode", [["discreto", "Discreta"], ["equilibrado", "Equilibrada"], ["agressivo", "Agressiva"]], getGhostMode())}
             </div>
           </div>
 
@@ -257,7 +265,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
             <div class="st-row">
               ${rowIcon("i-list")}
               <span class="st-text"><b>Versões por documento</b><small>As marcadas por você (★) nunca são apagadas sozinhas.</small></span>
-              <select data-k="hist-max" class="st-select">${[20, 40, 60, 100, 200].map((n) => `<option value="${n}" ${s.historyMax === n ? "selected" : ""}>${n} versões</option>`).join("")}</select>
+              ${dd("hist-max", [20, 40, 60, 100, 200].map((n) => [String(n), `${n} versões`] as [string, string]), String(s.historyMax))}
             </div>
             ${toggle("commits", "Guardar o log de alterações", "Guarda só a instrução de cada mudança (o que saiu e o que entrou), não o arquivo inteiro. Dá para voltar a qualquer ponto pela aba Alterações do histórico.", s.commitsOn, "i-code")}
             <div class="st-row">
@@ -286,20 +294,18 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
             <div class="st-row">
               ${rowIcon("i-trash")}
               <span class="st-text"><b>Política de limpeza</b><small>Quanto cada documento guarda antes de as cópias mais antigas saírem. As marcadas à mão nunca saem.</small></span>
-              <select data-k="backup-profile" class="st-select">
-                ${backup.PERFIS.map((p) => `<option value="${p.id}" ${s.backupProfile === p.id ? "selected" : ""}>${p.nome}</option>`).join("")}
-              </select>
+              ${dd("backup-profile", backup.PERFIS.map((p) => [p.id, p.nome] as [string, string]), s.backupProfile)}
             </div>
             <p class="st-list-note" data-backup-profile-desc></p>
             <div class="st-row" data-backup-custom ${s.backupProfile === "personalizado" ? "" : "hidden"}>
               ${rowIcon("i-copy")}
               <span class="st-text"><b>Cópias por documento</b><small>0 = guardar quantas existirem, sem limite de quantidade.</small></span>
-              <select data-k="backup-copies" class="st-select">${[10, 20, 50, 100, 200, 500, 0].map((n) => `<option value="${n}" ${s.backupCopies === n ? "selected" : ""}>${n === 0 ? "sem limite" : `${n} cópias`}</option>`).join("")}</select>
+              ${dd("backup-copies", [10, 20, 50, 100, 200, 500, 0].map((n) => [String(n), n === 0 ? "sem limite" : `${n} cópias`] as [string, string]), String(s.backupCopies))}
             </div>
             <div class="st-row" data-backup-custom2 ${s.backupProfile === "personalizado" ? "" : "hidden"}>
               ${rowIcon("i-clock")}
               <span class="st-text"><b>Prazo</b><small>0 = não apagar por tempo (só pela quantidade acima).</small></span>
-              <select data-k="backup-days" class="st-select">${[7, 30, 90, 365, 0].map((n) => `<option value="${n}" ${s.backupDays === n ? "selected" : ""}>${n === 0 ? "sem prazo" : n === 365 ? "1 ano" : `${n} dias`}</option>`).join("")}</select>
+              ${dd("backup-days", [7, 30, 90, 365, 0].map((n) => [String(n), n === 0 ? "sem prazo" : n === 365 ? "1 ano" : `${n} dias`] as [string, string]), String(s.backupDays))}
             </div>
             <div class="st-row">
               ${rowIcon("i-grid")}
@@ -346,10 +352,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
             <div class="st-row">
               ${rowIcon("i-draw")}
               <span class="st-text"><b>Estilo do desenho</b><small>Imagem guarda um PNG em assets/. Letras vira texto no próprio Markdown (ótimo para a IA).</small></span>
-              <select data-k="draw" class="st-select">
-                <option value="image" ${ctx.drawStyle() === "image" ? "selected" : ""}>Imagem (PNG)</option>
-                <option value="text" ${ctx.drawStyle() === "text" ? "selected" : ""}>Letras e símbolos</option>
-              </select>
+              ${dd("draw", [["image", "Imagem (PNG)"], ["text", "Letras e símbolos"]], ctx.drawStyle())}
             </div>
           </div>
 
@@ -396,6 +399,27 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   };
   const on = (sel: string, ev: string, fn: (e: Event) => void) => q(sel).addEventListener(ev, fn);
   const sw = (key: string) => q<HTMLInputElement>(`[data-k="${key}"]`);
+
+  /** Liga um dropdown `dd()`: clicar abre o menu do app e a escolha atualiza o botão. */
+  const ligarDd = (chave: string, opcoes: [string, string][], aoEscolher: (valor: string) => void): void => {
+    const btn = q<HTMLButtonElement>(`[data-dd="${chave}"]`);
+    btn.addEventListener("click", () => {
+      const atual = btn.dataset.valor ?? "";
+      ctx.menu(
+        btn,
+        opcoes.map(([valor, rotulo]) => ({
+          rotulo,
+          ativo: valor === atual,
+          escolher: () => {
+            btn.dataset.valor = valor;
+            const txt = btn.querySelector<HTMLElement>("[data-dd-txt]");
+            if (txt) txt.textContent = rotulo;
+            aoEscolher(valor);
+          },
+        }))
+      );
+    });
+  };
 
   // As seções são ABAS: só uma fica à vista por vez. Antes elas ficavam todas
   // empilhadas na mesma página e a navegação lateral apenas rolava até a seção —
@@ -486,10 +510,8 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       (rt.decisoes >= 5 ? ` A correção automática espera ~${(rt.pausa / 1000).toFixed(1).replace(".", ",")} s de pausa para agir (aprende com os seus desfazer).` : "");
   };
   paintStyle();
-  const modeSel = q<HTMLSelectElement>("[data-sel=ghostmode]");
-  modeSel.value = getGhostMode();
-  modeSel.addEventListener("change", () => {
-    setGhostMode(modeSel.value as GhostMode);
+  ligarDd("ghostmode", [["discreto", "Discreta"], ["equilibrado", "Equilibrada"], ["agressivo", "Agressiva"]], (valor) => {
+    setGhostMode(valor as GhostMode);
     flash();
   });
   paintDict();
@@ -591,8 +613,8 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     ctx.patch({ historyOn: (e.target as HTMLInputElement).checked });
     flash();
   });
-  sw("hist-max").addEventListener("change", (e) => {
-    ctx.patch({ historyMax: Number((e.target as HTMLSelectElement).value) || 60 });
+  ligarDd("hist-max", [20, 40, 60, 100, 200].map((n) => [String(n), `${n} versões`] as [string, string]), (valor) => {
+    ctx.patch({ historyMax: Number(valor) || 60 });
     flash();
   });
   const paintHist = () =>
@@ -636,18 +658,17 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     ctx.patch({ backupWarnMissing: (e.target as HTMLInputElement).checked });
     flash();
   });
-  sw("backup-profile").addEventListener("change", (e) => {
-    const valor = (e.target as HTMLSelectElement).value as AppSettings["backupProfile"];
-    ctx.patch({ backupProfile: valor });
+  ligarDd("backup-profile", backup.PERFIS.map((p) => [p.id, p.nome] as [string, string]), (valor) => {
+    ctx.patch({ backupProfile: valor as AppSettings["backupProfile"] });
     paintBackupProfile();
     flash();
   });
-  sw("backup-copies").addEventListener("change", (e) => {
-    ctx.patch({ backupCopies: Number((e.target as HTMLSelectElement).value) || 0 });
+  ligarDd("backup-copies", [10, 20, 50, 100, 200, 500, 0].map((n) => [String(n), n === 0 ? "sem limite" : `${n} cópias`] as [string, string]), (valor) => {
+    ctx.patch({ backupCopies: Number(valor) || 0 });
     flash();
   });
-  sw("backup-days").addEventListener("change", (e) => {
-    ctx.patch({ backupDays: Number((e.target as HTMLSelectElement).value) || 0 });
+  ligarDd("backup-days", [7, 30, 90, 365, 0].map((n) => [String(n), n === 0 ? "sem prazo" : n === 365 ? "1 ano" : `${n} dias`] as [string, string]), (valor) => {
+    ctx.patch({ backupDays: Number(valor) || 0 });
     flash();
   });
   on('[data-act="backup-dir"]', "click", async () => {
@@ -699,8 +720,8 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     ctx.toggleFlag("no-preview");
     flash();
   });
-  sw("draw").addEventListener("change", (e) => {
-    ctx.setDrawStyle((e.target as HTMLSelectElement).value === "text" ? "text" : "image");
+  ligarDd("draw", [["image", "Imagem (PNG)"], ["text", "Letras e símbolos"]], (valor) => {
+    ctx.setDrawStyle(valor === "text" ? "text" : "image");
     flash();
   });
   host.querySelectorAll<HTMLInputElement>('input[name="appicon"]').forEach((r) =>

@@ -239,6 +239,9 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Nome unificado em mdOffice**: textos e títulos de janela, metadados gravados em
   `.docx`/`.xlsx`/`.pptx`, nome do pacote (`mdoffice`) e as centenas de referências ao antigo
   "mdCreator" na documentação.
+- **Configurações**: os seis `<select>` (intensidade das sugestões, versões por documento,
+  política de backup, cópias, prazo e estilo do desenho) viraram **dropdowns do app** — a lista
+  nativa do sistema (cinza claro) não seguia o tema.
 - **Tela de Início** com os quatro formatos (Word, Excel, MD, PowerPoint) e botão lateral fixo.
 - **Painel de projetos**: árvore de pastas com `.md` em cartões (contagem de documentos/pastas,
   esqueleto ao carregar, busca com o termo destacado), animações de abrir/fechar e indicador de

@@ -667,6 +667,33 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   marcado, as prévias fixas dos dois temas, o interruptor antigo fora da página e a ligação que
   grava o tema (`ctx.setDark`).
 
+## src/settingsPage.ts
+
+### 2026-10-13 · este commit · dropdowns do app no lugar dos `<select>`
+- **Local:** novos `dd()` (markup) e `ligarDd()` (ligação), e os seis campos que eram `<select>`
+  (intensidade das sugestões, versões, política de backup, cópias, prazo e estilo do desenho)
+- **Linha:** `<select class="st-select">` → `<button class="st-select st-dd" data-dd data-valor>`;
+  handlers `change` → `ligarDd(chave, opcoes, aoEscolher)`
+- **Porquê:** a lista aberta do `<select>` é desenhada pelo sistema (cinza claro) e não segue o
+  tema; o menu do app (mesmo do ⋯) fica igual nos temas claro e escuro e marca a opção atual.
+
+## src/app/pages.ts
+
+### 2026-10-13 · este commit · `menu` no contexto das Configurações
+- **Local:** `settingsContext()`
+- **Linha:** novo `menu: (ancora, opcoes) => this.openMenu(...)` com `ddItem`
+- **Porquê:** a página de Configurações é um módulo à parte; passando o menu pelo contexto, ela
+  reusa o componente do app em vez de reimplementar um dropdown.
+
+## src/styles/settings.css
+
+### 2026-10-13 · este commit · botão do dropdown
+- **Local:** `button.st-dd` e `button.st-dd [data-dd-txt]`
+- **Linha:** novas regras (cursor, largura máxima e reticências no rótulo); o visual vem do
+  `.st-select`
+- **Porquê:** o botão precisa se comportar como botão (clique, foco, truncar rótulo longo) sem
+  perder o desenho do seletor do app.
+
 ---
 
 ## Próximos registros
