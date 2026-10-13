@@ -13,6 +13,7 @@ import { limparRitmo, resumoRitmo } from "./broker/writing";
 import type { Translation, ProviderChoice } from "./translate/controller";
 import type { Tone } from "./broker/writing";
 import type { AppSettings } from "./settings";
+import type { AppIcon } from "./app/appIcon";
 
 
 export type SettingsSection = "escrita" | "traducao" | "historico" | "aparencia" | "atalhos";
@@ -38,6 +39,9 @@ export interface SettingsCtx {
   openHistory: () => void;
   /** Conserta blocos de alinhamento quebrados no Markdown (ferramenta de manutenção). */
   repairAlignments: () => void;
+  /** Ícone da janela escolhido (claro/escuro). */
+  appIcon: () => AppIcon;
+  setAppIcon: (v: AppIcon) => void;
 }
 
 const NAV: { id: SettingsSection; label: string; desc: string; icon: string }[] = [
@@ -334,6 +338,13 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
               </select>
             </div>
           </div>
+
+          <h4 class="st-group">Ícone do app</h4>
+          <div class="st-seg" role="radiogroup" aria-label="Ícone do app">
+            <label class="st-seg-item" title="Ícone de fundo claro"><input type="radio" name="appicon" value="claro" ${ctx.appIcon() === "claro" ? "checked" : ""}><img class="st-seg-icone" src="/icones/mdoffice-claro.png" alt=""><span>Claro</span></label>
+            <label class="st-seg-item" title="Ícone de fundo escuro"><input type="radio" name="appicon" value="escuro" ${ctx.appIcon() === "escuro" ? "checked" : ""}><img class="st-seg-icone" src="/icones/mdoffice-escuro.png" alt=""><span>Escuro</span></label>
+          </div>
+          <p class="st-note">Vale para a janela e a barra de tarefas. O ícone do .exe/instalador é fixo (claro).</p>
         </section>
 
         <section class="st-sec" data-sec="atalhos">
@@ -687,4 +698,11 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     ctx.setDrawStyle((e.target as HTMLSelectElement).value === "text" ? "text" : "image");
     flash();
   });
+  host.querySelectorAll<HTMLInputElement>('input[name="appicon"]').forEach((r) =>
+    r.addEventListener("change", () => {
+      if (!r.checked) return;
+      ctx.setAppIcon(r.value === "escuro" ? "escuro" : "claro");
+      flash();
+    })
+  );
 }

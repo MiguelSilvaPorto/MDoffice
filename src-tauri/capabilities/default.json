@@ -16,6 +16,7 @@
     "core:window:allow-is-maximized",
     "core:window:allow-close",
     "core:window:allow-start-dragging",
+    "core:window:allow-set-icon",
     "dialog:default",
     "dialog:allow-ask",
     "opener:default"

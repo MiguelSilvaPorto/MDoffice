@@ -20,7 +20,7 @@
     "test:pptx-edicao": "node scripts/testar-edicao-pptx.mjs",
     "preview": "vite preview",
     "tauri": "tauri",
-    "icon": "node scripts/gen-icon.mjs && tauri icon app-icon.png",
+    "icon": "tauri icon app-icon.png",
     "prep:dicionario": "node scripts/copiar-dicionario.mjs",
     "prep:modelo": "node scripts/baixar-modelo.mjs"
   },

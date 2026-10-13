@@ -193,15 +193,20 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Backend**
 
-- (nada no momento)
+- Tauri com o recurso **`image-png`** (decodifica o PNG do ícone) e a permissão
+  **`core:window:allow-set-icon`**, para o app trocar o ícone da janela em tempo de execução.
 
 **Frontend**
 
-- (nada no momento)
+- **Ícone do app escolhível** (Configurações ▸ Aparência): claro ou escuro, trocando na hora o
+  ícone da janela e da barra de tarefas; sem escolha ainda, segue o tema (claro no claro,
+  escuro no escuro).
 
 **Ferramentas (dev)**
 
-- (nada no momento)
+- **Ícones do build regerados** dos pacotes novos (`app-icon.png` do pacote claro e
+  `src-tauri/icons/*` via `npm run icon`); o script `icon` virou `tauri icon app-icon.png` e o
+  `gen-icon.mjs` (desenho antigo) foi removido.
 
 ### Adicionado (na main)
 

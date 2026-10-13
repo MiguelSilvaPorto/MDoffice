@@ -358,6 +358,15 @@ body.settings-open #preview-wrap {
   box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
+/* ícone de verdade dentro do controle segmentado (escolha do ícone do app) */
+.st-seg-icone {
+  width: 18px;
+  height: 18px;
+  margin-right: 7px;
+  border-radius: 4px;
+  flex: none;
+}
+
 .st-seg-desc {
   margin: 12px 0 0;
   padding: 10px 14px;

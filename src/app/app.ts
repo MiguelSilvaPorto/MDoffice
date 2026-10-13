@@ -31,6 +31,7 @@ import { wordDocsMethods } from "./wordDocs";
 import { powerpointDocsMethods } from "./powerpointDocs";
 import { excelDocsMethods } from "./excelDocs";
 import { assistantMethods } from "./assistant";
+import { aplicarIconeApp } from "./appIcon";
 import { dictionaryMethods } from "./dictionary";
 import { mdToolsMethods } from "./mdTools";
 import { historySearchMethods } from "./historySearch";
@@ -274,6 +275,7 @@ export class App {
     this.renderLinkedFolders();
     this.renderOutline();
     this.applyTheme(this.initialDark(), false);
+    void aplicarIconeApp(); // ícone da janela escolhido em Configurações > Aparência
     this.setupToolbar();
     this.setupWindowControls();
     this.setupSplitter();

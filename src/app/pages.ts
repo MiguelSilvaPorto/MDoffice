@@ -8,6 +8,7 @@ import { listVersions, clearHistory } from "../history";
 import { openPresentation } from "../powerpoint/presenter";
 import { renderSettingsPage, type SettingsSection } from "../settingsPage";
 import { renderHomePage } from "../homePage";
+import { appIconAtual, definirIconeApp } from "./appIcon";
 import { $, h, toast, loadJSON, saveJSON } from "../util";
 
 export const pagesMethods = {
@@ -87,6 +88,8 @@ export const pagesMethods = {
       },
       openHistory: () => void this.openHistory(),
       repairAlignments: () => this.repairAlignments(),
+      appIcon: () => appIconAtual(),
+      setAppIcon: (v) => definirIconeApp(v),
     };
   },
 
