@@ -4,6 +4,7 @@ use super::assets::copy_assets;
 use super::bundle::export_portable_bundle;
 use super::files::{rename_file, unique_md_path};
 use super::projects::scan_folder;
+use super::storage::soma_pasta;
 use super::trash::{limpar, mover, read_index};
 use std::fs;
 use std::io::Read;
@@ -260,4 +261,20 @@ fn lixeira_nao_sobrescreve_nem_aceita_o_que_ja_esta_na_pasta() {
     assert_eq!(lista[0].name, "igual.md");
     fs::remove_dir_all(&docs).expect("limpa documentos de teste");
     fs::remove_dir_all(&root).expect("limpa lixeira de teste");
+}
+
+#[test]
+fn soma_o_tamanho_de_uma_pasta_recursivamente() {
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("relógio válido")
+        .as_nanos();
+    let root = std::env::temp_dir().join(format!("mdoffice-storage-{nonce}"));
+    fs::create_dir_all(root.join("a/b")).expect("cria subpastas");
+    fs::write(root.join("a/um.bin"), vec![0u8; 10]).expect("cria arquivo");
+    fs::write(root.join("a/b/dois.bin"), vec![0u8; 25]).expect("cria arquivo aninhado");
+
+    assert_eq!(soma_pasta(&root), 35);
+    assert_eq!(soma_pasta(&root.join("nao-existe")), 0);
+    fs::remove_dir_all(&root).expect("limpa arquivos de teste");
 }

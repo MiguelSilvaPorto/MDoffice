@@ -5,6 +5,7 @@
 //! - `drafts`   rascunhos do app e pasta padrão de documentos
 //! - `projects` estrutura de pastas (contexto para IA) e lista de documentos
 //! - `search`   busca dentro dos documentos
+//! - `storage`  armazenamento: tamanhos no disco e limpeza do legado
 //! - `bundle`   pacote ZIP para IA
 //! - `trash`    lixeira: documento fora da pasta, guardado por 30 dias antes de sumir
 //! - `backup`   cópias datadas dos documentos em disco, proteção antes de sobrescrever
@@ -17,6 +18,7 @@ pub mod drafts;
 pub mod files;
 pub mod projects;
 pub mod search;
+pub mod storage;
 pub mod trash;
 mod util;
 

@@ -155,11 +155,18 @@ export async function renameFile(from: string, to: string): Promise<string> {
 export interface DraftInfo {
   path: string;
   modified_ms: number;
+  /** tamanho do arquivo em bytes */
+  bytes: number;
 }
 
 /** Lista os rascunhos que o app guardou (mais novo primeiro). */
 export async function listDrafts(): Promise<DraftInfo[]> {
   return await invoke<DraftInfo[]>("list_drafts");
+}
+
+/** Pasta dos rascunhos do app (para abrir no Explorador no painel de Armazenamento). */
+export async function draftsFolder(): Promise<string> {
+  return await invoke<string>("drafts_folder_path");
 }
 
 /** Caminho livre para um novo rascunho na pasta do app. */

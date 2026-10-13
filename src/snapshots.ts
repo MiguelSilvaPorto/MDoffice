@@ -357,6 +357,46 @@ export async function clearCommits(doc: string): Promise<void> {
   for (const c of await listCommits(doc)) if (c.id !== undefined) await removeCommit(c.id);
 }
 
+export interface LogResumo {
+  /** documentos com log guardado */
+  docs: number;
+  /** total de commits */
+  commits: number;
+  /** tamanho aproximado (patches e âncoras em UTF-16) */
+  bytes: number;
+}
+
+/** Resumo do log de alterações inteiro (para o painel de Armazenamento). */
+export async function resumoLog(): Promise<LogResumo> {
+  try {
+    const db = await open();
+    const all = (await wrap(db.transaction(STORE).objectStore(STORE).getAll())) as Commit[];
+    const docs = new Set<string>();
+    let bytes = 0;
+    for (const c of all) {
+      docs.add(c.doc);
+      for (const op of c.ops) bytes += ((op.prev?.length ?? 0) + (op.next?.length ?? 0)) * 2;
+      bytes += (c.text?.length ?? 0) * 2;
+    }
+    return { docs: docs.size, commits: all.length, bytes };
+  } catch {
+    return { docs: 0, commits: 0, bytes: 0 };
+  }
+}
+
+/** Apaga o log de alterações de TODOS os documentos. Devolve quantos commits saíram. */
+export async function limparLogTudo(): Promise<number> {
+  try {
+    const db = await open();
+    const store = db.transaction(STORE, "readwrite").objectStore(STORE);
+    const total = await wrap<number>(store.count());
+    await wrap(store.clear());
+    return total;
+  } catch {
+    return 0;
+  }
+}
+
 export async function removeCommit(id: number): Promise<void> {
   try {
     const db = await open();

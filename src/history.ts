@@ -114,6 +114,45 @@ export async function clearHistory(doc: string): Promise<void> {
   for (const v of await listVersions(doc)) if (v.id !== undefined) await removeVersion(v.id);
 }
 
+export interface VersoesResumo {
+  /** documentos com versões guardadas */
+  docs: number;
+  /** total de versões */
+  versoes: number;
+  /** tamanho aproximado (o texto é guardado como UTF-16) */
+  bytes: number;
+}
+
+/** Resumo do histórico inteiro (para o painel de Armazenamento). */
+export async function resumoVersoes(): Promise<VersoesResumo> {
+  try {
+    const db = await open();
+    const all = (await wrap(db.transaction(STORE).objectStore(STORE).getAll())) as Version[];
+    const docs = new Set<string>();
+    let bytes = 0;
+    for (const v of all) {
+      docs.add(v.doc);
+      bytes += (v.text?.length ?? 0) * 2;
+    }
+    return { docs: docs.size, versoes: all.length, bytes };
+  } catch {
+    return { docs: 0, versoes: 0, bytes: 0 };
+  }
+}
+
+/** Apaga as versões de TODOS os documentos. Devolve quantas foram apagadas. */
+export async function limparVersoesTudo(): Promise<number> {
+  try {
+    const db = await open();
+    const store = db.transaction(STORE, "readwrite").objectStore(STORE);
+    const total = await wrap<number>(store.count());
+    await wrap(store.clear());
+    return total;
+  } catch {
+    return 0;
+  }
+}
+
 /** O arquivo mudou de caminho (renomear / salvar como): leva o histórico junto. */
 export async function moveHistory(from: string, to: string): Promise<void> {
   if (key(from) === key(to)) return;

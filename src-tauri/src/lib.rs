@@ -69,6 +69,7 @@ pub fn run() {
             commands::assets::asset_update,
             commands::files::rename_file,
             commands::drafts::list_drafts,
+            commands::drafts::drafts_folder_path,
             commands::drafts::draft_path,
             commands::drafts::delete_draft,
             commands::assets::copy_assets,
@@ -96,6 +97,8 @@ pub fn run() {
             commands::backup::backup_save_history,
             commands::backup::backup_load_history,
             commands::backup::backup_clear_history,
+            commands::storage::storage_report,
+            commands::storage::storage_remove_legacy,
         ])
         .run(tauri::generate_context!())
         .expect("erro ao iniciar o mdOffice");

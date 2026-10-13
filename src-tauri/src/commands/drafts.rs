@@ -49,6 +49,8 @@ fn prune_drafts(dir: &Path) {
 pub struct DraftInfo {
     path: String,
     modified_ms: u64,
+    /// tamanho do arquivo em bytes (para o painel de Armazenamento)
+    bytes: u64,
 }
 
 /// Lista os rascunhos guardados pelo app (mais novo primeiro).
@@ -65,20 +67,29 @@ pub fn list_drafts(app: tauri::AppHandle) -> Result<Vec<DraftInfo>, String> {
         if path.extension().map(|e| e != "md" && e != "docx" && e != "pptx" && e != "xlsx").unwrap_or(true) {
             continue;
         }
-        let modified_ms = entry
-            .metadata()
-            .ok()
+        let meta = entry.metadata().ok();
+        let modified_ms = meta
+            .as_ref()
             .and_then(|m| m.modified().ok())
             .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
             .map(|d| d.as_millis() as u64)
             .unwrap_or(0);
+        let bytes = meta.as_ref().map(|m| m.len()).unwrap_or(0);
         items.push(DraftInfo {
             path: path.to_string_lossy().to_string(),
             modified_ms,
+            bytes,
         });
     }
     items.sort_by(|a, b| b.modified_ms.cmp(&a.modified_ms));
     Ok(items)
+}
+
+/// Caminho da pasta de rascunhos (para abrir no Explorador no painel de Armazenamento).
+#[tauri::command]
+pub fn drafts_folder_path(app: tauri::AppHandle) -> Result<String, String> {
+    let dir = drafts_folder(&app)?;
+    Ok(dir.to_string_lossy().to_string())
 }
 
 /// Caminho livre para um novo rascunho (nome vindo do título do documento).

@@ -1,8 +1,12 @@
 // Página de Configurações (abre como uma aba, ao lado dos documentos). Cada ajuste vale na hora.
 import { toast } from "./util";
 import * as backup from "./backup";
-import { pickFolders } from "./files";
+import { pickFolders, listDrafts, draftsFolder, deleteDraft } from "./files";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { ask } from "@tauri-apps/plugin-dialog";
+import { resumoVersoes, limparVersoesTudo } from "./history";
+import { resumoLog, limparLogTudo } from "./snapshots";
+import { relatorio as relatorioArmazenamento, removerLegado } from "./storage";
 import { clearGhostMemory } from "./broker/ghost/memory";
 import { limparAprendizado } from "./broker/aprendizado";
 import { profileSummary } from "./broker/personal/profile";
@@ -16,7 +20,7 @@ import type { AppSettings } from "./settings";
 import type { AppIcon } from "./app/appIcon";
 
 
-export type SettingsSection = "escrita" | "traducao" | "historico" | "aparencia" | "atalhos";
+export type SettingsSection = "escrita" | "traducao" | "historico" | "armazenamento" | "aparencia" | "atalhos";
 
 export interface SettingsCtx {
   settings: () => AppSettings;
@@ -50,6 +54,7 @@ const NAV: { id: SettingsSection; label: string; desc: string; icon: string }[] 
   { id: "escrita", label: "Escrita", desc: "Correção e sugestões", icon: "i-feather" },
   { id: "traducao", label: "Tradução", desc: "Inglês ao vivo e glossário", icon: "i-globe" },
   { id: "historico", label: "Histórico", desc: "Versões, backup e salvamento", icon: "i-clock" },
+  { id: "armazenamento", label: "Armazenamento", desc: "Espaço em disco e limpeza", icon: "i-folder" },
   { id: "aparencia", label: "Aparência", desc: "Tema e elementos da janela", icon: "i-eye" },
   { id: "atalhos", label: "Atalhos", desc: "Teclas rápidas do app", icon: "i-code" },
 ];
@@ -313,6 +318,72 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
               <span class="st-btns">
                 <button class="btn small st-btn" data-act="backup-prune">Limpar cópias antigas</button>
               </span>
+            </div>
+          </div>
+        </section>
+
+        <section class="st-sec" data-sec="armazenamento">
+          <header class="st-sec-head">
+            <span class="st-sec-ic"><svg class="ic"><use href="#i-folder"/></svg></span>
+            <div class="st-sec-txt">
+              <h3>Armazenamento</h3>
+              <p class="st-lead">Onde o espaço está indo e o que dá para limpar.</p>
+            </div>
+          </header>
+
+          <h4 class="st-group">Resumo</h4>
+          <div class="st-list">
+            <div class="st-row">
+              ${rowIcon("i-grid")}
+              <span class="st-text"><b>Total no disco</b><small data-arm-total>calculando…</small></span>
+            </div>
+            <div class="st-arm-barra" data-arm-barra></div>
+            <div class="st-arm-legenda" data-arm-legenda></div>
+          </div>
+
+          <h4 class="st-group">O que ocupa</h4>
+          <div class="st-list">
+            <div class="st-row">
+              ${rowIcon("i-clock")}
+              <span class="st-text"><b>Versões guardadas</b><small data-arm-vers>calculando…</small></span>
+              <span class="st-btns"><button class="btn small st-btn" data-act="arm-clear-vers">Limpar versões</button></span>
+            </div>
+            <div class="st-row">
+              ${rowIcon("i-code")}
+              <span class="st-text"><b>Log de alterações</b><small data-arm-log>calculando…</small></span>
+              <span class="st-btns"><button class="btn small st-btn" data-act="arm-clear-log">Limpar log</button></span>
+            </div>
+            <div class="st-row">
+              ${rowIcon("i-folder")}
+              <span class="st-text"><b>Backup em disco</b><small data-arm-backup>calculando…</small></span>
+              <span class="st-btns">
+                <button class="btn small st-btn" data-act="arm-open-backup">Abrir pasta</button>
+                <button class="btn small st-btn" data-act="arm-prune-backup">Limpar antigas</button>
+              </span>
+            </div>
+            <div class="st-row">
+              ${rowIcon("i-save")}
+              <span class="st-text"><b>Rascunhos</b><small data-arm-drafts>calculando…</small></span>
+              <span class="st-btns">
+                <button class="btn small st-btn" data-act="arm-open-drafts">Abrir pasta</button>
+                <button class="btn small st-btn" data-act="arm-clear-drafts">Apagar</button>
+              </span>
+            </div>
+            <div class="st-row">
+              ${rowIcon("i-cloud")}
+              <span class="st-text"><b>Outros dados do app</b><small data-arm-other>calculando…</small></span>
+              <span class="st-btns"><button class="btn small st-btn" data-act="arm-open-data">Abrir pasta</button></span>
+            </div>
+          </div>
+
+          <div data-arm-legacy hidden>
+            <h4 class="st-group">Da versão anterior</h4>
+            <div class="st-list">
+              <div class="st-row">
+                ${rowIcon("i-trash")}
+                <span class="st-text"><b>Dados do mdCreator</b><small data-arm-legacy-txt>calculando…</small></span>
+                <span class="st-btns"><button class="btn small st-btn danger" data-act="arm-remove-legacy">Remover…</button></span>
+              </div>
             </div>
           </div>
         </section>
@@ -701,6 +772,134 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       paintBackupSize();
     } catch (e) {
       toast("Não foi possível limpar: " + e, "err", 5000);
+    }
+  });
+
+  // armazenamento
+  const bytes = (n: number) => backup.tamanhoLegivel(n);
+  const setTxt = (sel: string, txt: string) => {
+    const el = host.querySelector<HTMLElement>(sel);
+    if (el) el.textContent = txt;
+  };
+  const paintArmazenamento = () => {
+    void (async () => {
+      const [vers, log, idx, drafts, rep] = await Promise.all([
+        resumoVersoes(),
+        resumoLog(),
+        backup.indice().catch(() => ({ roots: [], files: [], copies: 0, bytes: 0 })),
+        listDrafts().catch(() => []),
+        relatorioArmazenamento().catch(() => null),
+      ]);
+      const rascunhosBytes = drafts.reduce((a, d) => a + (d.bytes ?? 0), 0);
+      setTxt("[data-arm-vers]", vers.versoes ? `${vers.versoes} versão(ões) em ${vers.docs} documento(s) — ≈ ${bytes(vers.bytes)}` : "Nenhuma versão guardada.");
+      setTxt("[data-arm-log]", log.commits ? `${log.commits} alteração(ões) em ${log.docs} documento(s) — ≈ ${bytes(log.bytes)}` : "Nenhuma alteração guardada.");
+      setTxt("[data-arm-backup]", idx.copies ? `${idx.copies} cópia(s) de ${idx.files.length} documento(s) — ${bytes(idx.bytes)}` : "Nenhuma cópia ainda.");
+      setTxt("[data-arm-drafts]", drafts.length ? `${drafts.length} rascunho(s) — ${bytes(rascunhosBytes)}` : "Nenhum rascunho.");
+      const dataBytes = rep?.data_bytes ?? 0;
+      const outros = Math.max(0, dataBytes - vers.bytes - log.bytes - idx.bytes - rascunhosBytes);
+      setTxt("[data-arm-other]", rep ? `${bytes(outros)} — cache do WebView e preferências (se recria sozinho)` : "indisponível fora do app.");
+      const total = dataBytes + (rep?.legacy_bytes ?? 0);
+      setTxt(
+        "[data-arm-total]",
+        rep ? `${bytes(total)} — dados do app ${bytes(dataBytes)}${rep.legacy_dir ? ` + versão anterior ${bytes(rep.legacy_bytes)}` : ""}` : "indisponível fora do app."
+      );
+      const bloco = host.querySelector<HTMLElement>("[data-arm-legacy]");
+      if (bloco) {
+        bloco.hidden = !(rep?.legacy_dir && rep.legacy_bytes > 0);
+        if (!bloco.hidden) setTxt("[data-arm-legacy-txt]", `${bytes(rep!.legacy_bytes)} em ${rep!.legacy_dir} — a migração já copiou o que importava`);
+      }
+      const partes = [
+        { nome: "Versões", bytes: vers.bytes, cor: "var(--accent)" },
+        { nome: "Log", bytes: log.bytes, cor: "color-mix(in srgb, var(--accent) 55%, transparent)" },
+        { nome: "Backup", bytes: idx.bytes, cor: "var(--fi-ppt, #d24a17)" },
+        { nome: "Rascunhos", bytes: rascunhosBytes, cor: "#f59e0b" },
+        { nome: "Outros", bytes: outros, cor: "var(--muted)" },
+      ].filter((p) => p.bytes > 0);
+      const soma = partes.reduce((a, p) => a + p.bytes, 0) || 1;
+      const barra = host.querySelector<HTMLElement>("[data-arm-barra]");
+      if (barra) barra.innerHTML = partes.map((p) => `<span style="width:${(100 * p.bytes) / soma}%;background:${p.cor}" title="${p.nome}: ${bytes(p.bytes)}"></span>`).join("");
+      const legenda = host.querySelector<HTMLElement>("[data-arm-legenda]");
+      if (legenda) legenda.innerHTML = partes.map((p) => `<span><i style="background:${p.cor}"></i>${p.nome} · ${bytes(p.bytes)}</span>`).join("");
+    })();
+  };
+  paintArmazenamento();
+  on('[data-act="arm-clear-vers"]', "click", async () => {
+    if (!(await ask("Apagar TODAS as versões guardadas de todos os documentos? O texto atual não muda.", { title: "Limpar versões", kind: "warning" }))) return;
+    const n = await limparVersoesTudo();
+    toast(n ? `${n} versão(ões) apagada(s).` : "Não havia versões guardadas.", "ok", 3200);
+    paintArmazenamento();
+  });
+  on('[data-act="arm-clear-log"]', "click", async () => {
+    if (!(await ask("Apagar o log de alterações de todos os documentos? A aba Alterações do histórico fica vazia.", { title: "Limpar log", kind: "warning" }))) return;
+    const n = await limparLogTudo();
+    toast(n ? `${n} alteração(ões) apagada(s).` : "Não havia alterações guardadas.", "ok", 3200);
+    paintArmazenamento();
+  });
+  on('[data-act="arm-open-backup"]', "click", async () => {
+    try {
+      await revealItemInDir(await backup.pastaDoApp());
+    } catch {
+      toast("Não foi possível abrir a pasta.", "err", 4000);
+    }
+  });
+  on('[data-act="arm-prune-backup"]', "click", async () => {
+    const atual = ctx.settings();
+    const numeros = backup.numerosDoPerfil(atual.backupProfile, atual.backupCopies, atual.backupDays);
+    try {
+      const n = await backup.limpar(numeros.copias, numeros.dias);
+      toast(n ? `${n} cópia(s) antiga(s) apagada(s).` : "Nada a apagar com a política atual.", "ok", 3200);
+      paintBackupSize();
+      paintArmazenamento();
+    } catch (e) {
+      toast("Não foi possível limpar: " + e, "err", 5000);
+    }
+  });
+  on('[data-act="arm-open-drafts"]', "click", async () => {
+    try {
+      await revealItemInDir(await draftsFolder());
+    } catch {
+      toast("Não foi possível abrir a pasta.", "err", 4000);
+    }
+  });
+  on('[data-act="arm-clear-drafts"]', "click", async () => {
+    const lista = await listDrafts().catch(() => []);
+    if (!lista.length) {
+      toast("Nenhum rascunho para apagar.", "info", 2600);
+      return;
+    }
+    if (!(await ask(`Apagar ${lista.length} rascunho(s) do app? Documentos já salvos em pasta não são afetados.`, { title: "Apagar rascunhos", kind: "warning" }))) return;
+    for (const d of lista) {
+      try {
+        await deleteDraft(d.path);
+      } catch {
+        /* segue nos outros */
+      }
+    }
+    toast(`${lista.length} rascunho(s) apagado(s).`, "ok", 3000);
+    paintArmazenamento();
+  });
+  on('[data-act="arm-open-data"]', "click", async () => {
+    try {
+      const r = await relatorioArmazenamento();
+      await revealItemInDir(r.data_dir);
+    } catch {
+      toast("Não foi possível abrir a pasta.", "err", 4000);
+    }
+  });
+  on('[data-act="arm-remove-legacy"]', "click", async () => {
+    const r = await relatorioArmazenamento().catch(() => null);
+    if (!r?.legacy_dir) return;
+    const confirmado = await ask(
+      `Remover a pasta da versão anterior (${bytes(r.legacy_bytes)})?\n\n${r.legacy_dir}\n\nA migração já copiou rascunhos, backups e preferências para a pasta nova; isto só libera o espaço que ficou para trás.`,
+      { title: "Remover dados antigos", kind: "warning" }
+    );
+    if (!confirmado) return;
+    try {
+      const liberado = await removerLegado();
+      toast(liberado ? `Pasta antiga removida: ${bytes(liberado)} liberados.` : "Nada para remover.", "ok", 4200);
+      paintArmazenamento();
+    } catch (e) {
+      toast(String(e), "err", 6000);
     }
   });
 

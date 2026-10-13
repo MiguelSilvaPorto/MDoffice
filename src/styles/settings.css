@@ -806,6 +806,45 @@ button.st-dd [data-dd-txt] {
   white-space: nowrap;
 }
 
+/* ---------- armazenamento: barra proporcional e legenda ---------- */
+
+.st-arm-barra {
+  display: flex;
+  gap: 2px;
+  height: 12px;
+  margin: 2px 0 6px;
+  padding: 0 8px;
+}
+
+.st-arm-barra span {
+  display: block;
+  min-width: 3px;
+  border-radius: 4px;
+  transition: width 0.2s ease;
+}
+
+.st-arm-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 0 8px 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.st-arm-legenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.st-arm-legenda i {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  flex: none;
+}
+
 /* ---------- telas estreitas ---------- */
 
 @media (max-width: 1020px) {
