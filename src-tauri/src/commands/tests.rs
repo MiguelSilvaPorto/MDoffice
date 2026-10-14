@@ -3,40 +3,12 @@
 use super::assets::copy_assets;
 use super::bundle::export_portable_bundle;
 use super::files::{gravar_bytes, rename_file, unique_md_path};
-use super::projects::scan_folder;
 use super::storage::soma_pasta;
 use super::trash::{limpar, mover, read_index};
 use std::fs;
 use std::io::Read;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
-
-#[test]
-fn inspeciona_arvore_sem_entrar_em_pastas_de_dependencias() {
-    let nonce = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("relógio válido")
-        .as_nanos();
-    let root = std::env::temp_dir().join(format!("mdoffice-tree-{nonce}"));
-    fs::create_dir_all(root.join("src/components")).expect("cria subpastas");
-    fs::create_dir_all(root.join("node_modules/pacote")).expect("cria pasta ignorada");
-    fs::write(root.join("src/main.rs"), "// teste").expect("cria arquivo");
-    fs::write(root.join("src/components/editor.ts"), "// teste")
-        .expect("cria arquivo aninhado");
-    fs::write(root.join("README.md"), "# teste").expect("cria readme");
-    fs::write(root.join("node_modules/pacote/index.js"), "// ignorado")
-        .expect("cria dependência");
-
-    let snap = scan_folder(&root).expect("estrutura deve ser lida");
-    let paths: Vec<_> = snap.entries.iter().map(|e| e.relative.as_str()).collect();
-    assert!(paths.contains(&"src"));
-    assert!(paths.contains(&"src/main.rs"));
-    assert!(paths.contains(&"src/components"));
-    assert!(paths.contains(&"src/components/editor.ts"));
-    assert!(paths.contains(&"README.md"));
-    assert!(!paths.iter().any(|p| p.contains("node_modules")));
-    fs::remove_dir_all(&root).expect("limpa arquivos de teste");
-}
 
 #[test]
 fn copia_assets_ao_sair_do_rascunho_sem_sobrescrever() {

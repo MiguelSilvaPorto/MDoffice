@@ -86,7 +86,7 @@ export const commandsMethods = {
     this.translation.setView(view);
   },
 
-  openSidePanel(this: App, panel: "projects" | "outline" | "context"): void {
+  openSidePanel(this: App, panel: "projects" | "outline"): void {
     document.body.classList.remove("no-sidebar");
     this.sidebar.show(panel);
   },

@@ -23,7 +23,7 @@ import * as backup from "../backup";
 const pickFoldersNative = () => files.pickFolders();
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { $, toast, debounce, copyText, loadJSON, toBase64Utf8, h, saveJSON } from "../util";
-import { type Recent, type LinkedFolder } from "./types";
+import { type Recent } from "./types";
 import { tabsMethods } from "./tabs";
 import { pagesMethods } from "./pages";
 import { homeContextMethods } from "./homeContext";
@@ -96,7 +96,6 @@ export class App {
   missingBackups: backup.BackupEntry[] = [];
   switching = false;
   recents: Recent[] = [];
-  linkedFolders: LinkedFolder[] = [];
   ignoreWords = new Set<string>(loadJSON<string[]>("mdc.ignore-words", []));
 
   // O documento "atual" é o da aba ativa: estes atalhos evitam repetir `this.tab.` por todo lado.
@@ -216,7 +215,6 @@ export class App {
     });
 
     this.recents = loadJSON<Recent[]>("mdc.recents", []);
-    this.linkedFolders = loadJSON<LinkedFolder[]>("mdc.linked-folders", []);
     this.sidebar = new Sidebar({
       openPath: (p) => void this.openPath(p),
       activateTab: (id) => void this.switchTo(id),
@@ -289,11 +287,9 @@ export class App {
     });
     $("#ol-collapse").addEventListener("click", () => this.outline.collapseAll(true));
     $("#ol-expand").addEventListener("click", () => this.outline.collapseAll(false));
-    $("#ctx-add").addEventListener("click", () => void this.chooseFolders());
     if (loadJSON<boolean>("mdc.no-sidebar", false)) document.body.classList.add("no-sidebar");
     if (loadJSON<boolean>("mdc.no-preview", false)) document.body.classList.add("no-preview");
 
-    this.renderLinkedFolders();
     this.renderOutline();
     this.applyTheme(this.initialDark(), false);
     this.applyAnimacao(this.initialAnimacao());

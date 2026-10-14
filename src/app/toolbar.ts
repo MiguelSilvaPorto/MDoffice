@@ -154,11 +154,6 @@ export const toolbarMethods = {
     this.ddItem(menu, { icon: "i-export", label: "Exportar…", hint: teclaVisivel("exportar"), onPick: () => this.openExport() });
     this.ddItem(menu, { icon: "i-zip", label: "Pacote para IA (.zip)", hint: "tudo junto", onPick: () => this.openExport("zip") });
     this.ddSep(menu);
-    this.ddItem(menu, { icon: "i-folder", label: "Vincular pastas (contexto)…", onPick: () => void this.chooseFolders() });
-    for (const folder of this.linkedFolders.slice(-3).reverse()) {
-      this.ddItem(menu, { label: folder.name, hint: folder.path, onPick: () => void this.showFolderContext([folder.path]) });
-    }
-    this.ddSep(menu);
     this.ddItem(menu, { icon: "i-spark", label: "Configurações", hint: `tom ${this.settings.tone}`, onPick: () => this.showSettings() });
     this.ddItem(menu, { icon: "i-check", label: "Revisar texto", hint: teclaVisivel("revisar"), onPick: () => this.openReview() });
     this.ddItem(menu, { icon: "i-eye", label: "Apresentar (slides)", hint: `F5 · ${deckSummary(this.editor.getText())}`, onPick: () => this.openSlides() });
@@ -220,9 +215,6 @@ export const toolbarMethods = {
             break;
           case "welcome":
             this.showWelcome();
-            break;
-          case "folders":
-            void this.chooseFolders();
             break;
           case "export-html":
             this.openExport("html");

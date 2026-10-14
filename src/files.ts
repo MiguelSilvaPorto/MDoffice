@@ -89,22 +89,6 @@ export async function pickFolders(): Promise<string[]> {
   return Array.isArray(p) ? p.filter((x): x is string => typeof x === "string") : [];
 }
 
-export interface FolderEntry {
-  name: string;
-  relative: string;
-  directory: boolean;
-}
-
-export interface FolderSnapshot {
-  root: string;
-  entries: FolderEntry[];
-  truncated: boolean;
-}
-
-export async function inspectFolders(paths: string[]): Promise<FolderSnapshot[]> {
-  return await invoke<FolderSnapshot[]>("inspect_folders", { paths });
-}
-
 export async function exportPortableBundle(docPath: string, content: string, outputPath: string): Promise<number> {
   return await invoke<number>("export_portable_bundle", { docPath, content, outputPath });
 }

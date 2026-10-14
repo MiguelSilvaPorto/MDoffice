@@ -65,7 +65,6 @@ pub fn run() {
             commands::files::read_file_data_url,
             commands::drafts::default_docs_dir,
             commands::files::unique_md_path,
-            commands::projects::inspect_folders,
             commands::assets::asset_update,
             commands::files::rename_file,
             commands::drafts::list_drafts,

@@ -662,13 +662,12 @@ mark.pj-mark {
   font-size: 11px;
 }
 
-/* estrutura e pastas de contexto dentro do painel novo */
+/* estrutura do documento dentro do painel novo */
 #sp-outline .outline-item {
   color: var(--sb-fg);
 }
 
-#sp-outline .outline-item:hover,
-#sp-context .recent:hover {
+#sp-outline .outline-item:hover {
   background: var(--sb-hover);
 }
 

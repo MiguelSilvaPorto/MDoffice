@@ -1,10 +1,10 @@
-// Painel lateral: abas de painéis (Início, Projetos, Estrutura, Contexto IA), busca e
+// Painel lateral: abas de painéis (Início, Projetos, Estrutura), busca e
 // árvore de projetos (pastas com documentos .md).
 import * as files from "./files";
 import { fileIcon, kindOfPath, type FileKind } from "./fileIcons";
 import { $, baseName, docDirOf, h, loadJSON, saveJSON, stripExt } from "./util";
 
-export type SidePanel = "projects" | "outline" | "context";
+export type SidePanel = "projects" | "outline";
 
 export interface OpenDocInfo {
   id: string;
@@ -66,7 +66,7 @@ export class Sidebar {
 
   async init(): Promise<void> {
     const saved = loadJSON<string>(SIDE_KEY, "projects");
-    this.active = (["projects", "outline", "context"] as string[]).includes(saved) ? (saved as SidePanel) : "projects";
+    this.active = (["projects", "outline"] as string[]).includes(saved) ? (saved as SidePanel) : "projects";
     // barra recolhida já na abertura: tira do Tab e dos leitores de tela (a animação é só visual)
     document.getElementById("sidebar")?.toggleAttribute("inert", document.body.classList.contains("no-sidebar"));
     document.querySelectorAll<HTMLElement>(".sb-tab").forEach((b) =>
@@ -82,8 +82,6 @@ export class Sidebar {
     const search = $("#sb-search") as HTMLInputElement;
     search.addEventListener("input", () => {
       this.query = search.value.trim().toLowerCase();
-      // buscar no conteúdo é coisa de projetos: sai do Contexto para ver os resultados
-      if (this.query.length >= 2 && this.active === "context") this.show("projects");
       this.render();
       this.scheduleContentSearch();
     });
