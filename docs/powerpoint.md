@@ -66,6 +66,10 @@ avisado ao abrir (nunca some em silêncio).
   arredondado, elipse, triângulo, linha, seta e arco** — no mesmo lugar e tamanho, já como forma
   normal (editável, com medidas em cm e ida e volta no `.pptx`). O traço torto é **endireitado
   antes de medir** (a mão nunca acerta o ângulo), então a forma acompanha o que foi desenhado.
+- O **arco** segue curvas largas (ajuste **elíptico**), não só círculos: traçar o topo de uma
+  caixa sai com o raio e a proporção do traço, em vez de virar "meio círculo".
+- **Desenhar por cima de uma forma existente** (mesmo apagada — a cor não importa) sai **alinhado
+  a ela**: o resultado encaixa nas bordas e nos centros das formas de baixo quando está perto.
 - O que o assistente **não** reconhece fica como **desenho livre** (um caminho de verdade, que
   também vai para o arquivo); com o **assistente desligado**, todo traço fica livre.
 - Enquanto o lápis está ligado, a **barrinha do pincel** define **cor**, **espessura** (1, 2, 4

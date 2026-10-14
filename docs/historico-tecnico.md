@@ -237,6 +237,12 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   sai) — ao contrário das ferramentas de forma/texto, que se desligam depois de criar. A cor
   padrão é o acento do deck; a escolha, a espessura e o assistente ficam entre sessões.
 
+### 2026-10-14 · este commit · as formas da lâmina no Draw
+- **Local:** `aoTraco`
+- **Linha:** `formaDoTraco(pontos, pincel, estilo, dim)` → `..., this.atual().shapes`
+- **Porquê:** o assistente precisa das formas de baixo para **encaixar** o traço reconhecido
+  nelas (o "ver a imagem de fundo"): desenhar por cima de uma caixa sai alinhado a ela.
+
 ## src/powerpoint/stage.ts
 
 ### 2026-10-14 · este commit · o traço à mão no palco
@@ -481,6 +487,22 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   o preset `arc` do OOXML, com o raio e os ângulos do desenho — desenhado ao contrário, sai o
   mesmo arco (o sentido decide qual ponta é o início).
 
+### 2026-10-14 · este commit · o arco elíptico e o encaixe nas formas de baixo
+- **Local:** `reconhecerTraco` (o arco passa na frente da reta), `ajustarElipse`,
+  `resolverSistema` e `encaixarNoPalco`
+- **Linha:** o ajuste do arco deixou de ser círculo (Kasa) e virou uma **cônica alinhada em uma
+  passada linear** (`A·x² + C·y² + D·x + E·y + F = 0`, com `A + C = 1`, resolvida por
+  Gauss–Jordan); novos limites de raio; a checagem do arco passa a vir **antes** da linha; e
+  `formaDoTraco` ganha `formas` e encaixa a caixa nas bordas/centros das formas de baixo
+  (retângulo, arco e desenho livre)
+- **Porquê:** o usuário traçou o contorno de uma caixa e o assistente fez "metade um círculo" —
+  o ajuste só conhecia círculo e o arco largo ainda era capturado como linha (o teste da reta
+  vinha primeiro). A primeira tentativa de elipse (alternar raios/centro partindo do círculo
+  enviesado de um arco parcial) caía num mínimo local ruim; a cônica alinhada resolve numa
+  passada — 0,8% de desvio no arco largo de teste. E o "ver a imagem de fundo": desenhar sobre
+  uma forma existente (a cor/apagado dela não importa) encaixa o resultado nas bordas e centros
+  dessa forma — a caixa traçada sai alinhada à caixa de baixo.
+
 ## scripts/testar-desenho-assistido.mjs
 
 ### 2026-10-14 · este commit · os traços tortos do Draw (novo arquivo)
@@ -498,6 +520,14 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   retângulo (com a caixa acompanhando o desenho), o arredondado torto continua `roundRect` com o
   raio plausível, e o arco de 90° vira `arc` com os ângulos certos — inclusive desenhado ao
   contrário.
+
+### 2026-10-14 · este commit · o arco largo e o encaixe
+- **Local:** builders `arcoElipse` e `topoDeCaixa` + asserções de `encaixarNoPalco`
+- **Linha:** casos novos no mesmo arquivo
+- **Porquê:** o relato virou teste: a curva larga (elipse 520×180) tem que sair com a caixa
+  elíptica (com o círculo, virava "meio círculo" ou linha), o topo de caixa com quinas fica
+  livre, o mesmo topo traçado **sobre uma caixa** sai alinhado a ela, e o encaixe puro (bordas,
+  centros e o "longe não mexe") fica travado.
 
 ## src/powerpoint/edicao/grafico.ts
 

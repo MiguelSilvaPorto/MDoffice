@@ -375,6 +375,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Draw enxerga as formas de baixo e o arco segue curvas largas**: traçar o contorno de uma
+  forma existente (mesmo **apagada** — a cor não importa, o app lê a geometria) agora sai
+  **alinhado a ela**: a forma reconhecida (ou o desenho livre) encaixa nas bordas e nos centros
+  das formas de baixo quando está perto. E o arco deixou de ser só de círculo: o ajuste virou
+  **elíptico** (cônica alinhada em uma passada), então uma curva larga — o topo de uma caixa —
+  sai com o raio e a proporção do traço, em vez de virar "meio círculo". O arco também passou a
+  ser conferido **antes** da reta (uma curva rasa virava linha).
 - **Escolha do painel com a cara do app**: os grupos de escolha do painel do PowerPoint
   (preenchimento: **Do tema / Sólido / Gradiente / Imagem**, e os demais) usavam o controle
   nativo — círculo pequeno e a escolha marcada só com um anel do sistema. Agora o **círculo é
@@ -382,13 +389,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **a linha inteira do escolhido fica destacada** (fundo suave, borda na cor de destaque e
   texto em semibold), com hover na linha e foco visível pelo teclado. Vale para todos os
   grupos do painel (preenchimento, contorno, âncora e os demais).
-
 - **Botão direito + arrastar move a tela no PowerPoint**: com o zoom alto (até 800%), navegar
   era só pela barra de rolagem — agora **botão direito pressionado + arrastar** move a tela em
   qualquer direção, com o cursor virando "agarrando" e o arrasto acompanhando o ponteiro
   (nada de soltar e pegar de novo a cada tela). O **clique direito parado continua abrindo o
   menu de contexto**: o arrasto só conta depois de 3 px e, quando conta, o menu não abre.
-
 - **Ícone da Formas alinhado**: o preview da forma no botão **Formas** seguia um tamanho próprio
   (30 px) em vez do tamanho dos outros ícones — na **fita baixa** ele ficava maior que o botão e
   vazava para fora; e o desenho dentro do ícone saía **3 px abaixo do centro** (o `viewBox` não
