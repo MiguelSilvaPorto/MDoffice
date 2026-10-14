@@ -986,7 +986,7 @@ export class PowerPointHost {
 
   /** Terminou um traço: vira forma (assistida) ou desenho livre, no lugar em que foi feito. */
   private aoTraco(t: { pontos: { x: number; y: number }[] }): void {
-    const forma = formaDoTraco(t.pontos, this.pincelUsado(), this.estilo(), this.dim());
+    const forma = formaDoTraco(t.pontos, this.pincelUsado(), this.estilo(), this.dim(), this.atual().shapes);
     if (!forma) return;
     this.registrar();
     this.substituirSlide({ ...this.atual(), shapes: [...this.atual().shapes, forma] });

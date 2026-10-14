@@ -6,7 +6,7 @@
 import { clamp, uid } from "../../util";
 import type { CustPath, Shape } from "../schema";
 import type { EstiloDeck } from "./criar";
-import { dePt, type Dim, type Ret } from "./geometria";
+import { dePt, paraPt, type Dim, type Ret } from "./geometria";
 
 export interface PontoTraco {
   x: number;
@@ -256,43 +256,90 @@ function anguloDaArestaMaisLonga(pts: PontoTraco[]): number {
   return ang;
 }
 
-/** Ajuste de círculo (Kasa): é o que reconhece um arco desenhado à mão. */
-function ajustarCirculo(pontos: PontoTraco[]): { cx: number; cy: number; r: number; desvio: number } | null {
-  const n = pontos.length;
-  let sx = 0;
-  let sy = 0;
-  let sz = 0;
-  let sxx = 0;
-  let syy = 0;
-  let sxy = 0;
-  let sxz = 0;
-  let syz = 0;
-  for (const p of pontos) {
-    const z = p.x * p.x + p.y * p.y;
-    sx += p.x;
-    sy += p.y;
-    sz += z;
-    sxx += p.x * p.x;
-    syy += p.y * p.y;
-    sxy += p.x * p.y;
-    sxz += p.x * z;
-    syz += p.y * z;
+/** Resolve um sistema linear (Gauss–Jordan com pivô parcial); `null` se for degenerado. */
+function resolverSistema(M: number[][], b: number[]): number[] | null {
+  const n = b.length;
+  const a = M.map((linha, i) => [...linha, b[i]]);
+  for (let col = 0; col < n; col++) {
+    let piv = col;
+    for (let r = col + 1; r < n; r++) if (Math.abs(a[r][col]) > Math.abs(a[piv][col])) piv = r;
+    if (Math.abs(a[piv][col]) < 1e-9) return null;
+    [a[col], a[piv]] = [a[piv], a[col]];
+    for (let r = 0; r < n; r++) {
+      if (r === col) continue;
+      const k = a[r][col] / a[col][col];
+      for (let c = col; c <= n; c++) a[r][c] -= k * a[col][c];
+    }
   }
-  const Sxx = sxx - (sx * sx) / n;
-  const Syy = syy - (sy * sy) / n;
-  const Sxy = sxy - (sx * sy) / n;
-  const Sxz = sxz - (sx * sz) / n;
-  const Syz = syz - (sy * sz) / n;
-  const den = 2 * (Sxx * Syy - Sxy * Sxy);
-  if (Math.abs(den) < 1e-6) return null;
-  const cx = (Sxz * Syy - Syz * Sxy) / den;
-  const cy = (Syz * Sxx - Sxz * Sxy) / den;
-  const r2 = cx * cx + cy * cy + (sz - 2 * cx * sx - 2 * cy * sy) / n;
-  if (!(r2 > 0)) return null;
-  const r = Math.sqrt(r2);
+  return a.map((linha, i) => linha[n] / linha[i]);
+}
+
+/**
+ * Ajuste de elipse alinhada aos eixos (uma passada linear sobre a cônica
+ * A·x² + C·y² + D·x + E·y + F = 0, com A + C = 1): é o que faz o arco seguir uma curva
+ * LARGA de verdade — com o círculo, o topo de uma caixa virava "meio círculo".
+ */
+export function ajustarElipse(pontos: PontoTraco[]): { cx: number; cy: number; rx: number; ry: number; desvio: number } | null {
+  const n = pontos.length;
+  if (n < 8) return null;
+  // A·(x² - y²) + D·x + E·y + F = -y²  (mínimos quadrados, 4 incógnitas)
+  let s11 = 0;
+  let s12 = 0;
+  let s13 = 0;
+  let s14 = 0;
+  let s22 = 0;
+  let s23 = 0;
+  let s24 = 0;
+  let s33 = 0;
+  let s34 = 0;
+  let s44 = 0;
+  let b1 = 0;
+  let b2 = 0;
+  let b3 = 0;
+  let b4 = 0;
+  for (const p of pontos) {
+    const u = p.x * p.x - p.y * p.y;
+    const v = p.x;
+    const w = p.y;
+    const z = -p.y * p.y;
+    s11 += u * u;
+    s12 += u * v;
+    s13 += u * w;
+    s14 += u;
+    s22 += v * v;
+    s23 += v * w;
+    s24 += v;
+    s33 += w * w;
+    s34 += w;
+    s44 += 1;
+    b1 += u * z;
+    b2 += v * z;
+    b3 += w * z;
+    b4 += z;
+  }
+  const sol = resolverSistema(
+    [
+      [s11, s12, s13, s14],
+      [s12, s22, s23, s24],
+      [s13, s23, s33, s34],
+      [s14, s24, s34, s44],
+    ],
+    [b1, b2, b3, b4]
+  );
+  if (!sol) return null;
+  const [A, D, E, F] = sol;
+  const C = 1 - A;
+  if (!(A > 1e-6) || !(C > 1e-6)) return null;
+  const cx = -D / (2 * A);
+  const cy = -E / (2 * C);
+  const rx2 = cx * cx + (C / A) * cy * cy - F / A;
+  const ry2 = rx2 * (A / C);
+  if (!(rx2 > 0) || !(ry2 > 0) || !isFinite(rx2) || !isFinite(ry2)) return null;
+  const rx = Math.sqrt(rx2);
+  const ry = Math.sqrt(ry2);
   let dev = 0;
-  for (const p of pontos) dev += Math.abs(Math.hypot(p.x - cx, p.y - cy) - r);
-  return { cx, cy, r, desvio: dev / n / r };
+  for (const p of pontos) dev += Math.abs(Math.hypot((p.x - cx) / rx, (p.y - cy) / ry) - 1);
+  return { cx, cy, rx, ry, desvio: dev / n };
 }
 
 /** Triângulo com o ápice para baixo (o preset padrão aponta para cima → precisa de flipV). */
@@ -397,8 +444,45 @@ export function reconhecerTraco(pontos: PontoTraco[]): TracoReconhecido | null {
     return null;
   }
 
-  // --- linha reta? (corta os "ganchos" que a mão faz nas pontas) ---
   const n = pontos.length;
+
+  // --- arco? (um traço curvo que segue uma elipse — o "canto arredondado" ou uma curva larga) ---
+  const ajuste = ajustarElipse(pontos);
+  if (ajuste && Math.min(ajuste.rx, ajuste.ry) > 14 && ajuste.desvio < 0.075 && Math.max(ajuste.rx, ajuste.ry) < diag * 40) {
+    const { cx, cy, rx, ry } = ajuste;
+    // ângulo PARAMÉTRICO da elipse (é o que o preset `arc` do OOXML usa)
+    const ang = (p: PontoTraco) => Math.atan2((p.y - cy) / ry, (p.x - cx) / rx);
+    const ang0 = ang(pontos[0]);
+    const angN = ang(pontos[n - 1]);
+    // sentido em que o traço foi desenhado (a soma das viradas de ângulo)
+    let volta = 0;
+    for (let i = 1; i < n; i++) {
+      let d = ang(pontos[i]) - ang(pontos[i - 1]);
+      while (d > Math.PI) d -= 2 * Math.PI;
+      while (d < -Math.PI) d += 2 * Math.PI;
+      volta += d;
+    }
+    const a1 = volta < 0 ? angN : ang0;
+    const a2 = volta < 0 ? ang0 : angN;
+    let varredura = ((a2 - a1) * 180) / Math.PI;
+    while (varredura <= 0) varredura += 360;
+    if (varredura >= 35 && varredura <= 330) {
+      const emAdj = (a: number) => {
+        let g = (a * 180) / Math.PI;
+        while (g < 0) g += 360;
+        while (g >= 360) g -= 360;
+        return Math.round(g * 60000);
+      };
+      return {
+        geom: "arc",
+        box: { x: cx - rx, y: cy - ry, w: 2 * rx, h: 2 * ry },
+        adj: { adj1: emAdj(a1), adj2: emAdj(a2) },
+        rotulo: "Arco",
+      };
+    }
+  }
+
+  // --- linha reta? (corta os "ganchos" que a mão faz nas pontas) ---
   const trim = Math.max(3, Math.floor(n * 0.18));
   const interno = n > trim * 2 + 4 ? pontos.slice(trim, n - trim) : pontos;
   const reta = ajustarReta(interno);
@@ -437,39 +521,6 @@ export function reconhecerTraco(pontos: PontoTraco[]): TracoReconhecido | null {
       }
     }
   }
-  // --- arco? (um traço curvo que segue um círculo — o "canto arredondado" do desenho) ---
-  const circulo = ajustarCirculo(pontos);
-  if (circulo && circulo.r > 18 && circulo.desvio < 0.09) {
-    const { cx, cy, r } = circulo;
-    const ang0 = Math.atan2(pontos[0].y - cy, pontos[0].x - cx);
-    const angN = Math.atan2(pontos[n - 1].y - cy, pontos[n - 1].x - cx);
-    // sentido em que o traço foi desenhado (a soma das viradas de ângulo)
-    let volta = 0;
-    for (let i = 1; i < n; i++) {
-      let d = Math.atan2(pontos[i].y - cy, pontos[i].x - cx) - Math.atan2(pontos[i - 1].y - cy, pontos[i - 1].x - cx);
-      while (d > Math.PI) d -= 2 * Math.PI;
-      while (d < -Math.PI) d += 2 * Math.PI;
-      volta += d;
-    }
-    const a1 = volta < 0 ? angN : ang0;
-    const a2 = volta < 0 ? ang0 : angN;
-    let varredura = ((a2 - a1) * 180) / Math.PI;
-    while (varredura <= 0) varredura += 360;
-    if (varredura >= 35 && varredura <= 330) {
-      const emAdj = (a: number) => {
-        let g = (a * 180) / Math.PI;
-        while (g < 0) g += 360;
-        while (g >= 360) g -= 360;
-        return Math.round(g * 60000);
-      };
-      return {
-        geom: "arc",
-        box: { x: cx - r, y: cy - r, w: 2 * r, h: 2 * r },
-        adj: { adj1: emAdj(a1), adj2: emAdj(a2) },
-        rotulo: "Arco",
-      };
-    }
-  }
   return null;
 }
 
@@ -503,6 +554,50 @@ export function caminhoLivre(pontos: PontoTraco[], bb: Ret = bboxDe(pontos)): Cu
   return { w: Math.max(1, n10(bb.w)), h: Math.max(1, n10(bb.h)), cmds, fill: "none", stroke: true };
 }
 
+/**
+ * Encaixa a caixa nas bordas e nos centros das formas de baixo quando está perto — é o
+ * "enxergar a imagem de fundo": desenhar por cima de uma forma (mesmo apagada) sai alinhado a ela.
+ */
+export function encaixarNoPalco(box: Ret, formas: Shape[], d: Dim, limiar: number): Ret {
+  const xs: number[] = [];
+  const ys: number[] = [];
+  for (const f of formas) {
+    if (f.rot && Math.abs(f.rot % 360) > 0.5) continue;
+    const b = paraPt(f.box, d);
+    xs.push(b.x, b.x + b.w, b.x + b.w / 2);
+    ys.push(b.y, b.y + b.h, b.y + b.h / 2);
+  }
+  if (!xs.length) return box;
+  const perto = (v: number, alvos: number[]) => {
+    let melhor = v;
+    let dist = limiar;
+    for (const t of alvos) {
+      const dd = Math.abs(t - v);
+      if (dd < dist) {
+        dist = dd;
+        melhor = t;
+      }
+    }
+    return melhor;
+  };
+  let x = perto(box.x, xs);
+  let x2 = perto(box.x + box.w, xs);
+  let y = perto(box.y, ys);
+  let y2 = perto(box.y + box.h, ys);
+  // nenhuma borda encostou? tenta o centro (desloca a caixa inteira)
+  if (x === box.x && x2 === box.x + box.w) {
+    const dx = perto(box.x + box.w / 2, xs) - (box.x + box.w / 2);
+    x += dx;
+    x2 += dx;
+  }
+  if (y === box.y && y2 === box.y + box.h) {
+    const dy = perto(box.y + box.h / 2, ys) - (box.y + box.h / 2);
+    y += dy;
+    y2 += dy;
+  }
+  return { x, y, w: Math.max(1, x2 - x), h: Math.max(1, y2 - y) };
+}
+
 function baseDaForma(est: EstiloDeck, d: Dim, boxPt: Ret): Shape {
   const b = dePt(boxPt, d);
   return {
@@ -534,11 +629,14 @@ function comPincel(s: Shape, pincel: Pincel, setas?: { head?: boolean; tail?: bo
  * O traço vira forma: reconhecido pelo assistente (ou desenho livre quando o assistente
  * está desligado ou quando o traço não bate com nenhuma forma).
  */
-export function formaDoTraco(pontos: PontoTraco[], pincel: Pincel, est: EstiloDeck, d: Dim): Shape | null {
+export function formaDoTraco(pontos: PontoTraco[], pincel: Pincel, est: EstiloDeck, d: Dim, formas: Shape[] = []): Shape | null {
   if (pontos.length < 2) return null;
   const rec = pincel.assistente ? reconhecerTraco(pontos) : null;
   if (rec) {
-    const s = baseDaForma(est, d, rec.box);
+    // encaixa nas formas de baixo (bordas e centros) antes de montar: desenhar por cima de uma
+    // forma existente sai alinhado a ela
+    const box = encaixarNoPalco(rec.box, formas, d, Math.max(6, d.w * 0.01));
+    const s = baseDaForma(est, d, box);
     s.geom = rec.geom;
     s.name = rec.rotulo;
     if (rec.adj) s.adj = { ...rec.adj };
@@ -546,7 +644,7 @@ export function formaDoTraco(pontos: PontoTraco[], pincel: Pincel, est: EstiloDe
     if (rec.flipV) s.flipV = true;
     return comPincel(s, pincel, { head: rec.head, tail: rec.tail });
   }
-  const s = baseDaForma(est, d, bboxDe(pontos));
+  const s = baseDaForma(est, d, encaixarNoPalco(bboxDe(pontos), formas, d, Math.max(6, d.w * 0.01)));
   s.geom = "custom";
   s.name = "Desenho livre";
   s.paths = [caminhoLivre(pontos)];

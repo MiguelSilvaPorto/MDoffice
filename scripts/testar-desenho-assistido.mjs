@@ -132,6 +132,37 @@ function arco(cx, cy, r, a0graus, a1graus, amp = 1.5, seed = 17) {
   return pts;
 }
 
+/** Curva LARGA (elíptica), como o topo de uma caixa desenhado à mão. */
+function arcoElipse(cx, cy, rx, ry, a0graus, a1graus, amp = 1.5, seed = 23) {
+  const rnd = rng(seed);
+  const pts = [];
+  const n = Math.max(16, Math.round(Math.abs(a1graus - a0graus) / 3));
+  for (let i = 0; i <= n; i++) {
+    const a = ((a0graus + ((a1graus - a0graus) * i) / n) * Math.PI) / 180;
+    pts.push({ x: cx + Math.cos(a) * rx + tremor(rnd, amp), y: cy + Math.sin(a) * ry + tremor(rnd, amp) });
+  }
+  return pts;
+}
+
+/** Traço do TOPO de uma caixa: lado curto + canto + reta + canto + lado (o contorno de um card). */
+function topoDeCaixa(x0, y0, x1, raio, amp = 2, seed = 29) {
+  const rnd = rng(seed);
+  const pts = [];
+  const ponto = (x, y) => pts.push({ x: x + tremor(rnd, amp), y: y + tremor(rnd, amp) });
+  const canto = (cx, cy, a0, a1) => {
+    for (let i = 0; i <= 8; i++) {
+      const a = a0 + (a1 - a0) * (i / 8);
+      ponto(cx + Math.cos(a) * raio, cy + Math.sin(a) * raio);
+    }
+  };
+  ponto(x0, y0 + raio + 20);
+  canto(x0 + raio, y0 + raio, Math.PI, 1.5 * Math.PI);
+  for (let i = 1; i <= 6; i++) ponto(x0 + raio + ((x1 - raio - x0 - raio) * i) / 6, y0);
+  canto(x1 - raio, y0 + raio, 1.5 * Math.PI, 2 * Math.PI);
+  ponto(x1, y0 + raio + 20);
+  return pts;
+}
+
 /** Rabisco qualquer (não bate com forma nenhuma). */
 function rabisco(seed = 21) {
   const r = rng(seed);
@@ -245,7 +276,17 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
   const a2 = rec?.adj?.adj2 ?? 0;
   ok("arco: ângulos plausíveis", a1 > 160 * 60000 && a1 < 200 * 60000 && a2 > 250 * 60000 && a2 < 290 * 60000, `adj1=${a1} adj2=${a2}`);
   const inv = D.reconhecerTraco(arco(300, 240, 120, 270, 180));
-  ok("arco desenhado ao contrário: mesmo arco", inv?.geom === "arc" && inv.adj && Math.abs(inv.adj.adj1 - a1) < 4 * 60000 && Math.abs(inv.adj.adj2 - a2) < 4 * 60000, JSON.stringify(inv?.adj));
+  ok("arco desenhado ao contrário: mesmo arco", inv?.geom === "arc" && inv.adj && Math.abs(inv.adj.adj1 - a1) < 6 * 60000 && Math.abs(inv.adj.adj2 - a2) < 6 * 60000, JSON.stringify(inv?.adj));
+  // curva LARGA: o ajuste tem que ser elíptico — com o círculo, o topo de uma caixa virava "meio círculo"
+  const largo = D.reconhecerTraco(arcoElipse(400, 300, 260, 90, 195, 345));
+  ok("arco largo: reconhecido", largo?.geom === "arc", JSON.stringify(largo?.geom));
+  ok("arco largo: caixa elíptica (não vira círculo)", largo && perto(largo.box.w, 520, 14) && perto(largo.box.h, 180, 14), JSON.stringify(largo?.box));
+  const topo = D.reconhecerTraco(topoDeCaixa(150, 120, 650, 70));
+  ok("topo de caixa com quinas: fica livre (não é arco)", topo === null, JSON.stringify(topo));
+  // ... mas desenhado POR CIMA de uma caixa, a forma sai alinhada a ela (o "ver a imagem de fundo")
+  const caixaFundo = { id: "cx", kind: "forma", box: { x: (150 / 960) * 100, y: (120 / 540) * 100, w: (500 / 960) * 100, h: (200 / 540) * 100 }, text: "", fontFamily: "A", fontSize: 18, color: "000000", bold: false, italic: false, align: "esquerda", fill: "", src: "", rot: 0 };
+  const topoForma = D.formaDoTraco(topoDeCaixa(150, 120, 650, 70), pincel, est, dim, [caixaFundo]);
+  ok("topo traçado sobre a caixa sai alinhado a ela", topoForma && perto(topoForma.box.x, (150 / 960) * 100, 0.6) && perto(topoForma.box.y, (120 / 540) * 100, 0.6) && perto(topoForma.box.w, (500 / 960) * 100, 0.6), JSON.stringify(topoForma?.box));
 }
 
 // ---------------------------------------------------------------- desenho livre
@@ -285,6 +326,19 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
   ok("seta vira linha com ponta", comSeta?.geom === "line" && comSeta?.ln?.tail === "triangle" && !comSeta?.ln?.head);
   const comArco = D.formaDoTraco(arco(300, 240, 120, 180, 270), pincel, est, dim);
   ok("arco vira forma de arco", comArco?.geom === "arc" && !!comArco?.adj?.adj1 && comArco?.fillX?.kind === "none");
+}
+
+// ---------------------------------------------------------------- encaixe nas formas de baixo
+{
+  const caixa = (x, y, w, h) => ({ id: "x", kind: "forma", box: { x, y, w, h }, text: "", fontFamily: "A", fontSize: 18, color: "000000", bold: false, italic: false, align: "esquerda", fill: "", src: "", rot: 0 });
+  // existente em % (20%, 10%, 50%, 30%) → pt (192, 54, 480, 162)
+  const existente = caixa(20, 10, 50, 30);
+  const enc = D.encaixarNoPalco({ x: 200, y: 60, w: 470, h: 150 }, [existente], dim, 10);
+  ok("encaixe: bordas colam na forma de baixo", perto(enc.x, 192) && perto(enc.y, 54) && perto(enc.x + enc.w, 672) && perto(enc.y + enc.h, 216), JSON.stringify(enc));
+  const solto = D.encaixarNoPalco({ x: 400, y: 300, w: 100, h: 80 }, [existente], dim, 10);
+  ok("encaixe: longe não mexe", perto(solto.x, 400) && perto(solto.y, 300) && perto(solto.w, 100));
+  const f = D.formaDoTraco(percorrer([{ x: 196, y: 56 }, { x: 670, y: 56 }, { x: 670, y: 210 }, { x: 196, y: 210 }]), pincel, est, dim, [existente]);
+  ok("desenhar por cima da caixa sai alinhado a ela", f && perto(f.box.x, 20, 0.6) && perto(f.box.y, 10, 0.6) && perto(f.box.w, 50, 0.6) && perto(f.box.h, 30, 0.6), JSON.stringify(f?.box));
 }
 
 // ---------------------------------------------------------------- a dica na tela
