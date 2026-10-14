@@ -4902,6 +4902,19 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** a régua é pura e o teste a prende sem carregar o modelo de 7 MB — e os três casos
   são exatamente os que a medição do corpus apontou como faltantes.
 
+## CHANGELOG.md
+
+### 2026-10-14 · limpeza · o artefato de medição e a entrada que ficou para trás
+- **Local:** a raiz do repositório e Geral → Adicionado → Frontend
+- **Linha:** `- medida-concord.json` (133 KB, do fechamento da concordância) · a entrada
+  “Concordância de número no corretor” saiu de **Não adicionado** e foi para **Adicionado**
+- **Porquê:** dois deslizes do mesmo fechamento: (1) o JSON da medição ficou na raiz e entrou no
+  commit com o `git add -A` — medição é **arquivo de trabalho**, não vai para o repositório (o
+  número vive em `docs/medicao-corretor.md`); (2) a entrada do CHANGELOG ficou em “Não adicionado”
+  mesmo com o código já na `main` — o dono da tarefa promove a entrada **no mesmo fechamento**
+  (quando o commit entra na `main`, ela já está em “Adicionado”). As duas lições vão para a
+  entrada “Ferramentas (dev)” do próprio CHANGELOG.
+
 ---
 
 ## Próximos registros
