@@ -17,7 +17,7 @@ import {
   type Dim,
   type Guia,
 } from "./edicao/geometria";
-import type { Animacao, Shape, ShapeBox } from "./schema";
+import type { Animacao, Lado, Shape, ShapeBox } from "./schema";
 import { CANTO_ROTULO, CANTOS, cantosDe, valoresComSelecao, type Canto } from "./edicao/formato";
 
 const ZOOM_MIN = 40;
@@ -41,8 +41,8 @@ export function passoZoom(atual: number): number {
 const r1 = (v: number) => Math.round(v * 10) / 10;
 const r2 = (v: number) => Math.round(v * 100) / 100;
 
-/** Ferramenta de criação ativa (arrastar na lâmina para desenhar) — ou o lápis do "Draw". */
-export type Ferramenta = { tipo: "forma"; id: string } | { tipo: "texto" } | { tipo: "desenho" } | null;
+/** Ferramenta ativa: desenhar arrastando, o lápis do "Draw" ou o "Conectar" (ligar formas). */
+export type Ferramenta = { tipo: "forma"; id: string } | { tipo: "texto" } | { tipo: "desenho" } | { tipo: "conectar" } | null;
 
 export interface ContextoPalco {
   shapes: Shape[];
@@ -92,6 +92,8 @@ export interface StageHooks {
   aoTraco: (t: { pontos: { x: number; y: number }[] }) => void;
   /** o traço em andamento mudou (para a dica na tela) */
   aoTracoAndamento: (pontos: { x: number; y: number }[]) => void;
+  /** modo conectar: a bolinha de origem e a de destino foram escolhidas */
+  aoLigar: (l: { de: string; ladoDe: Lado; para: string; ladoPara: Lado }) => void;
 }
 
 type Modo =
@@ -126,6 +128,9 @@ export class Stage {
   private rect: ShapeBox | null = null;
   /** traço à mão em andamento (em % da lâmina), só no modo desenho */
   private traco: { x: number; y: number }[] | null = null;
+  /** modo conectar: a forma sob o mouse (as bolinhas seguem ela) e a bolinha de origem escolhida */
+  private ligHover: string | null = null;
+  private ligOrigem: { id: string; lado: Lado } | null = null;
   private quadro = 0;
   private ultimo: PointerEvent | null = null;
   /** aviso flutuante do arrasto de canto ("22% · 3 cantos"), desenhado junto da seleção */
@@ -242,7 +247,7 @@ export class Stage {
   desenharSelecao(): void {
     const el = this.slideEl;
     if (!el) return;
-    el.querySelectorAll(".pp-sel, .pp-guia, .pp-marquee, .pp-celsel, .pp-selo").forEach((n) => n.remove());
+    el.querySelectorAll(".pp-sel, .pp-guia, .pp-marquee, .pp-celsel, .pp-selo, .pp-lig-ponto").forEach((n) => n.remove());
     const ctx = this.hooks.contexto();
     const sel = ctx.shapes.filter((s) => ctx.selecao.includes(s.id));
     const html: string[] = [];
@@ -336,6 +341,29 @@ export class Stage {
       const b = this.rect;
       html.push(`<div class="pp-marquee" style="left:${b.x}%;top:${b.y}%;width:${b.w}%;height:${b.h}%"></div>`);
     }
+    // modo conectar: as bolinhas nas bordas da forma sob o mouse (a de origem fica acesa)
+    if (ctx.ferramenta?.tipo !== "conectar") {
+      this.ligOrigem = null;
+      this.ligHover = null;
+    } else if (this.ligHover) {
+      const alvo = ctx.shapes.find((s) => s.id === this.ligHover);
+      if (alvo) {
+        const cx = alvo.box.x + alvo.box.w / 2;
+        const cy = alvo.box.y + alvo.box.h / 2;
+        const pontos: [Lado, number, number][] = [
+          ["topo", cx, alvo.box.y],
+          ["base", cx, alvo.box.y + alvo.box.h],
+          ["esq", alvo.box.x, cy],
+          ["dir", alvo.box.x + alvo.box.w, cy],
+        ];
+        for (const [lado, x, y] of pontos) {
+          const on = this.ligOrigem?.id === alvo.id && this.ligOrigem.lado === lado;
+          html.push(
+            `<button type="button" class="pp-lig-ponto${on ? " on" : ""}" data-lig-lado="${lado}" data-lig-id="${alvo.id}" style="left:${r2(x)}%;top:${r2(y)}%" title="Ligar aqui" aria-label="Ligar aqui"></button>`
+          );
+        }
+      }
+    }
     el.insertAdjacentHTML("beforeend", html.join(""));
     el.classList.toggle("criando", !!ctx.ferramenta);
   }
@@ -396,6 +424,27 @@ export class Stage {
 
     // controles da mídia (player de áudio/vídeo): o clique é do player, não do palco
     if (alvo.closest("[data-player]")) return;
+
+    // modo conectar: as bolinhas das bordas ligam uma forma na outra
+    if (ctx.ferramenta?.tipo === "conectar") {
+      const ponto = alvo.closest<HTMLElement>("[data-lig-ponto]");
+      if (ponto) {
+        const id = ponto.dataset.ligId!;
+        const lado = ponto.dataset.ligLado as Lado;
+        if (!this.ligOrigem) this.ligOrigem = { id, lado };
+        else {
+          const origem = this.ligOrigem;
+          this.ligOrigem = null;
+          this.hooks.aoLigar({ de: origem.id, ladoDe: origem.lado, para: id, ladoPara: lado });
+        }
+        this.desenharSelecao();
+      } else if (this.ligOrigem) {
+        this.ligOrigem = null; // clique fora das bolinhas cancela a origem
+        this.desenharSelecao();
+      }
+      e.preventDefault();
+      return;
+    }
 
     // ferramenta de criação ativa: começa a desenhar (ou a rabiscar, no modo desenho)
     if (ctx.ferramenta) {
@@ -581,7 +630,19 @@ export class Stage {
   }
 
   private aoMover(e: PointerEvent): void {
-    if (!this.modo) return;
+    if (!this.modo) {
+      // modo conectar: as bolinhas seguem a forma sob o mouse
+      if (this.hooks.contexto().ferramenta?.tipo === "conectar") {
+        const alvo = e.target as HTMLElement;
+        const ponto = alvo.closest<HTMLElement>("[data-lig-ponto]");
+        const id = ponto?.dataset.ligId ?? alvo.closest<HTMLElement>(".pp-shape[data-shape]")?.dataset.shape ?? null;
+        if (id !== this.ligHover) {
+          this.ligHover = id;
+          this.desenharSelecao();
+        }
+      }
+      return;
+    }
     this.ultimo = e;
     if (this.quadro) return;
     this.quadro = requestAnimationFrame(() => {

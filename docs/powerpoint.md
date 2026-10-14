@@ -111,6 +111,27 @@ avisado ao abrir (nunca some em silêncio).
 - Enquanto o lápis está ligado, a **barrinha do pincel** define **cor**, **espessura** (1, 2, 4
   ou 8 pt) e o assistente, e mostra o que está sendo entendido ("entendi: Círculo"); **Esc** sai.
 
+## Conectar formas
+
+- Na aba **Inserir**, o botão **Conectar** (grupo **Diagrama**, ao lado do Fluxo do Mermaid) liga
+  **formas que já existem** — nada é recriado: com o modo ligado, passar o mouse sobre uma forma
+  mostra as **bolinhas nas quatro bordas** (topo, base, esquerda, direita); o primeiro clique marca
+  a **origem** (a bolinha escolhida fica acesa) e o segundo, o **destino**, e a ligação nasce ali.
+  Clique fora das bolinhas cancela a origem e **Esc** sai do modo.
+- O traço sai com **cantos suaves de 90°** (a mesma ideia do Fluxo do Mermaid): alinhado quando as
+  bordas se encontram, um "Z" quando as laterais pedem desvio e um "L" quando uma ponta é vertical
+  e a outra horizontal.
+- **A cor acompanha as caixas**: a **espinha** (o trecho que sai da origem) sai com a **cor da
+  forma de origem** e a **descida final** (do último canto até o destino) com a **cor da forma de
+  destino** — as duas partes se encontram no mesmo ponto, sem fresta; quando o destino é
+  branco/sem cor, a descida segue a cor da origem. O fim leva **seta**.
+- A ligação fica **presa às duas formas**: mover, redimensionar, **trocar a cor** ou **apagar**
+  qualquer lado **redesenha** (ou remove) o conector na hora — as duas partes andam juntas (mesma
+  seleção) e valem como formas comuns (colorir, ordem, copiar/colar, desfazer), inclusive na
+  exportação do `.pptx`, onde viram formas livres (como o fluxo do Mermaid). Como o traço é
+  derivado das caixas, **arrastar a própria ligação não muda a rota** — para ajustar, mova as
+  formas ligadas (ou apague a ligação e refaça).
+
 ## Apresentar (F5)
 
 - **A lâmina cobre a tela do app** (full-bleed: só as barras laterais do formato) e a barra virou um
@@ -159,3 +180,6 @@ avisado ao abrir (nunca some em silêncio).
   e dos **cantos por canto** (seleção, raio individual e a geometria que vai para o arquivo).
 - `npm run test:desenho` — traços à mão sintéticos ("tremidos") viram a forma certa; o que não é
   reconhecido fica como desenho livre, e a forma montada sai com o pincel certo.
+- `npm run test:ligacoes` — a rota do conector (reta, "Z" e "L"), a divisão em duas partes com o
+  corte contínuo, as cores por trecho (branco cai na origem), o redesenho ao mover/redimensionar,
+  a remoção ao apagar a caixa e a cópia da ligação (remapeada ou solta).

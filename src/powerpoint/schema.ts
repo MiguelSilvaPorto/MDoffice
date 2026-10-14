@@ -219,6 +219,8 @@ export interface Shape {
   sizePt?: [number, number];
   /** formas com o mesmo id de grupo se selecionam e se movem juntas */
   grupo?: string;
+  /** ligação presa (ferramenta Conectar): a geometria do conector é DERIVADA das formas ligadas */
+  liga?: Liga;
   /** travada: aparece, mas não se move nem se redimensiona pelo palco */
   bloqueada?: boolean;
   /** texto alternativo (acessibilidade) */
@@ -254,6 +256,24 @@ export interface CelulaTab {
 }
 
 /** Uma tabela: tamanhos em pt (o conjunto se ajusta à caixa da forma). */
+/** Borda de uma forma usada por uma ligação (ferramenta Conectar). */
+export type Lado = "topo" | "base" | "esq" | "dir";
+
+/**
+ * Ligação presa entre duas formas: o conector guarda de onde sai e onde chega e a geometria é
+ * recalculada das caixas (mover qualquer lado reposiciona o traço). Cada ligação tem até duas
+ * partes: a = a espinha (cor da origem) e b = a descida final (cor do destino).
+ */
+export interface Liga {
+  de: string;
+  ladoDe: Lado;
+  para: string;
+  ladoPara: Lado;
+  parte: "a" | "b";
+  /** as duas partes andam juntas (e ficam juntas na seleção) */
+  grupo: string;
+}
+
 export interface Tabela {
   colunas: number[];
   linhas: number[];

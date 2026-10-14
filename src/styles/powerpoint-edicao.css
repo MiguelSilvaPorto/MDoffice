@@ -1435,6 +1435,27 @@ button.ppr.big .ppr-gal-ic svg {
   z-index: 50;
 }
 
+/* modo conectar: as bolinhas nas bordas das formas (onde a ligação sai/chega) */
+.pp-lig-ponto {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  margin: -6px 0 0 -6px;
+  padding: 0;
+  border: 1.5px solid var(--fi-ppt, #d24a17);
+  border-radius: 50%;
+  background: var(--panel);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  z-index: 56;
+  cursor: crosshair;
+}
+
+.pp-lig-ponto:hover,
+.pp-lig-ponto.on {
+  background: var(--fi-ppt, #d24a17);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--fi-ppt, #d24a17) 25%, transparent);
+}
+
 /* selo numerado das formas animadas (aba Animações): fica no canto da forma */
 .pp-selo {
   position: absolute;

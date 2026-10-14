@@ -399,7 +399,8 @@ export class Fita {
       ),
       grupo(
         "Diagrama",
-        `${grande("mermaid-fluxo", ic("i-flow"), "Fluxo do Mermaid", "Cole um flowchart e o app cria os cartões ligados por conectores de cantos suaves")}`
+        `${grande("mermaid-fluxo", ic("i-flow"), "Fluxo do Mermaid", "Cole um flowchart e o app cria os cartões ligados por conectores de cantos suaves")}
+         ${grande("conectar", ic("i-link"), "Conectar", "Ligue duas formas: clique na bolinha da borda de uma e na da outra (Esc sai)")}`
       ),
       grupo(
         "Mídia",
@@ -1058,6 +1059,7 @@ export class Fita {
     if (rotuloOcultar) rotuloOcultar.textContent = st.oculta ? "Mostrar" : "Ocultar";
     on("ferramenta:texto", st.ferramenta?.tipo === "texto");
     on("desenho", st.ferramenta?.tipo === "desenho");
+    on("conectar", st.ferramenta?.tipo === "conectar");
     for (const c of ["negrito", "italico", "sublinhado", "tachado", "marca-texto", "sobrescrito", "subscrito", "versalete", "caixa", "espacamento", "limpar-formatacao", "maior", "menor", "cor-texto", "marcadores", "numeracao", "recuo-menos", "recuo-mais", "espaco", "alinhar-esquerda", "alinhar-centro", "alinhar-direita", "alinhar-justificado", "v-topo", "v-meio", "v-base"]) dis(c, !temTexto);
     dis("desfazer", !st.podeDesfazer);
     dis("refazer", !st.podeRefazer);

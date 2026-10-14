@@ -385,6 +385,20 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   só o estado visual. O **Esc** interrompe uma prévia em andamento e devolve tudo na hora, e
   **trocar o efeito** de uma forma agora usa os padrões do efeito novo (a duração do antigo não
   contamina mais: Ampliar volta a nascer com 2 s).
+- **Conectar formas (Inserir ▸ Diagrama)**: a ferramenta **Conectar** liga **formas que já
+  existem** — nada é recriado. Com o modo ligado, passar o mouse sobre uma forma mostra as
+  **bolinhas nas quatro bordas** (topo, base, esquerda, direita); o primeiro clique marca a
+  **origem** (a bolinha escolhida fica acesa) e o segundo, o **destino**, e a ligação nasce ali
+  (clique fora das bolinhas cancela a origem; `Esc` sai do modo). O traço sai com **cantos suaves
+  de 90°**, como no Fluxo do Mermaid: alinhado quando as bordas se encontram, um "Z" quando as
+  laterais pedem desvio e um "L" quando uma ponta é vertical e a outra horizontal. **A cor
+  acompanha as caixas**: a **espinha** (o trecho que sai da origem) sai com a **cor da forma de
+  origem** e a **descida final** com a **cor da forma de destino** — as duas partes se encontram
+  no mesmo ponto, sem fresta; quando o destino é branco/sem cor, a descida segue a cor da origem,
+  e o fim leva **seta**. A ligação fica **presa às duas formas**: mover, redimensionar, trocar a
+  cor ou **apagar** qualquer lado **redesenha** (ou remove) o conector na hora; as duas partes
+  andam juntas (mesma seleção) e valem como formas comuns — inclusive na exportação do `.pptx`,
+  onde viram formas livres.
 
 ### Adicionado (na main)
 

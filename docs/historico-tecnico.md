@@ -6204,3 +6204,121 @@ antigas quando fizer sentido.
   só no Ctrl+S; o selo mostra "Não salvo" e o aviso aparece na primeira alteração)
 - **Porquê:** os docs diziam só "salvar .docx/.xlsx de verdade" — a regra do autosave (e o recado
   novo da barra) precisam estar onde o usuário procura.
+
+## src/powerpoint/schema.ts
+
+### 2026-10-14 · este commit · a ligação presa no modelo
+- **Local:** `Shape` (depois de `grupo`) e os tipos novos `Lado` e `Liga` (antes de `Tabela`)
+- **Linha:** `+ liga?: Liga;` · `+ export type Lado = "topo" | "base" | "esq" | "dir"` ·
+  `+ export interface Liga { de, ladoDe, para, ladoPara, parte, grupo }`
+- **Porquê:** o conector do **Conectar** é **derivado** — para se redesenhar sozinho ele precisa
+  guardar de qual forma e de qual borda ele sai, onde chega e qual das duas partes ele é. Os tipos
+  moram no schema (e não no módulo das ligações) porque o campo os referencia — assim não há ciclo
+  de importação entre o modelo e a edição.
+
+## src/powerpoint/edicao/ligacoes.ts (novo arquivo)
+
+### 2026-10-14 · este commit · a geometria, a cor por trecho e o redesenho
+- **Local:** novo módulo
+- **Linha:** `novo` — `pontoDaBorda` (o meio de cada lado, em pt), `rotaDaLigacao` (reta quando
+  alinhada, "Z" quando as laterais pedem desvio e "L" quando uma ponta é vertical e a outra
+  horizontal), `caminhoDaLigacao` (os comandos divididos em espinha/descida, com o corte
+  compartilhado e a curva do último canto na descida), `corDaForma` (o preenchimento com cor;
+  senão o contorno; branco/claro não conta), `parteDe` (comandos → forma livre com a caixa do
+  caminho), `ligacaoParaFormas` (as duas partes presas) e `atualizarLigacoes` (recalcula a lâmina
+  e leva embora a ligação da caixa apagada)
+- **Porquê:** o usuário montava o organograma à mão e queria só **ligar as caixas**: o conector sai
+  com a **cor da origem** na espinha e a **cor do destino** na descida final (verde da espinha
+  encostando exato no azul da descida), o que **não cabe num traço só** do OOXML — daí as duas
+  partes presas no mesmo grupo (a seleção e o mover já tratavam grupo). Decisões que valem a
+  leitura: a rota reaproveita a ideia do fluxo do Mermaid (cantos de 90° com curva de raio 9);
+  o corte fica **antes** da curva do último canto e as duas partes compartilham o ponto (o
+  número `ex, ey` entra nas duas) — trocar a cor ali **não deixa fresta**; a caixa do conector
+  leva folga de 4 pt para o traço não encostar na borda; a cor é **re-derivada** a cada recálculo
+  (mudar a caixa muda o traço — a cor manual vale só até o próximo movimento, que é o
+  comportamento que o pedido descreve); e sem cantos (rota reta) só existe a **descida**, com a
+  cor do destino.
+
+## src/powerpoint/stage.ts
+
+### 2026-10-14 · este commit · o modo conectar (as bolinhas e os cliques)
+- **Local:** `Ferramenta` (+ `{ tipo: "conectar" }`), `StageHooks.aoLigar`, os campos `ligHover`
+  e `ligOrigem`, `desenharSelecao`, `aoPressionar` e `aoMover`
+- **Linha:** `+ as quatro bolinhas (.pp-lig-ponto) da forma sob o mouse, com a de origem acesa` ·
+  `+ o clique na bolinha guarda a origem ou fecha a ligação (hooks.aoLigar)` ·
+  `+ no pointermove sem arrasto, as bolinhas seguem a forma sob o mouse` · os campos são limpos
+  ao sair do modo
+- **Porquê:** as bolinhas são o "onde irei ligar" que o usuário pediu: elas pertencem ao **palco**
+  (interação), não às formas — aparecem no hover e não sujam o desenho. O clique fora da bolinha
+  **cancela** a origem (em vez de selecionar algo) porque, no modo conectar, o mouse serve só para
+  escolher as pontas; e o `desenharSelecao` já é o desenho que o host refaz a cada mudança — as
+  bolinhas viajam com ele, sem listener novo (o `pointermove` do palco já existia).
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · este commit · a criação e o recálculo no ponto único
+- **Local:** `run("conectar")`, o hook do palco, `aoLigar` e `substituirSlide`
+- **Linha:** `+ case "conectar"` (alterna o modo e limpa a seleção) · `+ private aoLigar(l)` (cria
+  as formas, seleciona a última e passa pelo histórico) · `substituirSlide`: `slide` →
+  `atualizarLigacoes(slide, dim, acento)` quando a lâmina tem ligações
+- **Porquê:** o `substituirSlide` é o **ponto único** por onde passa toda mudança da lâmina
+  (inclusive cada quadro do arrasto, via `aoTransformar`) — recalcular ali faz o conector
+  acompanhar a caixa **ao vivo**, sem espalhar chamadas por todos os fluxos de edição. O guarda
+  `some((s) => s.liga)` mantém o custo zero nas lâminas sem ligações: nem o estilo do deck é
+  pedido à toa. A seleção é limpa ao entrar no modo porque, ali, valem as bolinhas — as alças de
+  redimensionar ficariam à vista sem funcionar.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · este commit · o botão Conectar
+- **Local:** grupo **Diagrama** (aba Inserir) e o estado pressionado da fita
+- **Linha:** `+ grande("conectar", ic("i-link"), "Conectar", …)` ·
+  `+ on("conectar", st.ferramenta?.tipo === "conectar")`
+- **Porquê:** o Conectar é irmão do Fluxo do Mermaid (a mesma ideia: formas ligadas por conectores
+  de cantos suaves) e ficou no mesmo grupo, com o ícone de elo (`i-link`, que já existia); o botão
+  fica aceso enquanto o modo está ligado, como o Draw.
+
+## src/powerpoint/edicao/operacoes.ts
+
+### 2026-10-14 · este commit · a cópia da ligação
+- **Local:** `clonarFormas` (usado por duplicar, colar e Ctrl+arrastar)
+- **Linha:** `+ const ids = new Map(alvo.map((s) => [s.id, uid()]))` · a cópia do `liga` remapeia
+  `de`/`para`/`grupo` quando os **dois** lados vieram junto; senão o campo sai (a cópia vira um
+  conector solto, com o desenho que tinha)
+- **Porquê:** sem o remapeamento, a ligação copiada voltaria a apontar para as formas
+  **originais** (o grude puxaria a cópia de volta — e o grupo recalculado ainda faria as duas
+  metades de ligações diferentes se juntarem na seleção); e copiar só o conector não deve inventar
+  pontas que não foram copiadas. O `ids` também troca o `id` das formas (antes era um `uid()` por
+  linha: não dava para saber o novo id de cada uma).
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · este commit · as bolinhas das bordas
+- **Local:** perto de `.pp-sel`
+- **Linha:** `+ .pp-lig-ponto` (círculo de 11 px no acento do módulo, `z-index: 56`,
+  `cursor: crosshair`, `margin: -6px 0 0 -6px` para o centro cair na borda) ·
+  `+ .pp-lig-ponto:hover, .pp-lig-ponto.on` (preenchido, com halo)
+- **Porquê:** a bolinha precisa ficar **acima** das formas para receber o clique (o `.pp-sel` é
+  `pointer-events: none`, e a bolinha é um `<button>`) e o estado aceso precisa ser visível para o
+  usuário saber de onde a ligação vai sair.
+
+## scripts/testar-ligacoes.mjs (novo arquivo) · package.json
+
+### 2026-10-14 · este commit · 43 verificações
+- **Local:** teste novo (e o script `test:ligacoes`)
+- **Linha:** `novo` — a rota (reta/"Z"/"L"), o corte contínuo entre as duas partes, as cores por
+  trecho (caixa branca cai na origem), o redesenho ao mover/redimensionar, a remoção ao apagar a
+  caixa, a meia ligação que sobrevive e a cópia (remapeada ou solta)
+- **Porquê:** o que é **derivado** precisa de teste: a conta do corte, as cores e o recálculo são
+  invisíveis na tela até o usuário mexer numa caixa — e a fresta entre as duas partes (o ponto
+  delicado da cor por trecho) já apareceu como falha na primeira montagem do teste. As asserções
+  prendem o comportamento nos dois lados.
+
+## docs/powerpoint.md · CHANGELOG.md
+
+### 2026-10-14 · este commit · a seção do Conectar e a entrada no changelog
+- **Local:** a seção nova "Conectar formas" (depois do Draw), a lista de **Testes**
+  (`test:ligacoes`) e a entrada em PowerPoint → Não adicionado → Frontend
+- **Porquê:** o Conectar muda o que o app faz (e como se monta um organograma) — o doc do módulo
+  precisa dizer das bolinhas, das cores por trecho e do que fica preso; a entrada fica em **Não
+  adicionado** até o fecho (a regra do AGENTS.md: nada é promovido antes de entrar na `main`).

@@ -32,11 +32,19 @@ export function duplicarFormas(slide: Slide, ids: string[], dx = 1.5, dy = 2.5):
 /** Clona formas com ids e grupos novos (usado por duplicar e colar). */
 export function clonarFormas(alvo: Shape[], dx = 0, dy = 0): Shape[] {
   const grupos = new Map<string, string>();
+  const ids = new Map(alvo.map((s) => [s.id, uid()]));
   return alvo.map((s) => {
     const g = s.grupo ? (grupos.get(s.grupo) ?? (grupos.set(s.grupo, uid()), grupos.get(s.grupo)!)) : undefined;
-    const c: Shape = { ...structuredCloneSeguro(s), id: uid(), box: { ...s.box, x: s.box.x + dx, y: s.box.y + dy } };
+    const c: Shape = { ...structuredCloneSeguro(s), id: ids.get(s.id)!, box: { ...s.box, x: s.box.x + dx, y: s.box.y + dy } };
     if (g) c.grupo = g;
     else delete c.grupo;
+    if (c.liga) {
+      // a cópia só continua presa quando os DOIS lados vêm juntos; senão vira um conector solto
+      const de = ids.get(c.liga.de);
+      const para = ids.get(c.liga.para);
+      if (de && para) c.liga = { ...c.liga, de, para, grupo: g ?? c.liga.grupo };
+      else delete c.liga;
+    }
     delete c.fixa;
     return c;
   });

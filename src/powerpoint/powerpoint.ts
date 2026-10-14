@@ -9,6 +9,7 @@ import { fluxoParaFormas, lerFluxoMermaid } from "./edicao/mermaid";
 import { ligarAjusteAlturaFita, ligarRecolherFita } from "../fita";
 import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, novaImagem, type EstiloDeck, type ItemGaleria } from "./edicao/criar";
 import { dicaDoTraco, formaDoTraco, type Pincel } from "./edicao/desenho";
+import { atualizarLigacoes, ligacaoParaFormas } from "./edicao/ligacoes";
 import { ajustarCor, CANTOS, comAjuste, comCantos, comLinha, comOpacidade, comPreenchimento, comRaioDeCanto, comSombra, gradiente, SOMBRAS_PRONTAS, solido, corPrincipal, type Canto } from "./edicao/formato";
 import { aspectSize, stageRatio } from "./schema";
 import type { Dim } from "./edicao/geometria";
@@ -73,7 +74,7 @@ import { Fita } from "./ui/fita";
 import { Painel } from "./ui/painel";
 import { abrirPopup, fecharPopup } from "./ui/popup";
 import type { EstadoUI } from "./ui/estado";
-import type { Animacao, AnimacaoDirecao, AnimacaoInicio, AnimacaoTipo, Deck, DeckSetup, Fill, GraficoTipo, Para, Shape, ShapeBox, Slide, SlideLayout, TextAlign, Transicao, TransicaoDirecao, TransicaoTipo } from "./schema";
+import type { Animacao, AnimacaoDirecao, AnimacaoInicio, AnimacaoTipo, Deck, DeckSetup, Fill, GraficoTipo, Lado, Para, Shape, ShapeBox, Slide, SlideLayout, TextAlign, Transicao, TransicaoDirecao, TransicaoTipo } from "./schema";
 
 marked.setOptions({ gfm: true, breaks: false });
 
@@ -213,6 +214,7 @@ export class PowerPointHost {
       aoCelulas: (sel) => this.selecionarCelulas(sel),
       aoTraco: (t) => this.aoTraco(t),
       aoTracoAndamento: (pontos) => this.aoTracoAndamento(pontos),
+      aoLigar: (l) => this.aoLigar(l),
     });
     this.montar();
     // fonte da web carregou: as medidas de entrelinha mudam, então redesenha (sem derrubar quem está digitando)
@@ -542,7 +544,9 @@ export class PowerPointHost {
   }
 
   private substituirSlide(slide: Slide): void {
-    this.slides = replaceSlide(this.deck, this.indice, slide).slides;
+    // as ligações são derivadas: qualquer mudança na lâmina reposiciona os conectores presos
+    const comLigacoes = slide.shapes.some((s) => s.liga);
+    this.slides = replaceSlide(this.deck, this.indice, comLigacoes ? atualizarLigacoes(slide, this.dim(), this.estilo().acento) : slide).slides;
   }
 
   /** Aplica uma edição à lâmina atual: guarda o desfazer, troca a lâmina e redesenha. */
@@ -1006,6 +1010,20 @@ export class PowerPointHost {
   private aoTracoAndamento(pontos: { x: number; y: number }[]): void {
     const dica = this.pane.querySelector<HTMLElement>("[data-pincel-dica]");
     if (dica) dica.textContent = `entendi: ${dicaDoTraco(pontos, this.pincel.assistente)}`;
+  }
+
+  /** Conectar: as duas formas escolhidas ganham a ligação presa (que se redesenha sozinha). */
+  private aoLigar(l: { de: string; ladoDe: Lado; para: string; ladoPara: Lado }): void {
+    const de = this.atual().shapes.find((s) => s.id === l.de);
+    const para = this.atual().shapes.find((s) => s.id === l.para);
+    if (!de || !para) return;
+    const formas = ligacaoParaFormas(de, l.ladoDe, para, l.ladoPara, this.dim(), this.estilo());
+    if (!formas.length) return;
+    this.registrar();
+    this.substituirSlide({ ...this.atual(), shapes: [...this.atual().shapes, ...formas] });
+    this.selecao = [formas[formas.length - 1].id];
+    this.markDirty();
+    this.pintar();
   }
 
   // ------------------------------------------------------------------
@@ -1597,6 +1615,13 @@ export class PowerPointHost {
         return void this.abrirFluxoMermaid();
       case "desenho":
         this.ferramenta = this.ferramenta?.tipo === "desenho" ? null : { tipo: "desenho" };
+        this.atualizarPincel();
+        this.stage.desenharSelecao();
+        this.fita.atualizar();
+        return;
+      case "conectar":
+        this.ferramenta = this.ferramenta?.tipo === "conectar" ? null : { tipo: "conectar" };
+        this.selecao = []; // no modo conectar valem as bolinhas das bordas, não as alças
         this.atualizarPincel();
         this.stage.desenharSelecao();
         this.fita.atualizar();
