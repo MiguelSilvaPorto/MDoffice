@@ -39,6 +39,11 @@ avisado ao abrir (nunca some em silêncio).
   — que desenha igual, como o “Combinar formas” do PowerPoint.
 - **Texto formatado por trecho**: negrito/itálico/sublinhado/riscado, marca-texto,
   sobrescrito, versalete, espaçamento, caixa alta/baixa, cor e limpar formatação.
+- **Fonte e tamanho como no PowerPoint**: o campo da fita mostra o que o texto **tem** — mesmo
+  que o `.pptx` use um tamanho fora da lista (41, 27, 17 pt…) ou uma fonte que o app não conhece —
+  e aceita **digitação**: dá para escrever qualquer tamanho (com vírgula) ou qualquer nome de fonte,
+  com a lista do app (e as fontes do próprio deck) no botão ao lado; tamanho misto fica em branco,
+  como no Office, e digitar aplica a todos os trechos escolhidos.
 - **Tabelas**: inserir, editar células (Tab anda entre elas), mesclar/dividir, linhas e
   colunas, estilos, bordas e sombreamento — com ida e volta fiel no `.pptx` (`a:tbl`).
 - **Gráficos**: inserir, editar os dados no painel, desenho em SVG e exportação como imagem.

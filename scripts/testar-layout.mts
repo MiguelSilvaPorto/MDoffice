@@ -388,5 +388,29 @@ checa("css: a grade da galeria existe", /\.pp-lays\s*\{[^}]*grid-template-column
 checa("css: o item da galeria existe", /\.pp-lay\s*\{/.test(cssPpt));
 checa("css: o layout atual fica destacado", /\.pp-lay\.on\s*\{/.test(cssPpt));
 
+// ---------------------------------------------------------------- fonte e tamanho livres
+
+console.log("\nfonte e tamanho livres nas fitas");
+
+checa("o seletor tem o modo editável (campo + setinha)", /data-editavel/.test(sel) && /\.sel-campo/.test(sel), "modo editável ausente em src/seletor.ts");
+checa("o valor digitado vira opção do select", /select\.append\(op\)/.test(sel), "o valor digitado não entra como opção");
+checa("número aceita vírgula e respeita min/max", /data-min/.test(sel) && /includes\(","\)/.test(sel), "normalização de número ausente");
+checa("a escolha na lista não é aplicada duas vezes", /if \(mudou\) \{\s*select\.value = op\.value/.test(sel), "ordem do face.focus() no item da lista");
+checa("o campo do modo editável tem estilo próprio", /\.sel-editavel > \.sel-campo\s*\{/.test(ler("src/styles/base.css")), "regra .sel-editavel > .sel-campo ausente");
+
+const fitaPptLivre = ler("src/powerpoint/ui/fita.ts");
+checa("fita do PowerPoint: fonte e tamanho editáveis", /data-sel="font" data-editavel/.test(fitaPptLivre) && /data-sel="size" data-editavel data-num/.test(fitaPptLivre), "data-editavel ausente nos seletores");
+const fitaWordLivre = ler("src/word/ribbon.ts");
+checa("fita do Word: fonte e tamanho editáveis", /data-sel="font" data-editavel/.test(fitaWordLivre) && /data-sel="size" data-editavel data-num/.test(fitaWordLivre), "data-editavel ausente nos seletores");
+checa("o Word acrescenta o valor que a lista não tem", /valor que a lista não conhece/.test(fitaWordLivre), "sel() não cria opção para o valor do documento");
+
+const listaFontes = ler("src/fontes.ts");
+checa(
+  "a lista de fontes do app é compartilhada (PowerPoint e Word)",
+  /export const FONTES_COMUNS/.test(listaFontes) && /FONTES_COMUNS/.test(ler("src/powerpoint/ui/estado.ts")) && /FONTES_COMUNS/.test(ler("src/word/schema.ts")),
+  "FONTES_COMUNS não é a fonte única"
+);
+checa("o diálogo do PowerPoint usa a lista do app", /FONTES_COMUNS\.map/.test(ler("src/app/powerpointDocs.ts")), "lista fixa voltou ao diálogo");
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

@@ -320,6 +320,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   aponta para os dois lados (a seta de diminuir fica **embaixo** do A, como no Word) e os
   seletores de **Fonte** e **Tamanho** ficaram na **mesma altura dos botões** da linha (28 px) —
   antes o campo ficava 2 px mais baixo que os vizinhos.
+- **Fonte e tamanho livres na fita**: os campos de **Fonte** e **Tamanho** mostram o que o
+  documento tem — um `.docx` com 13/13,5 pt ou com fonte fora da lista não fica mais em branco — e
+  aceitam **digitação** (qualquer tamanho ou nome de fonte, como no Word), com a lista do app no
+  botão ao lado; a lista de fontes ganhou as clássicas do Windows/Office.
 
 ---
 
@@ -537,6 +541,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   silhuetas cinzas (barra do título, linhas do corpo), na proporção do deck (16:9 ou 4:3) e com o
   nome embaixo. No "Layout" o layout atual vem destacado. A miniatura sai do MESMO dado que monta a
   lâmina nova (`caixasDoLayout`): mudou um layout, ela acompanha sozinha.
+- **Fonte e tamanho livres na fita**: o campo mostra o tamanho/fonte que o slide **tem** (os
+  **41, 27 e 17 pt** do deck de referência aparecem na lista, mesmo fora dos “redondos”) e aceita
+  **digitação** — qualquer tamanho (com vírgula, de 1 a 4096) ou qualquer nome de fonte; tamanho
+  misto fica em branco e digitar aplica a todos os trechos. A lista de fontes do app ganhou as
+  clássicas do Windows/Office e o diálogo **Configurar apresentação** passou a usá-la.
 
 ---
 
@@ -793,6 +802,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   (1em — na fita do PowerPoint ela cresce junto quando a faixa é aumentada). A lista aberta
   **fecha antes** de um painel se redesenhar (`fecharSeletor`), em vez de ficar presa a um
   controle que sumiu.
+- **Seletor do app com campo editável**: o controle ganhou o modo `data-editavel` — o valor vira
+  um **campo que aceita digitação** (com a setinha abrindo a mesma lista), o que a pessoa digita
+  entra como opção do próprio select e o `change` continua valendo para todo o código existente;
+  `data-num` normaliza números (vírgula ou ponto, com mínimo e máximo declarados no próprio
+  select). É o que as fitas do **Word** e do **PowerPoint** usam para não ficar presas a listas
+  fixas de fonte e tamanho. A lista de fontes comuns virou **uma só** (`src/fontes.ts`),
+  compartilhada pelos dois motores, com as clássicas do Windows/Office.
 
 **Ferramentas (dev)**
 
@@ -843,3 +859,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   que apareceram tortas no seletor (valor vazio sem o “—”, setinha `1em`, alto dos selects nas três
   fitas, setinha do botão de cor dentro do botão, setas de aumentar/diminuir e a lista que fecha
   antes de um painel se redesenhar).
+- **Teste de layout com o campo editável**: mais 10 checagens em `npm run test:layout` para o
+  modo editável (o valor digitado vira opção, vírgula e min/max, a escolha na lista não é aplicada
+  duas vezes, as duas fitas marcadas como editáveis e a lista de fontes única).

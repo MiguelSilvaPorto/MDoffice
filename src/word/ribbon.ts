@@ -95,10 +95,10 @@ export class Ribbon {
           ${group("Fonte", `
             <div class="rb-rows">
               <div class="rb-row">
-                <select class="rb-select font" data-sel="font" title="Fonte" aria-label="Fonte">
+                <select class="rb-select font" data-sel="font" data-editavel title="Fonte" aria-label="Fonte">
                   ${FONT_FAMILIES.map((f) => `<option value="${f}" style="font-family:'${f}'">${f}</option>`).join("")}
                 </select>
-                <select class="rb-select size" data-sel="size" title="Tamanho da letra" aria-label="Tamanho da letra">
+                <select class="rb-select size" data-sel="size" data-editavel data-num data-min="1" data-max="1638" title="Tamanho da letra" aria-label="Tamanho da letra">
                   ${FONT_SIZES.map((s) => `<option value="${s}">${s}</option>`).join("")}
                 </select>
                 ${btn("size-up", "A<sup>▲</sup>", "Aumentar tamanho da fonte")}
@@ -374,7 +374,19 @@ export class Ribbon {
     dis("redo", !st.canRedo);
     const sel = (name: string, v: string) => {
       this.el.querySelectorAll<HTMLSelectElement>(`[data-sel="${name}"]`).forEach((s) => {
-        if (v === "" || [...s.options].some((o) => o.value === v)) s.value = v;
+        if (v === "") {
+          s.value = v;
+          return;
+        }
+        // valor que a lista não conhece (fonte/tamanho de um .docx importado): vira opção
+        // para o campo mostrar o que o documento tem, como no Word
+        if (![...s.options].some((o) => o.value === v)) {
+          const op = document.createElement("option");
+          op.value = v;
+          op.textContent = v;
+          s.append(op);
+        }
+        s.value = v;
       });
     };
     this.el.querySelectorAll<HTMLElement>("[data-block]").forEach((b) => b.classList.toggle("active", b.dataset.block === st.block));
@@ -737,12 +749,22 @@ export class Ribbon {
     document.body.append(backdrop);
     melhorarSelects(modal);
     const q = <T extends HTMLElement>(sel: string) => modal.querySelector<T>(sel)!;
+    /** Valor vindo do documento que a lista não conhece (fonte/tamanho do .docx): vira opção. */
+    const porValor = (sel: HTMLSelectElement, v: string) => {
+      if (v && ![...sel.options].some((o) => o.value === v)) {
+        const op = document.createElement("option");
+        op.value = v;
+        op.textContent = v;
+        sel.append(op);
+      }
+      sel.value = v;
+    };
     const fill = () => {
       q<HTMLSelectElement>('[data-k="size"]').value = s.size;
       q<HTMLSelectElement>('[data-k="landscape"]').value = s.landscape ? "1" : "0";
       for (const k of ["top", "bottom", "left", "right"] as const) q<HTMLInputElement>(`[data-m="${k}"]`).value = String(s.margins[k]);
-      q<HTMLSelectElement>('[data-k="font"]').value = s.defaultFont;
-      q<HTMLSelectElement>('[data-k="fsize"]').value = String(s.defaultSize);
+      porValor(q<HTMLSelectElement>('[data-k="font"]'), s.defaultFont);
+      porValor(q<HTMLSelectElement>('[data-k="fsize"]'), String(s.defaultSize));
       q<HTMLInputElement>('[data-k="header"]').value = s.header;
       q<HTMLInputElement>('[data-k="footer"]').value = s.footer;
       q<HTMLInputElement>('[data-k="pn"]').checked = s.pageNumbers;

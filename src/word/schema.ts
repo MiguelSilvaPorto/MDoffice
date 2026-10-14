@@ -2,6 +2,7 @@
 // tabelas, imagens, quebra de página) e as marcas de texto (negrito, fonte, tamanho, cor…).
 import { Schema, type DOMOutputSpec, type MarkSpec, type Node as PMNode, type NodeSpec } from "prosemirror-model";
 import { tableNodes } from "prosemirror-tables";
+import { FONTES_COMUNS } from "../fontes";
 
 export type Align = "left" | "center" | "right" | "justify";
 
@@ -305,21 +306,25 @@ export function plainText(doc: PMNode): string {
   return out.join("\n");
 }
 
+/** Fontes do Word: as preferidas primeiro, depois as comuns do app (sem repetir). */
 export const FONT_FAMILIES = [
-  "Aptos",
-  "Calibri",
-  "Inter",
-  "Arial",
-  "Times New Roman",
-  "Georgia",
-  "Cambria",
-  "Verdana",
-  "Tahoma",
-  "Segoe UI",
-  "Trebuchet MS",
-  "Garamond",
-  "Courier New",
-  "Consolas",
+  ...new Set([
+    "Aptos",
+    "Calibri",
+    "Inter",
+    "Arial",
+    "Times New Roman",
+    "Georgia",
+    "Cambria",
+    "Verdana",
+    "Tahoma",
+    "Segoe UI",
+    "Trebuchet MS",
+    "Garamond",
+    "Courier New",
+    "Consolas",
+    ...FONTES_COMUNS,
+  ]),
 ];
 
 export const FONT_SIZES = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 48, 60, 72];

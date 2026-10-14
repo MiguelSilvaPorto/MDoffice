@@ -267,8 +267,8 @@ export class Fita {
         "Fonte",
         `<div class="ppr-linhas">
            <div class="ppr-linha">
-             <select class="ppr-sel fonte" data-sel="font" title="Fonte" aria-label="Fonte"></select>
-             <select class="ppr-sel tam" data-sel="size" title="Tamanho da fonte" aria-label="Tamanho da fonte"></select>
+             <select class="ppr-sel fonte" data-sel="font" data-editavel title="Fonte" aria-label="Fonte"></select>
+             <select class="ppr-sel tam" data-sel="size" data-editavel data-num data-min="1" data-max="4096" title="Tamanho da fonte" aria-label="Tamanho da fonte"></select>
              ${btn("maior", "A<sup>▲</sup>", "Aumentar fonte (Ctrl+Shift+>)", "fmt")}
              ${btn("menor", "A<sub>▼</sub>", "Diminuir fonte (Ctrl+Shift+<)", "fmt")}
            </div>

@@ -11,6 +11,7 @@ import { deckToPptx } from "../powerpoint/pptxexport";
 import { pptxToDeck } from "../powerpoint/pptximport";
 import { serialize } from "../powerpoint/model";
 import { melhorarSelects } from "../seletor";
+import { FONTES_COMUNS } from "../fontes";
 import { DEFAULT_SETUP } from "../powerpoint/model";
 import type { Deck, DeckSetup } from "../powerpoint/schema";
 import { bytesToBase64 } from "../util";
@@ -318,9 +319,8 @@ export const powerpointDocsMethods = {
             </select>
           </label>
           <label class="pg-row"><span class="pg-rot">Fonte padrão</span>
-            <select data-k="fontFamily">
-              <option>Segoe UI</option><option>Calibri</option><option>Arial</option>
-              <option>Georgia</option><option>Times New Roman</option><option>Verdana</option><option>Consolas</option>
+            <select data-k="fontFamily" data-editavel>
+              ${FONTES_COMUNS.map((f) => `<option>${f}</option>`).join("")}
             </select>
           </label>
           <label class="pg-row"><span class="pg-rot">Tamanho (pt)</span>
@@ -351,7 +351,17 @@ export const powerpointDocsMethods = {
       modal.querySelectorAll<Campo>("[data-k]").forEach((campo) => {
         const k = campo.dataset.k as keyof DeckSetup;
         if (campo instanceof HTMLInputElement && campo.type === "checkbox") campo.checked = !!rascunho[k];
-        else campo.value = String(rascunho[k] ?? "");
+        else {
+          const v = String(rascunho[k] ?? "");
+          // fonte do deck fora das comuns: entra como opção para o campo mostrar o que o deck tem
+          if (campo instanceof HTMLSelectElement && v && ![...campo.options].some((o) => o.value === v)) {
+            const op = document.createElement("option");
+            op.value = v;
+            op.textContent = v;
+            campo.append(op);
+          }
+          campo.value = v;
+        }
       });
 
       const done = (v: DeckSetup | null) => {

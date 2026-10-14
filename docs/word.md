@@ -18,7 +18,10 @@ arquivos `.docx` de verdade.
 - Abas **Início**, **Inserir**, **Layout** e **Revisão** (e a aba contextual **Tabela**
   quando o cursor está numa tabela).
 - **Fonte**: família e tamanho, negrito/itálico/sublinhado/riscado, sub/sobrescrito,
-  **cor da letra** e **destaque** (marca-texto), limpar formatação.
+  **cor da letra** e **destaque** (marca-texto), limpar formatação. Os dois campos **mostram o
+  que o documento tem** (fonte ou tamanho vindo de um `.docx` fora da lista não some) e aceitam
+  **digitação** — dá para escrever qualquer tamanho (com vírgula) ou qualquer nome de fonte, com
+  a lista do app no botão ao lado.
 - **Parágrafo**: marcadores e numeração com níveis, recuo, entrelinha, alinhamento
   (esquerda, centro, direita e **justificado**).
 - **Estilos**: Texto normal, Título 1–4, Citação e Código (caixas de estilo com prévia).

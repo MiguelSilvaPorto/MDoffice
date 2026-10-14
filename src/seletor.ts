@@ -3,6 +3,11 @@
 // ⋯, sem tirar o select do DOM: ele continua sendo a fonte da verdade (value, options,
 // disabled e o evento `change` continuam valendo para todo o código que já existe).
 //
+// Com `data-editavel` o controle vira um **campo com lista** (como no Office): o valor
+// aparece num input que aceita digitação — o que o documento tem não fica preso às opções —
+// e a setinha abre a lista. `data-num` + `data-min`/`data-max` validam e normalizam números
+// (aceita vírgula e ponto). O valor digitado vira uma opção do próprio select na hora.
+//
 // Uso: depois de montar uma tela/painel, chame `melhorarSelects(raiz)`.
 import { h } from "./util";
 
@@ -23,8 +28,16 @@ function rotuloDe(select: HTMLSelectElement): string {
 
 /** A cara do controle acompanha o estado atual do select (vazio = em branco, como o nativo). */
 export function sincronizarSeletor(select: HTMLSelectElement): void {
-  const rot = select.closest<HTMLElement>(".sel-wrap")?.querySelector<HTMLElement>("[data-sel-rotulo]");
+  const wrap = select.closest<HTMLElement>(".sel-wrap");
+  if (!wrap) return;
+  const rot = wrap.querySelector<HTMLElement>("[data-sel-rotulo]");
   if (rot) rot.textContent = rotuloDe(select);
+  // o campo do modo editável: acompanha valor e disabled (menos enquanto a pessoa digita)
+  const campo = wrap.querySelector<HTMLInputElement>(".sel-campo");
+  if (campo) {
+    campo.disabled = select.disabled;
+    if (document.activeElement !== campo) campo.value = rotuloDe(select);
+  }
 }
 
 function fecharMenu(animar = true): void {
@@ -67,7 +80,7 @@ document.addEventListener(
   true
 );
 
-function abrirMenu(select: HTMLSelectElement, face: HTMLElement): void {
+function abrirMenu(select: HTMLSelectElement, face: HTMLElement, ancora: HTMLElement = face): void {
   if (aberto?.select === select) {
     fecharMenu();
     return;
@@ -83,15 +96,21 @@ function abrirMenu(select: HTMLSelectElement, face: HTMLElement): void {
     item.addEventListener("click", () => {
       const mudou = select.value !== op.value;
       fecharMenu();
+      // mostra o rótulo no campo antes de devolver o foco: sem isso o blur do campo
+      // aplicaria a escolha de novo (e um texto antigo por cima dela)
+      const wrap = select.closest<HTMLElement>(".sel-wrap");
+      const campo = wrap?.querySelector<HTMLInputElement>(".sel-campo");
+      if (campo) campo.value = (op.label || op.textContent || "").trim();
+      if (mudou) {
+        select.value = op.value; // o setter interceptado sincroniza a cara
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      }
       face.focus();
-      if (!mudou) return;
-      select.value = op.value; // o setter interceptado sincroniza a cara
-      select.dispatchEvent(new Event("change", { bubbles: true }));
     });
     menu.append(item);
   }
   document.body.append(menu);
-  const r = face.getBoundingClientRect();
+  const r = ancora.getBoundingClientRect();
   const w = menu.offsetWidth;
   const hh = menu.offsetHeight;
   let top = r.bottom + 4;
@@ -117,28 +136,101 @@ export function melhorarSeletor(select: HTMLSelectElement): void {
   if (melhorados.has(select) || select.closest(".sel-wrap")) return;
   melhorados.add(select);
 
+  const editavel = select.hasAttribute("data-editavel");
   // o wrapper herda as classes do select para cada contexto continuar estilizando igual
   const wrap = document.createElement("span");
-  wrap.className = `${select.className} sel-wrap`;
+  wrap.className = `${select.className} sel-wrap${editavel ? " sel-editavel" : ""}`;
   select.classList.add("sel-oculto");
   select.before(wrap);
   wrap.append(select);
+
+  // modo editável: o valor mora num input (o que o documento tem não fica preso às opções)
+  const campo = editavel ? document.createElement("input") : null;
+  if (campo) {
+    campo.type = "text";
+    campo.className = "sel-campo";
+    campo.autocomplete = "off";
+    campo.spellcheck = false;
+    if (select.hasAttribute("data-num")) campo.inputMode = "decimal";
+    if (select.title) campo.title = select.title;
+    const aria = select.getAttribute("aria-label");
+    if (aria) campo.setAttribute("aria-label", aria);
+    wrap.append(campo);
+  }
 
   const face = document.createElement("button");
   face.type = "button";
   face.className = "sel-face";
   face.setAttribute("aria-haspopup", "menu");
   face.setAttribute("aria-expanded", "false");
-  if (select.title) face.title = select.title;
-  const aria = select.getAttribute("aria-label");
-  if (aria) face.setAttribute("aria-label", aria);
-  face.innerHTML = `<span data-sel-rotulo></span><svg class="ic"><use href="#i-chevron"/></svg>`;
+  if (!editavel) {
+    if (select.title) face.title = select.title;
+    const aria = select.getAttribute("aria-label");
+    if (aria) face.setAttribute("aria-label", aria);
+  } else {
+    face.setAttribute("aria-label", select.getAttribute("aria-label") ? `${select.getAttribute("aria-label")}: abrir a lista` : "Abrir a lista");
+  }
+  face.innerHTML = editavel ? `<svg class="ic"><use href="#i-chevron"/></svg>` : `<span data-sel-rotulo></span><svg class="ic"><use href="#i-chevron"/></svg>`;
   wrap.append(face);
 
   face.addEventListener("click", () => {
     if (select.disabled) return;
-    abrirMenu(select, face);
+    abrirMenu(select, face, editavel ? wrap : face);
   });
+
+  if (campo) {
+    /** O que a pessoa digitou vira valor do select (e opção, se não existir). */
+    const comprometer = (): void => {
+      const atual = rotuloDe(select);
+      const texto = campo.value.trim();
+      if (texto === "" || texto === atual) {
+        campo.value = atual; // vazio (ou igual): volta ao que estava
+        return;
+      }
+      let valor = texto;
+      if (select.hasAttribute("data-num")) {
+        // aceita "10,5" e "10.5" (e "1.234,5" com ponto de milhar)
+        const limpo = texto.replace(/\s/g, "");
+        const n = Number(limpo.includes(",") ? limpo.replace(/\./g, "").replace(",", ".") : limpo);
+        if (!Number.isFinite(n)) {
+          campo.value = atual; // não é número: volta
+          return;
+        }
+        const min = select.getAttribute("data-min");
+        const max = select.getAttribute("data-max");
+        let v = n;
+        if (min !== null && v < Number(min)) v = Number(min);
+        if (max !== null && v > Number(max)) v = Number(max);
+        v = Math.round(v * 100) / 100;
+        valor = String(v);
+        campo.value = valor.replace(".", ",");
+      }
+      let op = Array.from(select.options).find((o) => o.value === valor) ?? null;
+      if (!op) {
+        op = document.createElement("option");
+        op.value = valor;
+        op.textContent = select.hasAttribute("data-num") ? valor.replace(".", ",") : valor;
+        select.append(op);
+      }
+      if (select.value !== valor) {
+        select.value = valor; // o setter interceptado sincroniza a cara
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    };
+    campo.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        comprometer();
+        campo.select();
+      } else if (e.key === "Escape") {
+        campo.value = rotuloDe(select);
+        campo.blur();
+      }
+    });
+    // como no Office: entrar no campo já deixa tudo escolhido (digitar substitui)
+    campo.addEventListener("focus", () => campo.select());
+    campo.addEventListener("blur", comprometer);
+  }
 
   // `value` programático não gera mutação no DOM: intercepta o setter para a cara acompanhar
   const desc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")!;

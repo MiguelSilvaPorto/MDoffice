@@ -5204,7 +5204,7 @@ antigas quando fizer sentido.
   a cara do app (`5c79e97`), botão direito + arrastar move a tela (`9608977`) e a lista dos
   seletores sem cobrir a tela (`d32357e`)
 - **Porquê:** registrar no estado de autoria e promover no fechamento não cabem no mesmo
-  commit — a entrada só é verdadeira DEPOIS de a `main` receber o trabalho —, então a promoção
+  commit - a entrada só é verdadeira DEPOIS de a `main` receber o trabalho -, então a promoção
   anda em passos curtos de docs. Como nas rodadas anteriores, cada entrada foi conferida
   contra o histórico (o commit é ancestral de `main`) antes de mudar de lugar, e as seções de
   origem ficaram com "- (nada no momento)" nos dois lados.
@@ -5244,3 +5244,100 @@ antigas quando fizer sentido.
   de "Não adicionado" (F4, no MD\*) é de outro trabalho e ficou onde está — a promoção em
   bloco das rodadas anteriores só era segura porque todas as entradas daquelas seções eram
   desta linha de trabalho.
+## src/fontes.ts
+
+### 2026-10-14 · esta tarefa · uma lista de fontes para os dois motores (novo arquivo)
+- **Local:** arquivo novo — `FONTES_COMUNS`
+- **Linha:** “novo arquivo” (~90 fontes: as comuns + as clássicas do Windows/Office)
+- **Porquê:** a lista vivia dentro do PowerPoint (`ui/estado.ts`) e o Word tinha a sua própria,
+  curta — a fita do Word mostrava 13 fontes contra 18 do PowerPoint. O campo de fonte agora também
+  aceita qualquer nome **digitado** (ver `src/seletor.ts`), então a lista é só o atalho; uma lista
+  só evita que os dois motores sugiram coisas diferentes.
+
+## src/powerpoint/ui/estado.ts
+
+### 2026-10-14 · esta tarefa · FONTES_COMUNS vem do módulo compartilhado
+- **Local:** a lista local (antes `export const FONTES_COMUNS = [...]`)
+- **Linha:** array local → `export { FONTES_COMUNS } from "../../fontes"` (quem já importava
+  de `./estado` continua funcionando)
+- **Porquê:** uma definição só, sem mudar os pontos de import existentes.
+
+## src/word/schema.ts
+
+### 2026-10-14 · esta tarefa · FONT_FAMILIES = preferidas + comuns (sem repetir)
+- **Local:** `FONT_FAMILIES`
+- **Linha:** lista fixa de 14 → `[...new Set([...preferidas, ...FONTES_COMUNS])]`
+- **Porquê:** o Word ficava com uma lista própria e menor que a do PowerPoint; agora as preferidas
+  continuam no topo e o resto vem da lista compartilhada, sem duplicar (Aptos, Calibri e as
+  clássicas aparecem uma vez só).
+
+## src/seletor.ts
+
+### 2026-10-14 · esta tarefa · o modo editável (campo + lista)
+- **Local:** `melhorarSeletor` (campo, `comprometer`, teclado), `sincronizarSeletor` e o item da
+  lista em `abrirMenu`
+- **Linha:** `data-editavel` cria um `<input class="sel-campo">` antes da setinha (a cara vira só o
+  chevron); Enter/blur confirmam, Esc/valor inválido voltam, o foco seleciona tudo (digitar
+  substitui) e o valor digitado entra como `<option>` do próprio select; `data-num` normaliza
+  (“10,5” e “10.5” → `10.5`, com `data-min`/`data-max`); a opção da lista agora atualiza o campo
+  **antes** do `face.focus()` e o `change` é disparado uma vez só
+- **Porquê:** a fita só oferecia os tamanhos “redondos” e as fontes da lista — o deck de referência
+  usa 41/27/17 pt e fontes fora dela, e o campo nem mostrava o que o slide tinha. É o comportamento
+  do Office: o valor é um campo de texto, a lista é um atalho ao lado. O `change` continua sendo o
+  contrato com o código existente; a escolha aplicada duas vezes (blur + item) foi um efeito
+  colateral que a ordem corrige.
+
+## src/styles/base.css
+
+### 2026-10-14 · esta tarefa · estilos do campo editável
+- **Local:** bloco `.sel-editavel`/`.sel-campo` (depois da regra de desabilitado)
+- **Linha:** regras novas — campo sem borda com `font: inherit`, setinha `flex: none`, desabilitado
+  a 55% e o anel de foco no wrapper
+- **Porquê:** o wrapper continua sendo a “caixa” do controle (borda/fundo vêm do contexto), então o
+  campo não pode trazer estilo próprio; o anel de foco precisa aparecer na caixa, não no input nu.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · esta tarefa · fonte e tamanho editáveis na fita
+- **Local:** os dois `<select>` do grupo Fonte
+- **Linha:** `data-editavel` nos dois; `data-num data-min="1" data-max="4096"` no tamanho
+- **Porquê:** é o que faz o campo aceitar e mostrar qualquer valor (o `<select>` continua no DOM
+  com o valor/opções/`change` de sempre — o `atualizar()` já incluía o valor atual na lista).
+
+## src/word/ribbon.ts
+
+### 2026-10-14 · esta tarefa · fonte e tamanho editáveis na fita do Word
+- **Local:** os `<select>` `data-sel="font"`/`data-sel="size"`, o helper `sel()` do `update()` e o
+  diálogo “Configurar página” (`porValor`)
+- **Linha:** `data-editavel` (+ `data-num data-min="1" data-max="1638"` no tamanho); `sel()` agora
+  acrescenta uma `<option>` quando o valor do documento não está na lista (antes o valor era
+  ignorado e o campo ficava com o valor velho); `porValor()` faz o mesmo no diálogo
+- **Porquê:** um `.docx` com 13,5 pt ou fonte fora da lista deixava o campo em branco (ou defasado);
+  com a opção acrescentada o campo mostra o que o documento tem, e digitar continua podendo tudo.
+
+## src/app/powerpointDocs.ts
+
+### 2026-10-14 · esta tarefa · “Configurar apresentação” com a lista do app
+- **Local:** o `<select data-k="fontFamily">` e o preenchimento dos valores
+- **Linha:** 7 `<option>` fixas → `${FONTES_COMUNS.map(...)}` + `data-editavel`; o preenchimento
+  acrescenta a opção quando a fonte do deck não está na lista
+- **Porquê:** a lista fixa escondia a fonte real do deck (ficava em branco) e era menor que a da
+  fita; agora é a mesma lista e o campo aceita digitação.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · esta tarefa · seção “fonte e tamanho livres”
+- **Local:** bloco novo no fim (antes do resumo)
+- **Linha:** 10 checagens — modo editável no seletor, opção gerada pelo valor digitado, vírgula e
+  min/max, o `change` uma vez só, estilo do campo, as duas fitas marcadas e a lista de fontes única
+- **Porquê:** são regras fáceis de quebrar sem ninguém notar (bastava alguém “limpar” o
+  `data-editavel`), e o teste de layout é onde o repositório prende esse tipo de invariante.
+
+## docs/powerpoint.md e docs/word.md
+
+### 2026-10-14 · esta tarefa · a documentação acompanha o campo livre
+- **Local:** `powerpoint.md` (Editar as lâminas) e `word.md` (Fita)
+- **Linha:** balas novas explicando que os campos mostram o que o documento/slide tem e aceitam
+  digitação
+- **Porquê:** é comportamento visível: quem lê a documentação precisa saber que a lista de tamanhos
+  não é limite.

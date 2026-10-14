@@ -159,6 +159,38 @@ button {
   cursor: default;
 }
 
+/* modo editável (data-editavel): o valor vive num campo que aceita digitação */
+.sel-editavel {
+  gap: 4px;
+}
+
+.sel-editavel > .sel-campo {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+
+/* a carinha vira só a setinha (quem mostra o valor é o campo) */
+.sel-editavel > .sel-face {
+  flex: none;
+  gap: 0;
+}
+
+.sel-editavel:has(select:disabled) > .sel-campo {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.sel-editavel:has(> .sel-campo:focus-visible) {
+  outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: 2px;
+}
+
 .sel-wrap.sel-aberto .sel-face .ic {
   color: var(--accent);
 }

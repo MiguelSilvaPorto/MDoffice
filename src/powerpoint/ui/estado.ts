@@ -60,10 +60,9 @@ export interface EstadoUI {
   cantosSel: Canto[];
 }
 
-export const FONTES_COMUNS = [
-  "Segoe UI", "Calibri", "Arial", "Arial Black", "Cambria", "Candara", "Consolas", "Courier New", "Georgia", "Impact", "Tahoma",
-  "Times New Roman", "Trebuchet MS", "Verdana", "Montserrat", "Roboto", "Open Sans", "Inter",
-];
+// A lista de fontes comuns do app (fitas do PowerPoint e do Word). O campo de fonte
+// aceita qualquer nome digitado; a lista é o atalho.
+export { FONTES_COMUNS } from "../../fontes";
 
 export const TAMANHOS = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 44, 48, 54, 60, 72, 80, 96];
 
