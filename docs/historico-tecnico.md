@@ -6388,3 +6388,29 @@ antigas quando fizer sentido.
 - **Linha:** a bala do arco ganha a orientação (traço torto sai girado e a caixa acompanha) e o
   desenho livre passa a dizer "duas passadas"; a bala do desenho livre cita o passo fino
 - **Porquê:** é o comportamento visível do assistente, e era o que o usuário estava vendo errado.
+## src/powerpoint/powerpoint.ts · src/powerpoint/edicao/modelos.ts · src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · esta tarefa · Ideias de design (a lâmina atual em cada modelo)
+- **Local:** `powerpoint.ts` — a aba "Ideias" e o corpo `[data-ideias-corpo]` no painel lateral,
+  `mostrarLateral`, o método `pintarIdeias` e o gancho no `pintar`; `modelos.ts` — o catálogo;
+  `powerpoint-edicao.css` — os cartões
+- **Linha:** `+ <button data-lateral="ideias">` e `+ <div class="pp-ideias" data-ideias>`;
+  `+ pintarIdeias()` (aplicarModelo + htmlFormaRica por modelo, `previa.style.transform =
+  scale(w / 960)`); `+ if (this.lateral === "ideias") this.pintarIdeias();` no `pintar`;
+  `+ 13 presets com cores próprias`
+- **Porquê:** o pedido veio de olhar o **DeckCraft** (`A:\Projetos\deckcraft`): lá o painel
+  "Design Ideas" (`crates/ui-egui/src/panes.rs`, `fn designer`) clona o documento, troca o tema
+  do mestre, **renderiza a lâmina atual** em cada tema e aplica no clique — tudo offline. A
+  decisão aqui foi **não rasterizar**: o app já desenha a lâmina em HTML/CSS e o `.pp-slide` é
+  container de `cqw`, então a prévia é a lâmina de verdade em 960px reduzida por `transform` —
+  fiel por construção (não há um segundo desenho para manter em dia) e sem custo de render por
+  cartão. A escala sai **depois do layout**, com a largura real do painel (ele é redimensionável).
+  O catálogo novo é o de lá traduzido para os quatro papéis que o app usa (fundo, texto, acento
+  e secundária) — o mesmo formato dos modelos do usuário, então `aplicarModelo` já sabe aplicá-lo
+  sem nenhum caminho novo.
+- **Local:** `scripts/testar-layout.mts` e `docs/powerpoint.md`
+- **Linha:** `novo` — 8 checagens na seção "ideias de design" (o catálogo, as cores próprias, a
+  aba/corpo, a lâmina atual no cartão, a escala, o clique aplicando e o painel acompanhando) e o
+  doc do módulo com as Ideias e o catálogo novo
+- **Porquê:** é a mecânica inteira de uma aba nova; sem as checagens, um refactor do painel
+  derrubaria a prévia ou o clique em silêncio.

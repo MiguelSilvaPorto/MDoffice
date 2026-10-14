@@ -493,6 +493,38 @@ checa("css: a grade da galeria existe", /\.pp-lays\s*\{[^}]*grid-template-column
 checa("css: o item da galeria existe", /\.pp-lay\s*\{/.test(cssPpt));
 checa("css: o layout atual fica destacado", /\.pp-lay\.on\s*\{/.test(cssPpt));
 
+// Ideias de design: a lâmina atual desenhada em cada modelo (a ideia do Design Ideas do DeckCraft)
+console.log("\nídeias de design (a lâmina atual em cada modelo)");
+{
+  const mod = ler("src/powerpoint/edicao/modelos.ts");
+  checa(
+    "o catálogo ganhou os designs do DeckCraft (8 temas + 5 esquemas de cor)",
+    /id: "deckcraft"/.test(mod) && /id: "harbor"/.test(mod) && /id: "slate"/.test(mod) && /id: "grayscale"/.test(mod) && /id: "berry"/.test(mod)
+  );
+  checa(
+    "cada design traz as próprias cores (fundo, texto, acento e secundária) e a fonte",
+    /id: "harbor"[^}]*cores: \{ fg: "FFFFFF", accent: "1B7FA6", muted: "36B3A8" \}/.test(mod) && /id: "slate"[^}]*fonte: "Roboto"/.test(mod)
+  );
+  checa(
+    "o painel tem a aba e o corpo das Ideias",
+    /data-lateral="ideias">Ideias</.test(ppt) && /data-ideias-corpo/.test(ppt) && /data-ideias>/.test(ppt)
+  );
+  checa(
+    "cada cartão desenha A LÂMINA ATUAL com o modelo aplicado (não um desenho à parte)",
+    /aplicarModelo\(\[atual\], de, m\)/.test(ppt) && /htmlFormaRica\(f, ctx\)/.test(ppt) && /pp-ideia-slide/.test(ppt)
+  );
+  checa(
+    "a prévia é a lâmina de verdade reduzida por transform (com a largura do painel)",
+    /previa\.style\.transform = `scale\(\$\{w \/ largura\}\)`/.test(ppt) && /largura = 960/.test(ppt)
+  );
+  checa("clicar aplica o modelo (o mesmo comando do Template)", /cartao\.addEventListener\("click", \(\) => this\.run\("modelo", m\.id\)\)/.test(ppt));
+  checa(
+    "o painel acompanha a lâmina atual (redesenha junto com o palco)",
+    /if \(this\.lateral === "ideias"\) this\.pintarIdeias\(\)/.test(ppt)
+  );
+  checa("css: a moldura recorta a prévia e a lâmina entra em tamanho cheio", /\.pp-ideia-moldura\s*\{[^}]*overflow:\s*hidden/s.test(cssPpt) && /\.pp-ideia-slide\s*\{[^}]*transform-origin:\s*0 0/s.test(cssPpt));
+}
+
 // ---------------------------------------------------------------- fonte e tamanho livres
 
 console.log("\nfonte e tamanho livres nas fitas");

@@ -90,7 +90,13 @@ avisado ao abrir (nunca some em silêncio).
   a roda rola o quadro primeiro e só troca ao chegar ao fim; `Ctrl` + roda é o **zoom** (mirando o
   ponteiro).
 - **Modelos**: o botão **Template** aplica modelos de estilo (tema, cores e fonte) ao deck;
-  dá para salvar o visual atual como cartão e aplicar/remover depois.
+  dá para salvar o visual atual como cartão e aplicar/remover depois. O catálogo traz os
+  presets do app **mais os 13 designs no formato do DeckCraft** (8 temas originais + 5
+  esquemas de cor, cada um com as próprias cores e fonte).
+- **Ideias de design** (aba do painel lateral): mostra **esta lâmina** desenhada em cada
+  modelo do catálogo, em cartões clicáveis — clicar aplica o modelo à apresentação inteira.
+  As ideias são geradas **no computador** (sem nuvem), como no *Design Ideas* do DeckCraft: a
+  prévia é a lâmina de verdade reduzida, então o cartão mostra exatamente o que o clique faz.
 - **Configurar apresentação**: proporção (16:9 / 4:3), tema (claro/escuro/contraste), fonte
   padrão, tamanho, rodapé e número da lâmina.
 

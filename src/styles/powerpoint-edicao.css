@@ -2050,3 +2050,64 @@ button.ppr.trans-dir {
 #pp-stage {
   position: relative;
 }
+
+/* ---------- Ideias de design (painel lateral) ---------- */
+.pp-ideias-dica {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.pp-ideias {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 8px;
+}
+
+.pp-ideia {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* a moldura recorta a lâmina de verdade, que entra em tamanho cheio e é reduzida por
+   transform (a escala sai no JS, com a largura que o painel tiver) */
+.pp-ideia-moldura {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: var(--slide-ratio, 16 / 9);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.pp-ideia:hover .pp-ideia-moldura,
+.pp-ideia:focus-visible .pp-ideia-moldura {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.pp-ideia-slide {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  box-shadow: none;
+  border-radius: 0;
+  pointer-events: none;
+}
+
+.pp-ideia-nome {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--fg);
+}

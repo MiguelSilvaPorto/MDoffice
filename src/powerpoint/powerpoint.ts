@@ -16,7 +16,7 @@ import type { Dim } from "./edicao/geometria";
 import { Historico } from "./edicao/historico";
 import { formasDoLayout, novaLamina } from "./edicao/layouts";
 import { migrarSlides, registrarMidia } from "./edicao/migrar";
-import { MODELOS, aplicarModelo, type ModeloPPT } from "./edicao/modelos";
+import { MODELOS, aplicarModelo, type EstiloAtual, type ModeloPPT } from "./edicao/modelos";
 import { criarModeloUsuario, lerModelosUsuario, removerModeloUsuario } from "./modelosUsuario";
 import {
   agruparFormas,
@@ -170,7 +170,7 @@ export class PowerPointHost {
   private animPreview: ControleAnimacoes | null = null;
   private destinoImagem = "inserir";
   private destinoMidia: string | null = null;
-  private lateral: "formatar" | "notas" | "animacao" = "formatar";
+  private lateral: "formatar" | "notas" | "animacao" | "ideias" = "formatar";
   /** célula em edição (quando a forma em edição é uma tabela) e células selecionadas */
   private celulaEdit: [number, number] | null = null;
   private celulas: CelulasSel | null = null;
@@ -261,6 +261,7 @@ export class PowerPointHost {
             <button type="button" class="on" data-lateral="formatar">Formatar</button>
             <button type="button" data-lateral="animacao">Animação</button>
             <button type="button" data-lateral="notas">Notas</button>
+            <button type="button" data-lateral="ideias">Ideias</button>
             <button type="button" class="pp-side-fechar" data-side-toggle title="Esconder o painel" aria-label="Esconder o painel">»</button>
           </div>
           <div class="pp-side-corpo pp-painel" data-formatar></div>
@@ -271,6 +272,11 @@ export class PowerPointHost {
           <div class="pp-side-corpo" data-notas-corpo hidden>
             <div class="pp-side-head"><span>Notas do apresentador</span><span class="pp-side-hint">não aparecem na lâmina</span></div>
             <textarea class="pp-notes" data-notes placeholder="O que falar nesta lâmina..."></textarea>
+          </div>
+          <div class="pp-side-corpo" data-ideias-corpo hidden>
+            <div class="pp-side-head"><span>Ideias de design</span><span class="pp-side-hint">geradas no seu computador</span></div>
+            <p class="pp-ideias-dica">Escolha um visual para a apresentação: cada cartão mostra <b>esta lâmina</b> no design. Clicar aplica na apresentação inteira.</p>
+            <div class="pp-ideias" data-ideias></div>
           </div>
         </aside>
         <button type="button" class="pp-side-aba" data-side-toggle title="Mostrar o painel" aria-label="Mostrar o painel">« Formatar</button>
@@ -439,15 +445,67 @@ export class PowerPointHost {
     if (this.pane.classList.contains("pp-side-oculto")) this.pane.querySelector<HTMLElement>("[data-side-toggle]")?.click();
   }
 
-  private mostrarLateral(qual: "formatar" | "notas" | "animacao"): void {
+  private mostrarLateral(qual: "formatar" | "notas" | "animacao" | "ideias"): void {
     this.lateral = qual;
     for (const b of this.pane.querySelectorAll<HTMLElement>("[data-lateral]")) b.classList.toggle("on", b.dataset.lateral === qual);
     this.pane.querySelector<HTMLElement>("[data-formatar]")!.hidden = qual !== "formatar";
     this.pane.querySelector<HTMLElement>("[data-animacao-corpo]")!.hidden = qual !== "animacao";
     this.pane.querySelector<HTMLElement>("[data-notas-corpo]")!.hidden = qual !== "notas";
+    this.pane.querySelector<HTMLElement>("[data-ideias-corpo]")!.hidden = qual !== "ideias";
     if (qual === "notas") this.notes.focus();
     else if (qual === "animacao") this.renderAnimacoes();
+    else if (qual === "ideias") this.pintarIdeias();
     else this.painel.atualizar();
+  }
+
+  /**
+   * Ideias de design: a LÂMINA ATUAL desenhada em cada modelo (presets + modelos do usuário),
+   * offline — a mesma ideia do "Design Ideas" do DeckCraft (A:\Projetos\deckcraft), onde cada
+   * cartão é a lâmina de verdade renderizada no tema e o clique aplica.
+   *
+   * Aqui a prévia é a lâmina real reduzida por `transform`: o `.pp-slide` é um container de
+   * `cqw`, então o texto das formas escala junto e o cartão mostra exatamente o que o clique
+   * vai aplicar — sem desenho à parte para manter em dia.
+   */
+  private pintarIdeias(): void {
+    const host = this.pane.querySelector<HTMLElement>("[data-ideias]");
+    if (!host) return;
+    const atual = this.atual();
+    const de: EstiloAtual = { theme: this.setup.theme, bg: this.setup.bg, fontFamily: this.setup.fontFamily };
+    const ctx = this.ctxRender(false);
+    const largura = 960; // referência da prévia (o cqw do texto sai daqui)
+    const altura = Math.round(largura / stageRatio(this.setup));
+    host.textContent = "";
+    for (const m of [...MODELOS, ...lerModelosUsuario()]) {
+      const [comModelo] = aplicarModelo([atual], de, m);
+      const cartao = document.createElement("button");
+      cartao.type = "button";
+      cartao.className = "pp-ideia";
+      cartao.title = `${m.nome} — ${m.descricao}`;
+      const moldura = document.createElement("span");
+      moldura.className = "pp-ideia-moldura";
+      const previa = document.createElement("span");
+      previa.className = "pp-slide pp-ideia-slide";
+      previa.style.width = `${largura}px`;
+      previa.style.height = `${altura}px`;
+      previa.style.background = fundoValor(comModelo.bg, this.setup.media ?? {}) || `#${m.cores?.bg || m.bg || themeOf(m.tema).bg}`;
+      previa.innerHTML = comModelo.shapes.length
+        ? comModelo.shapes.map((f) => htmlFormaRica(f, ctx)).join("")
+        : sanitize(String(marked.parse(comModelo.md, { gfm: true, async: false }))).slice(0, 600);
+      moldura.append(previa);
+      const nome = document.createElement("span");
+      nome.className = "pp-ideia-nome";
+      nome.textContent = m.nome;
+      cartao.append(moldura, nome);
+      cartao.addEventListener("click", () => this.run("modelo", m.id));
+      host.append(cartao);
+    }
+    // a escala sai depois do layout: cada prévia cabe na largura que o painel tiver agora
+    for (const moldura of host.querySelectorAll<HTMLElement>(".pp-ideia-moldura")) {
+      const previa = moldura.firstElementChild as HTMLElement | null;
+      const w = moldura.clientWidth;
+      if (previa && w > 0) previa.style.transform = `scale(${w / largura})`;
+    }
   }
 
   /** Redesenha o painel de animação (lista da lâmina, na ordem). */
@@ -581,6 +639,8 @@ export class PowerPointHost {
     this.atualizarStatus();
     this.sincronizarTabelas();
     this.atualizarUI();
+    // com o painel de Ideias aberto, ele acompanha a lâmina atual (e o modelo aplicado)
+    if (this.lateral === "ideias") this.pintarIdeias();
   }
 
   /** só a lâmina e a seleção (usado enquanto se arrasta, para não refazer as miniaturas a cada quadro) */

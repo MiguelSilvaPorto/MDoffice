@@ -28,6 +28,23 @@ export const MODELOS: ModeloPPT[] = [
   { id: "escuro", nome: "Escuro", descricao: "Fundo quase preto e fonte Segoe UI", tema: "escuro", bg: "", fonte: "Segoe UI" },
   { id: "meia-noite", nome: "Meia-noite", descricao: "Fundo azul-escuro e fonte Inter", tema: "escuro", bg: "151B26", fonte: "Inter" },
   { id: "contraste", nome: "Alto contraste", descricao: "Preto e branco com destaques amarelos", tema: "contraste", bg: "", fonte: "Arial" },
+  // O catálogo inspirado no DeckCraft (o app irmão): cada design traz as PRÓPRIAS cores nos
+  // quatro papéis que o app usa (fundo, texto, acento e secundária) e a fonte — o mesmo
+  // formato dos modelos do usuário, então `aplicarModelo` já sabe trocá-las. Os oito primeiros
+  // são os temas originais de lá; os cinco últimos, os esquemas de cor extras do catálogo.
+  { id: "deckcraft", nome: "DeckCraft", descricao: "Fundo areia, texto azul-escuro e acento azul", tema: "claro", bg: "EDEBE7", fonte: "Inter", cores: { fg: "1E2B3C", accent: "2E6FD8", muted: "8A5CD8" } },
+  { id: "harbor", nome: "Harbor", descricao: "Fundo azul-marinho e acento turquesa", tema: "escuro", bg: "0B1F2A", fonte: "Open Sans", cores: { fg: "FFFFFF", accent: "1B7FA6", muted: "36B3A8" } },
+  { id: "ember", nome: "Ember", descricao: "Fundo carvão quente e acento laranja", tema: "escuro", bg: "1A1A1A", fonte: "Lato", cores: { fg: "FFFCF7", accent: "D9480F", muted: "F59F00" } },
+  { id: "meadow", nome: "Meadow", descricao: "Fundo verde-mata e acento verde-claro", tema: "escuro", bg: "14281D", fonte: "Open Sans", cores: { fg: "FFFFFF", accent: "4C9A2A", muted: "A4C639" } },
+  { id: "nocturne", nome: "Nocturne", descricao: "Fundo azul-noite e acento violeta", tema: "escuro", bg: "121826", fonte: "Inter", cores: { fg: "F2F4F8", accent: "7C5CFF", muted: "00C2A8" } },
+  { id: "paper", nome: "Paper", descricao: "Cinza de papel com acento azul clássico", tema: "claro", bg: "F2F2F2", fonte: "Lato", cores: { fg: "404040", accent: "4F81BD", muted: "8C8C8C" } },
+  { id: "coral", nome: "Coral Reef", descricao: "Fundo petróleo e acento coral", tema: "escuro", bg: "0F2A33", fonte: "Nunito Sans", cores: { fg: "FDF1EC", accent: "FF6F59", muted: "43AA8B" } },
+  { id: "slate", nome: "Slate", descricao: "Fundo ardósia e acento índigo", tema: "escuro", bg: "111827", fonte: "Roboto", cores: { fg: "F3F4F6", accent: "6366F1", muted: "0EA5E9" } },
+  { id: "grayscale", nome: "Grayscale", descricao: "Preto, branco e cinzas", tema: "claro", bg: "F8F8F8", fonte: "Inter", cores: { fg: "000000", accent: "5F5F5F", muted: "919191" } },
+  { id: "ocean", nome: "Ocean", descricao: "Fundo azul-gelo e acento oceano", tema: "claro", bg: "E8F1F2", fonte: "Inter", cores: { fg: "13293D", accent: "1B98E0", muted: "247BA0" } },
+  { id: "sunset", nome: "Sunset", descricao: "Fundo creme e acento pôr do sol", tema: "claro", bg: "FFF3E6", fonte: "Poppins", cores: { fg: "6F1A07", accent: "FF9F1C", muted: "E76F51" } },
+  { id: "forest", nome: "Forest", descricao: "Fundo palha e acento verde-oliva", tema: "claro", bg: "FEFAE0", fonte: "Merriweather", cores: { fg: "283618", accent: "606C38", muted: "BC6C25" } },
+  { id: "berry", nome: "Berry", descricao: "Fundo rosa-claro e acento vinho", tema: "claro", bg: "F7E8F3", fonte: "Poppins", cores: { fg: "4A1942", accent: "893168", muted: "56A3A6" } },
 ];
 
 /** Como o deck está agora — é daqui que saem as cores e a fonte que o modelo substitui. */
