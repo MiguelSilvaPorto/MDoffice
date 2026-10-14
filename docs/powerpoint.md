@@ -134,7 +134,9 @@ avisado ao abrir (nunca some em silêncio).
   que também vai para o arquivo; com o **assistente desligado**, todo traço fica livre. No modo
   assistente o desenho livre **encaixa nos eixos**: os trechos quase horizontais/verticais viram
   retas de verdade — o "L" desenhado alguns graus torto sai **reto, com o canto em 90°** — e o que
-  é diagonal de propósito (fora da tolerância de ~9°) fica como foi desenhado.
+  é diagonal de propósito (fora da tolerância de ~9°) fica como foi desenhado. Os trechos
+  encaixados saem como **segmento reto** no caminho (não como curva): é o que impede a "barriga"
+  que a cúbica fazia no meio do topo de um cartão mesmo com os pontos já alinhados.
 - Enquanto o lápis está ligado, a **barrinha do pincel** define **cor**, **espessura** (1, 2, 4
   ou 8 pt) e o assistente, e mostra o que está sendo entendido ("entendi: Círculo"); **Esc** sai.
 

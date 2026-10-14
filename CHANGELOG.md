@@ -382,7 +382,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **Desenho assistido: o topo do cartão sai reto (sem barriga no meio)**: com os pontos já
+  alinhados pelo encaixe nos eixos, o caminho continuava saindo em **cúbicas** — e a curva do
+  Catmull-Rom **bojava entre os pontos** quando os vizinhos eram os cantos (o print do relato). Os
+  trechos encaixados agora saem como **segmento reto** (`L`) no caminho: o topo de um cartão fica
+  exatamente reto, com os cantos descendo como foram desenhados. O encaixe passou a rodar **por
+  último** (depois da suavização), senão a média móvel puxava os pontos do topo de volta para os
+  cantos.
 
 ### Adicionado (na main)
 

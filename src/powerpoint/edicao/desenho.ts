@@ -673,15 +673,12 @@ function pontosDoLivre(pontos: PontoTraco[], bb: Ret): PontoTraco[] {
 }
 
 /**
- * Encaixe nos eixos do desenho livre (modo assistente): os trechos quase horizontais/verticais
- * viram retas de verdade — o "L" desenhado alguns graus torto sai reto, com o canto em 90°.
- * O que é diagonal de propósito (fora da tolerância) fica como o traço desenhou.
- *
- * A direção de cada trecho sai de uma JANELA de pontos (±2): no passo fino do caminho o tremor
- * que sobra faria um segmento curto parecer diagonal e o encaixe não pegaria nada.
+ * Núcleo do encaixe: os pontos JÁ suavizados/simplificados. A direção de cada trecho sai de uma
+ * JANELA de pontos (±2): no passo fino do caminho o tremor que sobra faria um segmento curto
+ * parecer diagonal e o encaixe não pegaria nada.
  */
-export function alinharNosEixos(pontos: PontoTraco[], tolGraus = 9): PontoTraco[] {
-  const pts = pontosDoLivre(pontos, bboxDe(pontos)).map((p) => ({ ...p }));
+function alinharPontos(pontos: PontoTraco[], tolGraus = 9): PontoTraco[] {
+  const pts = pontos.map((p) => ({ ...p }));
   const n = pts.length;
   if (n < 4) return pts;
   const tol = Math.sin((tolGraus * Math.PI) / 180);
@@ -721,17 +718,40 @@ export function alinharNosEixos(pontos: PontoTraco[], tolGraus = 9): PontoTraco[
   return pts;
 }
 
-/** Traço livre -> caminho do custGeom (M + cúbicas + Z, em pt, relativos à caixa), já suave. */
-export function caminhoLivre(pontos: PontoTraco[], bb: Ret = bboxDe(pontos)): CustPath {
+/**
+ * Encaixe nos eixos do desenho livre (modo assistente): os trechos quase horizontais/verticais
+ * viram retas de verdade — o "L" desenhado alguns graus torto sai reto, com o canto em 90°.
+ * O que é diagonal de propósito (fora da tolerância) fica como o traço desenhou.
+ */
+export function alinharNosEixos(pontos: PontoTraco[], tolGraus = 9): PontoTraco[] {
+  return alinharPontos(pontosDoLivre(pontos, bboxDe(pontos)), tolGraus);
+}
+
+/** Pontos finais do desenho livre: suavizados, simplificados e — no assistente — encaixados nos eixos. */
+export function pontosDoDesenhoLivre(pontos: PontoTraco[], encaixar: boolean): PontoTraco[] {
+  const pts = pontosDoLivre(pontos, bboxDe(pontos));
+  return encaixar ? alinharPontos(pts) : pts;
+}
+
+/**
+ * Caminho do custGeom (M + retas + cúbicas + Z, em pt, relativos à caixa).
+ * Os trechos EXATAMENTE no eixo (os que o encaixe do assistente alinhou) saem como RETA: a
+ * cúbica do Catmull-Rom boja entre os pontos quando os vizinhos são os cantos — era a "barriga"
+ * que ficava no topo do cartão mesmo com os pontos já alinhados.
+ */
+export function caminhoDePontos(pts: PontoTraco[], bb: Ret = bboxDe(pts)): CustPath {
   const n10 = (v: number) => Math.round(v * 10) / 10;
-  const pts = pontosDoLivre(pontos, bb);
   // Catmull-Rom virando cúbicas: o caminho passa pelos pontos e sai CURVO, sem as quinas da polilinha
   const get = (i: number) => pts[Math.min(pts.length - 1, Math.max(0, i))];
   const cmds: (string | number)[] = ["M", n10(pts[0].x - bb.x), n10(pts[0].y - bb.y)];
   for (let i = 0; i < pts.length - 1; i++) {
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    if (Math.abs(p2.y - p1.y) < 0.05 || Math.abs(p2.x - p1.x) < 0.05) {
+      cmds.push("L", n10(p2.x - bb.x), n10(p2.y - bb.y));
+      continue;
+    }
     const p0 = get(i - 1);
-    const p1 = get(i);
-    const p2 = get(i + 1);
     const p3 = get(i + 2);
     cmds.push(
       "C",
@@ -743,11 +763,16 @@ export function caminhoLivre(pontos: PontoTraco[], bb: Ret = bboxDe(pontos)): Cu
       n10(p2.y - bb.y)
     );
   }
-  const primeiro = pontos[0];
-  const ultimo = pontos[pontos.length - 1];
+  const primeiro = pts[0];
+  const ultimo = pts[pts.length - 1];
   const gap = Math.hypot(primeiro.x - ultimo.x, primeiro.y - ultimo.y);
   if (gap <= Math.max(10, Math.hypot(bb.w, bb.h) * 0.1)) cmds.push("Z");
   return { w: Math.max(1, n10(bb.w)), h: Math.max(1, n10(bb.h)), cmds, fill: "none", stroke: true };
+}
+
+/** Traço livre -> caminho do custGeom, já suave. */
+export function caminhoLivre(pontos: PontoTraco[], bb: Ret = bboxDe(pontos)): CustPath {
+  return caminhoDePontos(pontosDoLivre(pontos, bb), bb);
 }
 
 /**
@@ -842,11 +867,11 @@ export function formaDoTraco(pontos: PontoTraco[], pincel: Pincel, est: EstiloDe
     return comPincel(s, pincel, { head: rec.head, tail: rec.tail });
   }
   // modo assistente: o desenho livre encaixa nos eixos (as retas quase retas ficam retas e o
-  // canto em 90°) — é o "não se encaixa" que o traço torto do relato mostrava
-  const pontosLivre = pincel.assistente ? alinharNosEixos(pontos) : pontos;
+  // canto em 90°) — e os trechos encaixados saem como RETA no caminho (a cúbica fazia barriga)
+  const pontosLivre = pontosDoDesenhoLivre(pontos, pincel.assistente);
   const s = baseDaForma(est, d, encaixarNoPalco(bboxDe(pontosLivre), formas, d, Math.max(6, d.w * 0.01)));
   s.geom = "custom";
   s.name = "Desenho livre";
-  s.paths = [caminhoLivre(pontosLivre)];
+  s.paths = [caminhoDePontos(pontosLivre)];
   return comPincel(s, pincel);
 }

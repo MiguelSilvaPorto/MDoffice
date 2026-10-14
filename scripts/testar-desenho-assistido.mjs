@@ -465,6 +465,20 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
   const cru = D.formaDoTraco(cantoTorto, { ...pincel, assistente: false }, est, dim, []);
   ok("encaixe: o L continua desenho livre", assistido?.geom === "custom" && !!assistido.paths?.length && assistido.name === "Desenho livre", JSON.stringify({ geom: assistido?.geom }));
   ok("encaixe: com o assistente desligado o traço fica como desenhado", cru?.geom === "custom" && JSON.stringify(cru.box) !== JSON.stringify(assistido.box), JSON.stringify({ com: assistido?.box, sem: cru?.box }));
+
+  // o caminho do assistente sai com RETA nos trechos encaixados: com a cúbica do Catmull-Rom, o
+  // topo do cartão ficava com BARRIGA mesmo com os pontos alinhados (o print do relato) — os
+  // vizinhos (os cantos) puxavam a curva para fora da reta
+  const topoForma = D.formaDoTraco(topoDeCaixa(100, 100, 700, 110, 2, 29, 12, 40), pincel, est, dim, []);
+  const cmdsTopo = topoForma?.paths?.[0]?.cmds ?? [];
+  const retas = [];
+  for (let i = 0; i < cmdsTopo.length; i++) if (cmdsTopo[i] === "L") retas.push([cmdsTopo[i + 1], cmdsTopo[i + 2]]);
+  const ysDoTopo = retas.filter(([, y]) => y < 20).map(([, y]) => y);
+  ok(
+    "encaixe: o topo do cartão sai como RETA no caminho (não cúbica)",
+    retas.length >= 2 && ysDoTopo.length >= 2 && new Set(ysDoTopo).size === 1,
+    `${retas.length} reta(s) no caminho; ys do topo: ${JSON.stringify([...new Set(ysDoTopo)])}`
+  );
 }
 
 console.log("");

@@ -5285,6 +5285,33 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o defeito era de desenho e voltaria fácil (basta alguém “simplificar” a chamada de
   volta para `false` ✗, como estava) — o teste lê o TS e o CSS e trava as cinco regras.
 
+## src/powerpoint/edicao/desenho.ts
+
+### 2026-10-14 · topo reto · o encaixe por último e os trechos no eixo como RETA
+- **Local:** `alinharPontos` (novo, o núcleo do encaixe), `alinharNosEixos` (agora só a casca),
+  `pontosDoDesenhoLivre` (novo), `caminhoDePontos` (novo, com o `L` nos trechos no eixo) e o
+  `caminhoLivre`/`formaDoTraco` usando os novos
+- **Linha:** o caminho passou a sair de `pontosDoDesenhoLivre(pontos, pincel.assistente)` (o
+  encaixe roda DEPOIS da suavização/simplificação) e cada trecho com `dy < 0.05` ou `dx < 0.05`
+  vira `"L"` em vez de cúbica; o `formaDoTraco` monta a caixa e o caminho dos MESMOS pontos finais
+- **Porquê:** o print novo do relato ("ainda não… está imperfeito") mostrava o topo do cartão
+  ainda **bojudo** — e os pontos estavam certos (o encaixe funcionava): o defeito era o **caminho**,
+  que re-suavizava os pontos encaixados (a média móvel puxava as pontas da corrida para os cantos)
+  e depois desenhava cúbicas de Catmull-Rom entre eles (com vizinhos fora da reta, a curva boja
+  mesmo passando pelos pontos). A ordem certa é: suavizar → simplificar → encaixar → desenhar, com
+  reta onde o encaixe alinhou. `L` já era suportado pelo render (`presets.ts`), pela exportação
+  (`rica.ts`) e pela importação (`formas.ts`), então o `.pptx` sai igual.
+
+## scripts/testar-desenho-assistido.mjs
+
+### 2026-10-14 · topo reto · a verificação do caminho (reta, não cúbica)
+- **Local:** o bloco "encaixe nos eixos (assistente)"
+- **Linha:** `novo` — o caminho do topo do cartão precisa ter 2+ segmentos `L` e **todos os `L` do
+  topo com o mesmo y** (um só y = reta de verdade)
+- **Porquê:** o defeito era invisível nos pontos (que já estavam alinhados) e só aparecia no
+  **caminho**; o teste lê os comandos do `CustPath` e trava a regra (com cúbica, o `y` do topo
+  variava e a barriga voltava).
+
 ---
 
 ## Próximos registros
