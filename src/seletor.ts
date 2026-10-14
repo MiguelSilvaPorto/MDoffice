@@ -98,6 +98,16 @@ function abrirMenu(select: HTMLSelectElement, face: HTMLElement): void {
   if (top + hh > window.innerHeight - 8) top = Math.max(8, r.top - hh - 4);
   menu.style.left = `${Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8))}px`;
   menu.style.top = `${top}px`;
+
+  // a lista pode ser longa (tamanhos de fonte, fontes): abre já no item marcado, centrado
+  const marca = menu.querySelector(".dd-check");
+  const marcado = marca?.closest<HTMLElement>(".dd-item");
+  if (marcado) {
+    const rItem = marcado.getBoundingClientRect();
+    const rMenu = menu.getBoundingClientRect();
+    menu.scrollTop += rItem.top - rMenu.top - (rMenu.height - rItem.height) / 2;
+  }
+
   face.setAttribute("aria-expanded", "true");
   aberto = { select, face, menu };
 }

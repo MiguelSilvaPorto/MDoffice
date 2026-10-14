@@ -506,7 +506,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **A lista dos seletores não cobre mais a tela**: a lista aberta de um seletor (tamanho da
+  fonte, fonte…) montava os 20+ itens na altura natural e, em tela menor, cobria tudo — não
+  dava para ver o documento atrás. Agora a **altura fica presa à janela** (no máximo ~72%
+  dela) e a lista **rola dentro** dela; ao abrir, ela já vem **posicionada no item marcado**,
+  centrado na área visível, em vez de sempre do começo. Vale para todos os seletores do app
+  (Word, Excel, PowerPoint e Configurações).
 
 **Ferramentas (dev)**
 

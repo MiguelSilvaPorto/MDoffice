@@ -107,6 +107,14 @@
   box-shadow: var(--shadow);
 }
 
+/* Lista de um seletor (tamanho da fonte, fonte…): pode ter 20+ itens e, na altura natural,
+   cobria a tela inteira. A altura fica presa à janela e a lista rola DENTRO dela. */
+.dropdown.sel-menu {
+  max-height: min(72vh, 430px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .dd-item {
   display: flex;
   align-items: center;

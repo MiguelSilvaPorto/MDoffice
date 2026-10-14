@@ -4752,3 +4752,24 @@ antigas quando fizer sentido.
 - **Porquê:** o teste de layout prende invariantes de interação que já quebraram uma vez; o
   par "arrastar não abre o menu / clique parado abre" é exatamente o tipo de regra que volta
   em silêncio numa refatoração do menu.
+
+## src/seletor.ts · src/styles/editor.css
+
+### 2026-10-14 · esta tarefa · a lista do seletor não cobre mais a tela
+- **Local:** `editor.css` — regra nova `.dropdown.sel-menu`; `seletor.ts` — `abrirMenu`, depois
+  de posicionar o menu
+- **Linha:** `+ max-height: min(72vh, 430px); overflow-y: auto; overscroll-behavior: contain` e
+  `+ menu.scrollTop += rItem.top - rMenu.top - (rMenu.height - rItem.height) / 2`
+- **Porquê:** a lista era montada com todos os itens na altura natural (o tamanho da fonte tem
+  22 opções) e, em tela menor, cobria o documento inteiro — o menu é `position: fixed` e o
+  `max-width` já existia, mas nada limitava a altura. O limite agora fica no **componente**
+  (`.dropdown.sel-menu`), não em cada tela, porque o problema vale para todo seletor longo
+  (fonte, tamanho, nomes); o `overscroll-behavior: contain` evita que a rolagem do menu vaze
+  para o editor quando chega ao fim. O posicionamento inicial no item marcado usei de rects
+  (e não `offsetTop`) porque o menu é `position: fixed` e a conta com `offsetParent` muda de
+  contexto; abrir sempre no começo obrigava a rolar até o valor atual em toda abertura.
+- **Local:** `scripts/testar-layout.mts`
+- **Linha:** `novo` — 2 checagens na seção do seletor (a altura presa com rolagem e a abertura
+  no item marcado)
+- **Porquê:** é o mesmo lugar onde o resto do componente já está preso; o defeito era visível
+  (cobria a tela) e volta em silêncio se alguém simplificar o CSS.

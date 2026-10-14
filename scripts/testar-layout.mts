@@ -213,6 +213,15 @@ const sel = ler("src/seletor.ts");
 checa("o rótulo vazio fica em branco (sem o '—' de antes)", /rot\.textContent = rotuloDe\(select\);/.test(sel));
 checa("a lista aberta fecha antes de redesenhar um painel", /export function fecharSeletor\(/.test(sel));
 checa("a setinha acompanha o tamanho do contexto (1em)", /\.sel-face \.ic\s*\{[^}]*width:\s*1em/.test(ler("src/styles/base.css")));
+checa(
+  "a lista longa não cobre a tela (altura presa, rolagem dentro)",
+  /\.dropdown\.sel-menu\s*\{[^}]*max-height:\s*min\(72vh,\s*430px\)[^}]*overflow-y:\s*auto/s.test(ler("src/styles/editor.css")),
+  "a lista do tamanho da fonte abre na altura natural e cobre a janela"
+);
+checa(
+  "a lista abre já no item marcado",
+  /const marcado = marca\?\.closest<HTMLElement>\("\.dd-item"\)/.test(sel) && /menu\.scrollTop \+=/.test(sel)
+);
 
 // nas fitas, o seletor tem a altura dos botões da mesma linha (senão fica torto)
 checa("Word: .rb-select tem a altura do .rb (28px)", /\.rb-select\s*\{[^}]*height:\s*28px/.test(ler("src/styles/word.css")));
