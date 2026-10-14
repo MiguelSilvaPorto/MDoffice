@@ -767,6 +767,21 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   editor dava um salto. Recolher a largura deixa o corpo acompanhar o movimento; o
   `overflow: hidden` recorta o conteúdo enquanto ela fecha.
 
+## src/styles/movimento.css · src/tabs.ts · src/app/tabs.ts · scripts/testar-layout.mts
+
+### 2026-10-14 · este commit · a troca de abas animada
+- **Local:** `mdc-aba-ativa`, `mdc-conteudo-dir` e `mdc-conteudo-esq` (movimento.css, com os
+  ganchos nos níveis `anim-discreta`/`anim-completa`); `ativaAntes` + a classe `ativando`
+  (src/tabs.ts); `animarConteudoDaAba` (src/app/tabs.ts); 5 checagens novas
+- **Linha:** a aba que passa a ser a ativa ganha a classe uma vez por troca; o painel do
+  documento recebe `troca-conteudo-dir`/`-esq` reaplicada com reflow
+- **Porquê:** trocar de aba era seco: a barra reconstrói as abas a cada render (nada anima no
+  elemento ativo) e o conteúdo aparecia sem entrada. A direção sai do índice das abas (aba à
+  esquerda entra da esquerda); o `!important` do movimento é a camada do nível escolhido pelo
+  usuário, como no resto do arquivo; e as regras dos painéis usam o `#` porque a base
+  (`#word-pane:not([hidden])`) tem a mesma especificidade de id — a minha vem depois, na mesma
+  folha, e vence.
+
 ## src/styles/movimento.css
 
 ### 2026-10-13 · movimento da barra lateral · passo curto e pílula
