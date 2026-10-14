@@ -396,6 +396,9 @@ export class Fita {
            ${pequeno("ordem", `<span class="ppr-seta">⧉</span>`, "Organizar", "Ordem, alinhamento, grupo e giro", true)}
          </div>`
       ),
+      // Ideias de design: no DeckCraft o atalho mora na Página Inicial (grupo próprio no fim da aba) e
+      // abre o painel com a lâmina atual desenhada em cada modelo
+      grupo("Designer", `${grande("ideias", ic("i-spark"), "Ideias de design", "Sugestões de visual para a apresentação — a lâmina atual em cada modelo, geradas no seu computador")}`),
     ].join("");
   }
 
@@ -600,8 +603,6 @@ export class Fita {
       ),
       grupo("Personalizar", `${grande("fundo", ic("i-bucket"), "Formatar fundo", "Cor, gradiente ou imagem de fundo da lâmina", true)}`),
       grupo("Layout", `${grande("layout", ic("i-columns"), "Layout", "Layout da lâmina", true)}`),
-      // como no PowerPoint (Design ▸ Design Ideas): abre o painel com a lâmina atual em cada modelo
-      grupo("Designer", `${grande("ideias", ic("i-spark"), "Ideias de design", "Sugestões de visual para a apresentação — a lâmina atual em cada modelo, geradas no seu computador")}`),
     ].join("");
   }
 

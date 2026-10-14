@@ -384,7 +384,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **As Ideias de design ganharam um atalho na Página Inicial**: o botão saiu da aba **Design**
+  (grupo Designer) e passou para o **fim da Página Inicial**, no mesmo grupo **Designer** — o
+  atalho fica junto das tarefas do dia a dia e no mesmo lugar da referência (o DeckCraft põe as
+  *Design Ideas* na Home). O clique faz o de sempre: **mostra o painel** e abre a aba **Ideias**,
+  com esta lâmina desenhada em cada modelo. A aba **Design** continua com Tema, Personalizar (fundo)
+  e Layout, sem repetir o comando.
 
 ### Adicionado (na main)
 

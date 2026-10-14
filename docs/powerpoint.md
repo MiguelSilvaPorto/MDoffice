@@ -96,7 +96,7 @@ avisado ao abrir (nunca some em silêncio).
   dá para salvar o visual atual como cartão e aplicar/remover depois. O catálogo traz os
   presets do app **mais os 13 designs no formato do DeckCraft** (8 temas originais + 5
   esquemas de cor, cada um com as próprias cores e fonte).
-- **Ideias de design** (aba do painel lateral, ou **Design ▸ Designer ▸ Ideias de design** na
+- **Ideias de design** (aba do painel lateral, ou **Página Inicial ▸ Designer ▸ Ideias de design** na
   fita): mostra **esta lâmina** desenhada em cada ideia, em cartões clicáveis — clicar aplica à
   apresentação inteira. Cada ideia é um **design** (as cores e a fonte) com um **acabamento**:
   - *cores novas*: troca a paleta e, o mais importante, **remapeia as cores próprias das formas**

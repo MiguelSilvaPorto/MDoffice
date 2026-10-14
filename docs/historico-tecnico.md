@@ -7595,3 +7595,34 @@ antigas quando fizer sentido.
   A conferência olhou que a entrada ainda **não** estava em "Adicionado" e que as das outras
   sessões (**Conectar sem piscar e na caixa certa**, `9144ba7`) já tinham sido promovidas pelas
   donas — nada de outra worktree foi tocado.
+
+## src/powerpoint/ui/fita.ts · scripts/testar-layout.mts · docs/powerpoint.md
+
+### 2026-10-14 · esta tarefa · o atalho das Ideias de design muda para a Página Inicial
+- **Local:** `fita.ts` — a lista da `design()` e o fim da `inicio()`; `testar-layout.mts` — a
+  checagem "o botão da fita abre o painel na aba das Ideias"; `docs/powerpoint.md` — a menção do
+  caminho da fita na bala das Ideias de design
+- **Linha:** o grupo `grupo("Designer", …)` (o botão `ideias`, estrela `i-spark`) saiu do fim da
+  `design()` — que volta a terminar no grupo "Layout" — e entrou no fim da `inicio()`, depois de
+  "Desenho"; a checagem agora recorta o corpo das duas abas (`inicio()` tem o grupo, `design()`
+  **não**) e o rótulo virou "aba Página Inicial ▸ grupo Designer"; o doc diz **Página Inicial ▸
+  Designer ▸ Ideias de design**
+- **Porquê:** pedido do usuário — o botão estava escondido numa aba a que ninguém vai no meio do
+  trabalho; a Página Inicial é o lugar do atalho do dia a dia e é onde a referência (DeckCraft)
+  põe as *Design Ideas*. Nada do comando mudou (mesmo grupo, mesmo ícone `i-spark`, mesmo
+  `case "ideias"` mostrando o painel na aba das Ideias) e a aba Design não repete o botão: comando
+  em duas abas só multiplica o que pode ficar dessincronizado. A checagem prende os **dois lados**
+  da mudança (está na Página Inicial **e** saiu da Design): sem ela, um rebase ou uma cópia
+  devolveria o grupo à aba antiga sem ninguém notar.
+
+## docs/ui-deckcraft-abas.md
+
+### 2026-10-14 · esta tarefa · as notas do grupo das Ideias (Home e Design)
+- **Local:** as notas do grupo "Ideias de Design" (Página Inicial) e do grupo "Designer" (Design)
+- **Linha:** "não há painel de ideias de design no mdOffice…" → "atendido na **Página Inicial ▸
+  grupo Designer ▸ Ideias de design**…"; e a nota da Design passa a registrar que o mdOffice tem
+  o comando **numa porta só**
+- **Porquê:** as duas notas estavam velhas — davam as Ideias como inexistentes no mdOffice e não
+  diziam onde o comando mora agora. A referência tem o mesmo botão nas duas abas (Home e Design);
+  o mdOffice fica com o da Página Inicial, então a nota da Design precisa dizer isso, senão a
+  próxima tarefa "recria" o que já existe (ou põe o comando de volta em duas abas).

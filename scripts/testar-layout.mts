@@ -576,9 +576,13 @@ console.log("\nídeias de design (a lâmina atual em cada modelo)");
     /if \(this\.lateral === "ideias"\) this\.pintarIdeias\(\)/.test(ppt)
   );
   checa("css: a moldura recorta a prévia e a lâmina entra em tamanho cheio", /\.pp-ideia-moldura\s*\{[^}]*overflow:\s*hidden/s.test(cssPpt) && /\.pp-ideia-slide\s*\{[^}]*transform-origin:\s*0 0/s.test(cssPpt));
+  // o botão vive na Página Inicial (o atalho do dia a dia); a aba Design não o repete
+  const inicioFita = fitaPpt.slice(fitaPpt.indexOf("private inicio(): string {"), fitaPpt.indexOf("private inserir(): string {"));
+  const designFita = fitaPpt.slice(fitaPpt.indexOf("private design(): string {"), fitaPpt.indexOf("private exibir(): string {"));
   checa(
-    "o botão da fita abre o painel na aba das Ideias (aba Design ▸ grupo Designer)",
-    /grupo\("Designer", `\$\{grande\("ideias", ic\("i-spark"\)/.test(fitaPpt) &&
+    "o botão da fita abre o painel na aba das Ideias (aba Página Inicial ▸ grupo Designer)",
+    /grupo\("Designer", `\$\{grande\("ideias", ic\("i-spark"\)/.test(inicioFita) &&
+      !/grupo\("Designer"/.test(designFita) &&
       /case "ideias":[\s\S]{0,200}mostrarLateral\("ideias"\)/.test(ppt),
     "o botão da fita ficaria sem efeito (ou o painel não trocaria de aba)"
   );

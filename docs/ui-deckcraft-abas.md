@@ -224,7 +224,10 @@ Não é uma fita: é uma tela cheia que substitui fita, lâminas e barra de stat
 |---|---|---|---|---|
 | Design Ideas | Abre o painel de sugestões de design | Com lâmina aberta | Lâmpada amarela | — |
 
-**Notas para recriar no mdOffice:** não há painel de ideias de design no mdOffice; o botão ficaria sem equivalente direto (a IA local poderia ocupar esse lugar, sugerindo layout/estilo).
+**Notas para recriar no mdOffice:** atendido na **Página Inicial ▸ grupo Designer ▸ Ideias de
+design** — o grupo que o mdOffice criou na aba Design mudou para cá, junto das tarefas do dia a
+dia. O nome do grupo continuou "Designer" (o do PowerPoint) e o ícone é a estrela do app
+(`i-spark`), no lugar da lâmpada amarela da referência.
 
 ---
 
@@ -385,7 +388,9 @@ Não é uma fita: é uma tela cheia que substitui fita, lâminas e barra de stat
 |---|---|---|---|---|
 | Design Ideas | Abre o painel de sugestões | Com lâmina | Lâmpada amarela | — |
 
-**Notas para recriar no mdOffice:** sem equivalente; ver a nota do grupo de mesmo nome na Página Inicial.
+**Notas para recriar no mdOffice:** o comando existe, mas mora **só na Página Inicial** (ver a nota
+do grupo de mesmo nome lá) — o mdOffice não repete o mesmo botão em duas abas, para não ter dois
+caminhos que possam ficar dessincronizados.
 
 ---
 
