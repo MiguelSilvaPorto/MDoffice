@@ -125,8 +125,13 @@ function caixaDe(caixas: ShapeBox[]): ShapeBox {
  * do cabeçalho, que ficam onde estão.
  */
 export function unidadesDa(slide: Slide): Unidade[] {
-  const cards = cartoes(slide);
+  return unidadesCom(slide, cartoes(slide));
+}
+
+/** Como `unidadesDa`, com os cartões já detectados (o aplicar não detecta duas vezes). */
+function unidadesCom(slide: Slide, cards: Shape[]): Unidade[] {
   if (cards.length >= 2) {
+    const porId = new Map(slide.shapes.map((s) => [s.id, s]));
     const vivas = slide.shapes.filter((s) => !s.fixa && !s.liga);
     const dono = new Map<string, string>();
     // o conteúdo vai para a MENOR carta que o contém (cartão dentro de cartão)
@@ -135,7 +140,7 @@ export function unidadesDa(slide: Slide): Unidade[] {
     }
     return cards.map((c) => {
       const ids = [c.id, ...[...dono.entries()].filter(([, cid]) => cid === c.id).map(([sid]) => sid)];
-      return { ids, box: caixaDe(ids.map((id) => slide.shapes.find((s) => s.id === id)!.box)) };
+      return { ids, box: caixaDe(ids.map((id) => porId.get(id)!.box)) };
     });
   }
   const band = faixaDoTopo(slide, cards);
@@ -212,8 +217,10 @@ function escalaDoTexto(s: Shape, k: number): Shape {
  * para caber no espaço da fórmula) e o conteúdo de cada um escala junto, na mesma proporção.
  */
 export function aplicarArranjo(slide: Slide, id: Arranjo, variante: number, ratio: number): Slide {
-  const unidades = unidadesDa(slide);
   const cards = cartoes(slide);
+  const unidades = unidadesCom(slide, cards);
+  const porId = new Map(slide.shapes.map((s) => [s.id, s]));
+  const emCartao = new Set(slide.shapes.filter((s) => cards.some((c) => dentro(c, s))).map((s) => s.id));
   // nada a arrumar: uma lâmina de título (dois textos soltos) fica como está
   if (cards.length < 2 && unidades.length < 3) return slide;
   const topo = faixaDoTopo(slide, cards);
@@ -239,20 +246,20 @@ export function aplicarArranjo(slide: Slide, id: Arranjo, variante: number, rati
   espacos(id, variante, unidades.length, topo).forEach((slot, i) => {
     const u = unidades[i];
     const tamanho = i === 0 ? cartaoGrande : cartao;
-    const central = { x: slot.x + (slot.w - tamanho.w) / 2, y: slot.y + (slot.h - tamanho.h) / 2, w: tamanho.w, h: tamanho.h };
     const ku = Math.min(ESCALA_MAX, tamanho.w / fisico(u.box).w, tamanho.h / (fisico(u.box).h * ratio));
+    // o bloco inteiro (cartão + o que sai dele) é centrado no espaço e todas as formas andam por ele:
+    // assim o conteúdo não se desloca em relação ao cartão e nada passa do espaço do vizinho
+    const bloco = { x: slot.x + (slot.w - u.box.w * ku) / 2, y: slot.y + (slot.h - u.box.h * ku) / 2 };
     for (const sid of u.ids) {
-      const s = slide.shapes.find((x) => x.id === sid)!;
+      const s = porId.get(sid)!;
       escala.set(sid, ku);
-      caixas.set(sid, { x: central.x + (s.box.x - u.box.x) * ku, y: central.y + (s.box.y - u.box.y) * ku, w: s.box.w * ku, h: s.box.h * ku });
+      caixas.set(sid, { x: bloco.x + (s.box.x - u.box.x) * ku, y: bloco.y + (s.box.y - u.box.y) * ku, w: s.box.w * ku, h: s.box.h * ku });
     }
-    // o cartão (o primeiro id da unidade) senta exatamente no espaço
-    caixas.set(u.ids[0], central);
   });
 
   const shapes = slide.shapes
     // os conectores e as linhas de ligação saem: a vizinhança dos cartões mudou
-    .filter((s) => !s.liga && !ehLinhaSolta(s, cards.some((c) => dentro(c, s))))
+    .filter((s) => !s.liga && !ehLinhaSolta(s, emCartao.has(s.id)))
     .map((s) => {
       const caixa = caixas.get(s.id);
       if (!caixa) return s;

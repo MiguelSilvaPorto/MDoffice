@@ -177,6 +177,10 @@ export class PowerPointHost {
   private lateral: "formatar" | "notas" | "animacao" | "ideias" | "arranjos" = "formatar";
   /** qual lote de ideias está à mostra (o botão "Gerar mais ideias" avança) */
   private loteIdeias = 0;
+  /** a lâmina e a proporção de que as prévias dos Arranjos foram desenhadas (evita refazê-las à toa) */
+  private arranjosVista: { slide: Slide; ratio: number } | null = null;
+  /** identifica o desenho em andamento das prévias dos Arranjos (um novo cancela o anterior) */
+  private arranjosToken = 0;
   /** célula em edição (quando a forma em edição é uma tabela) e células selecionadas */
   private celulaEdit: [number, number] | null = null;
   private celulas: CelulasSel | null = null;
@@ -548,12 +552,22 @@ export class PowerPointHost {
     const largura = 960; // referência da prévia (o cqw do texto sai daqui)
     const ratio = stageRatio(this.setup);
     const altura = Math.round(largura / ratio);
+    // a lâmina não mudou (só a seleção, o zoom…): as prévias que já estão no painel valem
+    const vista = this.arranjosVista;
+    if (vista && vista.slide === atual && vista.ratio === ratio && host.childElementCount > 0) {
+      this.escalarPrevias(host, largura);
+      return;
+    }
+    this.arranjosVista = { slide: atual, ratio };
+    const token = ++this.arranjosToken;
     const quantas = unidadesDa(atual).length;
     const ideias: { id: Arranjo; variante: number }[] = [];
     for (const a of ARRANJOS) for (const v of variantesDe(a.id, quantas)) ideias.push({ id: a.id, variante: v });
     host.textContent = "";
+    // os cartões (vazios) aparecem na hora; a prévia de cada um é desenhada num quadro próprio,
+    // para o clique e a edição não esperarem seis lâminas inteiras serem montadas
+    const pendentes: (() => void)[] = [];
     for (const { id, variante } of ideias) {
-      const comArranjo = aplicarArranjo(atual, id, variante, ratio);
       const cartao = document.createElement("button");
       cartao.type = "button";
       cartao.className = "pp-ideia";
@@ -564,10 +578,15 @@ export class PowerPointHost {
       previa.className = "pp-slide pp-ideia-slide";
       previa.style.width = `${largura}px`;
       previa.style.height = `${altura}px`;
-      previa.style.background = fundoValor(comArranjo.bg, this.setup.media ?? {}) || `#${themeOf(this.setup.theme).bg}`;
-      previa.innerHTML = comArranjo.shapes.length
-        ? comArranjo.shapes.map((f) => htmlFormaRica(f, ctx)).join("")
-        : sanitize(String(marked.parse(comArranjo.md, { gfm: true, async: false }))).slice(0, 600);
+      pendentes.push(() => {
+        const comArranjo = aplicarArranjo(atual, id, variante, ratio);
+        previa.style.background = fundoValor(comArranjo.bg, this.setup.media ?? {}) || `#${themeOf(this.setup.theme).bg}`;
+        previa.innerHTML = comArranjo.shapes.length
+          ? comArranjo.shapes.map((f) => htmlFormaRica(f, ctx)).join("")
+          : sanitize(String(marked.parse(comArranjo.md, { gfm: true, async: false }))).slice(0, 600);
+        const w = moldura.clientWidth;
+        if (w > 0) previa.style.transform = `scale(${w / largura})`;
+      });
       moldura.append(previa);
       const nome = document.createElement("span");
       nome.className = "pp-ideia-nome";
@@ -576,7 +595,17 @@ export class PowerPointHost {
       cartao.addEventListener("click", () => this.run("arranjo", `${id}|${variante}`));
       host.append(cartao);
     }
-    // a escala sai depois do layout: cada prévia cabe na largura que o painel tiver agora
+    // uma prévia por quadro; se a lâmina mudar no meio, o desenho antigo para
+    const proxima = (): void => {
+      if (token !== this.arranjosToken) return;
+      pendentes.shift()?.();
+      if (pendentes.length) requestAnimationFrame(proxima);
+    };
+    requestAnimationFrame(proxima);
+  }
+
+  /** A escala de cada prévia cabe na largura que o painel tiver agora (sai depois do layout). */
+  private escalarPrevias(host: HTMLElement, largura: number): void {
     for (const moldura of host.querySelectorAll<HTMLElement>(".pp-ideia-moldura")) {
       const previa = moldura.firstElementChild as HTMLElement | null;
       const w = moldura.clientWidth;

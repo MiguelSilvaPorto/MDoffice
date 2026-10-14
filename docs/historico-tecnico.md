@@ -8225,3 +8225,12 @@ antigas quando fizer sentido.
 - **Linha:** `novo`
 - **Porquê:** a mudança é das três fitas e do módulo compartilhado (não de um módulo só), então a
   categoria é **Geral**; a entrada entra já promovida, como o fechamento exige.
+
+### 2026-10-14 · fix/arranjos-encaixe · Arranjos sem travar e sem deslocar o conteúdo
+- **Arquivo/local:** `src/powerpoint/powerpoint.ts` — `pintarArranjos()` (+ `escalarPrevias()`, campos `arranjosVista`/`arranjosToken`);
+  `src/powerpoint/edicao/arranjos.ts` — `aplicarArranjo()`, `unidadesDa()` (+ `unidadesCom()`).
+- **Linha:** `pintarArranjos`: 6× `aplicarArranjo` + `innerHTML` síncronos a cada `pintar()` → prévias vazias na hora, uma por
+  `requestAnimationFrame`, com cache pela referência da lâmina e proporção. `aplicarArranjo`: cartão forçado ao `central` e filhos
+  relativos à caixa total → o bloco inteiro é centrado e todas as formas andam por ele; `cartoes()` 3× → 1×; `find` → `Map`.
+- **Porquê:** `pintar()` roda a cada mudança e, com a aba aberta, remontava seis lâminas de 960px: a interface congelava por instante.
+  O cartão ia para um lugar e o que saía dele ficava deslocado, o que bagunçava o encaixe.

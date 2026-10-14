@@ -396,7 +396,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Backend**
 
-- (nada no momento)
+- **Arranjos: o conteúdo não se desloca mais do cartão** — o bloco inteiro (cartão + o que sai dele) é centrado no espaço e todas as formas andam por ele; a detecção roda uma vez e usa mapas por id, em vez de `find` por forma.
 
 **Frontend**
 
@@ -409,6 +409,9 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   de novo também desliga. Numa forma com **Estilo de Cor**, a receita vai junto (o alvo passa a usar
   a mesma rampa) — e quando a cópia não tem receita, o **estilo vivo do alvo é solto**, para a
   pintura não ser derrubada pelo recálculo no próximo movimento.
+
+- **Aba Arranjos não trava mais ao clicar** — as prévias são desenhadas uma por quadro e reaproveitadas enquanto a lâmina não muda (antes, seis lâminas inteiras eram remontadas de forma síncrona a cada clique ou edição).
+
 
 ### Adicionado (na main)
 

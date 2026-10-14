@@ -145,6 +145,8 @@ avisado ao abrir (nunca some em silêncio).
   - as **formas fixas do modelo** (decorações) e os **textos do cabeçalho** (título, subtítulo,
     legenda) **não se movem**; as **linhas de ligação saem** (conectores e traços finos fora dos
     cartões), porque a vizinhança dos cartões mudou — dá para desfazer;
+  - o cartão e o que sai dele andam como **um bloco** (nada fica deslocado) e as prévias são desenhadas
+    aos poucos, sem travar o app;
   - a prévia é a **sua lâmina** reorganizada e o clique aplica a fórmula em todas as lâminas (as
     que não têm conteúdo para arrumar — uma lâmina de título, por exemplo — ficam como estão).
 
