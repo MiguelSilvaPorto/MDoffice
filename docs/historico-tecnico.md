@@ -7523,3 +7523,64 @@ antigas quando fizer sentido.
   as linhas de ligação não roubam o ponteiro
 - **Porquê:** é o comportamento visível do modo; quem lê precisa saber que caixas sobrepostas não
   trocam o alvo no meio do gesto.
+
+## src/powerpoint/edicao/modelos.ts
+
+### 2026-10-14 · estilos de cor · o estilo nos modelos (R5)
+- **Local:** `ModeloPPT` (o campo `estilo`), o fim de `MODELOS`, `aplicarModelo` (o segundo `map`)
+  e `modeloDoDeck` (+ `estiloDoDeckNasLaminas`)
+- **Linha:** `+ estilo?: { familia; intensidade; brilho }` · `+ os modelos Esmeralda/Oceano/Ameixa
+  com estilo: { familia, intensidade: "media", brilho: "lustro" }` · `aplicarModelo`: `+ o segundo
+  map aplica bgEstilo (base "") ou remove` · `modeloDoDeck`: `+ estiloDoDeckNasLaminas(slides)`
+- **Porquê:** o estilo do modelo vive no FUNDO das lâminas — é o que ele promete ("um deck com o
+  visual da referência"), e as formas de Estilo de Cor de base vazia acompanham sozinhas pelo
+  acento. A decisão que valeu anotar é o **modelo sem estilo**: aplicar "Meia-noite" num deck com
+  fundo estilizado deixaria `bg` (do modelo) e `bgEstilo` (do deck) brigando — o recálculo
+  venceria e o modelo pareceria não aplicar. Por isso o `else delete n.bgEstilo`: o modelo sem
+  estilo **devolve o fundo ao do modelo**, explícito. Os três modelos novos são **aditivos** (não
+  mudam a cara de nenhum preset existente). No `modeloDoDeck`, o estilo é guardado **só quando a
+  maioria das lâminas concorda** (senão o "salvar como modelo" capturaria um fundo que o deck nem
+  usa) — é o que faz o seu modelo reproduzir o gradiente.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · estilos de cor · o modelo re-deriva o vivo (R5)
+- **Local:** `usarModelo`
+- **Linha:** depois do `setSetup`, `+ const d/tema; this.slides = this.slides.map((s) =>
+  atualizarEstilos(s, d, tema)); this.pintar();`
+- **Porquê:** o `aplicarModelo` troca as cores do tema antigo pelas do novo, mas a pintura das
+  formas com Estilo de Cor é DERIVADA — sem uma passada de recálculo elas ficariam com a rampa
+  antiga até a próxima edição da lâmina (o usuário veria o modelo "não pegar"). A passada usa o
+  `this.estilo()` já com o setup novo, então a base vazia resolve no acento do modelo; e
+  `atualizarEstilos` guarda o custo (lâmina sem estilo volta pela mesma referência).
+
+## src/powerpoint/ui/modelos.ts
+
+### 2026-10-14 · estilos de cor · a prévia da rampa no cartão (R5)
+- **Local:** `cartao` (+ o import de `FAMILIAS`/`rampaDeTons`)
+- **Linha:** `+ const rec = m.estilo ? FAMILIAS[m.estilo.familia] : null` e a prévia do fundo vira
+  `linear-gradient(135deg, claro, cor 45%, escuro)` (a classe `pp-tpl-com-estilo` marca o cartão)
+- **Porquê:** o cartão é um contrato com o clique — mostrar a cor sólida do modelo num modelo que
+  aplica um gradiente seria mentir na prévia. A rampa é a MESMA função que o motor usa (mesma
+  família/intensidade), então o cartão acompanha qualquer ajuste futuro das receitas sozinho.
+
+## scripts/testar-edicao-pptx.mjs · scripts/testar-layout.mts
+
+### 2026-10-14 · estilos de cor · os modelos testados (R5)
+- **Local:** o fim do bloco "modelos (botão Template)" e 4 checagens novas de layout
+- **Linha:** `+ 6 verificações` (as três referências com o estilo, o fundo com a receita, o modelo
+  sem estilo devolvendo o fundo, a forma de cor do tema re-derivando no acento novo — `2FBF71` —,
+  o modelo do usuário guardando o estilo e o sem estilo não inventando um) · `+ 4 checagens`
+  (o tipo e os três ids, o `bgEstilo` no aplicar, o recálculo no `usarModelo`, a prévia do cartão)
+- **Porquê:** a corrente inteira é nova (modelo → fundo → recálculo → acento) e cada elo já
+  quebrou em algum lugar do projeto: prender no teste evita que o próximo ajuste de tema derrube o
+  estilo "sem aviso". O caso da forma de cor do tema é o pedido do usuário em uma asserção.
+
+## docs/powerpoint.md · docs/estilos-de-cor-plano.md
+
+### 2026-10-14 · estilos de cor · os modelos no doc e a R5 no plano (R5)
+- **Local:** a seção "Estilos de cor" (a bala nova dos Modelos) e a checklist do plano
+- **Linha:** `+ a bala dos Modelos (as três referências, o re-derivar e o salvar como modelo)` ·
+  `+ R5 marcada como entregue (R6 fica como polimento opcional)`
+- **Porquê:** é a última frente combinada do plano — o doc fecha o ciclo (formas, fundo e modelos)
+  e o plano atualizado diz que só resta o polimento.

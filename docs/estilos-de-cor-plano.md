@@ -19,8 +19,9 @@
 - [x] **R4 — fundo da lâmina** com estilo — entregue (2026-10-14). "Fundo com estilo" no popover
   do fundo e na seção da lâmina do painel; no fundo a dobra vira lustro e o "Aplicar a todas"
   leva a receita junto.
-- [ ] **R5 — modelos** (Design) com estilo
-- [ ] **R6 — polimento** (opcional)
+- [x] **R5 — modelos** (Design) com estilo — entregue (2026-10-14). `ModeloPPT.estilo`, os modelos
+  Esmeralda/Oceano/Ameixa, aplicar re-deriva o vivo, salvar como modelo guarda o estilo do fundo.
+- [ ] **R6 — polimento** (opcional): mais famílias, calibrar o lustro/dobra, o que o usuário pedir
 
 ---
 

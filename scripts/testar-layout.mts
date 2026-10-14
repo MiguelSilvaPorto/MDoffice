@@ -952,6 +952,33 @@ console.log("\nestilos de cor (galeria, painel e o vivo)");
       /bgEstilo: this\.atual\(\)\.bgEstilo/.test(pptEst),
     "o vivo do fundo (cor, ângulo e aplicar a todas) ficaria pela metade"
   );
+
+  // R5: os Modelos carregam o estilo (cartão com a rampa, fundo das lâminas, o vivo acompanha)
+  const modelosEd = ler("src/powerpoint/edicao/modelos.ts");
+  const modelosUi = ler("src/powerpoint/ui/modelos.ts");
+  checa(
+    "os modelos podem carregar um Estilo de Cor (e as três referências trazem)",
+    /estilo\?: \{ familia: FamiliaEstilo; intensidade: IntensidadeEstilo; brilho: BrilhoEstilo \}/.test(modelosEd) &&
+      /id: "esmeralda"[\s\S]{0,260}estilo: \{ familia: "esmeralda"/.test(modelosEd) &&
+      /id: "oceano"[\s\S]{0,260}estilo: \{ familia: "oceano"/.test(modelosEd) &&
+      /id: "ameixa"[\s\S]{0,260}estilo: \{ familia: "ameixa"/.test(modelosEd),
+    "faltou o estilo nos modelos novos"
+  );
+  checa(
+    "aplicar um modelo com estilo põe a receita no fundo (e o sem estilo devolve ao do modelo)",
+    /if \(modelo\.estilo\) return \{ \.\.\.sl, bgEstilo: \{ \.\.\.modelo\.estilo, base: "" \}/.test(modelosEd) && /delete n\.bgEstilo;/.test(modelosEd),
+    "o fundo não acompanharia o modelo"
+  );
+  checa(
+    "o estilo vivo re-deriva ao aplicar o modelo (o acento novo chega às formas)",
+    /private usarModelo\(modelo: ModeloPPT[\s\S]{0,700}atualizarEstilos\(s, d, tema\)/.test(pptEst),
+    "as formas de cor do tema ficariam com a rampa antiga até a próxima edição"
+  );
+  checa(
+    "o cartão do modelo mostra a rampa do estilo (e o modelo do usuário guarda o do deck)",
+    /pp-tpl-com-estilo/.test(modelosUi) && /rampaDeTons\(rec\.base \|\| accent/.test(modelosUi) && /function estiloDoDeckNasLaminas/.test(modelosEd),
+    "a prévia do cartão ficaria sem a rampa"
+  );
 }
 
 // ---------------------------------------------------------------- docs sem marcador de conflito

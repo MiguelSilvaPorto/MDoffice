@@ -370,6 +370,34 @@ const M = await empacotar("src/powerpoint/edicao/modelos.ts", "modelos.mjs");
   const tab = [mk([caixa({ id: "tb", tabela: { colunas: [50], linhas: [20], celulas: [[cel("1C212B")]] } })])];
   const rt = M.aplicarModelo(tab, de, noite);
   ok("tabela: texto e preenchimento das células trocam junto", rt[0].shapes[0].tabela.celulas[0][0].paras[0].runs[0].color === "F4F5F8" && rt[0].shapes[0].tabela.celulas[0][0].fill.color === "818CF8");
+
+  // Estilos de Cor nos modelos (R5): a receita viaja no FUNDO das lâminas e o estilo vivo segue o
+  // acento novo — é o que faz o deck inteiro acompanhar o modelo
+  const comEstilo = M.MODELOS.filter((m) => m.estilo);
+  ok(
+    "modelos: as três referências trazem o estilo (média, lustro)",
+    comEstilo.length === 3 && comEstilo.every((m) => m.estilo.familia && m.estilo.intensidade === "media" && m.estilo.brilho === "lustro"),
+    comEstilo.map((m) => m.id).join(", ")
+  );
+  const esmeralda = M.MODELOS.find((m) => m.id === "esmeralda");
+  const rEst = M.aplicarModelo(base, de, esmeralda);
+  ok("modelo com estilo: o fundo das lâminas ganha a receita (sem cor própria)", rEst.every((s) => s.bgEstilo?.familia === "esmeralda" && s.bgEstilo.base === ""));
+  const rSem = M.aplicarModelo(rEst, { theme: "escuro", bg: "0B3A2B", fontFamily: "Inter" }, noite);
+  ok("modelo sem estilo: o fundo volta ao do modelo (a receita do fundo sai)", rSem.every((s) => !s.bgEstilo));
+  const C = await empacotar("src/powerpoint/edicao/criar.ts", "criar.mjs");
+  const formaDoTema = caixa({ id: "s", kind: "forma", estilo: { familia: "propria", intensidade: "media", brilho: "nada" }, fillX: { kind: "solid", color: "4F46E5" } });
+  const slidesEst = M.aplicarModelo([mk([formaDoTema], { kind: "solid", color: "FFFFFF" })], de, esmeralda);
+  const setupNovo = { aspect: "16:9", theme: esmeralda.tema, showNumber: false, footer: "", fontFamily: esmeralda.fonte, fontSize: 18, bg: esmeralda.bg };
+  const estNovo = C.estiloDoDeck(slidesEst, setupNovo);
+  const derivado = E.atualizarEstilos(slidesEst[0], dim, estNovo).shapes[0];
+  ok(
+    "modelo com estilo: a forma de cor do tema re-deriva no acento novo",
+    derivado.fillX.kind === "gradient" && derivado.fillX.stops.some((p) => p.color === estNovo.acento),
+    `${estNovo.acento}`
+  );
+  const salvo = M.modeloDoDeck(rEst, setupNovo, "Meu estilo", "u1");
+  ok("modelo do usuário guarda o estilo do fundo do deck", salvo.estilo?.familia === "esmeralda" && salvo.estilo.intensidade === "media");
+  ok("modelo do usuário sem estilo no fundo não inventa um", !M.modeloDoDeck(base, de, "Sem estilo", "u2").estilo);
 }
 
 // ideias de design: o tratamento alcança as cores próprias das formas e o acabamento

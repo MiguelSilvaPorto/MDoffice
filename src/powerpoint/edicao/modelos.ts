@@ -7,7 +7,7 @@
 // paleta, elas remapeiam as cores PRÓPRIAS das formas (um organograma importado tem verdes que
 // não estão em tema nenhum) para as cores do design, e podem arredondar os cantos ou dar
 // contorno de acento — é o que faz a lâmina parecer outro estilo, e não só outro fundo.
-import type { CelulaTab, DeckSetup, Fill, Para, Run, Shape, Slide, ThemeId } from "../schema";
+import type { BrilhoEstilo, CelulaTab, DeckSetup, EstiloForma, FamiliaEstilo, Fill, IntensidadeEstilo, Para, Run, Shape, Slide, ThemeId } from "../schema";
 import { themeOf } from "../themes";
 import { corDeContraste, estiloDoDeck } from "./criar";
 
@@ -22,6 +22,12 @@ export interface ModeloPPT {
   fonte: string;
   /** cores próprias (modelos criados pelo usuário): substituem as do tema */
   cores?: { bg?: string; fg?: string; accent?: string; muted?: string };
+  /**
+   * Estilo de Cor do modelo (Estilos de Cor): o FUNDO das lâminas nasce com a receita, sem cor
+   * própria — o estilo segue o acento do próprio modelo. Sem isto, aplicar o modelo devolve o
+   * fundo ao do modelo (o estilo do fundo sai, senão ele seria reescrito pelo recálculo).
+   */
+  estilo?: { familia: FamiliaEstilo; intensidade: IntensidadeEstilo; brilho: BrilhoEstilo };
   /** criado pelo usuário: aparece junto dos presets, com opção de remover */
   usuario?: boolean;
 }
@@ -50,6 +56,13 @@ export const MODELOS: ModeloPPT[] = [
   { id: "sunset", nome: "Sunset", descricao: "Fundo creme e acento pôr do sol", tema: "claro", bg: "FFF3E6", fonte: "Poppins", cores: { fg: "6F1A07", accent: "FF9F1C", muted: "E76F51" } },
   { id: "forest", nome: "Forest", descricao: "Fundo palha e acento verde-oliva", tema: "claro", bg: "FEFAE0", fonte: "Merriweather", cores: { fg: "283618", accent: "606C38", muted: "BC6C25" } },
   { id: "berry", nome: "Berry", descricao: "Fundo rosa-claro e acento vinho", tema: "claro", bg: "F7E8F3", fonte: "Poppins", cores: { fg: "4A1942", accent: "893168", muted: "56A3A6" } },
+  // Os modelos com Estilo de Cor: o FUNDO das lâminas nasce no gradiente da família (a receita
+  // acompanha o acento do próprio modelo), com o texto e a fonte já casados — é o deck da
+  // referência (verde → teal) pronto para usar, e qualquer forma com Estilo de Cor e cor "do
+  // tema" passa a acompanhar o acento daqui.
+  { id: "esmeralda", nome: "Esmeralda", descricao: "Fundo verde→teal com brilho e acento esmeralda", tema: "escuro", bg: "0B3A2B", fonte: "Inter", cores: { fg: "FFFFFF", accent: "2FBF71", muted: "9FD9BC" }, estilo: { familia: "esmeralda", intensidade: "media", brilho: "lustro" } },
+  { id: "oceano", nome: "Oceano", descricao: "Fundo azul→petróleo com brilho e acento oceano", tema: "escuro", bg: "06283D", fonte: "Open Sans", cores: { fg: "FFFFFF", accent: "2D9CDB", muted: "9CC9E8" }, estilo: { familia: "oceano", intensidade: "media", brilho: "lustro" } },
+  { id: "ameixa", nome: "Ameixa", descricao: "Fundo violeta→magenta com brilho e acento ameixa", tema: "escuro", bg: "241033", fonte: "Inter", cores: { fg: "FFFFFF", accent: "A66BD8", muted: "CDA9E8" }, estilo: { familia: "ameixa", intensidade: "media", brilho: "lustro" } },
 ];
 
 /** Como o deck está agora — é daqui que saem as cores e a fonte que o modelo substitui. */
@@ -301,6 +314,13 @@ export function aplicarModelo(slides: Slide[], de: EstiloAtual, modelo: ModeloPP
       return f;
     });
     return { ...sl, bg, shapes };
+  }).map((sl) => {
+    // o estilo do modelo vive no FUNDO: as lâminas ganham a receita sem cor própria (o estilo
+    // segue o acento do modelo); o modelo sem estilo devolve o fundo ao do modelo
+    if (modelo.estilo) return { ...sl, bgEstilo: { ...modelo.estilo, base: "" } as EstiloForma };
+    const n: Slide = { ...sl };
+    delete n.bgEstilo;
+    return n;
   });
 }
 
@@ -313,6 +333,21 @@ function fundoDoDeck(slides: Slide[], setup: DeckSetup): string {
   }
   const top = [...contagem.entries()].sort((a, b) => b[1] - a[1])[0];
   return top?.[0] ?? setup.bg ?? "";
+}
+
+/** O Estilo de Cor que o deck usa no fundo, quando a maioria das lâminas concorda (senão, nada). */
+function estiloDoDeckNasLaminas(slides: Slide[]): ModeloPPT["estilo"] {
+  const contagem = new Map<string, { e: NonNullable<Slide["bgEstilo"]>; n: number }>();
+  for (const sl of slides) {
+    if (!sl.bgEstilo) continue;
+    const k = `${sl.bgEstilo.familia}|${sl.bgEstilo.intensidade}|${sl.bgEstilo.brilho}`;
+    const at = contagem.get(k);
+    if (at) at.n++;
+    else contagem.set(k, { e: sl.bgEstilo, n: 1 });
+  }
+  const top = [...contagem.values()].sort((a, b) => b.n - a.n)[0];
+  if (!top || top.n * 2 <= slides.length) return undefined;
+  return { familia: top.e.familia, intensidade: top.e.intensidade, brilho: top.e.brilho };
 }
 
 /**
@@ -336,6 +371,7 @@ export function modeloDoDeck(slides: Slide[], setup: DeckSetup, nome: string, id
       accent: est.acento || t.accent,
       muted: t.muted,
     },
+    ...(estiloDoDeckNasLaminas(slides) ? { estilo: estiloDoDeckNasLaminas(slides)! } : {}),
     usuario: true,
   };
 }

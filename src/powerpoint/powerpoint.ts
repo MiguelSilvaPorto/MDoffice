@@ -3357,6 +3357,13 @@ export class PowerPointHost {
     this.registrar();
     this.slides = aplicarModelo(this.slides, { theme: this.setup.theme, bg: this.setup.bg, fontFamily: this.setup.fontFamily }, modelo, tratamento);
     this.setSetup({ theme: modelo.tema, bg: modelo.bg, fontFamily: modelo.fonte });
+    // o estilo vivo acompanha o modelo: re-deriva as formas e os fundos com o acento NOVO (a
+    // base vazia passou a apontar para ele) — sem isso a pintura ficaria com a rampa antiga até
+    // a próxima edição da lâmina
+    const d = this.dim();
+    const tema = this.estilo();
+    this.slides = this.slides.map((s) => atualizarEstilos(s, d, tema));
+    this.pintar();
   }
 
   /** Estatísticas para o rodapé do app. */

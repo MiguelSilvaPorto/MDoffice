@@ -1,6 +1,7 @@
 // Galeria do botão Template (fita): cartões com a prévia de cada modelo — fundo, texto, acento e fonte.
 // Além dos presets, lista os modelos criados pelo usuário e o cartão "+" (criar a partir do deck atual).
 import { MODELOS, type ModeloPPT } from "../edicao/modelos";
+import { FAMILIAS, rampaDeTons } from "../edicao/estilos";
 import { lerModelosUsuario } from "../modelosUsuario";
 import { themeOf } from "../themes";
 import { pedirTexto } from "../../dialogoTexto";
@@ -22,8 +23,13 @@ function cartao(m: ModeloPPT, dados: string): string {
   const fg = m.cores?.fg || t.fg;
   const muted = m.cores?.muted || t.muted;
   const accent = m.cores?.accent || t.accent;
-  return `<button type="button" class="pp-tpl" ${dados} title="${esc(m.nome)} — ${esc(m.descricao)}">
-      <span class="pp-tpl-previa" style="background:#${bg};color:#${fg}">
+  // modelo com Estilo de Cor: a prévia do fundo é a PRÓPRIA rampa do estilo (a mesma que as
+  // lâminas recebem ao aplicar) — o cartão mostra o gradiente da família na inclinação certa
+  const rec = m.estilo ? FAMILIAS[m.estilo.familia] : null;
+  const rampa = m.estilo && rec ? rampaDeTons(rec.base || accent, m.estilo.intensidade, rec.desvio) : null;
+  const previaBg = rampa ? `background:linear-gradient(135deg,#${rampa.claro} 0%,#${rampa.cor} 45%,#${rampa.escuro} 100%)` : `background:#${bg}`;
+  return `<button type="button" class="pp-tpl${m.estilo ? " pp-tpl-com-estilo" : ""}" ${dados} title="${esc(m.nome)} — ${esc(m.descricao)}">
+      <span class="pp-tpl-previa" style="${previaBg};color:#${fg}">
         <span class="pp-tpl-aa" style="font-family:'${esc(m.fonte)}'">Aa</span>
         <span class="pp-tpl-linhas">
           <span style="background:#${fg}"></span>

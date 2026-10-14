@@ -384,7 +384,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **Estilos de cor (R5 — os Modelos)**: o botão **Template** ganhou três modelos com a cara da
+  referência — **Esmeralda**, **Oceano** e **Ameixa** — que levam o **Estilo de Cor** no fundo das
+  lâminas (a rampa da família, com o acento do próprio modelo) e cujo cartão mostra a **prévia da
+  rampa** no lugar da cor de fundo. Aplicar um modelo **re-deriva na hora** as formas que usam
+  Estilo de Cor sem cor própria (a base vazia passa a apontar para o **acento novo**) e as de cor
+  fixa ficam como estão; aplicar um modelo **sem** estilo devolve o fundo ao do modelo (a receita
+  do fundo sai — senão o recálculo a reescreveria logo depois). E **salvar a apresentação como
+  modelo** guarda o estilo do fundo do deck junto, então o modelo criado por você reproduz o
+  gradiente em qualquer apresentação.
 
 
 ### Adicionado (na main)

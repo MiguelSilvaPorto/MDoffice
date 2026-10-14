@@ -206,6 +206,13 @@ avisado ao abrir (nunca some em silêncio).
   **ângulo**, sem cor própria ele acompanha o tema e a edição manual solta o estilo, deixando o
   gradiente como pintura. No fundo **não há dobra**: o brilho fica no lustro. "Aplicar a todas as
   lâminas" leva o estilo junto.
+- **Os Modelos combinam com o estilo**: o **Template** tem três modelos com a cara da referência —
+  **Esmeralda**, **Oceano** e **Ameixa** — que põem o Estilo de Cor no fundo das lâminas (o
+  cartão mostra a **rampa** na prévia) e cujo acento é o do próprio modelo. Aplicar um modelo
+  **re-deriva** as formas de Estilo de Cor sem cor própria (a base vazia segue o acento novo) e as
+  de cor fixa ficam; aplicar um modelo **sem** estilo devolve o fundo ao do modelo (a receita do
+  fundo sai). **Salvar como modelo** guarda o estilo do fundo do deck, então o seu modelo reproduz
+  o gradiente em qualquer apresentação.
 
 ## Apresentar (F5)
 
