@@ -47,6 +47,19 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   um clique para aplicar — antes o popup só dizia "comece nova frase aqui". Nesses avisos os botões
   de dicionário ("Ignorar palavra", "Adicionar ao dicionário") dão lugar a **"Ignorar neste
   texto"**, que dispensa o aviso somente naquele documento (nos outros ele continua).
+- **Motor ABNT — validação do `.docx` exportado (E04–E08 e E12)**: margem, fonte, entrelinha,
+  papel, paginação e quebra de seção não existem no Markdown — só no arquivo final. O motor ganhou
+  o validador que **abre o `.docx` exportado** (JSZip + varredura do XML, sem UI e sem depender do
+  exportador) e roda seis regras declaradas em TOML (`tipo = "docx"`, em `src/md/regras-docx/`):
+  margens 3-2-3-2 (`w:pgMar`), Arial/Times 12 pt (`w:rFonts`/`w:sz`), entrelinha 1,5 (`w:spacing`),
+  papel A4 (`w:pgSz`), paginação a partir da introdução (`w:pgNumType`/campo PAGE) e seção primária
+  em página nova (quebras/`w:sectPr`). As duas últimas são de confiança média e entram como
+  **sugestão**; o validador só acusa a ausência total de paginação, não a posição do número.
+  O teste (`npm run test:abnt-docx`) monta `.docx` à mão com os dois lados de cada regra e registra
+  o que os exportadores de hoje violam: o export do Markdown sai com margens de 2 cm, Calibri 11,
+  entrelinha 1,25, sem paginação e sem quebra entre seções primárias; o export da sessão Word, no
+  setup padrão, com margens superior/base de 2,5 cm, Calibri 11, entrelinha 1,15 e sem quebra
+  (configurado em ABNT, o mesmo exportador não acusa nada).
 
 ### Adicionado (na main)
 

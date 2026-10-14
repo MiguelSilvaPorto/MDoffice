@@ -1,0 +1,12 @@
+# E06 — NBR 14724:2024: entrelinha 1,5 no texto corrido.
+#
+# Regra de ARQUIVO (`tipo = "docx"`): o validador lê `w:spacing` (`w:line`/`w:lineRule`)
+# dos parágrafos e dos estilos. No Word, 1,5 = `w:line="360"` com `lineRule="auto"`.
+# Espaçamento simples é legítimo em citações longas, notas, legendas e tabelas — por isso
+# o verificador só julga o corpo (fora de tabelas e de títulos).
+id = "abnt.e06"
+norma = "nbr14724:2024"
+grupo = "E"
+severidade = "warning"
+tipo = "docx"
+verifica = "entrelinha-corpo"

@@ -1,0 +1,13 @@
+# E12 — NBR 14724:2024: cada seção primária começa em página nova.
+#
+# Regra de ARQUIVO (`tipo = "docx"`), de CONFIANÇA MÉDIA: o validador olha os títulos de
+# nível 1 (estilo Heading 1/Título 1) e exige quebra antes de cada um — `w:pageBreakBefore`,
+# `w:br w:type="page"` ou quebra de seção (`w:sectPr` com `w:type` de página nova) no
+# parágrafo do título ou no anterior. Título formatado "na mão" (sem estilo) não é visto;
+# por isso a severidade é sugestão, não aviso.
+id = "abnt.e12"
+norma = "nbr14724:2024"
+grupo = "E"
+severidade = "suggestion"
+tipo = "docx"
+verifica = "secoes-em-pagina-nova"

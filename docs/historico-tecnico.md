@@ -2415,3 +2415,58 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 Este documento foi **semeado** com as mudanças mais recentes (até 2026-10-13). A partir daqui,
 cada tarefa registra as próprias entradas ao ser fechada — e pode reescrever/consolidar as
 antigas quando fizer sentido.
+
+## src/md/docxcheck.ts
+
+### 2026-10-14 · este commit · validação do .docx exportado (E04–E08 e E12)
+- **Local:** arquivo novo — tipo `Verificacao`, varredor `varrerXml`/`blocoEm`, leitura do pacote (`lerDocx`), julgamentos (`verificacaoMargens`…`verificacaoSecoes`), mapa `VERIFICACOES_DOCX`, carga `REGRAS_DOCX` e API `verificarDocx`
+- **Linha:** “novo arquivo”
+- **Porquê:** o motor ABNT julga o texto do Markdown e **não vê** margem, fonte, entrelinha, papel,
+  paginação nem quebra de seção — o catálogo (E04–E08 e E12) é do **arquivo exportado**. O validador
+  abre o `.docx` com JSZip e varre o XML com um scanner de tags próprio (sem DOMParser: ele também
+  roda no Node dos testes), sem UI e sem tocar nos exportadores. Cada regra é declarada em TOML
+  (`tipo = "docx"` + `verifica`) e resolvida no mapa local — as regras **não** entram em
+  `src/broker/abnt/index.ts` (outro pipeline, outra carga). Decisões de precisão: margens julgadas
+  só **abaixo** do mínimo 3-2-3-2 (com folga de 28 twips para arredondamento) e margem maior passa
+  (encadernação); fonte/entrelinha medidas pela **moda ponderada por caracteres** do texto corrido,
+  lendo run → estilo do parágrafo → `docDefaults`/Normal, com formatação direta prevalecendo;
+  `lineRule` exata/não-automática e documento sem nenhuma medida declarada ficam em silêncio (não
+  adivinha); A4 em retrato **ou** paisagem passa; paginação (E08) só acusa a **ausência total**
+  (campo PAGE/`w:pgNum`/`w:pgNumType` com atributo) e sai como sugestão; seção primária (E12) só é
+  julgada quando o arquivo usa estilo de título (Heading 1/Título 1) e a quebra vale por
+  `w:pageBreakBefore`, `w:br w:type="page"` antes do texto ou `w:sectPr` de página nova (seção
+  `continuous` não conta e título sem estilo não é visto — também sai como sugestão, como manda a
+  confiança média do catálogo). Os limites do leitor (cadeia `basedOn` não resolvida, recuos não
+  julgados, posição da paginação não conferida) ficaram registrados em comentário no fim do arquivo.
+
+## src/md/regras-docx/*.toml
+
+### 2026-10-14 · este commit · seis regras `tipo = "docx"` (E04–E08 e E12)
+- **Local:** seis arquivos novos — `margens.toml`, `fonte.toml`, `entrelinha.toml`, `pagina.toml`, `paginacao.toml`, `secoes.toml`
+- **Linha:** “novo arquivo”
+- **Porquê:** a declaração (id, norma, grupo, severidade, verificador) precisa ser dado, não código —
+  mesmo contrato das regras de texto e de estrutura. E04–E07 (margens, fonte, entrelinha, papel) saem
+  como `warning`; E08 e E12, de confiança média no catálogo, como `suggestion`. A tolerância de E04
+  (`opcoes = { tolerancia = 28 }`) é dado, não constante escondida.
+
+## scripts/testar-abnt-docx.mts
+
+### 2026-10-14 · este commit · teste do validador, dois lados por regra
+- **Local:** arquivo novo — `docxMinimo` (monta .docx mínimo à mão), seções “os dois lados”, “bordas”, “exportador do app”
+- **Linha:** “novo arquivo”
+- **Porquê:** regra de validação sem o lado que **não** acusa não prova precisão. O teste monta o
+  `.docx` à mão (controle exato de cada elemento) para os dois lados de E04–E08/E12, cobre bordas
+  (caminho de arquivo, arquivo que não é `.docx`, subconjunto de regras, `verifica` desconhecido) e
+  registra o **estado atual** dos exportadores do app: o export do Markdown é acusado em E04, E05,
+  E06, E08 e E12 (papel A4 ok); o da sessão Word, no setup padrão, em E04, E05, E06 e E12 (paginação
+  já existe); o mesmo exportador configurado em ABNT (3-2-3-2, Arial 12, 1,5, quebra antes das
+  seções) não é acusado em nada. Isso é **achado**, não bug: o exportador não tem perfil ABNT, e a
+  tarefa que o adicionar vem atualizar os números aqui.
+
+## package.json
+
+### 2026-10-14 · este commit · script do teste
+- **Local:** `scripts`
+- **Linha:** nova linha `"test:abnt-docx": "node scripts/testar-abnt-docx.mts"`
+- **Porquê:** o teste do validador do `.docx` entra no mesmo padrão dos testes do motor ABNT
+  (`test:abnt`, `test:abnt-contexto`).

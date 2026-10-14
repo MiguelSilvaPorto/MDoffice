@@ -1,0 +1,10 @@
+# E05 — NBR 14724:2024: o corpo em Arial ou Times New Roman, 12 pt.
+#
+# Regra de ARQUIVO (`tipo = "docx"`): o validador lê `w:rFonts`/`w:sz` dos runs e dos
+# estilos (`w:docDefaults`/Normal) em `word/styles.xml`. 12 pt = 24 meios-pontos.
+id = "abnt.e05"
+norma = "nbr14724:2024"
+grupo = "E"
+severidade = "warning"
+tipo = "docx"
+verifica = "fonte-corpo"

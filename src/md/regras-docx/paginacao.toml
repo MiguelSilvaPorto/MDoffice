@@ -1,0 +1,12 @@
+# E08 — NBR 14724:2024: paginação no canto superior direito, a partir da introdução.
+#
+# Regra de ARQUIVO (`tipo = "docx"`), de CONFIANÇA MÉDIA: o validador só acusa a
+# AUSÊNCIA total de paginação (sem campo PAGE no cabeçalho/rodapé, sem `w:pgNumType`
+# configurado). Posição, formato e página inicial não são julgados — por isso a
+# severidade é sugestão, não aviso.
+id = "abnt.e08"
+norma = "nbr14724:2024"
+grupo = "E"
+severidade = "suggestion"
+tipo = "docx"
+verifica = "paginacao"

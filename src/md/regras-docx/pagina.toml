@@ -1,0 +1,10 @@
+# E07 — NBR 14724:2024: papel A4 (21 × 29,7 cm).
+#
+# Regra de ARQUIVO (`tipo = "docx"`): o validador lê `w:pgSz` das seções.
+# A4 em twips: 11906 × 16838 (retrato) ou 16838 × 11906 (paisagem).
+id = "abnt.e07"
+norma = "nbr14724:2024"
+grupo = "E"
+severidade = "warning"
+tipo = "docx"
+verifica = "papel-a4"

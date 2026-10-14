@@ -1,0 +1,13 @@
+# E04 — NBR 14724:2024: margens do anverso 3-2-3-2.
+#
+# Regra de ARQUIVO (`tipo = "docx"`): quem a executa é o validador do .docx exportado
+# (`src/md/docxcheck.ts`), lendo `w:sectPr/w:pgMar`; o pipeline de texto não a vê.
+# Esquerda e topo: 3 cm = 1701 twips. Direita e base: 2 cm = 1134 twips.
+id = "abnt.e04"
+norma = "nbr14724:2024"
+grupo = "E"
+severidade = "warning"
+tipo = "docx"
+verifica = "margens"
+# folga em twips para arredondamento de conversão (≈ 0,05 cm)
+opcoes = { tolerancia = 28 }
