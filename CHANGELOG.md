@@ -631,6 +631,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Encerrar (`Esc`). A **roda do mouse** e o **botão direito** também navegam, e o `Esc` fecha a
   grade/ajuda antes de sair. De quebra, a lâmina sem fundo próprio passa a usar o **fundo do tema**
   — antes o tema escuro ficava com texto claro sumindo no branco do palco.
+- **Desenho assistido acertado (curvas)**: o traço desenhado **torto** agora vira um **arco girado**
+  no mesmo ângulo do desenho — o ajuste passou a procurar a elipse **com orientação** (antes só
+  existia o ajuste alinhado aos eixos: a elipse saía grande e a curva ficava longe do traço, o
+  "não se encaixa" do relato). A validação também ficou mais rígida: elipse em forma de "faca"
+  (duas retas com um canto, por exemplo) **não vira arco** — vira desenho livre — e o **desenho
+  livre** ganhou **duas passadas de suavização** com passo de simplificação mais fino (o "cheio de
+  falhas" do serrilhado da mão).
 
 ---
 
@@ -990,3 +997,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   e ganhou 10 checagens em `npm run test:pptx-edicao` (gesto, inércia, rolagem primeiro, soma de
   movimentos pequenos) + 6 em `npm run test:layout` (Ctrl é do zoom, roda lateral ignorada e a
   ligação no palco).
+- **Testes do desenho assistido**: `npm run test:desenho` ganhou 4 checagens do arco (traço torto
+  sai girado no ângulo do desenho, a curva **passa pelo traço** — desvio máximo medido contra o
+  arco reconhecido — e o "canto em L" fica como desenho livre em vez de arco-faca) e o
+  `npm run test:pptx-edicao` confere que o arco girado vai ao `.pptx` com rotação e ângulos.

@@ -6112,7 +6112,7 @@ antigas quando fizer sentido.
 
 ### 2026-10-14 · esta tarefa · promoção das duas entradas que estavam na main
 - **Local:** seções "Não adicionado" do PowerPoint (1) e do Geral (1)
-- **Linha:** 2 entradas movidas para o "Adicionado" da mesma categoria — **zoom e marcação ao
+- **Linha:** 2 entradas movidas para o "Adicionado" da mesma categoria - **zoom e marcação ao
   vivo na apresentação** (`e80b957`) e **medição que não vai para o commit** (`28805e7`)
 - **Porquê:** mesma razão das rodadas anteriores (registrar no estado de autoria e promover no
   fechamento não cabem no mesmo commit).
@@ -6334,3 +6334,57 @@ antigas quando fizer sentido.
   regra proíbe promover antes. Mesma razão das rodadas anteriores (ex.: `334ec1e`):
   registra-se em "Não adicionado" no fecho e promove-se logo em seguida, quando o commit já está
   na `main`. Nenhuma entrada de worktree em andamento foi tocada — só o que já entrou.
+
+## src/powerpoint/edicao/desenho.ts
+
+### 2026-10-14 · esta tarefa · o arco acha a orientação (e a caixa para de sobrar)
+- **Local:** `ajustarElipseOrientada` (nova), o bloco do arco em `reconhecerTraco`, `formaDoTraco`
+  e `caminhoLivre`
+- **Linha:** o ajuste alinhado aos eixos (com `desvio < 0.075` normalizado) → **varredura de
+  rotações** (−45..45 em 3°, refinando em 0,5°): os pontos são endireitados, a elipse é ajustada
+  alinhada e o desvio é medido em **pt** (`desvio × min(rx, ry)`); o melhor ângulo vira
+  `rot` da forma (`TracoReconhecido.rot` → `s.rot`), e o **centro da elipse volta ao lugar
+  absoluto** (rotação de volta em torno do centróide) porque o quadro gira em volta do próprio
+  centro; entram três guardas — razão entre eixos ≥ 0,22 (uma "faca" não é arco), desvio absoluto
+  ≤ máx(2,5 pt, diag × 0,018) e o eixo maior ≤ 4× a diagonal do traço; em `caminhoLivre`,
+  `suavizarPontos` em **duas passadas** e `eps` de `máx(1, diag×0,008)` para `máx(0,8, diag×0,005)`
+- **Porquê:** o relato do usuário ("é tudo torto… não se encaixa") tinha três causas: (1) o ajuste
+  só existia alinhado aos eixos — um desenho torto achava uma elipse grande e a curva passava longe
+  do traço (medido: desvio máximo de **22 pt** num arco de 18°; depois do ajuste girado, **2 pt**);
+  (2) a liberdade de rotação, sozinha, criaria um efeito colateral — duas retas com um canto
+  achavam uma elipse "faca" e viravam arco (a razão entre eixos era 0,31: daí o corte em 0,22 para
+  não derrubar o arco largo legítimo, razão 0,346, e o desvio absoluto cuidar do resto); (3) o
+  desenho livre saía serrilhado — uma passada de média móvel não tirava o tremor da mão.
+  O ajuste roda no traço **cru**: suavizar antes "achata" arcos pequenos e uma elipse girada
+  passaria por cima (foi o caminho até chegar aqui — o teste do arco de 90° pegou).
+  Detalhe que custou caro: o centro da elipse no quadro endireitado não é o centro no lugar
+  absoluto; sem desfazer a rotação em torno do centróide, a forma saía deslocada e o desvio
+  medido continuava alto (22 pt) mesmo com o ângulo certo.
+
+## scripts/testar-desenho-assistido.mjs
+
+### 2026-10-14 · esta tarefa · o traço torto e o canto em L
+- **Local:** seção do arco
+- **Linha:** 5 checagens novas — arco de elipse desenhado com 18° de inclinação sai com `rot` ≈ 18;
+  a curva **passa pelo traço** (desvio máximo medido contra o arco reconhecido, amostrando o trecho
+  entre `adj1` e `adj2`, ≤ 4 pt); o "canto em L" (duas retas + canto) fica como desenho livre
+- **Porquê:** o teste antigo media só a **caixa** do arco — a curva podia estar longe do traço com
+  a caixa certa (era exatamente o defeito). O desvio medido contra a curva reconhecida é o que
+  prende o "encaixe" de verdade.
+
+## scripts/testar-edicao-pptx.mjs
+
+### 2026-10-14 · esta tarefa · o arco girado no arquivo
+- **Local:** seção nova no fim ("desenho assistido: arco girado")
+- **Linha:** 2 checagens — o traço torto vira arco com `rot` ≈ 18 e o `.pptx` sai com `prst="arc"`,
+  `rot="…"` e `adj1`/`adj2`
+- **Porquê:** rotação em arco é linha nova no caminho de exportação; sem o teste, uma regressão no
+  `Escritor` só apareceria no arquivo do usuário.
+
+## docs/powerpoint.md
+
+### 2026-10-14 · esta tarefa · a documentação do arco girado
+- **Local:** "Desenho à mão (Draw)"
+- **Linha:** a bala do arco ganha a orientação (traço torto sai girado e a caixa acompanha) e o
+  desenho livre passa a dizer "duas passadas"; a bala do desenho livre cita o passo fino
+- **Porquê:** é o comportamento visível do assistente, e era o que o usuário estava vendo errado.

@@ -102,12 +102,16 @@ avisado ao abrir (nunca some em silêncio).
   normal (editável, com medidas em cm e ida e volta no `.pptx`). O traço torto é **endireitado
   antes de medir** (a mão nunca acerta o ângulo), então a forma acompanha o que foi desenhado.
 - O **arco** segue curvas largas (ajuste **elíptico**), não só círculos: traçar o topo de uma
-  caixa sai com o raio e a proporção do traço, em vez de virar "meio círculo".
+  caixa sai com o raio e a proporção do traço, em vez de virar "meio círculo". O ajuste também
+  procura a **orientação**: a curva desenhada **torta** sai como arco **girado no mesmo ângulo do
+  desenho** e a caixa acompanha (a curva passa pelo traço, não por perto dele). E uma elipse em
+  forma de "faca" (duas retas com um canto, por exemplo) **não vira arco** — vai para o desenho
+  livre.
 - **Desenhar por cima de uma forma existente** (mesmo apagada — a cor não importa) sai **alinhado
   a ela**: o resultado encaixa nas bordas e nos centros das formas de baixo quando está perto.
 - O que o assistente **não** reconhece fica como **desenho livre** — um caminho de verdade,
-  **suavizado** (média móvel + curvas), que também vai para o arquivo; com o **assistente
-  desligado**, todo traço fica livre.
+  **suavizado** (duas passadas de média móvel + curvas, com passo fino para não cortar os cantos),
+  que também vai para o arquivo; com o **assistente desligado**, todo traço fica livre.
 - Enquanto o lápis está ligado, a **barrinha do pincel** define **cor**, **espessura** (1, 2, 4
   ou 8 pt) e o assistente, e mostra o que está sendo entendido ("entendi: Círculo"); **Esc** sai.
 

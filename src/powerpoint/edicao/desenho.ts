@@ -29,6 +29,8 @@ export interface TracoReconhecido {
   box: Ret;
   /** ajustes da geometria (roundRect: raio do canto em 1/100000) */
   adj?: Record<string, number>;
+  /** rotação da forma em graus (o traço desenhado torto vira forma torta de propósito) */
+  rot?: number;
   /** pontas de seta (linha rabiscada com cabeça) */
   head?: boolean;
   tail?: boolean;
@@ -256,6 +258,18 @@ function anguloDaArestaMaisLonga(pts: PontoTraco[]): number {
   return ang;
 }
 
+/** Gira os pontos em volta de um centro (mesmo sentido do `rotate` do CSS: y para baixo). */
+function girarPontos(pontos: PontoTraco[], cx: number, cy: number, graus: number): PontoTraco[] {
+  const g = (graus * Math.PI) / 180;
+  const cos = Math.cos(g);
+  const sin = Math.sin(g);
+  return pontos.map((p) => {
+    const dx = p.x - cx;
+    const dy = p.y - cy;
+    return { x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos };
+  });
+}
+
 /** Resolve um sistema linear (Gauss–Jordan com pivô parcial); `null` se for degenerado. */
 function resolverSistema(M: number[][], b: number[]): number[] | null {
   const n = b.length;
@@ -340,6 +354,66 @@ export function ajustarElipse(pontos: PontoTraco[]): { cx: number; cy: number; r
   let dev = 0;
   for (const p of pontos) dev += Math.abs(Math.hypot((p.x - cx) / rx, (p.y - cy) / ry) - 1);
   return { cx, cy, rx, ry, desvio: dev / n };
+}
+
+/**
+ * Ajuste de elipse com ORIENTAÇÃO: uma "quarta de círculo" desenhada torta não cabe numa
+ * elipse alinhada aos eixos — o ajuste sai grande e a curva não passa pelo traço (o quadro
+ * fica sobrando). A varredura endireita os pontos, ajusta a elipse alinhada e mede o desvio
+ * ABSOLUTO (em pt); o melhor ângulo vira a rotação da forma — o preset desenha os ângulos no
+ * quadro dele, que depois o CSS gira de volta.
+ */
+export function ajustarElipseOrientada(
+  pontos: PontoTraco[]
+): { cx: number; cy: number; rx: number; ry: number; rot: number; absoluto: number } | null {
+  if (pontos.length < 8) return null;
+  let cx = 0;
+  let cy = 0;
+  for (const p of pontos) {
+    cx += p.x;
+    cy += p.y;
+  }
+  cx /= pontos.length;
+  cy /= pontos.length;
+  const candidato = (rot: number) => {
+    // endireita com −rot: a forma precisa girar de +rot para voltar ao lugar
+    const girados = girarPontos(pontos, cx, cy, -rot);
+    const e = ajustarElipse(girados);
+    if (!e) return null;
+    // o centro volta para o lugar ABSOLUTO: o quadro da forma gira em volta do próprio centro,
+    // então ele tem que ficar onde a elipse está de verdade (sem isso, a forma saía deslocada
+    // da rotação em diante — a curva não passava pelo traço)
+    const g2 = (rot * Math.PI) / 180;
+    const cos2 = Math.cos(g2);
+    const sin2 = Math.sin(g2);
+    const dx = e.cx - cx;
+    const dy = e.cy - cy;
+    return {
+      cx: cx + dx * cos2 - dy * sin2,
+      cy: cy + dx * sin2 + dy * cos2,
+      rx: e.rx,
+      ry: e.ry,
+      rot,
+      absoluto: e.desvio * Math.min(e.rx, e.ry),
+    };
+  };
+  // o ajuste alinhado aos eixos é o "de sempre": só troca por um girado quando ele é
+  // CLARAMENTE melhor (um arco pequeno cabe em muitas elipses — sem essa preferência, um
+  // arco quase circular ganhava uma elipse girada com desvio só um pouco menor)
+  const base = candidato(0);
+  let melhor: { cx: number; cy: number; rx: number; ry: number; rot: number; absoluto: number } | null = base;
+  for (let rot = -45; rot <= 45.001; rot += 3) {
+    const c = candidato(rot);
+    if (c && melhor !== null && c.absoluto < melhor.absoluto) melhor = c;
+  }
+  if (melhor === null) return null;
+  const centro = melhor.rot;
+  for (let rot = centro - 2.5; rot <= centro + 2.501; rot += 0.5) {
+    const c = candidato(rot);
+    if (c && c.absoluto < melhor.absoluto) melhor = c;
+  }
+  if (base && melhor.rot !== 0 && melhor.absoluto > base.absoluto * 0.75) melhor = base;
+  return melhor;
 }
 
 /** Triângulo com o ápice para baixo (o preset padrão aponta para cima → precisa de flipV). */
@@ -447,17 +521,34 @@ export function reconhecerTraco(pontos: PontoTraco[]): TracoReconhecido | null {
   const n = pontos.length;
 
   // --- arco? (um traço curvo que segue uma elipse — o "canto arredondado" ou uma curva larga) ---
-  const ajuste = ajustarElipse(pontos);
-  if (ajuste && Math.min(ajuste.rx, ajuste.ry) > 14 && ajuste.desvio < 0.075 && Math.max(ajuste.rx, ajuste.ry) < diag * 40) {
-    const { cx, cy, rx, ry } = ajuste;
+  // A elipse é procurada COM orientação: o traço desenhado torto (a mão nunca sai reta) não
+  // cabe numa elipse alinhada aos eixos — o ajuste saía grande e a curva não passava pelo
+  // traço. O ajuste roda no traço CRU (suavizar antes "achata" arcos pequenos e uma elipse
+  // girada passaria por cima) e só vale quando: a elipse não é uma "faca" (uma linha reta
+  // vira elipse esticada e passaria), o desvio absoluto é pequeno e a elipse não é
+  // absurdamente maior que o desenho.
+  const ajuste = ajustarElipseOrientada(pontos);
+  if (
+    ajuste &&
+    Math.min(ajuste.rx, ajuste.ry) > 14 &&
+    Math.min(ajuste.rx, ajuste.ry) >= 0.22 * Math.max(ajuste.rx, ajuste.ry) &&
+    ajuste.absoluto <= Math.max(2.5, diag * 0.018) &&
+    Math.max(ajuste.rx, ajuste.ry) <= diag * 4
+  ) {
+    const { cx, cy, rx, ry, rot } = ajuste;
+    // os ângulos são medidos no QUADRO da forma (elipse alinhada aos eixos): desfaz a rotação
+    const noQuadro = girarPontos(pontos, cx, cy, -rot);
+    const nq = noQuadro.length;
     // ângulo PARAMÉTRICO da elipse (é o que o preset `arc` do OOXML usa)
     const ang = (p: PontoTraco) => Math.atan2((p.y - cy) / ry, (p.x - cx) / rx);
-    const ang0 = ang(pontos[0]);
-    const angN = ang(pontos[n - 1]);
+    const quadro0 = noQuadro[0];
+    const quadroN = noQuadro[nq - 1];
+    const ang0 = ang(quadro0);
+    const angN = ang(quadroN);
     // sentido em que o traço foi desenhado (a soma das viradas de ângulo)
     let volta = 0;
-    for (let i = 1; i < n; i++) {
-      let d = ang(pontos[i]) - ang(pontos[i - 1]);
+    for (let i = 1; i < nq; i++) {
+      let d = ang(noQuadro[i]) - ang(noQuadro[i - 1]);
       while (d > Math.PI) d -= 2 * Math.PI;
       while (d < -Math.PI) d += 2 * Math.PI;
       volta += d;
@@ -477,6 +568,7 @@ export function reconhecerTraco(pontos: PontoTraco[]): TracoReconhecido | null {
         geom: "arc",
         box: { x: cx - rx, y: cy - ry, w: 2 * rx, h: 2 * ry },
         adj: { adj1: emAdj(a1), adj2: emAdj(a2) },
+        rot: Math.abs(rot) >= 1 ? Math.round(rot * 10) / 10 : undefined,
         rotulo: "Arco",
       };
     }
@@ -558,8 +650,10 @@ function suavizarPontos(pontos: PontoTraco[]): PontoTraco[] {
 /** Traço livre -> caminho do custGeom (M + cúbicas + Z, em pt, relativos à caixa), já suave. */
 export function caminhoLivre(pontos: PontoTraco[], bb: Ret = bboxDe(pontos)): CustPath {
   const n10 = (v: number) => Math.round(v * 10) / 10;
-  const suave = suavizarPontos(pontos);
-  let eps = Math.max(1, Math.hypot(bb.w, bb.h) * 0.008);
+  // duas passadas: o tremor da mão sai de verdade (uma passada deixava o "serrilhado")
+  const suave = suavizarPontos(suavizarPontos(pontos));
+  // passo de simplificação mais fino: a curva acompanha o traço em vez de cortar os cantos
+  let eps = Math.max(0.8, Math.hypot(bb.w, bb.h) * 0.005);
   let pts = simplificar(suave, eps);
   while (pts.length > 120 && eps < 40) {
     eps *= 1.6;
@@ -676,6 +770,7 @@ export function formaDoTraco(pontos: PontoTraco[], pincel: Pincel, est: EstiloDe
     s.geom = rec.geom;
     s.name = rec.rotulo;
     if (rec.adj) s.adj = { ...rec.adj };
+    if (rec.rot) s.rot = rec.rot;
     if (rec.flipH) s.flipH = true;
     if (rec.flipV) s.flipV = true;
     return comPincel(s, pincel, { head: rec.head, tail: rec.tail });

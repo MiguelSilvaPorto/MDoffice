@@ -1087,5 +1087,29 @@ const RODA = await empacotar("src/powerpoint/roda-laminas.ts", "roda.mjs");
   ok("roda: o passo e a espera existem", RODA.PASSO_DA_RODA === 40 && RODA.ESPERA_DA_TROCA === 260);
 }
 
+// ---------------------------------------------------------------- desenho assistido: arco girado
+const DES = await empacotar("src/powerpoint/edicao/desenho.ts", "desenho2.mjs");
+{
+  const estDesenho = { fonte: "Segoe UI", tamanho: 18, corTexto: "1C212B", acento: "00B050", paleta: [] };
+  const dim = { w: 960, h: 540 };
+  const pincel = { cor: "00B050", w: 4, assistente: true };
+  const giro = (18 * Math.PI) / 180;
+  const pontos = [];
+  for (let i = 0; i <= 60; i++) {
+    const a = ((120 + (i / 60) * 220) * Math.PI) / 180;
+    const x = 170 * Math.cos(a);
+    const y = 130 * Math.sin(a);
+    pontos.push({
+      x: 480 + x * Math.cos(giro) - y * Math.sin(giro) + Math.sin(i * 2.1) * 0.8,
+      y: 270 + x * Math.sin(giro) + y * Math.cos(giro) + Math.cos(i * 1.7) * 0.8,
+    });
+  }
+  const forma = DES.formaDoTraco(pontos, pincel, estDesenho, dim);
+  ok("desenho: o traço torto sai como arco girado", forma?.geom === "arc" && Math.abs((forma.rot ?? 0) - 18) <= 4, JSON.stringify({ geom: forma?.geom, rot: forma?.rot }));
+  const setupDesenho = { aspect: "16:9", theme: "claro", showNumber: false, footer: "", fontFamily: "Segoe UI", fontSize: 18, bg: "" };
+  const xml = new R.Escritor(setupDesenho).lamina({ md: "", layout: "conteudo", notes: "", shapes: [forma] }).xml;
+  ok("desenho: o arco girado vai no .pptx com rotação e ângulos", /prst="arc"/.test(xml) && /rot="\d+"/.test(xml) && /adj1/.test(xml) && /adj2/.test(xml));
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);

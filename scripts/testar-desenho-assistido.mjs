@@ -283,6 +283,56 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
   ok("arco largo: caixa elíptica (não vira círculo)", largo && perto(largo.box.w, 520, 14) && perto(largo.box.h, 180, 14), JSON.stringify(largo?.box));
   const topo = D.reconhecerTraco(topoDeCaixa(150, 120, 650, 70));
   ok("topo de caixa com quinas: fica livre (não é arco)", topo === null, JSON.stringify(topo));
+
+  // traço desenhado TORTO: a elipse é procurada COM orientação — a forma sai girada no mesmo
+  // ângulo e a curva passa pelo traço (antes, o ajuste alinhado aos eixos saía grande e a
+  // curva não passava pelo desenho: era o "não se encaixa" do relato)
+  const giro = (18 * Math.PI) / 180;
+  // elipse LARGA (rx ≠ ry): é onde a rotação importa — um arco de círculo é o mesmo círculo
+  // em qualquer giro, então o ajuste (certo) devolve rotação zero
+  const torto = arcoElipse(0, 0, 170, 130, 120, 340).map((p) => ({
+    x: 300 + p.x * Math.cos(giro) - p.y * Math.sin(giro),
+    y: 300 + p.x * Math.sin(giro) + p.y * Math.cos(giro),
+  }));
+  const arcoTorto = D.reconhecerTraco(torto);
+  ok("arco torto: reconhecido com a rotação", arcoTorto?.geom === "arc" && Math.abs((arcoTorto.rot ?? 0) - 18) <= 4, JSON.stringify({ geom: arcoTorto?.geom, rot: arcoTorto?.rot }));
+  // a curva devolvida tem que PASSAR pelo traço (é o teste que pega o "não se encaixa"):
+  // compara com o arco DESENHADO (só o trecho visível, entre adj1 e adj2), não com a elipse toda
+  const pontosDoArco = (rec) => {
+    const cx = rec.box.x + rec.box.w / 2;
+    const cy = rec.box.y + rec.box.h / 2;
+    const rx = Math.max(rec.box.w / 2, 1);
+    const ry = Math.max(rec.box.h / 2, 1);
+    const g = ((rec.rot ?? 0) * Math.PI) / 180;
+    let a1 = ((rec.adj?.adj1 ?? 0) / 60000) * (Math.PI / 180);
+    let a2 = ((rec.adj?.adj2 ?? 21600000) / 60000) * (Math.PI / 180);
+    if (a2 <= a1) a2 += 2 * Math.PI; // o preset varre no sentido horário, de adj1 até adj2
+    const out = [];
+    for (let i = 0; i <= 240; i++) {
+      const t = a1 + ((a2 - a1) * i) / 240;
+      const x0 = rx * Math.cos(t);
+      const y0 = ry * Math.sin(t);
+      out.push({ x: cx + x0 * Math.cos(g) - y0 * Math.sin(g), y: cy + x0 * Math.sin(g) + y0 * Math.cos(g) });
+    }
+    return out;
+  };
+  const curvaDoArco = pontosDoArco(arcoTorto);
+  const desvioMax = Math.max(...torto.map((p) => Math.min(...curvaDoArco.map((q) => Math.hypot(p.x - q.x, p.y - q.y)))));
+  ok("arco torto: a curva passa pelo traço", desvioMax <= 4, `desvio máx ${desvioMax.toFixed(1)} pt`);
+
+  // duas retas com um canto arredondado NÃO podem virar um "arco-faca": a elipse esticada
+  // (razão entre eixos minúscula) fica de fora e o traço vira desenho livre
+  const cantoEmL = (() => {
+    const pts = [...reta(300, 260, 300, 180, 14, 2, 31)];
+    for (let i = 1; i <= 10; i++) {
+      const a = ((90 + (i / 10) * 90) * Math.PI) / 180;
+      pts.push({ x: 300 + 40 * Math.cos(a) + tremor(rng(37), 1.5), y: 140 + 40 * Math.sin(a) + tremor(rng(41), 1.5) });
+    }
+    pts.push(...reta(340, 140, 430, 140, 14, 2, 43));
+    return pts;
+  })();
+  const lRec = D.reconhecerTraco(cantoEmL);
+  ok("canto em L: fica livre (não vira arco esticado)", lRec === null, JSON.stringify(lRec));
   // ... mas desenhado POR CIMA de uma caixa, a forma sai alinhada a ela (o "ver a imagem de fundo")
   const caixaFundo = { id: "cx", kind: "forma", box: { x: (150 / 960) * 100, y: (120 / 540) * 100, w: (500 / 960) * 100, h: (200 / 540) * 100 }, text: "", fontFamily: "A", fontSize: 18, color: "000000", bold: false, italic: false, align: "esquerda", fill: "", src: "", rot: 0 };
   const topoForma = D.formaDoTraco(topoDeCaixa(150, 120, 650, 70), pincel, est, dim, [caixaFundo]);
