@@ -32,7 +32,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **A sugestão enquanto você digita agora aparece certa**: o texto fantasma mostrava **muita
+  sugestão errada** — medido no `scripts/eval-ghost.mts` (o avaliador do próprio repositório, com
+  o modelo de idioma real), a base antiga acertava **49%** do que mostrava. Os limiares de
+  confiança subiram (completar palavra e próxima palavra) e o mínimo de letras poupadas foi de 3
+  para 4: a mesma medição sobe para **~74% de acerto**, ainda economizando **~9%** das teclas —
+  mostra menos e mostra certo. Os **modos de intensidade** continuam valendo (discreta ~94%,
+  equilibrada ~74%, agressiva ~61%), agora com um **teto** no limiar para o modo discreto não
+  ficar mudo com a base mais exigente. A **correção do que foi digitado** ("noçao" → "noção")
+  segue intacta — ela vem antes de qualquer previsão. Novo `test:ghost` prende a precisão e a
+  economia no corpus de teste.
 
 ### Adicionado (na main)
 

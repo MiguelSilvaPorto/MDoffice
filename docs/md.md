@@ -189,6 +189,12 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   de erro** (transposição, tecla vizinha, acento, dígrafo) para acertar antes de conhecer o par
   exato. Há um **perfil do seu estilo** e um **modo de intensidade** (discreta, equilibrada,
   agressiva).
+- **Mostra pouco e mostra certo**: a confiança mínima para a sugestão aparecer é medida em
+  `scripts/corpus-wikipedia.txt` e o `test:ghost` prende os números — a sugestão mostrada acerta
+  ~73% das vezes (antes, ~49%) economizando ~9% das teclas. Os **modos** abrem o leque: discreta
+  ~94% de acerto (quase só o óbvio), equilibrada ~73% e agressiva ~61% mostrando mais. A
+  **correção do que acabou de ser digitado** ("noçao" → "noção") vem antes de qualquer previsão e
+  não depende desses limiares.
 
 ## Revisão inteligente e IA local
 

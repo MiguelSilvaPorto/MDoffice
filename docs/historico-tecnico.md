@@ -5454,6 +5454,34 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   bloco para depois do `aoSelecionar([])` (ou que troque o ajudante por uma condição inline)
   quebraria o gesto em silêncio; o teste lê o TS e trava as duas coisas.
 
+## src/broker/ghost/predict.ts
+
+### 2026-10-14 · sugestão certa · limiares mais exigentes e o teto do modo discreto
+- **Local:** `THRESHOLDS` (next, chain, prefix1/2/3, minSuffix) e o `limiar` (novo), usado nos
+  dois pontos que antes faziam `t * thresholdScale(...)`
+- **Linha:** `next 0.26 → 0.45`, `chain 0.45 → 0.75`, `prefix1 0.82 → 0.97`, `prefix2 0.5 → 0.8`,
+  `prefix3 0.36 → 0.6`, `minSuffix 3 → 4`; `limiar(t, modo) = Math.min(0.98, t * thresholdScale(modo))`
+- **Porquê:** o relato "a sugestão aparece errada" — o `eval-ghost.mts` (o avaliador do repositório,
+  com o modelo real em `scripts/corpus-wikipedia.txt`) media **49,3% de acerto**: metade do que
+  aparecia estava errado, e os erros eram quase todos completações de 2–3 letras ("ho", "us", "r").
+  As novas bases sobem para **74,3%** de acerto com a economia ainda em **9,0%** (medido no mesmo
+  texto, sem aprender). O **teto** existe porque o modo "discreta" multiplica por 1,4: com a base
+  em 0,97 o resultado passaria de 1 e o modo ficaria **mudo** — com o teto ele mostra só o quase
+  certo (94,3% de acerto na medição). A correção do que foi digitado (`fixTypo`) roda **antes** dos
+  limiares e não mudou.
+
+## scripts/testar-ghost.mjs (novo)
+
+### 2026-10-14 · sugestão certa · o teste que prende a precisão e a economia
+- **Local:** arquivo novo (`test:ghost` no package.json)
+- **Linha:** `novo` — dois casos diretos (a correção "noçao" → "noção" depois do espaço e a
+  palavra certa não virando correção) e a régua do eval rodada com o modelo real: **precisão
+  ≥ 68%**, **economia ≥ 7%** e **cobertura ≥ 2%** (o piso da cobertura existe para ninguém
+  "melhorar" a precisão mostrando nada)
+- **Porquê:** a precisão era o número que ninguém media em teste — só o `eval-ghost.mts`, que é
+  ferramenta de ajuste e sai com código 0. Agora o número vira portão: baixar de novo os limiares
+  (ou estragar a mistura com o documento) falha o teste. Roda em ~3 s com o modelo embutido.
+
 ---
 
 ## Próximos registros

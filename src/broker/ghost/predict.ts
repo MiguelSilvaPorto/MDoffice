@@ -12,7 +12,13 @@ import { preference, thresholdScale, minSuffixDelta } from "../personal/feedback
 import { agreementFactor } from "./agreement";
 import { fixTypo } from "./typo";
 
-/** Confiança mínima (0–1) para mostrar a sugestão. Ajustada medindo acertos em textos de teste (veja eval). */
+/**
+ * Confiança mínima (0–1) para mostrar a sugestão. Ajustada medindo acertos em textos de teste
+ * (veja eval-ghost). Com o modelo de idioma, a base antiga (prefix1 0,82 …) mostrava MUITA
+ * sugestão errada: 49% de acerto em scripts/corpus-wikipedia.txt (o relato "a sugestão aparece
+ * errada"). Esta base (medida no mesmo texto, sem aprender) sobe para ~74% de acerto com a
+ * economia de teclas ainda em ~9% — mostra menos e mostra certo.
+ */
 /** Quanto o documento pesa na mistura com o modelo do idioma. */
 export const MIX = { kNext: 4, kPrefix: 3, maxLambda: 0.8, personal: 0.5, /** peso de algo que apareceu só 1 vez (pode ser acaso) */ single: 0.5 };
 /** Quanto vale uma contagem do documento: o 1 vale menos (pode ser acaso) e passar de 5 não aumenta (evita repetição em ciclo). */
@@ -20,15 +26,15 @@ const seen = (c: number): number => (c >= 2 ? Math.min(c, 5) : c * MIX.single);
 
 export const THRESHOLDS = {
   /** próxima palavra, depois de um espaço */
-  next: 0.26,
+  next: 0.45,
   /** continuar a sugestão com mais uma palavra (até 3 no total) */
-  chain: 0.45,
+  chain: 0.75,
   /** completar a palavra com 1 letra digitada / 2 / 3 ou mais */
-  prefix1: 0.82,
-  prefix2: 0.5,
-  prefix3: 0.36,
+  prefix1: 0.97,
+  prefix2: 0.8,
+  prefix3: 0.6,
   /** completar a palavra só vale a pena se faltar pelo menos isto de letras (o Tab também custa uma tecla) */
-  minSuffix: 3,
+  minSuffix: 4,
   /** quantas palavras no máximo numa sugestão */
   maxWords: 3,
   /** oferece corrigir a palavra recém-digitada quando parece erro de digitação */
@@ -43,6 +49,12 @@ export const THRESHOLDS = {
 
 /** Quantas letras, no mínimo, a sugestão de completar palavra precisa poupar (depende do modo de intensidade). */
 const minChars = (): number => Math.max(1, THRESHOLDS.minSuffix + minSuffixDelta());
+
+/**
+ * Limiar já escalado pelo modo (discreto aperta, agressivo solta), com TETO em 0,98: a base já é
+ * exigente e, sem o teto, o "discreto" (×1,4) passaria de 1 e nunca mostraria nada.
+ */
+const limiar = (t: number, mode: "next" | "prefix"): number => Math.min(0.98, t * thresholdScale(mode));
 
 /** Analisa a linha e a posição do cursor e devolve a sugestão de texto fantasma, se houver. */
 export function predictCompletion(doc: Text, pos: number, index: DocumentIndex): GhostSuggestion | null {
@@ -333,7 +345,7 @@ function suggestFrom(model: LangModel, index: DocumentIndex, ctx: Ctx, first: Ra
   let tokens = ctx.tokens;
   if (ctx.prefix !== null) {
     const n = ctx.prefix.length;
-    const need = (n === 1 ? T.prefix1 : n === 2 ? T.prefix2 : T.prefix3) * thresholdScale("prefix");
+    const need = limiar(n === 1 ? T.prefix1 : n === 2 ? T.prefix2 : T.prefix3, "prefix");
     // a própria palavra digitada já é provável: deixa a pessoa terminar
     if (main && (first.p < need || first.pSelf > first.p)) return null;
     let disp = first.best.display;
@@ -346,7 +358,7 @@ function suggestFrom(model: LangModel, index: DocumentIndex, ctx: Ctx, first: Ra
     // palavra completada com folga: pode seguir com a próxima
     if (!main || first.p < 0.6) return suffix;
   } else {
-    if (main && first.p < T.next * thresholdScale("next")) return null;
+    if (main && first.p < limiar(T.next, "next")) return null;
     let w = first.best.display;
     if (ctx.sentenceStart) w = w[0].toUpperCase() + w.slice(1);
     words.push(w);
