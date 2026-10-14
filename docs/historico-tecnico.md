@@ -7845,7 +7845,7 @@ antigas quando fizer sentido.
   na ligação; a dica e os `disabled` com o CSS) · `+ a frase da cor-base` no doc · `+ a R6 na
   checklist (o que ficou com o olho do usuário)`
 - **Porquê:** o defeito nasceu de uma consequência entre rodadas (a R2 criou as rampas; a regra da
-  R0 lia `stops[0]`) — o teste prende os DOIS contratos (duas paradas continua como sempre; três
+  R0 lia `stops[0]`) - o teste prende os DOIS contratos (duas paradas continua como sempre; três
   paradas vale a base) e o histórico registra o cruzamento, que é o tipo de coisa que volta se
   ninguém escrever. A R6 fecha o plano: o que resta é a calibragem visual, que é do usuário.
 
@@ -8402,3 +8402,99 @@ antigas quando fizer sentido.
   decoração e painel saem do conteúdo (`dono`) e de `soltas`.
 - **Porquê:** na lâmina importada, o triângulo verde (pintado, 2–80% da área) virava cartão; como `cartoes()` descartava todo
   candidato dentro de outro, a caixa do triângulo engolia os cartões de verdade e tudo se empilhava. Painel de fundo: idem.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · aba Animações · o redesign da aba (pedido do usuário)
+- **Local:** `cartaoAnimacao()` e `cartaoMaisAnimacoes()` (novos, fora da classe) e `animacoes()`
+- **Linha:** a aba sai de **8 grupos** (Animação, Direção, Início, Texto, Duração, Atraso, Ordem,
+  Animar) para **7 na ordem de uso** (Animação, Início, Direção, **Tempo**, Texto, Ordem, Animar):
+  `grupo("Duração", …)` + `grupo("Atraso", …)` → um `grupo("Tempo", …)` com duas `.ppr-linha`
+  rotuladas por `.ppr-mini`; os botões de escolha (`btn(…, "fmt")`) viram `btn(…, "seg")` dentro de
+  `.ppr-seg` (Início, Direção, Duração, Atraso e as setas da Ordem); a caixa `label.ppr-opc` do
+  "Por parágrafo" vira o chip `label.ppr-chip` (o `input[data-anim-pp]` é o mesmo); o "Mais" deixa
+  de ser um `button.ppr.fmt.tem-menu` solto no meio da fileira e entra na grade como cartão
+  `.ppr-anim-mais`; o cartão passa a ser montado num lugar só (a galeria rápida e o popup "Mais"
+  tinham HTML duplicado, cada um com o seu nome de classe: `ppr-trans-nome` nos dois)
+- **Porquê:** o desenho antigo era uma fileira de grupos de uma linha só, com espaço morto e sem
+  hierarquia — a alternância entre as opções de uma mesma escolha não aparecia em lugar nenhum
+  (os botões não se tocavam, e nada dizia que eram mutuamente exclusivos). O grupo **Tempo** junta
+  o que é uma coisa só; os rótulos "Duração"/"Atraso" dentro das linhas substituem o rótulo do
+  grupo (que virava a terceira repetição do mesmo nome). A ordem dos grupos acompanha a ordem em
+  que se pensa a animação: qual efeito, como ele começa, quanto tempo leva, onde ele está na
+  lâmina e vê-lo tocar.
+
+### 2026-10-14 · aba Animações · estados visíveis e o botão Painel
+- **Local:** `atualizar()` (o bloco "aba Animações") e o `abrirMenu("animacao-mais")`
+- **Linha:** `+ <span class="ppr-ordem" data-anim-pos>` (a posição na ordem: `2/3`, com `title`);
+  `+ dis("animacao-mais", !tem)`; `+ on("animacao-painel", st.lateral === "animacao" && st.lateralAberta === true)`;
+  `anDurTxt`/`anAtrasoTxt` passam a mostrar o valor **só quando ele não é um dos da lista**
+  (`!DURACOES_ANIMACAO.some(…)` / `!ATRASOS_ANIMACAO.some(…)`); o popup ganha
+  `<div class="pp-pop-rot">Animações<span class="pp-pop-dica">aplicar na forma <b>…</b></span></div>`
+  e marca o efeito já aplicado (`cartaoAnimacao(t, t === atual ? "on" : "")`)
+- **Porquê:** as setas ↓↑ sozinhas não diziam onde o efeito está na lâmina (a informação só existia
+  no painel lateral); o valor escolhido aparecia **duas vezes** na mesma linha (no botão aceso e no
+  texto do fim); e o popup tapa a seleção sem dizer em quem o efeito ia cair. O "Mais" ficava
+  clicável sem forma escolhida — e aí o clique não faz nada (`aplicarAnimacao` sai sem seleção):
+  desabilitado, o cartão apagado explica **antes**. O "Painel" segue o painel lateral de verdade:
+  nasceu de `lateral`/`lateralAberta` no estado (abaixo) em vez de um flag inventado no botão.
+
+## src/powerpoint/ui/estado.ts · src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · aba Animações · o painel lateral no estado (o botão "Painel")
+- **Local:** `EstadoUI` (`lateral`, `lateralAberta`), `estadoUI()`, o `case "animacao-painel"` do
+  `run()`, `mostrarLateral()` e o `aplicar()` do `ligarPainelLateral()`
+- **Linha:** `+ lateral?: "formatar" | "notas" | "animacao" | "ideias"` e `+ lateralAberta?: boolean`
+  (lidos de `this.lateral` e de `!pane.classList.contains("pp-side-oculto")`) + `+ case "animacao-painel":
+  this.mostrarPainelLateral(); this.mostrarLateral("animacao")` + `+ this.fita?.atualizar()` no fim
+  do `mostrarLateral` e dentro do `aplicar` (esconder/mostrar o painel)
+- **Porquê:** o botão novo precisa saber duas coisas diferentes: se o painel está à mostra E se a
+  aba aberta nele é a das animações (escondido, o painel guarda a última aba). O refresh da fita
+  nos DOIS sentidos é o que mantém o botão aceso quando a pessoa troca a aba pelo próprio painel
+  ou o esconde no "»" — sem isso o botão só acertaria quando clicado por ele mesmo.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · aba Animações · o desenho (cartões, segmentados, chip, tempo e ordem)
+- **Local:** o bloco do fim do arquivo, "aba Animações" (era `.ppr-anim`, `.ppr-anim-gal`,
+  `.ppr-anim-item`, `.ppr-trans-nome`)
+- **Linha:** `grid-template-columns: repeat(6, 54px)` → `repeat(7, 72px)` (a galeria com o "Mais"
+  dentro); `+ .ppr-anim-gal .ppr-anim-item { width: 100% }` (no popup o cartão usa a célula de
+  84px inteira); `+ .ppr-anim-nome` (uma linha com reticências), `+ .ppr-anim-item.on::after`
+  (o selo ✓), `+ .ppr-anim-item:disabled`, `+ .ppr-anim-mais-ic`, `+ .pp-pop-anim`, `+ .pp-pop-dica`;
+  `+ .ppr-seg` e `+ button.ppr.seg` (com as bordas entre os vizinhos, em pé e deitado),
+  `+ .ppr-tempo`, `+ .ppr-mini`, `+ .ppr-chip` (com `:has(input:checked)`), `+ .ppr-ordem`
+- **Porquê:** a largura saiu de **medição**, não do olho: no harness (Edge headless servindo o app
+  pelo Vite, com o deck de exemplo), na fonte do app a 10px, "Desaparecer" ocupa **61px** — em
+  cartões de 54px (e mesmo de 64px) o nome saía cortado ("Desapa…"). Os 72px dão 64px de texto,
+  com folga para a fonte cair no `Segoe UI` de outra máquina; no popup a célula de 84px cobre os
+  mais longos ("Transparência", 68px; "Dissolver fora", 66px). O `.on` do cartão ganhou o selo
+  porque a borda do efeito escolhido era a MESMA cor da borda do `:hover` — um efeito aplicado e
+  um cartão só sob o mouse ficavam iguais. E o `:disabled` existe porque `.ppr-anim-item` **não** é
+  `button.ppr`: a regra geral `button.ppr:disabled` nunca valeu para a galeria (o cartão sem forma
+  escolhida tinha a cara de sempre e o clique morria em silêncio).
+
+## CHANGELOG.md · docs/powerpoint.md
+
+### 2026-10-14 · aba Animações · a entrada e a bala do módulo
+- **Local:** PowerPoint → **Adicionado** → Frontend (a entrada entra já promovida: o fechamento
+  entrega na `main` no mesmo passo) e a bala **Animações de forma** do doc do módulo
+- **Linha:** `+ a entrada do redesign` / `+ os grupos, o Painel e a posição na ordem na descrição da aba`
+- **Porquê:** a bala descrevia a aba por listas (início, duração, atraso, direção…) sem dizer como
+  ela está arrumada; quem procura o **painel de animação** no doc não o encontrava.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · aba Animações · as checagens do desenho
+- **Local:** o bloco novo "PowerPoint: aba Animações (o desenho da fita)", no fim do arquivo
+- **Linha:** `+ 10 checagens` — a ordem dos grupos (e a ausência dos grupos Duração/Atraso **dentro
+  do `animacoes()`**), os rótulos das linhas do Tempo, o `.ppr-seg`, as larguras do cartão
+  (72px na fita / a célula de 84px no popup), o `:disabled` da galeria junto do
+  `dis("animacao-mais", !tem)`, o selo `.on::after` e o chip, o `data-anim-pos`, a regra do valor
+  repetido, o `case "animacao-painel"` com os **dois** `fita.atualizar()` e o cabeçalho do popup
+- **Porquê:** são contratos de **cascata** e de **desenho** — o `:disabled` que não valia (a classe
+  do cartão não é `button.ppr`), a borda do `.on` igual à do `:hover`, o nome cortado por 2 px de
+  largura. Sem a checagem, "limpar" qualquer um deles volta a passar despercebido; a largura prende
+  o número medido no harness (61 px de texto para "Desaparecer"). A primeira versão da checagem dos
+  grupos procurava `grupo("Duração")` no arquivo inteiro e **falhava de propósito errado**: a aba
+  **Transições** tem um grupo Duração legítimo — a busca passou a valer só no corpo do `animacoes()`.

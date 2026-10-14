@@ -423,6 +423,8 @@ export class PowerPointHost {
       this.pane.classList.toggle("pp-side-oculto", oculto);
       for (const b of this.pane.querySelectorAll<HTMLElement>(".pp-side-btn")) b.setAttribute("aria-pressed", String(!oculto));
       guardar("pp-side-oculto", oculto ? "1" : "0");
+      // esconder/mostrar o painel também apaga/acende o "Painel" da aba Animações
+      this.fita?.atualizar();
       window.setTimeout(() => {
         this.pane.classList.remove("pp-side-anima");
         this.stage.desenharSelecao();
@@ -472,6 +474,8 @@ export class PowerPointHost {
     else if (qual === "animacao") this.renderAnimacoes();
     else if (qual === "ideias") this.pintarIdeias();
     else this.painel.atualizar();
+    // o botão "Painel" da aba Animações acompanha a aba aberta (fica aceso enquanto ela é a da vez)
+    this.fita?.atualizar();
   }
 
   /**
@@ -1078,6 +1082,8 @@ export class PowerPointHost {
       animacaoPos: forma && anims ? anims.findIndex((a) => a.forma === forma.id) : -1,
       animacaoTotal: anims?.length ?? 0,
       animacaoParas: forma ? paragrafosDe(forma).length : 0,
+      lateral: this.lateral,
+      lateralAberta: !this.pane.classList.contains("pp-side-oculto"),
     };
   }
 
@@ -1841,6 +1847,11 @@ export class PowerPointHost {
         return this.moverAnimacaoNaOrdem(1);
       case "animacao-previa":
         return this.preverAnimacoes();
+      // "Painel": mostra o painel lateral já na lista de animações (a lista mora nele)
+      case "animacao-painel":
+        this.mostrarPainelLateral();
+        this.mostrarLateral("animacao");
+        return;
 
       case "present":
         return this.present();

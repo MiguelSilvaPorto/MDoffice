@@ -15,6 +15,7 @@ import { abrirPopup, fecharPopup } from "./popup";
 import { galeriaDeLayouts } from "./layoutPreview";
 import { melhorarSelects, fecharSeletor } from "../../seletor";
 import { GALERIA } from "../edicao/criar";
+import { escapeHtml } from "../../util";
 
 export interface HooksFita {
   estado: () => EstadoUI;
@@ -203,6 +204,23 @@ function previaAnimacao(tipo: AnimacaoTipo): string {
       `<path d="M16 10 16 3 A7 7 0 0 0 9.9 6.5 Z" fill="currentColor" fill-opacity=".5"/>`,
   };
   return `<svg class="ppr-anim-svg" viewBox="0 0 32 20" aria-hidden="true">${desenhos[tipo]}</svg>`;
+}
+
+/**
+ * Cartão da galeria de animações: a prévia em cima e o nome embaixo, num alvo de clique só.
+ * A fita (efeitos mais usados) e o popup "Mais" (a lista completa) usam o MESMO desenho —
+ * trocar o cartão num lugar sem o outro deixaria as duas galerias com cara de coisas diferentes.
+ */
+function cartaoAnimacao(t: AnimacaoTipo, extra = ""): string {
+  return `<button type="button" class="ppr-anim-item${extra ? ` ${extra}` : ""}" data-cmd="animacao:${t}" title="${DICAS_ANIMACAO[t]}" aria-label="${ROTULOS_ANIMACAO[t]}">${previaAnimacao(t)}<span class="ppr-anim-nome">${ROTULOS_ANIMACAO[t]}</span></button>`;
+}
+
+/** O cartão "Mais": fecha a fileira da fita com o mesmo desenho dos efeitos e abre a galeria completa. */
+function cartaoMaisAnimacoes(): string {
+  return (
+    `<button type="button" class="ppr-anim-item ppr-anim-mais" data-cmd="animacao-mais" data-menu="1" title="Mais animações: girar, ampliar, transparência… (a lista completa, por classe)" aria-label="Mais animações">` +
+    `<span class="ppr-anim-mais-ic" aria-hidden="true">⋯</span><span class="ppr-anim-nome">Mais</span></button>`
+  );
 }
 
 /** Prévia visual de cada transição: a lâmina que entra é o retângulo cheio, a que sai é o mais claro. */
@@ -565,39 +583,58 @@ export class Fita {
     ].join("");
   }
 
-  /** Aba Animações: efeito por forma (entrada/ênfase/saída/trajetória), início, direção, duração, atraso, ordem e prévia. */
+  /**
+   * Aba Animações: efeito por forma (entrada/ênfase/saída/trajetória), início, direção e tempo
+   * (duração e atraso), build por parágrafo, posição na ordem, prévia e o painel de animação.
+   *
+   * A ordem dos grupos é a ordem em que se pensa a animação: primeiro QUAL efeito, depois COMO
+   * ele começa (início e direção), QUANTO tempo leva, e por último mexer na sequência dela na
+   * lâmina (ordem) e ver tocar (Animar). As escolhas de cada linha vão num controle segmentado —
+   * a fila de botões soltos de antes não dizia que eles eram alternativas entre si.
+   */
   private animacoes(): string {
-    // a fita mostra as mais usadas; o botão "Mais" abre a galeria completa por classe
+    // a fita mostra as mais usadas; o cartão "Mais" abre a galeria completa por classe
     const rapidas: AnimacaoTipo[] = ["aparecer", "surgir", "pulsar", "desaparecer", "sumir", "trajetoria"];
-    const galeria = rapidas.map(
-      (t) =>
-        `<button type="button" class="ppr-anim-item" data-cmd="animacao:${t}" title="${DICAS_ANIMACAO[t]}" aria-label="${ROTULOS_ANIMACAO[t]}">${previaAnimacao(t)}<span class="ppr-trans-nome">${ROTULOS_ANIMACAO[t]}</span></button>`
-    ).join("");
-    const direcoes = DIRECOES_ANIMACAO.map((d) => btn(`animacao-direcao:${d}`, `<span class="ppr-trans-dir">${FLECHAS_DIRECAO[d]}</span>`, `Direção do efeito: ${ROTULOS_DIRECAO[d]}`, "trans-dir")).join("");
-    const inicios = INICIOS_ANIMACAO.map((i) => btn(`animacao-inicio:${i}`, ROTULOS_INICIO[i], `Início do efeito — ${DICAS_INICIO[i]}`, "fmt")).join("");
-    const duracoes = DURACOES_ANIMACAO.map((d) => btn(`animacao-duracao:${d.valor}`, d.rotulo, `Duração do efeito: ${d.rotulo}`, "fmt")).join("");
-    const atrasos = ATRASOS_ANIMACAO.map((d) =>
-      btn(`animacao-atraso:${d.valor}`, d.rotulo, d.valor === 0 ? "Sem atraso: o efeito começa na hora" : `Atraso do efeito: ${d.rotulo}`, "fmt")
-    ).join("");
+    const galeria = rapidas.map((t) => cartaoAnimacao(t)).join("") + cartaoMaisAnimacoes();
+    const seg = (extra: string, itens: string) => `<div class="ppr-seg${extra ? ` ${extra}` : ""}">${itens}</div>`;
+    const segBtn = (cmd: string, conteudo: string, titulo: string, extra = "") => btn(cmd, conteudo, titulo, `seg${extra ? ` ${extra}` : ""}`);
+    const inicios = seg("", INICIOS_ANIMACAO.map((i) => segBtn(`animacao-inicio:${i}`, ROTULOS_INICIO[i], `Início do efeito — ${DICAS_INICIO[i]}`)).join(""));
+    const direcoes = seg("", DIRECOES_ANIMACAO.map((d) => segBtn(`animacao-direcao:${d}`, `<span class="ppr-trans-dir">${FLECHAS_DIRECAO[d]}</span>`, `Direção do efeito — ${ROTULOS_DIRECAO[d]}: ${DICAS_DIRECAO[d]}`)).join(""));
+    const duracoes = seg("", DURACOES_ANIMACAO.map((d) => segBtn(`animacao-duracao:${d.valor}`, d.rotulo, `Duração do efeito: ${d.rotulo}`)).join(""));
+    const atrasos = seg("", ATRASOS_ANIMACAO.map((d) => segBtn(`animacao-atraso:${d.valor}`, d.rotulo, d.valor === 0 ? "Sem atraso: o efeito começa na hora" : `Atraso do efeito: ${d.rotulo}`)).join(""));
     return [
       grupo(
         "Animação",
         `<div class="ppr-anim-wrap"><div class="ppr-trans ppr-anim">${galeria}</div>
-         <button type="button" class="ppr fmt tem-menu" data-cmd="animacao-mais" data-menu="1" title="Mais animações: girar, ampliar, transparência…">Mais<span class="car">▾</span></button></div>
-         <span class="ppr-trans-nota" data-anim-nota hidden title="As animações deste arquivo não são representadas pelo app: voltam como vieram na exportação">Original preservada</span>`
+         <span class="ppr-trans-nota" data-anim-nota hidden title="As animações deste arquivo não são representadas pelo app: voltam como vieram na exportação">Original preservada</span></div>`
       ),
-      grupo("Direção", `<div class="ppr-linha">${direcoes}</div>`),
       grupo("Início", `<div class="ppr-linha">${inicios}</div>`),
+      grupo("Direção", `<div class="ppr-linha">${direcoes}</div>`),
+      grupo(
+        "Tempo",
+        `<div class="ppr-linhas ppr-tempo">
+           <div class="ppr-linha"><span class="ppr-mini">Duração</span>${duracoes}<span class="ppr-trans-dur" data-anim-dur></span></div>
+           <div class="ppr-linha"><span class="ppr-mini">Atraso</span>${atrasos}<span class="ppr-trans-dur" data-anim-atraso></span></div>
+         </div>`
+      ),
       grupo(
         "Texto",
-        `<label class="ppr-opc" title="Cada parágrafo do texto entra num passo próprio (um clique por parágrafo; 'com'/'depois' encadeiam)"><input type="checkbox" data-anim-pp> Por parágrafo</label>`
+        `<label class="ppr-chip" title="Cada parágrafo do texto entra num passo próprio (um clique por parágrafo; 'com'/'depois' encadeiam)"><input type="checkbox" data-anim-pp><span class="ppr-chip-marca" aria-hidden="true"></span><span>Por parágrafo</span></label>`
       ),
-      grupo("Duração", `<div class="ppr-linha">${duracoes}<span class="ppr-trans-dur" data-anim-dur></span></div>`),
-      grupo("Atraso", `<div class="ppr-linha">${atrasos}<span class="ppr-trans-dur" data-anim-atraso></span></div>`),
-      grupo("Ordem", `<div class="ppr-linha">${btn("animacao-subir", "↑", "Mover o efeito da forma selecionada para cima na ordem", "fmt")}${btn("animacao-descer", "↓", "Mover o efeito da forma selecionada para baixo na ordem", "fmt")}</div>`),
+      grupo(
+        "Ordem",
+        `<div class="ppr-linha">
+           <span class="ppr-ordem" data-anim-pos>–</span>
+           ${seg("ppr-seg-v", `${segBtn("animacao-subir", "↑", "Mover o efeito da forma selecionada para cima na ordem")}${segBtn("animacao-descer", "↓", "Mover o efeito da forma selecionada para baixo na ordem")}`)}
+         </div>`
+      ),
       grupo(
         "Animar",
-        `${grande("animacao-previa", ic("i-eye"), "Prévia", "Reproduzir as animações desta lâmina, sem entrar no F5")}${pequeno("animacao-remover", ic("i-trash"), "Remover", "Tirar a animação da forma selecionada")}`
+        `${grande("animacao-previa", ic("i-eye"), "Prévia", "Reproduzir as animações desta lâmina, sem entrar no F5")}
+         <div class="ppr-col">
+           ${pequeno("animacao-painel", ic("i-sidebar"), "Painel", "Abrir o painel de animação: a lista das animações da lâmina, na ordem em que tocam")}
+           ${pequeno("animacao-remover", ic("i-trash"), "Remover", "Tirar a animação da forma selecionada")}
+         </div>`
       ),
     ].join("");
   }
@@ -732,15 +769,16 @@ export class Fita {
           ["Saída", TIPOS_ANIMACAO.filter((t) => CLASSE_ANIMACAO[t] === "saida")],
           ["Trajetórias", TIPOS_ANIMACAO.filter((t) => CLASSE_ANIMACAO[t] === "trajetoria")],
         ];
-        const html = classes
-          .map(
-            ([nome, tipos]) =>
-              `<div class="pp-pop-t">${nome}</div><div class="ppr-anim-gal">${tipos
-                .map((t) => `<button type="button" class="ppr-anim-item" data-cmd="animacao:${t}" title="${DICAS_ANIMACAO[t]}" aria-label="${ROTULOS_ANIMACAO[t]}">${previaAnimacao(t)}<span class="ppr-trans-nome">${ROTULOS_ANIMACAO[t]}</span></button>`)
-                .join("")}</div>`
-          )
-          .join("");
-        const el = abrirPopup(ancora, html, { classe: "pp-pop-menu" });
+        // o alvo do efeito vai no cabeçalho: o popup tapa a seleção, então ele lembra em QUEM o efeito vai cair
+        const alvo = est.forma?.name?.trim();
+        const nota = alvo ? `aplicar na forma <b>${escapeHtml(alvo)}</b>` : "selecione uma forma para animar";
+        const atual = est.animacao?.tipo;
+        const html =
+          `<div class="pp-pop-rot">Animações<span class="pp-pop-dica">${nota}</span></div>` +
+          classes
+            .map(([nome, tipos]) => `<div class="pp-pop-t">${nome}</div><div class="ppr-anim-gal">${tipos.map((t) => cartaoAnimacao(t, t === atual ? "on" : "")).join("")}</div>`)
+            .join("");
+        const el = abrirPopup(ancora, html, { classe: "pp-pop-menu pp-pop-anim" });
         el.addEventListener("click", (ev) => {
           const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-cmd]");
           if (!b) return;
@@ -1211,14 +1249,16 @@ export class Fita {
       b.classList.toggle("on", efSuave && Number(b.dataset.cmd!.split(":")[1]) === efDur);
     }
     const anDurTxt = this.el.querySelector<HTMLElement>("[data-anim-dur]");
-    if (anDurTxt) anDurTxt.textContent = efSuave ? formatarDuracao(efDur) : "";
+    // o valor só aparece quando NÃO é um dos da lista: repetir a duração escolhida ao lado
+    // dela mesma era ruído (e um valor do arquivo, fora da lista, precisa aparecer)
+    if (anDurTxt) anDurTxt.textContent = efSuave && !DURACOES_ANIMACAO.some((d) => d.valor === efDur) ? formatarDuracao(efDur) : "";
     const efAtraso = ef ? atrasoDe(ef) : 0;
     for (const b of this.el.querySelectorAll<HTMLButtonElement>("[data-cmd^='animacao-atraso:']")) {
       b.disabled = !ef;
       b.classList.toggle("on", !!ef && Number(b.dataset.cmd!.split(":")[1]) === efAtraso);
     }
     const anAtrasoTxt = this.el.querySelector<HTMLElement>("[data-anim-atraso]");
-    if (anAtrasoTxt) anAtrasoTxt.textContent = efAtraso > 0 ? formatarDuracao(efAtraso) : "";
+    if (anAtrasoTxt) anAtrasoTxt.textContent = ef && !ATRASOS_ANIMACAO.some((d) => d.valor === efAtraso) ? formatarDuracao(efAtraso) : "";
     const efTraj = !!ef && aceitaDirecaoAnimacao(ef.tipo);
     for (const b of this.el.querySelectorAll<HTMLButtonElement>("[data-cmd^='animacao-direcao:']")) {
       b.disabled = !efTraj;
@@ -1230,10 +1270,22 @@ export class Fita {
       ppInput.disabled = !ef || (st.animacaoParas ?? 0) < 2;
     }
     const efPos = st.animacaoPos ?? -1;
+    const totalAnim = st.animacaoTotal ?? 0;
+    dis("animacao-mais", !tem);
     dis("animacao-subir", !ef || efPos <= 0);
-    dis("animacao-descer", !ef || efPos < 0 || efPos >= (st.animacaoTotal ?? 0) - 1);
+    dis("animacao-descer", !ef || efPos < 0 || efPos >= totalAnim - 1);
     dis("animacao-remover", !ef);
-    dis("animacao-previa", (st.animacaoTotal ?? 0) === 0);
+    dis("animacao-previa", totalAnim === 0);
+    // "Painel" fica aceso enquanto o painel lateral está mostrando a lista de animações
+    on("animacao-painel", st.lateral === "animacao" && st.lateralAberta === true);
+    // a posição na ordem: "2/3" diz onde o efeito da forma selecionada está na lâmina
+    const badge = this.el.querySelector<HTMLElement>("[data-anim-pos]");
+    if (badge) {
+      const naOrdem = !!ef && efPos >= 0 && totalAnim > 0;
+      badge.textContent = naOrdem ? `${efPos + 1}/${totalAnim}` : "–";
+      badge.title = naOrdem ? `${efPos + 1}ª de ${totalAnim} animações nesta lâmina` : "A forma selecionada não tem animação";
+      badge.classList.toggle("vazio", !naOrdem);
+    }
     const notaAnim = this.el.querySelector<HTMLElement>("[data-anim-nota]");
     if (notaAnim) notaAnim.hidden = !st.animacaoPreservada;
 

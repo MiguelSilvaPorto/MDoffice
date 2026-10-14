@@ -1487,5 +1487,72 @@ console.log("\narrastar a caixa: forma sem fundo escolhida pega o miolo");
   );
 }
 
+// ---------------------------------------------------------------- aba Animações: o redesign
+
+console.log("\nPowerPoint: aba Animações (o desenho da fita)");
+
+{
+  const fita = ler("src/powerpoint/ui/fita.ts");
+  const css = ler("src/styles/powerpoint-edicao.css");
+  const estado = ler("src/powerpoint/ui/estado.ts");
+  const ppt = ler("src/powerpoint/powerpoint.ts");
+  // a ordem dos grupos é o que dá a leitura da aba: qual efeito, como começa, quanto tempo,
+  // onde está na lâmina e vê-lo tocar
+  const corpo = fita.slice(fita.indexOf("private animacoes(): string {"), fita.indexOf("private design(): string {"));
+  const ordem = ["Animação", "Início", "Direção", "Tempo", "Texto", "Ordem", "Animar"].map((n) => corpo.indexOf(`"${n}"`));
+  checa(
+    "os grupos ficam na ordem de uso (e não são mais oito)",
+    ordem.every((v, i) => v >= 0 && (i === 0 || v > ordem[i - 1])) && !/grupo\("Duração"/.test(corpo) && !/grupo\("Atraso"/.test(corpo),
+    "Duração e Atraso entram no grupo Tempo (uma linha cada, com o próprio rótulo)"
+  );
+  checa(
+    "Duração e Atraso moram na mesma casa, cada um com o próprio rótulo",
+    /<span class="ppr-mini">Duração<\/span>/.test(fita) && /<span class="ppr-mini">Atraso<\/span>/.test(fita) && /\.ppr-mini\s*\{/.test(css)
+  );
+  checa(
+    "as escolhas de uma linha são um controle segmentado",
+    /class="ppr-seg/.test(fita) && /button\.ppr\.seg\s*\{/.test(css) && /\.ppr-seg > button\.ppr\.seg \+ button\.ppr\.seg\s*\{/.test(css),
+    "botões soltos não dizem que são alternativas entre si"
+  );
+  checa(
+    "o cartão cabe o nome inteiro e o popup usa a célula de 84px",
+    /\.ppr-anim \{\s*grid-template-columns:\s*repeat\(7, 72px\)/.test(css) && /\.ppr-anim-item \{\s*position:\s*relative;\s*gap:\s*2px;\s*width:\s*72px/.test(css) && /\.ppr-anim-gal \.ppr-anim-item \{\s*width:\s*100%/.test(css),
+    "em 54px o 'Desaparecer' saía cortado (61px de texto, medido no harness)"
+  );
+  checa(
+    "a galeria sem forma escolhida aparece apagada (e o Mais não abre)",
+    /\.ppr-anim-item:disabled\s*\{[^}]*opacity/.test(css) && /dis\("animacao-mais", !tem\)/.test(fita),
+    ".ppr-anim-item não é button.ppr: a regra geral de :disabled não vale para ele"
+  );
+  checa(
+    "o efeito escolhido tem o selo, e o 'Por parágrafo' é um chip que acende",
+    /\.ppr-anim-item\.on::after\s*\{[^}]*content:\s*"✓"/.test(css) && /\.ppr-chip:has\(input:checked\)/.test(css) && /class="ppr-chip"/.test(fita),
+    "o .on do cartão era só a cor da borda do :hover"
+  );
+  checa(
+    "a posição na ordem aparece ao lado das setas",
+    /data-anim-pos/.test(fita) && /badge\.textContent = naOrdem \? `\$\{efPos \+ 1\}\/\$\{totalAnim\}` : "–"/.test(fita),
+    "↑↓ sem o número não dizem onde o efeito está na lâmina"
+  );
+  checa(
+    "o valor de duração/atraso só aparece quando não é um dos da lista",
+    /!DURACOES_ANIMACAO\.some\(\(d\) => d\.valor === efDur\)/.test(fita) && /!ATRASOS_ANIMACAO\.some\(\(d\) => d\.valor === efAtraso\)/.test(fita),
+    "o escolhido aparecia duas vezes na mesma linha"
+  );
+  checa(
+    "o botão Painel abre o painel de animação e segue o estado dele",
+    /case "animacao-painel":\s*\r?\n\s*this\.mostrarPainelLateral\(\);\s*\r?\n\s*this\.mostrarLateral\("animacao"\)/.test(ppt) &&
+      /lateral\?: "formatar" \| "notas" \| "animacao" \| "ideias"/.test(estado) &&
+      /on\("animacao-painel", st\.lateral === "animacao" && st\.lateralAberta === true\)/.test(fita) &&
+      (ppt.match(/this\.fita\?\.atualizar\(\)/g) ?? []).length >= 2,
+    "trocar a aba pelo painel ou esconder o painel tem de apagar/acender o botão"
+  );
+  checa(
+    "o popup Mais diz em qual forma o efeito vai cair",
+    /pp-pop-dica/.test(fita) && /aplicar na forma <b>/.test(fita) && /\.pp-pop-anim \.pp-pop-rot\s*\{/.test(css),
+    "o popup tapa a seleção"
+  );
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

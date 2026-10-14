@@ -88,14 +88,19 @@ avisado ao abrir (nunca some em silêncio).
   **Pulsar**, **Ampliar/Reduzir**, **Girar**, **Transparência**, **Desaparecer**, **Sumir**,
   **Voar fora**, **Encolher**, **Limpar fora**, **Caixa fora**, **Círculo fora**, **Losango fora**,
   **Dividir fora**, **Persianas fora**, **Dissolver fora**, **Roda fora** e **Trajetória** (em
-  linha, quatro direções) por forma — as mais usadas na fita, o resto em **Mais animações** —,
-  início (**Ao clicar**, **Com anterior**, **Depois do anterior**), duração, **atraso**, **direção**
-  (trajetória, voar e limpar), **por parágrafo** (cada parágrafo num passo), ordem (↑↓), remover e
-  prévia; as formas animadas ganham **selos numerados** no palco, o **painel de animação** (aba
-  lateral) lista a ordem e o `.pptx` faz round-trip do `p:timing`/`p:animMotion` (o que não é
-  modelado volta cru, com aviso). **Aplicar já mostra o efeito tocando** e a **prévia devolve a
-  lâmina ao estado de projeto** ao terminar (o **Esc** interrompe na hora) — nada fica aplicado
-  no palco fora da apresentação.
+  linha, quatro direções) por forma — as mais usadas na fita, o resto no cartão **Mais**. A aba
+  está arrumada na ordem em que se pensa a animação: **Animação** (a galeria, com o **selo de
+  conferido** no efeito escolhido), **Início** (**Ao clicar**, **Com anterior**, **Depois do
+  anterior**), **Direção** (trajetória, voar e limpar, setas ← → ↑ ↓), **Tempo** (**duração** e
+  **atraso**, cada um na sua linha — o valor que não está na lista, vindo do arquivo, aparece
+  escrito), **Texto** (**Por parágrafo**: cada parágrafo num passo), **Ordem** (a **posição na
+  ordem**, "2/3", com as setas ↑↓ para mover) e **Animar** (**Prévia**, **Painel** e **Remover**).
+  O botão **Painel** abre o **painel de animação** (aba lateral) — a lista das animações da lâmina
+  na ordem em que tocam — e fica **aceso** enquanto é ela que está à mostra. As formas animadas
+  ganham **selos numerados** no palco e o `.pptx` faz round-trip do `p:timing`/`p:animMotion` (o
+  que não é modelado volta cru, com aviso). **Aplicar já mostra o efeito tocando** e a **prévia
+  devolve a lâmina ao estado de projeto** ao terminar (o **Esc** interrompe na hora) — nada fica
+  aplicado no palco fora da apresentação.
 - **Lâminas**: arrastar as miniaturas para reordenar (na faixa do topo ou na vertical),
   ocultar, renomear e resetar (com ida e volta no `.pptx`), duplicar e excluir (o botão
   **Duplicar** está na Página Inicial e na aba **Inserir**). O **clique direito na miniatura**

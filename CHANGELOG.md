@@ -898,6 +898,22 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   apresentação** e **Excluir lâmina** (desabilitado com uma só), agindo na **lâmina clicada** —
   como o × de excluir já fazia. O botão **Duplicar** (que já existia pequeno na Página Inicial)
   também entrou na aba **Inserir**; 5 verificações novas em `npm run test:layout`.
+- **Redesign da aba Animações** (pedido do usuário): a aba deixou de ser uma fila de oito grupos
+  soltos. São **sete**, na ordem em que se pensa a animação: **Animação** (galeria + **Mais**),
+  **Início**, **Direção**, **Tempo** (**duração e atraso na mesma casa**, cada linha com o próprio
+  rótulo), **Texto**, **Ordem** e **Animar**. As escolhas de cada linha viraram **controles
+  segmentados** — o escolhido fica aceso, em vez de botões soltos que não diziam ser alternativas
+  entre si — e **Por parágrafo** virou um **chip que acende** quando está ligado. Na galeria, o
+  cartão **Mais** entrou na fileira com o mesmo desenho dos efeitos, o **escolhido ganha o selo de
+  conferido**, os nomes foram alargados para caber inteiro (sem "Desapa…") e **sem forma escolhida
+  a galeria aparece apagada** (antes ela tinha a cara de sempre e o clique morria em silêncio). No
+  grupo **Ordem**, o **número da vez** aparece ao lado das setas (**2/3** = a 2ª de 3 animações da
+  lâmina) e o botão novo **Painel** abre o painel lateral já na lista de animações, ficando **aceso**
+  enquanto é ela que está à mostra. O popup **Mais** ganhou cabeçalho dizendo **em qual forma** o
+  efeito vai cair e cartões maiores (nada de "Transparên…"). Nada mudou no motor: mesmos efeitos,
+  mesmo `.pptx` de ida e volta. O desenho está preso por **10 verificações** novas em
+  `npm run test:layout` — inclusive a **largura do cartão**, medida no harness: o nome
+  "Desaparecer" ocupa **61 px** de texto, e em cartões de 54 px ele saía cortado.
 
 ---
 

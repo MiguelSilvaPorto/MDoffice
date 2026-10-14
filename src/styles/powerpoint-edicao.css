@@ -1969,9 +1969,10 @@ button.ppr.big .ppr-gal-ic svg {
   align-content: center;
 }
 
-/* a galeria da aba Animações: cartões um pouco mais largos (nomes como "Desaparecer") */
+/* a galeria da aba Animações: cartões mais largos (nomes como "Desaparecer") e o "Mais" no fim */
 .ppr-anim {
-  grid-template-columns: repeat(6, 54px);
+  grid-template-columns: repeat(7, 72px);
+  gap: var(--pe-4);
 }
 
 .ppr-anim-wrap {
@@ -1980,11 +1981,17 @@ button.ppr.big .ppr-gal-ic svg {
   gap: 6px;
 }
 
-/* galeria completa do botão "Mais animações" (popup) */
+/* galeria completa do cartão "Mais" (popup) */
 .ppr-anim-gal {
   display: grid;
-  grid-template-columns: repeat(4, 54px);
+  grid-template-columns: repeat(6, 84px);
   gap: 4px;
+}
+
+/* no popup o cartão ocupa a célula inteira: os nomes mais longos
+   ("Transparência", "Dissolver fora") cabem sem reticências */
+.ppr-anim-gal .ppr-anim-item {
+  width: 100%;
 }
 
 .ppr-trans-item,
@@ -2026,9 +2033,249 @@ button.ppr.big .ppr-gal-ic svg {
   white-space: nowrap;
 }
 
-.ppr-trans-item.on .ppr-trans-nome,
-.ppr-anim-item.on .ppr-trans-nome {
+.ppr-trans-item.on .ppr-trans-nome {
   color: var(--fg);
+}
+
+/* ---------- aba Animações: o cartão do efeito ---------- */
+
+/* O cartão: a prévia numa "lamininha" de fundo, o nome numa linha só (com … quando não
+   cabe) e o efeito escolhido com a borda do acento, o fundo tingido e o selo de conferido
+   — antes a galeria só trocava a cor do fundo e o efeito escolhido se perdia na fileira. */
+.ppr-anim-item {
+  position: relative;
+  gap: 2px;
+  width: 72px;
+  padding: 3px 3px 2px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--fg) 4%, var(--panel-2));
+}
+
+.ppr-anim-item .ppr-anim-svg {
+  width: 100%;
+  height: 22px;
+  padding: 1px 0;
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+  border-radius: 3px;
+}
+
+.ppr-anim-nome {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--muted);
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ppr-anim-item:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--fi-ppt, #d24a17) 55%, var(--border));
+}
+
+.ppr-anim-item.on {
+  background: color-mix(in srgb, var(--fi-ppt, #d24a17) 16%, var(--panel-2));
+  border-color: var(--fi-ppt, #d24a17);
+  box-shadow: inset 0 0 0 1px var(--fi-ppt, #d24a17);
+}
+
+.ppr-anim-item.on .ppr-anim-nome {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.ppr-anim-item.on::after {
+  content: "✓";
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  width: 13px;
+  height: 13px;
+  color: #fff;
+  background: var(--fi-ppt, #d24a17);
+  border-radius: 50%;
+  font-size: 9px;
+  line-height: 1;
+}
+
+/* Sem forma escolhida a galeria não tem onde aplicar: o cartão apagado mostra isso (antes
+   ele ficava com a cara de sempre e o clique morria em silêncio). */
+.ppr-anim-item:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* o cartão "Mais" fecha a fileira com o mesmo desenho dos efeitos */
+.ppr-anim-mais-ic {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 22px;
+  color: var(--fi-ppt, #d24a17);
+  font-size: 17px;
+  line-height: 1;
+}
+
+/* a dica do popup "Mais" lembra em QUEM o efeito escolhido vai cair (o popup tapa a seleção) */
+.pp-pop-anim {
+  max-width: 570px;
+}
+
+.pp-pop-anim .pp-pop-rot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pp-pop-dica {
+  font-size: 11px;
+}
+
+.pp-pop-dica b {
+  color: var(--fg);
+}
+
+/* ---------- aba Animações: escolhas, tempo, texto e ordem ---------- */
+
+/* Controle segmentado: as opções de UMA escolha ficam grudadas, com a escolhida em destaque.
+   A fila de botões soltos de antes não dizia que elas eram alternativas entre si. */
+.ppr-seg {
+  display: inline-flex;
+  align-items: stretch;
+  overflow: hidden;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.ppr-seg-v {
+  flex-direction: column;
+}
+
+button.ppr.seg {
+  height: calc(var(--pe-altura) - 2px);
+  min-width: 0;
+  padding: 0 var(--pe-6);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.ppr-seg > button.ppr.seg + button.ppr.seg {
+  border-left: 1px solid var(--border);
+}
+
+.ppr-seg-v > button.ppr.seg + button.ppr.seg {
+  border-left: 0;
+  border-top: 1px solid var(--border);
+}
+
+button.ppr.seg:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--fi-ppt, #d24a17) 14%, transparent);
+  border-color: transparent;
+}
+
+button.ppr.seg.on:not(:disabled) {
+  background: color-mix(in srgb, var(--fi-ppt, #d24a17) 26%, var(--panel-2));
+  border-color: transparent;
+  font-weight: 600;
+}
+
+/* "Tempo": duração e atraso na mesma casa, cada linha com o próprio rótulo */
+.ppr-tempo {
+  gap: var(--pe-4);
+}
+
+.ppr-mini {
+  min-width: calc(46px * var(--fita-e));
+  color: var(--muted);
+  font-size: var(--pe-fonte-rot);
+  text-align: right;
+}
+
+/* "Por parágrafo" é uma escolha de ligar/desligar: vira um chip que acende quando está ligada */
+.ppr-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pe-5);
+  height: var(--pe-altura);
+  padding: 0 var(--pe-8);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: var(--pe-fonte-peq);
+  cursor: pointer;
+  user-select: none;
+}
+
+.ppr-chip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ppr-chip-marca {
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  color: transparent;
+  border: 1px solid color-mix(in srgb, var(--fg) 35%, transparent);
+  border-radius: 3px;
+  font-size: 9px;
+  line-height: 1;
+}
+
+.ppr-chip-marca::before {
+  content: "✓";
+}
+
+.ppr-chip:hover {
+  border-color: color-mix(in srgb, var(--fi-ppt, #d24a17) 45%, var(--border));
+}
+
+.ppr-chip:has(input:checked) {
+  background: color-mix(in srgb, var(--fi-ppt, #d24a17) 16%, var(--panel-2));
+  border-color: var(--fi-ppt, #d24a17);
+}
+
+.ppr-chip:has(input:checked) .ppr-chip-marca {
+  color: #fff;
+  background: var(--fi-ppt, #d24a17);
+  border-color: var(--fi-ppt, #d24a17);
+}
+
+.ppr-chip:has(input:disabled) {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.ppr-chip:has(input:focus-visible) {
+  outline: 2px solid var(--fi-ppt, #d24a17);
+  outline-offset: 1px;
+}
+
+/* "Ordem": o número da vez na lâmina ao lado das setas de mover */
+.ppr-ordem {
+  display: grid;
+  place-items: center;
+  min-width: calc(34px * var(--fita-e));
+  height: var(--pe-aba-alt);
+  padding: 0 var(--pe-4);
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: var(--pe-fonte-peq);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ppr-ordem.vazio {
+  color: var(--muted);
+  font-weight: 400;
 }
 
 .ppr-trans-nota {
