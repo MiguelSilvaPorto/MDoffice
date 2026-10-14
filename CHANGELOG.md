@@ -601,8 +601,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
-- (nada no momento)
+- **Concordância de número no corretor (a regra estrutural que o corpus mediu faltar)**: quando o erro dá uma forma que existe, quem decide entre singular e plural passa a ser a **concordância com a frase** — não a frequência. Se o determinante **imediato** pede plural (“as”, “os”, “vários”, “duas”…; antes ou depois da palavra) e o 1º do dicionário não concorda, a forma que concorda **passa na frente** — “tods os arquivos” → **todos**, “as citacõs” → **citações**, “As segurass notas” → **seguras**. A troca é **dentro da mesma palavra** (nunca uma palavra por outra: o `parDeNumero` cobre o “s” do plural, “m”↔“ns”, “ão”↔“ões/ãos/ães”, “l”↔“is/eis” e o a↔o do gênero) e a concordância ainda **veta** a promoção do contexto que contrarie a frase. Só reordena sugestão — nunca vira correção automática. **Medição:** no conjunto rotulado dá **250/295 = o mesmo do baseline** (os casos injetados não têm a forma “determinante + palavra”), com **falsos positivos 0,00**; o ganho é estrutural e está preso em 8 verificações novas (incluindo os três casos acima). A medição está em `docs/medicao-corretor.md` (oitava medição).
 
 **Ferramentas (dev)**
 

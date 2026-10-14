@@ -344,6 +344,31 @@ não é a frequência de quem escreve documentação técnica. **A lição:** o 
 (docs do projeto + web técnica + Wikipédia para o fundo). O modelo antigo ficou no lugar, e o
 próximo passo é `node scripts/regerar-ngrams.mjs` com um corpus assim; o harness é quem decide.
 
+### Oitava medição — a concordância de número (regra estrutural, o conjunto não vê)
+
+Depois do corpus, a frente virou **morfologia**: as perdas da sétima medição eram todas de
+concordância (“segurass” → segura, “porcentajens” → porcentagem). A regra nova decide singular ×
+plural **pela frase** — determinante imediato (“as”, “os”, “vários”…) — e não pela frequência,
+com a troca presa à **mesma palavra** (`parDeNumero`) e um veto sobre o contexto que contrarie a
+frase. Três iterações, medidas:
+
+| versão | r@1 | FP/1000 | veredito |
+| --- | ---: | ---: | --- |
+| baseline (antes) | **250/295** | 0,00 | — |
+| promoção com janela de 3 palavras | 247/295 ✗ | 0,00 | **fora**: o determinante a três palavras pode pertencer a outro substantivo |
+| só o veto (sem promoção) | 250/295 | 0,00 | neutra |
+| janela de 1 + `parDeNumero` (a que ficou) | **250/295** | **0,00** | **mesma coisa no conjunto** |
+
+Leitura honesta: no conjunto rotulado a regra **não muda nada** — os erros injetados (uma letra
+por palavra, gerados de `docs/*.md`) não têm o formato “determinante + palavra” que ela ataca. O
+que ela conserta são frases reais desse formato, e isso está **preso em testes**: “tods os
+arquivos” → **todos**, “as citacõs” → **citações**, “As segurass notas” → **seguras** (sem
+modelo de idioma algum). Como a regra é gramatical, o guarda é estreito (mesma palavra, número
+apenas, determinante adjacente), o dano possível é reordenar uma sugestão — nunca uma correção
+automática — e o conjunto continua com **FP 0,00**, ela entrou. A lição de método: um conjunto
+rotulado sintético mede o que ele *contém*; regras estruturais precisam de casos com a estrutura
+(tarefa para o corpus de avaliação, não para a regra).
+
 ---
 
 *Números do commit `120cc9e`. Se um rebase trouxer mudanças ao corretor, esta linha de base

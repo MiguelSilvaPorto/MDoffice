@@ -634,6 +634,68 @@ const RK = await empacotar("src/broker/personal/rerank.ts", "rerank.mjs");
   ok("rerank: uma sugestão só não tem o que ordenar", ordem(["a"], [0.5], [0])[0] === "a");
   ok("rerank: sem modelo a sugestão fica como o dicionário deixou", JSON.stringify(RK.rerankSuggestions("x", 0, 1, ["a", "b"])) === JSON.stringify(["a", "b"]));
 }
+
+// ---------------------------------------------------------------- concordância de número (F4)
+// A regra estrutural: a frase pede plural, a forma que concorda passa na frente.
+const CC = await empacotar("src/broker/spell/concordancia.ts", "concordancia.mjs");
+
+{
+  const pedido = CC.pedidoDoContexto;
+  ok("concordância: “as” antes pede plural", pedido(["as"], null) === "pl");
+  ok("concordância: o determinante imediato manda", pedido(["arquivos", "os"], null) === "pl" && pedido(["a"], null) === "sg");
+  ok("concordância: sem determinante não há pedido", pedido(["arquivo"], null) === null && pedido(["os", "arquivos"], null) === null);
+  ok("concordância: o determinante de depois vale", pedido(["prazo"], "os") === "pl");
+
+  const c = CC.concordanciaDeNumero;
+  ok("concordância: plural pedido, plural na forma concorda", c("pl", "seguras") === 1 && c("pl", "porcentagens") === 1 && c("pl", "diagramas") === 1);
+  ok("concordância: plural pedido, singular na forma discorda", c("pl", "segura") === -1 && c("pl", "porcentagem") === -1 && c("pl", "diagrama") === -1);
+  ok("concordância: o singular não é acusado (país, lápis, ônibus)", c("sg", "país") === 0 && c(null, "segura") === 0);
+}
+{
+  const ordem = RK.ordemPorContexto;
+  ok(
+    "rerank: a concordância promove a forma plural (o caso “segurass”)",
+    JSON.stringify(ordem(["segura", "seguras"], [0, 0], [0, 0], [-1, 1])) === JSON.stringify(["seguras", "segura"]),
+    JSON.stringify(ordem(["segura", "seguras"], [0, 0], [0, 0], [-1, 1]))
+  );
+  ok("rerank: sem pedido de plural, nada muda", JSON.stringify(ordem(["segura", "seguras"], [0, 0], [0, 0], [0, 0])) === JSON.stringify(["segura", "seguras"]));
+  ok("rerank: se o 1º já concorda, ele fica", JSON.stringify(ordem(["seguras", "segura"], [0, 0], [0, 0], [1, -1])) === JSON.stringify(["seguras", "segura"]));
+  ok(
+    "rerank: sem sinal de concordância, o contexto continua decidindo",
+    JSON.stringify(ordem(["a", "b"], [0, 0.5], [0, 0], [0, 0])) === JSON.stringify(["b", "a"])
+  );
+  ok(
+    "rerank: a concordância VETA a promoção que contradiz a frase",
+    JSON.stringify(ordem(["a", "b"], [0, 0.5], [0, 0], [0, -1])) === JSON.stringify(["a", "b"]),
+    JSON.stringify(ordem(["a", "b"], [0, 0.5], [0, 0], [0, -1]))
+  );
+}
+{
+  // sem modelo de idioma, a concordância sozinha resolve — é regra, não estatística
+  const frase = "As segurass notas foram revisadas.";
+  ok(
+    "rerank: “As segurass notas” vira “seguras” só com a concordância",
+    RK.rerankSuggestions(frase, 3, 11, ["segura", "seguras"])[0] === "seguras",
+    JSON.stringify(RK.rerankSuggestions(frase, 3, 11, ["segura", "seguras"]))
+  );
+  const semMarca = "Foram segurass de manhã.";
+  ok(
+    "rerank: sem marca de plural na frase, a ordem do dicionário fica",
+    RK.rerankSuggestions(semMarca, 6, 14, ["segura", "seguras"])[0] === "segura"
+  );
+  const comProximoPlural = "o maior ganho tods os arquivos";
+  ok(
+    "rerank: o plural de DEPOIS também vale (“tods os”)",
+    RK.rerankSuggestions(comProximoPlural, 14, 18, ["toda", "todos"])[0] === "todos",
+    JSON.stringify(RK.rerankSuggestions(comProximoPlural, 14, 18, ["toda", "todos"]))
+  );
+  const citacoes = "as citacõs usam caixa alta";
+  ok(
+    "rerank: “citacõs” vira “citações” (plural com -ões)",
+    RK.rerankSuggestions(citacoes, 3, 10, ["citação", "citações"])[0] === "citações",
+    JSON.stringify(RK.rerankSuggestions(citacoes, 3, 10, ["citação", "citações"]))
+  );
+}
 {
   // evidenciaDeContexto com um modelo de mentira (mesmo formato do LangModel)
   const modelo = {

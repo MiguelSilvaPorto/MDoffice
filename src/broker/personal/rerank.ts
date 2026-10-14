@@ -8,6 +8,7 @@ import { getLanguageModel, START, type LangModel } from "../ghost/model";
 import { personalIndex } from "../ghost/memory";
 import type { DocumentIndex } from "../ghost/documentIndex";
 import { bonusDaClasse } from "../spell/classeErro";
+import { concordanciaDeNumero, parDeNumero, pedidoDoContexto } from "../spell/concordancia";
 
 const WORD = /[\p{L}][\p{L}'-]*/gu;
 
@@ -61,37 +62,67 @@ export const FATOR_CONTEXTO = 3;
 export const MARGEM_CONTEXTO = 0.02;
 
 /**
- * A ordem final das sugestões, dada a evidência de contexto e os bônus de cada uma.
- * Pura, para o teste provar a régua sem o modelo inteiro:
- *   • quem manda é o contexto — o candidato com o maior total (contexto + bônus) é o
- *     escolhido, mas ele só PROMOVE se o contexto dele for claro: piso próprio e pelo
- *     menos `FATOR_CONTEXTO` vezes o contexto do 1º do dicionário, mais a margem.
- *   • sem isso, a ordem do dicionário fica como está (o corretor não chuta).
+ * A ordem final das sugestões, dada a evidência de contexto, os bônus e a concordância.
+ * Pura, para o teste provar a régua sem o modelo inteiro. Duas vias de promoção, nesta ordem:
+ *
+ *   1. **Concordância** (regra estrutural): o 1º do dicionário discorda do número que a frase
+ *      pede (um determinante plural antes) e outro candidato concorda — a forma certa é a que
+ *      concorda ("segurass" → seguras, não segura). Vale mesmo sem modelo de idioma.
+ *   2. **Contexto** (n-gramas): o candidato com o maior total (contexto + bônus) promove só se o
+ *      contexto dele for claro — piso próprio e pelo menos `FATOR_CONTEXTO` vezes o do 1º, mais
+ *      a margem (a medição mostrou que contexto fraco promove errado: "messmo" → "mesh").
+ *
+ * Sem nenhuma das duas, a ordem do dicionário fica como está (o corretor não chuta).
  */
-export function ordemPorContexto(suggestions: string[], ctx: number[], bonus: number[]): string[] {
+export function ordemPorContexto(suggestions: string[], ctx: number[], bonus: number[], concord?: number[]): string[] {
   if (suggestions.length < 2 || ctx.length !== suggestions.length) return suggestions;
+  const promove = (i: number) => [suggestions[i], ...suggestions.filter((_, k) => k !== i)];
+
+  if (concord && concord.length === suggestions.length) {
+    let melhor = -1;
+    suggestions.forEach((_, i) => {
+      if (concord[i] <= 0) return;
+      if (melhor < 0 || concord[i] + (bonus[i] ?? 0) > concord[melhor] + (bonus[melhor] ?? 0)) melhor = i;
+    });
+    // promove só quando as duas formas são a MESMA palavra no outro número ("segura" × "seguras"):
+    // a medição mostrou que promover entre palavras diferentes (só porque a frase tem determinante
+    // plural) tirava acerto — a janela do determinante não sabe a qual substantivo ele pertence.
+    if (melhor > 0 && concord[0] < 0 && parDeNumero(suggestions[0], suggestions[melhor])) return promove(melhor);
+  }
+
   let best = 0;
   suggestions.forEach((_, i) => {
     if (ctx[i] + (bonus[i] ?? 0) > ctx[best] + (bonus[best] ?? 0)) best = i;
   });
   if (best === 0) return suggestions;
+  // a gramática veta a estatística: se o candidato do contexto contradiz o número pedido e o 1º do
+  // dicionário não contradiz, o contexto não promove ("segurass …" não vira "segura" por n-grama)
+  if (concord && concord.length === suggestions.length && concord[best] < 0 && concord[0] >= 0) return suggestions;
   if (ctx[best] < PISO_CONTEXTO) return suggestions;
   if (ctx[best] < FATOR_CONTEXTO * ctx[0] + MARGEM_CONTEXTO) return suggestions;
-  return [suggestions[best], ...suggestions.filter((_, i) => i !== best)];
+  return promove(best);
 }
 
 /**
- * Devolve as sugestões do corretor, com a que o contexto mais sustenta na frente — quando (e só
- * quando) a evidência de contexto é clara. A régua está em `ordemPorContexto`; a medição de
- * `docs/medicao-corretor.md` mostrou que promoção por contexto fraco fazia o corretor perder
- * acerto ("messmo" → "mesh", "revissão" → "previsão"): por isso o piso e o fator são altos.
+ * Devolve as sugestões do corretor, com a que a frase sustenta na frente — pela concordância de
+ * número (regra estrutural) ou pelo contexto (modelo de n-gramas). A régua está em
+ * `ordemPorContexto`; a medição de `docs/medicao-corretor.md` mostrou que promoção por contexto
+ * fraco fazia o corretor perder acerto ("messmo" → "mesh", "revissão" → "previsão"): por isso o
+ * piso e o fator são altos — e a concordância, que é regra, entra antes.
  */
 export function rerankSuggestions(text: string, from: number, to: number, suggestions: string[], doc: DocumentIndex | null = null): string[] {
-  const model = getLanguageModel();
-  if (!model || suggestions.length < 2) return suggestions;
+  if (suggestions.length < 2) return suggestions;
   const { prev, next } = ctxWords(text, from, to);
   const errado = text.slice(from, to);
+
+  // a concordância não precisa do modelo: é a frase (o determinante) contra a forma do candidato
+  const pedido = pedidoDoContexto(prev, next);
+  const concord = suggestions.map((s) => concordanciaDeNumero(pedido, s));
+
+  const model = getLanguageModel();
+  if (!model) return ordemPorContexto(suggestions, suggestions.map(() => 0), suggestions.map(() => 0), concord);
+
   const ctx = suggestions.map((s) => evidenciaDeContexto(model, prev, next, s.toLowerCase()));
   const bonus = suggestions.map((s) => bonusDaClasse(errado, s) + 0.03 * Math.log1p((personalIndex.wordFreq.get(s.toLowerCase()) ?? 0) + (doc?.wordFreq.get(s.toLowerCase()) ?? 0)));
-  return ordemPorContexto(suggestions, ctx, bonus);
+  return ordemPorContexto(suggestions, ctx, bonus, concord);
 }

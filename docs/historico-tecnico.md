@@ -4860,6 +4860,48 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o modelo vinha sem procedência nem licença no documento do módulo. O corpus novo é
   CC BY-SA e precisa de atribuição — que agora está onde o usuário lê o que o app usa.
 
+## src/broker/spell/concordancia.ts (novo) · src/broker/spell/parDeNumero.ts (novo)
+
+### 2026-10-14 · concordância de número · a regra que o corpus mediu faltar
+- **Local:** `concordancia.ts` (`pedidoDoContexto`, `concordanciaDeNumero`, `parecePlural`) e
+  `parDeNumero.ts` (`parDeNumero`)
+- **Linha:** `novo`
+- **Porquê:** as perdas do F4-corpus foram de **morfologia** ("segurass" → segura em vez de
+  seguras, "porcentajens" → porcentagem): o ranking decide por frequência e contexto de n-gramas
+  e não olha a **concordância**. A regra é estrutural: (1) o pedido sai de um **determinante
+  imediato** ("as", "os", "vários"… — antes; sem ele, o de depois) e não de qualquer palavra, e a
+  janela é de **uma** palavra: com três, o determinante podia pertencer a outro substantivo
+  ("os relatórios de venda") e a medição mostrou que isso **tirava** acerto; (2) só o **plural**
+  é acusado — o singular não vira sinal, porque palavra singular terminada em "s" ("país",
+  "lápis", "ônibus") confundiria; (3) `parDeNumero` garante que a troca é a **mesma palavra**
+  mudando número/gênero (as variantes são geradas por regras: "s" do plural, "m"↔"ns",
+  "ão"↔"ões/ãos/ães", "l"↔"is/eis", a↔o), nunca uma palavra por outra.
+
+## src/broker/personal/rerank.ts
+
+### 2026-10-14 · concordância de número · a segunda via de promoção (e o veto)
+- **Local:** `ordemPorContexto` (novo parâmetro `concord`) e `rerankSuggestions`
+- **Linha:** `+ if (melhor > 0 && concord[0] < 0 && parDeNumero(suggestions[0], suggestions[melhor])) return promove(melhor)` ·
+  `+ if (concord[best] < 0 && concord[0] >= 0) return suggestions` (o veto) · `+ a concordância é
+  calculada antes de o modelo ser consultado` (vale sem modelo)
+- **Porquê:** a promoção por concordância vem **antes** da do contexto (gramática sobre
+  estatística) e o veto impede o inverso: o contexto não promove uma forma que contraria o número
+  da frase quando o 1º do dicionário não contraria. A medição do harness mostrou que a versão
+  **larga** (janela de 3 palavras, promoção entre palavras diferentes) **tirava** 1 p.p. de r@1
+  ("messmo" → "mesh" era do contexto, mas a concordância larga errava em outros) — daí o guarda
+  do `parDeNumero` e a janela curta. Como a promoção muda `suggestions[0]`, o `auto` do corretor
+  deixa de valer para aquele caso (virou sugestão) — o que é o comportamento seguro.
+
+## scripts/testar-correcao.mjs
+
+### 2026-10-14 · concordância de número · 8 verificações (3 com os casos medidos)
+- **Local:** os blocos “concordância de número” e “rerank: …” (o segundo cresceu)
+- **Linha:** `+ o pedido pelo determinante imediato (antes e depois; nada sem determinante)`,
+  `+ o sinal de concordância`, `+ a promoção dentro da mesma palavra`, `+ o veto`, `+ os três
+  casos realistas sem modelo ("As segurass notas", "tods os arquivos", "as citacõs")`
+- **Porquê:** a régua é pura e o teste a prende sem carregar o modelo de 7 MB — e os três casos
+  são exatamente os que a medição do corpus apontou como faltantes.
+
 ---
 
 ## Próximos registros
