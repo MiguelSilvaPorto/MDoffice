@@ -2129,6 +2129,40 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   ponderada (classe, h mudo, dobra, inversão e troca sem relação) e as variantes (pares trocados,
   limite de explosão).
 
+## scripts/avaliar-correcao.mts
+
+### 2026-10-14 · F0 da pesquisa de correção · harness de medição (novo arquivo)
+- **Local:** arquivo inteiro — conjuntos (real, sintético por classe, corretos), métricas por
+  conjunto/classe, payload do worker, `--json` / `--classe` / `--seed` / `--detalhe`
+- **Linha:** novo (`node scripts/avaliar-correcao.mts`)
+- **Porquê:** o F0 de `docs/pesquisa-correcao-offline.md` é "medir antes de mexer": sem linha de
+  base, qualquer mudança do F1/F2 seria achismo. O harness reaproveita o ambiente do navegador de
+  `scripts/testar-correcoes.mts` (worker do dicionário, `fetch`, `localStorage`) para rodar o
+  **mesmo** `checkText` do editor, então o que é medido é o comportamento do app — e nada em
+  `src/broker/**` precisou mudar: é instrumento, não comportamento. Sai sempre com código 0 (não
+  é teste). Os erros por classe são injetados em parágrafos de `docs/*.md` (o texto original vira
+  gabarito), mas só em palavras que o corretor **não** acusa e fora de trechos mascarados
+  (`maskNonProse`), para o erro medido ser exatamente o injetado; uma consulta em lote ao
+  dicionário separa o erro visível do erro de palavra real (matéria do F3), e os falsos positivos
+  são medidos no resto do texto corrompido, uma vez por parágrafo. `docs/medicao-*.md` ficam fora
+  do corpus: são instrumento, e se entrassem a linha de base mudaria a cada fase.
+
+## docs/medicao-corretor.md
+
+### 2026-10-14 · 120cc9e · linha de base do corretor (novo arquivo)
+- **Local:** arquivo inteiro (como rodar, conjuntos e colunas, tabelas, piores casos, leitura)
+- **Linha:** novo
+- **Porquê:** registrar o "antes" com commit, data e semente — é a régua das fases F1–F4 e o que
+  o critério de bloqueio da pesquisa compara (piorar FP/1000 ou a precisão das auto-aplicações não
+  fecha). Os números que interessam às próximas fases: detecção 97% com r@1 76% e r@3 85% (o
+  gargalo é o ranking, não a detecção), x↔ch como pior classe (r@1 33% e 10 das 24
+  auto-aplicações erradas), 3,25 falsos positivos por 1000 palavras todos do "você quis dizer"
+  sobre palavra existente (o caminho da ortografia não gera ruído), 10,7% das auto-aplicações
+  erradas e p95 de 0,152 ms/palavra com 7,5 MB no worker. O documento traz ainda a medição do
+  mesmo conjunto no commit do rebase (`cdd1c84`), quando a `main` já tinha o corretor com
+  confusões/teclado: r@1 80%, FP igual e p95 0,998 ms/palavra — e a nota de que um `.toml?raw`
+  novo em `src/broker/abnt/` exige plugin de bundle em qualquer harness esbuild.
+
 ---
 
 ## src/broker/abnt/ (base nova) · scripts/abnt/ · docs/abnt-como-escrever-regras.md

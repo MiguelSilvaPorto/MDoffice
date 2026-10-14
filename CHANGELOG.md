@@ -303,7 +303,18 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Ferramentas (dev)**
 
-- (nada no momento)
+- **Harness de medição do corretor (F0) com linha de base registrada**: `scripts/avaliar-correcao.mts`
+  mede o corretor real (`checkText`) contra um conjunto rotulado — os 25 pares de palavra de
+  `test/docs/gramatical.md` e 270 erros sintéticos por classe (acento, c↔ç, s↔ss, x↔ch, g↔j,
+  transposição, letra a mais/menos, tecla vizinha) gerados de parágrafos limpos de `docs/*.md` —,
+  com recall@1/@3, precisão do 1º lugar, falsos positivos por 1000 palavras, taxa e acerto da
+  auto-aplicação, ms/palavra (p50/p95) e o payload que o worker carrega; saída legível, `--json`
+  e `--classe=`. Aplicar: `node scripts/avaliar-correcao.mts`. Baseline do commit `120cc9e` em
+  `docs/medicao-corretor.md`: detecção 97%, r@1 76%, r@3 85%, FP 3,25/1000, auto-aplicação 76%
+  com 10,7% delas erradas, p95 0,152 ms/palavra e 7,5 MB de payload no worker. No fechamento um
+  rebase trouxe o corretor com confusões/teclado (`760095e`); a mesma medição rodou no commit novo
+  (`cdd1c84`): r@1 80%, r@3 89%, x↔ch 33%→67%, FP igual e p95 0,998 ms/palavra — a comparação está
+  no documento. Nada muda no comportamento do corretor.
 
 ### Adicionado (na main)
 
