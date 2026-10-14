@@ -6322,3 +6322,15 @@ antigas quando fizer sentido.
 - **Porquê:** o Conectar muda o que o app faz (e como se monta um organograma) — o doc do módulo
   precisa dizer das bolinhas, das cores por trecho e do que fica preso; a entrada fica em **Não
   adicionado** até o fecho (a regra do AGENTS.md: nada é promovido antes de entrar na `main`).
+
+## CHANGELOG.md
+
+### 2026-10-14 · promoção · as duas entradas do PowerPoint entram no "Adicionado"
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend
+- **Linha:** 2 entradas movidas — **Conectar formas (Inserir ▸ Diagrama)** (`b174446`) e **Aplicar
+  animação não deixa mais a forma presa** (`7bd1f8e`)
+- **Porquê:** os dois commits já estavam na `main` desde os seus fechos, mas a promoção não cabe no
+  mesmo commit do `fechar.ps1` — no momento do commit o código ainda não entrou na `main`, e a
+  regra proíbe promover antes. Mesma razão das rodadas anteriores (ex.: `334ec1e`):
+  registra-se em "Não adicionado" no fecho e promove-se logo em seguida, quando o commit já está
+  na `main`. Nenhuma entrada de worktree em andamento foi tocada — só o que já entrou.

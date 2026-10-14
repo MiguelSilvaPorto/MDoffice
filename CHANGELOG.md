@@ -378,13 +378,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Aplicar animação não deixa mais a forma presa**: a **prévia** (e a prévia que toca ao aplicar
-  um efeito, como no PowerPoint) agora **devolve a forma ao normal** quando termina — antes, um
-  efeito de ênfase (Ampliar, Girar, Transparência) deixava a forma maior/girada/transparente no
-  palco e uma saída (Sumir, Desaparecer, Encolher) a deixava **invisível**, sem jeito de desfazer
-  só o estado visual. O **Esc** interrompe uma prévia em andamento e devolve tudo na hora, e
-  **trocar o efeito** de uma forma agora usa os padrões do efeito novo (a duração do antigo não
-  contamina mais: Ampliar volta a nascer com 2 s).
+- (nada no momento)
+
+### Adicionado (na main)
+
+**Backend**
+
+- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
+
+**Frontend**
+
 - **Conectar formas (Inserir ▸ Diagrama)**: a ferramenta **Conectar** liga **formas que já
   existem** — nada é recriado. Com o modo ligado, passar o mouse sobre uma forma mostra as
   **bolinhas nas quatro bordas** (topo, base, esquerda, direita); o primeiro clique marca a
@@ -400,13 +403,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   andam juntas (mesma seleção) e valem como formas comuns — inclusive na exportação do `.pptx`,
   onde viram formas livres.
 
-### Adicionado (na main)
-
-**Backend**
-
-- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
-
-**Frontend**
+- **Aplicar animação não deixa mais a forma presa**: a **prévia** (e a prévia que toca ao aplicar
+  um efeito, como no PowerPoint) agora **devolve a forma ao normal** quando termina — antes, um
+  efeito de ênfase (Ampliar, Girar, Transparência) deixava a forma maior/girada/transparente no
+  palco e uma saída (Sumir, Desaparecer, Encolher) a deixava **invisível**, sem jeito de desfazer
+  só o estado visual. O **Esc** interrompe uma prévia em andamento e devolve tudo na hora, e
+  **trocar o efeito** de uma forma agora usa os padrões do efeito novo (a duração do antigo não
+  contamina mais: Ampliar volta a nascer com 2 s).
 
 - **Zoom e marcação ao vivo na apresentação (F5)**: `Ctrl` + roda dá **zoom no ponto do mouse**,
   `+`/`−` aproximam e afastam e **arrastar com zoom move a tela** (o clique parado continua
