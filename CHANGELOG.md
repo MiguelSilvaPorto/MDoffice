@@ -32,15 +32,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **F4 — auto-cura do conhecimento do corretor**: os termos que você já disse que estão certos
-  ("Ignorar neste texto") ganham **histerese** (nada de promover de primeira: com 3 sinais o app
-  adiciona a palavra ao **dicionário pessoal sozinho** e avisa) e **decaimento** (meia-vida de 30
-  dias: um costume antigo perde força, e o que ficou fraco é esquecido na compactação). Em
-  **Configurações ▸ Escrita ▸ Aprendizado**: **precisão percebida** (correções automáticas
-  mantidas), **avisos por 1.000 palavras**, a lista de **"termos que o app insiste em marcar"**
-  (clique para adicionar) e a dos **termos aprendidos** (clique para esquecer). E **exportar/
-  importar o aprendizado** num JSON pequeno (trocas, classes de erro, termos, métricas e o
-  dicionário pessoal — nenhum documento entra nele).
+- (nada no momento)
 
 ### Adicionado (na main)
 
@@ -50,6 +42,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **F4 — auto-cura do conhecimento do corretor**: os termos que você já disse que estão certos
+  ("Ignorar neste texto") ganham **histerese** (nada de promover de primeira: com 3 sinais o app
+  adiciona a palavra ao **dicionário pessoal sozinho** e avisa) e **decaimento** (meia-vida de 30
+  dias: um costume antigo perde força, e o que ficou fraco é esquecido na compactação). Em
+  **Configurações ▸ Escrita ▸ Aprendizado**: **precisão percebida** (correções automáticas
+  mantidas), **avisos por 1.000 palavras**, a lista de **"termos que o app insiste em marcar"**
+  (clique para adicionar) e a dos **termos aprendidos** (clique para esquecer). E **exportar/
+  importar o aprendizado** num JSON pequeno (trocas, classes de erro, termos, métricas e o
+  dicionário pessoal — nenhum documento entra nele).
 - **Avisos de estilo com a correção pronta no popup**: clicar num aviso como **"Frase muito
   comprida"** agora mostra o trecho **já corrigido** ("… do novo projeto. E combinamos de …") com
   um clique para aplicar - antes o popup só dizia "comece nova frase aqui". Nesses avisos os botões
@@ -377,6 +378,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- (nada no momento)
+
+### Adicionado (na main)
+
+**Backend**
+
+- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
+
+**Frontend**
+
 - **Fluxo do Mermaid na lâmina**: em **Inserir ▸ Fluxo do Mermaid**, colar um `flowchart`
   (TD/TB/LR/RL; nós `A[Texto]`, `A(Texto)`, `A((Texto))` e `A{Texto}`; setas `-->`, `---`,
   `-.->`, `==>`; rótulo `-->|texto|` ou `-- texto -->`) cria **cartões nativos** ligados por
@@ -388,15 +399,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   depois — nada fica por baixo. Os cartões e os conectores são formas comuns (mover, colorir,
   agrupar, editar texto) e o `.pptx` guarda igual: cartões como formas do PowerPoint e
   conectores como forma livre com a seta.
-
-### Adicionado (na main)
-
-**Backend**
-
-- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
-
-**Frontend**
-
 - **Desenho livre suave**: o traço que o assistente não reconhece saía como uma **polilinha** (as
   quinas da simplificação ficavam visíveis). Agora ele passa por uma **média móvel** (tira o
   tremor da mão, sem mexer nas pontas) e vira **curvas cúbicas** (Catmull-Rom) — o desenho livre
@@ -576,13 +578,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **O nível “Completa” ganhou cara própria — e o “Padrão” deixou de ser igual a ele**: os dois níveis eram praticamente indistinguíveis (o “Completa” só mexia **30–100 ms** nas durações e **1 px** no hover). Agora o “Completa” **entra com mola** (a curva passa do ponto e assenta, `cubic-bezier(0.34,1.56,0.64,1)`), viaja **o dobro** (modais e painéis 26 px, menus 14 px, abas 16 px), a **cascata do Início** abre mais espaçada (70/140/210/280 ms), a **paleta (Ctrl+K) entra em escadinha** (26 ms por item), os itens da paleta deslizam de lado, o toast e a barra lateral usam a mola, e o hover sobe **3 px** (com sombra maior nos cartões) — o “Padrão” continua curto e direto, como sempre foi, e o “Discreta” segue sem entrada e sem elevação. A **prévia de cada cartão** mostra o ritmo (a do “Completa” dá dois tempos com um estufo no fim) e a descrição diz o que muda. A rede de segurança do movimento de saída subiu de **420 para 640 ms** (senão o modal saía antes de a animação do completo acabar).
-- **Diálogo de texto com várias linhas (modo código)**: o diálogo de uma linha do app
-  (`pedirTexto`, usado em "Novo modelo", renomear lâmina etc.) ganhou a opção de virar uma
-  **área de várias linhas** — Enter quebra a linha e **Ctrl+Enter** (ou o botão) confirma —,
-  com fonte monoespaçada e a janela um pouco mais larga. É o campo que o Fluxo do Mermaid do
-  PowerPoint usa para colar o `flowchart`; a validação e o "clicar fora cancela" continuam
-  iguais.
+- (nada no momento)
 
 **Ferramentas (dev)**
 
@@ -623,6 +619,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Diálogo de texto com várias linhas (modo código)**: o diálogo de uma linha do app
+  (`pedirTexto`, usado em "Novo modelo", renomear lâmina etc.) ganhou a opção de virar uma
+  **área de várias linhas** — Enter quebra a linha e **Ctrl+Enter** (ou o botão) confirma —,
+  com fonte monoespaçada e a janela um pouco mais larga. É o campo que o Fluxo do Mermaid do
+  PowerPoint usa para colar o `flowchart`; a validação e o "clicar fora cancela" continuam
+  iguais.
+- **O nível “Completa” ganhou cara própria — e o “Padrão” deixou de ser igual a ele**: os dois níveis eram praticamente indistinguíveis (o “Completa” só mexia **30–100 ms** nas durações e **1 px** no hover). Agora o “Completa” **entra com mola** (a curva passa do ponto e assenta, `cubic-bezier(0.34,1.56,0.64,1)`), viaja **o dobro** (modais e painéis 26 px, menus 14 px, abas 16 px), a **cascata do Início** abre mais espaçada (70/140/210/280 ms), a **paleta (Ctrl+K) entra em escadinha** (26 ms por item), os itens da paleta deslizam de lado, o toast e a barra lateral usam a mola, e o hover sobe **3 px** (com sombra maior nos cartões) — o “Padrão” continua curto e direto, como sempre foi, e o “Discreta” segue sem entrada e sem elevação. A **prévia de cada cartão** mostra o ritmo (a do “Completa” dá dois tempos com um estufo no fim) e a descrição diz o que muda. A rede de segurança do movimento de saída subiu de **420 para 640 ms** (senão o modal saía antes de a animação do completo acabar).
 - **Sem o painel "Contexto para IA"**: a aba de pastas vinculadas saiu da barra lateral (não fazia
   mais sentido), junto com o modal "Pastas de contexto para IA", o item do menu **⋯**, o atalho do
   menu do botão direito do editor, o tipo `LinkedFolder` e o comando `inspect_folders` (Rust, que

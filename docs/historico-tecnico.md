@@ -5647,3 +5647,21 @@ antigas quando fizer sentido.
   sai na lâmina, as regras da lâmina nova e a edição posterior)
 - **Porquê:** a tarefa muda o que o app faz e o doc do módulo é onde a pessoa procura o recurso;
   o AGENTS pede o doc do módulo atualizado a cada mudança de comportamento.
+
+## CHANGELOG.md
+
+### 2026-10-14 · esta tarefa · promoção das 4 entradas que já estavam na main
+- **Local:** seções "Não adicionado" do MD\* (1 entrada), do PowerPoint (1) e do Geral (2)
+- **Linha:** 4 entradas movidas para o "Adicionado" da mesma categoria — **F4 auto-cura do
+  corretor** (`7918ea1`), **Fluxo do Mermaid na lâmina** (`a971cde`), **diálogo de texto com várias
+  linhas** (`a971cde`) e o **nível "Completa" com entrada própria** (`d8b8c61`) —, com as seções de
+  origem ficando com "- (nada no momento)" nos dois lados; a linha em branco dupla que sobrava no
+  "Ferramentas (dev)" do Geral saiu na mesma passada
+- **Porquê:** registrar no estado de autoria e promover no fechamento não cabem no mesmo commit —
+  a entrada só é verdadeira DEPOIS de a `main` receber o trabalho —, então a promoção anda em passos
+  curtos de docs. Como nas rodadas anteriores, cada entrada foi conferida contra o histórico antes
+  de mudar de lugar (`git log -S` para achar o commit e `git merge-base --is-ancestor ... main` para
+  provar que ele entrou): as quatro são de commits que já estão na `main`, então nada foi promovido
+  por impressão. A passada cobre só o que já estava na `main` naquele momento: a entrada de uma
+  tarefa que feche depois (ou que esteja com o fechamento em andamento), como a do **corpus dos
+  n-gramas**, fica para a promoção seguinte.
