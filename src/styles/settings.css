@@ -877,8 +877,14 @@ button.st-row:hover .st-chev {
   background: var(--accent-soft);
 }
 
+/* Perigo (apagar/remover): o rótulo fica LEGÍVEL — fundo normal e texto vermelho; o sólido
+   vermelho é só no hover e na confirmação (dois cliques). O fundo precisa ser reafirmado aqui
+   porque o botão também tem a classe `btn`, e o `.btn.danger` do base pinta o fundo de vermelho
+   (com o texto vermelho de `.st-btn.danger` o rótulo saía invisível, vermelho em cima de vermelho). */
 .st-btn.danger {
   color: var(--danger);
+  background: var(--panel-2);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
 }
 
 .st-btn.danger:hover {

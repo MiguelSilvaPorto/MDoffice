@@ -991,6 +991,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   clique/Esc/rolagem, nunca sai na impressão — e o `title` **volta** ao elemento assim que o balão
   fecha (o nativo nunca chega a aparecer). Vale para a fita, a barra, a régua, os painéis e o modo
   apresentação; verificações novas em `npm run test:layout`.
+- **Botão de perigo das Configurações legível**: o **"Remover…"/"Apagar…"** das Configurações saía
+  **vermelho com o rótulo vermelho** (invisível): o botão tem as classes `btn` e `st-btn`, e o
+  `.btn.danger` do base pintava o **fundo** enquanto o `.st-btn.danger` pintava o **texto**. Agora
+  ele é o botão do lugar — fundo normal, texto vermelho e borda no tom — e o **vermelho sólido com
+  texto branco fica só no hover e na confirmação** (o apagar pede dois cliques).
 
 **Ferramentas (dev)**
 
@@ -1050,6 +1055,9 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   movimentos pequenos) + 6 em `npm run test:layout` (Ctrl é do zoom, roda lateral ignorada e a
   ligação no palco).
 - **Testes do desenho assistido**: `npm run test:desenho` ganhou 4 checagens do arco (traço torto
-  sai girado no ângulo do desenho, a curva **passa pelo traço** — desvio máximo medido contra o
-  arco reconhecido — e o "canto em L" fica como desenho livre em vez de arco-faca) e o
+  sai girado no ângulo do desenho, a curva **passa pelo traço** - desvio máximo medido contra o
+  arco reconhecido - e o "canto em L" fica como desenho livre em vez de arco-faca) e o
   `npm run test:pptx-edicao` confere que o arco girado vai ao `.pptx` com rotação e ângulos.
+- **Teste de layout com o botão de perigo**: 3 checagens prendem o fundo reafirmado no
+  `.st-btn.danger`, o texto na cor de perigo e o vermelho sólido só no hover/confirmação — o
+  defeito (rótulo vermelho sobre fundo vermelho) não volta sem alguém notar.

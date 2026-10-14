@@ -740,5 +740,26 @@ checa(
   "um balão preso apareceria no PDF"
 );
 
+// ---------------------------------------------------------------- botão de perigo das Configurações
+
+console.log("\nbotão de perigo das Configurações");
+
+const cfgBtnCss = ler("src/styles/settings.css");
+checa(
+  "o botão de perigo reafirma o fundo (o rótulo não fica vermelho em cima de vermelho)",
+  /\.st-btn\.danger\s*\{[^}]*background:\s*var\(--panel-2\)/s.test(cfgBtnCss),
+  "falta o background no .st-btn.danger — o .btn.danger do base pinta o fundo e o texto fica invisível"
+);
+checa(
+  "o texto do perigo é a cor de perigo (legível no fundo do botão)",
+  /\.st-btn\.danger\s*\{[^}]*color:\s*var\(--danger\)/s.test(cfgBtnCss)
+);
+checa(
+  "o vermelho sólido fica no hover e na confirmação",
+  /\.st-btn\.danger:hover\s*\{[^}]*background:\s*var\(--danger\)/s.test(cfgBtnCss) &&
+    /\.st-btn\.danger\.confirmando\s*\{[^}]*background:\s*var\(--danger\)/s.test(cfgBtnCss),
+  "o hover ou o confirmando perderam o fundo vermelho"
+);
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

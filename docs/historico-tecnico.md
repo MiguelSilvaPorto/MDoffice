@@ -6690,3 +6690,28 @@ antigas quando fizer sentido.
 - **Linha:** `novo`
 - **Porquê:** a mudança é de interface do app inteiro (não de um módulo), então a categoria é
   **Geral** — e a entrada entra já promovida, como o fechamento exige.
+
+## src/styles/settings.css
+
+### 2026-10-14 · esta tarefa · o botão de perigo não fica vermelho em cima de vermelho
+- **Local:** `.st-btn.danger`
+- **Linha:** `color: var(--danger)` → `color: var(--danger); background: var(--panel-2);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border))`
+- **Porquê:** o botão tem **duas** classes de botão (`btn` e `st-btn`). O `.btn.danger` do
+  `base.css` pinta o **fundo** de vermelho; o `.st-btn.danger` do `settings.css` pinta a **cor do
+  texto** de vermelho. Mesma especificidade (0,2,0) — vence o arquivo que o `styles.css` carrega
+  depois (`settings.css`, linha 30 contra a 10 do base) — e o rótulo saía **vermelho sobre
+  vermelho** (invisível no print do usuário: um botão vermelho sem texto). Reafirmar o `background`
+  no bloco do perigo resolve na raiz, sem depender da ordem dos arquivos, e a borda ganha o tom. O
+  sólido com texto branco segue no `.st-btn.danger:hover` e no `.st-btn.danger.confirmando` (o
+  apagar pede dois cliques). Medido no harness com `getComputedStyle` nos dois temas: claro
+  4,7:1 e escuro 6,1:1 de contraste, e o fundo igual ao do botão normal ao lado.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · esta tarefa · checagens do botão de perigo
+- **Local:** fim do arquivo, seção "botão de perigo das Configurações"
+- **Linha:** 3 checagens — o `background` reafirmado no `.st-btn.danger`, o texto na cor de perigo
+  e o vermelho sólido no hover/confirmando
+- **Porquê:** é um defeito de cascata (duas classes disputando fundo e cor): a checagem de CSS
+  prende a combinação sem precisar de navegador, e falha se alguém "limpar" o bloco.
