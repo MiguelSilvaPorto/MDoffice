@@ -36,6 +36,12 @@ export class TextBoard {
   raf = 0;
   resizeObs: ResizeObserver | null = null;
   zoom = 1;
+  /** Tamanho da FOLHA (o quadro inteiro no zoom atual), em px CSS — é ela que dá a rolagem. */
+  cssW = 0;
+  cssH = 0;
+  /** De onde a folha começa dentro do recipiente rolável (os recuos dele). */
+  recuoEsq = 0;
+  recuoTopo = 0;
 
   constructor(canvas: HTMLCanvasElement, host: HTMLElement, opts: { doc?: TextDrawDoc | null } = {}) {
     this.canvas = canvas;
@@ -70,6 +76,8 @@ export class TextBoard {
 
     this.resizeObs = new ResizeObserver(() => this.fit());
     this.resizeObs.observe(host);
+    // a janela anda com a rolagem: o pedaço à vista é repintado na hora
+    host.addEventListener("scroll", () => this.request(), { passive: true });
     this.fit();
     this.request();
   }
@@ -80,20 +88,42 @@ export class TextBoard {
 
   // ---------- tamanho / desenho ----------
 
+  /**
+   * Ajusta a FOLHA (o quadro inteiro no zoom atual — é ela que dá a rolagem) e a JANELA
+   * (o pedaço visível, que é o que o canvas pinta). Pintar só a janela é o que deixa o
+   * zoom de 800% nítido: o quadro inteiro em resolução cheia seriam dezenas de milhões de pixels.
+   */
   fit(): void {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const hostW = (this.canvas.parentElement ?? this.host).clientWidth;
-    const avail = Math.max(220, hostW - 20);
+    const cs = getComputedStyle(this.host);
+    const recuoEsq = parseFloat(cs.paddingLeft) || 0;
+    const recuoTopo = parseFloat(cs.paddingTop) || 0;
+    const recuoX = recuoEsq + (parseFloat(cs.paddingRight) || 0);
+    const recuoY = recuoTopo + (parseFloat(cs.paddingBottom) || 0);
+    const hostW = this.host.clientWidth;
+
+    const avail = Math.max(220, hostW - recuoX - 8);
     const cssW = Math.min(avail, this.m.logicalW) * this.zoom;
     const cssH = (cssW * this.m.logicalH) / this.m.logicalW;
-    const canvas = this.canvas;
-    canvas.style.width = `${Math.round(cssW)}px`;
-    canvas.style.height = `${Math.round(cssH)}px`;
-    // buffer do tamanho exibido (× densidade da tela): sem redução forte, a grade e os
-    // traços de 1px continuam visíveis em qualquer zoom (antes pareciam sumir)
-    const buffer = clamp((cssW * dpr) / this.m.logicalW, 0.1, 3);
-    canvas.width = Math.max(1, Math.round(this.m.logicalW * buffer));
-    canvas.height = Math.max(1, Math.round(this.m.logicalH * buffer));
+    this.cssW = cssW;
+    this.cssH = cssH;
+    this.recuoEsq = recuoEsq;
+    this.recuoTopo = recuoTopo;
+    const sheet = this.canvas.parentElement;
+    if (sheet) {
+      sheet.style.width = `${Math.round(cssW)}px`;
+      sheet.style.height = `${Math.round(cssH)}px`;
+    }
+
+    // a janela: o que o canvas ocupa de verdade (nunca mais que a folha)
+    const viewW = Math.max(1, Math.min(hostW - recuoX, cssW));
+    const viewH = Math.max(1, Math.min(this.host.clientHeight - recuoY, cssH));
+    this.canvas.style.width = `${Math.round(viewW)}px`;
+    this.canvas.style.height = `${Math.round(viewH)}px`;
+    // buffer = janela × densidade da tela (com teto de memória ~32 MB): em qualquer zoom, 1:1
+    const escala = Math.min(dpr, Math.sqrt(8_000_000 / Math.max(1, viewW * viewH)));
+    this.canvas.width = Math.max(1, Math.round(viewW * escala));
+    this.canvas.height = Math.max(1, Math.round(viewH * escala));
     this.request();
   }
 
@@ -103,9 +133,34 @@ export class TextBoard {
     return this.zoom;
   }
 
-  setZoom(zoom: number): void {
-    this.zoom = clamp(Math.round(zoom * 100) / 100, 0.5, 3);
+  /** Onde a janela visível está (px CSS dentro da folha) e quanto vale 1 unidade lógica. */
+  janela(): { x: number; y: number; k: number } {
+    const k = this.cssW / this.m.logicalW;
+    const x = clamp(this.host.scrollLeft - this.recuoEsq, 0, Math.max(0, this.cssW - this.canvas.clientWidth));
+    const y = clamp(this.host.scrollTop - this.recuoTopo, 0, Math.max(0, this.cssH - this.canvas.clientHeight));
+    return { x, y, k };
+  }
+
+  /** Ponto lógico (na grade) a partir de um evento do mouse. */
+  pontoDe(e: { clientX: number; clientY: number }): { x: number; y: number } {
+    const r = this.canvas.getBoundingClientRect();
+    const j = this.janela();
+    return { x: (e.clientX - r.left + j.x) / j.k, y: (e.clientY - r.top + j.y) / j.k };
+  }
+
+  /** Zoom até 800% com âncora: o ponto sob o ponteiro (ou o centro da janela) fica onde está. */
+  setZoom(zoom: number, ancora?: { x: number; y: number }): void {
+    const wr = this.host.getBoundingClientRect();
+    const alvo = ancora ?? { x: wr.left + this.host.clientWidth / 2, y: wr.top + this.host.clientHeight / 2 };
+    const r = this.canvas.getBoundingClientRect();
+    const j = this.janela();
+    const alvoLogico = { x: (alvo.x - r.left + j.x) / j.k, y: (alvo.y - r.top + j.y) / j.k };
+    this.zoom = clamp(Math.round(zoom * 100) / 100, 0.5, 8);
     this.fit();
+    // rola para o ponto lógico voltar para debaixo da âncora (o k já é o novo)
+    const k = this.cssW / this.m.logicalW;
+    this.host.scrollLeft = Math.max(0, wr.left + this.recuoEsq + alvoLogico.x * k - alvo.x);
+    this.host.scrollTop = Math.max(0, wr.top + this.recuoTopo + alvoLogico.y * k - alvo.y);
   }
 
   request(): void {
@@ -118,9 +173,10 @@ export class TextBoard {
 
   render(): void {
     const ctx = this.ctx;
-    const sx = this.canvas.width / this.m.logicalW;
-    const sy = this.canvas.height / this.m.logicalH;
-    ctx.setTransform(sx, 0, 0, sy, 0, 0);
+    // a janela visível: o canvas pinta só o pedaço à vista, em resolução cheia
+    const j = this.janela();
+    const escala = this.canvas.width / Math.max(1, this.canvas.clientWidth);
+    ctx.setTransform(j.k * escala, 0, 0, j.k * escala, -j.x * escala, -j.y * escala);
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, this.m.logicalW, this.m.logicalH);
 

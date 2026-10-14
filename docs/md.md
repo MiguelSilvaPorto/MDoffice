@@ -46,7 +46,8 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   também encaixa alinhamentos. Formas, texto, cores, seleção/mover, borracha e desfazer/refazer.
 - **Mover e copiar objetos**: **⌖ Selecionar** move com ímã de alinhamento; **Alt+arrastar**
   copia, **Ctrl+C/Ctrl+V** cola, **Ctrl+D** duplica e as **setas** ajustam fino (Shift = 10px).
-- **Zoom** de 50% a 300% (barra **− / % / +** e **Ctrl + roda**), com cliques/traços precisos.
+- **Zoom** de 50% a **800%** (barra **− / % / +** e **Ctrl + roda**, ancorado no ponteiro), com
+  cliques/traços precisos: o quadro é pintado só no **pedaço à vista** — nítido em qualquer zoom.
 - Cada desenho é **PNG 2x** em `assets/` com um sidecar JSON para edição posterior.
 
 ## Desenho em letras e símbolos

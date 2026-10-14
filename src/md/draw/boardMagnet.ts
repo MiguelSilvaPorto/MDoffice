@@ -162,10 +162,6 @@ export const boardMagnetMethods = {
   },
 
   pt(this: Board, e: PointerEvent): Pt {
-    const r = this.canvas.getBoundingClientRect();
-    return {
-      x: ((e.clientX - r.left) * this.W) / Math.max(r.width, 1),
-      y: ((e.clientY - r.top) * this.H) / Math.max(r.height, 1),
-    };
+    return this.pontoDe(e);
   },
 };

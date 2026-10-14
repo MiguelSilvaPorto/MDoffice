@@ -139,11 +139,23 @@
   padding: 22px;
 }
 
-.dr-canvas {
-  display: block;
+/* A FOLHA é o quadro inteiro (é ela que dá a rolagem); o canvas é a JANELA visível, preso à
+   área à vista — é o que mantém o traço nítido de 50% a 800%. `flex: none` porque o painel
+   embutido é um contêiner flex: sem isso a folha encolhe e o quadro sai espremido. */
+.dr-sheet {
+  position: relative;
+  flex: none;
   background: #ffffff;
   border-radius: 10px;
   box-shadow: 0 6px 24px rgba(15, 23, 42, 0.18);
+}
+
+.dr-canvas {
+  position: sticky;
+  top: 0;
+  left: 0;
+  display: block;
+  background: #ffffff;
   touch-action: none;
 }
 

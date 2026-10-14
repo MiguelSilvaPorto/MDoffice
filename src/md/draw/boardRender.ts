@@ -10,18 +10,25 @@ import { roundRect, elBounds, hitEl } from "./elements";
 export const boardRenderMethods = {
   paintScene(this: Board): void {
     const ctx = this.ctx;
-    const sx = this.canvas.width / this.W;
-    const sy = this.canvas.height / this.H;
-    ctx.setTransform(sx, 0, 0, sy, 0, 0);
+    // A JANELA visível: o canvas pinta só o pedaço à vista, em resolução cheia — é o que
+    // permite o zoom de 800% sem borrar (o quadro inteiro em buffer seria inviável).
+    const j = this.janela();
+    const escala = this.canvas.width / Math.max(1, this.canvas.clientWidth); // px de tela por px CSS
+    ctx.setTransform(j.k * escala, 0, 0, j.k * escala, -j.x * escala, -j.y * escala);
     ctx.clearRect(0, 0, this.W, this.H);
 
     if (this.whiteBg) {
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, this.W, this.H);
     } else {
+      // só a parte à vista: o quadro inteiro seriam milhares de quadradinhos a cada pintura
       const s = 16;
-      for (let y = 0; y < this.H; y += s) {
-        for (let x = 0; x < this.W; x += s) {
+      const x0 = Math.floor(j.x / j.k / s) * s;
+      const y0 = Math.floor(j.y / j.k / s) * s;
+      const x1 = Math.min(this.W, (j.x + this.canvas.clientWidth) / j.k);
+      const y1 = Math.min(this.H, (j.y + this.canvas.clientHeight) / j.k);
+      for (let y = y0; y < y1; y += s) {
+        for (let x = x0; x < x1; x += s) {
           ctx.fillStyle = (x / s + y / s) % 2 === 0 ? "#f1f3f6" : "#e6e9ee";
           ctx.fillRect(x, y, s, s);
         }

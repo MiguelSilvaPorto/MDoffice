@@ -7,12 +7,10 @@ import { REVERSE } from "./glyphs";
 
 export const boardInputMethods = {
   cellFromEvent(this: TextBoard, e: MouseEvent | PointerEvent): { r: number; c: number } {
-    const rect = this.canvas.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) * this.m.logicalW) / Math.max(rect.width, 1);
-    const y = ((e.clientY - rect.top) * this.m.logicalH) / Math.max(rect.height, 1);
+    const p = this.pontoDe(e);
     return {
-      r: clamp(Math.floor(y / this.m.cellH), 0, this.rows - 1),
-      c: clamp(Math.floor(x / this.m.cellW), 0, this.cols - 1),
+      r: clamp(Math.floor(p.y / this.m.cellH), 0, this.rows - 1),
+      c: clamp(Math.floor(p.x / this.m.cellW), 0, this.cols - 1),
     };
   },
 

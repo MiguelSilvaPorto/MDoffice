@@ -185,6 +185,7 @@
   justify-content: safe center;
   max-height: min(62vh, 680px);
   padding: 12px;
+  overflow: auto;
 }
 
 .dr-zoom {

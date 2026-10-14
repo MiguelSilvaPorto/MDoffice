@@ -83,7 +83,7 @@ export function createDrawEditor(opts: DrawEditorOptions): DrawEditorHandle {
         <button class="tbtn wide" data-act="clear" title="Apagar tudo para começar de novo">Limpar</button>
       </div>
     </div>
-    <div class="draw-canvas-wrap"><canvas class="dr-canvas" tabindex="0"></canvas></div>
+    <div class="draw-canvas-wrap"><div class="dr-sheet"><canvas class="dr-canvas" tabindex="0"></canvas></div></div>
     <div class="di-foot">
       <span class="muted">Assistido: endireita linhas, regulariza ondulações e liga as formas · Shift = exato</span>
       <span class="muted">Arraste para mover · <b>Alt+arrastar</b> copia · Ctrl+C/V copia e cola · setas ajustam</span>
@@ -102,6 +102,8 @@ export function createDrawEditor(opts: DrawEditorOptions): DrawEditorHandle {
     assist,
   });
   loadElements(board, opts.doc.elements ?? []);
+  // gancho de depuração/teste (mesmo padrão do window.__mdoffice.app e do quadro de letras)
+  (window as unknown as { __mdofficeDrawBoard?: Board }).__mdofficeDrawBoard = board;
 
   let busy = false;
   const finish = async (result: DrawEditorResult) => {
@@ -180,17 +182,18 @@ export function createDrawEditor(opts: DrawEditorOptions): DrawEditorHandle {
   act("del", () => board.deleteSelected());
   act("clear", () => board.clearAll());
 
-  // ---- zoom (ajuste fino) ----
+  // ---- zoom (passos finos embaixo, maiores em cima: 800% sem vinte cliques) ----
+  const passoZoom = (z: number) => (z < 2 ? 0.25 : z < 4 ? 0.5 : 1);
   const zoomLabel = panel.querySelector<HTMLElement>('[data-act="zoom-reset"]')!;
   const updateZoom = () => {
     zoomLabel.textContent = `${Math.round(board.getZoom() * 100)}%`;
   };
   act("zoom-in", () => {
-    board.setZoom(board.getZoom() + 0.25);
+    board.setZoom(board.getZoom() + passoZoom(board.getZoom()));
     updateZoom();
   });
   act("zoom-out", () => {
-    board.setZoom(board.getZoom() - 0.25);
+    board.setZoom(board.getZoom() - passoZoom(board.getZoom()));
     updateZoom();
   });
   act("zoom-reset", () => {
@@ -203,7 +206,8 @@ export function createDrawEditor(opts: DrawEditorOptions): DrawEditorHandle {
     (e) => {
       if (!e.ctrlKey) return;
       e.preventDefault();
-      board.setZoom(board.getZoom() + (e.deltaY < 0 ? 0.25 : -0.25));
+      const z = board.getZoom();
+      board.setZoom(z + (e.deltaY < 0 ? passoZoom(z) : -passoZoom(z)), { x: e.clientX, y: e.clientY });
       updateZoom();
     },
     { passive: false }

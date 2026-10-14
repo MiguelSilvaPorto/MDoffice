@@ -52,6 +52,12 @@ export class Board {
   clipboard: DrEl | null = null;
   lastNudgeAt = 0;
   zoom = 1;
+  /** Tamanho da FOLHA (o quadro inteiro no zoom atual), em px CSS — é ela que dá a rolagem. */
+  cssW = 0;
+  cssH = 0;
+  /** De onde a folha começa dentro do recipiente rolável (os recuos dele). */
+  recuoEsq = 0;
+  recuoTopo = 0;
   resizeObs: ResizeObserver | null = null;
 
   constructor(canvas: HTMLCanvasElement, host: HTMLElement, opts: BoardOptions) {
@@ -72,8 +78,10 @@ export class Board {
 
     if (opts.fit) {
       this.resizeObs = new ResizeObserver(() => this.fit());
-      this.resizeObs.observe(canvas.parentElement ?? host);
+      this.resizeObs.observe(host);
     }
+    // a janela anda com a rolagem: o pedaço à vista é repintado na hora
+    host.addEventListener("scroll", () => this.request(), { passive: true });
     this.fit();
     this.updateCursor();
     this.request();
@@ -83,29 +91,52 @@ export class Board {
     this.resizeObs?.disconnect();
   }
 
-  /** Ajusta o tamanho visual do canvas à largura disponível (mantendo a proporção). */
+  /**
+   * Ajusta a FOLHA (o quadro inteiro no zoom atual — é ela que dá a rolagem) e a JANELA
+   * (o pedaço visível, que é o que o canvas pinta). Pintar só a janela é o que deixa o zoom
+   * de 800% nítido: o quadro inteiro em resolução cheia seriam ~100 milhões de pixels.
+   */
   fit(): void {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const hostW = (this.canvas.parentElement ?? this.host).clientWidth;
-    const avail = Math.max(160, hostW - (this.opts.fit ? 20 : 0));
+    const cs = getComputedStyle(this.host);
+    const recuoEsq = parseFloat(cs.paddingLeft) || 0;
+    const recuoTopo = parseFloat(cs.paddingTop) || 0;
+    const recuoX = recuoEsq + (parseFloat(cs.paddingRight) || 0);
+    const recuoY = recuoTopo + (parseFloat(cs.paddingBottom) || 0);
+    const hostW = this.host.clientWidth;
+
+    // a folha: as mesmas regras de antes (cabe na largura; teto de altura pelo zoom)
     let cssW = this.W;
     let cssH = this.H;
     if (this.opts.fit) {
+      const avail = Math.max(160, hostW - recuoX - 8);
       cssW = Math.min(avail, this.W) * this.zoom;
       cssH = (cssW * this.H) / this.W;
-      const maxH = Math.max(240, Math.round(window.innerHeight * 0.62)) * this.zoom;
+      const maxH = Math.max(240, Math.round(window.innerHeight * 0.62) - recuoY) * this.zoom;
       if (cssH > maxH) {
         cssH = maxH;
         cssW = (cssH * this.W) / this.H;
       }
     }
-    this.canvas.style.width = `${Math.round(cssW)}px`;
-    this.canvas.style.height = `${Math.round(cssH)}px`;
-    // buffer do tamanho exibido (× densidade da tela): sem redução forte, a grade e os
-    // traços de 1px continuam visíveis em qualquer zoom (antes pareciam sumir)
-    const bufferScale = clamp(((cssW * dpr) / this.W), 0.1, 3);
-    this.canvas.width = Math.max(1, Math.round(this.W * bufferScale));
-    this.canvas.height = Math.max(1, Math.round(this.H * bufferScale));
+    this.cssW = cssW;
+    this.cssH = cssH;
+    this.recuoEsq = recuoEsq;
+    this.recuoTopo = recuoTopo;
+    const sheet = this.canvas.parentElement;
+    if (sheet) {
+      sheet.style.width = `${Math.round(cssW)}px`;
+      sheet.style.height = `${Math.round(cssH)}px`;
+    }
+
+    // a janela: o que o canvas ocupa de verdade (nunca mais que a folha)
+    const viewW = Math.max(1, Math.min(hostW - recuoX, cssW));
+    const viewH = Math.max(1, Math.min(this.host.clientHeight - recuoY, cssH));
+    this.canvas.style.width = `${Math.round(viewW)}px`;
+    this.canvas.style.height = `${Math.round(viewH)}px`;
+    // buffer = janela × densidade da tela (com teto de memória ~32 MB): em qualquer zoom, 1:1
+    const escala = Math.min(dpr, Math.sqrt(8_000_000 / Math.max(1, viewW * viewH)));
+    this.canvas.width = Math.max(1, Math.round(viewW * escala));
+    this.canvas.height = Math.max(1, Math.round(viewH * escala));
     this.request();
   }
 
@@ -115,9 +146,34 @@ export class Board {
     return this.zoom;
   }
 
-  setZoom(zoom: number): void {
-    this.zoom = clamp(Math.round(zoom * 100) / 100, 0.5, 3);
+  /** Onde a janela visível está (px CSS dentro da folha) e quanto vale 1 unidade lógica. */
+  janela(): { x: number; y: number; k: number } {
+    const k = this.cssW / this.W;
+    const x = clamp(this.host.scrollLeft - this.recuoEsq, 0, Math.max(0, this.cssW - this.canvas.clientWidth));
+    const y = clamp(this.host.scrollTop - this.recuoTopo, 0, Math.max(0, this.cssH - this.canvas.clientHeight));
+    return { x, y, k };
+  }
+
+  /** Ponto lógico (no quadro) a partir de um evento do mouse. */
+  pontoDe(e: { clientX: number; clientY: number }): Pt {
+    const r = this.canvas.getBoundingClientRect();
+    const j = this.janela();
+    return { x: (e.clientX - r.left + j.x) / j.k, y: (e.clientY - r.top + j.y) / j.k };
+  }
+
+  /** Zoom até 800% com âncora: o ponto sob o ponteiro (ou o centro da janela) fica onde está. */
+  setZoom(zoom: number, ancora?: { x: number; y: number }): void {
+    const wr = this.host.getBoundingClientRect();
+    const alvo = ancora ?? { x: wr.left + this.host.clientWidth / 2, y: wr.top + this.host.clientHeight / 2 };
+    const r = this.canvas.getBoundingClientRect();
+    const j = this.janela();
+    const alvoLogico = { x: (alvo.x - r.left + j.x) / j.k, y: (alvo.y - r.top + j.y) / j.k };
+    this.zoom = clamp(Math.round(zoom * 100) / 100, 0.5, 8);
     this.fit();
+    // rola para o ponto lógico voltar para debaixo da âncora (o k já é o novo)
+    const k = this.cssW / this.W;
+    this.host.scrollLeft = Math.max(0, wr.left + this.recuoEsq + alvoLogico.x * k - alvo.x);
+    this.host.scrollTop = Math.max(0, wr.top + this.recuoTopo + alvoLogico.y * k - alvo.y);
   }
 
   // ---------- estado público ----------
@@ -387,8 +443,7 @@ export class Board {
   };
 
   onDblClick = (e: MouseEvent): void => {
-    const r = this.canvas.getBoundingClientRect();
-    const p = { x: ((e.clientX - r.left) * this.W) / Math.max(r.width, 1), y: ((e.clientY - r.top) * this.H) / Math.max(r.height, 1) };
+    const p = this.pontoDe(e);
     const hit = this.hitTest(p);
     if (hit?.type === "text") this.openTextInput(hit.pos.x, hit.pos.y, hit);
   };

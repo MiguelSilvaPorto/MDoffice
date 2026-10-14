@@ -83,7 +83,7 @@ export function createTextDrawEditor(opts: TextEditorOptions): TextEditorHandle 
       <span class="dr-spacer"></span>
       <span class="muted txt-hint">Desenhe com caixas, textos, campos [ ] e tabelas</span>
     </div>
-    <div class="draw-canvas-wrap"><canvas class="dr-canvas" tabindex="0"></canvas></div>
+    <div class="draw-canvas-wrap"><div class="dr-sheet"><canvas class="dr-canvas" tabindex="0"></canvas></div></div>
     <div class="di-foot">
       <span class="muted">⌖ arraste para selecionar a área e <b>Del</b> apaga · botão direito apaga linha/rótulo · o texto aparece no editor enquanto você desenha</span>
       <span class="dr-spacer"></span>
@@ -196,17 +196,18 @@ export function createTextDrawEditor(opts: TextEditorOptions): TextEditorHandle 
   act("clear", () => board.clearAll());
   act("fit-box", () => board.fitSelectionToBox());
 
-  // ---- zoom (ajuste fino) ----
+  // ---- zoom (passos finos embaixo, maiores em cima: 800% sem vinte cliques) ----
+  const passoZoom = (z: number) => (z < 2 ? 0.25 : z < 4 ? 0.5 : 1);
   const zoomLabel = panel.querySelector<HTMLElement>('[data-act="zoom-reset"]')!;
   const updateZoom = () => {
     zoomLabel.textContent = `${Math.round(board.getZoom() * 100)}%`;
   };
   act("zoom-in", () => {
-    board.setZoom(board.getZoom() + 0.25);
+    board.setZoom(board.getZoom() + passoZoom(board.getZoom()));
     updateZoom();
   });
   act("zoom-out", () => {
-    board.setZoom(board.getZoom() - 0.25);
+    board.setZoom(board.getZoom() - passoZoom(board.getZoom()));
     updateZoom();
   });
   act("zoom-reset", () => {
@@ -219,7 +220,8 @@ export function createTextDrawEditor(opts: TextEditorOptions): TextEditorHandle 
     (e) => {
       if (!e.ctrlKey) return;
       e.preventDefault();
-      board.setZoom(board.getZoom() + (e.deltaY < 0 ? 0.25 : -0.25));
+      const z = board.getZoom();
+      board.setZoom(z + (e.deltaY < 0 ? passoZoom(z) : -passoZoom(z)), { x: e.clientX, y: e.clientY });
       updateZoom();
     },
     { passive: false }

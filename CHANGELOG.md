@@ -155,6 +155,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   casam por palavra) e a citação repetida vira um aviso só. **R12** — destaque tipográfico
   uniforme: **sugestão**, nunca automática, e só quando a lista mistura entradas com e sem
   negrito/itálico no título. Nenhuma das quatro corrige o texto sozinha.
+- **Prancheta com zoom até 800%**: o zoom do quadro de desenho e do de letras parava em 300% — e
+  acima disso borraria, porque o canvas guardava o quadro inteiro num buffer limitado a 3×. Agora
+  vai a **800% com o traço nítido**: o canvas pinta só a **janela visível** (a "folha" é o quadro
+  inteiro e dá a rolagem; o pedaço à vista é pintado na resolução da tela). Os passos do zoom
+  crescem no alto (25% até 200%, 50% até 400%, 1× daí em diante — 800% em 12 cliques) e o zoom
+  **ancora no ponteiro** (Ctrl+roda) ou no centro da janela (botões −/+): o ponto que você está
+  olhando fica onde está. O quadro embutido no documento também rola de verdade (antes o excesso
+  era cortado).
 
 - **Popup do aviso com diff colorido**: a correção mostra o que **sai** em vermelho riscado e o
   que **entra** em verde — nos chips "Trocar por" (palavra → sugestão) e "Corrigir" (o trecho com

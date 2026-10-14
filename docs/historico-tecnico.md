@@ -3928,6 +3928,123 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** `75 padrões` → `94 padrões` · `+ a classe clichê, a perífrase “vou estar enviando” → “enviarei” e o plano em 1ª pessoa`
 - **Porquê:** a documentação dizia o número antigo e não conhecia as frases novas.
 
+## src/md/draw/board.ts
+
+### 2026-10-14 · prancheta 800% · a folha, a janela e a âncora
+- **Local:** `fit`, `setZoom`, `janela`, `pontoDe` (novos) e o construtor
+- **Linha:** o canvas deixou de ser o quadro inteiro (`bufferScale` com teto 3) e virou a JANELA
+  visível: `cssW/cssH` (a folha) + `viewW/viewH` (a janela) com
+  `escala = Math.min(dpr, Math.sqrt(8_000_000 / (viewW * viewH)))`; o zoom subiu de `0.5..3` para
+  `0.5..8` e ganhou âncora (`setZoom(zoom, ancora)`); o observador de tamanho passou a olhar o
+  RECIPIENTE (não o canvas, que agora é a janela) e o recipiente ganhou ouvinte de `scroll`
+- **Porquê:** a 800% o quadro inteiro em buffer seriam ~100 milhões de pixels (400 MB) — e o teto
+  de 3× já borrava em 300%. Pintando só o pedaço à vista, o traço fica 1:1 com a tela em qualquer
+  zoom e a memória fica em ~2 MB. A âncora evita o "pulo" ao ampliar: o ponto sob o ponteiro (ou o
+  centro) fica onde está.
+
+## src/md/draw/boardRender.ts
+
+### 2026-10-14 · prancheta 800% · a pintura da janela
+- **Local:** `paintScene`
+- **Linha:** `setTransform(canvas.width / W, …)` → `setTransform(j.k * escala, …, -j.x * escala,
+  -j.y * escala)` (com `j = this.janela()`); o xadrez do fundo deixou de varrer o quadro inteiro
+  (6 mil quadradinhos por pintura) e varre só a região à vista
+- **Porquê:** era o coração do "borraria acima de 300%": a transformação assumia que o canvas
+  continha o quadro inteiro. Com a janela, a mesma transformação vira a "câmera" e o fundo
+  xadrez fica barato (só o que aparece).
+
+## src/md/draw/boardMagnet.ts
+
+### 2026-10-14 · prancheta 800% · o ponto do ponteiro num lugar só
+- **Local:** `pt`
+- **Linha:** a conta com `getBoundingClientRect()` e `W / rect.width` → `return this.pontoDe(e)`
+- **Porquê:** a conta antiga supõe que o canvas mostra o quadro inteiro; com a janela ela erra. Uma
+  função só (`pontoDe`) garante que o ímã, o `onDown` e o duplo clique mapeiem igual — e o teste a
+  800% com rolagem confere no pixel.
+
+## src/md/draw/boardText.ts
+
+### 2026-10-14 · prancheta 800% · a caixa de texto na folha
+- **Local:** `openTextInput`
+- **Linha:** `canvas.offsetLeft + x * (canvas.clientWidth / W)` →
+  `recuoEsq + j.x + x * (cssW / W)` (e o mesmo no eixo y, com `cssH`)
+- **Porquê:** a caixa é posicionada no recipiente (o `offsetParent`), e o canvas deixou de ser o
+  quadro: sem isso, a caixa de texto nasceria na posição errada (e com o tamanho da janela em vez
+  do zoom).
+
+## src/md/draw/editor.ts
+
+### 2026-10-14 · prancheta 800% · a folha no DOM, os passos e a âncora
+- **Local:** o HTML do painel, o bloco "zoom" e o gancho de depuração
+- **Linha:** `<canvas class="dr-canvas">` ganhou a folha em volta
+  (`<div class="dr-sheet">…</div>`); `passoZoom = (z) => (z < 2 ? 0.25 : z < 4 ? 0.5 : 1)` nos
+  botões e na roda (que passou a ancorar em `{ x: e.clientX, y: e.clientY }`); novo
+  `window.__mdofficeDrawBoard`
+- **Porquê:** a folha é quem dá a rolagem (o canvas agora é a janela). Os passos crescem no zoom
+  alto para 800% não custar vinte cliques, e a roda ancorada mantém sob o ponteiro o que a pessoa
+  está olhando. O gancho segue o mesmo padrão do quadro de letras (teste/depuração).
+
+## src/md/textdraw/board.ts
+
+### 2026-10-14 · prancheta 800% · o mesmo desenho no quadro de letras
+- **Local:** `fit`, `janela`, `pontoDe`, `setZoom` e `render`
+- **Linha:** folha + janela (com o teto de memória), zoom `0.5..8` com âncora, ouvinte de `scroll`
+  e a transformação da janela no `render`
+- **Porquê:** os dois quadros sofriam do mesmo limite e do mesmo borrão; a solução é a mesma, com
+  as medidas da grade (`m.logicalW/H`).
+
+## src/md/textdraw/boardInput.ts
+
+### 2026-10-14 · prancheta 800% · a célula a partir do ponteiro
+- **Local:** `cellFromEvent`
+- **Linha:** a conta com `rect.width` → `const p = this.pontoDe(e)` + `floor(p.x / cellW)`
+- **Porquê:** mesma razão do `pt` do desenho: com a janela, a conta antiga apontaria a célula
+  errada a 800%.
+
+## src/md/textdraw/editor.ts
+
+### 2026-10-14 · prancheta 800% · a folha no DOM e os passos
+- **Local:** o HTML do painel e o bloco "zoom"
+- **Linha:** a folha em volta do canvas; `passoZoom` nos botões e na roda ancorada
+- **Porquê:** igual ao editor do desenho — os dois quadros se comportam do mesmo jeito.
+
+## src/styles/modals.css
+
+### 2026-10-14 · prancheta 800% · a folha e o canvas preso
+- **Local:** `.dr-sheet` (novo) e `.dr-canvas`
+- **Linha:** `novo` — `.dr-sheet { position: relative; flex: none; background; border-radius;
+  box-shadow }`; `.dr-canvas` passou a `position: sticky; top: 0; left: 0` (o fundo, o raio e a
+  sombra foram para a folha)
+- **Porquê:** o canvas preso à área à vista acompanha a rolagem sem atraso (o sticky é do
+  navegador; o JS só repinta). O `flex: none` é obrigatório: o painel embutido é um contêiner
+  flex e, sem ele, a folha encolhia de 3864 px para 491 px — o quadro saía espremido (foi o print
+  que pegou).
+
+## src/styles/welcome.css
+
+### 2026-10-14 · prancheta 800% · o embutido rola
+- **Local:** `.draw-inline .draw-canvas-wrap`
+- **Linha:** `novo` — `overflow: auto` (o resto continua: flex, `safe center`, teto de altura)
+- **Porquê:** com a folha maior que o painel, o excesso era CORTADO (o `.draw-inline` tem
+  `overflow: hidden`); agora rola como no painel grande.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · prancheta 800% · 10 verificações novas
+- **Local:** bloco "prancheta: zoom até 800% (janela visível)"
+- **Linha:** `novo` — o teto 8 nos dois quadros, o teto de memória da janela, a pintura pela
+  janela, a folha e o canvas sticky no CSS, a rolagem do embutido e os passos/âncora do editor
+- **Porquê:** prende as decisões que o teste manual no navegador confirmou (traço no pixel a 800%,
+  buffer 1:1 com a tela, folha sem encolher).
+
+## docs/md.md
+
+### 2026-10-14 · prancheta 800% · a menção do zoom
+- **Local:** "Desenho assistido" → bala do zoom
+- **Linha:** `de 50% a 300%` → `de 50% a 800% (… ancorado no ponteiro) … pintado só no pedaço à vista`
+- **Porquê:** o documento do módulo descreve o que o app faz; o limite novo e a janela visível
+  precisam estar ali.
+
 ---
 
 ## Próximos registros

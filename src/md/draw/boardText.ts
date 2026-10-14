@@ -13,10 +13,11 @@ export const boardTextMethods = {
     input.value = existing?.text ?? "";
     input.title = "Enter quebra linha · Ctrl+Enter ou clicar fora conclui · Esc cancela";
     const fontSize = existing?.fontSize ?? Math.max(16, Math.round(this.width * 6));
-    const scaleX = this.canvas.clientWidth / this.W;
-    const scaleY = this.canvas.clientHeight / this.H;
-    input.style.left = `${this.canvas.offsetLeft + x * scaleX}px`;
-    input.style.top = `${this.canvas.offsetTop + y * scaleY}px`;
+    const scaleX = this.cssW / this.W;
+    const scaleY = this.cssH / this.H;
+    const j = this.janela();
+    input.style.left = `${this.recuoEsq + j.x + x * scaleX}px`;
+    input.style.top = `${this.recuoTopo + j.y + y * scaleY}px`;
     input.style.fontSize = `${fontSize * scaleY}px`;
     input.style.color = existing?.color ?? this.color;
 

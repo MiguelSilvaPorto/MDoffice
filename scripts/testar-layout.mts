@@ -226,5 +226,33 @@ checa("Word: diminuir fonte com a seta embaixo", /A<sub>▼<\/sub>/.test(ler("sr
 // o painel do PowerPoint se redesenha sozinho: não pode matar a lista aberta
 checa("PowerPoint: o painel espera a lista fechar antes de redesenhar", /fecharSeletor\(this\.el\)/.test(ler("src/powerpoint/ui/painel.ts")));
 
+// ---------------------------------------------------------------- prancheta: zoom até 800%
+
+console.log("\nprancheta: zoom até 800% (janela visível)");
+
+const quadroDesenho = ler("src/md/draw/board.ts");
+const quadroLetras = ler("src/md/textdraw/board.ts");
+
+checa("desenho: o zoom vai até 800%", /clamp\(Math\.round\(zoom \* 100\) \/ 100, 0\.5, 8\)/.test(quadroDesenho), "o teto continua 300%");
+checa("letras: o zoom vai até 800%", /clamp\(Math\.round\(zoom \* 100\) \/ 100, 0\.5, 8\)/.test(quadroLetras), "o teto continua 300%");
+
+// O canvas pinta só a JANELA visível: o quadro inteiro a 800% seriam ~100 milhões de pixels.
+checa("desenho: o buffer é a janela × densidade (com teto de memória)", /escala = Math\.min\(dpr, Math\.sqrt\(8_000_000/.test(quadroDesenho));
+checa("letras: o buffer é a janela × densidade (com teto de memória)", /escala = Math\.min\(dpr, Math\.sqrt\(8_000_000/.test(quadroLetras));
+checa("desenho: a pintura usa a janela visível", /const j = this\.janela\(\);/.test(ler("src/md/draw/boardRender.ts")));
+
+const cssModais = ler("src/styles/modals.css");
+checa("css: a folha do quadro existe (é ela que dá a rolagem)", /\.dr-sheet\s*\{/.test(cssModais));
+checa("css: o canvas fica preso à área à vista (sticky)", /\.dr-canvas\s*\{[^}]*position:\s*sticky/s.test(cssModais), "o canvas não acompanharia a rolagem");
+checa("css: o quadro embutido rola em vez de cortar", /\.draw-inline \.draw-canvas-wrap\s*\{[^}]*overflow:\s*auto/s.test(ler("src/styles/welcome.css")));
+
+const editorQuadro = ler("src/md/draw/editor.ts");
+checa("editor: os passos crescem no zoom alto (800% sem vinte cliques)", /passoZoom = \(z: number\) => \(z < 2 \? 0\.25 : z < 4 \? 0\.5 : 1\)/.test(editorQuadro));
+checa(
+  "editor: a roda do mouse ancora no ponteiro",
+  /setZoom\(z \+ \(e\.deltaY < 0 \? passoZoom\(z\) : -passoZoom\(z\)\), \{ x: e\.clientX, y: e\.clientY \}\)/.test(editorQuadro),
+  "o zoom não ancora no ponteiro"
+);
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);
