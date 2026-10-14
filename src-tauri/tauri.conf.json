@@ -10,19 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "windows": [
-      {
-        "label": "main",
-        "title": "mdOffice — editor de documentos",
-        "width": 1320,
-        "height": 860,
-        "minWidth": 940,
-        "minHeight": 620,
-        "center": true,
-        "decorations": false,
-        "shadow": true
-      }
-    ],
+    "windows": [],
     "security": {
       "csp": null
     }

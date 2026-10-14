@@ -1,5 +1,3 @@
-use tauri::Manager;
-
 mod commands;
 
 /// O identificador do app mudou (`com.mdcreator.desktop` → `com.mdoffice.desktop`), e com
@@ -14,7 +12,7 @@ pub fn migrar_pasta_de_dados() {
         let Ok(base) = std::env::var("LOCALAPPDATA") else { return };
         let base = std::path::PathBuf::from(base);
         let antiga = base.join("com.mdcreator.desktop");
-        let nova = base.join("com.mdoffice.desktop");
+        let nova = base.join(commands::storage::IDENTIFICADOR);
         if nova.exists() || !antiga.exists() {
             return;
         }
@@ -26,7 +24,7 @@ pub fn migrar_pasta_de_dados() {
 #[cfg(windows)]
 fn copiar_pasta_de_dados(de: &std::path::Path, para: &std::path::Path) -> std::io::Result<()> {
     // cache do WebView não vai: é o grosso do tamanho e se recria sozinho
-    const PULAR: [&str; 5] = ["Cache", "Code Cache", "GPUCache", "ShaderCache", "CacheStorage"];
+    use commands::storage::PASTAS_DE_CACHE as PULAR;
     std::fs::create_dir_all(para)?;
     for item in std::fs::read_dir(de)? {
         let Ok(item) = item else { continue };
@@ -47,12 +45,24 @@ fn copiar_pasta_de_dados(de: &std::path::Path, para: &std::path::Path) -> std::i
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // o teto do cache do WebView só vale na criação da janela: decide aqui (e marca o que
+    // ficou valendo nesta sessão) para montá-la no `setup` com os argumentos certos
+    let args_webview = commands::storage::preparar_webview();
     tauri::Builder::default()
-        .setup(|app| {
-            for (_, win) in app.webview_windows() {
-                let _ = win.set_decorations(false);
-                let _ = win.set_shadow(true);
-            }
+        .setup(move |app| {
+            // A janela é montada aqui, e não pelo `tauri.conf.json` (que ficou com
+            // `windows: []`), porque o `--disk-cache-size` precisa chegar junto com o WebView.
+            // Os demais valores são exatamente os do arquivo.
+            let janela = tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::default())
+                .title("mdOffice — editor de documentos")
+                .inner_size(1320.0, 860.0)
+                .min_inner_size(940.0, 620.0)
+                .center()
+                .decorations(false)
+                .shadow(true)
+                .additional_browser_args(&args_webview)
+                .build()?;
+            let _ = janela.set_shadow(true);
             Ok(())
         })
         .plugin(tauri_plugin_dialog::init())
@@ -98,6 +108,8 @@ pub fn run() {
             commands::backup::backup_clear_history,
             commands::storage::storage_report,
             commands::storage::storage_remove_legacy,
+            commands::storage::storage_cache_config,
+            commands::storage::storage_set_cache_limit,
         ])
         .run(tauri::generate_context!())
         .expect("erro ao iniciar o mdOffice");

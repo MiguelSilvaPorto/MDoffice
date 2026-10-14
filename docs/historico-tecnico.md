@@ -7181,3 +7181,94 @@ antigas quando fizer sentido.
   caminho felizmente visível; o defeito estava no que ela não olhava. As novas prendem o que o
   usuário viu: texto legível em cada ideia, com o contraste medido — e o caso do cartão-imagem,
   que é o do deck real.
+
+## src-tauri/src/commands/storage.rs
+
+### 2026-10-14 · esta tarefa · o teto do cache do WebView (lado nativo)
+- **Local:** o módulo inteiro ganhou a parte do cache: `IDENTIFICADOR`, `PASTAS_DE_CACHE`,
+  `soma_cache`, `CacheConfig`, `config_de_json`, `caminho_do_cache`, `ler_config`,
+  `gravar_config`, `argumentos_do_webview`, `preparar_webview`, `validar_limite` e os comandos
+  `storage_cache_config`/`storage_set_cache_limit`; o `StorageReport` ganhou `cache_bytes`
+- **Linha:** `+ const CACHE_CFG: &str = "cache.json"`; `+ pub(crate) const LIMITES_MB: [u64; 5] = [0, 512, 1024, 2048, 4096]`;
+  `+ args.push_str(&format!(" --disk-cache-size={}", limite_mb * 1024 * 1024))`; a soma do cache
+  virou uma descida de até 3 níveis que soma as pastas de `PASTAS_DE_CACHE` e **não entra** numa
+  delas (`Service Worker\CacheStorage` não conta duas vezes)
+- **Porquê:** o WebView2 decide sozinho quanto guardar (uma fatia do disco livre) e não expõe
+  API para mudar isso depois de criado — o único caminho é o argumento de linha de comando
+  `--disk-cache-size`, que o Chromium lê **em bytes** na criação do ambiente. Daí a escolha ser
+  guardada num JSON que o `lib.rs` lê **antes** de o Tauri existir (por isso `pasta_local()`, sem
+  `AppHandle`, com o identificador numa constante só — o mesmo do `tauri.conf.json`), e daí o
+  `preparar_webview()` marcar `aplicado_mb`: é o que permite à tela dizer "vale na próxima
+  abertura" só enquanto for verdade. Os padrões do wry entram na string porque passar argumentos
+  **substitui** o que ele poria sozinho (o menu "mini" do Windows voltaria a aparecer). O
+  `cache_bytes` existe porque o "Outros dados" mistura cache e preferências: sem separar, a linha
+  nova mostraria um número que não é o cache. A busca do cache desce até `EBWebView\Default`
+  porque o WebView2 guarda o perfil ali — a lista antiga (só o topo da pasta) achava 0 B e a
+  linha parecia quebrada. A lista de nomes é a mesma da migração: um lugar só decide o que é
+  cache.
+
+## src-tauri/src/lib.rs · src-tauri/tauri.conf.json
+
+### 2026-10-14 · esta tarefa · a janela montada no lib.rs (para o cache)
+- **Local:** `run()` — `let args_webview = commands::storage::preparar_webview()` antes do
+  `Builder`, e o `setup` criando a janela com `WebviewWindowBuilder`; `copiar_pasta_de_dados`
+  passou a usar `PASTAS_DE_CACHE`; o `tauri.conf.json` ficou com `"windows": []`
+- **Linha:** `- for (_, win) in app.webview_windows() { win.set_decorations(false) ... }` →
+  `+ tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::default()).title(…).inner_size(1320.0, 860.0).min_inner_size(940.0, 620.0).center().decorations(false).shadow(true).additional_browser_args(&args_webview).build()?`
+- **Porquê:** o `tauri.conf.json` é compilado junto com o app (`generate_context!`), então não
+  há como injetar um argumento escolhido em tempo de execução por ele — e o wry **sempre** passa
+  o próprio conjunto de argumentos, o que faz a variável de ambiente
+  `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` ser ignorada. Montar a janela no `setup` é o caminho
+  suportado para isso; os valores do arquivo foram replicados um a um (título, 1320×860, mínimo,
+  centralizada, sem decoração, com sombra) para o app abrir exatamente como antes, e o teste de
+  layout prende essa igualdade. A migração passou a usar a mesma lista de cache do módulo: antes
+  ela pulava só o topo da pasta e, com o perfil em `EBWebView\Default`, copiaria o cache inteiro
+  na renomeação.
+
+## src/settingsPage.ts · src/storage.ts
+
+### 2026-10-14 · esta tarefa · a linha "Cache do WebView"
+- **Local:** `settingsPage.ts` — `LIMITES_DE_CACHE`, a linha nova depois de "Outros dados do app",
+  o `paintArmazenamento` (leitura do teto, do que está em uso e do tamanho do cache) e o
+  `ligarDd("cache-limite", …)`; `storage.ts` — `CacheConfig`, `limiteDoCache` e
+  `definirLimiteDoCache`
+- **Linha:** `+ ${dd("cache-limite", LIMITES_DE_CACHE, "0")}`; `+ seletorCache.value = String(teto)`
+  (o setter do seletor sincroniza o rótulo); `+ const pendente = teto !== emUso ? " — vale na próxima abertura do app" : ""`
+- **Porquê:** o ajuste é do lado nativo (é ele quem monta a janela), então a tela não guarda o
+  valor em `settings`: ela pergunta pelos comandos e escreve por eles — a fonte da verdade é uma
+  só. O `dd()` já existente dá a cara do app ao controle e o `ligarDd` traz o `change`, sem
+  inventar componente; o valor chega depois do render (é assíncrono), então o seletor nasce em
+  "Automático" e é corrigido no `paintArmazenamento`, que é também onde a linha ganha o texto.
+  O aviso de "próxima abertura" só aparece enquanto `limite_mb != aplicado_mb`: depois de
+  reabrir, a linha fica só com o limite em uso — sem isso a pessoa nunca saberia se a escolha
+  pegou.
+
+## src-tauri/src/commands/tests.rs · scripts/testar-layout.mts
+
+### 2026-10-14 · esta tarefa · as travas do cache
+- **Local:** `tests.rs` — três testes (`cache_do_webview_argumentos_e_limites`,
+  `cache_do_webview_config_tolera_arquivo_ausente_ou_estragado`,
+  `soma_cache_acha_o_cache_do_perfil_e_nao_conta_duas_vezes`); `testar-layout.mts` — seção
+  "cache do WebView" (12 checagens)
+- **Linha:** `novo` — no Rust: os padrões do wry continuam na string, o teto vira bytes, só as
+  opções da tela passam, JSON ausente/estragado vira automático e a soma acha o cache no perfil
+  sem contar duas vezes; no layout: `windows: []` no conf, a janela montada no `lib.rs` com os
+  mesmos valores, o `--disk-cache-size` em bytes, `cache.json`, a lista igual nos dois lados e o
+  aviso de "próxima abertura"
+- **Porquê:** o modo de falha desta tarefa é **silencioso**: se os argumentos não chegarem, o
+  app continua abrindo e o cache simplesmente não muda; se a lista do Rust e a da tela
+  divergirem, o comando recusa a escolha e o seletor volta sozinho. Os testes prendem os dois
+  lados — e o teste do layout já era o lugar onde os invariantes do painel ficam presos (foi ele
+  que pegou, na mesma rodada, a soma do cache olhando a pasta errada).
+
+## docs/estrutura-do-projeto.md
+
+### 2026-10-14 · esta tarefa · o backend e a janela no mapa do projeto
+- **Local:** seção "Backend — `src-tauri/` (Rust)" — a linha dos comandos, a árvore e a nota nova
+- **Linha:** `files · assets · drafts · projects · search · bundle · backup · util · tests` →
+  `files · assets · drafts · projects · search · storage · bundle · backup · util · tests`; a
+  árvore agora diz que a janela é montada no `lib.rs` e o `tauri.conf.json` cuida de build e
+  empacotamento; nota nova sobre o `cache.json` e o `--disk-cache-size`
+- **Porquê:** a mudança de onde a janela nasce é o tipo de coisa que surpreende quem for mexer
+  depois (procurar a janela no `tauri.conf.json` e não achar); o mapa do projeto é onde essa
+  pergunta se responde.

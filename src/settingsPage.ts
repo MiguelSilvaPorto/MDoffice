@@ -6,7 +6,7 @@ import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { resumoVersoes, limparVersoesTudo } from "./history";
 import { resumoLog, limparLogTudo } from "./snapshots";
-import { relatorio as relatorioArmazenamento, removerLegado } from "./storage";
+import { relatorio as relatorioArmazenamento, removerLegado, limiteDoCache, definirLimiteDoCache } from "./storage";
 import { clearGhostMemory } from "./broker/ghost/memory";
 import { limparAprendizado } from "./broker/aprendizado";
 import { limparTermos, termosAprendidos, termosInsistentes } from "./broker/personal/termos";
@@ -168,6 +168,15 @@ function dd(chave: string, opcoes: [string, string][], atual: string): string {
     .map(([valor, rotulo]) => `<option value="${valor}"${valor === atual ? " selected" : ""}>${rotulo}</option>`)
     .join("")}</select>`;
 }
+
+/** Tetos do cache do WebView, em MB (0 = automático). Os mesmos do lado Rust (`storage.rs`). */
+const LIMITES_DE_CACHE: [string, string][] = [
+  ["0", "Automático"],
+  ["512", "512 MB"],
+  ["1024", "1 GB"],
+  ["2048", "2 GB"],
+  ["4096", "4 GB"],
+];
 
 export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section: SettingsSection = "escrita"): void {
   // Se a página for redesenhada no meio de uma troca de tecla, a escuta antiga não
@@ -478,6 +487,11 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
               ${rowIcon("i-cloud")}
               <span class="st-text"><b>Outros dados do app</b><small data-arm-other>calculando…</small></span>
               <span class="st-btns"><button class="btn small st-btn" data-act="arm-open-data">Abrir pasta</button></span>
+            </div>
+            <div class="st-row">
+              ${rowIcon("i-refresh")}
+              <span class="st-text"><b>Cache do WebView</b><small data-arm-cache>calculando…</small></span>
+              ${dd("cache-limite", LIMITES_DE_CACHE, "0")}
             </div>
           </div>
 
@@ -1220,12 +1234,13 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   };
   const paintArmazenamento = () => {
     void (async () => {
-      const [vers, log, idx, drafts, rep] = await Promise.all([
+      const [vers, log, idx, drafts, rep, cache] = await Promise.all([
         resumoVersoes(),
         resumoLog(),
         backup.indice().catch(() => ({ roots: [], files: [], copies: 0, bytes: 0 })),
         listDrafts().catch(() => []),
         relatorioArmazenamento().catch(() => null),
+        limiteDoCache().catch(() => null),
       ]);
       const rascunhosBytes = drafts.reduce((a, d) => a + (d.bytes ?? 0), 0);
       setTxt("[data-arm-vers]", vers.versoes ? `${vers.versoes} versão(ões) em ${vers.docs} documento(s) — ≈ ${bytes(vers.bytes)}` : "Nenhuma versão guardada.");
@@ -1235,6 +1250,19 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       const dataBytes = rep?.data_bytes ?? 0;
       const outros = Math.max(0, dataBytes - vers.bytes - log.bytes - idx.bytes - rascunhosBytes);
       setTxt("[data-arm-other]", rep ? `${bytes(outros)} — cache do WebView e preferências (se recria sozinho)` : "indisponível fora do app.");
+      // Cache do WebView: o que está em disco agora e o teto escolhido. O teto vale na próxima
+      // abertura (o WebView só lê o argumento quando a janela é criada), então enquanto o
+      // escolhido for diferente do que está em uso a linha avisa.
+      const teto = cache?.limite_mb ?? 0;
+      const emUso = cache?.aplicado_mb ?? 0;
+      const seletorCache = host.querySelector<HTMLSelectElement>('[data-k="cache-limite"]');
+      if (seletorCache && cache) seletorCache.value = String(teto); // o setter do seletor sincroniza o rótulo
+      const rotuloTeto = teto === 0 ? "automático (o WebView decide)" : bytes(teto * 1024 * 1024);
+      const pendente = teto !== emUso ? " — vale na próxima abertura do app" : "";
+      setTxt(
+        "[data-arm-cache]",
+        rep ? `${bytes(rep.cache_bytes)} agora — limite: ${rotuloTeto}${pendente}` : "indisponível fora do app."
+      );
       const total = dataBytes + (rep?.legacy_bytes ?? 0);
       setTxt(
         "[data-arm-total]",
@@ -1338,6 +1366,25 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     } catch (e) {
       toast(String(e), "err", 6000);
     }
+  });
+  // Teto do cache do WebView: guardado no lado Rust, porque é ele quem monta a janela e passa
+  // o `--disk-cache-size`. A escolha só passa a valer quando o app abrir de novo.
+  ligarDd("cache-limite", LIMITES_DE_CACHE, async (valor) => {
+    const mb = Number(valor) || 0;
+    try {
+      const cfg = await definirLimiteDoCache(mb);
+      flash();
+      toast(
+        cfg.limite_mb === 0
+          ? "Cache do WebView: automático — vale na próxima abertura do app."
+          : `Cache do WebView: até ${bytes(cfg.limite_mb * 1024 * 1024)} — vale na próxima abertura do app.`,
+        "ok",
+        4200
+      );
+    } catch (e) {
+      toast("Não foi possível guardar o limite do cache: " + e, "err", 5200);
+    }
+    paintArmazenamento(); // mostra o limite guardado (e avisa se ainda não valeu)
   });
 
   // aparência

@@ -925,5 +925,55 @@ console.log("\nPowerPoint: o 'Configurar' saiu (a aba Design cobre)");
   );
 }
 
+console.log("\ncache do WebView: teto escolhido na tela e aplicado na janela");
+{
+  const conf = JSON.parse(ler("src-tauri/tauri.conf.json")) as { app: { windows: unknown[] } };
+  const rust = ler("src-tauri/src/lib.rs");
+  const storage = ler("src-tauri/src/commands/storage.rs");
+  const pagina = ler("src/settingsPage.ts");
+  const front = ler("src/storage.ts");
+
+  // A janela saiu do `tauri.conf.json` para o `lib.rs`: é o único jeito de o argumento do
+  // cache chegar ANTES de o WebView existir (o conf é compilado junto com o app).
+  checa("a janela não é mais criada pelo tauri.conf.json", Array.isArray(conf.app.windows) && conf.app.windows.length === 0, "app.windows do conf precisa ficar vazio");
+  checa(
+    "a janela é montada no lib.rs com os mesmos valores do arquivo",
+    /WebviewWindowBuilder::new\(app, "main", tauri::WebviewUrl::default\(\)\)/.test(rust) &&
+      /\.inner_size\(1320\.0, 860\.0\)/.test(rust) &&
+      /\.min_inner_size\(940\.0, 620\.0\)/.test(rust) &&
+      /\.decorations\(false\)/.test(rust) &&
+      /\.shadow\(true\)/.test(rust),
+    "título, tamanho, mínimo, decoração e sombra precisam continuar iguais"
+  );
+  checa("o lib.rs decide o teto antes de montar a janela", /let args_webview = commands::storage::preparar_webview\(\)/.test(rust) && /additional_browser_args\(&args_webview\)/.test(rust));
+  checa(
+    "os padrões do wry continuam nos argumentos",
+    /--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection/.test(storage),
+    "passar argumentos substitui os padrões do wry (menu mini e SmartScreen)"
+  );
+  checa("o teto vira --disk-cache-size em bytes", /--disk-cache-size=\{\}/.test(storage) && /limite_mb \* 1024 \* 1024/.test(storage));
+  checa("sem teto escolhido (automático) não vai argumento extra", /if limite_mb > 0/.test(storage));
+  checa("a escolha fica em cache.json na pasta de dados", /const CACHE_CFG: &str = "cache\.json"/.test(storage));
+  checa("o Rust recusa teto fora das opções", /fn validar_limite/.test(storage) && /fora das opções/.test(storage));
+  checa(
+    "as opções da tela são as mesmas do Rust",
+    /\[0, 512, 1024, 2048, 4096\]/.test(storage) && /\["0", "Automático"\]/.test(pagina) && /\["4096", "4 GB"\]/.test(pagina),
+    "seletor e LIMITES_MB precisam concordar"
+  );
+  checa(
+    "a conta do cache separa o cache das preferências",
+    /pub\(crate\) fn soma_cache/.test(storage) && /PASTAS_DE_CACHE/.test(storage) && /cache_bytes/.test(front),
+    "o painel mostra o cache em si, não só o 'Outros dados'"
+  );
+  checa(
+    "a tela grava o teto pelo comando do Rust e avisa quando só vale depois",
+    /storage_set_cache_limit/.test(front) && /definirLimiteDoCache/.test(pagina) && /ligarDd\("cache-limite"/.test(pagina) && /vale na próxima abertura do app/.test(pagina)
+  );
+  checa(
+    "o painel mostra o cache agora e o limite em uso",
+    /data-arm-cache/.test(pagina) && /aplicado_mb/.test(storage) && /emUso/.test(pagina)
+  );
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

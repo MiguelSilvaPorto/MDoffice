@@ -4,7 +4,7 @@ use super::assets::copy_assets;
 use super::bundle::export_portable_bundle;
 use super::files::{gravar_bytes, rename_file, unique_md_path};
 use super::projects::list_markdown;
-use super::storage::soma_pasta;
+use super::storage::{argumentos_do_webview, config_de_json, soma_cache, soma_pasta, validar_limite, LIMITES_MB};
 use super::trash::{limpar, mover, read_index};
 use std::fs;
 use std::io::Read;
@@ -311,6 +311,71 @@ fn gravar_bytes_nao_gasta_ida_extra_e_cria_a_pasta_quando_falta() {
     fs::write(dir.join("bloqueio"), b"nao sou pasta").expect("cria arquivo");
     let erro = gravar_bytes(&dir.join("bloqueio").join("x.md"), b"x").expect_err("recusa");
     assert!(!erro.is_empty(), "o erro precisa chegar para o aviso de 'não salvou'");
+
+    fs::remove_dir_all(&dir).expect("limpa arquivos de teste");
+}
+
+#[test]
+fn cache_do_webview_argumentos_e_limites() {
+    // sem teto (automático) os argumentos ficam só com os padrões do wry
+    let padrao = argumentos_do_webview(0);
+    assert_eq!(padrao, "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection");
+    assert!(!padrao.contains("disk-cache-size"), "automático não impõe teto");
+
+    // com teto, o valor vai em BYTES (o que o Chromium espera) e os padrões continuam junto:
+    // passar argumentos substitui o que o wry poria sozinho
+    let um_gb = argumentos_do_webview(1024);
+    assert!(um_gb.contains("--disk-cache-size=1073741824"), "1 GB em bytes: {um_gb}");
+    assert!(um_gb.contains("--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection"));
+    assert!(argumentos_do_webview(4096).contains("--disk-cache-size=4294967296"), "4 GB em bytes");
+
+    // só as opções da tela passam
+    assert_eq!(validar_limite(0).expect("automático"), 0);
+    assert_eq!(validar_limite(2048).expect("2 GB"), 2048);
+    assert!(validar_limite(999).is_err(), "valor fora da lista é recusado");
+    assert_eq!(LIMITES_MB, [0, 512, 1024, 2048, 4096], "as opções são as mesmas da tela");
+}
+
+#[test]
+fn cache_do_webview_config_tolera_arquivo_ausente_ou_estragado() {
+    let padrao = config_de_json("nao sou json");
+    assert_eq!((padrao.limite_mb, padrao.aplicado_mb), (0, 0), "lixo vira automático");
+
+    let lido = config_de_json("{\"limite_mb\":1024,\"aplicado_mb\":0}");
+    assert_eq!((lido.limite_mb, lido.aplicado_mb), (1024, 0), "o pedido e o que está em uso são campos separados");
+
+    let so_um = config_de_json("{\"limite_mb\":2048}");
+    assert_eq!((so_um.limite_mb, so_um.aplicado_mb), (2048, 0), "campo que falta vira 0");
+}
+
+#[test]
+fn soma_cache_acha_o_cache_do_perfil_e_nao_conta_duas_vezes() {
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("relógio válido")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("mdoffice-cache-{nonce}"));
+    // o perfil de verdade: EBWebView\Default\Cache, Code Cache e Service Worker\CacheStorage
+    let perfil = dir.join("EBWebView").join("Default");
+    fs::create_dir_all(perfil.join("Cache").join("Cache_Data")).expect("cria o cache de disco");
+    fs::write(perfil.join("Cache").join("Cache_Data").join("f_000001"), vec![0u8; 1000]).expect("arquivo do cache");
+    fs::create_dir_all(perfil.join("Code Cache").join("js")).expect("cria o cache de código");
+    fs::write(perfil.join("Code Cache").join("js").join("dados"), vec![0u8; 200]).expect("arquivo do cache de código");
+    fs::create_dir_all(perfil.join("Service Worker").join("CacheStorage")).expect("cria o cache do service worker");
+    fs::write(perfil.join("Service Worker").join("CacheStorage").join("x"), vec![0u8; 30]).expect("arquivo do sw");
+    fs::create_dir_all(perfil.join("Local Storage")).expect("cria as preferências");
+    fs::write(perfil.join("Local Storage").join("leveldb"), vec![0u8; 5000]).expect("arquivo de preferências");
+
+    assert_eq!(
+        soma_cache(&dir),
+        1230,
+        "o cache conta o que está no perfil (Cache, Code Cache e CacheStorage), sem contar duas vezes"
+    );
+    assert_eq!(
+        soma_pasta(&dir),
+        6230,
+        "a pasta inteira continua contando tudo (preferências inclusive)"
+    );
 
     fs::remove_dir_all(&dir).expect("limpa arquivos de teste");
 }

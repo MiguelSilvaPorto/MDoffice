@@ -768,12 +768,26 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Backend**
 
-- (nada no momento)
+- **Limite do cache do WebView (lado nativo)**: a janela do app passou a ser montada pelo
+  `lib.rs` (o `tauri.conf.json` ficou com `windows: []`) porque o `--disk-cache-size` precisa
+  chegar **junto com o WebView** — o arquivo de configuração é compilado no app e não dá para
+  mudá-lo em tempo de execução. A escolha fica em `cache.json` na pasta de dados (MB; 0 =
+  automático), o `preparar_webview()` marca o que ficou valendo na sessão e os padrões do wry
+  (`msWebOOUI`, `msPdfOOUI`, `msSmartScreenProtection`) continuam nos argumentos. Os comandos
+  novos (`storage_cache_config`/`storage_set_cache_limit`) validam o teto contra a lista da tela,
+  e o `storage_report` passou a devolver `cache_bytes` — a soma só das pastas de cache do perfil
+  (dentro de `EBWebView\Default`), sem preferências e sem contar duas vezes o
+  `Service Worker\CacheStorage`.
 
 **Frontend**
 
-- (nada no momento)
-- (nada no momento)
+- **Cache do WebView com teto escolhido**: a linha nova **Cache do WebView** em
+  **Configurações ▸ Armazenamento** mostra o que está em disco agora (ex.: "55.1 MB agora") e
+  deixa escolher o teto — **Automático** (o WebView decide, como sempre foi), **512 MB**, **1 GB**,
+  **2 GB** ou **4 GB** — no mesmo controle dos outros ajustes. A escolha vale na **próxima
+  abertura** do app (o WebView só lê o argumento quando a janela nasce): até lá a linha avisa
+  "vale na próxima abertura do app" e, depois de reabrir, mostra só o limite em uso. A conta do
+  "Outros dados do app" continua a mesma; a linha nova é que separa o cache das preferências.
 
 **Ferramentas (dev)**
 

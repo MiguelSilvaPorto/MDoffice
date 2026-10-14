@@ -56,16 +56,20 @@ src/                  frontend (TypeScript, sem framework) — um "motor" por pa
 
 ## Backend — `src-tauri/` (Rust)
 
-Os comandos que só o lado nativo pode fazer: arquivos, imagens, rascunhos, projetos, busca
-e o pacote para IA. O frontend chama por `invoke`.
+Os comandos que só o lado nativo pode fazer: arquivos, imagens, rascunhos, projetos, busca,
+armazenamento e o pacote para IA. O frontend chama por `invoke`.
 
 ```
 src-tauri/
-├─ src/commands/      files · assets · drafts · projects · search · bundle · backup · util · tests
-├─ src/lib.rs         registro dos plugins/comandos
-├─ src/main.rs        entrada do app
-└─ tauri.conf.json    janela, build e empacotamento
+├─ src/commands/      files · assets · drafts · projects · search · storage · bundle · backup · util · tests
+├─ src/lib.rs         registro dos plugins/comandos e a janela (montada aqui, para o cache)
+├─ src/main.rs        entrada do app (migra a pasta de dados antes de abrir)
+└─ tauri.conf.json    build e empacotamento (a janela fica no lib.rs)
 ```
+
+A **janela** é montada no `lib.rs` (e não pelo `tauri.conf.json`) porque o teto do cache do
+WebView vira o argumento `--disk-cache-size` na criação dela — escolhido em **Configurações ▸
+Armazenamento**, guardado em `cache.json` na pasta de dados e lido antes de o Tauri existir.
 
 ## Como o documento é organizado (no disco)
 
