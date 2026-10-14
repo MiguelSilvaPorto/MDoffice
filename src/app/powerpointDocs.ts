@@ -6,6 +6,7 @@ import * as files from "../files";
 import { newTab, tabLabel, type DocTab } from "../tabs";
 import { moveHistory } from "../history";
 import { moveCommits } from "../snapshots";
+import { avisoOfficeSemAutosave } from "./seloAutosave";
 import { type PowerPointTabData } from "../powerpoint/powerpoint";
 import { deckToPptx } from "../powerpoint/pptxexport";
 import { pptxToDeck } from "../powerpoint/pptximport";
@@ -144,13 +145,15 @@ export const powerpointDocsMethods = {
    * Salvamento automático. Mesma regra do Word: rascunhos do app são regravados
    * sempre; arquivos SEUS só são gravados em Salvar — o motor converte a
    * apresentação em caixas de texto e recursos que ele ainda não entende podem
-   * ser simplificados. O histórico guarda cópias de qualquer jeito.
+   * ser simplificados. O histórico guarda cópias de qualquer jeito, o selo da barra
+   * mostra "Não salvo" e um aviso (uma vez por arquivo) explica o Ctrl+S.
    */
   async autosavePpt(this: App): Promise<void> {
     const tab = this.tab;
     if (tab.kind !== "ppt" || !tab.dirty) return;
     if (tab.path && !tab.isDraft) {
       this.recordVersion(tab.path, this.pptHost.serialized());
+      if (this.avisosOffice.primeiraVez(tab.path)) toast(avisoOfficeSemAutosave("ppt"), "info", 9000);
       return;
     }
     try {

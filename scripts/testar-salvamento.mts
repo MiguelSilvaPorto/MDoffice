@@ -239,5 +239,58 @@ checa(
   "a comparação com a última cópia sumiu"
 );
 
+// ---------------------------------------------------------------- arquivo do Office do usuário
+
+console.log("\nselo do salvamento: arquivo SEU do Office não é regravado sozinho");
+
+const { modoDoSelo, ehArquivoOfficeDoUsuario, criarAvisosOffice } = await import("../src/app/seloAutosave.ts");
+
+const selo = (opts: Partial<Parameters<typeof modoDoSelo>[0]>) =>
+  modoDoSelo({ ligado: true, kind: "ppt", temPath: true, rascunho: false, sujo: true, salvando: false, ...opts });
+
+checa("arquivo do Office do usuário com alterações diz 'Não salvo' (e não 'Salvando…')", selo({}) === "nao-salvo");
+checa("sem alterações pendentes volta a 'Salvo'", selo({ sujo: false }) === "salvo");
+checa("rascunho do app continua no caminho da fila ('Salvando…')", selo({ rascunho: true }) === "salvando");
+checa("documento MD continua 'Salvando…' (a fila grava)", selo({ kind: "doc" }) === "salvando");
+checa("com o salvamento automático desligado o selo é 'Desativado'", selo({ ligado: false }) === "desligado");
+checa(
+  "word e xlsx seguem a mesma regra do pptx",
+  selo({ kind: "word" }) === "nao-salvo" && selo({ kind: "xlsx" }) === "nao-salvo"
+);
+checa(
+  "arquivo do Office sem caminho (ou rascunho) não é 'do usuário'",
+  !ehArquivoOfficeDoUsuario("ppt", false, false) && !ehArquivoOfficeDoUsuario("ppt", true, true)
+);
+
+{
+  const avisos = criarAvisosOffice();
+  checa("o aviso sai uma vez por arquivo", avisos.primeiraVez("X:\\Pasta\\deck.pptx") === true);
+  checa("a segunda vez (mesmo arquivo) não repete o aviso", avisos.primeiraVez("X:\\Pasta\\deck.pptx") === false);
+  checa("o caminho não diferencia maiúsculas (Windows)", avisos.primeiraVez("x:\\pasta\\DECK.PPTX") === false);
+  checa("outro arquivo tem o próprio aviso", avisos.primeiraVez("X:\\Pasta\\outro.pptx") === true);
+}
+
+// Os três motores usam a regra no ramo de arquivo do usuário: guardam versão e avisam — sem gravar por cima.
+const wordDocs = ler("src/app/wordDocs.ts");
+const pptDocs = ler("src/app/powerpointDocs.ts");
+const xlsDocs = ler("src/app/excelDocs.ts");
+for (const [nome, fonte, kind] of [
+  ["Word", wordDocs, "word"],
+  ["PowerPoint", pptDocs, "ppt"],
+  ["Excel", xlsDocs, "xlsx"],
+] as const) {
+  checa(
+    `${nome}: arquivo do usuário guarda versão + aviso, sem gravar por cima`,
+    new RegExp(
+      `recordVersion\\(tab\\.path, this\\.\\w+\\.serialized\\(\\)\\);\\r?\\n\\s+if \\(this\\.avisosOffice\\.primeiraVez\\(tab\\.path\\)\\) toast\\(avisoOfficeSemAutosave\\("${kind}"\\)`
+    ).test(fonte),
+    "o ramo do arquivo do usuário mudou"
+  );
+}
+const layoutSrc = ler("src/app/layout.ts");
+checa("o selo usa a decisão pura ('modoDoSelo') e tem o estado pendente", /modoDoSelo\(\{/.test(layoutSrc) && /is-pendente/.test(layoutSrc));
+checa("o caminho fica à vista quando o arquivo do Office está pendente", /topBtn\.hidden = modo === "salvando"/.test(layoutSrc));
+checa("o selo pendente tem cor própria (âmbar), sem a pulsação", /\.tb-autosave-badge\.is-pendente \{/.test(ler("src/styles/topbar.css")));
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

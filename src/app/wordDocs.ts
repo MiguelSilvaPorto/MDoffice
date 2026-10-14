@@ -5,6 +5,7 @@ import * as files from "../files";
 import { newTab, tabLabel, type DocTab } from "../tabs";
 import { moveHistory } from "../history";
 import { moveCommits } from "../snapshots";
+import { avisoOfficeSemAutosave } from "./seloAutosave";
 import { type WordTabData } from "../word/host";
 import { importDocx } from "../word/docxImport";
 import { exportDocx } from "../word/docxExport";
@@ -138,7 +139,8 @@ export const wordDocsMethods = {
   /**
    * Salvamento automático do Word. Rascunhos do app são regravados sempre; arquivos SEUS só
    * são gravados em Salvar — o motor pode simplificar recursos que ainda não entende
-   * (comentários, revisões, campos). O histórico guarda cópias de qualquer jeito.
+   * (comentários, revisões, campos). O histórico guarda cópias de qualquer jeito, o selo da
+   * barra mostra "Não salvo" e um aviso (uma vez por arquivo) explica o Ctrl+S.
    */
   async autosaveWord(this: App): Promise<void> {
     if (!this.settings.autosaveOn) return;
@@ -146,6 +148,7 @@ export const wordDocsMethods = {
     if (tab.kind !== "word" || !tab.dirty) return;
     if (tab.path && !tab.isDraft) {
       this.recordVersion(tab.path, this.wordHost.serialized());
+      if (this.avisosOffice.primeiraVez(tab.path)) toast(avisoOfficeSemAutosave("word"), "info", 9000);
       return;
     }
     try {

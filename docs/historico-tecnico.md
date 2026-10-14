@@ -5971,3 +5971,91 @@ antigas quando fizer sentido.
   vivo na apresentação** (`e80b957`) e **medição que não vai para o commit** (`28805e7`)
 - **Porquê:** mesma razão das rodadas anteriores (registrar no estado de autoria e promover no
   fechamento não cabem no mesmo commit).
+
+## src/app/seloAutosave.ts (novo)
+
+### 2026-10-14 · selo do salvamento · o arquivo do Office do usuário não é regravado sozinho (o recado)
+- **Local:** `ehArquivoOfficeDoUsuario`, `modoDoSelo`, `criarAvisosOffice` e `avisoOfficeSemAutosave`
+- **Linha:** `novo`
+- **Porquê:** o autosave **não** reescreve um arquivo SEU do Word/PowerPoint/Excel (o motor pode
+  simplificar animações, gráficos, comentários e revisões — sobrescrever seria perda silenciosa),
+  mas o selo da barra dizia "Salvando…" para sempre nesses arquivos (o texto vinha de
+  `saving || dirty`) e o chip do caminho sumia junto: quem editava um `.pptx` na pasta de rede lia
+  como um loop que nunca salva. As decisões saíram do `layout.ts` para um módulo puro porque são
+  testáveis sem DOM: o modo do selo (`desligado`/`salvando`/`nao-salvo`/`salvo`) e o aviso (uma vez
+  por arquivo, por sessão, com o caminho em minúsculas — o Windows não diferencia maiúsculas).
+  O MD\* e os rascunhos seguem no caminho antigo: para eles o autosave VAI gravar ("Salvando…" é
+  verdade).
+
+## src/app/layout.ts
+
+### 2026-10-14 · selo do salvamento · dizer a verdade e não esconder o caminho
+- **Local:** `updateAutosaveUI` e `refreshPath`
+- **Linha:** `if (this.saving || this.dirty)` → `modoDoSelo({…})` com os três recados
+  ("Salvando…"/"Não salvo"/"Salvo"); `+ badge.classList.toggle("is-pendente", modo === "nao-salvo")`;
+  `topBtn.hidden = on && (this.saving || this.dirty)` → `topBtn.hidden = modo === "salvando"`
+- **Porquê:** o selo do arquivo do Office do usuário precisa dizer **Não salvo** (âmbar, sem a
+  pulsação — nada está sendo gravado) e o tooltip explica o Ctrl+S. O chip do caminho deixa de se
+  esconder nesse estado: nada vai mudar sozinho, então esconder o caminho só tirava a referência —
+  e ele é o atalho para mostrar o arquivo na pasta.
+
+## src/app/app.ts
+
+### 2026-10-14 · selo do salvamento · os avisos vivem no App
+- **Local:** campo `avisosOffice` (abaixo de `saveQueue`) e o import do `seloAutosave`
+- **Linha:** `novo campo avisosOffice = criarAvisosOffice();`
+- **Porquê:** o aviso é uma vez por arquivo **por sessão** — um `Set` no App morre junto com a
+  janela, sem crescer em disco e sem esconder o aviso para sempre de quem voltar ao arquivo noutra
+  sessão (o selo "Não salvo" continua lembrando de qualquer jeito).
+
+## src/app/wordDocs.ts · src/app/powerpointDocs.ts · src/app/excelDocs.ts
+
+### 2026-10-14 · selo do salvamento · o aviso no ramo do arquivo do usuário
+- **Local:** `autosaveWord`, `autosavePpt` e `autosaveExcel` (o ramo `tab.path && !tab.isDraft`) e
+  os comentários das funções
+- **Linha:** depois do `recordVersion(...)`, `+ if (this.avisosOffice.primeiraVez(tab.path))
+  toast(avisoOfficeSemAutosave("<kind>"), "info", 9000);`
+- **Porquê:** o ramo já existia (rascunhos são regravados; arquivos SEUS só no Salvar) — faltava o
+  recado. O aviso sai na primeira alteração de cada arquivo, quando há algo a perder, e não é um
+  diálogo: é um `toast` informativo de 9 s; o selo "Não salvo" e o tooltip continuam ensinando
+  depois.
+
+## src/settingsPage.ts
+
+### 2026-10-14 · selo do salvamento · a descrição do toggle diz o que o autosave cobre
+- **Local:** a linha do `toggle("autosave", …)` em Configurações
+- **Linha:** "Grava o documento sozinho enquanto você escreve. Desligue se quiser salvar apenas com
+  Ctrl+S." → "Regrava rascunhos do app e documentos MD\* enquanto você escreve. Arquivos do Word,
+  PowerPoint e Excel são gravados só no Ctrl+S (o selo da barra mostra “Não salvo”)."
+- **Porquê:** a descrição antiga prometia demais — quem lê "grava o documento sozinho" e edita um
+  `.pptx` espera que o arquivo seja gravado; não é (o motor pode simplificar recursos), e agora
+  isso está dito no lugar onde o usuário liga/desliga o salvamento automático.
+
+## src/styles/topbar.css
+
+### 2026-10-14 · selo do salvamento · a cor do estado pendente
+- **Local:** `.tb-autosave-badge.is-pendente`
+- **Linha:** `novo` (o mesmo âmbar do `is-dirty`, sem herdar a pulsação que é só do `is-dirty`)
+- **Porquê:** "Não salvo" é um aviso parado — a pulsação existe para dizer "gravando agora" e não
+  pode valer para um estado em que **nada** está acontecendo.
+
+## scripts/testar-salvamento.mts
+
+### 2026-10-14 · selo do salvamento · 17 verificações (a régua pura + o contrato dos motores)
+- **Local:** o bloco "selo do salvamento: arquivo SEU do Office não é regravado sozinho"
+- **Linha:** `novo`
+- **Porquê:** a decisão saiu para o `seloAutosave.ts` justamente para ser testável sem DOM — o
+  teste cobre os quatro modos, a regra do "arquivo do usuário" (com/sem caminho, com/sem rascunho),
+  o aviso uma vez por arquivo (e o caminho sem diferenciar maiúsculas) e, por contrato, que os três
+  motores guardam versão + avisam sem gravar por cima, que o layout usa a decisão pura e que o
+  caminho fica à vista no estado pendente. Verificado também no navegador: selo âmbar "Não salvo"
+  com um `path` de rede falso, o chip à vista, o aviso saindo uma vez e o MD seguindo "Salvando…".
+
+## docs/powerpoint.md · docs/word.md · docs/excel.md
+
+### 2026-10-14 · selo do salvamento · o que o autosave cobre, por módulo
+- **Local:** "Abrir e salvar .pptx", "Salvar e exportar" (Word) e a lista do Excel
+- **Linha:** `+ a bala do salvamento automático` em cada um (rascunhos são regravados; arquivo SEU
+  só no Ctrl+S; o selo mostra "Não salvo" e o aviso aparece na primeira alteração)
+- **Porquê:** os docs diziam só "salvar .docx/.xlsx de verdade" — a regra do autosave (e o recado
+  novo da barra) precisam estar onde o usuário procura.

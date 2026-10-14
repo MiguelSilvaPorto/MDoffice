@@ -47,6 +47,10 @@ arquivos `.docx` de verdade.
 ## Salvar e exportar
 
 - **Salvar .docx de verdade** (`Ctrl+S`) — o arquivo abre no Word.
+- **Salvamento automático**: rascunhos do app são regravados sozinhos; um `.docx` **seu** só é
+  gravado no `Ctrl+S` (o motor pode simplificar comentários, revisões, campos). O selo da barra
+  mostra **Não salvo** enquanto houver alterações pendentes e o aviso explica na primeira vez —
+  o histórico guarda cópias de qualquer jeito.
 - **Exportar PDF** imprime a própria folha (com páginas, cabeçalho e rodapé).
 - **Importar do Office**: abre `.docx` direto das pastas do Office (e explica os formatos
   antigos `.doc`).

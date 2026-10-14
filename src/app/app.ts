@@ -49,6 +49,7 @@ import { layoutMethods } from "./layout";
 import { deepReviewMethods } from "./deepReview";
 import { trashMethods } from "./trash";
 import { criarFilaSalvamento } from "./saveQueue";
+import { criarAvisosOffice } from "./seloAutosave";
 
 export class App {
   editor!: MdEditor;
@@ -91,6 +92,12 @@ export class App {
       this.updateAutosaveUI();
     },
   });
+  /**
+   * Avisos (uma vez por arquivo, por sessão) de que um arquivo SEU do Office não é
+   * regravado sozinho — o motor pode simplificar recursos que ainda não entende e o
+   * arquivo só é gravado no Ctrl+S. O selo da barra mostra "Não salvo".
+   */
+  avisosOffice = criarAvisosOffice();
   backupDetail = "";
   /** Documentos com backup cujo original sumiu do disco. */
   missingBackups: backup.BackupEntry[] = [];

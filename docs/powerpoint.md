@@ -16,6 +16,11 @@ avisado ao abrir (nunca some em silêncio).
 - **Gravação** em XML do PowerPoint escrito pelo próprio app. Medido em 5 apresentações reais
   (64 lâminas): diferença média ≈2% para a renderização de referência, e o arquivo exportado,
   reaberto por um leitor independente, é idêntico em quase todas as lâminas.
+- **Salvamento automático**: rascunhos do app são regravados sozinhos; uma apresentação **sua** só
+  é gravada no `Ctrl+S` — o motor pode simplificar animações e recursos que ainda não entende e
+  nada é reescrito por baixo dos panos. Enquanto houver alterações pendentes o selo da barra mostra
+  **Não salvo** (com o caminho à vista) e o aviso explica na primeira alteração; o histórico do app
+  guarda cópias de qualquer jeito.
 - Ainda **não** reproduz (e avisa): tabelas de layout complexo, gráficos importados, SmartArt,
   imagens EMF/WMF, animações e transições antigas, e fontes embutidas **comprimidas**
   (MicroType Express) — aparecem com a família equivalente, mas voltam intactas ao salvar.

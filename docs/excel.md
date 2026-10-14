@@ -12,6 +12,9 @@ Planilha com grade que cresce sob demanda, fórmulas em português e abertura de
 - **Zoom** (aba Exibir e barra inferior) e **linhas de grade** ligáveis nas configurações.
 - **Abrir `.xlsx`/`.xlsm`** e **salvar `.xlsx`**; macros não são preservadas (o app sugere
   salvar como `.xlsx` para não sobrescrever o original).
+- **Salvamento automático**: rascunhos do app são regravados sozinhos; uma planilha **sua** só é
+  gravada no `Ctrl+S` — o selo da barra mostra **Não salvo** enquanto houver alterações pendentes
+  (o histórico guarda cópias de qualquer jeito).
 
 ## Fita (abas Início, Fórmulas e Exibir)
 

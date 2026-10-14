@@ -899,6 +899,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   mouse ou arrastar a barra de rolagem por baixo da tela de carregamento. Agora o `html`/`body` já
   nascem travados no próprio `index.html`, com os MESMOS valores do `base.css` (nada muda quando o
   app assume).
+- **Selo do salvamento honesto com arquivo SEU do Office**: ao editar um `.pptx`/`.docx`/`.xlsx`
+  que é seu, o autosave **não** reescreve o arquivo (o motor pode simplificar animações, gráficos,
+  comentários e revisões) — mas o selo da barra dizia **"Salvando…" para sempre**, como se houvesse
+  uma gravação que nunca termina, e o chip do caminho sumia junto. Agora ele mostra **"Não salvo"**
+  (âmbar, sem pulsar), o caminho continua à vista e, na primeira alteração de cada arquivo, um aviso
+  explica que só o **Ctrl+S** grava o arquivo (as alterações ficam no histórico do app). O MD\* segue
+  igual ("Salvando…" → "Salvo") e a descrição do toggle nas Configurações passou a dizer o que o
+  salvamento automático cobre. Verificações novas em `npm run test:salvamento`.
 
 **Ferramentas (dev)**
 

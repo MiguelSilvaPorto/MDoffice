@@ -6,6 +6,7 @@ import * as files from "../files";
 import { newTab, tabLabel, type DocTab } from "../tabs";
 import { moveHistory } from "../history";
 import { moveCommits } from "../snapshots";
+import { avisoOfficeSemAutosave } from "./seloAutosave";
 import { type ExcelTabData } from "../excel/host";
 import { livroParaXlsx } from "../excel/xlsxexport";
 import { xlsxParaLivro } from "../excel/xlsximport";
@@ -157,13 +158,15 @@ export const excelDocsMethods = {
    * Salvamento automático. Mesma regra do Word e do PowerPoint: rascunhos do
    * app são regravados sempre; arquivos SEUS só são gravados em Salvar — o motor
    * converte a planilha e recursos que ele ainda não entende podem ser
-   * simplificados. O histórico guarda cópias de qualquer jeito.
+   * simplificados. O histórico guarda cópias de qualquer jeito, o selo da barra mostra
+   * "Não salvo" e um aviso (uma vez por arquivo) explica o Ctrl+S.
    */
   async autosaveExcel(this: App): Promise<void> {
     const tab = this.tab;
     if (tab.kind !== "xlsx" || !tab.dirty) return;
     if (tab.path && !tab.isDraft) {
       this.recordVersion(tab.path, this.excelHost.serialized());
+      if (this.avisosOffice.primeiraVez(tab.path)) toast(avisoOfficeSemAutosave("xlsx"), "info", 9000);
       return;
     }
     try {

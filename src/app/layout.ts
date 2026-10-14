@@ -3,6 +3,7 @@
 import type { App } from "./app";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { FormatoCantos, NivelAnimacao } from "../settingsPage";
+import { modoDoSelo } from "./seloAutosave";
 import { $, baseName, docDirOf, clamp, loadJSON, toast, saveJSON } from "../util";
 
 export const layoutMethods = {
@@ -66,26 +67,45 @@ export const layoutMethods = {
     btn.setAttribute("aria-checked", on ? "true" : "false");
     btn.classList.toggle("is-active", on);
 
+    // Com um arquivo SEU do Office, o autosave não escreve o arquivo — o selo precisa dizer
+    // a verdade ("Não salvo") e não fingir uma gravação que nunca chega ao fim.
+    const modo = modoDoSelo({
+      ligado: on,
+      kind: this.tab.kind,
+      temPath: !!this.path,
+      rascunho: this.isDraft,
+      sujo: this.dirty,
+      salvando: this.saving,
+    });
+
     badge.classList.toggle("is-on", on);
     badge.classList.toggle("is-off", !on);
-    badge.classList.toggle("is-dirty", on && this.dirty);
+    badge.classList.toggle("is-dirty", modo === "salvando" && this.dirty);
+    badge.classList.toggle("is-pendente", modo === "nao-salvo");
 
-    if (!on) {
+    if (modo === "desligado") {
       btn.title = "Salvamento Automático: Desativado (clique para ligar)";
       badge.title = "Salvamento Automático desligado. Pressione Ctrl+S para salvar.";
       text.textContent = "Desativado";
       if (iconUse) iconUse.setAttribute("href", "#i-cloud-off");
+    } else if (modo === "nao-salvo") {
+      btn.title = "Salvamento Automático: Ativado (clique para desligar)";
+      badge.title =
+        `Alterações não salvas em ${this.path ? baseName(this.path) : "documento"}: o salvamento automático ` +
+        "não reescreve arquivos do Word, PowerPoint e Excel — recursos que o app ainda não entende podem " +
+        "se perder. Salve com Ctrl+S.";
+      text.textContent = "Não salvo";
+      if (iconUse) iconUse.setAttribute("href", "#i-save");
+    } else if (modo === "salvando") {
+      btn.title = "Salvamento Automático: Ativado (clique para desligar)";
+      badge.title = this.saving ? "Salvando documento…" : "Salvando alterações pendentes…";
+      text.textContent = "Salvando…";
+      if (iconUse) iconUse.setAttribute("href", "#i-cloud");
     } else {
       btn.title = "Salvamento Automático: Ativado (clique para desligar)";
-      if (this.saving || this.dirty) {
-        badge.title = this.saving ? "Salvando documento…" : "Salvando alterações pendentes…";
-        text.textContent = "Salvando…";
-        if (iconUse) iconUse.setAttribute("href", "#i-cloud");
-      } else {
-        badge.title = this.statusSaved || "Todas as alterações foram salvas";
-        text.textContent = "Salvo";
-        if (iconUse) iconUse.setAttribute("href", "#i-check");
-      }
+      badge.title = this.statusSaved || "Todas as alterações foram salvas";
+      text.textContent = "Salvo";
+      if (iconUse) iconUse.setAttribute("href", "#i-check");
     }
     this.refreshPath();
   },
@@ -145,10 +165,18 @@ export const layoutMethods = {
     }
 
     if (topBtn && topText) {
-      // Exibe na topbar à direita quando salvo ou quando tem caminho do arquivo
-      const on = this.settings.autosaveOn;
-      const isSaving = on && (this.saving || this.dirty);
-      topBtn.hidden = isSaving;
+      // Exibe na topbar à direita quando salvo ou quando tem caminho do arquivo. Com um arquivo
+      // do Office pendente o caminho FICA à vista: o autosave não vai gravar (o selo diz
+      // "Não salvo") e o chip é o atalho para mostrar o arquivo na pasta.
+      const modo = modoDoSelo({
+        ligado: this.settings.autosaveOn,
+        kind: this.tab.kind,
+        temPath: !!this.path,
+        rascunho: this.isDraft,
+        sujo: this.dirty,
+        salvando: this.saving,
+      });
+      topBtn.hidden = modo === "salvando";
       topText.textContent = dirText || baseName(this.path);
       topBtn.title = fullTitle;
     }

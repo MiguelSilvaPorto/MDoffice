@@ -216,6 +216,11 @@
   color: #eab308;
 }
 
+/* Arquivo SEU do Office com alterações: o autosave não vai gravar (sem pulsar) */
+.tb-autosave-badge.is-pendente {
+  color: #eab308;
+}
+
 .tb-autosave-badge.is-off {
   color: var(--muted);
 }

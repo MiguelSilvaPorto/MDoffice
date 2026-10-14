@@ -386,7 +386,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
 
           <h4 class="st-group">Salvamento</h4>
           <div class="st-list">
-            ${toggle("autosave", "Salvamento automático", "Grava o documento sozinho enquanto você escreve. Desligue se quiser salvar apenas com Ctrl+S.", s.autosaveOn, "i-save")}
+            ${toggle("autosave", "Salvamento automático", "Regrava rascunhos do app e documentos MD* enquanto você escreve. Arquivos do Word, PowerPoint e Excel são gravados só no Ctrl+S (o selo da barra mostra “Não salvo”).", s.autosaveOn, "i-save")}
             ${toggle("hist", "Guardar versões dos documentos", "Uma cópia automática a cada 5 minutos (se o texto mudou) e ao salvar.", s.historyOn, "i-clock")}
             <div class="st-row">
               ${rowIcon("i-list")}
