@@ -7327,3 +7327,13 @@ antigas quando fizer sentido.
   ganhou **BOM** e o diff virou o arquivo inteiro): desfeita com `git checkout --conflict=merge` e
   refeita com o editor e com um script em Node que preserva os bytes — o BOM é justamente o tipo
   de ruído que a checagem de marcador não pega, então ficou o registro.
+
+### 2026-10-14 · esta tarefa · promoção das entradas do teto do cache
+- **Local:** Geral → "Não adicionado" → Backend e Frontend → "Adicionado" das mesmas listas
+- **Linha:** 2 entradas movidas — **Limite do cache do WebView (lado nativo)** e **Cache do WebView
+  com teto escolhido** (`57c8e37`), com as seções de origem ficando com "- (nada no momento)"; a
+  linha em branco sobrando no "Ferramentas (dev)" do Geral saiu na mesma passada
+- **Porquê:** o commit está na `main` (conferido com `git merge-base --is-ancestor` antes de
+  mover), então a promoção não afirma nada falso; como nas rodadas anteriores, ela anda num passo
+  curto de docs porque o registro de autoria e a promoção não cabem no mesmo commit do
+  `fechar.ps1`. Nada de worktree em andamento foi tocado.

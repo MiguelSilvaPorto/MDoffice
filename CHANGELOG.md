@@ -772,6 +772,18 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Backend**
 
+- (nada no momento)
+
+**Frontend**
+
+- (nada no momento)
+
+**Ferramentas (dev)**
+
+### Adicionado (na main)
+
+**Backend**
+
 - **Limite do cache do WebView (lado nativo)**: a janela do app passou a ser montada pelo
   `lib.rs` (o `tauri.conf.json` ficou com `windows: []`) porque o `--disk-cache-size` precisa
   chegar **junto com o WebView** — o arquivo de configuração é compilado no app e não dá para
@@ -782,23 +794,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   e o `storage_report` passou a devolver `cache_bytes` — a soma só das pastas de cache do perfil
   (dentro de `EBWebView\Default`), sem preferências e sem contar duas vezes o
   `Service Worker\CacheStorage`.
-
-**Frontend**
-
-- **Cache do WebView com teto escolhido**: a linha nova **Cache do WebView** em
-  **Configurações ▸ Armazenamento** mostra o que está em disco agora (ex.: "55.1 MB agora") e
-  deixa escolher o teto — **Automático** (o WebView decide, como sempre foi), **512 MB**, **1 GB**,
-  **2 GB** ou **4 GB** — no mesmo controle dos outros ajustes. A escolha vale na **próxima
-  abertura** do app (o WebView só lê o argumento quando a janela nasce): até lá a linha avisa
-  "vale na próxima abertura do app" e, depois de reabrir, mostra só o limite em uso. A conta do
-  "Outros dados do app" continua a mesma; a linha nova é que separa o cache das preferências.
-
-**Ferramentas (dev)**
-
-
-### Adicionado (na main)
-
-**Backend**
 
 - **Salvamento automático em pasta de rede (UNC/SMB) não trava mais a interface**: os comandos
   de arquivo e de backup passaram a rodar no pool de tarefas do Tauri (`#[tauri::command(async)]`).
@@ -831,6 +826,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Cache do WebView com teto escolhido**: a linha nova **Cache do WebView** em
+  **Configurações ▸ Armazenamento** mostra o que está em disco agora (ex.: "55.1 MB agora") e
+  deixa escolher o teto — **Automático** (o WebView decide, como sempre foi), **512 MB**, **1 GB**,
+  **2 GB** ou **4 GB** — no mesmo controle dos outros ajustes. A escolha vale na **próxima
+  abertura** do app (o WebView só lê o argumento quando a janela nasce): até lá a linha avisa
+  "vale na próxima abertura do app" e, depois de reabrir, mostra só o limite em uso. A conta do
+  "Outros dados do app" continua a mesma; a linha nova é que separa o cache das preferências.
 - **Marcador de conflito no histórico (limpeza)**: o fechamento da tarefa das Ideias deixou um
   bloco de conflito (`<<<<<<<` / `=======` / `>>>>>>>`) **commitado** no
   `docs/historico-tecnico.md` — a resolução tinha sido feita e conferida, mas o `fechar.ps1`
