@@ -11,6 +11,7 @@ import { baseTheme, lightHL, darkHL } from "./editor/theme";
 import { issueField, setIssuesEffect } from "./editor/issues";
 import { setAlignment } from "./editor/alignment";
 import { wrapSelection, toggleLinePrefix, cycleHeading, continueList } from "./editor/formatting";
+import { partesDaTroca } from "./diffTroca";
 import { synonymsFor, type WritingIssue } from "../broker/writing";
 import { createGhostTextExtension, setGhostEffect } from "../broker/autocomplete";
 
@@ -269,14 +270,28 @@ export class MdEditor {
     return false;
   }
 
-  /** Trecho do texto com a correção já aplicada ("…antes. Depois…"), para o chip do aviso. */
-  private fixPreview(view: EditorView, issue: WritingIssue): string {
+  /**
+   * Trecho do aviso para o chip "Corrigir", em partes: o contexto fica neutro e a troca ganha
+   * cor — o que sai (vermelho, riscado) e o que entra (verde). Quando só um lado muda, o comum
+   * fica neutro ("pronto" + verde "."); quando os dois mudam, mostra os trechos inteiros
+   * ("responsavo" riscado → "responsável" verde).
+   */
+  private fixPreviewParts(view: EditorView, issue: WritingIssue): { tipo: "texto" | "rem" | "add"; texto: string }[] {
     const doc = view.state.doc;
     const fix = issue.fix ?? "";
     const from = Math.max(0, issue.from - 30);
     const to = Math.min(doc.length, issue.to + 36);
-    const trecho = `${doc.sliceString(from, issue.from)}${fix}${doc.sliceString(issue.to, to)}`.replace(/\s+/g, " ").trim();
-    return `${from > 0 ? "…" : ""}${trecho}${to < doc.length ? "…" : ""}`;
+    const velho = doc.sliceString(issue.from, issue.to);
+    const antes = doc.sliceString(from, issue.from).replace(/\s+/g, " ").trimStart();
+    const depois = doc.sliceString(issue.to, to).replace(/\s+/g, " ").trimEnd();
+    // só o miolo que muda de verdade fica colorido (prefixo/sufixo comuns ficam neutros)
+    const partes: { tipo: "texto" | "rem" | "add"; texto: string }[] = [];
+    if (from > 0) partes.push({ tipo: "texto", texto: "…" });
+    if (antes) partes.push({ tipo: "texto", texto: antes });
+    partes.push(...partesDaTroca(velho, fix));
+    if (depois) partes.push({ tipo: "texto", texto: depois });
+    if (to < doc.length) partes.push({ tipo: "texto", texto: "…" });
+    return partes;
   }
 
   private showIssuePopup(issue: WritingIssue, view: EditorView): void {
@@ -289,17 +304,27 @@ export class MdEditor {
     title.textContent = issue.message;
     pop.append(title);
 
-    const addChip = (row: HTMLElement, text: string, onClick: () => void, ghost = false) => {
+    const spanTexto = (classe: string, texto: string) => {
+      const s = document.createElement("span");
+      if (classe) s.className = classe;
+      s.textContent = texto;
+      return s;
+    };
+    /** Chip com o conteúdo montado à mão (para colorir o diff); `titulo` é a dica com o texto todo. */
+    const addChipDom = (row: HTMLElement, montar: (b: HTMLButtonElement) => void, titulo: string, onClick: () => void, ghost = false) => {
       const b = document.createElement("button");
       b.type = "button";
       b.className = ghost ? "cm-issue-chip ghost" : "cm-issue-chip";
-      b.textContent = text;
-      b.title = text; // o chip pode encurtar com "…"; a dica mostra o texto todo
+      montar(b);
+      b.title = titulo; // o chip pode encurtar com "…"; a dica mostra o texto todo
       b.addEventListener("click", (e) => {
         e.preventDefault();
         onClick();
       });
       row.append(b);
+    };
+    const addChip = (row: HTMLElement, text: string, onClick: () => void, ghost = false) => {
+      addChipDom(row, (b) => { b.textContent = text; }, text, onClick, ghost);
     };
 
     if (issue.suggestions.length) {
@@ -309,18 +334,27 @@ export class MdEditor {
       label.className = "cm-issue-label";
       label.textContent = "Trocar por:";
       row.append(label);
+      const removido = view.state.doc.sliceString(issue.from, issue.to).replace(/\s+/g, " ").trim();
       for (const s of issue.suggestions.slice(0, 6)) {
-        addChip(row, s, () => {
-          view.dispatch({ changes: { from: issue.from, to: issue.to, insert: s } });
-          this.closeIssuesPopup();
-          this.onIssuesChanged?.();
-        });
+        addChipDom(
+          row,
+          (b) => {
+            if (removido && removido !== s) b.append(spanTexto("cm-issue-rem", removido), spanTexto("cm-issue-seta", "→"));
+            b.append(spanTexto("cm-issue-add", s));
+          },
+          removido && removido !== s ? `${removido} → ${s}` : s,
+          () => {
+            view.dispatch({ changes: { from: issue.from, to: issue.to, insert: s } });
+            this.closeIssuesPopup();
+            this.onIssuesChanged?.();
+          }
+        );
       }
       pop.append(row);
     }
 
     // Aviso de estilo com correção calculada e sem lista de trocas (ex.: quebrar frase comprida):
-    // mostra o trecho JÁ corrigido, para aplicar num clique — a regra sabe onde quebrar.
+    // mostra o trecho com o diff colorido — o que sai em vermelho (riscado), o que entra em verde.
     if (!issue.suggestions.length && issue.kind === "style" && issue.fix !== undefined) {
       const row = document.createElement("div");
       row.className = "cm-issue-row";
@@ -328,11 +362,19 @@ export class MdEditor {
       label.className = "cm-issue-label";
       label.textContent = "Corrigir:";
       row.append(label);
-      addChip(row, this.fixPreview(view, issue), () => {
-        view.dispatch({ changes: { from: issue.from, to: issue.to, insert: issue.fix! } });
-        this.closeIssuesPopup();
-        this.onIssuesChanged?.();
-      });
+      const partes = this.fixPreviewParts(view, issue);
+      addChipDom(
+        row,
+        (b) => {
+          for (const p of partes) b.append(spanTexto(p.tipo === "rem" ? "cm-issue-rem" : p.tipo === "add" ? "cm-issue-add" : "", p.texto));
+        },
+        partes.map((p) => p.texto).join(""),
+        () => {
+          view.dispatch({ changes: { from: issue.from, to: issue.to, insert: issue.fix! } });
+          this.closeIssuesPopup();
+          this.onIssuesChanged?.();
+        }
+      );
       pop.append(row);
     }
 

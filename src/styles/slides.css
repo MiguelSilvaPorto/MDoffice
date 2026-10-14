@@ -275,6 +275,23 @@
   border-color: var(--border);
 }
 
+/* diff do popup: o que o app sugere REMOVER fica vermelho e riscado; o que ENTRA fica verde */
+.cm-issue-rem {
+  color: var(--danger);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--danger) 55%, transparent);
+}
+
+.cm-issue-add {
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.cm-issue-seta {
+  margin: 0 5px;
+  color: var(--muted);
+}
+
 /* painel de revisão */
 .rv-modal {
   width: min(880px, 94vw);

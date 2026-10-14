@@ -13,6 +13,7 @@
     "check": "tsc --noEmit",
     "test:excel": "node scripts/testar-excel.mjs && node scripts/testar-grade-excel.mjs",
     "test:correcao": "node scripts/testar-correcao.mjs",
+    "test:diff": "node scripts/testar-diff-troca.mjs",
     "test:log": "node scripts/testar-snapshots.mts",
     "test:backup": "node scripts/testar-backup.mts && node scripts/testar-backup-e2e.cjs",
     "test:lixeira": "node scripts/testar-lixeira.mts",
