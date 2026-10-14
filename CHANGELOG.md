@@ -311,6 +311,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   vizinhas) e pela **vizinhança de teclas**; as **grafias prováveis** (ss↔ç, ch↔x, dobradas) são
   procuradas direto no vocabulário. "excessao" → **exceção**, "analize" → **análise**, "pesquiza" →
   **pesquisa** e "obrigdao" → **obrigado** agora saem certos - e sozinhos. Corpus: **34/34**.
+- **"Você quis dizer" sem falsos positivos**: o aviso só aparece quando a diferença é **erro de
+  digitação típico** (inversão de letras, tecla vizinha do ABNT2, confusão c↔ç/s↔z/g↔j/m↔n, "h"
+  mudo ou letra dobrada). Antes qualquer troca de letra valia e palavras reais eram questionadas
+  ("paridade" → "caridade", "parse" → "passe"); medido com o harness: **3,25 → 0,00 falsos
+  positivos por 1000 palavras**, com o acerto da auto-correção em 92%.
 
 **Ferramentas (dev)**
 

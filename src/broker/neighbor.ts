@@ -7,6 +7,7 @@
 
 import { COMMON_WORDS } from "./data/commonWords";
 import { FREQUENTES, FREQUENTES_EXATAS } from "./palavras";
+import { distanciaPonderada } from "./spell/confusoes";
 
 /** A partir de quantas ocorrências a palavra é considerada de uso real. */
 const USO_REAL = 20;
@@ -56,6 +57,13 @@ export function commonNeighbor(word: string, contagem: (w: string) => number): s
     const frequenciaCandidata = contagem(candidate);
     if (frequenciaCandidata < PISO_CANDIDATA) continue;
     if (frequenciaCandidata < VANTAGEM * Math.max(frequenciaOriginal, 1)) continue;
+    // E a diferença tem de ser ERRO DE DIGITAÇÃO típico: inversão de letras, tecla
+    // vizinha do ABNT2, confusão do português (c/ç, s/z, g/j, m/n…), "h" mudo ou letra
+    // dobrada. Trocar uma letra por QUALQUER outra não é erro de digitação — é outra
+    // palavra: era aí que nasciam os falsos positivos ("paridade" → "caridade",
+    // "parse" → "passe", "rasas" → "casas", "acento" → "aceito"). Medido no F0:
+    // 13 de 13 falsos positivos vinham deste caminho.
+    if (distanciaPonderada(lower, candidate, 1) >= 1) continue;
     return candidate;
   }
   return null;

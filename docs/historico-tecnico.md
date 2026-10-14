@@ -2360,6 +2360,30 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** bala nova depois do “Modo formal”
 - **Porquê:** o documento do módulo descreve o que o app faz; o catálogo por classe, as frases por janela e o MIP são funcionalidades visíveis.
 
+## src/broker/neighbor.ts
+
+### 2026-10-13 · vizinho sem falso positivo · a edição precisa ser erro de digitação
+- **Local:** `commonNeighbor`, no laço dos candidatos
+- **Linha:** depois das guardas (uso real, listas, piso, vantagem) entra
+  `if (distanciaPonderada(lower, candidate, 1) >= 1) continue;`
+- **Porquê:** o F0 mediu **3,25 falsos positivos por 1000 palavras e todos (13 de 13) vinham
+  deste caminho** — a função aceitava QUALQUER troca de uma letra, então palavra real e rara
+  virava "erro de digitação" de uma comum ("paridade" → "caridade", "parse" → "passe", "rasas" →
+  "casas", "acento" → "aceito"). A regra nova usa o que a tarefa de confusões/teclado criou: só
+  vale se a distância **ponderada** for menor que 1, isto é, inversão de letras, tecla vizinha,
+  confusão do português, "h" mudo ou letra dobrada. Medido de novo com o mesmo harness:
+  **0,00 falsos positivos por 1000 palavras** (0 em 4.275), o corpus segue **34/34 e 34/34** e o
+  acerto da auto-correção subiu de 89-91% para **92%** (a sugestão errada também não ocupa mais o
+  lugar da certa).
+
+## docs/medicao-corretor.md
+
+### 2026-10-13 · vizinho sem falso positivo · números novos ao lado do baseline
+- **Local:** seção de falsos positivos
+- **Linha:** registrada a comparação (3,25 → 0,00) com o commit
+- **Porquê:** o documento é o termômetro do F1; deixar o número velho sem o novo faria a próxima
+  medição parecer igual à primeira.
+
 ---
 
 ## Próximos registros

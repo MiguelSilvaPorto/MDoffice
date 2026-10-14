@@ -220,6 +220,30 @@ Enquanto isso, a lição de método: um `.toml?raw` novo em `src/broker/abnt/` *
 bundle esbuild sem plugin** — o `scripts/testar-correcoes.mts` já ganhou o dele, e este harness
 tem o próprio (seção "empacotamento"); quem escrever outro harness precisa do mesmo.
 
+### Terceira medição — `neighbor` sem falso positivo
+
+O F0 apontou que **todos** os falsos positivos vinham do "você quis dizer" (`neighbor.ts`) sobre
+palavra real, e a correção foi exigir que a diferença seja **erro de digitação típico** (inversão,
+tecla vizinha, confusão do português, "h" mudo ou dobra) — ver o histórico técnico. Mesmo conjunto,
+commit da medição logo após a mudança:
+
+| métrica | `cdd1c84` | `neighbor` corrigido |
+| --- | ---: | ---: |
+| r@1 total | 80% | 78% |
+| r@3 total | 89% | **86%** |
+| precisão do 1º lugar | 84% | 83% |
+| auto% | 82% | 80% |
+| acerto do `best` | 91% | **92%** |
+| `auto ≠ gabarito` | 23 | **19** |
+| **falsos positivos / 1000 palavras** | **3,25** | **0,00** |
+| p50 / p95 ms por palavra | 0,185 / 0,998 | 0,182 / 1,026 |
+
+Leitura curta: o ruído **zerou** (0 em 4.275 palavras) e as auto-aplicações erradas caíram de 23
+para 19; em troca, o recall cedeu ~2 p.p. no conjunto sintético — parte dele era justamente o
+"vizinho" acertando por sorte em cima de troca sem classe. O corpus de regressão segue **34/34 e
+34/34**. O alvo do F1 que fica na mesa é o **ranking das classes "letra a menos" e "letra a mais"**
+(`mdia`→"dia", `fecar`→"ficar", `lissta`→"está"): o gabarito está na lista, mas não em 1º.
+
 ---
 
 *Números do commit `120cc9e`. Se um rebase trouxer mudanças ao corretor, esta linha de base
