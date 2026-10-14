@@ -3574,3 +3574,108 @@ antigas quando fizer sentido.
 - **Porquê:** a tarefa do grupo S já tinha corrigido `carregadas >= 10` e o `.map(I.regraDeToml)`
   (que passava o índice como registro) na main; no rebase a versão dela prevaleceu e este
   commit não reescreve a mesma linha.
+
+## src-tauri/src/commands/files.rs
+
+### 2026-10-14 · este commit · salvamento automático fora da thread principal
+- **Local:** atributos dos comandos e o novo `gravar_bytes`
+- **Linha:** `#[tauri::command]` → `#[tauri::command(async)]` em `load_text`, `save_text`,
+  `save_binary`, `read_file_data_url`, `rename_file`, `create_folder`, `unique_md_path`; o bloco
+  `if !dir.exists() { create_dir_all }` antes de `fs::write` virou `gravar_bytes(p, bytes)`
+- **Porquê:** no Tauri 2 um comando sem `async` roda na **thread principal** (doc oficial: “Commands
+  without the async keyword are executed on the main thread unless defined with
+  `#[tauri::command(async)]`”) — e `fs::read`/`fs::write` num share UNC/SMB custa centenas de ms a
+  segundos, travando a janela e o IPC a cada salvamento automático. Com o atributo o comando é
+  despachado para o pool do runtime e a main thread segue respondendo. O `exists()` da pasta antes
+  de cada gravação virou recuperação do erro `NotFound` (cria a pasta e tenta de novo): uma ida ao
+  disco a menos por salvamento no caminho comum, sem perder a criação de pasta no primeiro
+  salvamento nem depois de a pasta ser apagada por fora. A ordem de segurança continua igual
+  (`protect_before_write` antes de gravar).
+
+## src-tauri/src/commands/backup.rs
+
+### 2026-10-14 · este commit · cópia lê o documento uma única vez; comandos fora da main thread
+- **Local:** `gravar_copia`/`gravar_copia_com` (leitor injetável), `write_copy_atomic` (novo),
+  `same_bytes` → `same_bytes_with`, e o atributo de todos os 17 comandos `backup_*`
+- **Linha:** `same_bytes(&src, …)` + `fs::copy(&src, …)` (uma leitura do original por raiz, em
+  série) → `let bytes = match ler_original(&src)` **uma vez**, reusado na comparação e nas cópias;
+  `#[tauri::command]` → `#[tauri::command(async)]`
+- **Porquê:** em pasta de rede o documento era lido inteiro uma vez por raiz (comparação) e de novo
+  por raiz (cópia) — 4 leituras de rede com as duas pastas, em série, a cada cópia. O leitor
+  injetável de `gravar_copia_com` existe para o teste contar as leituras e prender a regra. A
+  gravação da cópia datada virou atômica (`.nome.tmp` + rename) com o temporário começando por `.`
+  para o índice nunca confundi-lo com uma cópia; o comportamento (pular conteúdo igual, `.orig`,
+  `failed` por raiz) ficou idêntico. Os comandos saíram da thread principal pelo mesmo motivo de
+  `files.rs`: `backup_write` é chamado logo depois do salvamento do dia e `backup_missing` confere
+  `exists()` de originais que podem estar na rede.
+
+## src-tauri/src/commands/tests.rs
+
+### 2026-10-14 · este commit · gravação sem `exists()` prévio
+- **Local:** teste `gravar_bytes_nao_gasta_ida_extra_e_cria_a_pasta_quando_falta`
+- **Linha:** novo teste
+- **Porquê:** prende o comportamento do caminho quente (pasta existente: grava direto), da pasta
+  que falta (cria e tenta de novo), da pasta apagada por fora no meio da sessão (recria) e do erro
+  real que chega ao app quando o caminho é impossível — é ele que alimenta o aviso de “não salvou”.
+
+## src/app/saveQueue.ts
+
+### 2026-10-14 · este commit · fila do salvamento automático (single-flight + coalescência)
+- **Local:** arquivo novo — `criarFilaSalvamento` (`pedir`, `salvando`, `aoMudarEstado`)
+- **Linha:** “novo arquivo”
+- **Porquê:** o autosave antigo (`if (this.saving) return`) **descartava** o pedido que chegasse
+  durante uma gravação; com gravações de segundos (pasta de rede), a última parte do texto ficava
+  sem salvar até a próxima tecla/blur/fechar. A fila garante uma gravação por vez, transforma
+  pedidos durante a gravação em **uma** nova gravação (com o estado mais recente, lido na hora da
+  gravação) e faz o `await` esperar a fila esvaziar — é o que fechar a janela e trocar de aba
+  precisam para não perder a última palavra. A digitação não espera: `pedir()` só agenda.
+
+## src/app/documents.ts
+
+### 2026-10-14 · este commit · autosave pela fila
+- **Local:** `autosave` e o novo `salvarAgora`
+- **Linha:** o corpo do antigo `autosave` (com `if (this.saving) return` e o `try/finally` que
+  mexia em `this.saving`) → `autosave` só chama `this.saveQueue.pedir()`; o miolo virou
+  `salvarAgora`, executado pela fila
+- **Porquê:** a fila assume o controle de “um por vez” e do indicador; o miolo continua idêntico
+  (incluindo o `dirty` só limpo quando o texto do editor não mudou durante a gravação), então
+  rascunho, histórico, cópia do dia e aviso de erro seguem intactos.
+
+## src/app/app.ts
+
+### 2026-10-14 · este commit · a fila vive no App
+- **Local:** campo `saveQueue` (abaixo de `saving`)
+- **Linha:** novo campo `saveQueue = criarFilaSalvamento({ gravar: () => this.salvarAgora(), aoMudarEstado: … })`
+- **Porquê:** `this.saving` (lido pelo indicador “Salvando…” e pelo caminho na topbar) passa a ser
+  espelho da fila; o callback mantém a interface em sincronia sem que o miolo do salvamento precise
+  saber da fila.
+
+## scripts/testar-salvamento.mts
+
+### 2026-10-14 · este commit · fila com disco lento + contratos do Rust
+- **Local:** arquivo novo — blocos “fila do salvamento”, “Rust: I/O fora da thread principal” e
+  “segurança”
+- **Linha:** “novo arquivo”
+- **Porquê:** não há servidor de rede no ambiente para medir SMB de verdade; o teste simula cada
+  gravação com 80–150 ms de atraso e prende: `pedir()` retorna na hora (a interface não espera o
+  disco), rajada durante a gravação vira 1 gravação + 1 coalescida, nunca há duas em paralelo,
+  pedido durante a gravação não é perdido, o estado gravado é o mais recente e uma falha não
+  derruba a fila. Os contratos conferem `#[tauri::command(async)]` nos comandos críticos, que
+  `save_text`/`save_binary` continuam protegendo antes de gravar e que a cópia de backup lê o
+  documento uma única vez.
+
+## package.json
+
+### 2026-10-14 · este commit · test:salvamento
+- **Local:** `scripts`
+- **Linha:** nova linha `"test:salvamento": "node scripts/testar-salvamento.mts"`
+- **Porquê:** o teste da fila roda pelo nome, como os demais.
+
+## docs/md.md
+
+### 2026-10-14 · este commit · salvamento automático em pasta de rede
+- **Local:** “Editor e pré-visualização”, bala do salvamento automático
+- **Linha:** “**Salvamento automático** a cada alteração;” → acrescenta que a gravação não trava a
+  interface (mesmo em pasta de rede) e que nenhuma alteração fica sem salvar
+- **Porquê:** o comportamento visível mudou (o app engasgava a cada salvamento em UNC/SMB e podia
+  deixar o fim do texto sem gravar).

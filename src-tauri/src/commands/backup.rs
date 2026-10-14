@@ -11,6 +11,11 @@
 //!
 //! O `backup_index` devolve as métricas (quantidade, bytes, datas) que o monitor de
 //! espaço vai ler depois; nada aqui apaga nada sozinho além da rotação combinada.
+//!
+//! Os comandos são `#[tauri::command(async)]`: ler e copiar o documento (que pode
+//! estar numa pasta de rede) sai da thread principal — senão cada cópia trava a
+//! interface. E o documento é lido **uma única vez** por gravação: os mesmos bytes
+//! servem à comparação com a última cópia e à gravação em todas as raízes.
 
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -88,19 +93,19 @@ fn store_config(app: &tauri::AppHandle, cfg: &BackupConfig) -> Result<(), String
 }
 
 /// Configuração atual do backup.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn backup_config(app: tauri::AppHandle) -> Result<BackupConfig, String> {
     Ok(load_config(&app))
 }
 
 /// Grava a configuração (o app chama quando você muda um ajuste).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn backup_save_config(app: tauri::AppHandle, config: BackupConfig) -> Result<(), String> {
     store_config(&app, &config)
 }
 
 /// Pasta de backup da própria aplicação (`…\AppData\Local\com.mdoffice.desktop\backups`).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn backup_app_root(app: tauri::AppHandle) -> Result<String, String> {
     let dir = data_dir(&app)?.join("backups");
     fs::create_dir_all(&dir).map_err(io_err)?;
@@ -108,7 +113,7 @@ pub fn backup_app_root(app: tauri::AppHandle) -> Result<String, String> {
 }
 
 /// Prepara (cria se preciso) a pasta que o usuário escolheu e devolve o caminho.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn backup_prepare_root(path: String) -> Result<String, String> {
     let dir = PathBuf::from(&path);
     if dir.exists() && !dir.is_dir() {
@@ -140,7 +145,7 @@ pub fn active_roots(app: &tauri::AppHandle) -> Vec<PathBuf> {
 }
 
 /// Pastas de backup ativas (para mostrar na interface).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn backup_roots(app: tauri::AppHandle) -> Result<Vec<String>, String> {
     let mut out = Vec::new();
     for r in active_roots(&app) {
@@ -425,7 +430,7 @@ fn merge_entries(roots: &[PathBuf], original: &str) -> BackupEntry {
 }
 
 /// Cópias de um documento (é o que a aba "Backup em disco" da tela de Histórico mostra).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn backup_list(app: tauri::AppHandle, path: String) -> Result<BackupEntry, String> {
     Ok(merge_entries(&active_roots(&app), &path))
 }
@@ -444,7 +449,7 @@ pub struct BackupWriteResult {
 /// Grava uma cópia datada do arquivo nas duas raízes.
 ///
 /// `stamp` é a data/hora local já formatada pelo app (`2026-10-09_10-42-13`).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn backup_write(app: tauri::AppHandle, path: String, stamp: String) -> Result<BackupWriteResult, String> {
     let cfg = load_config(&app);
     if !cfg.enabled {
@@ -459,12 +464,38 @@ pub fn backup_write(app: tauri::AppHandle, path: String, stamp: String) -> Resul
 }
 
 /// O miolo da gravação, sem depender do app (é o que os testes exercitam).
+///
+/// Lê o documento **uma única vez** e reusa os bytes na comparação e em todas as
+/// raízes: antes, `same_bytes` e `fs::copy` reliam o original por raiz — em pasta
+/// de rede isso era uma ida ao disco a mais por raiz, em série, a cada cópia.
 fn gravar_copia(roots: &[PathBuf], path: &str, stamp: &str, protect: bool) -> BackupWriteResult {
+    gravar_copia_com(roots, path, stamp, protect, |p| fs::read(p))
+}
+
+/// O mesmo, com o leitor do original injetável (o teste conta as leituras).
+fn gravar_copia_com<F>(
+    roots: &[PathBuf],
+    path: &str,
+    stamp: &str,
+    protect: bool,
+    ler_original: F,
+) -> BackupWriteResult
+where
+    F: Fn(&Path) -> std::io::Result<Vec<u8>>,
+{
     let src = PathBuf::from(path);
     let mut out = BackupWriteResult::default();
     if !src.is_file() {
         return out;
     }
+    let bytes = match ler_original(&src) {
+        Ok(b) => b,
+        Err(e) => {
+            out.failed
+                .push(format!("{path}: não foi possível ler o documento ({e})"));
+            return out;
+        }
+    };
     let ext = ext_of(path);
 
     for root in roots {
@@ -483,7 +514,7 @@ fn gravar_copia(roots: &[PathBuf], path: &str, stamp: &str, protect: bool) -> Ba
 
         // conteúdo igual ao último backup: não grava de novo
         if let Some(prev) = &anterior {
-            if same_bytes(&src, &dir.join(&prev.name)) {
+            if same_bytes_with(&bytes, &dir.join(&prev.name)) {
                 out.skipped = true;
                 out.written.push(root.to_string_lossy().to_string());
                 continue;
@@ -499,12 +530,26 @@ fn gravar_copia(roots: &[PathBuf], path: &str, stamp: &str, protect: bool) -> Ba
             }
         }
 
-        match fs::copy(&src, dir.join(format!("{stamp}.{ext}"))) {
-            Ok(_) => out.written.push(root.to_string_lossy().to_string()),
+        match write_copy_atomic(&dir.join(format!("{stamp}.{ext}")), &bytes) {
+            Ok(()) => out.written.push(root.to_string_lossy().to_string()),
             Err(e) => out.failed.push(format!("{}: {e}", root.display())),
         }
     }
     out
+}
+
+/// Grava uma cópia datada de forma atômica (temporário + rename).
+///
+/// O temporário começa com `.` de propósito: se o processo morrer no meio, a
+/// sobra é ignorada pelo índice (nomes com ponto inicial não são cópias).
+fn write_copy_atomic(destino: &Path, bytes: &[u8]) -> Result<(), String> {
+    let nome = destino
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| "copia".to_string());
+    let tmp = destino.with_file_name(format!(".{nome}.tmp"));
+    fs::write(&tmp, bytes).map_err(io_err)?;
+    fs::rename(&tmp, destino).map_err(io_err)
 }
 
 /// Hash do conteúdo que o app gravou por último em cada caminho.
@@ -629,29 +674,30 @@ pub fn forget_write(path: &str) {
     }
 }
 
-fn same_bytes(a: &Path, b: &Path) -> bool {
-    let (Ok(ma), Ok(mb)) = (fs::metadata(a), fs::metadata(b)) else {
+/// O conteúdo lido (`a`) é igual ao que está no arquivo `b`?
+fn same_bytes_with(a: &[u8], b: &Path) -> bool {
+    let Ok(mb) = fs::metadata(b) else {
         return false;
     };
-    if ma.len() != mb.len() {
+    if mb.len() != a.len() as u64 {
         return false;
     }
-    match (fs::read(a), fs::read(b)) {
-        (Ok(x), Ok(y)) => x == y,
+    match fs::read(b) {
+        Ok(y) => a == y.as_slice(),
         _ => false,
     }
 }
 
 /// Devolve o conteúdo de uma cópia para a pasta de backup de outro arquivo (usado para
 /// montar o histórico exportado).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn backup_save_history(path: String, root: String, json: String) -> Result<(), String> {
     let dir = mirror_dir(Path::new(&root), &path).join(HIST_DIR);
     write_atomic(&dir.join("historico.json"), json.as_bytes())
 }
 
 /// Lê o histórico exportado de um documento (null se ainda não houver).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn backup_load_history(path: String, root: String) -> Result<Option<String>, String> {
     let p = mirror_dir(Path::new(&root), &path)
         .join(HIST_DIR)
@@ -663,7 +709,7 @@ pub fn backup_load_history(path: String, root: String) -> Result<Option<String>,
 }
 
 /// Apaga o histórico exportado de um documento.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn backup_clear_history(path: String, root: String) -> Result<(), String> {
     let dir = mirror_dir(Path::new(&root), &path).join(HIST_DIR);
     if dir.is_dir() {
@@ -673,7 +719,7 @@ pub fn backup_clear_history(path: String, root: String) -> Result<(), String> {
 }
 
 /// Copia uma das cópias de volta para o caminho original.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn backup_restore(
     app: tauri::AppHandle,
     path: String,
@@ -700,7 +746,7 @@ pub fn backup_restore(
 }
 
 /// Apaga uma cópia específica.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn backup_delete(path: String, root: String, name: String) -> Result<(), String> {
     let p = mirror_dir(Path::new(&root), &path).join(&name);
     // só apaga o que está dentro da raiz de backup
@@ -766,7 +812,7 @@ fn escolher_apagadas(arquivos: &[BackupFile], max_copies: u32, max_days: u32, ag
 }
 
 /// Apaga cópias antigas conforme a política. Devolve quantas foram apagadas.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn backup_prune(app: tauri::AppHandle, max_copies: u32, max_days: u32) -> Result<u32, String> {
     let roots = active_roots(&app);
     let agora = now_ms();
@@ -795,7 +841,7 @@ pub fn backup_prune(app: tauri::AppHandle, max_copies: u32, max_days: u32) -> Re
 }
 
 /// Remove todas as pastas de backup do documento (usado pelo "apagar" do documento).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn backup_forget(app: tauri::AppHandle, path: String) -> Result<u32, String> {
     let mut n = 0;
     for root in active_roots(&app) {
@@ -878,7 +924,7 @@ fn montar_indice(roots: &[PathBuf], agora: u64) -> BackupIndex {
 }
 
 /// Varre as raízes e devolve (e grava em `_indice.json`) as métricas de espaço.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn backup_index(app: tauri::AppHandle) -> Result<BackupIndex, String> {
     let roots = active_roots(&app);
     let idx = montar_indice(&roots, now_ms());
@@ -893,7 +939,7 @@ pub fn backup_index(app: tauri::AppHandle) -> Result<BackupIndex, String> {
 }
 
 /// Documentos com backup cujo original sumiu do disco.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn backup_missing(app: tauri::AppHandle) -> Result<Vec<BackupEntry>, String> {
     let roots = active_roots(&app);
     // arquivo que está na lixeira não "sumiu" — foi movido de propósito
@@ -919,7 +965,7 @@ pub fn backup_missing(app: tauri::AppHandle) -> Result<Vec<BackupEntry>, String>
 }
 
 /// Procura (para o monitor) documentos com cópias muito antigas.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn backup_aged(app: tauri::AppHandle, min_days: u32) -> Result<Vec<IndexFile>, String> {
     let idx = backup_index(app)?;
     Ok(idx.files.into_iter().filter(|f| f.days >= min_days).collect())
@@ -1293,6 +1339,53 @@ mod tests {
         assert!(list_dir(&mirror_dir(&root_bom, &doc.to_string_lossy()), &root_bom).len() == 1);
 
         limpo(&root_bom);
+        limpo(&origem_dir);
+    }
+
+    #[test]
+    fn a_copia_le_o_documento_uma_vez_so() {
+        // Cada ida ao disco é caríssima em pasta de rede: a gravação da cópia precisa
+        // ler o documento UMA vez por chamada, não uma por raiz (era o que o antigo
+        // `same_bytes` + `fs::copy` faziam, em série).
+        let root_a = raiz("leitura-a");
+        let root_b = raiz("leitura-b");
+        let origem_dir = raiz("leitura-doc");
+        let doc = origem_dir.join("notas.md");
+        fs::write(&doc, "versao 1").unwrap();
+        let roots = vec![root_a.clone(), root_b.clone()];
+
+        let leituras = std::cell::Cell::new(0u32);
+        let r = gravar_copia_com(&roots, &doc.to_string_lossy(), "2026-10-09_10-00-00", true, |p| {
+            leituras.set(leituras.get() + 1);
+            fs::read(p)
+        });
+        assert_eq!(r.written.len(), 2, "os dois backups receberam a cópia");
+        assert_eq!(leituras.get(), 1, "o documento foi lido uma única vez");
+
+        // o mesmo vale quando o conteúdo não mudou (a cópia é pulada, mas a leitura
+        // continua sendo a única forma segura de saber)
+        let leituras2 = std::cell::Cell::new(0u32);
+        let r2 = gravar_copia_com(&roots, &doc.to_string_lossy(), "2026-10-09_10-01-00", true, |p| {
+            leituras2.set(leituras2.get() + 1);
+            fs::read(p)
+        });
+        assert!(r2.skipped, "conteúdo igual ao último backup");
+        assert_eq!(leituras2.get(), 1, "uma leitura também no caminho pulado");
+
+        // com disco "lento" (leitura artificialmente cara), o custo aparece uma vez:
+        let inicio = std::time::Instant::now();
+        let _ = gravar_copia_com(&roots, &doc.to_string_lossy(), "2026-10-09_10-02-00", true, |p| {
+            std::thread::sleep(std::time::Duration::from_millis(120));
+            fs::read(p)
+        });
+        let decorrido = inicio.elapsed();
+        assert!(
+            decorrido < std::time::Duration::from_millis(300),
+            "com duas raízes o atraso da leitura não pode somar por raiz (levou {decorrido:?})"
+        );
+
+        limpo(&root_a);
+        limpo(&root_b);
         limpo(&origem_dir);
     }
 

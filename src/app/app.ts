@@ -46,6 +46,7 @@ import { keysMethods } from "./keys";
 import { layoutMethods } from "./layout";
 import { deepReviewMethods } from "./deepReview";
 import { trashMethods } from "./trash";
+import { criarFilaSalvamento } from "./saveQueue";
 
 export class App {
   editor!: MdEditor;
@@ -71,8 +72,23 @@ export class App {
   closedTabs: string[] = [];
   /** Estado do backup em disco, mostrado na barra inferior. */
   backupState: "ok" | "degradado" | "perigo" = "ok";
-  /** true enquanto o salvamento automático está gravando. */
+  /** true enquanto o salvamento automático está gravando (espelho da fila, para a interface). */
   saving = false;
+  /**
+   * Fila do salvamento automático: uma gravação por vez e **nenhum pedido descartado**.
+   *
+   * Em pasta de rede uma gravação leva segundos; o pedido que chega nesse meio-tempo
+   * vira uma nova gravação com o estado mais recente assim que a atual termina (antes
+   * ele era simplesmente ignorado e a última parte do texto ficava sem salvar).
+   * O estado da fila alimenta o indicador "Salvando…" da barra.
+   */
+  saveQueue = criarFilaSalvamento({
+    gravar: () => this.salvarAgora(),
+    aoMudarEstado: (salvando) => {
+      this.saving = salvando;
+      this.updateAutosaveUI();
+    },
+  });
   backupDetail = "";
   /** Documentos com backup cujo original sumiu do disco. */
   missingBackups: backup.BackupEntry[] = [];

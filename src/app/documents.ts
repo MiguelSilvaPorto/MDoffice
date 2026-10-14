@@ -69,51 +69,56 @@ export const documentsMethods = {
     this.translation?.setDocPath(p);
   },
 
+  /**
+   * Salvamento automático: passa pela fila (uma gravação por vez).
+   *
+   * O pedido que chega durante uma gravação **não é descartado**: a fila grava de
+   * novo ao terminar, com o texto mais recente — em pasta de rede, onde cada
+   * gravação leva segundos, era isso que perdia a última parte do que foi digitado.
+   * Quem faz `await` (fechar a janela, trocar de aba) espera a fila esvaziar.
+   */
   async autosave(this: App): Promise<void> {
     if (!this.settings.autosaveOn) return;
-    if (this.saving) return;
-    this.saving = true;
-    this.updateAutosaveUI();
-    try {
-      if (this.tab.kind === "word") return await this.autosaveWord();
-      if (this.tab.kind === "ppt") return await this.autosavePpt();
-      if (this.tab.kind === "xlsx") return await this.autosaveExcel();
-      const tab = this.tab;
-      if (!tab.dirty) return;
-      const text = this.editor.getText();
-      // Documento novo (sem arquivo ainda): cria o rascunho e passa a salvar nele — é o
-      // "salva conforme eu escrevo". Se não houver acesso a arquivos (navegador), cai
-      // no servidor de desenvolvimento, que grava em temp/rascunho.md do projeto.
-      if (!tab.path) {
-        try {
-          if (await this.ensureSaved()) return;
-        } catch {
-          /* sem arquivos: segue para o salvamento pelo servidor */
-        }
-        const salvou = await files.saveDraftFallback("rascunho", text);
-        if (salvou) {
-          tab.dirty = false;
-          tab.statusSaved = `Salvo automaticamente em temp/ às ${fmtTime()}`;
-          this.afterSave(tab);
-        }
-        return;
-      }
+    return this.saveQueue.pedir();
+  },
+
+  /** O miolo do salvamento automático, executado pela fila (um por vez). */
+  async salvarAgora(this: App): Promise<void> {
+    if (this.tab.kind === "word") return await this.autosaveWord();
+    if (this.tab.kind === "ppt") return await this.autosavePpt();
+    if (this.tab.kind === "xlsx") return await this.autosaveExcel();
+    const tab = this.tab;
+    if (!tab.dirty) return;
+    const text = this.editor.getText();
+    // Documento novo (sem arquivo ainda): cria o rascunho e passa a salvar nele — é o
+    // "salva conforme eu escrevo". Se não houver acesso a arquivos (navegador), cai
+    // no servidor de desenvolvimento, que grava em temp/rascunho.md do projeto.
+    if (!tab.path) {
       try {
-        await files.saveDoc(tab.path, text);
-        this.recordVersion(tab.path, text);
-        // uma cópia por dia mesmo sem salvar: cobre o "esqueci de salvar"
-        this.backupOnceADay(tab.path);
-        // se o texto mudou enquanto gravava, continua "sujo" (o próximo autosave pega)
-        if (tab !== this.tab || this.editor.getText() === text) tab.dirty = false;
-        tab.statusSaved = tab.isDraft ? `Rascunho atualizado às ${fmtTime()}` : `Salvo automaticamente às ${fmtTime()}`;
-        this.afterSave(tab);
+        if (await this.ensureSaved()) return;
       } catch {
-        // não conseguiu gravar pelo app (navegador): guarda em temp/ do projeto
-        await files.saveDraftFallback("rascunho", text);
+        /* sem arquivos: segue para o salvamento pelo servidor */
       }
-    } finally {
-      this.saving = false;
-      this.updateAutosaveUI();
+      const salvou = await files.saveDraftFallback("rascunho", text);
+      if (salvou) {
+        tab.dirty = false;
+        tab.statusSaved = `Salvo automaticamente em temp/ às ${fmtTime()}`;
+        this.afterSave(tab);
+      }
+      return;
+    }
+    try {
+      await files.saveDoc(tab.path, text);
+      this.recordVersion(tab.path, text);
+      // uma cópia por dia mesmo sem salvar: cobre o "esqueci de salvar"
+      this.backupOnceADay(tab.path);
+      // se o texto mudou enquanto gravava, continua "sujo" (o próximo autosave pega)
+      if (tab !== this.tab || this.editor.getText() === text) tab.dirty = false;
+      tab.statusSaved = tab.isDraft ? `Rascunho atualizado às ${fmtTime()}` : `Salvo automaticamente às ${fmtTime()}`;
+      this.afterSave(tab);
+    } catch {
+      // não conseguiu gravar pelo app (navegador): guarda em temp/ do projeto
+      await files.saveDraftFallback("rascunho", text);
     }
   },
 

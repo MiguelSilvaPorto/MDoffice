@@ -403,9 +403,25 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Backend**
 
-- (nada no momento)
+- **Salvamento automático em pasta de rede (UNC/SMB) não trava mais a interface**: os comandos
+  de arquivo e de backup passaram a rodar no pool de tarefas do Tauri (`#[tauri::command(async)]`).
+  No Tauri 2 um comando síncrono roda na **thread principal** — e ler/gravar num share de rede
+  (centenas de ms a segundos por operação) travava a janela e filava o IPC a cada salvamento. Cada
+  salvamento também gasta **uma ida ao disco a menos** (não checa mais `exists()` da pasta antes de
+  gravar: a pasta é criada só quando a gravação responde "não encontrei" e tenta de novo) e a cópia
+  de backup lê o documento **uma única vez** (antes o `same_bytes` + `fs::copy` reliam o original
+  por raiz, em série — 4 leituras de rede por cópia com duas pastas).
 
 **Frontend**
+
+- **Fila do salvamento automático (nada de pedido descartado)**: um salvamento por vez e o pedido
+  que chega durante uma gravação **deixa de ser ignorado** — ao terminar, a fila grava de novo com
+  o texto mais recente. Antes (`if (this.saving) return`), em pasta de rede o autosave disparado
+  durante uma gravação lenta era simplesmente descartado e a última parte do que foi digitado
+  ficava sem salvar até a próxima tecla/blur/fechar. Rajadas de pedidos durante a gravação viram
+  **uma** gravação (coalescência), a digitação nunca espera o disco e o indicador "Salvando…"
+  continua refletindo o estado real. Teste novo: `npm run test:salvamento` (fila exercitada com um
+  "disco lento" de mentira + contratos do Rust).
 
 - **Formalidade base (Onda 3)**: o catálogo informal → formal cresceu de **18 para 75 padrões**, agora classificados por **classe** (internetês, contração, muleta, gíria, oralidade, atenuação, redundância e vagueza), com política explícita de **seguro** (o app pode corrigir sozinho — 45 padrões) × **sugestão** (30 padrões, quando a troca depende do sentido) e tom mínimo (neutro × formal). Entraram as **regras de frase por janelas** — “a gente vê que” → “nós vemos”/“vê-se que”, “Aí eu fui” → “Então, eu”/“Em seguida, eu”, “então” repetido, “você vê que” → “observa-se que” e “há três anos atrás” → “há três anos” —, com exclusão de citação (`>`), código, URL, sigla e e-mail. O painel de revisão (F7) passa a mostrar o **MIP** (marcadores informais por 1.000 palavras) antes e depois das correções seguras, a contagem por classe e o trecho/risco de cada marcador.
 - **Teste do “entretanto” alinhado ao comportamento decidido**: a adversativa leva só a vírgula de antes (“…, entretanto faltou teste.”), como o corpus já exigia (caso 16, “porém”); a expectativa antiga do teste pedia as duas vírgulas.

@@ -18,6 +18,7 @@
     "test:log": "node scripts/testar-snapshots.mts",
     "test:backup": "node scripts/testar-backup.mts && node scripts/testar-backup-e2e.cjs",
     "test:lixeira": "node scripts/testar-lixeira.mts",
+    "test:salvamento": "node scripts/testar-salvamento.mts",
     "test:layout": "node scripts/testar-layout.mts",
     "test:pptx": "node scripts/testar-pptx.mjs",
     "test:pptx-edicao": "node scripts/testar-edicao-pptx.mjs",

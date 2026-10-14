@@ -2,7 +2,7 @@
 
 use super::assets::copy_assets;
 use super::bundle::export_portable_bundle;
-use super::files::{rename_file, unique_md_path};
+use super::files::{gravar_bytes, rename_file, unique_md_path};
 use super::projects::scan_folder;
 use super::storage::soma_pasta;
 use super::trash::{limpar, mover, read_index};
@@ -277,4 +277,34 @@ fn soma_o_tamanho_de_uma_pasta_recursivamente() {
     assert_eq!(soma_pasta(&root), 35);
     assert_eq!(soma_pasta(&root.join("nao-existe")), 0);
     fs::remove_dir_all(&root).expect("limpa arquivos de teste");
+}
+
+#[test]
+fn gravar_bytes_nao_gasta_ida_extra_e_cria_a_pasta_quando_falta() {
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("relógio válido")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("mdoffice-gravar-{nonce}"));
+
+    // 1. pasta inexistente: a gravação cria a pasta (e o arquivo) na segunda tentativa
+    let dentro = dir.join("sub").join("notas.md");
+    gravar_bytes(&dentro, b"versao 1").expect("cria a pasta e grava");
+    assert_eq!(fs::read_to_string(&dentro).expect("lê"), "versao 1");
+
+    // 2. pasta existente: grava por cima sem tocar em mais nada
+    gravar_bytes(&dentro, b"versao 2").expect("sobrescreve");
+    assert_eq!(fs::read_to_string(&dentro).expect("lê"), "versao 2");
+
+    // 3. pasta apagada por fora no meio da sessão: a próxima gravação recria
+    fs::remove_dir_all(dir.join("sub")).expect("apaga a pasta por fora");
+    gravar_bytes(&dentro, b"versao 3").expect("recria a pasta");
+    assert_eq!(fs::read_to_string(&dentro).expect("lê"), "versao 3");
+
+    // 4. caminho impossível (a "pasta" é um arquivo): o erro de verdade chega ao app
+    fs::write(dir.join("bloqueio"), b"nao sou pasta").expect("cria arquivo");
+    let erro = gravar_bytes(&dir.join("bloqueio").join("x.md"), b"x").expect_err("recusa");
+    assert!(!erro.is_empty(), "o erro precisa chegar para o aviso de 'não salvou'");
+
+    fs::remove_dir_all(&dir).expect("limpa arquivos de teste");
 }

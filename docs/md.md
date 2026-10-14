@@ -10,7 +10,10 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   em monitores largos — igual à pré-visualização. A divisória do meio acompanha o mouse 1:1;
   arrastada **para além do limite da direita**, fecha a pré-visualização (que volta em
   **Configurações → Aparência → Pré-visualização**).
-- **Salvamento automático** a cada alteração; barra de status com palavras/caracteres/linhas,
+- **Salvamento automático** a cada alteração, sem travar a interface — inclusive em documento
+  aberto de uma **pasta de rede** (UNC/SMB), onde cada gravação pode levar segundos; a fila de
+  salvamento não descarta alteração nenhuma (o que foi digitado durante a gravação entra na
+  gravação seguinte). Barra de status com palavras/caracteres/linhas,
   painel de recentes e índice (estrutura) navegável, tema claro/escuro.
 - **Busca no conteúdo**: a caixa **Buscar** do painel lateral procura dentro dos documentos
   dos seus projetos (ignora acento e maiúscula) e nas abas abertas, mesmo sem salvar; clique
