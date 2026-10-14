@@ -18,7 +18,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - O `fechar.ps1` **bloqueia o fechamento** se a tarefa não tocar em `CHANGELOG.md` e
   `docs/historico-tecnico.md` (regra completa no [AGENTS.md](AGENTS.md)).
 
-> Estado do "Não adicionado" conferido em **2026-10-13**.
+> Estado do "Não adicionado" conferido em **2026-10-14**.
 
 ---
 
