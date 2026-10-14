@@ -365,18 +365,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Escolha do painel com a cara do app**: os grupos de escolha do painel do PowerPoint
-  (preenchimento: **Do tema / Sólido / Gradiente / Imagem**, e os demais) usavam o controle
-  nativo — círculo pequeno e a escolha marcada só com um anel do sistema. Agora o **círculo é
-  desenhado pelo app** (maior, com o ponto na cor de destaque e um halo suave no escolhido) e
-  **a linha inteira do escolhido fica destacada** (fundo suave, borda na cor de destaque e
-  texto em semibold), com hover na linha e foco visível pelo teclado. Vale para todos os
-  grupos do painel (preenchimento, contorno, âncora e os demais).
-- **Botão direito + arrastar move a tela no PowerPoint**: com o zoom alto (até 800%), navegar
-  era só pela barra de rolagem — agora **botão direito pressionado + arrastar** move a tela em
-  qualquer direção, com o cursor virando "agarrando" e o arrasto acompanhando o ponteiro
-  (nada de soltar e pegar de novo a cada tela). O **clique direito parado continua abrindo o
-  menu de contexto**: o arrasto só conta depois de 3 px e, quando conta, o menu não abre.
+- (nada no momento)
 
 ### Adicionado (na main)
 
@@ -385,6 +374,20 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **Escolha do painel com a cara do app**: os grupos de escolha do painel do PowerPoint
+  (preenchimento: **Do tema / Sólido / Gradiente / Imagem**, e os demais) usavam o controle
+  nativo — círculo pequeno e a escolha marcada só com um anel do sistema. Agora o **círculo é
+  desenhado pelo app** (maior, com o ponto na cor de destaque e um halo suave no escolhido) e
+  **a linha inteira do escolhido fica destacada** (fundo suave, borda na cor de destaque e
+  texto em semibold), com hover na linha e foco visível pelo teclado. Vale para todos os
+  grupos do painel (preenchimento, contorno, âncora e os demais).
+
+- **Botão direito + arrastar move a tela no PowerPoint**: com o zoom alto (até 800%), navegar
+  era só pela barra de rolagem — agora **botão direito pressionado + arrastar** move a tela em
+  qualquer direção, com o cursor virando "agarrando" e o arrasto acompanhando o ponteiro
+  (nada de soltar e pegar de novo a cada tela). O **clique direito parado continua abrindo o
+  menu de contexto**: o arrasto só conta depois de 3 px e, quando conta, o menu não abre.
 
 - **Ícone da Formas alinhado**: o preview da forma no botão **Formas** seguia um tamanho próprio
   (30 px) em vez do tamanho dos outros ícones — na **fita baixa** ele ficava maior que o botão e
@@ -519,12 +522,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **A lista dos seletores não cobre mais a tela**: a lista aberta de um seletor (tamanho da
-  fonte, fonte…) montava os 20+ itens na altura natural e, em tela menor, cobria tudo — não
-  dava para ver o documento atrás. Agora a **altura fica presa à janela** (no máximo ~72%
-  dela) e a lista **rola dentro** dela; ao abrir, ela já vem **posicionada no item marcado**,
-  centrado na área visível, em vez de sempre do começo. Vale para todos os seletores do app
-  (Word, Excel, PowerPoint e Configurações).
+- (nada no momento)
 
 **Ferramentas (dev)**
 
@@ -563,6 +561,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **A lista dos seletores não cobre mais a tela**: a lista aberta de um seletor (tamanho da
+  fonte, fonte…) montava os 20+ itens na altura natural e, em tela menor, cobria tudo — não
+  dava para ver o documento atrás. Agora a **altura fica presa à janela** (no máximo ~72%
+  dela) e a lista **rola dentro** dela; ao abrir, ela já vem **posicionada no item marcado**,
+  centrado na área visível, em vez de sempre do começo. Vale para todos os seletores do app
+  (Word, Excel, PowerPoint e Configurações).
 
 - **Formalidade base (Onda 3)**: o catálogo informal → formal cresceu de **18 para 75 padrões**, agora classificados por **classe** (internetês, contração, muleta, gíria, oralidade, atenuação, redundância e vagueza), com política explícita de **seguro** (o app pode corrigir sozinho — 45 padrões) × **sugestão** (30 padrões, quando a troca depende do sentido) e tom mínimo (neutro × formal). Entraram as **regras de frase por janelas** — “a gente vê que” → “nós vemos”/“vê-se que”, “Aí eu fui” → “Então, eu”/“Em seguida, eu”, “então” repetido, “você vê que” → “observa-se que” e “há três anos atrás” → “há três anos” —, com exclusão de citação (`>`), código, URL, sigla e e-mail. O painel de revisão (F7) passa a mostrar o **MIP** (marcadores informais por 1.000 palavras) antes e depois das correções seguras, a contagem por classe e o trecho/risco de cada marcador.
 

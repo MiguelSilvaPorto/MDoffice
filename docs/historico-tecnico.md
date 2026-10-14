@@ -4880,3 +4880,16 @@ antigas quando fizer sentido.
   escolhido)
 - **Porquê:** o teste de layout é onde os invariantes do painel já ficam presos; sem ele, uma
   simplificação do CSS volta ao controle nativo sem ninguém notar.
+
+## CHANGELOG.md
+
+### 2026-10-14 · esta tarefa · promoção das entradas que já estavam na main
+- **Local:** seções "Não adicionado" do PowerPoint (2 entradas) e do Geral (1)
+- **Linha:** 3 entradas movidas para o "Adicionado" da mesma categoria — escolha do painel com
+  a cara do app (`5c79e97`), botão direito + arrastar move a tela (`9608977`) e a lista dos
+  seletores sem cobrir a tela (`d32357e`)
+- **Porquê:** registrar no estado de autoria e promover no fechamento não cabem no mesmo
+  commit — a entrada só é verdadeira DEPOIS de a `main` receber o trabalho —, então a promoção
+  anda em passos curtos de docs. Como nas rodadas anteriores, cada entrada foi conferida
+  contra o histórico (o commit é ancestral de `main`) antes de mudar de lugar, e as seções de
+  origem ficaram com "- (nada no momento)" nos dois lados.
