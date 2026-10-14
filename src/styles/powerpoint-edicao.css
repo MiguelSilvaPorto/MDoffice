@@ -1574,7 +1574,9 @@ button.ppr.big .ppr-gal-ic svg {
 }
 
 .pp-pincel-w,
-.pp-pincel-assist {
+.pp-pincel-assist,
+.pp-pincel-modo,
+.pp-pincel-btn {
   border: 1px solid var(--border);
   background: transparent;
   color: var(--fg);
@@ -1586,10 +1588,31 @@ button.ppr.big .ppr-gal-ic svg {
 }
 
 .pp-pincel-w.on,
-.pp-pincel-assist.on {
+.pp-pincel-assist.on,
+.pp-pincel-modo.on {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-fg);
+}
+
+.pp-pincel-concluir {
+  background: var(--fi-ppt, #d24a17);
+  border-color: var(--fi-ppt, #d24a17);
+  color: #fff;
+  font-weight: 600;
+}
+
+.pp-pincel-concluir:hover {
+  filter: brightness(1.1);
+}
+
+.pp-pincel-cancelar {
+  color: var(--muted);
+}
+
+.pp-pincel-cancelar:hover {
+  color: var(--fg);
+  border-color: var(--fg);
 }
 
 .pp-pincel-dica {
@@ -1597,6 +1620,40 @@ button.ppr.big .ppr-gal-ic svg {
   color: var(--muted);
   margin-left: 6px;
   white-space: nowrap;
+}
+
+/* nós de controle ao desenhar curvas por pontos */
+.pp-no-curva {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid var(--fi-ppt, #d24a17);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 55;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.pp-no-curva.reto {
+  border-radius: 2px;
+  background: var(--fi-ppt, #d24a17);
+}
+
+.pp-no-curva.inicio {
+  width: 13px;
+  height: 13px;
+  margin: -7px 0 0 -7px;
+  border-width: 2.5px;
+}
+
+.pp-no-curva.inicio.fecha {
+  background: #10b981;
+  border-color: #047857;
+  transform: scale(1.35);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.35), 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .pp-sel {

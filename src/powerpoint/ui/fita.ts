@@ -463,9 +463,12 @@ export class Fita {
            ${pequeno("forma-rapida:0", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[0], 18)}</span>`, "Linha", "Desenhar uma linha")}
            ${pequeno("forma-rapida:1", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[1], 18)}</span>`, "Seta", "Desenhar uma seta")}
            ${pequeno("forma-rapida:3", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[3], 18)}</span>`, "Conector", "Desenhar um conector angular")}
+         </div>
+         <div class="ppr-col">
+           ${pequeno("ferramenta:curva", ic("i-curve"), "Curva", "Curva por pontos: clique para marcar pontos de parada (duplo-clique termina, clique no início fecha)")}
          </div>`
       ),
-      grupo("Desenho", `${grande("desenho", ic("i-draw"), "Draw", "Desenho à mão: rabisque na lâmina e o app ajusta a forma (Esc sai)")}`),
+      grupo("Desenho", `${grande("desenho", ic("i-draw"), "Draw", "Desenho à mão e por pontos: rabisque ou marque pontos de parada (Esc sai)")}`),
     ].join("");
   }
 
@@ -1200,6 +1203,7 @@ export class Fita {
     const rotuloOcultar = this.el.querySelector<HTMLElement>('[data-cmd="slide-ocultar"] span');
     if (rotuloOcultar) rotuloOcultar.textContent = st.oculta ? "Mostrar" : "Ocultar";
     on("ferramenta:texto", st.ferramenta?.tipo === "texto");
+    on("ferramenta:curva", st.ferramenta?.tipo === "curva");
     on("desenho", st.ferramenta?.tipo === "desenho");
     on("conectar", st.ferramenta?.tipo === "conectar");
     for (const c of ["negrito", "italico", "sublinhado", "tachado", "marca-texto", "sobrescrito", "subscrito", "versalete", "caixa", "espacamento", "limpar-formatacao", "maior", "menor", "cor-texto", "marcadores", "numeracao", "recuo-menos", "recuo-mais", "espaco", "alinhar-esquerda", "alinhar-centro", "alinhar-direita", "alinhar-justificado", "v-topo", "v-meio", "v-base"]) dis(c, !temTexto);

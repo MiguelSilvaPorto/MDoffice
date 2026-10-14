@@ -8,7 +8,7 @@ import { pedirTexto } from "../dialogoTexto";
 import { fluxoParaFormas, lerFluxoMermaid } from "./edicao/mermaid";
 import { ligarAjusteAlturaFita, ligarRecolherFita, ligarRodaHorizontal } from "../fita";
 import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, novaImagem, type EstiloDeck, type ItemGaleria } from "./edicao/criar";
-import { dicaDoTraco, formaDoTraco, type Pincel } from "./edicao/desenho";
+import { dicaDoTraco, formaDoTraco, formaDeCurva, type Pincel } from "./edicao/desenho";
 import { atualizarEstilos, ehBrilho, ehFamilia, ehIntensidade, estiloDaFamilia, ligarEstilo, ligarEstiloFundo, soltarEstilo, soltarEstiloFundo } from "./edicao/estilos";
 import { atualizarLigacoes, ligacaoParaFormas } from "./edicao/ligacoes";
 import { ajustarCor, CANTOS, comAjuste, comCantos, comLinha, comOpacidade, comPreenchimento, comRaioDeCanto, comSombra, gradiente, SOMBRAS_PRONTAS, solido, corPrincipal, type Canto } from "./edicao/formato";
@@ -214,7 +214,7 @@ export class PowerPointHost {
         celulas: this.celulasDaSelecao(),
         cantosSel: this.cantosSel,
         animacoes: normalizarAnimacoes(this.atual().animacoes) ?? [],
-        pincel: this.ferramenta?.tipo === "desenho" ? { cor: this.pincelUsado().cor, w: this.pincel.w } : null,
+        pincel: this.ferramenta?.tipo === "desenho" || this.ferramenta?.tipo === "curva" ? { cor: this.pincelUsado().cor, w: this.pincel.w } : null,
       }),
       aoSelecionar: (ids) => this.selecionar(ids),
       aoSelecionarCantos: (c) => this.selecionarCantos(c),
@@ -227,6 +227,7 @@ export class PowerPointHost {
       aoTracoAndamento: (pontos) => this.aoTracoAndamento(pontos),
       aoLigar: (l) => this.aoLigar(l),
       aoPincelar: (id) => this.aoPincelar(id),
+      aoCurva: (c) => this.aoCurva(c),
     });
     this.montar();
     // fonte da web carregou: as medidas de entrelinha mudam, então redesenha (sem derrubar quem está digitando)
@@ -256,7 +257,12 @@ export class PowerPointHost {
           <button type="button" class="pp-pincel-w" data-pincel-w="4" title="Traço grosso (4 pt)">4</button>
           <button type="button" class="pp-pincel-w" data-pincel-w="8" title="Traço bem grosso (8 pt)">8</button>
           <span class="pp-pincel-sep"></span>
+          <button type="button" class="pp-pincel-modo on" data-pincel-modo="livre" title="Traço livre: arraste para rabiscar">Livre</button>
+          <button type="button" class="pp-pincel-modo" data-pincel-modo="pontos" title="Curva por pontos: clique para marcar pontos de parada">Pontos</button>
+          <span class="pp-pincel-sep"></span>
           <button type="button" class="pp-pincel-assist" data-pincel-assist title="Assistente: reconhece o traço e ajusta a forma (retângulo, retângulo arredondado, círculo, triângulo, linha e seta)">Assistente</button>
+          <button type="button" class="pp-pincel-btn pp-pincel-concluir" data-pincel-concluir hidden title="Concluir curva (Enter)">Concluir</button>
+          <button type="button" class="pp-pincel-btn pp-pincel-cancelar" data-pincel-cancelar hidden title="Cancelar curva (Esc)">✕</button>
           <span class="pp-pincel-dica" data-pincel-dica></span>
         </div>
         <div class="pp-left">
@@ -1235,9 +1241,24 @@ export class PowerPointHost {
         this.atualizarPincel();
       });
     }
+    for (const b of barra.querySelectorAll<HTMLElement>("[data-pincel-modo]")) {
+      b.addEventListener("click", () => {
+        const modo = (b.dataset.pincelModo as "livre" | "pontos") || "livre";
+        this.stage.definirModoDesenho(modo);
+        this.atualizarPincel();
+      });
+    }
     barra.querySelector<HTMLElement>("[data-pincel-assist]")?.addEventListener("click", () => {
       this.pincel.assistente = !this.pincel.assistente;
       gravarPincel(this.pincel);
+      this.atualizarPincel();
+    });
+    barra.querySelector<HTMLElement>("[data-pincel-concluir]")?.addEventListener("click", () => {
+      this.stage.finalizarCurva();
+      this.atualizarPincel();
+    });
+    barra.querySelector<HTMLElement>("[data-pincel-cancelar]")?.addEventListener("click", () => {
+      this.stage.cancelarCurva();
       this.atualizarPincel();
     });
     this.atualizarPincel();
@@ -1247,21 +1268,58 @@ export class PowerPointHost {
   private atualizarPincel(): void {
     const barra = this.pane.querySelector<HTMLElement>("[data-pincel]");
     if (!barra) return;
-    const ativo = this.ferramenta?.tipo === "desenho";
+    const ehDesenho = this.ferramenta?.tipo === "desenho";
+    const ehCurva = this.ferramenta?.tipo === "curva";
+    const ativo = ehDesenho || ehCurva;
     barra.hidden = !ativo;
     if (!ativo) return;
     const p = this.pincelUsado();
     const cor = barra.querySelector<HTMLElement>("[data-pincel-cor]");
     if (cor) cor.style.background = `#${p.cor}`;
-    for (const b of barra.querySelectorAll<HTMLElement>("[data-pincel-w]")) b.classList.toggle("on", Number(b.dataset.pincelW) === this.pincel.w);
+    for (const b of barra.querySelectorAll<HTMLElement>("[data-pincel-w]")) {
+      b.classList.toggle("on", Number(b.dataset.pincelW) === this.pincel.w);
+    }
     barra.querySelector("[data-pincel-assist]")?.classList.toggle("on", this.pincel.assistente);
+
+    const modo = ehCurva ? "pontos" : this.stage.obterModoDesenho();
+    for (const b of barra.querySelectorAll<HTMLElement>("[data-pincel-modo]")) {
+      b.classList.toggle("on", b.dataset.pincelModo === modo);
+    }
+
+    const temPontos = this.stage.temPontosCurva();
+    const btnConcluir = barra.querySelector<HTMLElement>("[data-pincel-concluir]");
+    const btnCancelar = barra.querySelector<HTMLElement>("[data-pincel-cancelar]");
+    if (btnConcluir) btnConcluir.hidden = !temPontos;
+    if (btnCancelar) btnCancelar.hidden = !temPontos;
+
     const dica = barra.querySelector<HTMLElement>("[data-pincel-dica]");
-    if (dica) dica.textContent = "Rabisque na lâmina — Esc para sair";
+    if (dica) {
+      if (temPontos) {
+        dica.textContent = "Clique para o próximo · Duplo-clique/Enter termina · Clique no 1º fecha";
+      } else if (ehCurva || modo === "pontos") {
+        dica.textContent = "Clique para marcar pontos de parada — Esc para sair";
+      } else {
+        dica.textContent = "Rabisque ou clique pontos de parada — Esc para sair";
+      }
+    }
   }
 
   /** Terminou um traço: vira forma (assistida) ou desenho livre, no lugar em que foi feito. */
   private aoTraco(t: { pontos: { x: number; y: number }[] }): void {
     const forma = formaDoTraco(t.pontos, this.pincelUsado(), this.estilo(), this.dim(), this.atual().shapes);
+    if (!forma) return;
+    this.registrar();
+    this.substituirSlide({ ...this.atual(), shapes: [...this.atual().shapes, forma] });
+    this.selecao = [forma.id];
+    this.markDirty();
+    this.pintar();
+    this.atualizarPincel();
+  }
+
+  /** Terminou ou fechou uma curva por pontos de parada. */
+  private aoCurva(c: { pontos: { x: number; y: number; reto?: boolean }[]; fechado: boolean }): void {
+    const pontosPt = this.stage.pontosEmPtComReto(c.pontos, this.dim());
+    const forma = formaDeCurva(pontosPt, c.fechado, this.pincelUsado(), this.estilo(), this.dim(), this.atual().shapes);
     if (!forma) return;
     this.registrar();
     this.substituirSlide({ ...this.atual(), shapes: [...this.atual().shapes, forma] });
@@ -1932,6 +1990,13 @@ export class PowerPointHost {
         this.stage.desenharSelecao();
         this.fita.atualizar();
         return;
+      case "curva":
+        this.ferramenta = this.ferramenta?.tipo === "curva" ? null : { tipo: "curva" };
+        this.selecao = [];
+        this.atualizarPincel();
+        this.stage.desenharSelecao();
+        this.fita.atualizar();
+        return;
       case "conectar":
         this.ferramenta = this.ferramenta?.tipo === "conectar" ? null : { tipo: "conectar" };
         this.selecao = []; // no modo conectar valem as bolinhas das bordas, não as alças
@@ -1946,7 +2011,14 @@ export class PowerPointHost {
         this.fita.atualizar();
         return;
       case "ferramenta":
-        this.ferramenta = value === "texto" ? (this.ferramenta?.tipo === "texto" ? null : { tipo: "texto" }) : null;
+        if (value === "texto") {
+          this.ferramenta = this.ferramenta?.tipo === "texto" ? null : { tipo: "texto" };
+        } else if (value === "curva") {
+          this.ferramenta = this.ferramenta?.tipo === "curva" ? null : { tipo: "curva" };
+          this.selecao = [];
+        } else {
+          this.ferramenta = null;
+        }
         // o pincel de formatação vive junto da ferramenta: sair dela (Esc, outro botão) esquece o formato copiado
         this.pincelFmt = null;
         this.atualizarPincel();
@@ -2910,6 +2982,27 @@ export class PowerPointHost {
     if (ctrl && k === "a") return this.consumir(e, () => this.run("sel-tudo"));
     if (ctrl && k === "g") return this.consumir(e, () => this.run(e.shiftKey ? "desagrupar" : "agrupar"));
     if (ctrl && !e.shiftKey && (k === "b" || k === "i" || k === "u") && this.selecao.length) return this.consumir(e, () => this.run(k === "b" ? "negrito" : k === "i" ? "italico" : "sublinhado"));
+
+    if (this.stage.temPontosCurva()) {
+      if (e.key === "Enter") {
+        return this.consumir(e, () => {
+          this.stage.finalizarCurva();
+          this.atualizarPincel();
+        });
+      }
+      if (e.key === "Escape") {
+        return this.consumir(e, () => {
+          this.stage.cancelarCurva();
+          this.atualizarPincel();
+        });
+      }
+      if (e.key === "Backspace" || e.key === "Delete") {
+        return this.consumir(e, () => {
+          this.stage.removerUltimoPontoCurva();
+          this.atualizarPincel();
+        });
+      }
+    }
 
     if (e.key === "Escape") {
       // prévia de animação em andamento: o Escape para e devolve a forma ao normal

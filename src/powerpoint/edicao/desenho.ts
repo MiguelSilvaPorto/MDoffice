@@ -11,6 +11,7 @@ import { dePt, paraPt, type Dim, type Ret } from "./geometria";
 export interface PontoTraco {
   x: number;
   y: number;
+  reto?: boolean;
 }
 
 /** O pincel do modo Draw: cor, espessura e o assistente ligado/desligado. */
@@ -739,15 +740,23 @@ export function pontosDoDesenhoLivre(pontos: PontoTraco[], encaixar: boolean): P
  * cúbica do Catmull-Rom boja entre os pontos quando os vizinhos são os cantos — era a "barriga"
  * que ficava no topo do cartão mesmo com os pontos já alinhados.
  */
-export function caminhoDePontos(pts: PontoTraco[], bb: Ret = bboxDe(pts)): CustPath {
+export function caminhoDePontos(pts: PontoTraco[], bb: Ret = bboxDe(pts), fechado = false): CustPath {
   const n10 = (v: number) => Math.round(v * 10) / 10;
-  // Catmull-Rom virando cúbicas: o caminho passa pelos pontos e sai CURVO, sem as quinas da polilinha
-  const get = (i: number) => pts[Math.min(pts.length - 1, Math.max(0, i))];
+  const n = pts.length;
+  if (n < 2) return { w: Math.max(1, n10(bb.w)), h: Math.max(1, n10(bb.h)), cmds: [], fill: "none", stroke: true };
+
+  const get = (i: number) => {
+    if (fechado) return pts[((i % n) + n) % n];
+    return pts[Math.min(n - 1, Math.max(0, i))];
+  };
+
   const cmds: (string | number)[] = ["M", n10(pts[0].x - bb.x), n10(pts[0].y - bb.y)];
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    if (Math.abs(p2.y - p1.y) < 0.05 || Math.abs(p2.x - p1.x) < 0.05) {
+
+  const count = fechado ? n : n - 1;
+  for (let i = 0; i < count; i++) {
+    const p1 = get(i);
+    const p2 = get(i + 1);
+    if (p1.reto || p2.reto || Math.abs(p2.y - p1.y) < 0.05 || Math.abs(p2.x - p1.x) < 0.05) {
       cmds.push("L", n10(p2.x - bb.x), n10(p2.y - bb.y));
       continue;
     }
@@ -766,8 +775,8 @@ export function caminhoDePontos(pts: PontoTraco[], bb: Ret = bboxDe(pts)): CustP
   const primeiro = pts[0];
   const ultimo = pts[pts.length - 1];
   const gap = Math.hypot(primeiro.x - ultimo.x, primeiro.y - ultimo.y);
-  if (gap <= Math.max(10, Math.hypot(bb.w, bb.h) * 0.1)) cmds.push("Z");
-  return { w: Math.max(1, n10(bb.w)), h: Math.max(1, n10(bb.h)), cmds, fill: "none", stroke: true };
+  if (fechado || gap <= Math.max(10, Math.hypot(bb.w, bb.h) * 0.1)) cmds.push("Z");
+  return { w: Math.max(1, n10(bb.w)), h: Math.max(1, n10(bb.h)), cmds, fill: fechado ? "norm" : "none", stroke: true };
 }
 
 /** Traço livre -> caminho do custGeom, já suave. */
@@ -873,5 +882,61 @@ export function formaDoTraco(pontos: PontoTraco[], pincel: Pincel, est: EstiloDe
   s.geom = "custom";
   s.name = "Desenho livre";
   s.paths = [caminhoDePontos(pontosLivre)];
+  return comPincel(s, pincel);
+}
+
+/** Gera a string SVG path d em % (para pré-visualização ao vivo da curva). */
+export function svgPathDePontosPct(pts: PontoTraco[], fechado = false): string {
+  if (pts.length < 2) return "";
+  const n = pts.length;
+  const f = (v: number) => v.toFixed(2);
+  let d = `M${f(pts[0].x)} ${f(pts[0].y)}`;
+  if (n === 2 && !fechado) {
+    return `${d}L${f(pts[1].x)} ${f(pts[1].y)}`;
+  }
+  const get = (i: number) => {
+    if (fechado) return pts[((i % n) + n) % n];
+    return pts[Math.min(n - 1, Math.max(0, i))];
+  };
+  const count = fechado ? n : n - 1;
+  for (let i = 0; i < count; i++) {
+    const p1 = get(i);
+    const p2 = get(i + 1);
+    if (p1.reto || p2.reto || Math.abs(p2.y - p1.y) < 0.05 || Math.abs(p2.x - p1.x) < 0.05) {
+      d += `L${f(p2.x)} ${f(p2.y)}`;
+      continue;
+    }
+    const p0 = get(i - 1);
+    const p3 = get(i + 2);
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d += `C${f(c1x)} ${f(c1y)} ${f(c2x)} ${f(c2y)} ${f(p2.x)} ${f(p2.y)}`;
+  }
+  if (fechado) d += "Z";
+  return d;
+}
+
+/**
+ * Cria uma forma vetorial (custom) a partir dos pontos fixos de parada definidos pelo usuário.
+ * Pode ser uma curva aberta ou uma forma fechada (fechado = true).
+ */
+export function formaDeCurva(
+  pontos: PontoTraco[],
+  fechado: boolean,
+  pincel: Pincel,
+  est: EstiloDeck,
+  d: Dim,
+  formas: Shape[] = []
+): Shape | null {
+  if (pontos.length < 2) return null;
+  const bb = bboxDe(pontos);
+  if (bb.w < 2 && bb.h < 2) return null;
+  const box = encaixarNoPalco(bb, formas, d, Math.max(6, d.w * 0.01));
+  const s = baseDaForma(est, d, box);
+  s.geom = "custom";
+  s.name = fechado ? "Forma livre" : "Curva";
+  s.paths = [caminhoDePontos(pontos, bb, fechado)];
   return comPincel(s, pincel);
 }

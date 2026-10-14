@@ -481,6 +481,37 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
   );
 }
 
+// ---------------------------------------------------------------- curva por pontos de parada
+{
+  // 1) svgPathDePontosPct: aberta e fechada
+  const pts = [
+    { x: 10, y: 10 },
+    { x: 50, y: 30 },
+    { x: 80, y: 10 },
+  ];
+  const dAberta = D.svgPathDePontosPct(pts, false);
+  ok("curva por pontos: svg aberto contém M e C e não tem Z", dAberta.startsWith("M") && dAberta.includes("C") && !dAberta.endsWith("Z"));
+
+  const dFechada = D.svgPathDePontosPct(pts, true);
+  ok("curva por pontos: svg fechado termina com Z e liga de volta", dFechada.startsWith("M") && dFechada.endsWith("Z"));
+
+  // 2) ponto com canto reto (reto: true) gera comando L
+  const ptsComCanto = [
+    { x: 10, y: 10 },
+    { x: 50, y: 10, reto: true },
+    { x: 80, y: 40 },
+  ];
+  const dCanto = D.svgPathDePontosPct(ptsComCanto, false);
+  ok("curva por pontos: ponto reto gera segmento L", dCanto.includes("L50.00 10.00"));
+
+  // 3) formaDeCurva: aberta e fechada
+  const fAberta = D.formaDeCurva(pts.map((p) => ({ x: p.x * 5, y: p.y * 5 })), false, pincel, est, dim, []);
+  ok("forma de curva aberta: geom custom, nome Curva, fill none", fAberta?.geom === "custom" && fAberta.name === "Curva" && fAberta.paths?.[0]?.fill === "none");
+
+  const fFechada = D.formaDeCurva(pts.map((p) => ({ x: p.x * 5, y: p.y * 5 })), true, pincel, est, dim, []);
+  ok("forma de curva fechada: geom custom, nome Forma livre, fill norm, termina em Z", fFechada?.geom === "custom" && fFechada.name === "Forma livre" && fFechada.paths?.[0]?.fill === "norm" && fFechada.paths?.[0]?.cmds.includes("Z"));
+}
+
 console.log("");
 console.log(falhas ? `${falhas} falha(s)` : "Tudo certo.");
 process.exit(falhas ? 1 : 0);

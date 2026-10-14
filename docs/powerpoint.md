@@ -181,9 +181,9 @@ avisado ao abrir (nunca some em silêncio).
   Como o arranjo não troca cores nem fontes, dá para aplicar um arranjo e depois combinar com
   qualquer ideia de design.
 
-## Desenho à mão (Draw)
+## Desenho à mão (Draw) e Curva por pontos
 
-- Na aba **Inserir**, o botão **Draw** (grupo **Desenho**) liga o lápis: **rabisque na lâmina** e,
+- Na aba **Inserir**, o botão **Draw** (grupo **Desenho à mão e por pontos**) liga o lápis: **rabisque na lâmina** e,
   ao soltar, o assistente **refaz o traço por cima** com a forma exata — **retângulo, retângulo
   arredondado, elipse, triângulo, linha, seta e arco** — no mesmo lugar e tamanho, já como forma
   normal (editável, com medidas em cm e ida e volta no `.pptx`). O traço torto é **endireitado
@@ -206,8 +206,27 @@ avisado ao abrir (nunca some em silêncio).
   é diagonal de propósito (fora da tolerância de ~9°) fica como foi desenhado. Os trechos
   encaixados saem como **segmento reto** no caminho (não como curva): é o que impede a "barriga"
   que a cúbica fazia no meio do topo de um cartão mesmo com os pontos já alinhados.
-- Enquanto o lápis está ligado, a **barrinha do pincel** define **cor**, **espessura** (1, 2, 4
-  ou 8 pt) e o assistente, e mostra o que está sendo entendido ("entendi: Círculo"); **Esc** sai.
+- **Modos Livre vs Pontos na barra do Pincel**: enquanto o lápis está ligado, a **barrinha do pincel** define
+  **cor**, **espessura** (1, 2, 4 ou 8 pt), assistente, e agora permite alternar entre **[Livre]** (arraste para
+  rabiscar) e **[Pontos]** (clique para posicionar nós de parada). No modo Livre, dar um clique pontual sem arrastar
+  também inicia a inserção de nós de parada automaticamente.
+
+### Curva por pontos de parada (ferramenta Curva e modo Pontos)
+
+- **Onde encontrar**: na aba **Inserir ▸ Linhas ▸ Curva** ou ativando **[Pontos]** na barra flutuante do Draw.
+- **Como funciona**: cada clique na lâmina adiciona um nó de controle de passagem. O caminho é interpolado
+  em tempo real com spline suave $C^1$ (Catmull-Rom), garantindo contornos limpos e sem oscilações indesejadas.
+- **Fechamento suave**: ao aproximar o mouse do ponto inicial (marcado com halo verde pulsante), um clique fecha o
+  contorno criando uma forma geométrica completa (`custom`, com preenchimento).
+- **Quinas e cantos retos**: segure `Alt` ao clicar para transformar o nó num canto reto (marcador quadrado).
+- **Travamento de direção**: segure `Shift` enquanto move o mouse para travar o segmento a cada 45° (horizontal,
+  vertical ou diagonal perfeita).
+- **Encaixe magnético (snap)**: aproximações próximas a bordas ou centros de outras formas da lâmina alinham o
+  ponto automaticamente.
+- **Conclusão e atalhos**:
+  - `Enter` ou botão **Concluir** ou **duplo clique**: finaliza a curva aberta.
+  - `Backspace` ou `Delete`: desfaz o último ponto adicionado.
+  - `Esc` ou botão **✕**: descarta e cancela o traçado em andamento.
 
 ## Conectar formas
 

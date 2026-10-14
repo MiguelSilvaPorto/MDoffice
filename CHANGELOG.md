@@ -413,6 +413,26 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **terminando antes da âncora**. Os botões de ordem (Trazer para frente etc.) seguem desabilitados
   sem seleção, como no PowerPoint.
 
+- **Designs criados na hora (o gerador das Ideias)**: as ideias só combinavam o catálogo (19
+  designs × 3 acabamentos). Agora **três cartões de cada fornada são criados pelo app**: uma
+  paleta montada na hora a partir de uma cor de partida (o **ângulo de ouro** espalha as
+  paletas), um **esquema harmônico** (análogo, complementar ou triádico), fundo claro ou escuro
+  alternado e uma fonte que combina — o nome sai da cor ("Verde análogo") e o cartão diz
+  **Novo**. A semente avança a cada fornada, então as paletas **não se repetem**; o design é
+  **determinístico** (o `gerado-N` volta pela mesma função), e é isso que faz a prévia do cartão
+  ser exatamente o que o clique aplica. O texto de cada paleta é conferido contra o fundo
+  (**WCAG 4,5:1**, medido em 14,9 e 15,9 nas oito primeiras) antes de a ideia aparecer.
+
+- **Curva por pontos de parada e modo Pontos no Draw**: desenhar contornos e curvas suaves à mão livre
+  costumava deixar pontos tortos ou traços ondulados. Agora o PowerPoint oferece duas soluções integradas:
+  - **Ferramenta dedicada Curva** na fita (**Inserir ▸ Linhas ▸ Curva**): clique na lâmina para marcar pontos
+    de parada sucessivos; o traço é recalculado em tempo real com interpolação suave $C^1$ (Catmull-Rom), sem quinas.
+  - **Modo Pontos na barra do Draw**: a barra flutuante do pincel traz o alternador **[Livre]** e **[Pontos]**,
+    e um clique sem arrastar no modo Livre inicia os nós de parada automaticamente.
+  - **Ajustes de precisão**: fechar o contorno ao clicar próximo ao nó inicial (halo verde), gerando forma fechada;
+    segurar `Alt` para marcar o nó como canto reto/quina (marcador quadrado); segurar `Shift` para travar o segmento
+    a cada 45°; `Backspace`/`Delete` para remover o último ponto; `Enter` ou duplo-clique para concluir curva aberta;
+    e `Esc` para cancelar.
 - **Copiar formatação (o Pincel de Formatação)**: a apresentação ganhou o botão que faltava na
   **Área de Transferência** da fita — com uma forma escolhida, ele **copia a pintura e o formato do
   texto** dela (preenchimento, contorno, sombra, transparência, a receita do **Estilo de Cor** e

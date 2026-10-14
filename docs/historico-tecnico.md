@@ -8657,3 +8657,52 @@ antigas quando fizer sentido.
   por título (`promover-entrada.mjs`, que confere antes se a entrada já não está em "Adicionado" e
   recusa se estiver). As demais ficam para quem as escreveu — promover por conta própria o trabalho
   alheio é o tipo de atalho que faz o CHANGELOG mentir.
+
+## src/powerpoint/edicao/desenho.ts
+
+### 2026-10-14 · curva por pontos · Catmull-Rom para curvas abertas/fechadas e geradores de forma
+- **Local:** `PontoTraco`, `caminhoDePontos`, `svgPathDePontosPct` e `formaDeCurva`
+- **Linha:** `PontoTraco` ganha campo opcional `reto?: boolean`; `caminhoDePontos` passa a aceitar `fechado = false`, calculando derivadas contínuas $C^1$ para anel fechado ou segmentos abertos com suporte a quinas (`L`); novas funções exportadas `svgPathDePontosPct` (string SVG em porcentagem para prévia viva) e `formaDeCurva` (cria forma `custom` fechada ou aberta com o pincel ativo).
+- **Porquê:** desenhar curvas à mão livre com o mouse gera ondulações inevitáveis. A interpolação por pontos de parada (spline Catmull-Rom cúbica) garante contornos orgânicos e matematicamente suaves sem desvios, com suporte a cantos retos quando o usuário desejar.
+
+## src/powerpoint/stage.ts
+
+### 2026-10-14 · curva por pontos · manipulação de nós no palco, snap magnético e prévia elástica
+- **Local:** tipo `Ferramenta`, `StageHooks.aoCurva`, estado interno (`pontosCurva`, `cursorCurva`, `modoDesenho`), `aoPressionar`, `aoMover`, `aoSoltar`, `aoDuploClique` e `desenharSelecao`
+- **Linha:** inclusão da ferramenta `{ tipo: "curva" }`; detecção de clique pontual no modo Livre para iniciar nós; alternância de modo desenho; trava angular de 45° com `Shift`; quinas com `Alt`; snap magnético a formas existentes; cálculo de proximidade do ponto inicial (< 14px) com halo verde pulsante; renderização do caminho elástico em SVG e dos marcadores `.pp-no-curva`.
+- **Porquê:** permite ao usuário colocar pontos de controle com precisão visual imediata, com feedback elástico e fechamento orgânico de formas livres.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · curva por pontos · barra de pincel com modos Livre/Pontos, atalhos e integração de forma
+- **Local:** barra flutuante `.pp-pincel` no DOM, `ligarPincel()`, `atualizarPincel()`, `aoCurva()`, `aoTecla()` e despacho no `run()`
+- **Linha:** inseridos botões `[Livre]`, `[Pontos]`, `[Concluir]`, `[✕]` e texto de dicas na barra flutuante; integração com `aoCurva` criando e selecionando a nova forma na lâmina com histórico de undo/redo; tratamento de teclado (`Enter` conclui, `Escape` cancela, `Backspace`/`Delete` desfaz último ponto); suporte a `ferramenta:curva` e `case "curva"`.
+- **Porquê:** oferece tanto a ferramenta direta de Curva na fita quanto a comodidade de alternar ou usar pontos de parada no próprio Draw.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · curva por pontos · botão Curva na fita e rótulo do grupo
+- **Local:** `inserir()` (grupo Linhas e grupo Desenho) e `atualizar()`
+- **Linha:** adição do botão `ferramenta:curva` no grupo "Linhas" com ícone `i-curve`; renomeação do grupo "Desenho" para "Desenho à mão e por pontos"; acendimento do botão no `atualizar()`.
+- **Porquê:** dá acesso direto e descobrível à ferramenta na fita de opções do PowerPoint.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · curva por pontos · estilização dos modos do pincel e marcadores dos nós
+- **Local:** regras para `.pp-pincel-modo`, `.pp-pincel-btn`, `.pp-pincel-concluir`, `.pp-pincel-cancelar`, e nós `.pp-no-curva`
+- **Linha:** estilos para botões da barra flutuante e marcadores de nó (circular, quadrado para quina reta, e verde com halo pulsante para fechamento).
+- **Porquê:** garante acabamento visual elegante e alinhado ao design do mdOffice.
+
+## index.html
+
+### 2026-10-14 · curva por pontos · símbolo SVG i-curve
+- **Local:** `<svg id="pp-icons">`
+- **Linha:** inclusão do `<symbol id="i-curve" ...>` com visual de curva spline e nós de controle.
+- **Porquê:** fornece o ícone para o botão da ferramenta na fita.
+
+## scripts/testar-desenho-assistido.mjs
+
+### 2026-10-14 · curva por pontos · testes unitários para interpolação e formas livres
+- **Local:** novos blocos de teste para `svgPathDePontosPct` e `formaDeCurva`
+- **Linha:** testes cobrindo curva aberta, curva fechada, nós retos com comando `L` e estrutura das formas geradas.
+- **Porquê:** assegura cobertura de testes automatizados e previne regressões.

@@ -22,6 +22,7 @@ import type { Animacao, Lado, Shape, ShapeBox } from "./schema";
 import { CANTO_ROTULO, CANTOS, cantosDe, valoresComSelecao, type Canto } from "./edicao/formato";
 import { alvoDaConexao, bolinhaDaConexao } from "./edicao/ligacoes";
 import { temTexto } from "./edicao/texto";
+import { svgPathDePontosPct, type PontoTraco } from "./edicao/desenho";
 
 const ZOOM_MIN = 40;
 /** Até 800%: a lâmina é HTML (vetorial), então ampliar não perde nitidez. */
@@ -46,8 +47,8 @@ export function passoZoom(atual: number): number {
 const r1 = (v: number) => Math.round(v * 10) / 10;
 const r2 = (v: number) => Math.round(v * 100) / 100;
 
-/** Ferramenta ativa: desenhar arrastando, o lápis do "Draw", o "Conectar" (ligar formas) ou o pincel de formatação. */
-export type Ferramenta = { tipo: "forma"; id: string } | { tipo: "texto" } | { tipo: "desenho" } | { tipo: "conectar" } | { tipo: "pincel" } | null;
+/** Ferramenta ativa: desenhar arrastando, o lápis do "Draw", o "Conectar", a "Curva" por pontos ou o pincel de formatação. */
+export type Ferramenta = { tipo: "forma"; id: string } | { tipo: "texto" } | { tipo: "desenho" } | { tipo: "conectar" } | { tipo: "curva" } | { tipo: "pincel" } | null;
 
 export interface ContextoPalco {
   shapes: Shape[];
@@ -101,6 +102,8 @@ export interface StageHooks {
   aoLigar: (l: { de: string; ladoDe: Lado; para: string; ladoPara: Lado }) => void;
   /** pincel de formatação: a forma clicada recebe o formato copiado (null = clique no vazio) */
   aoPincelar: (id: string | null) => void;
+  /** terminou ou fechou uma curva por pontos de parada */
+  aoCurva?: (c: { pontos: { x: number; y: number; reto?: boolean }[]; fechado: boolean }) => void;
 }
 
 type Modo =
@@ -110,7 +113,7 @@ type Modo =
   | { t: "retangulo"; x0: number; y0: number; soma: boolean; base: string[] }
   | { t: "criar"; x0: number; y0: number }
   | { t: "canto"; ids: string[]; alvo: Canto; sel: Canto[]; colapsar: boolean; mexeu: boolean; partida: { x: number; y: number }; ref: { box: ShapeBox; rot: number }; inicial: Map<string, [number, number, number, number]> }
-  | { t: "traco"; pontos: { x: number; y: number }[] }
+  | { t: "traco"; pontos: { x: number; y: number }[]; partida: { x: number; y: number }; moveu: boolean }
   | { t: "celulas"; id: string; r0: number; c0: number }
   | {
       /** botão direito pressionado: move a TELA (panorama) em vez de mexer na lâmina */
@@ -135,6 +138,14 @@ export class Stage {
   private rect: ShapeBox | null = null;
   /** traço à mão em andamento (em % da lâmina), só no modo desenho */
   private traco: { x: number; y: number }[] | null = null;
+  /** pontos fixos de parada da curva em andamento (em % da lâmina) */
+  private pontosCurva: { x: number; y: number; reto?: boolean }[] = [];
+  /** posição do cursor elástico durante o desenho da curva */
+  private cursorCurva: { x: number; y: number } | null = null;
+  /** o cursor está perto do ponto inicial (clique fecha a forma)? */
+  private pertoDoInicio = false;
+  /** modo do desenho no Draw: "livre" (arrasto) ou "pontos" (cliques de parada) */
+  private modoDesenho: "livre" | "pontos" = "livre";
   /** modo conectar: a forma sob o mouse (as bolinhas seguem ela) e a bolinha de origem escolhida */
   private ligHover: string | null = null;
   private ligOrigem: { id: string; lado: Lado } | null = null;
@@ -354,9 +365,37 @@ export class Stage {
           `<path d="${d}" fill="none" stroke="#${ctx.pincel?.cor ?? "888888"}" stroke-width="${ctx.pincel?.w ?? 2}" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`
       );
     }
+    if (this.pontosCurva.length > 0) {
+      const pts = [...this.pontosCurva];
+      if (this.cursorCurva && !this.pertoDoInicio) {
+        pts.push(this.cursorCurva);
+      }
+      const cor = ctx.pincel?.cor ?? "888888";
+      const w = ctx.pincel?.w ?? 2;
+      const fechando = this.pertoDoInicio && this.pontosCurva.length >= 3;
+      const d = svgPathDePontosPct(pts, fechando);
+      html.push(
+        `<svg class="pp-traco pp-curva-preview" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">` +
+          `<path d="${d}" fill="${fechando ? "#" + cor : "none"}" fill-opacity="${fechando ? "0.15" : "0"}" stroke="#${cor}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>` +
+        `</svg>`
+      );
+      for (let i = 0; i < this.pontosCurva.length; i++) {
+        const pt = this.pontosCurva[i];
+        const ehInicio = i === 0;
+        const aceso = ehInicio && this.pertoDoInicio;
+        const cls = `pp-no-curva${ehInicio ? " inicio" : ""}${aceso ? " fecha" : ""}${pt.reto ? " reto" : ""}`;
+        html.push(
+          `<span class="${cls}" style="left:${pt.x.toFixed(2)}%;top:${pt.y.toFixed(2)}%" title="${ehInicio ? (aceso ? "Clique para fechar a forma" : "Ponto inicial") : `Ponto ${i + 1}`}"></span>`
+        );
+      }
+    }
     if (this.rect) {
       const b = this.rect;
       html.push(`<div class="pp-marquee" style="left:${b.x}%;top:${b.y}%;width:${b.w}%;height:${b.h}%"></div>`);
+    }
+    if (ctx.ferramenta?.tipo !== "curva" && ctx.ferramenta?.tipo !== "desenho") {
+      this.pontosCurva = [];
+      this.cursorCurva = null;
     }
     // modo conectar: as bolinhas nas bordas da forma sob o mouse (a de origem fica acesa)
     if (ctx.ferramenta?.tipo !== "conectar") {
@@ -481,8 +520,22 @@ export class Stage {
     // ferramenta de criação ativa: começa a desenhar (ou a rabiscar, no modo desenho)
     if (ctx.ferramenta) {
       this.slideEl.setPointerCapture(e.pointerId);
+      if (ctx.ferramenta.tipo === "curva" || (ctx.ferramenta.tipo === "desenho" && (this.modoDesenho === "pontos" || this.pontosCurva.length > 0))) {
+        const pSnap = this.pontoComSnap(e, ctx);
+        if (this.pertoDoInicio && this.pontosCurva.length >= 3) {
+          this.hooks.aoCurva?.({ pontos: [...this.pontosCurva], fechado: true });
+          this.limparCurva();
+          e.preventDefault();
+          return;
+        }
+        this.pontosCurva.push(pSnap);
+        this.cursorCurva = pSnap;
+        this.desenharSelecao();
+        e.preventDefault();
+        return;
+      }
       if (ctx.ferramenta.tipo === "desenho") {
-        this.modo = { t: "traco", pontos: [p] };
+        this.modo = { t: "traco", pontos: [p], partida: p, moveu: false };
         this.traco = this.modo.pontos;
         this.desenharSelecao();
       } else {
@@ -724,10 +777,15 @@ export class Stage {
 
   private aoMover(e: PointerEvent): void {
     if (!this.modo) {
+      const ctx = this.hooks.contexto();
+      if (ctx.ferramenta?.tipo === "curva" || this.pontosCurva.length > 0) {
+        this.cursorCurva = this.pontoComSnap(e, ctx);
+        this.desenharSelecao();
+        return;
+      }
       // modo conectar: as bolinhas seguem a forma sob o ponteiro. O alvo é GEOMÉTRICO (bolinha
       // manda, depois a caixa de cima, com histerese): pelo DOM, a fresta de ~6 px da bolinha
       // pertence à caixa de baixo e o alvo alterna — as bolinhas piscam e a ligação sai errada
-      const ctx = this.hooks.contexto();
       if (ctx.ferramenta?.tipo === "conectar") {
         const p = this.pontoEmPct(e);
         const r = this.slideEl!.getBoundingClientRect();
@@ -930,6 +988,9 @@ export class Stage {
     }
 
     if (modo.t === "traco") {
+      if (Math.hypot(p.x - modo.partida.x, p.y - modo.partida.y) >= 0.5) {
+        modo.moveu = true;
+      }
       const ult = modo.pontos[modo.pontos.length - 1];
       if (Math.hypot(p.x - ult.x, p.y - ult.y) >= 0.12) modo.pontos.push(p);
       this.desenharSelecao();
@@ -977,10 +1038,18 @@ export class Stage {
 
     const ctx = this.hooks.contexto();
     if (modo.t === "traco") {
-      const pontos = this.pontosEmPt(modo.pontos, ctx.dim);
       this.traco = null;
-      this.desenharSelecao();
-      if (pontos.length > 1) this.hooks.aoTraco({ pontos });
+      if (modo.moveu) {
+        const pontos = this.pontosEmPt(modo.pontos, ctx.dim);
+        this.desenharSelecao();
+        if (pontos.length > 1) this.hooks.aoTraco({ pontos });
+      } else {
+        // Clique sem arrastar no modo desenho: inicia ou acrescenta ponto de parada
+        const pSnap = this.pontoComSnap(e, ctx);
+        this.pontosCurva = [pSnap];
+        this.cursorCurva = pSnap;
+        this.desenharSelecao();
+      }
       return;
     }
     if (modo.t === "criar") {
@@ -1016,7 +1085,117 @@ export class Stage {
     this.desenharSelecao();
   }
 
+  temPontosCurva(): boolean {
+    return this.pontosCurva.length > 0;
+  }
+
+  definirModoDesenho(modo: "livre" | "pontos"): void {
+    this.modoDesenho = modo;
+    this.desenharSelecao();
+  }
+
+  obterModoDesenho(): "livre" | "pontos" {
+    return this.modoDesenho;
+  }
+
+  finalizarCurva(): void {
+    if (this.pontosCurva.length >= 2) {
+      this.hooks.aoCurva?.({ pontos: [...this.pontosCurva], fechado: false });
+    }
+    this.limparCurva();
+  }
+
+  cancelarCurva(): void {
+    this.limparCurva();
+  }
+
+  removerUltimoPontoCurva(): void {
+    if (this.pontosCurva.length > 0) {
+      this.pontosCurva.pop();
+      this.desenharSelecao();
+    }
+  }
+
+  limparCurva(): void {
+    this.pontosCurva = [];
+    this.cursorCurva = null;
+    this.pertoDoInicio = false;
+    this.desenharSelecao();
+  }
+
+  pontosEmPtComReto(pontos: { x: number; y: number; reto?: boolean }[], dim: Dim): (PontoTraco & { reto?: boolean })[] {
+    return pontos.map((p) => ({ x: (p.x / 100) * dim.w, y: (p.y / 100) * dim.h, reto: p.reto }));
+  }
+
+  /** Ponto em % com snap (ao início, ao ângulo de 45° com Shift, e a bordas de formas existentes). */
+  private pontoComSnap(e: PointerEvent, ctx: ContextoPalco): { x: number; y: number; reto?: boolean } {
+    const raw = this.pontoEmPct(e);
+    const r = this.slideEl?.getBoundingClientRect();
+    const wPx = r?.width ?? 960;
+    const hPx = r?.height ?? 540;
+
+    // 1) Perto do ponto inicial? Fecha a forma
+    if (this.pontosCurva.length >= 3) {
+      const p0 = this.pontosCurva[0];
+      const d0 = Math.hypot(((raw.x - p0.x) / 100) * wPx, ((raw.y - p0.y) / 100) * hPx);
+      if (d0 < 14) {
+        this.pertoDoInicio = true;
+        return { x: p0.x, y: p0.y, reto: e.altKey };
+      }
+    }
+    this.pertoDoInicio = false;
+
+    // 2) Shift trava em múltiplos de 45°
+    if (e.shiftKey && this.pontosCurva.length > 0) {
+      const prev = this.pontosCurva[this.pontosCurva.length - 1];
+      const dxPt = ((raw.x - prev.x) / 100) * ctx.dim.w;
+      const dyPt = ((raw.y - prev.y) / 100) * ctx.dim.h;
+      const len = Math.hypot(dxPt, dyPt);
+      if (len > 1) {
+        const ang = Math.atan2(dyPt, dxPt);
+        const step = Math.PI / 4;
+        const snapped = Math.round(ang / step) * step;
+        raw.x = prev.x + ((Math.cos(snapped) * len) / ctx.dim.w) * 100;
+        raw.y = prev.y + ((Math.sin(snapped) * len) / ctx.dim.h) * 100;
+      }
+      return { x: raw.x, y: raw.y, reto: e.altKey };
+    }
+
+    // 3) Encaixe magnético em bordas e centros de formas existentes
+    const tolX = (10 / wPx) * 100;
+    const tolY = (10 / hPx) * 100;
+    for (const s of ctx.shapes) {
+      if (s.rot && Math.abs(s.rot % 360) > 0.5) continue;
+      const b = s.box;
+      const alvosX = [b.x, b.x + b.w, b.x + b.w / 2];
+      const alvosY = [b.y, b.y + b.h, b.y + b.h / 2];
+      for (const tx of alvosX) {
+        if (Math.abs(raw.x - tx) <= tolX) {
+          raw.x = tx;
+          break;
+        }
+      }
+      for (const ty of alvosY) {
+        if (Math.abs(raw.y - ty) <= tolY) {
+          raw.y = ty;
+          break;
+        }
+      }
+    }
+
+    return { x: raw.x, y: raw.y, reto: e.altKey };
+  }
+
   private aoDuploClique(e: MouseEvent): void {
+    if (this.pontosCurva.length >= 2) {
+      const n = this.pontosCurva.length;
+      if (n >= 3 && Math.hypot(this.pontosCurva[n - 1].x - this.pontosCurva[n - 2].x, this.pontosCurva[n - 1].y - this.pontosCurva[n - 2].y) < 1.0) {
+        this.pontosCurva.pop();
+      }
+      this.finalizarCurva();
+      e.preventDefault();
+      return;
+    }
     const alvo = e.target as HTMLElement;
     // (o duplo clique nas alças de canto é detectado no aoPressionar: o overlay é reconstruído
     // entre os cliques e o evento nativo se perde)
