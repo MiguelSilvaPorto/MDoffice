@@ -1,0 +1,12 @@
+# R07 — lei: número, data, órgão, publicação (NBR 6023:2025).
+#
+# Sem órgão → completar: a referência de legislação começa pelo órgão emissor
+# ("BRASIL. Lei n. 8.112…"). A acusação é da entrada que começa pelo TIPO ("Lei n. …").
+# Regra de CONFERÊNCIA: o aviso sai sem sugestão de troca (o órgão não é conhecido).
+id = "abnt.r07"
+norma = "nbr6023:2025"
+grupo = "R"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "referencia-lei"
+mensagem = "(o verificador escreve a mensagem)"

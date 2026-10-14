@@ -1,0 +1,13 @@
+# R06 — site: "Disponível em: endereço. Acesso em: data." (NBR 6023:2025).
+#
+# Sem "Acesso em" → acrescentar a data; endereço sem os rótulos → completar. A máscara
+# esconde a URL das regras de texto, e "sem 'Acesso em'" é ausência: o julgamento é do
+# verificador `referencia-site`, sobre o texto ORIGINAL da entrada. Regra de CONFERÊNCIA
+# (a data de acesso não é conhecida pela máquina) — é a de confiança alta do catálogo.
+id = "abnt.r06"
+norma = "nbr6023:2025"
+grupo = "R"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "referencia-site"
+mensagem = "(o verificador escreve a mensagem)"

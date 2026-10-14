@@ -71,6 +71,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **A03** acusa citação autor-data — “(Silva, 2020)” — dentro do resumo. Os avisos de
   ausência ancoram no fim do resumo, onde o elemento entraria, e sem RESUMO no documento as
   regras são silêncio (quem cobra o resumo é a regra de estrutura).
+- **Motor ABNT — forma de cada tipo de referência (NBR 6023:2025)**: as referências passam a
+  ser conferidas **por tipo** — **livro** (local e editora), **capítulo** ("In:" com a obra
+  completa), **artigo** (título do periódico antes de "v./n." e as páginas), **site**
+  ("Disponível em" e "Acesso em: data"), **lei** (órgão emissor), **tese/dissertação**
+  (instituição e ano), **evento** (ano) e **patente** (número do registro). São as oito regras
+  **R03–R10**, de **conferência**: o dado que falta a máquina não conhece, então o aviso sai
+  **sem sugestão de troca** — ele diz o que completar. Cada regra só acusa com marca forte do
+  tipo (páginas da parte ou um segundo autor no capítulo, "In:" + Anais no evento, campo da
+  patente…) e fica quieta na dúvida; cada teste tem **os dois lados** — a entrada que acusa e a
+  referência **completa** do mesmo tipo, que não pode acusar —, e uma **bibliografia com uma
+  referência completa de cada tipo** sai sem nenhum aviso.
 - **Avisos de estilo com a correção pronta no popup**: clicar num aviso como **"Frase muito
   comprida"** agora mostra o trecho **já corrigido** ("… do novo projeto. E combinamos de …") com
   um clique para aplicar - antes o popup só dizia "comece nova frase aqui". Nesses avisos os botões

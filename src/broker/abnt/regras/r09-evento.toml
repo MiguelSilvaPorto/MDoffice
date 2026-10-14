@@ -1,0 +1,12 @@
+# R09 — evento: nome, ano, local; "In:" ata/anais (NBR 6023:2025).
+#
+# Sem ano → completar: o trabalho apresentado em evento entra pelo par "In:" +
+# publicação (Anais/Atas) e cobra o ano do evento e o da publicação. Regra de
+# CONFERÊNCIA: o aviso sai sem sugestão de troca (a máquina não sabe a data).
+id = "abnt.r09"
+norma = "nbr6023:2025"
+grupo = "R"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "referencia-evento"
+mensagem = "(o verificador escreve a mensagem)"

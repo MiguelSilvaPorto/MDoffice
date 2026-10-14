@@ -1,0 +1,13 @@
+# R05 — artigo: título do periódico + v./n./p. (NBR 6023:2025).
+#
+# Sem periódico → completar; sem páginas, completar as páginas. A forma correta traz
+# o periódico ANTES do fascículo ("Revista X, v. 12, n. 3, p. 45-67, 2020"): quando o
+# "v." começa depois de ponto, o nome do periódico ficou de fora. Regra de CONFERÊNCIA
+# (o dado que falta não é conhecido), julgada no verificador `referencia-artigo`.
+id = "abnt.r05"
+norma = "nbr6023:2025"
+grupo = "R"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "referencia-artigo"
+mensagem = "(o verificador escreve a mensagem)"

@@ -41,6 +41,14 @@ import p01 from "./regras/p01.toml?raw";
 import tabelaTituloFonte from "./regras/tabela-titulo-e-fonte.toml?raw";
 import figuraLegendaFonte from "./regras/figura-legenda-e-fonte.toml?raw";
 import listasItensExistentes from "./regras/listas-itens-existentes.toml?raw";
+import r03Livro from "./regras/r03-livro.toml?raw";
+import r04Capitulo from "./regras/r04-capitulo.toml?raw";
+import r05Artigo from "./regras/r05-artigo.toml?raw";
+import r06Site from "./regras/r06-site.toml?raw";
+import r07Lei from "./regras/r07-lei.toml?raw";
+import r08Tese from "./regras/r08-tese.toml?raw";
+import r09Evento from "./regras/r09-evento.toml?raw";
+import r10Patente from "./regras/r10-patente.toml?raw";
 
 const FONTES: { nome: string; texto: string }[] = [
   { nome: "horas.toml", texto: horas },
@@ -73,6 +81,14 @@ const FONTES: { nome: string; texto: string }[] = [
   { nome: "tabela-titulo-e-fonte.toml", texto: tabelaTituloFonte },
   { nome: "figura-legenda-e-fonte.toml", texto: figuraLegendaFonte },
   { nome: "listas-itens-existentes.toml", texto: listasItensExistentes },
+  { nome: "r03-livro.toml", texto: r03Livro },
+  { nome: "r04-capitulo.toml", texto: r04Capitulo },
+  { nome: "r05-artigo.toml", texto: r05Artigo },
+  { nome: "r06-site.toml", texto: r06Site },
+  { nome: "r07-lei.toml", texto: r07Lei },
+  { nome: "r08-tese.toml", texto: r08Tese },
+  { nome: "r09-evento.toml", texto: r09Evento },
+  { nome: "r10-patente.toml", texto: r10Patente },
 ];
 
 /** Perfil institucional: sobrescreve versão de norma e o que fazer com cada regra. */

@@ -1,0 +1,13 @@
+# R08 — tese/dissertação: tipo, instituição, ano (NBR 6023:2025).
+#
+# Sem instituição → completar (e, com a instituição, o ano também é cobrado). Entra
+# pelo tipo do trabalho ("Tese (Doutorado)", "Dissertação (Mestrado)", "TCC",
+# "Trabalho de Conclusão de Curso"). Regra de CONFERÊNCIA: o dado que falta não é
+# conhecido, então o aviso não sugere troca.
+id = "abnt.r08"
+norma = "nbr6023:2025"
+grupo = "R"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "referencia-tese"
+mensagem = "(o verificador escreve a mensagem)"

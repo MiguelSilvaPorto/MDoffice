@@ -1,0 +1,13 @@
+# R10 — patente: número, classificação, data (NBR 6023:2025).
+#
+# Sem número → completar: a patente entra pela palavra + um campo da forma
+# ("Depositante:", "Classificação", "Depósito:", "N. do registro:") e cobra o número
+# do registro. Regra de CONFERÊNCIA: o número não é conhecido, então o aviso não
+# sugere troca.
+id = "abnt.r10"
+norma = "nbr6023:2025"
+grupo = "R"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "referencia-patente"
+mensagem = "(o verificador escreve a mensagem)"

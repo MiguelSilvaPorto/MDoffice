@@ -2708,6 +2708,13 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o documento do módulo descreve o que o app faz; o menu do trecho longo e a marca da
   frase inteira precisam estar ali.
 
+### 2026-10-14 · (este commit) · conferência ABNT das referências por tipo
+- **Local:** “Escrita assistida (português, offline)”, bala nova depois da formalidade por classe
+- **Linha:** `novo`
+- **Porquê:** os avisos de R03–R10 aparecem para quem escreve (bloco REFERÊNCIAS); o documento
+  do módulo descreve o que o app faz, e um aviso de conferência sem troca automática precisa
+  estar dito para não parecer defeito quando não há sugestão.
+
 ## src/powerpoint/schema.ts · src/powerpoint/edicao/formato.ts
 
 ### 2026-10-14 · este commit · cantos por canto (modelo e regras)
@@ -3274,6 +3281,56 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** são avisos visíveis no editor; o documento do módulo descreve o que o app faz, e
   o recorte do aviso de fonte (“não sugere a troca: a autoria não é conhecida”) é uma decisão
   do produto que o usuário precisa entender.
+
+## src/broker/abnt/verificadores/referencias-tipos.ts (novo)
+
+### 2026-10-14 · (este commit) · R03–R10: a forma de cada tipo de referência
+- **Local:** helper `entradas` (parágrafos do bloco `referencias`, sem o título da seção, com
+  cache por leitura do documento) e os oito verificadores `referencia-livro`,
+  `referencia-capitulo`, `referencia-artigo`, `referencia-site`, `referencia-lei`,
+  `referencia-tese`, `referencia-evento`, `referencia-patente` — mais o registro `VERIFICADORES`
+- **Linha:** `novo` — as oito regras são de conferência e o julgamento mora no verificador
+- **Porquê:** a violação de R03–R10 é a **ausência** de um dado essencial (local/editora,
+  "In:", periódico, "Acesso em", órgão, instituição, ano, número) — e regex acha presença, não
+  ausência; além disso metade das decisões precisa da **entrada inteira** (segundo autor depois
+  do ponto, "v." logo depois de ponto, campo da patente com/sem número). Precisão primeiro:
+  cada verificador só entra com marca forte do tipo e fica quieto na dúvida (capítulo sem
+  rastro de parte, "Tese" sem parênteses, livro com "patentes" no título, endereço sem rótulo
+  em entrada que não é online); nenhum devolve `fix` — o dado que falta a máquina não conhece.
+  O que cada um Não distingue está dito no arquivo: R03 não separa livro de e-book (e livro
+  com local sem dois-pontos é acusado — pela norma o par "Local: Editora" é o elemento); R04
+  deixa passar capítulo sem páginas E sem segundo autor; R05 não vê periódico escrito depois
+  de ponto; R06 pega o endereço no meio de obra impressa; R08 aceita sigla depois de
+  travessão/vírgula; R09 exige "In:" + Anais/Atas; R10 cala quando o depósito parece número.
+
+## src/broker/abnt/regras/r03-livro.toml … r10-patente.toml (novos) · src/broker/abnt/index.ts
+
+### 2026-10-14 · (este commit) · as oito regras entram como dado (`tipo = "estrutura"`)
+- **Local:** os oito TOMLs novos e as entradas de `FONTES` (fim da lista, depois do
+  `latinismos.toml`) com os imports `?raw`
+- **Linha:** `10 fontes` → `18 fontes`; cada TOML novo declara `id = "abnt.r03"…"abnt.r10"`,
+  `norma = "nbr6023:2025"`, `severidade = "warning"`, `tipo = "estrutura"` e o `verifica`
+- **Porquê:** o TOML continua sendo a **declaração** (id do catálogo, norma, severidade, nome do
+  verificador) — é o que o perfil institucional usa para `off`/`soft`/`hard` por regra — e o
+  julgamento fica em `referencias-tipos.ts`; nenhuma tem `auto`/`substituir` (conferência não é
+  troca) e a mensagem é escrita pelo verificador.
+
+## scripts/testar-abnt-referencias-tipos.mts (novo) · scripts/testar-regras-abnt.mts · package.json
+
+### 2026-10-14 · (este commit) · teste das R03–R10 e dois consertos no teste de ouro
+- **Local:** teste novo com o ajudante `scripts/abnt/ferramentas.mts`; script
+  `test:abnt-referencias-tipos` no `package.json`; `scripts/testar-regras-abnt.mts` na carga e
+  nas três chamadas `map`
+- **Linha:** `carregadas === 10` → `carregadas >= 10`; `map(I.regraDeToml)` →
+  `map((r) => I.regraDeToml(r))` (nas três seções que usavam o método solto) e o script novo
+- **Porquê:** cada caso do teste tem os **dois lados** (acusa / referência completa que não
+  acusa) e uma **bibliografia completa, uma referência de cada tipo**, prova a precisão em
+  conjunto; os avisos são checados sem `fix`, sem sugestão e com a norma citada. No teste de
+  ouro, a contagem fixa (`=== 10`) quebraria a cada regra nova — o que ele protege é que as
+  dez antigas (e todas as novas) carreguem; e `map(I.regraDeToml)` passava o **índice** do map
+  como segundo argumento (`registro` do `regraDeToml`), o que passou despercebido enquanto não
+  havia regra de estrutura na carga: com a primeira (`abnt.r03`) virou "verificador
+  desconhecido (conhecidos: nenhum)".
 
 ---
 

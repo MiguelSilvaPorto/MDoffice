@@ -117,6 +117,13 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   existem — lista vazia, item apontando para uma figura/tabela que o documento não tem ou sigla
   que não é usada no texto são avisados. O aviso de fonte ausente **não sugere a troca**: a
   máquina não conhece a autoria.
+- **Conferência ABNT das referências (NBR 6023)**: no bloco **REFERÊNCIAS**, oito regras
+  (**R03–R10**) conferem a **forma de cada tipo** — livro sem local/editora, capítulo sem
+  “In:”, artigo sem o título do periódico ou sem as páginas, site sem “Acesso em: data”, lei
+  sem o órgão emissor, tese/dissertação sem instituição ou ano, evento sem ano e patente sem o
+  número do registro. O dado que falta não é conhecido, então esses avisos **apontam o que
+  completar, sem troca automática** — e só aparecem com marca forte do tipo (não valem em cima
+  de dúvida).
 - **Espaço esquecido** e **“Você quis dizer…?”**: palavras coladas viram duas; palavras a uma
   letra de uma comum ganham sugestão.
 - **Conferência ABNT de sumário e numeração**: com um **SUMÁRIO** no texto, o assistente compara

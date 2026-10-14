@@ -1,0 +1,13 @@
+# R03 — livro: autor. Título. Local: Editora, ano (NBR 6023:2025).
+#
+# "Livro, 2020" (sem local/editora) → completar dados. A violação é a AUSÊNCIA de um
+# dado que a máquina não conhece: regra de CONFERÊNCIA (sem `substituir`), e o
+# julgamento mora no verificador `referencia-livro` — regra de texto acha presença,
+# não ausência. O verificador não distingue livro de e-book (mesma forma).
+id = "abnt.r03"
+norma = "nbr6023:2025"
+grupo = "R"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "referencia-livro"
+mensagem = "(o verificador escreve a mensagem)"
