@@ -5,7 +5,8 @@ import type { EmbeddedFont, Fill, Line, Para, Run, Shape } from "../schema";
 import { aplicarTextoDigitado, type EstiloRun } from "../edicao/texto";
 import { htmlGrafico } from "./grafico";
 import { htmlMidia } from "./midia";
-import { PRESETS_CONHECIDOS, tracadoDoPreset, tracadoLivre, type Traçado } from "./presets";
+import { PRESETS_CONHECIDOS, tracadoDoPreset, tracadoLivre, retangulo4Cantos, type Traçado } from "./presets";
+import { cantosEditaveis } from "../edicao/formato";
 
 export interface CtxRender {
   /** tamanho da lâmina em pt */
@@ -278,6 +279,12 @@ function defsDeFill(id: string, fill: Fill | undefined, w: number, h: number, ct
 
 function tracadosDa(s: Shape, w: number, h: number): Traçado[] {
   if (s.paths?.length) return tracadoLivre(s.paths, w, h);
+  if (s.cantos?.length === 4 && cantosEditaveis(s.geom)) {
+    // raio por canto (em % do menor lado) manda no desenho
+    const ss = Math.min(w, h);
+    const r = s.cantos.map((v) => (Math.max(0, Math.min(50, v)) / 100) * ss) as [number, number, number, number];
+    return [{ d: retangulo4Cantos(w, h, r), preenche: true }];
+  }
   const g = s.geom ?? "rect";
   if (!PRESETS_CONHECIDOS.has(g)) avisarPresetDesconhecido(g);
   return tracadoDoPreset(g, w, h, s.adj);
@@ -462,6 +469,11 @@ function moldura(s: Shape, ctx: CtxRender): string {
   const w = (s.box.w / 100) * ctx.larguraPt;
   const h = (s.box.h / 100) * ctx.alturaPt;
   if (s.geom === "ellipse") return "border-radius:50%;";
+  if (s.cantos?.length === 4 && cantosEditaveis(s.geom)) {
+    const ss = Math.min(w, h);
+    const q = s.cantos.map((v) => cq((Math.max(0, Math.min(50, v)) / 100) * ss, ctx));
+    return `border-radius:${q[0]} ${q[1]} ${q[2]} ${q[3]};`;
+  }
   if (s.geom === "roundRect") return `border-radius:${cq((Math.min(w, h) * Math.min(s.adj?.adj ?? 16667, 50000)) / 100000, ctx)};`;
   return "";
 }

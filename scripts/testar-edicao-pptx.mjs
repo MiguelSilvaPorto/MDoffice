@@ -200,6 +200,33 @@ const TI = await empacotar("src/powerpoint/pptximport/texto.ts", "imptexto.mjs")
   ok("forma sem canto ignora o raio", F.comRaioDeCanto(s, 25) === s);
 }
 
+// ---------------------------------------------------------------- cantos por canto
+{
+  const setup2 = { aspect: "16:9", theme: "claro", showNumber: false, footer: "", fontFamily: "Segoe UI", fontSize: 18, bg: "" };
+  const redondo = () => forma("c1", 10, 10, 30, 20, { geom: "roundRect", adj: { adj: 16667 } });
+  ok("cantos: roundRect vira 16,67 nos quatro", JSON.stringify(F.cantosDe(redondo()).map((v) => Math.round(v * 100) / 100)) === JSON.stringify([16.67, 16.67, 16.67, 16.67]));
+  const soTl = F.comCantos(redondo(), ["tl"], 30);
+  ok("cantos: muda só os escolhidos", JSON.stringify(soTl.cantos) === JSON.stringify([30, 16.667, 16.667, 16.667]) && soTl.geom === "roundRect" && soTl.adj === undefined, JSON.stringify(soTl.cantos));
+  const dois = F.comCantos(redondo(), ["tl", "br"], 0);
+  ok("cantos: zera só os escolhidos", JSON.stringify(dois.cantos) === JSON.stringify([0, 16.667, 0, 16.667]));
+  ok("cantos: canto cortado (snip) não entra no raio por canto", F.cantosDe(forma("s", 0, 0, 10, 10, { geom: "snip1Rect" })) === null);
+  ok("representação: 4 iguais = roundRect", F.representacaoDeCantos([20, 20, 20, 20]) === "roundRect");
+  ok("representação: zeros = rect", F.representacaoDeCantos([0, 0, 0, 0]) === "rect");
+  ok("representação: só sup. direito = round1Rect", F.representacaoDeCantos([0, 20, 0, 0]) === "round1Rect");
+  ok("representação: par de cima = round2SameRect", F.representacaoDeCantos([20, 20, 0, 0]) === "round2SameRect");
+  ok("representação: diagonal = round2DiagRect", F.representacaoDeCantos([20, 0, 20, 0]) === "round2DiagRect");
+  ok("representação: 3+1 = forma livre", F.representacaoDeCantos([20, 20, 20, 0]) === "livre");
+  ok("adj do canto: 16,6667% = 16667", F.adjDeCanto(16.6667) === 16667);
+
+  const xmlDe = (f) => new R.Escritor(setup2).lamina({ md: "", layout: "conteudo", notes: "", shapes: [f] }).xml;
+  ok("arquivo: quatro iguais viram roundRect nativo", xmlDe({ ...redondo(), cantos: [20, 20, 20, 20] }).includes('<a:prstGeom prst="roundRect"'));
+  ok("arquivo: par de cima vira round2SameRect nativo", xmlDe({ ...redondo(), cantos: [20, 20, 0, 0] }).includes('<a:prstGeom prst="round2SameRect"'));
+  const livreXml = xmlDe({ ...redondo(), cantos: [20, 20, 20, 0] });
+  ok("arquivo: 3+1 vira forma livre (custGeom com curvas)", livreXml.includes("<a:custGeom") && livreXml.includes("<a:cubicBezTo"));
+  ok("arquivo: o raio por canto manda (adj antigo é ignorado)", !xmlDe({ ...redondo(), cantos: [20, 20, 20, 20], adj: { adj: 40000 } }).includes("40000"));
+  ok("arquivo: tudo zero vira retângulo", xmlDe({ ...redondo(), cantos: [0, 0, 0, 0] }).includes('<a:prstGeom prst="rect"'));
+}
+
 // ---------------------------------------------------------------- tabelas
 {
   const TB = await empacotar("src/powerpoint/edicao/tabela.ts", "tabela.mjs");

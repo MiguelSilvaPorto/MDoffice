@@ -31,6 +31,7 @@ export const GALERIA: ItemGaleria[] = [
   { geom: "snip2SameRect", rotulo: "Retângulo com cantos cortados", grupo: "Retângulos", adj: { adj1: 16667, adj2: 0 } },
   { geom: "round1Rect", rotulo: "Retângulo com um canto arredondado", grupo: "Retângulos" },
   { geom: "round2SameRect", rotulo: "Retângulo com cantos arredondados no topo", grupo: "Retângulos", adj: { adj1: 16667, adj2: 0 } },
+  { geom: "round2DiagRect", rotulo: "Retângulo com cantos arredondados em diagonal", grupo: "Retângulos", adj: { adj1: 16667, adj2: 0 } },
   { geom: "ellipse", rotulo: "Elipse", grupo: "Formas básicas" },
   { geom: "triangle", rotulo: "Triângulo", grupo: "Formas básicas" },
   { geom: "rtTriangle", rotulo: "Triângulo retângulo", grupo: "Formas básicas" },

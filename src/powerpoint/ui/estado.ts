@@ -1,5 +1,6 @@
 // O que a fita e o painel precisam saber do que está selecionado (o host calcula e entrega).
 import type { EstadoTrecho } from "../edicao/texto";
+import type { Canto } from "../edicao/formato";
 import type { CelulasSel, Ferramenta } from "../stage";
 import type { DeckSetup, Fill, Para, Shape, SlideLayout, Transicao } from "../schema";
 
@@ -45,6 +46,8 @@ export interface EstadoUI {
   altura: number;
   /** células escolhidas na tabela selecionada */
   celulas: CelulasSel | null;
+  /** cantos escolhidos para a edição de raio (palco e painel) */
+  cantosSel: Canto[];
 }
 
 export const FONTES_COMUNS = [

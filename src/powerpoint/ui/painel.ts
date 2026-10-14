@@ -1,6 +1,6 @@
 // Painel "Formatar" (à direita): tudo que a fita não cabe, com números exatos — preenchimento (sólido, gradiente com
 // paradas, imagem), contorno, sombra, cantos, tamanho e posição em cm, rotação, texto, recorte de imagem e fundo da lâmina.
-import { AJUSTES_POR_GEOM, raioDeCanto } from "../edicao/formato";
+import { AJUSTES_POR_GEOM, CANTOS, CANTO_ROTULO, cantosDe, raioDeCanto, representacaoDeCantos, type Canto } from "../edicao/formato";
 import { GRAFICO_TIPOS, paletaDeSeries } from "../edicao/grafico";
 import { MIDIA_ROTULOS } from "../edicao/midia";
 import { ORDEM_LAYOUTS, ROTULOS_LAYOUT } from "../edicao/layouts";
@@ -108,7 +108,8 @@ export class Painel {
   private assinar(est: EstadoUI): string {
     const f = est.forma;
     return JSON.stringify([
-      est.formas.map((s) => [s.id, s.box, s.rot, s.fillX, s.ln, s.shadow, s.opacity, s.adj, s.anchor, s.ins, s.wrap, s.vert, s.crop, s.flipH, s.flipV, s.bloqueada, s.autofit, s.grafico, s.midia, s.src]),
+      est.formas.map((s) => [s.id, s.box, s.rot, s.fillX, s.ln, s.shadow, s.opacity, s.adj, s.cantos, s.anchor, s.ins, s.wrap, s.vert, s.crop, s.flipH, s.flipV, s.bloqueada, s.autofit, s.grafico, s.midia, s.src]),
+      est.cantosSel,
       f ? f.geom : "",
       // o espaçamento de caracteres do painel segue o trecho escolhido no texto
       est.trecho && est.trecho.spc !== "misto" ? est.trecho.spc : null,
@@ -132,7 +133,7 @@ export class Painel {
     if (f.kind !== "imagem" && !(f.geom === "line" || f.geom?.endsWith("Connector3") || f.geom === "straightConnector1")) partes.push(secao("preench", "Preenchimento", this.htmlPreenchimento(f)));
     partes.push(secao("linha", "Linha", this.htmlLinha(f)));
     partes.push(secao("efeitos", "Efeitos", this.htmlEfeitos(f)));
-    const ajustes = this.htmlAjustes(f);
+    const ajustes = this.htmlAjustes(f, est);
     if (ajustes) partes.push(secao("ajustes", "Ajustes da forma", ajustes));
     partes.push(secao("tamanho", "Tamanho e posição", this.htmlTamanho(f, est)));
     if (f.paras !== undefined) partes.push(secao("texto", "Texto", this.htmlTexto(f, est)));
@@ -191,10 +192,57 @@ export class Painel {
     return partes.join("");
   }
 
-  private htmlAjustes(f: Shape): string {
-    const canto = raioDeCanto(f);
+  /**
+   * Cantos: os quatro valores do raio (%; sup. esq, sup. dir, inf. dir, inf. esq), os que estão
+   * escolhidos para a edição e como o arranjo vai parar no .pptx (preset nativo ou forma livre).
+   */
+  private htmlCantos(cantos: [number, number, number, number], est: EstadoUI): string {
+    const sel = est.cantosSel;
+    const valorDe = (c: Canto) => cantos[CANTOS.indexOf(c)];
+    const vals = sel.map(valorDe);
+    const iguais = vals.every((v) => Math.abs(v - vals[0]) < 0.01);
+    const valor = vals.length ? vals[0] : cantos[0];
+    const botao = (c: Canto) => {
+      const on = sel.includes(c);
+      return `<button type="button" class="pf-canto c-${c}${on ? " on" : ""}" data-click="canto-sel" data-valor="${c}" title="Canto ${CANTO_ROTULO[c]} — ${n1(valorDe(c))}%" aria-pressed="${on}">${n1(valorDe(c))}</button>`;
+    };
+    const nota: Record<string, string> = {
+      rect: "Sem arredondamento: vai como Retângulo comum.",
+      roundRect: "No arquivo: Retângulo arredondado (forma nativa do PowerPoint).",
+      round1Rect: "No arquivo: forma nativa com um canto arredondado.",
+      round2SameRect: "No arquivo: forma nativa com os cantos de cima/baixo arredondados.",
+      round2DiagRect: "No arquivo: forma nativa com os cantos em diagonal arredondados.",
+      livre: "No arquivo: forma livre (desenha igual; é o que o “Combinar formas” do PowerPoint produz).",
+    };
+    return `
+      <div class="pf-cantos">
+        <div class="pf-cantos-mapa" role="group" aria-label="Cantos da forma (clique para escolher quais editar)">
+          <span class="pf-cantos-quadro" aria-hidden="true"></span>
+          ${botao("tl")}${botao("tr")}${botao("br")}${botao("bl")}
+        </div>
+        <label class="pf-linha"><span>Raio</span><span class="pf-campo"><input type="range" data-act="canto" min="0" max="50" step="0.5" value="${iguais ? valor : ""}"><small>${sel.length} de 4 canto(s)${iguais ? "" : " · valores diferentes"}</small></span></label>
+        <div class="pf-botoes">
+          <button type="button" class="btn small" data-click="canto-todos"${sel.length === 4 ? " disabled" : ""}>Todos</button>
+          <button type="button" class="btn small" data-click="canto-opostos">Opostos</button>
+          <button type="button" class="btn small" data-click="canto-preset" data-valor="0">Quadrado</button>
+          <button type="button" class="btn small" data-click="canto-preset" data-valor="16.67">Padrão</button>
+          <button type="button" class="btn small" data-click="canto-preset" data-valor="25">Suave</button>
+          <button type="button" class="btn small" data-click="canto-preset" data-valor="50">Pílula</button>
+        </div>
+        <p class="pf-nota">${nota[representacaoDeCantos(cantos)] ?? ""}</p>
+      </div>`;
+  }
+
+  private htmlAjustes(f: Shape, est: EstadoUI): string {
+    const cantos = cantosDe(f);
     const partes: string[] = [];
-    if (canto !== null) partes.push(`<label class="pf-linha"><span>Raio dos cantos</span><span class="pf-campo"><input type="range" data-act="canto" min="0" max="50" step="0.5" value="${canto}"><small>${n1(canto)}%</small></span></label>`);
+    if (cantos) {
+      partes.push(this.htmlCantos(cantos, est));
+    } else {
+      // geometrias de canto CORTADO (snip*): o ajuste continua sendo o tamanho do corte
+      const corte = raioDeCanto(f);
+      if (corte !== null) partes.push(`<label class="pf-linha"><span>Cantos recortados</span><span class="pf-campo"><input type="range" data-act="canto-corte" min="0" max="50" step="0.5" value="${corte}"><small>${n1(corte)}%</small></span></label>`);
+    }
     const lista = AJUSTES_POR_GEOM[f.geom ?? ""] ?? [];
     for (const a of lista) {
       if ((f.geom === "roundRect" || f.geom === "round1Rect") && a.chave === "adj") continue;

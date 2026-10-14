@@ -18,11 +18,15 @@ import {
   type Guia,
 } from "./edicao/geometria";
 import type { Shape, ShapeBox } from "./schema";
+import { CANTO_ROTULO, CANTOS, cantosDe, valoresComSelecao, type Canto } from "./edicao/formato";
 
 const ZOOM_MIN = 40;
 /** Até 400%: a lâmina é HTML (vetorial), então ampliar não perde nitidez. */
 const ZOOM_MAX = 400;
 const ZOOM_PASSO = 10;
+
+const r1 = (v: number) => Math.round(v * 10) / 10;
+const r2 = (v: number) => Math.round(v * 100) / 100;
 
 /** Ferramenta de criação ativa (arrastar na lâmina para desenhar). */
 export type Ferramenta = { tipo: "forma"; id: string } | { tipo: "texto" } | null;
@@ -39,6 +43,8 @@ export interface ContextoPalco {
   comGrupos: (ids: string[]) => string[];
   /** células selecionadas de uma tabela */
   celulas: CelulasSel | null;
+  /** cantos escolhidos para a edição (as alças de canto do palco) */
+  cantosSel: Canto[];
 }
 
 export interface CelulasSel {
@@ -63,6 +69,8 @@ export interface StageHooks {
   aoDuplicarParaArrastar: () => string[];
   /** clique ou arraste sobre células de uma tabela (null = limpar) */
   aoCelulas: (sel: CelulasSel | null) => void;
+  /** os cantos escolhidos para a edição mudaram (alças de canto do palco) */
+  aoSelecionarCantos: (cantos: Canto[]) => void;
 }
 
 type Modo =
@@ -71,6 +79,7 @@ type Modo =
   | { t: "girar"; ids: string[]; inicial: Map<string, { box: ShapeBox; rot: number }>; centro: { x: number; y: number }; angulo0: number }
   | { t: "retangulo"; x0: number; y0: number; soma: boolean; base: string[] }
   | { t: "criar"; x0: number; y0: number }
+  | { t: "canto"; ids: string[]; dono: string; alvo: Canto; sel: Canto[]; inicial: Map<string, [number, number, number, number]> }
   | { t: "celulas"; id: string; r0: number; c0: number };
 
 export class Stage {
@@ -83,6 +92,8 @@ export class Stage {
   private rect: ShapeBox | null = null;
   private quadro = 0;
   private ultimo: PointerEvent | null = null;
+  /** aviso flutuante do arrasto de canto ("22% · 3 cantos"), desenhado junto da seleção */
+  private hudCanto: string | null = null;
 
   constructor(hooks: StageHooks) {
     this.hooks = hooks;
@@ -197,17 +208,38 @@ export class Stage {
     const ctx = this.hooks.contexto();
     const sel = ctx.shapes.filter((s) => ctx.selecao.includes(s.id));
     const html: string[] = [];
-    const caixa = (b: ShapeBox, rot: number, extra: string, alcas: boolean) => {
+    const caixa = (b: ShapeBox, rot: number, extra: string, alcas: boolean, dentro = "") => {
       const alca = (a: string) => `<span class="pp-alca" data-alca="${a}"></span>`;
       const gira = alcas ? `<span class="pp-gira" data-gira="1"></span><span class="pp-gira-haste"></span>` : "";
       const handles = alcas ? ["nw", "n", "ne", "e", "se", "s", "sw", "w"].map(alca).join("") : "";
       html.push(
-        `<div class="pp-sel ${extra}" style="left:${b.x}%;top:${b.y}%;width:${b.w}%;height:${b.h}%;${rot ? `transform:rotate(${rot}deg);` : ""}">${handles}${gira}</div>`
+        `<div class="pp-sel ${extra}" style="left:${b.x}%;top:${b.y}%;width:${b.w}%;height:${b.h}%;${rot ? `transform:rotate(${rot}deg);` : ""}">${handles}${gira}${dentro}</div>`
       );
+    };
+    // alças de canto: cada uma senta no próprio arco; em raio 0 fica um tico para dentro,
+    // para não cobrir a alça de redimensionar que fica exatamente no canto
+    const alcasDeCanto = (s: Shape): string => {
+      const c = s.bloqueada ? null : cantosDe(s);
+      if (!c) return "";
+      const bw = (s.box.w / 100) * ctx.dim.w;
+      const bh = (s.box.h / 100) * ctx.dim.h;
+      const ss = Math.min(bw, bh);
+      const recuo = (v: number) => 0.2929 * (v / 100) * ss + this.afastamentoPt(ctx.dim);
+      const pctX = (v: number) => r2((recuo(v) / bw) * 100);
+      const pctY = (v: number) => r2((recuo(v) / bh) * 100);
+      const pos: Record<Canto, [number, number]> = {
+        tl: [pctX(c[0]), pctY(c[0])],
+        tr: [100 - pctX(c[1]), pctY(c[1])],
+        br: [100 - pctX(c[2]), 100 - pctY(c[2])],
+        bl: [pctX(c[3]), 100 - pctY(c[3])],
+      };
+      const alca = (id: Canto) =>
+        `<span class="pp-canto${ctx.cantosSel.includes(id) ? " on" : ""}" data-canto="${id}" title="Canto ${CANTO_ROTULO[id]} — ${r1(c[CANTOS.indexOf(id)])}%" style="left:${pos[id][0]}%;top:${pos[id][1]}%"></span>`;
+      return CANTOS.map(alca).join("") + (this.hudCanto ? `<span class="pp-canto-hud">${this.hudCanto}</span>` : "");
     };
     if (sel.length === 1 && !ctx.editando) {
       const s = sel[0];
-      caixa(s.box, s.rot, s.bloqueada ? "bloqueada" : "", !s.bloqueada);
+      caixa(s.box, s.rot, s.bloqueada ? "bloqueada" : "", !s.bloqueada, alcasDeCanto(s));
       if (s.tabela) html[html.length - 1] = html[html.length - 1].replace(/<\/div>$/, `<span class="pp-mover" data-mover title="Mover a tabela">✥</span></div>`);
     } else if (sel.length === 1 && ctx.editando === sel[0].id) {
       caixa(sel[0].box, sel[0].rot, "editando", false);
@@ -270,6 +302,40 @@ export class Stage {
       this.rect = null;
       e.preventDefault();
       return;
+    }
+
+    // alça de canto: escolhe os cantos (clique = só ele; Shift = soma/remove) e começa o arrasto
+    const cantoEl = alvo.closest<HTMLElement>("[data-canto]");
+    if (cantoEl && ctx.selecao.length === 1) {
+      const s = ctx.shapes.find((x) => x.id === ctx.selecao[0]);
+      const base = s && !s.bloqueada ? cantosDe(s) : null;
+      if (s && base) {
+        const id = cantoEl.dataset.canto as Canto;
+        const soma = e.shiftKey || e.ctrlKey || e.metaKey;
+        let selC: Canto[];
+        if (soma) {
+          selC = ctx.cantosSel.includes(id)
+            ? ctx.cantosSel.length > 1
+              ? ctx.cantosSel.filter((c) => c !== id)
+              : ctx.cantosSel
+            : [...ctx.cantosSel, id];
+        } else {
+          selC = ctx.cantosSel.includes(id) ? ctx.cantosSel : [id];
+        }
+        this.hooks.aoSelecionarCantos(selC);
+        const inicial = new Map<string, [number, number, number, number]>();
+        for (const sh of ctx.shapes.filter((x) => ctx.selecao.includes(x.id) && !x.bloqueada)) {
+          const c = cantosDe(sh);
+          if (c) inicial.set(sh.id, c);
+        }
+        if (!inicial.size) return;
+        this.slideEl.setPointerCapture(e.pointerId);
+        this.hooks.aoTransformar(new Map(), "inicio");
+        this.hudCanto = null;
+        this.modo = { t: "canto", ids: [...inicial.keys()], dono: s.id, alvo: id, sel: selC, inicial };
+        e.preventDefault();
+        return;
+      }
     }
 
     const alca = alvo.closest<HTMLElement>("[data-alca]");
@@ -374,6 +440,12 @@ export class Stage {
     return { x: (p.x / 100) * dim.w, y: (p.y / 100) * dim.h };
   }
 
+  /** Afastamento das alças de canto, em pt: ~9 px na tela, igual em qualquer zoom. */
+  private afastamentoPt(dim: Dim): number {
+    const larguraPx = this.slideEl?.getBoundingClientRect().width ?? 0;
+    return larguraPx > 0 ? (9 * dim.w) / larguraPx : 6;
+  }
+
   private aoMover(e: PointerEvent): void {
     if (!this.modo) return;
     this.ultimo = e;
@@ -389,6 +461,37 @@ export class Stage {
     if (!modo || !this.slideEl) return;
     const ctx = this.hooks.contexto();
     const p = this.pontoEmPct(e);
+
+    if (modo.t === "canto") {
+      const dono = ctx.shapes.find((x) => x.id === modo.dono);
+      if (!dono) return;
+      const b = paraPt(dono.box, ctx.dim);
+      const pt = this.pontoEmPt(e, ctx.dim);
+      // ponto no espaço local da forma (desfaz a rotação em volta do centro)
+      const c0 = centro(b);
+      const rad = (-dono.rot * Math.PI) / 180;
+      const dx = pt.x - c0.x;
+      const dy = pt.y - c0.y;
+      const lx = c0.x + dx * Math.cos(rad) - dy * Math.sin(rad);
+      const ly = c0.y + dx * Math.sin(rad) + dy * Math.cos(rad);
+      const ofs = this.afastamentoPt(ctx.dim);
+      const ox = (modo.alvo === "tl" || modo.alvo === "bl" ? lx - b.x : b.x + b.w - lx) - ofs;
+      const oy = (modo.alvo === "tl" || modo.alvo === "tr" ? ly - b.y : b.y + b.h - ly) - ofs;
+      const ss = Math.min(b.w, b.h);
+      let pct = ((Math.max(0, ox) + Math.max(0, oy)) / 0.5858 / (ss || 1)) * 100;
+      pct = Math.max(0, Math.min(50, pct));
+      pct = e.altKey ? Math.round(pct * 10) / 10 : Math.round(pct * 2) / 2;
+      const patches = new Map<string, Partial<Shape>>();
+      for (const id of modo.ids) {
+        const base = modo.inicial.get(id);
+        if (!base) continue;
+        patches.set(id, { cantos: valoresComSelecao(base, modo.sel, pct), geom: "roundRect", adj: undefined });
+      }
+      this.hudCanto = `${r1(pct).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% · ${modo.sel.length} canto${modo.sel.length > 1 ? "s" : ""}`;
+      this.hooks.aoTransformar(patches, "meio");
+      this.desenharSelecao();
+      return;
+    }
 
     if (modo.t === "mover") {
       let dx = p.x - modo.x0;
@@ -573,12 +676,31 @@ export class Stage {
       return;
     }
     this.guias = [];
+    this.hudCanto = null;
     this.hooks.aoTransformar(new Map(), "fim");
     this.desenharSelecao();
   }
 
   private aoDuploClique(e: MouseEvent): void {
     const alvo = e.target as HTMLElement;
+    // duplo clique na alça de canto: aquele canto volta a ser quadrado (0%)
+    const cantoEl = alvo.closest<HTMLElement>("[data-canto]");
+    if (cantoEl) {
+      const ctx = this.hooks.contexto();
+      const idc = cantoEl.dataset.canto as Canto;
+      const sel = ctx.shapes.filter((s) => ctx.selecao.includes(s.id) && !s.bloqueada);
+      const patches = new Map<string, Partial<Shape>>();
+      for (const s of sel) {
+        const base = cantosDe(s);
+        if (base) patches.set(s.id, { cantos: valoresComSelecao(base, [idc], 0), geom: "roundRect", adj: undefined });
+      }
+      if (patches.size) {
+        this.hooks.aoSelecionarCantos([idc]);
+        this.hooks.aoTransformar(new Map(), "inicio");
+        this.hooks.aoTransformar(patches, "fim");
+      }
+      return;
+    }
     const formaEl = alvo.closest<HTMLElement>(".pp-shape[data-shape]");
     if (!formaEl) return;
     const id = formaEl.dataset.shape!;

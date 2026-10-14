@@ -2551,6 +2551,124 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o documento do módulo descreve o que o app faz; o menu do trecho longo e a marca da
   frase inteira precisam estar ali.
 
+## src/powerpoint/schema.ts · src/powerpoint/edicao/formato.ts
+
+### 2026-10-14 · este commit · cantos por canto (modelo e regras)
+- **Local:** `Shape` (schema) e, no formato, `Canto`/`CANTOS`, `cantosEditaveis`, `cantosDe`,
+  `valoresComSelecao`, `comCantos`, `representacaoDeCantos`, `adjDeCanto`
+- **Linha:** novo campo `cantos?: [tl, tr, br, bl]` (raio em % do menor lado, 0–50) e as funções
+  novas; `raioDeCanto`/`comRaioDeCanto` ficaram só para as formas de canto **cortado** (snip*)
+- **Porquê:** o app só tinha o ajuste único do `roundRect` (um raio para os quatro). O array guarda
+  o desenho por canto; quando a forma ainda não passou pelo controle, `cantosDe` **deriva** os
+  quatro valores do que a geometria atual representa (roundRect, round1Rect, round2SameRect,
+  round2DiagRect), então uma forma importada já abre com os cantos certos no painel.
+  `representacaoDeCantos` diz qual preset nativo do OOXML bate **exatamente** com o arranjo
+  (a semântica foi conferida no presetShapeDefinitions: round1Rect = sup. direito;
+  round2SameRect = raio de cima/baixo; round2DiagRect = sup.esq+inf.dir / sup.dir+inf.esq);
+  fora desses casos, "livre". `comCantos` normaliza a forma para `geom: "roundRect"` e descarta o
+  `adj` antigo — o raio por canto passa a mandar.
+
+## src/powerpoint/render/presets.ts
+
+### 2026-10-14 · este commit · retângulo de 4 cantos e o preset diagonal
+- **Local:** `retangulo4Cantos` (novo); casos `round2SameRect` e `round2DiagRect` do
+  `tracadoDoPreset`; `PRESETS_CONHECIDOS`
+- **Linha:** `round2SameRect` duplicava o desenho inline do retângulo arredondado → passou a usar
+  `retangulo4Cantos`; `round2DiagRect` ganhou desenho (não existia, virava retângulo) e entrou na
+  lista de conhecidos
+- **Porquê:** o desenho de 4 raios independentes é a base do recurso; reaproveitar nele os pares
+  de cima/baixo evita duas implementações do mesmo arco. O preset diagonal entra porque agora o
+  app pode **gravar** esse arranjo e precisa reler o arquivo igual.
+
+## src/powerpoint/render/forma.ts
+
+### 2026-10-14 · este commit · desenhar os cantos (forma, imagem e tabela)
+- **Local:** `tracadosDa`, `moldura` e o estilo da tabela em `htmlTabela`
+- **Linha:** `tracadosDa` passa a preferir `s.cantos` (path de 4 arcos) quando a geometria é
+  retangular; `moldura` (máscara de imagem) usa `border-radius` com os 4 valores; a tabela ganha
+  `overflow: hidden` + `border-radius` no quadro quando tem `cantos`
+- **Porquê:** o mesmo campo precisa valer em **tudo que tem caixa** (o pedido cobre formas, caixas
+  de texto, imagens e tabelas). Na imagem o recorte é por CSS (border-radius aceita os quatro
+  valores na ordem certa); na tabela o arredondamento é só visual do quadro (o `a:tbl` do arquivo
+  não tem cantos — o painel avisa que ali fica no app).
+
+## src/powerpoint/pptxexport/rica.ts
+
+### 2026-10-14 · este commit · gravar os cantos na forma mais fiel
+- **Local:** `geomXml` (agora recebe `w`/`h`), `cantosGeomXml` e `cantosLivreXml` (novos)
+- **Linha:** `geomXml(s)` → `geomXml(s, w, h)`; com `s.cantos` presente, escolhe entre
+  `prstGeom` (rect / roundRect / round1Rect / round2SameRect / round2DiagRect com os `adj`) e
+  `custGeom` com os quatro quartos de círculo em `cubicBezTo`
+- **Porquê:** manter "formas que o PowerPoint entende": quando o arranjo bate com um preset, o
+  arquivo sai **nativo** (com alças no PowerPoint); quando não bate (ex.: 3 raios diferentes),
+  sai como **forma livre** — exatamente o que o próprio "Combinar formas" do PowerPoint produz —
+  em vez de arredondar tudo por conta própria e trair o desenho. Os cantos são uma referência
+  ao tamanho do menor lado (mesma regra do `roundRect`), por isso o XML precisa das dimensões.
+
+## src/powerpoint/stage.ts
+
+### 2026-10-14 · este commit · alças de canto com seleção múltipla
+- **Local:** `desenharSelecao` (`alcasDeCanto`), `aoPressionar` (bloco novo antes das alças de
+  redimensionar), `aplicar` (modo `"canto"`), `aoSoltar` (limpa o HUD), `aoDuploClique`,
+  `afastamentoPt` e o campo `hudCanto`; `ContextoPalco.cantosSel` e o hook `aoSelecionarCantos`
+- **Linha:** novos `Modo` `{ t: "canto" }` e as alças `.pp-canto` (uma por canto, na altura do
+  próprio arco); clique escolhe só aquele canto, `Shift` soma/remove, arrastar aplica o mesmo
+  raio a **todos os escolhidos**, `Alt` refina (0,1%) e o HUD mostra "22% · 3 cantos"
+- **Porquê:** é o coração do pedido ("selecionar 3 e deixar aquele de fora"). O arrasto mede a
+  distância do ponteiro ao canto **no espaço local da forma** (desfaz a rotação), convertendo em
+  % do menor lado; as alças ficam um tico (≈9 px) para dentro porque, em raio 0, elas cairiam
+  exatamente sobre a alça de redimensionar e a engoliriam. O valor é arredondado a 0,5% para o
+  número bater com o painel.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · este commit · estado dos cantos escolhidos e as ações
+- **Local:** campo `cantosSel`, hook `aoSelecionarCantos`, `contexto()` do palco, `selecionar`,
+  `selecionarCantos` (novo), casos `canto`/`canto-corte`/`canto-sel`/`canto-todos`/`canto-opostos`
+  e `img-forma`; `estadoUI()`
+- **Linha:** `case "canto"` → `comCantos(f, this.cantosSel, valor)`; o ajuste das formas de canto
+  cortado virou `canto-corte` (segue com `comRaioDeCanto`); trocar para Retângulo/Elipse descarta
+  o `cantos`
+- **Porquê:** a seleção de cantos é estado da edição (não da forma): mora no host, é zerada para
+  "os quatro" quando a seleção de formas muda (mantém o comportamento antigo do slider único) e
+  alimenta palco e painel. `img-forma` limpa os cantos ao sair da família retangular, senão o
+  raio continuaria mandando num desenho que não tem canto.
+
+## src/powerpoint/ui/painel.ts · src/powerpoint/ui/estado.ts
+
+### 2026-10-14 · este commit · bloco "Cantos" no painel
+- **Local:** `htmlCantos` (novo), `htmlAjustes` (recebe o estado), `assinar` (assinatura) e
+  `EstadoUI.cantosSel`
+- **Linha:** o slider "Raio dos cantos" virou o bloco com mini-diagrama (4 botões com o valor de
+  cada canto), slider do valor escolhido, **Todos/Opostos** e os presets
+  **Quadrado/Padrão/Suave/Pílula**, mais a nota de como o arranjo vai para o arquivo
+- **Porquê:** o painel é onde o número exato aparece; a escolha dos cantos precisa de um lugar
+  visível (o do palco é o atalho). A assinatura do painel ganhou `s.cantos` e `est.cantosSel`,
+  senão o bloco não redesenhava quando o usuário clicava num canto. Formas de canto **cortado**
+  (snip*) continuam com o slider do corte, agora rotulado "Cantos recortados".
+
+## src/powerpoint/edicao/criar.ts · src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · este commit · galeria e o visual das alças/bloco
+- **Local:** `GALERIA` e os estilos `.pp-canto`, `.pp-canto-hud`, `.pf-cantos*`
+- **Linha:** nova forma "Retângulo com cantos arredondados em diagonal" na galeria; alças de canto
+  redondas (verde no selecionado) e HUD em pílula; mini-diagrama com o quadro pontilhado e os
+  quatro valores clicáveis
+- **Porquê:** o preset diagonal agora existe no desenho e no arquivo — oferecê-lo na galeria
+  completa a família de cantos; o visual das alças segue o das alças de redimensionar (mesmo
+  tamanho/z-index) e a HUD usa a cor do acento para ler no claro e no escuro.
+
+## scripts/testar-edicao-pptx.mjs
+
+### 2026-10-14 · este commit · testes dos cantos
+- **Local:** bloco novo "cantos por canto"
+- **Linha:** 13 asserções — derivação do roundRect, mudança só dos escolhidos, zeros, snip fora,
+  as cinco representações, o `adj` e a **geometria exportada** (roundRect/round2SameRect nativos,
+  `custGeom` com curvas no 3+1, `adj` antigo ignorado e retângulo nos zeros)
+- **Porquê:** a regra de gravação é o ponto mais sensível do recurso (é o que decide o que o
+  PowerPoint vai entender depois); o teste prende o comportamento das duas famílias (nativa e
+  livre) para ninguém "otimizar" isso sem perceber a perda.
+
 ---
 
 ## Próximos registros

@@ -151,6 +151,11 @@ export interface Shape {
   geom?: string;
   /** ajustes da geometria (adj, adj1...) em unidades de 1/100000 */
   adj?: Record<string, number>;
+  /**
+   * raio dos 4 cantos em % do menor lado (0–50), na ordem sup. esq, sup. dir, inf. dir, inf. esq.
+   * Vale nas geometrias retangulares; quando existe, manda no desenho (o `adj` deixa de ser lido).
+   */
+  cantos?: [number, number, number, number];
   /** geometria livre (custGeom): caminhos em unidades do próprio caminho */
   paths?: CustPath[];
   flipH?: boolean;

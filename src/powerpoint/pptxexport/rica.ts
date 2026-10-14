@@ -4,6 +4,7 @@
 // O PptxGenJS continua montando o pacote (mestre, layout, tema, notas); este módulo só troca o conteúdo das lâminas.
 import { aspectSize, type CustPath, type DeckSetup, type Fill, type Line, type Para, type Run, type Shape, type Slide } from "../schema";
 import { envolventeDe } from "../edicao/geometria";
+import { adjDeCanto, cantosDe, representacaoDeCantos } from "../edicao/formato";
 import { extDeMime } from "../edicao/midia";
 import { donaDe } from "../edicao/tabela";
 import { coresTema } from "./theme";
@@ -209,10 +210,57 @@ function pathsXml(paths: CustPath[]): string {
   return `<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/><a:rect l="0" t="0" r="r" b="b"/><a:pathLst>${caminhos}</a:pathLst></a:custGeom>`;
 }
 
-function geomXml(s: Shape): string {
+function geomXml(s: Shape, wEmu: number, hEmu: number): string {
   if (s.paths?.length) return pathsXml(s.paths);
+  const cantos = s.cantos?.length === 4 ? cantosDe(s) : null;
+  if (cantos) return cantosGeomXml(cantos, wEmu, hEmu);
   const adj = s.adj ? Object.entries(s.adj).map(([k, v]) => `<a:gd name="${k}" fmla="val ${Math.round(v)}"/>`).join("") : "";
   return `<a:prstGeom prst="${s.geom && s.geom !== "custom" ? s.geom : "rect"}"><a:avLst>${adj}</a:avLst></a:prstGeom>`;
+}
+
+/**
+ * Cantos por canto: escolhe a forma NATIVA mais fiel quando o arranjo bate com um preset do
+ * PowerPoint (roundRect / round1Rect / round2SameRect / round2DiagRect — semântica do
+ * presetShapeDefinitions do OOXML); fora desses casos, escreve geometria livre, que é o mesmo
+ * que o próprio "Combinar formas" do PowerPoint produz (desenha igual, editável como forma livre).
+ */
+function cantosGeomXml(c: [number, number, number, number], wEmu: number, hEmu: number): string {
+  const gd = (nome: string, pct: number) => `<a:gd name="${nome}" fmla="val ${adjDeCanto(pct)}"/>`;
+  switch (representacaoDeCantos(c)) {
+    case "rect":
+      return `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>`;
+    case "roundRect":
+      return `<a:prstGeom prst="roundRect"><a:avLst>${gd("adj", c[0])}</a:avLst></a:prstGeom>`;
+    case "round1Rect":
+      return `<a:prstGeom prst="round1Rect"><a:avLst>${gd("adj", c[1])}</a:avLst></a:prstGeom>`;
+    case "round2SameRect":
+      return `<a:prstGeom prst="round2SameRect"><a:avLst>${gd("adj1", c[0])}${gd("adj2", c[2])}</a:avLst></a:prstGeom>`;
+    case "round2DiagRect":
+      return `<a:prstGeom prst="round2DiagRect"><a:avLst>${gd("adj1", c[0])}${gd("adj2", c[1])}</a:avLst></a:prstGeom>`;
+    case "livre":
+      return cantosLivreXml(c, wEmu, hEmu);
+  }
+}
+
+/** Retângulo de cantos independentes como geometria livre (quartos de círculo em curvas). */
+function cantosLivreXml(c: [number, number, number, number], w: number, h: number): string {
+  const ss = Math.min(w, h);
+  const r = c.map((v) => (Math.max(0, Math.min(50, v)) / 100) * ss) as [number, number, number, number];
+  const K = 0.5523;
+  const pt = (x: number, y: number) => `<a:pt x="${Math.round(x)}" y="${Math.round(y)}"/>`;
+  const linha = (x: number, y: number) => `<a:lnTo>${pt(x, y)}</a:lnTo>`;
+  const curva = (x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) => `<a:cubicBezTo>${pt(x1, y1)}${pt(x2, y2)}${pt(x3, y3)}</a:cubicBezTo>`;
+  let d = `<a:moveTo>${pt(r[0], 0)}</a:moveTo>`;
+  d += linha(w - r[1], 0);
+  if (r[1] > 0) d += curva(w - r[1] + K * r[1], 0, w, r[1] - K * r[1], w, r[1]);
+  d += linha(w, h - r[2]);
+  if (r[2] > 0) d += curva(w, h - r[2] + K * r[2], w - r[2] + K * r[2], h, w - r[2], h);
+  d += linha(r[3], h);
+  if (r[3] > 0) d += curva(r[3] - K * r[3], h, 0, h - r[3] + K * r[3], 0, h - r[3]);
+  d += linha(0, r[0]);
+  if (r[0] > 0) d += curva(0, r[0] - K * r[0], r[0] - K * r[0], 0, r[0], 0);
+  d += "<a:close/>";
+  return `<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/><a:rect l="0" t="0" r="r" b="b"/><a:pathLst><a:path w="${Math.round(w)}" h="${Math.round(h)}">${d}</a:path></a:pathLst></a:custGeom>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -318,7 +366,7 @@ function formaXml(s: Shape, ctx: Ctx): string {
         `<p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>` +
         `<p:nvPr><${tag} r:link="${idMidia}"/>${extLst}</p:nvPr></p:nvPicPr>` +
         `<p:blipFill><a:blip r:embed="${poster}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>` +
-        `<p:spPr>${xfrm}${geomXml(s)}<a:noFill/><a:ln><a:noFill/></a:ln></p:spPr></p:pic>`
+        `<p:spPr>${xfrm}${geomXml(s, w, h)}<a:noFill/><a:ln><a:noFill/></a:ln></p:spPr></p:pic>`
       );
     }
   }
@@ -332,7 +380,7 @@ function formaXml(s: Shape, ctx: Ctx): string {
       return (
         `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="${nome}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>` +
         `<p:blipFill><a:blip r:embed="${rid}">${alfa}</a:blip>${src}<a:stretch><a:fillRect/></a:stretch></p:blipFill>` +
-        `<p:spPr>${xfrm}${geomXml(s)}<a:noFill/>${lnXml(s.ln)}${sombraXml(s)}</p:spPr></p:pic>`
+        `<p:spPr>${xfrm}${geomXml(s, w, h)}<a:noFill/>${lnXml(s.ln)}${sombraXml(s)}</p:spPr></p:pic>`
       );
     }
   }
@@ -350,7 +398,7 @@ function formaXml(s: Shape, ctx: Ctx): string {
   const corpo = paras.length ? corpoXml(s, paras) : "";
   return (
     `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="${nome}"/><p:cNvSpPr${txBox}/><p:nvPr/></p:nvSpPr>` +
-    `<p:spPr>${xfrm}${geomXml(s)}${preench}${ln}${sombraXml(s)}</p:spPr>${corpo}</p:sp>`
+    `<p:spPr>${xfrm}${geomXml(s, w, h)}${preench}${ln}${sombraXml(s)}</p:spPr>${corpo}</p:sp>`
   );
 }
 

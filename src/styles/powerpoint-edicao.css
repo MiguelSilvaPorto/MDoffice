@@ -1028,6 +1028,64 @@ button.ppr.cor {
   gap: 6px;
 }
 
+/* ---------- painel: cantos ---------- */
+
+.pf-cantos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* mini-diagrama: os quatro valores clicáveis, na posição real de cada canto */
+.pf-cantos-mapa {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px 26px;
+  width: max-content;
+  margin: 2px 0 4px;
+  padding: 7px 12px;
+}
+
+.pf-cantos-quadro {
+  position: absolute;
+  inset: 0;
+  border: 1px dashed color-mix(in srgb, var(--fg) 30%, transparent);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+.pf-canto {
+  width: 44px;
+  height: 22px;
+  padding: 0;
+  color: var(--muted);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 10.5px;
+  cursor: pointer;
+}
+
+.pf-canto:hover {
+  color: var(--fg);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+
+.pf-canto.on {
+  color: var(--accent-fg);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.pf-nota {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 /* ---------- seleção no palco ---------- */
 
 /* quem pega o mouse: formas preenchidas, imagens e o texto; o vazio de uma forma sem fundo deixa passar */
@@ -1156,6 +1214,47 @@ button.ppr.cor {
   left: 0;
   top: 50%;
   cursor: ew-resize;
+}
+
+/* alças de canto: cada uma senta no próprio arco; clique escolhe, arrasto arredonda os escolhidos */
+.pp-canto {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  margin: -5.5px 0 0 -5.5px;
+  background: #fff;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+  cursor: grab;
+  pointer-events: auto;
+  z-index: 51;
+}
+
+.pp-canto.on {
+  background: var(--accent);
+  border-color: #fff;
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.pp-canto:active {
+  cursor: grabbing;
+}
+
+/* valor do arrasto de canto ("22% · 3 cantos") */
+.pp-canto-hud {
+  position: absolute;
+  left: 50%;
+  top: -26px;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  color: var(--accent-fg);
+  background: var(--accent);
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 52;
 }
 
 .pp-gira {

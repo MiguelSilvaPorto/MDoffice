@@ -28,6 +28,24 @@ function retanguloArredondado(w: number, h: number, r: number): string {
   return `M${f(r)} 0H${f(w - r)}A${f(r)} ${f(r)} 0 0 1 ${f(w)} ${f(r)}V${f(h - r)}A${f(r)} ${f(r)} 0 0 1 ${f(w - r)} ${f(h)}H${f(r)}A${f(r)} ${f(r)} 0 0 1 0 ${f(h - r)}V${f(r)}A${f(r)} ${f(r)} 0 0 1 ${f(r)} 0Z`;
 }
 
+/**
+ * Retângulo com os QUATRO cantos independentes. `r` em pt na ordem sup. esq, sup. dir, inf. dir, inf. esq.
+ * Cada raio é limitado a metade do menor lado (dois cantos vizinhos nunca se cruzam de forma estranha).
+ */
+export function retangulo4Cantos(w: number, h: number, r: [number, number, number, number]): string {
+  const lim = Math.min(w, h) / 2;
+  const [tl, tr, br, bl] = r.map((v) => Math.max(0, Math.min(v, lim))) as [number, number, number, number];
+  let d = `M${f(tl)} 0H${f(w - tr)}`;
+  if (tr > 0) d += `A${f(tr)} ${f(tr)} 0 0 1 ${f(w)} ${f(tr)}`;
+  d += `V${f(h - br)}`;
+  if (br > 0) d += `A${f(br)} ${f(br)} 0 0 1 ${f(w - br)} ${f(h)}`;
+  d += `H${f(bl)}`;
+  if (bl > 0) d += `A${f(bl)} ${f(bl)} 0 0 1 0 ${f(h - bl)}`;
+  d += `V${f(tl)}`;
+  if (tl > 0) d += `A${f(tl)} ${f(tl)} 0 0 1 ${f(tl)} 0`;
+  return d + "Z";
+}
+
 /** Balão de fala: retângulo (com cantos opcionais) e uma ponta que aponta para (adj1, adj2) a partir do centro. */
 function balao(w: number, h: number, adj1: number, adj2: number, raio: number): string {
   const r = Math.max(0, Math.min(raio, w / 2, h / 2));
@@ -57,7 +75,7 @@ export const PRESETS_CONHECIDOS = new Set([
   "rect", "roundRect", "ellipse", "triangle", "rtTriangle", "diamond", "parallelogram", "trapezoid", "pentagon", "hexagon",
   "octagon", "chevron", "homePlate", "rightArrow", "leftArrow", "upArrow", "downArrow", "leftRightArrow", "upDownArrow", "star5",
   "plus", "donut", "frame", "line", "straightConnector1", "bentConnector2", "bentConnector3", "curvedConnector3", "round1Rect",
-  "round2SameRect", "snip1Rect", "snip2SameRect", "flowChartProcess", "flowChartAlternateProcess", "flowChartTerminator",
+  "round2SameRect", "round2DiagRect", "snip1Rect", "snip2SameRect", "flowChartProcess", "flowChartAlternateProcess", "flowChartTerminator",
   "flowChartDecision", "teardrop", "noSmoking", "mathPlus", "mathMinus", "mathMultiply", "heart", "can", "wedgeRectCallout",
   "wedgeRoundRectCallout",
 ]);
@@ -84,12 +102,13 @@ export function tracadoDoPreset(prst: string, w: number, h: number, adj: Record<
     case "round2SameRect": {
       const r1 = (ss * Math.min(a("adj1", 16667), 50000)) / 100000;
       const r2 = (ss * Math.min(a("adj2", 0), 50000)) / 100000;
-      return [
-        {
-          d: `M${f(r1)} 0H${f(w - r1)}A${f(r1)} ${f(r1)} 0 0 1 ${f(w)} ${f(r1)}V${f(h - r2)}A${f(r2)} ${f(r2)} 0 0 1 ${f(w - r2)} ${f(h)}H${f(r2)}A${f(r2)} ${f(r2)} 0 0 1 0 ${f(h - r2)}V${f(r1)}A${f(r1)} ${f(r1)} 0 0 1 ${f(r1)} 0Z`,
-          preenche: true,
-        },
-      ];
+      return [{ d: retangulo4Cantos(w, h, [r1, r1, r2, r2]), preenche: true }];
+    }
+    case "round2DiagRect": {
+      // na especificação: adj1 = sup. esq + inf. dir; adj2 = sup. dir + inf. esq
+      const r1 = (ss * Math.min(a("adj1", 16667), 50000)) / 100000;
+      const r2 = (ss * Math.min(a("adj2", 0), 50000)) / 100000;
+      return [{ d: retangulo4Cantos(w, h, [r1, r2, r1, r2]), preenche: true }];
     }
     case "snip1Rect": {
       const s = (ss * Math.min(a("adj", 16667), 50000)) / 100000;

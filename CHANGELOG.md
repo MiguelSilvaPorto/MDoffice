@@ -261,7 +261,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **Cantos por canto (assistido)**: dá para escolher **quais cantos** mudar — clique na alça do
+  canto no palco (`Shift` soma/remove; 1, 2, 3 ou 4) ou nos cantos do mini-diagrama do painel — e
+  arrastar arredonda **só os escolhidos**, com precisão (passo de 0,5%; `Alt` = 0,1%) e o valor na
+  tela; duplo clique na alça deixa o canto quadrado. Presets **Quadrado · Padrão · Suave · Pílula**
+  e atalhos **Todos/Opostos**; vale para formas, caixas de texto, imagens (máscara) e tabelas.
+  No arquivo, o app grava a forma **nativa** mais fiel (Retângulo arredondado, um canto, par de
+  cima/baixo ou diagonais) e avisa quando o arranjo só existe como **forma livre** — que desenha
+  igual, como o “Combinar formas” do PowerPoint.
 
 ### Adicionado (na main)
 

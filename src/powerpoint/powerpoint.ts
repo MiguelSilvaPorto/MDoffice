@@ -7,7 +7,7 @@ import { $, toast } from "../util";
 import { pedirTexto } from "../dialogoTexto";
 import { ligarAjusteAlturaFita, ligarRecolherFita } from "../fita";
 import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, novaImagem, type EstiloDeck, type ItemGaleria } from "./edicao/criar";
-import { ajustarCor, comAjuste, comLinha, comOpacidade, comPreenchimento, comRaioDeCanto, comSombra, gradiente, SOMBRAS_PRONTAS, solido, corPrincipal } from "./edicao/formato";
+import { ajustarCor, CANTOS, comAjuste, comCantos, comLinha, comOpacidade, comPreenchimento, comRaioDeCanto, comSombra, gradiente, SOMBRAS_PRONTAS, solido, corPrincipal, type Canto } from "./edicao/formato";
 import { aspectSize, stageRatio } from "./schema";
 import type { Dim } from "./edicao/geometria";
 import { Historico } from "./edicao/historico";
@@ -143,6 +143,8 @@ export class PowerPointHost {
   /** célula em edição (quando a forma em edição é uma tabela) e células selecionadas */
   private celulaEdit: [number, number] | null = null;
   private celulas: CelulasSel | null = null;
+  /** cantos escolhidos para a edição de raio (as alças de canto do palco e o painel) */
+  private cantosSel: Canto[] = [...CANTOS];
 
   private strip!: HTMLElement;
   private canvas!: HTMLElement;
@@ -168,8 +170,10 @@ export class PowerPointHost {
         fixasSelecionaveis: this.fixas,
         comGrupos: (ids) => comGrupos(this.atual(), ids),
         celulas: this.celulasDaSelecao(),
+        cantosSel: this.cantosSel,
       }),
       aoSelecionar: (ids) => this.selecionar(ids),
+      aoSelecionarCantos: (c) => this.selecionarCantos(c),
       aoTransformar: (patches, fase) => this.aoTransformar(patches, fase),
       aoEditarTexto: (id) => this.entrarEdicao(id),
       aoCriar: (c) => this.aoCriar(c),
@@ -698,6 +702,7 @@ export class PowerPointHost {
       largura: forma ? (forma.box.w / 100) * d.w : 0,
       altura: forma ? (forma.box.h / 100) * d.h : 0,
       celulas: this.celulasDaSelecao(),
+      cantosSel: [...this.cantosSel],
       transicao: normalizarTransicao(this.atual().transicao),
       transicaoPreservada: !!this.atual().transicaoXml,
     };
@@ -712,8 +717,20 @@ export class PowerPointHost {
     if (igual) return;
     if (this.editando && !(ids.length === 1 && ids[0] === this.editando)) this.sairEdicao();
     this.selecao = ids;
+    // seleção nova: a edição de cantos volta a valer para os quatro
+    this.cantosSel = [...CANTOS];
     if (this.celulas && !(ids.length === 1 && ids[0] === this.celulas.id)) this.celulas = null;
     this.atualizarUI();
+  }
+
+  /** Cantos escolhidos (painel e palco): só eles mudam quando o raio é ajustado. */
+  private selecionarCantos(cantos: Canto[]): void {
+    const novo = cantos.length ? cantos : [...CANTOS];
+    const igual = novo.length === this.cantosSel.length && novo.every((c, i) => c === this.cantosSel[i]);
+    if (igual) return;
+    this.cantosSel = novo;
+    this.stage.desenharSelecao();
+    this.painel.atualizar();
   }
 
   private aoTransformar(patches: Map<string, Partial<Shape>>, fase: "inicio" | "meio" | "fim"): void {
@@ -1573,8 +1590,28 @@ export class PowerPointHost {
         this.editar((s) => patchFormas(s, ids, (f) => comOpacidade(f, Math.max(0, Math.min(100, Number(value))) / 100)), "opac");
         return;
       case "canto":
+      case "canto-preset":
+        this.editar((s) => patchFormas(s, ids, (f) => comCantos(f, this.cantosSel, Number(value))), "canto");
+        return;
+      case "canto-corte":
+        // formas com canto cortado (snip*): o ajuste é o tamanho do corte, não um raio
         this.editar((s) => patchFormas(s, ids, (f) => comRaioDeCanto(f, Number(value))), "canto");
         return;
+      case "canto-sel": {
+        const c = value as Canto;
+        const tem = this.cantosSel.includes(c);
+        if (tem && this.cantosSel.length <= 1) return;
+        this.selecionarCantos(tem ? this.cantosSel.filter((x) => x !== c) : [...this.cantosSel, c]);
+        return;
+      }
+      case "canto-todos":
+        this.selecionarCantos([...CANTOS]);
+        return;
+      case "canto-opostos": {
+        const diagonal = this.cantosSel.length === 2 && this.cantosSel.includes("tl") && this.cantosSel.includes("br");
+        this.selecionarCantos(diagonal ? ["tr", "bl"] : ["tl", "br"]);
+        return;
+      }
       case "estilo":
         return this.estiloRapido(String(value));
 
@@ -1609,7 +1646,14 @@ export class PowerPointHost {
         this.editar((s) => patchFormas(s, ids, { bloqueada: value === "1" }));
         return;
       case "img-forma":
-        this.editar((s) => patchFormas(s, ids, { geom: String(value), adj: undefined }));
+        this.editar((s) =>
+          patchFormas(s, ids, (f) => ({
+            geom: String(value),
+            adj: undefined,
+            // trocar para retângulo/elipse descarta os cantos por canto (que só valem na família retangular)
+            cantos: value === "rect" || value === "ellipse" ? undefined : f.cantos,
+          }))
+        );
         return;
       case "crop-reset":
         this.editar((s) => patchFormas(s, ids, { crop: undefined }));
