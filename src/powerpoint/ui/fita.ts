@@ -286,6 +286,7 @@ export class Fita {
            ${pequeno("forma-rapida:3", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[3], 18)}</span>`, "Conector", "Desenhar um conector angular")}
          </div>`
       ),
+      grupo("Desenho", `${grande("desenho", ic("i-draw"), "Draw", "Desenho à mão: rabisque na lâmina e o app ajusta a forma (Esc sai)")}`),
     ].join("");
   }
 
@@ -543,7 +544,7 @@ export class Fita {
     const run = (c: string, v?: string) => this.hooks.run(c, v);
     switch (cmd) {
       case "galeria":
-        abrirGaleria(ancora, (item) => run("forma-inserir", String(GALERIA.indexOf(item))), () => run("desenho"));
+        abrirGaleria(ancora, (item) => run("forma-inserir", String(GALERIA.indexOf(item))));
         return;
       case "modelo":
         abrirModelos(ancora, (m) => run("modelo", m.id), {
@@ -916,6 +917,7 @@ export class Fita {
     const rotuloOcultar = this.el.querySelector<HTMLElement>('[data-cmd="slide-ocultar"] span');
     if (rotuloOcultar) rotuloOcultar.textContent = st.oculta ? "Mostrar" : "Ocultar";
     on("ferramenta:texto", st.ferramenta?.tipo === "texto");
+    on("desenho", st.ferramenta?.tipo === "desenho");
     for (const c of ["negrito", "italico", "sublinhado", "tachado", "marca-texto", "sobrescrito", "subscrito", "versalete", "caixa", "espacamento", "limpar-formatacao", "maior", "menor", "cor-texto", "marcadores", "numeracao", "recuo-menos", "recuo-mais", "espaco", "alinhar-esquerda", "alinhar-centro", "alinhar-direita", "alinhar-justificado", "v-topo", "v-meio", "v-base"]) dis(c, !temTexto);
     dis("desfazer", !st.podeDesfazer);
     dis("refazer", !st.podeRefazer);

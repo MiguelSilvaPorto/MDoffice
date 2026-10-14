@@ -24,7 +24,7 @@ export interface Pincel {
 }
 
 export interface TracoReconhecido {
-  geom: "rect" | "roundRect" | "ellipse" | "triangle" | "line";
+  geom: "rect" | "roundRect" | "ellipse" | "triangle" | "line" | "arc";
   /** caixa da forma em pt */
   box: Ret;
   /** ajustes da geometria (roundRect: raio do canto em 1/100000) */
@@ -111,6 +111,29 @@ function cobreQuatroLados(pontos: PontoTraco[], b: Ret, tol: number): number {
     if (Math.abs(p.x - (b.x + b.w)) <= tol) lados.dir = true;
   }
   return (lados.cima ? 1 : 0) + (lados.baixo ? 1 : 0) + (lados.esq ? 1 : 0) + (lados.dir ? 1 : 0);
+}
+
+/** Quantos lados têm um trecho RETO de verdade junto da borda (retângulo tem 4; elipse, quase nenhum). */
+function ladosRetos(pontos: PontoTraco[], b: Ret, tol: number): number {
+  const x1 = b.x + b.w;
+  const y1 = b.y + b.h;
+  const xsCima: number[] = [];
+  const xsBaixo: number[] = [];
+  const ysEsq: number[] = [];
+  const ysDir: number[] = [];
+  for (const p of pontos) {
+    if (Math.abs(p.y - b.y) <= tol) xsCima.push(p.x);
+    if (Math.abs(p.y - y1) <= tol) xsBaixo.push(p.x);
+    if (Math.abs(p.x - b.x) <= tol) ysEsq.push(p.y);
+    if (Math.abs(p.x - x1) <= tol) ysDir.push(p.y);
+  }
+  const cobre = (v: number[], de: number, ate: number) => (v.length < 2 || ate - de <= 0 ? 0 : (Math.max(...v) - Math.min(...v)) / (ate - de));
+  let n = 0;
+  if (cobre(xsCima, b.x, x1) >= 0.6) n++;
+  if (cobre(xsBaixo, b.x, x1) >= 0.6) n++;
+  if (cobre(ysEsq, b.y, y1) >= 0.6) n++;
+  if (cobre(ysDir, b.y, y1) >= 0.6) n++;
+  return n;
 }
 
 interface Reta {
@@ -217,6 +240,61 @@ function cantosLimpos(cantos: PontoTraco[], diag: number): PontoTraco[] {
   return out;
 }
 
+/** Direção da aresta mais longa de um polígono — a inclinação com que o desenho saiu. */
+function anguloDaArestaMaisLonga(pts: PontoTraco[]): number {
+  let melhor = -1;
+  let ang = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    const d = Math.hypot(b.x - a.x, b.y - a.y);
+    if (d > melhor) {
+      melhor = d;
+      ang = Math.atan2(b.y - a.y, b.x - a.x);
+    }
+  }
+  return ang;
+}
+
+/** Ajuste de círculo (Kasa): é o que reconhece um arco desenhado à mão. */
+function ajustarCirculo(pontos: PontoTraco[]): { cx: number; cy: number; r: number; desvio: number } | null {
+  const n = pontos.length;
+  let sx = 0;
+  let sy = 0;
+  let sz = 0;
+  let sxx = 0;
+  let syy = 0;
+  let sxy = 0;
+  let sxz = 0;
+  let syz = 0;
+  for (const p of pontos) {
+    const z = p.x * p.x + p.y * p.y;
+    sx += p.x;
+    sy += p.y;
+    sz += z;
+    sxx += p.x * p.x;
+    syy += p.y * p.y;
+    sxy += p.x * p.y;
+    sxz += p.x * z;
+    syz += p.y * z;
+  }
+  const Sxx = sxx - (sx * sx) / n;
+  const Syy = syy - (sy * sy) / n;
+  const Sxy = sxy - (sx * sy) / n;
+  const Sxz = sxz - (sx * sz) / n;
+  const Syz = syz - (sy * sz) / n;
+  const den = 2 * (Sxx * Syy - Sxy * Sxy);
+  if (Math.abs(den) < 1e-6) return null;
+  const cx = (Sxz * Syy - Syz * Sxy) / den;
+  const cy = (Syz * Sxx - Sxz * Sxy) / den;
+  const r2 = cx * cx + cy * cy + (sz - 2 * cx * sx - 2 * cy * sy) / n;
+  if (!(r2 > 0)) return null;
+  const r = Math.sqrt(r2);
+  let dev = 0;
+  for (const p of pontos) dev += Math.abs(Math.hypot(p.x - cx, p.y - cy) - r);
+  return { cx, cy, r, desvio: dev / n / r };
+}
+
 /** Triângulo com o ápice para baixo (o preset padrão aponta para cima → precisa de flipV). */
 function apexEmBaixo(tres: PontoTraco[]): boolean {
   let iA = 0;
@@ -256,28 +334,49 @@ export function reconhecerTraco(pontos: PontoTraco[]): TracoReconhecido | null {
   const cantos = fechado && simplificado.length > 2 ? simplificado.slice(0, -1) : simplificado;
 
   if (fechado) {
-    // --- retângulo (ou arredondado)? (4–10 cantos e tudo junto da borda) ---
-    if (cantos.length >= 4 && cantos.length <= 10) {
-      const tol = Math.max(5, diag * 0.09);
-      let junto = true;
-      for (const p of pontos) {
-        if (distanciaAoRetangulo(p, bb) > tol) {
-          junto = false;
-          break;
+    // --- retângulo (ou arredondado)? (4–8 cantos, lados retos e tudo junto da borda) ---
+    const limpos = cantosLimpos(cantos, diag);
+    if (limpos.length >= 4 && limpos.length <= 8) {
+      // a mão nunca acerta o ângulo: a inclinação sai da aresta mais longa e o traço é
+      // ENDIREITADO antes de medir — sem isso, um retângulo alguns graus torto vira
+      // "arredondado" (os cantos da caixa alinhada ficam longe do traço)
+      const ang = anguloDaArestaMaisLonga(limpos);
+      const quarto = Math.PI / 2;
+      const off = Math.abs(((ang % quarto) + quarto) % quarto);
+      const inclinacao = Math.min(off, quarto - off);
+      if (inclinacao < (24 * Math.PI) / 180) {
+        const torto = inclinacao >= (2 * Math.PI) / 180;
+        const cxb = bb.x + bb.w / 2;
+        const cyb = bb.y + bb.h / 2;
+        const cos = Math.cos(ang);
+        const sin = Math.sin(ang);
+        const retos = torto
+          ? pontos.map((p) => {
+              const dx = p.x - cxb;
+              const dy = p.y - cyb;
+              return { x: cxb + dx * cos + dy * sin, y: cyb - dx * sin + dy * cos };
+            })
+          : pontos;
+        const bbReto = torto ? bboxDe(retos) : bb;
+        const diagReto = Math.hypot(bbReto.w, bbReto.h);
+        const tolJunto = Math.max(5, diagReto * 0.09);
+        let junto = true;
+        for (const p of retos) {
+          if (distanciaAoRetangulo(p, bbReto) > tolJunto) {
+            junto = false;
+            break;
+          }
         }
-      }
-      if (junto && cobreQuatroLados(pontos, bb, tol) >= 4) {
-        // "quase" alinhado aos eixos → endireita nos eixos; torto de verdade fica livre
-        const ang = Math.atan2(cantos[1].y - cantos[0].y, cantos[1].x - cantos[0].x);
-        const quarto = Math.PI / 2;
-        const off = Math.abs(((ang % quarto) + quarto) % quarto);
-        if (Math.min(off, quarto - off) >= (24 * Math.PI) / 180) return null;
-        const raio = raioDosCantos(pontos, bb);
-        if (raio >= Math.max(6, Math.min(bb.w, bb.h) * 0.08)) {
-          const adj = Math.round(clamp((100000 * raio) / Math.min(bb.w, bb.h), 4000, 50000));
-          return { geom: "roundRect", box: bb, adj: { adj }, rotulo: "Retângulo arredondado" };
+        // o desenho tem que ter LADOS RETOS (uma elipse não tem): é o que separa
+        // "retângulo arredondado" de "elipse" com o mesmo desvio no canto
+        if (junto && ladosRetos(retos, bbReto, Math.max(4, diagReto * 0.04)) >= 3) {
+          const raio = raioDosCantos(retos, bbReto);
+          if (raio >= Math.max(6, Math.min(bbReto.w, bbReto.h) * 0.08)) {
+            const adj = Math.round(clamp((100000 * raio) / Math.min(bbReto.w, bbReto.h), 4000, 50000));
+            return { geom: "roundRect", box: bbReto, adj: { adj }, rotulo: "Retângulo arredondado" };
+          }
+          return { geom: "rect", box: bbReto, rotulo: "Retângulo" };
         }
-        return { geom: "rect", box: bb, rotulo: "Retângulo" };
       }
     }
 
@@ -336,6 +435,39 @@ export function reconhecerTraco(pontos: PontoTraco[]): TracoReconhecido | null {
           rotulo: head || tail ? "Seta" : "Linha",
         };
       }
+    }
+  }
+  // --- arco? (um traço curvo que segue um círculo — o "canto arredondado" do desenho) ---
+  const circulo = ajustarCirculo(pontos);
+  if (circulo && circulo.r > 18 && circulo.desvio < 0.09) {
+    const { cx, cy, r } = circulo;
+    const ang0 = Math.atan2(pontos[0].y - cy, pontos[0].x - cx);
+    const angN = Math.atan2(pontos[n - 1].y - cy, pontos[n - 1].x - cx);
+    // sentido em que o traço foi desenhado (a soma das viradas de ângulo)
+    let volta = 0;
+    for (let i = 1; i < n; i++) {
+      let d = Math.atan2(pontos[i].y - cy, pontos[i].x - cx) - Math.atan2(pontos[i - 1].y - cy, pontos[i - 1].x - cx);
+      while (d > Math.PI) d -= 2 * Math.PI;
+      while (d < -Math.PI) d += 2 * Math.PI;
+      volta += d;
+    }
+    const a1 = volta < 0 ? angN : ang0;
+    const a2 = volta < 0 ? ang0 : angN;
+    let varredura = ((a2 - a1) * 180) / Math.PI;
+    while (varredura <= 0) varredura += 360;
+    if (varredura >= 35 && varredura <= 330) {
+      const emAdj = (a: number) => {
+        let g = (a * 180) / Math.PI;
+        while (g < 0) g += 360;
+        while (g >= 360) g -= 360;
+        return Math.round(g * 60000);
+      };
+      return {
+        geom: "arc",
+        box: { x: cx - r, y: cy - r, w: 2 * r, h: 2 * r },
+        adj: { adj1: emAdj(a1), adj2: emAdj(a2) },
+        rotulo: "Arco",
+      };
     }
   }
   return null;

@@ -77,7 +77,7 @@ export const PRESETS_CONHECIDOS = new Set([
   "plus", "donut", "frame", "line", "straightConnector1", "bentConnector2", "bentConnector3", "curvedConnector3", "round1Rect",
   "round2SameRect", "round2DiagRect", "snip1Rect", "snip2SameRect", "flowChartProcess", "flowChartAlternateProcess", "flowChartTerminator",
   "flowChartDecision", "teardrop", "noSmoking", "mathPlus", "mathMinus", "mathMultiply", "heart", "can", "wedgeRectCallout",
-  "wedgeRoundRectCallout",
+  "wedgeRoundRectCallout", "arc",
 ]);
 
 /** Traçados de um preset, em pt. `adj` traz os ajustes do arquivo (1/100000). */
@@ -241,6 +241,22 @@ export function tracadoDoPreset(prst: string, w: number, h: number, adj: Record<
         { d: `M0 ${f(ry)}A${f(w / 2)} ${f(ry)} 0 0 1 ${f(w)} ${f(ry)}V${f(h - ry)}A${f(w / 2)} ${f(ry)} 0 0 1 0 ${f(h - ry)}Z`, preenche: true },
         { d: `M0 ${f(ry)}A${f(w / 2)} ${f(ry)} 0 0 0 ${f(w)} ${f(ry)}`, preenche: false },
       ];
+    }
+    case "arc": {
+      // arco do ângulo adj1 ao adj2, no sentido horário (como no PowerPoint); 0° = 3 horas
+      const g1 = (a("adj1", 16200000) / 60000) * (Math.PI / 180);
+      const g2 = (a("adj2", 0) / 60000) * (Math.PI / 180);
+      const cx = w / 2;
+      const cy = h / 2;
+      const rx = w / 2;
+      const ry = h / 2;
+      const x1 = cx + rx * Math.cos(g1);
+      const y1 = cy + ry * Math.sin(g1);
+      const x2 = cx + rx * Math.cos(g2);
+      const y2 = cy + ry * Math.sin(g2);
+      let varredura = ((g2 - g1) * 180) / Math.PI;
+      while (varredura <= 0) varredura += 360;
+      return [{ d: `M${f(x1)} ${f(y1)}A${f(rx)} ${f(ry)} 0 ${varredura > 180 ? 1 : 0} 1 ${f(x2)} ${f(y2)}`, preenche: false }];
     }
     case "line":
     case "straightConnector1":

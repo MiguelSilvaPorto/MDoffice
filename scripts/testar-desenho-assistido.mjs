@@ -91,6 +91,47 @@ function elipse(cx, cy, rx, ry, n = 72, amp = 2.5, seed = 13) {
   return pts;
 }
 
+/** Retângulo "torto": os vértices girados alguns graus em torno do centro (como a mão desenha). */
+function percorrerTorto(x, y, w, h, graus, porAresta = 16, amp = 2.5) {
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  const a = (graus * Math.PI) / 180;
+  const cos = Math.cos(a);
+  const sin = Math.sin(a);
+  const girado = (p) => {
+    const dx = p.x - cx;
+    const dy = p.y - cy;
+    return { x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos };
+  };
+  return percorrer([{ x, y }, { x: x + w, y }, { x: x + w, y: y + h }, { x, y: y + h }].map(girado), porAresta, amp);
+}
+
+/** O mesmo contorno arredondado, girado alguns graus. */
+function contornoArredondadoTorto(x, y, w, h, raio, graus, amp = 2.5) {
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  const a = (graus * Math.PI) / 180;
+  const cos = Math.cos(a);
+  const sin = Math.sin(a);
+  return contornoArredondado(x, y, w, h, raio, amp).map((p) => {
+    const dx = p.x - cx;
+    const dy = p.y - cy;
+    return { x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos };
+  });
+}
+
+/** Arco de círculo desenhado à mão (o "canto arredondado" solto). */
+function arco(cx, cy, r, a0graus, a1graus, amp = 1.5, seed = 17) {
+  const rnd = rng(seed);
+  const pts = [];
+  const n = Math.max(12, Math.round(Math.abs(a1graus - a0graus) / 4));
+  for (let i = 0; i <= n; i++) {
+    const a = ((a0graus + ((a1graus - a0graus) * i) / n) * Math.PI) / 180;
+    pts.push({ x: cx + Math.cos(a) * r + tremor(rnd, amp), y: cy + Math.sin(a) * r + tremor(rnd, amp) });
+  }
+  return pts;
+}
+
 /** Rabisco qualquer (não bate com forma nenhuma). */
 function rabisco(seed = 21) {
   const r = rng(seed);
@@ -155,6 +196,19 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
   ok("elipse: caixa no lugar", rec && pertoCaixa(rec.box, 170, 90, 260, 180, 9), JSON.stringify(rec?.box));
 }
 
+// a mão nunca acerta o ângulo: um retângulo alguns graus torto continua retângulo
+{
+  const rec = D.reconhecerTraco(percorrerTorto(140, 100, 220, 150, 5));
+  ok("retângulo torto 5°: continua retângulo (não vira arredondado)", rec?.geom === "rect", JSON.stringify(rec));
+  ok("retângulo torto 5°: caixa acompanha o desenho", rec && pertoCaixa(rec.box, 140, 100, 220, 150, 9), JSON.stringify(rec?.box));
+  const rec8 = D.reconhecerTraco(percorrerTorto(140, 100, 220, 150, 8));
+  ok("retângulo torto 8°: reconhecido", rec8?.geom === "rect", JSON.stringify(rec8));
+  const arred = D.reconhecerTraco(contornoArredondadoTorto(120, 90, 220, 150, 18, 5));
+  ok("retângulo arredondado torto: reconhecido", arred?.geom === "roundRect", JSON.stringify(arred));
+  const adj = arred?.adj?.adj ?? 0;
+  ok("retângulo arredondado torto: raio plausível", adj >= 4000 && adj <= 30000, `adj=${adj}`);
+}
+
 {
   const cima = D.reconhecerTraco(percorrer([{ x: 160, y: 100 }, { x: 320, y: 260 }, { x: 160, y: 260 }]));
   ok("triângulo: reconhecido", cima?.geom === "triangle", JSON.stringify(cima));
@@ -180,6 +234,18 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
   // desenhada da direita para a esquerda: a ponta continua sendo o fim do traço
   const invertida = D.reconhecerTraco(seta(460, 360, 120, 360));
   ok("seta invertida: ponta no fim (flipH)", invertida?.tail === true && invertida.flipH === true, JSON.stringify(invertida));
+}
+
+// ---------------------------------------------------------------- arco (o "canto arredondado")
+{
+  const rec = D.reconhecerTraco(arco(300, 240, 120, 180, 270));
+  ok("arco: reconhecido", rec?.geom === "arc", JSON.stringify(rec));
+  ok("arco: caixa = círculo do arco", rec && pertoCaixa(rec.box, 180, 120, 240, 240, 12), JSON.stringify(rec?.box));
+  const a1 = rec?.adj?.adj1 ?? 0;
+  const a2 = rec?.adj?.adj2 ?? 0;
+  ok("arco: ângulos plausíveis", a1 > 160 * 60000 && a1 < 200 * 60000 && a2 > 250 * 60000 && a2 < 290 * 60000, `adj1=${a1} adj2=${a2}`);
+  const inv = D.reconhecerTraco(arco(300, 240, 120, 270, 180));
+  ok("arco desenhado ao contrário: mesmo arco", inv?.geom === "arc" && inv.adj && Math.abs(inv.adj.adj1 - a1) < 4 * 60000 && Math.abs(inv.adj.adj2 - a2) < 4 * 60000, JSON.stringify(inv?.adj));
 }
 
 // ---------------------------------------------------------------- desenho livre
@@ -217,6 +283,8 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
 
   const comSeta = D.formaDoTraco(seta(120, 320, 460, 320), pincel, est, dim);
   ok("seta vira linha com ponta", comSeta?.geom === "line" && comSeta?.ln?.tail === "triangle" && !comSeta?.ln?.head);
+  const comArco = D.formaDoTraco(arco(300, 240, 120, 180, 270), pincel, est, dim);
+  ok("arco vira forma de arco", comArco?.geom === "arc" && !!comArco?.adj?.adj1 && comArco?.fillX?.kind === "none");
 }
 
 // ---------------------------------------------------------------- a dica na tela
