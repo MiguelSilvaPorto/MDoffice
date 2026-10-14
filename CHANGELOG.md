@@ -378,7 +378,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **Vídeo em lâmina importada volta a preencher o quadro**: o vídeo era desenhado dentro de um
+  invólucro sem estilo (o `height:100%` caía para o tamanho natural, ~300×150), então a área do
+  vídeo ficava transparente e **os cartões de trás apareciam através dela** (na lâmina 8 do deck
+  IMCOPA, os cartões escuros com as imagens "600 × 400" que o Google Slides esconde atrás do
+  vídeo). Agora o vídeo vai direto no quadro e **recorta ao quadro** (`object-fit: cover`, como
+  no PowerPoint/Google — antes era `contain`, com tarjas pretas). De quebra: a **capa** de um
+  deck importado (`media:ID`) não passava pelo resolvedor de mídia e o atributo `poster` saía
+  cru — a miniatura e o editor ficavam sem a capa; agora é resolvida (blob/data).
+
 
 ### Adicionado (na main)
 

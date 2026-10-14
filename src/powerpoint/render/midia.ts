@@ -158,8 +158,13 @@ export function htmlMidia(s: Shape, ctx: CtxRender): string {
     `pp-shape pp-rica pp-midia-box${ctx.selecionada === s.id ? " selected" : ""}${s.fixa ? " pp-fixa" : ""}` +
     `${ctx.editando === s.id ? " pp-editando" : ""}${s.bloqueada ? " pp-bloqueada" : ""}`;
   const url = urlDaMidia(s.src, ctx.media);
-  const poster = posterDaMidia(s);
-  const base = `width:100%;height:100%;object-fit:contain;display:block;background:#000;border-radius:2px`;
+  // o poster de um deck importado é `media:ID` (a capa é uma mídia do pacote) — sem passar
+  // pelo mesmo resolvedor do `src`, o atributo saía cru e a capa não carregava
+  const poster = urlDaMidia(posterDaMidia(s), ctx.media);
+  // `cover`: o vídeo recorta ao quadro, como no PowerPoint/Google — e a capa preenche o
+  // quadro em vez de aparecer com tarjas (o `contain` só caberia se o quadro tivesse
+  // exatamente a proporção do vídeo, que não é o caso das lâminas importadas).
+  const base = `width:100%;height:100%;object-fit:cover;display:block;background:#000;border-radius:2px`;
   const trecho = trechoDaMidia(m);
 
   if (ctx.apresentando) {
@@ -174,12 +179,14 @@ export function htmlMidia(s: Shape, ctx: CtxRender): string {
   }
 
   if (ctx.editavel) {
-    const el =
-      m.tipo === "video"
-        ? `<video data-player src="${esc(url)}" poster="${esc(poster)}" preload="metadata" controls style="${base}"></video>`
-        : `<audio data-player src="${esc(url)}" preload="metadata" controls style="width:100%"></audio>`;
-    const capa = m.tipo === "video" ? "" : `<img class="pp-midia-capa" src="${esc(poster)}" alt="" draggable="false"/>`;
-    return `<div class="${classes}" data-shape="${s.id}" data-kind="imagem" style="${est.join(";")}">${capa}<div class="pp-midia-player">${el}</div></div>`;
+    // o vídeo vai DIRETO no quadro: dentro de um invólucro sem tamanho (`pp-midia-player`,
+    // que não tem CSS) o `height:100%` caía para o tamanho natural (~300×150) e a área do
+    // vídeo ficava transparente — a lâmina de trás aparecia através dela
+    if (m.tipo === "video") {
+      return `<div class="${classes}" data-shape="${s.id}" data-kind="imagem" style="${est.join(";")}"><video data-player src="${esc(url)}" poster="${esc(poster)}" preload="metadata" controls style="${base}"></video></div>`;
+    }
+    const capa = `<img class="pp-midia-capa" src="${esc(poster)}" alt="" draggable="false"/>`;
+    return `<div class="${classes}" data-shape="${s.id}" data-kind="imagem" style="${est.join(";")}">${capa}<div class="pp-midia-player"><audio data-player src="${esc(url)}" preload="metadata" controls style="width:100%"></audio></div></div>`;
   }
 
   return `<div class="${classes}" data-shape="${s.id}" data-kind="imagem" style="${est.join(";")}"><img src="${esc(poster)}" alt="" draggable="false" style="width:100%;height:100%;object-fit:cover;display:block"/></div>`;

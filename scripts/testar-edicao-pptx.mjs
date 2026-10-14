@@ -855,6 +855,41 @@ const MD = await empacotar("src/powerpoint/edicao/midia.ts", "midia.mjs");
   ok("caixa do vídeo centrada e dentro da lâmina", bx.x > 0 && bx.y > 0 && bx.x + bx.w < 100 && bx.y + bx.h < 100, JSON.stringify(bx));
 }
 
+// ---------------------------------------------------------------- mídia: o desenho na lâmina
+const RENDMID = await empacotar("src/powerpoint/render/midia.ts", "rend-midia.mjs");
+{
+  const formaVideo = {
+    id: "v1",
+    kind: "imagem",
+    box: { x: 10, y: 10, w: 50, h: 40 },
+    text: "",
+    rot: 0,
+    geom: "rect",
+    src: "media:v1",
+    midia: { tipo: "video", auto: true, controles: true, poster: "data:image/png;base64,QUJD" },
+  };
+  const html = RENDMID.htmlMidia(formaVideo, { media: {}, editavel: true });
+  ok(
+    "o vídeo vai direto no quadro (sem o invólucro sem estilo que o encolhia)",
+    /data-kind="imagem"[^>]*><video/.test(html) && !html.includes("pp-midia-player"),
+    "o vídeo voltaria a cair para o tamanho natural"
+  );
+  ok("o vídeo preenche o quadro (cover, não contain)", /object-fit:cover/.test(html) && !/object-fit:contain/.test(html));
+  ok("a capa do arquivo vai no atributo poster", /poster="data:image\/png/.test(html));
+  const htmlPres = RENDMID.htmlMidia(formaVideo, { media: {}, apresentando: true });
+  ok("na apresentação o vídeo também preenche o quadro", /object-fit:cover/.test(htmlPres) && /poster="data:image\/png/.test(htmlPres));
+  const formaImportada = { ...formaVideo, src: "media:v1", midia: { tipo: "video", auto: true, controles: true, poster: "media:p1" } };
+  const htmlImp = RENDMID.htmlMidia(formaImportada, { media: { p1: "data:image/png;base64,QUJD" }, editavel: true });
+  ok(
+    "a capa de um deck importado é resolvida pelo mapa de mídia (não sai `media:` cru)",
+    !htmlImp.includes('poster="media:') && /poster="(data:|blob:)/.test(htmlImp),
+    htmlImp.match(/poster="[^"]{0,24}/)?.[0] ?? "sem poster"
+  );
+  const formaAudio = { ...formaVideo, midia: { tipo: "audio", auto: false, controles: true, poster: "data:image/png;base64,QUJD" }, src: "media:a1" };
+  const htmlAudio = RENDMID.htmlMidia(formaAudio, { media: {}, editavel: true });
+  ok("o áudio mantém a capa com o player por cima", htmlAudio.includes("pp-midia-capa") && htmlAudio.includes("<audio"));
+}
+
 // ---------------------------------------------------------------- mídia: XML do .pptx
 const ESCR = await empacotar("src/powerpoint/pptxexport/rica.ts", "rica.mjs");
 {

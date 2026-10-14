@@ -5665,3 +5665,26 @@ antigas quando fizer sentido.
   por impressão. A passada cobre só o que já estava na `main` naquele momento: a entrada de uma
   tarefa que feche depois (ou que esteja com o fechamento em andamento), como a do **corpus dos
   n-gramas**, fica para a promoção seguinte.
+## src/powerpoint/render/midia.ts
+
+### 2026-10-14 · esta tarefa · o vídeo importado volta a preencher o quadro
+- **Local:** `htmlMidia` — o ramo do editor e o `poster`; a constante `base` do estilo inline
+- **Linha:** `object-fit:contain` → `object-fit:cover`; o `<video>` saiu de dentro do
+  `<div class="pp-midia-player">` e ficou direto no quadro; `posterDaMidia(s)` →
+  `urlDaMidia(posterDaMidia(s), ctx.media)`
+- **Porquê:** o relato do usuário (lâmina 8 do deck IMCOPA) mostrou os cartões de trás
+  aparecendo através da área do vídeo. A causa foi confirmada no arquivo real: as classes
+  `pp-midia-box/player/capa/el` **não têm CSS nenhum**, então o `height:100%` do vídeo caía
+  para o tamanho natural (~300×150) dentro de um invólucro de altura automática — a área do
+  quadro ficava transparente. O `contain` ainda punha tarjas pretas em qualquer quadro com
+  proporção diferente da do vídeo; o PowerPoint e o Google recortam ao quadro (`cover`), e o
+  quadro do arquivo (1,52) contra o vídeo (16:9) é exatamente esse caso. O `poster` saía como
+  `media:ID` cru (o `src` já passava pelo resolvedor, o poster não): o atributo não carregava
+  nada no navegador e a miniatura/editor ficavam sem capa — a prova com o arquivo real
+  (`prova-video.mjs`, no temp) mostrou `poster="media:m59"` antes e `blob:`/`data:` depois.
+- **Local:** `scripts/testar-edicao-pptx.mjs` (seção "mídia: o desenho na lâmina")
+- **Linha:** `novo` — 6 checagens: vídeo direto no quadro (sem o invólucro), `cover` (e não
+  `contain`), capa no atributo, o mesmo na apresentação, a capa importada resolvida pelo mapa
+  de mídia e o áudio mantendo capa + player
+- **Porquê:** era o único ponto sem teste do caminho de mídia (os testes cobriam edição e XML,
+  não o desenho); foi o desenho que quebrou na frente do usuário.
