@@ -445,3 +445,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Pesquisa (documento)**: sugestões sem IA — aquecimento, velocidade e sugestões longas: gargalos
   medidos no motor atual (modelo, índice, latência, largura média de 1,35 palavra), estado da arte
   com fontes e plano por fases V0–V4 (`docs/pesquisa-sugestoes-velocidade-tamanho.md`).
+- **Monitor da `main` suja**: além do hook que bloqueia o commit na `main`, o mesmo instalador
+  (`instalar-monitor.ps1`) agora agenda o `monitor-main.ps1`: a cada poucos minutos ele registra
+  no log quando a **cópia principal** fica com alterações soltas (trabalho direto na `main` —
+  edição, que o hook não tem como impedir) e quando ela volta a ficar limpa.

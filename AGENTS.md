@@ -26,6 +26,7 @@ As ferramentas ficam em `tools\worktrees\` (PowerShell) e são de uso **obrigat�
 - **Nunca deixe worktree órfã.** Terminou ou desistiu? Rode o `fechar.ps1` (ou `limpar.ps1 -Nome <branch> -Forcar -ApagarBranch` para descartar).
 - **Conflito:** o `fechar.ps1` para, lista os arquivos e deixa a integração (rebase) em andamento na worktree. Resolva, rode `git add` e execute o `fechar.ps1` de novo — ele continua o rebase sozinho.
 - **O push é automático — não o faça à mão.** O `fechar.ps1` já envia a `main` ao GitHub depois de entregar. Se o envio falhar, ou se alguém fechar com `-SemPush`, o monitor (`monitor-push.ps1`, tarefa agendada instalada por `instalar-monitor.ps1`) envia quando todas as worktrees tiverem terminado. Ele nunca força push: se a `main` e o GitHub divergirem, avisa no log (`.git\mdoffice-monitor.log`) e espera o usuário resolver.
+- **A `main` suja também é vigiada.** O hook bloqueia o commit direto na `main`, mas não as edições: o `monitor-main.ps1` (segunda tarefa agendada, instalada pelo mesmo `instalar-monitor.ps1`) registra no log (`.git\mdoffice-monitor.log`) quando a cópia principal fica com alterações soltas — e quando volta a ficar limpa. O aviso não conserta nada: quem sujou move o trabalho para uma worktree.
 - **Não mexa em worktree de outro agente.** `tools\worktrees\status.ps1` mostra worktrees, estado da `main` e limpeza pendente.
 - **Proteção opcional:** `tools\worktrees\instalar-protecao.ps1` instala um hook que bloqueia commit direto na `main`.
 

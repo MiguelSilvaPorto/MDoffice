@@ -83,6 +83,31 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** centralizar a leitura da branch (que precisa funcionar com rebase em andamento) e
   da descrição da tarefa, usadas pelo `fechar.ps1` e pelo `status.ps1`.
 
+## tools/worktrees/monitor-main.ps1
+
+### 2026-10-14 · este commit · monitor da main suja (novo arquivo)
+- **Local:** arquivo inteiro (`param`, `Logar`, `LogarMudanca` e o bloco do mutex)
+- **Linha:** novo arquivo
+- **Porquê:** o hook `pre-commit` bloqueia o commit na `main`, mas não as edições — arquivos
+  editados direto na cópia principal só apareciam quando alguém rodava o `status.ps1`. O monitor
+  fecha o ponto cego no mesmo molde do `monitor-push.ps1`: mutex próprio, estado próprio
+  (`.git\mdoffice-monitor-main.estado`) e o mesmo log, escrevendo só quando o motivo muda
+  (limpa ↔ suja, com a lista de arquivos na chave). O parâmetro `-Pasta` existe para testar o
+  monitor apontando para outra pasta (uma worktree) sem sujar a `main`; a raiz é normalizada
+  para a cópia principal (tira `\.worktrees\<tarefa>`), então o padrão aponta certo mesmo
+  rodando de dentro de uma worktree.
+
+## tools/worktrees/instalar-monitor.ps1
+
+### 2026-10-14 · este commit · as duas tarefas dos monitores
+- **Local:** lista `$monitores` e os blocos `-Estado`, `-Remover` e de instalação
+- **Linha:** `$nome = 'MDOffice-MonitorPush'` fixo → lista com **MonitorPush** e **MonitorMain**,
+  percorrida nos três caminhos
+- **Porquê:** o monitor novo entra junto do antigo com um comando só: `-Estado` mostra as duas
+  tarefas e o fim do log, `-Remover` tira as duas, e a instalação cria as duas com os mesmos
+  parâmetros (conhost --headless, a cada 2 minutos, sem administrador) — os scripts são
+  conferidos antes de qualquer registro, para não instalar metade.
+
 ## src/styles/base.css
 
 ### 2026-10-13 · este commit · botão de ação destrutiva
