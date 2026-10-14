@@ -409,13 +409,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   de novo também desliga. Numa forma com **Estilo de Cor**, a receita vai junto (o alvo passa a usar
   a mesma rampa) — e quando a cópia não tem receita, o **estilo vivo do alvo é solto**, para a
   pintura não ser derrubada pelo recálculo no próximo movimento.
-- **Arrastar a caixa pelo vazio (forma sem fundo)**: uma caixa de texto sem preenchimento só
-  pegava o clique **nas letras** — o resto do retângulo era clique-através, então tentar arrastar
-  a caixa pelo miolo caía na lâmina e ainda **desfazia a seleção**. Agora a forma sem fundo
-  **escolhida** tem o interior inteiro como área de arrasto (com o cursor de mover) e continua
-  clique-através quando não está escolhida — dá para escolher o que está embaixo sem perder a
-  caixa de vista. Editando o texto, quem manda continua sendo o cursor de texto.
-
 
 - **Arranjos: o clique aplica só na lâmina atual** — antes a fórmula era aplicada em todas as lâminas do deck (e sem refazer os estilos e ligações derivados); agora vale para a lâmina que a prévia mostra, como qualquer edição, e dá para desfazer.
 
@@ -429,6 +422,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Arrastar a caixa pelo vazio (forma sem fundo)**: uma caixa de texto sem preenchimento só
+  pegava o clique **nas letras** — o resto do retângulo era clique-através, então tentar arrastar
+  a caixa pelo miolo caía na lâmina e ainda **desfazia a seleção**. Agora a forma sem fundo
+  **escolhida** tem o interior inteiro como área de arrasto (com o cursor de mover) e continua
+  clique-através quando não está escolhida — dá para escolher o que está embaixo sem perder a
+  caixa de vista. Editando o texto, quem manda continua sendo o cursor de texto.
 - **Aba Arranjos não trava mais ao clicar** — as prévias são desenhadas uma por quadro e reaproveitadas enquanto a lâmina não muda (antes, seis lâminas inteiras eram remontadas de forma síncrona a cada clique ou edição).
 
 - **Aba Design sem o grupo "Tema"**: os três botões (**Tema claro**, **Tema escuro** e **Alto

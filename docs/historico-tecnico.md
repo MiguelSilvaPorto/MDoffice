@@ -8284,3 +8284,15 @@ antigas quando fizer sentido.
   letras respondiam) e volta fácil numa simplificação do CSS — o par "solta passa / escolhida
   pega" é exatamente a regra que alguém pode achar que é só uma classe a mais. O teste do render
   prova a decisão a partir do dado (forma + seleção), não do CSS.
+
+## CHANGELOG.md
+
+### 2026-10-14 · esta tarefa · promoção da entrada do arrasto da caixa
+- **Local:** PowerPoint → "Não adicionado" → Frontend → "Adicionado" → Frontend (topo)
+- **Linha:** 1 entrada movida — **Arrastar a caixa pelo vazio (forma sem fundo)** (`a7483d4`)
+- **Porquê:** o commit está na `main` (conferido com `git merge-base --is-ancestor` antes de
+  mover), então a promoção não afirma nada falso; como nas rodadas anteriores, ela anda num passo
+  curto de docs porque o registro de autoria e a promoção não cabem no mesmo commit do `fechar.ps1`.
+  A entrada do **Copiar formatação** (Pincel) que estava na mesma lista ficou onde estava de
+  propósito: o commit dela (`8b49df4`) também está na `main`, mas a sessão dela pode estar no meio
+  da própria promoção — mexer aqui só criaria um conflito inútil para quem chegar depois.
