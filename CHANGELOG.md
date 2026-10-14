@@ -402,27 +402,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - **Arranjos: triângulos e painéis de fundo não viram mais "cartões"** — antes uma forma grande e decorativa (ex.: os triângulos verdes) ou um painel atrás dos cartões era tratado como cartão, engolia os de verdade e o arranjo saía desordenado; agora eles ficam parados e só os cartões com conteúdo se arrumam. Teste: `npm run test:arranjos`.
 
-- **Fita: os menus de forma abrem mesmo sem forma escolhida — e nunca por cima do botão**: o
-  **Contorno** (o relato: "clicado de novo, não abre"), o **Preenchimento** e os **Efeitos**
-  ficavam **desabilitados** sem forma escolhida e engoliam o clique sem dizer nada. Agora os três
-  abrem o menu com a **dica** (o padrão que os **Estilos de cor** já usavam — `d32f4db`): o menu
-  traz "Selecione uma forma na lâmina para desenhar o contorno." (idem preenchimento e efeito) e os
-  itens **desabilitados** — nada de clique mudo. E o menu **não cobre mais o próprio botão**: numa
-  janela baixa ele subia e tapava a fita (o clique seguinte caía no menu); agora ele **encolhe**
-  com rolagem por dentro e fica sempre **abaixo** — ou, quando lá há mais espaço, acima,
-  **terminando antes da âncora**. Os botões de ordem (Trazer para frente etc.) seguem desabilitados
-  sem seleção, como no PowerPoint.
-
-- **Designs criados na hora (o gerador das Ideias)**: as ideias só combinavam o catálogo (19
-  designs × 3 acabamentos). Agora **três cartões de cada fornada são criados pelo app**: uma
-  paleta montada na hora a partir de uma cor de partida (o **ângulo de ouro** espalha as
-  paletas), um **esquema harmônico** (análogo, complementar ou triádico), fundo claro ou escuro
-  alternado e uma fonte que combina — o nome sai da cor ("Verde análogo") e o cartão diz
-  **Novo**. A semente avança a cada fornada, então as paletas **não se repetem**; o design é
-  **determinístico** (o `gerado-N` volta pela mesma função), e é isso que faz a prévia do cartão
-  ser exatamente o que o clique aplica. O texto de cada paleta é conferido contra o fundo
-  (**WCAG 4,5:1**, medido em 14,9 e 15,9 nas oito primeiras) antes de a ideia aparecer.
-
 ### Adicionado (na main)
 
 **Backend**
@@ -443,6 +422,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
     segurar `Alt` para marcar o nó como canto reto/quina (marcador quadrado); segurar `Shift` para travar o segmento
     a cada 45°; `Backspace`/`Delete` para remover o último ponto; `Enter` ou duplo-clique para concluir curva aberta;
     e `Esc` para cancelar.
+
+- **Fita: os menus de forma abrem mesmo sem forma escolhida — e nunca por cima do botão**: o
+  **Contorno** (o relato: "clicado de novo, não abre"), o **Preenchimento** e os **Efeitos**
+  ficavam **desabilitados** sem forma escolhida e engoliam o clique sem dizer nada. Agora os três
+  abrem o menu com a **dica** (o padrão que os **Estilos de cor** já usavam — `d32f4db`): o menu
+  traz "Selecione uma forma na lâmina para desenhar o contorno." (idem preenchimento e efeito) e os
+  itens **desabilitados** — nada de clique mudo. E o menu **não cobre mais o próprio botão**: numa
+  janela baixa ele subia e tapava a fita (o clique seguinte caía no menu); agora ele **encolhe**
+  com rolagem por dentro e fica sempre **abaixo** — ou, quando lá há mais espaço, acima,
+  **terminando antes da âncora**. Os botões de ordem (Trazer para frente etc.) seguem desabilitados
+  sem seleção, como no PowerPoint.
 
 - **A galeria do Template põe os SEUS modelos em cima e o catálogo embaixo**: o cartão
   **Novo modelo** (guardar esta apresentação) vem **primeiro** e cada modelo que você criou fica

@@ -8713,3 +8713,15 @@ antigas quando fizer sentido.
 - **Local:** PowerPoint → "Não adicionado" → Frontend → "Adicionado" → Frontend (topo)
 - **Linha:** 1 entrada movida — **Curva por pontos de parada e modo Pontos no Draw** (`ad3f479`)
 - **Porquê:** o commit está na `main` (entregue no commit anterior); a promoção atualiza o CHANGELOG para refletir o estado entregue na `main`.
+
+### 2026-10-14 — promoção — a entrada do Contorno entra no "Adicionado" (PowerPoint)
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** 1 entrada movida — **Fita: os menus de forma abrem mesmo sem forma escolhida — e nunca
+  por cima do botão** (`294e4e5`, worktree `fix-contorno-reabre`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não cabe
+  no mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que ainda
+  não entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** da lista do Frontend,
+  como as promoções anteriores; as entradas das outras sessões no "Não adicionado" do módulo
+  (Arranjos, Pincel de Formatação, Arranjos só na lâmina atual) ficaram
+  intactas; a entrada do gerador saiu na promoção paralela da outra sessão (a nota acima,
+  `7bdccb1`) — as duas notas convivem porque as duas rodadas chegaram juntas. Aquela promoção deixou uma **cópia** do gerador no "Não adicionado" (a entrada já estava no "Adicionado"); a cópia saiu nesta resolução de rebase, junto da minha entrada — deixá-la seria uma entrada prometendo trabalho que já entrou.
