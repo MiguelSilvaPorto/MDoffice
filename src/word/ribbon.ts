@@ -2,7 +2,7 @@
 import type { WordEditor, FormatState } from "./editor";
 import { FONT_FAMILIES, FONT_SIZES } from "./schema";
 import { DEFAULT_SETUP, type PageSetup } from "./model";
-import { h } from "../util";
+import { h, toast } from "../util";
 import { ligarAjusteAlturaFita, ligarRecolherFita } from "../fita";
 
 export interface RibbonHooks {
@@ -584,7 +584,7 @@ export class Ribbon {
     const SpeechRecognition = (window as unknown as { SpeechRecognition?: any; webkitSpeechRecognition?: any }).SpeechRecognition ||
       (window as unknown as { SpeechRecognition?: any; webkitSpeechRecognition?: any }).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("O reconhecimento de voz pelo navegador (Web Speech API) não está disponível no sistema atual.");
+      toast("O reconhecimento de voz pelo navegador (Web Speech API) não está disponível no sistema atual.", "info", 5600);
       return;
     }
     const rec = new SpeechRecognition();

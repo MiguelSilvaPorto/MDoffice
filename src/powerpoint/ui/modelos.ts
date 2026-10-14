@@ -3,6 +3,7 @@
 import { MODELOS, type ModeloPPT } from "../edicao/modelos";
 import { lerModelosUsuario } from "../modelosUsuario";
 import { themeOf } from "../themes";
+import { pedirTexto } from "../../dialogoTexto";
 import { abrirPopup, fecharPopup } from "./popup";
 
 const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] ?? c);
@@ -69,10 +70,20 @@ export function abrirModelos(ancora: HTMLElement, aoEscolher: (m: ModeloPPT) => 
     }
     const criar = t.closest<HTMLElement>("[data-criar]");
     if (criar) {
-      const nome = window.prompt("Nome do novo modelo:", "Meu modelo");
-      if (nome === null) return;
-      acoes.criar?.(nome);
-      desenhar();
+      void (async () => {
+        // fecha a galeria antes do diálogo: os cliques nele não são "fora do popup"
+        fecharPopup();
+        const nome = await pedirTexto({
+          titulo: "Novo modelo",
+          rotulo: "Nome do novo modelo",
+          dica: "O modelo guarda o visual desta apresentação (tema, cores e fonte) e passa a aparecer no botão Template.",
+          valor: "Meu modelo",
+        });
+        if (nome === null) return;
+        acoes.criar?.(nome);
+        // reabre a galeria com o cartão novo (a âncora continua na fita)
+        if (ancora.isConnected) abrirModelos(ancora, aoEscolher, acoes);
+      })();
       return;
     }
     const preset = t.closest<HTMLElement>("[data-i]");

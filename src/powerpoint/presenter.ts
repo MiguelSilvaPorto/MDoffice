@@ -8,6 +8,7 @@ import { deckFromMarkdown } from "./markdown";
 import { DEFAULT_SETUP, stageRatio } from "./model";
 import type { Deck, DeckSetup, Slide, Transicao, TransicaoTipo } from "./schema";
 import { fundoValor } from "./render/forma";
+import { toast } from "../util";
 
 marked.setOptions({ gfm: true, breaks: false });
 
@@ -27,14 +28,14 @@ function oculta(slide: Slide): boolean {
  *  sai. Ctrl+P imprime uma lâmina por página (PDF). Lâminas ocultas não aparecem. */
 export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titulo?: string, desenharFormas?: (slide: Slide) => string): void {
   if (!deck.slides.length) {
-    alert("Este documento não tem conteúdo para apresentar.\n\nSepare as lâminas com uma linha de três traços (---).");
+    toast("Este documento não tem conteúdo para apresentar — separe as lâminas com uma linha de três traços (---).", "info", 5600);
     return;
   }
   // a apresentação anda pela ordem das lâminas visíveis: `atual` é a posição nessa
   // lista (e é o número que a barra mostra), não o índice em deck.slides
   const ordem = deck.slides.map((_, i) => i).filter((i) => !oculta(deck.slides[i]));
   if (!ordem.length) {
-    alert("Todas as lâminas estão ocultas — não há o que apresentar.\n\nMostre ao menos uma lâmina para usar o modo apresentação.");
+    toast("Todas as lâminas estão ocultas — mostre ao menos uma para usar o modo apresentação.", "info", 5600);
     return;
   }
   const overlay = document.createElement("div");

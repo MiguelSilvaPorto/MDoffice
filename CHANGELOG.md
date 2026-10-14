@@ -178,6 +178,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - Corretor/revisão e **texto fantasma** funcionando no Word; fontes métricas locais.
 - Histórico de versões, abas, Estrutura e busca valem no Word também.
 - Importação de `.docx` com avisos do que ainda não entende (nunca some em silêncio).
+- **Aviso de voz sem janela do sistema**: quando o reconhecimento de voz não está disponível, o
+  aviso virou um toast do app (antes era o `alert` nativo do WebView).
 
 ---
 
@@ -212,6 +214,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Abas de planilha** (nova, duplicar, excluir, mover) e **zoom**.
 - Abrir `.xlsx`/`.xlsm` e salvar `.xlsx` (macros não são preservadas; sugere `.xlsx`).
 - **Configurar planilha**: linhas de grade, casas decimais, símbolo da moeda e zoom.
+- **Limpeza**: removido o `renomearAba` com `window.prompt` (código morto) — a aba já se renomeia
+  na tela, no duplo clique e no menu de contexto.
 
 ---
 
@@ -263,6 +267,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   tela preta/branca), o resumo vai a **102/191** e entra o **mapa de edição** — 14 áreas do que o
   DeckCraft edita e falta aqui, com os ganhos rápidos e os próximos passos reordenados
   (`docs/paridade-deckcraft.md`).
+- **Diálogos do app no lugar de janelas do sistema**: **Novo modelo** (botão Template) e
+  **Renomear lâmina** agora usam o diálogo de texto do app — com o tema, dica, Enter/OK,
+  Esc/Cancelar e clique fora; ao criar, a galeria reabre já com o cartão novo.
+- **Avisos do F5**: “documento sem conteúdo” e “todas as lâminas ocultas” viraram toasts do app
+  (antes eram `alert` nativos).
 
 ---
 
@@ -299,7 +308,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   ser **ponderada por classe** (c↔ç, s↔z, g↔j, e↔i, o↔u, m↔n, "h" mudo, letra dobrada, inversão de
   vizinhas) e pela **vizinhança de teclas**; as **grafias prováveis** (ss↔ç, ch↔x, dobradas) são
   procuradas direto no vocabulário. "excessao" → **exceção**, "analize" → **análise**, "pesquiza" →
-  **pesquisa** e "obrigdao" → **obrigado** agora saem certos — e sozinhos. Corpus: **34/34**.
+  **pesquisa** e "obrigdao" → **obrigado** agora saem certos - e sozinhos. Corpus: **34/34**.
 
 **Ferramentas (dev)**
 
@@ -424,8 +433,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   app**, com **Restaurar** e **Apagar** por cópia, para o documento atual **e** para os outros
   documentos com backup. Ganhou "onde ficam os arquivos" (as duas pastas com Abrir e o log
   exportado em `.historico/historico.json`), o atalho para os **originais sumidos** e o
-  **Apagar completo** (versões + alterações + log exportado — as cópias em disco ficam; antes
+  **Apagar completo** (versões + alterações + log exportado - as cópias em disco ficam; antes
   o botão apagava só as versões). O "Abrir histórico" abre direto na aba certa.
+- **Diálogo de texto do app** (`src/dialogoTexto.ts`): componente único para pedir um nome - campo
+  com rótulo e dica, **Enter/OK** confirmando, **Esc/Cancelar/clique fora** cancelando e `validar`
+  com mensagem de erro. Substitui os `window.prompt` nativos ("localhost:1420 diz."), que não
+  seguem o tema.
 
 **Ferramentas (dev)**
 

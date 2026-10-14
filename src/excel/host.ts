@@ -1894,15 +1894,6 @@ export class ExcelHost {
     this.pintar();
   }
 
-  private renomearAba(i: number): void {
-    const nome = window.prompt("Nome da aba:", this.livro.folhas[i]?.nome ?? "Planilha");
-    if (nome === null) return;
-    this.guardarPilha();
-    this.livro = renomearFolha(this.livro, i, nome);
-    this.sujo();
-    this.pintar();
-  }
-
   // ---- linhas e colunas ----
 
   /** Empurra células para baixo a partir da linha de seleção. */

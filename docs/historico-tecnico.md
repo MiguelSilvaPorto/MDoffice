@@ -2217,6 +2217,71 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Local:** `docs/abnt-como-escrever-regras.md` (novo)
 - **Porquê:** o contrato em prosa, com os dois lados de cada teste e o que o lint recusa.
   É o que permite mais de uma pessoa (ou agente) escrever regra sem inventar dialeto.
+## src/dialogoTexto.ts
+
+### 2026-10-14 · esta tarefa · diálogo de texto do app (novo arquivo)
+- **Local:** arquivo inteiro: `pedirTexto` (Promise) sobre o modal do app
+- **Linha:** novo arquivo
+- **Porquê:** o “Novo modelo” do PowerPoint usava `window.prompt` — a janela nativa do WebView
+  (“localhost:1420 diz…”) não segue o tema, não tem o desenho do app e congela a janela. O
+  componente reaproveita `modal-backdrop`/`modal` + `wm-head`/`wm-body`/`wm-foot` + `st-field`
+  (mesma base dos outros diálogos), devolve o valor por Promise e cancela com **Esc**, botão ou
+  clique fora. O `validar` opcional mostra o erro na própria janela (a mensagem some ao digitar).
+  Textos de fora entram por `textContent`, nunca como HTML.
+
+## src/styles/modals.css
+
+### 2026-10-14 · esta tarefa · desenho do diálogo de texto
+- **Local:** bloco novo no fim (`modal.dialogo-texto`, `.dg-erro`)
+- **Linha:** `.modal.dialogo-texto { width: min(460px, 92vw); height: auto }` + respiro do
+  `wm-body` + `.dg-erro` (vermelho do app)
+- **Porquê:** o `.modal` base nasce grande (95vw × 92vh) para os editores; um diálogo de uma
+  linha precisa de largura de leitura e altura mínima, sem “barriga”.
+
+## src/powerpoint/ui/modelos.ts
+
+### 2026-10-14 · esta tarefa · “Novo modelo” sem janela do sistema
+- **Local:** handler `[data-criar]` da galeria do botão Template
+- **Linha:** `const nome = window.prompt("Nome do novo modelo:", "Meu modelo")` → chamada a
+  `pedirTexto({ titulo, rotulo, dica, valor })` (assíncrona)
+- **Porquê:** é o caso do print do usuário. Como o diálogo é do app, a galeria fecha antes
+  (`fecharPopup()` — os cliques no modal não podem contar como “fora do popup”) e **reabre
+  depois** (`abrirModelos` de novo, se a âncora ainda está na fita) para a pessoa ver o cartão
+  recém-criado na hora.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · esta tarefa · renomear lâmina com o diálogo do app
+- **Local:** `case "slide-nome"` (menu da lâmina)
+- **Linha:** `window.prompt(...)` → `pedirTexto(...)` dentro de uma IIFE assíncrona
+- **Porquê:** mesmo problema do “Novo modelo”. O `case` é síncrono (a cadeia de menus do app
+  continua), então o fluxo virou `void (async () => { … })()` e, depois do `await`, compara com
+  `this.atual()` (e não com o `sl` capturado) antes de aplicar a troca.
+
+## src/powerpoint/presenter.ts
+
+### 2026-10-14 · esta tarefa · avisos do F5 viram toast
+- **Local:** `openDeckView` (as duas saídas de aviso)
+- **Linha:** `alert("Este documento não tem conteúdo…")` e `alert("Todas as lâminas estão
+  ocultas…")` → `toast(mensagem, "info", 5600)`
+- **Porquê:** `alert` nativo congela a janela e foge do desenho do app; o toast é o canal de
+  aviso do próprio sistema (mesmo texto, sem `\n\n` — o toast quebra sozinho).
+
+## src/word/ribbon.ts
+
+### 2026-10-14 · esta tarefa · aviso de voz vira toast
+- **Local:** `startDictation` (quando o Web Speech API não existe)
+- **Linha:** `alert("O reconhecimento de voz…")` → `toast(mensagem, "info", 5600)`
+- **Porquê:** mesmo caso: é aviso, não decisão; o toast não interrompe o fluxo e respeita o tema.
+
+## src/excel/host.ts
+
+### 2026-10-14 · esta tarefa · fora o renomear de aba com prompt (código morto)
+- **Local:** método `renomearAba(i)` (particular)
+- **Linha:** método inteiro removido (usava `window.prompt` e `renomearFolha`)
+- **Porquê:** ninguém o chamava — a renomeação acontece na tela (`renomearAbaNaTela`, no duplo
+  clique da aba e no menu de contexto botão direito) desde que essa versão entrou. Era o último
+  `window.prompt` do app fora dos diálogos que esta tarefa trocou.
 
 ---
 

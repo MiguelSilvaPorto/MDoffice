@@ -241,3 +241,29 @@
   align-items: center;
   gap: 8px;
 }
+
+/* ---------- diálogo de texto (pedir um nome) ---------- */
+
+.modal.dialogo-texto {
+  width: min(460px, 92vw);
+  height: auto;
+}
+
+.modal.dialogo-texto .wm-body {
+  padding: 14px 18px 8px;
+}
+
+.modal.dialogo-texto .st-field {
+  margin-top: 0;
+}
+
+.dg-erro {
+  margin: 8px 0 2px;
+  color: var(--danger);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.dg-erro[hidden] {
+  display: none;
+}

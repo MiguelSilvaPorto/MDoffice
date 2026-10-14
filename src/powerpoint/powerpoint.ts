@@ -4,6 +4,7 @@
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { $, toast } from "../util";
+import { pedirTexto } from "../dialogoTexto";
 import { ligarAjusteAlturaFita, ligarRecolherFita } from "../fita";
 import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, novaImagem, type EstiloDeck, type ItemGaleria } from "./edicao/criar";
 import { ajustarCor, comAjuste, comLinha, comOpacidade, comPreenchimento, comRaioDeCanto, comSombra, gradiente, SOMBRAS_PRONTAS, solido, corPrincipal } from "./edicao/formato";
@@ -1207,16 +1208,23 @@ export class PowerPointHost {
         return;
       }
       case "slide-nome": {
-        const nome = window.prompt("Nome da lâmina (vazio volta a usar só o número):", sl.nome ?? "");
-        if (nome === null) return;
-        const limpo = nome.trim();
-        if (limpo === (sl.nome ?? "")) return;
-        this.editar((s) => {
-          const n = { ...s };
-          if (limpo) n.nome = limpo;
-          else delete n.nome;
-          return n;
-        });
+        void (async () => {
+          const nome = await pedirTexto({
+            titulo: "Renomear lâmina",
+            rotulo: "Nome da lâmina",
+            dica: "Vazio volta a usar só o número da lâmina.",
+            valor: sl.nome ?? "",
+          });
+          if (nome === null) return;
+          const limpo = nome.trim();
+          if (limpo === (this.atual().nome ?? "")) return;
+          this.editar((s) => {
+            const n = { ...s };
+            if (limpo) n.nome = limpo;
+            else delete n.nome;
+            return n;
+          });
+        })();
         return;
       }
       case "slide-reset": {
