@@ -7122,3 +7122,16 @@ antigas quando fizer sentido.
   `+ a Dobra e o grupo no p:grpSp` · `+ R3 marcada como entregue`
 - **Porquê:** a dobra muda o que o usuário vê (e o que ele encontra no PowerPoint: um grupo) —
   o doc do módulo precisa dizer; e o plano é o que permite retomar a R4/R5 numa sessão nova.
+
+## CHANGELOG.md
+
+### 2026-10-14 · promoção · as duas entradas do PowerPoint entram no "Adicionado"
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** 2 entradas movidas — **Estilos de cor (R3 — o brilho em dobra)** (`35cd210`) e
+  **Desenho assistido: o topo do cartão sai reto** (`7e1148e`); a seção ficou com "- (nada no
+  momento)"
+- **Porquê:** os dois commits já estão na `main`, mas a promoção não cabe no mesmo commit do
+  `fechar.ps1`. A conferência olhou que as duas ainda **não** estavam em "Adicionado" antes de
+  mover — a lição das rodadas anteriores, quando o rebase re-inseriu uma entrada já promovida.
+  A entrada da **remoção do "Configurar"** (`66ee5c7`) já tinha sido promovida pela própria
+  sessão dela.

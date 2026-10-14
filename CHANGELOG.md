@@ -382,13 +382,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Desenho assistido: o topo do cartão sai reto (sem barriga no meio)**: com os pontos já
-  alinhados pelo encaixe nos eixos, o caminho continuava saindo em **cúbicas** — e a curva do
-  Catmull-Rom **bojava entre os pontos** quando os vizinhos eram os cantos (o print do relato). Os
-  trechos encaixados agora saem como **segmento reto** (`L`) no caminho: o topo de um cartão fica
-  exatamente reto, com os cantos descendo como foram desenhados. O encaixe passou a rodar **por
-  último** (depois da suavização), senão a média móvel puxava os pontos do topo de volta para os
-  cantos.
+- (nada no momento)
+
+### Adicionado (na main)
+
+**Backend**
+
+- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
+
+**Frontend**
+
 - **Estilos de cor (R3 — o brilho em dobra)**: o acabamento **Dobra** entrou na galeria e no
   painel: além do **Lustro** (a faixa clara dentro da própria rampa), agora dá para pôr o
   **brilho diagonal** da referência — uma **forma-capa** translúcida (paralelogramo com gradiente
@@ -400,13 +403,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   tom profundo com o alfa, a sombra no efeito, e a **dobra abre no PowerPoint como um grupo**
   (base + capa no mesmo `p:grpSp`) — a volta traz o visual como pintura.
 
-### Adicionado (na main)
-
-**Backend**
-
-- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
-
-**Frontend**
+- **Desenho assistido: o topo do cartão sai reto (sem barriga no meio)**: com os pontos já
+  alinhados pelo encaixe nos eixos, o caminho continuava saindo em **cúbicas** — e a curva do
+  Catmull-Rom **bojava entre os pontos** quando os vizinhos eram os cantos (o print do relato). Os
+  trechos encaixados agora saem como **segmento reto** (`L`) no caminho: o topo de um cartão fica
+  exatamente reto, com os cantos descendo como foram desenhados. O encaixe passou a rodar **por
+  último** (depois da suavização), senão a média móvel puxava os pontos do topo de volta para os
+  cantos.
 
 - **Estilos de cor (R2 — a cara do sistema)**: na aba **Formato da Forma**, o botão **Estilos**
   (grupo **Estilos de Cor**) abre a galeria das famílias — **Esmeralda, Oceano, Ameixa, Âmbar,
