@@ -17,8 +17,9 @@ const SUPERFICIES = [
   "editor-context-menu",
 ];
 
-/** Rede de segurança: se a animação não rodar, o elemento some mesmo assim. */
-const LIMITE = 420;
+/** Rede de segurança: se a animação não rodar, o elemento some mesmo assim (o maior tempo
+ *  do nível "completa" é 460 ms — o limite fica acima dele). */
+const LIMITE = 640;
 
 export function ligarMovimentoDeSaida(): void {
   if (typeof MutationObserver === "undefined" || !document.body) return;

@@ -4636,6 +4636,53 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o documento do módulo descreve o que o app faz; a galeria é a porta de entrada da
   lâmina nova.
 
+## src/styles/movimento.css
+
+### 2026-10-14 · nível completo · entradas com mola e viagem própria
+- **Local:** o bloco `html.anim-completa` (durações, hover, cascata) e os keyframes novos
+  (`mdc-surgir-mais`, `mdc-menu-mais`, `mdc-painel-mais`, `mdc-aba-mais`, `mdc-item-mais`)
+- **Linha:** `--mov-2: 240ms; --mov-3: 380ms` → `--mov-2: 300ms; --mov-3: 460ms` (+ `--curva-mola`)
+  · hover `translateY(-2px)` → `-3px` (+ sombra maior no cartão) · `+ as sobrescritas das entradas
+  (modais, menus, painéis, abas, cartões do Início, itens da paleta)` · `+ a escadinha da paleta
+  (nth-child com 26 ms de passo)` · `+ a mola no toast, na barra lateral e na pílula`
+- **Porquê:** o nível “Completa” só era **mais lento** (30–100 ms) — o usuário não via diferença
+  nenhuma entre ele e o “Padrão” (reportado com print). A diferença agora é de **natureza**: a
+  entrada viaja mais, a curva passa do ponto e assenta, a cascata abre em passos visíveis e o
+  relevo é maior. Os `!important` seguem o padrão deste arquivo (a camada de preferência do
+  usuário precisa vencer os tempos definidos componente a componente).
+
+## src/styles/settings.css
+
+### 2026-10-14 · nível completo · a prévia do cartão mostra o ritmo
+- **Local:** `.st-anim-previa[data-anim="completa"] .st-anim-bola`
+- **Linha:** `animation: prev-anim 2.4s cubic-bezier(0.34, 1.56, 0.64, 1) infinite` →
+  `animation: prev-completa 2.4s … infinite` (+ o `@keyframes prev-completa`)
+- **Porquê:** a prévia usava o MESMO passo do “Padrão”, só com uma curva mais macia — no cartão,
+  os dois pareciam iguais. A prévia nova dá dois tempos (vai, para, volta) e estufa a bolinha no
+  fim (`scale(1.3)`), então o cartão já explica o que o nível faz antes de escolher.
+
+## src/settingsPage.ts · src/movimento.ts
+
+### 2026-10-14 · nível completo · a descrição certa e a rede de segurança no tempo certo
+- **Local:** o `title` do cartão “Completa” e a constante `LIMITE` do `movimento.ts`
+- **Linha:** `title="Movimento mais longo, com mais relevo e cascata"` → `title="Entradas com mola
+  (passam do ponto e assentam), cascata mais espaçada, hover mais alto e janelas maiores"` ·
+  `const LIMITE = 420` → `640`
+- **Porquê:** o texto do cartão prometia pouco e não dizia o que muda; e a rede de segurança do
+  movimento de saída (o `setTimeout` que remove o elemento se a animação não rodar) tinha 420 ms —
+  menos que os 460 ms da maior animação do nível completo, então o modal podia sair no meio dela.
+  O limite agora fica acima do maior tempo, e o teste confere essa relação (lê os dois arquivos).
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · nível completo · as checagens prendem a diferença
+- **Local:** a seção “configurações: aparência em cartões”
+- **Linha:** `+ 3 checagens` (a entrada própria do completo com a mola e a escadinha; as prévias com
+  ritmos diferentes; a rede de segurança ≥ o maior tempo) e as duas antigas atualizadas
+  (`--mov-2: 240ms` → `300ms`; `translateY(-2px)` → `-3px`)
+- **Porquê:** sem isso, o nível podia voltar a ser “30 ms mais lento” sem ninguém notar — foi
+  exatamente o que aconteceu com o logo das boas-vindas e o marcador do CHANGELOG.
+
 ---
 
 ## Próximos registros

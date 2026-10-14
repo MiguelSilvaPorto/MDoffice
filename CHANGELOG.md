@@ -559,7 +559,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **O nível “Completa” ganhou cara própria — e o “Padrão” deixou de ser igual a ele**: os dois níveis eram praticamente indistinguíveis (o “Completa” só mexia **30–100 ms** nas durações e **1 px** no hover). Agora o “Completa” **entra com mola** (a curva passa do ponto e assenta, `cubic-bezier(0.34,1.56,0.64,1)`), viaja **o dobro** (modais e painéis 26 px, menus 14 px, abas 16 px), a **cascata do Início** abre mais espaçada (70/140/210/280 ms), a **paleta (Ctrl+K) entra em escadinha** (26 ms por item), os itens da paleta deslizam de lado, o toast e a barra lateral usam a mola, e o hover sobe **3 px** (com sombra maior nos cartões) — o “Padrão” continua curto e direto, como sempre foi, e o “Discreta” segue sem entrada e sem elevação. A **prévia de cada cartão** mostra o ritmo (a do “Completa” dá dois tempos com um estufo no fim) e a descrição diz o que muda. A rede de segurança do movimento de saída subiu de **420 para 640 ms** (senão o modal saía antes de a animação do completo acabar).
 
 **Ferramentas (dev)**
 

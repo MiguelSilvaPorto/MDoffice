@@ -535,7 +535,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
               <span class="st-opcao-previa st-anim-previa" data-anim="padrao" aria-hidden="true"><span class="st-anim-bola"></span></span>
               <span class="st-opcao-nome">Padrão</span>
             </label>
-            <label class="st-opcao" title="Movimento mais longo, com mais relevo e cascata">
+            <label class="st-opcao" title="Entradas com mola (passam do ponto e assentam), cascata mais espaçada, hover mais alto e janelas maiores">
               <input type="radio" name="animacao" value="completa" ${ctx.animacao() === "completa" ? "checked" : ""}>
               <span class="st-opcao-previa st-anim-previa" data-anim="completa" aria-hidden="true"><span class="st-anim-bola"></span></span>
               <span class="st-opcao-nome">Completa</span>

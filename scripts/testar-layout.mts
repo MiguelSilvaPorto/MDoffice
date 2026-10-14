@@ -118,11 +118,45 @@ checa(
 );
 checa(
   "os três níveis de animação têm tempo próprio",
-  /html\.anim-discreta\s*\{[^}]*--mov-2:\s*100ms/.test(mov) && /html\.anim-completa\s*\{[^}]*--mov-2:\s*240ms/.test(mov),
+  /html\.anim-discreta\s*\{[^}]*--mov-2:\s*100ms/.test(mov) && /html\.anim-completa\s*\{[^}]*--mov-2:\s*300ms[^}]*--mov-3:\s*460ms/.test(mov),
   "durações de discreta/completa ausentes em movimento.css"
 );
 checa("o nível discreto tira entradas e elevação", /html\.anim-discreta[^{]*\{[^}]*animation:\s*none\s*!important/.test(mov), "regra animation: none ausente");
-checa("o nível completo dá mais relevo", /html\.anim-completa[^{]*\{[^}]*translateY\(-2px\)\s*!important/.test(mov), "regra translateY(-2px) ausente");
+checa("o nível completo dá mais relevo", /html\.anim-completa[^{]*\{[^}]*translateY\(-3px\)\s*!important/.test(mov), "regra translateY(-3px) ausente");
+checa(
+  "o completo tem entrada PRÓPRIA (mola, viagem maior e escadinha), não só mais tempo",
+  /--curva-mola:/.test(mov) &&
+    /@keyframes mdc-surgir-mais/.test(mov) &&
+    /@keyframes mdc-menu-mais/.test(mov) &&
+    /@keyframes mdc-item-mais/.test(mov) &&
+    /html\.anim-completa \.modal-backdrop > :not\(style\):not\(script\)\s*\{[^}]*mdc-surgir-mais[^}]*var\(--curva-mola\)/.test(mov) &&
+    /html\.anim-completa \.palette-item:nth-child\(3\)\s*\{[^}]*animation-delay:\s*52ms/.test(mov),
+  "o nível completo voltaria a ser só 30 ms mais lento que o padrão"
+);
+checa(
+  "as prévias dos cartões mostram ritmos diferentes",
+  (() => {
+    const previas = ler("src/styles/settings.css");
+    return (
+      /@keyframes prev-completa/.test(previas) &&
+      /data-anim="completa"[^}]*prev-completa/.test(previas) &&
+      /data-anim="padrao"[^}]*prev-anim/.test(previas) &&
+      /prev-discreta/.test(previas) &&
+      /data-anim="completa"/.test(cfg) &&
+      /data-anim="padrao"/.test(cfg)
+    );
+  })(),
+  "a prévia do completo ainda usa o mesmo passo do padrão"
+);
+checa(
+  "a rede de segurança da saída cobre o tempo do completo",
+  (() => {
+    const limite = Number(/const LIMITE = (\d+)/.exec(ler("src/movimento.ts"))?.[1] ?? 0);
+    const maior = Math.max(...[...mov.matchAll(/--mov-\d:\s*(\d+)ms/g)].map((m) => Number(m[1])));
+    return limite >= maior;
+  })(),
+  "o modal sairia antes de a animação do completo acabar"
+);
 checa(
   "o quadrado aperta de verdade (2 px nos controles, 3 px nas caixas)",
   /html\.cantos-quadrados[^{]*\{[^}]*border-radius:\s*2px\s*!important/.test(cts) && /html\.cantos-quadrados[^{]*\{[^}]*border-radius:\s*3px\s*!important/.test(cts),

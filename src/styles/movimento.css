@@ -30,9 +30,11 @@ html.anim-discreta {
 }
 
 html.anim-completa {
-  --mov-1: 140ms;
-  --mov-2: 240ms;
-  --mov-3: 380ms;
+  --mov-1: 150ms;
+  --mov-2: 300ms;
+  --mov-3: 460ms;
+  /* a mola: passa do ponto e assenta — é o que dá o "peso" do nível completo */
+  --curva-mola: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* discreta: sem elevação, sem cascata e sem entradas — só cor e opacidade */
@@ -74,7 +76,7 @@ html.anim-discreta :where(
 /* completa: mais relevo e cascata mais espaçada */
 
 html.anim-completa :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .win-btn, .dd-item, .palette-item, .seg-btn):hover {
-  transform: translateY(-2px) !important;
+  transform: translateY(-3px) !important;
 }
 
 html.anim-completa :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .win-btn, .dd-item, .palette-item, .seg-btn):active {
@@ -82,7 +84,8 @@ html.anim-completa :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-b
 }
 
 html.anim-completa .st-card:hover {
-  transform: translateY(-2px) !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16) !important;
 }
 
 html.anim-completa .pj-entrada {
@@ -103,6 +106,81 @@ html.anim-completa .home-grid .home-card:nth-child(4) {
 
 html.anim-completa .home-grid .home-card:nth-child(5) {
   animation-delay: 280ms !important;
+}
+
+/* ---------- completa: entradas com mais viagem e um "assentar" com folga ----------
+   O nível padrão entra 14px e para; aqui a entrada viaja o dobro, a curva passa do ponto
+   (mola) e cada família de superfície tem o seu jeito — é o que se vê ao abrir um menu,
+   trocar de painel ou fechar um modal. */
+
+html.anim-completa .modal-backdrop > :not(style):not(script) {
+  animation: mdc-surgir-mais var(--mov-3) var(--curva-mola) both !important;
+}
+
+html.anim-completa :where(.dropdown, .pp-popup, .wd-menu-pop, .xl-menu, .cm-issue-popup, .editor-context-menu) {
+  animation: mdc-menu-mais var(--mov-2) var(--curva-mola) both !important;
+}
+
+html.anim-completa :where(#home-page:not([hidden]), #settings-page:not([hidden]), #word-pane:not([hidden]), #excel-pane:not([hidden]), #powerpoint-pane:not([hidden])) {
+  animation: mdc-surgir-mais var(--mov-3) var(--curva-mola) both !important;
+}
+
+html.anim-completa :where(.sb-panel:not([hidden]), .wd-rpanel:not([hidden]), .xl-panel:not([hidden]), .ppr-painel:not([hidden])) {
+  animation: mdc-painel-mais var(--mov-2) var(--curva-mola) both !important;
+}
+
+html.anim-completa .tab.entrando {
+  animation: mdc-aba-mais var(--mov-2) var(--curva-mola) both !important;
+}
+
+html.anim-completa .home-grid .home-card {
+  animation: mdc-surgir-mais var(--mov-3) var(--curva-mola) both !important;
+}
+
+/* a lista da paleta (Ctrl+K) entra em escadinha */
+html.anim-completa .palette-item {
+  animation: mdc-item-mais var(--mov-2) var(--curva-entrada) both !important;
+}
+
+html.anim-completa .palette-item:nth-child(2) {
+  animation-delay: 26ms !important;
+}
+
+html.anim-completa .palette-item:nth-child(3) {
+  animation-delay: 52ms !important;
+}
+
+html.anim-completa .palette-item:nth-child(4) {
+  animation-delay: 78ms !important;
+}
+
+html.anim-completa .palette-item:nth-child(5) {
+  animation-delay: 104ms !important;
+}
+
+html.anim-completa .palette-item:nth-child(6) {
+  animation-delay: 130ms !important;
+}
+
+html.anim-completa .palette-item:nth-child(7) {
+  animation-delay: 156ms !important;
+}
+
+html.anim-completa .palette-item:nth-child(8) {
+  animation-delay: 182ms !important;
+}
+
+/* o toast chega com um dedo de mola (na padrão ele só desliza) */
+html.anim-completa .toast {
+  transition-timing-function: var(--curva-mola) !important;
+}
+
+html.anim-completa #sidebar {
+  transition-timing-function: var(--curva-mola) !important;
+}
+
+html.anim-completa .sb-pill {
+  transition-timing-function: var(--curva-mola) !important;
 }
 
 /* ---------- passos ---------- */
@@ -166,6 +244,43 @@ html.anim-completa .home-grid .home-card:nth-child(5) {
 @keyframes mdc-pulso {
   50% {
     opacity: 0.5;
+  }
+}
+
+/* ---------- passos do nível "completa" (mais viagem, mesma direção) ---------- */
+
+@keyframes mdc-surgir-mais {
+  from {
+    opacity: 0;
+    transform: translateY(26px) scale(0.95);
+  }
+}
+
+@keyframes mdc-menu-mais {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.94);
+  }
+}
+
+@keyframes mdc-painel-mais {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+}
+
+@keyframes mdc-aba-mais {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+}
+
+@keyframes mdc-item-mais {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
   }
 }
 
