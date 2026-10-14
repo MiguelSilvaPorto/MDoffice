@@ -215,6 +215,7 @@
 }
 
 .pg-modal .pg-row select,
+.pg-modal .pg-row .sel-wrap,
 .pg-modal .pg-row input:not([type="checkbox"]) {
   flex: 1;
   min-width: 0;
@@ -231,6 +232,7 @@
 }
 
 .pg-modal .pg-row select:focus,
+.pg-modal .pg-row .sel-wrap:has(.sel-face:focus-visible),
 .pg-modal .pg-row input:not([type="checkbox"]):focus {
   outline: none;
   border-color: var(--accent);

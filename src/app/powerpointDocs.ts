@@ -10,6 +10,7 @@ import { type PowerPointTabData } from "../powerpoint/powerpoint";
 import { deckToPptx } from "../powerpoint/pptxexport";
 import { pptxToDeck } from "../powerpoint/pptximport";
 import { serialize } from "../powerpoint/model";
+import { melhorarSelects } from "../seletor";
 import { DEFAULT_SETUP } from "../powerpoint/model";
 import type { Deck, DeckSetup } from "../powerpoint/schema";
 import { bytesToBase64 } from "../util";
@@ -337,6 +338,7 @@ export const powerpointDocsMethods = {
         </footer>`;
       backdrop.append(modal);
       document.body.append(backdrop);
+      melhorarSelects(modal);
 
       // preenche com os valores atuais
       type Campo = HTMLSelectElement | HTMLInputElement;

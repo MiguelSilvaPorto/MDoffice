@@ -4,6 +4,7 @@
 import { h } from "../util";
 import { ligarAjusteAlturaFita, ligarRecolherFita } from "../fita";
 import type { Alinhamento, FormatoNumero } from "./schema";
+import { melhorarSelects } from "../seletor";
 
 /** O que a fita precisa saber e fazer (o host implementa). */
 export interface RibbonHooks {
@@ -208,6 +209,9 @@ export function fita(host: HTMLElement, hooks: RibbonHooks): HTMLElement {
       <div class="xl-panel" data-xlpanel="exibir" hidden>${painelExibir}</div>
     </div>
   `;
+
+  // o seletor de número abre a lista do app (não a cinza do sistema)
+  melhorarSelects(host);
 
   // os botões da fita não roubam o foco da célula em edição
   host.addEventListener("mousedown", (e) => {

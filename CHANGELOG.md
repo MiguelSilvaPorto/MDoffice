@@ -62,7 +62,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   regras são silêncio (quem cobra o resumo é a regra de estrutura).
 - **Avisos de estilo com a correção pronta no popup**: clicar num aviso como **"Frase muito
   comprida"** agora mostra o trecho **já corrigido** ("… do novo projeto. E combinamos de …") com
-  um clique para aplicar — antes o popup só dizia "comece nova frase aqui". Nesses avisos os botões
+  um clique para aplicar - antes o popup só dizia "comece nova frase aqui". Nesses avisos os botões
   de dicionário ("Ignorar palavra", "Adicionar ao dicionário") dão lugar a **"Ignorar neste
   texto"**, que dispensa o aviso somente naquele documento (nos outros ele continua).
 - **Motor ABNT — validação do `.docx` exportado (E04–E08 e E12)**: margem, fonte, entrelinha,
@@ -171,7 +171,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   “Com o tempo livre” ficam sem vírgula). Antes, no texto típico, a varredura só aplicava
   maiúscula inicial e ponto final — nenhuma vírgula.
 - **Reticências são três pontos**: o corretor agora acusa o "...." (quatro pontos) e corrige para
-  "..." — antes o "...." era tratado como intencional e passava batido. A correção entra na
+  "..." - antes o "...." era tratado como intencional e passava batido. A correção entra na
   varredura (na pausa, ao terminar o parágrafo e ao salvar) e o aviso mostra o trecho já
   corrigido; linhas pontilhadas longas (".....") continuam intactas.
 - **Trecho longo com "Dividir:" e "Encurtar:"**: o aviso de trecho comprido deixou de ser beco sem
@@ -185,6 +185,9 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **A marca do aviso agora cobre a frase inteira**: o "Frase de 55 palavras" pintava só 40
   caracteres e o "trecho muito longo", 60 — a mensagem falava de uma coisa e a faixa amarela
   mostrava outra. Agora a faixa vai do começo ao fim da frase/trecho.
+- **Seleção do app no construtor de diagramas e no desenho de letras**: tipo do diagrama, forma e
+  conexões de cada linha e o estilo de traço trocam a lista cinza do sistema pelo menu do app; as
+  opções que o construtor refaz na hora (próximo passo, de/para) continuam atualizando sozinhas.
 
 ---
 
@@ -222,6 +225,9 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - Importação de `.docx` com avisos do que ainda não entende (nunca some em silêncio).
 - **Aviso de voz sem janela do sistema**: quando o reconhecimento de voz não está disponível, o
   aviso virou um toast do app (antes era o `alert` nativo do WebView).
+- **Seleção do app na fita e em “Configurar página”**: os seletores de **Fonte** e **Tamanho** e os
+  quatro do diálogo de página (papel, orientação, fonte e tamanho padrão) trocam a lista cinza do
+  sistema pelo menu suspenso do app.
 
 ---
 
@@ -256,8 +262,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Abas de planilha** (nova, duplicar, excluir, mover) e **zoom**.
 - Abrir `.xlsx`/`.xlsm` e salvar `.xlsx` (macros não são preservadas; sugere `.xlsx`).
 - **Configurar planilha**: linhas de grade, casas decimais, símbolo da moeda e zoom.
-- **Limpeza**: removido o `renomearAba` com `window.prompt` (código morto) — a aba já se renomeia
+- **Limpeza**: removido o `renomearAba` com `window.prompt` (código morto) - a aba já se renomeia
   na tela, no duplo clique e no menu de contexto.
+- **Seleção do app no formato do número**: o seletor da fita troca a lista cinza do sistema pelo
+  menu suspenso do app (o valor e o comportamento são os mesmos).
 
 ---
 
@@ -326,8 +334,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Diálogos do app no lugar de janelas do sistema**: **Novo modelo** (botão Template) e
   **Renomear lâmina** agora usam o diálogo de texto do app — com o tema, dica, Enter/OK,
   Esc/Cancelar e clique fora; ao criar, a galeria reabre já com o cartão novo.
-- **Avisos do F5**: “documento sem conteúdo” e “todas as lâminas ocultas” viraram toasts do app
+- **Avisos do F5**: "documento sem conteúdo" e "todas as lâminas ocultas" viraram toasts do app
   (antes eram `alert` nativos).
+- **Seleção do app na fita, no painel e no “Configurar apresentação”**: fonte/tamanho da fita, os
+  campos do painel (transição, animação, layout…) e os três do diálogo de configuração trocam a
+  lista cinza do sistema pelo menu suspenso do app.
 
 ---
 
@@ -513,6 +524,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   com rótulo e dica, **Enter/OK** confirmando, **Esc/Cancelar/clique fora** cancelando e `validar`
   com mensagem de erro. Substitui os `window.prompt` nativos ("localhost:1420 diz."), que não
   seguem o tema.
+- **Seleção do app no lugar da lista cinza do sistema**: todo `<select>` restante (Word, Excel,
+  PowerPoint, diagramas e desenho de letras) passa a abrir o **mesmo menu suspenso do ⋯**, que
+  segue o tema claro/escuro (`src/seletor.ts` + estilos do controle). O `<select>` continua no
+  DOM — valor, opções e o evento `change` seguem valendo para todo o código existente — e a tela
+  mostra uma “cara” com o rótulo atual e o chevron. **Esc fecha só a lista** (o diálogo por baixo
+  continua), clicar fora fecha e opção desabilitada não abre.
 
 **Ferramentas (dev)**
 

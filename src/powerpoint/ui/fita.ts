@@ -11,6 +11,7 @@ import { FONTES_COMUNS, TAMANHOS, cmParaPt, ptParaCm, type EstadoUI } from "./es
 import { abrirGaleria, iconeDeForma } from "./galeria";
 import { abrirModelos } from "./modelos";
 import { abrirPopup, fecharPopup } from "./popup";
+import { melhorarSelects } from "../../seletor";
 import { GALERIA } from "../edicao/criar";
 import { ORDEM_LAYOUTS, ROTULOS_LAYOUT } from "../edicao/layouts";
 
@@ -135,10 +136,13 @@ export class Fita {
         <div class="ppr-painel" data-painel="exibir" hidden>${this.exibir()}</div>
       </div>`;
 
+    // os seletores de fonte/tamanho abrem a lista do app (não a cinza do sistema)
+    melhorarSelects(host);
+
     // os botões da fita não roubam o foco (a seleção do texto precisa continuar viva)
     host.addEventListener("mousedown", (e) => {
       const t = e.target as HTMLElement;
-      if (t.closest("button") && !t.closest("select, input")) e.preventDefault();
+      if (t.closest("button") && !t.closest("select, input, .sel-face")) e.preventDefault();
     });
     host.addEventListener("click", (e) => this.aoClicar(e));
     host.addEventListener("change", (e) => this.aoMudar(e));

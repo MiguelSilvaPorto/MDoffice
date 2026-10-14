@@ -7,6 +7,7 @@ import { ORDEM_LAYOUTS, ROTULOS_LAYOUT } from "../edicao/layouts";
 import type { Fill, Line, Shadow, Shape } from "../schema";
 import { abrirCores } from "./cores";
 import { cmParaPt, ptParaCm, type EstadoUI } from "./estado";
+import { melhorarSelects } from "../../seletor";
 
 export interface HooksPainel {
   estado: () => EstadoUI;
@@ -99,6 +100,7 @@ export class Painel {
     const abertas = new Map<string, boolean>();
     for (const d of this.el.querySelectorAll<HTMLDetailsElement>("details[data-sec]")) abertas.set(d.dataset.sec!, d.open);
     this.el.innerHTML = this.html(est);
+    melhorarSelects(this.el);
     for (const d of this.el.querySelectorAll<HTMLDetailsElement>("details[data-sec]")) {
       const a = abertas.get(d.dataset.sec!);
       if (a !== undefined) d.open = a;

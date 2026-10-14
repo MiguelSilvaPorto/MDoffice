@@ -1,6 +1,7 @@
 // Editor embutido do desenho em letras (barra de ferramentas e ciclo de vida).
 
 import { h, toast } from "../../util";
+import { melhorarSelects } from "../../seletor";
 import { type TraceStyle, type TextDrawDoc, type TextTool } from "./model";
 import { R, L } from "./glyphs";
 import { TextBoard } from "./board";
@@ -90,6 +91,8 @@ export function createTextDrawEditor(opts: TextEditorOptions): TextEditorHandle 
       <button class="btn" data-act="cancel">Cancelar</button>
       <button class="btn primary" data-act="done">Concluir</button>
     </div>`;
+
+  melhorarSelects(panel);
 
   const canvas = panel.querySelector<HTMLCanvasElement>(".dr-canvas")!;
   const wrap = panel.querySelector<HTMLElement>(".draw-canvas-wrap")!;

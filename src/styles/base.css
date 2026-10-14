@@ -107,6 +107,66 @@ button {
 
 /* ---------- botões ---------- */
 
+/* ---------- seleção do app (no lugar da lista cinza do `<select>` nativo) ---------- */
+
+.sel-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* o select continua no DOM (valor/opções/eventos), mas quem aparece é a cara abaixo */
+.sel-wrap > select.sel-oculto {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.sel-face {
+  all: unset;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sel-face [data-sel-rotulo] {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sel-face .ic {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  color: var(--muted);
+}
+
+.sel-wrap:has(select:disabled) .sel-face {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.sel-wrap.sel-aberto .sel-face .ic {
+  color: var(--accent);
+}
+
+.sel-face:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: 2px;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

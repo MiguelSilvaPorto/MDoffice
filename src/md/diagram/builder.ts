@@ -1,6 +1,7 @@
 // Construtor de diagramas Mermaid: campos simples + pré-visualização ao vivo (clique nos passos para editar).
 
 import { h, toast, debounce, copyText, clamp } from "../../util";
+import { melhorarSelects } from "../../seletor";
 import { type FlowStep, type SeqMessage, type StateTransition, buildFlowchart, buildSequence, buildState, detectKind } from "./build";
 import { renderMermaidInto } from "./mermaid";
 import { builderHtml } from "./template";
@@ -44,6 +45,7 @@ export function openDiagramBuilder(opts: DiagramBuilderOptions): void {
   modal.innerHTML = builderHtml(mode);
   backdrop.append(modal);
   document.body.append(backdrop);
+  melhorarSelects(modal);
 
   const fieldsHost = modal.querySelector<HTMLElement>(".dg-fields")!;
   const kindSelect = modal.querySelector<HTMLSelectElement>(".dg-kind")!;
@@ -263,6 +265,7 @@ export function openDiagramBuilder(opts: DiagramBuilderOptions): void {
       }
     });
     fieldsHost.append(row);
+    melhorarSelects(row);
     rows.push({ id, el: row });
     return row;
   };

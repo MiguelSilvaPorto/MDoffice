@@ -935,6 +935,7 @@ button.ppr.cor {
 
 .pf-campo input[type="number"],
 .pf-campo select,
+.pf-campo .sel-wrap,
 .pf-parada input[type="number"] {
   width: 84px;
   height: 24px;
@@ -947,7 +948,8 @@ button.ppr.cor {
   font-size: 12px;
 }
 
-.pf-campo select {
+.pf-campo select,
+.pf-campo .sel-wrap {
   width: 128px;
 }
 

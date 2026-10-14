@@ -2918,6 +2918,90 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o comportamento tem que ficar preso: qualquer regressão no round-trip perderia
   animação de arquivo do usuário.
 
+## src/seletor.ts
+
+### 2026-10-14 · esta tarefa · seleção do app no lugar da lista do sistema (novo arquivo)
+- **Local:** `melhorarSelects`/`melhorarSeletor`, `sincronizarSeletor` e os listeners de Esc/clique-fora
+- **Linha:** novo arquivo
+- **Porquê:** o `<select>` nativo abre uma lista desenhada pelo sistema (cinza, fora do tema) —
+  o problema visto no Word/Excel/PowerPoint/diagramas. Em vez de reescrever os ~24 pontos de uso,
+  o módulo **melhora no lugar**: embrulha o select num `.sel-wrap`, esconde-o
+  (`visibility: hidden`) e mostra uma “cara” com rótulo + chevron; a lista aberta é o `.dropdown`
+  do app. O select continua no DOM e segue sendo a fonte da verdade — `value`, `options`,
+  `disabled` e o evento `change` continuam valendo para todo o código existente. O que evita
+  quebra: (a) o setter de `value` é interceptado na instância para a cara acompanhar mudanças
+  programáticas; (b) um `MutationObserver` cobre opções refeitas e `selected`/`disabled`;
+  (c) os listeners de Esc/clique-fora entram **na carga do módulo** (antes de qualquer diálogo) e
+  o Esc usa `stopImmediatePropagation` — fecha só a lista, sem derrubar a janela por baixo;
+  (d) o wrapper herda as classes do select para cada contexto continuar estilizando igual.
+
+## src/styles/base.css
+
+### 2026-10-14 · esta tarefa · controle de seleção (a cara do select)
+- **Local:** bloco novo `.sel-wrap` / `.sel-face` / `.sel-oculto`
+- **Linha:** novas regras
+- **Porquê:** a “cara” é um botão (`all: unset`) com rótulo + chevron; o wrapper posiciona e herda
+  o visual de cada contexto (carrega as classes do select). `visibility: hidden` tira o select
+  invisível da ordem de foco.
+
+## src/styles/modals.css · src/styles/powerpoint-edicao.css · src/styles/diagram.css
+
+### 2026-10-14 · esta tarefa · espelhos para `.sel-wrap`
+- **Local:** `.pg-modal .pg-row select`, `.pf-campo select`, `.dg-modal select`
+- **Linha:** cada regra ganhou o irmão `.sel-wrap` (caixa, cores e foco)
+- **Porquê:** esses três contextos estilizam o select por ELEMENTO; com o wrapper no lugar, o
+  mesmo desenho precisa valer para ele (e o foco passa a ser `:has(.sel-face:focus-visible)`).
+
+## src/word/ribbon.ts
+
+### 2026-10-14 · esta tarefa · fita e “Configurar página”
+- **Local:** construtor (fim do `host.innerHTML`) e `pageDialog`
+- **Linha:** `melhorarSelects(host)` e `melhorarSelects(modal)`
+- **Porquê:** Fonte/Tamanho da fita e os quatro seletores do diálogo abrem a lista do app; o
+  helper `sel()` que sincroniza `value` continua igual.
+
+## src/excel/ribbon.ts
+
+### 2026-10-14 · esta tarefa · formato do número
+- **Local:** fim da montagem (`host.innerHTML`)
+- **Linha:** `melhorarSelects(host)`
+- **Porquê:** o seletor de formato abre a lista do app; o `change` que a fita já escutava continua
+  disparando (o evento sai do próprio select).
+
+## src/powerpoint/ui/fita.ts · src/powerpoint/ui/painel.ts
+
+### 2026-10-14 · esta tarefa · fita e painel
+- **Local:** construtor da `Fita`, fim do render do `Painel`
+- **Linha:** `melhorarSelects(host)` / `melhorarSelects(this.el)`; a guarda do `mousedown` ganhou
+  `.sel-face` para não engolir o clique
+- **Porquê:** fonte/tamanho (recriados no `atualizar()`) e todos os campos `linhaSel` do painel
+  abrem a lista do app; opções refeitas por `innerHTML` seguem sincronizando sozinhas.
+
+## src/app/powerpointDocs.ts
+
+### 2026-10-14 · esta tarefa · “Configurar apresentação”
+- **Local:** montagem do diálogo, antes de preencher os valores
+- **Linha:** `melhorarSelects(modal)`
+- **Porquê:** proporção, tema e fonte padrão abrem a lista do app; `ler()`/preenchimento seguem
+  lendo `campo.value` do próprio select.
+
+## src/md/diagram/builder.ts
+
+### 2026-10-14 · esta tarefa · construtor de diagramas
+- **Local:** abertura (`modal.innerHTML`) e `addRow`
+- **Linha:** `melhorarSelects(modal)` + `melhorarSelects(row)`
+- **Porquê:** tipo, forma e conexões usam a lista do app. As linhas novas (e as reconstruídas)
+  passam pelo upgrade ao nascer; `refreshNextOptions`/`refreshSeqOptions`/`refreshStateOptions`
+  continuam escrevendo `innerHTML` no select e a cara acompanha pelo observador.
+
+## src/md/textdraw/editor.ts
+
+### 2026-10-14 · esta tarefa · estilo de traço
+- **Local:** fim da montagem do painel
+- **Linha:** `melhorarSelects(panel)`
+- **Porquê:** o seletor de traço abre a lista do app; o `change` que o editor escutava continua
+  igual.
+
 ---
 
 ## Próximos registros

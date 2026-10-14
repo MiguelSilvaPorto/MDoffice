@@ -77,6 +77,7 @@
 
 .dg-modal input[type="text"],
 .dg-modal select,
+.dg-modal .sel-wrap,
 .dg-code {
   color: var(--fg);
   background: var(--panel-2);
@@ -89,6 +90,7 @@
 
 .dg-modal input[type="text"]:focus,
 .dg-modal select:focus,
+.dg-modal .sel-wrap:has(.sel-face:focus-visible),
 .dg-code:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);

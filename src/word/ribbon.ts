@@ -3,6 +3,7 @@ import type { WordEditor, FormatState } from "./editor";
 import { FONT_FAMILIES, FONT_SIZES } from "./schema";
 import { DEFAULT_SETUP, type PageSetup } from "./model";
 import { h, toast } from "../util";
+import { melhorarSelects } from "../seletor";
 import { ligarAjusteAlturaFita, ligarRecolherFita } from "../fita";
 
 export interface RibbonHooks {
@@ -211,6 +212,9 @@ export class Ribbon {
         </div>
       </div>
     `;
+
+    // os <select> da fita abrem a lista do app (não a cinza do sistema)
+    melhorarSelects(host);
 
     host.querySelectorAll<HTMLButtonElement>(".wd-rtab").forEach((tabBtn) => {
       tabBtn.addEventListener("click", () => {
@@ -724,6 +728,7 @@ export class Ribbon {
       <footer class="wm-foot"><button class="btn" data-reset>Restaurar padrão</button><span class="dr-spacer"></span><button class="btn" data-close>Cancelar</button><button class="btn primary" data-ok>Aplicar</button></footer>`;
     backdrop.append(modal);
     document.body.append(backdrop);
+    melhorarSelects(modal);
     const q = <T extends HTMLElement>(sel: string) => modal.querySelector<T>(sel)!;
     const fill = () => {
       q<HTMLSelectElement>('[data-k="size"]').value = s.size;
