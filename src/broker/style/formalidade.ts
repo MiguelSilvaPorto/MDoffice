@@ -204,3 +204,101 @@ export function haAtras({ text, mask, push }: RuleCtx): void {
     );
   }
 }
+
+/** Futuros irregulares: só fazer/dizer/trazer (e os compostos) fogem de “infinitivo + ei/á/…”. */
+const FUTURO_IRREGULAR: [string, string][] = [
+  ["fazer", "far"],
+  ["dizer", "dir"],
+  ["trazer", "trar"],
+];
+
+/** Do infinitivo e da pessoa para o futuro: ("enviar", "vou") → "enviarei". */
+export function futuroDoInfinitivo(infinitivo: string, pessoa: string): string | null {
+  const inf = infinitivo.toLowerCase();
+  if (!/^[\p{L}]{3,}r$/u.test(inf)) return null;
+  const termo = { vou: "ei", vamos: "emos", vai: "á", vão: "ão" }[pessoa.toLowerCase()];
+  if (!termo) return null;
+  // o futuro é o infinitivo + a terminação; só os três irregulares trocam o radical
+  let radical = inf;
+  for (const [de, para] of FUTURO_IRREGULAR) {
+    if (inf.endsWith(de)) radical = `${inf.slice(0, -de.length)}${para}`;
+  }
+  return radical + termo;
+}
+
+/** Do gerúndio e do auxiliar para o futuro: ("enviando", "vou") → "enviarei". */
+export function futuroDe(gerundio: string, auxiliar: string): string | null {
+  const g = gerundio.toLowerCase();
+  if (!/^[\p{L}]{2,}ndo$/u.test(g)) return null;
+  // o gerúndio devolve o infinitivo (enviando→enviar, comendo→comer, partindo→partir)
+  return futuroDoInfinitivo(`${g.slice(0, -3)}r`, auxiliar);
+}
+
+/**
+ * “vou estar enviando” → “enviarei”: a perífrase de gerúndio é oralidade de relatório.
+ * A pessoa vem do auxiliar (vou→ei, vamos→emos, vai→á, vão→ão) e o verbo, do gerúndio pelo
+ * infinitivo. É sugestão: o gerúndio pode marcar processo, e o futuro marca o ato.
+ */
+export function vouEstarGerundio({ text, mask, push }: RuleCtx): void {
+  if (getTone() !== "formal") return;
+  const rx = /(?<![\p{L}])(vou|vamos|vai|vão)([^\S\n]+estar[^\S\n]+)([\p{L}]+)ndo(?![\p{L}])/giu;
+  let m: RegExpExecArray | null;
+  while ((m = rx.exec(mask)) !== null) {
+    if (emCitacao(mask, m.index)) continue;
+    const futuro = futuroDe(`${m[3]}ndo`, m[1]);
+    if (!futuro) continue;
+    const forma = ehMaiuscula(text, m.index) || abreFrase(mask, m.index) ? futuro[0].toUpperCase() + futuro.slice(1) : futuro;
+    push(
+      m.index,
+      m.index + m[0].length,
+      `“${m[0]}” é perífrase de gerúndio — em texto formal use o futuro: “${forma}”; risco: o gerúndio marca processo, o futuro marca o ato`,
+      undefined,
+      [forma],
+      false,
+      "oralidade"
+    );
+  }
+}
+
+/** Particípios dos verbos de relatório (para o aviso dizer a passiva certa). */
+const PARTICIPIOS: Record<string, string> = {
+  fazer: "feito",
+  ver: "visto",
+  analisar: "analisado",
+  revisar: "revisado",
+  escrever: "escrito",
+  enviar: "enviado",
+  realizar: "realizado",
+  elaborar: "elaborado",
+  desenvolver: "desenvolvido",
+  apresentar: "apresentado",
+  entregar: "entregue",
+};
+
+/**
+ * “vou fazer a análise” / “vamos enviar o relatório”: plano em 1ª pessoa do dia a dia.
+ * A passiva (“a análise será feita”) ou o impessoal (“este trabalho fará”) é o caminho, mas
+ * a troca depende do complemento (gênero e número) — então o aviso mostra o caminho e não
+ * traz troca pronta.
+ */
+export function vouFazer({ mask, push }: RuleCtx): void {
+  if (getTone() !== "formal") return;
+  const rx = new RegExp(`(?<![\\p{L}])(vou|vamos)[^\\S\\n]+(${Object.keys(PARTICIPIOS).join("|")})(?![\\p{L}])`, "giu");
+  let m: RegExpExecArray | null;
+  while ((m = rx.exec(mask)) !== null) {
+    if (emCitacao(mask, m.index)) continue;
+    const verbo = m[2].toLowerCase();
+    const plural = m[1].toLowerCase() === "vamos";
+    const passiva = `${plural ? "serão" : "será"} ${PARTICIPIOS[verbo]}${plural ? "s" : ""}`;
+    const impessoal = futuroDoInfinitivo(verbo, "vai") ?? verbo;
+    push(
+      m.index,
+      m.index + m[0].length,
+      `“${m[0]}” é plano em 1ª pessoa — em texto formal prefira a passiva (“${passiva}”) ou o impessoal (“este trabalho ${impessoal}”); risco: ajuste o gênero e o número ao que for feito`,
+      undefined,
+      [],
+      false,
+      "oralidade"
+    );
+  }
+}

@@ -5,7 +5,7 @@
  * `style/formalidade.ts`). É o que dá a contagem por classe e o peso do MIP
  * (marcadores informais por 1.000 palavras, em `stats.ts`).
  */
-export type ClasseMarcador = "giria" | "internetes" | "contracao" | "muleta" | "oralidade" | "atenuacao" | "redundancia" | "vagueza";
+export type ClasseMarcador = "giria" | "internetes" | "contracao" | "muleta" | "oralidade" | "atenuacao" | "redundancia" | "vagueza" | "cliche";
 
 /** Um marcador informal encontrado no texto (para o MIP e o painel de revisão). */
 export interface MarcadorInformal {

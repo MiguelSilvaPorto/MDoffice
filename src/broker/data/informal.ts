@@ -44,6 +44,7 @@ export const ROTULO_CLASSE: Record<ClasseMarcador, string> = {
   atenuacao: "atenuação",
   redundancia: "redundância",
   vagueza: "vagueza",
+  cliche: "clichê",
 };
 
 /** Pesos do MIP por classe (pesquisa-formalidade-abnt, seção 3.5). */
@@ -56,6 +57,7 @@ export const PESO_CLASSE: Record<ClasseMarcador, number> = {
   atenuacao: 1,
   redundancia: 1,
   vagueza: 1,
+  cliche: 1,
 };
 
 /** A classe é de marcador informal (conta no MIP)? */
@@ -129,7 +131,20 @@ export const INFORMAL: PadraoInformal[] = [
   { rx: /(?<![\p{L}])um[^\S\n]+monte[^\S\n]+de(?![\p{L}])/giu, message: "“um monte de” é informal e pede acordo com o que vem depois — use “muitos”, “muitas”, “vários” ou “várias”", sugestoes: ["muitos", "muitas", "vários", "várias"], classe: "vagueza", seguro: false, tom: "neutro", exemplo: "um monte de gente reclamou" },
   { rx: /(?<![\p{L}])muita[^\S\n]+gente(?![\p{L}])(?!\s+que[^\S\n]+(?:diz|afirma|fala|pensa|acha)(?![\p{L}]))/giu, message: "“muita gente” é vago — use “muitas pessoas” ou “muitos autores”", sugestoes: ["muitas pessoas", "muitos autores"], classe: "vagueza", seguro: false, tom: "formal", exemplo: "muita gente defende essa ideia" },
 
+  // ---------------------------------------------------------------- clichês
+  { rx: /(?<![\p{L}])nos[^\S\n]+dias[^\S\n]+de[^\S\n]+hoje(?![\p{L}])/giu, message: "“nos dias de hoje” é clichê — use “atualmente”", fix: "atualmente", classe: "cliche", seguro: true, tom: "neutro", exemplo: "nos dias de hoje, tudo é digital" },
+  { rx: /(?<![\p{L}])no[^\S\n]+mundo[^\S\n]+atual(?![\p{L}])/giu, message: "“no mundo atual” é clichê — use “atualmente” ou “hoje”", sugestoes: ["atualmente", "hoje"], classe: "cliche", seguro: false, tom: "neutro", exemplo: "no mundo atual, a informação corre" },
+  { rx: /(?<![\p{L}])desde[^\S\n]+os[^\S\n]+primórdios(?![\p{L}])/giu, message: "“desde os primórdios” é clichê — use “desde o início”", fix: "desde o início", classe: "cliche", seguro: true, tom: "neutro", exemplo: "a prática existe desde os primórdios" },
+  { rx: /(?<![\p{L}])(?:é[^\S\n]+sabido|todos[^\S\n]+sabem)[^\S\n]+que(?![\p{L}])/giu, message: "“é sabido que”/“todos sabem que” é clichê — afirme direto (“X é…”) ou use “sabe-se que”", sugestoes: ["sabe-se que"], classe: "cliche", seguro: false, tom: "formal", exemplo: "é sabido que o tema é polêmico" },
+  { rx: /(?<![\p{L}])cada[^\S\n]+vez[^\S\n]+mais(?![\p{L}])/giu, message: "“cada vez mais” é clichê — use “crescentemente” ou retire", sugestoes: ["crescentemente"], classe: "cliche", seguro: false, tom: "formal", exemplo: "o consumo cresce cada vez mais" },
+  { rx: /(?<![\p{L}])vem[^\S\n]+crescendo(?![\p{L}])/giu, message: "“vem crescendo” é clichê — use “tem crescido”", fix: "tem crescido", classe: "cliche", seguro: true, tom: "neutro", exemplo: "a demanda vem crescendo no setor" },
+  { rx: /(?<![\p{L}])faz-se[^\S\n]+necessário(?![\p{L}])/giu, message: "“faz-se necessário” é clichê — use “é necessário”", sugestoes: ["é necessário"], classe: "cliche", seguro: false, tom: "neutro", exemplo: "faz-se necessário revisar o prazo" },
+  { rx: /(?<![\p{L}])de[^\S\n]+suma[^\S\n]+importância(?![\p{L}])/giu, message: "“de suma importância” é clichê — use “essencial”", fix: "essencial", classe: "cliche", seguro: true, tom: "neutro", exemplo: "o dado é de suma importância" },
+  { rx: /(?<![\p{L}])abrir[^\S\n]+um[^\S\n]+leque[^\S\n]+de[^\S\n]+possibilidades(?![\p{L}])/giu, message: "“abrir um leque de possibilidades” é clichê — use “ampliar as possibilidades”", sugestoes: ["ampliar as possibilidades"], classe: "cliche", seguro: false, tom: "formal", exemplo: "a técnica pode abrir um leque de possibilidades" },
+  { rx: /(?<![\p{L}])um[^\S\n]+passo[^\S\n]+importante(?![\p{L}])/giu, message: "“um passo importante” é clichê — use “um avanço relevante” (ou diga o que mudou)", sugestoes: ["um avanço relevante"], classe: "cliche", seguro: false, tom: "formal", exemplo: "o acordo foi um passo importante" },
+
   // ---------------------------------------------------------------- oralidade
+  { rx: /(?<![\p{L}])d[áa][^\S\n]+(?:pra|para)[^\S\n]+ver[^\S\n]+que(?![\p{L}])/giu, message: "“dá pra ver que” é oral — use “observa-se que” ou “é possível observar que”", sugestoes: ["observa-se que", "é possível observar que"], classe: "oralidade", seguro: false, tom: "neutro", exemplo: "dá pra ver que o número subiu" },
   { rx: /(?<![\p{L}])o[^\S\n]+pessoal(?![\p{L}])/giu, message: "“o pessoal” é oral — use “a equipe” ou “os participantes”; risco: depende de quem é o sujeito", sugestoes: ["a equipe", "os participantes"], classe: "oralidade", seguro: false, tom: "formal", exemplo: "o pessoal terminou a tarefa" },
   { rx: /(?<![\p{L}])tem[^\S\n]+muita[^\S\n]+gente[^\S\n]+que[^\S\n]+(?:diz|afirma|fala|pensa|acha)(?![\p{L}])/giu, message: "“tem muita gente que diz” é oral — use “há quem afirme” ou “muitos autores afirmam”; risco: muda o sujeito", sugestoes: ["há quem afirme", "muitos autores afirmam"], classe: "oralidade", seguro: false, tom: "formal", exemplo: "tem muita gente que diz o contrário" },
 
@@ -137,7 +152,8 @@ export const INFORMAL: PadraoInformal[] = [
   { rx: /(?<![\p{L}])(?:eu[^\S\n]+)?acho[^\S\n]+que(?![\p{L}])/giu, message: "“acho que” é opinião assumida — em texto formal use “considera-se que” ou “entende-se que”; risco: vira afirmação impessoal", sugestoes: ["considera-se que", "entende-se que"], classe: "atenuacao", seguro: false, tom: "formal", exemplo: "acho que o prazo é curto" },
   { rx: /(?<![\p{L}])(?:eu[^\S\n]+)?acredito[^\S\n]+que(?![\p{L}])/giu, message: "“acredito que” é opinião em 1ª pessoa — em texto formal use “acredita-se que” ou “entende-se que”; risco: vira afirmação impessoal", sugestoes: ["acredita-se que", "entende-se que"], classe: "atenuacao", seguro: false, tom: "formal", exemplo: "acredito que a hipótese se confirma" },
   { rx: /(?<![\p{L}])me[^\S\n]+parece[^\S\n]+que(?![\p{L}])/giu, message: "“me parece que” é atenuação em 1ª pessoa — use “os indícios sugerem que” ou “aparentemente”", sugestoes: ["os indícios sugerem que", "aparentemente"], classe: "atenuacao", seguro: false, tom: "formal", exemplo: "me parece que o resultado mudou" },
-  { rx: /(?<![\p{L}])meio[^\S\n]+que(?![\p{L}])/giu, message: "“meio que” é oral — use “de certa forma” ou retire; risco: pode atenuar algo que você quer afirmar", sugestoes: ["de certa forma"], classe: "atenuacao", seguro: false, tom: "formal", exemplo: "o texto meio que fugiu do tema" },
+  { rx: /(?<![\p{L}])meio[^\S\n]+que(?![\p{L}])/giu, message: "“meio que” é oral — use “em certa medida” ou retire; risco: pode atenuar algo que você quer afirmar", sugestoes: ["em certa medida"], classe: "atenuacao", seguro: false, tom: "formal", exemplo: "o texto meio que fugiu do tema" },
+  { rx: /(?<![\p{L}])de[^\S\n]+certa[^\S\n]+forma(?![\p{L}])/giu, message: "“de certa forma” é vago — use “em certa medida” ou retire (afirme direto)", sugestoes: ["em certa medida"], classe: "vagueza", seguro: false, tom: "formal", exemplo: "o resultado, de certa forma, surpreendeu" },
   { rx: /(?<![\p{L}])mais[^\S\n]+ou[^\S\n]+menos(?=[^\S\n]+\d)/giu, message: "“mais ou menos” antes de número → “aproximadamente”", fix: "aproximadamente", classe: "atenuacao", seguro: true, tom: "neutro", exemplo: "mais ou menos 30 participantes" },
   { rx: /(?<![\p{L}])mais[^\S\n]+ou[^\S\n]+menos(?!\s*\d)/giu, message: "“mais ou menos” pode virar “aproximadamente” ou “parcialmente”; risco: pode ser avaliação, não quantidade", sugestoes: ["aproximadamente", "parcialmente"], classe: "atenuacao", seguro: false, tom: "formal", exemplo: "o desempenho ficou mais ou menos" },
   { rx: /(?<![\p{L}])pode[^\S\n]+ser[^\S\n]+que(?![\p{L}])/giu, message: "“pode ser que” → “é possível que”", sugestoes: ["é possível que"], classe: "atenuacao", seguro: false, tom: "formal", exemplo: "pode ser que o prazo mude" },
@@ -156,6 +172,8 @@ export const INFORMAL: PadraoInformal[] = [
   { rx: /(?<![\p{L}])monopólio[^\S\n]+exclusivo(?![\p{L}])/giu, message: "redundância: “monopólio exclusivo” → “monopólio”", fix: "monopólio", classe: "redundancia", seguro: true, tom: "neutro", exemplo: "o monopólio exclusivo da empresa" },
   { rx: /(?<![\p{L}])acabamento[^\S\n]+final(?![\p{L}])/giu, message: "redundância: “acabamento final” → “acabamento”", fix: "acabamento", classe: "redundancia", seguro: true, tom: "neutro", exemplo: "falta o acabamento final" },
   { rx: /(?<![\p{L}])conclusão[^\S\n]+final(?![\p{L}])/giu, message: "“conclusão final” reforça demais — prefira “conclusão”", sugestoes: ["conclusão"], classe: "redundancia", seguro: false, tom: "formal", exemplo: "na conclusão final, retomamos o tema" },
+  { rx: /(?<![\p{L}])criar[^\S\n]+novo(?![\p{L}])/giu, message: "redundância: “criar novo” → “criar”", fix: "criar", classe: "redundancia", seguro: true, tom: "neutro", exemplo: "o time quer criar novo processo" },
+  { rx: /(?<![\p{L}])inovar[^\S\n]+do[^\S\n]+zero(?![\p{L}])/giu, message: "redundância: “inovar do zero” → “inovar”", fix: "inovar", classe: "redundancia", seguro: true, tom: "neutro", exemplo: "a equipe quer inovar do zero" },
   { rx: /(?<![\p{L}])em[^\S\n]+duas[^\S\n]+metades[^\S\n]+iguais(?![\p{L}])/giu, message: "redundância: “em duas metades iguais” → “em duas metades” (ou “ao meio”)", fix: "em duas metades", classe: "redundancia", seguro: true, tom: "neutro", exemplo: "o bolo foi cortado em duas metades iguais" },
   { rx: /(?<![\p{L}])mais[^\S\n]+melhor(?![\p{L}])/giu, message: "“mais melhor” não existe — use “melhor”", fix: "melhor", classe: "redundancia", seguro: true, tom: "neutro", exemplo: "essa opção é mais melhor" },
   { rx: /(?<![\p{L}])menos[^\S\n]+pior(?![\p{L}])/giu, message: "“menos pior” → “menos ruim”", fix: "menos ruim", classe: "redundancia", seguro: true, tom: "neutro", exemplo: "o cenário ficou menos pior" },

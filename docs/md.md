@@ -96,15 +96,18 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   palavras”) fala da mesma frase, os dois viram **um aviso só**.
 - **Modo formal**: “pra/tá/a gente” → linguagem formal, com o verbo ajustado pela frase
   (“a gente vai” → “nós vamos”); modo **informal** e **neutro** também disponíveis.
-- **Formalidade por classe + MIP**: o catálogo informal → formal tem 75 padrões por classe
-  (internetês, contração, muleta, gíria, oralidade, atenuação, redundância e vagueza) — com o
-  que **corrige sozinho** (“pra → para”, “vc → você”, “subir para cima → subir”) separado do
-  que **só sugere** (“acho que” → “considera-se que”/“entende-se que”, “coisa” →
-  “item/elemento/aspecto”), cada sugestão com o risco. As **frases** ganham janelas de contexto
-  (“a gente vê que” → “nós vemos”/“vê-se que”; “Aí eu fui” → “Então, eu”/“Em seguida, eu”;
-  “então” repetido; “há três anos atrás” → “há três anos”), sem tocar citação (`>`), código,
-  URL, sigla ou e-mail. O painel de revisão mostra o **MIP** — marcadores informais por 1.000
-  palavras — antes e depois das correções seguras, por classe, com o trecho de cada marcador.
+- **Formalidade por classe + MIP**: o catálogo informal → formal tem **94 padrões** por classe
+  (internetês, contração, muleta, gíria, oralidade, atenuação, redundância, vagueza e **clichê**) — com o
+  que **corrige sozinho** (“pra → para”, “vc → você”, “subir para cima → subir”, “nos dias de hoje →
+  atualmente”) separado do que **só sugere** (“acho que” → “considera-se que”/“entende-se que”,
+  “faz-se necessário” → “é necessário”), cada sugestão com o risco. As **frases** ganham janelas de
+  contexto (“a gente vê que” → “nós vemos”/“vê-se que”; “Aí eu fui” → “Então, eu”/“Em seguida, eu”;
+  “então” repetido; “há três anos atrás” → “há três anos”; **“vou estar enviando” → “enviarei”**,
+  com os irregulares na tabela — “vamos estar fazendo” → “faremos”; e **“vou fazer”/“vamos enviar”**,
+  que aponta a passiva “será feito”/“serão enviados” quando o complemento permitir discernir), sem
+  tocar citação (`>`), código, URL, sigla ou e-mail. O painel de revisão mostra o **MIP** — marcadores
+  informais por 1.000 palavras — antes e depois das correções seguras, por classe, com o trecho de
+  cada marcador.
 - **“Formalizar texto” com prévia** (`Ctrl+Alt+F`, no menu Escrever ou no painel de revisão):
   pega a **seleção** — sem seleção, o documento inteiro — e abre **antes × depois** lado a lado,
   com o trecho trocado pintado (vermelho no antes, verde no depois) e o **MIP caindo ao vivo**.

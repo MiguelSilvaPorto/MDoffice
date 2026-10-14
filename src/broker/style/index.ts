@@ -12,7 +12,7 @@ import { encurtarTrecho } from "../encurtar";
 import { lowercaseAfterPeriod, paragraphStartLowercase } from "./capitalization";
 import { phrases } from "./phrases";
 import { informalRegister } from "./register";
-import { aGente, aiConector, entaoConector, voceVeQue, haAtras } from "./formalidade";
+import { aGente, aiConector, entaoConector, voceVeQue, haAtras, vouEstarGerundio, vouFazer } from "./formalidade";
 import { REGRAS_ABNT } from "../abnt";
 import { personalLongSentence } from "./personal";
 import { fazerImpessoal } from "./concordancia";
@@ -44,6 +44,8 @@ const RULES: Rule[] = [
   aiConector,
   entaoConector,
   voceVeQue,
+  vouEstarGerundio,
+  vouFazer,
   haAtras,
   fazerImpessoal,
   ...REGRAS_ABNT,

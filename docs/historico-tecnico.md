@@ -3875,6 +3875,59 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o valor cortado não quebrava nada visível (caía no padrão); só um teste que compara
   prefixo × slice prende isso para todos os despachos, não só os que lembrarmos de testar.
 
+## src/broker/types.ts · src/broker/data/informal.ts
+
+### 2026-10-14 · frases formais, degrau 2 · a classe clichê e as entradas que faltavam
+- **Local:** `ClasseMarcador` (types); `ROTULO_CLASSE`, `PESO_CLASSE` e o catálogo (informal.ts)
+- **Linha:** `+ | "cliche"` · `+ cliche: "clichê"` · `+ cliche: 1` · `+ 14 padrões` (10 de clichê, “dá pra ver que”, “de certa forma”, “criar novo”, “inovar do zero”)
+- **Porquê:** a seção 3.2.6 da pesquisa (clichês e frases feitas) não tinha sido implementada, e o
+  peso **1** estava definido lá (seção 3.5). Os clichês com troca previsível entram como correção
+  (“nos dias de hoje” → “atualmente”, “vem crescendo” → “tem crescido”, “de suma importância” →
+  “essencial”, “desde os primórdios” → “desde o início”); os que dependem de julgamento (“é sabido
+  que”, “cada vez mais”, “faz-se necessário”, “um passo importante”…) só sugerem, como a pesquisa
+  manda. **“Meio que” deixou de sugerir “de certa forma”** — a troca virou “em certa medida”,
+  porque a entrada nova marca “de certa forma” como vagueza (sugerir a marca e marcá-la ao mesmo
+  tempo seria contradição).
+
+## src/broker/style/formalidade.ts
+
+### 2026-10-14 · frases formais, degrau 2 · a perífrase de gerúndio e o plano em 1ª pessoa
+- **Local:** `futuroDoInfinitivo`, `futuroDe`, `vouEstarGerundio` e `vouFazer` (novos), `FUTURO_IRREGULAR` e `PARTICIPIOS` (tabelas)
+- **Linha:** `novo`
+- **Porquê:** “vou estar enviando” é a oralidade de relatório mais comum e não tinha regra. A pessoa
+  sai do auxiliar (vou→ei, vamos→emos, vai→á, vão→ão) e o verbo sai do gerúndio pelo infinitivo
+  (`enviando` → `enviar` → `enviarei`); só **fazer/dizer/trazer** (e os compostos, por `endsWith`)
+  trocam o radical — `faremos`, `trarão` —, o que mantém a regra honesta sem um conjugador inteiro.
+  É **sugestão**: o gerúndio marca processo, o futuro marca o ato. Já “vou fazer/vamos enviar”
+  (plano em 1ª pessoa) pede a passiva, que depende do gênero e do número do complemento — o aviso
+  **mostra** a passiva certa (“será feito”, “serão enviados”) e não traz troca pronta. As duas
+  regras são do tom **formal** (como as irmãs) e ficam fora de citação.
+
+## src/broker/style/index.ts · src/broker/stats.ts
+
+### 2026-10-14 · frases formais, degrau 2 · as regras nas duas listas
+- **Local:** `RULES` (style/index) e `REGRAS_MARCADOR` (stats)
+- **Linha:** `+ vouEstarGerundio, vouFazer` nas duas
+- **Porquê:** quem avisa no editor é a lista de estilo; quem **mede** (MIP) e **planeja** (a janela
+  de formalizar) é a varredura própria do `achadosInformais`. Regra que entrasse numa lista só
+  apareceria no aviso e sumiria da métrica (ou o contrário).
+
+## scripts/testar-correcao.mjs
+
+### 2026-10-14 · frases formais, degrau 2 · 17 verificações novas
+- **Local:** o bloco “frases do degrau 2” e a contagem de classes
+- **Linha:** `+ as checagens dos clichês, da perífrase (incluindo os irregulares e o tom neutro), do plano em 1ª pessoa com a passiva certa, de “dá pra ver que”, “de certa forma” e “criar novo”` · `8 classes → 9 classes`
+- **Porquê:** o teste pegou um erro real na primeira versão da passiva (“seráão enviados” ✗) e
+  agora prende o comportamento certo. A lista de classes do teste é a fonte do `ehMarcador` — sem
+  incluir “cliche” ali, os avisos novos seriam invisíveis para o teste.
+
+## docs/md.md
+
+### 2026-10-14 · frases formais, degrau 2 · o módulo documentado
+- **Local:** a lista da escrita assistida, no item da formalidade por classe
+- **Linha:** `75 padrões` → `94 padrões` · `+ a classe clichê, a perífrase “vou estar enviando” → “enviarei” e o plano em 1ª pessoa`
+- **Porquê:** a documentação dizia o número antigo e não conhecia as frases novas.
+
 ---
 
 ## Próximos registros

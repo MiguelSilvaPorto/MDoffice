@@ -5,12 +5,12 @@ import { ehClasseMarcador, PESO_CLASSE } from "./data/informal";
 import { maskNonProse } from "./mask";
 import { getTone, setTone } from "./tone";
 import { informalRegister } from "./style/register";
-import { aGente, aiConector, entaoConector, voceVeQue, haAtras } from "./style/formalidade";
+import { aGente, aiConector, entaoConector, voceVeQue, vouEstarGerundio, vouFazer, haAtras } from "./style/formalidade";
 import type { RuleCtx } from "./style/types";
 import type { ClasseMarcador, MarcadorInformal, WritingIssue, WritingStats } from "./types";
 
 /** As regras que produzem marcador informal (catálogo + janelas de frase). */
-const REGRAS_MARCADOR: ((ctx: RuleCtx) => void)[] = [informalRegister, aGente, aiConector, entaoConector, voceVeQue, haAtras];
+const REGRAS_MARCADOR: ((ctx: RuleCtx) => void)[] = [informalRegister, aGente, aiConector, entaoConector, voceVeQue, vouEstarGerundio, vouFazer, haAtras];
 
 /** Frase em volta do trecho (o painel mostra o trecho, não só a palavra). */
 function fraseEmVolta(text: string, from: number, to: number): string {

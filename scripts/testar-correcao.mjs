@@ -159,17 +159,18 @@ igual("quebra de frase comprida só entra no “Corrigir tudo”", "um dois trê
 //   muleta: "tipo assim, o sistema falhou", "sei lá o que aconteceu", "digamos assim…"
 //   gíria: "um baita problema", "ok, podemos seguir", "o resultado ficou da hora"
 //   vagueza: "essa coisa ficou estranha", "um monte de gente reclamou"
-//   oralidade: "o pessoal terminou a tarefa", "tem muita gente que diz o contrário"
+//   oralidade: "o pessoal terminou a tarefa", "dá pra ver que o número subiu"
 //   atenuação: "acho que o prazo é curto", "mais ou menos 30 participantes"
 //   redundância: "vamos subir para cima", "repetir de novo", "a verdade real"
+//   clichê: "nos dias de hoje, tudo é digital", "vem crescendo no setor"
 {
   const semCaso = F.INFORMAL.filter((p) => !F.marcadoresInformais(p.exemplo).some((m) => m.classe === p.classe)).map((p) => p.exemplo);
   ok("catálogo: todo padrão casa o próprio exemplo", semCaso.length === 0, semCaso.join(" | "));
   ok("catálogo: 50+ padrões por classe", F.INFORMAL.length >= 50, `${F.INFORMAL.length}`);
   const classes = new Set(F.INFORMAL.map((p) => p.classe));
   ok(
-    "catálogo: cobre as 8 classes",
-    ["internetes", "contracao", "muleta", "giria", "oralidade", "atenuacao", "redundancia", "vagueza"].every((c) => classes.has(c)),
+    "catálogo: cobre as 9 classes",
+    ["internetes", "contracao", "muleta", "giria", "oralidade", "atenuacao", "redundancia", "vagueza", "cliche"].every((c) => classes.has(c)),
     Array.from(classes).join(",")
   );
   const incoerentes = F.INFORMAL.filter((p) => (p.fix !== undefined) !== p.seguro);
@@ -227,6 +228,51 @@ igual("quebra de frase comprida só entra no “Corrigir tudo”", "um dois trê
   ok("“você vê que” → impessoal", vv.length === 1 && vv[0].suggestions.includes("Observa-se que"), JSON.stringify(vv));
   const ha = F.checkStyle("Ele saiu há três anos atrás.").filter((i) => i.classe === "redundancia");
   ok("“há três anos atrás” → “há três anos”", ha.length === 1 && ha[0].fix === "há três anos", JSON.stringify(ha));
+}
+{
+  // frases do degrau 2: clichês, perífrase de gerúndio e plano em 1ª pessoa
+  const cli = (t) => F.checkStyle(t).filter((i) => i.classe === "cliche");
+  const baixo = (i) => i.suggestions.map((s) => s.toLowerCase());
+  const hoje = cli("Nos dias de hoje, tudo é digital.");
+  ok("clichê com troca fixa: “nos dias de hoje” → “Atualmente”", hoje.length === 1 && hoje[0].fix === "Atualmente", JSON.stringify(hoje));
+  const soma = cli("O dado é de suma importância.");
+  ok("clichê: “de suma importância” → “essencial”", soma.length === 1 && soma[0].fix === "essencial", JSON.stringify(soma));
+  const faz = cli("Faz-se necessário revisar o prazo.");
+  ok("clichê: “faz-se necessário” só sugere", faz.length === 1 && faz[0].fix === undefined && baixo(faz[0]).includes("é necessário"), JSON.stringify(faz));
+  const sabido = cli("É sabido que o tema é polêmico.");
+  ok("clichê: “é sabido que” aponta o caminho", sabido.length === 1 && sabido[0].fix === undefined && baixo(sabido[0]).includes("sabe-se que"), JSON.stringify(sabido));
+  const crescendo = cli("A demanda vem crescendo no setor.");
+  ok("clichê: “vem crescendo” → “tem crescido”", crescendo.length === 1 && crescendo[0].fix === "tem crescido", JSON.stringify(crescendo));
+
+  const oral = (t) => F.checkStyle(t).filter((i) => i.classe === "oralidade");
+  const peri = oral("Vou estar enviando o relatório amanhã.");
+  ok("perífrase: “vou estar enviando” vira “Enviarei”", peri.length === 1 && peri[0].fix === undefined && peri[0].suggestions.includes("Enviarei"), JSON.stringify(peri));
+  const peri2 = oral("vamos estar fazendo a revisão");
+  ok("perífrase: “vamos estar fazendo” vira “faremos” (irregular)", peri2.length === 1 && baixo(peri2[0]).includes("faremos"), JSON.stringify(peri2));
+  const peri3 = oral("vão estar trazendo os dados");
+  ok("perífrase: “vão estar trazendo” vira “trarão”", peri3.length === 1 && baixo(peri3[0]).includes("trarão"), JSON.stringify(peri3));
+  const peri4 = oral("A equipe vai estar analisando o material.");
+  ok("perífrase: 3ª pessoa vira “analisará”", peri4.length === 1 && baixo(peri4[0]).includes("analisará"), JSON.stringify(peri4));
+  const plano = oral("Vou fazer a análise dos dados.");
+  ok(
+    "plano em 1ª pessoa: avisa e mostra a passiva (“será feito”)",
+    plano.length === 1 && plano[0].fix === undefined && plano[0].suggestions.length === 0 && /será feito/.test(plano[0].message) && /gênero/.test(plano[0].message),
+    JSON.stringify(plano)
+  );
+  const plano2 = oral("Vamos enviar o relatório.");
+  ok("plano no plural: a passiva vai ao plural (“serão enviados”)", plano2.length === 1 && /serão enviados/.test(plano2[0].message), JSON.stringify(plano2));
+  F.setTone("neutro");
+  ok("perífrase e plano não aparecem no tom neutro", oral("Vou estar enviando o relatório. Vou fazer a análise.").length === 0);
+  F.setTone("formal");
+
+  const dapra = oral("Dá pra ver que o número subiu.");
+  ok("“dá pra ver que” → “Observa-se que”", dapra.length === 1 && dapra[0].suggestions.includes("Observa-se que"), JSON.stringify(dapra));
+  const dapra2 = oral("Dá para ver que o número subiu.");
+  ok("“dá para ver que” também entra", dapra2.length === 1 && dapra2[0].suggestions.includes("Observa-se que"), JSON.stringify(dapra2));
+  const certa = F.checkStyle("O resultado, de certa forma, surpreendeu.").filter((i) => i.classe === "vagueza");
+  ok("“de certa forma” entra como vagueza", certa.length === 1 && certa[0].suggestions.includes("em certa medida"), JSON.stringify(certa));
+  const criar = F.checkStyle("O time quer criar novo processo.").filter((i) => i.classe === "redundancia");
+  ok("“criar novo” → “criar”", criar.length === 1 && criar[0].fix === "criar", JSON.stringify(criar));
 }
 {
   // exclusões: citação, código, URL, sigla e e-mail
