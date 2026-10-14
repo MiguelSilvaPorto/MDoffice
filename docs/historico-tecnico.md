@@ -166,6 +166,14 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   (`pointer-events: none`; `non-scaling-stroke` para a espessura não esticar com a viewBox), e o
   pincel de uma barrinha flutuante ancorada no `#pp-stage` (que já era `position: relative`).
 
+### 2026-10-14 · este commit · o preview da Formas no tamanho dos ícones
+- **Local:** `.ppr-gal-ic` e as regras de `button.ppr.big` / `fita-compacta`
+- **Linha:** novo `align-items`/`flex: none` no span e os tamanhos `--pe-icone-g` (fita normal) e
+  `--pe-icone` (fita baixa) para o `svg`
+- **Porquê:** o SVG do preview da forma tem tamanho próprio (30 px) e não passava pelas regras do
+  `.ic`: na fita baixa (botão de ~26 px) ele ficava maior que o botão e vazava para fora,
+  destoando dos outros ícones.
+
 ## src/powerpoint/ui/fita.ts
 
 ### 2026-10-14 · este commit · grupo Edição fora da fita
@@ -192,6 +200,22 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o Draw chegou a entrar na galeria de Formas, mas o pedido era uma opção **fora** de
   Formas — ele virou botão próprio na aba Inserir (ver `ui/fita.ts`) e a galeria voltou a listar
   só formas.
+
+### 2026-10-14 · este commit · o preview centrado no ícone
+- **Local:** `iconeDeForma`
+- **Linha:** `viewBox="-2 ${-oy - 2} ${w + 4} ${22 + 4 - oy * 0}"` → `viewBox="-2 -2 26 26"`
+- **Porquê:** o `oy` já centra o desenho em y=11 (as formas mais baixas entram deslocadas), mas o
+  viewBox subia junto e deixava o desenho **3 px abaixo** do centro do ícone (e o `- oy * 0` era
+  um termo morto); com o viewBox simétrico em torno de y=11 o preview fica centrado de verdade —
+  no botão Formas e nas miniaturas da galeria.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · este commit · as travas do ícone da Formas
+- **Local:** seção "fita do PowerPoint: tamanho estável entre abas"
+- **Linha:** três checagens novas (tamanho do preview nas duas fitas e o viewBox centrado)
+- **Porquê:** o defeito era invisível para os testes (CSS + viewBox); agora a regra e o viewBox
+  ficam travados — se alguém voltar o tamanho fixo ou o viewBox assimétrico, o teste acusa.
 
 ## src/powerpoint/powerpoint.ts
 

@@ -375,20 +375,23 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Ícone da Formas alinhado**: o preview da forma no botão **Formas** seguia um tamanho próprio
+  (30 px) em vez do tamanho dos outros ícones — na **fita baixa** ele ficava maior que o botão e
+  vazava para fora; e o desenho dentro do ícone saía **3 px abaixo do centro** (o `viewBox` não
+  era simétrico). Agora ele acompanha o ícone grande (fita normal) e o normal (fita baixa), e o
+  desenho fica centrado — vale também para as miniaturas da galeria.
 - **Zoom do PowerPoint até 800%**: o teto era 400%; agora o slider, o **+ / −** e o
   **Ctrl + roda** vão a **800%** (a lâmina é HTML/vetorial, então ampliar não perde nitidez, e
   a rolagem continua de verdade). Para a faixa nova não custar 70 cliques, o passo do botão e
   da roda **cresce com o nível** — 10% até 150%, 25% até 250%, 50% até 500%, 100% daí em
   diante (do 100% ao 800% em ~17 passos) —, o mesmo conceito que as pranchetas de desenho já
   usavam; o slider continua fino (10%).
-
 - **Dica das alças de canto no visual do app**: o balão nativo do sistema (`title`) saiu; passar o
   mouse numa alça de canto mostra uma caixa do próprio app com **"Canto superior direito · 40%"**
   (valor em destaque) e a dica de uso — **"Arraste arredonda os 4 cantos escolhidos · Shift+clique
   soma ou tira"** (o texto acompanha quantos cantos estão na escolha). A caixa abre para o lado de
   dentro da lâmina (direita→esquerda nas alças da direita, cima→baixo nas de cima) e **some durante
   o arrasto**, quando quem manda é o aviso com o valor ao vivo.
-
 - **Correção no Draw**: o retângulo desenhado torto (a mão nunca acerta o ângulo) virava
   **retângulo arredondado** e a forma saía maior que o traço — o arredondamento era medido na
   caixa alinhada aos eixos. Agora o traço é **endireitado antes de medir** (a inclinação sai da
