@@ -545,14 +545,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Ícones de tipo no estilo adotado (contorno)**: os ícones das **abas**, das **listas**
-  (Recentes/Projetos) e dos **menus** deixaram a folha preenchida e passaram ao **contorno** —
-  folha com o canto dobrado, interior vazio e a marca do formato no traço: **#** (Markdown),
-  linhas de texto (Word), planilha com faixa de cabeçalho (Excel) e gráfico com seta
-  (PowerPoint). A paleta é a do conjunto adotado (**md roxo `#7C3AED`, Word azul `#2B6CE4`,
-  Excel verde `#16A34A`, PowerPoint laranja `#EA580C`), a mesma nos dois temas — a identidade
-  do formato não muda com o tema. O traço foi calibrado para 16 px (o tamanho das abas) e
-  conferido rasterizado em 16, 17 e 22 px, claro e escuro.
+- (nada no momento)
 
 **Ferramentas (dev)**
 
@@ -591,6 +584,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **Ícones de tipo no estilo adotado (contorno)**: os ícones das **abas**, das **listas**
+  (Recentes/Projetos) e dos **menus** deixaram a folha preenchida e passaram ao **contorno** —
+  folha com o canto dobrado, interior vazio e a marca do formato no traço: **#** (Markdown),
+  linhas de texto (Word), planilha com faixa de cabeçalho (Excel) e gráfico com seta
+  (PowerPoint). A paleta é a do conjunto adotado (**md roxo `#7C3AED`, Word azul `#2B6CE4`,
+  Excel verde `#16A34A`, PowerPoint laranja `#EA580C`), a mesma nos dois temas — a identidade
+  do formato não muda com o tema. O traço foi calibrado para 16 px (o tamanho das abas) e
+  conferido rasterizado em 16, 17 e 22 px, claro e escuro.
 
 - **A lista dos seletores não cobre mais a tela**: a lista aberta de um seletor (tamanho da
   fonte, fonte…) montava os 20+ itens na altura natural e, em tela menor, cobria tudo — não

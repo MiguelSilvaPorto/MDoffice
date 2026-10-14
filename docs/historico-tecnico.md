@@ -5179,3 +5179,15 @@ antigas quando fizer sentido.
   adotada, a marca de cada tipo e o desenho antigo fora
 - **Porquê:** é o mesmo lugar onde os invariantes visuais do app já ficam presos; sem ele, uma
   volta ao estilo antigo passaria despercebida.
+
+## CHANGELOG.md
+
+### 2026-10-14 · esta tarefa · promoção da entrada dos ícones de tipo
+- **Local:** seção "Não adicionado" do Geral (a entrada dos ícones de tipo em contorno)
+- **Linha:** movida para o topo do "Adicionado" do Geral — o commit dela (`f3c4e02`) já está
+  na `main`
+- **Porquê:** mesma razão das rodadas anteriores (registrar no estado de autoria e promover
+  no fechamento não cabem no mesmo commit). **Promoção pontual, por agulha**: a outra entrada
+  de "Não adicionado" (F4, no MD\*) é de outro trabalho e ficou onde está — a promoção em
+  bloco das rodadas anteriores só era segura porque todas as entradas daquelas seções eram
+  desta linha de trabalho.
