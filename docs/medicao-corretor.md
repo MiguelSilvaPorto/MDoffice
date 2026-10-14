@@ -290,6 +290,34 @@ fora de alcance: casos em que a palavra de contexto **não está no vocabulário
 e os ambíguos de verdade ("slva" → "salva" ou "silva"). Ambos precisariam de um contexto mais largo
 (as duas palavras anteriores) ou de vocabulário maior — matéria do F4.
 
+### Sexta medição — o F4: o contexto paga o próprio custo?
+
+O F4 estava para entrar como "contexto dos dois lados com trigramas". Antes de mexer na régua, a
+própria medição foi montada: o `--json` do harness passou a levar a lista `medidas` (caso a caso),
+e duas rodadas — **com** e **sem** o modelo de idioma — foram comparadas por índice.
+
+| rodada | r@1 | r@3 | precisão do 1º | auto% | auto✓% | FP/1000 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| sem o modelo (só dicionário) | **85%** | 88% | 91% | 83% | 94% | 0,00 |
+| com o modelo, régua antiga | 84% ✗ | 88% | 91% | 82% | 95% | 0,00 |
+| com o modelo, régua nova | **85%** | 88% | 91% | 83% | 94% | 0,00 |
+
+Leitura curta: a camada de contexto estava **tirando** um ponto de r@1. Caso a caso, os dois
+culpados: “messmo” → “**mesh**” (contexto 0,034 contra 0,003 — uma evidência fraca que passava no
+piso 0,03 porque o **bônus de classe** chegava junto) e “revissão” → “**previsão**” (0,103 contra
+0,042 — 2,4×, e o antigo exigia só 2×). Régua nova: a promoção é do **contexto** (piso 0,06 e no
+mínimo 3× o contexto do 1º + 0,02), e o bônus de classe/uso só escolhe entre candidatas que o
+contexto já sustenta.
+
+**A varredura que decidiu:** 8 pisos × 5 fatores × 4 margens (160 configurações), simuladas sobre a
+evidência real de 54 casos do conjunto — **nenhuma** dá ganho líquido positivo; as que promovem
+alguma coisa, promovem errado ou dão em empate. Conclusão honesta: nesse corpus (30 mil palavras,
+top-12 sucessoras por linha) o contexto **não** é promotor confiável — o trigrama ajuda a **escolher**
+a forma de quem já errou, mas não a **acusar** quem escreveu certo. Por isso a régua ficou
+conservadora: fica pronta para promover quando o contexto for decisivo de verdade, e hoje não
+atrapalha. O caso “media” → “média” segue fora de alcance **por desenho** (a razão pelo lado
+direito é 0,15 — o modelo não sustenta a troca), e é o tipo de caso em que acusar seria chute.
+
 ---
 
 *Números do commit `120cc9e`. Se um rebase trouxer mudanças ao corretor, esta linha de base

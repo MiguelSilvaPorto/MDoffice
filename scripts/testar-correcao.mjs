@@ -613,6 +613,49 @@ const USO = await empacotar("src/broker/spell/uso.ts", "uso.mjs");
   ok("uso: início de frase conta como contexto", USO.trocaPorContexto("media", "<s>", modelo)?.palavra === "média");
 }
 
+// ---------------------------------------------------------------- rerank por contexto (F4)
+// A régua do rerank com o modelo de idioma: contexto manda; bônus de classe/uso só desempata.
+const RK = await empacotar("src/broker/personal/rerank.ts", "rerank.mjs");
+
+{
+  const ordem = RK.ordemPorContexto;
+  ok("rerank: contexto claro promove", ordem(["cade", "casa"], [0.01, 0.3], [0, 0])[0] === "casa");
+  ok(
+    "rerank: evidência fraca não mexe (o caso “messmo” → “mesh”)",
+    ordem(["mesmo", "mesh"], [0.0027, 0.0341], [0, 0])[0] === "mesmo",
+    JSON.stringify(ordem(["mesmo", "mesh"], [0.0027, 0.0341], [0, 0]))
+  );
+  ok(
+    "rerank: 2,4× ainda não é claro (o caso “revissão” → “previsão”)",
+    ordem(["revisão", "previsão"], [0.0424, 0.1029], [0, 0])[0] === "revisão"
+  );
+  ok("rerank: bônus de classe sozinho não promove", ordem(["casa", "caza"], [0.001, 0.002], [0, 0.03])[0] === "casa");
+  ok("rerank: a promoção leva junto a ordem do resto", JSON.stringify(ordem(["a", "b", "c"], [0.01, 0.4, 0.02], [0, 0, 0])) === JSON.stringify(["b", "a", "c"]));
+  ok("rerank: uma sugestão só não tem o que ordenar", ordem(["a"], [0.5], [0])[0] === "a");
+  ok("rerank: sem modelo a sugestão fica como o dicionário deixou", JSON.stringify(RK.rerankSuggestions("x", 0, 1, ["a", "b"])) === JSON.stringify(["a", "b"]));
+}
+{
+  // evidenciaDeContexto com um modelo de mentira (mesmo formato do LangModel)
+  const modelo = {
+    idOf: new Map([
+      ["o", 3],
+      ["casa", 4],
+      ["caza", 5],
+      ["própria", 6],
+    ]),
+    data: { n: [0, 0, 0, 100, 500, 10, 200] },
+    total: 1000,
+    bigram: (id) => (id === 3 ? { succ: [{ id: 4, count: 40 }, { id: 5, count: 2 }], total: 100 } : id === 4 ? { succ: [{ id: 6, count: 30 }], total: 100 } : { succ: [], total: 0 }),
+    trigram: () => ({ succ: [], total: 0 }),
+  };
+  const ev = (palavra, prev, next = null) => RK.evidenciaDeContexto(modelo, prev, next, palavra);
+  ok("evidência: o bigrama da anterior sustenta (0,45 do P)", Math.abs(ev("casa", ["o"]) - 0.45 * 0.4) < 1e-9, String(ev("casa", ["o"])));
+  ok("evidência: a candidata rara fica atrás", ev("caza", ["o"]) < ev("casa", ["o"]), `${ev("caza", ["o"])} vs ${ev("casa", ["o"])}`);
+  ok("evidência: o lado DIREITO também conta (0,25 do seguinte)", Math.abs(ev("casa", ["o"], "própria") - (0.18 + 0.25 * 0.3)) < 1e-9, String(ev("casa", ["o"], "própria")));
+  ok("evidência: sem dado não é zero nem culpa", ev("casa", ["x"]) === 0 && ev("casa", []) === 0);
+  ok("evidência: palavra fora do vocabulário não pontua", ev("cazaa", ["o"]) === 0);
+}
+
 // ---------------------------------------------------------------- trecho longo: dividir e encurtar
 const E = await empacotar("src/broker/encurtar.ts", "encurtar.mjs");
 

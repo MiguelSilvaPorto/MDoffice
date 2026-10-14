@@ -4045,6 +4045,54 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o documento do módulo descreve o que o app faz; o limite novo e a janela visível
   precisam estar ali.
 
+## src/broker/personal/rerank.ts
+
+### 2026-10-14 · F4 do corretor · a promoção por contexto para de errar
+- **Local:** `evidenciaDeContexto` (nova), `evidence` (usa a nova), `ordemPorContexto` (nova) e `rerankSuggestions`
+- **Linha:** `PISO_CONTEXTO`/`FATOR_CONTEXTO`/`MARGEM_CONTEXTO` (novos: 0,06 · 3 · 0,02) · a evidência do
+  contexto saiu de dentro do `evidence` para `evidenciaDeContexto` · a decisão saiu do
+  `rerankSuggestions` para a função pura `ordemPorContexto(suggestions, ctx, bonus)`
+- **Porquê:** a régua antiga promovia com `ev[best] >= 0,03` — um piso que o **bônus de classe**
+  (±0,03) alcançava sozinho, contra um 1º do dicionário com contexto ~0. A medição (harness, caso a
+  caso) mostrou o custo: “messmo” → “**mesh**” ✗ e “revissão” → “**previsão**” ✗ (contexto 0,10
+  contra 0,04 — 2,4×, e o antigo exigia só 2×). Agora a promoção é do **contexto** — piso próprio,
+  3× o contexto do 1º + margem — e o bônus só escolhe entre candidatas que o contexto já sustenta.
+  A varredura de limiares (8 pisos × 5 fatores × 4 margens, sobre as evidências reais de 54 casos)
+  mostrou que nenhuma configuração faz a promoção *ganhar* nesse corpus: por isso a régua ficou
+  conservadora — quando o contexto for decisivo, promove; fora disso, não chuta.
+  `rerankSuggestions` vira fachada (modelo + contexto + bônus → `ordemPorContexto`), o que deixa a
+  régua testável sem carregar o modelo.
+
+## scripts/avaliar-correcao.mts
+
+### 2026-10-14 · F4 do corretor · a medição caso a caso no JSON
+- **Local:** o objeto `resultado` do `--json`
+- **Linha:** `+ medidas: [...{ conjunto, origem, classe, errado, gabarito, detectado, sugestoes, auto, trecho }]`
+- **Porquê:** comparar duas rodadas (com × sem modelo, antes × depois) só pelos totais escondia o
+  que interessava — **quais** casos mudaram. Com a lista completa (a semente é a mesma, então a
+  ordem é a mesma) dá para alinhar por índice e ver a troca exata; foi assim que os dois casos
+  perdidos apareceram (“mesh” e “previsão”).
+
+## scripts/testar-correcao.mjs
+
+### 2026-10-14 · F4 do corretor · 13 verificações da régua
+- **Local:** o bloco “rerank por contexto (F4)”
+- **Linha:** `+ as checagens de ordemPorContexto (promoção clara, evidência fraca, 2,4×, bônus
+  sozinho, ordem do resto, uma sugestão) e de evidenciaDeContexto (0,45 do bigrama da anterior,
+  0,25 do lado DIREITO, sem dado = 0, fora do vocabulário = 0)`
+- **Porquê:** prende os dois casos que a medição acusou (“mesh” 0,034 e “previsão” 2,4× ficam fora)
+  e prova que o lado direito do contexto entra na conta — com um modelo de mentira, sem carregar
+  os 7 MB do modelo real.
+
+## docs/medicao-corretor.md
+
+### 2026-10-14 · F4 do corretor · a sexta medição (o contexto paga o próprio custo?)
+- **Local:** a seção de medições comparadas
+- **Linha:** `+ a tabela com × sem o modelo, antes × depois da régua, e o veredito da varredura de limiares`
+- **Porquê:** o número sozinho não conta a história: sem o modelo r@1 era **85%** e com o modelo
+  (régua antiga) **84%** — a camada de contexto estava *tirando*. Com a régua nova, com modelo =
+  **85%** (empata em vez de perder) e o contexto segue disponível para quando for decisivo.
+
 ---
 
 ## Próximos registros

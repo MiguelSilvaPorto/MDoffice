@@ -576,6 +576,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **F4 do corretor — a promoção por contexto para de errar**: o `rerankSuggestions` (a camada que reordena as sugestões pelo trigrama/bigrama e pelo lado direito da frase) promovia com evidência **fraca**, e o bônus de classe/uso podiam promovê-la sozinhos — na medição isso custava acerto (“messmo” → “**mesh**” ✗, “revissão” → “**previsão**” ✗). Agora **a promoção é do contexto**: piso próprio (0,06), no mínimo **3×** o contexto do 1º do dicionário + margem, e o bônus de classe/uso só escolhem entre candidatas que o contexto já sustenta. Com o modelo ligado, o r@1 voltou de **84% para 85%** (empata com a rodada sem modelo em vez de perder 1 p.p.), a precisão do 1º segue **91%** e os falsos positivos **0,00**. A varredura de limiares (8 pisos × 5 fatores × 4 margens sobre as evidências reais de 54 casos do conjunto) mostrou que **nenhuma** configuração faz a promoção ganhar nesse corpus — a régua ficou conservadora de propósito: promove quando o contexto é de fato decisivo, fora disso não chuta.
+- **Harness: medição caso a caso**: o `--json` do `scripts/avaliar-correcao.mts` agora leva a lista `medidas` (cada erro com conjunto, classe, sugestões, auto e trecho) — é o que permite comparar duas rodadas (com/sem modelo, antes/depois) **por índice** e ver exatamente quais casos mudaram, em vez de só o total.
 - **Fila do salvamento automático (nada de pedido descartado)**: um salvamento por vez e o pedido
   que chega durante uma gravação **deixa de ser ignorado** — ao terminar, a fila grava de novo com
   o texto mais recente. Antes (`if (this.saving) return`), em pasta de rede o autosave disparado

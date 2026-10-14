@@ -899,6 +899,19 @@ async function main(): Promise<number> {
     commit,
     seed: opcoes.seed,
     modeloDeIdioma: opcoes.modelo,
+    // caso a caso, para comparar duas medições (ex.: com e sem o modelo de idioma):
+    // `cada` tem o mesmo par errado/gabarito em todas as rodadas (a semente é a mesma).
+    medidas: medidas.map((m) => ({
+      conjunto: m.conjunto,
+      origem: m.origem,
+      classe: m.classe,
+      errado: m.errado,
+      gabarito: m.gabarito,
+      detectado: m.detectado,
+      sugestoes: m.sugestoes.slice(0, 3),
+      auto: m.auto,
+      trecho: m.trecho,
+    })),
     dicionario: { carregou: !!M.spellIsReady(), ms: Math.round(msDicionario) },
     payloadWorker: { bytes: payloadBytes, arquivos: payload, foraDoWorker: fora },
     desempenho: tempos,
