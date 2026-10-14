@@ -5701,3 +5701,15 @@ antigas quando fizer sentido.
   de mídia e o áudio mantendo capa + player
 - **Porquê:** era o único ponto sem teste do caminho de mídia (os testes cobriam edição e XML,
   não o desenho); foi o desenho que quebrou na frente do usuário.
+
+## CHANGELOG.md
+
+### 2026-10-14 · esta tarefa · promoção das duas entradas que estavam na main
+- **Local:** seções "Não adicionado" do PowerPoint (1) e do Geral (1)
+- **Linha:** 2 entradas movidas para o "Adicionado" da mesma categoria — **vídeo em lâmina
+  importada volta a preencher o quadro** (`503dc75`) e **corpus dos n-gramas** (`6cfbb06`);
+  a linha em branco dupla que a resolução do conflito deixou no CHANGELOG saiu na mesma passada
+- **Porquê:** mesma razão das rodadas anteriores (registrar no estado de autoria e promover no
+  fechamento não cabem no mesmo commit). Desta vez a resolução do conflito do rebase tinha
+  deixado duas linhas em branco na emenda — a conferência olha o arquivo inteiro, não só as
+  entradas: `\n\n\n` zero depois da limpeza.

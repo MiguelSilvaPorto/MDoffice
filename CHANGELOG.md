@@ -378,14 +378,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Vídeo em lâmina importada volta a preencher o quadro**: o vídeo era desenhado dentro de um
-  invólucro sem estilo (o `height:100%` caía para o tamanho natural, ~300×150), então a área do
-  vídeo ficava transparente e **os cartões de trás apareciam através dela** (na lâmina 8 do deck
-  IMCOPA, os cartões escuros com as imagens "600 × 400" que o Google Slides esconde atrás do
-  vídeo). Agora o vídeo vai direto no quadro e **recorta ao quadro** (`object-fit: cover`, como
-  no PowerPoint/Google — antes era `contain`, com tarjas pretas). De quebra: a **capa** de um
-  deck importado (`media:ID`) não passava pelo resolvedor de mídia e o atributo `poster` saía
-  cru — a miniatura e o editor ficavam sem a capa; agora é resolvida (blob/data).
+- (nada no momento)
 
 
 ### Adicionado (na main)
@@ -395,6 +388,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **Vídeo em lâmina importada volta a preencher o quadro**: o vídeo era desenhado dentro de um
+  invólucro sem estilo (o `height:100%` caía para o tamanho natural, ~300×150), então a área do
+  vídeo ficava transparente e **os cartões de trás apareciam através dela** (na lâmina 8 do deck
+  IMCOPA, os cartões escuros com as imagens "600 × 400" que o Google Slides esconde atrás do
+  vídeo). Agora o vídeo vai direto no quadro e **recorta ao quadro** (`object-fit: cover`, como
+  no PowerPoint/Google — antes era `contain`, com tarjas pretas). De quebra: a **capa** de um
+  deck importado (`media:ID`) não passava pelo resolvedor de mídia e o atributo `poster` saía
+  cru — a miniatura e o editor ficavam sem a capa; agora é resolvida (blob/data).
 
 - **Botão Apresentar na barra superior**: com uma apresentação aberta, o botão **Apresentar**
   aparece na barra de cima (entre o menu **⋯** e os controles da janela) e começa a apresentação
@@ -591,10 +593,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 **Frontend**
 
 - (nada no momento)
+- (nada no momento)
 
 **Ferramentas (dev)**
 
-- **Corpus dos n-gramas: cadeia reproduzível — e o resultado medido**: o modelo de sugestões vinha de um corpus que **ninguém conseguia refazer** (nem se sabia o tamanho), e ele tem buracos: **“severidade” não existe** no vocabulário e **“mesh” existe**. Entraram `scripts/baixar-corpus.mjs` (artigos **destacados e bons** da Wikipédia PT, CC BY-SA 4.0 — só **contagens** vão para o app — com **retomada**, **paralelismo** e **manifesto de títulos versionado** para o redo), `scripts/corpus-texto.mjs` (o limpador de HTML: prosa fica; tabela — infobox **aninhado** também —, figura, referência e nota de edição saem), `scripts/regerar-ngrams.mjs` (`npm run corpus`, a cadeia num comando) e `npm run test:corpus` (14 verificações). O `build-ngrams.mjs` passou a aceitar uma **pasta** de corpus (com 718 arquivos a linha de comando estourava). **O achado:** `prop=extracts` só devolve **um** extrato completo por pedido (`exlimit` só vale junto com `exintro`) — era por isso que o download rendia quase nada (0,17 MB/min); a REST (`/page/html/…`) rende o artigo inteiro e, com 4 pedidos em paralelo, o corpus anda a ~0,6 MB/min. **O resultado medido:** com 30 MB de Wikipédia o modelo fica **menor** (4,8 MB) e conhece “severidade” (e não conhece mais “mesh”) — mas **no harness ele é pior**: r@1 **85% → 80%**, r@3 88% → 84%, precisão 91% → 88%, **falsos positivos 0,00 → 1,64/1000**, 19 casos perdidos contra 6 ganhos (ganha em plural com “ss”/“j”, perde em palavras do dia a dia do app: “clicar”, “seguras”, “porcentagens”…). Conclusão honesta: o problema não é só o **tamanho** do corpus, é o **registro** — o antigo estava mais perto dos textos do app (técnico) do que a enciclopédia. O modelo antigo **ficou** (a cadeia está pronta para um corpus do registro certo, ou misto).
 
 ### Adicionado (na main)
 
@@ -630,6 +632,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **Corpus dos n-gramas: cadeia reproduzível — e o resultado medido**: o modelo de sugestões vinha de um corpus que **ninguém conseguia refazer** (nem se sabia o tamanho), e ele tem buracos: **“severidade” não existe** no vocabulário e **“mesh” existe**. Entraram `scripts/baixar-corpus.mjs` (artigos **destacados e bons** da Wikipédia PT, CC BY-SA 4.0 — só **contagens** vão para o app — com **retomada**, **paralelismo** e **manifesto de títulos versionado** para o redo), `scripts/corpus-texto.mjs` (o limpador de HTML: prosa fica; tabela — infobox **aninhado** também —, figura, referência e nota de edição saem), `scripts/regerar-ngrams.mjs` (`npm run corpus`, a cadeia num comando) e `npm run test:corpus` (14 verificações). O `build-ngrams.mjs` passou a aceitar uma **pasta** de corpus (com 718 arquivos a linha de comando estourava). **O achado:** `prop=extracts` só devolve **um** extrato completo por pedido (`exlimit` só vale junto com `exintro`) — era por isso que o download rendia quase nada (0,17 MB/min); a REST (`/page/html/…`) rende o artigo inteiro e, com 4 pedidos em paralelo, o corpus anda a ~0,6 MB/min. **O resultado medido:** com 30 MB de Wikipédia o modelo fica **menor** (4,8 MB) e conhece “severidade” (e não conhece mais “mesh”) — mas **no harness ele é pior**: r@1 **85% → 80%**, r@3 88% → 84%, precisão 91% → 88%, **falsos positivos 0,00 → 1,64/1000**, 19 casos perdidos contra 6 ganhos (ganha em plural com “ss”/“j”, perde em palavras do dia a dia do app: “clicar”, “seguras”, “porcentagens”…). Conclusão honesta: o problema não é só o **tamanho** do corpus, é o **registro** — o antigo estava mais perto dos textos do app (técnico) do que a enciclopédia. O modelo antigo **ficou** (a cadeia está pronta para um corpus do registro certo, ou misto).
 
 - **Diálogo de texto com várias linhas (modo código)**: o diálogo de uma linha do app
   (`pedirTexto`, usado em "Novo modelo", renomear lâmina etc.) ganhou a opção de virar uma
