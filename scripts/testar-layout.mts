@@ -621,5 +621,21 @@ checa(
 checa("o chip do zoom mostra a % e volta a 100% no clique", /data-tool="zoom"/.test(apresen) && /botao\('\[data-tool="zoom"\]', \(\) => mudarZoom\(1, 50, 50\)\)/.test(apresen));
 checa("Esc sai da ferramenta e do zoom antes de encerrar", /ferramenta\) definirFerramenta\(null\)/.test(apresen) && /zoomK > 1\.001\) mudarZoom\(1, 50, 50\)/.test(apresen));
 
+console.log("\npopup do Template: cabe na janela e rola");
+{
+  const css = ler("src/styles/powerpoint-edicao.css");
+  checa(
+    "o popup de modelos tem teto próprio (não encosta na janela)",
+    /\.pp-pop-modelos\s*\{[^}]*max-height:\s*min\(64vh, 560px\)/.test(css),
+    "sem teto próprio, o popup chega à borda e corta a última linha"
+  );
+  checa("a lista rola dentro do popup", /\.pp-popup\s*\{[^}]*overflow:\s*auto/.test(css), "o popup precisa ser o contêiner de rolagem");
+  checa(
+    "o título fica visível ao rolar",
+    /\.pp-pop-modelos \.pp-pop-t\s*\{[^}]*position:\s*sticky/.test(css),
+    "sem o título fixo, ao rolar o usuário perde a referência"
+  );
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

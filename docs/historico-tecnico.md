@@ -5154,6 +5154,27 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   não pegavam nada — o defeito só existe no **encontro** delas com o `patchFormas`; o teste agora
   cobre esse encontro.
 
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · popup do Template · teto próprio e título fixo
+- **Local:** `.pp-pop-modelos` e o novo `.pp-pop-modelos .pp-pop-t`
+- **Linha:** `max-width: 380px` → `+ max-height: min(64vh, 560px)` e o título com
+  `position: sticky; top: -8px; background: var(--panel)`
+- **Porquê:** o popup já tinha o teto geral dos popups da fita (78vh, em `.pp-popup`) e a rolagem —
+  mas com 19 modelos ele chegava à **borda inferior** da janela e a última linha ficava **cortada
+  no meio** ✗ (parecia faltar modelo). O teto próprio, mais curto, deixa o popup claramente dentro
+  da janela; o título fixo mostra que a área rola; e o `desenhar` do `ui/modelos.ts` (que empurra o
+  popup para cima quando ele cresce) continua valendo como rede. Três verificações no `test:layout`
+  prendem o teto, a rolagem e o título.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · popup do Template · as três verificações
+- **Local:** a seção “popup do Template: cabe na janela e rola”
+- **Linha:** `+ o teto próprio, + a rolagem no popup, + o título sticky`
+- **Porquê:** o defeito era visual e fácil de voltar (basta alguém tirar o teto para a última linha
+  ser cortada de novo) — o teste lê o CSS e trava a regra.
+
 ---
 
 ## Próximos registros

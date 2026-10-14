@@ -704,6 +704,19 @@ button.ppr.big .ppr-gal-ic svg {
 
 .pp-pop-modelos {
   max-width: 380px;
+  /* não encosta na janela: com 19 modelos o popup chegava à borda e a última linha
+     ficava cortada no meio. Aqui ele tem teto próprio (shorter que os 78vh gerais) e o
+     título fica fixo enquanto a grade rola por baixo. */
+  max-height: min(64vh, 560px);
+}
+
+.pp-pop-modelos .pp-pop-t {
+  position: sticky;
+  top: -8px; /* encosta no topo do popup (que tem 8 px de padding) */
+  z-index: 1;
+  margin: 0;
+  padding: 6px 0 4px;
+  background: var(--panel);
 }
 
 .pp-tpls {

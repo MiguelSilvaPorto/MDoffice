@@ -394,6 +394,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Popup do Template cabe na janela (e rola com o título à vista)**: com os 19 modelos — mais os que o usuário cria — o popup chegava à **borda inferior** da janela e a última linha ficava **cortada no meio**, parecendo que faltavam modelos. Agora ele tem teto próprio (`min(64vh, 560px)`, menor que os 78vh gerais dos popups da fita) e o título **“Modelos de apresentação” fica fixo** enquanto a grade rola por baixo — e o “Novo modelo” continua sendo o último, alcançável com a rolagem. Três verificações novas no `test:layout`.
 - **Ideias de design** (aba nova no painel lateral): mostra **esta lâmina** desenhada em cada
   modelo do catálogo, em cartões clicáveis — clicar aplica o modelo à apresentação inteira. É a
   ideia do *Design Ideas* do **DeckCraft**, offline como lá ("geradas no seu computador"): a
