@@ -1,0 +1,16 @@
+# E03 — partes da estrutura textual (NBR 14724:2024): introdução, desenvolvimento e
+# conclusão, como seções de nível 1.
+#
+# O desenvolvimento raras vezes tem esse título: a obra nomeia a parte principal pelo
+# assunto ("Referencial teórico", "Metodologia", "Resultados"…), então o item aceita as
+# alternativas usuais — cobrar a palavra "DESENVOLVIMENTO" acusaria trabalho correto.
+#
+# Sem indícios declarados: a evidência é o próprio par de seções (duas partes
+# reconhecidas já mostram que o documento é um trabalho — sem conclusão, é aviso).
+id = "abnt.e03"
+norma = "nbr14724:2024"
+grupo = "E"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "secoes-obrigatorias"
+opcoes = { obrigatorias = ["INTRODUÇÃO", { rotulo = "DESENVOLVIMENTO", nomes = ["DESENVOLVIMENTO", "REFERENCIAL TEÓRICO", "FUNDAMENTAÇÃO TEÓRICA", "REVISÃO DE LITERATURA", "METODOLOGIA", "MATERIAIS E MÉTODOS", "MÉTODOS", "RESULTADOS", "RESULTADOS E DISCUSSÃO", "DISCUSSÃO", "CAPÍTULO"] }, { rotulo = "CONCLUSÃO", nomes = ["CONCLUSÃO", "CONSIDERAÇÕES FINAIS", "CONSIDERAÇÕES GERAIS"] }], falta = "partes da estrutura textual (introdução, desenvolvimento e conclusão)" }

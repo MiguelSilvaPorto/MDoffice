@@ -32,6 +32,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Regras ABNT de estrutura (E01–E03 e P01)**: o motor passou a conferir o trabalho pela
+  estrutura que as normas cobram, e não só pela tipografia. **E01** cobra os elementos
+  pré-textuais obrigatórios (resumo, abstract e sumário — NBR 14724:2024); **E02** confere a
+  ordem pré-textuais → textuais → pós-textuais (o caso clássico: referências antes da
+  conclusão); **E03** cobra as partes da estrutura textual (introdução, desenvolvimento e
+  conclusão); e **P01** cobra as seções do projeto de pesquisa (introdução, objetivos,
+  metodologia e cronograma — NBR 15287:2025). Os dois verificadores são genéricos
+  (`secoes-obrigatorias` e `secoes-em-ordem`), parametrizados pelos TOMLs; o aviso de
+  ausência ancora no fim do documento e explica por que a regra falou — o verificador só age
+  quando o documento tem **cara de trabalho** (ao menos dois elementos reconhecidos e um
+  indício de corpo do texto), para um texto qualquer não virar "TCC sem resumo".
 - **Regras ABNT do sumário e da numeração (S01–S04)**: o motor de estrutura agora compara o
   **sumário** com os títulos do texto — subseção que falta, entrada sobrando, ordem trocada e
   pré-textuais listados (RESUMO, LISTAS…) — e confere a **numeração progressiva**: a subseção

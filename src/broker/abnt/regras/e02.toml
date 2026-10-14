@@ -1,0 +1,12 @@
+# E02 — ordem dos elementos: pré-textuais → textuais → pós-textuais (NBR 14724:2024).
+#
+# A ordem é RELATIVA: só a seção que quebra a ordem é acusada (o exemplo da norma é
+# "referências antes da conclusão" — a conclusão é que está fora de lugar). Seção de
+# outra natureza (referencial teórico, metodologia…) não participa e não atrapalha.
+id = "abnt.e02"
+norma = "nbr14724:2024"
+grupo = "E"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "secoes-em-ordem"
+opcoes = { fases = [["resumo", "abstract", "sumario", "lista-de-figuras", "lista-de-tabelas", "lista-de-siglas", "lista-de-abreviaturas", "lista-de-simbolos"], ["INTRODUÇÃO", "DESENVOLVIMENTO", "CONCLUSÃO", "CONSIDERAÇÕES FINAIS"], ["REFERÊNCIAS", "APÊNDICES", "ANEXOS"]], fases_nomes = ["pré-textuais", "textuais", "pós-textuais"] }

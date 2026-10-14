@@ -1,0 +1,16 @@
+# E01 — elementos pré-textuais obrigatórios (NBR 14724:2024).
+#
+# Os três reconhecidos por título: resumo, abstract (resumo em língua estrangeira) e
+# sumário. Capa, folha de rosto e folha de aprovação variam por instituição (e quase
+# nunca são títulos no Markdown): ficam fora para não virar aviso em trabalho correto.
+#
+# Só fala quando o documento tem cara de trabalho acadêmico: pelo menos 2 itens
+# reconhecidos e pelo menos 1 indício (seção do corpo do texto). Um texto qualquer —
+# ou um resumo solto — é silêncio: falso positivo é pior que falso negativo.
+id = "abnt.e01"
+norma = "nbr14724:2024"
+grupo = "E"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "secoes-obrigatorias"
+opcoes = { obrigatorias = ["resumo", "abstract", "sumario"], indicios = ["INTRODUÇÃO", "DESENVOLVIMENTO", "CONCLUSÃO", "CONSIDERAÇÕES FINAIS"], falta = "elementos pré-textuais obrigatórios" }

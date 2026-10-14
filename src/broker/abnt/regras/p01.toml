@@ -1,0 +1,15 @@
+# P01 — seções da estrutura do projeto de pesquisa (NBR 15287:2025): introdução,
+# objetivos, metodologia e cronograma.
+#
+# As seções variam de nome entre instituições (o manual pede o CONTEÚDO de cada uma);
+# os itens aceitam as alternativas usuais ("Material e métodos" para metodologia, por
+# exemplo). Sem indícios: as próprias seções reconhecidas já dizem que é um projeto, e
+# exigir uma quinta seção silenciaria o caso que a regra existe para pegar (sem
+# cronograma, sobram introdução e objetivos — duas seções são evidência suficiente).
+id = "abnt.p01"
+norma = "nbr15287:2025"
+grupo = "P"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "secoes-obrigatorias"
+opcoes = { obrigatorias = ["INTRODUÇÃO", { rotulo = "OBJETIVOS", nomes = ["OBJETIVOS", "OBJETIVO"] }, { rotulo = "METODOLOGIA", nomes = ["METODOLOGIA", "MÉTODO", "MÉTODOS", "MATERIAIS E MÉTODOS", "MATERIAL E MÉTODOS", "PROCEDIMENTOS METODOLÓGICOS"] }, "CRONOGRAMA"], falta = "seções da estrutura do projeto (introdução, objetivos, metodologia e cronograma)" }

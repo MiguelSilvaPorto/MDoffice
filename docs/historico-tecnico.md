@@ -3102,6 +3102,59 @@ Este documento foi **semeado** com as mudanças mais recentes (até 2026-10-13).
 cada tarefa registra as próprias entradas ao ser fechada — e pode reescrever/consolidar as
 antigas quando fizer sentido.
 
+## src/broker/abnt/verificadores/estrutura.ts
+
+### 2026-10-14 · esta tarefa · seções obrigatórias (E01, E03 e P01)
+- **Local:** `VERIFICADORES` — `secoes-obrigatorias` (novo)
+- **Linha:** `novo` — opções `obrigatorias`, `indicios`, `minimo`, `nivel`, `falta`; cada
+  item aceita título, lista de alternativas ou `{ rotulo, nomes }`
+- **Porquê:** três regras do catálogo são a mesma pergunta ("os elementos existem?") com
+  dados diferentes — a diferença é DECLARADA no TOML, e o verificador é um só. O item com
+  alternativas resolve o falso positivo mais provável: o desenvolvimento raras vezes tem
+  esse título (é "Referencial teórico", "Metodologia", "Resultados"…), e cobrar a palavra
+  acusaria trabalho correto. A evidência mínima (`minimo`, `indicios`) é o que separa "TCC
+  sem resumo" de "texto qualquer": sem dois elementos reconhecidos e um indício de corpo
+  do texto, o verificador é silêncio. O aviso é UM por regra (não um por item que falta)
+  porque ancora no fim do documento e o motor mantém só o primeiro aviso do mesmo trecho —
+  um por item faria os outros sumirem. `minimo`/`indicios` ficam em opção para a
+  instituição calibrar (o padrão segue a confiança do catálogo).
+
+### 2026-10-14 · esta tarefa · ordem relativa das fases (E02)
+- **Local:** `VERIFICADORES` — `secoes-em-ordem` (novo)
+- **Linha:** `novo` — opções `fases` (lista de listas), `fases_nomes`, `nivel`
+- **Porquê:** a ordem da NBR 14724 é relativa (pré → textual → pós), então o verificador
+  compara FASES, não uma lista fixa de títulos: seção de outra natureza (referencial
+  teórico, metodologia…) não participa e não atrapalha. Só a seção que quebra a ordem é
+  acusada — no exemplo da norma ("referências antes da conclusão"), a conclusão é que está
+  fora de lugar — e o aviso aponta o título (trecho visível) e diz para onde mover.
+
+## src/broker/abnt/regras/e01.toml…p01.toml · src/broker/abnt/index.ts
+
+### 2026-10-14 · esta tarefa · as quatro regras e a carga
+- **Local:** `regras/e01.toml`…`regras/p01.toml` (novos) e `FONTES` em `abnt/index.ts`
+- **Linha:** `novo` — quatro declarações `tipo = "estrutura"` e quatro entradas no FIM da
+  lista de fontes
+- **Porquê:** E01/E03/P01 são a mesma forma (`secoes-obrigatorias`) com dados diferentes;
+  E02 usa `secoes-em-ordem`. E01 ficou com os três pré-textuais reconhecíveis por título
+  (capa, folha de rosto e folha de aprovação variam por instituição e quase nunca são
+  títulos no Markdown); E02 reconhece também as listas e os apêndices/anexos por bloco.
+  Entradas no fim da `FONTES` para não mexer na ordem das dez antigas (o motor para na
+  primeira regra que avisa um trecho).
+
+## scripts/testar-abnt-estrutura.mts · scripts/testar-regras-abnt.mts · package.json
+
+### 2026-10-14 · esta tarefa · o teste do grupo (e dois consertos que ele exigiu)
+- **Local:** `scripts/testar-abnt-estrutura.mts` (novo), `scripts/testar-regras-abnt.mts`
+  e `package.json` (script `test:abnt-estrutura`)
+- **Linha:** teste novo (40 checagens, os dois lados de cada caso); no de ouro, a exigência
+  de "exatamente dez regras" → presença das dez ids + carga aceita; `map(I.regraDeToml)` →
+  lambda nos três lugares
+- **Porquê:** a contagem exata quebraria a cada grupo novo entregue em paralelo. O
+  `map(regraDeToml)` passava o ÍNDICE como segundo argumento e virava o registro de
+  verificadores — invisível enquanto só havia regra de texto; com regra de estrutura, a
+  carga morria com "verificador desconhecido (conhecidos: nenhum)". O teste novo cobre o
+  lado que importa: texto qualquer e fragmento (resumo solto, uma seção só) NÃO acusam.
+
 ## src/md/docxcheck.ts
 
 ### 2026-10-14 · este commit · validação do .docx exportado (E04–E08 e E12)

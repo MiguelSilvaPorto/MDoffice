@@ -135,16 +135,18 @@ console.log("\nlint da carga");
   const I = await empacotar("src/broker/abnt/index.ts", "index.mjs");
 
   // as dez originais continuam passando; cada grupo novo (E, C, R, S…) acrescenta as
-  // suas e a carga segue exigindo que TODAS passem (uma ruim derruba a carga inteira)
-  let carregadas = 0;
+  // suas e a carga segue exigindo que TODAS passem (uma ruim derruba a carga inteira).
+  // A checagem é a PRESENÇA das dez (e não o total exato): os grupos são entregues em
+  // paralelo e o número exato quebraria o teste a cada entrega.
+  let ids = new Set<string>();
   let erroCarga = "";
   try {
-    const ids = new Set((I.carregarRegras() as { id: string }[]).map((r) => r.id));
-    carregadas = IDS_ANTIGAS.filter((id) => ids.has(id)).length;
+    ids = new Set((I.carregarRegras() as { id: string }[]).map((r) => r.id));
   } catch (e) {
     erroCarga = String(e);
   }
-  checa("as dez regras originais (e as novas) passam no lint", carregadas === 10, erroCarga);
+  const faltando = IDS_ANTIGAS.filter((id) => !ids.has(id));
+  checa("as dez regras originais (e as novas) passam no lint", !erroCarga && faltando.length === 0, erroCarga || `faltando: ${faltando.join(", ")}`);
 
   // recusas: cada exemplo quebra uma regra do schema
   const base = {

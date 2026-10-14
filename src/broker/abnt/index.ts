@@ -34,6 +34,10 @@ import citacaoSemAno from "./regras/citacao-sem-ano.toml?raw";
 import citacaoDiretaSemPagina from "./regras/citacao-direta-sem-pagina.toml?raw";
 import citacaoDiretaLonga from "./regras/citacao-direta-longa.toml?raw";
 import pontoDepoisDoParentese from "./regras/ponto-depois-do-parentese.toml?raw";
+import e01 from "./regras/e01.toml?raw";
+import e02 from "./regras/e02.toml?raw";
+import e03 from "./regras/e03.toml?raw";
+import p01 from "./regras/p01.toml?raw";
 
 const FONTES: { nome: string; texto: string }[] = [
   { nome: "horas.toml", texto: horas },
@@ -59,6 +63,10 @@ const FONTES: { nome: string; texto: string }[] = [
   { nome: "citacao-direta-sem-pagina.toml", texto: citacaoDiretaSemPagina },
   { nome: "citacao-direta-longa.toml", texto: citacaoDiretaLonga },
   { nome: "ponto-depois-do-parentese.toml", texto: pontoDepoisDoParentese },
+  { nome: "e01.toml", texto: e01 },
+  { nome: "e02.toml", texto: e02 },
+  { nome: "e03.toml", texto: e03 },
+  { nome: "p01.toml", texto: p01 },
 ];
 
 /** Perfil institucional: sobrescreve versão de norma e o que fazer com cada regra. */
