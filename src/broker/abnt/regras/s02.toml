@@ -1,0 +1,12 @@
+# S02 — elementos pré-textuais não constam no sumário (NBR 6027).
+#
+# Acusa quando uma entrada do sumário casa com um bloco pré-textual (RESUMO, ABSTRACT,
+# SUMÁRIO, LISTA DE …, CAPA, FOLHA DE …). Pós-textuais (REFERÊNCIAS, APÊNDICES…)
+# ficam em paz: os manuais divergem sobre listá-los.
+id = "abnt.s02"
+norma = "nbr6027:2012"
+grupo = "S"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "sumario-sem-pretextuais"
+mensagem = "(o verificador escreve a mensagem)"

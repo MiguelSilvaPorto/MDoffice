@@ -27,7 +27,8 @@
     "prep:modelo": "node scripts/baixar-modelo.mjs",
     "test:abnt": "node scripts/testar-regras-abnt.mts",
     "test:abnt-contexto": "node scripts/testar-abnt-contexto.mts",
-    "test:abnt-docx": "node scripts/testar-abnt-docx.mts"
+    "test:abnt-docx": "node scripts/testar-abnt-docx.mts",
+    "test:abnt-numeracao": "node scripts/testar-abnt-numeracao.mts"
   },
   "dependencies": {
     "@codemirror/commands": "^6.6.0",

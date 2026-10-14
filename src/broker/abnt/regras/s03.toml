@@ -1,0 +1,13 @@
+# S03 — numeração progressiva decimal (NBR 6024).
+#
+# O indicativo da subseção continua o da seção superior ("3" → "3.1", nunca "1.2") e
+# não desce mais níveis do que a estrutura de títulos alcança (sem o "3.1" intermediário,
+# não há "3.1.1"). A sequência dos irmãos e a ausência de indicativo não são conferidas
+# aqui (não dá para julgar sem chutar).
+id = "abnt.s03"
+norma = "nbr6024:2012"
+grupo = "S"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "numeracao-progressiva"
+mensagem = "(o verificador escreve a mensagem)"

@@ -21,6 +21,10 @@ import pagina from "./regras/pagina.toml?raw";
 import etAl from "./regras/et-al.toml?raw";
 import travessao from "./regras/travessao.toml?raw";
 import latinismos from "./regras/latinismos.toml?raw";
+import s01 from "./regras/s01.toml?raw";
+import s02 from "./regras/s02.toml?raw";
+import s03 from "./regras/s03.toml?raw";
+import s04 from "./regras/s04.toml?raw";
 
 const FONTES: { nome: string; texto: string }[] = [
   { nome: "horas.toml", texto: horas },
@@ -33,6 +37,10 @@ const FONTES: { nome: string; texto: string }[] = [
   { nome: "et-al.toml", texto: etAl },
   { nome: "travessao.toml", texto: travessao },
   { nome: "latinismos.toml", texto: latinismos },
+  { nome: "s01.toml", texto: s01 },
+  { nome: "s02.toml", texto: s02 },
+  { nome: "s03.toml", texto: s03 },
+  { nome: "s04.toml", texto: s04 },
 ];
 
 /** Perfil institucional: sobrescreve versão de norma e o que fazer com cada regra. */

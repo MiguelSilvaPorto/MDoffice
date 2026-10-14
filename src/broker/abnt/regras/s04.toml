@@ -1,0 +1,12 @@
+# S04 — seção com uma única subseção (convenção de manual, confiança baixa).
+#
+# Sugestão, nunca automática: só entre seções com indicativo decimal, e ignora
+# pré/pós-textuais. A severidade é `suggestion` porque a NBR 6024 não reprova uma
+# subseção isolada — os manuais é que pedem pelo menos duas.
+id = "abnt.s04"
+norma = "nbr6024:2012"
+grupo = "S"
+severidade = "suggestion"
+tipo = "estrutura"
+verifica = "subsecao-unica"
+mensagem = "(o verificador escreve a mensagem)"

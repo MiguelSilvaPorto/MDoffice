@@ -120,7 +120,8 @@ console.log("\nlint da carga");
   const L = await empacotar("src/broker/abnt/lint.ts", "lint.mjs");
   const I = await empacotar("src/broker/abnt/index.ts", "index.mjs");
 
-  // as dez passam
+  // as dez originais continuam passando; cada grupo novo (E, C, R, S…) acrescenta as
+  // suas e a carga segue exigindo que TODAS passem (uma ruim derruba a carga inteira)
   let carregadas = 0;
   let erroCarga = "";
   try {
@@ -128,7 +129,7 @@ console.log("\nlint da carga");
   } catch (e) {
     erroCarga = String(e);
   }
-  checa("as dez regras passam no lint", carregadas === 10, erroCarga);
+  checa("as dez regras originais (e as novas) passam no lint", carregadas >= 10, erroCarga);
 
   // recusas: cada exemplo quebra uma regra do schema
   const base = {
@@ -211,7 +212,10 @@ console.log("\nteste de ouro (TOML contra as dez funções)");
     return avisos;
   };
 
-  const novos = I.carregarRegras().map(I.regraDeToml);
+  // A seta NÃO é estilo: `.map(I.regraDeToml)` passaria o ÍNDICE do array como o
+  // `registro` de verificadores — na primeira regra de estrutura, "verificador
+  // desconhecido". O registro default só vale quando o segundo argumento é undefined.
+  const novos = I.carregarRegras().map((r) => I.regraDeToml(r));
 
   // As quatro famílias da Parte A, com caso para cada uma das dez regras.
   const FAMILIAS: [string, string[]][] = [
@@ -279,7 +283,7 @@ console.log("\nnormalização: NFD e CRLF (famílias 5 e 6 da especificação)")
   const N = await empacotar("src/broker/normalizar.ts", "normalizar.mjs");
   const I = await empacotar("src/broker/abnt/index.ts", "index3.mjs");
   const M = await empacotar("src/broker/mask.ts", "mask2.mjs");
-  const regras = I.carregarRegras().map(I.regraDeToml);
+  const regras = I.carregarRegras().map((r) => I.regraDeToml(r));
 
   const rodarRegras = (texto: string) => {
     const mask = M.maskNonProse(texto);
@@ -371,7 +375,7 @@ console.log("\nmedição: as dez regras sobre um TCC");
   const I = await empacotar("src/broker/abnt/index.ts", "index5.mjs");
   const M = await empacotar("src/broker/mask.ts", "mask3.mjs");
   const texto = readFileSync(join(raiz, "docs/pesquisa-formalidade-abnt.md"), "utf8");
-  const regras = I.carregarRegras().map(I.regraDeToml);
+  const regras = I.carregarRegras().map((r) => I.regraDeToml(r));
   const mask = M.maskNonProse(texto);
   const ctx = { text: texto, mask, push: () => {} };
 

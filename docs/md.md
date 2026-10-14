@@ -97,6 +97,11 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   palavras — antes e depois das correções seguras, por classe, com o trecho de cada marcador.
 - **Espaço esquecido** e **“Você quis dizer…?”**: palavras coladas viram duas; palavras a uma
   letra de uma comum ganham sugestão.
+- **Conferência ABNT de sumário e numeração**: com um **SUMÁRIO** no texto, o assistente compara
+  as entradas com os títulos — falta uma subseção? sobrou uma entrada? a ordem está trocada? um
+  pré-textual como RESUMO está listado? — e confere a **numeração progressiva**: "3" → "3.1", e um
+  "1.2" que não continua o "3" é acusado. O aviso de **subseção única** ("2 METODOLOGIA" com só
+  uma "2.1") é sugestão de forma; nada disso é corrigido sozinho.
 - **“Formatar texto”** (comando): varredura automática de pontuação com ritmo aprendido.
 
 ## Sugestões enquanto você digita

@@ -2470,3 +2470,80 @@ antigas quando fizer sentido.
 - **Linha:** nova linha `"test:abnt-docx": "node scripts/testar-abnt-docx.mts"`
 - **Porquê:** o teste do validador do `.docx` entra no mesmo padrão dos testes do motor ABNT
   (`test:abnt`, `test:abnt-contexto`).
+## src/broker/abnt/verificadores/numeracao.ts
+
+### 2026-10-14 · este commit · S01 a S04: sumário e numeração (NBR 6027 e 6024)
+- **Local:** os quatro verificadores (`sumario-bate-titulos`, `sumario-sem-pretextuais`,
+  `numeracao-progressiva`, `subsecao-unica`) e o mapa `VERIFICADORES`
+- **Linha:** “novo arquivo” (o arquivo existia vazio, esperando o grupo)
+- **Porquê:** o grupo S compara **documento**, não padrão — o julgamento não cabe em TOML, e as
+  decisões de precisão (falso positivo é pior que falso negativo) são o conteúdo:
+  (1) o sumário é lido como linha de lista/texto com numeração, destaque, link e pontilhado de
+  página — o pontilhado é o que identifica a página, porque dois espaços sozinhos não bastam
+  (senão um título que termina em número perderia o próprio texto);
+  (2) a ausência no sumário é cobrada só até a seção terciária (`profundidade`, opção do TOML —
+  quase nenhum manual exige a quaternária) e só para seções que não são de pré/pós-textuais;
+  (3) a entrada sem título correspondente só acusa quando tem forma de seção (numeração ou caixa
+  alta) — uma linha solta no sumário não vira aviso;
+  (4) S03 só compara uma seção com o pai estrutural quando **os dois** têm indicativo (sem série
+  para continuar, silêncio); a sequência dos irmãos e a ausência de indicativo não são conferidas;
+  (5) S04 exige indicativo decimal nos dois lados (sem numeração o aviso seria ruído em qualquer
+  README) e é `suggestion`, sem `auto`. Nenhum dos quatro devolve `fix`: reordenar/renumerar
+  depende do que o autor quis dizer.
+
+## src/broker/abnt/regras/s01.toml … s04.toml
+
+### 2026-10-14 · este commit · as regras do grupo S viram dado
+- **Local:** “novo arquivo” (quatro arquivos)
+- **Linha:** —
+- **Porquê:** a DECLARAÇÃO é dado (id, norma, severidade, `verifica`, opções) e o julgamento está
+  no verificador. S01 declara `opcoes = { profundidade = 3 }`; S04 nasce `suggestion` (subseção
+  única é convenção de manual, não regra dura) — o perfil institucional pode suavizar/endurecer
+  cada uma sem tocar no código.
+
+## src/broker/abnt/index.ts
+
+### 2026-10-14 · este commit · as quatro regras entram na carga
+- **Local:** imports do fim do arquivo + lista `FONTES` (fim)
+- **Linha:** `…latinismos.toml` → `…latinismos.toml, s01.toml, s02.toml, s03.toml, s04.toml`
+- **Porquê:** a ordem da lista importa (o motor para na primeira regra que avisa um trecho): as
+  novas entram **no fim**, depois das dez antigas, sem deslocar nenhuma. Uma regra S com problema
+  derruba a carga inteira, como qualquer outra.
+
+## scripts/testar-abnt-numeracao.mts
+
+### 2026-10-14 · este commit · teste do grupo S
+- **Local:** “novo arquivo”
+- **Linha:** —
+- **Porquê:** cada caso tem os dois lados (acusa/não acusa) e roda pelo caminho real
+  (TOML → lint → interpretador → verificador). Cobre: sumário completo e tolerado (link, negrito,
+  item sem página), subseção ausente, entrada fantasma, ordem trocada, profundidade lida da
+  opção, pré-textuais fora do sumário, continuidade da numeração (o exemplo do catálogo),
+  indicativo mais fundo que a estrutura, subseção única e o caso integrado das quatro juntas
+  (todo aviso com trecho; nenhum com correção).
+
+## scripts/testar-regras-abnt.mts
+
+### 2026-10-14 · este commit · a carga passa de dez regras; `.map(I.regraDeToml)`
+- **Local:** “lint da carga” e as três chamadas `carregarRegras().map(…)`
+- **Linha:** `carregadas === 10` → `carregadas >= 10`; `.map(I.regraDeToml)` →
+  `.map((r) => I.regraDeToml(r))`
+- **Porquê:** com os grupos novos a carga deixa de ser dez (o `>=` preserva a prova: qualquer
+  regra ruim derruba a carga inteira e o teste continua vermelho). E o `.map` direto passava o
+  **índice** do array como o `registro` de verificadores — a primeira regra de estrutura quebrava
+  com “verificador desconhecido”; o teste antigo nunca tinha visto uma.
+
+## package.json
+
+### 2026-10-14 · este commit · test:abnt-numeracao
+- **Local:** `scripts`
+- **Linha:** `"test:abnt-contexto": …` → `… , "test:abnt-numeracao": "node scripts/testar-abnt-numeracao.mts"`
+- **Porquê:** o teste do grupo roda pelo nome, como os outros testes ABNT.
+
+## docs/md.md
+
+### 2026-10-14 · este commit · conferência ABNT de sumário e numeração
+- **Local:** “Escrita assistida (português, offline)”
+- **Linha:** bala nova
+- **Porquê:** as regras S01–S04 são visíveis (avisos no editor) e o documento do módulo descreve
+  o que o app faz.

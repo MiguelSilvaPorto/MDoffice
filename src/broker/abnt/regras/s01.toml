@@ -1,0 +1,17 @@
+# S01 — o sumário bate com os títulos do corpo (presença, grafia e ordem), NBR 6027.
+#
+# O verificador aceita item de sumário como linha de lista/texto, com numeração,
+# destaque, link, pontilhado e número de página; a comparação é por título normalizado
+# (sem numeração e sem acento). Sem sumário no documento é silêncio: quem cobra o
+# elemento é a regra E01.
+#
+# `profundidade` é o nível máximo cobrado do sumário (3 = até a seção terciária; a
+# instituição que exigir a quaternária sobe para 4).
+id = "abnt.s01"
+norma = "nbr6027:2012"
+grupo = "S"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "sumario-bate-titulos"
+opcoes = { profundidade = 3 }
+mensagem = "(o verificador escreve a mensagem)"

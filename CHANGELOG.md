@@ -32,6 +32,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Regras ABNT do sumário e da numeração (S01–S04)**: o motor de estrutura agora compara o
+  **sumário** com os títulos do texto — subseção que falta, entrada sobrando, ordem trocada e
+  pré-textuais listados (RESUMO, LISTAS…) — e confere a **numeração progressiva**: a subseção
+  continua o número da seção superior ("3" → "3.1", nunca "1.2" depois de "3") e não desce mais
+  níveis do que a estrutura de títulos alcança. Fecha com o aviso de **subseção única**
+  ("2 METODOLOGIA" com uma só "2.1"), que é **sugestão de forma**, nunca automática. O sumário
+  em Markdown é aceito como lista com numeração, destaque, link e pontilhado de página; nada
+  disso é corrigido sozinho — a máquina não sabe qual seção o autor quis dizer.
 - **Motor ABNT — contexto de documento e regras de estrutura**: o motor sabia conferir
   padrão de texto, mas não sabia *onde* no documento — e as normas cobram exatamente isso
   ("a lista de referências existe", "o sumário bate com os títulos", "o resumo tem
