@@ -285,6 +285,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   passar para "só sugestão" erros óbvios como **"atensao" → "atenção"**; a dominância de uso (5×)
   voltou a aplicá-los sozinha — medido no corpus: **32/32 casos corrigidos e 32/32 textos
   corretos preservados**.
+- **O corretor conhece as confusões do português e o teclado ABNT2**: a nota dos candidatos passa a
+  ser **ponderada por classe** (c↔ç, s↔z, g↔j, e↔i, o↔u, m↔n, "h" mudo, letra dobrada, inversão de
+  vizinhas) e pela **vizinhança de teclas**; as **grafias prováveis** (ss↔ç, ch↔x, dobradas) são
+  procuradas direto no vocabulário. "excessao" → **exceção**, "analize" → **análise**, "pesquiza" →
+  **pesquisa** e "obrigdao" → **obrigado** agora saem certos — e sozinhos. Corpus: **34/34**.
 
 **Ferramentas (dev)**
 

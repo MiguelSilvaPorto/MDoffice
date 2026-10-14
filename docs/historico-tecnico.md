@@ -2061,6 +2061,49 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** as regras entram no pacote como texto, do mesmo jeito que no app. O primeiro
   `build()` já tinha o plugin e o segundo não: o erro aparecia só na parte do aprendizado.
 
+## src/broker/spell/teclado.ts (novo)
+
+### 2026-10-13 · confusões e teclado · vizinhança do ABNT2
+- **Local:** arquivo inteiro (`FILEIRAS`, `VIZINHAS`, `saoVizinhas`, `custoDeTecla`)
+- **Linha:** `novo`
+- **Porquê:** errar para a tecla do lado ("obrigdao" por "obrigado") custava o mesmo que trocar uma
+  letra por qualquer outra. A grade de 3×3 em volta de cada tecla dá metade do custo para vizinhas
+  (diagonais incluídas); a mesma tecla custa zero. As fileiras são tratadas alinhadas — é uma
+  aproximação, e o comentário diz isso.
+
+## src/broker/spell/confusoes.ts (novo)
+
+### 2026-10-13 · confusões e teclado · as confusões do português com custo
+- **Local:** `PARES`/`CUSTO_DO_PAR`, `custoDeTroca`, `distanciaPonderada`, `PARES_DE_LETRAS`,
+  `DOBRAS`, `variantesDeConfusao`
+- **Linha:** `novo`
+- **Porquê:** a distância de edição tratava c↔ç, s↔z, g↔j, m↔n, "h" mudo e letra dobrada como
+  "qualquer troca". Agora cada classe tem custo (0,3-0,5), a inversão de vizinhas custa 0,5 e a
+  distância vira ponderada (Damerau-Levenshtein com custos). As **variantes** (ss↔ç, ch↔x, dobradas,
+  um por vez) são procuradas direto no vocabulário — e, como a busca é pela forma normalizada, a
+  troca de par e a de acento se compõem ("excessao" → "exceçao" casa com "exceção").
+
+## src/broker/spell/candidatos.ts
+
+### 2026-10-13 · confusões e teclado · custo ponderado e busca das variantes
+- **Local:** `Indice` (novo `porNormalizada`), `construirIndice` e `candidatos`
+- **Linha:** a coleta virou um `Map` por forma normalizada (fica a melhor nota); a nota usa
+  `distanciaPonderada` no lugar de `distancia`; novo passo que procura as variantes de confusão em
+  `porNormalizada` (custo ≤ `maxDist + 0,6`, arredondado ao teto do índice)
+- **Porquê:** o índice de trigramas aproxima pelo miolo da palavra; as confusões precisam de uma
+  segunda porta de entrada (a grafia provável), e o custo ponderado faz o candidato certo subir
+  quando a diferença é uma confusão conhecida. O dedupe por forma normalizada evita o mesmo
+  candidato aparecer duas vezes com notas diferentes.
+
+## scripts/testar-correcao.mjs
+
+### 2026-10-13 · confusões e teclado · 9 verificações
+- **Local:** bloco "confusões e teclado"
+- **Linha:** `novo`
+- **Porquê:** o teclado (vizinha = metade, mesma tecla = zero), o custo por classe, a distância
+  ponderada (classe, h mudo, dobra, inversão e troca sem relação) e as variantes (pares trocados,
+  limite de explosão).
+
 ---
 
 ## Próximos registros

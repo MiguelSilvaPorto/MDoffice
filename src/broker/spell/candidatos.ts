@@ -21,6 +21,8 @@
 // uma palavra comum porém distante passa na frente da certa; baixa demais e o
 // empate entre duas palavras igualmente próximas fica arbitrário.
 
+import { distanciaPonderada, variantesDeConfusao } from "./confusoes";
+
 /** Palavra com acento removido e minúscula — a forma usada para comparar. */
 export function normalizar(palavra: string): string {
   return palavra
@@ -58,6 +60,8 @@ export interface Indice {
   palavras: string[];
   /** forma normalizada de cada palavra (mesma ordem) */
   normalizadas: string[];
+  /** forma normalizada → posição (a busca das variantes de confusão usa isto) */
+  porNormalizada: Map<string, number>;
 }
 
 /** Pedaços de 3 letras de uma palavra, sem repetir (o índice não precisa de peso). */
@@ -76,16 +80,18 @@ function trigramas(palavra: string): string[] {
 export function construirIndice(palavras: string[]): Indice {
   const baldes = new Map<string, number[]>();
   const normalizadas: string[] = new Array(palavras.length);
+  const porNormalizada = new Map<string, number>();
   for (let i = 0; i < palavras.length; i++) {
     const n = normalizar(palavras[i]);
     normalizadas[i] = n;
+    if (!porNormalizada.has(n)) porNormalizada.set(n, i);
     for (const g of trigramas(n)) {
       let balde = baldes.get(g);
       if (!balde) baldes.set(g, (balde = []));
       balde.push(i);
     }
   }
-  return { baldes, palavras, normalizadas };
+  return { baldes, palavras, normalizadas, porNormalizada };
 }
 
 /**
@@ -169,9 +175,23 @@ export function candidatos(
   const limite = opcoes.limite ?? 40;
   const peso = opcoes.pesoFrequencia ?? PESO_FREQUENCIA;
 
-  // 1) candidatos: quem compartilha trigramas
+  // Um candidato por forma normalizada, ficando com a melhor nota.
+  const achados = new Map<string, Candidato>();
+  const considerar = (i: number, custo: number) => {
+    const c = indice.normalizadas[i];
+    const n = frequencia.contagem.get(c) ?? 0;
+    const pesoFreq = Math.log1p(n) / frequencia.maxLog;
+    const nota = -custo + peso * pesoFreq;
+    const atual = achados.get(c);
+    if (atual === undefined || nota > atual.nota) {
+      achados.set(c, { palavra: indice.palavras[i], distancia: custo, contagem: n, nota });
+    }
+  };
+
+  // 1) quem compartilha pedaços de 3 letras com a palavra errada. O custo é PONDERADO:
+  //    trocar "c" por "ç", "s" por "z" ou errar a tecla vizinha custa menos que uma
+  //    troca qualquer — é o que faz o candidato certo subir na frente dos parecidos.
   const vistos = new Set<number>();
-  const achados: Candidato[] = [];
   for (const g of trigramas(p)) {
     const balde = indice.baldes.get(g);
     if (!balde) continue;
@@ -180,15 +200,27 @@ export function candidatos(
       vistos.add(i);
       const c = indice.normalizadas[i];
       if (Math.abs(c.length - p.length) > maxDist) continue;
-      const d = distancia(p, c, maxDist);
+      const d = distanciaPonderada(p, c, maxDist);
       if (d > maxDist) continue;
-      const n = frequencia.contagem.get(c) ?? 0;
-      const pesoFreq = Math.log1p(n) / frequencia.maxLog;
-      achados.push({ palavra: indice.palavras[i], distancia: d, contagem: n, nota: -d + peso * pesoFreq });
+      considerar(i, d);
     }
   }
 
-  // 2) ordena: nota (distância + frequência) e, no empate, mais frequente primeiro
-  achados.sort((a, b) => b.nota - a.nota || b.contagem - a.contagem || a.palavra.localeCompare(b.palavra));
-  return achados.slice(0, limite);
+  // 2) as GRATIAS prováveis da palavra errada (ss↔ç, ch↔x, dobradas…), procuradas
+  //    direto no vocabulário: pega o caso em que o índice de trigramas não aproxima.
+  //    Como a busca é pela forma normalizada, a troca de par e a de acento se compõem
+  //    ("excessao" → "exceçao" que, normalizado, casa com "exceção").
+  for (const variante of variantesDeConfusao(p)) {
+    const i = indice.porNormalizada.get(variante);
+    if (i === undefined || vistos.has(i)) continue;
+    const custo = distanciaPonderada(p, variante, maxDist + 0.6);
+    if (custo > maxDist + 0.6) continue;
+    vistos.add(i);
+    considerar(i, Math.min(custo, maxDist));
+  }
+
+  // 3) ordena: nota (custo ponderado + frequência) e, no empate, mais frequente primeiro
+  const lista = [...achados.values()];
+  lista.sort((a, b) => b.nota - a.nota || b.contagem - a.contagem || a.palavra.localeCompare(b.palavra));
+  return lista.slice(0, limite);
 }

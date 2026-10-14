@@ -343,5 +343,34 @@ const DEC = await empacotar("src/broker/spell/decisao.ts", "decisao.mjs");
   DEC.limparCalibragem();
 }
 
+// ---------------------------------------------------------------- confusões e teclado
+const CF = await empacotar("src/broker/spell/confusoes.ts", "confusoes.mjs");
+const TC = await empacotar("src/broker/spell/teclado.ts", "teclado.mjs");
+
+{
+  ok("teclado: vizinha do ABNT2 custa metade", TC.custoDeTecla("a", "s") === 0.5 && TC.custoDeTecla("a", "p") === 1);
+  ok("teclado: a própria tecla não custa nada", TC.custoDeTecla("a", "a") === 0);
+  ok(
+    "confusões: par do português custa menos que troca comum",
+    CF.custoDeTroca("c", "ç") < 0.5 && CF.custoDeTroca("g", "j") < 0.5 && CF.custoDeTroca("a", "p") === 1,
+    `cç=${CF.custoDeTroca("c", "ç")} gj=${CF.custoDeTroca("g", "j")}`
+  );
+  ok(
+    "confusões: distância ponderada desconta a classe",
+    CF.distanciaPonderada("geito", "jeito", 2) < 0.6 && CF.distanciaPonderada("casa", "caza", 2) <= 0.5,
+    `geito→jeito=${CF.distanciaPonderada("geito", "jeito", 2)} casa→caza=${CF.distanciaPonderada("casa", "caza", 2)}`
+  );
+  ok(
+    "confusões: h mudo e dobra de letra são baratos",
+    CF.distanciaPonderada("hoje", "oje", 2) <= 0.5 && CF.distanciaPonderada("exesso", "exeso", 2) <= 0.5,
+    `hoje→oje=${CF.distanciaPonderada("hoje", "oje", 2)} exesso→exeso=${CF.distanciaPonderada("exesso", "exeso", 2)}`
+  );
+  ok("confusões: inversão de vizinhas custa meia edição", CF.distanciaPonderada("maneira", "maneria", 2) <= 0.6, String(CF.distanciaPonderada("maneira", "maneria", 2)));
+  const variantes = CF.variantesDeConfusao("excessao");
+  ok("confusões: variantes trocam pares de letras", variantes.includes("exceçao") && variantes.includes("excesao"), variantes.slice(0, 6).join(", "));
+  ok("confusões: o limite segura a explosão", CF.variantesDeConfusao("excessosss", 5).length <= 5);
+  ok("confusões: troca sem relação custa a edição inteira", CF.distanciaPonderada("casa", "lua", 2) > 2);
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);
