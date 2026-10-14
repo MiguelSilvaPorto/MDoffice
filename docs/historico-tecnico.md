@@ -5073,6 +5073,15 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   precisa dizer para onde o documento novo vai — e o teste do Excel (um achado, não desta tarefa)
   ficou registrado em Ferramentas (dev).
 
+## CHANGELOG.md
+
+### 2026-10-14 · promoção · as três entradas da pasta padrão passam para Adicionado
+- **Local:** Geral → Adicionado → Frontend (as duas da pasta padrão) e → Ferramentas (dev) (o achado do `test:excel`)
+- **Linha:** as três entradas saíram de **Não adicionado** (o código já estava na `main` desde `0a98b7e`)
+- **Porquê:** a lição de promover no fecho — registrada em “Ferramentas (dev)” na tarefa anterior —
+  não foi aplicada no fecho da pasta padrão. A entrada volta ao lugar certo: o que está na `main`
+  mora em **Adicionado**, e o dono da tarefa promove no **mesmo commit** em que o código entra.
+
 ---
 
 ## Próximos registros
