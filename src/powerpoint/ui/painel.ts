@@ -204,6 +204,10 @@ export class Painel {
     const vals = sel.map(valorDe);
     const iguais = vals.every((v) => Math.abs(v - vals[0]) < 0.01);
     const valor = vals.length ? vals[0] : cantos[0];
+    // várias formas escolhidas com cantos diferentes: o slider fica "em branco" e o painel avisa
+    const outras = est.formas.map((x) => cantosDe(x)).filter((c): c is [number, number, number, number] => !!c);
+    const mistas = outras.some((c) => sel.some((cx) => Math.abs(c[CANTOS.indexOf(cx)] - valorDe(cx)) > 0.01));
+    const coerente = iguais && !mistas;
     const botao = (c: Canto) => {
       const on = sel.includes(c);
       return `<button type="button" class="pf-canto c-${c}${on ? " on" : ""}" data-click="canto-sel" data-valor="${c}" title="Canto ${CANTO_ROTULO[c]} — ${n1(valorDe(c))}%" aria-pressed="${on}">${n1(valorDe(c))}</button>`;
@@ -222,7 +226,7 @@ export class Painel {
           <span class="pf-cantos-quadro" aria-hidden="true"></span>
           ${botao("tl")}${botao("tr")}${botao("br")}${botao("bl")}
         </div>
-        <label class="pf-linha"><span>Raio</span><span class="pf-campo"><input type="range" data-act="canto" min="0" max="50" step="0.5" value="${iguais ? valor : ""}"><small>${sel.length} de 4 canto(s)${iguais ? "" : " · valores diferentes"}</small></span></label>
+        <label class="pf-linha"><span>Raio</span><span class="pf-campo"><input type="range" data-act="canto" min="0" max="50" step="0.5" value="${coerente ? valor : ""}"><small>${sel.length} de 4 canto(s)${coerente ? "" : mistas ? " · formas com valores diferentes" : " · valores diferentes"}</small></span></label>
         <div class="pf-botoes">
           <button type="button" class="btn small" data-click="canto-todos"${sel.length === 4 ? " disabled" : ""}>Todos</button>
           <button type="button" class="btn small" data-click="canto-opostos">Opostos</button>

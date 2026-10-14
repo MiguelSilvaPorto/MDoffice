@@ -87,7 +87,7 @@ type Modo =
   | { t: "girar"; ids: string[]; inicial: Map<string, { box: ShapeBox; rot: number }>; centro: { x: number; y: number }; angulo0: number }
   | { t: "retangulo"; x0: number; y0: number; soma: boolean; base: string[] }
   | { t: "criar"; x0: number; y0: number }
-  | { t: "canto"; ids: string[]; dono: string; alvo: Canto; sel: Canto[]; inicial: Map<string, [number, number, number, number]> }
+  | { t: "canto"; ids: string[]; alvo: Canto; sel: Canto[]; colapsar: boolean; mexeu: boolean; partida: { x: number; y: number }; ref: { box: ShapeBox; rot: number }; inicial: Map<string, [number, number, number, number]> }
   | { t: "traco"; pontos: { x: number; y: number }[] }
   | { t: "celulas"; id: string; r0: number; c0: number };
 
@@ -105,6 +105,8 @@ export class Stage {
   private ultimo: PointerEvent | null = null;
   /** aviso flutuante do arrasto de canto ("22% · 3 cantos"), desenhado junto da seleção */
   private hudCanto: string | null = null;
+  /** último clique parado numa alça de canto (para o duplo clique "deixar quadrado") */
+  private cliqueCanto: { id: Canto; t: number } | null = null;
 
   constructor(hooks: StageHooks) {
     this.hooks = hooks;
@@ -228,36 +230,42 @@ export class Stage {
       );
     };
     // alças de canto: cada uma senta no próprio arco; em raio 0 fica um tico para dentro,
-    // para não cobrir a alça de redimensionar que fica exatamente no canto
-    const alcasDeCanto = (s: Shape): string => {
-      const c = s.bloqueada ? null : cantosDe(s);
-      if (!c) return "";
-      const bw = (s.box.w / 100) * ctx.dim.w;
-      const bh = (s.box.h / 100) * ctx.dim.h;
+    // para não cobrir a alça de redimensionar que fica exatamente no canto.
+    // Vale na forma única e no quadro do grupo (aí a posição usa o maior raio de cada canto).
+    const alcasDeCanto = (b: ShapeBox, valores: [number, number, number, number] | null): string => {
+      if (!valores) return "";
+      const bw = (b.w / 100) * ctx.dim.w;
+      const bh = (b.h / 100) * ctx.dim.h;
       const ss = Math.min(bw, bh);
       const recuo = (v: number) => 0.2929 * (v / 100) * ss + this.afastamentoPt(ctx.dim);
       const pctX = (v: number) => r2((recuo(v) / bw) * 100);
       const pctY = (v: number) => r2((recuo(v) / bh) * 100);
       const pos: Record<Canto, [number, number]> = {
-        tl: [pctX(c[0]), pctY(c[0])],
-        tr: [100 - pctX(c[1]), pctY(c[1])],
-        br: [100 - pctX(c[2]), 100 - pctY(c[2])],
-        bl: [pctX(c[3]), 100 - pctY(c[3])],
+        tl: [pctX(valores[0]), pctY(valores[0])],
+        tr: [100 - pctX(valores[1]), pctY(valores[1])],
+        br: [100 - pctX(valores[2]), 100 - pctY(valores[2])],
+        bl: [pctX(valores[3]), 100 - pctY(valores[3])],
       };
       const alca = (id: Canto) =>
-        `<span class="pp-canto${ctx.cantosSel.includes(id) ? " on" : ""}" data-canto="${id}" title="Canto ${CANTO_ROTULO[id]} — ${r1(c[CANTOS.indexOf(id)])}%" style="left:${pos[id][0]}%;top:${pos[id][1]}%"></span>`;
+        `<span class="pp-canto${ctx.cantosSel.includes(id) ? " on" : ""}" data-canto="${id}" title="Canto ${CANTO_ROTULO[id]} — ${r1(valores[CANTOS.indexOf(id)])}%" style="left:${pos[id][0]}%;top:${pos[id][1]}%"></span>`;
       return CANTOS.map(alca).join("") + (this.hudCanto ? `<span class="pp-canto-hud">${this.hudCanto}</span>` : "");
+    };
+    /** O maior raio de cada canto entre as formas escolhidas (posição das alças do grupo). */
+    const cantosDoGrupo = (formas: Shape[]): [number, number, number, number] | null => {
+      const lista = formas.map((s) => (s.bloqueada ? null : cantosDe(s))).filter((c): c is [number, number, number, number] => !!c);
+      if (!lista.length) return null;
+      return [0, 1, 2, 3].map((i) => Math.max(...lista.map((c) => c[i]))) as [number, number, number, number];
     };
     if (sel.length === 1 && !ctx.editando) {
       const s = sel[0];
-      caixa(s.box, s.rot, s.bloqueada ? "bloqueada" : "", !s.bloqueada, alcasDeCanto(s));
+      caixa(s.box, s.rot, s.bloqueada ? "bloqueada" : "", !s.bloqueada, s.bloqueada ? "" : alcasDeCanto(s.box, cantosDe(s)));
       if (s.tabela) html[html.length - 1] = html[html.length - 1].replace(/<\/div>$/, `<span class="pp-mover" data-mover title="Mover a tabela">✥</span></div>`);
     } else if (sel.length === 1 && ctx.editando === sel[0].id) {
       caixa(sel[0].box, sel[0].rot, "editando", false);
     } else if (sel.length > 1) {
       for (const s of sel) caixa(s.box, s.rot, "item", false);
       const m = envolventeDe(sel, ctx.dim)!;
-      caixa(m, 0, "multi", sel.some((s) => !s.bloqueada));
+      caixa(m, 0, "multi", sel.some((s) => !s.bloqueada), alcasDeCanto(m, cantosDoGrupo(sel)));
     }
     if (ctx.celulas) {
       const cs = ctx.celulas;
@@ -334,35 +342,55 @@ export class Stage {
       return;
     }
 
-    // alça de canto: escolhe os cantos (clique = só ele; Shift = soma/remove) e começa o arrasto
+    // alça de canto: clique escolhe SÓ aquele canto (Shift liga/desliga sem arrastar); arrastar
+    // muda os escolhidos — inclusive com várias formas selecionadas (aí vale para todas)
     const cantoEl = alvo.closest<HTMLElement>("[data-canto]");
-    if (cantoEl && ctx.selecao.length === 1) {
-      const s = ctx.shapes.find((x) => x.id === ctx.selecao[0]);
-      const base = s && !s.bloqueada ? cantosDe(s) : null;
-      if (s && base) {
+    if (cantoEl && ctx.selecao.length) {
+      const escolhidas = ctx.shapes.filter((x) => ctx.selecao.includes(x.id) && !x.bloqueada);
+      const comCanto = escolhidas.filter((s) => cantosDe(s));
+      if (comCanto.length) {
         const id = cantoEl.dataset.canto as Canto;
-        const soma = e.shiftKey || e.ctrlKey || e.metaKey;
-        let selC: Canto[];
-        if (soma) {
-          selC = ctx.cantosSel.includes(id)
+        if (e.shiftKey || e.ctrlKey || e.metaKey) {
+          const novo = ctx.cantosSel.includes(id)
             ? ctx.cantosSel.length > 1
               ? ctx.cantosSel.filter((c) => c !== id)
               : ctx.cantosSel
             : [...ctx.cantosSel, id];
-        } else {
-          selC = ctx.cantosSel.includes(id) ? ctx.cantosSel : [id];
+          this.hooks.aoSelecionarCantos(novo);
+          e.preventDefault();
+          return;
         }
+        // duplo clique na alça (detectado aqui, sem depender do evento nativo: o overlay é
+        // reconstruído entre os cliques e o navegador perde o par): aquele canto volta a quadrado
+        if (this.cliqueCanto?.id === id && performance.now() - this.cliqueCanto.t < 450) {
+          this.cliqueCanto = null;
+          const patches = new Map<string, Partial<Shape>>();
+          for (const sh of comCanto) {
+            const base = cantosDe(sh);
+            if (base) patches.set(sh.id, { cantos: valoresComSelecao(base, [id], 0), geom: "roundRect", adj: undefined });
+          }
+          if (patches.size) {
+            this.hooks.aoSelecionarCantos([id]);
+            this.hooks.aoTransformar(new Map(), "inicio");
+            this.hooks.aoTransformar(patches, "fim");
+          }
+          e.preventDefault();
+          return;
+        }
+        // clique num canto já escolhido mantém o grupo para o arrasto; sem arrasto, colapsa nele
+        const colapsar = ctx.cantosSel.includes(id) && ctx.cantosSel.length > 1;
+        const selC: Canto[] = colapsar ? ctx.cantosSel : [id];
         this.hooks.aoSelecionarCantos(selC);
         const inicial = new Map<string, [number, number, number, number]>();
-        for (const sh of ctx.shapes.filter((x) => ctx.selecao.includes(x.id) && !x.bloqueada)) {
-          const c = cantosDe(sh);
-          if (c) inicial.set(sh.id, c);
-        }
-        if (!inicial.size) return;
+        for (const sh of comCanto) inicial.set(sh.id, cantosDe(sh)!);
+        const ref =
+          escolhidas.length === 1
+            ? { box: { ...escolhidas[0].box }, rot: escolhidas[0].rot }
+            : { box: envolventeDe(escolhidas, ctx.dim) ?? { ...escolhidas[0].box }, rot: 0 };
         this.slideEl.setPointerCapture(e.pointerId);
         this.hooks.aoTransformar(new Map(), "inicio");
         this.hudCanto = null;
-        this.modo = { t: "canto", ids: [...inicial.keys()], dono: s.id, alvo: id, sel: selC, inicial };
+        this.modo = { t: "canto", ids: [...inicial.keys()], alvo: id, sel: selC, colapsar, mexeu: false, partida: p, ref, inicial };
         e.preventDefault();
         return;
       }
@@ -498,13 +526,14 @@ export class Stage {
     const p = this.pontoEmPct(e);
 
     if (modo.t === "canto") {
-      const dono = ctx.shapes.find((x) => x.id === modo.dono);
-      if (!dono) return;
-      const b = paraPt(dono.box, ctx.dim);
+      // zona morta: um clique parado não pode mexer no valor (só o arrasto de verdade)
+      if (Math.abs(p.x - modo.partida.x) + Math.abs(p.y - modo.partida.y) > 0.25) modo.mexeu = true;
+      if (!modo.mexeu) return;
+      const b = paraPt(modo.ref.box, ctx.dim);
       const pt = this.pontoEmPt(e, ctx.dim);
-      // ponto no espaço local da forma (desfaz a rotação em volta do centro)
+      // ponto no espaço local (desfaz a rotação em volta do centro — a referência do grupo não gira)
       const c0 = centro(b);
-      const rad = (-dono.rot * Math.PI) / 180;
+      const rad = (-modo.ref.rot * Math.PI) / 180;
       const dx = pt.x - c0.x;
       const dy = pt.y - c0.y;
       const lx = c0.x + dx * Math.cos(rad) - dy * Math.sin(rad);
@@ -725,6 +754,8 @@ export class Stage {
       this.desenharSelecao();
       return;
     }
+    if (modo.t === "canto" && !modo.mexeu) this.cliqueCanto = { id: modo.alvo, t: performance.now() };
+    if (modo.t === "canto" && modo.colapsar && !modo.mexeu) this.hooks.aoSelecionarCantos([modo.alvo]);
     this.guias = [];
     this.hudCanto = null;
     this.hooks.aoTransformar(new Map(), "fim");
@@ -733,24 +764,8 @@ export class Stage {
 
   private aoDuploClique(e: MouseEvent): void {
     const alvo = e.target as HTMLElement;
-    // duplo clique na alça de canto: aquele canto volta a ser quadrado (0%)
-    const cantoEl = alvo.closest<HTMLElement>("[data-canto]");
-    if (cantoEl) {
-      const ctx = this.hooks.contexto();
-      const idc = cantoEl.dataset.canto as Canto;
-      const sel = ctx.shapes.filter((s) => ctx.selecao.includes(s.id) && !s.bloqueada);
-      const patches = new Map<string, Partial<Shape>>();
-      for (const s of sel) {
-        const base = cantosDe(s);
-        if (base) patches.set(s.id, { cantos: valoresComSelecao(base, [idc], 0), geom: "roundRect", adj: undefined });
-      }
-      if (patches.size) {
-        this.hooks.aoSelecionarCantos([idc]);
-        this.hooks.aoTransformar(new Map(), "inicio");
-        this.hooks.aoTransformar(patches, "fim");
-      }
-      return;
-    }
+    // (o duplo clique nas alças de canto é detectado no aoPressionar: o overlay é reconstruído
+    // entre os cliques e o evento nativo se perde)
     const formaEl = alvo.closest<HTMLElement>(".pp-shape[data-shape]");
     if (!formaEl) return;
     const id = formaEl.dataset.shape!;

@@ -2777,6 +2777,25 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   exatamente sobre a alça de redimensionar e a engoliriam. O valor é arredondado a 0,5% para o
   número bater com o painel.
 
+### 2026-10-14 · este commit · clique escolhe o canto; o grupo iguala as caixas
+- **Local:** `aoPressionar` (alça de canto), `aplicar`/`Modo` `{ t: "canto" }`, `aoSoltar`,
+  `desenharSelecao` (`alcasDeCanto` e `cantosDoGrupo`)
+- **Linha:** o clique passa a escolher **só aquele canto**; `Shift+clique` liga/desliga **sem
+  arrastar**; clique parado num canto já escolhido colapsa a escolha nele (no `aoSoltar`, via
+  `colapsar`); o arrasto ganhou **zona morta** (`partida` do ponteiro) para o clique não mexer no
+  valor; o quadro de **várias formas** ganhou as quatro alças (posição pelo maior raio de cada
+  canto) e a referência do arrasto virou `modo.ref` (a forma sozinha ou a envolvente do grupo);
+  o **duplo clique** (deixar o canto quadrado) passou a ser detectado no próprio palco
+  (`cliqueCanto` + janela de 450 ms), porque o overlay é reconstruído entre os cliques e o evento
+  `dblclick` nativo se perdia
+- **Porquê:** o pedido foi "selecionar e ajustar **somente** o canto que quero" e "selecionar mais
+  de uma caixa com cantos diferentes permitindo que **tudo fique igual**". Como os quatro cantos
+  começam marcados, o clique num deles mantinha o grupo inteiro e o arrasto mudava os quatro: agora
+  o clique deixa claro o alvo (colapsa nele), o `Shift` monta o grupo desejado e só o arrasto
+  altera valor — a zona morta evita que um clique de 1 px aplique 0,5%.
+- **Porquê (grupo):** as alças do quadro são o mesmo gesto em escala de grupo — arrastar iguala os
+  cantos escolhidos de **todas** as caixas numa tacada, sem depender do painel.
+
 ## src/powerpoint/powerpoint.ts
 
 ### 2026-10-14 · este commit · estado dos cantos escolhidos e as ações
@@ -2803,6 +2822,14 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   visível (o do palco é o atalho). A assinatura do painel ganhou `s.cantos` e `est.cantosSel`,
   senão o bloco não redesenhava quando o usuário clicava num canto. Formas de canto **cortado**
   (snip*) continuam com o slider do corte, agora rotulado "Cantos recortados".
+
+### 2026-10-14 · este commit · aviso de formas com valores diferentes
+- **Local:** `htmlCantos`
+- **Linha:** o slider fica em branco e o rótulo ganha "· formas com valores diferentes" quando as
+  formas escolhidas divergem nos cantos marcados
+- **Porquê:** com **múltiplas caixas** (o caso que o recurso passou a cobrir), o número do painel
+  sozinho enganaria: ele mostra o da forma principal. O aviso diz que ainda não está tudo igual —
+  e clicar num preset (ou "Todos") é o gesto que iguala todas de uma vez.
 
 ## src/powerpoint/edicao/criar.ts · src/styles/powerpoint-edicao.css
 

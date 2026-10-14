@@ -309,14 +309,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Cantos por canto (assistido)**: dá para escolher **quais cantos** mudar — clique na alça do
-  canto no palco (`Shift` soma/remove; 1, 2, 3 ou 4) ou nos cantos do mini-diagrama do painel — e
-  arrastar arredonda **só os escolhidos**, com precisão (passo de 0,5%; `Alt` = 0,1%) e o valor na
-  tela; duplo clique na alça deixa o canto quadrado. Presets **Quadrado · Padrão · Suave · Pílula**
-  e atalhos **Todos/Opostos**; vale para formas, caixas de texto, imagens (máscara) e tabelas.
-  No arquivo, o app grava a forma **nativa** mais fiel (Retângulo arredondado, um canto, par de
-  cima/baixo ou diagonais) e avisa quando o arranjo só existe como **forma livre** — que desenha
-  igual, como o “Combinar formas” do PowerPoint.
+- **Cantos: o clique escolhe só aquele canto (e o grupo iguala tudo)**: clicar numa alça de canto
+  agora escolhe **só ela** no ajuste (antes, com os quatro marcados, o clique mantinha os quatro e
+  o arrasto mexia em todos); clique **parado** num canto já marcado deixa só ele, `Shift+clique`
+  soma/remove **sem arrastar** (não muda valor sem querer) e o arrasto mexe **apenas nos cantos
+  escolhidos**, com cada canto guardando o valor que tinha. Com **várias formas selecionadas**, o
+  quadro do grupo ganha as quatro alças: arrastar (ou usar os presets do painel) iguala os cantos
+  de **todas as caixas** de uma vez, e o painel avisa quando as formas têm valores diferentes.
 
 ### Adicionado (na main)
 
@@ -376,6 +375,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Seleção do app na fita, no painel e no “Configurar apresentação”**: fonte/tamanho da fita, os
   campos do painel (transição, animação, layout…) e os três do diálogo de configuração trocam a
   lista cinza do sistema pelo menu suspenso do app.
+- **Cantos por canto (assistido)**: dá para escolher **quais cantos** mudar — clique na alça do
+  canto no palco (`Shift` soma/remove; 1, 2, 3 ou 4) ou nos cantos do mini-diagrama do painel — e
+  arrastar arredonda **só os escolhidos**, com precisão (passo de 0,5%; `Alt` = 0,1%) e o valor na
+  tela; duplo clique na alça deixa o canto quadrado. Presets **Quadrado · Padrão · Suave · Pílula**
+  e atalhos **Todos/Opostos**; vale para formas, caixas de texto, imagens (máscara) e tabelas.
+  No arquivo, o app grava a forma **nativa** mais fiel (Retângulo arredondado, um canto, par de
+  cima/baixo ou diagonais) e avisa quando o arranjo só existe como **forma livre** — que desenha
+  igual, como o “Combinar formas” do PowerPoint.
 
 ---
 

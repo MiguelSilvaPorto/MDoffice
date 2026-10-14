@@ -25,14 +25,17 @@ avisado ao abrir (nunca some em silêncio).
 - **Formas**: galeria, desenhar arrastando, 8 alças de redimensionar, girar, **guias de
   encaixe**, seleção múltipla, **agrupar/desagrupar**, ordem (frente/trás), alinhar,
   distribuir, copiar/colar, duplicar e desfazer/refazer.
-- **Cantos assistidos**: escolha **quais cantos** editar (clique na alça do canto no palco —
-  `Shift` soma/remove; dá para mexer em 1, 2, 3 ou 4 — ou pelo mini-diagrama do painel) e arraste
-  para arredondar **só os escolhidos**, com precisão (passo de 0,5%; `Alt` = 0,1%) e o valor na
-  tela durante o arrasto; duplo clique na alça deixa o canto quadrado. Presets **Quadrado ·
-  Padrão · Suave · Pílula** e atalhos **Todos/Opostos**. Vale para formas, caixas de texto,
-  imagens (máscara) e tabelas. No `.pptx` o app grava a forma **nativa** mais fiel (Retângulo
-  arredondado, um canto, par de cima/baixo ou diagonais) e avisa quando o arranjo só existe como
-  **forma livre** — que desenha igual, como o “Combinar formas” do PowerPoint.
+- **Cantos assistidos**: **clique numa alça de canto** para editar só aquele canto (`Shift+clique`
+  soma/remove sem arrastar; clique parado num canto já escolhido deixa só ele) e arraste para
+  arredondar **apenas os escolhidos** — cada canto guarda o próprio valor (dá para ter o sup. esq.
+  em 50% e o inf. dir. em 30%, por exemplo), com precisão (passo de 0,5%; `Alt` = 0,1%) e o valor na
+  tela; duplo clique na alça deixa o canto quadrado. O mini-diagrama do painel mostra e escolhe os
+  quatro, com presets **Quadrado · Padrão · Suave · Pílula** e **Todos/Opostos**. Com **várias
+  formas selecionadas**, as alças do quadro do grupo (e o painel) aplicam o mesmo raio a **todas** —
+  é assim que caixas com cantos diferentes ficam iguais. Vale para formas, caixas de texto, imagens
+  (máscara) e tabelas. No `.pptx` o app grava a forma **nativa** mais fiel (Retângulo arredondado,
+  um canto, par de cima/baixo ou diagonais) e avisa quando o arranjo só existe como **forma livre**
+  — que desenha igual, como o “Combinar formas” do PowerPoint.
 - **Texto formatado por trecho**: negrito/itálico/sublinhado/riscado, marca-texto,
   sobrescrito, versalete, espaçamento, caixa alta/baixa, cor e limpar formatação.
 - **Tabelas**: inserir, editar células (Tab anda entre elas), mesclar/dividir, linhas e

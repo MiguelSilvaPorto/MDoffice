@@ -209,6 +209,7 @@ const TI = await empacotar("src/powerpoint/pptximport/texto.ts", "imptexto.mjs")
   ok("cantos: muda só os escolhidos", JSON.stringify(soTl.cantos) === JSON.stringify([30, 16.667, 16.667, 16.667]) && soTl.geom === "roundRect" && soTl.adj === undefined, JSON.stringify(soTl.cantos));
   const dois = F.comCantos(redondo(), ["tl", "br"], 0);
   ok("cantos: zera só os escolhidos", JSON.stringify(dois.cantos) === JSON.stringify([0, 16.667, 0, 16.667]));
+  ok("cantos: iguala formas com bases diferentes", JSON.stringify(F.valoresComSelecao([10, 0, 5, 2], ["tl", "br"], 30)) === JSON.stringify([30, 0, 30, 2]));
   ok("cantos: canto cortado (snip) não entra no raio por canto", F.cantosDe(forma("s", 0, 0, 10, 10, { geom: "snip1Rect" })) === null);
   ok("representação: 4 iguais = roundRect", F.representacaoDeCantos([20, 20, 20, 20]) === "roundRect");
   ok("representação: zeros = rect", F.representacaoDeCantos([0, 0, 0, 0]) === "rect");
