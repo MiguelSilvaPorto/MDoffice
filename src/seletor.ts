@@ -111,6 +111,9 @@ function abrirMenu(select: HTMLSelectElement, face: HTMLElement, ancora: HTMLEle
   }
   document.body.append(menu);
   const r = ancora.getBoundingClientRect();
+  // o menu abraça o conteúdo, com a largura do CAMPO como mínimo (como a lista nativa) — sem
+  // isso ele herdava os 250px dos menus "⋯" e um seletor de números virava uma janela
+  menu.style.minWidth = `${Math.ceil(r.width)}px`;
   const w = menu.offsetWidth;
   const hh = menu.offsetHeight;
   let top = r.bottom + 4;

@@ -851,7 +851,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **A lista dos seletores ficou do tamanho do campo (mudar o tamanho da fonte não abre mais uma
+  janela)**: o menu dos seletores (tamanho da fonte, fonte, e todos os `<select>` do app) usava a
+  largura e as linhas dos menus **“⋯”** — **250px de largura mínima** e **~36px por item** —, então
+  escolher “36” abria um painel gigante com barra de rolagem, fora do tamanho do campo (print do
+  usuário). Agora a lista **abraça o conteúdo** (com a **largura do campo como mínimo**, como a
+  lista nativa), as linhas são **compactas** (22px) e a altura fica presa em **60vh/330px** com a
+  rolagem dentro. Vale para a fita (PowerPoint, Word, Excel), os painéis e o editor.
 
 **Ferramentas (dev)**
 

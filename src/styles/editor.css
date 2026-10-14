@@ -108,11 +108,29 @@
 }
 
 /* Lista de um seletor (tamanho da fonte, fonte…): pode ter 20+ itens e, na altura natural,
-   cobria a tela inteira. A altura fica presa à janela e a lista rola DENTRO dela. */
+   cobria a tela inteira. A altura fica presa à janela e a lista rola DENTRO dela. O menu de
+   seletor NÃO usa a largura dos menus "⋯" (250px): ele abraça o rótulo mais largo, com a largura
+   do próprio campo como mínimo (como a lista nativa) e linhas compactas — num seletor de números
+   o menu tem que parecer continuação do campo, não uma janela. */
 .dropdown.sel-menu {
-  max-height: min(72vh, 430px);
+  width: max-content;
+  min-width: 0;
+  max-width: min(320px, calc(100vw - 16px));
+  max-height: min(60vh, 330px);
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+.sel-menu .dd-item {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.sel-menu .dd-item > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dd-item {

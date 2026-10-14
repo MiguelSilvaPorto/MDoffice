@@ -7917,3 +7917,41 @@ antigas quando fizer sentido.
   conectores e traços fora, e as quatro fórmulas com a geometria certa (lista empilha, faixa
   alinha, destaque dá o primeiro maior). A verificação com o deck real (12 lâminas) fechou o
   quadro: 3-4 unidades por lâmina e zero problemas nas quatro fórmulas.
+## src/styles/editor.css
+
+### 2026-10-14 · lista do seletor compacta · o menu volta a ser um menu
+- **Local:** `.dropdown.sel-menu` e as regras novas `.sel-menu .dd-item` / `.sel-menu .dd-item >
+  span:first-child`
+- **Linha:** `max-height: min(72vh, 430px)` → `+ width: max-content; min-width: 0; max-width:
+  min(320px, calc(100vw - 16px)); max-height: min(60vh, 330px)` e `+ .sel-menu .dd-item { padding:
+  3px 8px; border-radius: 6px; font-size: 12px }` e `+ o rótulo com ellipsis`
+- **Porquê:** o menu do seletor herdava o desenho dos menus **“⋯”** (`.dropdown`): 250px de largura
+  mínima e itens de ~36px. Num seletor de NÚMEROS isso abre uma janela — o print do usuário mostra
+  o “36” abrindo um painel de 250×430 com barra de rolagem. A lista de um seletor é outra coisa:
+  deve **abraçar o conteúdo** (é o que o `max-content` faz), com a **largura do campo como
+  mínimo** — comportamento da lista nativa — e linhas baixas; a especificidade `.sel-menu .dd-item`
+  (0,2,0) vence o `.dd-item` geral (0,1,0) mesmo vindo antes no arquivo. O `max-height` caiu para
+  60vh/330px: com as linhas de 22px, cabem ~15 itens (antes, ~12 em 430px). Os menus “⋯” seguem
+  como eram — a mudança é só do seletor.
+
+## src/seletor.ts
+
+### 2026-10-14 · lista do seletor compacta · a largura mínima vem do campo
+- **Local:** `abrirMenu` (depois do `document.body.append(menu)`)
+- **Linha:** `+ menu.style.minWidth = `${Math.ceil(r.width)}px`` antes de medir/posicionar
+- **Porquê:** com `width: max-content` a lista de números ficaria com a largura de “72” (muito
+  estreita para o ✓). O mínimo igual ao campo resolve os dois lados: o menu **nunca fica menor que
+  o controle** (como a lista nativa e como os menus do Office) e cresce com o rótulo mais largo até
+  o teto do CSS. A linha entra **antes** do `offsetWidth` porque a posição é calculada com a
+  largura final — medir antes faria o menu pular ao ser pintado.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · lista do seletor compacta · 3 checagens (e a antiga atualizada)
+- **Local:** a seção dos seletores (junto das checagens do modo editável) e a da altura presa
+- **Linha:** `+ as checagens de width/min-width/max-width/max-height do .sel-menu`, `+ as do item
+  compacto (padding 3px 8px, 12px, ellipsis)` e `+ a do minWidth vindo do campo`; a checagem da
+  altura presa passou de `min(72vh, 430px)` para `min(60vh, 330px)`
+- **Porquê:** o defeito é 100% visual — sem uma checagem de layout, um ajuste futuro no `.dropdown`
+  (que é compartilhado) pode trazer os 250px de volta e ninguém vê até alguém abrir a lista. As
+  checagens prendem o contrato: o menu do seletor não usa a largura dos menus “⋯”.
