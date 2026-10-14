@@ -30,7 +30,7 @@ html.cantos-quadrados :where(
 
 html.cantos-quadrados :where(
     .st-list, .st-keys-card, .st-nav-item, .st-opcao, .st-seg, .st-brand-ic, .st-sec-ic,
-    .pj-empty-ic, .dropdown, .modal, .palette, .home-card, .home-file-row, .toast,
+    .pj-empty-ic, .dropdown, .modal, .palette, .home-card, .home-file-row, .toast, .dica,
     .tb-autosave-wrap, .tb-split-draw, .dr-canvas, .st-field textarea, .pp-popup, .wd-menu-pop,
     .xl-menu, .cm-issue-popup, .editor-context-menu, .pp-tpl, .pp-tpl-previa, .st-seg-desc
   ) {

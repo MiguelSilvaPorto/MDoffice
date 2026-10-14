@@ -6629,3 +6629,64 @@ antigas quando fizer sentido.
   `fechar.ps1` (no momento do commit o código ainda não entrou). Mesma razão das rodadas
   anteriores: registra-se em "Não adicionado" no fecho e promove-se logo em seguida. Nenhuma
   entrada de worktree em andamento foi tocada — só o que já está na `main`.
+
+## src/dica.ts (novo)
+
+### 2026-10-14 · dica do app · o balão no lugar do `title` nativo
+- **Local:** `posicaoDaDica` e `ligarDicas` (+ `ESPERA_MS`, `MARGEM`)
+- **Linha:** `novo`
+- **Porquê:** os controles do app carregam a dica no `title` (um lugar só, com a tecla do atalho
+  junto e atualizada pela aba Atalhos) — o problema era a **cara**: quem desenhava o balão era o
+  navegador, com fonte, borda e sombra do sistema, destoando da fita e dos menus (o usuário apontou
+  o "Pincel de Formatação" do Word). O módulo escuta o `title` no documento inteiro e mostra o
+  mesmo texto num balão do app. Decisões que valem a leitura: (1) o `title` é **removido no hover e
+  devolvido ao sair** — senão o nativo aparece por cima; se o dono trocar o `title` no meio do
+  hover (a fita faz isso ao remapear tecla), o valor novo vence; (2) a espera de **380 ms** evita
+  dica piscando ao cruzar a fita, e o foco de teclado não espera; (3) o balão mora na **raiz do
+  documento** (não no body): a impressão esconde os filhos do body que não são a sobreposição da
+  apresentação, e um balão preso apareceria no PDF — daí também o `display: none` no `@media print`;
+  (4) toque não abre dica e o ponteiro nunca entra no balão (`pointer-events: none`); (5) andar
+  **dentro** do mesmo controle (ícone, texto) não fecha a dica — só sair dele; (6) `posicaoDaDica`
+  é pura (caixa do controle + tamanho do balão + janela) para ser testável sem DOM: abaixo do
+  controle, acima quando não cabe e sempre dentro da janela.
+
+## src/main.ts
+
+### 2026-10-14 · dica do app · ligada no start
+- **Local:** imports e a chamada ao lado de `ligarMovimentoDeSaida()`
+- **Linha:** `+ import { ligarDicas } from "./dica";` e `+ ligarDicas();`
+- **Porquê:** é infraestrutura de interface (vale para o app inteiro), então entra junto do
+  movimento de saída, antes de o App montar as telas — os controles que nascem depois já têm dica
+  (a escuta é delegada no documento).
+
+## src/styles/base.css · src/styles/cantos.css
+
+### 2026-10-14 · dica do app · a superfície do balão
+- **Local:** o bloco `.dica` (novo, no fim do `base.css`) e a lista tier 2 do `cantos.css`
+- **Linha:** `novo` — painel/borda/sombra dos menus (`var(--panel)`, `var(--border)`,
+  `0 4px 16px rgba(0,0,0,.2)`), raio 7px, `z-index: 1050` (acima dos popups, que usam 1000),
+  12.5 px, `white-space: pre-line`, `pointer-events: none`, entrada de 120 ms (desligada com
+  `prefers-reduced-motion`) e `display: none` na impressão; `+ .dica` na lista dos cantos
+- **Porquê:** o balão é "superfície" do app — a mesma família dos menus — então usa os tokens do
+  tema (claro e escuro), acompanha a preferência de **cantos** (quadrados/redondos) e não pode
+  aparecer num PDF se ficar preso no hover de quem imprime.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · dica do app · 12 verificações (posição pura + contrato)
+- **Local:** o bloco "dicas do app (o balão no lugar do title nativo)"
+- **Linha:** `novo`
+- **Porquê:** `posicaoDaDica` é pura de propósito, e o teste cobre os três casos que quebrariam na
+  prática (abaixo; acima quando não cabe; preso nas laterais da janela). O resto prende o contrato:
+  o `title` sai e volta, a espera existe, toque não abre, o balão vive na raiz, o `ligarDicas()`
+  está no start e a folha tem a superfície do app, os cantos e a regra de impressão. A verificação
+  no navegador confirmou o resto com print (hover real no "Pincel de Formatação": balão do app com
+  o texto do title, sem o nativo, e o title devolvido ao sair).
+
+## CHANGELOG.md
+
+### 2026-10-14 · dica do app · a entrada no Geral
+- **Local:** Geral → Adicionado → Frontend
+- **Linha:** `novo`
+- **Porquê:** a mudança é de interface do app inteiro (não de um módulo), então a categoria é
+  **Geral** — e a entrada entra já promovida, como o fechamento exige.

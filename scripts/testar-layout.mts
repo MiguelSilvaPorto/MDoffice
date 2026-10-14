@@ -662,5 +662,83 @@ console.log("\nfita do Word: o ajuste escala métricas (como as Apresentações)
   );
 }
 
+// ---------------------------------------------------------------- dica (tooltip do app)
+
+console.log("\ndicas do app (o balão no lugar do title nativo)");
+
+const { posicaoDaDica } = await import("../src/dica.ts");
+
+// posição: abaixo quando cabe; acima quando não cabe; sempre dentro da janela
+{
+  const janela = { largura: 1000, altura: 700 };
+  const caixa = (topo: number, esquerda = 100, largura = 40, altura = 24) => ({
+    left: esquerda,
+    top: topo,
+    width: largura,
+    height: altura,
+    bottom: topo + altura,
+  });
+
+  const embaixo = posicaoDaDica(caixa(100), { largura: 200, altura: 30 }, janela);
+  checa(
+    "cabe embaixo: o balão sai abaixo, centrado no controle",
+    embaixo.abaixo && embaixo.topo === 132 && embaixo.esquerda === 20,
+    JSON.stringify(embaixo)
+  );
+
+  const emcima = posicaoDaDica(caixa(660), { largura: 200, altura: 30 }, janela);
+  checa(
+    "sem espaço embaixo: o balão sobe para cima do controle",
+    !emcima.abaixo && emcima.topo === 622,
+    JSON.stringify(emcima)
+  );
+
+  const esquerda = posicaoDaDica(caixa(100, 2, 20), { largura: 200, altura: 30 }, janela);
+  const direita = posicaoDaDica(caixa(100, 980, 20), { largura: 200, altura: 30 }, janela);
+  checa(
+    "nas pontas da janela o balão não vaza",
+    esquerda.esquerda === 8 && direita.esquerda === 792,
+    JSON.stringify({ esquerda, direita })
+  );
+}
+
+// contrato do módulo e da folha
+const dica = ler("src/dica.ts");
+checa(
+  "o title sai no hover e VOLTA ao sair (o nativo nunca aparece)",
+  /removeAttribute\("title"\)/.test(dica) && /setAttribute\("title", guardado\)/.test(dica),
+  "sem devolver o title, a dica some do elemento para sempre"
+);
+checa(
+  "a dica espera um instante parado sobre o controle",
+  /const ESPERA_MS = \d+/.test(dica) && /setTimeout\(mostrar/.test(dica) && /imediato \? 0 : ESPERA_MS/.test(dica),
+  "sem espera, a dica pisca ao cruzar a fita"
+);
+checa("toque (dedo/caneta) não abre dica", /pointerType === "touch"/.test(dica), "a dica apareceria no toque");
+checa(
+  "o balão vive na raiz do documento (imune ao modo apresentação)",
+  /doc\.documentElement\.append\(balao\)/.test(dica),
+  "como filho do body, a apresentação o esconderia"
+);
+checa("o app liga as dicas no start", /ligarDicas\(\)/.test(ler("src/main.ts")), "ninguém chama ligarDicas");
+checa(
+  "o balão fica acima das janelas e popups do app",
+  /\.dica\s*\{[^}]*z-index:\s*1050/.test(ler("src/styles/base.css")),
+  "o balão precisa ficar acima dos modais e menus"
+);
+checa(
+  "o balão é superfície do app (painel, borda e sombra) e não recebe o ponteiro",
+  /\.dica\s*\{[^}]*background:\s*var\(--panel\)[^}]*border:\s*1px solid var\(--border\)[^}]*pointer-events:\s*none/s.test(
+    ler("src/styles/base.css")
+  ),
+  "sem os tokens do app o balão volta a destoar"
+);
+checa("a dica segue a preferência de cantos", /\.dica\b/.test(ler("src/styles/cantos.css")), "fora da lista dos cantos");
+checa(
+  "a dica não sai na impressão",
+  /@media print\s*\{\s*\.dica\s*\{\s*display:\s*none/.test(ler("src/styles/base.css")),
+  "um balão preso apareceria no PDF"
+);
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

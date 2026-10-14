@@ -981,6 +981,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   explica que só o **Ctrl+S** grava o arquivo (as alterações ficam no histórico do app). O MD\* segue
   igual ("Salvando…" → "Salvo") e a descrição do toggle nas Configurações passou a dizer o que o
   salvamento automático cobre. Verificações novas em `npm run test:salvamento`.
+- **Dica (tooltip) no padrão do app**: os controles sempre tiveram a dica no `title` — e é bom
+  (um lugar só, com a tecla do atalho junto, atualizada pela aba Atalhos) —, mas quem desenhava o
+  balão era o **navegador**, com a fonte, a borda e a sombra do sistema, destoando da fita, dos
+  menus e do resto do app (o "Pincel de Formatação" do Word era o exemplo à vista). Agora um balão
+  próprio (`src/dica.ts` + a regra `.dica`) mostra esse mesmo texto: superfície dos menus (painel,
+  borda, sombra), tema claro/escuro, a preferência de cantos respeitada e **acima dos popups**. Ele
+  espera **380 ms** parado sobre o controle, não abre no toque, não recebe o ponteiro, sai no
+  clique/Esc/rolagem, nunca sai na impressão — e o `title` **volta** ao elemento assim que o balão
+  fecha (o nativo nunca chega a aparecer). Vale para a fita, a barra, a régua, os painéis e o modo
+  apresentação; verificações novas em `npm run test:layout`.
 
 **Ferramentas (dev)**
 

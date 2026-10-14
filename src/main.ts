@@ -2,11 +2,14 @@
 import "./styles.css";
 import { toast } from "./util";
 import { ligarMovimentoDeSaida } from "./movimento";
+import { ligarDicas } from "./dica";
 import { App } from "./app/app";
 import { ligarBatimento } from "./app/batimento";
 
 const app = new App();
 ligarMovimentoDeSaida();
+// As dicas do app (o balão no lugar do `title` nativo do navegador)
+ligarDicas();
 // Em desenvolvimento, avisa o servidor de dev que a página está viva: é assim que o
 // watchdog percebe uma página travada (o processo continua de pé) e reinicia o app.
 ligarBatimento();

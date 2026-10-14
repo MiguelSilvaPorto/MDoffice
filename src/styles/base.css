@@ -255,3 +255,50 @@ button {
 .btn:disabled:hover {
   background: transparent;
 }
+
+/* ---------- dica (tooltip) ---------- */
+
+/* O balão do app no lugar do `title` nativo do navegador (ver src/dica.ts): mesma
+   superfície dos menus do app — painel, borda, sombra e o raio que a preferência de
+   cantos ajusta (cantos.css). Nunca recebe o ponteiro e não sai na impressão. */
+
+.dica {
+  position: fixed;
+  z-index: 1050;
+  max-width: 320px;
+  padding: 5px 9px;
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  font-family: var(--ui-font);
+  font-size: 12.5px;
+  line-height: 1.35;
+  white-space: pre-line;
+  pointer-events: none;
+  user-select: none;
+  animation: dica-entra 120ms ease-out;
+}
+
+.dica[hidden] {
+  display: none;
+}
+
+@keyframes dica-entra {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dica {
+    animation: none;
+  }
+}
+
+@media print {
+  .dica {
+    display: none !important;
+  }
+}
