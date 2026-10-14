@@ -51,6 +51,8 @@ export interface Animacao {
   atraso?: number;
   /** direção da trajetória (padrão: direita); só vale no tipo `trajetoria` */
   direcao?: AnimacaoDirecao;
+  /** cada parágrafo do texto entra num passo próprio (um clique por parágrafo) */
+  porParagrafo?: boolean;
 }
 
 /**

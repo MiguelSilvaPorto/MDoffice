@@ -3,7 +3,7 @@
 // lotes "com/depois do anterior" (com o atraso acumulado) e os comportamentos de cada efeito.
 // O que a lâmina trouxe cru (`timingXml`) volta como veio, sem passar por aqui.
 import type { Animacao, AnimacaoDirecao, Shape } from "../schema";
-import { atrasoDe, direcaoDeAnimacao, duracaoEfetiva, inicioDe } from "../edicao/animacao";
+import { atrasoDe, direcaoDeAnimacao, duracaoEfetiva, inicioDe, paragrafosDe } from "../edicao/animacao";
 
 /** presetID/presetClass de cada tipo (aparecer = 1; surgir/sumir = fade = 10; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9; trajetória em linha = 64). */
 const PRESET: Record<Animacao["tipo"], { id: number; classe: "entr" | "emph" | "exit" | "path" }> = {
@@ -34,6 +34,8 @@ interface Efeito {
   spid: number;
   grp: number;
   nodeType: "clickEffect" | "withEffect" | "afterEffect";
+  /** índice do parágrafo alvo (no build "por parágrafo"); sem ele, o alvo é a forma inteira */
+  paragraph?: number;
 }
 
 /** Duração do efeito em ms (0 nos instantâneos). */
@@ -65,13 +67,24 @@ function agrupar(efeitos: Efeito[]): { auto: boolean; lotes: Efeito[][] }[] {
 export function xmlTiming(animacoes: Animacao[] | undefined, ids: Record<string, number>, shapes: Shape[] = []): string {
   const efeitos: Efeito[] = [];
   const grpPorSpid = new Map<number, number>();
+  const porId = new Map(shapes.map((s) => [s.id, s]));
   for (const a of animacoes ?? []) {
     const spid = ids[a.forma];
     if (!spid) continue; // forma que não entrou no XML (não deve acontecer)
     const grp = grpPorSpid.get(spid) ?? 0;
     grpPorSpid.set(spid, grp + 1);
     const inicio = inicioDe(a);
-    efeitos.push({ a, spid, grp, nodeType: inicio === "clicar" ? "clickEffect" : inicio === "com" ? "withEffect" : "afterEffect" });
+    const tipoNode = (i: number) => {
+      const ini = i === 0 ? inicio : inicio === "clicar" ? "clicar" : "depois";
+      return ini === "clicar" ? "clickEffect" : ini === "com" ? "withEffect" : "afterEffect";
+    };
+    // "por parágrafo": um efeito por parágrafo NÃO vazio (os índices do pRg contam os vazios)
+    const paras = a.porParagrafo ? paragrafosDe(porId.get(a.forma)) : [];
+    if (paras.length) {
+      paras.forEach((p, i) => efeitos.push({ a, spid, grp, paragraph: p, nodeType: tipoNode(i) }));
+    } else {
+      efeitos.push({ a, spid, grp, nodeType: tipoNode(0) });
+    }
   }
   if (!efeitos.length) return "";
 
@@ -85,7 +98,11 @@ export function xmlTiming(animacoes: Animacao[] | undefined, ids: Record<string,
         ? `<p:cTn id="${id()}" dur="${Math.max(1, dur)}" fill="hold"${extras}/>`
         : `<p:cTn id="${id()}" dur="${Math.max(1, dur)}" fill="hold"${extras}><p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>`;
     const nomes = attrs.length ? `<p:attrNameLst>${attrs.map((a) => `<p:attrName>${a}</p:attrName>`).join("")}</p:attrNameLst>` : "";
-    return `<p:cBhvr>${ctn}<p:tgtEl><p:spTgt spid="${e.spid}"/></p:tgtEl>${nomes}</p:cBhvr>`;
+    const alvo =
+      e.paragraph !== undefined
+        ? `<p:spTgt spid="${e.spid}"><p:txEl><p:pRg st="${e.paragraph}" end="${e.paragraph}"/></p:txEl></p:spTgt>`
+        : `<p:spTgt spid="${e.spid}"/>`;
+    return `<p:cBhvr>${ctn}<p:tgtEl>${alvo}</p:tgtEl>${nomes}</p:cBhvr>`;
   };
   const setVis = (e: Efeito, delay: number, visivel: boolean): string =>
     `<p:set>${cbhvr(e, 1, delay, ["style.visibility"])}<p:to><p:strVal val="${visivel ? "visible" : "hidden"}"/></p:to></p:set>`;
@@ -143,10 +160,16 @@ export function xmlTiming(animacoes: Animacao[] | undefined, ids: Record<string,
   };
 
   const clicks = agrupar(efeitos);
-  // formas com texto animadas entram no `p:bldLst` (animBg: o fundo da forma anima junto)
-  const porId = new Map(shapes.map((s) => [s.id, s]));
+  // formas com texto animadas entram no `p:bldLst`; o build "por parágrafo" usa build="p",
+  // os demais usam animBg (o fundo da forma anima junto)
   const bld: string[] = [];
   for (const e of efeitos) {
+    if (e.paragraph !== undefined) {
+      if (!bld.some((b) => b.includes(`spid="${e.spid}" `) && b.includes(`grpId="${e.grp}"`))) {
+        bld.push(`<p:bldP spid="${e.spid}" grpId="${e.grp}" build="p"/>`);
+      }
+      continue;
+    }
     const s = porId.get(e.a.forma);
     const temTexto = !!s && ((s.paras?.length ?? 0) > 0 || !!s.text?.trim());
     if (temTexto && !bld.some((b) => b.includes(`spid="${e.spid}" `))) {

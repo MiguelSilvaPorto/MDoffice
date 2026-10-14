@@ -529,6 +529,13 @@ const AN = await empacotar("src/powerpoint/edicao/animacao.ts", "animacao.mjs");
   const comTraj = AN.comAnimacao(undefined, "s1", "trajetoria");
   ok("animação: comDirecao muda a direção da trajetória", AN.comDirecao(comTraj, "s1", "baixo")[0].direcao === "baixo");
   ok("animação: comDirecao em efeito sem direção não faz nada", JSON.stringify(AN.comDirecao(lista, "s2", "cima")) === JSON.stringify(lista));
+
+  // por parágrafo: flag, mutação e contagem
+  ok("animação: porParagrafo entra normalizado", AN.normalizarAnimacao({ forma: "s1", tipo: "surgir", porParagrafo: true }).porParagrafo === true);
+  ok("animação: sem porParagrafo o flag não aparece", AN.normalizarAnimacao({ forma: "s1", tipo: "surgir" }).porParagrafo === undefined);
+  const comPP = AN.comPorParagrafo(comTraj, "s1", true);
+  ok("animação: comPorParagrafo liga e desliga o build", comPP[0].porParagrafo === true && AN.comPorParagrafo(comPP, "s1", false)[0].porParagrafo === undefined);
+  ok("animação: paragrafosDe conta só os não vazios", JSON.stringify(AN.paragrafosDe({ paras: [{ runs: [1] }, { runs: [] }, { runs: [2, 3] }] })) === "[0,2]");
 }
 
 // ---------------------------------------------------------------- round-trip do p:timing
@@ -623,6 +630,50 @@ const TEXP = await empacotar("src/powerpoint/pptxexport/timing.ts", "timing-exp.
   ok("timing: trajetória com outra distância fica crua", !TIMP.lerTiming(meia, spids).animacoes);
   const curva = TEXP.xmlTiming([{ forma: "s1", tipo: "trajetoria", direcao: "direita" }], ids, []).replace('path="M 0 0 L 0.25 0 E"', 'path="M 0 0 C 0 -0.25 0.25 -0.25 0.25 0 E"');
   ok("timing: trajetória em curva fica crua", !TIMP.lerTiming(curva, spids).animacoes);
+
+  // "por parágrafo": um efeito por parágrafo NÃO vazio + bldP build="p"; o importador colapsa de volta
+  {
+    const forma = (id) => ({
+      id,
+      kind: "forma",
+      box: { x: 0, y: 0, w: 30, h: 20 },
+      text: "",
+      fontFamily: "Segoe UI",
+      fontSize: 18,
+      color: "000000",
+      bold: false,
+      italic: false,
+      align: "esquerda",
+      fill: "",
+      src: "",
+      rot: 0,
+      name: id,
+      geom: "rect",
+      paras: [{ runs: [{ text: "Um" }] }, { runs: [] }, { runs: [{ text: "Dois" }] }],
+    });
+    const f1 = forma("s1");
+    const m = [{ forma: "s1", tipo: "surgir", duracao: 0.5, porParagrafo: true }];
+    const xmlPP = TEXP.xmlTiming(m, ids, [f1]);
+    ok(
+      "timing: por parágrafo gera um efeito por parágrafo não vazio",
+      (xmlPP.match(/presetID="10"/g) ?? []).length === 2 && xmlPP.includes('<p:pRg st="0" end="0"/>') && xmlPP.includes('<p:pRg st="2" end="2"/>') && !xmlPP.includes('<p:pRg st="1"'),
+      xmlPP.slice(0, 300)
+    );
+    ok("timing: por parágrafo usa bldP build=p", xmlPP.includes('<p:bldP spid="4" grpId="0" build="p"/>') && !xmlPP.includes("animBg"));
+    ok("timing: um clique por parágrafo (nodeType)", (xmlPP.match(/nodeType="clickEffect"/g) ?? []).length === 2);
+    const parasInfo = new Map([["4", { total: 3, naoVazios: [0, 2] }]]);
+    const voltaPP = TIMP.lerTiming(xmlPP, spids, parasInfo);
+    ok("timing: build por parágrafo volta colapsado", JSON.stringify(voltaPP.animacoes) === JSON.stringify(m), JSON.stringify([m, voltaPP]));
+    // sem o mapa de parágrafos não dá para conferir a cobertura: fica cru
+    ok("timing: sem o mapa de parágrafos o build fica cru", !TIMP.lerTiming(xmlPP, spids).animacoes);
+    // cobertura diferente (um parágrafo a mais) também fica crua
+    const infoErrada = new Map([["4", { total: 3, naoVazios: [0, 1, 2] }]]);
+    ok("timing: cobertura diferente fica crua", !TIMP.lerTiming(xmlPP, spids, infoErrada).animacoes);
+    // "depois": o segundo parágrafo encadeia (afterEffect)
+    const mDepois = [{ forma: "s1", tipo: "aparecer", inicio: "depois", porParagrafo: true }];
+    const xmlDepois = TEXP.xmlTiming(mDepois, ids, [f1]);
+    ok("timing: build 'depois' encadeia (afterEffect)", xmlDepois.includes('nodeType="afterEffect"') && TIMP.lerTiming(xmlDepois, spids, parasInfo).animacoes?.[0]?.inicio === "depois");
+  }
 }
 
 // ---------------------------------------------------------------- contrato do despacho da fita

@@ -24,19 +24,53 @@ export interface ControleAnimacoes {
   cancelar(): void;
 }
 
+interface Alvo {
+  a: Animacao;
+  /** o elemento que anima: a forma ou UM parágrafo dela (no "por parágrafo") */
+  el: HTMLElement | null;
+}
+
 interface Passo {
   /** toca sozinho ("com"/"depois"); o "ao clicar" espera o clique */
   auto: boolean;
-  efeitos: Animacao[];
+  alvos: Alvo[];
 }
 
-/** Agrupa a lista em passos: "com" entra no passo atual; "clicar"/"depois" abrem um novo. */
-function agrupar(animacoes: Animacao[]): Passo[] {
+/** Parágrafos NÃO vazios do texto de uma forma (é o que o "por parágrafo" anima). */
+function paragrafosDe(el: HTMLElement | undefined): HTMLElement[] {
+  if (!el) return [];
+  return [...el.querySelectorAll<HTMLElement>(".pp-shape-text > p")].filter((p) => (p.textContent ?? "").replace(/\u200b/g, "").trim() !== "");
+}
+
+/**
+ * Expande a lista em alvos: o efeito "por parágrafo" vira um alvo por parágrafo —
+ * o primeiro com o início escolhido e os outros ao clique ou encadeados ("depois"),
+ * como o PowerPoint faz com builds.
+ */
+function expandir(lista: Animacao[], elementos: Map<string, HTMLElement>): Alvo[] {
+  const alvos: Alvo[] = [];
+  for (const a of lista) {
+    const raizEl = elementos.get(a.forma);
+    const paras = a.porParagrafo ? paragrafosDe(raizEl) : [];
+    if (paras.length) {
+      paras.forEach((p, i) => {
+        const inicio = i === 0 ? a.inicio : inicioDe(a) === "clicar" ? "clicar" : "depois";
+        alvos.push({ a: { ...a, inicio }, el: p });
+      });
+    } else {
+      alvos.push({ a, el: raizEl ?? null });
+    }
+  }
+  return alvos;
+}
+
+/** Agrupa os alvos em passos: "com" entra no passo atual; "clicar"/"depois" abrem um novo. */
+function agrupar(alvos: Alvo[]): Passo[] {
   const passos: Passo[] = [];
-  for (const a of animacoes) {
-    const inicio = inicioDe(a);
-    if (inicio === "com" && passos.length) passos[passos.length - 1].efeitos.push(a);
-    else passos.push({ auto: inicio !== "clicar", efeitos: [a] });
+  for (const alvo of alvos) {
+    const inicio = inicioDe(alvo.a);
+    if (inicio === "com" && passos.length) passos[passos.length - 1].alvos.push(alvo);
+    else passos.push({ auto: inicio !== "clicar", alvos: [alvo] });
   }
   return passos;
 }
@@ -54,7 +88,8 @@ export function iniciarAnimacoes(
   const elementos = new Map<string, HTMLElement>();
   for (const el of raiz.querySelectorAll<HTMLElement>("[data-shape]")) elementos.set(el.dataset.shape!, el);
 
-  const passos = agrupar(lista).filter((p) => p.efeitos.some((e) => elementos.has(e.forma)));
+  const alvos = expandir(lista, elementos);
+  const passos = agrupar(alvos).filter((p) => p.alvos.some((x) => x.el));
   if (!passos.length) return vazio;
 
   // a trajetória anda 25% da lâmina (o mesmo que o preset "Linhas" do PowerPoint):
@@ -62,18 +97,17 @@ export function iniciarAnimacoes(
   const larg = raiz.clientWidth || raiz.getBoundingClientRect().width || 0;
   const alt = raiz.clientHeight || raiz.getBoundingClientRect().height || 0;
 
-  // estado inicial: efeitos de entrada escondem a forma até o passo dela chegar
-  for (const a of lista) {
-    if (entrada(a.tipo)) elementos.get(a.forma)?.classList.add(OCULTA);
+  // estado inicial: efeitos de entrada escondem o alvo (a forma ou o parágrafo) até a vez dele
+  for (const alvo of alvos) {
+    if (entrada(alvo.a.tipo)) alvo.el?.classList.add(OCULTA);
   }
 
   let indice = 0;
   let timer = 0;
   let vivo = true;
 
-  /** Toca um efeito e devolve quanto ele leva (atraso + duração, ms). */
-  const tocar = (a: Animacao): number => {
-    const el = elementos.get(a.forma);
+  /** Toca um alvo e devolve quanto ele leva (atraso + duração, ms). */
+  const tocar = ({ a, el }: Alvo): number => {
     if (!el) return 0;
     const ms = reduzido ? 0 : Math.round(duracaoEfetiva(a) * 1000);
     const atrasoMs = reduzido ? 0 : Math.round(atrasoDe(a) * 1000);
@@ -123,10 +157,10 @@ export function iniciarAnimacoes(
     return atrasoMs + ms;
   };
 
-  /** Toca um passo inteiro (efeitos em paralelo) e devolve a maior duração. */
+  /** Toca um passo inteiro (alvos em paralelo) e devolve a maior duração. */
   const tocarPasso = (p: Passo): number => {
     let maior = 0;
-    for (const a of p.efeitos) maior = Math.max(maior, tocar(a));
+    for (const alvo of p.alvos) maior = Math.max(maior, tocar(alvo));
     return maior;
   };
 
@@ -155,7 +189,9 @@ export function iniciarAnimacoes(
     cancelar(): void {
       vivo = false;
       window.clearTimeout(timer);
-      for (const el of elementos.values()) {
+      const els = new Set<HTMLElement>();
+      for (const alvo of alvos) if (alvo.el) els.add(alvo.el);
+      for (const el of els) {
         el.classList.remove(OCULTA, SURGE, SOME, PULSA, AMPLIA, GIRA, TRANSP, TRAJ);
         el.style.removeProperty("--anim-dur");
         el.style.removeProperty("--traj-x");

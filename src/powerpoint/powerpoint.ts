@@ -34,7 +34,7 @@ import {
 import { lerSelecao, restaurarSelecao, textoDaCaixa } from "./edicao/selecaoDom";
 import { alternarMarcador, estadoDoTrecho, estiloDosParas, estiloNoIntervalo, limparEstiloNoIntervalo, mudarCaixaTexto, mudarRecuo, mudarTamanhoRelativo, parasDaSelecao, type EstiloRun, type RunPatch, type TipoCaixa } from "./edicao/texto";
 import { comTransicao, direcaoDe, duracaoDe, normalizarTransicao, ROTULOS_DIRECAO } from "./edicao/transicao";
-import { comAnimacao, comAtraso, comDirecao, comDuracao, comInicio, moverAnimacao, normalizarAnimacoes, podarAnimacoes, semAnimacao, suave, TIPOS_ANIMACAO, aceitaDirecaoAnimacao, atrasoDe, direcaoDeAnimacao, duracaoDeAnimacao, inicioDe, formatarDuracao, ROTULOS_ANIMACAO, ROTULOS_INICIO } from "./edicao/animacao";
+import { comAnimacao, comAtraso, comDirecao, comDuracao, comInicio, comPorParagrafo, moverAnimacao, normalizarAnimacoes, paragrafosDe, podarAnimacoes, semAnimacao, suave, TIPOS_ANIMACAO, aceitaDirecaoAnimacao, atrasoDe, direcaoDeAnimacao, duracaoDeAnimacao, inicioDe, formatarDuracao, ROTULOS_ANIMACAO, ROTULOS_INICIO } from "./edicao/animacao";
 import { iniciarAnimacoes, type ControleAnimacoes } from "./render/animacao";
 import { caixaDaMidia, comCorteDaMidia, comOpcaoMidia, comVolumeDaMidia, midiaPadrao, normalizarMidia, MIDIA_ROTULOS, tipoDeArquivo } from "./edicao/midia";
 import { capturarQuadro, cartaoParaPng } from "./render/midia";
@@ -458,6 +458,7 @@ export class PowerPointHost {
         const nome = escapeHtml(porId.get(a.forma)?.name?.trim() || "Forma");
         const partes = [ROTULOS_ANIMACAO[a.tipo], ROTULOS_INICIO[inicioDe(a)]];
         if (aceitaDirecaoAnimacao(a.tipo)) partes.splice(1, 0, ROTULOS_DIRECAO[direcaoDeAnimacao(a)]);
+        if (a.porParagrafo) partes.push("por parágrafo");
         if (suave(a.tipo)) partes.push(formatarDuracao(duracaoDeAnimacao(a)));
         const atraso = atrasoDe(a);
         if (atraso > 0) partes.push(`+${formatarDuracao(atraso)}`);
@@ -816,6 +817,7 @@ export class PowerPointHost {
       animacaoPreservada: !!this.atual().timingXml,
       animacaoPos: forma && anims ? anims.findIndex((a) => a.forma === forma.id) : -1,
       animacaoTotal: anims?.length ?? 0,
+      animacaoParas: forma ? paragrafosDe(forma).length : 0,
     };
   }
 
@@ -1509,6 +1511,8 @@ export class PowerPointHost {
         return this.mudarAtrasoAnimacao(Number(String(value).replace(",", ".")));
       case "animacao-direcao":
         return this.mudarDirecaoAnimacao(String(value ?? "direita") as AnimacaoDirecao);
+      case "animacao-por-paragrafo":
+        return this.mudarPorParagrafoAnimacao(String(value) === "1");
       case "animacao-remover":
         return this.removerAnimacao();
       case "animacao-subir":
@@ -2654,6 +2658,13 @@ export class PowerPointHost {
     const f = this.principal();
     if (!f) return;
     this.editarAnimacoes((lista) => comDirecao(lista, f.id, direcao), "animacao");
+  }
+
+  /** Liga/desliga o "por parágrafo" do efeito da forma principal. */
+  private mudarPorParagrafoAnimacao(ativo: boolean): void {
+    const f = this.principal();
+    if (!f) return;
+    this.editarAnimacoes((lista) => comPorParagrafo(lista, f.id, ativo), "animacao");
   }
 
   /** Tira o efeito da forma (a principal ou a indicada pelo painel de animação). */

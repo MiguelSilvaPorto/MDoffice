@@ -455,6 +455,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **Correção**: o despacho da fita do degrau 2 tinha dois `slice` com um caractere a mais — os
   botões "Com anterior"/"Depois" e as durações de 1 s/2 s não chegavam ao motor (caíam no padrão
   em silêncio). Agora um **teste de contrato** confere cada prefixo do despacho contra o `slice`.
+- **Animações, degrau 4**: **por parágrafo** — a caixa no grupo **Texto** faz cada parágrafo do
+  texto entrar num passo próprio: um clique por parágrafo no "ao clicar"; "com o anterior" e
+  "depois" encadeiam sozinhos. O `.pptx` escreve um efeito por parágrafo **não vazio** (`pRg`) com
+  `bldLst build="p"` e o importador colapsa o build de volta numa animação; se a cobertura dos
+  parágrafos não bater com o texto da forma, o timing volta cru, com aviso.
 - **Diálogos do app no lugar de janelas do sistema**: **Novo modelo** (botão Template) e
   **Renomear lâmina** agora usam o diálogo de texto do app — com o tema, dica, Enter/OK,
   Esc/Cancelar e clique fora; ao criar, a galeria reabre já com o cartão novo.

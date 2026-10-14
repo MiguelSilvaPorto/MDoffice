@@ -4117,6 +4117,105 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   (régua antiga) **84%** — a camada de contexto estava *tirando*. Com a régua nova, com modelo =
   **85%** (empata em vez de perder) e o contexto segue disponível para quando for decisivo.
 
+## src/powerpoint/schema.ts
+
+### 2026-10-14 · por parágrafo · o flag no modelo
+- **Local:** `Animacao`
+- **Linha:** `porParagrafo?: boolean` (novo)
+- **Porquê:** o modelo é uma animação por forma; o build do PowerPoint é um efeito por parágrafo.
+  O flag guarda o "por parágrafo" como propriedade do efeito e a expansão/colapso acontece no
+  round-trip e no jogador — sem multiplicar o modelo.
+
+## src/powerpoint/edicao/animacao.ts
+
+### 2026-10-14 · por parágrafo · normalização, mutação e contagem
+- **Local:** `normalizarAnimacao`, `comPorParagrafo` (novo) e `paragrafosDe` (novo)
+- **Linha:** o flag é copiado quando presente; `comPorParagrafo` liga/desliga; `paragrafosDe`
+  devolve os índices dos parágrafos NÃO vazios de uma forma
+- **Porquê:** "não vazio" é a régua do build (o PowerPoint anima os parágrafos com texto e os
+  índices do `pRg` contam os vazios no meio) — a mesma conta vale para o XML e para o jogador.
+
+## src/powerpoint/render/animacao.ts
+
+### 2026-10-14 · por parágrafo · alvos por parágrafo
+- **Local:** `Alvo` (novo), `paragrafosDe`, `expandir` (novo), `agrupar`, `tocar` e `cancelar`
+- **Linha:** o jogador passou a trabalhar com **alvos** (a forma ou UM parágrafo): o efeito
+  "por parágrafo" vira um alvo por parágrafo não vazio — o primeiro com o início escolhido e os
+  outros ao clique ou encadeados — e cada alvo vira um passo próprio; o `cancelar` limpa os
+  elementos dos alvos (forma ou parágrafos)
+- **Porquê:** os parágrafos são `<p>` dentro de `.pp-shape-text` (fora das células de tabela, que
+  usam `.pp-cel`); animar cada um é só trocar o elemento alvo. O padrão de encadeamento
+  (primeiro com o início, resto clicar/depois) é o mesmo do XML, para prévia e F5 baterem.
+
+## src/powerpoint/pptxexport/timing.ts
+
+### 2026-10-14 · por parágrafo · expansão e bldLst build=p
+- **Local:** `Efeito` (campo `paragraph`), a montagem dos efeitos, o `cbhvr` (alvo) e o `bldLst`
+- **Linha:** com `porParagrafo`, o efeito vira N efeitos (um por parágrafo não vazio, mesmo grp),
+  o alvo ganha `<p:txEl><p:pRg st="i" end="i"/></p:txEl>` e o `bldLst` escreve
+  `<p:bldP … build="p"/>` (sem `animBg`); os outros efeitos de texto seguem com `animBg="1"`
+- **Porquê:** é a estrutura do build do PowerPoint (a mesma do DeckCraft): índices reais (contando
+  vazios), nodeType clickEffect/afterEffect por parágrafo e o bldP que fecha o padrão.
+
+## src/powerpoint/pptximport/timing.ts
+
+### 2026-10-14 · por parágrafo · ler o pRg e colapsar o build
+- **Local:** `EfeitoLido` (`grp`, `paragrafo`), `lerEfeito` (alvo) e o `lerTiming` (assinatura e
+  o agrupamento por forma)
+- **Linha:** o alvo aceita `pRg` com `st = end` (trecho fica cru); os efeitos são agrupados por
+  forma e o grupo **colapsa** numa animação com `porParagrafo` quando: cobre exatamente os
+  parágrafos não vazios, o efeito/duração/atraso/direção/grupo são iguais, o encadeamento é o
+  padrão e existe `bldP build="p"`; senão, volta cru com aviso. A assinatura ganhou o mapa
+  `parasInfo` (parágrafos por forma) — sem ele o build não dá para conferir e fica cru
+- **Porquê:** "colapsar" é o inverso exato da expansão da exportação; exigir a cobertura completa
+  evita transformar animação parcial de parágrafos numa coisa que o modelo não representa.
+
+## src/powerpoint/pptximport/index.ts
+
+### 2026-10-14 · por parágrafo · o mapa de parágrafos da lâmina
+- **Local:** o bloco do `lerTiming`
+- **Linha:** `parasInfo` (spid -> `{ total, naoVazios }`) montado a partir das formas lidas
+  (`paragrafosDe`) e passado ao `lerTiming`
+- **Porquê:** a leitura do timing não conhece as formas; o mapa (id do arquivo -> parágrafos)
+  dá a régua para o colapso do build.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · por parágrafo · a caixa no grupo Texto
+- **Local:** `animacoes()` (grupo **Texto**), o `aoMudar` e o bloco do `atualizar`
+- **Linha:** `<input type="checkbox" data-anim-pp>` (novo); o `aoMudar` trata o `data-anim-pp`
+  antes do `data-opc` da tabela; a caixa reflete `ef.porParagrafo` e fica **desabilitada** sem
+  efeito ou com menos de 2 parágrafos não vazios (`st.animacaoParas`)
+- **Porquê:** o build é uma opção do efeito; a caixa só faz sentido quando há o que dividir.
+
+## src/powerpoint/ui/estado.ts
+
+### 2026-10-14 · por parágrafo · parágrafos no estado
+- **Local:** `EstadoUI`
+- **Linha:** `animacaoParas?: number` (novo)
+- **Porquê:** a fita precisa do número de parágrafos não vazios da forma principal para habilitar
+  a caixa sem recalcular por conta própria.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · por parágrafo · o host
+- **Local:** imports, `estadoUI`, case `animacao-por-paragrafo`, `mudarPorParagrafoAnimacao` e o
+  `renderAnimacoes`
+- **Linha:** `animacaoParas: forma ? paragrafosDe(forma).length : 0`; o case chama o método (pelo
+  mesmo `editarAnimacoes`, com undo coalescido); o painel mostra "por parágrafo" na linha de info
+- **Porquê:** a mesma trilha dos outros ajustes de animação (edição, undo e repintura únicos).
+
+## scripts/testar-edicao-pptx.mjs
+
+### 2026-10-14 · por parágrafo · testes
+- **Local:** blocos das animações e do round-trip
+- **Linha:** novos — flag normalizado, `comPorParagrafo` liga/desliga, `paragrafosDe` conta só os
+  não vazios; a exportação gera um efeito por parágrafo não vazio com `pRg` e `bldP build="p"`
+  (sem animBg) e o import colapsa de volta; sem o mapa de parágrafos ou com cobertura diferente,
+  fica cru; build "depois" encadeia com `afterEffect`
+- **Porquê:** o colapso é o que mantém o round-trip fiel — o teste cobre o caminho feliz e as
+  duas recusas.
+
 ---
 
 ## Próximos registros

@@ -5,9 +5,10 @@ import type { Deck, DeckSetup, Fill, Shape, Slide } from "../schema";
 import { DEFAULT_SETUP } from "../model";
 import { lerTema, MAPA_PADRAO, type Tema } from "./cores";
 import { lerArvore, lerPreenchimento, type CtxForma } from "./formas";
+import { paragrafosDe } from "../edicao/animacao";
 import { Pacote, type Relacao } from "./pacote";
 import { lerTransicao } from "./slides";
-import { lerTiming } from "./timing";
+import { lerTiming, type ParasDaForma } from "./timing";
 import { caminho, filho, filhos, num, type No } from "./xmltree";
 import { carregarFontes } from "./fontes";
 import { laminasDoPresentation, nomeDaCld } from "./slides";
@@ -203,8 +204,15 @@ export async function pptxToDeck(bytes: Uint8Array, setupBase: DeckSetup = DEFAU
     const textoSlide = (await pac.texto(parte)) ?? "";
     const transicao = lerTransicao(textoSlide);
     for (const a of transicao.avisos) avisos.add(a);
-    // animações da lâmina (`p:timing`): modeladas quando dá; senão, cru (e vira aviso)
-    const timing = lerTiming(textoSlide, spids);
+    // animações da lâmina (`p:timing`): modeladas quando dá; senão, cru (e vira aviso).
+    // O mapa de parágrafos por forma é o que deixa reconhecer o build "por parágrafo".
+    const parasInfo = new Map<string, ParasDaForma>();
+    for (const [fileId, interno] of spids) {
+      const f = shapes.find((x) => x.id === interno);
+      if (!f?.paras?.length) continue;
+      parasInfo.set(fileId, { total: f.paras.length, naoVazios: paragrafosDe(f) });
+    }
+    const timing = lerTiming(textoSlide, spids, parasInfo);
     for (const a of timing.avisos) avisos.add(a);
     slides.push({
       md,

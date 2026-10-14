@@ -157,6 +157,7 @@ export function normalizarAnimacao(a: Animacao | undefined | null): Animacao | u
   const atraso = atrasoDe(a);
   if (atraso > 0) out.atraso = atraso;
   if (aceitaDirecaoAnimacao(a.tipo)) out.direcao = direcaoDeAnimacao(a);
+  if (a.porParagrafo) out.porParagrafo = true;
   return out;
 }
 
@@ -222,6 +223,22 @@ export function comDirecao(lista: Animacao[] | undefined, forma: string, direcao
   if (i < 0 || !aceitaDirecaoAnimacao(atual[i].tipo)) return atual;
   atual[i] = normalizarAnimacao({ ...atual[i], direcao })!;
   return atual;
+}
+
+/** Liga/desliga o "por parágrafo" do efeito da forma. */
+export function comPorParagrafo(lista: Animacao[] | undefined, forma: string, ativo: boolean): Animacao[] | undefined {
+  const atual = normalizarAnimacoes(lista);
+  if (!atual) return atual;
+  const i = atual.findIndex((a) => a.forma === forma);
+  if (i < 0) return atual;
+  atual[i] = normalizarAnimacao({ ...atual[i], porParagrafo: ativo })!;
+  return atual;
+}
+
+/** Quantos parágrafos NÃO vazios a forma tem (é o que o "por parágrafo" anima). */
+export function paragrafosDe(forma: { paras?: { runs: unknown[] }[] } | undefined): number[] {
+  if (!forma?.paras?.length) return [];
+  return forma.paras.map((p, i) => (p.runs.length ? i : -1)).filter((i) => i >= 0);
 }
 
 /** Tira o efeito da forma. */

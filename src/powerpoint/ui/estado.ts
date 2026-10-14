@@ -47,6 +47,8 @@ export interface EstadoUI {
   animacaoPos?: number;
   /** quantas animações a lâmina tem */
   animacaoTotal?: number;
+  /** parágrafos não vazios da forma principal (habilita o "por parágrafo") */
+  animacaoParas?: number;
   /** a seleção tem formas agrupadas */
   temGrupo: boolean;
   /** unidade de medida do painel */

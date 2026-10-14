@@ -429,6 +429,10 @@ export class Fita {
       ),
       grupo("Direção", `<div class="ppr-linha">${direcoes}</div>`),
       grupo("Início", `<div class="ppr-linha">${inicios}</div>`),
+      grupo(
+        "Texto",
+        `<label class="ppr-opc" title="Cada parágrafo do texto entra num passo próprio (um clique por parágrafo; 'com'/'depois' encadeiam)"><input type="checkbox" data-anim-pp> Por parágrafo</label>`
+      ),
       grupo("Duração", `<div class="ppr-linha">${duracoes}<span class="ppr-trans-dur" data-anim-dur></span></div>`),
       grupo("Atraso", `<div class="ppr-linha">${atrasos}<span class="ppr-trans-dur" data-anim-atraso></span></div>`),
       grupo("Ordem", `<div class="ppr-linha">${btn("animacao-subir", "↑", "Mover o efeito da forma selecionada para cima na ordem", "fmt")}${btn("animacao-descer", "↓", "Mover o efeito da forma selecionada para baixo na ordem", "fmt")}</div>`),
@@ -529,6 +533,11 @@ export class Fita {
 
   private aoMudar(e: Event): void {
     const t = e.target as HTMLElement;
+    const pp = t.closest<HTMLInputElement>("input[data-anim-pp]");
+    if (pp) {
+      this.hooks.run("animacao-por-paragrafo", pp.checked ? "1" : "0");
+      return;
+    }
     const opc = t.closest<HTMLInputElement>("input[data-opc]");
     if (opc) {
       const k = opc.dataset.opc!;
@@ -992,6 +1001,11 @@ export class Fita {
     for (const b of this.el.querySelectorAll<HTMLButtonElement>("[data-cmd^='animacao-direcao:']")) {
       b.disabled = !efTraj;
       b.classList.toggle("on", efTraj && b.dataset.cmd === `animacao-direcao:${direcaoDeAnimacao(ef)}`);
+    }
+    const ppInput = this.el.querySelector<HTMLInputElement>("[data-anim-pp]");
+    if (ppInput) {
+      ppInput.checked = !!ef?.porParagrafo;
+      ppInput.disabled = !ef || (st.animacaoParas ?? 0) < 2;
     }
     const efPos = st.animacaoPos ?? -1;
     dis("animacao-subir", !ef || efPos <= 0);

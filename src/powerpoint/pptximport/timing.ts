@@ -7,7 +7,7 @@
 // com o XML original e volta como veio na exportação — nada se perde no round-trip.
 import type { Animacao, AnimacaoDirecao, AnimacaoInicio, AnimacaoTipo } from "../schema";
 import { normalizarAnimacao } from "../edicao/animacao";
-import { caminho, filho, lerXml, type No } from "./xmltree";
+import { caminho, filho, filhos, lerXml, type No } from "./xmltree";
 
 /** Resultado da leitura do `<p:timing>` de uma lâmina. */
 export interface TimingLido {
@@ -76,9 +76,12 @@ interface EfeitoLido {
   tipo: AnimacaoTipo;
   inicio: AnimacaoInicio;
   spid: string;
+  grp: string;
   duracao?: number;
   atraso?: number;
   direcao?: AnimacaoDirecao;
+  /** índice do parágrafo alvo (nos builds "por parágrafo") */
+  paragrafo?: number;
 }
 
 /** O atributo que um `p:set` mexe (style.visibility, style.opacity…). */
@@ -104,10 +107,18 @@ function lerEfeito(ctn: No, seqInterativa: boolean): EfeitoLido | undefined {
   const atrasoMs = cond?.a.delay !== undefined && cond.a.delay !== "0" ? Number(cond.a.delay) : 0;
   if (!Number.isFinite(atrasoMs) || atrasoMs < 0) return undefined;
 
-  // alvo: uma forma inteira (por parágrafo/trecho fica de fora)
+  // alvo: uma forma inteira ou UM parágrafo (builds); trechos (st ≠ end) ficam de fora
   const tgt = achar(ctn, "spTgt");
   if (!tgt?.a.spid) return undefined;
-  if (caminho(tgt, "txEl/pRg") || achar(tgt, "pRg")) return undefined;
+  const rg = caminho(tgt, "txEl/pRg") ?? achar(tgt, "pRg");
+  let paragrafo: number | undefined;
+  if (rg) {
+    const st = Number(rg.a.st);
+    const end = Number(rg.a.end ?? rg.a.st);
+    if (!Number.isInteger(st) || st < 0 || st !== end) return undefined;
+    paragrafo = st;
+  }
+  const grp = ctn.a.grpId ?? "0";
 
   // comportamentos esperados de cada tipo (qualquer outro elemento = fora do modelo)
   const comportamentos = filho(ctn, "childTnLst")?.c ?? [];
@@ -143,17 +154,28 @@ function lerEfeito(ctn: No, seqInterativa: boolean): EfeitoLido | undefined {
     tipo,
     inicio: INICIO_POR_NODE[ctn.a.nodeType ?? ""] ?? "com",
     spid: tgt.a.spid,
+    grp,
     ...(!instantaneo && dur > 1 ? { duracao: dur / 1000 } : {}),
     ...(atrasoMs > 0 ? { atraso: atrasoMs / 1000 } : {}),
     ...(direcao ? { direcao } : {}),
+    ...(paragrafo !== undefined ? { paragrafo } : {}),
   };
+}
+
+/** Parágrafos de cada forma no arquivo (para reconhecer o build "por parágrafo"). */
+export interface ParasDaForma {
+  /** quantos parágrafos o texto tem (contando os vazios, como o `pRg`) */
+  total: number;
+  /** índices dos parágrafos NÃO vazios (os que o build anima, em ordem) */
+  naoVazios: number[];
 }
 
 /**
  * Lê o `<p:timing>` de uma lâmina. `spids` mapeia o id da forma no arquivo (cNvPr) para o
- * id interno do modelo — sem ele não dá para amarrar o efeito à forma.
+ * id interno do modelo — sem ele não dá para amarrar o efeito à forma. `parasInfo` (opcional)
+ * diz quantos parágrafos cada forma tem, para reconhecer o build "por parágrafo".
  */
-export function lerTiming(xml: string, spids: Map<string, string>): TimingLido {
+export function lerTiming(xml: string, spids: Map<string, string>, parasInfo?: Map<string, ParasDaForma>): TimingLido {
   const m = RE_TIMING.exec(xml);
   if (!m) return { avisos: [] };
   const bruta = m[0];
@@ -185,28 +207,62 @@ export function lerTiming(xml: string, spids: Map<string, string>): TimingLido {
   };
   visitar(timing, false);
 
-  // efeito fora do modelo (ênfase, trajetória, por parágrafo, gatilho, atraso…): preserva cru e avisa
-  if (foraDoModelo) {
-    return {
-      bruta,
-      avisos: ["Animações desta lâmina foram mantidas como vieram (o modelo ainda não representa todos os efeitos)."],
-    };
-  }
+  const avisoFora = "Animações desta lâmina foram mantidas como vieram (o modelo ainda não representa todos os efeitos).";
+  if (foraDoModelo) return { bruta, avisos: [avisoFora] };
   // sem nenhum efeito de animação (ex.: só mídia com tempo próprio): preserva o XML, sem aviso
   if (!lidos.length) return { bruta, avisos: [] };
 
+  /** O `p:bldLst` tem um build "por parágrafo" para este alvo? (é o que fecha o padrão) */
+  const temBuild = (spid: string, grp: string): boolean => {
+    const lista = filho(timing, "bldLst");
+    return !!lista && filhos(lista, "bldP").some((p) => p.a.spid === spid && (p.a.grpId ?? "0") === grp && p.a.build === "p");
+  };
+
+  // agrupa por forma no arquivo: um efeito = caso simples; vários = build "por parágrafo"
+  const porSpid = new Map<string, EfeitoLido[]>();
+  for (const e of lidos) {
+    const grupo = porSpid.get(e.spid) ?? [];
+    grupo.push(e);
+    porSpid.set(e.spid, grupo);
+  }
+
   const animacoes: Animacao[] = [];
   const vistos = new Set<string>();
-  for (const e of lidos) {
-    const forma = spids.get(e.spid);
-    if (!forma || vistos.has(forma)) {
-      return {
-        bruta,
-        avisos: ["Animações desta lâmina foram mantidas como vieram (há efeitos que o modelo ainda não representa)."],
-      };
-    }
+  for (const [spid, grupo] of porSpid) {
+    const forma = spids.get(spid);
+    if (!forma || vistos.has(forma)) return { bruta, avisos: [avisoFora] };
     vistos.add(forma);
-    const n = normalizarAnimacao({ forma, tipo: e.tipo, inicio: e.inicio, duracao: e.duracao, atraso: e.atraso, direcao: e.direcao });
+
+    // caso simples: um efeito mirando a forma inteira
+    if (grupo.length === 1 && grupo[0].paragrafo === undefined) {
+      const e = grupo[0];
+      const n = normalizarAnimacao({ forma, tipo: e.tipo, inicio: e.inicio, duracao: e.duracao, atraso: e.atraso, direcao: e.direcao });
+      if (!n) return { bruta, avisos: [] };
+      animacoes.push(n);
+      continue;
+    }
+
+    // build "por parágrafo": um efeito por parágrafo não vazio, na ordem, com o encadeamento padrão
+    const base = grupo[0];
+    const info = parasInfo?.get(spid);
+    const indices = grupo.map((e) => e.paragrafo);
+    const mesmoEfeito = grupo.every(
+      (e) => e.tipo === base.tipo && e.duracao === base.duracao && e.atraso === base.atraso && e.direcao === base.direcao && e.grp === base.grp
+    );
+    const esperado = base.inicio === "clicar" ? "clicar" : "depois";
+    const encadeado = grupo.slice(1).every((e) => e.inicio === esperado);
+    const cobre = !!info && JSON.stringify(indices) === JSON.stringify(info.naoVazios);
+    if (!mesmoEfeito || !encadeado || !cobre || !temBuild(spid, base.grp)) return { bruta, avisos: [avisoFora] };
+
+    const n = normalizarAnimacao({
+      forma,
+      tipo: base.tipo,
+      inicio: base.inicio,
+      duracao: base.duracao,
+      atraso: base.atraso,
+      direcao: base.direcao,
+      porParagrafo: true,
+    });
     if (!n) return { bruta, avisos: [] };
     animacoes.push(n);
   }
