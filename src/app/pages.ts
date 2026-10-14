@@ -77,6 +77,10 @@ export const pagesMethods = {
       setCopilot: (on) => this.setCopilot(on),
       dictionaryCount: () => this.ignoreWords.size,
       openDictionary: () => this.showDictionary(),
+      // F4 — auto-cura de conhecimento: termos candidatos/aprendidos e o arquivo de aprendizado
+      promoverTermo: (palavra) => this.promoverTermo(palavra),
+      esquecerTermo: (palavra) => this.esquecerTermoAprendido(palavra),
+      importarAprendizado: (texto) => this.importarAprendizadoTexto(texto),
       dark: () => document.documentElement.dataset.theme === "dark",
       setDark: (dark) => this.applyTheme(dark),
       animacao: () => this.initialAnimacao(),

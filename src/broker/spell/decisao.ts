@@ -149,6 +149,13 @@ export function limparCalibragem(): void {
   gravar({ ok: 0, ruim: 0 });
 }
 
+/** Repõe a calibragem de um arquivo de aprendizado (F4). */
+export function restaurarCalibragem(dados: unknown): void {
+  const d = dados as { ok?: unknown; ruim?: unknown } | undefined;
+  if (!d || typeof d !== "object") throw new Error("calibragem inválida");
+  gravar({ ok: Math.max(0, Number(d.ok) || 0), ruim: Math.max(0, Number(d.ruim) || 0) });
+}
+
 /**
  * Limiar em vigor: fica no inicial até haver amostra e depois sobe/desce conforme a taxa
  * de desfeitas. Duas de cada cem desfeitas é o alvo: acima disso o app fica mais exigente,

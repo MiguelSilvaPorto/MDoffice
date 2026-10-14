@@ -9,6 +9,10 @@ import { resumoLog, limparLogTudo } from "./snapshots";
 import { relatorio as relatorioArmazenamento, removerLegado } from "./storage";
 import { clearGhostMemory } from "./broker/ghost/memory";
 import { limparAprendizado } from "./broker/aprendizado";
+import { limparTermos, termosAprendidos, termosInsistentes } from "./broker/personal/termos";
+import { limparMetricas, metricasCorretor } from "./broker/personal/metricas";
+import { exportarAprendizado } from "./broker/personal/aprendizadoArquivo";
+import { calibragem } from "./broker/spell/decisao";
 import { profileSummary } from "./broker/personal/profile";
 import { llmEnabled, llmUseGpu, llmTypingSetting, setLlmEnabled, setLlmUseGpu, setLlmTyping } from "./broker/llm/config";
 import { llmAvailable, llmDevice } from "./broker/llm/client";
@@ -86,6 +90,12 @@ export interface SettingsCtx {
   setCopilot: (on: boolean) => void;
   dictionaryCount: () => number;
   openDictionary: () => void;
+  /** F4: promove um termo que o app insiste em marcar (entra no dicionário pessoal). */
+  promoverTermo: (palavra: string) => void;
+  /** F4: esquece um termo aprendido (sai das listas e volta a ser verificado). */
+  esquecerTermo: (palavra: string) => void;
+  /** F4: importa um arquivo de aprendizado (substitui o atual) e recarrega o dicionário. */
+  importarAprendizado: (texto: string) => { ok: boolean; resumo?: string; erro?: string };
   dark: () => boolean;
   setDark: (dark: boolean) => void;
   /** Nível de animação do app: discreta, padrão ou completa. */
@@ -226,6 +236,20 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
               <span class="st-text"><b>Seu estilo de escrita</b><small data-style-summary></small></span>
             </div>
             <div class="st-row">
+              ${rowIcon("i-check")}
+              <span class="st-text"><b>Corretor: precisão percebida e ruído</b><small data-corretor-resumo></small></span>
+            </div>
+            <div class="st-row">
+              ${rowIcon("i-spark")}
+              <span class="st-text"><b>Termos que o app insiste em marcar</b><small>Palavras que você já disse que estão certas (“Ignorar neste texto”). Aos poucos o app aprende sozinho: elas entram no dicionário pessoal e param de ser marcadas. Clique para adicionar uma agora.</small></span>
+            </div>
+            <div class="st-termos" data-termos-candidatos></div>
+            <div class="st-row">
+              ${rowIcon("i-text")}
+              <span class="st-text"><b>Termos que o app aprendeu sozinho</b><small>Clique num termo para esquecê-lo — ele sai do dicionário e volta a ser verificado.</small></span>
+            </div>
+            <div class="st-termos" data-termos-aprendidos></div>
+            <div class="st-row">
               ${rowIcon("i-search")}
               <span class="st-text"><b>Memória das sugestões</b><small>As sugestões aprendem com os seus documentos recentes. Fica só neste computador.</small></span>
               <button class="btn small st-btn" data-act="forget-ghost">Esquecer o que aprendeu</button>
@@ -234,6 +258,12 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
               ${rowIcon("i-text")}
               <span class="st-text"><b>Dicionário pessoal</b><small data-dict-count></small></span>
               <button class="btn small st-btn" data-act="dict">Abrir dicionário…</button>
+            </div>
+            <div class="st-row">
+              ${rowIcon("i-save")}
+              <span class="st-text"><b>Levar o aprendizado para outro computador</b><small>Um arquivo pequeno com as trocas, as classes de erro, os termos e o dicionário pessoal — nenhum documento entra nele. Importar substitui o aprendizado atual.</small></span>
+              <button class="btn small st-btn" data-act="exp-aprend">Exportar…</button>
+              <button class="btn small st-btn" data-act="imp-aprend">Importar…</button>
             </div>
           </div>
 
@@ -715,12 +745,92 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     flash();
   });
   paintDict();
+  // F4 — auto-cura: métricas do corretor + termos candidatos/aprendidos
+  const paintCorretor = () => {
+    const m = metricasCorretor();
+    const c = calibragem();
+    const n = c.ok + c.ruim;
+    const precisao = n ? `${Math.round((c.ok / Math.max(1, n)) * 100)}% (de ${n} correções automáticas)` : "sem amostra ainda";
+    q("[data-corretor-resumo]").textContent =
+      `Precisão percebida: ${precisao} · ${String(m.porMil).replace(".", ",")} aviso(s) de escrita por 1.000 palavras (em ${m.palavras} palavras verificadas).`;
+    const cand = termosInsistentes();
+    q("[data-termos-candidatos]").innerHTML = cand.length
+      ? cand
+          .slice(0, 14)
+          .map(
+            (t) =>
+              `<button class="st-termo" type="button" data-termo="${t.palavra}" title="Adicionar “${t.palavra}” ao dicionário agora">${t.palavra}<span>${String(t.pontos).replace(".", ",")}</span></button>`
+          )
+          .join("")
+      : `<span class="muted">Nada por aqui ainda — quando você ignorar a mesma palavra algumas vezes, ela aparece nesta lista.</span>`;
+    const apre = termosAprendidos();
+    q("[data-termos-aprendidos]").innerHTML = apre.length
+      ? apre
+          .slice(0, 14)
+          .map(
+            (t) =>
+              `<button class="st-termo feito" type="button" data-esquecer="${t.palavra}" title="Esquecer “${t.palavra}” (sai do dicionário e volta a ser verificada)">${t.palavra} ✕</button>`
+          )
+          .join("")
+      : `<span class="muted">O app ainda não aprendeu nenhum termo sozinho.</span>`;
+  };
+  paintCorretor();
+  q("[data-termos-candidatos]").addEventListener("click", (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>("[data-termo]");
+    if (!b) return;
+    ctx.promoverTermo(b.dataset.termo!);
+    paintCorretor();
+    paintDict();
+  });
+  q("[data-termos-aprendidos]").addEventListener("click", (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>("[data-esquecer]");
+    if (!b) return;
+    ctx.esquecerTermo(b.dataset.esquecer!);
+    paintCorretor();
+    paintDict();
+  });
+  on('[data-act="exp-aprend"]', "click", () => {
+    const texto = exportarAprendizado();
+    const blob = new Blob([texto], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `mdoffice-aprendizado-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+    toast("Aprendizado exportado — guarde o arquivo onde quiser.", "ok", 3400);
+  });
+  on('[data-act="imp-aprend"]', "click", () => {
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = ".json,application/json";
+    inp.addEventListener("change", () => {
+      const f = inp.files?.[0];
+      if (!f) return;
+      void f.text().then((texto) => {
+        const r = ctx.importarAprendizado(texto);
+        if (r.ok) {
+          toast(`Aprendizado importado: ${r.resumo}`, "ok", 5600);
+          paintCorretor();
+          paintDict();
+          paintStyle();
+        } else {
+          toast(r.erro ?? "Não deu para importar o arquivo.", "err", 5600);
+        }
+      });
+    });
+    inp.click();
+  });
   on('[data-act="forget-ghost"]', "click", () => {
     clearGhostMemory();
     clearFeedback();
     limparRitmo();
     limparAprendizado();
+    limparTermos();
+    limparMetricas();
     paintStyle();
+    paintCorretor();
     toast("As sugestões, a correção automática e o corretor esqueceram o que aprenderam.", "ok", 2600);
   });
   on('[data-act="dict"]', "click", () => {

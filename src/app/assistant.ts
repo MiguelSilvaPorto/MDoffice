@@ -4,6 +4,9 @@ import type { App } from "./app";
 import { checkText, checkStyle, marcarAplicacao, planejarVarredura, stats as writingStats, spellIsReady, spellHasFailed, type WritingIssue } from "../broker/writing";
 import { openReviewModal } from "../broker/review";
 import { limparAplicadasAuto, marcarAplicadasAuto, registrarCorrecao } from "../broker/aprendizado";
+import { contarVarredura } from "../broker/personal/metricas";
+import { esquecerTermo, marcarPromovidoManual } from "../broker/personal/termos";
+import { importarAprendizado } from "../broker/personal/aprendizadoArquivo";
 import { registrarAplicacaoAuto, registrarMantidaSePendente } from "../broker/spell/decisao";
 import { enviarLimiar } from "../broker/spell";
 import { $, toast, saveJSON } from "../util";
@@ -80,6 +83,8 @@ export const assistantMethods = {
     }
     this.editor.setIssues(this.issues);
     this.updateWritingBadge();
+    // F4: métricas do corretor (precisão percebida e avisos por 1.000 palavras, em Configurações)
+    contarVarredura(writingStats(text).words, this.issues.filter((i) => i.kind === "spell").length);
     this.reviewHandle?.refresh(this.issues, writingStats(text));
     // com o resultado da ortografia em mãos, a correção automática ganha o que fazer
     if (this.autoFix && this.autoFixArmed) this.autoFixSoon();
@@ -307,9 +312,52 @@ export const assistantMethods = {
   ignoreWord(this: App, word: string): void {
     this.ignoreWords.add(word.toLowerCase());
     saveJSON("mdc.ignore-words", Array.from(this.ignoreWords));
+    // F4: entrou no dicionário à mão — sai da lista de "termos que o app insiste em marcar"
+    marcarPromovidoManual(word);
     toast(`“${word}” foi adicionada ao dicionário pessoal.`, "ok", 3000);
     void this.runWritingCheck();
     this.wordHost?.recheckSpelling();
+  },
+
+  /**
+   * F4: o corretor aprendeu sozinho o termo (3 sinais de "não é erro") — ele entra no dicionário
+   * pessoal e para de ser marcado. O aviso diz o que aconteceu, porque o app mudou sozinho.
+   */
+  adotarTermo(this: App, palavra: string): void {
+    const p = palavra.trim();
+    if (!p) return;
+    this.ignoreWords.add(p.toLowerCase());
+    saveJSON("mdc.ignore-words", Array.from(this.ignoreWords));
+    toast(`O corretor aprendeu: “${p}” entrou no seu dicionário e não será mais marcada.`, "ok", 6500);
+    void this.runWritingCheck();
+    this.wordHost?.recheckSpelling();
+  },
+
+  /** Configurações: promove um termo candidato na hora (mesmo caminho de "Adicionar ao dicionário"). */
+  promoverTermo(this: App, palavra: string): void {
+    this.ignoreWord(palavra);
+  },
+
+  /** Configurações: esquece um termo aprendido (sai da lista e volta a ser verificado). */
+  esquecerTermoAprendido(this: App, palavra: string): void {
+    esquecerTermo(palavra);
+    const k = palavra.trim().toLowerCase();
+    if (this.ignoreWords.delete(k)) saveJSON("mdc.ignore-words", Array.from(this.ignoreWords));
+    toast(`“${palavra}” foi esquecida e volta a ser verificada.`, "info", 3200);
+    void this.runWritingCheck();
+    this.wordHost?.recheckSpelling();
+  },
+
+  /** Configurações: importa um arquivo de aprendizado (substitui o atual) e recarrega o dicionário. */
+  importarAprendizadoTexto(this: App, texto: string): { ok: boolean; resumo?: string; erro?: string } {
+    const r = importarAprendizado(texto);
+    if (r.ok && r.dicionario) {
+      this.ignoreWords = new Set(r.dicionario.map((p) => p.toLowerCase()));
+      saveJSON("mdc.ignore-words", Array.from(this.ignoreWords));
+      void this.runWritingCheck();
+      this.wordHost?.recheckSpelling();
+    }
+    return { ok: r.ok, resumo: r.resumo, erro: r.erro };
   },
 
   /** "Ignorar neste texto": dispensa um aviso de ESTILO neste documento (dicionário não se aplica). */

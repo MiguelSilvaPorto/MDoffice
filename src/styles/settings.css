@@ -592,6 +592,50 @@ body.settings-open #preview-puxa {
   border-top: 1px solid var(--border);
 }
 
+/* Aprendizado do corretor (F4): termos candidatos e aprendidos sozinho */
+.st-termos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 16px 12px 64px;
+}
+
+.st-termos .muted {
+  font-size: 12px;
+}
+
+.st-termo {
+  padding: 3px 9px;
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.st-termo span {
+  margin-left: 5px;
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.st-termo:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+
+.st-termo.feito {
+  color: var(--muted);
+}
+
+.st-termo.feito:hover {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+}
+
 .st-row {
   display: flex;
   align-items: center;

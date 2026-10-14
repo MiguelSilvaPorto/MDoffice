@@ -201,3 +201,25 @@ export function limparAprendizado(): void {
   }
   avisar();
 }
+
+// ---------- exportar/importar o aprendizado (F4) ----------
+
+/** Os pares aprendidos, para o arquivo de aprendizado (F4). */
+export function dadosAprendizado(): Registro[] {
+  return carregar().map((r) => ({ ...r }));
+}
+
+/** Repõe os pares de um arquivo de aprendizado; devolve quantos entraram. */
+export function restaurarAprendizado(dados: unknown): number {
+  if (!Array.isArray(dados)) throw new Error("pares inválidos");
+  const lista: Registro[] = [];
+  for (const r of dados as Registro[]) {
+    if (!r || typeof r.errado !== "string" || typeof r.certo !== "string") continue;
+    if (!parAprendivel(r.errado, r.certo)) continue;
+    lista.push({ errado: r.errado, certo: r.certo, n: Number(r.n) || 0 });
+  }
+  registros = lista;
+  gravar();
+  avisar();
+  return lista.length;
+}

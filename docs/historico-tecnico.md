@@ -4375,6 +4375,89 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   (`git grep -E '^(<<<<<<< |=======$|>>>>>>> )'` não acha nada) e a entrada “Ferramentas (dev)”
   registra a lição: conferir os **três** marcadores e rodar `git diff --check` antes de `git add`.
 
+## src/broker/personal/termos.ts
+
+### 2026-10-14 · este commit · dicionário pessoal automático (F4, novo arquivo)
+- **Local:** arquivo inteiro — `sinalizarTermo`, `termosInsistentes`, `termosAprendidos`,
+  `marcarPromovidoManual`, `esquecerTermo`, `aoPromoverTermo`, `dadosTermos`/`restaurarTermos`
+- **Linha:** `novo` — força por termo (`p`), quando foi mexido (`t`), marca de promovido (`prom`) e
+  a visão com decaimento (`comDecaimento`, meia-vida de 30 dias, compactação abaixo de 0,25 e teto
+  de 400); `sinalizarTermo` promove ao cruzar o limiar 3 (com folga `EPS` contra o épsilon do
+  decaimento entre sinais) e chama os ouvintes
+- **Porquê:** o plano F4 pede que o app **melhore sozinho** e pare de repetir ruído. Antes o
+  corretor só aprendia PARES de correção; um termo técnico recorrente continuava marcado para
+  sempre até alguém abrir o dicionário à mão. O sinal escolhido é o mais honesto que existe:
+  "Ignorar neste texto" (a pessoa diz, explicitamente, que a palavra está certa) — e a histerese
+  evita promover por um clique isolado. O decaimento é o que impede a lista de virar histórico
+  eterno: um costume antigo vale metade a cada 30 dias e o que não se sustenta sai na compactação.
+
+## src/broker/personal/metricas.ts
+
+### 2026-10-14 · este commit · métricas do corretor (F4, novo arquivo)
+- **Local:** arquivo inteiro — `contarVarredura`, `metricasCorretor`, `dadosMetricas`/`restaurarMetricas`
+- **Linha:** `novo` — `mdc.corretor.metricas` com palavras verificadas, avisos de escrita e
+  varreduras; `porMil` derivado
+- **Porquê:** o protocolo de avaliação do plano mede "FP/1000 ao longo do tempo" e pede
+  transparência em Configurações. É contagem agregada (números), não texto.
+
+## src/broker/personal/aprendizadoArquivo.ts
+
+### 2026-10-14 · este commit · exportar/importar o aprendizado (F4, novo arquivo)
+- **Local:** arquivo inteiro — `exportarAprendizado`, `importarAprendizado`, `VERSAO`
+- **Linha:** `novo` — JSON `{ app, tipo, versao, corretor: { pares, classes, calibragem, termos,
+  metricas }, dicionario }`; a importação valida app/versão, repõe cada parte pelos módulos e
+  devolve o dicionário para o app recarregar o dele
+- **Porquê:** o aprendizado vivia só no `localStorage` — trocar de computador (ou reinstalar)
+  zerava tudo. O arquivo é a unidade de "levar o corretor comigo": pequeno, legível e sem nenhum
+  documento; importar é **substituir** (e a tela diz isso).
+
+## src/broker/aprendizado.ts · src/broker/spell/classeErro.ts · src/broker/spell/decisao.ts
+
+### 2026-10-14 · este commit · dados/restaurar para o arquivo de aprendizado (F4)
+- **Local:** `dadosAprendizado`/`restaurarAprendizado`, `dadosClasses`/`restaurarClasses`,
+  `restaurarCalibragem`
+- **Linha:** novas funções em cada módulo (cada um valida e grava o seu pedaço; a calibragem usa o
+  `gravar` que já existia)
+- **Porquê:** o arquivo de aprendizado precisa montar/desmontar o conhecimento sem o exportador
+  conhecer a estrutura íntima de cada armazenamento — cada módulo continua dono do seu formato.
+
+## src/app/app.ts · src/app/assistant.ts
+
+### 2026-10-14 · este commit · o sinal, a adoção e as métricas (F4)
+- **Local:** `onIgnoreHere` e o registro de `aoPromoverTermo` (app.ts); `adotarTermo`,
+  `promoverTermo`, `esquecerTermoAprendido`, `importarAprendizadoTexto` e `contarVarredura` no
+  `runWritingCheck` (assistant.ts); `ignoreWord` marca `marcarPromovidoManual`
+- **Linha:** `sinalizarTermo(word)` no handler de ignorar; `aoPromoverTermo((p) =>
+  this.adotarTermo(p))`; `contarVarredura(writingStats(text).words, issues de escrita)`
+- **Porquê:** o módulo não conhece o app: quem escuta a promoção é quem sabe mexer no dicionário
+  pessoal (`ignoreWords` + armazenamento). O aviso do `adotarTermo` existe porque **o app mudou
+  sozinho** — quem escrevia merece saber. E adicionar à mão agora também tira o termo da lista de
+  candidatas (senão ele apareceria como "insistente" mesmo já estando no dicionário).
+
+## src/settingsPage.ts · src/app/pages.ts · src/styles/settings.css
+
+### 2026-10-14 · este commit · painel do aprendizado em Configurações (F4)
+- **Local:** grupo "Aprendizado" da seção Escrita (`data-corretor-resumo`, `data-termos-candidatos`,
+  `data-termos-aprendidos`), `paintCorretor`, os cliques nos chips e os botões Exportar/Importar;
+  `ctx.promoverTermo`/`esquecerTermo`/`importarAprendizado`; estilos `.st-termos`/`.st-termo`
+- **Linha:** `novo` — linhas + chips das listas; exportar baixa
+  `mdoffice-aprendizado-AAAA-MM-DD.json`; importar lê um arquivo e chama `ctx.importarAprendizado`
+- **Porquê:** o plano pede o painel com "precisão percebida, FP/1000 e termos que o app insiste em
+  marcar" — e o lugar natural é o grupo Aprendizado que já existia. Os chips são os mesmos gestos
+  do resto da página (clique = ação): candidata → entra no dicionário; aprendida → sai (e o
+  "esquecer o que aprendeu" agora também limpa termos e métricas).
+
+## scripts/testar-correcao.mjs
+
+### 2026-10-14 · este commit · 16 verificações do F4
+- **Local:** bloco novo "F4: auto-cura de conhecimento"
+- **Linha:** `+` histerese (1 e 2 sinais não promovem; o 3º promove e avisa), decaimento
+  (meia-vida de 30 dias = metade da força), compactação do que ficou fraco, promoção à mão,
+  esquecer, sinais estranhos, métricas (porMil) e o arquivo (ida e volta + recusa de outro app e
+  de versão diferente)
+- **Porquê:** é a fase com mais risco silencioso (promover demais enche o dicionário de erro;
+  promover de menos não muda nada); as asserções prendem o comportamento nos dois lados.
+
 ---
 
 ## Próximos registros

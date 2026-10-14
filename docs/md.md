@@ -82,6 +82,13 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   entram sozinhas ao pausar; ao **terminar o parágrafo** o parágrafo ganha ponto/vírgulas; ao
   **salvar**, o documento é revisado. Cada correção é um passo único de `Ctrl+Z` — e **desfazer
   ensina**: a troca desfeita volta a ser só sugestão.
+- **Aprendizado do corretor (auto-cura)**: os pares que você aceita viram correção automática e as
+  recusas descontam; os termos que você insiste em manter (**“Ignorar neste texto”**) entram
+  sozinhos no **dicionário pessoal** — com histerese (3 sinais) e decaimento (meia-vida de 30 dias:
+  costume antigo perde força e o termo fraco é esquecido). Em **Configurações ▸ Escrita** dá para
+  ver a **precisão percebida**, os **avisos por 1.000 palavras**, os **termos que o app insiste em
+  marcar** e os que **aprendeu** (clique para adicionar/esquecer) e **exportar/importar o
+  aprendizado** num JSON pequeno, sem nenhum documento.
 - **Ponto e vírgula automáticos**: ponto final no fim do parágrafo, vírgula antes de
   “mas/porém/contudo…”, depois de conectivos que abrem a frase e depois das **aberturas
   adverbiais** (“Com o tempo,”, “Hoje em dia,”, “No começo,”…) — inclusive quando elas

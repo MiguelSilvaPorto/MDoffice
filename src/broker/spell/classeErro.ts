@@ -277,3 +277,24 @@ export function limparClasses(): void {
     /* sem armazenamento */
   }
 }
+
+// ---------- exportar/importar o aprendizado (F4) ----------
+
+/** Os contadores por classe, para o arquivo de aprendizado (F4). */
+export function dadosClasses(): Contadores {
+  return JSON.parse(JSON.stringify(carregar())) as Contadores;
+}
+
+/** Repõe os contadores de um arquivo de aprendizado; devolve quantas classes entraram. */
+export function restaurarClasses(dados: unknown): number {
+  if (!dados || typeof dados !== "object") throw new Error("classes inválidas");
+  const limpos: Contadores = {};
+  for (const [k, v] of Object.entries(dados as Record<string, unknown>)) {
+    const c = v as ContagemClasse | undefined;
+    if (!c || typeof c !== "object") continue;
+    limpos[k as ClasseErro] = { ok: Math.max(0, Number(c.ok) || 0), nao: Math.max(0, Number(c.nao) || 0) };
+  }
+  cache = limpos;
+  gravar();
+  return Object.keys(limpos).length;
+}

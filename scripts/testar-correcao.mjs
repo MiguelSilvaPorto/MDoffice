@@ -722,5 +722,95 @@ const E = await empacotar("src/broker/encurtar.ts", "encurtar.mjs");
   ok("encurtar: “é capaz de tudo” fica (complemento não verbal)", !E.encurtarTrecho(capaz, 0, capaz.length, 3).some((t) => t.para === "pode"));
 }
 
+// ---------------------------------------------------------------- F4: auto-cura de conhecimento
+const TM = await empacotar("src/broker/personal/termos.ts", "termos.mjs");
+const ME = await empacotar("src/broker/personal/metricas.ts", "metricas.mjs");
+const AR = await empacotar("src/broker/personal/aprendizadoArquivo.ts", "aprendizado-arquivo.mjs");
+{
+  armazem.clear();
+  TM.limparTermos();
+  const promovidos = [];
+  TM.aoPromoverTermo((p) => promovidos.push(p));
+  ok("termos: começa vazio", TM.termosInsistentes().length === 0 && TM.termosAprendidos().length === 0);
+  ok("termos: um sinal não promove", TM.sinalizarTermo("imcopa") === false && TM.forcaDoTermo("imcopa") === 1);
+  TM.sinalizarTermo("imcopa");
+  ok("termos: dois sinais viram candidata, sem promover", TM.termosInsistentes().some((t) => t.palavra === "imcopa") && TM.termosAprendidos().length === 0);
+  ok("termos: o terceiro sinal promove", TM.sinalizarTermo("imcopa") === true && promovidos.includes("imcopa") && TM.termosAprendidos().some((t) => t.palavra === "imcopa"));
+  ok("termos: promovido não infla nem promove de novo", TM.sinalizarTermo("imcopa") === false && TM.forcaDoTermo("imcopa") === 3);
+  ok("termos: promovido sai das candidatas", !TM.termosInsistentes().some((t) => t.palavra === "imcopa"));
+
+  // decaimento: um sinal de 30 dias atrás (uma meia-vida) vale metade
+  TM.limparTermos();
+  TM.sinalizarTermo("sicoob");
+  const d1 = TM.dadosTermos();
+  d1.itens["sicoob"].t = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  TM.restaurarTermos(d1);
+  const f = TM.forcaDoTermo("sicoob");
+  ok("termos: decaimento pela meia-vida", f > 0.45 && f < 0.55, String(f));
+  TM.sinalizarTermo("sicoob");
+  TM.sinalizarTermo("sicoob");
+  ok("termos: sinal antigo + dois novos ainda não promove", TM.termosAprendidos().length === 0 && TM.forcaDoTermo("sicoob") > 2.4);
+  ok("termos: um sinal a mais promove", TM.sinalizarTermo("sicoob") === true);
+
+  // à mão: entra no dicionário na hora e sai das candidatas
+  TM.limparTermos();
+  TM.sinalizarTermo("lgpd");
+  TM.marcarPromovidoManual("lgpd");
+  ok("termos: adicionar à mão marca como aprendido", TM.termosInsistentes().length === 0 && TM.termosAprendidos().some((t) => t.palavra === "lgpd"));
+  TM.esquecerTermo("lgpd");
+  ok("termos: esquecer tira das listas", TM.termosAprendidos().length === 0);
+
+  // compactação: um sinal de 4 meias-vidas atrás fica fraco e sai sozinho
+  TM.limparTermos();
+  TM.sinalizarTermo("xpto");
+  const d2 = TM.dadosTermos();
+  d2.itens["xpto"].t = Date.now() - 120 * 24 * 60 * 60 * 1000;
+  TM.restaurarTermos(d2);
+  ok("termos: compactação esquece o que ficou fraco", TM.termosInsistentes().length === 0 && TM.forcaDoTermo("xpto") === 0);
+
+  ok("termos: sinal estranho é ignorado", TM.sinalizarTermo("!!") === false && TM.sinalizarTermo("a") === false);
+}
+{
+  ME.limparMetricas();
+  ME.contarVarredura(500, 5);
+  ME.contarVarredura(500, 0);
+  const m = ME.metricasCorretor();
+  ok("métricas: avisos por 1.000 palavras", m.palavras === 1000 && m.marcadas === 5 && m.porMil === 5 && m.varreduras === 2, JSON.stringify(m));
+  ME.contarVarredura(0, 3);
+  ok("métricas: varredura sem palavras não conta", ME.metricasCorretor().varreduras === 2);
+}
+{
+  // exportar/importar: o arquivo leva pares, termos, métricas e o dicionário pessoal
+  L.limparAprendizado();
+  TM.limparTermos();
+  ME.limparMetricas();
+  L.registrarCorrecao("estenso", "extenso");
+  L.registrarCorrecao("estenso", "extenso");
+  TM.sinalizarTermo("imcopa");
+  TM.sinalizarTermo("imcopa");
+  TM.sinalizarTermo("imcopa");
+  ME.contarVarredura(200, 4);
+  armazem.set("mdc.ignore-words", JSON.stringify(["imcopa"]));
+  const arquivo = AR.exportarAprendizado();
+  L.limparAprendizado();
+  TM.limparTermos();
+  ME.limparMetricas();
+  armazem.delete("mdc.ignore-words");
+  const r = AR.importarAprendizado(arquivo);
+  const pares = JSON.parse(armazem.get("mdc.corretor.aprendido") ?? "[]");
+  const termos = JSON.parse(armazem.get("mdc.corretor.termos") ?? "{}");
+  const metricas = JSON.parse(armazem.get("mdc.corretor.metricas") ?? "{}");
+  const dicionario = JSON.parse(armazem.get("mdc.ignore-words") ?? "[]");
+  ok(
+    "arquivo: importa e repõe pares, termos, métricas e dicionário",
+    r.ok && pares.some((p) => p.errado === "estenso") && termos.itens?.imcopa?.prom === true && metricas.palavras === 200 && dicionario.includes("imcopa"),
+    JSON.stringify(r)
+  );
+  const ruim = AR.importarAprendizado('{"app":"outro"}');
+  ok("arquivo: recusa arquivo de outro app", !ruim.ok && /mdOffice/.test(ruim.erro ?? ""));
+  const versao = AR.importarAprendizado('{"app":"mdoffice","tipo":"aprendizado-do-corretor","versao":99}');
+  ok("arquivo: recusa versão diferente", !versao.ok && /versão/.test(versao.erro ?? ""));
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);

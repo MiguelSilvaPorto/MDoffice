@@ -7,6 +7,7 @@ import { Preview } from "../md/preview";
 import * as files from "../files";
 import { setTone } from "../broker/writing";
 import { warmUpSpell, onSpellReady, ritmoDePausa, type WritingIssue } from "../broker/writing";
+import { aoPromoverTermo, sinalizarTermo } from "../broker/personal/termos";
 import { type ReviewHandle } from "../broker/review";
 import { TabBar, newTab, tabLabel, type DocTab } from "../tabs";
 import { Sidebar } from "../sidebar";
@@ -309,10 +310,15 @@ export class App {
     this.editor.onIgnoreWord = (word) => this.ignoreWord(word);
     this.editor.onIgnoreStyle = (issue) => this.ignoreStyleIssue(issue);
     this.editor.onIgnoreHere = (word) => {
+      // F4: "Ignorar neste texto" é o sinal de "este termo está certo" — com histerese, o app
+      // acaba adicionando sozinho ao dicionário (o aviso conta o que aconteceu).
+      sinalizarTermo(word);
       this.ignoredHere.add(word.toLowerCase());
       toast(`“${word}” ignorada neste texto (nos outros documentos ela continua sendo verificada).`, "info", 3600);
       void this.runWritingCheck();
     };
+    // F4: o termo aprendido sozinho entra no dicionário pessoal na hora
+    aoPromoverTermo((palavra) => this.adotarTermo(palavra));
     document.querySelector("#st-writing")?.addEventListener("click", () => this.openReview());
     document.querySelector("#st-deep")?.addEventListener("click", () => this.openDeepReview());
     this.startDeepWatcher();

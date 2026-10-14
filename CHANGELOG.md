@@ -32,7 +32,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **F4 — auto-cura do conhecimento do corretor**: os termos que você já disse que estão certos
+  ("Ignorar neste texto") ganham **histerese** (nada de promover de primeira: com 3 sinais o app
+  adiciona a palavra ao **dicionário pessoal sozinho** e avisa) e **decaimento** (meia-vida de 30
+  dias: um costume antigo perde força, e o que ficou fraco é esquecido na compactação). Em
+  **Configurações ▸ Escrita ▸ Aprendizado**: **precisão percebida** (correções automáticas
+  mantidas), **avisos por 1.000 palavras**, a lista de **"termos que o app insiste em marcar"**
+  (clique para adicionar) e a dos **termos aprendidos** (clique para esquecer). E **exportar/
+  importar o aprendizado** num JSON pequeno (trocas, classes de erro, termos, métricas e o
+  dicionário pessoal — nenhum documento entra nele).
 
 ### Adicionado (na main)
 
