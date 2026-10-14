@@ -90,6 +90,8 @@ export class TabBar {
   private renaming = false;
   /** ids já desenhados: a aba que aparece pela primeira vez entra animada */
   private vistas = new Set<string>();
+  /** id da aba ativa no render anterior: quando muda, a nova entra com um "pop" */
+  private ativaAntes: string | null = null;
 
   constructor(host: HTMLElement, hooks: TabBarHooks) {
     this.hooks = hooks;
@@ -118,15 +120,20 @@ export class TabBar {
   render(tabs: DocTab[], activeId: string): void {
     if (this.renaming) return;
     this.strip.textContent = "";
+    const trocou = this.ativaAntes !== null && this.ativaAntes !== activeId;
     for (const t of tabs) {
       const el = this.buildTab(t, t.id === activeId, tabs.length);
       // a aba que aparece pela primeira vez entra animada (o render reconstrói todas)
       if (!this.vistas.has(t.id)) {
         el.classList.add("entrando");
         this.vistas.add(t.id);
+      } else if (trocou && t.id === activeId) {
+        // troca de aba: a nova ativa entra com um "pop" (o elemento é recriado a cada render)
+        el.classList.add("ativando");
       }
       this.strip.append(el);
     }
+    this.ativaAntes = activeId;
     // esquece as abas que já fecharam (se voltarem, entram animadas de novo)
     const abertas = new Set(tabs.map((t) => t.id));
     for (const id of this.vistas) if (!abertas.has(id)) this.vistas.delete(id);

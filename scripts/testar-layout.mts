@@ -88,6 +88,15 @@ checa("o botão ativo do seletor deixa o fundo para a pílula", /\.sb-tab\.activ
 checa("o Início destaca a aba só pela cor (sem pintar o fundo)", !/\.sb-tab\[data-side="home"\]\.active[^{]*\{[^}]*background/.test(home));
 checa("a troca de painel usa o passo curto (mdc-painel), sem escala", /\.sb-panel:not\(\[hidden\]\)[^{]*\{[^}]*mdc-painel/.test(mov));
 
+// 4.2 Troca de abas: a nova ativa dá um pop e o documento desliza do lado da aba.
+console.log("troca de abas: movimento");
+
+checa("a nova aba ativa entra com um pop", /\.tab\.ativando\s*\{[^}]*mdc-aba-ativa/.test(mov), "regra .tab.ativando ausente no movimento");
+checa("o documento desliza conforme o lado da aba", /\.troca-conteudo-dir[\s\S]{0,220}mdc-conteudo-dir/.test(mov) && /\.troca-conteudo-esq[\s\S]{0,220}mdc-conteudo-esq/.test(mov), "troca do conteúdo ausente no movimento");
+checa("o nível discreto desliga a troca de abas", /anim-discreta[^{]*:where\([\s\S]{0,1500}\.troca-conteudo-dir/.test(mov), "troca fora da lista do nível discreto");
+checa("a troca de abas está ligada no app", /troca-conteudo-\$\{dir\}/.test(ler("src/app/tabs.ts")), "sem a chamada em src/app/tabs.ts");
+checa("a barra lembra a aba ativa anterior", /ativando/.test(ler("src/tabs.ts")), "sem o ativando em src/tabs.ts");
+
 // 4.1 Barra superior: o "Apresentar" só aparece com uma apresentação (PowerPoint) ativa.
 console.log("barra superior: Apresentar com apresentação");
 

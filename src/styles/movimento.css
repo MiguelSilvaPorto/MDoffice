@@ -68,7 +68,10 @@ html.anim-discreta :where(
     .wd-menu-pop,
     .xl-menu,
     .cm-issue-popup,
-    .editor-context-menu
+    .editor-context-menu,
+    .tab.ativando,
+    .troca-conteudo-dir,
+    .troca-conteudo-esq
   ) {
   animation: none !important;
 }
@@ -131,6 +134,15 @@ html.anim-completa :where(.sb-panel:not([hidden]), .wd-rpanel:not([hidden]), .xl
 
 html.anim-completa .tab.entrando {
   animation: mdc-aba-mais var(--mov-2) var(--curva-mola) both !important;
+}
+
+html.anim-completa .tab.ativando {
+  animation: mdc-aba-ativa var(--mov-2) var(--curva-mola) both !important;
+}
+
+/* a mola no deslize do documento (o id do painel vence a classe, por isso o !important) */
+html.anim-completa :is(.troca-conteudo-dir, .troca-conteudo-esq) {
+  animation-timing-function: var(--curva-mola) !important;
 }
 
 html.anim-completa .home-grid .home-card {
@@ -218,6 +230,28 @@ html.anim-completa .sb-pill {
   from {
     opacity: 0;
     transform: translateY(7px);
+  }
+}
+
+/* troca de aba: a nova ativa cresce no lugar e o documento entra do lado de onde a aba veio */
+@keyframes mdc-aba-ativa {
+  from {
+    opacity: 0.5;
+    transform: translateY(3px);
+  }
+}
+
+@keyframes mdc-conteudo-dir {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+@keyframes mdc-conteudo-esq {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
   }
 }
 
@@ -405,6 +439,26 @@ body.preview-saindo #splitter {
 
 .tab.entrando {
   animation: mdc-aba var(--mov-2) var(--curva-entrada) both;
+}
+
+/* a aba que passa a ser a ativa entra com um "pop" (o render recria o elemento) */
+.tab.ativando {
+  animation: mdc-aba-ativa var(--mov-2) var(--curva-entrada) both;
+}
+
+/* troca de aba: o documento desliza do lado de onde a aba veio */
+.troca-conteudo-dir,
+#word-pane.troca-conteudo-dir,
+#excel-pane.troca-conteudo-dir,
+#powerpoint-pane.troca-conteudo-dir {
+  animation: mdc-conteudo-dir var(--mov-2) var(--curva-entrada) both;
+}
+
+.troca-conteudo-esq,
+#word-pane.troca-conteudo-esq,
+#excel-pane.troca-conteudo-esq,
+#powerpoint-pane.troca-conteudo-esq {
+  animation: mdc-conteudo-esq var(--mov-2) var(--curva-entrada) both;
 }
 
 /* o ponto de "alterações não gravadas" nasce crescendo */

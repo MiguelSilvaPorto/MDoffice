@@ -136,10 +136,12 @@ export const tabsMethods = {
 
   /** Torna a aba indicada a ativa e redesenha tudo que depende do documento. */
   async activate(this: App, target: DocTab): Promise<void> {
+    const antes = this.tab;
     if (target !== this.tab) {
       this.snapshotTab();
       this.tab = target;
     }
+    if (antes !== target) this.animarConteudoDaAba(antes, target);
     if (target.kind === "word") {
       this.leavePpt();
       this.leaveXlsx();
@@ -175,6 +177,24 @@ export const tabsMethods = {
     this.markText(this.editor.getText());
     await this.preview.render(this.editor.getText());
     this.editor.focus();
+  },
+
+  /**
+   * A troca de abas ganha vida: o documento desliza do lado de onde a aba veio.
+   * A classe é reaplicada com um reflow porque o render das abas recria os elementos
+   * (e o painel pode já estar com a classe da troca anterior).
+   */
+  animarConteudoDaAba(this: App, de: DocTab, para: DocTab): void {
+    const iDe = this.tabs.indexOf(de);
+    const iPara = this.tabs.indexOf(para);
+    const dir = iDe >= 0 && iPara >= 0 && iPara < iDe ? "esq" : "dir";
+    const seletor =
+      para.kind === "word" ? "#word-pane" : para.kind === "xlsx" ? "#excel-pane" : para.kind === "ppt" ? "#powerpoint-pane" : "#editor-wrap";
+    const alvo = document.querySelector<HTMLElement>(seletor);
+    if (!alvo) return;
+    alvo.classList.remove("troca-conteudo-dir", "troca-conteudo-esq");
+    void alvo.offsetWidth; // reinicia a animação mesmo quando a classe já estava
+    alvo.classList.add(`troca-conteudo-${dir}`);
   },
 
   /** Atualiza título, barra de abas, rodapé, contagens e estrutura. */
