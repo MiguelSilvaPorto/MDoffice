@@ -20,18 +20,31 @@ export interface TimingLido {
 
 const RE_TIMING = /<p:timing\b[\s\S]*?<\/p:timing>/;
 
-/** Preset do PowerPoint -> tipo do modelo (aparecer = 1; surgir/sumir = fade = 10; voar = 2; zoom = 53; limpar = 22; caixa = 4; círculo = 6; losango = 8; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9; trajetória em linha = 64). */
+/** Preset do PowerPoint -> tipo do modelo (aparecer = 1; surgir/sumir = fade = 10; voar = 2; zoom = 53; limpar = 22; caixa = 4; círculo = 6; losango = 8; dividir = 16; persianas = 3; dissolver = 9; roda = 21; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9; trajetória em linha = 64). */
 const PRESETS: Record<string, Record<string, AnimacaoTipo>> = {
-  entr: { "1": "aparecer", "10": "surgir", "2": "voar", "53": "zoom", "22": "limpar", "4": "caixa", "6": "circulo", "8": "losango" },
+  entr: { "1": "aparecer", "10": "surgir", "2": "voar", "53": "zoom", "22": "limpar", "4": "caixa", "6": "circulo", "8": "losango", "16": "dividir", "3": "persianas", "9": "dissolver", "21": "roda" },
   emph: { "26": "pulsar", "6": "ampliar", "8": "girar", "9": "transparencia" },
-  exit: { "1": "desaparecer", "10": "sumir", "2": "voarFora", "53": "encolher", "22": "limparFora", "4": "caixaFora", "6": "circuloFora", "8": "losangoFora" },
+  exit: {
+    "1": "desaparecer",
+    "10": "sumir",
+    "2": "voarFora",
+    "53": "encolher",
+    "22": "limparFora",
+    "4": "caixaFora",
+    "6": "circuloFora",
+    "8": "losangoFora",
+    "16": "dividirFora",
+    "3": "persianasFora",
+    "9": "dissolverFora",
+    "21": "rodaFora",
+  },
   path: { "64": "trajetoria" },
 };
 
 /** Subtypes aceitos nos efeitos com direção (as quatro direções; 0 aparece em arquivos antigos). */
 const SUBS_DIRECAO = ["0", "1", "2", "4", "8"];
 
-/** Subtypes aceitos nas revelações do centro (abre = 16, fecha = 32; 0 aparece em arquivos antigos). */
+/** Subtypes aceitos nas revelações de forma: abre/fecha (16/32), dividir na horizontal (21/42), persianas (10) e roda de um ponteiro (1); 0 aparece em arquivos antigos. */
 const SUBS_FORMA: Partial<Record<AnimacaoTipo, string[]>> = {
   caixa: ["0", "16"],
   circulo: ["0", "16"],
@@ -39,12 +52,18 @@ const SUBS_FORMA: Partial<Record<AnimacaoTipo, string[]>> = {
   caixaFora: ["0", "32"],
   circuloFora: ["0", "32"],
   losangoFora: ["0", "32"],
+  dividir: ["0", "21"],
+  dividirFora: ["0", "42"],
+  persianas: ["0", "10"],
+  persianasFora: ["0", "10"],
+  roda: ["0", "1"],
+  rodaFora: ["0", "1"],
 };
 
 /** O `filter` do Limpar -> a borda de onde a revelação vem. */
 const FILTRO_LIMPAR: Record<string, AnimacaoDirecao> = { "wipe(down)": "cima", "wipe(up)": "baixo", "wipe(right)": "esquerda", "wipe(left)": "direita" };
 
-/** O `filter` e o sentido de cada revelação do centro. */
+/** O `filter` e o sentido de cada revelação fixa (a variante padrão do PowerPoint; as outras ficam cruas). */
 const FILTRO_FORMA: Partial<Record<AnimacaoTipo, { filtro: string; saida: boolean }>> = {
   caixa: { filtro: "box(in)", saida: false },
   circulo: { filtro: "circle(in)", saida: false },
@@ -52,6 +71,14 @@ const FILTRO_FORMA: Partial<Record<AnimacaoTipo, { filtro: string; saida: boolea
   caixaFora: { filtro: "box(out)", saida: true },
   circuloFora: { filtro: "circle(out)", saida: true },
   losangoFora: { filtro: "diamond(out)", saida: true },
+  dividir: { filtro: "barn(inHorizontal)", saida: false },
+  dividirFora: { filtro: "barn(outHorizontal)", saida: true },
+  persianas: { filtro: "blinds(horizontal)", saida: false },
+  persianasFora: { filtro: "blinds(horizontal)", saida: true },
+  dissolver: { filtro: "dissolve", saida: false },
+  dissolverFora: { filtro: "dissolve", saida: true },
+  roda: { filtro: "wheel(1)", saida: false },
+  rodaFora: { filtro: "wheel(1)", saida: true },
 };
 
 /** Linha reta de 25% da lâmina (`M 0 0 L x y E`) -> direção; qualquer outro caminho fica fora do modelo. */

@@ -4704,6 +4704,90 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** é um defeito só visível no intervalo do carregamento (e o teste de layout é o lugar
   do repositório que olha o `index.html`).
 
+## src/powerpoint/schema.ts
+
+### 2026-10-14 · texturas · os oito tipos novos
+- **Local:** `AnimacaoTipo`
+- **Linha:** `dividir`, `persianas`, `dissolver`, `roda` (entrada) e `dividirFora`, `persianasFora`,
+  `dissolverFora`, `rodaFora` (saída)
+- **Porquê:** são os clássicos de textura do PowerPoint; todos são `animEffect` com `filter` (a
+  mesma forma dos degraus anteriores) e só a variante padrão é modelada — as outras (verticais,
+  dois ponteiros…) voltam cruas.
+
+## src/powerpoint/edicao/animacao.ts
+
+### 2026-10-14 · texturas · tabelas
+- **Local:** `TIPOS_ANIMACAO`, `CLASSE_ANIMACAO`, rótulos e dicas
+- **Linha:** os oito entram nas tabelas (os rótulos das saídas levam "fora", como as revelações);
+  nenhum aceita direção (as texturas não têm borda: o dividir abre do centro, as persianas são
+  horizontais, o dissolver é por pontos e a roda dá a volta)
+- **Porquê:** a galeria se organiza pelas classes — os novos caem sozinhos nos grupos do
+  "Mais animações".
+
+## src/powerpoint/render/animacao.ts
+
+### 2026-10-14 · texturas · classes e o estado final
+- **Local:** as constantes de classe, `CLASSE_EFEITO`, `EFEITO_FIXO` e o `cancelar`
+- **Linha:** `forma-dividir`, `forma-persianas`, `forma-dissolve` e `forma-roda` (mais as "fora");
+  as quatro saídas entram no `EFEITO_FIXO` (a classe fica segurando a máscara zerada)
+- **Porquê:** as texturas não precisam de medida (diferente do voo e do limpar): a geometria está
+  toda no CSS, então o jogador só liga a classe e a duração.
+
+## src/styles/slides.css
+
+### 2026-10-14 · texturas · recorte e máscaras com --reveal
+- **Local:** depois dos keyframes do losango
+- **Linha:** `forma-dividir` (clip-path inset de/para `inset(0 50% 0 50%)`), `@property --reveal`
+  (percentage) e as máscaras: persianas (`linear-gradient` com `mask-size: 100% 10%` + repeat-y =
+  dez faixas que crescem), dissolver (duas faixas de 6 px em `mask-composite: intersect` = a grade
+  de pontinhos) e roda (`conic-gradient(from 0deg, …)` = a volta do ponteiro); os keyframes animam
+  só `--reveal` de 0% a 100% (e o inverso nas saídas)
+- **Porquê:** `clip-path` não faz texturas e `mask-image` com gradiente não interpola entre stops —
+  a saída é registrar a variável com `@property` (o Chrome/WebView2 interpola custom properties
+  registradas) e deixar o gradiente ler a variável. As máscaras são **aproximações** das texturas
+  do PowerPoint (a do dissolver cresce em grade, não em pontos aleatórios), documentadas aqui.
+
+## src/powerpoint/pptxexport/timing.ts
+
+### 2026-10-14 · texturas · a tabela única de revelações
+- **Local:** `PRESET`, `SUB_FORMA`, `REVELACAO` (era `FILTRO_FORMA`) e os comportamentos
+- **Linha:** presets novos — dividir = **16** (subtypes 21/42), persianas = **3** (10), dissolver =
+  **9** (0) e roda = **21** (1); a tabela `REVELACAO` reúne as 14 revelações com `{ filtro, saida }`
+  e os dois `if` de caixa/círculo/losango viraram um só
+- **Porquê:** com 14 revelações fixas, uma tabela com o sentido dentro é mais segura que pares de
+  condições — o comportamento (set de visibilidade + `animEffect`) é o mesmo para todas.
+
+## src/powerpoint/pptximport/timing.ts
+
+### 2026-10-14 · texturas · presets, subtypes e filters
+- **Local:** `PRESETS`, `SUBS_FORMA` e `FILTRO_FORMA`
+- **Linha:** os oito entram nos presets 16/3/9/21 das classes certas; subtypes aceitos {0,21}/{0,42}
+  (dividir), {0,10} (persianas), {0} (dissolver) e {0,1} (roda); o `filter` exato de cada um
+  (`barn(in|outHorizontal)`, `blinds(horizontal)`, `dissolve`, `wheel(1)`) — qualquer variante
+  diferente volta crua
+- **Porquê:** manter só a variante padrão (a que o export escreve) garante o round-trip; as
+  variantes do PowerPoint viram aviso na importação em vez de animação errada.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · texturas · as prévias
+- **Local:** `previaAnimacao`
+- **Linha:** Dividir (duas metades + setas para fora/para dentro), Persianas (faixas que crescem e
+  o inverso), Dissolver (pontinhos com metade apagada na saída) e Roda (o círculo com o setor, do
+  lado oposto na saída)
+- **Porquê:** as prévias precisam distinguir entrada e saída das texturas — o desenho das "fora"
+  mostra o caminho de volta.
+
+## scripts/testar-edicao-pptx.mjs
+
+### 2026-10-14 · texturas · testes
+- **Local:** blocos das animações e do round-trip
+- **Linha:** novos — classes das texturas e "não têm direção"; round-trip dos oito tipos (preset,
+  subtype e filter) e as recusas: persianas verticais, roda de dois ponteiros e dividir na
+  vertical ficando crus
+- **Porquê:** as três recusas cobrem exatamente as variantes que o modelo não representa — se
+  aceitasse, o arquivo reexportado sairia com a variante errada.
+
 ---
 
 ## Próximos registros

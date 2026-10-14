@@ -868,6 +868,150 @@
   }
 }
 
+/* dividir: as duas metades abrem/fecham a partir do centro (barn inHorizontal) */
+
+.forma-dividir {
+  animation: forma-dividir var(--anim-dur, 500ms) ease both;
+}
+
+.forma-dividir-fora {
+  animation: forma-dividir-fora var(--anim-dur, 500ms) ease both;
+}
+
+@keyframes forma-dividir {
+  from {
+    clip-path: inset(0 50% 0 50%);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes forma-dividir-fora {
+  from {
+    clip-path: inset(0 0 0 0);
+  }
+
+  to {
+    clip-path: inset(0 50% 0 50%);
+  }
+}
+
+/* as texturas (persianas, dissolver e roda) revelam por máscara: uma variável
+   registrada (--reveal) anima dentro do gradiente da máscara */
+@property --reveal {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+
+/* persianas: dez faixas horizontais que crescem para baixo */
+
+.forma-persianas {
+  mask-image: linear-gradient(to bottom, #000 var(--reveal), transparent 0);
+  mask-size: 100% 10%;
+  mask-repeat: repeat-y;
+  animation: forma-persianas var(--anim-dur, 500ms) ease both;
+}
+
+.forma-persianas-fora {
+  mask-image: linear-gradient(to bottom, #000 var(--reveal), transparent 0);
+  mask-size: 100% 10%;
+  mask-repeat: repeat-y;
+  animation: forma-persianas-fora var(--anim-dur, 500ms) ease both;
+}
+
+@keyframes forma-persianas {
+  from {
+    --reveal: 0%;
+  }
+
+  to {
+    --reveal: 100%;
+  }
+}
+
+@keyframes forma-persianas-fora {
+  from {
+    --reveal: 100%;
+  }
+
+  to {
+    --reveal: 0%;
+  }
+}
+
+/* dissolver: quadradinhos de 6 px que crescem (a interseção das faixas) */
+
+.forma-dissolve {
+  mask-image: linear-gradient(to bottom, #000 var(--reveal), transparent 0), linear-gradient(to right, #000 var(--reveal), transparent 0);
+  mask-size: 100% 6px, 6px 100%;
+  mask-repeat: repeat;
+  mask-composite: intersect;
+  animation: forma-dissolve var(--anim-dur, 500ms) ease both;
+}
+
+.forma-dissolve-fora {
+  mask-image: linear-gradient(to bottom, #000 var(--reveal), transparent 0), linear-gradient(to right, #000 var(--reveal), transparent 0);
+  mask-size: 100% 6px, 6px 100%;
+  mask-repeat: repeat;
+  mask-composite: intersect;
+  animation: forma-dissolve-fora var(--anim-dur, 500ms) ease both;
+}
+
+@keyframes forma-dissolve {
+  from {
+    --reveal: 0%;
+  }
+
+  to {
+    --reveal: 100%;
+  }
+}
+
+@keyframes forma-dissolve-fora {
+  from {
+    --reveal: 100%;
+  }
+
+  to {
+    --reveal: 0%;
+  }
+}
+
+/* roda: uma volta completa, como um ponteiro (wheel(1)) */
+
+.forma-roda {
+  mask-image: conic-gradient(from 0deg, #000 var(--reveal), transparent 0);
+  animation: forma-roda var(--anim-dur, 500ms) ease both;
+}
+
+.forma-roda-fora {
+  mask-image: conic-gradient(from 0deg, #000 var(--reveal), transparent 0);
+  animation: forma-roda-fora var(--anim-dur, 500ms) ease both;
+}
+
+@keyframes forma-roda {
+  from {
+    --reveal: 0%;
+  }
+
+  to {
+    --reveal: 100%;
+  }
+}
+
+@keyframes forma-roda-fora {
+  from {
+    --reveal: 100%;
+  }
+
+  to {
+    --reveal: 0%;
+  }
+}
+
 /* movimento reduzido: o efeito aplica na hora (o jogador já usa duração 0) */
 @media (prefers-reduced-motion: reduce) {
   .forma-surge,
@@ -888,7 +1032,15 @@
   .forma-circulo,
   .forma-circulo-fora,
   .forma-losango,
-  .forma-losango-fora {
+  .forma-losango-fora,
+  .forma-dividir,
+  .forma-dividir-fora,
+  .forma-persianas,
+  .forma-persianas-fora,
+  .forma-dissolve,
+  .forma-dissolve-fora,
+  .forma-roda,
+  .forma-roda-fora {
     animation-duration: 1ms;
   }
 }

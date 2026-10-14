@@ -507,6 +507,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   limpar varre a partir da borda, as outras abrem do centro. Round-trip do `p:timing` com
   `animEffect` de `filter` (`wipe(up|down|left|right)`, `box(in|out)`, `circle(in|out)`,
   `diamond(in|out)`) e subtypes 16/32; filter ou subtype fora do padrão volta cru, com aviso.
+- **Animações, degrau 7**: os clássicos de textura **Dividir** (abre do centro para os lados),
+  **Persianas** (faixas horizontais), **Dissolver** (pontinhos) e **Roda** (uma volta como um
+  ponteiro), com as saídas "fora" — a galeria passa a **29 efeitos**. O F5 desenha as texturas
+  por **máscara** (a variável registrada `--reveal` anima dentro do gradiente; o dividir usa
+  recorte) e o `.pptx` faz round-trip do `p:timing` com `filter` (`barn(in|outHorizontal)`,
+  `blinds(horizontal)`, `dissolve`, `wheel(1)`) e subtypes 21/42, 10, 0 e 1; as outras variantes
+  do PowerPoint (verticais, dois ponteiros…) ficam cruas, com aviso.
 - **Diálogos do app no lugar de janelas do sistema**: **Novo modelo** (botão Template) e
   **Renomear lâmina** agora usam o diálogo de texto do app — com o tema, dica, Enter/OK,
   Esc/Cancelar e clique fora; ao criar, a galeria reabre já com o cartão novo.

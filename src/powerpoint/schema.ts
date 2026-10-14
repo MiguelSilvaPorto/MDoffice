@@ -27,7 +27,7 @@ export interface Transicao {
 }
 
 /** Efeito de animação de uma forma (entrada, ênfase, saída ou trajetória). */
-export type AnimacaoTipo = "aparecer" | "surgir" | "voar" | "zoom" | "limpar" | "caixa" | "circulo" | "losango" | "pulsar" | "ampliar" | "girar" | "transparencia" | "desaparecer" | "sumir" | "voarFora" | "encolher" | "limparFora" | "caixaFora" | "circuloFora" | "losangoFora" | "trajetoria";
+export type AnimacaoTipo = "aparecer" | "surgir" | "voar" | "zoom" | "limpar" | "caixa" | "circulo" | "losango" | "dividir" | "persianas" | "dissolver" | "roda" | "pulsar" | "ampliar" | "girar" | "transparencia" | "desaparecer" | "sumir" | "voarFora" | "encolher" | "limparFora" | "caixaFora" | "circuloFora" | "losangoFora" | "dividirFora" | "persianasFora" | "dissolverFora" | "rodaFora" | "trajetoria";
 
 /** Direção da trajetória (para onde a forma anda). */
 export type AnimacaoDirecao = "esquerda" | "direita" | "cima" | "baixo";

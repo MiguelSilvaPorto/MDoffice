@@ -5,7 +5,7 @@
 import type { Animacao, AnimacaoDirecao, Shape } from "../schema";
 import { aceitaDirecaoAnimacao, atrasoDe, direcaoDeAnimacao, duracaoEfetiva, inicioDe, paragrafosDe } from "../edicao/animacao";
 
-/** presetID/presetClass de cada tipo (aparecer = 1; surgir/sumir = fade = 10; voar = 2; zoom = 53; limpar = 22; caixa = 4; círculo = 6; losango = 8; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9; trajetória em linha = 64). */
+/** presetID/presetClass de cada tipo (aparecer = 1; surgir/sumir = fade = 10; voar = 2; zoom = 53; limpar = 22; caixa = 4; círculo = 6; losango = 8; dividir = 16; persianas = 3; dissolver = 9; roda = 21; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9; trajetória em linha = 64). */
 const PRESET: Record<Animacao["tipo"], { id: number; classe: "entr" | "emph" | "exit" | "path" }> = {
   aparecer: { id: 1, classe: "entr" },
   surgir: { id: 10, classe: "entr" },
@@ -15,6 +15,10 @@ const PRESET: Record<Animacao["tipo"], { id: number; classe: "entr" | "emph" | "
   caixa: { id: 4, classe: "entr" },
   circulo: { id: 6, classe: "entr" },
   losango: { id: 8, classe: "entr" },
+  dividir: { id: 16, classe: "entr" },
+  persianas: { id: 3, classe: "entr" },
+  dissolver: { id: 9, classe: "entr" },
+  roda: { id: 21, classe: "entr" },
   pulsar: { id: 26, classe: "emph" },
   ampliar: { id: 6, classe: "emph" },
   girar: { id: 8, classe: "emph" },
@@ -27,14 +31,31 @@ const PRESET: Record<Animacao["tipo"], { id: number; classe: "entr" | "emph" | "
   caixaFora: { id: 4, classe: "exit" },
   circuloFora: { id: 6, classe: "exit" },
   losangoFora: { id: 8, classe: "exit" },
+  dividirFora: { id: 16, classe: "exit" },
+  persianasFora: { id: 3, classe: "exit" },
+  dissolverFora: { id: 9, classe: "exit" },
+  rodaFora: { id: 21, classe: "exit" },
   trajetoria: { id: 64, classe: "path" },
 };
 
 /** presetSubtype das direções (os do PowerPoint: cima 1, direita 2, baixo 4, esquerda 8). */
 const SUB_DIRECAO: Record<AnimacaoDirecao, number> = { cima: 1, direita: 2, baixo: 4, esquerda: 8 };
 
-/** presetSubtype das revelações do centro: abre (in) = 16, fecha (out) = 32. */
-const SUB_FORMA: Partial<Record<Animacao["tipo"], number>> = { caixa: 16, circulo: 16, losango: 16, caixaFora: 32, circuloFora: 32, losangoFora: 32 };
+/** presetSubtype das revelações: caixa/círculo/losango abrem (16) ou fecham (32); dividir abre (21) ou fecha (42) na horizontal; persianas horizontais (10) e roda de um ponteiro (1); o dissolver não tem variante (0). */
+const SUB_FORMA: Partial<Record<Animacao["tipo"], number>> = {
+  caixa: 16,
+  circulo: 16,
+  losango: 16,
+  caixaFora: 32,
+  circuloFora: 32,
+  losangoFora: 32,
+  dividir: 21,
+  dividirFora: 42,
+  persianas: 10,
+  persianasFora: 10,
+  roda: 1,
+  rodaFora: 1,
+};
 
 /** Caminho de uma linha reta de 25% da lâmina, na direção pedida (o mesmo dos presets "Linhas"). */
 const CAMINHO_LINHA: Record<AnimacaoDirecao, string> = {
@@ -62,14 +83,22 @@ const FILTRO_LIMPAR: Record<AnimacaoDirecao, string> = {
   direita: "wipe(left)",
 };
 
-/** O `filter` das revelações do centro (abre/fecha). */
-const FILTRO_FORMA: Partial<Record<Animacao["tipo"], string>> = {
-  caixa: "box(in)",
-  caixaFora: "box(out)",
-  circulo: "circle(in)",
-  circuloFora: "circle(out)",
-  losango: "diamond(in)",
-  losangoFora: "diamond(out)",
+/** O `filter` e o sentido de cada revelação fixa (o dissolver não tem variante; persianas e roda usam a horizontal/um ponteiro). */
+const REVELACAO: Partial<Record<Animacao["tipo"], { filtro: string; saida: boolean }>> = {
+  caixa: { filtro: "box(in)", saida: false },
+  caixaFora: { filtro: "box(out)", saida: true },
+  circulo: { filtro: "circle(in)", saida: false },
+  circuloFora: { filtro: "circle(out)", saida: true },
+  losango: { filtro: "diamond(in)", saida: false },
+  losangoFora: { filtro: "diamond(out)", saida: true },
+  dividir: { filtro: "barn(inHorizontal)", saida: false },
+  dividirFora: { filtro: "barn(outHorizontal)", saida: true },
+  persianas: { filtro: "blinds(horizontal)", saida: false },
+  persianasFora: { filtro: "blinds(horizontal)", saida: true },
+  dissolver: { filtro: "dissolve", saida: false },
+  dissolverFora: { filtro: "dissolve", saida: true },
+  roda: { filtro: "wheel(1)", saida: false },
+  rodaFora: { filtro: "wheel(1)", saida: true },
 };
 
 interface Efeito {
@@ -174,8 +203,8 @@ export function xmlTiming(animacoes: Animacao[] | undefined, ids: Record<string,
     if (e.a.tipo === "encolher") return animProp(e, dur, "ppt_w", "#ppt_w", "0") + animProp(e, dur, "ppt_h", "#ppt_h", "0") + animEffect(e, true, dur) + setVis(e, Math.max(0, dur - 1), false);
     if (e.a.tipo === "limpar") return setVis(e, 0, true) + animEffect(e, false, dur, FILTRO_LIMPAR[direcaoDeAnimacao(e.a)]);
     if (e.a.tipo === "limparFora") return animEffect(e, true, dur, FILTRO_LIMPAR[direcaoDeAnimacao(e.a)]) + setVis(e, Math.max(0, dur - 1), false);
-    if (e.a.tipo === "caixa" || e.a.tipo === "circulo" || e.a.tipo === "losango") return setVis(e, 0, true) + animEffect(e, false, dur, FILTRO_FORMA[e.a.tipo]);
-    if (e.a.tipo === "caixaFora" || e.a.tipo === "circuloFora" || e.a.tipo === "losangoFora") return animEffect(e, true, dur, FILTRO_FORMA[e.a.tipo]) + setVis(e, Math.max(0, dur - 1), false);
+    const rev = REVELACAO[e.a.tipo];
+    if (rev) return rev.saida ? animEffect(e, true, dur, rev.filtro) + setVis(e, Math.max(0, dur - 1), false) : setVis(e, 0, true) + animEffect(e, false, dur, rev.filtro);
     if (e.a.tipo === "pulsar") return animScale(e, dur, 105000, true);
     if (e.a.tipo === "ampliar") return animScale(e, dur, 150000, false);
     if (e.a.tipo === "girar") return `<p:animRot by="21600000">${cbhvr(e, dur, null, [])}</p:animRot>`;

@@ -25,6 +25,14 @@ const CIRCULO = "forma-circulo";
 const CIRCULO_FORA = "forma-circulo-fora";
 const LOSANGO = "forma-losango";
 const LOSANGO_FORA = "forma-losango-fora";
+const DIVIDIR = "forma-dividir";
+const DIVIDIR_FORA = "forma-dividir-fora";
+const PERSIANAS = "forma-persianas";
+const PERSIANAS_FORA = "forma-persianas-fora";
+const DISSOLVE = "forma-dissolve";
+const DISSOLVE_FORA = "forma-dissolve-fora";
+const RODA = "forma-roda";
+const RODA_FORA = "forma-roda-fora";
 
 /** Classe de cada tipo (aparecer/desaparecer são só visibilidade e saem antes). */
 const CLASSE_EFEITO: Record<Exclude<Animacao["tipo"], "aparecer" | "desaparecer">, string> = {
@@ -47,6 +55,14 @@ const CLASSE_EFEITO: Record<Exclude<Animacao["tipo"], "aparecer" | "desaparecer"
   circuloFora: CIRCULO_FORA,
   losango: LOSANGO,
   losangoFora: LOSANGO_FORA,
+  dividir: DIVIDIR,
+  dividirFora: DIVIDIR_FORA,
+  persianas: PERSIANAS,
+  persianasFora: PERSIANAS_FORA,
+  dissolver: DISSOLVE,
+  dissolverFora: DISSOLVE_FORA,
+  roda: RODA,
+  rodaFora: RODA_FORA,
 };
 
 /** Efeitos que terminam num estado novo (a classe fica segurando o fim da animação). */
@@ -61,6 +77,10 @@ const EFEITO_FIXO: Partial<Record<Animacao["tipo"], string>> = {
   caixaFora: CAIXA_FORA,
   circuloFora: CIRCULO_FORA,
   losangoFora: LOSANGO_FORA,
+  dividirFora: DIVIDIR_FORA,
+  persianasFora: PERSIANAS_FORA,
+  dissolverFora: DISSOLVE_FORA,
+  rodaFora: RODA_FORA,
 };
 
 /** O lado "sumido" do Limpar: a faixa visível fica encostada na borda da direção. */
@@ -260,7 +280,36 @@ export function iniciarAnimacoes(
       const els = new Set<HTMLElement>();
       for (const alvo of alvos) if (alvo.el) els.add(alvo.el);
       for (const el of els) {
-        el.classList.remove(OCULTA, SURGE, SOME, PULSA, AMPLIA, GIRA, TRANSP, TRAJ, VOA, VOA_FORA, ZOOM, ENCOLHE, LIMPA, LIMPA_FORA, CAIXA, CAIXA_FORA, CIRCULO, CIRCULO_FORA, LOSANGO, LOSANGO_FORA);
+        el.classList.remove(
+          OCULTA,
+          SURGE,
+          SOME,
+          PULSA,
+          AMPLIA,
+          GIRA,
+          TRANSP,
+          TRAJ,
+          VOA,
+          VOA_FORA,
+          ZOOM,
+          ENCOLHE,
+          LIMPA,
+          LIMPA_FORA,
+          CAIXA,
+          CAIXA_FORA,
+          CIRCULO,
+          CIRCULO_FORA,
+          LOSANGO,
+          LOSANGO_FORA,
+          DIVIDIR,
+          DIVIDIR_FORA,
+          PERSIANAS,
+          PERSIANAS_FORA,
+          DISSOLVE,
+          DISSOLVE_FORA,
+          RODA,
+          RODA_FORA
+        );
         el.style.removeProperty("--anim-dur");
         el.style.removeProperty("--traj-x");
         el.style.removeProperty("--traj-y");

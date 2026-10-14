@@ -559,6 +559,20 @@ const AN = await empacotar("src/powerpoint/edicao/animacao.ts", "animacao.mjs");
       AN.CLASSE_ANIMACAO.losangoFora === "saida"
   );
   ok("animação: direção vale no limpar", AN.aceitaDirecaoAnimacao("limpar") && AN.aceitaDirecaoAnimacao("limparFora") && !AN.aceitaDirecaoAnimacao("caixa"));
+
+  // as texturas (dividir, persianas, dissolver e roda)
+  ok(
+    "animação: classes das texturas",
+    AN.CLASSE_ANIMACAO.dividir === "entrada" &&
+      AN.CLASSE_ANIMACAO.persianas === "entrada" &&
+      AN.CLASSE_ANIMACAO.dissolver === "entrada" &&
+      AN.CLASSE_ANIMACAO.roda === "entrada" &&
+      AN.CLASSE_ANIMACAO.dividirFora === "saida" &&
+      AN.CLASSE_ANIMACAO.persianasFora === "saida" &&
+      AN.CLASSE_ANIMACAO.dissolverFora === "saida" &&
+      AN.CLASSE_ANIMACAO.rodaFora === "saida"
+  );
+  ok("animação: texturas não têm direção", !AN.aceitaDirecaoAnimacao("dividir") && !AN.aceitaDirecaoAnimacao("persianas") && !AN.aceitaDirecaoAnimacao("dissolver") && !AN.aceitaDirecaoAnimacao("roda"));
 }
 
 // ---------------------------------------------------------------- round-trip do p:timing
@@ -720,6 +734,34 @@ const TEXP = await empacotar("src/powerpoint/pptxexport/timing.ts", "timing-exp.
   ok("timing: limpar lê a direção do filter", JSON.stringify(TIMP.lerTiming(limparTrocado, spids).animacoes) === JSON.stringify([{ forma: "s1", tipo: "limpar", duracao: 0.5, direcao: "esquerda" }]));
   const caixaSub = TEXP.xmlTiming([{ forma: "s1", tipo: "caixaFora" }], ids, []).replace('presetSubtype="32"', 'presetSubtype="16"');
   ok("timing: caixa fora com subtype de entrada fica crua", !TIMP.lerTiming(caixaSub, spids).animacoes);
+
+  // Dividir, Persianas, Dissolver e Roda (a variante padrão): round-trip com filter e subtype
+  for (const [tipo, classe, preset, sub, filtro] of [
+    ["dividir", "entr", 16, 21, "barn(inHorizontal)"],
+    ["dividirFora", "exit", 16, 42, "barn(outHorizontal)"],
+    ["persianas", "entr", 3, 10, "blinds(horizontal)"],
+    ["persianasFora", "exit", 3, 10, "blinds(horizontal)"],
+    ["dissolver", "entr", 9, 0, "dissolve"],
+    ["dissolverFora", "exit", 9, 0, "dissolve"],
+    ["roda", "entr", 21, 1, "wheel(1)"],
+    ["rodaFora", "exit", 21, 1, "wheel(1)"],
+  ]) {
+    const m = [{ forma: "s1", tipo, duracao: 0.5 }];
+    const xmlT = TEXP.xmlTiming(m, ids, []);
+    const volta = TIMP.lerTiming(xmlT, spids);
+    ok(
+      `timing: round-trip ${tipo}`,
+      xmlT.includes(`presetID="${preset}" presetClass="${classe}" presetSubtype="${sub}"`) && xmlT.includes(`filter="${filtro}"`) && JSON.stringify(volta.animacoes) === JSON.stringify(m),
+      JSON.stringify([m, volta])
+    );
+  }
+  // as outras variantes ficam cruas (persianas verticais, roda de dois ponteiros, dividir vertical)
+  const persianasV = TEXP.xmlTiming([{ forma: "s1", tipo: "persianas" }], ids, []).replace('filter="blinds(horizontal)"', 'filter="blinds(vertical)"');
+  ok("timing: persianas verticais ficam cruas", !TIMP.lerTiming(persianasV, spids).animacoes);
+  const roda2 = TEXP.xmlTiming([{ forma: "s1", tipo: "roda" }], ids, []).replace('filter="wheel(1)"', 'filter="wheel(2)"');
+  ok("timing: roda de dois ponteiros fica crua", !TIMP.lerTiming(roda2, spids).animacoes);
+  const dividirV = TEXP.xmlTiming([{ forma: "s1", tipo: "dividir" }], ids, []).replace('filter="barn(inHorizontal)"', 'filter="barn(inVertical)"');
+  ok("timing: dividir na vertical fica cru", !TIMP.lerTiming(dividirV, spids).animacoes);
 
   // "por parágrafo": um efeito por parágrafo NÃO vazio + bldP build="p"; o importador colapsa de volta
   {

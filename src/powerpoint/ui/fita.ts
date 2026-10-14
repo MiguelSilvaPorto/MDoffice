@@ -128,6 +128,62 @@ function previaAnimacao(tipo: AnimacaoTipo): string {
       moldura +
       `<path d="M20 3 27 10 20 17 13 10Z" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".65"/>` +
       `<path d="M20 7 23 10 20 13 17 10Z" fill="currentColor" fill-opacity=".55"/>`,
+    // abre do centro para os lados (duas metades + setas para fora)
+    dividir:
+      moldura +
+      `<rect x="4" y="5" width="8" height="10" rx="1.5" fill="currentColor" fill-opacity=".5"/>` +
+      `<rect x="20" y="5" width="8" height="10" rx="1.5" fill="currentColor" fill-opacity=".5"/>` +
+      traco("M13.5 10 11 10M12 8.5 10.5 10 12 11.5M18.5 10 21 10M20 8.5 21.5 10 20 11.5"),
+    // fecha no centro (mesmo desenho, setas para dentro)
+    dividirFora:
+      moldura +
+      `<rect x="4" y="5" width="8" height="10" rx="1.5" fill="currentColor" fill-opacity=".5"/>` +
+      `<rect x="20" y="5" width="8" height="10" rx="1.5" fill="currentColor" fill-opacity=".5"/>` +
+      traco("M11 10 13.5 10M13 8.5 14.5 10 13 11.5M21 10 18.5 10M19 8.5 17.5 10 19 11.5"),
+    // faixas que crescem (persianas horizontais)
+    persianas:
+      moldura +
+      `<rect x="6" y="3.5" width="20" height="2.6" rx="1" fill="currentColor" fill-opacity=".55"/>` +
+      `<rect x="6" y="8" width="20" height="2.6" rx="1" fill="currentColor" fill-opacity=".55"/>` +
+      `<rect x="6" y="12.5" width="14" height="2.6" rx="1" fill="currentColor" fill-opacity=".45"/>` +
+      `<rect x="6" y="17" width="7" height="2.6" rx="1" fill="currentColor" fill-opacity=".35"/>`,
+    // some em faixas (mesmo desenho, de baixo para cima)
+    persianasFora:
+      moldura +
+      `<rect x="6" y="3.5" width="7" height="2.6" rx="1" fill="currentColor" fill-opacity=".35"/>` +
+      `<rect x="6" y="8" width="14" height="2.6" rx="1" fill="currentColor" fill-opacity=".45"/>` +
+      `<rect x="6" y="12.5" width="20" height="2.6" rx="1" fill="currentColor" fill-opacity=".55"/>` +
+      `<rect x="6" y="17" width="20" height="2.6" rx="1" fill="currentColor" fill-opacity=".55"/>`,
+    // pontinhos que aparecem (dissolver)
+    dissolver:
+      moldura +
+      `<g fill="currentColor" fill-opacity=".55">` +
+      `<rect x="7" y="4" width="2.4" height="2.4" rx=".4"/><rect x="13" y="4" width="2.4" height="2.4" rx=".4"/><rect x="19" y="4" width="2.4" height="2.4" rx=".4"/>` +
+      `<rect x="10" y="7.5" width="2.4" height="2.4" rx=".4"/><rect x="16" y="7.5" width="2.4" height="2.4" rx=".4"/><rect x="22" y="7.5" width="2.4" height="2.4" rx=".4"/>` +
+      `<rect x="7" y="11" width="2.4" height="2.4" rx=".4"/><rect x="13" y="11" width="2.4" height="2.4" rx=".4"/><rect x="19" y="11" width="2.4" height="2.4" rx=".4"/>` +
+      `<rect x="10" y="14.5" width="2.4" height="2.4" rx=".4"/><rect x="16" y="14.5" width="2.4" height="2.4" rx=".4"/><rect x="22" y="14.5" width="2.4" height="2.4" rx=".4"/>` +
+      `</g>`,
+    // some em pontinhos (mesmo desenho, com metade apagada)
+    dissolverFora:
+      moldura +
+      `<g fill="currentColor" fill-opacity=".3">` +
+      `<rect x="7" y="4" width="2.4" height="2.4" rx=".4"/><rect x="13" y="4" width="2.4" height="2.4" rx=".4"/><rect x="19" y="4" width="2.4" height="2.4" rx=".4"/>` +
+      `<rect x="10" y="7.5" width="2.4" height="2.4" rx=".4"/><rect x="16" y="7.5" width="2.4" height="2.4" rx=".4"/><rect x="22" y="7.5" width="2.4" height="2.4" rx=".4"/>` +
+      `</g>` +
+      `<g fill="currentColor" fill-opacity=".6">` +
+      `<rect x="7" y="11" width="2.4" height="2.4" rx=".4"/><rect x="13" y="11" width="2.4" height="2.4" rx=".4"/><rect x="19" y="11" width="2.4" height="2.4" rx=".4"/>` +
+      `<rect x="10" y="14.5" width="2.4" height="2.4" rx=".4"/><rect x="16" y="14.5" width="2.4" height="2.4" rx=".4"/><rect x="22" y="14.5" width="2.4" height="2.4" rx=".4"/>` +
+      `</g>`,
+    // uma volta como um ponteiro (roda)
+    roda:
+      moldura +
+      `<circle cx="16" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".6"/>` +
+      `<path d="M16 10 16 3 A7 7 0 0 1 22.1 6.5 Z" fill="currentColor" fill-opacity=".5"/>`,
+    // some na volta (mesmo desenho, seta no sentido contrário)
+    rodaFora:
+      moldura +
+      `<circle cx="16" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".6"/>` +
+      `<path d="M16 10 16 3 A7 7 0 0 0 9.9 6.5 Z" fill="currentColor" fill-opacity=".5"/>`,
   };
   return `<svg class="ppr-anim-svg" viewBox="0 0 32 20" aria-hidden="true">${desenhos[tipo]}</svg>`;
 }
