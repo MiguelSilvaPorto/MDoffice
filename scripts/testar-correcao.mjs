@@ -53,6 +53,9 @@ igual("não fecha frase terminando em conector", "O relatorio ficou pronto para"
 igual("título não recebe ponto", "## titulo sem ponto", "## titulo sem ponto");
 igual("item de lista não recebe ponto", "- item sem ponto", "- item sem ponto");
 igual("reticências ficam intactas", "Esperando...", "Esperando...");
+igual("quatro pontos viram três (reticências)", "Esperando....", "Esperando...");
+igual("quatro pontos no meio da frase também", "Ele pensou.... O plano mudou.", "Ele pensou... O plano mudou.");
+igual("linha pontilhada longa fica (separador)", "Introdução..... 5", "Introdução..... 5");
 
 // ---------------------------------------------------------------- vírgulas
 igual("vírgula antes de “mas”", "eu comprei pão mas esqueci o leite", "Eu comprei pão, mas esqueci o leite.");

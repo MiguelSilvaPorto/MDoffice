@@ -415,3 +415,15 @@ O time ira viajar amanha de manha.
 ````text
 O time irá viajar amanhã de manhã.
 ````
+
+## Caso 34 — reticências: quatro pontos viram três
+
+### Errado
+````text
+A pesquisa continua....
+````
+
+### Esperado
+````text
+A pesquisa continua...
+````

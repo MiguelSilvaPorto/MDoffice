@@ -4,10 +4,20 @@
 
 import type { RuleCtx } from "./types";
 
-/** Pontos e vírgulas duplicados: “..”, “. .”, “,,”, “, ,”. Reticências “...” ficam intactas. */
+/**
+ * Pontos e vírgulas duplicados: “..”, “. .”, “,,”, “, ,”. Reticências são “...” (três pontos) —
+ * o quarto ponto é excesso.
+ */
 export function duplicatedPunct({ mask, push }: RuleCtx): void {
   let m: RegExpExecArray | null;
-  // “..” (dois pontos seguidos; “...” e “....” são intencionais e ficam)
+  // “....” (exatamente quatro pontos): reticências são TRÊS pontos — o quarto é excesso.
+  // Fica de fora o que é separador/linha pontilhada (“.....”, “..........”), que é longo
+  // de propósito. As guardas de dígito são as mesmas do “..”: não encostam em número (“3.14”).
+  const quatroPontos = /(?<![\d.])\.{4}(?![\d.])/gu;
+  while ((m = quatroPontos.exec(mask)) !== null) {
+    push(m.index, m.index + m[0].length, "Reticências são três pontos — fica só “...”", "...", [], false);
+  }
+  // “..” (dois pontos seguidos; “...” fica: é reticência de verdade)
   const doisPontos = /(?<![\d.])\.\.(?![\d.])/gu;
   while ((m = doisPontos.exec(mask)) !== null) {
     push(m.index, m.index + m[0].length, "Dois pontos seguidos — fica um só", ".", [], false);

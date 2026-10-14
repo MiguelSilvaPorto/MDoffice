@@ -74,9 +74,10 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   agrupa os avisos, estatísticas e **“Corrigir tudo (estilo)”**; dicionário pessoal e
   “ignorar palavra”.
 - **Correção automática** (liga/desliga): palavras erradas com certeza, maiúsculas, espaços,
-  pontuação repetida e abreviações entram sozinhas ao pausar; ao **terminar o parágrafo** o
-  parágrafo ganha ponto/vírgulas; ao **salvar**, o documento é revisado. Cada correção é um
-  passo único de `Ctrl+Z` — e **desfazer ensina**: a troca desfeita volta a ser só sugestão.
+  pontuação repetida (inclusive **“....” → “...”**: reticências são três pontos) e abreviações
+  entram sozinhas ao pausar; ao **terminar o parágrafo** o parágrafo ganha ponto/vírgulas; ao
+  **salvar**, o documento é revisado. Cada correção é um passo único de `Ctrl+Z` — e **desfazer
+  ensina**: a troca desfeita volta a ser só sugestão.
 - **Ponto e vírgula automáticos**: ponto final no fim do parágrafo, vírgula antes de
   “mas/porém/contudo…”, depois de conectivos que abrem a frase e depois das **aberturas
   adverbiais** (“Com o tempo,”, “Hoje em dia,”, “No começo,”…) — inclusive quando elas

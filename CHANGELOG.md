@@ -112,6 +112,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   `F7`. Guardas evitam o falso positivo de expressão com complemento (“No começo de tudo”,
   “Com o tempo livre” ficam sem vírgula). Antes, no texto típico, a varredura só aplicava
   maiúscula inicial e ponto final — nenhuma vírgula.
+- **Reticências são três pontos**: o corretor agora acusa o "...." (quatro pontos) e corrige para
+  "..." — antes o "...." era tratado como intencional e passava batido. A correção entra na
+  varredura (na pausa, ao terminar o parágrafo e ao salvar) e o aviso mostra o trecho já
+  corrigido; linhas pontilhadas longas (".....") continuam intactas.
 
 ---
 

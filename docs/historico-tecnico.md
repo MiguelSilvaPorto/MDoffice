@@ -1892,6 +1892,44 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   são as que garantem que ela NÃO existe fora do `no-preview` (senão volta a brigar com a barra
   de rolagem) e que os seis painéis a escondem.
 
+## src/broker/style/limpeza.ts
+
+### 2026-10-14 · reticências são três pontos · a regra nova no `duplicatedPunct`
+- **Local:** `duplicatedPunct`
+- **Linha:** bloco novo — `const quatroPontos = /(?<![\d.])\.{4}(?![\d.])/gu;` com
+  `push(…, "Reticências são três pontos — fica só “...”", "...", [], false)`; o comentário do “..”
+  deixou de dizer que “....” é intencional
+- **Porquê:** o corretor tratava o “....” como reticência intencional e deixava passar — o usuário
+  reportou que o certo são três pontos. Quatro pontos exatos viram “...”, com as mesmas guardas de
+  dígito do “..” (não encostam em número). Runs maiores (“.....”, “..........”) ficam de fora: são
+  separadores/linhas pontilhadas de propósito, e a regra não arrisca.
+
+## scripts/testar-correcao.mjs
+
+### 2026-10-14 · reticências são três pontos · 3 verificações novas
+- **Local:** bloco "ponto final", depois de "reticências ficam intactas"
+- **Linha:** `novo` — quatro pontos no fim (“Esperando....”), no meio (“Ele pensou.... O plano
+  mudou.”) e a linha pontilhada longa que fica (“Introdução..... 5”)
+- **Porquê:** cobre o caso relatado, o meio da frase e a decisão de deixar o separador longo
+  intacto — se a regra for apertada depois, o teste do separador mostra o que muda.
+
+## test/docs/gramatical.md
+
+### 2026-10-14 · reticências são três pontos · caso 34
+- **Local:** `## Caso 34` (novo)
+- **Linha:** caso novo — “A pesquisa continua....” → “A pesquisa continua...”
+- **Porquê:** o corpus roda o pipeline real (`checkText`) e exige as duas pontas: o “....” vira
+  “...” e o “...” de verdade não é tocado (texto correto preservado).
+
+## docs/md.md
+
+### 2026-10-14 · reticências são três pontos · a menção na correção automática
+- **Local:** “Escrita assistida” → bala “**Correção automática**”
+- **Linha:** `pontuação repetida e abreviações` → `pontuação repetida (inclusive “....” → “...”:
+  reticências são três pontos) e abreviações`
+- **Porquê:** o documento do módulo descreve o que entra sozinho na pausa; a regra nova é uma
+  correção automática e precisa aparecer ali.
+
 ---
 
 ## Próximos registros
