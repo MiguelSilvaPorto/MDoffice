@@ -400,6 +400,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Arranjos: triângulos e painéis de fundo não viram mais "cartões"** — antes uma forma grande e decorativa (ex.: os triângulos verdes) ou um painel atrás dos cartões era tratado como cartão, engolia os de verdade e o arranjo saía desordenado; agora eles ficam parados e só os cartões com conteúdo se arrumam. Teste: `npm run test:arranjos`.
+
 - **Copiar formatação (o Pincel de Formatação)**: a apresentação ganhou o botão que faltava na
   **Área de Transferência** da fita — com uma forma escolhida, ele **copia a pintura e o formato do
   texto** dela (preenchimento, contorno, sombra, transparência, a receita do **Estilo de Cor** e

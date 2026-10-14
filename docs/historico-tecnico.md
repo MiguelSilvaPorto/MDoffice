@@ -8394,3 +8394,11 @@ antigas quando fizer sentido.
 - **Porquê:** mudança do módulo PowerPoint. A entrada fica em "Não adicionado" até o commit do
   `fechar.ps1` entregar a `main`; a promoção para "Adicionado" é um passo separado (não cabe no
   mesmo commit do fechamento), como na promoção das entradas da R6 e das Ideias.
+
+### 2026-10-14 · fix/arranjos-deteccao · Enfeites e painéis deixam de ser "cartões"
+- **Arquivo/local:** `src/powerpoint/edicao/arranjos.ts` — `ehCartao()`, novos `geomDeCartao()`/`ehDecoracao()`/`analisar()`,
+  `soltas()`, `unidadesCom()`; `scripts/testar-arranjos.mjs` (novo) e `package.json` (`test:arranjos`).
+- **Linha:** `ehCartao` = pintada + área → + geometria de retângulo e não-enfeite; `cartoes()` → `analisar()` (cartões + painéis);
+  decoração e painel saem do conteúdo (`dono`) e de `soltas`.
+- **Porquê:** na lâmina importada, o triângulo verde (pintado, 2–80% da área) virava cartão; como `cartoes()` descartava todo
+  candidato dentro de outro, a caixa do triângulo engolia os cartões de verdade e tudo se empilhava. Painel de fundo: idem.

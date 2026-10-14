@@ -148,6 +148,9 @@ avisado ao abrir (nunca some em silêncio).
     é por contenção (o que está por dentro anda junto);
   - os cartões ganham o **mesmo tamanho** (o do maior, ajustado para caber no espaço da fórmula) e
     o conteúdo escala junto, com o texto num mínimo de 8pt;
+  - **enfeites não são cartões**: uma forma grande, pintada e sem texto que não é retângulo
+    (triângulo, seta…) ou é translúcida fica onde está e não engole nada; um **painel de fundo**
+    que envolve vários cartões também fica parado — só os cartões dentro dele se arrumam;
   - as **formas fixas do modelo** (decorações) e os **textos do cabeçalho** (título, subtítulo,
     legenda) **não se movem**; as **linhas de ligação saem** (conectores e traços finos fora dos
     cartões), porque a vizinhança dos cartões mudou — dá para desfazer;

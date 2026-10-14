@@ -66,8 +66,23 @@ function pintado(s: Shape): boolean {
   return s.kind === "imagem" || !!s.src || s.fillX?.kind === "solid" || !!s.fill;
 }
 
+/** Geometrias que um cartão pode ter (retângulo e variações de cantos); triângulo, seta, estrela,
+ *  traçado livre etc. são enfeite. */
+function geomDeCartao(s: Shape): boolean {
+  if (s.paths?.length) return false;
+  return !s.geom || /^(rect|round|snip)/i.test(s.geom);
+}
+
+/** Uma forma grande, pintada e sem texto que é enfeite (triângulo, forma translúcida…): não é
+ *  cartão e não anda com ninguém — fica onde está, como as decorações fixas do modelo. */
+function ehDecoracao(s: Shape): boolean {
+  if (s.kind === "imagem" || !!s.src || temTexto(s)) return false;
+  if (!pintado(s) || porcao(s.box) < AREA_MIN) return false;
+  return !geomDeCartao(s) || (s.opacity !== undefined && s.opacity < 0.7);
+}
+
 function ehCartao(s: Shape): boolean {
-  return pintado(s) && porcao(s.box) >= AREA_MIN && porcao(s.box) <= AREA_MAX;
+  return pintado(s) && geomDeCartao(s) && !ehDecoracao(s) && porcao(s.box) >= AREA_MIN && porcao(s.box) <= AREA_MAX;
 }
 
 /** Ordem de leitura: de cima para baixo e, na mesma faixa, da esquerda para a direita. */
@@ -77,16 +92,20 @@ function emOrdem(a: Shape, b: Shape): number {
   return a.box.x - b.box.x;
 }
 
-/** Os cartões da lâmina (só os de fora: um cartão dentro de outro anda com o de fora). */
-function cartoes(slide: Slide): Shape[] {
+/** Os cartões da lâmina (só os de fora: um cartão dentro de outro anda com o de fora) e os painéis
+ *  de fundo, que envolvem vários cartões e por isso ficam parados. */
+function analisar(slide: Slide): { cards: Shape[]; paineis: Set<string> } {
   const vivas = slide.shapes.filter((s) => !s.fixa && !s.liga);
   const candidatos = vivas.filter(ehCartao);
-  return candidatos.filter((c) => !candidatos.some((o) => o !== c && dentro(o, c))).sort(emOrdem);
+  // um painel que envolve vários cartões é fundo, não cartão: os cartões dele é que contam
+  const paineis = new Set(candidatos.filter((c) => candidatos.filter((o) => o !== c && dentro(c, o)).length >= 2).map((c) => c.id));
+  const reais = candidatos.filter((c) => !paineis.has(c.id));
+  return { cards: reais.filter((c) => !reais.some((o) => o !== c && dentro(o, c))).sort(emOrdem), paineis };
 }
 
 /** As formas que não andam: fixas do modelo, conectores e o que está dentro de um cartão. */
 function soltas(slide: Slide, cards: Shape[]): Shape[] {
-  return slide.shapes.filter((s) => !s.fixa && !s.liga && !cards.some((c) => dentro(c, s)));
+  return slide.shapes.filter((s) => !s.fixa && !s.liga && !ehDecoracao(s) && !cards.some((c) => dentro(c, s)));
 }
 
 /** Um traço comprido e fino fora dos cartões é uma linha de ligação (num deck importado elas vêm
@@ -125,14 +144,15 @@ function caixaDe(caixas: ShapeBox[]): ShapeBox {
  * do cabeçalho, que ficam onde estão.
  */
 export function unidadesDa(slide: Slide): Unidade[] {
-  return unidadesCom(slide, cartoes(slide));
+  const { cards, paineis } = analisar(slide);
+  return unidadesCom(slide, cards, paineis);
 }
 
 /** Como `unidadesDa`, com os cartões já detectados (o aplicar não detecta duas vezes). */
-function unidadesCom(slide: Slide, cards: Shape[]): Unidade[] {
+function unidadesCom(slide: Slide, cards: Shape[], paineis: Set<string>): Unidade[] {
   if (cards.length >= 2) {
     const porId = new Map(slide.shapes.map((s) => [s.id, s]));
-    const vivas = slide.shapes.filter((s) => !s.fixa && !s.liga);
+    const vivas = slide.shapes.filter((s) => !s.fixa && !s.liga && !ehDecoracao(s) && !paineis.has(s.id));
     const dono = new Map<string, string>();
     // o conteúdo vai para a MENOR carta que o contém (cartão dentro de cartão)
     for (const c of [...cards].sort((a, b) => area(a.box) - area(b.box))) {
@@ -217,8 +237,8 @@ function escalaDoTexto(s: Shape, k: number): Shape {
  * para caber no espaço da fórmula) e o conteúdo de cada um escala junto, na mesma proporção.
  */
 export function aplicarArranjo(slide: Slide, id: Arranjo, variante: number, ratio: number): Slide {
-  const cards = cartoes(slide);
-  const unidades = unidadesCom(slide, cards);
+  const { cards, paineis } = analisar(slide);
+  const unidades = unidadesCom(slide, cards, paineis);
   const porId = new Map(slide.shapes.map((s) => [s.id, s]));
   const emCartao = new Set(slide.shapes.filter((s) => cards.some((c) => dentro(c, s))).map((s) => s.id));
   // nada a arrumar: uma lâmina de título (dois textos soltos) fica como está
