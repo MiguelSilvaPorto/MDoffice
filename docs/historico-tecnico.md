@@ -6594,3 +6594,13 @@ antigas quando fizer sentido.
   rodada pendente sem depender da conversa. O documento marca a R1 como entregue e registra as
   correções que a implementação fez no plano (ângulo 45 no lugar de 135; a assinatura da capa
   sem o esquema; a abertura das intensidades como implementada).
+
+## CHANGELOG.md
+
+### 2026-10-14 · estilos de cor · a entrada da R1 entra no "Adicionado"
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** 1 entrada movida — **Estilos de cor — o motor (R1)** (`d08b66c`)
+- **Porquê:** o commit da R1 já está na `main`, mas a promoção não cabe no mesmo commit do
+  `fechar.ps1` (no momento do commit o código ainda não entrou). Mesma razão das rodadas
+  anteriores: registra-se em "Não adicionado" no fecho e promove-se logo em seguida. Nenhuma
+  entrada de worktree em andamento foi tocada — só o que já está na `main`.

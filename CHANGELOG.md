@@ -378,6 +378,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- (nada no momento)
+
+### Adicionado (na main)
+
+**Backend**
+
+- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
+
+**Frontend**
+
 - **Estilos de cor — o motor (R1, primeira rodada)**: o sistema que vai dar às formas o gradiente
   bonito da referência começou pela base que ninguém vê: um módulo puro de cor que converte
   hex↔HSL, gera a **rampa de tons** que preserva a saturação e **desvia o matiz no tom escuro**
@@ -393,15 +403,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   alguns graus torto sai **reto, com o canto em 90°** — e o que é diagonal de propósito fica como
   está. O encaixe lê a direção numa **janela de pontos** (o tremor que sobra no caminho fino
   enganava a leitura por segmento) e só age em trechos com **3+ segmentos** alinhados.
-
-
-### Adicionado (na main)
-
-**Backend**
-
-- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
-
-**Frontend**
 
 - **Botão "Ideias de design" na fita** (aba **Design** ▸ grupo **Designer**): as Ideias existiam
   só pela aba do painel lateral; agora o botão abre o painel já na aba das Ideias — o mesmo
