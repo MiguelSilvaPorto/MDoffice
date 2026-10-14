@@ -176,13 +176,22 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   com a entrada "Selecionar tudo" do menu de contexto no vazio; a ação continua nos dois caminhos
   (o handler `sel-tudo` do `powerpoint.ts` foi mantido).
 
+### 2026-10-14 · este commit · o botão Draw na aba Inserir
+- **Local:** `inserir()` (novo grupo "Desenho") e os estados da fita
+- **Linha:** novo `grupo("Desenho", grande("desenho", ic("i-draw"), "Draw", ...))` no fim da aba;
+  `on("desenho", st.ferramenta?.tipo === "desenho")` acende o botão com o lápis ligado
+- **Porquê:** o pedido era o Draw **fora** de Formas: em vez de morar na galeria, virou botão
+  próprio na aba Inserir (o ícone é o mesmo lápis do "Desenhar" do editor), e a galeria de formas
+  ficou só com formas.
+
 ## src/powerpoint/ui/galeria.ts
 
-### 2026-10-14 · este commit · a opção Draw na galeria
-- **Local:** `abrirGaleria` (novo parâmetro `aoDesenhar`) e o lápis desenhado em SVG
-- **Linha:** lista de grupos + novo grupo "Desenho" com o botão `data-desenhar` → `run("desenho")`
-- **Porquê:** o pedido era o Draw "no mesmo lugar que insere formas": a galeria ganhou uma opção
-  a mais (depois dos grupos de formas), sem criar uma aba nova.
+### 2026-10-14 · este commit · sem o Draw na galeria
+- **Local:** `abrirGaleria`
+- **Linha:** o parâmetro `aoDesenhar` e o grupo "Desenho" da galeria → removidos
+- **Porquê:** o Draw chegou a entrar na galeria de Formas, mas o pedido era uma opção **fora** de
+  Formas — ele virou botão próprio na aba Inserir (ver `ui/fita.ts`) e a galeria voltou a listar
+  só formas.
 
 ## src/powerpoint/powerpoint.ts
 
@@ -200,7 +209,7 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** novo estado `pincel` (cor, espessura, assistente — guardado no `localStorage`); a
   barrinha entra no `#pp-stage`; `aoTraco` monta a forma com `formaDoTraco` e registra no
   histórico (desfazer funciona); `aoTracoAndamento` atualiza a dica ("entendi: …")
-- **Porquê:** o Draw entra pela galeria de Formas e mantém o lápis **ligado** entre traços (Esc
+- **Porquê:** o Draw entra pelo botão da aba Inserir e mantém o lápis **ligado** entre traços (Esc
   sai) — ao contrário das ferramentas de forma/texto, que se desligam depois de criar. A cor
   padrão é o acento do deck; a escolha, a espessura e o assistente ficam entre sessões.
 
@@ -433,6 +442,21 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   **desenho livre**: `caminhoLivre` simplifica (RDP) e guarda M/L/Z no custGeom, que a
   renderização (`tracadoLivre`) e o `.pptx` já entendiam.
 
+### 2026-10-14 · este commit · medida alinhada, lados retos e arco
+- **Local:** `reconhecerTraco` (ramo fechado e o ramo novo do arco), `ladosRetos`,
+  `anguloDaArestaMaisLonga`, `ajustarCirculo`
+- **Linha:** o arredondamento e a caixa passam a ser medidos no espaço **endireitado**; o ramo do
+  retângulo ganha o teste de **lados retos**; novo ramo de **arco** nos traços abertos
+- **Porquê:** o usuário relatou que o Draw "só arredondava": um retângulo alguns graus torto tinha
+  os cantos da caixa alinhada longe do traço, o raio estimado explodia (virava `roundRect` com
+  raio enorme) e a caixa saía maior que o desenho. Agora a inclinação sai da aresta mais longa e
+  o traço é endireitado antes de medir (abaixo de 2° nem gira: é só o tremor da mão). O teste de
+  **lados retos** (3+ lados com trecho reto cobrindo 60% da borda) separa "arredondado" de
+  "elipse", que têm o mesmo desvio no canto — sem ele, a elipse viraria `roundRect` de raio
+  máximo. E o **arco**: um traço aberto que segue um círculo (o "canto arredondado" solto) vira
+  o preset `arc` do OOXML, com o raio e os ângulos do desenho — desenhado ao contrário, sai o
+  mesmo arco (o sentido decide qual ponta é o início).
+
 ## scripts/testar-desenho-assistido.mjs
 
 ### 2026-10-14 · este commit · os traços tortos do Draw (novo arquivo)
@@ -442,6 +466,14 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   desenhada com jitter determinístico (mulberry32), os cantos arredondados têm raio conhecido e
   a seta é desenhada como a mão faz (chega na ponta, volta e risca as asas). Cobre também o
   desenho livre (M/L/Z dentro da caixa), a forma montada (pincel, caixa em %) e a dica.
+
+### 2026-10-14 · este commit · os casos novos: torto, arredondado torto e arco
+- **Local:** builders `percorrerTorto`, `contornoArredondadoTorto` e `arco` + asserções
+- **Linha:** casos novos no mesmo arquivo
+- **Porquê:** os defeitos relatados viram teste: o retângulo 5°/8° torto tem que continuar
+  retângulo (com a caixa acompanhando o desenho), o arredondado torto continua `roundRect` com o
+  raio plausível, e o arco de 90° vira `arc` com os ângulos certos — inclusive desenhado ao
+  contrário.
 
 ## src/powerpoint/edicao/grafico.ts
 
@@ -2750,6 +2782,13 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o desenho de 4 raios independentes é a base do recurso; reaproveitar nele os pares
   de cima/baixo evita duas implementações do mesmo arco. O preset diagonal entra porque agora o
   app pode **gravar** esse arranjo e precisa reler o arquivo igual.
+
+### 2026-10-14 · este commit · o preset do arco
+- **Local:** caso `arc` do `tracadoDoPreset`; `PRESETS_CONHECIDOS`
+- **Linha:** novo desenho (não existia: virava retângulo) e entrada na lista de conhecidos
+- **Porquê:** o arco reconhecido no Draw precisa de desenho próprio: do ângulo `adj1` ao `adj2`,
+  no sentido horário (0° = 3 horas, como no PowerPoint), com a bandeira de arco grande quando a
+  varredura passa de 180° — é o mesmo preset que o arquivo grava e relê.
 
 ## src/powerpoint/render/forma.ts
 

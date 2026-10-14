@@ -347,10 +347,18 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Desenho à mão assistido (Draw)**: na galeria de Formas (aba Inserir) entrou a opção **Draw** —
+- **Correção no Draw**: o retângulo desenhado torto (a mão nunca acerta o ângulo) virava
+  **retângulo arredondado** e a forma saía maior que o traço — o arredondamento era medido na
+  caixa alinhada aos eixos. Agora o traço é **endireitado antes de medir** (a inclinação sai da
+  aresta mais longa) e a caixa **acompanha o desenho**; o que separa "arredondado" de "elipse"
+  passa a ser a existência de **lados retos**. O **arco** também entrou: um traço curvo que
+  segue um círculo (o "canto arredondado") vira uma forma de **arco** de verdade, com o raio e
+  o trecho desenhados. E o **Draw saiu da galeria de Formas**: agora é um botão próprio no
+  grupo **Desenho** da aba **Inserir**.
+- **Desenho à mão assistido (Draw)**: na aba **Inserir**, o botão **Draw** (grupo Desenho) —
   liga o lápis e você **rabisca na lâmina**; ao soltar, o app **refaz o traço por cima** com a
-  forma exata (**retângulo, retângulo arredondado, círculo/elipse, triângulo, linha e seta**), no
-  mesmo lugar e tamanho, já como forma normal (editável, medidas em cm e ida e volta no `.pptx`).
+  forma exata (**retângulo, retângulo arredondado, círculo/elipse, triângulo, linha, seta e
+  arco**), no mesmo lugar e tamanho, já como forma normal (editável, medidas em cm e ida e volta no `.pptx`).
   O que não for reconhecido fica como **desenho livre** (também preservado no arquivo); a
   **barrinha do pincel** traz cor, espessura (1–8 pt) e o interruptor do assistente, com dica do
   que está sendo entendido enquanto desenha; **Esc** sai do lápis. Testes: `npm run test:desenho`.

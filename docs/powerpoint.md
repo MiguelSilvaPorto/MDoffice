@@ -58,10 +58,11 @@ avisado ao abrir (nunca some em silêncio).
 
 ## Desenho à mão (Draw)
 
-- Na galeria de **Formas** (aba Inserir), a opção **Draw** liga o lápis: **rabisque na lâmina** e,
+- Na aba **Inserir**, o botão **Draw** (grupo **Desenho**) liga o lápis: **rabisque na lâmina** e,
   ao soltar, o assistente **refaz o traço por cima** com a forma exata — **retângulo, retângulo
-  arredondado, elipse, triângulo, linha e seta** — no mesmo lugar e tamanho, já como forma normal
-  (editável, com medidas em cm e ida e volta no `.pptx`).
+  arredondado, elipse, triângulo, linha, seta e arco** — no mesmo lugar e tamanho, já como forma
+  normal (editável, com medidas em cm e ida e volta no `.pptx`). O traço torto é **endireitado
+  antes de medir** (a mão nunca acerta o ângulo), então a forma acompanha o que foi desenhado.
 - O que o assistente **não** reconhece fica como **desenho livre** (um caminho de verdade, que
   também vai para o arquivo); com o **assistente desligado**, todo traço fica livre.
 - Enquanto o lápis está ligado, a **barrinha do pincel** define **cor**, **espessura** (1, 2, 4
