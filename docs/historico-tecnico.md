@@ -7799,3 +7799,39 @@ antigas quando fizer sentido.
   `fechar.ps1`. A conferência olhou o bloco inteiro antes de mover: a entrada da **duplicar lâmina**
   (`238e39c`, de outra sessão) já estava promovida pela dona, e nada de worktree em andamento foi
   tocado.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · fita do PowerPoint · o grupo "Tema" sai da aba Design
+- **Local:** `design()` e o despacho de cliques (o `if` do `theme:` antes do de `layout:`)
+- **Linha:** − o `grupo("Tema", …)` com os botões `theme:claro`, `theme:escuro` e
+  `theme:contraste` (a aba passa a começar pelo grupo **Personalizar**) ·
+  − `if (cmd.startsWith("theme:")) this.hooks.run("theme", cmd.slice(6));`
+- **Porquê:** os três botões não davam sinal no deck — o clique trocava a chave de tema do setup,
+  mas a aparência é mandada pelo fundo da lâmina, pelo modelo e pelas cores próprias das formas.
+  O usuário relatou que o grupo "não tem função nenhuma" e pediu a remoção; o despacho saiu junto
+  (sem os botões, ninguém mais emite `theme:`). Na integração com a main conviveu com as mudanças
+  vizinhas (as Ideias na Página Inicial): a `design()` fica com **Personalizar** e **Layout**.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · fita do PowerPoint · o caso `theme` sai do motor
+- **Local:** `run()` (o `case "theme"`, antes de `case "modelo"`) e o import de `./themes`
+- **Linha:** − `case "theme": if (value && THEMES.some((t) => t.id === value)) this.setSetup({ theme:
+  value as DeckSetup["theme"] });` · `import { THEMES, stageVars, themeOf }` → `import { stageVars,
+  themeOf }`
+- **Porquê:** sem o emissor (a fita), o caso viraria ramo morto; o `THEMES` era usado só nele (para
+  validar os três ids). A **chave `theme` do `DeckSetup` fica**: a exportação
+  (`coresTema`/`aplicarTema`), a apresentação e os modelos continuam lendo — o que saiu foi só a
+  troca manual.
+
+## CHANGELOG.md
+
+### 2026-10-14 · fita do PowerPoint · a entrada em "Não adicionado"
+- **Local:** PowerPoint → **Não adicionado** → Frontend; e, em **Adicionado**, a entrada vizinha
+- **Linha:** `+ 1 entrada` — **Aba Design sem o grupo "Tema"**; a entrada
+  **Ideias de design na Página Inicial** (já promovida pela dona) trocou "continua com Tema,
+  Personalizar (fundo) e Layout" por "continua com Personalizar (fundo) e Layout" (o Tema saiu
+  neste commit)
+- **Porquê:** a tarefa ainda não está na `main`; a entrada só é promovida quando o `fechar.ps1`
+  entregar. O ajuste na entrada vizinha evita a descrição contraditória sobre a mesma aba.

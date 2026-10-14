@@ -69,7 +69,7 @@ import { aoCarregarFontes, fundoValor, htmlFormaRica, parasComEstilo, parasComTe
 import { shapeText } from "./shapes";
 import { clampIndex, duplicateSlide, moveSlide, removeSlide, replaceSlide, resetSlide, setLayout } from "./slides";
 import { Stage, passoZoom, type CelulasSel, type Ferramenta } from "./stage";
-import { THEMES, stageVars, themeOf } from "./themes";
+import { stageVars, themeOf } from "./themes";
 import { abrirCores } from "./ui/cores";
 import { Fita } from "./ui/fita";
 import { Painel } from "./ui/painel";
@@ -1659,9 +1659,6 @@ export class PowerPointHost {
         this.pintar();
         return;
       }
-      case "theme":
-        if (value && THEMES.some((t) => t.id === value)) this.setSetup({ theme: value as DeckSetup["theme"] });
-        return;
       case "modelo": {
         const modelo = MODELOS.find((m) => m.id === value) ?? lerModelosUsuario().find((m) => m.id === value);
         if (modelo) this.usarModelo(modelo);

@@ -597,14 +597,6 @@ export class Fita {
 
   private design(): string {
     return [
-      grupo(
-        "Tema",
-        `<div class="ppr-linha">
-           ${btn("theme:claro", "◐", "Tema claro", "fmt")}
-           ${btn("theme:escuro", "◑", "Tema escuro", "fmt")}
-           ${btn("theme:contraste", "◕", "Alto contraste", "fmt")}
-         </div>`
-      ),
       grupo("Personalizar", `${grande("fundo", ic("i-bucket"), "Formatar fundo", "Cor, gradiente ou imagem de fundo da lâmina", true)}`),
       grupo("Layout", `${grande("layout", ic("i-columns"), "Layout", "Layout da lâmina", true)}`),
     ].join("");
@@ -666,8 +658,7 @@ export class Fita {
       return;
     }
     fecharPopup();
-    if (cmd.startsWith("theme:")) this.hooks.run("theme", cmd.slice(6));
-    else if (cmd.startsWith("layout:")) this.hooks.run("layout", cmd.slice(7));
+    if (cmd.startsWith("layout:")) this.hooks.run("layout", cmd.slice(7));
     else if (cmd.startsWith("forma-rapida:")) this.hooks.run("forma-inserir", cmd.slice(13));
     else if (cmd.startsWith("ferramenta:")) this.hooks.run("ferramenta", cmd.slice(11));
     else if (cmd.startsWith("midia:")) this.hooks.run("midia", cmd.slice(6));
