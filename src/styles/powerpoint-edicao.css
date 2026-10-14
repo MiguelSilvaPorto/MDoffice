@@ -1580,6 +1580,19 @@ button.ppr.big .ppr-gal-ic svg {
   border-width: 1px;
   border-style: dashed;
   opacity: 0.8;
+  /* acima do quadro do grupo (z-index 50): no canto em que as duas caem no mesmo
+     ponto, quem atende é a alça da própria forma — ver .pp-sel.item .pp-alca */
+  z-index: 51;
+}
+
+/* Cada forma da múltipla seleção mostra as PRÓPRIAS 4 alças de canto, menores
+   que as do quadro do grupo: a pequena redimensiona só aquela forma (tem
+   data-dono), a grande — as 8 do grupo — redimensiona todas de uma vez. */
+.pp-sel.item .pp-alca {
+  width: 7px;
+  height: 7px;
+  margin: -4px 0 0 -4px;
+  border-width: 1px;
 }
 
 .pp-sel.multi {

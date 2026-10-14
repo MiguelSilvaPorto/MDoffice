@@ -418,6 +418,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   cantos são rasos, sai como **linha em cima da aresta** — a tolerância da linha caiu de 5% para
   2,5% do comprimento, que era o que deixava os cantos passarem por "linha".
 
+- **Múltipla seleção: cada forma tem as próprias 4 alças de canto**: antes só o quadro do grupo ganhava alças — as formas escolhidas ficavam só com o contorno tracejado, sem nenhum ponto, e não havia como redimensionar **uma** delas estando com várias selecionadas (qualquer alça mexia na seleção inteira). Agora cada forma mostra as **suas 4 alças de canto** (menores, 7 px contra 9 px das do grupo) e arrastar uma delas redimensiona **só aquela forma**, **sem desfazer a seleção** — o quadro do grupo segue com as 8 alças para redimensionar todas de uma vez. No canto em que as duas caem no mesmo ponto quem atende é a alça da forma (a pequena no pontual, a grande no coletivo); a haste de girar continua **uma só**, do conjunto.
+
 - **Ideias de design com "Gerar mais ideias" e acabamentos**: as ideias mostravam só 8 cartões
   e, num deck importado, trocavam apenas o fundo e o texto — as formas do organograma têm cores
   próprias (verdes) que não estão em tema nenhum e ficavam intactas. Agora cada ideia é um

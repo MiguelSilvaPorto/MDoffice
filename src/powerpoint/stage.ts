@@ -251,10 +251,14 @@ export class Stage {
     const ctx = this.hooks.contexto();
     const sel = ctx.shapes.filter((s) => ctx.selecao.includes(s.id));
     const html: string[] = [];
-    const caixa = (b: ShapeBox, rot: number, extra: string, alcas: boolean, dentro = "") => {
-      const alca = (a: string) => `<span class="pp-alca" data-alca="${a}"></span>`;
-      const gira = alcas ? `<span class="pp-gira" data-gira="1"></span><span class="pp-gira-haste"></span>` : "";
-      const handles = alcas ? ["nw", "n", "ne", "e", "se", "s", "sw", "w"].map(alca).join("") : "";
+    const caixa = (b: ShapeBox, rot: number, extra: string, alcas: boolean, dentro = "", dono?: string) => {
+      // `dono`: as alças pertencem a UMA forma (as 4 de canto, menores) — arrastar
+      // redimensiona só ela. Sem dono, são as 8 da seleção/quadro do grupo.
+      const data = dono ? ` data-dono="${dono}"` : "";
+      const alca = (a: string) => `<span class="pp-alca"${data} data-alca="${a}"></span>`;
+      const gira = alcas && !dono ? `<span class="pp-gira" data-gira="1"></span><span class="pp-gira-haste"></span>` : "";
+      const pontos = dono ? ["nw", "ne", "se", "sw"] : ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+      const handles = alcas ? pontos.map(alca).join("") : "";
       html.push(
         `<div class="pp-sel ${extra}" style="left:${b.x}%;top:${b.y}%;width:${b.w}%;height:${b.h}%;${rot ? `transform:rotate(${rot}deg);` : ""}">${handles}${gira}${dentro}</div>`
       );
@@ -302,7 +306,10 @@ export class Stage {
     } else if (sel.length === 1 && ctx.editando === sel[0].id) {
       caixa(sel[0].box, sel[0].rot, "editando", false);
     } else if (sel.length > 1) {
-      for (const s of sel) caixa(s.box, s.rot, "item", false);
+      // Cada forma escolhida ganha as PRÓPRIAS 4 alças de canto (menores, com
+      // `data-dono`): dá para redimensionar uma forma só sem desfazer a seleção.
+      // O quadro do grupo continua com as 8, para mexer em todas de uma vez.
+      for (const s of sel) caixa(s.box, s.rot, "item", !s.bloqueada, "", s.bloqueada ? undefined : s.id);
       const m = envolventeDe(sel, ctx.dim)!;
       caixa(m, 0, "multi", sel.some((s) => !s.bloqueada), alcasDeCanto(m, cantosDoGrupo(sel)));
     }
@@ -519,7 +526,10 @@ export class Stage {
     const alca = alvo.closest<HTMLElement>("[data-alca]");
     const gira = alvo.closest<HTMLElement>("[data-gira]");
     if ((alca || gira) && ctx.selecao.length) {
-      const sel = ctx.shapes.filter((s) => ctx.selecao.includes(s.id) && !s.bloqueada);
+      // Alça com dono (múltipla seleção): redimensiona SÓ aquela forma, sem
+      // desfazer a seleção; sem dono, quem manda é a seleção inteira (quadro do grupo).
+      const dono = alca?.dataset.dono;
+      const sel = ctx.shapes.filter((s) => (dono ? s.id === dono : ctx.selecao.includes(s.id)) && !s.bloqueada);
       if (!sel.length) return;
       this.slideEl.setPointerCapture(e.pointerId);
       const inicial = new Map(sel.map((s) => [s.id, { box: { ...s.box }, rot: s.rot }]));

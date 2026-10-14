@@ -378,6 +378,44 @@ checa(
   /\.pp-frame\.pp-panorama[\s\S]{0,120}cursor: grabbing/.test(ler("src/styles/powerpoint.css"))
 );
 
+// ---------------------------------------------------------------- PowerPoint: alças por forma na múltipla seleção
+
+console.log("\nPowerPoint: cada forma da múltipla seleção tem as próprias 4 alças");
+
+const cssPptSel = ler("src/styles/powerpoint-edicao.css");
+checa(
+  "a múltipla seleção dá alças a cada forma, com o dono marcado",
+  /for \(const s of sel\) caixa\(s\.box, s\.rot, "item", !s\.bloqueada, "", s\.bloqueada \? undefined : s\.id\);/.test(palcoPpt),
+  "sem o dono, cada forma da seleção volta a ficar sem as suas alças (só o quadro do grupo)"
+);
+checa(
+  "as alças do dono são só as 4 de canto (o quadro do grupo continua com as 8)",
+  /const pontos = dono \? \["nw", "ne", "se", "sw"\] : \["nw", "n", "ne", "e", "se", "s", "sw", "w"\];/.test(palcoPpt) &&
+    /const data = dono \? ` data-dono="\$\{dono\}"` : "";/.test(palcoPpt),
+  "as alças por forma virariam 8, iguais às do grupo (ou perderiam o dono)"
+);
+checa(
+  "arrastar a alça de uma forma redimensiona só ela",
+  /const dono = alca\?\.dataset\.dono;/.test(palcoPpt) &&
+    /const sel = ctx\.shapes\.filter\(\(s\) => \(dono \? s\.id === dono : ctx\.selecao\.includes\(s\.id\)\) && !s\.bloqueada\);/.test(palcoPpt),
+  "o dono seria ignorado e o arrasto mexeria na seleção inteira"
+);
+checa(
+  "quem manda no canto repetido é a alça da forma (o quadro do grupo fica atrás)",
+  /\.pp-sel\.item\s*\{[^}]*z-index:\s*51/.test(cssPptSel),
+  "as alças da forma ficariam escondidas embaixo das do grupo"
+);
+checa(
+  "as alças da forma são menores que as do grupo",
+  /\.pp-sel\.item \.pp-alca\s*\{[^}]*width:\s*7px[^}]*height:\s*7px/.test(cssPptSel),
+  "do mesmo tamanho, não se distingue o que redimensiona uma forma do que redimensiona todas"
+);
+checa(
+  "a rotação continua sendo uma só, do conjunto",
+  /const gira = alcas && !dono \?/.test(palcoPpt),
+  "cada forma ganharia haste de girar e a tela ficaria poluída"
+);
+
 // 6. Boas-vindas: o logo é o ÍCONE DO APP (o mesmo da janela), não o "M↓" num quadradinho.
 console.log("\npasta padrão dos documentos (Documentos/mdOffice com as quatro subpastas)");
 {

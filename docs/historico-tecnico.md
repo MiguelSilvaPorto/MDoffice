@@ -5255,6 +5255,36 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   helper do teste tinha 6 pontos na reta e um deles escapava por sorte) — os casos agora prendem os
   dois erros (linha sem cantos e arco bojudo) e o acerto (linha em cima da aresta).
 
+## src/powerpoint/stage.ts · src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · múltipla seleção · cada forma ganha as próprias 4 alças de canto
+- **Local:** `desenharSelecao` → o construtor `caixa` e o ramo `sel.length > 1`; o `aoPressionar`
+  (o ramo que trata `[data-alca]`); `.pp-sel.item` e `.pp-sel.item .pp-alca` no CSS
+- **Linha:** `caixa(b, rot, extra, alcas, dentro = "")` → `(…, dono?: string)`: com `dono`, as alças
+  ganham `data-dono="<id>"` e saem só as **4 de canto** (`["nw","ne","se","sw"]`), sem a haste de
+  girar (`alcas && !dono`) · no ramo da múltipla, `caixa(s.box, s.rot, "item", false)` →
+  `caixa(s.box, s.rot, "item", !s.bloqueada, "", s.bloqueada ? undefined : s.id)` · no ponteiro,
+  `+ const dono = alca?.dataset.dono` e a seleção do que vai ser redimensionado passa a ser
+  `dono ? s.id === dono : ctx.selecao.includes(s.id)` · `.pp-sel.item { + z-index: 51 }` ·
+  `+ .pp-sel.item .pp-alca` (7 px, contra 9 px das do grupo)
+- **Porquê:** na múltipla seleção só o quadro do grupo ganhava alças (as formas entravam com
+  `alcas = false`) — o usuário via “4 pontos” na caixa geral e nenhum nas formas, então não havia
+  como redimensionar **uma** forma estando com várias escolhidas (arrastar qualquer alça mexia na
+  seleção inteira). As alças por forma nascem marcadas com o **dono**, e o arrasto redimensiona só
+  ele — a seleção continua de pé (o `redim` já tinha o caminho de `ids.length === 1`, com a própria
+  rotação da forma). O `z-index` do item subiu para **51** de propósito: no canto em que a alça da
+  forma e a do grupo caem no mesmo ponto quem atende é a da forma (a pequena manda no pontual,
+  a grande — as 8, intocadas — no coletivo). A haste de girar continua **uma só**, do conjunto:
+  uma por forma poluiria a tela e não faria sentido (girar é sempre do grupo).
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · múltipla seleção · 6 verificações
+- **Local:** a seção “PowerPoint: cada forma da múltipla seleção tem as próprias 4 alças”
+- **Linha:** `+ o dono na chamada, + as 4 de canto com data-dono, + o filtro do arrasto, + o z-index, + o tamanho menor, + a haste única`
+- **Porquê:** o defeito era de desenho e voltaria fácil (basta alguém “simplificar” a chamada de
+  volta para `false` ✗, como estava) — o teste lê o TS e o CSS e trava as cinco regras.
+
 ---
 
 ## Próximos registros

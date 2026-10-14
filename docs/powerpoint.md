@@ -31,7 +31,10 @@ avisado ao abrir (nunca some em silêncio).
 ## Editar as lâminas
 
 - **Formas**: galeria, desenhar arrastando, 8 alças de redimensionar, girar, **guias de
-  encaixe**, seleção múltipla, **agrupar/desagrupar**, ordem (frente/trás), alinhar,
+  encaixe**, seleção múltipla (**cada forma escolhida mostra as próprias 4 alças de canto** —
+  arrastar uma delas redimensiona **só aquela forma**, sem desfazer a seleção; o quadro do grupo
+  segue com as 8 para redimensionar todas de uma vez, e no canto em que as duas caem no mesmo
+  ponto quem atende é a alça da forma), **agrupar/desagrupar**, ordem (frente/trás), alinhar,
   distribuir, copiar/colar, duplicar e desfazer/refazer.
 - **Cantos assistidos**: **clique numa alça de canto** para editar só aquele canto (`Shift+clique`
   soma/remove sem arrastar; clique parado num canto já escolhido deixa só ele) e arraste para
