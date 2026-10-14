@@ -800,6 +800,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   linha da ligação roubava o ponteiro: com duas caixas sobrepostas as **bolinhas piscavam** e a
   ligação saía **na caixa errada** (relato do usuário). O clique também ficou com folga (~8 px) e
   os **conectores saem do alvo**.
+- **"Duplicar lâmina" no clique direito da miniatura (e na aba Inserir)**: o clique direito na
+  miniatura caía no **menu do navegador** (Voltar/Atualizar/Salvar como/Imprimir/Inspecionar) —
+  nada a ver com a lâmina e sem o "Duplicar lâmina" que se procura ali. Agora abre um **menu do
+  app** com **Duplicar lâmina**, **Nova lâmina no fim**, **Renomear…**, **Ocultar/Mostrar na
+  apresentação** e **Excluir lâmina** (desabilitado com uma só), agindo na **lâmina clicada** —
+  como o × de excluir já fazia. O botão **Duplicar** (que já existia pequeno na Página Inicial)
+  também entrou na aba **Inserir**; 5 verificações novas em `npm run test:layout`.
 
 ---
 

@@ -83,7 +83,11 @@ avisado ao abrir (nunca some em silêncio).
   lâmina ao estado de projeto** ao terminar (o **Esc** interrompe na hora) — nada fica aplicado
   no palco fora da apresentação.
 - **Lâminas**: arrastar as miniaturas para reordenar (na faixa do topo ou na vertical),
-  ocultar, renomear e resetar (com ida e volta no `.pptx`), duplicar e excluir. **Nova lâmina** e
+  ocultar, renomear e resetar (com ida e volta no `.pptx`), duplicar e excluir (o botão
+  **Duplicar** está na Página Inicial e na aba **Inserir**). O **clique direito na miniatura**
+  abre um menu do app — **Duplicar lâmina**, **Nova lâmina no fim**, **Renomear…**, **Ocultar/
+  Mostrar na apresentação** e **Excluir lâmina** — agindo na lâmina clicada (antes caía no menu do
+  navegador: Voltar/Atualizar/Salvar como/Imprimir/Inspecionar). **Nova lâmina** e
   **Layout** abrem uma **galeria em grade** com a **miniatura de cada layout** (os espaços como
   silhuetas cinzas, na proporção do deck) — no "Layout" o atual vem destacado; clicar cria a
   lâmina com aquele layout (ou aplica na atual). A **lâmina nova entra no fim** da apresentação

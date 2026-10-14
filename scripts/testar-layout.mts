@@ -1113,5 +1113,35 @@ checa("o clique da bolinha também é geométrico (com folga)", /bolinhaDaConexa
 checa("os conectores ficam fora do alvo", (palcoConectar.match(/!s\.liga/g) ?? []).length >= 2, "a linha da ligação atravessa a lâmina e roubaria o ponteiro");
 checa("a histerese existe (a borda não fica piscando)", /margemX/.test(ligPpt) && /margemY/.test(ligPpt), "sem folga o alvo alterna entre a caixa e a de baixo");
 
+// ---------------------------------------------------------------- duplicar lâmina (fita e miniatura)
+
+console.log("\nPowerPoint: duplicar lâmina na fita e no clique direito da miniatura");
+
+{
+  const fita = ler("src/powerpoint/ui/fita.ts");
+  const ppt = ler("src/powerpoint/powerpoint.ts");
+  checa(
+    "a aba Inserir também tem o Duplicar lâmina",
+    /grande\("slide-novo", ic\("i-plus"\), "Nova lâmina", "Nova lâmina no fim: escolha o layout", true\)\}\r?\n\s+\$\{grande\("slide-dup"/.test(fita),
+    "o botão só existe na Página Inicial"
+  );
+  checa(
+    "a miniatura abre menu próprio no clique direito",
+    /btn\.addEventListener\("contextmenu", \(e\) => this\.menuDaLamina\(e, i\)\)/.test(ppt),
+    "o menu nativo do WebView (Voltar/Atualizar/Inspecionar) volta a aparecer"
+  );
+  checa("o menu da miniatura oferece Duplicar lâmina", /private menuDaLamina\([\s\S]{0,700}"Duplicar lâmina"/.test(ppt), "sem a ação onde o usuário procura");
+  checa(
+    "as ações do menu agem na lâmina CLICADA",
+    /this\.indice = i;\r?\n\s+if \(c === "dup"\) this\.run\("slide-dup"\)/.test(ppt),
+    "agiriam sempre na lâmina atual"
+  );
+  checa(
+    "o menu barra o menu nativo do navegador",
+    /menuDaLamina\(e: MouseEvent, i: number\): void \{\r?\n\s+e\.preventDefault\(\)/.test(ppt),
+    "o menu do navegador apareceria por cima"
+  );
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

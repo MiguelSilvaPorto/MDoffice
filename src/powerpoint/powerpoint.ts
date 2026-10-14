@@ -862,6 +862,8 @@ export class PowerPointHost {
         this.run("slide-del");
       });
       btn.append(del);
+      // clique direito na miniatura: as ações DAQUELA lâmina (e barra o menu nativo do WebView)
+      btn.addEventListener("contextmenu", (e) => this.menuDaLamina(e, i));
       this.strip.append(btn);
     });
 
@@ -2855,6 +2857,52 @@ export class PowerPointHost {
       const c = b.dataset.c!;
       if (c === "editar-texto") this.entrarEdicao(this.selecao[0]);
       else this.run(c);
+    });
+  }
+
+  /**
+   * Menu de contexto da MINIATURA da faixa (clique direito).
+   *
+   * Antes o clique direito aqui caía no menu nativo do WebView (Voltar/Atualizar/Salvar como/
+   * Imprimir/Inspecionar) — nada a ver com a lâmina, e sem o "Duplicar lâmina" que se procura
+   * ali. As ações agem na lâmina CLICADA (`this.indice = i`), como o × de excluir já fazia; a
+   * fita continua agindo na lâmina atual.
+   */
+  private menuDaLamina(e: MouseEvent, i: number): void {
+    e.preventDefault();
+    e.stopPropagation();
+    const slide = this.slides[i];
+    if (!slide) return;
+    const oculta = slide.show === false;
+    const itens: [string, string, boolean][] = [
+      ["dup", "Duplicar lâmina", true],
+      ["nova", "Nova lâmina no fim", true],
+      ["nome", "Renomear…", true],
+      ["ocultar", oculta ? "Mostrar na apresentação" : "Ocultar na apresentação", true],
+      ["del", "Excluir lâmina", this.slides.length > 1],
+    ];
+    const ancora = document.createElement("span");
+    ancora.style.cssText = `position:fixed;left:${e.clientX}px;top:${e.clientY}px;width:1px;height:1px`;
+    document.body.append(ancora);
+    const el = abrirPopup(ancora, itens.map(([c, n, ok]) => `<button type="button" class="pp-pop-item" data-c="${c}"${ok ? "" : " disabled"}>${n}</button>`).join(""), {
+      classe: "pp-pop-menu",
+      aoFechar: () => ancora.remove(),
+    });
+    el.addEventListener("click", (ev) => {
+      const b = (ev.target as HTMLElement).closest<HTMLButtonElement>("[data-c]");
+      if (!b || b.disabled) return;
+      fecharPopup();
+      const c = b.dataset.c!;
+      if (c === "nova") {
+        // a regra do app vale também aqui: a lâmina nova entra no FIM
+        this.run("slide-new");
+        return;
+      }
+      this.indice = i;
+      if (c === "dup") this.run("slide-dup");
+      else if (c === "del") this.run("slide-del");
+      else if (c === "nome") this.run("slide-nome");
+      else this.run("slide-ocultar");
     });
   }
 

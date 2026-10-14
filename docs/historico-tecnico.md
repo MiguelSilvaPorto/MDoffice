@@ -7626,3 +7626,55 @@ antigas quando fizer sentido.
   diziam onde o comando mora agora. A referência tem o mesmo botão nas duas abas (Home e Design);
   o mdOffice fica com o da Página Inicial, então a nota da Design precisa dizer isso, senão a
   próxima tarefa "recria" o que já existe (ou põe o comando de volta em duas abas).
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · duplicar lâmina · o menu da miniatura (o clique direito)
+- **Local:** o render da faixa (`this.strip`, o laço das miniaturas) e o novo `menuDaLamina` (ao
+  lado de `menuDeContexto`)
+- **Linha:** `+ btn.addEventListener("contextmenu", (e) => this.menuDaLamina(e, i));` e o método
+  com os cinco itens (Duplicar lâmina / Nova lâmina no fim / Renomear… / Ocultar-Mostrar na
+  apresentação / Excluir lâmina)
+- **Porquê:** o clique direito na miniatura não tinha tratamento, então quem procurava "duplicar
+  lâmina" ali recebia o **menu nativo do WebView** (Voltar/Atualizar/Salvar como/Imprimir/
+  Inspecionar) — nada a ver com a lâmina (o relato veio com o print dele). O menu usa o mesmo
+  `abrirPopup` do menu do palco (`pp-pop-menu`), barra o nativo (`preventDefault`) e age na lâmina
+  **clicada** (`this.indice = i` antes de rodar), como o × de excluir já fazia — a fita continua
+  agindo na lâmina atual. "Nova lâmina no fim" mantém a regra do app (a lâmina nova entra no FIM);
+  o rótulo diz isso em vez de prometer "logo depois desta".
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · duplicar lâmina · a aba Inserir também tem o botão
+- **Local:** `inserir()` — grupo "Lâminas"
+- **Linha:** o grupo de um botão (`Nova lâmina`) → `Nova lâmina` + `Duplicar`
+  (`grande("slide-dup", ic("i-dup"), "Duplicar", …)`)
+- **Porquê:** o botão já existia pequeno na Página Inicial ("Duplicar", na coluna do grupo
+  Lâminas), mas quem procura na aba **Inserir** (onde vive o grupo Lâminas) não achava. O comando
+  `slide-dup` já existia — faltava o botão no lugar procurado.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · duplicar lâmina · 5 verificações
+- **Local:** o bloco "PowerPoint: duplicar lâmina na fita e no clique direito da miniatura"
+- **Linha:** `novo`
+- **Porquê:** prende o botão na aba Inserir, o `contextmenu` na miniatura, a ação no menu, o alvo
+  (`this.indice = i`) e o `preventDefault` que barra o menu do navegador. A verificação no
+  navegador confirmou: o clique direito barra o nativo, o menu abre com os cinco itens e o
+  "Duplicar lâmina" levou a faixa de 3 para 4 lâminas.
+
+## docs/powerpoint.md
+
+### 2026-10-14 · duplicar lâmina · a bala das Lâminas
+- **Local:** "Editar as lâminas" → bala **Lâminas**
+- **Linha:** `+ o botão Duplicar está na Página Inicial e na aba Inserir` e a descrição do menu do
+  clique direito (antes caía no menu do navegador)
+- **Porquê:** o documento é onde se procura o que o app sabe fazer; a bala antiga dizia só
+  "duplicar e excluir", sem dizer onde.
+
+## CHANGELOG.md
+
+### 2026-10-14 · duplicar lâmina · a entrada no PowerPoint
+- **Local:** PowerPoint → Adicionado → Frontend
+- **Linha:** `novo`
+- **Porquê:** mudança do módulo PowerPoint; a entrada entra já promovida, como o fechamento exige.

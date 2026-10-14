@@ -404,7 +404,11 @@ export class Fita {
 
   private inserir(): string {
     return [
-      grupo("Lâminas", `${grande("slide-novo", ic("i-plus"), "Nova lâmina", "Nova lâmina no fim: escolha o layout", true)}`),
+      grupo(
+        "Lâminas",
+        `${grande("slide-novo", ic("i-plus"), "Nova lâmina", "Nova lâmina no fim: escolha o layout", true)}
+         ${grande("slide-dup", ic("i-dup"), "Duplicar", "Duplicar a lâmina atual (a cópia entra logo depois dela)")}`
+      ),
       grupo("Tabelas", `${grande("tabela-grade", ic("i-grid"), "Tabela", "Inserir uma tabela", true)}`),
       grupo("Gráficos", `${grande("grafico-menu", ic("i-chart"), "Gráfico", "Inserir um gráfico (colunas, barras, linhas, pizza…)", true)}`),
       grupo(
