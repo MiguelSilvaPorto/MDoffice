@@ -7272,3 +7272,20 @@ antigas quando fizer sentido.
 - **Porquê:** a mudança de onde a janela nasce é o tipo de coisa que surpreende quem for mexer
   depois (procurar a janela no `tauri.conf.json` e não achar); o mapa do projeto é onde essa
   pergunta se responde.
+
+## CHANGELOG.md
+
+### 2026-10-14 · esta tarefa · promoção da entrada que estava na main
+- **Local:** seção "Não adicionado" do PowerPoint → "Adicionado" do PowerPoint/Frontend
+- **Linha:** **Ideias de design: o texto não some mais** (`083e568`) movida para o "Adicionado";
+  a seção ficou com "- (nada no momento)"
+- **Porquê:** mesma razão das rodadas anteriores (registrar no estado de autoria e promover no
+  fechamento não cabem no mesmo commit). Desta vez o rebase do fechamento bateu **duas** vezes em
+  arquivos de documentação (`CHANGELOG.md` e depois `docs/historico-tecnico.md`): cada conflito foi
+  resolvido mantendo os dois lados — a entrada do "Desenho assistido: o topo do cartão sai reto" e
+  a dos "Estilos de cor (R3)" chegaram na `main` no meio do caminho — e, depois de resolver, a
+  conferência de marcador foi refeita **depois do `git add`**, como a rodada anterior ensinou. Uma
+  tentativa de resolver o CHANGELOG com `Set-Content` do PowerShell saiu do controle (o arquivo
+  ganhou **BOM** e o diff virou o arquivo inteiro): desfeita com `git checkout --conflict=merge` e
+  refeita com o editor e com um script em Node que preserva os bytes — o BOM é justamente o tipo
+  de ruído que a checagem de marcador não pega, então ficou o registro.

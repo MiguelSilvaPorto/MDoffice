@@ -383,6 +383,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 **Frontend**
 
 - (nada no momento)
+- (nada no momento)
+
+
+### Adicionado (na main)
+
+**Backend**
+
+- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
+
+**Frontend**
 
 - **Ideias de design: o texto não some mais** (e o contraste é conferido): com um design escuro, o
   texto das formas ficava **claro sobre cartão branco** e desaparecia (print do usuário). Duas
@@ -396,14 +406,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Sobre um cartão que é **imagem** (a cor de trás é desconhecida) o texto **não troca de lado**:
   num deck importado é isso que o mantém legível. No deck real do usuário: 190 textos com
   superfície conhecida, **0 abaixo de 4,5:1**, e os 168 textos sobre cartões-imagem preservados.
-
-### Adicionado (na main)
-
-**Backend**
-
-- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
-
-**Frontend**
 
 - **Estilos de cor (R3 — o brilho em dobra)**: o acabamento **Dobra** entrou na galeria e no
   painel: além do **Lustro** (a faixa clara dentro da própria rampa), agora dá para pôr o
