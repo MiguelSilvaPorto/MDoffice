@@ -5129,6 +5129,31 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o defeito só aparecia com o jogador rodando (nenhum teste puro o pegaria); o DOM
   falso deixa o teste no mesmo `node scripts/testar-edicao-pptx.mjs`, sem dependência nova.
 
+## src/powerpoint/edicao/formato.ts
+
+### 2026-10-14 · sem sombra · campo removido vira `undefined` (o `delete` não sobrevivia)
+- **Local:** `comPreenchimento`, `comLinha`, `comSombra`, `comOpacidade` e `comCantos`
+- **Linha:** os `delete n.fillX`, `delete n.ln`, `delete n.shadow`, `delete n.opacity` e
+  `delete n.adj` viraram `n.campo = undefined` (com o porquê num comentário no topo do bloco)
+- **Porquê:** o `patchFormas` (o único caminho da fita e do painel) **espalha** o resultado por cima
+  da forma original — `{ ...s, ...comSombra(s, null) }` — e o espalhamento **não apaga** chave
+  nenhuma: uma chave removida no resultado continuava viva na original. Era o "Sem sombra" que não
+  tirava a sombra (relato do usuário, com print) — e, pela mesma causa, "Sem contorno", "Sem
+  preenchimento", a opacidade de volta a 100% e o ajuste antigo dos cantos também não surtiam.
+  `undefined` é equivalente a ausente para todo mundo (render, exportação, JSON do salvamento).
+
+## scripts/testar-edicao-pptx.mjs
+
+### 2026-10-14 · sem sombra · o teste que faltava (o do patchFormas)
+- **Local:** bloco "formato"
+- **Linha:** `novo` — cinco casos com a forma "cheia" (sombra, contorno, preenchimento, opacidade e
+  ajuste) passando por `patchFormas` + `comSombra(f, null)`/`comLinha(f, null)`/
+  `comPreenchimento(f, undefined)`/`comOpacidade(f, 1)`/`comCantos(...)`, cada um exigindo o campo
+  removido
+- **Porquê:** os testes antigos checavam as funções puras (que sempre estiveram certas) e por isso
+  não pegavam nada — o defeito só existe no **encontro** delas com o `patchFormas`; o teste agora
+  cobre esse encontro.
+
 ---
 
 ## Próximos registros

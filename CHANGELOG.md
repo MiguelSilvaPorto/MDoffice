@@ -378,7 +378,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **Sem sombra agora tira a sombra de verdade** (e a família toda): as opções que **removem** um
+  formato — **Sem sombra**, **Sem contorno**, **Sem preenchimento**, opacidade de volta a **100%**
+  e o ajuste antigo ao mexer nos **cantos** — não surtiam efeito quando aplicadas pela fita ou pelo
+  painel. O motivo: o `patchFormas` espalha o resultado por cima da forma original e uma chave
+  **apagada** (`delete`) continuava viva na original; agora o campo removido vira `undefined`, que
+  o espalhamento respeita. Testes novos prendem cada um dos cinco casos.
 
 
 ### Adicionado (na main)

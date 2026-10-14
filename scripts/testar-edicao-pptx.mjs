@@ -198,6 +198,27 @@ const TI = await empacotar("src/powerpoint/pptximport/texto.ts", "imptexto.mjs")
   const rr = F.comRaioDeCanto(forma("r", 0, 0, 10, 10, { geom: "roundRect" }), 25);
   ok("raio de canto: 25% do menor lado = adj 25000", rr.adj.adj === 25000 && perto(F.raioDeCanto(rr), 25));
   ok("forma sem canto ignora o raio", F.comRaioDeCanto(s, 25) === s);
+
+  // remover um campo (Sem sombra, Sem contorno, opacidade 100%…) precisa sobreviver ao
+  // patchFormas, que espalha o resultado por cima da forma original: chave apagada continuaria viva
+  const cheia = {
+    ...s,
+    shadow: { color: "000000", alpha: 0.3, blur: 8, dist: 4, dir: 90 },
+    ln: { color: "000000", alpha: 1, w: 1, dash: "solid" },
+    fillX: { kind: "solid", color: "FF0000" },
+    opacity: 0.5,
+  };
+  const slide = { md: "", layout: "conteudo", notes: "", shapes: [cheia] };
+  const semSombra = O.patchFormas(slide, ["a"], (f) => F.comSombra(f, null)).shapes[0];
+  ok("patchFormas: Sem sombra tira a sombra", !semSombra.shadow, JSON.stringify(semSombra.shadow ?? null));
+  const semLinha = O.patchFormas(slide, ["a"], (f) => F.comLinha(f, null)).shapes[0];
+  ok("patchFormas: Sem contorno tira o contorno", !semLinha.ln, JSON.stringify(semLinha.ln ?? null));
+  const semFill = O.patchFormas(slide, ["a"], (f) => F.comPreenchimento(f, undefined)).shapes[0];
+  ok("patchFormas: sem preenchimento limpa o fillX", !semFill.fillX && semFill.fill === "", JSON.stringify(semFill.fillX ?? null));
+  const opaco = O.patchFormas(slide, ["a"], (f) => F.comOpacidade(f, 1)).shapes[0];
+  ok("patchFormas: opacidade 100% limpa o opacity", opaco.opacity === undefined, String(opaco.opacity));
+  const comCantos = O.patchFormas({ ...slide, shapes: [{ ...cheia, adj: { adj: 50000 } }] }, ["a"], (f) => F.comCantos(f, ["tl", "tr", "br", "bl"], 20)).shapes[0];
+  ok("patchFormas: cantos limpam o ajuste antigo (adj)", comCantos.adj === undefined, JSON.stringify(comCantos.adj ?? null));
 }
 
 // ---------------------------------------------------------------- cantos por canto

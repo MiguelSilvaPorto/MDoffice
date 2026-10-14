@@ -33,11 +33,16 @@ export function ajustarCor(cor: string, fator: number): string {
   return novo.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("").toUpperCase();
 }
 
-/** Troca o preenchimento da forma (e mantém o campo antigo `fill` em dia para as miniaturas simples). */
+/**
+ * Troca o preenchimento da forma (e mantém o campo antigo `fill` em dia para as miniaturas simples).
+ * Campo removido vira `undefined`, não `delete`: quem aplica estas funções é o `patchFormas`, que
+ * espalha o resultado por cima da forma original (`{ ...s, ...patch(s) }`) — uma chave apagada
+ * continuaria viva na original (era o "Sem sombra" que não tirava a sombra).
+ */
 export function comPreenchimento(s: Shape, f: Fill | undefined): Shape {
   const n: Shape = { ...s };
   if (!f || f.kind === "none") {
-    delete n.fillX;
+    n.fillX = undefined;
     n.fill = "";
     if (f?.kind === "none") n.fillX = { kind: "none" };
     return n;
@@ -53,7 +58,7 @@ export const LINHA_PADRAO: Line = { color: "000000", alpha: 1, w: 1, dash: "soli
 export function comLinha(s: Shape, patch: Partial<Line> | null): Shape {
   const n: Shape = { ...s };
   if (patch === null) {
-    delete n.ln;
+    n.ln = undefined;
     return n;
   }
   n.ln = { ...LINHA_PADRAO, ...(s.ln ?? {}), ...patch };
@@ -76,7 +81,7 @@ export const SOMBRAS_PRONTAS: { nome: string; sombra: Shadow | null }[] = [
 export function comSombra(s: Shape, sombra: Partial<Shadow> | null): Shape {
   const n: Shape = { ...s };
   if (sombra === null) {
-    delete n.shadow;
+    n.shadow = undefined;
     return n;
   }
   n.shadow = { ...SOMBRA_PADRAO, ...(s.shadow ?? {}), ...sombra };
@@ -85,7 +90,7 @@ export function comSombra(s: Shape, sombra: Partial<Shadow> | null): Shape {
 
 export function comOpacidade(s: Shape, o: number): Shape {
   const n: Shape = { ...s };
-  if (o >= 1) delete n.opacity;
+  if (o >= 1) n.opacity = undefined;
   else n.opacity = Math.max(0, o);
   return n;
 }
@@ -194,7 +199,7 @@ export function comCantos(s: Shape, selecao: Canto[], pct: number): Shape {
   const atual = cantosDe(s);
   if (!atual) return s;
   const n: Shape = { ...s, cantos: valoresComSelecao(atual, selecao, pct), geom: "roundRect" };
-  delete n.adj;
+  n.adj = undefined;
   return n;
 }
 
