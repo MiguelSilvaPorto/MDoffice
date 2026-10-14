@@ -3,14 +3,18 @@
 // lotes "com/depois do anterior" (com o atraso acumulado) e os comportamentos de cada efeito.
 // O que a lâmina trouxe cru (`timingXml`) volta como veio, sem passar por aqui.
 import type { Animacao, AnimacaoDirecao, Shape } from "../schema";
-import { atrasoDe, direcaoDeAnimacao, duracaoEfetiva, inicioDe, paragrafosDe } from "../edicao/animacao";
+import { aceitaDirecaoAnimacao, atrasoDe, direcaoDeAnimacao, duracaoEfetiva, inicioDe, paragrafosDe } from "../edicao/animacao";
 
-/** presetID/presetClass de cada tipo (aparecer = 1; surgir/sumir = fade = 10; voar = 2; zoom = 53; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9; trajetória em linha = 64). */
+/** presetID/presetClass de cada tipo (aparecer = 1; surgir/sumir = fade = 10; voar = 2; zoom = 53; limpar = 22; caixa = 4; círculo = 6; losango = 8; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9; trajetória em linha = 64). */
 const PRESET: Record<Animacao["tipo"], { id: number; classe: "entr" | "emph" | "exit" | "path" }> = {
   aparecer: { id: 1, classe: "entr" },
   surgir: { id: 10, classe: "entr" },
   voar: { id: 2, classe: "entr" },
   zoom: { id: 53, classe: "entr" },
+  limpar: { id: 22, classe: "entr" },
+  caixa: { id: 4, classe: "entr" },
+  circulo: { id: 6, classe: "entr" },
+  losango: { id: 8, classe: "entr" },
   pulsar: { id: 26, classe: "emph" },
   ampliar: { id: 6, classe: "emph" },
   girar: { id: 8, classe: "emph" },
@@ -19,11 +23,18 @@ const PRESET: Record<Animacao["tipo"], { id: number; classe: "entr" | "emph" | "
   sumir: { id: 10, classe: "exit" },
   voarFora: { id: 2, classe: "exit" },
   encolher: { id: 53, classe: "exit" },
+  limparFora: { id: 22, classe: "exit" },
+  caixaFora: { id: 4, classe: "exit" },
+  circuloFora: { id: 6, classe: "exit" },
+  losangoFora: { id: 8, classe: "exit" },
   trajetoria: { id: 64, classe: "path" },
 };
 
-/** presetSubtype das direções da trajetória (os do PowerPoint: cima 1, direita 2, baixo 4, esquerda 8). */
+/** presetSubtype das direções (os do PowerPoint: cima 1, direita 2, baixo 4, esquerda 8). */
 const SUB_DIRECAO: Record<AnimacaoDirecao, number> = { cima: 1, direita: 2, baixo: 4, esquerda: 8 };
+
+/** presetSubtype das revelações do centro: abre (in) = 16, fecha (out) = 32. */
+const SUB_FORMA: Partial<Record<Animacao["tipo"], number>> = { caixa: 16, circulo: 16, losango: 16, caixaFora: 32, circuloFora: 32, losangoFora: 32 };
 
 /** Caminho de uma linha reta de 25% da lâmina, na direção pedida (o mesmo dos presets "Linhas"). */
 const CAMINHO_LINHA: Record<AnimacaoDirecao, string> = {
@@ -42,6 +53,24 @@ function valoresDoVoo(dir: AnimacaoDirecao, entra: boolean): { attr: string; fro
     entra ? { attr: "ppt_y", from: y, to: "#ppt_y" } : { attr: "ppt_y", from: "#ppt_y", to: y },
   ];
 }
+
+/** O `filter` do Limpar em cada borda (os do PowerPoint: a borda de onde a revelação vem). */
+const FILTRO_LIMPAR: Record<AnimacaoDirecao, string> = {
+  cima: "wipe(down)",
+  baixo: "wipe(up)",
+  esquerda: "wipe(right)",
+  direita: "wipe(left)",
+};
+
+/** O `filter` das revelações do centro (abre/fecha). */
+const FILTRO_FORMA: Partial<Record<Animacao["tipo"], string>> = {
+  caixa: "box(in)",
+  caixaFora: "box(out)",
+  circulo: "circle(in)",
+  circuloFora: "circle(out)",
+  losango: "diamond(in)",
+  losangoFora: "diamond(out)",
+};
 
 interface Efeito {
   a: Animacao;
@@ -126,8 +155,8 @@ export function xmlTiming(animacoes: Animacao[] | undefined, ids: Record<string,
     `<p:tavLst><p:tav tm="0"><p:val><p:strVal val="${from}"/></p:val></p:tav><p:tav tm="100000"><p:val><p:strVal val="${to}"/></p:val></p:tav></p:tavLst></p:anim>`;
   const setVis = (e: Efeito, delay: number, visivel: boolean): string =>
     `<p:set>${cbhvr(e, 1, delay, ["style.visibility"])}<p:to><p:strVal val="${visivel ? "visible" : "hidden"}"/></p:to></p:set>`;
-  const animEffect = (e: Efeito, saida: boolean, dur: number): string =>
-    `<p:animEffect transition="${saida ? "out" : "in"}" filter="fade">${cbhvr(e, dur, null, [])}</p:animEffect>`;
+  const animEffect = (e: Efeito, saida: boolean, dur: number, filtro = "fade"): string =>
+    `<p:animEffect transition="${saida ? "out" : "in"}" filter="${filtro}">${cbhvr(e, dur, null, [])}</p:animEffect>`;
   /** Escala (pulsar e ampliar): `by` em milésimos de porcentagem; o pulsar volta sozinho (`autoRev`). */
   const animScale = (e: Efeito, dur: number, escala: number, autoRev: boolean): string =>
     `<p:animScale>${cbhvr(e, dur, null, [], autoRev ? ' autoRev="1"' : "")}<p:by x="${escala}" y="${escala}"/></p:animScale>`;
@@ -143,6 +172,10 @@ export function xmlTiming(animacoes: Animacao[] | undefined, ids: Record<string,
     if (e.a.tipo === "voarFora") return valoresDoVoo(direcaoDeAnimacao(e.a), false).map((v) => animProp(e, dur, v.attr, v.from, v.to)).join("") + setVis(e, Math.max(0, dur - 1), false);
     if (e.a.tipo === "zoom") return setVis(e, 0, true) + animProp(e, dur, "ppt_w", "0", "#ppt_w") + animProp(e, dur, "ppt_h", "0", "#ppt_h") + animEffect(e, false, dur);
     if (e.a.tipo === "encolher") return animProp(e, dur, "ppt_w", "#ppt_w", "0") + animProp(e, dur, "ppt_h", "#ppt_h", "0") + animEffect(e, true, dur) + setVis(e, Math.max(0, dur - 1), false);
+    if (e.a.tipo === "limpar") return setVis(e, 0, true) + animEffect(e, false, dur, FILTRO_LIMPAR[direcaoDeAnimacao(e.a)]);
+    if (e.a.tipo === "limparFora") return animEffect(e, true, dur, FILTRO_LIMPAR[direcaoDeAnimacao(e.a)]) + setVis(e, Math.max(0, dur - 1), false);
+    if (e.a.tipo === "caixa" || e.a.tipo === "circulo" || e.a.tipo === "losango") return setVis(e, 0, true) + animEffect(e, false, dur, FILTRO_FORMA[e.a.tipo]);
+    if (e.a.tipo === "caixaFora" || e.a.tipo === "circuloFora" || e.a.tipo === "losangoFora") return animEffect(e, true, dur, FILTRO_FORMA[e.a.tipo]) + setVis(e, Math.max(0, dur - 1), false);
     if (e.a.tipo === "pulsar") return animScale(e, dur, 105000, true);
     if (e.a.tipo === "ampliar") return animScale(e, dur, 150000, false);
     if (e.a.tipo === "girar") return `<p:animRot by="21600000">${cbhvr(e, dur, null, [])}</p:animRot>`;
@@ -156,7 +189,7 @@ export function xmlTiming(animacoes: Animacao[] | undefined, ids: Record<string,
 
   const effectPar = (e: Efeito): string => {
     const { id: preset, classe } = PRESET[e.a.tipo];
-    const sub = e.a.tipo === "trajetoria" || e.a.tipo === "voar" || e.a.tipo === "voarFora" ? SUB_DIRECAO[direcaoDeAnimacao(e.a)] : 0;
+    const sub = aceitaDirecaoAnimacao(e.a.tipo) ? SUB_DIRECAO[direcaoDeAnimacao(e.a)] : SUB_FORMA[e.a.tipo] ?? 0;
     return (
       `<p:par><p:cTn id="${id()}" presetID="${preset}" presetClass="${classe}" presetSubtype="${sub}" fill="hold" grpId="${e.grp}" nodeType="${e.nodeType}">` +
       `<p:stCondLst><p:cond delay="${atrasoMs(e.a)}"/></p:stCondLst><p:childTnLst>${comportamentos(e)}</p:childTnLst></p:cTn></p:par>`

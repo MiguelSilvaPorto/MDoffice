@@ -752,6 +752,122 @@
   }
 }
 
+/* limpar: a forma é revelada/some a partir da borda (o jogador mede --wipe-lado em inset) */
+
+.forma-limpa {
+  animation: forma-limpa var(--anim-dur, 500ms) ease both;
+}
+
+.forma-limpa-fora {
+  animation: forma-limpa-fora var(--anim-dur, 500ms) ease both;
+}
+
+@keyframes forma-limpa {
+  from {
+    clip-path: inset(var(--wipe-lado, 100% 0 0 0));
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes forma-limpa-fora {
+  from {
+    clip-path: inset(0 0 0 0);
+  }
+
+  to {
+    clip-path: inset(var(--wipe-lado, 100% 0 0 0));
+  }
+}
+
+/* caixa, círculo e losango: a forma abre do centro (e fecha de volta na saída) */
+
+.forma-caixa {
+  animation: forma-caixa var(--anim-dur, 500ms) ease both;
+}
+
+.forma-caixa-fora {
+  animation: forma-caixa-fora var(--anim-dur, 500ms) ease both;
+}
+
+.forma-circulo {
+  animation: forma-circulo var(--anim-dur, 500ms) ease both;
+}
+
+.forma-circulo-fora {
+  animation: forma-circulo-fora var(--anim-dur, 500ms) ease both;
+}
+
+.forma-losango {
+  animation: forma-losango var(--anim-dur, 500ms) ease both;
+}
+
+.forma-losango-fora {
+  animation: forma-losango-fora var(--anim-dur, 500ms) ease both;
+}
+
+@keyframes forma-caixa {
+  from {
+    clip-path: inset(50% 50% 50% 50%);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes forma-caixa-fora {
+  from {
+    clip-path: inset(0 0 0 0);
+  }
+
+  to {
+    clip-path: inset(50% 50% 50% 50%);
+  }
+}
+
+@keyframes forma-circulo {
+  from {
+    clip-path: circle(0% at 50% 50%);
+  }
+
+  to {
+    clip-path: circle(75% at 50% 50%);
+  }
+}
+
+@keyframes forma-circulo-fora {
+  from {
+    clip-path: circle(75% at 50% 50%);
+  }
+
+  to {
+    clip-path: circle(0% at 50% 50%);
+  }
+}
+
+@keyframes forma-losango {
+  from {
+    clip-path: polygon(50% 50%, 50% 50%, 50% 50%, 50% 50%);
+  }
+
+  to {
+    clip-path: polygon(50% -50%, 150% 50%, 50% 150%, -50% 50%);
+  }
+}
+
+@keyframes forma-losango-fora {
+  from {
+    clip-path: polygon(50% -50%, 150% 50%, 50% 150%, -50% 50%);
+  }
+
+  to {
+    clip-path: polygon(50% 50%, 50% 50%, 50% 50%, 50% 50%);
+  }
+}
+
 /* movimento reduzido: o efeito aplica na hora (o jogador já usa duração 0) */
 @media (prefers-reduced-motion: reduce) {
   .forma-surge,
@@ -764,7 +880,15 @@
   .forma-voa,
   .forma-voa-fora,
   .forma-zoom,
-  .forma-encolhe {
+  .forma-encolhe,
+  .forma-limpa,
+  .forma-limpa-fora,
+  .forma-caixa,
+  .forma-caixa-fora,
+  .forma-circulo,
+  .forma-circulo-fora,
+  .forma-losango,
+  .forma-losango-fora {
     animation-duration: 1ms;
   }
 }

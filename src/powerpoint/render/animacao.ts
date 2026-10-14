@@ -17,6 +17,14 @@ const VOA = "forma-voa";
 const VOA_FORA = "forma-voa-fora";
 const ZOOM = "forma-zoom";
 const ENCOLHE = "forma-encolhe";
+const LIMPA = "forma-limpa";
+const LIMPA_FORA = "forma-limpa-fora";
+const CAIXA = "forma-caixa";
+const CAIXA_FORA = "forma-caixa-fora";
+const CIRCULO = "forma-circulo";
+const CIRCULO_FORA = "forma-circulo-fora";
+const LOSANGO = "forma-losango";
+const LOSANGO_FORA = "forma-losango-fora";
 
 /** Classe de cada tipo (aparecer/desaparecer são só visibilidade e saem antes). */
 const CLASSE_EFEITO: Record<Exclude<Animacao["tipo"], "aparecer" | "desaparecer">, string> = {
@@ -31,6 +39,14 @@ const CLASSE_EFEITO: Record<Exclude<Animacao["tipo"], "aparecer" | "desaparecer"
   voarFora: VOA_FORA,
   zoom: ZOOM,
   encolher: ENCOLHE,
+  limpar: LIMPA,
+  limparFora: LIMPA_FORA,
+  caixa: CAIXA,
+  caixaFora: CAIXA_FORA,
+  circulo: CIRCULO,
+  circuloFora: CIRCULO_FORA,
+  losango: LOSANGO,
+  losangoFora: LOSANGO_FORA,
 };
 
 /** Efeitos que terminam num estado novo (a classe fica segurando o fim da animação). */
@@ -41,7 +57,22 @@ const EFEITO_FIXO: Partial<Record<Animacao["tipo"], string>> = {
   trajetoria: TRAJ,
   voarFora: VOA_FORA,
   encolher: ENCOLHE,
+  limparFora: LIMPA_FORA,
+  caixaFora: CAIXA_FORA,
+  circuloFora: CIRCULO_FORA,
+  losangoFora: LOSANGO_FORA,
 };
+
+/** O lado "sumido" do Limpar: a faixa visível fica encostada na borda da direção. */
+const WIPE_INSET: Record<Animacao["direcao"] & string, string> = {
+  esquerda: "0 100% 0 0",
+  direita: "0 0 0 100%",
+  cima: "0 0 100% 0",
+  baixo: "100% 0 0 0",
+};
+
+/** Tipos de revelação por recorte (o Limpar usa a direção; os outros já nascem do centro). */
+const RECORTE = ["limpar", "limparFora", "caixa", "caixaFora", "circulo", "circuloFora", "losango", "losangoFora"];
 
 export interface ControleAnimacoes {
   /** Toca o próximo passo pendente (o clique da apresentação). false = não havia o que tocar. */
@@ -168,6 +199,8 @@ export function iniciarAnimacoes(
         el.style.setProperty("--voa-x", `${dir === "esquerda" ? -(cx + caixa.width / 2) : dir === "direita" ? larg - cx + caixa.width / 2 : 0}px`);
         el.style.setProperty("--voa-y", `${dir === "cima" ? -(cy + caixa.height / 2) : dir === "baixo" ? alt - cy + caixa.height / 2 : 0}px`);
       }
+      // limpar (entrada e saída): o recorte some encostado na borda escolhida
+      if (a.tipo === "limpar" || a.tipo === "limparFora") el.style.setProperty("--wipe-lado", WIPE_INSET[direcaoDeAnimacao(a)]);
       // efeitos que terminam noutro estado: a classe fica (o CSS segura o fim da animação)
       const classe = CLASSE_EFEITO[a.tipo as Exclude<Animacao["tipo"], "aparecer" | "desaparecer">];
       el.classList.add(classe);
@@ -227,12 +260,13 @@ export function iniciarAnimacoes(
       const els = new Set<HTMLElement>();
       for (const alvo of alvos) if (alvo.el) els.add(alvo.el);
       for (const el of els) {
-        el.classList.remove(OCULTA, SURGE, SOME, PULSA, AMPLIA, GIRA, TRANSP, TRAJ, VOA, VOA_FORA, ZOOM, ENCOLHE);
+        el.classList.remove(OCULTA, SURGE, SOME, PULSA, AMPLIA, GIRA, TRANSP, TRAJ, VOA, VOA_FORA, ZOOM, ENCOLHE, LIMPA, LIMPA_FORA, CAIXA, CAIXA_FORA, CIRCULO, CIRCULO_FORA, LOSANGO, LOSANGO_FORA);
         el.style.removeProperty("--anim-dur");
         el.style.removeProperty("--traj-x");
         el.style.removeProperty("--traj-y");
         el.style.removeProperty("--voa-x");
         el.style.removeProperty("--voa-y");
+        el.style.removeProperty("--wipe-lado");
       }
     },
   };

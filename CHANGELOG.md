@@ -497,6 +497,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   e o encolher termina invisível. Round-trip do `p:timing` com `anim` de `ppt_x`/`ppt_y` (tavLst
   de/para), escala 0–100% e fade; diagonais e as variantes do zoom (subtype 16/32) ficam crus,
   com aviso.
+- **Animações, degrau 6**: os presets de revelação **Limpar** e **Limpar fora** (com a **borda
+  escolhida** em Direção), **Caixa**, **Círculo** e **Losango** (abre do centro na entrada, fecha
+  na saída) — a galeria passa a **21 efeitos**. A prévia e o F5 usam recorte (`clip-path`): o
+  limpar varre a partir da borda, as outras abrem do centro. Round-trip do `p:timing` com
+  `animEffect` de `filter` (`wipe(up|down|left|right)`, `box(in|out)`, `circle(in|out)`,
+  `diamond(in|out)`) e subtypes 16/32; filter ou subtype fora do padrão volta cru, com aviso.
 - **Diálogos do app no lugar de janelas do sistema**: **Novo modelo** (botão Template) e
   **Renomear lâmina** agora usam o diálogo de texto do app — com o tema, dica, Enter/OK,
   Esc/Cancelar e clique fora; ao criar, a galeria reabre já com o cartão novo.

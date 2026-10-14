@@ -86,6 +86,48 @@ function previaAnimacao(tipo: AnimacaoTipo): string {
       `<rect x="9" y="3" width="20" height="14" rx="2" fill="currentColor" fill-opacity=".35"/>` +
       traco("M14 6.5 16.5 8.5M24 6.5 21.5 8.5") +
       `<rect x="17.5" y="7.5" width="7" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".8"/>`,
+    // revelada a partir da borda (metade cheia + o resto tracejado + seta)
+    limpar:
+      moldura +
+      `<rect x="6" y="5" width="7" height="10" rx="1.5" fill="currentColor" fill-opacity=".5"/>` +
+      `<rect x="13" y="5" width="7" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".6"/>` +
+      traco("M2 10h2.5M3.5 8.5 5 10 3.5 11.5"),
+    // some a partir da borda (mesmo desenho, seta saindo)
+    limparFora:
+      moldura +
+      `<rect x="6" y="5" width="7" height="10" rx="1.5" fill="currentColor" fill-opacity=".5"/>` +
+      `<rect x="13" y="5" width="7" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".6"/>` +
+      traco("M4.5 10h-2.5M3 8.5 1.5 10 3 11.5"),
+    // abre do centro como uma caixa (interior cheio + contorno do tamanho final)
+    caixa:
+      moldura +
+      `<rect x="10" y="4" width="20" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".65"/>` +
+      `<rect x="17" y="7.5" width="6" height="5" rx="1" fill="currentColor" fill-opacity=".55"/>`,
+    // fecha para o centro (mesmo desenho)
+    caixaFora:
+      moldura +
+      `<rect x="10" y="4" width="20" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".65"/>` +
+      `<rect x="17" y="7.5" width="6" height="5" rx="1" fill="currentColor" fill-opacity=".55"/>`,
+    // abre do centro como um círculo (círculo cheio + contorno maior tracejado)
+    circulo:
+      moldura +
+      `<circle cx="20" cy="10" r="6" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".65"/>` +
+      `<circle cx="20" cy="10" r="3" fill="currentColor" fill-opacity=".55"/>`,
+    // fecha para o centro (mesmo desenho)
+    circuloFora:
+      moldura +
+      `<circle cx="20" cy="10" r="6" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".65"/>` +
+      `<circle cx="20" cy="10" r="3" fill="currentColor" fill-opacity=".55"/>`,
+    // abre do centro como um losango (losango cheio + contorno maior tracejado)
+    losango:
+      moldura +
+      `<path d="M20 3 27 10 20 17 13 10Z" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".65"/>` +
+      `<path d="M20 7 23 10 20 13 17 10Z" fill="currentColor" fill-opacity=".55"/>`,
+    // fecha para o centro (mesmo desenho)
+    losangoFora:
+      moldura +
+      `<path d="M20 3 27 10 20 17 13 10Z" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".65"/>` +
+      `<path d="M20 7 23 10 20 13 17 10Z" fill="currentColor" fill-opacity=".55"/>`,
   };
   return `<svg class="ppr-anim-svg" viewBox="0 0 32 20" aria-hidden="true">${desenhos[tipo]}</svg>`;
 }

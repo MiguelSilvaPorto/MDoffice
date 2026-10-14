@@ -20,16 +20,39 @@ export interface TimingLido {
 
 const RE_TIMING = /<p:timing\b[\s\S]*?<\/p:timing>/;
 
-/** Preset do PowerPoint -> tipo do modelo (aparecer = 1; surgir/sumir = fade = 10; voar = 2; zoom = 53; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9; trajetória em linha = 64). */
+/** Preset do PowerPoint -> tipo do modelo (aparecer = 1; surgir/sumir = fade = 10; voar = 2; zoom = 53; limpar = 22; caixa = 4; círculo = 6; losango = 8; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9; trajetória em linha = 64). */
 const PRESETS: Record<string, Record<string, AnimacaoTipo>> = {
-  entr: { "1": "aparecer", "10": "surgir", "2": "voar", "53": "zoom" },
+  entr: { "1": "aparecer", "10": "surgir", "2": "voar", "53": "zoom", "22": "limpar", "4": "caixa", "6": "circulo", "8": "losango" },
   emph: { "26": "pulsar", "6": "ampliar", "8": "girar", "9": "transparencia" },
-  exit: { "1": "desaparecer", "10": "sumir", "2": "voarFora", "53": "encolher" },
+  exit: { "1": "desaparecer", "10": "sumir", "2": "voarFora", "53": "encolher", "22": "limparFora", "4": "caixaFora", "6": "circuloFora", "8": "losangoFora" },
   path: { "64": "trajetoria" },
 };
 
 /** Subtypes aceitos nos efeitos com direção (as quatro direções; 0 aparece em arquivos antigos). */
 const SUBS_DIRECAO = ["0", "1", "2", "4", "8"];
+
+/** Subtypes aceitos nas revelações do centro (abre = 16, fecha = 32; 0 aparece em arquivos antigos). */
+const SUBS_FORMA: Partial<Record<AnimacaoTipo, string[]>> = {
+  caixa: ["0", "16"],
+  circulo: ["0", "16"],
+  losango: ["0", "16"],
+  caixaFora: ["0", "32"],
+  circuloFora: ["0", "32"],
+  losangoFora: ["0", "32"],
+};
+
+/** O `filter` do Limpar -> a borda de onde a revelação vem. */
+const FILTRO_LIMPAR: Record<string, AnimacaoDirecao> = { "wipe(down)": "cima", "wipe(up)": "baixo", "wipe(right)": "esquerda", "wipe(left)": "direita" };
+
+/** O `filter` e o sentido de cada revelação do centro. */
+const FILTRO_FORMA: Partial<Record<AnimacaoTipo, { filtro: string; saida: boolean }>> = {
+  caixa: { filtro: "box(in)", saida: false },
+  circulo: { filtro: "circle(in)", saida: false },
+  losango: { filtro: "diamond(in)", saida: false },
+  caixaFora: { filtro: "box(out)", saida: true },
+  circuloFora: { filtro: "circle(out)", saida: true },
+  losangoFora: { filtro: "diamond(out)", saida: true },
+};
 
 /** Linha reta de 25% da lâmina (`M 0 0 L x y E`) -> direção; qualquer outro caminho fica fora do modelo. */
 function direcaoDaLinha(caminhoTexto: string): AnimacaoDirecao | undefined {
@@ -115,8 +138,9 @@ function lerEfeito(ctn: No, seqInterativa: boolean): EfeitoLido | undefined {
   const tipo = PRESETS[classe]?.[preset];
   if (!tipo) return undefined;
   const sub = ctn.a.presetSubtype ?? "0";
-  const comDirecao = tipo === "trajetoria" || tipo === "voar" || tipo === "voarFora";
-  if (comDirecao ? !SUBS_DIRECAO.includes(sub) : sub !== "0") return undefined;
+  const comDirecao = tipo === "trajetoria" || tipo === "voar" || tipo === "voarFora" || tipo === "limpar" || tipo === "limparFora";
+  const subsForma = SUBS_FORMA[tipo];
+  if (comDirecao ? !SUBS_DIRECAO.includes(sub) : subsForma ? !subsForma.includes(sub) : sub !== "0") return undefined;
   // repetição, reversão e suavização do próprio efeito: fora do modelo
   if (ctn.a.repeatCount !== undefined || ctn.a.autoRev !== undefined || ctn.a.accel !== undefined || ctn.a.decel !== undefined) return undefined;
   // o atraso do efeito é modelado (o XML usa milissegundos); gatilho por evento não
@@ -184,6 +208,15 @@ function lerEfeito(ctn: No, seqInterativa: boolean): EfeitoLido | undefined {
     if (valorTav(aw, "0") !== deW || valorTav(aw, "100000") !== (entra ? "#ppt_w" : "0")) return undefined;
     if (valorTav(ah, "0") !== (entra ? "0" : "#ppt_h") || valorTav(ah, "100000") !== paraH) return undefined;
     if (!animEff || animEff.a.filter !== "fade" || animEff.a.transition !== (entra ? "in" : "out")) return undefined;
+  } else if (tipo === "limpar" || tipo === "limparFora") {
+    if (!so("set", "animEffect") || atributoDoSet(set!) !== "style.visibility") return undefined;
+    if (!animEff || animEff.a.transition !== (tipo === "limpar" ? "in" : "out")) return undefined;
+    direcao = FILTRO_LIMPAR[animEff.a.filter ?? ""];
+    if (!direcao) return undefined;
+  } else if (FILTRO_FORMA[tipo]) {
+    const esperado = FILTRO_FORMA[tipo]!;
+    if (!so("set", "animEffect") || atributoDoSet(set!) !== "style.visibility") return undefined;
+    if (!animEff || animEff.a.filter !== esperado.filtro || animEff.a.transition !== (esperado.saida ? "out" : "in")) return undefined;
   } else if (tipo === "pulsar" || tipo === "ampliar") {
     if (!so("animScale")) return undefined;
   } else if (tipo === "girar") {

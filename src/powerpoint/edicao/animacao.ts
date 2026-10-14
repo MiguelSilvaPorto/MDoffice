@@ -11,7 +11,29 @@ export const DURACAO_PADRAO = 0.5;
 const DURACAO_POR_TIPO: Partial<Record<AnimacaoTipo, number>> = { girar: 2, ampliar: 2, trajetoria: 2 };
 
 /** Tipos na ordem da galeria (entrada, ênfase, saída e trajetória). */
-export const TIPOS_ANIMACAO: AnimacaoTipo[] = ["aparecer", "surgir", "voar", "zoom", "pulsar", "ampliar", "girar", "transparencia", "desaparecer", "sumir", "voarFora", "encolher", "trajetoria"];
+export const TIPOS_ANIMACAO: AnimacaoTipo[] = [
+  "aparecer",
+  "surgir",
+  "voar",
+  "zoom",
+  "limpar",
+  "caixa",
+  "circulo",
+  "losango",
+  "pulsar",
+  "ampliar",
+  "girar",
+  "transparencia",
+  "desaparecer",
+  "sumir",
+  "voarFora",
+  "encolher",
+  "limparFora",
+  "caixaFora",
+  "circuloFora",
+  "losangoFora",
+  "trajetoria",
+];
 
 /** Classe de cada efeito (agrupa a galeria e decide a validação do .pptx). */
 export type AnimacaoClasse = "entrada" | "enfase" | "saida" | "trajetoria";
@@ -21,6 +43,10 @@ export const CLASSE_ANIMACAO: Record<AnimacaoTipo, AnimacaoClasse> = {
   surgir: "entrada",
   voar: "entrada",
   zoom: "entrada",
+  limpar: "entrada",
+  caixa: "entrada",
+  circulo: "entrada",
+  losango: "entrada",
   pulsar: "enfase",
   ampliar: "enfase",
   girar: "enfase",
@@ -29,6 +55,10 @@ export const CLASSE_ANIMACAO: Record<AnimacaoTipo, AnimacaoClasse> = {
   sumir: "saida",
   voarFora: "saida",
   encolher: "saida",
+  limparFora: "saida",
+  caixaFora: "saida",
+  circuloFora: "saida",
+  losangoFora: "saida",
   trajetoria: "trajetoria",
 };
 
@@ -37,6 +67,10 @@ export const ROTULOS_ANIMACAO: Record<AnimacaoTipo, string> = {
   surgir: "Surgir",
   voar: "Voar",
   zoom: "Zoom",
+  limpar: "Limpar",
+  caixa: "Caixa",
+  circulo: "Círculo",
+  losango: "Losango",
   pulsar: "Pulsar",
   ampliar: "Ampliar",
   girar: "Girar",
@@ -45,6 +79,10 @@ export const ROTULOS_ANIMACAO: Record<AnimacaoTipo, string> = {
   sumir: "Sumir",
   voarFora: "Voar fora",
   encolher: "Encolher",
+  limparFora: "Limpar fora",
+  caixaFora: "Caixa fora",
+  circuloFora: "Círculo fora",
+  losangoFora: "Losango fora",
   trajetoria: "Trajetória",
 };
 
@@ -53,6 +91,10 @@ export const DICAS_ANIMACAO: Record<AnimacaoTipo, string> = {
   surgir: "Surgir: a forma entra suavemente (fade)",
   voar: "Voar: a forma entra voando da borda escolhida em Direção",
   zoom: "Zoom: a forma cresce do centro com um fade",
+  limpar: "Limpar: a forma é revelada a partir da borda escolhida em Direção",
+  caixa: "Caixa: a forma abre do centro para as bordas, como uma caixa",
+  circulo: "Círculo: a forma abre do centro como um círculo",
+  losango: "Losango: a forma abre do centro como um losango",
   pulsar: "Pulsar: a forma cresce um pouco e volta ao tamanho",
   ampliar: "Ampliar/Reduzir: a forma cresce e fica maior",
   girar: "Girar: a forma dá uma volta completa",
@@ -61,6 +103,10 @@ export const DICAS_ANIMACAO: Record<AnimacaoTipo, string> = {
   sumir: "Sumir: a forma sai suavemente (fade)",
   voarFora: "Voar fora: a forma sai voando para a borda escolhida em Direção",
   encolher: "Encolher: a forma diminui até sumir, com um fade",
+  limparFora: "Limpar fora: a forma some a partir da borda escolhida em Direção",
+  caixaFora: "Caixa fora: a forma se fecha para o centro, como uma caixa",
+  circuloFora: "Círculo fora: a forma se fecha para o centro como um círculo",
+  losangoFora: "Losango fora: a forma se fecha para o centro como um losango",
   trajetoria: "Trajetória: a forma anda em linha reta (escolha a direção ao lado)",
 };
 
@@ -98,17 +144,17 @@ export const ATRASOS_ANIMACAO: { valor: number; rotulo: string }[] = [
 /** Início padrão de um efeito novo. */
 export const INICIO_PADRAO: AnimacaoInicio = "clicar";
 
-/** Direções da trajetória/do voar (na ordem da fita) e a padrão. */
+/** Direções da trajetória/do voo/do limpar (na ordem da fita) e a padrão. */
 export const DIRECOES_ANIMACAO: AnimacaoDirecao[] = ["esquerda", "direita", "cima", "baixo"];
 
 export const DIRECAO_PADRAO: AnimacaoDirecao = "direita";
 
-/** Direção padrão de cada efeito com direção (o PowerPoint usa "de baixo" no Voar). */
-const DIRECAO_POR_TIPO: Partial<Record<AnimacaoTipo, AnimacaoDirecao>> = { trajetoria: "direita", voar: "baixo", voarFora: "baixo" };
+/** Direção padrão de cada efeito com direção (o PowerPoint usa "de baixo" no Voar e no Limpar). */
+const DIRECAO_POR_TIPO: Partial<Record<AnimacaoTipo, AnimacaoDirecao>> = { trajetoria: "direita", voar: "baixo", voarFora: "baixo", limpar: "baixo", limparFora: "baixo" };
 
-/** Trajetória e Voar (entrada/saída) têm direção. */
+/** Trajetória, Voar (entrada/saída) e Limpar (entrada/saída) têm direção. */
 export function aceitaDirecaoAnimacao(tipo: AnimacaoTipo | undefined): boolean {
-  return tipo === "trajetoria" || tipo === "voar" || tipo === "voarFora";
+  return tipo === "trajetoria" || tipo === "voar" || tipo === "voarFora" || tipo === "limpar" || tipo === "limparFora";
 }
 
 /** Direção efetiva: os tipos sem direção caem no padrão (só para o código não tratar "nenhuma"). */

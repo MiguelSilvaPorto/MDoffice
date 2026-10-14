@@ -544,6 +544,21 @@ const AN = await empacotar("src/powerpoint/edicao/animacao.ts", "animacao.mjs");
     AN.CLASSE_ANIMACAO.voar === "entrada" && AN.CLASSE_ANIMACAO.zoom === "entrada" && AN.CLASSE_ANIMACAO.voarFora === "saida" && AN.CLASSE_ANIMACAO.encolher === "saida"
   );
   ok("animação: direção vale no voar e na trajetória", AN.aceitaDirecaoAnimacao("voar") && AN.aceitaDirecaoAnimacao("voarFora") && AN.aceitaDirecaoAnimacao("trajetoria") && !AN.aceitaDirecaoAnimacao("zoom"));
+
+  // limpar e as revelações do centro
+  ok("animação: limpar nasce com direção baixo", AN.normalizarAnimacao({ forma: "s1", tipo: "limpar" }).direcao === "baixo");
+  ok(
+    "animação: classes de limpar/caixa/círculo/losango",
+    AN.CLASSE_ANIMACAO.limpar === "entrada" &&
+      AN.CLASSE_ANIMACAO.caixa === "entrada" &&
+      AN.CLASSE_ANIMACAO.circulo === "entrada" &&
+      AN.CLASSE_ANIMACAO.losango === "entrada" &&
+      AN.CLASSE_ANIMACAO.limparFora === "saida" &&
+      AN.CLASSE_ANIMACAO.caixaFora === "saida" &&
+      AN.CLASSE_ANIMACAO.circuloFora === "saida" &&
+      AN.CLASSE_ANIMACAO.losangoFora === "saida"
+  );
+  ok("animação: direção vale no limpar", AN.aceitaDirecaoAnimacao("limpar") && AN.aceitaDirecaoAnimacao("limparFora") && !AN.aceitaDirecaoAnimacao("caixa"));
 }
 
 // ---------------------------------------------------------------- round-trip do p:timing
@@ -665,6 +680,46 @@ const TEXP = await empacotar("src/powerpoint/pptxexport/timing.ts", "timing-exp.
   }
   const zoomVariante = TEXP.xmlTiming([{ forma: "s1", tipo: "zoom" }], ids, []).replace('presetSubtype="0"', 'presetSubtype="16"');
   ok("timing: zoom com variante (subtype 16) fica cru", !TIMP.lerTiming(zoomVariante, spids).animacoes);
+
+  // Limpar (entrada/saída): round-trip das quatro direções (subtypes 1/2/4/8 + o filter da borda)
+  for (const [direcao, sub, filtro] of [["cima", 1, "wipe(down)"], ["direita", 2, "wipe(left)"], ["baixo", 4, "wipe(up)"], ["esquerda", 8, "wipe(right)"]]) {
+    for (const [tipo, classe] of [["limpar", "entr"], ["limparFora", "exit"]]) {
+      const m = [{ forma: "s1", tipo, duracao: 0.5, direcao }];
+      const xmlL = TEXP.xmlTiming(m, ids, []);
+      const volta = TIMP.lerTiming(xmlL, spids);
+      ok(
+        `timing: round-trip ${tipo} ${direcao}`,
+        xmlL.includes(`presetID="22" presetClass="${classe}" presetSubtype="${sub}"`) && xmlL.includes(`filter="${filtro}"`) && JSON.stringify(volta.animacoes) === JSON.stringify(m),
+        JSON.stringify([m, volta])
+      );
+    }
+  }
+  // Caixa/Círculo/Losango (abre na entrada, fecha na saída): round-trip com filter e subtype 16/32
+  for (const [tipo, classe, sub, filtro] of [
+    ["caixa", "entr", 16, "box(in)"],
+    ["caixaFora", "exit", 32, "box(out)"],
+    ["circulo", "entr", 16, "circle(in)"],
+    ["circuloFora", "exit", 32, "circle(out)"],
+    ["losango", "entr", 16, "diamond(in)"],
+    ["losangoFora", "exit", 32, "diamond(out)"],
+  ]) {
+    const m = [{ forma: "s1", tipo, duracao: 0.5 }];
+    const xmlF = TEXP.xmlTiming(m, ids, []);
+    const volta = TIMP.lerTiming(xmlF, spids);
+    ok(
+      `timing: round-trip ${tipo}`,
+      xmlF.includes(`presetClass="${classe}" presetSubtype="${sub}"`) && xmlF.includes(`filter="${filtro}"`) && JSON.stringify(volta.animacoes) === JSON.stringify(m),
+      JSON.stringify([m, volta])
+    );
+  }
+  // filter/subtype fora do padrão ficam crus
+  const limparErrado = TEXP.xmlTiming([{ forma: "s1", tipo: "limpar", direcao: "cima" }], ids, []).replace('filter="wipe(down)"', 'filter="wipe(sideways)"');
+  ok("timing: limpar com filter desconhecido fica cru", !TIMP.lerTiming(limparErrado, spids).animacoes);
+  // a borda vem do filter (não do subtype): um filter de outra direção volta com a direção dele
+  const limparTrocado = TEXP.xmlTiming([{ forma: "s1", tipo: "limpar", direcao: "cima" }], ids, []).replace('filter="wipe(down)"', 'filter="wipe(right)"');
+  ok("timing: limpar lê a direção do filter", JSON.stringify(TIMP.lerTiming(limparTrocado, spids).animacoes) === JSON.stringify([{ forma: "s1", tipo: "limpar", duracao: 0.5, direcao: "esquerda" }]));
+  const caixaSub = TEXP.xmlTiming([{ forma: "s1", tipo: "caixaFora" }], ids, []).replace('presetSubtype="32"', 'presetSubtype="16"');
+  ok("timing: caixa fora com subtype de entrada fica crua", !TIMP.lerTiming(caixaSub, spids).animacoes);
 
   // "por parágrafo": um efeito por parágrafo NÃO vazio + bldP build="p"; o importador colapsa de volta
   {

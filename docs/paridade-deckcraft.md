@@ -46,7 +46,7 @@ não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico)
 
 | # | Área | O DeckCraft edita | Aqui | Esforço |
 |---|---|---|---|---|
-| 1 | **Animações** | 64 efeitos (entrada/ênfase/saída/trajetórias), início/duração/atraso, build por parágrafo, painel, pincel | entrada/saída + ênfase + voar/zoom + trajetória em linha (**13 efeitos**) com início/duração/atraso/direção, por parágrafo, prévia, painel, selos e round-trip do `p:timing`/`p:animMotion`; sem os demais presets (wipe, split, box, curvas…) | pequena |
+| 1 | **Animações** | 64 efeitos (entrada/ênfase/saída/trajetórias), início/duração/atraso, build por parágrafo, painel, pincel | entrada/saída + ênfase + voar/zoom + revelações (limpar, caixa, círculo, losango) + trajetória em linha (**21 efeitos**) com início/duração/atraso/direção, por parágrafo, prévia, painel, selos e round-trip do `p:timing`/`p:animMotion`; sem os demais presets (dividir, xadrez, persianas, roda…; curvas/voltas/laços) | pequena |
 | 2 | **Morph e transições** | Morph (objetos/palavras/caracteres) + 48 transições com opções por efeito | 7 efeitos; sem Morph nem opções por tipo | grande |
 | 3 | **Formas** | merge (união/fragmentar/interseção/subtrair), editar pontos, forma livre/curva/rabisco, conector colado em pontos de conexão, botões de ação | nada disso | grande |
 | 4 | **Mestre e layouts** | vista de mestre: editar master, criar/renomear/excluir layouts e placeholders | 6 layouts + "Editar elementos do layout" na própria lâmina | média-grande |
@@ -281,9 +281,9 @@ correções simples de imagem e réguas.
 
 ## Animations (7/8)
 
-- [x] **Entrance, emphasis, exit effects** — P0 · parcial: entrada/saída (**Aparecer**, **Surgir**, **Voar**, **Zoom**, **Desaparecer**, **Sumir**, **Voar fora**, **Encolher**) e **ênfase** (Pulsar, Ampliar/Reduzir, Girar, Transparência); sem os demais efeitos de ênfase (cor, negrito…) nem as outras entradas/saídas (wipe, split, box…)
+- [x] **Entrance, emphasis, exit effects** — P0 · parcial: entrada/saída (**Aparecer**, **Surgir**, **Voar**, **Zoom**, **Limpar**, **Caixa**, **Círculo**, **Losango**, **Desaparecer**, **Sumir**, **Voar fora**, **Encolher**, **Limpar fora**, **Caixa fora**, **Círculo fora**, **Losango fora**) e **ênfase** (Pulsar, Ampliar/Reduzir, Girar, Transparência); sem os demais efeitos de ênfase (cor, negrito…) nem as outras entradas/saídas (dividir, xadrez, persianas, roda, barras…) nem os formatos da caixa/círculo/losango (abre/fecha fixos)
 - [x] **Motion paths** — P1 · parcial: **trajetória em linha** nas quatro direções (25% da lâmina, como o preset "Linhas"); sem curvas, voltas, laços nem caminho personalizado
-- [x] **Effect options, start (on click/with/after), duration, delay** — P0 · parcial: início (**Ao clicar**, **Com anterior**, **Depois do anterior**), duração (0,5/1/2 s, padrão por tipo), **atraso** (Sem a 2 s) e a **direção** da trajetória e do voar (4 bordas); sem as demais opções de efeito
+- [x] **Effect options, start (on click/with/after), duration, delay** — P0 · parcial: início (**Ao clicar**, **Com anterior**, **Depois do anterior**), duração (0,5/1/2 s, padrão por tipo), **atraso** (Sem a 2 s) e a **direção** da trajetória, do voar e do limpar (4 bordas); sem as demais opções de efeito
 - [x] **Animation pane (reorder, timing)** — P0 · tem: **painel de animação** na aba lateral (lista na ordem, selecionar, mover ↑↓ e remover) + selos numerados no palco
 - [x] **By-paragraph text builds** — P1 · tem: caixa **Por parágrafo** na aba Animações (um passo por parágrafo não vazio: um clique por parágrafo no "ao clicar", encadeado no "com"/"depois") + round-trip do `pRg`/`bldLst build="p"`
 - [ ] **Triggers** — P2 · falta
@@ -292,11 +292,11 @@ correções simples de imagem e réguas.
 
 > As animações tocam no F5 na ordem: o clique primeiro toca o efeito pendente e só depois troca de
 > lâmina. O `.pptx` faz **round-trip do `p:timing`/`p:animMotion`** (presetID por efeito,
-> `nodeType`, atraso, direção da trajetória e do voo, build por parágrafo e comportamentos de
-> visibilidade/fade/escala/rotação/opacidade/movimento); o que o modelo não representa (curvas,
-> voltas, laços e caminho personalizado, diagonais do voo e variantes do zoom, gatilhos, repetição,
-> demais presets, mídia com tempo próprio) fica guardado **cru** e volta como veio, com aviso na
-> importação.
+> `nodeType`, atraso, direção da trajetória/do voo/do limpar, build por parágrafo e comportamentos
+> de visibilidade/fade/escala/rotação/opacidade/movimento/recorte (`filter`)); o que o modelo não
+> representa (curvas, voltas, laços e caminho personalizado, diagonais do voo, variantes do zoom,
+> outros `filter`, gatilhos, repetição, demais presets, mídia com tempo próprio) fica guardado
+> **cru** e volta como veio, com aviso na importação.
 
 ## Slide show (3/10)
 
@@ -367,8 +367,9 @@ correções simples de imagem e réguas.
 
 Ordem sugerida depois da revisão de **13/10/2026** (impacto × esforço, foco no editor):
 
-1. **Animações** — fechar o quadro: os demais presets (wipe, split, box…; curvas/voltas/laços e o
-   caminho personalizado na trajetória) e os itens P2 (gatilhos e pincel de animação).
+1. **Animações** — fechar o quadro: os demais presets (dividir, xadrez, persianas, roda…;
+   curvas/voltas/laços e o caminho personalizado na trajetória) e os itens P2 (gatilhos e pincel
+   de animação).
 2. **Ganhos rápidos** — largura/altura de coluna e linha na fita, lâminas a partir de estrutura,
    Format Painter, símbolos/emoji, data/hora, "apresentar da lâmina atual" e Alt Text.
 3. **Presenter view de verdade** (notas, próximo slide e cronômetro) e ensaiar tempos.

@@ -4477,6 +4477,93 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** é a fase com mais risco silencioso (promover demais enche o dicionário de erro;
   promover de menos não muda nada); as asserções prendem o comportamento nos dois lados.
 
+## src/powerpoint/schema.ts
+
+### 2026-10-14 · revelações · os oito tipos novos
+- **Local:** `AnimacaoTipo`
+- **Linha:** `limpar`, `caixa`, `circulo`, `losango` (entrada) e `limparFora`, `caixaFora`,
+  `circuloFora`, `losangoFora` (saída)
+- **Porquê:** são os presets de revelação que o DeckCraft lista logo depois de voar/zoom; todos
+  compartilham a mesma forma de comportamento (visibilidade + `animEffect` com `filter`), então o
+  custo é tabela + recorte no CSS.
+
+## src/powerpoint/edicao/animacao.ts
+
+### 2026-10-14 · revelações · tabelas e a direção do limpar
+- **Local:** `TIPOS_ANIMACAO`, `CLASSE_ANIMACAO`, rótulos/dicas, `DIRECAO_POR_TIPO`,
+  `aceitaDirecaoAnimacao`
+- **Linha:** os oito entram nas tabelas (os rótulos das saídas levam "fora", como o Voar fora); o
+  `limpar`/`limparFora` passam a aceitar **direção** (padrão "baixo", o do PowerPoint)
+- **Porquê:** o limpar é o único dos quatro que revela a partir de uma borda — os outros abrem do
+  centro e não têm direção; a dica de cada tipo diz qual é o caso.
+
+## src/powerpoint/render/animacao.ts
+
+### 2026-10-14 · revelações · classes, o inset do limpar e o mapa de recortes
+- **Local:** as constantes de classe, `CLASSE_EFEITO`, `EFEITO_FIXO`, `WIPE_INSET` e o `aplicar`
+- **Linha:** `forma-limpa`, `forma-limpa-fora`, `forma-caixa`, `forma-caixa-fora`, `forma-circulo`,
+  `forma-circulo-fora`, `forma-losango`, `forma-losango-fora`; o limpar grava `--wipe-lado` com a
+  faixa "sumida" encostada na borda ("0 100% 0 0" à esquerda…); as quatro saídas entram no
+  `EFEITO_FIXO` (ficam com a classe segurando o recorte final)
+- **Porquê:** o recorte é o mesmo mecanismo para entrada e saída (a entrada vai da faixa sumida ao
+  cheio; a saída faz o caminho de volta), então uma variável só serve às duas. O `WIPE_INSET` é a
+  tabela direção -> inset que evita espalhar ternários.
+
+## src/styles/slides.css
+
+### 2026-10-14 · revelações · keyframes de clip-path
+- **Local:** depois dos keyframes do encolher
+- **Linha:** `forma-limpa`/`forma-limpa-fora` (inset de/para `--wipe-lado`), `forma-caixa` (inset
+  50% ↔ 0), `forma-circulo` (circle 0% ↔ 75% — cobre as pontas) e `forma-losango` (polígono
+  pequeno ↔ grande); `prefers-reduced-motion` inclui os oito
+- **Porquê:** `clip-path` interpola entre formas iguais (inset ↔ inset, circle ↔ circle, polygon ↔
+  polygon) — é o que dá o "revelar" do PowerPoint sem mexer no layout; o círculo para em 75% porque
+  71% já cobre o retângulo inteiro.
+
+## src/powerpoint/pptxexport/timing.ts
+
+### 2026-10-14 · revelações · filters e subtypes
+- **Local:** `PRESET`, `SUB_FORMA`, `FILTRO_LIMPAR`, `FILTRO_FORMA`, `animEffect`, os comportamentos
+  e o `effectPar`
+- **Linha:** `limpar`/`limparFora` = presetID **22** (subtype da direção, `filter="wipe(down|up|
+  left|right)"` — o sentido do PowerPoint: de cima varre para baixo), `caixa`/`circulo`/`losango` =
+  **4/6/8** com `box|circle|diamond(in|out)` e subtype 16/32; o `animEffect` ganhou o parâmetro do
+  `filter`; o subtype agora sai de `aceitaDirecaoAnimacao` + `SUB_FORMA`
+- **Porquê:** o `filter` é o que o PowerPoint lê para revelar (o subtype sozinho não basta); o
+  subtype 16/32 é o "in/out" que o DeckCraft escreve quando a opção está escolhida.
+
+## src/powerpoint/pptximport/timing.ts
+
+### 2026-10-14 · revelações · ler o filter e aceitar os subtypes
+- **Local:** `PRESETS`, `SUBS_FORMA`, `FILTRO_LIMPAR`, `FILTRO_FORMA` e o `lerEfeito`
+- **Linha:** presets 22/4/6/8 nas classes certas; o limpar exige `set` + `animEffect` com
+  `filter="wipe(...)"` e **a borda vem do filter** (não do subtype); caixa/círculo/losango exigem o
+  `filter` exato do tipo e subtype {0,16} na entrada / {0,32} na saída; filter desconhecido ou
+  subtype trocado volta cru
+- **Porquê:** a geometria (o filter) é a fonte da verdade, como no voo; exigir o filter exato
+  mantém o tudo-ou-nada — um `box(out)` na entrada viraria animação errada ao reexportar.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · revelações · as prévias novas
+- **Local:** `previaAnimacao`
+- **Linha:** Limpar (metade cheia + o resto tracejado + seta da borda), Caixa (contorno grande
+  tracejado + interior cheio), Círculo e Losango (contorno grande + forma cheia no centro); as
+  saídas reusam os mesmos desenhos (o Limpar fora com a seta invertida)
+- **Porquê:** os oito entram sozinhos nos grupos do "Mais animações" (a classe já os separa); as
+  prévias mostram o que muda — a revelação a partir da borda ou do centro.
+
+## scripts/testar-edicao-pptx.mjs
+
+### 2026-10-14 · revelações · testes
+- **Local:** blocos das animações e do round-trip
+- **Linha:** novos — direção padrão "baixo" no limpar, classes, `aceitaDirecaoAnimacao`; round-trip
+  do **Limpar/Limpar fora** nas 4 direções (subtype + filter), de **Caixa/Círculo/Losango** (abre
+  16/fecha 32); filter desconhecido cru, subtype de entrada numa saída cru e o caso "a direção vem
+  do filter" (um filter de outra borda volta com a direção dele)
+- **Porquê:** o último caso documenta a regra (o filter manda, não o subtype) e os outros garantem
+  que variante não modelada não vira animação errada.
+
 ---
 
 ## Próximos registros
