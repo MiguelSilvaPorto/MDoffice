@@ -384,6 +384,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- (nada no momento)
+
+
+### Adicionado (na main)
+
+**Backend**
+
+- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
+
+**Frontend**
+
 - **Aba Design sem o grupo "Tema"**: os três botões (**Tema claro**, **Tema escuro** e **Alto
   contraste**) saíram da fita do PowerPoint: o clique não mudava nada visível no deck (quem manda
   na cara é o **Template**, o **fundo da lâmina** e as cores das formas). A aba fica com

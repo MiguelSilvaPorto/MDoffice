@@ -7955,3 +7955,16 @@ antigas quando fizer sentido.
 - **Porquê:** o defeito é 100% visual — sem uma checagem de layout, um ajuste futuro no `.dropdown`
   (que é compartilhado) pode trazer os 250px de volta e ninguém vê até alguém abrir a lista. As
   checagens prendem o contrato: o menu do seletor não usa a largura dos menus “⋯”.
+
+
+## CHANGELOG.md
+
+### 2026-10-14 · esta tarefa · promoção das duas entradas que estavam na main
+- **Local:** seção "Não adicionado" do PowerPoint → "Adicionado" do PowerPoint/Frontend
+- **Linha:** **Aba "Arranjos"** (`79a4d1d`) e **Aba Design sem o grupo "Tema"** (`69ca23f`) movidas
+  para o "Adicionado"; a seção ficou com "- (nada no momento)"
+- **Porquê:** mesma razão das rodadas anteriores (registrar no estado de autoria e promover no
+  fechamento não cabem no mesmo commit). A entrada do "Tema" era de outra sessão e já estava na
+  `main`: promover as duas de uma vez é o que deixa a seção vazia de verdade — a conferência do
+  script olha se a entrada **já existe** em "Adicionado" antes de mover, então não há risco de
+  duplicar se a outra sessão promover depois.
