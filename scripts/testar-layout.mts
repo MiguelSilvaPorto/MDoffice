@@ -64,6 +64,8 @@ checa("o rótulo da aba reserva a largura do negrito", /\.ppr-aba-rot::after\s*\
 checa("o preview da Formas segue o tamanho do ícone grande", /button\.ppr\.big \.ppr-gal-ic svg\s*\{[^}]*width:\s*var\(--pe-icone-g\)/.test(pp), "regra button.ppr.big .ppr-gal-ic svg ausente");
 checa("na fita compacta o preview usa o ícone normal", /fita-compacta button\.ppr\.big \.ppr-gal-ic svg\s*\{[^}]*width:\s*var\(--pe-icone\)/.test(pp), "regra .fita-compacta .ppr-gal-ic svg ausente");
 checa("o preview da forma fica centrado no próprio ícone", /viewBox="-2 -2 26 26"/.test(ler("src/powerpoint/ui/galeria.ts")), "viewBox assimétrico no iconeDeForma");
+const sl = ler("src/styles/slides.css");
+checa("a apresentação não deixa o contorno de edição aparecer", /\.slides-overlay \.pp-shape[\s\S]{0,140}pointer-events:\s*none\s*!important/.test(sl) && /\.slides-overlay \.pp-shape\.pp-rica:hover[\s\S]{0,140}outline:\s*none/.test(sl), "regras de isolamento do deck ausentes");
 
 // 4. Barra lateral: recolher animado (largura), pílula deslizante no seletor de painéis e
 //    troca de painel sem o "pop" com escala.

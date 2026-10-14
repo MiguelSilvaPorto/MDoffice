@@ -420,6 +420,18 @@
   pointer-events: none;
 }
 
+/* o editor reativa o ponteiro nas formas (`.pp-shape.pp-rica`) e o contorno de hover/seleção
+   acendia por cima do desenho — a "caixa de seleção" na apresentação. Aqui nada de ponteiro. */
+.slides-overlay .pp-shape,
+.slides-overlay .pp-shape * {
+  pointer-events: none !important;
+}
+
+.slides-overlay .pp-shape.pp-rica:hover,
+.slides-overlay .pp-shape.pp-rica.selected {
+  outline: none;
+}
+
 /* ---------- transições de lâmina (F5 e prévia da fita) ----------
    A direção diz de onde a lâmina entra: as variáveis abaixo alimentam as animações
    de deslizar (push/cover/uncover) e o recorte do wipe. O F5 usa duas camadas (a que
