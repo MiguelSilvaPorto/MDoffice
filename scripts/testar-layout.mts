@@ -569,7 +569,7 @@ console.log("\nídeias de design (a lâmina atual em cada modelo)");
   );
   checa(
     "o tratamento alcança as cores próprias das formas (o verde do organograma vira o acento)",
-    /mapaDasCoresProprias\(slides, ta, tb\)/.test(mod) && /tratamento === "cantos"/.test(mod) && /tratamento === "contorno"/.test(mod) && /geom = "roundRect"/.test(mod)
+    /papelDaCor\(c, tb\)/.test(mod) && /contrasteCom\(papelDoTexto\(c, tb\), sobre, tb\)/.test(mod) && /tratamento === "cantos"/.test(mod) && /tratamento === "contorno"/.test(mod) && /geom = "roundRect"/.test(mod)
   );
   checa(
     "o painel acompanha a lâmina atual (redesenha junto com o palco)",

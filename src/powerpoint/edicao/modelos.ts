@@ -87,39 +87,87 @@ function matiz(hex: string): { l: number; s: number } {
   return { l, s: max === min ? 0 : (max - min) / (l < 0.5 ? max + min : 2 - max - min) };
 }
 
+/** As quatro cores que um design oferece — é para elas que as cores próprias do deck vão. */
+export interface CoresPPT {
+  fg: string;
+  bg: string;
+  accent: string;
+  muted: string;
+}
+
+/** A cor sem # e em maiúsculas — a forma como o app guarda as cores. */
+const semGrade = (c: string) => c.replace(/^#/, "").toUpperCase();
+
+/** Os dois extremos que o design oferece — é deles que o texto tira o contraste. */
+function extremos(destino: CoresPPT): { escuro: string; claro: string } {
+  return matiz(semGrade(destino.fg)).l <= matiz(semGrade(destino.bg)).l
+    ? { escuro: destino.fg, claro: destino.bg }
+    : { escuro: destino.bg, claro: destino.fg };
+}
+
+/** O fundo claro da família do acento (o branco do deck vira um tom de fundo, não um acento). */
+function tinta(destino: CoresPPT): string {
+  return misturar(semGrade(destino.accent), semGrade(destino.bg), 0.86);
+}
+
+/** Luminância relativa (WCAG) de uma cor hex sem #. */
+function luminancia(hex: string): number {
+  const canais = [0, 1, 2].map((i) => {
+    const v = parseInt(hex.slice(i * 2, i * 2 + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * canais[0] + 0.7152 * canais[1] + 0.0722 * canais[2];
+}
+
+/** Contraste entre duas cores (WCAG: de 1 a 21) — o mínimo para texto é 4,5:1. */
+export function contrasteDeCores(a: string, b: string): number {
+  const la = luminancia(semGrade(a));
+  const lb = luminancia(semGrade(b));
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
 /**
- * O destino de cada cor própria do deck na paleta do design, pelo PAPEL que ela cumpre — e não
- * pela frequência: as escuras são texto (viram o texto do design), as claras são fundos da
- * família da marca (viram uma tinta do acento) e as saturadas são a marca (viram o acento). É
- * isso que faz o organograma inteiro acompanhar o design, em vez de só o fundo e o texto.
+ * O destino de uma cor PRÓPRIA do deck que pinta uma superfície (fundo da lâmina, forma, célula)
+ * na paleta do design, pelo PAPEL dela: as claras são fundos (viram a tinta do acento), as
+ * escuras são painéis escuros (continuam escuros), as saturadas são a marca (viram o acento) e
+ * os cinzas do meio são a cor secundária.
  */
-export function mapaDasCoresProprias(
-  slides: Slide[],
-  tema: { fg: string; bg: string; accent: string; muted: string },
-  destino: { fg: string; bg: string; accent: string; muted: string }
-): Map<string, string> {
-  const limpa = (c: string) => c.replace(/^#/, "").toUpperCase();
-  const doTema = new Set([tema.fg, tema.bg, tema.accent, tema.muted, "FFFFFF", "000000"].map(limpa));
-  const tinta = misturar(destino.accent, destino.bg, 0.86); // fundo claro da família do acento
-  const mapa = new Map<string, string>();
-  const ver = (c: string | undefined): void => {
-    if (!c) return;
-    const h = limpa(c);
-    if (!/^[0-9A-F]{6}$/.test(h) || doTema.has(h) || mapa.has(h)) return;
-    const { l, s } = matiz(h);
-    mapa.set(h, l < 0.25 ? destino.fg : l > 0.72 ? tinta : s >= 0.3 ? destino.accent : l < 0.5 ? destino.fg : destino.muted);
-  };
-  for (const sl of slides) {
-    for (const s of sl.shapes) {
-      ver(s.color);
-      ver(s.fillX?.kind === "solid" ? s.fillX.color : s.fill);
-      ver(s.ln?.color);
-      for (const p of s.paras ?? []) for (const r of p.runs) ver(r.color);
-      for (const linha of s.tabela?.celulas ?? []) for (const cel of linha) ver(cel.fill?.kind === "solid" ? cel.fill.color : undefined);
-    }
-    ver(sl.bg?.kind === "solid" ? sl.bg.color : undefined);
-  }
-  return mapa;
+export function papelDaCor(cor: string, destino: CoresPPT): string {
+  const { l, s } = matiz(semGrade(cor));
+  if (l > 0.72) return tinta(destino);
+  if (l < 0.25) return extremos(destino).escuro;
+  if (s >= 0.3) return destino.accent;
+  return l < 0.5 ? extremos(destino).escuro : destino.muted;
+}
+
+/**
+ * O destino de uma cor de TEXTO: o escuro continua escuro e o claro continua claro — é o que
+ * mantém o texto legível quando a superfície dele não muda (uma imagem, por exemplo).
+ */
+export function papelDoTexto(cor: string, destino: CoresPPT): string {
+  const { l, s } = matiz(semGrade(cor));
+  if (l > 0.72) return extremos(destino).claro;
+  if (l < 0.25) return extremos(destino).escuro;
+  if (s >= 0.3) return destino.accent;
+  return l < 0.5 ? extremos(destino).escuro : destino.muted;
+}
+
+/**
+ * O texto legível sobre a superfície nova: se o tom escolhido pelo papel não alcança o contraste
+ * mínimo (WCAG 4,5:1), o texto cai para o extremo do design que mais contrasta com ela — e, em
+ * último recurso (superfícies do meio, onde nem o preto nem o branco do design chegam), para o
+ * branco ou o preto puro. É o que impede o defeito de "texto claro sobre cartão claro" quando a
+ * ideia troca os dois ao mesmo tempo.
+ */
+export function contrasteCom(texto: string, superficie: string | undefined, destino: CoresPPT): string {
+  if (!superficie || contrasteDeCores(texto, superficie) >= 4.5) return texto;
+  const { escuro, claro } = extremos(destino);
+  const melhor = (a: string, b: string) => (contrasteDeCores(b, superficie) > contrasteDeCores(a, superficie) ? b : a);
+  // primeiro os extremos do design (é a cara dele); o branco/preto puro entra só em último
+  // recurso — superfícies do meio, onde nem o preto nem o branco do design alcançam 4,5:1
+  const doDesign = [escuro, claro].reduce(melhor);
+  if (contrasteDeCores(doDesign, superficie) >= 4.5) return doDesign;
+  return [doDesign, "FFFFFF", "000000"].reduce(melhor);
 }
 
 /** Aplica o modelo às lâminas: troca as cores do tema antigo pelas do novo e ajusta a fonte. */
@@ -141,48 +189,84 @@ export function aplicarModelo(slides: Slide[], de: EstiloAtual, modelo: ModeloPP
     [ta.accent.toUpperCase(), tb.accent],
     [(de.bg || ta.bg).toUpperCase(), bgNovo],
   ]);
-  // Tratamento de ideia: as formas com cor própria (fora da paleta) entram no mapa pelo papel
-  // de cada cor — a marca vira o acento, os fundos claros viram tinta do acento e o texto vira
-  // o texto do design
-  if (tratamento) {
-    for (const [c, novo] of mapaDasCoresProprias(slides, ta, tb)) mapa.set(c, novo);
-  }
   const fonteAntiga = de.fontFamily || ta.font;
-  const cor = (c: string | undefined): string | undefined => (c ? (mapa.get(c.replace(/^#/, "").toUpperCase()) ?? c) : c);
+  const cor = (c: string | undefined): string | undefined => (c ? (mapa.get(semGrade(c)) ?? c) : c);
   const fonte = (f: string | undefined): string | undefined => (!f || f === fonteAntiga ? modelo.fonte : f);
-  // texto sobre forma pintada com o acento antigo — ou com uma cor própria que virou o acento
-  // novo: refaz o contraste para continuar legível
-  const contrasteNovo = corDeContraste(tb.accent);
-  const fill = (f: Fill | undefined): Fill | undefined => {
+  // Sem tratamento (o Template da fita), tudo passa pelo mapa do tema, como sempre. Com
+  // tratamento (as Ideias), cada cor própria ganha o papel dela: as superfícies pelo papel de
+  // superfície (a marca vira o acento, os fundos claros viram tinta do acento, os painéis
+  // escuros continuam escuros…) e os textos pelo papel de texto mais o contraste com a
+  // superfície onde eles sentam — é isso que mantém o texto legível quando a ideia troca o
+  // fundo e o texto ao mesmo tempo.
+  const superficie = (c: string | undefined): string | undefined => (c ? (tratamento ? papelDaCor(c, tb) : cor(c)) : c);
+  const pintura = (f: Fill | undefined): Fill | undefined => {
     if (!f) return f;
-    if (f.kind === "solid") return { ...f, color: cor(f.color) };
-    if (f.kind === "gradient") return { ...f, stops: f.stops?.map((s) => ({ ...s, color: cor(s.color) ?? s.color })) };
+    if (f.kind === "solid") return { ...f, color: superficie(f.color) ?? f.color };
+    if (f.kind === "gradient") return { ...f, stops: f.stops?.map((s) => ({ ...s, color: superficie(s.color) ?? s.color })) };
     return f;
   };
-  const corDeTexto = (s: Shape, c: string): string => {
-    const bruta = (s.fillX?.kind === "solid" ? s.fillX.color : s.fill)?.replace(/^#/, "").toUpperCase() ?? "";
-    const nova = mapa.get(bruta);
+  // texto sobre forma pintada com o acento antigo: refaz o contraste para continuar legível
+  const contrasteNovo = corDeContraste(tb.accent);
+  const corDeTexto = (c: string, sobre: string | undefined, forma?: Shape): string => {
+    if (tratamento) return contrasteCom(papelDoTexto(c, tb), sobre, tb);
+    const bruta = forma ? (forma.fillX?.kind === "solid" ? forma.fillX.color : forma.fill)?.replace(/^#/, "").toUpperCase() ?? "" : "";
+    const nova = forma ? mapa.get(bruta) : undefined;
     if (nova && nova.toUpperCase() === tb.accent.toUpperCase() && c.toUpperCase() === corDeContraste(bruta)) return contrasteNovo;
     return cor(c) ?? c;
   };
-  const runs = (s: Shape, rs: Run[]): Run[] => rs.map((r) => ({ ...r, color: corDeTexto(s, r.color), font: fonte(r.font) ?? r.font }));
-  const paras = (s: Shape, ps: Para[]): Para[] => ps.map((p) => ({ ...p, runs: runs(s, p.runs) }));
-  const celula = (c: CelulaTab): CelulaTab => ({
-    ...c,
-    fill: fill(c.fill),
-    paras: c.paras.map((p) => ({ ...p, runs: p.runs.map((r) => ({ ...r, color: cor(r.color) ?? r.color, font: fonte(r.font) ?? r.font })) })),
-    estilo: c.estilo ? { ...c.estilo, color: cor(c.estilo.color) ?? c.estilo.color, font: fonte(c.estilo.font) ?? c.estilo.font } : c.estilo,
-  });
-  const forma = (s: Shape): Shape => {
+  const runs = (rs: Run[], sobre: string | undefined, forma?: Shape): Run[] => rs.map((r) => ({ ...r, color: corDeTexto(r.color, sobre, forma), font: fonte(r.font) ?? r.font }));
+  const paras = (ps: Para[], sobre: string | undefined, forma?: Shape): Para[] => ps.map((p) => ({ ...p, runs: runs(p.runs, sobre, forma) }));
+  const celula = (c: CelulaTab, sobre: string | undefined): CelulaTab => {
+    const fillNovo = pintura(c.fill);
+    // a superfície da célula é o preenchimento dela; sem preenchimento, a superfície da forma
+    const fundo = fillNovo?.kind === "solid" ? superficie(fillNovo.color) : sobre;
+    return {
+      ...c,
+      fill: fillNovo,
+      paras: c.paras.map((p) => ({ ...p, runs: runs(p.runs, fundo) })),
+      estilo: c.estilo ? { ...c.estilo, color: corDeTexto(c.estilo.color, fundo), font: fonte(c.estilo.font) ?? c.estilo.font } : c.estilo,
+    };
+  };
+  /** O preenchimento da própria forma (na paleta nova), quando ela tem um. */
+  const pinturaDaForma = (s: Shape): string | undefined => {
+    const bruta = s.fillX?.kind === "solid" ? s.fillX.color : s.fillX?.kind === "gradient" ? s.fillX.stops?.[0]?.color : s.fill;
+    return bruta ? superficie(bruta) : undefined;
+  };
+  /** O centro de uma forma está dentro da outra? (o texto solto senta em cima de um cartão) */
+  const dentro = (fora: Shape, dentro: Shape): boolean => {
+    const cx = dentro.box.x + dentro.box.w / 2;
+    const cy = dentro.box.y + dentro.box.h / 2;
+    return cx >= fora.box.x && cx <= fora.box.x + fora.box.w && cy >= fora.box.y && cy <= fora.box.y + fora.box.h;
+  };
+  /**
+   * A superfície onde o texto senta: o preenchimento da própria forma; a forma pintada que está
+   * embaixo dela (o cartão do texto solto); ou, por fim, o fundo da lâmina. Num deck importado o
+   * cartão quase sempre é uma **imagem** — e aí a cor de trás é desconhecida, então o texto não
+   * troca de lado (o escuro continua escuro), que é o que o mantém legível.
+   */
+  const superficieDoTexto = (s: Shape, anteriores: Shape[], fundoLamina: string | undefined): string | undefined => {
+    const propria = pinturaDaForma(s);
+    if (propria) return propria;
+    for (let i = anteriores.length - 1; i >= 0; i--) {
+      const baixo = anteriores[i];
+      if (!dentro(baixo, s)) continue;
+      if (baixo.kind === "imagem" || baixo.src) return undefined; // imagem: a cor de trás é desconhecida
+      const f = pinturaDaForma(baixo);
+      if (f) return f;
+    }
+    return fundoLamina;
+  };
+  const forma = (s: Shape, anteriores: Shape[], fundoLamina: string | undefined): Shape => {
+    const sobre = superficieDoTexto(s, anteriores, fundoLamina);
     const f: Shape = {
       ...s,
-      color: corDeTexto(s, s.color),
+      color: corDeTexto(s.color, sobre, s),
       fontFamily: fonte(s.fontFamily) ?? s.fontFamily,
-      fill: cor(s.fill) ?? s.fill,
-      fillX: fill(s.fillX),
-      ln: s.ln ? { ...s.ln, color: cor(s.ln.color) ?? s.ln.color } : s.ln,
-      paras: s.paras ? paras(s, s.paras) : s.paras,
-      tabela: s.tabela ? { ...s.tabela, celulas: s.tabela.celulas.map((linha) => linha.map(celula)) } : s.tabela,
+      fill: superficie(s.fill) ?? s.fill,
+      fillX: pintura(s.fillX),
+      ln: s.ln ? { ...s.ln, color: superficie(s.ln.color) ?? s.ln.color } : s.ln,
+      paras: s.paras ? paras(s.paras, sobre, s) : s.paras,
+      tabela: s.tabela ? { ...s.tabela, celulas: s.tabela.celulas.map((linha) => linha.map((c) => celula(c, sobre))) } : s.tabela,
     };
     // Acabamento das ideias: cantos arredondados nos quadros pintados (o raio vira o "adj" do
     // preset, na mesma unidade do resto do app: 100000 × raio ÷ lado menor)…
@@ -197,7 +281,27 @@ export function aplicarModelo(slides: Slide[], de: EstiloAtual, modelo: ModeloPP
     }
     return f;
   };
-  return slides.map((sl) => ({ ...sl, bg: fill(sl.bg), shapes: sl.shapes.map(forma) }));
+  return slides.map((sl) => {
+    // o fundo da lâmina segue a paleta do tema (é ele que vira o fundo do design); o que não for
+    // do tema cai no papel da superfície
+    const corDeFundo = (c: string | undefined): string | undefined => (c ? mapa.get(semGrade(c)) ?? papelDaCor(c, tb) : c);
+    const bg = ((): Fill | undefined => {
+      const f = sl.bg;
+      if (!f || !tratamento) return pintura(f);
+      if (f.kind === "solid") return { ...f, color: corDeFundo(f.color) };
+      if (f.kind === "gradient") return { ...f, stops: f.stops?.map((s) => ({ ...s, color: corDeFundo(s.color) ?? s.color })) };
+      return f;
+    })();
+    // as formas originais (na ordem) é que dizem onde cada texto senta — o cartão de baixo pode
+    // ser uma imagem, e aí a superfície fica desconhecida de propósito
+    const originais: Shape[] = [];
+    const shapes = sl.shapes.map((s) => {
+      const f = forma(s, originais, bg?.kind === "solid" ? bg.color : undefined);
+      originais.push(s);
+      return f;
+    });
+    return { ...sl, bg, shapes };
+  });
 }
 
 /** O fundo que mais aparece nas lâminas (hex sem #) — é o que o modelo do usuário guarda. */

@@ -101,8 +101,14 @@ avisado ao abrir (nunca some em silêncio).
   apresentação inteira. Cada ideia é um **design** (as cores e a fonte) com um **acabamento**:
   - *cores novas*: troca a paleta e, o mais importante, **remapeia as cores próprias das formas**
     pelo papel de cada uma — a cor da marca vira o acento, os fundos claros viram uma tinta do
-    acento e as cores escuras viram o texto. Um organograma importado (com verdes que não estão
-    em tema nenhum) passa inteiro para a paleta do design, em vez de só o fundo e o texto;
+    acento e os painéis escuros continuam escuros. Um organograma importado (com verdes que não
+    estão em tema nenhum) passa inteiro para a paleta do design, em vez de só o fundo e o texto.
+    O **texto** segue regras próprias para não sumir: o escuro continua escuro e o claro continua
+    claro (o papel da superfície é que muda), a superfície de cada texto é procurada **embaixo
+    dele** — o preenchimento da própria forma, o cartão que está por baixo ou o fundo da lâmina —
+    e, quando a cor nova não alcança **4,5:1** de contraste (WCAG) com essa superfície, o texto
+    vira para o extremo do design que contrasta. Sobre um cartão que é **imagem** (a cor de trás
+    é desconhecida) o texto não troca de lado — é o que o mantém legível num deck importado;
   - *cantos arredondados*: os quadros pintados ganham cantos arredondados (raio de 12%);
   - *contorno de acento*: os quadros pintados ganham contorno na cor de acento do design.
 

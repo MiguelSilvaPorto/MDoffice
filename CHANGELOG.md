@@ -384,6 +384,19 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - (nada no momento)
 
+- **Ideias de design: o texto não some mais** (e o contraste é conferido): com um design escuro, o
+  texto das formas ficava **claro sobre cartão branco** e desaparecia (print do usuário). Duas
+  causas: o branco puro dos cartões ficava fora do remapeamento e a cor do texto era escolhida
+  pelo "papel" da cor sem olhar **onde o texto senta**. Agora as **superfícies** têm papel próprio
+  (as claras viram a tinta do acento, as escuras continuam escuras, as da marca viram o acento) e
+  os **textos** têm outro: o escuro continua escuro, o claro continua claro. A superfície de cada
+  texto é procurada **embaixo dele** (o preenchimento da própria forma, o cartão de baixo ou o
+  fundo da lâmina) e o contraste é medido (**WCAG 4,5:1**): se o tom escolhido não alcança, o
+  texto vira para o extremo do design que contrasta — e, em último recurso, branco ou preto puro.
+  Sobre um cartão que é **imagem** (a cor de trás é desconhecida) o texto **não troca de lado**:
+  num deck importado é isso que o mantém legível. No deck real do usuário: 190 textos com
+  superfície conhecida, **0 abaixo de 4,5:1**, e os 168 textos sobre cartões-imagem preservados.
+
 ### Adicionado (na main)
 
 **Backend**

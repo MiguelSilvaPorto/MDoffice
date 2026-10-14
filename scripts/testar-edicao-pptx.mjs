@@ -380,7 +380,19 @@ const M = await empacotar("src/powerpoint/edicao/modelos.ts", "modelos.mjs");
   const caixa = (extra = {}) => ({ id: "t", kind: "texto", box: { x: 8, y: 10, w: 80, h: 20 }, text: "Oi", fontFamily: "Segoe UI", fontSize: 18, color: "1C212B", bold: false, italic: false, align: "esquerda", fill: "", src: "", rot: 0, ...extra });
   // deck importado: quadros com um verde próprio (fora de qualquer paleta) e texto branco
   const verde = (id) => caixa({ id, kind: "forma", geom: "rect", color: "FFFFFF", fill: "2EA36F", fillX: { kind: "solid", color: "2EA36F" }, paras: [para(run("FFFFFF", "Segoe UI"))] });
-  const temaClaro = { fg: "1C212B", bg: "FFFFFF", accent: "4F46E5", muted: "94A3B8" };
+  const destino = { fg: "13293D", bg: "E8F1F2", accent: "1B98E0", muted: "247BA0" };
+  ok(
+    "ideias: o papel da superfície leva a marca para o acento, o escuro para o fundo escuro e o claro para a tinta do acento",
+    M.papelDaCor("2EA36F", destino) === "1B98E0" && M.papelDaCor("0F2738", destino) === "13293D" && M.papelDaCor("E8F7EE", destino) === "CBE5EF" && M.papelDaCor("64748B", destino) === "13293D"
+  );
+  ok(
+    "ideias: o papel do texto mantém o escuro escuro e o claro claro (para não sumir sobre imagem)",
+    M.papelDoTexto("0F2738", destino) === "13293D" && M.papelDoTexto("FFFFFF", destino) === "E8F1F2" && M.papelDoTexto("2EA36F", destino) === "1B98E0"
+  );
+  ok(
+    "ideias: o contraste vira o texto para o extremo que contrasta com a superfície",
+    M.contrasteCom("FFFFFF", "1B98E0", destino) === "13293D" && M.contrasteCom("FFFFFF", "13293D", destino) === "FFFFFF" && M.contrasteDeCores("FFFFFF", "13293D") >= 4.5
+  );
   const deck = [
     mk([verde("a"), verde("b"), caixa({ id: "c", color: "2EA36F", paras: [para(run("2EA36F", "Segoe UI"))] })], { kind: "solid", color: "FFFFFF" }),
     mk(
@@ -395,21 +407,42 @@ const M = await empacotar("src/powerpoint/edicao/modelos.ts", "modelos.mjs");
   ];
   const de = { theme: "claro", bg: "", fontFamily: "Segoe UI" };
   const ocean = M.MODELOS.find((m) => m.id === "ocean");
-  const destino = { fg: "13293D", bg: "E8F1F2", accent: "1B98E0", muted: "247BA0" };
-  const mp = M.mapaDasCoresProprias(deck, temaClaro, destino);
-  ok(
-    "ideias: o mapa leva a marca para o acento, o escuro para o texto e o claro para a tinta do acento",
-    mp.get("2EA36F") === "1B98E0" && mp.get("0F2738") === "13293D" && mp.get("E8F7EE") === "CBE5EF" && mp.get("64748B") === "13293D" && !mp.has("4F46E5") && !mp.has("1C212B") && !mp.has("FFFFFF")
-  );
   const semTrat = M.aplicarModelo(deck, de, ocean);
   ok("ideias: sem tratamento o verde próprio fica como está (o comportamento antigo)", semTrat[0].shapes[0].fillX.color === "2EA36F" && semTrat[0].shapes[0].geom === "rect");
   const rec = M.aplicarModelo(deck, de, ocean, "recolorir");
-  ok("ideias: recolorir leva o verde próprio para o acento (preenchimento e texto)", rec[0].shapes[0].fill === "1B98E0" && rec[0].shapes[0].fillX.color === "1B98E0" && rec[0].shapes[2].paras[0].runs[0].color === "1B98E0");
-  const sun = M.MODELOS.find((m) => m.id === "sunset");
-  const recSun = M.aplicarModelo(deck, de, sun, "recolorir");
-  ok("ideias: texto sobre o quadro que virou acento claro escurece (contraste refeito)", recSun[0].shapes[0].fillX.color === "FF9F1C" && recSun[0].shapes[0].paras[0].runs[0].color === "1C212B");
-  const cantos = M.aplicarModelo(deck, de, ocean, "cantos");
-  ok("ideias: cantos arredondados nos quadros pintados (raio 12% no adj) e recoloridos junto", cantos[0].shapes[0].geom === "roundRect" && cantos[0].shapes[0].adj.adj === 12000 && cantos[0].shapes[1].geom === "roundRect" && cantos[0].shapes[0].fillX.color === "1B98E0" && cantos[0].shapes[2].geom === undefined);
+  ok(
+    "ideias: recolorir leva as cores próprias para a paleta (marca → acento, escuro → fundo escuro, claro → tinta)",
+    rec[0].shapes[0].fill === "1B98E0" && rec[0].shapes[0].fillX.color === "1B98E0" && rec[1].shapes[0].fillX.color === "1B98E0" && rec[1].shapes[1].fillX.color === "13293D" && rec[1].shapes[2].fillX.color === "CBE5EF" && rec[0].bg.color === "E8F1F2"
+  );
+  const pares = [];
+  for (const sl of rec)
+    for (const s of sl.shapes) {
+      const sup = s.fillX?.kind === "solid" ? s.fillX.color : s.fill;
+      if (!sup) continue;
+      for (const p of s.paras ?? []) for (const r of p.runs) pares.push([r.color, sup]);
+    }
+  ok(
+    "ideias: todo texto de forma pintada fica com o contraste mínimo (WCAG 4,5:1)",
+    pares.length >= 2 && pares.every(([t, sup]) => M.contrasteDeCores(t, sup) >= 4.5),
+    pares.map(([t, sup]) => `${t}/${sup}`).join(" ")
+  );
+  const escuro = M.MODELOS.find((m) => m.id === "escuro");
+  const cartao = [mk([caixa({ id: "card", kind: "forma", fill: "FFFFFF", fillX: { kind: "solid", color: "FFFFFF" }, paras: [para(run("0F2738", "Segoe UI"))] })], { kind: "solid", color: "FFFFFF" })];
+  const comEscuro = M.aplicarModelo(cartao, de, escuro, "recolorir");
+  const card = comEscuro[0].shapes[0];
+  ok(
+    "ideias: num design escuro o cartão branco escurece e o texto continua legível (o defeito do print)",
+    card.fillX.color !== "FFFFFF" && card.paras[0].runs[0].color !== "0F2738" && M.contrasteDeCores(card.paras[0].runs[0].color, card.fillX.color) >= 4.5
+  );
+  // texto solto em cima de um cartão que é imagem: a cor de trás é desconhecida, então o texto
+  // não troca de lado — era o defeito do print (cartão branco de imagem + texto claro em cima)
+  const comImagem = [mk([caixa({ id: "card", kind: "imagem", src: "m1", box: { x: 0, y: 0, w: 100, h: 60 } }), caixa({ id: "txt", box: { x: 10, y: 10, w: 60, h: 20 }, color: "0F2738", paras: [para(run("0F2738", "Segoe UI"))] })], { kind: "solid", color: "FFFFFF" })];
+  const sobreImagem = M.aplicarModelo(comImagem, de, escuro, "recolorir")[0].shapes[1];
+  ok(
+    "ideias: texto solto sobre imagem não troca de lado (o escuro continua escuro e legível)",
+    sobreImagem.paras[0].runs[0].color !== "F4F5F8" && M.contrasteDeCores(sobreImagem.paras[0].runs[0].color, "FFFFFF") >= 4.5
+  );
+  const cantos = M.aplicarModelo(deck, de, ocean, "cantos");  ok("ideias: cantos arredondados nos quadros pintados (raio 12% no adj) e recoloridos junto", cantos[0].shapes[0].geom === "roundRect" && cantos[0].shapes[0].adj.adj === 12000 && cantos[0].shapes[1].geom === "roundRect" && cantos[0].shapes[0].fillX.color === "1B98E0" && cantos[0].shapes[2].geom === undefined);
   const cont = M.aplicarModelo(deck, de, ocean, "contorno");
   ok("ideias: contorno de acento nas formas pintadas (1,25 pt no mínimo)", cont[0].shapes[0].ln.color === "1B98E0" && cont[0].shapes[0].ln.w === 1.25 && cont[0].shapes[2].ln === undefined);
   ok("ideias: aplicar não mexe nas lâminas originais", deck[0].shapes[0].fillX.color === "2EA36F" && deck[0].shapes[0].geom === "rect");

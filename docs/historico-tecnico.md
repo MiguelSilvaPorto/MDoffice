@@ -7064,6 +7064,7 @@ antigas quando fizer sentido.
 - **Linha:** `novo`
 - **Porquê:** é uma mudança do módulo PowerPoint (não de interface geral), e a entrada entra já
   promovida, como o fechamento exige.
+
 ## src/powerpoint/edicao/estilos.ts
 
 ### 2026-10-14 · estilos de cor · a capa nasce agrupada com a base (R3)
@@ -7135,3 +7136,48 @@ antigas quando fizer sentido.
   mover — a lição das rodadas anteriores, quando o rebase re-inseriu uma entrada já promovida.
   A entrada da **remoção do "Configurar"** (`66ee5c7`) já tinha sido promovida pela própria
   sessão dela.
+
+## src/powerpoint/edicao/modelos.ts · scripts/testar-edicao-pptx.mjs · docs/powerpoint.md
+
+### 2026-10-14 · esta tarefa · o texto das ideias não some (papel da superfície × papel do texto)
+
+- **Local:** `modelos.ts` — `papelDaCor`, `papelDoTexto`, `contrasteDeCores`, `contrasteCom`,
+  `extremos`, `tinta`, `luminancia` (no lugar do `mapaDasCoresProprias`) e, em `aplicarModelo`,
+  `superficieDoTexto`/`dentro`/`pinturaDaForma` e as assinaturas novas de `corDeTexto`, `runs`,
+  `paras`, `celula` e `forma`
+- **Linha:** `- mapaDasCoresProprias(slides, ta, tb)` (um mapa só, para superfície e texto) ·
+  `+ papelDaCor(c, tb)` nas superfícies e `+ contrasteCom(papelDoTexto(c, tb), sobre, tb)` nos
+  textos · `+ dentro(baixo, s)` para achar a forma que está embaixo do texto
+- **Porquê:** o print do usuário mostrou o defeito — com a ideia **Escuro**, o texto ficou claro
+  sobre cartões brancos e desapareceu. Duas causas: (1) o **branco puro** (`FFFFFF`) estava na
+  lista de exclusões do mapa de cores próprias, então o cartão branco **não** entrava no
+  remapeamento e continuava branco enquanto o texto virava claro; (2) a cor do texto saía do
+  mesmo mapa da superfície, pelo "papel" da cor — mas o papel certo do texto **depende de onde
+  ele senta**, e não da cor dele: o mesmo cinza-escuro precisa virar claro sobre um painel escuro
+  e continuar escuro sobre um cartão claro. A separação em dois papéis resolve a raiz: as
+  **superfícies** (fundo da lâmina, preenchimentos, contornos) seguem o papel da cor — claro vira
+  a tinta do acento, escuro continua escuro, marca vira o acento, cinza do meio vira a secundária
+  — e os **textos** seguem o papel do texto (o escuro continua escuro, o claro continua claro),
+  com o contraste medido em **WCAG 4,5:1** contra a superfície e virada para o extremo do design
+  quando não alcança (branco/preto puro só em último recurso, para superfícies do meio onde nem o
+  preto nem o branco do design chegam lá — com quatro candidatos sempre há um legível).
+- **Local:** `modelos.ts` — a superfície de cada texto, quando a forma dele não tem preenchimento
+- **Linha:** `+ superficieDoTexto(s, anteriores, fundoLamina)` — o preenchimento da própria forma,
+  senão a última forma pintada **abaixo** dela (o teste do centro da caixa), senão o fundo da
+  lâmina; **imagem** devolve "desconhecida" de propósito
+- **Porquê:** a verificação com o deck real do usuário (12 lâminas, 511 formas) mostrou que só
+  **2** das 197 formas com texto têm preenchimento próprio: os textos são caixas soltas e os
+  cartões são **imagens** — a cor de trás é desconhecida. Usar o fundo da lâmina como superfície
+  desses textos (a primeira tentativa) era pior: com o design escuro, o fundo da lâmina é escuro,
+  o texto escuro "não contrastava" e a proteção o virava para claro — de novo ilegível em cima do
+  cartão branco. Para superfície desconhecida o texto **não troca de lado**: era exatamente o caso
+  do print (cartão-imagem branco + texto escuro). Com a correção, os 190 textos com superfície
+  conhecida ficam em **0 abaixo de 4,5:1** e os 168 sobre imagem preservam o lado.
+- **Local:** `scripts/testar-edicao-pptx.mjs` e `scripts/testar-layout.mts`
+- **Linha:** `novo` — 5 checagens de unidade (os dois papéis, o contraste que vira o texto, a
+  paleta inteira recolorida, o contraste mínimo em toda forma pintada, o design escuro sobre
+  cartão branco e o texto solto sobre imagem) no lugar das 4 antigas
+- **Porquê:** a checagem antiga ("recolorir leva o verde próprio para o acento") prendia só o
+  caminho felizmente visível; o defeito estava no que ela não olhava. As novas prendem o que o
+  usuário viu: texto legível em cada ideia, com o contraste medido — e o caso do cartão-imagem,
+  que é o do deck real.
