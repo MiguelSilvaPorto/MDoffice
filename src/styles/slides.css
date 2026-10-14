@@ -575,6 +575,49 @@
   }
 }
 
+/* ---------- animações de forma (aba Animações) ---------- */
+
+/* entrada ainda não disparada: a forma fica escondida até o passo dela chegar */
+.forma-oculta {
+  visibility: hidden;
+}
+
+.forma-surge {
+  animation: forma-surge var(--anim-dur, 500ms) ease both;
+}
+
+.forma-some {
+  animation: forma-some var(--anim-dur, 500ms) ease both;
+}
+
+@keyframes forma-surge {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes forma-some {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+/* movimento reduzido: o efeito aplica na hora (o jogador já usa duração 0) */
+@media (prefers-reduced-motion: reduce) {
+  .forma-surge,
+  .forma-some {
+    animation-duration: 1ms;
+  }
+}
+
 /* impressão: as camadas voltam ao fluxo (uma lâmina por página) */
 @media print {
   .slides-stage {

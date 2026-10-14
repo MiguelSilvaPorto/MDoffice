@@ -2730,6 +2730,194 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   ("severidade") não está no vocabulário do modelo — é limitação honesta, não bug, e o documento
   precisa dizer isso para a próxima medição não parecer estagnada.
 
+## src/powerpoint/schema.ts
+
+### 2026-10-14 · animações de forma · o modelo
+- **Local:** depois da `Transicao` e no `Slide`
+- **Linha:** novos `AnimacaoTipo` (`aparecer|surgir|desaparecer|sumir`), `AnimacaoInicio`
+  (`clicar|com|depois`) e `Animacao { forma, tipo, inicio?, duracao? }`; no `Slide`,
+  `animacoes?: Animacao[]` e `timingXml?: string`
+- **Porquê:** é o modelo do recorte de animações: uma por forma, na ordem em que toca; o
+  `timingXml` guarda o `<p:timing>` original quando a lâmina tem efeitos que o app não
+  representa (volta como veio, como a transição crua).
+
+## src/powerpoint/edicao/animacao.ts
+
+### 2026-10-14 · animações de forma · tipos e normalização (novo arquivo)
+- **Local:** arquivo inteiro
+- **Linha:** novo — tabelas (tipos, rótulos, dicas, inícios, durações), `normalizarAnimacao(ões)`,
+  `comAnimacao`/`comInicio`/`comDuracao`/`semAnimacao`/`moverAnimacao`/`podarAnimacoes` e os
+  ajudantes `suave`/`entrada`/`inicioDe`/`duracaoDeAnimacao`/`duracaoEfetiva`
+- **Porquê:** as regras ficam puras e testáveis (como `edicao/transicao.ts`): duração só nos
+  efeitos suaves (aparecer/desaparecer são instantâneos), início padrão "ao clicar", limites de
+  duração 0,1–10 s e uma animação por forma (trocar no lugar preserva a ordem).
+
+## src/powerpoint/render/animacao.ts
+
+### 2026-10-14 · animações de forma · o jogador (novo arquivo)
+- **Local:** arquivo inteiro (`iniciarAnimacoes`)
+- **Linha:** novo — agrupa os efeitos em passos (o "com" entra no passo atual; "clicar"/"depois"
+  abrem outro), esconde as entradas até a hora, toca com as classes `forma-surge`/`forma-some` e
+  devolve `{ proximo, cancelar }`
+- **Porquê:** o MESMO jogador serve à prévia no editor e ao F5 — o apresentador só repassa o
+  clique (`proximo()`) antes de trocar de lâmina. `prefers-reduced-motion` aplica na hora;
+  `cancelar()` limpa classes e timers.
+
+## src/powerpoint/slides.ts
+
+### 2026-10-14 · animações de forma · duplicar e redefinir
+- **Local:** `duplicateSlide` e `resetSlide`
+- **Linha:** a cópia remapeia os ids das formas e das animações (mapa id antigo → novo) e copia
+  `animacoes`/`timingXml`; o redefinir poda as animações pelas formas que sobraram e descarta o
+  `timingXml`
+- **Porquê:** sem o remap, a cópia da lâmina ficaria com animações apontando para ids que não
+  existem (ou para as formas da original). O `timingXml` aponta para as formas antigas por id —
+  depois de redefinir, não vale mais.
+
+## src/powerpoint/pptximport/timing.ts
+
+### 2026-10-14 · animações de forma · leitura do p:timing (novo arquivo)
+- **Local:** arquivo inteiro (`lerTiming`)
+- **Linha:** novo — regra tudo-ou-nada: efeitos `entr/exit` com presetID 1/10 viram
+  aparecer/surgir/desaparecer/sumir; qualquer coisa fora do modelo (ênfase, trajetória, por
+  parágrafo, gatilho, atraso, repetição, mídia com tempo próprio) devolve o `<p:timing>` cru e
+  um aviso
+- **Porquê:** é o molde do `lerTransicao`: melhor preservar inteiro do que modelar pela metade e
+  perder efeito no round-trip. O início vem do `nodeType` (clickEffect/withEffect/afterEffect) e
+  o alvo vem do `spTgt`, resolvido pelo mapa `spids` (id do arquivo → id interno).
+
+## src/powerpoint/pptximport/formas.ts
+
+### 2026-10-14 · animações de forma · mapa de ids
+- **Local:** `CtxForma` e os dois pontos que criam forma (`lerForma` e a tabela)
+- **Linha:** novo campo `spids: Map<string, string>`; `if (!fixa && cNv?.a.id) c.spids.set(...)`
+  ao lado de `const idForma = ...`
+- **Porquê:** o `p:timing` referencia a forma pelo id do ARQUIVO (cNvPr) e o modelo usa ids
+  internos (`s1`, `s2`…). Só as formas DA LÂMINA entram no mapa — as decorações `fixa` vêm do
+  mestre/layout e têm ids de outro arquivo.
+
+## src/powerpoint/pptximport/index.ts
+
+### 2026-10-14 · animações de forma · timing na importação
+- **Local:** laço das lâminas, ao lado da transição
+- **Linha:** o texto da lâmina é lido uma vez (`textoSlide`) e alimenta `lerTransicao` e
+  `lerTiming`; o resultado entra no `Slide` como `animacoes`/`timingXml` (+ avisos)
+- **Porquê:** cada lâmina tem o próprio mapa `spids` (criado no `base`); ler o texto uma vez
+  evita reler a parte do zip.
+
+## src/powerpoint/pptxexport/timing.ts
+
+### 2026-10-14 · animações de forma · escrita do p:timing (novo arquivo)
+- **Local:** arquivo inteiro (`xmlTiming` e `inserirTiming`)
+- **Linha:** novo — estrutura validada contra arquivos reais (a mesma que o DeckCraft escreve):
+  grupos de clique (`delay="indefinite"`; grupo automático ganha `evt="onBegin"` + `p:tn 2`),
+  lotes "depois" com atraso acumulado, efeito com `presetID/presetClass/presetSubtype/nodeType`
+  e comportamentos (`set` de visibilidade + `animEffect` de fade); `p:bldLst` para formas com
+  texto (`animBg`)
+- **Porquê:** o PptxGenJS não escreve timing; a ordem do esquema manda o `<p:timing>` depois do
+  `p:transition` — e depois do `mc:AlternateContent` quando a transição veio crua.
+
+## src/powerpoint/pptxexport/rica.ts
+
+### 2026-10-14 · animações de forma · o XML devolve o mapa de ids
+- **Local:** `Ctx`, `SaidaLamina` e `formaXml`
+- **Linha:** novo `ids: Record<string, number>` no contexto e na saída; `ctx.ids[s.id] = id` ao
+  lado de `const id = ++ctx.seq`
+- **Porquê:** a exportação RENUMERA as formas; o `p:timing` precisa do id que a forma ganhou no
+  XML (o `spid`), não do id interno do modelo.
+
+## src/powerpoint/pptxexport/index.ts
+
+### 2026-10-14 · animações de forma · exportação
+- **Local:** `precisaPos` e `trocarLaminas`
+- **Linha:** lâminas com `animacoes`/`timingXml` passam pelo pós-processamento; o mapa de ids de
+  cada lâmina rica é guardado e o `<p:timing>` entra DEPOIS do laço das transições
+- **Porquê:** o timing precisa da transição já no lugar (a ordem do esquema) e do mapa de ids
+  que o Escritor acabou de gerar.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · animações de forma · aba Animações
+- **Local:** `ABAS`, painel, `previaAnimacao`, `animacoes()`, o despacho do clique e o bloco do
+  `atualizar()`
+- **Linha:** nova aba entre Transições e Design; grupos **Animação** (galeria com prévia SVG),
+  **Início**, **Duração**, **Ordem** (↑↓) e **Animar** (Prévia/Remover); comandos com os prefixos
+  `animacao:`, `animacao-inicio:` e `animacao-duracao:`; nota "Original preservada" quando a
+  lâmina tem `timingXml`
+- **Porquê:** a galeria marca o efeito da forma selecionada, o início e a duração refletem o
+  estado; os itens ficaram com a mesma cara dos da transição (as regras `.ppr-trans-*` passaram a
+  valer para `.ppr-anim-item`/`.ppr-anim-svg`).
+
+## src/powerpoint/ui/estado.ts
+
+### 2026-10-14 · animações de forma · estado da fita
+- **Local:** `EstadoUI`
+- **Linha:** novos `animacao?: Animacao`, `animacaoPreservada`, `animacaoPos` e `animacaoTotal`
+- **Porquê:** a fita precisa do efeito da forma principal (marcar a galeria, habilitar
+  início/duração/ordem/remover) e saber se a lâmina tem timing cru.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · animações de forma · o host
+- **Local:** imports, `contexto()` do palco, `estadoUI()`, cases do `run`, `excluir`,
+  `pintarSlide` e os métodos novos
+- **Linha:** `aplicarAnimacao`, `mudarInicioAnimacao`, `mudarDuracaoAnimacao`, `removerAnimacao`,
+  `moverAnimacaoNaOrdem` e `preverAnimacoes` (novos); `editarAnimacoes(fn, chave)` centraliza a
+  comparação (não cria passo de desfazer à toa e substitui o `timingXml` ao escolher um efeito);
+  excluir poda as animações das formas removidas; o palco recebe `animacoes` para os selos
+- **Porquê:** os efeitos são editados como a transição (mesmo `editar`, com undo coalescido); a
+  prévia usa o jogador com `automatico: true` e é cancelada a cada repintura.
+
+## src/powerpoint/presenter.ts
+
+### 2026-10-14 · animações de forma · o F5
+- **Local:** `mostrar` (agora devolve a camada e a duração da transição), `pintar`, `ir` e `fechar`
+- **Linha:** `anim = iniciarAnimacoes(camada, slide.animacoes, { atrasoMs: transicaoMs })`;
+  `if (passo > 0 && anim?.proximo()) return;` no `ir`; `anim?.cancelar()` ao fechar
+- **Porquê:** o clique primeiro toca o efeito pendente ("ao clicar") e só depois troca de lâmina —
+  o comportamento do PowerPoint. As animações começam quando a transição termina (ou na hora, se
+  não há transição).
+
+## src/powerpoint/stage.ts
+
+### 2026-10-14 · animações de forma · selos numerados
+- **Local:** `ContextoPalco` e `desenharSelecao`
+- **Linha:** novo `animacoes: Animacao[]` no contexto; laço que injeta `<div class="pp-selo">` no
+  canto da forma (número = ordem do efeito); os selos entram na limpeza do redesenho
+- **Porquê:** sem painel de animação, os selos mostram de relance quais formas têm efeito e em
+  que ordem — o mesmo papel das etiquetas numeradas do PowerPoint.
+
+## src/styles/slides.css
+
+### 2026-10-14 · animações de forma · classes do jogador
+- **Local:** depois das animações de transição
+- **Linha:** `.forma-oculta` (entrada ainda não disparada), `.forma-surge`/`.forma-some` (fade
+  com `--anim-dur`) e os keyframes `forma-surge`/`forma-some`; `prefers-reduced-motion` aplica na
+  hora
+- **Porquê:** as classes são o contrato com o jogador (`render/animacao.ts`) — o CSS cuida do
+  visual e o jogador da ordem/timing.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · animações de forma · selo e galeria
+- **Local:** depois de `.pp-sel` e nas regras da galeria de transições
+- **Linha:** nova `.pp-selo` (pílula com número no canto da forma); `.ppr-trans-item`/`-svg`
+  passam a valer também para `.ppr-anim-item`/`.ppr-anim-svg`
+- **Porquê:** o selo é a marca da forma animada no palco; a galeria da aba nova usa a mesma
+  linguagem visual da galeria de transições, sem duplicar CSS.
+
+## scripts/testar-edicao-pptx.mjs
+
+### 2026-10-14 · animações de forma · testes
+- **Local:** blocos novos: "animações de forma (modelo)", "round-trip do p:timing" e
+  "exportação: spid amarrado à forma"
+- **Linha:** verificações novas — normalização/limites, ordem/remoção/poda, presetID/nodeType,
+  round-trip (inclusive "com" automático), fora-do-modelo cru com aviso, ordem do `<p:timing>` no
+  XML (depois da transição e do `mc:AlternateContent`), `p:bldLst` e o mapa de ids ligando o
+  efeito ao `spid` real
+- **Porquê:** o comportamento tem que ficar preso: qualquer regressão no round-trip perderia
+  animação de arquivo do usuário.
+
 ---
 
 ## Próximos registros

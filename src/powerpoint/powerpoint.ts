@@ -33,6 +33,8 @@ import {
 import { lerSelecao, restaurarSelecao, textoDaCaixa } from "./edicao/selecaoDom";
 import { alternarMarcador, estadoDoTrecho, estiloDosParas, estiloNoIntervalo, limparEstiloNoIntervalo, mudarCaixaTexto, mudarRecuo, mudarTamanhoRelativo, parasDaSelecao, type EstiloRun, type RunPatch, type TipoCaixa } from "./edicao/texto";
 import { comTransicao, direcaoDe, duracaoDe, normalizarTransicao } from "./edicao/transicao";
+import { comAnimacao, comDuracao, comInicio, moverAnimacao, normalizarAnimacoes, podarAnimacoes, semAnimacao, TIPOS_ANIMACAO } from "./edicao/animacao";
+import { iniciarAnimacoes, type ControleAnimacoes } from "./render/animacao";
 import { caixaDaMidia, comCorteDaMidia, comOpcaoMidia, comVolumeDaMidia, midiaPadrao, normalizarMidia, MIDIA_ROTULOS, tipoDeArquivo } from "./edicao/midia";
 import { capturarQuadro, cartaoParaPng } from "./render/midia";
 import {
@@ -67,7 +69,7 @@ import { Fita } from "./ui/fita";
 import { Painel } from "./ui/painel";
 import { abrirPopup, fecharPopup } from "./ui/popup";
 import type { EstadoUI } from "./ui/estado";
-import type { Deck, DeckSetup, Fill, GraficoTipo, Para, Shape, ShapeBox, Slide, SlideLayout, TextAlign, Transicao, TransicaoDirecao, TransicaoTipo } from "./schema";
+import type { Animacao, AnimacaoInicio, AnimacaoTipo, Deck, DeckSetup, Fill, GraficoTipo, Para, Shape, ShapeBox, Slide, SlideLayout, TextAlign, Transicao, TransicaoDirecao, TransicaoTipo } from "./schema";
 
 marked.setOptions({ gfm: true, breaks: false });
 
@@ -137,6 +139,8 @@ export class PowerPointHost {
   private faixaVertical = lerFlag("mdc.pp.faixaVertical", false);
   private hist = new Historico<Estado>(100);
   private pendente: Estado | null = null;
+  /** prévia das animações de forma em andamento no palco (aba Animações) */
+  private animPreview: ControleAnimacoes | null = null;
   private destinoImagem = "inserir";
   private destinoMidia: string | null = null;
   private lateral: "formatar" | "notas" = "formatar";
@@ -171,6 +175,7 @@ export class PowerPointHost {
         comGrupos: (ids) => comGrupos(this.atual(), ids),
         celulas: this.celulasDaSelecao(),
         cantosSel: this.cantosSel,
+        animacoes: normalizarAnimacoes(this.atual().animacoes) ?? [],
       }),
       aoSelecionar: (ids) => this.selecionar(ids),
       aoSelecionarCantos: (c) => this.selecionarCantos(c),
@@ -485,6 +490,9 @@ export class PowerPointHost {
 
   /** desenha o conteúdo da lâmina atual (formas ou markdown) */
   private pintarSlide(slide: Slide): void {
+    // redesenhar cancela uma prévia de animações em andamento (o DOM vai ser trocado)
+    this.animPreview?.cancelar();
+    this.animPreview = null;
     if (!slide.shapes.length) {
       // lâmina só com markdown (modo simples)
       const html = marked.parse(slide.md, { gfm: true, async: false }) as string;
@@ -674,6 +682,8 @@ export class PowerPointHost {
       paragrafo = paras[idx[0] ?? 0];
     }
     const d = this.dim();
+    const anims = normalizarAnimacoes(this.atual().animacoes);
+    const animacao = forma && anims ? anims.find((a) => a.forma === forma.id) : undefined;
     return {
       temLamina: this.slides.length > 0,
       indice: this.indice,
@@ -705,6 +715,10 @@ export class PowerPointHost {
       cantosSel: [...this.cantosSel],
       transicao: normalizarTransicao(this.atual().transicao),
       transicaoPreservada: !!this.atual().transicaoXml,
+      animacao,
+      animacaoPreservada: !!this.atual().timingXml,
+      animacaoPos: forma && anims ? anims.findIndex((a) => a.forma === forma.id) : -1,
+      animacaoTotal: anims?.length ?? 0,
     };
   }
 
@@ -1313,6 +1327,25 @@ export class PowerPointHost {
       case "transicao-previa":
         return this.preverTransicao();
 
+      // ---- animações de forma (aba Animações) ----
+      case "animacao": {
+        const tipo = String(value ?? "") as AnimacaoTipo;
+        if (!TIPOS_ANIMACAO.includes(tipo)) return;
+        return this.aplicarAnimacao(tipo);
+      }
+      case "animacao-inicio":
+        return this.mudarInicioAnimacao(String(value ?? "clicar") as AnimacaoInicio);
+      case "animacao-duracao":
+        return this.mudarDuracaoAnimacao(Number(String(value).replace(",", ".")));
+      case "animacao-remover":
+        return this.removerAnimacao();
+      case "animacao-subir":
+        return this.moverAnimacaoNaOrdem(-1);
+      case "animacao-descer":
+        return this.moverAnimacaoNaOrdem(1);
+      case "animacao-previa":
+        return this.preverAnimacoes();
+
       case "present":
         return this.present();
       case "configure":
@@ -1352,7 +1385,12 @@ export class PowerPointHost {
       case "excluir":
         if (!ids.length) return;
         this.registrar();
-        this.substituirSlide(removerFormas(sl, ids));
+        {
+          // as animações das formas que saíram somem junto; o `<p:timing>` cru (que apontava
+          // para elas por id) não vale mais depois de excluir
+          const semFormas = removerFormas(sl, ids);
+          this.substituirSlide({ ...semFormas, animacoes: podarAnimacoes(semFormas.animacoes, semFormas.shapes.map((f) => f.id)), timingXml: undefined });
+        }
         this.selecao = [];
         this.markDirty();
         this.pintar();
@@ -2382,6 +2420,68 @@ export class PowerPointHost {
     el.classList.add(dir, classe);
     el.addEventListener("animationend", fim, { once: true });
     window.setTimeout(fim, ms + 150);
+  }
+
+  // ------------------------------------------------------------------
+  // animações de forma (aba Animações)
+  // ------------------------------------------------------------------
+
+  /** Aplica uma mudança na lista de animações da lâmina (sem criar lâmina nova à toa). */
+  private editarAnimacoes(fn: (lista: Animacao[] | undefined) => Animacao[] | undefined, chave: string): void {
+    this.editar((s) => {
+      const depois = fn(s.animacoes);
+      const mudou = JSON.stringify(depois ?? null) !== JSON.stringify(s.animacoes ?? null);
+      // escolher uma animação na fita substitui o que veio cru do .pptx (como na transição)
+      if (!mudou && !s.timingXml) return s;
+      return { ...s, animacoes: depois, timingXml: undefined };
+    }, chave);
+  }
+
+  /** Aplica um efeito à seleção (a ordem é a da aplicação). */
+  private aplicarAnimacao(tipo: AnimacaoTipo): void {
+    if (!this.selecao.length) return;
+    const ids = comGrupos(this.atual(), this.selecao);
+    this.editarAnimacoes((lista) => {
+      let nova = lista;
+      for (const id of ids) nova = comAnimacao(nova, id, tipo);
+      return nova;
+    }, "animacao");
+  }
+
+  /** Muda o início do efeito da forma principal (ao clicar / com / depois do anterior). */
+  private mudarInicioAnimacao(inicio: AnimacaoInicio): void {
+    const f = this.principal();
+    if (!f) return;
+    this.editarAnimacoes((lista) => comInicio(lista, f.id, inicio), "animacao");
+  }
+
+  /** Muda a duração do efeito da forma principal (só nos suaves: surgir/sumir). */
+  private mudarDuracaoAnimacao(segundos: number): void {
+    const f = this.principal();
+    if (!f || !Number.isFinite(segundos)) return;
+    this.editarAnimacoes((lista) => comDuracao(lista, f.id, segundos), "animacao");
+  }
+
+  /** Tira o efeito da forma principal. */
+  private removerAnimacao(): void {
+    const f = this.principal();
+    if (!f) return;
+    this.editarAnimacoes((lista) => semAnimacao(lista, f.id), "animacao-remover");
+  }
+
+  /** Move o efeito da forma principal na ordem (passo -1 sobe, +1 desce). */
+  private moverAnimacaoNaOrdem(passo: number): void {
+    const f = this.principal();
+    if (!f) return;
+    this.editarAnimacoes((lista) => moverAnimacao(lista, f.id, passo), "animacao-ordem");
+  }
+
+  /** Prévia das animações no palco: toca a sequência inteira, sem esperar cliques. */
+  private preverAnimacoes(): void {
+    const lista = normalizarAnimacoes(this.atual().animacoes);
+    if (!lista?.length) return;
+    this.animPreview?.cancelar();
+    this.animPreview = iniciarAnimacoes(this.slideEl, lista, { automatico: true });
   }
 
   // ------------------------------------------------------------------

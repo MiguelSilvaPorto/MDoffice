@@ -17,7 +17,7 @@ import {
   type Dim,
   type Guia,
 } from "./edicao/geometria";
-import type { Shape, ShapeBox } from "./schema";
+import type { Animacao, Shape, ShapeBox } from "./schema";
 import { CANTO_ROTULO, CANTOS, cantosDe, valoresComSelecao, type Canto } from "./edicao/formato";
 
 const ZOOM_MIN = 40;
@@ -45,6 +45,8 @@ export interface ContextoPalco {
   celulas: CelulasSel | null;
   /** cantos escolhidos para a edição (as alças de canto do palco) */
   cantosSel: Canto[];
+  /** animações da lâmina, na ordem — viram selos numerados sobre as formas (aba Animações) */
+  animacoes: Animacao[];
 }
 
 export interface CelulasSel {
@@ -204,7 +206,7 @@ export class Stage {
   desenharSelecao(): void {
     const el = this.slideEl;
     if (!el) return;
-    el.querySelectorAll(".pp-sel, .pp-guia, .pp-marquee, .pp-celsel").forEach((n) => n.remove());
+    el.querySelectorAll(".pp-sel, .pp-guia, .pp-marquee, .pp-celsel, .pp-selo").forEach((n) => n.remove());
     const ctx = this.hooks.contexto();
     const sel = ctx.shapes.filter((s) => ctx.selecao.includes(s.id));
     const html: string[] = [];
@@ -263,6 +265,12 @@ export class Stage {
         html.push(`<div class="pp-celsel" style="left:${((x0 - raiz.left) / raiz.width) * 100}%;top:${((y0 - raiz.top) / raiz.height) * 100}%;width:${((x1 - x0) / raiz.width) * 100}%;height:${((y1 - y0) / raiz.height) * 100}%"></div>`);
       }
     }
+    // selos numerados das formas animadas (o número é a ordem dos efeitos na lâmina)
+    ctx.animacoes.forEach((a, i) => {
+      const forma = ctx.shapes.find((s) => s.id === a.forma);
+      if (!forma) return;
+      html.push(`<div class="pp-selo" style="left:${forma.box.x}%;top:${forma.box.y}%" title="Animação ${i + 1} — ${a.tipo}">${i + 1}</div>`);
+    });
     for (const g of this.guias) {
       html.push(g.eixo === "v" ? `<div class="pp-guia v" style="left:${g.pos}%"></div>` : `<div class="pp-guia h" style="top:${g.pos}%"></div>`);
     }

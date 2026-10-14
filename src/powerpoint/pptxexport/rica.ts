@@ -33,6 +33,8 @@ export interface SaidaLamina {
   xml: string;
   /** relações (id -> arquivo em ppt/media) que o XML usa */
   imagens: { id: string; arquivo: string; tipo: RelTipo }[];
+  /** id interno da forma -> id no XML; o `<p:timing>` das animações usa este mapa */
+  ids: Record<string, number>;
 }
 
 /** Contexto de escrita de todo o deck: mídia deduplicada entre as lâminas. */
@@ -101,6 +103,7 @@ export class Escritor {
       idMedia: (src) => idDe(src, "media"),
       setup: this.setup,
       seq: 1,
+      ids: {},
     };
     const bg = fillXml(s.bg ?? { kind: "solid", color: coresTema(this.setup).bg }, ctx);
     const formas = formasEmGrupos(s.shapes, ctx);
@@ -112,7 +115,7 @@ export class Escritor {
       `<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>` +
       formas +
       `</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
-    return { xml, imagens };
+    return { xml, imagens, ids: ctx.ids };
   }
 }
 
@@ -126,6 +129,8 @@ interface Ctx {
   idMedia: (src: string) => string | undefined;
   setup: DeckSetup;
   seq: number;
+  /** id interno da forma -> id que ela ganhou no XML (`cNvPr`); o `p:timing` anima por ele */
+  ids: Record<string, number>;
 }
 
 // ---------------------------------------------------------------------------
@@ -340,6 +345,7 @@ function parasDeFormaSimples(s: Shape): Para[] {
 
 function formaXml(s: Shape, ctx: Ctx): string {
   const id = ++ctx.seq;
+  ctx.ids[s.id] = id;
   const nome = esc(s.name || `Forma ${id}`);
   const x = emu((s.box.x / 100) * ctx.larg);
   const y = emu((s.box.y / 100) * ctx.alt);
@@ -443,7 +449,7 @@ function ladoXml(tag: string, ln: Line | null | undefined): string {
 
 function tabelaXml(s: Shape, id: number, nome: string, x: number, y: number, w: number, h: number): string {
   const t = s.tabela!;
-  const ctx0 = { larg: 0, alt: 0, idImagem: () => undefined, idMidia: () => undefined, idMedia: () => undefined, setup: undefined as never, seq: 0 } as Ctx;
+  const ctx0 = { larg: 0, alt: 0, idImagem: () => undefined, idMidia: () => undefined, idMedia: () => undefined, setup: undefined as never, seq: 0, ids: {} } as Ctx;
   const grade = t.colunas.map((c) => `<a:gridCol w="${Math.round(c * EMU_PT)}"/>`).join("");
   const linhas = t.celulas
     .map((linha, r) => {

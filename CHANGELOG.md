@@ -316,6 +316,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   tela preta/branca), o resumo vai a **102/191** e entra o **mapa de edição** — 14 áreas do que o
   DeckCraft edita e falta aqui, com os ganhos rápidos e os próximos passos reordenados
   (`docs/paridade-deckcraft.md`).
+- **Animações de forma** (aba nova): entrada e saída — **Aparecer**, **Surgir**, **Desaparecer** e
+  **Sumir** — por forma, com início (**Ao clicar**, **Com anterior**, **Depois do anterior**),
+  duração nos efeitos suaves (0,5/1/2 s), ordem (↑↓), **Remover** e **Prévia** no palco. As
+  formas animadas ganham **selos numerados** no editor e, no F5, os efeitos tocam na ordem (o
+  clique primeiro toca o efeito pendente e só depois troca de lâmina). O `.pptx` faz **round-trip
+  do `p:timing`**: o que o modelo não representa (ênfase, trajetórias, por parágrafo, gatilhos…)
+  volta cru, com aviso na importação.
 - **Diálogos do app no lugar de janelas do sistema**: **Novo modelo** (botão Template) e
   **Renomear lâmina** agora usam o diálogo de texto do app — com o tema, dica, Enter/OK,
   Esc/Cancelar e clique fora; ao criar, a galeria reabre já com o cartão novo.

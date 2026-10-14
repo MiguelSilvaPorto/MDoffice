@@ -7,6 +7,7 @@ import { lerTema, MAPA_PADRAO, type Tema } from "./cores";
 import { lerArvore, lerPreenchimento, type CtxForma } from "./formas";
 import { Pacote, type Relacao } from "./pacote";
 import { lerTransicao } from "./slides";
+import { lerTiming } from "./timing";
 import { caminho, filho, filhos, num, type No } from "./xmltree";
 import { carregarFontes } from "./fontes";
 import { laminasDoPresentation, nomeDaCld } from "./slides";
@@ -153,6 +154,7 @@ export async function pptxToDeck(bytes: Uint8Array, setupBase: DeckSetup = DEFAU
     const treeSlide = caminho(sl.raiz, "cSld/spTree");
     const treeLayout = caminho(layout?.raiz, "cSld/spTree");
     const treeMestre = caminho(mestre?.raiz, "cSld/spTree");
+    const spids = new Map<string, string>();
     const base: CtxForma = {
       pac,
       tema,
@@ -170,6 +172,7 @@ export async function pptxToDeck(bytes: Uint8Array, setupBase: DeckSetup = DEFAU
       rels: sl.rels,
       numeroSlide: i + 1,
       seq,
+      spids,
       descartes: [],
     };
     descartesPorLamina.push(base.descartes);
@@ -197,8 +200,12 @@ export async function pptxToDeck(bytes: Uint8Array, setupBase: DeckSetup = DEFAU
     // o show="0" no p:sld, que é o lugar do esquema e o que outros programas gravam
     const oculta = ocultas.has(parte) || sl.raiz?.a.show === "0";
     // transição de entrada: o que o modelo não representa volta cru (e vira aviso)
-    const transicao = lerTransicao((await pac.texto(parte)) ?? "");
+    const textoSlide = (await pac.texto(parte)) ?? "";
+    const transicao = lerTransicao(textoSlide);
     for (const a of transicao.avisos) avisos.add(a);
+    // animações da lâmina (`p:timing`): modeladas quando dá; senão, cru (e vira aviso)
+    const timing = lerTiming(textoSlide, spids);
+    for (const a of timing.avisos) avisos.add(a);
     slides.push({
       md,
       layout: i === 0 ? "titulo" : "conteudo",
@@ -209,6 +216,8 @@ export async function pptxToDeck(bytes: Uint8Array, setupBase: DeckSetup = DEFAU
       ...(nome ? { nome } : {}),
       ...(transicao.transicao ? { transicao: transicao.transicao } : {}),
       ...(transicao.bruta ? { transicaoXml: transicao.bruta } : {}),
+      ...(timing.animacoes ? { animacoes: timing.animacoes } : {}),
+      ...(timing.bruta ? { timingXml: timing.bruta } : {}),
     });
   }
 
@@ -236,5 +245,7 @@ export async function pptxToDeck(bytes: Uint8Array, setupBase: DeckSetup = DEFAU
 
 export { deckParaMarkdown } from "./slides-md";
 export { xmlParaMarkdown, notasDoSlide, ordemDosSlides, lerTransicao } from "./slides";
+export { lerTiming } from "./timing";
 export type { TransicaoLida } from "./slides";
+export type { TimingLido } from "./timing";
 export { textosDe, paragrafos } from "./xml";

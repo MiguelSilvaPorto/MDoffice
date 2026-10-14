@@ -1,6 +1,7 @@
 // Operações sobre LÂMINAS: criar, duplicar, mover, excluir, reordenar.
 // Separado do host (como o Word separa host de editor) para o host só orquestrar.
 import { uid } from "../util";
+import { normalizarAnimacoes, podarAnimacoes } from "./edicao/animacao";
 import { newSlide } from "./model";
 import type { Deck, Shape, Slide, SlideLayout } from "./schema";
 
@@ -27,15 +28,26 @@ export function duplicateSlide(deck: Deck, at: number): { deck: Deck; index: num
   const slides = deck.slides.slice();
   const original = slides[clampIndex(at, slides.length)];
   if (!original) return { deck, index: at };
+  // formas ganham id novo para não compartilhar seleção; as animações acompanham o id novo
+  const ids = new Map<string, string>();
+  const shapes = original.shapes.map((s) => {
+    const id = uid();
+    ids.set(s.id, id);
+    return { ...s, id };
+  });
+  const animacoes = normalizarAnimacoes(
+    (original.animacoes ?? []).filter((a) => ids.has(a.forma)).map((a) => ({ ...a, forma: ids.get(a.forma)! }))
+  );
   const copia: Slide = {
     md: original.md,
     layout: original.layout,
     notes: original.notes,
-    // a cópia entra como a original (a transição e o que veio cru do .pptx acompanham)
+    // a cópia entra como a original (a transição, as animações e o que veio cru do .pptx acompanham)
     ...(original.transicao ? { transicao: original.transicao } : {}),
     ...(original.transicaoXml ? { transicaoXml: original.transicaoXml } : {}),
-    // formas ganham id novo para não compartilhar seleção
-    shapes: original.shapes.map((s) => ({ ...s, id: uid() })),
+    ...(animacoes ? { animacoes } : {}),
+    ...(original.timingXml ? { timingXml: original.timingXml } : {}),
+    shapes,
     // a cópia nasce com o mesmo nome e o mesmo estado de exibição da original
     ...(original.show === false ? { show: false } : {}),
     ...(original.nome ? { nome: original.nome } : {}),
@@ -86,7 +98,10 @@ export function resetSlide(deck: Deck, at: number, caixas: Shape[]): Deck {
   const alvo = deck.slides[i];
   if (!alvo) return deck;
   const slides = deck.slides.slice();
-  slides[i] = { ...alvo, shapes: [...alvo.shapes.filter((f) => f.fixa), ...caixas] };
+  const shapes = [...alvo.shapes.filter((f) => f.fixa), ...caixas];
+  // as animações seguem as formas que sobreviveram; o `<p:timing>` cru (que apontava para
+  // as formas antigas por id) não vale mais depois de redefinir
+  slides[i] = { ...alvo, shapes, animacoes: podarAnimacoes(alvo.animacoes, shapes.map((f) => f.id)), timingXml: undefined };
   return { ...deck, slides };
 }
 

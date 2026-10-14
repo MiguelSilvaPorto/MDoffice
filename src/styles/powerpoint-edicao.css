@@ -1144,6 +1144,27 @@ button.ppr.cor {
   z-index: 50;
 }
 
+/* selo numerado das formas animadas (aba Animações): fica no canto da forma */
+.pp-selo {
+  position: absolute;
+  z-index: 51;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  background: var(--fi-ppt, #d24a17);
+  color: #fff;
+  border: 1px solid var(--panel);
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
 .pp-sel.item {
   border-width: 1px;
   border-style: dashed;
@@ -1406,7 +1427,8 @@ button.ppr.cor {
   align-content: center;
 }
 
-.ppr-trans-item {
+.ppr-trans-item,
+.ppr-anim-item {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1421,16 +1443,19 @@ button.ppr.cor {
   cursor: pointer;
 }
 
-.ppr-trans-item:hover {
+.ppr-trans-item:hover,
+.ppr-anim-item:hover {
   border-color: var(--fi-ppt, #d24a17);
 }
 
-.ppr-trans-item.on {
+.ppr-trans-item.on,
+.ppr-anim-item.on {
   background: color-mix(in srgb, var(--fi-ppt, #d24a17) 18%, var(--panel-2));
   border-color: var(--fi-ppt, #d24a17);
 }
 
-.ppr-trans-svg {
+.ppr-trans-svg,
+.ppr-anim-svg {
   width: 32px;
   height: 20px;
   flex: none;
@@ -1441,7 +1466,8 @@ button.ppr.cor {
   white-space: nowrap;
 }
 
-.ppr-trans-item.on .ppr-trans-nome {
+.ppr-trans-item.on .ppr-trans-nome,
+.ppr-anim-item.on .ppr-trans-nome {
   color: var(--fg);
 }
 

@@ -26,6 +26,26 @@ export interface Transicao {
   duracao?: number;
 }
 
+/** Efeito de animação de uma forma (entrada ou saída). */
+export type AnimacaoTipo = "aparecer" | "surgir" | "desaparecer" | "sumir";
+
+/** Quando o efeito começa: no clique, junto com o anterior ou depois que ele termina. */
+export type AnimacaoInicio = "clicar" | "com" | "depois";
+
+/**
+ * Animação de uma forma da lâmina. Uma por forma (por enquanto): o efeito entra
+ * na ordem em que foi aplicado e a lâmina guarda a lista nessa ordem.
+ */
+export interface Animacao {
+  /** id da forma animada (Shape.id) */
+  forma: string;
+  tipo: AnimacaoTipo;
+  /** quando começa (padrão: ao clicar) */
+  inicio?: AnimacaoInicio;
+  /** duração em segundos (padrão: 0,5); só vale em surgir/sumir */
+  duracao?: number;
+}
+
 /**
  * Uma lâmina. O conteúdo fica em Markdown (`md`) — é o que o app já sabe editar,
  * corrigir, exportar e mandar para a IA — e as notas do apresentador ficam em `notes`.
@@ -51,6 +71,10 @@ export interface Slide {
   transicao?: Transicao;
   /** `<p:transition>` original do .pptx quando o efeito não é modelado: volta como veio na exportação */
   transicaoXml?: string;
+  /** animações de entrada/saída das formas, na ordem em que tocam (aba Animações) */
+  animacoes?: Animacao[];
+  /** `<p:timing>` original do .pptx quando a lâmina tem animações que o modelo não representa */
+  timingXml?: string;
 }
 
 /** O deck inteiro. */

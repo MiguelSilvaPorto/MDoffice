@@ -478,6 +478,105 @@ const EXP = await empacotar("src/powerpoint/pptxexport/slides.ts", "slides-exp.m
   ok("transição: o XML cru volta como veio", EXP.inserirTransicao(lamina(""), undefined, bruta) === lamina(bruta));
 }
 
+// ---------------------------------------------------------------- animações de forma (modelo)
+const AN = await empacotar("src/powerpoint/edicao/animacao.ts", "animacao.mjs");
+{
+  const a = AN.normalizarAnimacao({ forma: "s1", tipo: "surgir" });
+  ok("animação: surgir ganha a duração padrão de 0,5 s", a.forma === "s1" && a.tipo === "surgir" && a.duracao === 0.5 && a.inicio === undefined, JSON.stringify(a));
+  ok("animação: aparecer não guarda duração", AN.normalizarAnimacao({ forma: "s1", tipo: "aparecer", duracao: 2 }).duracao === undefined);
+  ok("animação: tipo desconhecido é descartado", AN.normalizarAnimacao({ forma: "s1", tipo: "spin" }) === undefined);
+  ok("animação: sem forma é descartada", AN.normalizarAnimacao({ tipo: "surgir" }) === undefined);
+  ok("animação: duração fora dos limites é aparada", AN.duracaoDeAnimacao({ forma: "s1", tipo: "sumir", duracao: 99 }) === 10 && AN.duracaoDeAnimacao({ forma: "s1", tipo: "sumir", duracao: 0 }) === 0.1);
+  ok("animação: duração efetiva é 0 nos instantâneos", AN.duracaoEfetiva({ forma: "s1", tipo: "aparecer" }) === 0 && AN.duracaoEfetiva({ forma: "s1", tipo: "surgir" }) === 0.5);
+  ok("animação: início conhecido é preservado", AN.normalizarAnimacao({ forma: "s1", tipo: "surgir", inicio: "depois" }).inicio === "depois");
+  ok("animação: início inválido cai no padrão (ao clicar)", AN.inicioDe({ forma: "s1", tipo: "surgir", inicio: "x" }) === "clicar");
+
+  // comAnimacao: acrescenta no fim, troca no lugar (preserva a ordem)
+  let lista = AN.comAnimacao(undefined, "s1", "surgir");
+  lista = AN.comAnimacao(lista, "s2", "aparecer");
+  lista = AN.comAnimacao(lista, "s1", "sumir");
+  ok("animação: comAnimacao troca no lugar e preserva a ordem", lista.length === 2 && lista[0].forma === "s1" && lista[0].tipo === "sumir" && lista[1].forma === "s2", JSON.stringify(lista));
+  ok("animação: comInicio muda o início do efeito", AN.comInicio(lista, "s2", "depois")[1].inicio === "depois");
+  ok("animação: comInicio em forma sem efeito não faz nada", JSON.stringify(AN.comInicio(lista, "s9", "com")) === JSON.stringify(lista));
+  ok("animação: comDuracao só vale nos suaves", AN.comDuracao(lista, "s2", 2)[1].duracao === undefined && AN.comDuracao(lista, "s1", 2)[0].duracao === 2);
+  ok("animação: mover troca as posições", AN.moverAnimacao(lista, "s1", 1)[1].forma === "s1");
+  ok("animação: mover fora dos limites não muda nada", JSON.stringify(AN.moverAnimacao(lista, "s1", -1)) === JSON.stringify(lista));
+  ok("animação: remover tira o efeito da forma", AN.semAnimacao(lista, "s1").length === 1);
+  ok("animação: podar segue as formas vivas", AN.podarAnimacoes(lista, ["s2"]).length === 1 && AN.podarAnimacoes(lista, ["s2"])[0].forma === "s2");
+}
+
+// ---------------------------------------------------------------- round-trip do p:timing
+const TIMP = await empacotar("src/powerpoint/pptximport/timing.ts", "timing-imp.mjs");
+const TEXP = await empacotar("src/powerpoint/pptxexport/timing.ts", "timing-exp.mjs");
+{
+  const spids = new Map([["4", "s1"], ["5", "s2"]]);
+  const ids = { s1: 4, s2: 5 };
+  const modelo = [
+    { forma: "s1", tipo: "surgir", duracao: 1 },
+    { forma: "s2", tipo: "desaparecer", inicio: "depois" },
+  ];
+  const xml = TEXP.xmlTiming(modelo, ids, []);
+  ok("timing: presetID/presetClass de cada efeito", xml.includes('presetID="10" presetClass="entr"') && xml.includes('presetID="1" presetClass="exit"'), xml.slice(0, 400));
+  ok("timing: nodeType acompanha o início", xml.includes('nodeType="clickEffect"') && xml.includes('nodeType="afterEffect"'));
+  const volta = TIMP.lerTiming(`<p:sld>${xml}</p:sld>`, spids);
+  ok("timing: round-trip devolve o mesmo modelo", JSON.stringify(volta.animacoes) === JSON.stringify(modelo), JSON.stringify([modelo, volta]));
+  ok("timing: round-trip não guarda cru nem avisa", !volta.bruta && volta.avisos.length === 0);
+
+  // "com o anterior" sem clique antes vira grupo automático (começa junto com a lâmina)
+  const com = TEXP.xmlTiming([{ forma: "s1", tipo: "aparecer", inicio: "com" }], ids, []);
+  ok("timing: 'com' sem clique antes vira grupo automático", com.includes('evt="onBegin"') && com.includes("<p:tn>2</p:tn>"));
+  ok("timing: 'com' volta como 'com'", TIMP.lerTiming(com, spids).animacoes?.[0].inicio === "com");
+
+  ok("timing: sem animações não escreve p:timing", TEXP.xmlTiming(undefined, ids) === "" && TEXP.xmlTiming([], ids) === "");
+
+  // dois efeitos na mesma forma: o modelo é um por forma — fica cru (nada se perde)
+  const duplicado = TIMP.lerTiming(TEXP.xmlTiming([{ forma: "s1", tipo: "aparecer" }, { forma: "s1", tipo: "surgir" }], ids, []), spids);
+  ok("timing: dois efeitos na mesma forma ficam crus", !duplicado.animacoes && !!duplicado.bruta);
+
+  // ênfase (fora do modelo): guarda o XML cru e avisa
+  const enfase = `<p:timing><p:tnLst><p:par><p:cTn id="1" dur="indefinite" nodeType="tmRoot"><p:childTnLst><p:seq concurrent="1" nextAc="seek"><p:cTn id="2" dur="indefinite" nodeType="mainSeq"><p:childTnLst><p:par><p:cTn id="3" fill="hold"><p:stCondLst><p:cond delay="indefinite"/></p:stCondLst><p:childTnLst><p:par><p:cTn id="4" presetID="26" presetClass="emph" presetSubtype="0" fill="hold" grpId="0" nodeType="clickEffect"><p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst><p:animScale><p:cBhvr><p:cTn id="5" dur="500" fill="hold"/><p:tgtEl><p:spTgt spid="4"/></p:tgtEl></p:cBhvr><p:by x="105000" y="105000"/></p:animScale></p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn><p:prevCondLst><p:cond evt="onPrev" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:prevCondLst><p:nextCondLst><p:cond evt="onNext" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:nextCondLst></p:seq></p:childTnLst></p:cTn></p:par></p:tnLst></p:timing>`;
+  const cru = TIMP.lerTiming(enfase, spids);
+  ok("timing: ênfase fica guardada crua e avisa", !cru.animacoes && !!cru.bruta && cru.avisos.length === 1);
+  const semTiming = `<p:sld><p:cSld/><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
+  ok("timing: o XML cru volta como veio", TEXP.inserirTiming(semTiming, undefined, cru.bruta, {}, []).includes(cru.bruta));
+
+  // alvo que não é uma forma da lâmina (id desconhecido): cru
+  const desconhecido = TIMP.lerTiming(xml, new Map([["4", "s1"]]));
+  ok("timing: efeito sem forma correspondente fica cru", !desconhecido.animacoes && !!desconhecido.bruta);
+
+  // inserção na ordem do esquema: depois da transição e sem duplicar
+  const comTransicao = `<p:sld><p:cSld/><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr><p:transition spd="fast"><p:fade/></p:transition></p:sld>`;
+  const comTiming = TEXP.inserirTiming(comTransicao, modelo, undefined, ids, []);
+  ok("timing: entra depois do p:transition", /<\/p:transition><p:timing/.test(comTiming), comTiming.slice(0, 300));
+  const semTransicao = TEXP.inserirTiming(semTiming, modelo, undefined, ids, []);
+  ok("timing: sem transição entra depois do p:clrMapOvr", /<\/p:clrMapOvr><p:timing/.test(semTransicao));
+  const idempotente = TEXP.inserirTiming(comTiming, modelo, undefined, ids, []);
+  ok("timing: inserir de novo não duplica", (idempotente.match(/<p:timing\b/g) ?? []).length === 1);
+  // transição crua (mc:AlternateContent): o timing entra depois do bloco inteiro, não no meio
+  const alt = `<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><mc:Choice Requires="p14"><p:transition spd="slow"><p:wedge/></p:transition></mc:Choice><mc:Fallback><p:transition spd="slow"><p:fade/></p:transition></mc:Fallback></mc:AlternateContent>`;
+  const comAlt = TEXP.inserirTiming(`<p:sld><p:cSld/><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>${alt}</p:sld>`, modelo, undefined, ids, []);
+  ok("timing: com transição crua entra depois do mc:AlternateContent", /<\/mc:AlternateContent><p:timing/.test(comAlt), comAlt.slice(0, 300));
+
+  // forma com texto entra no p:bldLst (o fundo da forma anima junto)
+  const comTexto = TEXP.xmlTiming([{ forma: "s1", tipo: "surgir" }], ids, [{ id: "s1", paras: [{ runs: [] }] }]);
+  ok("timing: forma com texto entra no p:bldLst", comTexto.includes("<p:bldLst>") && comTexto.includes('<p:bldP spid="4" grpId="0" animBg="1"/>'));
+}
+
+// ---------------------------------------------------------------- exportação: spid amarrado à forma
+const ESC = await empacotar("src/powerpoint/pptxexport/rica.ts", "rica.mjs");
+{
+  const setup = { aspect: "16:9", theme: "claro", showNumber: false, footer: "", fontFamily: "Segoe UI", fontSize: 18, bg: "" };
+  const forma = (id, x) => ({ id, kind: "forma", box: { x, y: 10, w: 30, h: 20 }, text: "", fontFamily: "Segoe UI", fontSize: 18, color: "000000", bold: false, italic: false, align: "esquerda", fill: "", src: "", rot: 0, name: id, geom: "rect" });
+  const slide = { md: "", layout: "conteudo", notes: "", shapes: [forma("s1", 10), forma("s2", 50)], animacoes: [{ forma: "s2", tipo: "surgir", duracao: 1 }] };
+  const saida = new ESC.Escritor(setup).lamina(slide);
+  const spid = saida.ids.s2;
+  ok("exportação: o mapa de ids liga a forma ao id do XML", typeof spid === "number" && saida.xml.includes(`<p:cNvPr id="${spid}" name="s2"`), JSON.stringify(saida.ids));
+  const comTiming = TEXP.inserirTiming(saida.xml, slide.animacoes, undefined, saida.ids, slide.shapes);
+  ok("exportação: o efeito anima o spid certo", comTiming.includes(`<p:spTgt spid="${spid}"/>`), comTiming.slice(comTiming.indexOf("<p:timing")));
+  ok("exportação: o p:timing entra antes do fim da lâmina", comTiming.indexOf("<p:timing") < comTiming.indexOf("</p:sld>"));
+  ok("exportação: a lâmina sem animação não ganha p:timing", !new ESC.Escritor(setup).lamina({ ...slide, animacoes: undefined }).xml.includes("p:timing"));
+}
+
 // ---------------------------------------------------------------- mídia (áudio/vídeo)
 const MD = await empacotar("src/powerpoint/edicao/midia.ts", "midia.mjs");
 {

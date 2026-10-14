@@ -4,7 +4,8 @@ import { SOMBRAS_PRONTAS } from "../edicao/formato";
 import { GRAFICO_TIPOS } from "../edicao/grafico";
 import { ROTULOS_PRESET, type PresetTabela } from "../edicao/tabela";
 import { DICAS_DIRECAO, DICAS_TRANSICAO, DIRECOES_TRANSICAO, DURACOES_TRANSICAO, ROTULOS_DIRECAO, ROTULOS_TRANSICAO, TIPOS_TRANSICAO, aceitaDirecao, direcaoDe, duracaoDe, formatarDuracao } from "../edicao/transicao";
-import type { SlideLayout, TransicaoDirecao, TransicaoTipo } from "../schema";
+import { DICAS_ANIMACAO, DICAS_INICIO, DURACOES_ANIMACAO, INICIOS_ANIMACAO, ROTULOS_ANIMACAO, ROTULOS_INICIO, TIPOS_ANIMACAO, duracaoDeAnimacao, inicioDe, suave } from "../edicao/animacao";
+import type { AnimacaoTipo, SlideLayout, TransicaoDirecao, TransicaoTipo } from "../schema";
 import { abrirCores } from "./cores";
 import { FONTES_COMUNS, TAMANHOS, cmParaPt, ptParaCm, type EstadoUI } from "./estado";
 import { abrirGaleria, iconeDeForma } from "./galeria";
@@ -29,6 +30,26 @@ const grupo = (nome: string, corpo: string) => `<div class="ppr-grupo"><div clas
 
 /** Setas da direção da transição (a lâmina entra por esse lado). */
 const FLECHAS_DIRECAO: Record<TransicaoDirecao, string> = { esquerda: "←", direita: "→", cima: "↑", baixo: "↓" };
+
+/** Prévia visual de cada animação: a forma é o retângulo; a seta mostra se ela entra ou sai. */
+function previaAnimacao(tipo: AnimacaoTipo): string {
+  const moldura = `<rect x="1" y="1" width="30" height="18" rx="2" fill="none" stroke="currentColor" stroke-opacity=".45"/>`;
+  const forma = (op: number, extra = "") => `<rect x="13" y="5" width="16" height="10" rx="1.5" fill="currentColor" fill-opacity="${op}"${extra}/>`;
+  const traco = (d: string) => `<path d="${d}" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const entra = traco("M4 10h5M7 7.5 9.5 10 7 12.5");
+  const sai = traco("M24 10h5M26.5 7.5 29 10 26.5 12.5");
+  const desenhos: Record<AnimacaoTipo, string> = {
+    // entra de uma vez
+    aparecer: moldura + entra + forma(0.5),
+    // entra suavemente (duas camadas sugerem o fade)
+    surgir: moldura + entra + forma(0.22) + `<rect x="17" y="7" width="8" height="6" rx="1" fill="currentColor" fill-opacity=".5"/>`,
+    // sai de uma vez (a forma fica tracejada)
+    desaparecer: moldura + forma(0.5, ' stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".7"') + sai,
+    // sai suavemente
+    sumir: moldura + forma(0.12) + `<rect x="17" y="7" width="8" height="6" rx="1" fill="currentColor" fill-opacity=".3"/>` + sai,
+  };
+  return `<svg class="ppr-anim-svg" viewBox="0 0 32 20" aria-hidden="true">${desenhos[tipo]}</svg>`;
+}
 
 /** Prévia visual de cada transição: a lâmina que entra é o retângulo cheio, a que sai é o mais claro. */
 function previaTransicao(tipo: TransicaoTipo): string {
@@ -60,6 +81,7 @@ const ABAS = [
   { id: "formato", nome: "Formato da Forma" },
   { id: "tabela", nome: "Layout da Tabela" },
   { id: "transicoes", nome: "Transições" },
+  { id: "animacoes", nome: "Animações" },
   { id: "design", nome: "Design" },
   { id: "exibir", nome: "Exibir" },
 ];
@@ -108,6 +130,7 @@ export class Fita {
         <div class="ppr-painel" data-painel="formato" hidden>${this.formato()}</div>
         <div class="ppr-painel" data-painel="tabela" hidden>${this.tabela()}</div>
         <div class="ppr-painel" data-painel="transicoes" hidden>${this.transicoes()}</div>
+        <div class="ppr-painel" data-painel="animacoes" hidden>${this.animacoes()}</div>
         <div class="ppr-painel" data-painel="design" hidden>${this.design()}</div>
         <div class="ppr-painel" data-painel="exibir" hidden>${this.exibir()}</div>
       </div>`;
@@ -364,6 +387,30 @@ export class Fita {
     ].join("");
   }
 
+  /** Aba Animações: efeito por forma (entrada/saída), início, duração, ordem e prévia. */
+  private animacoes(): string {
+    const galeria = TIPOS_ANIMACAO.map(
+      (t) =>
+        `<button type="button" class="ppr-anim-item" data-cmd="animacao:${t}" title="${DICAS_ANIMACAO[t]}" aria-label="${ROTULOS_ANIMACAO[t]}">${previaAnimacao(t)}<span class="ppr-trans-nome">${ROTULOS_ANIMACAO[t]}</span></button>`
+    ).join("");
+    const inicios = INICIOS_ANIMACAO.map((i) => btn(`animacao-inicio:${i}`, ROTULOS_INICIO[i], `Início do efeito — ${DICAS_INICIO[i]}`, "fmt")).join("");
+    const duracoes = DURACOES_ANIMACAO.map((d) => btn(`animacao-duracao:${d.valor}`, d.rotulo, `Duração do efeito: ${d.rotulo}`, "fmt")).join("");
+    return [
+      grupo(
+        "Animação",
+        `<div class="ppr-trans ppr-anim">${galeria}</div>
+         <span class="ppr-trans-nota" data-anim-nota hidden title="As animações deste arquivo não são representadas pelo app: voltam como vieram na exportação">Original preservada</span>`
+      ),
+      grupo("Início", `<div class="ppr-linha">${inicios}</div>`),
+      grupo("Duração", `<div class="ppr-linha">${duracoes}<span class="ppr-trans-dur" data-anim-dur></span></div>`),
+      grupo("Ordem", `<div class="ppr-linha">${btn("animacao-subir", "↑", "Mover o efeito da forma selecionada para cima na ordem", "fmt")}${btn("animacao-descer", "↓", "Mover o efeito da forma selecionada para baixo na ordem", "fmt")}</div>`),
+      grupo(
+        "Animar",
+        `${grande("animacao-previa", ic("i-eye"), "Prévia", "Reproduzir as animações desta lâmina, sem entrar no F5")}${pequeno("animacao-remover", ic("i-trash"), "Remover", "Tirar a animação da forma selecionada")}`
+      ),
+    ].join("");
+  }
+
   private design(): string {
     return [
       grupo(
@@ -444,6 +491,9 @@ export class Fita {
     else if (cmd.startsWith("transicao-direcao:")) this.hooks.run("transicao-direcao", cmd.slice(18));
     else if (cmd.startsWith("transicao-duracao:")) this.hooks.run("transicao-duracao", cmd.slice(18));
     else if (cmd.startsWith("transicao:")) this.hooks.run("transicao", cmd.slice(10));
+    else if (cmd.startsWith("animacao-inicio:")) this.hooks.run("animacao-inicio", cmd.slice(17));
+    else if (cmd.startsWith("animacao-duracao:")) this.hooks.run("animacao-duracao", cmd.slice(18));
+    else if (cmd.startsWith("animacao:")) this.hooks.run("animacao", cmd.slice(9));
     else this.hooks.run(cmd);
   }
 
@@ -856,6 +906,32 @@ export class Fita {
     const notaTrans = this.el.querySelector<HTMLElement>("[data-trans-nota]");
     if (notaTrans) notaTrans.hidden = !st.transicaoPreservada;
     dis("transicao-previa", tipo === "none");
+
+    // aba Animações: efeito da forma principal, início, duração e a ordem
+    const ef = st.animacao;
+    for (const b of this.el.querySelectorAll<HTMLButtonElement>("[data-cmd^='animacao:']")) {
+      b.disabled = !tem;
+      b.classList.toggle("on", !!ef && b.dataset.cmd === `animacao:${ef.tipo}`);
+    }
+    for (const b of this.el.querySelectorAll<HTMLButtonElement>("[data-cmd^='animacao-inicio:']")) {
+      b.disabled = !ef;
+      b.classList.toggle("on", !!ef && b.dataset.cmd === `animacao-inicio:${inicioDe(ef)}`);
+    }
+    const efSuave = !!ef && suave(ef.tipo);
+    const efDur = ef ? duracaoDeAnimacao(ef) : 0;
+    for (const b of this.el.querySelectorAll<HTMLButtonElement>("[data-cmd^='animacao-duracao:']")) {
+      b.disabled = !efSuave;
+      b.classList.toggle("on", efSuave && Number(b.dataset.cmd!.split(":")[1]) === efDur);
+    }
+    const anDurTxt = this.el.querySelector<HTMLElement>("[data-anim-dur]");
+    if (anDurTxt) anDurTxt.textContent = efSuave ? formatarDuracao(efDur) : "";
+    const efPos = st.animacaoPos ?? -1;
+    dis("animacao-subir", !ef || efPos <= 0);
+    dis("animacao-descer", !ef || efPos < 0 || efPos >= (st.animacaoTotal ?? 0) - 1);
+    dis("animacao-remover", !ef);
+    dis("animacao-previa", (st.animacaoTotal ?? 0) === 0);
+    const notaAnim = this.el.querySelector<HTMLElement>("[data-anim-nota]");
+    if (notaAnim) notaAnim.hidden = !st.animacaoPreservada;
 
     // seletores de fonte e tamanho
     const selFonte = this.el.querySelector<HTMLSelectElement>('[data-sel="font"]');

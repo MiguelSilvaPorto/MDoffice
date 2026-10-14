@@ -32,6 +32,8 @@ export interface CtxForma {
   numeroSlide: number;
   /** contador para ids únicos de forma */
   seq: { n: number };
+  /** id da forma no arquivo (cNvPr) -> id interno; o `p:timing` das animações referencia por lá */
+  spids: Map<string, string>;
   /** formas que o importador não desenhou, com o motivo (diagnóstico) */
   descartes: string[];
 }
@@ -432,8 +434,12 @@ async function lerForma(no: No, c: CtxForma, grupos: Grupo[], fixa: boolean, vis
   // ---- geometria ----
   const prst = filho(spPr, "prstGeom") ?? filho(filho(heranca.layout, "spPr"), "prstGeom") ?? filho(filho(heranca.mestre, "spPr"), "prstGeom");
   const cust = filho(spPr, "custGeom");
+  const idForma = `s${++c.seq.n}`;
+  // o `p:timing` (animações) referencia a forma pelo id do arquivo (cNvPr): guarda o mapa.
+  // Só as formas DA LÂMINA — as decorações `fixa` vêm do mestre/layout e têm ids de lá.
+  if (!fixa && cNv?.a.id) c.spids.set(cNv.a.id, idForma);
   const forma: Shape = {
-    id: `s${++c.seq.n}`,
+    id: idForma,
     kind: visual === "pic" ? "imagem" : "forma",
     box: { x: (xf.x / c.larg) * 100, y: (xf.y / c.alt) * 100, w: (xf.w / c.larg) * 100, h: (xf.h / c.alt) * 100 },
     text: "",
@@ -710,8 +716,10 @@ async function lerTabela(no: No, c: CtxForma, grupos: Grupo[], fixa: boolean, gr
   const tabela: Tabela = { colunas, linhas, celulas, cabecalho: pr?.a.firstRow === "1", faixas: pr?.a.bandRow === "1", primeiraColuna: pr?.a.firstCol === "1" };
   const nv = filho(filho(no, "nvGraphicFramePr"), "cNvPr");
   if (pr?.a.firstRow === "1" && !celulas[0].some((x) => x.fill)) c.avisos.add("Tabela: o estilo do tema (cores do cabeçalho e faixas) não é aplicado; as células mostram só o que foi formatado nelas");
+  const idForma = `s${++c.seq.n}`;
+  if (!fixa && nv?.a.id) c.spids.set(nv.a.id, idForma);
   const shape: Shape = {
-    id: `s${++c.seq.n}`,
+    id: idForma,
     kind: "forma",
     box: { x: (xf.x / c.larg) * 100, y: (xf.y / c.alt) * 100, w: (xf.w / c.larg) * 100, h: (xf.h / c.alt) * 100 },
     text: "",

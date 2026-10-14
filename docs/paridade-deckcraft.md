@@ -4,7 +4,7 @@
 > — a reimplementação open-source do PowerPoint em Rust puro (ArtCraft), em alpha.
 > **Base do checklist:** `docs/parity-checklist.md` do DeckCraft (191 features medidas contra o
 > PowerPoint for Mac 16.113, em 10/10/2026), cruzado com a paleta de comandos real do app.
-> **Última revisão deste documento:** 13/10/2026 — itens re-verificados **contra o código do
+> **Última revisão deste documento:** 14/10/2026 — itens re-verificados **contra o código do
 > mdOffice** e contra o **projeto DeckCraft real** (232 comandos de engine + 36 de UI), não só
 > contra o checklist dele; o mapa de edição abaixo nasceu dessa varredura.
 
@@ -21,14 +21,14 @@
 |---|---:|---|---:|
 | Application shell | 10/11 | Media | 4/7 |
 | Files | 8/18 | Transitions | 3/5 |
-| Slides | 6/9 | Animations | 0/8 |
+| Slides | 6/9 | Animations | 4/8 |
 | Views | 6/10 | Slide show | 3/10 |
 | Masters & themes | 6/14 | Review | 1/4 |
 | Shapes | 6/14 | Draw | 0/2 |
 | Format | 7/11 | Undo & clipboard | 2/3 |
 | Arrange | 7/9 | Automation | 1/2 |
 | Text | 14/25 | Platforms | 1/3 |
-| Tables | 7/8 | **Total** | **102/191** |
+| Tables | 7/8 | **Total** | **106/191** |
 | Charts | 4/5 | | |
 | SmartArt | 0/2 | | |
 | Pictures | 6/11 | | |
@@ -46,7 +46,7 @@ não tem (IA local, tradução, suíte Word/Excel/Markdown, backup e histórico)
 
 | # | Área | O DeckCraft edita | Aqui | Esforço |
 |---|---|---|---|---|
-| 1 | **Animações** | 64 efeitos (entrada/ênfase/saída/trajetórias), início/duração/atraso, build por parágrafo, painel, pincel | **zero** — o `p:timing` nem é lido | grande |
+| 1 | **Animações** | 64 efeitos (entrada/ênfase/saída/trajetórias), início/duração/atraso, build por parágrafo, painel, pincel | entrada/saída (**4 efeitos**) com início/duração, prévia, selos numerados e round-trip do `p:timing`; sem ênfase, trajetórias, por parágrafo nem painel | média |
 | 2 | **Morph e transições** | Morph (objetos/palavras/caracteres) + 48 transições com opções por efeito | 7 efeitos; sem Morph nem opções por tipo | grande |
 | 3 | **Formas** | merge (união/fragmentar/interseção/subtrair), editar pontos, forma livre/curva/rabisco, conector colado em pontos de conexão, botões de ação | nada disso | grande |
 | 4 | **Mestre e layouts** | vista de mestre: editar master, criar/renomear/excluir layouts e placeholders | 6 layouts + "Editar elementos do layout" na própria lâmina | média-grande |
@@ -72,7 +72,7 @@ correções simples de imagem e réguas.
 ## Application shell (10/11)
 
 - [x] **Start screen (new, templates/themes, recent)** — P0 · parcial: tela **Início** com os 4 formatos, recentes, rascunhos e busca; temas/modelos ficam dentro do editor (botão **Template** na fita do PowerPoint: 6 modelos + os do usuário)
-- [x] **Ribbon with Home/Insert/Draw/Design/Transitions/Animations/Slide Show/Review/View tabs** — P0 · parcial: fita com **7 abas** (Página Inicial, Inserir, **Transições**, Design e Exibir, mais **Formato da Forma** e **Layout da Tabela** quando a seleção pede); faltam Draw, Animations, Slide Show, Review e Record
+- [x] **Ribbon with Home/Insert/Draw/Design/Transitions/Animations/Slide Show/Review/View tabs** — P0 · parcial: fita com **8 abas** (Página Inicial, Inserir, **Transições**, **Animações**, Design e Exibir, mais **Formato da Forma** e **Layout da Tabela** quando a seleção pede); faltam Draw, Slide Show, Review e Record
 - [x] **Contextual tabs (Shape Format, Picture Format, Table Design/Layout, Chart Design)** — P0 · parcial: **Formato da Forma** e **Layout da Tabela** aparecem conforme a seleção; faltam Picture Format e Chart Design
 - [x] **Quick Access toolbar / title bar commands** — P1 · parcial: barra superior do app (novo, abrir, salvar, salvamento automático, desenhar, exportar, ⋯)
 - [ ] **Native menu bar (macOS) with every command** — P1 · falta (app Windows/Tauri; sem barra de menus nativa)
@@ -279,16 +279,22 @@ correções simples de imagem e réguas.
 
 > A transição toca no F5 (e na prévia) e faz o round-trip no `.pptx` (`p:transition` com `spd`/`p14:dur`/`dir`); efeitos desconhecidos ficam guardados crus.
 
-## Animations (0/8)
+## Animations (4/8)
 
-- [ ] **Entrance, emphasis, exit effects** — P0 · falta
+- [x] **Entrance, emphasis, exit effects** — P0 · parcial: entrada e saída (**Aparecer**, **Surgir**, **Desaparecer**, **Sumir**); sem ênfase
 - [ ] **Motion paths** — P1 · falta
-- [ ] **Effect options, start (on click/with/after), duration, delay** — P0 · falta
-- [ ] **Animation pane (reorder, timing)** — P0 · falta
+- [x] **Effect options, start (on click/with/after), duration, delay** — P0 · parcial: início (**Ao clicar**, **Com anterior**, **Depois do anterior**) e duração (0,5/1/2 s) nos efeitos suaves; sem atraso nem opções de efeito (direção etc.)
+- [x] **Animation pane (reorder, timing)** — P0 · parcial: ordem pela fita (↑↓) e **selos numerados** nas formas do palco; sem painel de animação
 - [ ] **By-paragraph text builds** — P1 · falta
 - [ ] **Triggers** — P2 · falta
 - [ ] **Animation Painter** — P2 · falta
-- [ ] **Preview in editor** — P1 · falta
+- [x] **Preview in editor** — P1 · tem: botão **Prévia** na aba Animações (toca a sequência sem entrar no F5)
+
+> As animações tocam no F5 na ordem: o clique primeiro toca o efeito pendente e só depois troca de
+> lâmina. O `.pptx` faz **round-trip do `p:timing`** (presetID 1/10, `nodeType` e comportamentos de
+> visibilidade/fade); o que o modelo não representa (ênfase, trajetórias, por parágrafo, gatilhos,
+> atraso, repetição, mídia com tempo próprio) fica guardado **cru** e volta como veio, com aviso na
+> importação.
 
 ## Slide show (3/10)
 
@@ -359,8 +365,8 @@ correções simples de imagem e réguas.
 
 Ordem sugerida depois da revisão de **13/10/2026** (impacto × esforço, foco no editor):
 
-1. **Animações** — um recorte de entrada/saída (aparecer, surgir, desaparecer) com painel simples,
-   prévia e round-trip do `p:timing`; é a maior lacuna de edição.
+1. **Animações** — ampliar o recorte: ênfase, trajetórias, por parágrafo, atraso e painel de
+   animação (a base — entrada/saída com round-trip do `p:timing` — já entrou).
 2. **Ganhos rápidos** — largura/altura de coluna e linha na fita, lâminas a partir de estrutura,
    Format Painter, símbolos/emoji, data/hora, "apresentar da lâmina atual" e Alt Text.
 3. **Presenter view de verdade** (notas, próximo slide e cronômetro) e ensaiar tempos.

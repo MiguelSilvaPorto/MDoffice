@@ -9,6 +9,7 @@ import { prepararMidia } from "../render/midia";
 import { comNomeDaCld, comOcultaNoSld, comOcultasNoSldId, escreverLamina, inserirTransicao, marcarLamina } from "./slides";
 import { Escritor } from "./rica";
 import { escreverNotas } from "./notes";
+import { inserirTiming } from "./timing";
 import { aplicarTema, fonteTema } from "./theme";
 
 /** Gera os bytes do arquivo .pptx a partir do deck. */
@@ -56,8 +57,11 @@ export async function deckToPptx(deck: Deck, setup: DeckSetup, titulo = "Apresen
   // arraybuffer: no Tauri não existe download de browser (o writeFile() do
   // PptxGenJS não funciona aqui — ver achado F18 no plano)
   const buf = await pptx.write({ outputType: "arraybuffer" });
-  // sem lâminas ricas, fontes, nomes, lâminas ocultas ou transições, o pacote do PptxGenJS já está pronto
-  const precisaPos = ricas.length > 0 || !!setup.fontsRaw?.length || slides.some((s) => s.nome?.trim() || s.show === false || s.transicao || s.transicaoXml);
+  // sem lâminas ricas, fontes, nomes, lâminas ocultas, transições ou animações, o pacote do PptxGenJS já está pronto
+  const precisaPos =
+    ricas.length > 0 ||
+    !!setup.fontsRaw?.length ||
+    slides.some((s) => s.nome?.trim() || s.show === false || s.transicao || s.transicaoXml || s.animacoes?.length || s.timingXml);
   if (!precisaPos) return new Uint8Array(buf);
   return await trocarLaminas(new Uint8Array(buf), slides, ricas, setup);
 }
@@ -68,6 +72,7 @@ export { aplicarTema, coresTema, fonteTema } from "./theme";
 export { propsDaForma, caixaEmPol } from "./shapes";
 export { markdownEmBlocos } from "./slides";
 export { xmlTransicao, inserirTransicao, velocidadeDe } from "./slides";
+export { xmlTiming, inserirTiming } from "./timing";
 
 const MIME_EXT: Record<string, string> = {
   png: "image/png",
@@ -104,8 +109,11 @@ async function trocarLaminas(bytes: Uint8Array, slides: Slide[], ricas: number[]
   const { default: JSZip } = await import("jszip");
   const zip = await JSZip.loadAsync(bytes);
   const escritor = new Escritor(setup);
+  /** id interno da forma -> id no XML de cada lâmina rica (o `p:timing` anima por ele) */
+  const idsPorLamina = new Map<number, Record<string, number>>();
   for (const i of ricas) {
     const saida = escritor.lamina(slides[i]);
+    idsPorLamina.set(i, saida.ids);
     zip.file(`ppt/slides/slide${i + 1}.xml`, saida.xml);
     const relPath = `ppt/slides/_rels/slide${i + 1}.xml.rels`;
     let rels = (await zip.file(relPath)?.async("string")) ?? `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`;
@@ -150,6 +158,17 @@ async function trocarLaminas(bytes: Uint8Array, slides: Slide[], ricas: number[]
     if (!xml) continue;
     const comTransicao = inserirTransicao(xml, s.transicao, s.transicaoXml);
     if (comTransicao !== xml) zip.file(caminho, comTransicao);
+  }
+  // animações de forma: o `<p:timing>` entra DEPOIS da transição (a ordem do esquema);
+  // o mapa de ids da lâmina liga cada efeito à forma certa (`spid`)
+  for (let i = 0; i < slides.length; i++) {
+    const s = slides[i];
+    if (!s.animacoes?.length && !s.timingXml) continue;
+    const caminho = `ppt/slides/slide${i + 1}.xml`;
+    const xml = await zip.file(caminho)?.async("string");
+    if (!xml) continue;
+    const comTiming = inserirTiming(xml, s.animacoes, s.timingXml, idsPorLamina.get(i) ?? {}, s.shapes);
+    if (comTiming !== xml) zip.file(caminho, comTiming);
   }
   let ct = (await zip.file("[Content_Types].xml")?.async("string")) ?? "";
   for (const ext of exts) {

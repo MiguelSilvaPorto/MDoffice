@@ -8,6 +8,7 @@ import { deckFromMarkdown } from "./markdown";
 import { DEFAULT_SETUP, stageRatio } from "./model";
 import type { Deck, DeckSetup, Slide, Transicao, TransicaoTipo } from "./schema";
 import { fundoValor } from "./render/forma";
+import { iniciarAnimacoes, type ControleAnimacoes } from "./render/animacao";
 import { toast } from "../util";
 
 marked.setOptions({ gfm: true, breaks: false });
@@ -67,6 +68,7 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   let telaCor: "preta" | "branca" | null = null; // tela preta/branca (B/W)
   let pinturaSeq = 0; // marked é assíncrono: uma pintura antiga não pode sobrescrever a nova
   let encerrarAtual: (() => void) | null = null; // transição de lâmina em andamento
+  let anim: ControleAnimacoes | null = null; // animações de forma da lâmina atual
 
   rotulo.textContent = titulo || deck.titulo;
   if (setup.footer) rotulo.textContent += ` · ${setup.footer}`;
@@ -163,8 +165,9 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   /**
    * Troca o conteúdo do palco. Com transição, a lâmina que sai fica numa camada por baixo e a que
    * entra anima por cima (as animações estão em styles/slides.css). Uma transição nova cancela a anterior.
+   * Devolve a camada nova e quanto a transição vai durar (as animações de forma começam depois).
    */
-  const mostrar = (novo: HTMLElement, t?: Transicao): void => {
+  const mostrar = (novo: HTMLElement, t?: Transicao): { camada: HTMLElement; transicaoMs: number } => {
     encerrarTransicao();
     const saindo = stage.querySelector<HTMLElement>(".slides-camada.entrando");
     const camada = document.createElement("div");
@@ -172,7 +175,7 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     camada.append(novo);
     if (!saindo || !t || t.tipo === "none" || semMovimento()) {
       stage.replaceChildren(camada);
-      return;
+      return { camada, transicaoMs: 0 };
     }
     const ms = Math.round(duracaoDe(t) * 1000);
     const dir = direcaoDe(t);
@@ -199,6 +202,7 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
       window.clearTimeout(relogio);
       fim();
     };
+    return { camada, transicaoMs: ms };
   };
 
   const pintar = async (animar = false): Promise<void> => {
@@ -207,7 +211,9 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     const conteudo = await conteudoDa(slide);
     if (seq !== pinturaSeq) return; // uma troca mais recente já assumiu a pintura
     soltarMidias();
-    mostrar(conteudo, animar ? slide.transicao : undefined);
+    const { camada, transicaoMs } = mostrar(conteudo, animar ? slide.transicao : undefined);
+    // animações de forma: entram depois da transição (ou na hora, se não houver)
+    anim = iniciarAnimacoes(camada, slide.animacoes, { atrasoMs: transicaoMs });
     tocarMidias();
     contador.textContent = `${atual + 1} / ${ordem.length}`;
     notas.textContent = slide.notes;
@@ -223,7 +229,11 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     // a transição é a da lâmina que está ENTRANDO
     void pintar(true);
   };
-  const ir = (passo: number) => irPara(atual + passo);
+  const ir = (passo: number) => {
+    // o clique primeiro toca o próximo efeito "ao clicar" da lâmina; só depois troca de lâmina
+    if (passo > 0 && anim?.proximo()) return;
+    irPara(atual + passo);
+  };
 
   const limparDigitos = () => {
     digitos = "";
@@ -253,6 +263,8 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   const fechar = () => {
     document.removeEventListener("keydown", onKey, true);
     encerrarTransicao();
+    anim?.cancelar();
+    anim = null;
     for (const el of stage.querySelectorAll<HTMLMediaElement>("audio,video")) el.pause();
     for (const el of midiasNoBolso.values()) el.pause();
     overlay.remove();

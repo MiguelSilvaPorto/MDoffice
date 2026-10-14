@@ -2,7 +2,7 @@
 import type { EstadoTrecho } from "../edicao/texto";
 import type { Canto } from "../edicao/formato";
 import type { CelulasSel, Ferramenta } from "../stage";
-import type { DeckSetup, Fill, Para, Shape, SlideLayout, Transicao } from "../schema";
+import type { Animacao, DeckSetup, Fill, Para, Shape, SlideLayout, Transicao } from "../schema";
 
 export interface EstadoUI {
   temLamina: boolean;
@@ -39,6 +39,14 @@ export interface EstadoUI {
   transicao?: Transicao;
   /** a lâmina tem uma transição do .pptx que o app não representa (fica guardada crua) */
   transicaoPreservada?: boolean;
+  /** animação da forma principal (aba Animações) */
+  animacao?: Animacao;
+  /** a lâmina tem um `<p:timing>` do .pptx que o app não representa (fica guardado cru) */
+  animacaoPreservada?: boolean;
+  /** posição da animação da forma principal na ordem (0-based; -1 = sem animação) */
+  animacaoPos?: number;
+  /** quantas animações a lâmina tem */
+  animacaoTotal?: number;
   /** a seleção tem formas agrupadas */
   temGrupo: boolean;
   /** unidade de medida do painel */
