@@ -6926,3 +6926,14 @@ antigas quando fizer sentido.
 - **Porquê:** é funcionalidade visível e cheia de regras (a cor refaz a rampa, o tema acompanha, a
   pintura manual solta o estilo) — o doc do módulo é onde o usuário procura; e o `test:estilos`
   entrou na lista junto dos outros testes do PowerPoint.
+
+## CHANGELOG.md
+
+### 2026-10-14 · promoção · as duas entradas do PowerPoint entram no "Adicionado"
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** 2 entradas movidas — **Estilos de cor (R2)** (`61fa080`) e **Desenho assistido: o arco
+  agora tem que passar pelo traço** (`c294252`); a seção ficou com "- (nada no momento)"
+- **Porquê:** os dois commits já estão na `main`, mas a promoção não cabe no mesmo commit do
+  `fechar.ps1` (no momento do commit o código ainda não entrou). A conferência olhou que as duas
+  ainda **não** estavam em "Adicionado" antes de mover — a lição das rodadas anteriores, quando o
+  rebase re-inseriu uma entrada já promovida.

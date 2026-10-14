@@ -382,13 +382,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Desenho assistido: o arco agora tem que passar pelo traço** (e a linha não engole os cantos):
-  um traço do **topo de um cartão** (retas com cantos) virava um **arco largo que bojava por baixo
-  do desenho** — o ajuste elíptico era aceito pela **média** do desvio, que é pequena quando o
-  traço só "se parece" com a elipse. Agora o aceite olha o **desvio máximo** da curva: o topo do
-  cartão fica **livre** (e o encaixe nos eixos deixa a aresta reta com os cantos) ou, quando os
-  cantos são rasos, sai como **linha em cima da aresta** — a tolerância da linha caiu de 5% para
-  2,5% do comprimento, que era o que deixava os cantos passarem por "linha".
+- (nada no momento)
+
+### Adicionado (na main)
+
+**Backend**
+
+- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
+
+**Frontend**
+
 - **Estilos de cor (R2 — a cara do sistema)**: na aba **Formato da Forma**, o botão **Estilos**
   (grupo **Estilos de Cor**) abre a galeria das famílias — **Esmeralda, Oceano, Ameixa, Âmbar,
   Rubi, Grafite** e "Da sua cor" — com a **prévia real** da rampa em cada cartão; um clique dá à
@@ -407,13 +410,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   "vivo" não existe no arquivo — reimportar traz o visual como pintura. **R3** traz o brilho em
   dobra e o caso de ouro de exportação; **R4** e **R5**, fundo e modelos.
 
-### Adicionado (na main)
-
-**Backend**
-
-- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
-
-**Frontend**
+- **Desenho assistido: o arco agora tem que passar pelo traço** (e a linha não engole os cantos):
+  um traço do **topo de um cartão** (retas com cantos) virava um **arco largo que bojava por baixo
+  do desenho** — o ajuste elíptico era aceito pela **média** do desvio, que é pequena quando o
+  traço só "se parece" com a elipse. Agora o aceite olha o **desvio máximo** da curva: o topo do
+  cartão fica **livre** (e o encaixe nos eixos deixa a aresta reta com os cantos) ou, quando os
+  cantos são rasos, sai como **linha em cima da aresta** — a tolerância da linha caiu de 5% para
+  2,5% do comprimento, que era o que deixava os cantos passarem por "linha".
 
 - **Ideias de design com "Gerar mais ideias" e acabamentos**: as ideias mostravam só 8 cartões
   e, num deck importado, trocavam apenas o fundo e o texto — as formas do organograma têm cores
