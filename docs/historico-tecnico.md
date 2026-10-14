@@ -3501,6 +3501,115 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   nenhum)"; e a comparação "regras em TOML == as dez funções" passou a precisar do filtro das
   dez, porque o catálogo cresce por tarefas paralelas (a contagem virou piso, não total).
 
+## src/powerpoint/schema.ts
+
+### 2026-10-14 · animações, degrau 2 · ênfase e atraso no modelo
+- **Local:** `AnimacaoTipo` e `Animacao`
+- **Linha:** `AnimacaoTipo` ganha `pulsar|ampliar|girar|transparencia`; `Animacao` ganha
+  `atraso?: number` (segundos)
+- **Porquê:** a ênfase é o próximo degrau do mapa de edição (o DeckCraft tem 17 efeitos dela) e o
+  atraso era o único detalhe de tempo que ainda derrubava o `p:timing` para o cru.
+
+## src/powerpoint/edicao/animacao.ts
+
+### 2026-10-14 · animações, degrau 2 · classes, duração por tipo e atraso
+- **Local:** arquivo inteiro (tabelas, `CLASSE_ANIMACAO`, `instantaneo`, `atrasoDe`, `comAtraso`,
+  `duracaoDeAnimacao`, `normalizarAnimacao`)
+- **Linha:** `suave` passa a significar "efeito com transição" (tudo menos aparecer/desaparecer);
+  duração padrão por tipo (`girar`/`ampliar` = 2 s, o resto 0,5 s); `atrasoDe` limita 0–60 s e o
+  atraso zero não é guardado; `ATRASOS_ANIMACAO` (Sem/0,25/0,5/1/2 s)
+- **Porquê:** a ênfase tem duração de verdade (escala/rotação/opacidade ao longo do tempo) e o
+  PowerPoint usa 2 s nos efeitos de escala/rotação; o atraso é propriedade de qualquer efeito,
+  inclusive dos instantâneos.
+
+## src/powerpoint/render/animacao.ts
+
+### 2026-10-14 · animações, degrau 2 · o jogador com atraso e ênfase
+- **Local:** `tocar` (agora agenda pelo atraso) e as classes novas
+- **Linha:** `aplicar()` separado do agendamento (`setTimeout(aplicar, atrasoMs)`); o retorno vira
+  `atraso + duração` (é o que encadeia o "depois do anterior"); `ENFASE_FIXA` (ampliar/girar/
+  transparência ficam com a classe — o CSS segura o fim da animação), pulsar/surgir/sumir limpam
+  no fim; `cancelar()` limpa as classes novas
+- **Porquê:** o atraso faz parte da duração do passo para o encadeamento; efeitos que terminam
+  noutro estado não podem soltar a classe (a forma voltaria ao estado inicial).
+
+## src/styles/slides.css
+
+### 2026-10-14 · animações, degrau 2 · keyframes de ênfase
+- **Local:** depois dos keyframes de fade de forma
+- **Linha:** `.forma-pulsa`/`-amplia`/`-gira`/`-transp` + keyframes; `prefers-reduced-motion`
+  inclui os quatro
+- **Porquê:** os keyframes usam as propriedades `scale`/`rotate` (e não `transform`): elas compõem
+  com o `transform` da forma, então a ênfase não desfaz a rotação/espelho do elemento.
+
+## src/powerpoint/pptxexport/timing.ts
+
+### 2026-10-14 · animações, degrau 2 · ênfase, autoRev e atraso no XML
+- **Local:** `PRESET`, `cbhvr` (novo parâmetro `extras`), `animScale`, `comportamentos`,
+  `effectPar` e o acúmulo dos lotes
+- **Linha:** presets `pulsar=26`, `ampliar=6`, `girar=8`, `transparencia=9`; pulsar escreve
+  `animScale by=105000` com `autoRev="1"`; ampliar `150000`; girar `animRot by=21600000`;
+  transparência `set` de `style.opacity` 0.50; o atraso entra no `p:cond` do efeito e o próximo
+  lote ("depois") espera `atraso + duração`
+- **Porquê:** a estrutura segue a do DeckCraft (validada contra o PowerPoint); o `autoRev` no cTn
+  interno é o que faz o pulsar voltar ao tamanho (sem ele a forma fica 5% maior).
+
+## src/powerpoint/pptximport/timing.ts
+
+### 2026-10-14 · animações, degrau 2 · presets de ênfase, validação por classe e atraso
+- **Local:** `PRESETS`, `lerEfeito` (validação por classe) e o retorno
+- **Linha:** `emph` mapeia 26/6/8/9; a validação aceita os comportamentos de cada tipo
+  (`animScale`, `animRot` ou `set` de opacidade) e confere o atributo do `set`
+  (`style.visibility` × `style.opacity`); o atraso do `p:cond` é lido em **ms e convertido para
+  segundos** antes de normalizar
+- **Porquê:** o atraso entrou no modelo; a validação por classe evita aceitar como "ênfase" um
+  efeito que o app não desenha. **Achado do teste**: a primeira versão passava 500 (ms) direto
+  para o modelo em segundos e o clamp transformava em 60 s — o teste de round-trip do atraso
+  pegou o bug antes de sair.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · animações, degrau 2 · galeria em classes, Mais animações e Atraso
+- **Local:** `previaAnimacao` (4 desenhos novos), `animacoes()`, o case `animacao-mais` do
+  `abrirMenu` e o despacho do clique
+- **Linha:** a fita mostra as 5 mais usadas + botão **Mais** (popup com Entrada/Ênfase/Saída,
+  igual à galeria de formas); grupo novo **Atraso** (`animacao-atraso:<v>`); a galeria ganhou
+  `.ppr-anim` (5 colunas de 54px)
+- **Porquê:** 8 efeitos não cabem numa linha só da fita; o popup categorizado é o padrão do
+  PowerPoint ("mais") e mantém a aba compacta.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · animações, degrau 2 · atraso, painel de animação e robustez
+- **Local:** case `animacao-atraso`, `mudarAtrasoAnimacao`, `removerAnimacao`/`moverAnimacaoNaOrdem`
+  (agora aceitam a forma), a aba lateral (3ª aba) e `renderAnimacoes()`
+- **Linha:** o painel de animação vive no `pp-side` (aba **Animação**): lista numerada com nome,
+  efeito/início/duração/atraso, clique seleciona a forma e os botões movem/removem; `atualizarUI`
+  redesenha a lista quando a aba está aberta; `escapeHtml` no nome da forma
+- **Porquê:** com efeitos de ênfase e atraso, gerenciar a ordem por botão da fita ficou curto —
+  o painel é o lugar natural (como o Animation Pane do PowerPoint) e a aba lateral já existia
+  para Formatar/Notas.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · animações, degrau 2 · painel e galerias
+- **Local:** depois de `.pp-side-corpo[hidden]` e na galeria de animações
+- **Linha:** estilos do painel (`.pp-anim-lista`, `.pp-anim-linha`, número, nome truncado, info,
+  ações no hover, vazio); `.ppr-anim` (5 × 54px), `.ppr-anim-wrap` e `.ppr-anim-gal` (popup)
+- **Porquê:** o painel segue a linguagem da lateral (pílulas com o número, realce do item ativo);
+  a galeria do popup tem mais largura para os nomes longos ("Transparência").
+
+## scripts/testar-edicao-pptx.mjs
+
+### 2026-10-14 · animações, degrau 2 · testes
+- **Local:** blocos "animações de forma (modelo)" e "round-trip do p:timing"
+- **Linha:** novos — duração por tipo, classes, instantâneos/suaves, atraso (normalização,
+  limites, `comAtraso`); pulsar modelado (emph 26 com `autoRev`), colorPulse cru; round-trip dos
+  quatro efeitos de ênfase; atraso no `p:cond` (ida e volta) e o lote "depois" esperando
+  `atraso + duração`; a fixture de ênfase antiga virou o caso positivo do pulsar
+- **Porquê:** cada peça nova tem ida e volta presa por teste — foi o teste do atraso que pegou a
+  conversão ms→s errada.
+
 ---
 
 ## Próximos registros

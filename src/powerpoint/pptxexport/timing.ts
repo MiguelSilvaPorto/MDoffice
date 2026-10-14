@@ -3,12 +3,16 @@
 // lotes "com/depois do anterior" (com o atraso acumulado) e os comportamentos de cada efeito.
 // O que a lâmina trouxe cru (`timingXml`) volta como veio, sem passar por aqui.
 import type { Animacao, Shape } from "../schema";
-import { duracaoDeAnimacao, inicioDe, suave } from "../edicao/animacao";
+import { atrasoDe, duracaoEfetiva, inicioDe } from "../edicao/animacao";
 
-/** presetID/presetClass de cada tipo (aparecer = 1; surgir/sumir = fade = 10). */
-const PRESET: Record<Animacao["tipo"], { id: number; classe: "entr" | "exit" }> = {
+/** presetID/presetClass de cada tipo (aparecer = 1; surgir/sumir = fade = 10; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9). */
+const PRESET: Record<Animacao["tipo"], { id: number; classe: "entr" | "emph" | "exit" }> = {
   aparecer: { id: 1, classe: "entr" },
   surgir: { id: 10, classe: "entr" },
+  pulsar: { id: 26, classe: "emph" },
+  ampliar: { id: 6, classe: "emph" },
+  girar: { id: 8, classe: "emph" },
+  transparencia: { id: 9, classe: "emph" },
   desaparecer: { id: 1, classe: "exit" },
   sumir: { id: 10, classe: "exit" },
 };
@@ -21,7 +25,10 @@ interface Efeito {
 }
 
 /** Duração do efeito em ms (0 nos instantâneos). */
-const durMs = (a: Animacao): number => (suave(a.tipo) ? Math.round(duracaoDeAnimacao(a) * 1000) : 0);
+const durMs = (a: Animacao): number => Math.round(duracaoEfetiva(a) * 1000);
+
+/** Atraso do efeito em ms. */
+const atrasoMs = (a: Animacao): number => Math.round(atrasoDe(a) * 1000);
 
 /**
  * Agrupa os efeitos em grupos de clique; dentro de cada grupo, os "depois do anterior"
@@ -59,12 +66,12 @@ export function xmlTiming(animacoes: Animacao[] | undefined, ids: Record<string,
   let n = 0;
   const id = (): number => ++n;
 
-  /** Um comportamento (`p:cBhvr`): alvo, duração e, se pedido, atraso. */
-  const cbhvr = (e: Efeito, dur: number, delay: number | null, attrs: string[]): string => {
+  /** Um comportamento (`p:cBhvr`): alvo, duração e, se pedido, atraso; `extras` vai no próprio cTn. */
+  const cbhvr = (e: Efeito, dur: number, delay: number | null, attrs: string[], extras = ""): string => {
     const ctn =
       delay === null
-        ? `<p:cTn id="${id()}" dur="${Math.max(1, dur)}" fill="hold"/>`
-        : `<p:cTn id="${id()}" dur="${Math.max(1, dur)}" fill="hold"><p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>`;
+        ? `<p:cTn id="${id()}" dur="${Math.max(1, dur)}" fill="hold"${extras}/>`
+        : `<p:cTn id="${id()}" dur="${Math.max(1, dur)}" fill="hold"${extras}><p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>`;
     const nomes = attrs.length ? `<p:attrNameLst>${attrs.map((a) => `<p:attrName>${a}</p:attrName>`).join("")}</p:attrNameLst>` : "";
     return `<p:cBhvr>${ctn}<p:tgtEl><p:spTgt spid="${e.spid}"/></p:tgtEl>${nomes}</p:cBhvr>`;
   };
@@ -72,21 +79,29 @@ export function xmlTiming(animacoes: Animacao[] | undefined, ids: Record<string,
     `<p:set>${cbhvr(e, 1, delay, ["style.visibility"])}<p:to><p:strVal val="${visivel ? "visible" : "hidden"}"/></p:to></p:set>`;
   const animEffect = (e: Efeito, saida: boolean, dur: number): string =>
     `<p:animEffect transition="${saida ? "out" : "in"}" filter="fade">${cbhvr(e, dur, null, [])}</p:animEffect>`;
+  /** Escala (pulsar e ampliar): `by` em milésimos de porcentagem; o pulsar volta sozinho (`autoRev`). */
+  const animScale = (e: Efeito, dur: number, escala: number, autoRev: boolean): string =>
+    `<p:animScale>${cbhvr(e, dur, null, [], autoRev ? ' autoRev="1"' : "")}<p:by x="${escala}" y="${escala}"/></p:animScale>`;
 
-  /** Os comportamentos de cada tipo: aparecer/desaparecer são um `set`; surgir/sumir têm fade. */
+  /** Os comportamentos de cada tipo: entrada/saída por visibilidade e fade; ênfase por escala/rotação/opacidade. */
   const comportamentos = (e: Efeito): string => {
     const dur = durMs(e.a);
     if (e.a.tipo === "aparecer") return setVis(e, 0, true);
     if (e.a.tipo === "desaparecer") return setVis(e, 0, false);
     if (e.a.tipo === "surgir") return setVis(e, 0, true) + animEffect(e, false, dur);
-    return animEffect(e, true, dur) + setVis(e, Math.max(0, dur - 1), false);
+    if (e.a.tipo === "sumir") return animEffect(e, true, dur) + setVis(e, Math.max(0, dur - 1), false);
+    if (e.a.tipo === "pulsar") return animScale(e, dur, 105000, true);
+    if (e.a.tipo === "ampliar") return animScale(e, dur, 150000, false);
+    if (e.a.tipo === "girar") return `<p:animRot by="21600000">${cbhvr(e, dur, null, [])}</p:animRot>`;
+    // transparência: opacidade para 0,50 (fica assim)
+    return `<p:set>${cbhvr(e, dur, null, ["style.opacity"])}<p:to><p:strVal val="0.50"/></p:to></p:set>`;
   };
 
   const effectPar = (e: Efeito): string => {
     const { id: preset, classe } = PRESET[e.a.tipo];
     return (
       `<p:par><p:cTn id="${id()}" presetID="${preset}" presetClass="${classe}" presetSubtype="0" fill="hold" grpId="${e.grp}" nodeType="${e.nodeType}">` +
-      `<p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst>${comportamentos(e)}</p:childTnLst></p:cTn></p:par>`
+      `<p:stCondLst><p:cond delay="${atrasoMs(e.a)}"/></p:stCondLst><p:childTnLst>${comportamentos(e)}</p:childTnLst></p:cTn></p:par>`
     );
   };
 
@@ -102,7 +117,8 @@ export function xmlTiming(animacoes: Animacao[] | undefined, ids: Record<string,
         out += `<p:par><p:cTn id="${id()}" fill="hold"><p:stCondLst><p:cond delay="${atraso}"/></p:stCondLst><p:childTnLst>`;
         for (const e of lote) out += effectPar(e);
         out += `</p:childTnLst></p:cTn></p:par>`;
-        atraso += Math.max(0, ...lote.map((e) => durMs(e.a)));
+        // o próximo lote ("depois do anterior") começa quando o último efeito deste termina
+        atraso += Math.max(0, ...lote.map((e) => atrasoMs(e.a) + durMs(e.a)));
       }
       out += `</p:childTnLst></p:cTn></p:par>`;
     }

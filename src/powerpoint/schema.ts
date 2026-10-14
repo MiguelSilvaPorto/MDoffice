@@ -26,8 +26,8 @@ export interface Transicao {
   duracao?: number;
 }
 
-/** Efeito de animação de uma forma (entrada ou saída). */
-export type AnimacaoTipo = "aparecer" | "surgir" | "desaparecer" | "sumir";
+/** Efeito de animação de uma forma (entrada, ênfase ou saída). */
+export type AnimacaoTipo = "aparecer" | "surgir" | "pulsar" | "ampliar" | "girar" | "transparencia" | "desaparecer" | "sumir";
 
 /** Quando o efeito começa: no clique, junto com o anterior ou depois que ele termina. */
 export type AnimacaoInicio = "clicar" | "com" | "depois";
@@ -42,8 +42,10 @@ export interface Animacao {
   tipo: AnimacaoTipo;
   /** quando começa (padrão: ao clicar) */
   inicio?: AnimacaoInicio;
-  /** duração em segundos (padrão: 0,5); só vale em surgir/sumir */
+  /** duração em segundos (padrão por tipo); só vale nos efeitos com transição */
   duracao?: number;
+  /** atraso antes de tocar, em segundos (padrão: sem atraso) */
+  atraso?: number;
 }
 
 /**

@@ -43,10 +43,12 @@ avisado ao abrir (nunca some em silêncio).
 - **Gráficos**: inserir, editar os dados no painel, desenho em SVG e exportação como imagem.
 - **Mídia**: inserir áudio/vídeo, tocar no F5 com corte, volume e repetição, e ida e volta no `.pptx`.
 - **Transições de lâmina**: galeria, direção, duração, no F5 e no arquivo.
-- **Animações de forma**: aba própria com **Aparecer**, **Surgir**, **Desaparecer** e **Sumir**
-  por forma, início (**Ao clicar**, **Com anterior**, **Depois do anterior**), duração nos efeitos
-  suaves, ordem (↑↓), remover e prévia; as formas animadas ganham **selos numerados** no palco e
-  o `.pptx` faz round-trip do `p:timing` (o que não é modelado volta cru, com aviso).
+- **Animações de forma**: aba própria com **Aparecer**, **Surgir**, **Pulsar**, **Ampliar/Reduzir**,
+  **Girar**, **Transparência**, **Desaparecer** e **Sumir** por forma (as mais usadas na fita, o
+  resto em **Mais animações**), início (**Ao clicar**, **Com anterior**, **Depois do anterior**),
+  duração, **atraso**, ordem (↑↓), remover e prévia; as formas animadas ganham **selos numerados**
+  no palco, o **painel de animação** (aba lateral) lista a ordem e o `.pptx` faz round-trip do
+  `p:timing` (o que não é modelado volta cru, com aviso).
 - **Lâminas**: arrastar as miniaturas para reordenar (na faixa do topo ou na vertical),
   ocultar, renomear e resetar (com ida e volta no `.pptx`), duplicar e excluir.
 - **Modelos**: o botão **Template** aplica modelos de estilo (tema, cores e fonte) ao deck;
@@ -77,8 +79,9 @@ avisado ao abrir (nunca some em silêncio).
 - **Fita** com abas (Página Inicial, Inserir, **Transições**, **Animações**, Design e Exibir;
   **Formato da Forma** e **Layout da Tabela** aparecem quando a seleção pede), recolhível e
   ajustável, com rolagem horizontal quando não cabe.
-- **Painel Formatar/Notas** à direita: pode ser escondido, redimensionado e reaberto pela aba
-  “« Formatar”; as notas ficam na aba **Notas**.
+- **Painel Formatar/Animação/Notas** à direita: pode ser escondido, redimensionado e reaberto pela
+  aba “« Formatar”; o painel de animação lista os efeitos da lâmina na ordem (selecionar, mover e
+  remover) e as notas ficam na aba **Notas**.
 - **Zoom até 400%** ancorado no ponteiro (Ctrl + roda do mouse), com rolagem de verdade.
 - **Faixa de lâminas** no topo ou na vertical (Exibir → Faixa vertical).
 

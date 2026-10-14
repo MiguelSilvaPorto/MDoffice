@@ -3,7 +3,7 @@
 // (mesmo papel do src/word/host.ts)
 import { marked } from "marked";
 import DOMPurify from "dompurify";
-import { $, toast } from "../util";
+import { $, escapeHtml, toast } from "../util";
 import { pedirTexto } from "../dialogoTexto";
 import { ligarAjusteAlturaFita, ligarRecolherFita } from "../fita";
 import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, novaImagem, type EstiloDeck, type ItemGaleria } from "./edicao/criar";
@@ -34,7 +34,7 @@ import {
 import { lerSelecao, restaurarSelecao, textoDaCaixa } from "./edicao/selecaoDom";
 import { alternarMarcador, estadoDoTrecho, estiloDosParas, estiloNoIntervalo, limparEstiloNoIntervalo, mudarCaixaTexto, mudarRecuo, mudarTamanhoRelativo, parasDaSelecao, type EstiloRun, type RunPatch, type TipoCaixa } from "./edicao/texto";
 import { comTransicao, direcaoDe, duracaoDe, normalizarTransicao } from "./edicao/transicao";
-import { comAnimacao, comDuracao, comInicio, moverAnimacao, normalizarAnimacoes, podarAnimacoes, semAnimacao, TIPOS_ANIMACAO } from "./edicao/animacao";
+import { comAnimacao, comAtraso, comDuracao, comInicio, moverAnimacao, normalizarAnimacoes, podarAnimacoes, semAnimacao, suave, TIPOS_ANIMACAO, atrasoDe, duracaoDeAnimacao, inicioDe, formatarDuracao, ROTULOS_ANIMACAO, ROTULOS_INICIO } from "./edicao/animacao";
 import { iniciarAnimacoes, type ControleAnimacoes } from "./render/animacao";
 import { caixaDaMidia, comCorteDaMidia, comOpcaoMidia, comVolumeDaMidia, midiaPadrao, normalizarMidia, MIDIA_ROTULOS, tipoDeArquivo } from "./edicao/midia";
 import { capturarQuadro, cartaoParaPng } from "./render/midia";
@@ -167,7 +167,7 @@ export class PowerPointHost {
   private animPreview: ControleAnimacoes | null = null;
   private destinoImagem = "inserir";
   private destinoMidia: string | null = null;
-  private lateral: "formatar" | "notas" = "formatar";
+  private lateral: "formatar" | "notas" | "animacao" = "formatar";
   /** célula em edição (quando a forma em edição é uma tabela) e células selecionadas */
   private celulaEdit: [number, number] | null = null;
   private celulas: CelulasSel | null = null;
@@ -255,21 +255,26 @@ export class PowerPointHost {
           <div class="pp-side-resize" data-side-resize title="Arraste para mudar a largura"></div>
           <div class="pp-side-tabs">
             <button type="button" class="on" data-lateral="formatar">Formatar</button>
+            <button type="button" data-lateral="animacao">Animação</button>
             <button type="button" data-lateral="notas">Notas</button>
             <button type="button" class="pp-side-fechar" data-side-toggle title="Esconder o painel" aria-label="Esconder o painel">»</button>
           </div>
           <div class="pp-side-corpo pp-painel" data-formatar></div>
+          <div class="pp-side-corpo" data-animacao-corpo hidden>
+            <div class="pp-side-head"><span>Animações da lâmina</span><span class="pp-side-hint">na ordem em que tocam</span></div>
+            <div data-anim-lista></div>
+          </div>
           <div class="pp-side-corpo" data-notas-corpo hidden>
             <div class="pp-side-head"><span>Notas do apresentador</span><span class="pp-side-hint">não aparecem na lâmina</span></div>
             <textarea class="pp-notes" data-notes placeholder="O que falar nesta lâmina..."></textarea>
           </div>
         </aside>
-        <button type="button" class="pp-side-aba" data-side-toggle title="Mostrar o painel Formatar/Notas" aria-label="Mostrar o painel Formatar/Notas">« Formatar</button>
+        <button type="button" class="pp-side-aba" data-side-toggle title="Mostrar o painel" aria-label="Mostrar o painel">« Formatar</button>
       </div>
       <div class="pp-status">
         <span data-pos>Lâmina 1 / 1</span>
         <span class="spacer"></span>
-        <button type="button" class="btn small pp-side-btn" data-side-toggle title="Mostrar ou esconder o painel Formatar/Notas" aria-pressed="true">Painel</button>
+        <button type="button" class="btn small pp-side-btn" data-side-toggle title="Mostrar ou esconder o painel" aria-pressed="true">Painel</button>
         <span class="pp-zoom">
           <button type="button" class="btn small" data-zoom="out" title="Reduzir zoom" aria-label="Reduzir zoom">−</button>
           <input type="range" min="${Stage.limites.min}" max="${Stage.limites.max}" step="${Stage.limites.passo}" value="100" data-zoomrange aria-label="Zoom">
@@ -312,8 +317,24 @@ export class PowerPointHost {
     this.ligarPainelLateral();
     // abas do painel lateral
     for (const b of this.pane.querySelectorAll<HTMLElement>("[data-lateral]")) {
-      b.addEventListener("click", () => this.mostrarLateral(b.dataset.lateral as "formatar" | "notas"));
+      b.addEventListener("click", () => this.mostrarLateral(b.dataset.lateral as "formatar" | "notas" | "animacao"));
     }
+    // painel de animação: clicar na linha seleciona a forma; os botões mexem no efeito
+    this.pane.querySelector<HTMLElement>("[data-anim-lista]")?.addEventListener("click", (ev) => {
+      const t = ev.target as HTMLElement;
+      const mover = t.closest<HTMLElement>("[data-anim-mover]");
+      if (mover) {
+        this.moverAnimacaoNaOrdem(Number(mover.dataset.animMover), mover.dataset.animForma);
+        return;
+      }
+      const remover = t.closest<HTMLElement>("[data-anim-remover]");
+      if (remover) {
+        this.removerAnimacao(remover.dataset.animRemover);
+        return;
+      }
+      const linha = t.closest<HTMLElement>("[data-anim-item]");
+      if (linha) this.selecionar([linha.dataset.animItem!]);
+    });
 
     // zoom
     for (const b of this.pane.querySelectorAll<HTMLElement>("[data-zoom]")) {
@@ -410,13 +431,48 @@ export class PowerPointHost {
     if (this.pane.classList.contains("pp-side-oculto")) this.pane.querySelector<HTMLElement>("[data-side-toggle]")?.click();
   }
 
-  private mostrarLateral(qual: "formatar" | "notas"): void {
+  private mostrarLateral(qual: "formatar" | "notas" | "animacao"): void {
     this.lateral = qual;
     for (const b of this.pane.querySelectorAll<HTMLElement>("[data-lateral]")) b.classList.toggle("on", b.dataset.lateral === qual);
     this.pane.querySelector<HTMLElement>("[data-formatar]")!.hidden = qual !== "formatar";
+    this.pane.querySelector<HTMLElement>("[data-animacao-corpo]")!.hidden = qual !== "animacao";
     this.pane.querySelector<HTMLElement>("[data-notas-corpo]")!.hidden = qual !== "notas";
     if (qual === "notas") this.notes.focus();
+    else if (qual === "animacao") this.renderAnimacoes();
     else this.painel.atualizar();
+  }
+
+  /** Redesenha o painel de animação (lista da lâmina, na ordem). */
+  private renderAnimacoes(): void {
+    const host = this.pane.querySelector<HTMLElement>("[data-anim-lista]");
+    if (!host) return;
+    const lista = normalizarAnimacoes(this.atual().animacoes) ?? [];
+    const porId = new Map(this.atual().shapes.map((s) => [s.id, s]));
+    if (!lista.length) {
+      host.innerHTML = `<p class="pp-anim-vazio">Nenhuma animação nesta lâmina. Selecione uma forma e escolha um efeito na aba <b>Animações</b>.</p>`;
+      return;
+    }
+    const principal = this.principal()?.id;
+    host.innerHTML = `<ol class="pp-anim-lista">${lista
+      .map((a, i) => {
+        const nome = escapeHtml(porId.get(a.forma)?.name?.trim() || "Forma");
+        const partes = [ROTULOS_ANIMACAO[a.tipo], ROTULOS_INICIO[inicioDe(a)]];
+        if (suave(a.tipo)) partes.push(formatarDuracao(duracaoDeAnimacao(a)));
+        const atraso = atrasoDe(a);
+        if (atraso > 0) partes.push(`+${formatarDuracao(atraso)}`);
+        return (
+          `<li class="pp-anim-linha${a.forma === principal ? " on" : ""}" data-anim-item="${a.forma}" title="Selecionar ${nome}">` +
+          `<span class="pp-anim-num">${i + 1}</span>` +
+          `<span class="pp-anim-nome">${nome}</span>` +
+          `<span class="pp-anim-info">${partes.join(" · ")}</span>` +
+          `<span class="pp-anim-acoes">` +
+          `<button type="button" data-anim-mover="-1" data-anim-forma="${a.forma}" title="Mover para cima na ordem" aria-label="Mover para cima">↑</button>` +
+          `<button type="button" data-anim-mover="1" data-anim-forma="${a.forma}" title="Mover para baixo na ordem" aria-label="Mover para baixo">↓</button>` +
+          `<button type="button" data-anim-remover="${a.forma}" title="Remover esta animação" aria-label="Remover animação">×</button>` +
+          `</span></li>`
+        );
+      })
+      .join("")}</ol>`;
   }
 
   // ------------------------------------------------------------------
@@ -524,6 +580,7 @@ export class PowerPointHost {
   private atualizarUI(): void {
     this.fita.atualizar();
     this.painel.atualizar();
+    if (this.lateral === "animacao") this.renderAnimacoes();
     this.stage.desenharSelecao();
   }
 
@@ -1447,6 +1504,8 @@ export class PowerPointHost {
         return this.mudarInicioAnimacao(String(value ?? "clicar") as AnimacaoInicio);
       case "animacao-duracao":
         return this.mudarDuracaoAnimacao(Number(String(value).replace(",", ".")));
+      case "animacao-atraso":
+        return this.mudarAtrasoAnimacao(Number(String(value).replace(",", ".")));
       case "animacao-remover":
         return this.removerAnimacao();
       case "animacao-subir":
@@ -2573,25 +2632,32 @@ export class PowerPointHost {
     this.editarAnimacoes((lista) => comInicio(lista, f.id, inicio), "animacao");
   }
 
-  /** Muda a duração do efeito da forma principal (só nos suaves: surgir/sumir). */
+  /** Muda a duração do efeito da forma principal (só nos efeitos com transição). */
   private mudarDuracaoAnimacao(segundos: number): void {
     const f = this.principal();
     if (!f || !Number.isFinite(segundos)) return;
     this.editarAnimacoes((lista) => comDuracao(lista, f.id, segundos), "animacao");
   }
 
-  /** Tira o efeito da forma principal. */
-  private removerAnimacao(): void {
+  /** Muda o atraso do efeito da forma principal (0 = sem atraso). */
+  private mudarAtrasoAnimacao(segundos: number): void {
     const f = this.principal();
-    if (!f) return;
-    this.editarAnimacoes((lista) => semAnimacao(lista, f.id), "animacao-remover");
+    if (!f || !Number.isFinite(segundos)) return;
+    this.editarAnimacoes((lista) => comAtraso(lista, f.id, segundos), "animacao");
   }
 
-  /** Move o efeito da forma principal na ordem (passo -1 sobe, +1 desce). */
-  private moverAnimacaoNaOrdem(passo: number): void {
-    const f = this.principal();
-    if (!f) return;
-    this.editarAnimacoes((lista) => moverAnimacao(lista, f.id, passo), "animacao-ordem");
+  /** Tira o efeito da forma (a principal ou a indicada pelo painel de animação). */
+  private removerAnimacao(forma?: string): void {
+    const id = forma ?? this.principal()?.id;
+    if (!id) return;
+    this.editarAnimacoes((lista) => semAnimacao(lista, id), "animacao-remover");
+  }
+
+  /** Move o efeito da forma na ordem (passo -1 sobe, +1 desce). */
+  private moverAnimacaoNaOrdem(passo: number, forma?: string): void {
+    const id = forma ?? this.principal()?.id;
+    if (!id) return;
+    this.editarAnimacoes((lista) => moverAnimacao(lista, id, passo), "animacao-ordem");
   }
 
   /** Prévia das animações no palco: toca a sequência inteira, sem esperar cliques. */

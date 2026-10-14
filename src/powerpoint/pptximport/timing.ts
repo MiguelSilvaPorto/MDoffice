@@ -20,9 +20,10 @@ export interface TimingLido {
 
 const RE_TIMING = /<p:timing\b[\s\S]*?<\/p:timing>/;
 
-/** Preset do PowerPoint -> tipo do modelo (aparecer = 1; surgir/sumir = fade = 10). */
+/** Preset do PowerPoint -> tipo do modelo (aparecer = 1; surgir/sumir = fade = 10; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9). */
 const PRESETS: Record<string, Record<string, AnimacaoTipo>> = {
   entr: { "1": "aparecer", "10": "surgir" },
+  emph: { "26": "pulsar", "6": "ampliar", "8": "girar", "9": "transparencia" },
   exit: { "1": "desaparecer", "10": "sumir" },
 };
 
@@ -60,6 +61,12 @@ interface EfeitoLido {
   inicio: AnimacaoInicio;
   spid: string;
   duracao?: number;
+  atraso?: number;
+}
+
+/** O atributo que um `p:set` mexe (style.visibility, style.opacity…). */
+function atributoDoSet(set: No): string {
+  return achar(set, "attrName")?.t ?? "";
 }
 
 /** Lê um efeito (cTn com presetClass). undefined = fora do modelo. */
@@ -70,10 +77,13 @@ function lerEfeito(ctn: No, seqInterativa: boolean): EfeitoLido | undefined {
   const tipo = PRESETS[classe]?.[preset];
   if (!tipo) return undefined;
   if ((ctn.a.presetSubtype ?? "0") !== "0") return undefined;
-  // atraso, repetição, reversão e suavização do próprio efeito: fora do modelo
-  const cond = caminho(ctn, "stCondLst/cond");
-  if (cond && (cond.a.evt !== undefined || (cond.a.delay !== undefined && cond.a.delay !== "0"))) return undefined;
+  // repetição, reversão e suavização do próprio efeito: fora do modelo
   if (ctn.a.repeatCount !== undefined || ctn.a.autoRev !== undefined || ctn.a.accel !== undefined || ctn.a.decel !== undefined) return undefined;
+  // o atraso do efeito é modelado (o XML usa milissegundos); gatilho por evento não
+  const cond = caminho(ctn, "stCondLst/cond");
+  if (cond?.a.evt !== undefined) return undefined;
+  const atrasoMs = cond?.a.delay !== undefined && cond.a.delay !== "0" ? Number(cond.a.delay) : 0;
+  if (!Number.isFinite(atrasoMs) || atrasoMs < 0) return undefined;
 
   // alvo: uma forma inteira (por parágrafo/trecho fica de fora)
   const tgt = achar(ctn, "spTgt");
@@ -82,25 +92,34 @@ function lerEfeito(ctn: No, seqInterativa: boolean): EfeitoLido | undefined {
 
   // comportamentos esperados de cada tipo (qualquer outro elemento = fora do modelo)
   const comportamentos = filho(ctn, "childTnLst")?.c ?? [];
-  const soEsperados = comportamentos.every((b) => b.n === "set" || b.n === "animEffect");
-  if (!soEsperados) return undefined;
+  const so = (...aceitos: string[]): boolean => comportamentos.every((b) => aceitos.includes(b.n));
   const animEff = comportamentos.find((b) => b.n === "animEffect");
-  const suave = tipo === "surgir" || tipo === "sumir";
-  if (suave) {
+  const set = comportamentos.find((b) => b.n === "set");
+  const instantaneo = tipo === "aparecer" || tipo === "desaparecer";
+  if (instantaneo) {
+    if (!so("set") || atributoDoSet(set!) !== "style.visibility") return undefined;
+  } else if (tipo === "surgir" || tipo === "sumir") {
+    if (!so("set", "animEffect") || atributoDoSet(set!) !== "style.visibility") return undefined;
     if (!animEff || animEff.a.filter !== "fade" || animEff.a.transition !== (tipo === "surgir" ? "in" : "out")) return undefined;
-  } else if (animEff) {
-    return undefined; // aparecer/desaparecer são instantâneos: sem efeito animado
+  } else if (tipo === "pulsar" || tipo === "ampliar") {
+    if (!so("animScale")) return undefined;
+  } else if (tipo === "girar") {
+    if (!so("animRot")) return undefined;
+  } else {
+    // transparência: um set de opacidade
+    if (!so("set") || atributoDoSet(set!) !== "style.opacity") return undefined;
   }
 
   const dur = maxDur(ctn, 0);
-  if (!suave && dur > 1) return undefined; // instantâneo com duração: fora do modelo
+  if (instantaneo && dur > 1) return undefined; // instantâneo com duração: fora do modelo
 
   return {
     ctn,
     tipo,
     inicio: INICIO_POR_NODE[ctn.a.nodeType ?? ""] ?? "com",
     spid: tgt.a.spid,
-    ...(suave && dur > 1 ? { duracao: dur / 1000 } : {}),
+    ...(!instantaneo && dur > 1 ? { duracao: dur / 1000 } : {}),
+    ...(atrasoMs > 0 ? { atraso: atrasoMs / 1000 } : {}),
   };
 }
 
@@ -161,7 +180,7 @@ export function lerTiming(xml: string, spids: Map<string, string>): TimingLido {
       };
     }
     vistos.add(forma);
-    const n = normalizarAnimacao({ forma, tipo: e.tipo, inicio: e.inicio, duracao: e.duracao });
+    const n = normalizarAnimacao({ forma, tipo: e.tipo, inicio: e.inicio, duracao: e.duracao, atraso: e.atraso });
     if (!n) return { bruta, avisos: [] };
     animacoes.push(n);
   }

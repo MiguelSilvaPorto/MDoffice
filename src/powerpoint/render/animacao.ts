@@ -2,12 +2,19 @@
 // usam este mesmo jogador. Recebe a raiz com as formas (`[data-shape]`) e a lista de animações
 // da lâmina e devolve um controle: "próximo" (o clique da apresentação) e "cancelar".
 import type { Animacao } from "../schema";
-import { duracaoEfetiva, entrada, inicioDe } from "../edicao/animacao";
+import { atrasoDe, duracaoEfetiva, entrada, inicioDe } from "../edicao/animacao";
 
 /** Classes que o CSS anima (styles/slides.css). */
 const OCULTA = "forma-oculta";
 const SURGE = "forma-surge";
 const SOME = "forma-some";
+const PULSA = "forma-pulsa";
+const AMPLIA = "forma-amplia";
+const GIRA = "forma-gira";
+const TRANSP = "forma-transp";
+
+/** Ênfase que termina num estado novo (a classe fica segurando o fim da animação). */
+const ENFASE_FIXA: Partial<Record<Animacao["tipo"], string>> = { ampliar: AMPLIA, girar: GIRA, transparencia: TRANSP };
 
 export interface ControleAnimacoes {
   /** Toca o próximo passo pendente (o clique da apresentação). false = não havia o que tocar. */
@@ -58,36 +65,49 @@ export function iniciarAnimacoes(
   let timer = 0;
   let vivo = true;
 
-  /** Toca um efeito e devolve quanto ele dura (ms). */
+  /** Toca um efeito e devolve quanto ele leva (atraso + duração, ms). */
   const tocar = (a: Animacao): number => {
     const el = elementos.get(a.forma);
     if (!el) return 0;
     const ms = reduzido ? 0 : Math.round(duracaoEfetiva(a) * 1000);
-    if (a.tipo === "aparecer") {
-      el.classList.remove(OCULTA);
-      return 0;
-    }
-    if (a.tipo === "desaparecer") {
-      el.classList.add(OCULTA);
-      return 0;
-    }
-    el.classList.remove(OCULTA);
-    el.style.setProperty("--anim-dur", `${Math.max(1, ms)}ms`);
-    const classe = a.tipo === "surgir" ? SURGE : SOME;
-    el.classList.add(classe);
-    const fim = () => {
+    const atrasoMs = reduzido ? 0 : Math.round(atrasoDe(a) * 1000);
+
+    /** Aplica o efeito no elemento (depois do atraso, quando houver). */
+    const aplicar = (): void => {
       if (!vivo) return;
-      el.classList.remove(classe);
-      el.style.removeProperty("--anim-dur");
-      if (a.tipo === "sumir") el.classList.add(OCULTA);
+      if (a.tipo === "aparecer") {
+        el.classList.remove(OCULTA);
+        return;
+      }
+      if (a.tipo === "desaparecer") {
+        el.classList.add(OCULTA);
+        return;
+      }
+      el.classList.remove(OCULTA);
+      el.style.setProperty("--anim-dur", `${Math.max(1, ms)}ms`);
+      // ênfase que termina noutro estado: a classe fica (o CSS segura o fim da animação)
+      const fixa = ENFASE_FIXA[a.tipo];
+      const classe = a.tipo === "surgir" ? SURGE : a.tipo === "sumir" ? SOME : a.tipo === "pulsar" ? PULSA : fixa!;
+      el.classList.add(classe);
+      if (fixa) return;
+      // efeitos que voltam ao estado normal (surgir/sumir/pulsar): limpam no fim
+      const fim = () => {
+        if (!vivo) return;
+        el.classList.remove(classe);
+        el.style.removeProperty("--anim-dur");
+        if (a.tipo === "sumir") el.classList.add(OCULTA);
+      };
+      if (ms > 0) {
+        el.addEventListener("animationend", fim, { once: true });
+        window.setTimeout(fim, ms + 120); // rede de segurança
+      } else {
+        fim();
+      }
     };
-    if (ms > 0) {
-      el.addEventListener("animationend", fim, { once: true });
-      window.setTimeout(fim, ms + 120); // rede de segurança
-    } else {
-      fim();
-    }
-    return ms;
+
+    if (atrasoMs > 0) window.setTimeout(aplicar, atrasoMs);
+    else aplicar();
+    return atrasoMs + ms;
   };
 
   /** Toca um passo inteiro (efeitos em paralelo) e devolve a maior duração. */
@@ -123,7 +143,7 @@ export function iniciarAnimacoes(
       vivo = false;
       window.clearTimeout(timer);
       for (const el of elementos.values()) {
-        el.classList.remove(OCULTA, SURGE, SOME);
+        el.classList.remove(OCULTA, SURGE, SOME, PULSA, AMPLIA, GIRA, TRANSP);
         el.style.removeProperty("--anim-dur");
       }
     },

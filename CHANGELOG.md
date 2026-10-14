@@ -389,6 +389,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   clique primeiro toca o efeito pendente e só depois troca de lâmina). O `.pptx` faz **round-trip
   do `p:timing`**: o que o modelo não representa (ênfase, trajetórias, por parágrafo, gatilhos…)
   volta cru, com aviso na importação.
+- **Animações, degrau 2**: **ênfase** — **Pulsar**, **Ampliar/Reduzir**, **Girar** e
+  **Transparência** — com duração padrão por tipo, **atraso** por efeito ("Sem" a 2 s) e a
+  galeria reorganizada em **Entrada/Ênfase/Saída** (as mais usadas na fita + **Mais animações**).
+  Entra o **painel de animação** na aba lateral: a lista da lâmina na ordem, com selecionar,
+  mover (↑↓) e remover item a item. O round-trip do `p:timing` cobre tudo isso (ênfase por
+  escala/rotação/opacidade, `autoRev` do pulsar e o atraso no `p:cond`).
 - **Diálogos do app no lugar de janelas do sistema**: **Novo modelo** (botão Template) e
   **Renomear lâmina** agora usam o diálogo de texto do app — com o tema, dica, Enter/OK,
   Esc/Cancelar e clique fora; ao criar, a galeria reabre já com o cartão novo.

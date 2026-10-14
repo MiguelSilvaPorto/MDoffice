@@ -876,6 +876,108 @@ button.ppr.cor {
   display: none;
 }
 
+/* ---------- painel de animação (aba lateral) ---------- */
+
+.pp-anim-lista {
+  list-style: none;
+  margin: 0;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pp-anim-linha {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.pp-anim-linha:hover {
+  background: var(--panel-2);
+}
+
+.pp-anim-linha.on {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--fi-ppt, #d24a17) 45%, transparent);
+}
+
+.pp-anim-num {
+  flex: none;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--fi-ppt, #d24a17);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pp-anim-nome {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.pp-anim-info {
+  color: var(--muted);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.pp-anim-acoes {
+  display: flex;
+  gap: 1px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.pp-anim-linha:hover .pp-anim-acoes,
+.pp-anim-linha.on .pp-anim-acoes {
+  opacity: 1;
+}
+
+.pp-anim-acoes button {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pp-anim-acoes button:hover {
+  color: var(--fg);
+  background: var(--panel);
+}
+
+.pp-anim-vazio {
+  margin: 0;
+  padding: 12px 14px;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
 .pp-painel {
   display: block;
   padding-bottom: 14px;
@@ -1499,6 +1601,24 @@ button.ppr.cor {
   grid-template-columns: repeat(4, 46px);
   gap: 4px;
   align-content: center;
+}
+
+/* a galeria da aba Animações: cartões um pouco mais largos (nomes como "Desaparecer") */
+.ppr-anim {
+  grid-template-columns: repeat(5, 54px);
+}
+
+.ppr-anim-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* galeria completa do botão "Mais animações" (popup) */
+.ppr-anim-gal {
+  display: grid;
+  grid-template-columns: repeat(4, 54px);
+  gap: 4px;
 }
 
 .ppr-trans-item,

@@ -504,6 +504,20 @@ const AN = await empacotar("src/powerpoint/edicao/animacao.ts", "animacao.mjs");
   ok("animação: mover fora dos limites não muda nada", JSON.stringify(AN.moverAnimacao(lista, "s1", -1)) === JSON.stringify(lista));
   ok("animação: remover tira o efeito da forma", AN.semAnimacao(lista, "s1").length === 1);
   ok("animação: podar segue as formas vivas", AN.podarAnimacoes(lista, ["s2"]).length === 1 && AN.podarAnimacoes(lista, ["s2"])[0].forma === "s2");
+
+  // ênfase: duração padrão por tipo e classe
+  ok("animação: girar/ampliar nascem com 2 s", AN.normalizarAnimacao({ forma: "s1", tipo: "girar" }).duracao === 2 && AN.normalizarAnimacao({ forma: "s1", tipo: "ampliar" }).duracao === 2);
+  ok("animação: pulsar/transparência nascem com 0,5 s", AN.normalizarAnimacao({ forma: "s1", tipo: "pulsar" }).duracao === 0.5 && AN.normalizarAnimacao({ forma: "s1", tipo: "transparencia" }).duracao === 0.5);
+  ok("animação: classe de cada efeito", AN.CLASSE_ANIMACAO.pulsar === "enfase" && AN.CLASSE_ANIMACAO.surgir === "entrada" && AN.CLASSE_ANIMACAO.sumir === "saida");
+  ok("animação: instantâneos e suaves", AN.instantaneo("aparecer") && AN.instantaneo("desaparecer") && !AN.instantaneo("pulsar") && AN.suave("girar") && !AN.suave("desaparecer"));
+  ok("animação: ênfase tem duração efetiva", AN.duracaoEfetiva({ forma: "s1", tipo: "pulsar", duracao: 1 }) === 1);
+
+  // atraso: normalização, limite e mutação
+  ok("animação: atraso entra normalizado", AN.normalizarAnimacao({ forma: "s1", tipo: "surgir", atraso: 0.5 }).atraso === 0.5);
+  ok("animação: atraso zero não é guardado", AN.normalizarAnimacao({ forma: "s1", tipo: "surgir", atraso: 0 }).atraso === undefined);
+  ok("animação: atraso fora dos limites é aparado", AN.atrasoDe({ forma: "s1", tipo: "surgir", atraso: 99 }) === 60 && AN.atrasoDe({ forma: "s1", tipo: "surgir", atraso: -1 }) === 0);
+  ok("animação: comAtraso muda o atraso do efeito", AN.comAtraso(lista, "s1", 1)[0].atraso === 1);
+  ok("animação: comAtraso em forma sem efeito não faz nada", JSON.stringify(AN.comAtraso(lista, "s9", 1)) === JSON.stringify(lista));
 }
 
 // ---------------------------------------------------------------- round-trip do p:timing
@@ -534,10 +548,14 @@ const TEXP = await empacotar("src/powerpoint/pptxexport/timing.ts", "timing-exp.
   const duplicado = TIMP.lerTiming(TEXP.xmlTiming([{ forma: "s1", tipo: "aparecer" }, { forma: "s1", tipo: "surgir" }], ids, []), spids);
   ok("timing: dois efeitos na mesma forma ficam crus", !duplicado.animacoes && !!duplicado.bruta);
 
-  // ênfase (fora do modelo): guarda o XML cru e avisa
-  const enfase = `<p:timing><p:tnLst><p:par><p:cTn id="1" dur="indefinite" nodeType="tmRoot"><p:childTnLst><p:seq concurrent="1" nextAc="seek"><p:cTn id="2" dur="indefinite" nodeType="mainSeq"><p:childTnLst><p:par><p:cTn id="3" fill="hold"><p:stCondLst><p:cond delay="indefinite"/></p:stCondLst><p:childTnLst><p:par><p:cTn id="4" presetID="26" presetClass="emph" presetSubtype="0" fill="hold" grpId="0" nodeType="clickEffect"><p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst><p:animScale><p:cBhvr><p:cTn id="5" dur="500" fill="hold"/><p:tgtEl><p:spTgt spid="4"/></p:tgtEl></p:cBhvr><p:by x="105000" y="105000"/></p:animScale></p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn><p:prevCondLst><p:cond evt="onPrev" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:prevCondLst><p:nextCondLst><p:cond evt="onNext" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:nextCondLst></p:seq></p:childTnLst></p:cTn></p:par></p:tnLst></p:timing>`;
-  const cru = TIMP.lerTiming(enfase, spids);
-  ok("timing: ênfase fica guardada crua e avisa", !cru.animacoes && !!cru.bruta && cru.avisos.length === 1);
+  // ênfase modelada: pulsar (presetID 26, animScale) e o que fica fora do modelo (colorPulse = 27)
+  const pulsarXml = TEXP.xmlTiming([{ forma: "s1", tipo: "pulsar" }], ids, []);
+  ok("timing: pulsar sai como emph 26 com animScale", pulsarXml.includes('presetID="26" presetClass="emph"') && pulsarXml.includes("<p:animScale>") && pulsarXml.includes('autoRev="1"'), pulsarXml.slice(pulsarXml.indexOf("<p:childTnLst>"), pulsarXml.indexOf("<p:childTnLst>") + 200));
+  const pulsado = TIMP.lerTiming(pulsarXml, spids);
+  ok("timing: pulsar volta modelado", pulsado.animacoes?.[0]?.tipo === "pulsar" && pulsado.animacoes[0].inicio === undefined && pulsado.animacoes[0].duracao === 0.5, JSON.stringify(pulsado));
+  const fora = `<p:timing><p:tnLst><p:par><p:cTn id="1" dur="indefinite" nodeType="tmRoot"><p:childTnLst><p:seq concurrent="1" nextAc="seek"><p:cTn id="2" dur="indefinite" nodeType="mainSeq"><p:childTnLst><p:par><p:cTn id="3" fill="hold"><p:stCondLst><p:cond delay="indefinite"/></p:stCondLst><p:childTnLst><p:par><p:cTn id="4" presetID="27" presetClass="emph" presetSubtype="0" fill="hold" grpId="0" nodeType="clickEffect"><p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst><p:animClr clrSpc="rgb" dir="cw"><p:cBhvr><p:cTn id="5" dur="500" fill="hold"/><p:tgtEl><p:spTgt spid="4"/></p:tgtEl></p:cBhvr><p:to><a:srgbClr val="FF0000"/></p:to></p:animClr></p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn><p:prevCondLst><p:cond evt="onPrev" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:prevCondLst><p:nextCondLst><p:cond evt="onNext" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:nextCondLst></p:seq></p:childTnLst></p:cTn></p:par></p:tnLst></p:timing>`;
+  const cru = TIMP.lerTiming(fora, spids);
+  ok("timing: ênfase fora do modelo (colorPulse) fica crua e avisa", !cru.animacoes && !!cru.bruta && cru.avisos.length === 1);
   const semTiming = `<p:sld><p:cSld/><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
   ok("timing: o XML cru volta como veio", TEXP.inserirTiming(semTiming, undefined, cru.bruta, {}, []).includes(cru.bruta));
 
@@ -561,6 +579,22 @@ const TEXP = await empacotar("src/powerpoint/pptxexport/timing.ts", "timing-exp.
   // forma com texto entra no p:bldLst (o fundo da forma anima junto)
   const comTexto = TEXP.xmlTiming([{ forma: "s1", tipo: "surgir" }], ids, [{ id: "s1", paras: [{ runs: [] }] }]);
   ok("timing: forma com texto entra no p:bldLst", comTexto.includes("<p:bldLst>") && comTexto.includes('<p:bldP spid="4" grpId="0" animBg="1"/>'));
+
+  // ênfase: round-trip dos quatro efeitos (com duração explícita)
+  for (const tipo of ["pulsar", "ampliar", "girar", "transparencia"]) {
+    const m = [{ forma: "s1", tipo, duracao: 1 }];
+    const volta = TIMP.lerTiming(TEXP.xmlTiming(m, ids, []), spids);
+    ok(`timing: round-trip ${tipo}`, JSON.stringify(volta.animacoes) === JSON.stringify(m), JSON.stringify([m, volta]));
+  }
+
+  // atraso: sai no p:cond do efeito e volta (ordem das chaves = a da normalização)
+  const comAtraso = [{ forma: "s1", tipo: "surgir", duracao: 1, atraso: 0.5 }];
+  const xmlAtraso = TEXP.xmlTiming(comAtraso, ids, []);
+  ok("timing: atraso entra no p:cond do efeito", xmlAtraso.includes('<p:cond delay="500"/>'), xmlAtraso.slice(0, 500));
+  ok("timing: atraso volta modelado", JSON.stringify(TIMP.lerTiming(xmlAtraso, spids).animacoes) === JSON.stringify(comAtraso));
+  // "depois do anterior" com atraso: o lote seguinte espera atraso + duração do anterior
+  const encadeado = TEXP.xmlTiming([{ forma: "s1", tipo: "surgir", atraso: 0.5, duracao: 1 }, { forma: "s2", tipo: "desaparecer", inicio: "depois" }], ids, []);
+  ok("timing: o lote seguinte espera atraso + duração", encadeado.includes('<p:cond delay="1500"/>'), encadeado.slice(0, 700));
 }
 
 // ---------------------------------------------------------------- exportação: spid amarrado à forma

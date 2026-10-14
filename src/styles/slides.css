@@ -610,10 +610,75 @@
   }
 }
 
+/* ---------- ênfase (aba Animações) ----------
+   `scale`/`rotate` são propriedades próprias: compõem com o `transform` da forma
+   (rotação/espelho), então a ênfase não desfaz a rotação do elemento. */
+
+.forma-pulsa {
+  animation: forma-pulsa var(--anim-dur, 500ms) ease both;
+}
+
+.forma-amplia {
+  animation: forma-amplia var(--anim-dur, 2000ms) ease both;
+}
+
+.forma-gira {
+  animation: forma-gira var(--anim-dur, 2000ms) linear both;
+}
+
+.forma-transp {
+  animation: forma-transp var(--anim-dur, 500ms) ease both;
+}
+
+@keyframes forma-pulsa {
+  0%,
+  100% {
+    scale: 1;
+  }
+
+  50% {
+    scale: 1.1;
+  }
+}
+
+@keyframes forma-amplia {
+  from {
+    scale: 1;
+  }
+
+  to {
+    scale: 1.5;
+  }
+}
+
+@keyframes forma-gira {
+  from {
+    rotate: 0deg;
+  }
+
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes forma-transp {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0.5;
+  }
+}
+
 /* movimento reduzido: o efeito aplica na hora (o jogador já usa duração 0) */
 @media (prefers-reduced-motion: reduce) {
   .forma-surge,
-  .forma-some {
+  .forma-some,
+  .forma-pulsa,
+  .forma-amplia,
+  .forma-gira,
+  .forma-transp {
     animation-duration: 1ms;
   }
 }
