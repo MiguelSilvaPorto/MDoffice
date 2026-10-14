@@ -110,7 +110,11 @@ const emPt = (s, i) => {
   ok("cor da caixa: preenchimento branco cai no contorno", L.corDaForma(forma("a", 0, 0, 10, 10, { fillX: { kind: "solid", color: "FFFFFF" }, ln: { color: "1F5FA8" } })) === "1F5FA8");
   ok("cor da caixa: caixa branca de borda clara não tem cor", L.corDaForma(forma("a", 0, 0, 10, 10, { fillX: { kind: "solid", color: "FDFDFD" }, ln: { color: "E8E8E8" } })) === "");
   ok("cor da caixa: forma vazia não tem cor", L.corDaForma(forma("a", 0, 0, 10, 10)) === "");
-  ok("cor da caixa: gradiente usa a primeira parada", L.corDaForma(forma("a", 0, 0, 10, 10, { fillX: { kind: "gradient", stops: [{ color: "8B3F2A" }] } })) === "8B3F2A");
+  ok("cor da caixa: gradiente de duas paradas usa a primeira", L.corDaForma(forma("a", 0, 0, 10, 10, { fillX: { kind: "gradient", stops: [{ pos: 0, color: "8B3F2A" }, { pos: 100, color: "112233" }] } })) === "8B3F2A");
+  ok(
+    "cor da caixa: numa rampa de 3 tons vale a cor-base (a do meio)",
+    L.corDaForma(forma("a", 0, 0, 10, 10, { fillX: { kind: "gradient", stops: [{ pos: 0, color: "32CC67" }, { pos: 45, color: "1F9D55" }, { pos: 100, color: "0E5746" }] } })) === "1F9D55"
+  );
 }
 
 // ---------------------------------------------------------------- criação da ligação
@@ -136,6 +140,12 @@ const emPt = (s, i) => {
   const branca = forma("c", 50, 40, 20, 10, { fillX: { kind: "solid", color: "FFFFFF" }, ln: { color: "EDEDED" } });
   const formas2 = L.ligacaoParaFormas(origem, "base", branca, "topo", dim, est);
   ok("ligação para caixa sem cor: a descida segue a cor da origem", formas2[1].ln.color === "2F6F4E");
+
+  // a ligação de uma caixa estilizada sai na cor-base — e não no tom claro da ponta da rampa
+  const estilizada = forma("a", 10, 10, 30, 10, { fillX: { kind: "gradient", stops: [{ pos: 0, color: "32CC67" }, { pos: 45, color: "1F9D55" }, { pos: 100, color: "0E5746" }] } });
+  const alvo = forma("b", 50, 40, 20, 10, { fillX: { kind: "solid", color: "1F5FA8" } });
+  const lig = L.ligacaoParaFormas(estilizada, "base", alvo, "topo", dim, est);
+  ok("ligação de caixa estilizada: a espinha usa a cor-base da rampa", lig[0].ln.color === "1F9D55", lig[0].ln.color);
 
   // ligação reta: só uma parte (a descida), sem espinha
   const alinhada = forma("d", 20, 40, 10, 10, { fillX: { kind: "solid", color: "1F5FA8" } });

@@ -7678,3 +7678,40 @@ antigas quando fizer sentido.
 - **Local:** PowerPoint → Adicionado → Frontend
 - **Linha:** `novo`
 - **Porquê:** mudança do módulo PowerPoint; a entrada entra já promovida, como o fechamento exige.
+## src/powerpoint/edicao/ligacoes.ts
+
+### 2026-10-14 · estilos de cor · a cor do conector de uma caixa estilizada (R6)
+- **Local:** `corDaForma` (+ o ajudante novo `corDoGradiente`)
+- **Linha:** `s.fillX.stops?.[0]?.color` → `corDoGradiente(s.fillX.stops ?? [])` (a parada mais
+  próxima do MEIO; no empate das duas paradas, a primeira — o comportamento de sempre)
+- **Porquê:** o estilo trouxe rampas de TRÊS paradas, e o `stops[0]` é o **tom claro** da ponta —
+  o conector de uma caixa estilizada saía mais claro que a própria caixa (defeito introduzido pela
+  R2, quando as rampas passaram a existir nos preenchimentos). A parada do meio É a cor-base da
+  receita; para gradientes de duas paradas (importados) nada muda. A escolha por "mais próxima do
+  meio" (e não "a do meio") cobre também rampas com posições fora do padrão, sem inventar regra.
+
+## src/powerpoint/ui/fita.ts · src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · estilos de cor · o menu avisa quando não há seleção (R6)
+- **Local:** `menuEstilos` (a dica e os `disabled`) e o CSS (`.pp-pop-dica`, `:disabled`)
+- **Linha:** `+ ${temForma ? "" : "<p class=\"pp-pop-dica\">Selecione uma forma…</p>"}` e
+  `+${temForma ? "" : " disabled"}` nos cartões, nas opções, nas cores e no "Desligar" ·
+  `+ .pp-pop-dica` e `+ .pp-estilo-cartao:disabled` (opacidade e cursor)
+- **Porquê:** abrir o menu sem forma escolhida mostrava cartões vivos que não faziam nada ao
+  clique (o `estiloCor` sai quando não há seleção) — mudo e sem explicação. Desabilitar + a frase
+  dizem o que falta fazer; o CSS distingue o cartão desabilitado do ativo (o `:hover` não acende).
+  O mesmo padrão vale para os controles de intensidade/brilho/ângulo/cor/desligar.
+
+## scripts/testar-ligacoes.mjs · scripts/testar-layout.mts · docs/powerpoint.md · docs/estilos-de-cor-plano.md
+
+### 2026-10-14 · estilos de cor · o polimento testado e documentado (R6)
+- **Local:** o bloco da cor da caixa e da criação da ligação; as checagens novas; o doc do módulo
+  (a cor-base no Conectar) e a checklist do plano
+- **Linha:** `+ 3 verificações` (duas paradas usa a primeira; rampa de três usa a do meio; a
+  espinha de uma caixa estilizada sai `1F9D55`, a cor-base) · `+ 2 checagens` (o `corDoGradiente`
+  na ligação; a dica e os `disabled` com o CSS) · `+ a frase da cor-base` no doc · `+ a R6 na
+  checklist (o que ficou com o olho do usuário)`
+- **Porquê:** o defeito nasceu de uma consequência entre rodadas (a R2 criou as rampas; a regra da
+  R0 lia `stops[0]`) — o teste prende os DOIS contratos (duas paradas continua como sempre; três
+  paradas vale a base) e o histórico registra o cruzamento, que é o tipo de coisa que volta se
+  ninguém escrever. A R6 fecha o plano: o que resta é a calibragem visual, que é do usuário.

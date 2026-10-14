@@ -983,6 +983,19 @@ console.log("\nestilos de cor (galeria, painel e o vivo)");
     /pp-tpl-com-estilo/.test(modelosUi) && /rampaDeTons\(rec\.base \|\| accent/.test(modelosUi) && /function estiloDoDeckNasLaminas/.test(modelosEd),
     "a prévia do cartão ficaria sem a rampa"
   );
+
+  // R6: o polimento — a cor do conector vem da cor-base da rampa e o menu avisa sem seleção
+  const ligEst = ler("src/powerpoint/edicao/ligacoes.ts");
+  checa(
+    "polimento: o conector de uma caixa estilizada usa a cor-base (não o tom claro)",
+    /const corDoGradiente = /.test(ligEst) && /corDoGradiente\(s\.fillX\.stops \?\? \[\]\)/.test(ligEst),
+    "o conector voltaria ao stops[0] (o tom claro da ponta)"
+  );
+  checa(
+    "polimento: o menu de estilos avisa e desabilita sem forma escolhida",
+    /pp-pop-dica/.test(fitaEst) && /temForma \? "" : " disabled"/.test(fitaEst) && /\.pp-pop-dica\s*\{/.test(cssEst) && /\.pp-estilo-cartao:disabled/.test(cssEst),
+    "o menu ficaria mudo (cartões clicáveis sem efeito)"
+  );
 }
 
 // ---------------------------------------------------------------- docs sem marcador de conflito

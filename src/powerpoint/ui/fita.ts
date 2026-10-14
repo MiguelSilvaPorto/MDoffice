@@ -974,24 +974,26 @@ export class Fita {
   private menuEstilos(ancora: HTMLElement): void {
     const est = this.hooks.estado();
     const atual = est.forma?.estilo;
+    const temForma = !!est.forma;
     const intensidade = atual?.intensidade ?? "media";
     const cartoes = FAMILIAS_ORDEM.filter((id) => id !== "propria")
       .map((id) => {
         const rec = FAMILIAS[id];
         const r = rampaDeTons(rec.base, intensidade, rec.desvio);
-        return `<button type="button" class="pp-estilo-cartao${atual?.familia === id ? " on" : ""}" data-cmd="estilo-cor:familia:${id}" title="${rec.nome}">
+        return `<button type="button" class="pp-estilo-cartao${atual?.familia === id ? " on" : ""}" data-cmd="estilo-cor:familia:${id}" title="${rec.nome}"${temForma ? "" : " disabled"}>
           <span class="pp-estilo-previa" style="background:linear-gradient(135deg,#${r.claro} 0%,#${r.cor} 45%,#${r.escuro} 100%)"></span>
           <span class="pp-estilo-nome">${rec.nome}</span>
         </button>`;
       })
       .join("");
-    const op = (on: boolean, cmd: string, nome: string) => `<button type="button" class="pp-op${on ? " on" : ""}" data-cmd="${cmd}">${nome}</button>`;
+    const op = (on: boolean, cmd: string, nome: string) => `<button type="button" class="pp-op${on ? " on" : ""}" data-cmd="${cmd}"${temForma ? "" : " disabled"}>${nome}</button>`;
     const base = (atual?.base ?? "").trim() || FAMILIAS[atual?.familia ?? "propria"]?.base || est.paleta[0] || "1F9D55";
     const cores = [...new Set([base, ...est.paleta.slice(0, 8)])]
-      .map((c) => `<button type="button" class="pp-estilo-cor" data-cmd="estilo-cor:cor:${c}" title="#${c}" aria-label="Cor #${c}" style="background:#${c}"></button>`)
+      .map((c) => `<button type="button" class="pp-estilo-cor" data-cmd="estilo-cor:cor:${c}" title="#${c}" aria-label="Cor #${c}"${temForma ? "" : " disabled"} style="background:#${c}"></button>`)
       .join("");
     const html = `
       <div class="pp-pop-t">Estilos de cor</div>
+      ${temForma ? "" : `<p class="pp-pop-dica">Selecione uma forma na lâmina para aplicar o estilo — um clique dá a ela o gradiente, o brilho, o contorno e o texto casados.</p>`}
       <div class="pp-estilos-gal">${cartoes}</div>
       <div class="pp-pop-t">Intensidade</div>
       <div class="pp-linhas-op">
@@ -1011,7 +1013,7 @@ export class Fita {
       </div>
       <div class="pp-pop-t">Cor do estilo</div>
       <div class="pp-estilo-cores">${cores}</div>
-      <button type="button" class="pp-pop-item" data-cmd="estilo-cor:desligar">Desligar estilo (editar à mão)</button>`;
+      <button type="button" class="pp-pop-item" data-cmd="estilo-cor:desligar"${temForma ? "" : " disabled"}>Desligar estilo (editar à mão)</button>`;
     const el = abrirPopup(ancora, html, { classe: "pp-pop-menu" });
     el.addEventListener("click", (ev) => {
       const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-cmd]");

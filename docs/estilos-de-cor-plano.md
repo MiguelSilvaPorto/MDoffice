@@ -21,7 +21,10 @@
   leva a receita junto.
 - [x] **R5 — modelos** (Design) com estilo — entregue (2026-10-14). `ModeloPPT.estilo`, os modelos
   Esmeralda/Oceano/Ameixa, aplicar re-deriva o vivo, salvar como modelo guarda o estilo do fundo.
-- [ ] **R6 — polimento** (opcional): mais famílias, calibrar o lustro/dobra, o que o usuário pedir
+- [x] **R6 — polimento**: entregue o que dava sem o olho na tela (o conector de uma caixa
+  estilizada usa a **cor-base** da rampa; o menu de estilos **avisa e desabilita sem seleção**).
+  **Pendente do usuário:** calibrar lustro/dobra com o olho no app (proporções/alfa) e pedir
+  famílias novas, se quiser.
 
 ---
 

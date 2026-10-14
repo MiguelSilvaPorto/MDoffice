@@ -390,6 +390,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   *Design Ideas* na Home). O clique faz o de sempre: **mostra o painel** e abre a aba **Ideias**,
   com esta lâmina desenhada em cada modelo. A aba **Design** continua com Tema, Personalizar (fundo)
   e Layout, sem repetir o comando.
+- **Estilos de cor (R6 — polimento)**: dois ajustes de acabamento. O **conector que sai de uma
+  caixa com Estilo de Cor** agora usa a **cor-base da rampa** (a parada do meio) — antes ele pegava
+  a **ponta clara** do gradiente, então a ligação saía mais clara que a caixa (num gradiente de
+  duas paradas, o empate continua com a primeira, o comportamento de sempre). E o **menu de
+  estilos**, aberto **sem forma escolhida**, avisa ("selecione uma forma na lâmina…") e deixa os
+  cartões e controles **desabilitados** — antes os cliques não faziam nada, sem explicação.
 
 ### Adicionado (na main)
 

@@ -167,7 +167,8 @@ avisado ao abrir (nunca some em silêncio).
 - **A cor acompanha as caixas**: a **espinha** (o trecho que sai da origem) sai com a **cor da
   forma de origem** e a **descida final** (do último canto até o destino) com a **cor da forma de
   destino** — as duas partes se encontram no mesmo ponto, sem fresta; quando o destino é
-  branco/sem cor, a descida segue a cor da origem. O fim leva **seta**.
+  branco/sem cor, a descida segue a cor da origem. O fim leva **seta**. Se a caixa tem **Estilo de
+  cor**, a ligação usa a **cor-base da rampa** (a do meio), não o tom claro da ponta.
 - A ligação fica **presa às duas formas**: mover, redimensionar, **trocar a cor** ou **apagar**
   qualquer lado **redesenha** (ou remove) o conector na hora — as duas partes andam juntas (mesma
   seleção) e valem como formas comuns (colorir, ordem, copiar/colar, desfazer), inclusive na

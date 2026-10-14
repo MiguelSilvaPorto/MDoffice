@@ -4,7 +4,7 @@
 // do último canto) fica com a cor do DESTINO, como num organograma desenhado à mão. A geometria
 // reaproveita a ideia do Fluxo do Mermaid: cantos de 90° com curva.
 import { uid } from "../../util";
-import type { Lado, Liga, Shape, ShapeBox, Slide } from "../schema";
+import type { GradStop, Lado, Liga, Shape, ShapeBox, Slide } from "../schema";
 import type { EstiloDeck } from "./criar";
 import { ajustarCor } from "./formato";
 import { paraPt, type Dim, type Ret } from "./geometria";
@@ -158,9 +158,16 @@ const quaseBranco = (hex: string): boolean => {
   return 0.299 * r + 0.587 * g + 0.114 * b > 228;
 };
 
+/** A parada que representa a cor do gradiente: a mais próxima do MEIO (numa rampa de 3 tons é a
+ *  cor-base; num gradiente de duas paradas, o empate fica com a primeira — o comportamento de
+ *  sempre). É o que faz o conector de uma caixa com Estilo de Cor sair na cor da caixa, e não no
+ *  tom claro da ponta. */
+const corDoGradiente = (stops: readonly GradStop[]): string | undefined =>
+  [...stops].sort((a, b) => Math.abs(a.pos - 50) - Math.abs(b.pos - 50) || a.pos - b.pos)[0]?.color;
+
 /** Cor "do ramo" da forma (o preenchimento com cor; senão o contorno); vazio quando é branca/clara. */
 export function corDaForma(s: Shape): string {
-  const fundo = s.fillX?.kind === "solid" ? s.fillX.color : s.fillX?.kind === "gradient" ? s.fillX.stops?.[0]?.color : s.fill;
+  const fundo = s.fillX?.kind === "solid" ? s.fillX.color : s.fillX?.kind === "gradient" ? corDoGradiente(s.fillX.stops ?? []) : s.fill;
   for (const c of [fundo, s.ln?.color]) if (c && !quaseBranco(c)) return c;
   return "";
 }

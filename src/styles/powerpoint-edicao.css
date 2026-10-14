@@ -952,6 +952,26 @@ button.ppr.big .ppr-gal-ic svg {
   margin-bottom: 4px;
 }
 
+/* a dica do menu de estilos quando não há forma escolhida (os cartões ficam desabilitados) */
+.pp-pop-dica {
+  max-width: 210px;
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.pp-estilo-cartao:disabled,
+.pp-estilo-cor:disabled,
+.pp-estilo-cartao:disabled:hover {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.pp-estilo-cartao:disabled {
+  border-color: transparent;
+}
+
 .pp-estilo-cor {
   width: 20px;
   height: 20px;
