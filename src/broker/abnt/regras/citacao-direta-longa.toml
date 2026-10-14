@@ -1,0 +1,16 @@
+# C04 — citação direta longa (mais de `limite` linhas) não leva aspas.
+#
+# A NBR 10520:2023 recomenda, para a citação direta com mais de três linhas, o bloco
+# próprio com recuo de 4 cm, fonte menor e espaço simples — e SEM aspas. O recuo, a
+# fonte e o espaçamento são cobrados no arquivo .docx exportado (regras do .docx);
+# o que o Markdown mostra é a marca errada: as aspas no bloco (ou o texto corrido
+# que devia ser bloco). O julgamento está em ./verificadores/citacoes.ts
+# (verificador "citacao-direta-longa"), que conta as linhas de cada citação entre
+# aspas e cobra o formato certo em cada caso.
+id = "abnt.c04"
+norma = "nbr10520:2023"
+grupo = "C"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "citacao-direta-longa"
+opcoes = { limite = 3 }

@@ -30,6 +30,10 @@ import e10Abstract from "./regras/e10-abstract.toml?raw";
 import a01ResumoExtensao from "./regras/a01-resumo-extensao.toml?raw";
 import a02PalavrasChave from "./regras/a02-palavras-chave.toml?raw";
 import a03ResumoCitacao from "./regras/a03-resumo-sem-citacao.toml?raw";
+import citacaoSemAno from "./regras/citacao-sem-ano.toml?raw";
+import citacaoDiretaSemPagina from "./regras/citacao-direta-sem-pagina.toml?raw";
+import citacaoDiretaLonga from "./regras/citacao-direta-longa.toml?raw";
+import pontoDepoisDoParentese from "./regras/ponto-depois-do-parentese.toml?raw";
 
 const FONTES: { nome: string; texto: string }[] = [
   { nome: "horas.toml", texto: horas },
@@ -51,6 +55,10 @@ const FONTES: { nome: string; texto: string }[] = [
   { nome: "a01-resumo-extensao.toml", texto: a01ResumoExtensao },
   { nome: "a02-palavras-chave.toml", texto: a02PalavrasChave },
   { nome: "a03-resumo-sem-citacao.toml", texto: a03ResumoCitacao },
+  { nome: "citacao-sem-ano.toml", texto: citacaoSemAno },
+  { nome: "citacao-direta-sem-pagina.toml", texto: citacaoDiretaSemPagina },
+  { nome: "citacao-direta-longa.toml", texto: citacaoDiretaLonga },
+  { nome: "ponto-depois-do-parentese.toml", texto: pontoDepoisDoParentese },
 ];
 
 /** Perfil institucional: sobrescreve versão de norma e o que fazer com cada regra. */

@@ -1,0 +1,16 @@
+# C06 — ponto final duplicado: “…. (Silva, 2020).” tem o ponto da frase antes do
+# parêntese E o ponto final depois. A NBR 10520:2023 manda o ponto final da frase
+# depois do parêntese; a troca remove o ponto que está dentro das aspas e mantém o
+# de fora. Só acusa quando os DOIS pontos existem (o padrão exige o “).” final) —
+# o caso de um ponto só não é julgado.
+#
+# A troca é mecânica e não muda sentido (o ponto final permanece), por isso `auto`.
+id = "abnt.c06"
+norma = "nbr10520:2023"
+grupo = "C"
+severidade = "warning"
+auto = true
+regex = '(?<trecho>\.(?<fecha>["”]))[<<espaco>>]*\((?<autor>[A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç]+(?:[<<espaco>>]*(?:;|e|&)[<<espaco>>]*[A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç]+)*)(?:[<<espaco>>]*et\.?[<<espaco>>]*al\.?)?[<<espaco>>]*,[<<espaco>>]*(?<ano>[0-9]{4}[a-z]?)(?:[<<espaco>>]*,[<<espaco>>]*(?:(?:p[áa]g|pag|pg)\.?|p\.)[<<espaco>>]*[0-9]+(?:-[0-9]+)?)?[<<espaco>>]*\)\.'
+trecho = "trecho"
+substituir = "{fecha}"
+mensagem = "[ABNT NBR 10520:2023] Ponto final duplicado: a frase termina depois do parêntese da citação — remova o ponto de dentro das aspas (o ponto final é o de fora)."

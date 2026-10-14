@@ -1,0 +1,23 @@
+# C03 — citação direta (entre aspas) SEM a página: "…texto" (Silva, 2020) → acrescentar p. N.
+#
+# A NBR 10520:2023 pede a página nas citações diretas (quando houver). O julgamento
+# "não tem p. N" é ESTRUTURAL, dentro do dialeto: a regra só casa a citação que FECHA
+# logo depois do ano — se houver ", p. 15" (ou qualquer complemento) antes do ")", a
+# citação não casa. Sem lookahead (que o dialeto não tem) e sem verificador: o próprio
+# formato do parêntese é a ausência. A regra roda sobre a máscara, então código,
+# links e HTML ficam fora por construção.
+#
+# Limites conhecidos (falso NEGATIVO, não falso positivo):
+#   - a citação precisa vir logo depois do fecho das aspas (só espaços entre os dois);
+#   - citação múltipla sem página nenhuma — "(Silva, 2020; Santos, 2019)" — não é
+#     acusada, e página escrita fora do "p." ("(Silva, 2020, 15)") também não;
+#   - o ano precisa vir depois de um sobrenome (um a vários, com "et al." opcional);
+#   - um título entre aspas seguido de citação tem o mesmo formato e é acusado —
+#     confirme antes de corrigir.
+id = "abnt.c03"
+norma = "nbr10520:2023"
+grupo = "C"
+severidade = "warning"
+regex = '["”][<<espaco>>]*(?<trecho>\((?<autor>[A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç]+(?:[<<espaco>>]*(?:;|e|&)[<<espaco>>]*[A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç]+)*)(?:[<<espaco>>]*et\.?[<<espaco>>]*al\.?)?[<<espaco>>]*,[<<espaco>>]*(?<ano>[0-9]{4}[a-z]?)[<<espaco>>]*\))'
+trecho = "trecho"
+mensagem = "[ABNT NBR 10520:2023] Citação direta entre aspas sem a página: “{trecho}” — acrescente “p. N” da obra citada (ex.: “(Silva, 2020, p. 15)”)"

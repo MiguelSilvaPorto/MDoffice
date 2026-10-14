@@ -4,7 +4,7 @@
 //    contra o que o motor faz de verdade (`/\s/u`, `/\d/u`). O que é circular está
 //    dito no próprio teste: para os predicados sobre `\p{L}` ele confere a lógica do
 //    complemento e a borda, não a escolha da classe.
-// 2. LINT — as dez regras passam, e exemplos quebrados de propósito são recusados.
+// 2. LINT — as dez regras antigas passam, e exemplos quebrados de propósito são recusados.
 // 3. TESTE DE OURO — as regras em TOML têm de produzir EXATAMENTE os mesmos avisos
 //    que as dez funções TypeScript de `src/broker/style/abnt.ts`, nas quatro famílias
 //    de caso: acento colado à borda, vizinhos, bordas do texto e match descartado ao
@@ -115,6 +115,20 @@ console.log("classes e predicados (gerado, code point a code point)");
 
 // ---------------------------------------------------------------- 2. lint
 
+/** Os ids das dez regras originais — o teste de ouro compara ELAS com as funções TS. */
+const IDS_ANTIGAS = [
+  "abnt.horas",
+  "abnt.horas_dois_pontos",
+  "abnt.unidades",
+  "abnt.meses",
+  "abnt.siglas_plural",
+  "abnt.citacao_autor_data",
+  "abnt.pagina",
+  "abnt.et_al",
+  "abnt.travessao",
+  "abnt.latinismos",
+];
+
 console.log("\nlint da carga");
 {
   const L = await empacotar("src/broker/abnt/lint.ts", "lint.mjs");
@@ -125,11 +139,12 @@ console.log("\nlint da carga");
   let carregadas = 0;
   let erroCarga = "";
   try {
-    carregadas = (I.carregarRegras() as unknown[]).length;
+    const ids = new Set((I.carregarRegras() as { id: string }[]).map((r) => r.id));
+    carregadas = IDS_ANTIGAS.filter((id) => ids.has(id)).length;
   } catch (e) {
     erroCarga = String(e);
   }
-  checa("as dez regras originais (e as novas) passam no lint", carregadas >= 10, erroCarga);
+  checa("as dez regras originais (e as novas) passam no lint", carregadas === 10, erroCarga);
 
   // recusas: cada exemplo quebra uma regra do schema
   const base = {
@@ -212,10 +227,16 @@ console.log("\nteste de ouro (TOML contra as dez funções)");
     return avisos;
   };
 
+  // O teste de ouro compara as DEZ funções antigas com as TOML delas; as regras novas do
+  // catálogo (E, C01/C03/C04/C06, R, S, A, P, T) não têm par no TypeScript antigo — têm
+  // o próprio teste (scripts/testar-abnt-<grupo>.mts) — e ficam fora daqui.
+  //
   // A seta NÃO é estilo: `.map(I.regraDeToml)` passaria o ÍNDICE do array como o
   // `registro` de verificadores — na primeira regra de estrutura, "verificador
   // desconhecido". O registro default só vale quando o segundo argumento é undefined.
-  const novos = I.carregarRegras().map((r) => I.regraDeToml(r));
+  const novos = I.carregarRegras()
+    .filter((r: { id: string }) => IDS_ANTIGAS.includes(r.id))
+    .map((r: unknown) => I.regraDeToml(r));
 
   // As quatro famílias da Parte A, com caso para cada uma das dez regras.
   const FAMILIAS: [string, string[]][] = [

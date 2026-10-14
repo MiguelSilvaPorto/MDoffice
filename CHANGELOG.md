@@ -78,6 +78,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   entrelinha 1,25, sem paginação e sem quebra entre seções primárias; o export da sessão Word, no
   setup padrão, com margens superior/base de 2,5 cm, Calibri 11, entrelinha 1,15 e sem quebra
   (configurado em ABNT, o mesmo exportador não acusa nada).
+- **Citações ABNT — C01, C03, C04 e C06 (NBR 10520:2023)**: as conferências de citação que
+  faltavam do catálogo. **C01** acusa a citação autor-data entre parênteses **sem o ano**
+  ("(Silva)") — o critério é apertado de propósito (lista fechada de sobrenomes em caixa mista):
+  "(Anexo)", "(Brasil)", leis e siglas passam em paz. **C03** acusa a **citação direta entre
+  aspas sem a página** ("…texto" (Silva, 2020)). **C04** acusa a **citação direta longa (mais de
+  3 linhas) com aspas** — em texto corrido (deve virar bloco `>`) ou dentro do bloco (as aspas
+  saem; recuo de 4 cm, fonte menor e espaço simples). **C06** acusa o **ponto final duplicado**
+  (“…. (Silva, 2020).” → um ponto só, o de fora) e corrige — as demais acusam sem sugerir troca
+  (o ano e a página são desconhecidos). C01/C03/C06 são regras declaradas em TOML; C04 é
+  verificador do documento; teste próprio com os dois lados em `scripts/testar-abnt-citacoes.mts`.
 
 ### Adicionado (na main)
 

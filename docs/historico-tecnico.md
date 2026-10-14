@@ -2407,6 +2407,98 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** nova tabela com o commit desta tarefa
 - **Porquê:** cada fase do F1 registra a sua medição; o documento é o termômetro e sem o número novo
   a próxima mudança não teria com o que se comparar.
+## src/broker/abnt/regras/citacao-sem-ano.toml (novo)
+
+### 2026-10-14 · citações C01/C03/C04/C06 · "(Silva)" sem ano: só com sobrenome da lista
+- **Local:** arquivo novo — regra `abnt.c01` (texto, sem `substituir`)
+- **Linha:** novo
+- **Porquê:** a NBR 10520:2023 exige autor E ano no sistema autor-data, e a máquina não sabe o ano
+  que falta — a regra é de AVISO (acusa sem sugerir troca). Qualquer parêntese com maiúscula
+  acusaria "(Anexo)", "(Brasil)", leis e siglas; o critério ficou apertado de propósito: só casa
+  parêntese com sobrenome frequente da lista fechada, em caixa mista, um ou mais ligados por
+  ";" / "e" / "&", com "et al." opcional. "(SILVA)" fica fora (caixa alta é matéria da C02) e
+  sobrenome fora da lista também. A lista é dado, não heurística: ampliá-la cobre mais sem
+  afrouxar o critério — o limite está escrito no próprio TOML.
+
+## src/broker/abnt/regras/citacao-direta-sem-pagina.toml (novo)
+
+### 2026-10-14 · citações C01/C03/C04/C06 · a página ausente é estrutural (sem lookahead)
+- **Local:** arquivo novo — regra `abnt.c03` (texto, sem `substituir`)
+- **Linha:** novo
+- **Porquê:** o dialeto não tem lookahead, mas a ausência aqui não precisa dele: o padrão só casa a
+  citação que FECHA logo depois do ano — com ", p. 15" (ou qualquer complemento) antes do ")" não
+  casa. A regra roda sobre a máscara, então código, link e HTML ficam fora por construção. Ficou
+  como regra de texto (não verificador) porque o formato do parêntese carrega o julgamento; os
+  falsos NEGATIVOS assumidos (citação múltipla sem página; título entre aspas seguido de citação)
+  estão no TOML.
+
+## src/broker/abnt/regras/citacao-direta-longa.toml (novo) · src/broker/abnt/verificadores/citacoes.ts
+
+### 2026-10-14 · citações C01/C03/C04/C06 · C04: contagem de linhas no verificador
+- **Local:** arquivo novo — regra `abnt.c04` (`tipo = "estrutura"`, `verifica =
+  "citacao-direta-longa"`, `opcoes = { limite = 3 }`); mapa `VERIFICADORES` de `citacoes.ts`
+- **Linha:** novo (verificador novo, chave `"citacao-direta-longa"`)
+- **Porquê:** "a aspa abre o bloco?" e "o trecho passa de `limite` linhas?" não cabem no dialeto. O
+  verificador casa as aspas em pares por parágrafo, conta linhas físicas e acusa dois casos: bloco
+  (`>`) com mais de `limite` linhas que COMEÇA com aspa (remover as aspas; recuo/fonte/espaço
+  simples são do .docx) e trecho entre aspas com mais de `limite` linhas em texto corrido (deve
+  virar bloco). Bloco longo com aspa curta dentro — "Segundo Silva (2020), “a educação…”" — fica
+  em paz (precisão acima de cobertura); código, listas e tabelas não entram pela tipagem do
+  modelo; aspa sem par não é julgada.
+
+## src/broker/abnt/index.ts
+
+### 2026-10-14 · citações C01/C03/C04/C06 · as quatro fontes no fim de FONTES
+- **Local:** imports dos quatro `.toml?raw` e lista `FONTES`
+- **Linha:** quatro entradas acrescentadas no FIM (`citacao-sem-ano`, `citacao-direta-sem-pagina`,
+  `citacao-direta-longa`, `ponto-depois-do-parentese`)
+- **Porquê:** a ordem é a do motor (a primeira regra que casa um trecho vence); acrescentar no fim
+  não desloca as dez antigas nem as regras das tarefas que entrarem antes.
+
+## src/broker/abnt/regras/ponto-depois-do-parentese.toml (novo)
+
+### 2026-10-14 · citações C01/C03/C04/C06 · C06 só com o ponto DUPLICADO, e a troca sai sozinha
+- **Local:** arquivo novo — regra `abnt.c06` (texto, `auto = true`, com `substituir`)
+- **Linha:** novo
+- **Porquê:** a 10520:2023 manda o ponto final depois do parêntese. O padrão exige os dois pontos
+  (o de dentro das aspas e o “).” final): o caso com um ponto só não é julgado — evita reprovar
+  citação em que a pontuação interna é legítima. A troca substitui só o trecho (`.` + aspas) pelo
+  fecho das aspas, então o ponto final de fora permanece: é mecânica e por isso entra sozinha.
+
+## scripts/testar-abnt-citacoes.mts (novo) · package.json
+
+### 2026-10-14 · citações C01/C03/C04/C06 · 61 checagens, todo caso com os dois lados
+- **Local:** teste novo com o ajudante de `scripts/abnt/ferramentas.mts`; script
+  `test:abnt-citacoes`
+- **Linha:** novo
+- **Porquê:** cada regra tem o caso que acusa e o que não pode acusar — inclusive os falsos
+  positivos clássicos do parêntese ("(Anexo)", "(Brasil)", "(Lei nº 8.112)", "(IBGE)", "(Tabela 1)")
+  e os limites assumidos (título entre aspas no C03; bloco com aspa curta no C04; aspa sem par).
+  O C06 é conferido pela troca aplicada (o texto corrigido fica com um ponto só) e o C04 também
+  pelo `verificar` direto, com `limite` mudado, para provar que a opção vinda do TOML é lida.
+
+## scripts/testar-regras-abnt.mts
+
+### 2026-10-14 · citações C01/C03/C04/C06 · o teste de ouro compara as DEZ (e o registro)
+- **Local:** bloco do lint, teste de ouro, normalização e medição
+- **Linha:** `carregarRegras().map(I.regraDeToml)` → `.filter(IDS_ANTIGAS).map((r) => I.regraDeToml(r))`
+  no teste de ouro (lambdas nas outras seções); a checagem das dez virou presença por id
+- **Porquê:** o catálogo cresce por tarefas paralelas — contar o total de regras quebraria a cada
+  tarefa irmã, e o teste de ouro compara as DEZ funções antigas com as TOML delas (as regras novas
+  têm teste próprio). O `.map(I.regraDeToml)` escondia um segundo problema: o `map` passa o ÍNDICE
+  como segundo argumento (o `registro` do `regraDeToml`), o que só aparece quando existe a primeira
+  regra de ESTRUTURA — que é a C04 ("verificador desconhecido: … (nenhum)"). A tarefa irmã do grupo
+  S já tinha trocado o `.map` por lambda e a contagem por `>= 10`; a integração manteve o lambda e o
+  filtro dos ids — as duas mudanças são o mesmo conserto, e o filtro é o que preserva o sentido do
+  teste quando os grupos novos (E, R, A, T…) entrarem.
+
+## docs/md.md
+
+### 2026-10-14 · citações C01/C03/C04/C06 · as conferências de citação na Escrita assistida
+- **Local:** “Escrita assistida (português, offline)”
+- **Linha:** bala nova depois do MIP
+- **Porquê:** as quatro regras aparecem para o usuário como avisos no editor e no painel de
+  revisão; o documento do módulo descreve o que o app faz.
 
 ## src/broker/style/punctuation.ts
 

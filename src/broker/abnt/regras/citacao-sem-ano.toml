@@ -1,0 +1,24 @@
+# C01 — citação autor-data entre parênteses SEM o ano: "(Silva)" → "(Silva, 2020)".
+#
+# A NBR 10520:2023 exige autor E ano no sistema autor-data. A máquina não sabe o ano
+# que falta, então a regra é de AVISO: acusa sem sugerir troca.
+#
+# PRECISÃO ACIMA DE COBERTURA — o critério é apertado de propósito: só acusa o
+# parêntese que contém APENAS sobrenomes da lista fechada abaixo (em caixa mista,
+# como "(Silva)"), um ou mais, ligados por ";" / "e" / "&", com "et al." opcional.
+# É o limite conhecido da regra; NÃO acusa:
+#   - rótulos, instituições, leis e siglas: "(Anexo)", "(Brasil)", "(IBGE)",
+#     "(Lei nº 8.112)", "(Tabela 1)", "(Ministério da Educação)";
+#   - caixa alta ("(SILVA)") — sigla e sobrenome em caixa alta não se distinguem,
+#     e a caixa alta é matéria da regra C02 (abnt.citacao_autor_data);
+#   - sobrenome fora da lista ("(Borsoi)") e formas com prefixo ("(cf. Silva)");
+#   - parêntese com vírgula sem ano ("(Silva, p. 15)") e com o ano já escrito.
+# A lista é sobrenome frequente da língua portuguesa: aumentá-la amplia a cobertura
+# sem afrouxar o critério (dado, não heurística).
+id = "abnt.c01"
+norma = "nbr10520:2023"
+grupo = "C"
+severidade = "warning"
+regex = '(?<trecho>\((?:Silva|Santos|Oliveira|Souza|Sousa|Rodrigues|Ferreira|Alves|Pereira|Lima|Gomes|Costa|Ribeiro|Martins|Carvalho|Almeida|Lopes|Soares|Fernandes|Vieira|Barbosa|Rocha|Dias|Nascimento|Andrade|Moreira|Nunes|Marques|Machado|Mendes|Freitas|Cardoso|Ramos|Gonçalves|Santana|Teixeira|Araújo|Correia|Monteiro|Moura|Batista|Campos|Cunha|Pinto|Miranda|Xavier|Reis|Melo|Mello|Azevedo|Duarte|Sampaio|Barros|Farias|Fonseca|Guimarães|Magalhães|Braga|Amaral|Neves|Pires|Tavares|Assis|Aguiar|Bezerra|Borges|Brito|Coelho|Furtado|Paiva|Passos|Pinheiro|Queiroz|Rezende|Resende|Rosa|Sanches|Siqueira|Simões|Viana|Vasconcelos|Vaz|Peixoto|Pacheco|Prado|Marinho|Maia|Macedo|Leite|Lacerda|Falcão|Dantas|Cordeiro|Chaves|Cavalcante|Cavalcanti|Castro|Caldeira|Bueno|Bittencourt|Bernardes|Bastos|Barreto|Antunes|Albuquerque|Abreu|Aragão|Assunção|Moraes|Morais|Nogueira|Mendonça|Menezes|Mesquita|Mota|Motta|Nóbrega|Novaes|Silveira|Trindade|Freire|Fraga|Lins|Lobato|Holanda)(?:[<<espaco>>]*(?:;|e|&)[<<espaco>>]*(?:Silva|Santos|Oliveira|Souza|Sousa|Rodrigues|Ferreira|Alves|Pereira|Lima|Gomes|Costa|Ribeiro|Martins|Carvalho|Almeida|Lopes|Soares|Fernandes|Vieira|Barbosa|Rocha|Dias|Nascimento|Andrade|Moreira|Nunes|Marques|Machado|Mendes|Freitas|Cardoso|Ramos|Gonçalves|Santana|Teixeira|Araújo|Correia|Monteiro|Moura|Batista|Campos|Cunha|Pinto|Miranda|Xavier|Reis|Melo|Mello|Azevedo|Duarte|Sampaio|Barros|Farias|Fonseca|Guimarães|Magalhães|Braga|Amaral|Neves|Pires|Tavares|Assis|Aguiar|Bezerra|Borges|Brito|Coelho|Furtado|Paiva|Passos|Pinheiro|Queiroz|Rezende|Resende|Rosa|Sanches|Siqueira|Simões|Viana|Vasconcelos|Vaz|Peixoto|Pacheco|Prado|Marinho|Maia|Macedo|Leite|Lacerda|Falcão|Dantas|Cordeiro|Chaves|Cavalcante|Cavalcanti|Castro|Caldeira|Bueno|Bittencourt|Bernardes|Bastos|Barreto|Antunes|Albuquerque|Abreu|Aragão|Assunção|Moraes|Morais|Nogueira|Mendonça|Menezes|Mesquita|Mota|Motta|Nóbrega|Novaes|Silveira|Trindade|Freire|Fraga|Lins|Lobato|Holanda))*[<<espaco>>]*(?:et[<<espaco>>]*al\.?)?[<<espaco>>]*\))'
+trecho = "trecho"
+mensagem = "[ABNT NBR 10520:2023] Citação autor-data entre parênteses sem o ano: “{trecho}” — acrescente o ano da obra citada (ex.: “(Silva, 2020)”). Confira a lista de referências."

@@ -102,6 +102,14 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   “então” repetido; “há três anos atrás” → “há três anos”), sem tocar citação (`>`), código,
   URL, sigla ou e-mail. O painel de revisão mostra o **MIP** — marcadores informais por 1.000
   palavras — antes e depois das correções seguras, por classe, com o trecho de cada marcador.
+- **Citações ABNT (NBR 10520:2023)**: além da tipografia (horas, unidades, meses, “et al.”,
+  “p.”, travessão e latim), o revisor confere citações — acusa a autor-data **sem o ano**
+  (“(Silva)”; só sobrenomes comuns, em caixa mista, para “(Anexo)”, “(Brasil)”, leis e siglas
+  passarem), a **direta entre aspas sem a página** (“…texto” (Silva, 2020)), a **direta longa
+  com aspas** (mais de 3 linhas: em texto corrido deve virar bloco; no bloco `>`, as aspas saem)
+  e o **ponto final duplicado** (“…. (Silva, 2020).” → um ponto só, o de fora), este com
+  correção automática. As conferências que não sabem a correção (ano, página) avisam sem
+  sugerir troca.
 - **Espaço esquecido** e **“Você quis dizer…?”**: palavras coladas viram duas; palavras a uma
   letra de uma comum ganham sugestão.
 - **Conferência ABNT de sumário e numeração**: com um **SUMÁRIO** no texto, o assistente compara
