@@ -8642,3 +8642,18 @@ antigas quando fizer sentido.
 - **Porquê:** muda o que o app faz (um clique que não fazia nada agora explica; o menu não tapa o
   botão) — o documento do módulo e o changelog são parte da entrega. A entrada fica em **Não
   adicionado** até o `fechar.ps1` integrar na `main`.
+
+## CHANGELOG.md
+
+### 2026-10-14 · esta tarefa · promoção da entrada do gerador (e só dela)
+
+- **Local:** seção "Não adicionado" do PowerPoint → "Adicionado" do PowerPoint/Frontend
+- **Linha:** **Designs criados na hora (o gerador das Ideias)** (`59b384b`) movida para o
+  "Adicionado" — 9 linhas; as outras entradas pendentes ficaram onde estavam
+- **Porquê:** mesma razão das rodadas anteriores (registrar no estado de autoria e promover no
+  fechamento não cabem no mesmo commit), com uma diferença: a seção tinha entradas de **outras
+  sessões** e o script de promoção promove todas de uma vez. Como não dá para saber se o trabalho
+  delas já está na `main` (a regra é nunca promover o que não entrou), a promoção foi **filtrada**
+  por título (`promover-entrada.mjs`, que confere antes se a entrada já não está em "Adicionado" e
+  recusa se estiver). As demais ficam para quem as escreveu — promover por conta própria o trabalho
+  alheio é o tipo de atalho que faz o CHANGELOG mentir.

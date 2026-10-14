@@ -413,15 +413,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **terminando antes da âncora**. Os botões de ordem (Trazer para frente etc.) seguem desabilitados
   sem seleção, como no PowerPoint.
 
-- **Designs criados na hora (o gerador das Ideias)**: as ideias só combinavam o catálogo (19
-  designs × 3 acabamentos). Agora **três cartões de cada fornada são criados pelo app**: uma
-  paleta montada na hora a partir de uma cor de partida (o **ângulo de ouro** espalha as
-  paletas), um **esquema harmônico** (análogo, complementar ou triádico), fundo claro ou escuro
-  alternado e uma fonte que combina — o nome sai da cor ("Verde análogo") e o cartão diz
-  **Novo**. A semente avança a cada fornada, então as paletas **não se repetem**; o design é
-  **determinístico** (o `gerado-N` volta pela mesma função), e é isso que faz a prévia do cartão
-  ser exatamente o que o clique aplica. O texto de cada paleta é conferido contra o fundo
-  (**WCAG 4,5:1**, medido em 14,9 e 15,9 nas oito primeiras) antes de a ideia aparecer.
 - **Copiar formatação (o Pincel de Formatação)**: a apresentação ganhou o botão que faltava na
   **Área de Transferência** da fita — com uma forma escolhida, ele **copia a pintura e o formato do
   texto** dela (preenchimento, contorno, sombra, transparência, a receita do **Estilo de Cor** e
@@ -491,6 +482,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **Designs criados na hora (o gerador das Ideias)**: as ideias só combinavam o catálogo (19
+  designs × 3 acabamentos). Agora **três cartões de cada fornada são criados pelo app**: uma
+  paleta montada na hora a partir de uma cor de partida (o **ângulo de ouro** espalha as
+  paletas), um **esquema harmônico** (análogo, complementar ou triádico), fundo claro ou escuro
+  alternado e uma fonte que combina — o nome sai da cor ("Verde análogo") e o cartão diz
+  **Novo**. A semente avança a cada fornada, então as paletas **não se repetem**; o design é
+  **determinístico** (o `gerado-N` volta pela mesma função), e é isso que faz a prévia do cartão
+  ser exatamente o que o clique aplica. O texto de cada paleta é conferido contra o fundo
+  (**WCAG 4,5:1**, medido em 14,9 e 15,9 nas oito primeiras) antes de a ideia aparecer.
 
 - **O vazio ao lado do texto não larga mais a caixa**: com a forma **escolhida**, clicar/puxar no **vazio** ao lado ou embaixo do texto **deselecionava a caixa** ✗ — o quadro da forma pode ser **menor que o texto** (o texto transborda), então esse vazio cai **fora** do quadro e o clique não encontrava a forma. Agora o gesto do texto alcança **o que o texto pinta** (a caixa do texto **e o que passa dela**): o clique nesse vazio **entra na edição** e vai para o texto, sem largar a escolha. A **beirada** do quadro continua movendo e o clique **fora de tudo** continua limpando a escolha, como sempre.
 
