@@ -378,7 +378,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **Zoom e marcação ao vivo na apresentação (F5)**: `Ctrl` + roda dá **zoom no ponto do mouse**,
+  `+`/`−` aproximam e afastam e **arrastar com zoom move a tela** (o clique parado continua
+  avançando), com um chip no HUD mostrando a porcentagem — clique nele, `Z` ou `Esc` voltam a
+  100%. E dá para **marcar a lâmina durante a fala**: **caneta** (`P`), **marca-texto** (`H`) e
+  **borracha** (`E`; `Shift+E` limpa a lâmina), com o traço desenhado num canvas **dentro da
+  lâmina** — ele acompanha o zoom e a marcação fica guardada **por lâmina**. Os três botões
+  entraram no HUD e a ajuda (`?`) lista os atalhos novos.
 
 ### Adicionado (na main)
 

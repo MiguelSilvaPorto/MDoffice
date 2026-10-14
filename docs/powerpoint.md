@@ -108,8 +108,13 @@ avisado ao abrir (nunca some em silêncio).
   qualquer movimento.
 - **Ferramentas no HUD**: progresso e contador clicável, navegação `‹ ›`, **grade de lâminas** (`G`,
   com a miniatura real de cada uma), **tempo decorrido** (`T`), **notas do apresentador** (`N`),
-  **tela preta/branca** (`B`/`W`), **laser** (segure `L` ou `Ctrl`), **ajuda** (`?`) e **Encerrar**
-  (`Esc`).
+  **tela preta/branca** (`B`/`W`), **laser** (segure `L` ou `Ctrl`), **caneta** (`P`), **marca-texto**
+  (`H`), **borracha** (`E`; `Shift+E` limpa a lâmina), **zoom** (`+`/`−`, `Z` volta a 100% e o chip no
+  HUD mostra a %), **ajuda** (`?`) e **Encerrar** (`Esc`).
+- **Zoom e marcação ao vivo**: `Ctrl` + roda dá zoom **no ponto do mouse**, `+`/`−` aproximam e
+  afastam, e **arrastar com zoom move a tela** (o clique parado continua avançando). A **caneta** e o
+  **marca-texto** desenham por cima da lâmina (o traço acompanha o zoom, porque fica na lâmina) e a
+  marcação é **por lâmina**; `Esc` sai da ferramenta e do zoom antes de encerrar.
 - **Navegação**: setas / `PgUp` / `PgDn` / `Espaço` / clique / **roda do mouse** avançam e voltam; o
   **botão direito volta** uma lâmina; `nº` + `Enter` pula direto para a lâmina; `Esc` fecha primeiro
   a grade/ajuda e só depois a apresentação.

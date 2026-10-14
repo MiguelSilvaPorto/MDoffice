@@ -24,6 +24,21 @@ function oculta(slide: Slide): boolean {
   return (slide as Slide & { show?: boolean }).show === false;
 }
 
+/** Ferramenta de tinta da apresentação. */
+type FerramentaTinta = "caneta" | "marca" | "borracha";
+
+/**
+ * Traço da caneta/marca-texto: pontos NORMALIZADOS (0..1) na lâmina, para o traço sobreviver
+ * ao zoom e ao redimensionamento da janela (o canvas é redesenhado no tamanho novo).
+ */
+interface Traco {
+  cor: string;
+  /** fração da largura da lâmina (o traço não engrossa quando o canvas cresce) */
+  largura: number;
+  alpha: number;
+  pontos: { x: number; y: number }[];
+}
+
 /** Abre o modo apresentação. Setas/Espaço/Enter/clique avançam, Backspace volta,
  *  Home/End vão à primeira/última lâmina, digitar um número e Enter pula direto
  *  para a lâmina, B/W alternam tela preta/branca, N mostra/oculta as notas, Esc
@@ -60,6 +75,10 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
         <span class="slides-goto" data-goto hidden></span>
         <span class="slides-espaco"></span>
         <span class="slides-tools">
+          <button class="sl-btn" data-tool="caneta" title="Caneta para marcar a lâmina durante a fala (P)">Caneta</button>
+          <button class="sl-btn" data-tool="marca" title="Marca-texto (H)">Marca</button>
+          <button class="sl-btn" data-tool="borracha" title="Borracha: passe por cima do traço (E)">Borracha</button>
+          <button class="sl-btn sl-zoom" data-tool="zoom" title="Zoom da apresentação — clique para voltar a 100%" hidden>100%</button>
           <button class="sl-btn" data-tool="tempo" title="Mostrar o tempo decorrido (T)"><span data-relogio hidden>00:00</span><span data-relogio-off>Tempo</span></button>
           <button class="sl-btn" data-tool="notas" title="Notas do apresentador (N)">Notas</button>
           <button class="sl-btn" data-tool="tela" title="Tela preta (B) ou branca (W)">Tela</button>
@@ -74,6 +93,9 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
         <span>B/W tela preta ou branca</span>
         <span>N notas · G grade de lâminas · T tempo</span>
         <span>segure L (ou Ctrl) para o laser</span>
+        <span>+ / − dá zoom · Z (ou Esc) volta a 100% · Ctrl+roda dá zoom onde o mouse está</span>
+        <span>com zoom, arrastar move a tela</span>
+        <span>P caneta · H marca-texto · E borracha (Shift+E limpa) · Esc sai da ferramenta</span>
         <span>botão direito volta · Esc encerra</span>
       </div>
     </div>`;
@@ -106,6 +128,19 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   let pinturaSeq = 0; // marked é assíncrono: uma pintura antiga não pode sobrescrever a nova
   let encerrarAtual: (() => void) | null = null; // transição de lâmina em andamento
   let anim: ControleAnimacoes | null = null; // animações de forma da lâmina atual
+
+  // ---- zoom e tinta (caneta/marca-texto/borracha) ----
+  // O zoom é o da LÂMINA: `k` de 1 a 6, com a origem em (x%, y%) — o ponto sob a origem fica
+  // parado ao ampliar, e é isso que faz "dar zoom onde o mouse está" funcionar.
+  let zoomK = 1;
+  let zoomX = 50;
+  let zoomY = 50;
+  let ferramenta: FerramentaTinta | null = null;
+  const tintas = new Map<number, Traco[]>(); // por lâmina (índice no deck): a marcação fica
+  let tracoAtual: Traco | null = null;
+  let pan: { x: number; y: number; ox: number; oy: number; moveu: boolean } | null = null;
+  let engolirClique = false; // um arrasto de panorama não pode virar "avança a lâmina"
+  let ultimoPonteiro = { x: 0, y: 0 };
 
   rotulo.textContent = titulo || deck.titulo;
   if (setup.footer) rotulo.textContent += ` · ${setup.footer}`;
@@ -251,6 +286,12 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     if (seq !== pinturaSeq) return; // uma troca mais recente já assumiu a pintura
     soltarMidias();
     const { camada, transicaoMs } = mostrar(conteudo, animar ? slide.transicao : undefined);
+    // lâmina nova começa sem zoom; a tinta que já existe para ela é redesenhada no canvas novo
+    zoomK = 1;
+    zoomX = 50;
+    zoomY = 50;
+    aplicarZoom();
+    prepararTinta();
     // animações de forma: entram depois da transição (ou na hora, se não houver)
     anim = iniciarAnimacoes(camada, slide.animacoes, { atrasoMs: transicaoMs });
     tocarMidias();
@@ -353,6 +394,137 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     laser.style.transform = `translate(${x}px, ${y}px)`;
   };
 
+  // ---- zoom da lâmina ----
+
+  /** A seção da lâmina na camada que está entrando (recebe o zoom e a tinta). */
+  const secaoAtual = (): HTMLElement | null =>
+    stage.querySelector<HTMLElement>(".slides-camada.entrando > section") ??
+    stage.querySelector<HTMLElement>(".slides-camada > section");
+
+  const aplicarZoom = (): void => {
+    const sec = secaoAtual();
+    if (sec) {
+      if (zoomK <= 1.001) {
+        sec.style.removeProperty("transform");
+        sec.style.removeProperty("transform-origin");
+      } else {
+        sec.style.transform = `scale(${zoomK})`;
+        sec.style.transformOrigin = `${zoomX}% ${zoomY}%`;
+      }
+    }
+    const chip = overlay.querySelector<HTMLElement>('[data-tool="zoom"]');
+    if (chip) {
+      chip.hidden = zoomK <= 1.001;
+      chip.textContent = `${Math.round(zoomK * 100)}%`;
+    }
+  };
+
+  const mudarZoom = (k: number, ox = zoomX, oy = zoomY): void => {
+    zoomK = Math.min(6, Math.max(1, k));
+    zoomX = Math.min(100, Math.max(0, ox));
+    zoomY = Math.min(100, Math.max(0, oy));
+    if (zoomK <= 1.001) {
+      zoomX = 50;
+      zoomY = 50;
+    }
+    aplicarZoom();
+    acordar();
+  };
+
+  /** O ponto do ponteiro em % da lâmina (com zoom: o rect já vem transformado). */
+  const pontoNaLamina = (x: number, y: number): { x: number; y: number } => {
+    const sec = secaoAtual();
+    const r = sec?.getBoundingClientRect();
+    if (!r || r.width <= 0 || r.height <= 0) return { x: 50, y: 50 };
+    return { x: ((x - r.left) / r.width) * 100, y: ((y - r.top) / r.height) * 100 };
+  };
+
+  // ---- tinta: caneta, marca-texto e borracha por cima da lâmina ----
+
+  const ESTILO_TINTA: Record<Exclude<FerramentaTinta, "borracha">, { cor: string; largura: number; alpha: number }> = {
+    caneta: { cor: "#e11d48", largura: 0.0022, alpha: 1 },
+    marca: { cor: "#facc15", largura: 0.009, alpha: 0.35 },
+  };
+
+  const desenharTinta = (): void => {
+    const cv = secaoAtual()?.querySelector<HTMLCanvasElement>("canvas.slides-tinta");
+    if (!cv) return;
+    const ctx2 = cv.getContext("2d");
+    if (!ctx2) return;
+    ctx2.clearRect(0, 0, cv.width, cv.height);
+    const tracos = [...(tintas.get(ordem[atual]) ?? [])];
+    if (tracoAtual) tracos.push(tracoAtual);
+    for (const t of tracos) {
+      if (!t.pontos.length) continue;
+      ctx2.globalAlpha = t.alpha;
+      ctx2.strokeStyle = t.cor;
+      ctx2.fillStyle = t.cor;
+      ctx2.lineWidth = Math.max(1, t.largura * cv.width);
+      ctx2.lineCap = "round";
+      ctx2.lineJoin = "round";
+      const p0 = t.pontos[0];
+      if (t.pontos.length === 1) {
+        // um toque vira um ponto (sem ele, um clique sozinho não apareceria)
+        ctx2.beginPath();
+        ctx2.arc(p0.x * cv.width, p0.y * cv.height, Math.max(1, ctx2.lineWidth / 2), 0, Math.PI * 2);
+        ctx2.fill();
+        continue;
+      }
+      ctx2.beginPath();
+      t.pontos.forEach((p, i) => (i === 0 ? ctx2.moveTo(p.x * cv.width, p.y * cv.height) : ctx2.lineTo(p.x * cv.width, p.y * cv.height)));
+      ctx2.stroke();
+    }
+    ctx2.globalAlpha = 1;
+  };
+
+  /** Garante o canvas da lâmina atual (tamanho em px da lâmina × densidade da tela). */
+  const prepararTinta = (): void => {
+    const sec = secaoAtual();
+    if (!sec) return;
+    let cv = sec.querySelector<HTMLCanvasElement>("canvas.slides-tinta");
+    if (!cv) {
+      cv = document.createElement("canvas");
+      cv.className = "slides-tinta";
+      sec.append(cv);
+    }
+    const r = sec.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(2, Math.round(r.width * dpr));
+    const h = Math.max(2, Math.round(r.height * dpr));
+    if (cv.width !== w || cv.height !== h) {
+      cv.width = w;
+      cv.height = h;
+    }
+    desenharTinta();
+  };
+
+  const definirFerramenta = (t: FerramentaTinta | null): void => {
+    ferramenta = ferramenta === t ? null : t;
+    overlay.classList.toggle("com-tinta", !!ferramenta);
+    for (const nome of ["caneta", "marca", "borracha"] as const) {
+      overlay.querySelector(`[data-tool="${nome}"]`)?.classList.toggle("on", ferramenta === nome);
+    }
+    prepararTinta();
+    acordar();
+  };
+
+  const pontoNoCanvas = (cv: HTMLCanvasElement, e: PointerEvent): { x: number; y: number } => {
+    const r = cv.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / Math.max(1, r.width), y: (e.clientY - r.top) / Math.max(1, r.height) };
+  };
+
+  /** Borracha: some com os traços que passarem perto do ponto (raio em fração da lâmina). */
+  const apagarPerto = (p: { x: number; y: number }): void => {
+    const lista = tintas.get(ordem[atual]);
+    if (!lista?.length) return;
+    const raio = 0.02;
+    const restantes = lista.filter((t) => !t.pontos.some((q) => Math.hypot(q.x - p.x, q.y - p.y) < raio));
+    if (restantes.length !== lista.length) {
+      tintas.set(ordem[atual], restantes);
+      desenharTinta();
+    }
+  };
+
   /**
    * Grade de lâminas (G): miniaturas para pular direto. Cada célula é o PRÓPRIO conteúdo
    * desenhado no tamanho do palco e reduzido por transform — fiel, sem thumbnail separado.
@@ -413,6 +585,7 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   const fechar = () => {
     document.removeEventListener("keydown", onKey, true);
     document.removeEventListener("keyup", onKeyUp, true);
+    window.removeEventListener("resize", aoRedimensionar);
     window.clearInterval(relogioTimer);
     window.clearTimeout(ociosoTimer);
     encerrarTransicao();
@@ -443,6 +616,8 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
       e.preventDefault();
       if (gradeAberta) fecharGrade(); // primeiro o painel aberto...
       else if (!ajuda.hidden) alternarAjuda();
+      else if (ferramenta) definirFerramenta(null); // ...a ferramenta de tinta...
+      else if (zoomK > 1.001) mudarZoom(1, 50, 50); // ...o zoom...
       else if (digitos) limparDigitos(); // ...depois o número digitado...
       else fechar(); // ...e só então a apresentação
       return;
@@ -468,6 +643,41 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
         return;
       }
       limparDigitos(); // qualquer outra tecla cancela o número pendente
+    }
+    // ---- zoom e tinta ----
+    if (e.key === "+" || e.key === "=") {
+      e.preventDefault();
+      const p = pontoNaLamina(ultimoPonteiro.x, ultimoPonteiro.y);
+      mudarZoom(zoomK * 1.25, p.x, p.y);
+      return;
+    }
+    if (e.key === "-" || e.key === "_") {
+      e.preventDefault();
+      const p = pontoNaLamina(ultimoPonteiro.x, ultimoPonteiro.y);
+      mudarZoom(zoomK / 1.25, p.x, p.y);
+      return;
+    }
+    if (tecla === "z") {
+      mudarZoom(1, 50, 50);
+      return;
+    }
+    if (tecla === "p") {
+      definirFerramenta("caneta");
+      return;
+    }
+    if (tecla === "h") {
+      definirFerramenta("marca");
+      return;
+    }
+    if (tecla === "e") {
+      if (e.shiftKey) {
+        tintas.delete(ordem[atual]); // Shift+E limpa a marcação da lâmina
+        desenharTinta();
+        acordar();
+      } else {
+        definirFerramenta("borracha");
+      }
+      return;
     }
     if (tecla === "n") {
       alternarNotas();
@@ -534,6 +744,10 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   };
   botao('[data-nav="prev"]', () => ir(-1));
   botao('[data-nav="next"]', () => ir(1));
+  botao('[data-tool="caneta"]', () => definirFerramenta("caneta"));
+  botao('[data-tool="marca"]', () => definirFerramenta("marca"));
+  botao('[data-tool="borracha"]', () => definirFerramenta("borracha"));
+  botao('[data-tool="zoom"]', () => mudarZoom(1, 50, 50)); // clique no % volta a 100%
   botao('[data-tool="grade"]', abrirGrade);
   botao('[data-tool="tempo"]', alternarTempo);
   botao('[data-tool="notas"]', alternarNotas);
@@ -543,6 +757,11 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
 
   overlay.addEventListener("click", (e) => {
     const alvo = e.target as HTMLElement;
+    if (engolirClique) {
+      engolirClique = false; // o arrasto de panorama terminou aqui: não navega
+      return;
+    }
+    if (ferramenta) return; // com uma ferramenta ativa o clique é do desenho, não da navegação
     if (alvo.closest(".slides-hud, .slides-grade, .slides-notes")) return; // o clique é dos controles
     if (telaCor) {
       limparTela(); // clique volta da tela preta/branca
@@ -555,6 +774,7 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   // botão direito volta uma lâmina (o menu do sistema não abre)
   overlay.addEventListener("contextmenu", (e) => {
     e.preventDefault();
+    if (ferramenta) return; // desenhando, o botão direito não navega (evita voltar sem querer)
     const alvo = e.target as HTMLElement;
     if (alvo.closest(".slides-hud, .slides-grade, .slides-notes, audio, video")) return;
     if (telaCor) {
@@ -571,10 +791,92 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
       if (telaCor || alvo.closest(".slides-hud, .slides-grade, .slides-notes")) return;
       e.preventDefault();
       acordar();
+      // Ctrl+roda dá zoom NO PONTO do mouse (a roda sozinha navega, como nas setas)
+      if (e.ctrlKey || e.metaKey) {
+        const p = pontoNaLamina(e.clientX, e.clientY);
+        mudarZoom(zoomK * (e.deltaY < 0 ? 1.15 : 1 / 1.15), p.x, p.y);
+        return;
+      }
       ir(e.deltaY > 0 ? 1 : -1);
     },
     { passive: false }
   );
+
+  // ponteiro: desenhar (com ferramenta), apagar (borracha) ou mover a tela (com zoom)
+  overlay.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    const alvo = e.target as HTMLElement;
+    if (alvo.closest(".slides-hud, .slides-grade, .slides-notes")) return;
+    if (telaCor) return;
+    ultimoPonteiro = { x: e.clientX, y: e.clientY };
+    if (alvo instanceof HTMLCanvasElement && alvo.classList.contains("slides-tinta")) {
+      if (ferramenta === "borracha") {
+        overlay.dataset.apagando = "1";
+        apagarPerto(pontoNoCanvas(alvo, e));
+        e.preventDefault();
+        return;
+      }
+      if (ferramenta) {
+        tracoAtual = { ...ESTILO_TINTA[ferramenta], pontos: [pontoNoCanvas(alvo, e)] };
+        alvo.setPointerCapture(e.pointerId);
+        desenharTinta();
+        e.preventDefault();
+      }
+      return;
+    }
+    // sem ferramenta e com zoom: arrastar move a tela (o clique parado continua avançando)
+    if (zoomK > 1.001) {
+      pan = { x: e.clientX, y: e.clientY, ox: zoomX, oy: zoomY, moveu: false };
+      overlay.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    }
+  });
+  overlay.addEventListener("pointermove", (e) => {
+    ultimoPonteiro = { x: e.clientX, y: e.clientY };
+    const alvo = e.target as HTMLElement;
+    const noCanvas = alvo instanceof HTMLCanvasElement && alvo.classList.contains("slides-tinta");
+    if (tracoAtual && noCanvas) {
+      tracoAtual.pontos.push(pontoNoCanvas(alvo as HTMLCanvasElement, e));
+      desenharTinta();
+      return;
+    }
+    if (ferramenta === "borracha" && overlay.dataset.apagando === "1" && noCanvas) {
+      apagarPerto(pontoNoCanvas(alvo as HTMLCanvasElement, e));
+      return;
+    }
+    if (pan) {
+      const dx = e.clientX - pan.x;
+      const dy = e.clientY - pan.y;
+      if (!pan.moveu && Math.abs(dx) + Math.abs(dy) > 4) pan.moveu = true;
+      if (!pan.moveu) return;
+      const r = secaoAtual()?.getBoundingClientRect();
+      if (r && r.width > 0) {
+        // mover o conteúdo por (dx, dy) px = deslocar a origem na fração correspondente
+        mudarZoom(zoomK, pan.ox - (dx / (r.width * zoomK)) * 100, pan.oy - (dy / (r.height * zoomK)) * 100);
+      }
+    }
+  });
+  const soltarPonteiro = (): void => {
+    if (tracoAtual) {
+      const lista = tintas.get(ordem[atual]) ?? [];
+      lista.push(tracoAtual);
+      tintas.set(ordem[atual], lista);
+      tracoAtual = null;
+      desenharTinta();
+    }
+    if (pan) {
+      engolirClique = pan.moveu; // o arrasto de panorama não pode virar "avança a lâmina"
+      pan = null;
+    }
+    delete overlay.dataset.apagando;
+  };
+  overlay.addEventListener("pointerup", soltarPonteiro);
+  overlay.addEventListener("pointercancel", soltarPonteiro);
+
+  const aoRedimensionar = (): void => {
+    prepararTinta(); // a lâmina mudou de tamanho: o canvas da tinta acompanha
+  };
+  window.addEventListener("resize", aoRedimensionar);
   overlay.addEventListener("mousemove", (e) => {
     acordar();
     if (laserOn) moverLaser(e.clientX, e.clientY);

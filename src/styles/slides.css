@@ -1295,3 +1295,43 @@
     padding: 0;
   }
 }
+
+/* ---------- apresentação: zoom e tinta (caneta/marca-texto) ---------- */
+
+/* a lâmina do Markdown não tem posição própria; o canvas da tinta e o zoom precisam dela
+   (a lâmina rica, `.slide-rica`, já é `position: relative`) */
+.slides-stage .slide {
+  position: relative;
+}
+
+/* o zoom é aplicado na seção da lâmina (transform + origem no ponto do mouse); o palco
+   recorta o que passa das bordas, e arrastar move a origem */
+.slides-camada > section {
+  will-change: transform;
+}
+
+/* caneta/marca-texto: um canvas por cima da lâmina; só recebe o ponteiro com ferramenta
+   ativa (sem ela, o clique navega) */
+.slides-tinta {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.slides-overlay.com-tinta .slides-tinta {
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+.slides-overlay.com-tinta .slides-stage {
+  cursor: crosshair;
+}
+
+/* o chip do zoom no HUD (clique volta a 100%) */
+.sl-zoom {
+  min-width: 62px;
+  font-variant-numeric: tabular-nums;
+}

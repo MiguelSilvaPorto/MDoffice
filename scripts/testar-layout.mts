@@ -518,5 +518,34 @@ checa("Esc fecha a grade/ajuda antes de sair", /gradeAberta\) fecharGrade\(\)/.t
 checa("o tempo conta desde a abertura da apresentação", /inicioEm = Date\.now\(\)/.test(apresen) && /setInterval\(atualizarRelogio, 1000\)/.test(apresen));
 checa("a lâmina sem fundo próprio usa o fundo do tema", /THEME_COLORS\[setup\.theme\]/.test(apresen));
 
+// zoom e tinta (caneta/marca-texto) da apresentação
+checa(
+  "o zoom é da lâmina, com origem no ponto (o mouse manda)",
+  /sec\.style\.transform = `scale\(\$\{zoomK\}\)`/.test(apresen) && /transformOrigin = `\$\{zoomX\}% \$\{zoomY\}%`/.test(apresen)
+);
+checa(
+  "teclas: +/− dão zoom, Z volta a 100%, Ctrl+roda dá zoom no ponto",
+  /e\.key === "\+" \|\| e\.key === "="/.test(apresen) && /tecla === "z"/.test(apresen) && /if \(e\.ctrlKey \|\| e\.metaKey\) \{[\s\S]{0,120}mudarZoom/.test(apresen)
+);
+checa(
+  "com zoom, arrastar move a tela (e o arrasto não vira 'avança')",
+  /pan = \{ x: e\.clientX/.test(apresen) && /engolirClique = pan\.moveu/.test(apresen) && /if \(engolirClique\)/.test(apresen)
+);
+checa(
+  "caneta (P), marca-texto (H) e borracha (E) desenham por cima da lâmina",
+  /tecla === "p"/.test(apresen) &&
+    /tecla === "h"/.test(apresen) &&
+    /tecla === "e"/.test(apresen) &&
+    /ESTILO_TINTA/.test(apresen) &&
+    /canvas\.slides-tinta/.test(apresen)
+);
+checa("Shift+E limpa a marcação da lâmina", /if \(e\.shiftKey\) \{\s*\n\s*tintas\.delete\(ordem\[atual\]\)/.test(apresen));
+checa(
+  "o canvas da tinta fica na lâmina (sobrevive ao zoom) e só recebe o ponteiro com ferramenta",
+  /\.slides-tinta \{[^}]*pointer-events: none/s.test(cssSlides) && /\.slides-overlay\.com-tinta \.slides-tinta \{[^}]*pointer-events: auto/s.test(cssSlides)
+);
+checa("o chip do zoom mostra a % e volta a 100% no clique", /data-tool="zoom"/.test(apresen) && /botao\('\[data-tool="zoom"\]', \(\) => mudarZoom\(1, 50, 50\)\)/.test(apresen));
+checa("Esc sai da ferramenta e do zoom antes de encerrar", /ferramenta\) definirFerramenta\(null\)/.test(apresen) && /zoomK > 1\.001\) mudarZoom\(1, 50, 50\)/.test(apresen));
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

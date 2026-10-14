@@ -5934,3 +5934,31 @@ antigas quando fizer sentido.
   primeiro; `Ctrl` + roda é zoom
 - **Porquê:** é comportamento visível e fácil de descobrir errado (quem não sabe tenta rolar o
   quadro e troca de lâmina sem querer).
+
+## src/powerpoint/presenter.ts · src/styles/slides.css
+
+### 2026-10-14 · esta tarefa · zoom e caneta na apresentação
+- **Local:** `presenter.ts` — estado novo (`zoomK/zoomX/zoomY`, `ferramenta`, `tintas`, `pan`),
+  o bloco "zoom da lâmina" e o bloco "tinta", o `pintar`, as teclas, a roda, o ponteiro, os
+  botões do HUD, a ajuda e o `fechar`; `slides.css` — a seção nova (`.slides-tinta`, `.sl-zoom`)
+- **Linha:** `+ sec.style.transform = scale(${zoomK})` com `transform-origin: ${zoomX}% ${zoomY}%`;
+  `+ overlay.addEventListener("pointerdown"|"pointermove"|"pointerup")`; `+ definirFerramenta`,
+  `prepararTinta`, `desenharTinta`, `apagarPerto`; `+ if (e.ctrlKey || e.metaKey)` na roda; as
+  teclas `+`/`=`/`-`/`_`/`z`/`p`/`h`/`e` (com `Shift+E`); o chip `data-tool="zoom"`
+- **Porquê:** o pedido foi "ferramentas de zoom e marcar/desenhar onde quero mostrar" — o modo
+  apresentação tinha laser, mas não zoom nem tinta. Decisões que valem a leitura: (1) **o zoom é
+  da LÂMINA e a origem é o ponto** — é o que faz `Ctrl`+roda ampliar "onde o mouse está" e o que
+  deixa o traço da caneta acompanhar o zoom sem nenhuma conta extra; (2) **o canvas da tinta vive
+  DENTRO da lâmina** (`.slide`/`.slide-rica`, as duas com `position: relative`) e os pontos são
+  **normalizados (0..1)**, então o traço sobrevive ao zoom, ao redimensionamento da janela e à
+  troca de lâmina (a marcação é **por lâmina**, como no PowerPoint); (3) **`Z` no lugar do `0`**
+  para voltar a 100%: os dígitos já são do "ir para a lâmina", e roubar o `0` quebraria o atalho
+  existente; (4) **o arrasto de panorama engole o clique** (`engolirClique`) — sem isso, todo
+  arrasto com zoom avançaria uma lâmina ao soltar; (5) `Esc` desce a pilha: grade → ajuda →
+  ferramenta → zoom → número digitado → encerrar.
+- **Local:** `scripts/testar-layout.mts` e `docs/powerpoint.md`
+- **Linha:** `novo` — 8 checagens na seção do F5 (transform/origem, teclas, panorama, tinta,
+  Shift+E, o canvas no CSS, o chip e o `Esc`) e o doc do módulo com as ferramentas novas
+- **Porquê:** o apresentador é a tela mais "na frente do público"; um comportamento desses
+  quebrando em silêncio estraga a fala. As checagens prendem o que é observável por padrão de
+  código, como o resto do arquivo já faz.
