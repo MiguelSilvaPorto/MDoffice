@@ -211,6 +211,9 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Fita do PowerPoint sem o botão "Selecionar tudo"**: o grupo **Edição** (que só tinha esse
+  botão) saiu da aba Página Inicial — **Ctrl+A** e o clique direito no vazio seguem selecionando
+  todas as formas.
 - **Abrir e salvar `.pptx` com fidelidade** (formas, fundos, imagens, texto por trecho,
   decorações de layout/mestre, cores do tema, notas, fontes embutidas) — ≈2% de diferença
   média para a referência; o que não reproduz é avisado.

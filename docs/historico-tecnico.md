@@ -134,6 +134,16 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** em janelas estreitas os grupos quebravam para uma segunda linha e o topo crescia
   sem controle; agora a fita fica com altura previsível e rola na horizontal (roda do mouse).
 
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · este commit · grupo Edição fora da fita
+- **Local:** `inicio()` — lista de grupos da aba Página Inicial
+- **Linha:** `grupo("Edição", ...)` com o único botão `sel-tudo` → removido; o array da aba
+  termina agora no grupo "Desenho"
+- **Porquê:** o grupo só tinha o botão "Selecionar tudo" (ícone ▦), redundante com o **Ctrl+A** e
+  com a entrada "Selecionar tudo" do menu de contexto no vazio; a ação continua nos dois caminhos
+  (o handler `sel-tudo` do `powerpoint.ts` foi mantido).
+
 ## src/powerpoint/powerpoint.ts
 
 ### 2026-10-13 · e392858 · faixa vertical, zoom ancorado e desfazer na digitação
