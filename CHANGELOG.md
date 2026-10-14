@@ -317,6 +317,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Desenho à mão assistido (Draw)**: na galeria de Formas (aba Inserir) entrou a opção **Draw** —
+  liga o lápis e você **rabisca na lâmina**; ao soltar, o app **refaz o traço por cima** com a
+  forma exata (**retângulo, retângulo arredondado, círculo/elipse, triângulo, linha e seta**), no
+  mesmo lugar e tamanho, já como forma normal (editável, medidas em cm e ida e volta no `.pptx`).
+  O que não for reconhecido fica como **desenho livre** (também preservado no arquivo); a
+  **barrinha do pincel** traz cor, espessura (1–8 pt) e o interruptor do assistente, com dica do
+  que está sendo entendido enquanto desenha; **Esc** sai do lápis. Testes: `npm run test:desenho`.
 - **Fita do PowerPoint sem o botão "Selecionar tudo"**: o grupo **Edição** (que só tinha esse
   botão) saiu da aba Página Inicial — **Ctrl+A** e o clique direito no vazio seguem selecionando
   todas as formas.

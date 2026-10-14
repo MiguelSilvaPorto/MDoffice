@@ -159,6 +159,13 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** em janelas estreitas os grupos quebravam para uma segunda linha e o topo crescia
   sem controle; agora a fita fica com altura previsível e rola na horizontal (roda do mouse).
 
+### 2026-10-14 · este commit · traço ao vivo e barrinha do pincel
+- **Local:** `.pp-traco` e `.pp-pincel` (com `[hidden]`, cor, espessuras e assistente)
+- **Linha:** novas regras em `powerpoint-edicao.css`
+- **Porquê:** o traço em andamento precisa de um SVG por cima da lâmina sem capturar o mouse
+  (`pointer-events: none`; `non-scaling-stroke` para a espessura não esticar com a viewBox), e o
+  pincel de uma barrinha flutuante ancorada no `#pp-stage` (que já era `position: relative`).
+
 ## src/powerpoint/ui/fita.ts
 
 ### 2026-10-14 · este commit · grupo Edição fora da fita
@@ -169,6 +176,14 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   com a entrada "Selecionar tudo" do menu de contexto no vazio; a ação continua nos dois caminhos
   (o handler `sel-tudo` do `powerpoint.ts` foi mantido).
 
+## src/powerpoint/ui/galeria.ts
+
+### 2026-10-14 · este commit · a opção Draw na galeria
+- **Local:** `abrirGaleria` (novo parâmetro `aoDesenhar`) e o lápis desenhado em SVG
+- **Linha:** lista de grupos + novo grupo "Desenho" com o botão `data-desenhar` → `run("desenho")`
+- **Porquê:** o pedido era o Draw "no mesmo lugar que insere formas": a galeria ganhou uma opção
+  a mais (depois dos grupos de formas), sem criar uma aba nova.
+
 ## src/powerpoint/powerpoint.ts
 
 ### 2026-10-13 · e392858 · faixa vertical, zoom ancorado e desfazer na digitação
@@ -178,6 +193,28 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** pedido de poder colocar as miniaturas na lateral; o zoom com Ctrl+roda devia
   manter parado o ponto sob o cursor; e o desfazer durante a digitação precisava funcionar
   dentro das caixas de texto e tabelas.
+
+### 2026-10-14 · este commit · o lápis do Draw no host
+- **Local:** `run("desenho")`, `ligarPincel`, `atualizarPincel`, `aoTraco`, `aoTracoAndamento`,
+  `contexto()`, `montar()`
+- **Linha:** novo estado `pincel` (cor, espessura, assistente — guardado no `localStorage`); a
+  barrinha entra no `#pp-stage`; `aoTraco` monta a forma com `formaDoTraco` e registra no
+  histórico (desfazer funciona); `aoTracoAndamento` atualiza a dica ("entendi: …")
+- **Porquê:** o Draw entra pela galeria de Formas e mantém o lápis **ligado** entre traços (Esc
+  sai) — ao contrário das ferramentas de forma/texto, que se desligam depois de criar. A cor
+  padrão é o acento do deck; a escolha, a espessura e o assistente ficam entre sessões.
+
+## src/powerpoint/stage.ts
+
+### 2026-10-14 · este commit · o traço à mão no palco
+- **Local:** `Ferramenta`, `ContextoPalco`, `StageHooks`, `Modo`, `aoPressionar`, `aplicar`,
+  `aoSoltar`, `desenharSelecao`
+- **Linha:** novo `{ tipo: "desenho" }` e o modo `{ t: "traco" }`; novos hooks `aoTraco` /
+  `aoTracoAndamento`; `pincel` no contexto; o traço em andamento entra no desenho da seleção
+- **Porquê:** o palco já tinha o encanamento de ferramenta de criação (pointer capture, % da
+  lâmina, rAF) — o lápis entrou nele em vez de criar um caminho paralelo. O traço fica em % da
+  lâmina para o desenho ao vivo (SVG `viewBox 0 0 100 100`, com `non-scaling-stroke`) e vira pt
+  na hora de reconhecer; a classe `.criando` que já existia deixa o cursor de cruz no modo.
 
 ## src/app/powerpointDocs.ts · src/app/excelDocs.ts
 
@@ -377,6 +414,34 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o `fi-tile` deixou de ser o quadradinho e virou a folha; a dobra é um triângulo branco
   translúcido por cima da cor do tipo — funciona nas quatro cores e nos dois temas sem pedir uma
   variável de cor nova. O desenho branco continua no `.fi-line`, agora dentro da folha.
+
+## src/powerpoint/edicao/desenho.ts
+
+### 2026-10-14 · este commit · desenho à mão assistido (novo arquivo)
+- **Local:** arquivo inteiro (`reconhecerTraco`, `caminhoLivre`, `formaDoTraco`)
+- **Linha:** novo arquivo
+- **Porquê:** o pedido era desenhar à mão na lâmina e o app **verificar o traço e refazer por
+  cima** com a forma exata. O reconhecedor veio da prancheta (`src/md/draw/recognize.ts`), agora
+  em pt e devolvendo forma do deck: retângulo (endireita nos eixos; um traço torto de verdade
+  fica livre), **retângulo arredondado** (o raio sai da distância do traço ao canto — o ponto
+  mais próximo fica a ~0,41r dele), elipse, **triângulo** (com `flipV` quando o ápice vem para
+  baixo), **linha** (ajuste por mínimos quadrados no miolo, pontas projetadas e limitadas) e
+  **seta** (as "asas" aparecem nos dois lados da reta ajustada perto da ponta). Duas decisões
+  que os testes cobraram: as pontas são os **extremos** do traço (numa seta as asas vêm antes da
+  ponta) e o sentido do desenho decide qual extremo é o início — o marcador segue o traço, com
+  `flipH`/`flipV` quando ele foi desenhado "ao contrário". O que não bate com forma nenhuma vira
+  **desenho livre**: `caminhoLivre` simplifica (RDP) e guarda M/L/Z no custGeom, que a
+  renderização (`tracadoLivre`) e o `.pptx` já entendiam.
+
+## scripts/testar-desenho-assistido.mjs
+
+### 2026-10-14 · este commit · os traços tortos do Draw (novo arquivo)
+- **Local:** arquivo inteiro (traços sintéticos + asserções) e o script `test:desenho` no `package.json`
+- **Linha:** novo arquivo
+- **Porquê:** o reconhecimento precisa de prova com "tremor de mão" de verdade: cada forma é
+  desenhada com jitter determinístico (mulberry32), os cantos arredondados têm raio conhecido e
+  a seta é desenhada como a mão faz (chega na ponta, volta e risca as asas). Cobre também o
+  desenho livre (M/L/Z dentro da caixa), a forma montada (pincel, caixa em %) e a dica.
 
 ## src/powerpoint/edicao/grafico.ts
 

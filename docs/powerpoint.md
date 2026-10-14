@@ -51,6 +51,17 @@ avisado ao abrir (nunca some em silêncio).
 - **Configurar apresentação**: proporção (16:9 / 4:3), tema (claro/escuro/contraste), fonte
   padrão, tamanho, rodapé e número da lâmina.
 
+## Desenho à mão (Draw)
+
+- Na galeria de **Formas** (aba Inserir), a opção **Draw** liga o lápis: **rabisque na lâmina** e,
+  ao soltar, o assistente **refaz o traço por cima** com a forma exata — **retângulo, retângulo
+  arredondado, elipse, triângulo, linha e seta** — no mesmo lugar e tamanho, já como forma normal
+  (editável, com medidas em cm e ida e volta no `.pptx`).
+- O que o assistente **não** reconhece fica como **desenho livre** (um caminho de verdade, que
+  também vai para o arquivo); com o **assistente desligado**, todo traço fica livre.
+- Enquanto o lápis está ligado, a **barrinha do pincel** define **cor**, **espessura** (1, 2, 4
+  ou 8 pt) e o assistente, e mostra o que está sendo entendido ("entendi: Círculo"); **Esc** sai.
+
 ## Apresentar (F5)
 
 - **Modo apresentação completo**: avançar/voltar lâmina, **tela preta/branca**, **transições**
@@ -73,3 +84,5 @@ avisado ao abrir (nunca some em silêncio).
 - `npm run test:pptx -- <pasta com .pptx>` — importa e exporta apresentações reais e compara.
 - `npm run test:pptx-edicao` — testes do motor de edição (geometria, operações, texto, tabelas)
   e dos **cantos por canto** (seleção, raio individual e a geometria que vai para o arquivo).
+- `npm run test:desenho` — traços à mão sintéticos ("tremidos") viram a forma certa; o que não é
+  reconhecido fica como desenho livre, e a forma montada sai com o pincel certo.
