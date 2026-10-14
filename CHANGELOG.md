@@ -43,6 +43,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   segue intacta — ela vem antes de qualquer previsão. Novo `test:ghost` prende a precisão e a
   economia no corpus de teste.
 
+- **Prancheta de letras: botão direito + arrastar move a tela**: no zoom alto, andar pelo desenho
+  dependia da barra de rolagem. Agora **segurar o botão direito e arrastar** move a tela
+  (panorama), com o cursor "agarrando" enquanto o arrasto dura — e o **clique parado continua
+  apagando** a linha/rótulo sob o cursor (o arrasto é consumido antes do menu de contexto; uma
+  zona morta de 3 px separa o clique tremido do arrasto). É o mesmo gesto do palco do PowerPoint,
+  e a dica do rodapé da prancheta passou a explicar os dois casos.
+
 ### Adicionado (na main)
 
 **Backend**

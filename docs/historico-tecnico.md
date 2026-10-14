@@ -8008,3 +8008,68 @@ antigas quando fizer sentido.
   os commits já estão na `main`, mas existe um `docs: promove…` (8d7755d) **em voo** de outra
   sessão, fora da `main`, que move exatamente essas duas. Promover aqui criaria um conflito inútil
   no fecho dela; quem chega primeiro resolve, e a dela já está no caminho.
+
+## src/md/textdraw/board.ts
+
+### 2026-10-14 · panorama na prancheta de letras · botão direito + arrastar move a tela
+- **Local:** os campos novos (`pano`, `panMoveu`), o `consumirPanorama()`, o início do `onDown`,
+  do `onMove` e do `onUp`, e o `contextmenu` do canvas
+- **Linha:** `+ pano: { x0, y0, esquerda, topo, moveu } | null` e `+ panMoveu = false` ·
+  `+ if (e.button === 2) { … this.host.scrollLeft/Top … }` no `onDown` (antes do `if (e.button !== 0)`) ·
+  `+ o bloco do panorama` no início do `onMove` (`this.host.scrollLeft = this.pano.esquerda - dx`) ·
+  `+ o fecho no onUp` (`this.panMoveu = this.pano.moveu`) · `+ if (this.consumirPanorama()) return;`
+  no `contextmenu`
+- **Porquê:** no zoom alto (até 800%) a folha é maior que a janela e andar pelo desenho dependia
+  da barra de rolagem — o pedido do usuário foi "segurar e arrastar o botão direito deve
+  movimentar a tela". O gesto é o MESMO do palco do PowerPoint (`Stage`): zona morta de 3 px para
+  o clique tremido continuar apagando, a marca `panMoveu` sobrevive do `pointerup` para o
+  `contextmenu` (o navegador dispara um logo depois do outro) e o arrasto é consumido antes de
+  apagar. A folha rola "ao contrário" do ponteiro (arrastar para a direita mostra o que está à
+  esquerda), como num mapa.
+
+## src/styles/textdraw.css
+
+### 2026-10-14 · panorama na prancheta de letras · o cursor agarra
+- **Local:** logo abaixo de `.text-draw .dr-canvas`
+- **Linha:** `+ .text-draw .draw-canvas-wrap.txt-pano, … * { cursor: grabbing !important; }`
+- **Porquê:** sem o retorno visual, o arrasto com o botão direito parece que "não pegou" (o cursor
+  continuaria de cruz); a classe `txt-pano` entra no host no `pointerdown` do botão direito e sai
+  no `pointerup`. O `!important` é o mesmo recurso do `.pp-panorama` do PowerPoint: a regra
+  precisa vencer o `cursor: crosshair` do canvas.
+
+## src/md/textdraw/editor.ts
+
+### 2026-10-14 · panorama na prancheta de letras · a dica do rodapé
+- **Local:** o `di-foot` (a dica `muted`)
+- **Linha:** "botão direito apaga linha/rótulo" → "botão direito: clique apaga linha/rótulo,
+  arraste move a tela"
+- **Porquê:** a interface diria o comportamento antigo — quem não souber que dá para arrastar não
+  descobre o gesto novo.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · panorama na prancheta de letras · 4 checagens
+- **Local:** o bloco "prancheta: zoom até 800% (janela visível)"
+- **Linha:** `+ 4 checagens` (o botão direito inicia o panorama — e o `move` rola com
+  `esquerda - dx`/`topo - dy`; o clique parado continua apagando via `consumirPanorama` antes do
+  `eraseRunAt`; a dica do rodapé; o CSS do cursor)
+- **Porquê:** o ponto crítico do gesto é o `contextmenu` não apagar depois do arrasto — um ajuste
+  futuro no listener ou na zona morta quebraria isso em silêncio (o usuário só veria a linha sumir
+  ao soltar). As checagens prendem os dois lados (arrasto move, clique apaga) e o contrato da dica.
+
+## docs/md.md
+
+### 2026-10-14 · panorama na prancheta de letras · a bala "Andar pelo desenho"
+- **Local:** a seção "Desenho em letras e símbolos", depois de "Apagar fácil"
+- **Linha:** `+ a bala do botão direito + arrastar` e o ajuste da bala vizinha ("botão direito
+  **parado** (ou borracha) apaga só o trecho")
+- **Porquê:** o documento é onde se procura o que o app sabe fazer; com o clique parado mantendo o
+  apagar, a bala antiga ("botão direito apaga só o trecho") ficaria contraditória com o gesto novo.
+
+## CHANGELOG.md
+
+### 2026-10-14 · panorama na prancheta de letras · a entrada em "Não adicionado"
+- **Local:** MD\* → **Não adicionado** → Frontend
+- **Linha:** `+ 1 entrada` — **Prancheta de letras: botão direito + arrastar move a tela**
+- **Porquê:** a tarefa ainda não está na `main`; a entrada só é promovida quando o `fechar.ps1`
+  entregar.

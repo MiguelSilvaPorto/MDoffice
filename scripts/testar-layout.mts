@@ -321,6 +321,31 @@ checa("desenho: o buffer é a janela × densidade (com teto de memória)", /esca
 checa("letras: o buffer é a janela × densidade (com teto de memória)", /escala = Math\.min\(dpr, Math\.sqrt\(8_000_000/.test(quadroLetras));
 checa("desenho: a pintura usa a janela visível", /const j = this\.janela\(\);/.test(ler("src/md/draw/boardRender.ts")));
 
+// Botão direito na prancheta de letras: arrastar move a TELA (panorama); o clique parado continua
+// apagando — o menu de contexto pergunta (`consumirPanorama`) e o arrasto é consumido antes.
+checa(
+  "letras: botão direito + arrastar move a tela (panorama)",
+  /if \(e\.button === 2\) \{[\s\S]{0,300}this\.pano = \{/.test(quadroLetras) &&
+    /this\.host\.scrollLeft = this\.pano\.esquerda - dx/.test(quadroLetras) &&
+    /this\.host\.scrollTop = this\.pano\.topo - dy/.test(quadroLetras),
+  "o botão direito não inicia o panorama"
+);
+checa(
+  "letras: o clique parado continua apagando",
+  /if \(this\.consumirPanorama\(\)\) return;[\s\S]{0,200}this\.eraseRunAt\(cell\)/.test(quadroLetras),
+  "o arrasto apagaria a linha/rótulo ao soltar"
+);
+checa(
+  "letras: a dica do rodapé explica o botão direito (clique apaga, arrasto move)",
+  /botão direito: clique apaga linha\/rótulo, arraste move a tela/.test(ler("src/md/textdraw/editor.ts")),
+  "a interface diria o comportamento antigo"
+);
+checa(
+  "css: o cursor agarra durante o panorama",
+  /\.text-draw \.draw-canvas-wrap\.txt-pano[^{]*\{[^}]*cursor:\s*grabbing/s.test(ler("src/styles/textdraw.css")),
+  "sem o cursor, o arrasto parece que não pegou"
+);
+
 const cssModais = ler("src/styles/modals.css");
 checa("css: a folha do quadro existe (é ela que dá a rolagem)", /\.dr-sheet\s*\{/.test(cssModais));
 checa("css: o canvas fica preso à área à vista (sticky)", /\.dr-canvas\s*\{[^}]*position:\s*sticky/s.test(cssModais), "o canvas não acompanharia a rolagem");

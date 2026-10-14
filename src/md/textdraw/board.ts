@@ -36,6 +36,10 @@ export class TextBoard {
   raf = 0;
   resizeObs: ResizeObserver | null = null;
   zoom = 1;
+  /** Botão direito pressionado: o arrasto move a TELA (panorama) em vez de apagar. */
+  pano: { x0: number; y0: number; esquerda: number; topo: number; moveu: boolean } | null = null;
+  /** O último botão direito foi um arrasto de panorama? (o menu de contexto pergunta e consome) */
+  panMoveu = false;
   /** Tamanho da FOLHA (o quadro inteiro no zoom atual), em px CSS — é ela que dá a rolagem. */
   cssW = 0;
   cssH = 0;
@@ -64,9 +68,10 @@ export class TextBoard {
       this.hoverCell = null;
       this.request();
     });
-    // botão direito apaga a linha/rótulo sob o cursor
+    // botão direito parado apaga a linha/rótulo sob o cursor; com arrasto (panorama), não apaga
     canvas.addEventListener("contextmenu", (e) => {
       e.preventDefault();
+      if (this.consumirPanorama()) return;
       const cell = this.cellFromEvent(e);
       this.pushUndo();
       this.eraseRunAt(cell);
@@ -284,7 +289,34 @@ export class TextBoard {
 
   // ---------- ponteiro ----------
 
+  /**
+   * O último clique direito foi um arrasto (panorama)? Consome a marca.
+   *
+   * Quem pergunta é o menu de contexto: botão direito + arrastar move a TELA (e não apaga);
+   * clique parado continua apagando. O navegador dispara `contextmenu` logo depois do
+   * `pointerup`, então a marca precisa sobreviver de um evento para o outro — e o arrasto só
+   * conta depois de passar a zona morta de 3 px (clique tremido não vira arrasto).
+   */
+  consumirPanorama(): boolean {
+    const moveu = this.panMoveu;
+    this.panMoveu = false;
+    return moveu;
+  }
+
   onDown = (e: PointerEvent): void => {
+    // botão direito: arrastar move a tela (panorama). Sem arrasto, o clique segue para o
+    // menu de contexto, que apaga a linha/rótulo (ver `consumirPanorama`).
+    if (e.button === 2) {
+      this.pano = { x0: e.clientX, y0: e.clientY, esquerda: this.host.scrollLeft, topo: this.host.scrollTop, moveu: false };
+      this.host.classList.add("txt-pano"); // cursor de "agarrando" em toda a folha
+      try {
+        this.canvas.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignora */
+      }
+      e.preventDefault();
+      return;
+    }
     if (e.button !== 0) return;
     // foca sem rolar a tela (senão o navegador "puxa" a vista para o canvas a cada traço)
     this.canvas.focus({ preventScroll: true });
@@ -330,6 +362,16 @@ export class TextBoard {
   };
 
   onMove = (e: PointerEvent): void => {
+    // panorama: o quanto o ponteiro andou é o quanto a folha rola (ao contrário)
+    if (this.pano) {
+      const dx = e.clientX - this.pano.x0;
+      const dy = e.clientY - this.pano.y0;
+      if (!this.pano.moveu && Math.abs(dx) + Math.abs(dy) > 3) this.pano.moveu = true;
+      if (!this.pano.moveu) return;
+      this.host.scrollLeft = this.pano.esquerda - dx;
+      this.host.scrollTop = this.pano.topo - dy;
+      return;
+    }
     const cell = this.cellFromEvent(e);
     const changedHover = !this.hoverCell || this.hoverCell.r !== cell.r || this.hoverCell.c !== cell.c;
     this.hoverCell = cell;
@@ -382,6 +424,13 @@ export class TextBoard {
       if (this.canvas.hasPointerCapture(e.pointerId)) this.canvas.releasePointerCapture(e.pointerId);
     } catch {
       /* ignora */
+    }
+    // panorama: a marca fica para o menu de contexto decidir se apaga (arrasto não apaga)
+    if (this.pano) {
+      this.panMoveu = this.pano.moveu;
+      this.pano = null;
+      this.host.classList.remove("txt-pano");
+      return;
     }
     // garante que linha/caixa terminem exatamente na célula onde o mouse foi solto
     if ((this.tool === "line" || this.tool === "rect") && this.startCell && this.draftBase) {

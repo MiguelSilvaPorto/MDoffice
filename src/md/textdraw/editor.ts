@@ -85,7 +85,7 @@ export function createTextDrawEditor(opts: TextEditorOptions): TextEditorHandle 
     </div>
     <div class="draw-canvas-wrap"><div class="dr-sheet"><canvas class="dr-canvas" tabindex="0"></canvas></div></div>
     <div class="di-foot">
-      <span class="muted">⌖ arraste para selecionar a área e <b>Del</b> apaga · botão direito apaga linha/rótulo · o texto aparece no editor enquanto você desenha</span>
+      <span class="muted">⌖ arraste para selecionar a área e <b>Del</b> apaga · botão direito: clique apaga linha/rótulo, arraste move a tela · o texto aparece no editor enquanto você desenha</span>
       <span class="dr-spacer"></span>
       <button class="btn" data-act="remove" title="Remover este desenho do documento">Remover</button>
       <button class="btn" data-act="cancel">Cancelar</button>

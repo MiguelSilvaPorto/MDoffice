@@ -62,8 +62,10 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   tudo é desenhado numa grade de caracteres — caixas (`┌─┐│└┘`), linhas, textos, **campos
   selecionáveis** `[ ]` e **tabelas**, com traço simples, duplo (`╔═╗`) ou ASCII (`+| -`).
 - **Modelos prontos** (Caixa com título e campo, Fluxo A ▶ B, Tabela 3 × 2) com um clique.
-- **Apagar fácil**: arrastar marcando uma área e **Del**; botão direito (ou borracha) apaga
-  só o trecho; **Remover** apaga o desenho inteiro.
+- **Apagar fácil**: arrastar marcando uma área e **Del**; botão direito **parado** (ou borracha)
+  apaga só o trecho; **Remover** apaga o desenho inteiro.
+- **Andar pelo desenho**: **botão direito + arrastar** move a tela (panorama) — no zoom alto não
+  é preciso caçar a barra de rolagem; é o mesmo gesto do palco do PowerPoint.
 - **Tempo real (ida e volta)**: o bloco ` ```text ` é atualizado no editor à esquerda na hora,
   e editar o bloco no editor recarrega o quadro — *Concluir* nunca sobrescreve o que você escreveu.
 

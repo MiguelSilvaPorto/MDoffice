@@ -9,6 +9,12 @@
   cursor: crosshair;
 }
 
+/* botão direito pressionado: arrastar move a tela (panorama) — o quadro inteiro "agarra" */
+.text-draw .draw-canvas-wrap.txt-pano,
+.text-draw .draw-canvas-wrap.txt-pano * {
+  cursor: grabbing !important;
+}
+
 .txt-trace {
   height: 22px;
   margin-left: 4px;
