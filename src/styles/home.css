@@ -19,6 +19,7 @@ body.home-open #home-page {
 body.home-open #editor-wrap,
 body.home-open #splitter,
 body.home-open #preview-wrap,
+body.home-open #preview-puxa,
 body.home-open #settings-page {
   display: none !important;
 }

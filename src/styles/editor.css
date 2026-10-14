@@ -299,6 +299,40 @@ body.no-preview #preview-wrap {
   display: none !important;
 }
 
+/* ---------- alça de puxar a pré-visualização de volta ---------- */
+
+/* Com a prévia fechada, sobra esta faixa na direita. Ela existe para o gesto de
+   trazer a prévia de volta — e de quebra é o que impede a alça de cair em cima da
+   barra de rolagem do editor (que fica nos últimos 10px úteis do painel). */
+#preview-puxa {
+  display: none;
+  flex: none;
+  width: 8px;
+  align-self: stretch;
+  position: relative;
+  z-index: 2;
+  cursor: col-resize;
+}
+
+body.no-preview #preview-puxa {
+  display: block;
+}
+
+/* mesma linha fina que aparece no divisor, para o gesto ter onde se anunciar */
+#preview-puxa::after {
+  content: "";
+  position: absolute;
+  inset: 0 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+#preview-puxa:hover::after,
+body.resizing #preview-puxa::after {
+  background: var(--accent);
+}
+
 body.no-preview #editor-wrap {
   flex: 1 1 auto !important;
   width: 100% !important;

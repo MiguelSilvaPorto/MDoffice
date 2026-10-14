@@ -18,7 +18,8 @@ body.ppt-open #powerpoint-pane {
 
 body.ppt-open #editor-wrap,
 body.ppt-open #splitter,
-body.ppt-open #preview-wrap {
+body.ppt-open #preview-wrap,
+body.ppt-open #preview-puxa {
   display: none;
 }
 

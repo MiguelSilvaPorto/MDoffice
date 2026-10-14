@@ -19,7 +19,8 @@ body.xlsx-open #excel-pane {
 
 body.xlsx-open #editor-wrap,
 body.xlsx-open #splitter,
-body.xlsx-open #preview-wrap {
+body.xlsx-open #preview-wrap,
+body.xlsx-open #preview-puxa {
   display: none;
 }
 

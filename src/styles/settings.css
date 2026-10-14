@@ -18,7 +18,8 @@ body.settings-open #settings-page {
 
 body.settings-open #editor-wrap,
 body.settings-open #splitter,
-body.settings-open #preview-wrap {
+body.settings-open #preview-wrap,
+body.settings-open #preview-puxa {
   display: none;
 }
 

@@ -138,5 +138,69 @@ checa(
 );
 checa("o boot aplica animação e cantos antes da primeira pintura", /mdc\.animacao/.test(boot) && /mdc\.cantos/.test(boot), "index.html não lê as duas chaves");
 
+// ---------- puxar a pré-visualização de volta pela borda direita ----------
+
+console.log("\npuxar a pré-visualização de volta");
+
+const cssDaAlca = ler("src/styles/editor.css");
+const htmlDaAlca = ler("index.html");
+const layoutDaAlca = ler("src/app/layout.ts");
+
+// A alça só existe com a prévia fechada. Com a prévia aberta ela cairia nos últimos
+// pixels do editor — exatamente onde fica a barra de rolagem.
+checa(
+  "a alça existe no HTML, como último item do #body",
+  /<div id="preview-puxa"[^>]*><\/div>\s*<\/div>\s*<footer id="statusbar"/.test(htmlDaAlca),
+  "div #preview-puxa ausente antes do fechamento do #body"
+);
+checa("a alça nasce escondida", /#preview-puxa\s*\{[^}]*display:\s*none/.test(cssDaAlca), "falta display:none");
+checa(
+  "só aparece com a prévia fechada",
+  /body\.no-preview #preview-puxa\s*\{[^}]*display:\s*block/.test(cssDaAlca),
+  "falta a regra body.no-preview"
+);
+checa("ela reserva a faixa na direita (8px)", /#preview-puxa\s*\{[^}]*width:\s*8px/.test(cssDaAlca), "falta a largura");
+checa("o cursor é o de redimensionar", /#preview-puxa\s*\{[^}]*cursor:\s*col-resize/.test(cssDaAlca), "falta o cursor");
+checa(
+  "acende a linha no hover, como o divisor",
+  /#preview-puxa:hover::after/.test(cssDaAlca) && /var\(--accent\)/.test(cssDaAlca),
+  "falta a linha do hover"
+);
+
+// Os painéis que já escondem o divisor precisam esconder a alça também: com a prévia
+// fechada e uma planilha aberta, ela apareceria numa tela onde não há prévia.
+const paineis: [string, string][] = [
+  ["src/styles/home.css", "home-open"],
+  ["src/styles/word.css", "word-open"],
+  ["src/styles/powerpoint.css", "ppt-open"],
+  ["src/styles/excel.css", "xlsx-open"],
+  ["src/styles/settings.css", "settings-open"],
+  ["src/styles/palette.css", "focus-mode"],
+];
+for (const [arquivo, classe] of paineis) {
+  checa(
+    `${arquivo}: esconde a alça`,
+    new RegExp(`body\\.${classe} #preview-puxa`).test(ler(arquivo)),
+    "a alça apareceria neste painel"
+  );
+}
+
+// O gesto: clicar traz de volta no tamanho anterior; arrastar acompanha o dedo.
+checa(
+  "o clique reabre a prévia (tira o no-preview)",
+  /pointerdown[\s\S]{0,900}?contains\("no-preview"\)\) this\.toggle\("no-preview"\)/.test(layoutDaAlca),
+  "o pointerdown não reabre a prévia"
+);
+checa(
+  "o arrasto é medido pelo deslocamento do dedo (não pela posição)",
+  /puxaInicioRatio \+ \(e\.clientX - puxaInicioX\) \/ bounds\.free/.test(layoutDaAlca),
+  "o arrasto não usa o deslocamento"
+);
+checa(
+  "quem escuta o movimento é a janela (a alça sai da tela ao reabrir)",
+  /window\.addEventListener\("pointermove", aoMoverPuxa\)/.test(layoutDaAlca),
+  "faltam os ouvintes na janela"
+);
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

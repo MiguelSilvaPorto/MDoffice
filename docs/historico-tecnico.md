@@ -1855,6 +1855,43 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** cobre o veredito contando uma vez por leva, o desfazer como "ruim", o limiar subindo
   com muitas desfeitas (0,85) e descendo com muitas mantidas (0,59), e o zero voltando ao padrão.
 
+## index.html · src/styles/editor.css · src/app/layout.ts · scripts/testar-layout.mts
+
+### 2026-10-14 · (este commit) · puxar a pré-visualização de volta pela borda direita
+- **Local:** `index.html`, último item do `#body`
+- **Linha:** novo — `<div id="preview-puxa" title="…">` depois do `</section>` da prévia
+- **Porquê:** a alça é o gesto de volta. Fica como ÚLTIMO item do `#body` de propósito: ocupa uma
+  faixa própria de 8px na direita e por isso não cai em cima da barra de rolagem do editor (que
+  vive nos últimos 10px do painel).
+- **Local:** `src/styles/editor.css`, bloco novo depois de `body.no-preview`
+- **Linha:** `novo` — `#preview-puxa` (`display: none`, `flex: none`, `width: 8px`,
+  `align-self: stretch`, `cursor: col-resize`), `body.no-preview #preview-puxa { display: block }`,
+  `#preview-puxa::after` e o hover em `var(--accent)`
+- **Porquê:** nasce escondida e só aparece com a prévia fechada — com a prévia aberta ela estaria
+  sobre a barra de rolagem. A linha fina do hover é a mesma do divisor: um gesto invisível não
+  tem como se anunciar. O `z-index: 2` acompanha o divisor.
+- **Local:** `src/styles/word.css`, `excel.css`, `powerpoint.css`, `settings.css`, `home.css` e
+  `palette.css`
+- **Linha:** `#preview-puxa` somado às regras que já escondem `#splitter` e `#preview-wrap`
+- **Porquê:** com a prévia fechada e uma planilha (ou o Início, ou o modo foco) aberta, a alça
+  apareceria numa tela onde não existe prévia. O `editor.css` vem antes de todos esses no
+  `styles.css`, então as regras deles vencem sem precisar de `!important` novo.
+- **Local:** `src/app/layout.ts`, `setupSplitter` (depois do `dblclick` do divisor)
+- **Linha:** `novo` — `pointerdown` na alça, `aoMoverPuxa` e `aoSoltarPuxa` na janela, mais o texto
+  do aviso ao fechar
+- **Porquê:** três decisões que parecem detalhe e não são. (1) O `pointerdown` remove o
+  `no-preview` na hora, no tamanho em que a prévia estava: quem só quer trazê-la de volta clica e
+  pronto. (2) O arrasto é medido pelo DESLOCAMENTO do dedo e não pela posição: a alça fica na
+  beirada, e ler a posição faria a prévia pular para o mínimo no primeiro movimento — o contrário
+  de puxar. (3) Quem escuta `pointermove`/`pointerup` é a JANELA, não a alça: no instante em que a
+  prévia volta a alça sai da tela (o `display: none` do CSS) e não receberia mais nada. A largura
+  final é guardada no mesmo `mdc.split` do divisor.
+- **Local:** `scripts/testar-layout.mts`, bloco novo "puxar a pré-visualização de volta"
+- **Linha:** 15 verificações
+- **Porquê:** a alça é CSS + estrutura + um gesto; o teste prende as três. As que mais protegem
+  são as que garantem que ela NÃO existe fora do `no-preview` (senão volta a brigar com a barra
+  de rolagem) e que os seis painéis a escondem.
+
 ---
 
 ## Próximos registros

@@ -272,7 +272,7 @@ export const layoutMethods = {
         document.body.classList.remove("preview-saindo");
         if (!document.body.classList.contains("no-preview")) this.toggle("no-preview");
         fechando = false;
-        toast("Pré-visualização fechada. Para reabrir: Configurações → Aparência → Pré-visualização.", "info", 3600);
+        toast("Pré-visualização fechada. Para reabrir, puxe a borda direita para a esquerda (ou Configurações → Aparência → Pré-visualização).", "info", 4200);
       };
       const aoTerminar = (ev: AnimationEvent) => {
         if (ev.target === previewPane) concluir();
@@ -328,6 +328,50 @@ export const layoutMethods = {
       body.style.removeProperty("--rg");
       localStorage.removeItem("mdc.split");
     });
+
+    // ---------- puxar a pré-visualização de volta ----------
+    //
+    // Fechada a prévia (arrastando o divisor para além do limite), sobra a faixa
+    // `#preview-puxa` na direita. Clicar nela traz a prévia de volta no tamanho em que
+    // estava; arrastar para a esquerda aumenta, como se fosse o próprio divisor.
+    //
+    // Quem escuta o movimento é a JANELA, não a alça: no instante em que a prévia volta
+    // a alça sai da tela (o `display: none` do CSS) e não receberia mais nada.
+    //
+    // O arrasto é medido pelo DESLOCAMENTO do dedo, não pela posição dele: a alça fica
+    // na beirada, e ler a posição faria a prévia pular para o mínimo no primeiro
+    // movimento — o contrário de puxar.
+    const puxa = $("#preview-puxa");
+    let puxando = false;
+    let puxaInicioX = 0;
+    let puxaInicioRatio = 0.5;
+    puxa.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      const atual = Number(body.style.getPropertyValue("--lg"));
+      puxaInicioRatio = Number.isFinite(atual) && atual > 0 && atual < 1 ? atual : 0.5;
+      puxaInicioX = e.clientX;
+      puxando = true;
+      document.body.classList.add("resizing");
+      // a prévia volta JÁ, no tamanho em que estava: quem só quer trazê-la de volta
+      // basta clicar (sem mover, o deslocamento é zero e a largura não muda)
+      if (document.body.classList.contains("no-preview")) this.toggle("no-preview");
+      applyRatio(puxaInicioRatio);
+    });
+    const aoMoverPuxa = (e: PointerEvent) => {
+      if (!puxando) return;
+      const bounds = region();
+      applyRatio(puxaInicioRatio + (e.clientX - puxaInicioX) / bounds.free);
+    };
+    const aoSoltarPuxa = () => {
+      if (!puxando) return;
+      puxando = false;
+      document.body.classList.remove("resizing");
+      const v = body.style.getPropertyValue("--lg");
+      if (v) localStorage.setItem("mdc.split", v);
+    };
+    window.addEventListener("pointermove", aoMoverPuxa);
+    window.addEventListener("pointerup", aoSoltarPuxa);
+    window.addEventListener("pointercancel", aoSoltarPuxa);
     window.addEventListener("resize", () => {
       region();
       const current = Number(body.style.getPropertyValue("--lg"));

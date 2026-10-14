@@ -99,6 +99,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Skills e regras**: janela que gera `SKILL.md`, `AGENTS.md` e `CLAUDE.md` a partir de modelos.
 - **Divisória editor/prévia**: arrastar para além do limite da direita fecha a pré-visualização
   (saída suave e aviso de como reabrir); encostar no mínimo continua só redimensionando.
+- **Puxar a pré-visualização de volta**: fechada a prévia, sobra uma faixa na **borda direita** —
+  clicar traz a prévia de volta no tamanho em que estava e arrastar para a esquerda a aumenta,
+  como se fosse o próprio divisor. Antes a única volta era Configurações ▸ Aparência. A faixa
+  fica **fora** da área da barra de rolagem do editor, só existe com a prévia fechada e some nos
+  painéis onde não há prévia (Word, Excel, PowerPoint, Configurações, Início e modo foco).
 - **Vírgulas em trechos longos**: a correção automática passa a inserir a vírgula depois das
   **aberturas adverbiais** (“Com o tempo,”, “Hoje em dia,”, “No começo,”, “Atualmente,”…) e
   quando elas **retomam a oração** no meio de um trecho (“…revisar hoje em dia, eu quero…”).

@@ -18,7 +18,8 @@ body.word-open #word-pane {
 
 body.word-open #editor-wrap,
 body.word-open #splitter,
-body.word-open #preview-wrap {
+body.word-open #preview-wrap,
+body.word-open #preview-puxa {
   display: none;
 }
 
