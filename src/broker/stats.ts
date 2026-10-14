@@ -23,14 +23,14 @@ function fraseEmVolta(text: string, from: number, to: number): string {
 }
 
 /**
- * Marcadores informais do texto, com classe e risco.
+ * Varredura CRUA dos marcadores informais (catálogo + janelas de frase), na ordem do texto.
  *
- * A varredura é própria (não passa pelo `checkStyle`): a métrica conta o que o
- * catálogo conhece, mesmo quando outra regra cobre o mesmo trecho (é o caso do
- * internetês, que `data/abbreviations.ts` já corrigia) — e sempre com o tom
- * formal, porque o tom decide o que vira aviso, mas a métrica mede o texto.
+ * É própria em vez de `checkStyle` de propósito: o `checkStyle` corta o que outra regra
+ * cobre primeiro — o internetês ("vc", "msm"), que `data/abbreviations.ts` já corrige —
+ * e tanto o MIP quanto a formalização precisam de TODOS os marcadores. Sempre no tom
+ * formal: o tom decide o que vira aviso, mas aqui se mede/planeja o texto.
  */
-export function marcadoresInformais(text: string): MarcadorInformal[] {
+export function achadosInformais(text: string): WritingIssue[] {
   const mask = maskNonProse(text);
   const achados: WritingIssue[] = [];
   const push: RuleCtx["push"] = (from, to, message, fix, suggestions = [], safe = false, classe) => {
@@ -55,17 +55,23 @@ export function marcadoresInformais(text: string): MarcadorInformal[] {
       vistos.add(chave);
       return true;
     })
-    .sort((a, b) => a.from - b.from)
-    .map((i) => ({
-      classe: i.classe as ClasseMarcador,
-      from: i.from,
-      to: i.to,
-      word: i.word,
-      message: i.message,
-      frase: fraseEmVolta(text, i.from, i.to),
-      // "seguro" = a troca não mexe no sentido (tem correção); as demais só se sugerem
-      seguro: i.fix !== undefined,
-    }));
+    .sort((a, b) => a.from - b.from);
+}
+
+/**
+ * Marcadores informais do texto, com classe e risco (é o que o painel de revisão e o MIP usam).
+ */
+export function marcadoresInformais(text: string): MarcadorInformal[] {
+  return achadosInformais(text).map((i) => ({
+    classe: i.classe as ClasseMarcador,
+    from: i.from,
+    to: i.to,
+    word: i.word,
+    message: i.message,
+    frase: fraseEmVolta(text, i.from, i.to),
+    // "seguro" = a troca não mexe no sentido (tem correção); as demais só se sugerem
+    seguro: i.fix !== undefined,
+  }));
 }
 
 const arredonda1 = (n: number) => Math.round(n * 10) / 10;

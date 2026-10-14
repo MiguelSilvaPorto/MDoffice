@@ -9,6 +9,8 @@ export interface ReviewOptions {
   onGoTo: (issue: WritingIssue) => void;
   onFix: (issue: WritingIssue) => void;
   onFixAllStyle: () => void;
+  /** abrir a prévia antes/depois do registro (o botão aparece junto do MIP) */
+  onFormalizar?: () => void;
   onIgnore: (word: string) => void;
   onRecheck: () => void;
   onClose?: () => void;
@@ -121,6 +123,9 @@ export function openReviewModal(opts: ReviewOptions): ReviewHandle {
       const classes = h("div", { class: "rv-word-row" });
       for (const c of stats.marcadoresPorClasse) {
         classes.append(h("span", { class: "rv-word", text: `${ROTULO_CLASSE[c.classe]} ${c.count}×` }));
+      }
+      if (opts.onFormalizar) {
+        classes.append(chip("Formalizar com prévia…", "Abrir o antes/depois do texto formal (as trocas de sentido dependem de você)", () => opts.onFormalizar?.()));
       }
       wordsHost.append(classes);
       for (const m of stats.marcadores.slice(0, 8)) {

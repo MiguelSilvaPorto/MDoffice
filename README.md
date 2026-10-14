@@ -37,7 +37,7 @@ copiar código ou conteúdo.
 
 - **MD\*** — o editor de Markdown: realce de sintaxe, pré-visualização ao vivo, desenho
   assistido e em letras, diagramas, imagens, e a escrita assistida (corretor, correção
-  automática, sugestões, revisão inteligente e tradução PT-BR → inglês). → [detalhes](docs/md.md)
+  automática, sugestões, revisão inteligente, formalização com prévia e tradução PT-BR → inglês). → [detalhes](docs/md.md)
 - **Word** — motor de `.docx` de verdade: folha A4/Carta com páginas, cabeçalho, rodapé,
   estilos, tabelas, imagens, zoom; abre e salva `.docx`. → [detalhes](docs/word.md)
 - **Excel** — planilha com grade que cresce, fórmulas (com [documentação própria](docs/excel/formulas/README.md)),

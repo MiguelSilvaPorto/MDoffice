@@ -3332,6 +3332,114 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   havia regra de estrutura na carga: com a primeira (`abnt.r03`) virou "verificador
   desconhecido (conhecidos: nenhum)".
 
+## src/broker/data/informal.ts
+
+### 2026-10-14 · formalizar com prévia · dois consertos que a prévia revelou
+- **Local:** a entrada de “dar uma olhada” e a de “um monte de”
+- **Linha:** `dar uma olhada` (1 padrão com `fix: "examinar"`) → 6 padrões (em/no/na/nos/nas com a
+  preposição e o artigo no `fix`, e a forma solta como sugestão sem `fix`); `um monte de`
+  (`fix: "muitos"`, `seguro: true`) → `sugestoes: ["muitos", "muitas", "vários", "várias"]`,
+  `seguro: false`
+- **Porquê:** as duas trocas estavam marcadas como **seguras** e produziam português errado quando
+  aplicadas em massa: “dar uma olhada **no** relatório” → “examinar **no** relatório” (a troca
+  precisa resolver a contração: “examinar **o** relatório”) e “um monte de **gente**” → “muitos
+  gente” (o acordo depende do que vem depois, que a regra não vê). A prévia pintou as duas na
+  primeira prova do recurso — o teste `test:formalizar` agora prende os dois casos, e o
+  `test:correcao` continua verde (o catálogo exige `fix ⇔ seguro`, que segue valendo).
+
+## src/broker/formalizar.ts (novo)
+
+### 2026-10-14 · formalizar com prévia · o plano de trocas e o risco de cada uma
+- **Local:** arquivo inteiro (`RiscoTroca`, `TrocaFormal`, `trocasDeFormalizacao`, `aplicarTrocas`, `mipDe`)
+- **Linha:** `novo`
+- **Porquê:** o catálogo e as janelas de frase já ACHAVAM os marcadores, mas formalizar o texto
+  exigia trocar um a um e não mostrava o efeito. O plano usa a mesma varredura que alimenta o MIP
+  (`achadosInformais`) — por isso o internetês que outra regra já corrige também entra — e
+  classifica o risco pela mesma régua do `stats.ts`: `fix` presente é **troca segura** (já entra
+  marcada na prévia), só sugestões é **depende do sentido** (espera decisão, com alternativas) e
+  aviso sem troca pronta é **manual** (só informa). O `aplicarTrocas` devolve também os limites de
+  cada troca no original e no texto novo — é o que deixa a janela pintar os dois lados — e corta
+  sobreposição (vale a primeira). `mipDe` reusa o `stats` para o número do painel não divergir.
+
+## src/broker/stats.ts
+
+### 2026-10-14 · formalizar com prévia · a varredura dos marcadores vira função própria
+- **Local:** `marcadoresInformais` → `achadosInformais` (nova) + `marcadoresInformais` (usa a nova)
+- **Linha:** o laço de `push` + filtro/dedupe/sort saiu do corpo do `marcadoresInformais` para a função exportada `achadosInformais`
+- **Porquê:** medir (MIP) e planejar (formalizar) precisam da MESMA varredura — a do `checkStyle`
+  perderia os marcadores que outra regra cobre primeiro (o internetês, por exemplo). Extrair
+  evita uma segunda cópia da lista de regras e garante que o MIP da prévia seja o mesmo do painel.
+
+## src/formalizar.ts (novo)
+
+### 2026-10-14 · formalizar com prévia · a janela antes × depois
+- **Local:** arquivo inteiro (`abrirFormalizar`, `pintarTrechos`, `linha`, `pintar`, `recalcular`)
+- **Linha:** `novo`
+- **Porquê:** faltava ver o efeito antes de aceitar. A janela mostra os dois lados com o trecho
+  trocado pintado (vermelho no antes, verde no depois, via os limites que o `aplicarTrocas`
+  devolve), o MIP antes → depois ao vivo e a lista em três pilhas: **marcadas** (seguras, já
+  checadas), **decida** (depende do sentido, com o risco no tooltip e as alternativas em chips) e
+  **reformule** (sem troca pronta). Aplicar é uma transação só no app — Ctrl+Z desfaz tudo.
+
+## src/app/formalizar.ts (novo)
+
+### 2026-10-14 · formalizar com prévia · o comando no editor
+- **Local:** `openFormalizar`
+- **Linha:** `novo`
+- **Porquê:** é a ponte com o CodeMirror: pega a seleção (sem seleção, o documento inteiro),
+  recusa as abas que não são Markdown (Word/Excel/PowerPoint/Configurações) e aplica o resultado
+  com `replaceRange` + `checkWritingSoon`, como o resto das ferramentas de escrita.
+
+## src/app/app.ts
+
+### 2026-10-14 · formalizar com prévia · o mixin novo na classe
+- **Local:** imports, `FormalizarMethodsType` e o `Object.assign` do fim
+- **Linha:** `+ import { formalizarMethods } from "./formalizar";` e `+ formalizarMethods` nas duas listas
+- **Porquê:** o padrão da casa: cada assunto tem o arquivo próprio e a classe só cola os métodos.
+
+## src/app/commands.ts · src/app/keymap.ts
+
+### 2026-10-14 · formalizar com prévia · paleta e atalho
+- **Local:** `openPalette` (grupo Escrever) e a lista de atalhos (grupo Escrita)
+- **Linha:** `+ "Formalizar texto (prévia antes/depois)…"` e `+ { id: "formalizar", padrao: "Ctrl+Alt+F" }`
+- **Porquê:** sem entrada na paleta e sem tecla o recurso ficaria escondido; `Ctrl+Alt+F` estava livre.
+
+## src/broker/review.ts · src/app/assistant.ts
+
+### 2026-10-14 · formalizar com prévia · o caminho pelo painel de revisão
+- **Local:** `ReviewOptions.onFormalizar` (novo) + o chip na linha do MIP; `openReview` passa o callback
+- **Linha:** `+ chip("Formalizar com prévia…", …)` e `+ onFormalizar: () => { this.reviewHandle?.close(); this.openFormalizar(); }`
+- **Porquê:** o painel já mostrava o MIP e os marcadores — é o lugar natural para o passo seguinte
+  ("vi os marcadores, quero formalizar"). O painel fecha antes para não ficarem dois modais.
+
+## src/styles/formalizar.css (novo) · src/styles.css
+
+### 2026-10-14 · formalizar com prévia · o visual da janela
+- **Local:** arquivo novo + o `@import` depois do `ai-docs.css`
+- **Linha:** `novo`
+- **Porquê:** a janela segue os tokens do tema (funciona no claro e no escuro) e o destaque do
+  antes/depois usa preenchimento translúcido (rgba) em vez de `color-mix`, que nem toda webview
+  suporta.
+
+## scripts/testar-formalizar.mts (novo) · package.json
+
+### 2026-10-14 · formalizar com prévia · 47 verificações
+- **Local:** arquivo novo + script `test:formalizar` no `package.json`
+- **Linha:** `novo`
+- **Porquê:** prova o plano de ponta a ponta — o que entra (catálogo + janelas, com classe e risco),
+  o que **não** entra (citação, código, texto já formal), a aplicação (ordem, sobreposição,
+  limites da prévia), a queda do MIP e a **janela inteira** num DOM de mentira (abre, pinta, decide
+  por checkbox e por chip e aplica) — sem depender do dicionário, em segundos. Traz ainda os dois
+  consertos do catálogo presos no teste e confere que toda classe usada na janela existe no CSS.
+
+## docs/md.md · docs/funcionalidades.md · README.md
+
+### 2026-10-14 · formalizar com prévia · a documentação do que o app faz
+- **Local:** a lista da escrita assistida (md.md), o índice de módulos (funcionalidades.md) e a linha do MD\* (README)
+- **Linha:** `+ o item "Formalizar texto com prévia"` e a palavra "formalização" nas duas listas
+- **Porquê:** é funcionalidade visível (comando, atalho e painel): o documento do módulo precisa
+  dizer como usar e o que as trocas fazem.
+
 ---
 
 ## Próximos registros

@@ -348,6 +348,10 @@ export const assistantMethods = {
         this.checkWritingSoon();
       },
       onIgnore: (word) => this.ignoreWord(word),
+      onFormalizar: () => {
+        this.reviewHandle?.close();
+        this.openFormalizar();
+      },
       onRecheck: () => void this.runWritingCheck(),
       onClose: () => {
         this.reviewHandle = null;

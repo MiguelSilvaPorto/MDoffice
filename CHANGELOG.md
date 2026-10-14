@@ -507,6 +507,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Formalizar texto com prévia antes/depois**: o comando novo (**Ctrl+Alt+F**, no menu “Escrever” e no painel de revisão) pega a **seleção** — ou o documento inteiro quando não há seleção — e mostra **antes × depois** lado a lado, com o **MIP ao vivo** e os trechos trocados pintados (vermelho no antes, verde no depois). As **trocas seguras** (com correção pronta — a mesma régua do MIP) já entram marcadas; as que **dependem do sentido** esperam a decisão, com o risco explicado no tooltip e as alternativas em chips (“a gente analisou” → “Nós analisamos” **ou** “analisou-se”); os avisos sem troca pronta (“sei lá…”) só informam, sem caixa. Nada dentro de citação (`>`), código, URL, sigla ou e-mail, e aplicar é **uma transação**: Ctrl+Z desfaz tudo de uma vez.
+- **Dois consertos no catálogo que a prévia revelou**: “dar uma olhada **no** relatório” virava “examinar **no** relatório” — a troca agora leva a preposição junto (“examinar o relatório”, “examinar a planilha”, “examinar as contas”…) e a forma solta, sem objeto, virou **sugestão** (“examinar”, “revisar”, “conferir”); e “um monte de **gente**” virava “muitos gente” — agora é **sugestão** com as quatro formas (muitos/muitas/vários/várias). As duas eram marcadas como **troca segura**, e a formatação em massa as aplicava assim mesmo.
 - **Abas estilo Chrome**: `Ctrl+T`/`Ctrl+W`/`Ctrl+Tab`/`Ctrl+1…9`, reabrir a última fechada,
   arrastar para reordenar, menu de contexto; fechar nunca pergunta (vira rascunho em Recentes);
   fechar o **último documento** volta para a tela de Início.
@@ -609,6 +611,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Ferramentas (dev)**
 
+- **Teste da formalização** (`npm run test:formalizar`, 47 verificações): prova o plano de trocas de ponta a ponta — o que entra (catálogo + janelas de frase, com classe e risco), o que **não** entra (citação, código, texto já formal), a aplicação (ordem, sobreposição, limites para a prévia pintar), a queda do MIP e a **janela inteira** num DOM de mentira (abre, pinta, decide e aplica); prende ainda os dois consertos do catálogo e confere que toda classe que a janela usa existe no CSS.
 - Fluxo de **worktrees** obrigatório: `abrir.ps1`, `fechar.ps1`, `limpar.ps1`, `status.ps1`,
   `limpar-agendada.ps1` e proteção opcional da `main`.
 - `fechar.ps1` integra a `main` por **rebase** (história linear, sem commit de merge) e envia

@@ -63,6 +63,7 @@ export const commandsMethods = {
     add("Escrever", "Inserir modelo para IA", () => this.act("ai-template"));
     add("Escrever", "Criar skill ou regras do agente (SKILL.md, AGENTS.md, CLAUDE.md)", () => this.act("ai-docs"), undefined, "skill agente claude agents regras instrucoes");
     add("Escrever", "Formatar texto (pontuação, espaçamento, ortografia)", () => void this.formatarTexto(), undefined, "formatar pontuacao virgula ponto espaco maiuscula corrigir tudo");
+    add("Escrever", "Formalizar texto (prévia antes/depois)…", () => this.openFormalizar(), teclaVisivel("formalizar"), "formalidade registro oralidade giria muleta atenuacao pra a gente acho que mip antes depois");
     add("Escrever", "Dicionário pessoal…", () => this.showDictionary());
 
     add("Ver", "Alternar tema claro/escuro", () => this.applyTheme(document.documentElement.dataset.theme !== "dark"), undefined, "escuro dark");

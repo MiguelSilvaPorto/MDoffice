@@ -105,6 +105,13 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   “então” repetido; “há três anos atrás” → “há três anos”), sem tocar citação (`>`), código,
   URL, sigla ou e-mail. O painel de revisão mostra o **MIP** — marcadores informais por 1.000
   palavras — antes e depois das correções seguras, por classe, com o trecho de cada marcador.
+- **“Formalizar texto” com prévia** (`Ctrl+Alt+F`, no menu Escrever ou no painel de revisão):
+  pega a **seleção** — sem seleção, o documento inteiro — e abre **antes × depois** lado a lado,
+  com o trecho trocado pintado (vermelho no antes, verde no depois) e o **MIP caindo ao vivo**.
+  As **trocas seguras** já vêm marcadas; as que **dependem do sentido** esperam a decisão, com o
+  risco no tooltip e as alternativas em chips (“a gente analisou” → “Nós analisamos” **ou**
+  “analisou-se”); avisos sem troca pronta (“sei lá…”) só informam. Aplicar é **uma transação só**:
+  Ctrl+Z desfaz tudo de uma vez.
 - **Citações ABNT (NBR 10520:2023)**: além da tipografia (horas, unidades, meses, “et al.”,
   “p.”, travessão e latim), o revisor confere citações — acusa a autor-data **sem o ano**
   (“(Silva)”; só sobrenomes comuns, em caixa mista, para “(Anexo)”, “(Brasil)”, leis e siglas
