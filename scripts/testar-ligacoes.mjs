@@ -197,5 +197,36 @@ const emPt = (s, i) => {
   ok("duplicar só o conector: ele deixa de ficar preso", !solto.liga && !!solto.paths?.length);
 }
 
+// ---------------------------------------------------------------- alvo do modo Conectar
+
+console.log("\nalvo do modo Conectar (a bolinha manda; a caixa de cima vence; sem piscar)");
+
+{
+  // duas caixas SOBREPOSTAS: `a` embaixo, `b` em cima (a lista vem na ordem de pintura)
+  const a = { id: "a", box: { x: 10, y: 10, w: 40, h: 30 } };
+  const b = { id: "b", box: { x: 20, y: 20, w: 40, h: 30 } };
+  const formas = [a, b];
+  const rx = 0.85; // ~8 px de raio da bolinha num slide de 960 de largura
+  const ry = 1.5; // ~8 px num slide de 540 de altura
+  const mx = 1.5; // histerese, ~14 px
+  const my = 2.6;
+  const alvo = (x, y, atual = null) => L.alvoDaConexao(formas, { x, y }, atual, rx, ry, mx, my);
+
+  ok("no miolo das duas, a caixa de CIMA ganha", alvo(30, 30) === "b", String(alvo(30, 30)));
+  ok("na parte de baixo, só a de baixo aparece", alvo(15, 35) === "a", String(alvo(15, 35)));
+  // a bolinha do meio da base de `a` fica em (30, 40): ~1,5 px FORA da caixa dela e DENTRO de `b`
+  // (pelo DOM o alvo virava `b` → as bolinhas piscavam e a ligação saía na caixa errada)
+  ok("a bolinha da caixa de baixo não é roubada pela de cima", alvo(30, 41.2) === "a", String(alvo(30, 41.2)));
+  // a bolinha do topo de `b` (40, 20) pende para fora da caixa dela, dentro de `a`: manda `b`
+  ok("a bolinha de cima manda mesmo fora da caixa dela", alvo(40, 19) === "b", String(alvo(40, 19)));
+  // a fresta em volta da caixa continua sendo dela (histerese): 1% fora, longe das bolinhas
+  ok("perto da caixa, o alvo não pisca (histerese)", alvo(9, 30, "a") === "a", String(alvo(9, 30, "a")));
+  ok("longe de tudo, solta o alvo", alvo(5, 30, "a") === null, String(alvo(5, 30, "a")));
+  // e o clique usa a bolinha separada (com folga) e devolve o LADO
+  const bol = L.bolinhaDaConexao(formas, { x: 30, y: 41.2 }, rx, ry);
+  ok("a bolinha do clique devolve a caixa e o lado", bol?.id === "a" && bol?.lado === "base", JSON.stringify(bol));
+  ok("fora das bolinhas, o clique não pega nada", L.bolinhaDaConexao(formas, { x: 30, y: 30 }, rx, ry) === null);
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);

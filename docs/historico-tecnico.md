@@ -7030,7 +7030,7 @@ antigas quando fizer sentido.
   agora tem que passar pelo traço** (`c294252`); a seção ficou com "- (nada no momento)"
 - **Porquê:** os dois commits já estão na `main`, mas a promoção não cabe no mesmo commit do
   `fechar.ps1` (no momento do commit o código ainda não entrou). A conferência olhou que as duas
-  ainda **não** estavam em "Adicionado" antes de mover — a lição das rodadas anteriores, quando o
+  ainda **não** estavam em "Adicionado" antes de mover - a lição das rodadas anteriores, quando o
   rebase re-inseriu uma entrada já promovida.
 
 ## src/powerpoint/ui/fita.ts
@@ -7337,6 +7337,7 @@ antigas quando fizer sentido.
   mover), então a promoção não afirma nada falso; como nas rodadas anteriores, ela anda num passo
   curto de docs porque o registro de autoria e a promoção não cabem no mesmo commit do
   `fechar.ps1`. Nada de worktree em andamento foi tocado.
+
 ## src/powerpoint/edicao/estilos.ts
 
 ### 2026-10-14 · estilos de cor · ligar e soltar o fundo (R4)
@@ -7467,3 +7468,58 @@ antigas quando fizer sentido.
   código está na `main`, a entrada aparece **uma única vez**, no "Adicionado", e as entradas das
   outras sessões ficaram intactas. O duplicado era resíduo do merge, não de uma promoção feita à
   mão.
+
+## src/powerpoint/edicao/ligacoes.ts
+
+### 2026-10-14 · esta tarefa · o alvo do Conectar é geométrico (a bolinha manda e a caixa de cima vence)
+- **Local:** `bolinhaDaConexao` (nova) e `alvoDaConexao` (nova), ao lado de `pontoDaBorda`
+- **Linha:** "novo" - a bolinha (círculo de ~8 px em % de cada eixo) manda; depois a caixa, com a
+  de CIMA vencendo (a lista vem na ordem de pintura, então a varredura é do fim para o começo);
+  por fim a histerese (`margemX`/`margemY`) mantém a forma atual com o ponteiro perto
+- **Porquê:** o alvo do hover vinha do DOM (`e.target.closest`) e tinha dois defeitos de uma vez:
+  a bolinha tem 11 px e fica **no meio da borda**, ou seja, metade dela pende **para fora** da
+  caixa - nessa fresta o DOM aponta para a caixa **de baixo** (com duas caixas sobrepostas o alvo
+  fica alternando: as bolinhas **piscam**) e a **linha da ligação**, sendo uma forma com caixa
+  fina, roubava o ponteiro no meio do caminho. Os dois sintomas do relato ("fica piscando" e "liga
+  errado") saem daí. Quem chama filtra `!s.liga` (conector não é destino) - o filtro fica no
+  chamador para a função pura não precisar do tipo `Shape`.
+
+## src/powerpoint/stage.ts
+
+### 2026-10-14 · esta tarefa · o palco usa o alvo geométrico (hover e clique)
+- **Local:** `aoMover` (ramo do modo conectar) e `aoPressionar` (mesmo ramo)
+- **Linha:** `e.target.closest("[data-lig-ponto]") / .pp-shape[data-shape]` → `alvoDaConexao(...)`
+  no hover e `bolinhaDaConexao(...)` no clique, com raio de ~8 px e histerese de ~14 px
+  convertidos de pixel para % pelo rect do palco
+- **Porquê:** o clique antes exigia acertar os 11 px da bolinha (a folga de 8 px deixa o gesto
+  humano passar) e devolve o LADO junto; e o hover com histerese não reaproveita a "fresta" para
+  trocar de caixa. O alvo geométrico usa as mesmas coordenadas das bolinhas desenhadas
+  (`desenharSelecao`), então o que se vê é o que se pega.
+
+## scripts/testar-ligacoes.mjs
+
+### 2026-10-14 · esta tarefa · 8 checagens do alvo do Conectar
+- **Local:** seção nova "alvo do modo Conectar"
+- **Linha:** duas caixas sobrepostas: o miolo é da de cima; a bolinha da de baixo não é roubada na
+  fresta; a bolinha de cima manda fora da caixa dela; a histerese não solta a 1% da borda; longe
+  solta; e o clique devolve caixa + lado (e nada fora das bolinhas)
+- **Porquê:** era o comportamento exato do relato; sem teste, o alvo pode voltar para o DOM sem
+  ninguém notar (o sintoma só aparece com caixas sobrepostas).
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · esta tarefa · o palco tem que usar a função (e não o DOM)
+- **Local:** seção nova "Conectar: alvo das bolinhas"
+- **Linha:** 4 checagens - o hover e o clique chamam as funções com o filtro `!s.liga`, os
+  conectores ficam fora do alvo e a histerese existe em `ligacoes.ts`
+- **Porquê:** o defeito é de ligação (o palco volta a perguntar ao DOM); a checagem de layout
+  prende a ligação sem precisar de navegador.
+
+## docs/powerpoint.md
+
+### 2026-10-14 · esta tarefa · o alvo do Conectar na documentação
+- **Local:** "Conectar formas", primeira bala
+- **Linha:** acrescenta que o alvo é a forma apontada (bolinha → caixa de cima → histerese) e que
+  as linhas de ligação não roubam o ponteiro
+- **Porquê:** é o comportamento visível do modo; quem lê precisa saber que caixas sobrepostas não
+  trocam o alvo no meio do gesto.

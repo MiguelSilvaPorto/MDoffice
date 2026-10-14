@@ -38,6 +38,77 @@ export function pontoDaBorda(r: Ret, lado: Lado): Pto {
   return { x: r.x + r.w, y: cy };
 }
 
+/**
+ * A **bolinha** sob o ponteiro (o lado da borda), se houver: a da caixa de cima vence. As
+ * bolinhas ficam no meio de cada lado; `rx`/`ry` são o raio do círculo em % de cada eixo (o %
+ * da lâmina não é quadrado).
+ */
+export function bolinhaDaConexao(
+  formas: { id: string; box: ShapeBox }[],
+  ponteiro: Pto,
+  rx: number,
+  ry: number
+): { id: string; lado: Lado } | null {
+  const noCirculo = (x: number, y: number): boolean => {
+    const dx = (ponteiro.x - x) / rx;
+    const dy = (ponteiro.y - y) / ry;
+    return dx * dx + dy * dy <= 1;
+  };
+  for (let i = formas.length - 1; i >= 0; i--) {
+    const b = formas[i].box;
+    const cx = b.x + b.w / 2;
+    const cy = b.y + b.h / 2;
+    const lados: [Lado, number, number][] = [
+      ["topo", cx, b.y],
+      ["base", cx, b.y + b.h],
+      ["esq", b.x, cy],
+      ["dir", b.x + b.w, cy],
+    ];
+    for (const [lado, x, y] of lados) if (noCirculo(x, y)) return { id: formas[i].id, lado };
+  }
+  return null;
+}
+
+/**
+ * A forma sob o ponteiro no modo Conectar. A ordem dos passos existe por um defeito real:
+ *
+ *  1. a **bolinha** manda (ver `bolinhaDaConexao`) — o ponteiro sobre ela é da forma dela,
+ *     mesmo que a caixa de baixo esteja ali embaixo;
+ *  2. depois a **caixa**: a de CIMA vence (a lista vem na ordem de pintura — a última é a
+ *     que está por cima), como no PowerPoint;
+ *  3. por fim a **histerese**: sem nada embaixo do ponteiro, mantém a forma atual enquanto o
+ *     ponteiro estiver perto dela. A bolinha fica ~6 px PARA FORA da caixa: sem essa folga, a
+ *     fresta em volta da caixa pertence à forma de baixo e o alvo fica alternando entre as
+ *     duas — as bolinhas piscam e a ligação sai na caixa errada (relato do usuário).
+ *
+ * `margemX`/`margemY` são a folga da histerese. Quem chama deixa os CONECTORES de fora: a linha
+ * da ligação é uma faixa fina que atravessa a lâmina e roubaria o ponteiro no meio do caminho.
+ */
+export function alvoDaConexao(
+  formas: { id: string; box: ShapeBox }[],
+  ponteiro: Pto,
+  atual: string | null,
+  rx: number,
+  ry: number,
+  margemX: number,
+  margemY: number
+): string | null {
+  const bolinha = bolinhaDaConexao(formas, ponteiro, rx, ry);
+  if (bolinha) return bolinha.id;
+  for (let i = formas.length - 1; i >= 0; i--) {
+    const b = formas[i].box;
+    if (ponteiro.x >= b.x && ponteiro.x <= b.x + b.w && ponteiro.y >= b.y && ponteiro.y <= b.y + b.h) return formas[i].id;
+  }
+  if (atual) {
+    const s = formas.find((f) => f.id === atual);
+    if (s) {
+      const b = s.box;
+      if (ponteiro.x >= b.x - margemX && ponteiro.x <= b.x + b.w + margemX && ponteiro.y >= b.y - margemY && ponteiro.y <= b.y + b.h + margemY) return atual;
+    }
+  }
+  return null;
+}
+
 /** Rota ortogonal entre as duas bordas (2 a 4 pontos): reta quando dá, "Z" ou "L" quando não. */
 export function rotaDaLigacao(a: Pto, ladoDe: Lado, b: Pto, ladoPara: Lado): Pto[] {
   const vertA = ladoDe === "topo" || ladoDe === "base";

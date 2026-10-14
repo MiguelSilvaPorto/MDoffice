@@ -19,6 +19,7 @@ import {
 } from "./edicao/geometria";
 import type { Animacao, Lado, Shape, ShapeBox } from "./schema";
 import { CANTO_ROTULO, CANTOS, cantosDe, valoresComSelecao, type Canto } from "./edicao/formato";
+import { alvoDaConexao, bolinhaDaConexao } from "./edicao/ligacoes";
 
 const ZOOM_MIN = 40;
 /** Até 800%: a lâmina é HTML (vetorial), então ampliar não perde nitidez. */
@@ -432,17 +433,18 @@ export class Stage {
     // controles da mídia (player de áudio/vídeo): o clique é do player, não do palco
     if (alvo.closest("[data-player]")) return;
 
-    // modo conectar: as bolinhas das bordas ligam uma forma na outra
+    // modo conectar: as bolinhas das bordas ligam uma forma na outra. O alvo é geométrico e
+    // com folga (~8 px): a bolinha é pequena e a caixa de baixo não pode roubar o clique
     if (ctx.ferramenta?.tipo === "conectar") {
-      const ponto = alvo.closest<HTMLElement>("[data-lig-ponto]");
-      if (ponto) {
-        const id = ponto.dataset.ligId!;
-        const lado = ponto.dataset.ligLado as Lado;
-        if (!this.ligOrigem) this.ligOrigem = { id, lado };
+      const r = this.slideEl.getBoundingClientRect();
+      const px = (n: number, total: number, reserva: number) => (total > 0 ? (n / total) * 100 : reserva);
+      const bolinha = bolinhaDaConexao(ctx.shapes.filter((s) => !s.liga), p, px(8, r.width, 0.9), px(8, r.height, 1.5));
+      if (bolinha) {
+        if (!this.ligOrigem) this.ligOrigem = { id: bolinha.id, lado: bolinha.lado };
         else {
           const origem = this.ligOrigem;
           this.ligOrigem = null;
-          this.hooks.aoLigar({ de: origem.id, ladoDe: origem.lado, para: id, ladoPara: lado });
+          this.hooks.aoLigar({ de: origem.id, ladoDe: origem.lado, para: bolinha.id, ladoPara: bolinha.lado });
         }
         this.desenharSelecao();
       } else if (this.ligOrigem) {
@@ -641,11 +643,19 @@ export class Stage {
 
   private aoMover(e: PointerEvent): void {
     if (!this.modo) {
-      // modo conectar: as bolinhas seguem a forma sob o mouse
-      if (this.hooks.contexto().ferramenta?.tipo === "conectar") {
-        const alvo = e.target as HTMLElement;
-        const ponto = alvo.closest<HTMLElement>("[data-lig-ponto]");
-        const id = ponto?.dataset.ligId ?? alvo.closest<HTMLElement>(".pp-shape[data-shape]")?.dataset.shape ?? null;
+      // modo conectar: as bolinhas seguem a forma sob o ponteiro. O alvo é GEOMÉTRICO (bolinha
+      // manda, depois a caixa de cima, com histerese): pelo DOM, a fresta de ~6 px da bolinha
+      // pertence à caixa de baixo e o alvo alterna — as bolinhas piscam e a ligação sai errada
+      const ctx = this.hooks.contexto();
+      if (ctx.ferramenta?.tipo === "conectar") {
+        const p = this.pontoEmPct(e);
+        const r = this.slideEl!.getBoundingClientRect();
+        const px = (n: number, total: number, reserva: number) => (total > 0 ? (n / total) * 100 : reserva);
+        const rx = px(8, r.width, 0.9); // raio do círculo da bolinha (~8 px)
+        const ry = px(8, r.height, 1.5);
+        const mx = px(14, r.width, 1.5); // folga da histerese (~14 px)
+        const my = px(14, r.height, 2.6);
+        const id = alvoDaConexao(ctx.shapes.filter((s) => !s.liga), p, this.ligHover, rx, ry, mx, my);
         if (id !== this.ligHover) {
           this.ligHover = id;
           this.desenharSelecao();

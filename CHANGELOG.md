@@ -758,10 +758,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   grade/ajuda antes de sair. De quebra, a lâmina sem fundo próprio passa a usar o **fundo do tema**
   — antes o tema escuro ficava com texto claro sumindo no branco do palco.
 - **Desenho assistido acertado (curvas)**: o traço desenhado **torto** agora vira um **arco girado**
-  no mesmo ângulo do desenho — o ajuste passou a procurar a elipse **com orientação** (antes só
+  no mesmo ângulo do desenho - o ajuste passou a procurar a elipse **com orientação** (antes só
   existia o ajuste alinhado aos eixos: a elipse saía grande e a curva ficava longe do traço, o
   "não se encaixa" do relato). A validação também ficou mais rígida: elipse em forma de "faca"
-  (duas retas com um canto, por exemplo) **não vira arco** — vira desenho livre — e o **desenho
+  (duas retas com um canto, por exemplo) **não vira arco** - vira desenho livre - e o **desenho
   livre** ganhou **duas passadas de suavização** com passo de simplificação mais fino (o "cheio de
   falhas" do serrilhado da mão).
 - **O "Configurar apresentação" saiu**: o diálogo não tinha mais função. O **Tema** virou a aba
@@ -779,6 +779,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   branco aparecem nos dois temas, com recorte na mesa e o deslocamento da prévia em 80% do real
   para caber. Vale para os seis presets (inclusive **Brilho suave**); 4 verificações novas em
   `npm run test:layout`.
+- **Conectar sem piscar e na caixa certa**: o alvo das bolinhas do modo **Conectar** passou a ser
+  **geométrico** — a bolinha manda, depois a **caixa de cima** e, sem nada embaixo do ponteiro, a
+  forma atual fica enquanto o ponteiro anda **perto** dela (histerese). Pelo DOM, a fresta de ~6 px
+  em volta da caixa (onde a bolinha pende para fora) pertence à caixa **de baixo** e a própria
+  linha da ligação roubava o ponteiro: com duas caixas sobrepostas as **bolinhas piscavam** e a
+  ligação saía **na caixa errada** (relato do usuário). O clique também ficou com folga (~8 px) e
+  os **conectores saem do alvo**.
 
 ---
 
@@ -1182,5 +1189,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   arco reconhecido - e o "canto em L" fica como desenho livre em vez de arco-faca) e o
   `npm run test:pptx-edicao` confere que o arco girado vai ao `.pptx` com rotação e ângulos.
 - **Teste de layout com o botão de perigo**: 3 checagens prendem o fundo reafirmado no
-  `.st-btn.danger`, o texto na cor de perigo e o vermelho sólido só no hover/confirmação — o
+  `.st-btn.danger`, o texto na cor de perigo e o vermelho sólido só no hover/confirmação - o
   defeito (rótulo vermelho sobre fundo vermelho) não volta sem alguém notar.
+- **Testes do Conectar**: 8 checagens novas em `npm run test:ligacoes` prendem o alvo geométrico
+  (a bolinha manda, a caixa de cima vence, a histerese não solta na fresta e o clique devolve a
+  caixa e o lado) e 4 em `npm run test:layout` garantem que o palco usa a função (e não o DOM) e
+  deixa os conectores fora do alvo — o defeito das bolinhas piscando e da ligação na caixa errada
+  volta só com alguém vendo.

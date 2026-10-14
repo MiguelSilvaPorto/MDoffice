@@ -1067,5 +1067,20 @@ console.log("\nPowerPoint: prévia das sombras na galeria de Efeitos");
   );
 }
 
+// ---------------------------------------------------------------- Conectar: alvo das bolinhas
+
+console.log("\nConectar: alvo das bolinhas (sem piscar, caixa certa)");
+
+const palcoConectar = ler("src/powerpoint/stage.ts");
+const ligPpt = ler("src/powerpoint/edicao/ligacoes.ts");
+checa(
+  "o hover das bolinhas é geométrico (não o DOM)",
+  /alvoDaConexao\(ctx\.shapes\.filter\(\(s\) => !s\.liga\)/.test(palcoConectar),
+  "pelo DOM a fresta da bolinha pertence à caixa de baixo: o alvo pisca e a ligação sai errada"
+);
+checa("o clique da bolinha também é geométrico (com folga)", /bolinhaDaConexao\(ctx\.shapes\.filter\(\(s\) => !s\.liga\)/.test(palcoConectar), "clicar exatamente na bolinha de 11 px é duro demais");
+checa("os conectores ficam fora do alvo", (palcoConectar.match(/!s\.liga/g) ?? []).length >= 2, "a linha da ligação atravessa a lâmina e roubaria o ponteiro");
+checa("a histerese existe (a borda não fica piscando)", /margemX/.test(ligPpt) && /margemY/.test(ligPpt), "sem folga o alvo alterna entre a caixa e a de baixo");
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

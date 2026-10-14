@@ -152,7 +152,11 @@ avisado ao abrir (nunca some em silêncio).
   **formas que já existem** — nada é recriado: com o modo ligado, passar o mouse sobre uma forma
   mostra as **bolinhas nas quatro bordas** (topo, base, esquerda, direita); o primeiro clique marca
   a **origem** (a bolinha escolhida fica acesa) e o segundo, o **destino**, e a ligação nasce ali.
-  Clique fora das bolinhas cancela a origem e **Esc** sai do modo.
+  Clique fora das bolinhas cancela a origem e **Esc** sai do modo. O alvo é **a forma apontada**: a
+  bolinha manda, depois a caixa **de cima** e, sem nada embaixo do ponteiro, a mesma forma segue
+  enquanto o ponteiro anda perto dela — as bolinhas não ficam piscando na borda (caixas
+  sobrepostas não trocam o alvo no meio do caminho) e as **linhas de ligação não roubam** o
+  ponteiro.
 - O traço sai com **cantos suaves de 90°** (a mesma ideia do Fluxo do Mermaid): alinhado quando as
   bordas se encontram, um "Z" quando as laterais pedem desvio e um "L" quando uma ponta é vertical
   e a outra horizontal.
