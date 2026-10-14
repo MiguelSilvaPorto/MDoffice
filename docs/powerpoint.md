@@ -111,8 +111,6 @@ avisado ao abrir (nunca some em silêncio).
   computador** (sem nuvem), como no *Design Ideas* do DeckCraft: a prévia é a lâmina de verdade
   reduzida — com o mapa de cores do deck inteiro —, então o cartão mostra exatamente o que o
   clique faz.
-- **Configurar apresentação**: proporção (16:9 / 4:3), tema (claro/escuro/contraste), fonte
-  padrão, tamanho, rodapé e número da lâmina.
 
 ## Desenho à mão (Draw)
 

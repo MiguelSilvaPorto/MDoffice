@@ -719,6 +719,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   (duas retas com um canto, por exemplo) **não vira arco** — vira desenho livre — e o **desenho
   livre** ganhou **duas passadas de suavização** com passo de simplificação mais fino (o "cheio de
   falhas" do serrilhado da mão).
+- **O "Configurar apresentação" saiu**: o diálogo não tinha mais função. O **Tema** virou a aba
+  **Design** (Tema + **Template**, com os 13 designs do catálogo e as **Ideias de design**) e
+  **fonte/tamanho** são da fita (Fonte) e dos modelos. Saíram o botão **Configurar** da barra da
+  fita e o **Tamanho** de Design ▸ Personalizar (o grupo ficou só com **Formatar fundo**), junto do
+  diálogo (`askPptSetup`/`configurePpt`) e da fiação `onConfigure` do host do PowerPoint. A
+  **proporção, o rodapé e o número da lâmina** continuam valendo para os decks (importados,
+  exportados e salvos) — só não têm mais esse editor. O **"Configurar planilha"** do Excel fica
+  como está.
 
 ---
 

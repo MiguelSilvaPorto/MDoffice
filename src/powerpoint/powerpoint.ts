@@ -94,7 +94,6 @@ export interface PowerPointHostOptions {
   onPickImage?: (destino?: string) => void;
   /** pede um áudio/vídeo ao usuário; `tipo` diz se é "audio" ou "video" (ou "trocar" na troca de arquivo) */
   onPickMedia?: (tipo?: string) => void;
-  onConfigure?: () => void;
   onDirty?: () => void;
 }
 
@@ -1702,8 +1701,6 @@ export class PowerPointHost {
 
       case "present":
         return this.present();
-      case "configure":
-        return void this.opts.onConfigure?.();
       case "notes":
         this.mostrarLateral("notas");
         return;

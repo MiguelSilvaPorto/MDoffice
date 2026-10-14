@@ -11,8 +11,6 @@ import { type PowerPointTabData } from "../powerpoint/powerpoint";
 import { deckToPptx } from "../powerpoint/pptxexport";
 import { pptxToDeck } from "../powerpoint/pptximport";
 import { serialize } from "../powerpoint/model";
-import { melhorarSelects } from "../seletor";
-import { FONTES_COMUNS } from "../fontes";
 import { DEFAULT_SETUP } from "../powerpoint/model";
 import type { Deck, DeckSetup } from "../powerpoint/schema";
 import { bytesToBase64 } from "../util";
@@ -292,112 +290,5 @@ export const powerpointDocsMethods = {
     } catch (e) {
       toast("Não consegui abrir a mídia: " + e, "err", 5000);
     }
-  },
-
-  /** Abre o diálogo "Configurar apresentação" e aplica o resultado. */
-  async configurePpt(this: App): Promise<void> {
-    const novo = await this.askPptSetup(this.pptHost.setup_());
-    if (novo) this.pptHost.setSetup(novo);
-  },
-
-  /** Diálogo "Configurar apresentação": proporção, número, rodapé, fonte e tema. */
-  askPptSetup(this: App, setup: DeckSetup): Promise<DeckSetup | null> {
-    return new Promise((resolve) => {
-      const rascunho: DeckSetup = { ...setup };
-      const backdrop = h("div", { class: "modal-backdrop" });
-      const modal = h("div", { class: "modal pg-modal" });
-      modal.innerHTML = `
-        <header class="wm-head">
-          <svg class="ic"><use href="#i-gear"/></svg>
-          <h2>Configurar apresentação</h2>
-          <button class="btn icon" data-close title="Fechar (Esc)"><svg class="ic"><use href="#i-close"/></svg></button>
-        </header>
-        <div class="wm-body">
-          <p class="pg-hint">Vale para todas as lâminas: proporção, tema, fonte padrão e rodapé.</p>
-          <label class="pg-row"><span class="pg-rot">Proporção</span>
-            <select data-k="aspect">
-              <option value="16:9">16:9 (tela cheia)</option>
-              <option value="4:3">4:3 (projetor antigo)</option>
-            </select>
-          </label>
-          <label class="pg-row"><span class="pg-rot">Tema</span>
-            <select data-k="theme">
-              <option value="claro">Claro</option>
-              <option value="escuro">Escuro</option>
-              <option value="contraste">Alto contraste</option>
-            </select>
-          </label>
-          <label class="pg-row"><span class="pg-rot">Fonte padrão</span>
-            <select data-k="fontFamily" data-editavel>
-              ${FONTES_COMUNS.map((f) => `<option>${f}</option>`).join("")}
-            </select>
-          </label>
-          <label class="pg-row"><span class="pg-rot">Tamanho (pt)</span>
-            <input type="number" data-k="fontSize" min="8" max="96" step="1">
-          </label>
-          <label class="pg-row"><span class="pg-rot">Rodapé</span>
-            <input type="text" data-k="footer" placeholder="Nome da empresa, por exemplo">
-          </label>
-          <label class="pg-row"><span class="pg-check"><input type="checkbox" data-k="showNumber"> Mostrar o número da lâmina</span></label>
-        </div>
-        <footer class="wm-foot">
-          <button class="btn" data-cancel>Cancelar</button>
-          <span class="dr-spacer"></span>
-          <button class="btn primary" data-ok>Aplicar</button>
-        </footer>`;
-      backdrop.append(modal);
-      document.body.append(backdrop);
-      melhorarSelects(modal);
-
-      // preenche com os valores atuais
-      type Campo = HTMLSelectElement | HTMLInputElement;
-      const ler = (campo: Campo): unknown => {
-        const k = campo.dataset.k as keyof DeckSetup;
-        if (campo instanceof HTMLInputElement && campo.type === "checkbox") return campo.checked;
-        if (campo instanceof HTMLInputElement && campo.type === "number") return +campo.value;
-        return campo.value;
-      };
-      modal.querySelectorAll<Campo>("[data-k]").forEach((campo) => {
-        const k = campo.dataset.k as keyof DeckSetup;
-        if (campo instanceof HTMLInputElement && campo.type === "checkbox") campo.checked = !!rascunho[k];
-        else {
-          const v = String(rascunho[k] ?? "");
-          // fonte do deck fora das comuns: entra como opção para o campo mostrar o que o deck tem
-          if (campo instanceof HTMLSelectElement && v && ![...campo.options].some((o) => o.value === v)) {
-            const op = document.createElement("option");
-            op.value = v;
-            op.textContent = v;
-            campo.append(op);
-          }
-          campo.value = v;
-        }
-      });
-
-      const done = (v: DeckSetup | null) => {
-        document.removeEventListener("keydown", onKey, true);
-        backdrop.remove();
-        resolve(v);
-      };
-      const onKey = (e: KeyboardEvent) => {
-        if (e.key === "Escape") {
-          e.preventDefault();
-          e.stopPropagation();
-          done(null);
-        }
-      };
-      document.addEventListener("keydown", onKey, true);
-      backdrop.addEventListener("mousedown", (e) => {
-        if (e.target === backdrop) done(null);
-      });
-      modal.querySelector("[data-close]")!.addEventListener("click", () => done(null));
-      modal.querySelector("[data-cancel]")!.addEventListener("click", () => done(null));
-      modal.querySelector<HTMLButtonElement>("[data-ok]")!.addEventListener("click", () => {
-        modal.querySelectorAll<Campo>("[data-k]").forEach((campo) => {
-          (rascunho as unknown as Record<string, unknown>)[campo.dataset.k!] = ler(campo);
-        });
-        done(rascunho);
-      });
-      modal.querySelector<HTMLElement>("[data-ok]")!.focus();
-    });
   },
 };

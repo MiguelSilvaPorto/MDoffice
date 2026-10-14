@@ -606,7 +606,6 @@ checa(
   /export const FONTES_COMUNS/.test(listaFontes) && /FONTES_COMUNS/.test(ler("src/powerpoint/ui/estado.ts")) && /FONTES_COMUNS/.test(ler("src/word/schema.ts")),
   "FONTES_COMUNS não é a fonte única"
 );
-checa("o diálogo do PowerPoint usa a lista do app", /FONTES_COMUNS\.map/.test(ler("src/app/powerpointDocs.ts")), "lista fixa voltou ao diálogo");
 
 // ---------------------------------------------------------------- tela de carregamento
 
@@ -893,6 +892,36 @@ console.log("\ndocs sem marcador de conflito");
 
 for (const arq of ["CHANGELOG.md", "README.md", "docs/historico-tecnico.md", "docs/powerpoint.md", "docs/funcionalidades.md"]) {
   checa(`${arq} sem marcador de conflito esquecido`, !/^(<{7,}|={7,}|>{7,})/m.test(ler(arq)), "sobrou <<<<<<< / ======= / >>>>>>> de um rebase");
+}
+
+// ---------------------------------------------------------------- Configurar apresentação (removido)
+
+console.log("\nPowerPoint: o 'Configurar' saiu (a aba Design cobre)");
+
+{
+  const fita = ler("src/powerpoint/ui/fita.ts");
+  checa(
+    "a barra da fita não tem mais o botão Configurar",
+    !/data-cmd="configure"/.test(fita) && !/ppr-cfg/.test(fita),
+    "o botão ficou para trás"
+  );
+  checa(
+    "Design ▸ Personalizar ficou só com o fundo (sem o 'Tamanho')",
+    /grupo\("Personalizar", `\$\{grande\("fundo"/.test(fita) && !/grande\("configure"/.test(fita),
+    "o botão Tamanho abria o diálogo removido"
+  );
+  const docs = ler("src/app/powerpointDocs.ts");
+  checa("o diálogo e o pedido do host saíram do app", !/askPptSetup/.test(docs) && !/configurePpt/.test(docs), "sobrou código do diálogo");
+  checa(
+    "o host do PowerPoint não tem mais a fiação 'configure'",
+    !/onConfigure/.test(ler("src/powerpoint/powerpoint.ts")),
+    "a fiação onConfigure ficou no host do PowerPoint"
+  );
+  checa(
+    "o 'Configurar planilha' do Excel continua (só o do PowerPoint saiu)",
+    /askExcelConfig/.test(ler("src/app/excelDocs.ts")) && /xl-tab-cfg/.test(ler("src/excel/ribbon.ts")),
+    "a remoção não pode levar o diálogo do Excel junto"
+  );
 }
 
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");

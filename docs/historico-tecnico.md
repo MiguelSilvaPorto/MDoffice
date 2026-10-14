@@ -6967,3 +6967,73 @@ antigas quando fizer sentido.
   `fechar.ps1` (no momento do commit o código ainda não entrou). A conferência olhou que as duas
   ainda **não** estavam em "Adicionado" antes de mover — a lição das rodadas anteriores, quando o
   rebase re-inseriu uma entrada já promovida.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · remoção do "Configurar" · a barra e o Design perdem o botão
+- **Local:** o template da barra (`ppr-abas`, ao lado do **Template**) e `design()` (grupo
+  **Personalizar**)
+- **Linha:** saiu `<button class="ppr-aba ppr-cfg" data-cmd="configure" …>Configurar</button>` e
+  saiu `${grande("configure", ic("i-gear"), "Tamanho", "Proporção e tamanho da lâmina")}` — o grupo
+  ficou só com o **Formatar fundo**
+- **Porquê:** o diálogo que os dois abriam não tinha mais função: o **Tema** virou a aba **Design**
+  (Tema + Template, com os 13 designs do catálogo) e **fonte/tamanho** são da fita (Fonte) e dos
+  modelos. O pedido foi literal ("remova a configuração… não tem mais função") — os dois pontos de
+  entrada saíram junto do diálogo para não deixar porta para uma tela morta.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · remoção do "Configurar" · o host perde a fiação
+- **Local:** `PowerPointHostOptions` (`onConfigure`) e o despacho de comandos (`case "configure"`)
+- **Linha:** `- onConfigure?: () => void;` e `- case "configure": return void this.opts.onConfigure?.();`
+- **Porquê:** sem o botão não há quem emita o comando — a fiação inteira (tipo + caso) saiu. O
+  **host do Excel mantém a sua** (`onConfigure` + `case "configure"`), porque o "Configurar
+  planilha" continua existindo: a remoção foi só do PowerPoint.
+
+## src/app/app.ts
+
+### 2026-10-14 · remoção do "Configurar" · a ponte do App
+- **Local:** a construção do `PowerPointHost`
+- **Linha:** `- onConfigure: () => void this.configurePpt(),`
+- **Porquê:** era a ponte entre o host e o diálogo removido; sem ela o host nasce sem o callback
+  (opcional) e nada referencia o método que deixou de existir.
+
+## src/app/powerpointDocs.ts
+
+### 2026-10-14 · remoção do "Configurar" · o diálogo sai inteiro
+- **Local:** `configurePpt` e `askPptSetup` (o modal "Configurar apresentação", ~105 linhas) e os
+  imports `melhorarSelects`/`FONTES_COMUNS`
+- **Linha:** os dois métodos saíram; os imports saíram junto (eram usados só pelo diálogo)
+- **Porquê:** o diálogo era o único editor de `aspect`/`footer`/`showNumber` e duplicava
+  `theme`/`fontFamily` (a aba Design e os modelos fazem melhor). A **proporção, o rodapé e o número
+  da lâmina continuam valendo** para os decks — quem os traz é o arquivo importado, e o
+  `setSetup`/exportação seguem intactos; o que acabou foi o editor. `DeckSetup` continua importado
+  (o `readPptx` usa).
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · remoção do "Configurar" · 5 verificações (e uma que saiu)
+- **Local:** o bloco "PowerPoint: o 'Configurar' saiu (a aba Design cobre)" e a checagem da lista
+  de fontes
+- **Linha:** `novo` bloco (bloco com escopo próprio: `fitaPpt` já existia no arquivo) + saiu
+  `checa("o diálogo do PowerPoint usa a lista do app", …)`
+- **Porquê:** o bloco prende a remoção (sem botão na barra, sem "Tamanho" no Design, sem diálogo,
+  sem fiação) e que o **Excel continua** com o "Configurar planilha" — remoção de um não pode levar
+  o outro. A checagem da lista de fontes saiu porque ela vigiava justamente o diálogo removido (a
+  checagem de cima, da lista compartilhada, continua valendo).
+
+## docs/powerpoint.md
+
+### 2026-10-14 · remoção do "Configurar" · a bala do diálogo sai do módulo
+- **Local:** a seção de Design/Ideias de design
+- **Linha:** saiu a bala "**Configurar apresentação**: proporção (16:9 / 4:3), tema
+  (claro/escuro/contraste), fonte padrão, tamanho, rodapé e número da lâmina."
+- **Porquê:** o documento descreve o que o app faz hoje; o diálogo não existe mais.
+
+## CHANGELOG.md
+
+### 2026-10-14 · remoção do "Configurar" · a entrada no PowerPoint
+- **Local:** PowerPoint → Adicionado → Frontend
+- **Linha:** `novo`
+- **Porquê:** é uma mudança do módulo PowerPoint (não de interface geral), e a entrada entra já
+  promovida, como o fechamento exige.

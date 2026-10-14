@@ -258,7 +258,6 @@ export class Fita {
         ${ABAS.map((a) => `<button type="button" class="ppr-aba${a.id === "inicio" ? " on" : ""}" role="tab" data-aba="${a.id}"${a.id === "formato" || a.id === "tabela" ? " hidden" : ""}><span class="ppr-aba-rot" data-nome="${a.nome}">${a.nome}</span></button>`).join("")}
         <span class="ppr-enche"></span>
         <button type="button" class="ppr-aba ppr-tpl" data-cmd="modelo" data-menu="1" title="Aplicar um modelo à apresentação (tema, cores e fonte)">${ic("i-addons")}<span>Template</span></button>
-        <button type="button" class="ppr-aba ppr-cfg" data-cmd="configure" title="Configurar apresentação: proporção, tema, fonte e rodapé">${ic("i-gear")}<span>Configurar</span></button>
       </div>
       <div class="ppr-paineis">
         <div class="ppr-painel" data-painel="inicio">${this.inicio()}</div>
@@ -583,7 +582,7 @@ export class Fita {
            ${btn("theme:contraste", "◕", "Alto contraste", "fmt")}
          </div>`
       ),
-      grupo("Personalizar", `${grande("fundo", ic("i-bucket"), "Formatar fundo", "Cor, gradiente ou imagem de fundo da lâmina", true)}${grande("configure", ic("i-gear"), "Tamanho", "Proporção e tamanho da lâmina")}`),
+      grupo("Personalizar", `${grande("fundo", ic("i-bucket"), "Formatar fundo", "Cor, gradiente ou imagem de fundo da lâmina", true)}`),
       grupo("Layout", `${grande("layout", ic("i-columns"), "Layout", "Layout da lâmina", true)}`),
       // como no PowerPoint (Design ▸ Design Ideas): abre o painel com a lâmina atual em cada modelo
       grupo("Designer", `${grande("ideias", ic("i-spark"), "Ideias de design", "Sugestões de visual para a apresentação — a lâmina atual em cada modelo, geradas no seu computador")}`),
