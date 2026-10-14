@@ -1838,6 +1838,19 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o popup é do editor, mas a lista de avisos e as abas ficam com o App; o gancho leva o
   aviso inteiro (e não só o texto) porque a chave do "ignorar" é mensagem + trecho.
 
+## src/styles/slides.css · scripts/testar-layout.mts
+
+### 2026-10-14 · este commit · a apresentação sem o contorno de edição
+- **Local:** depois de `.slide-rica .pp-shape` (a nova regra `.slides-overlay .pp-shape` e
+  `.slides-overlay .pp-shape.pp-rica:hover`); uma checagem nova na seção do PowerPoint
+- **Linha:** `pointer-events: none !important` nas formas e nos filhos (com `outline: none` no
+  hover/selecionado)
+- **Porquê:** o usuário viu a "caixa de seleção" na apresentação: o módulo reativa o ponteiro nas
+  formas (`.pp-shape.pp-rica { pointer-events: auto }`) e o contorno de hover
+  (`.pp-shape.pp-rica:hover`, 1px do acento) acendia por cima do desenho sempre que o mouse
+  passava. A regra do deck (`.slide-rica .pp-shape`) tem a mesma especificidade e perdia na ordem
+  de carga — por isso o `!important` no isolamento da apresentação.
+
 ## src/styles/slides.css
 
 ### 2026-10-14 · 4cfd23f · cores do diff no popup

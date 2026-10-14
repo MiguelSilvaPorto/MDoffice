@@ -380,7 +380,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - (nada no momento)
 
-
 ### Adicionado (na main)
 
 **Backend**
@@ -389,6 +388,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Apresentação sem a "caixa de seleção"**: no modo apresentação, passar o mouse sobre uma forma
+  acendia o **contorno de hover/seleção** do editor por cima do desenho (o editor reativa o
+  ponteiro nas formas e o contorno vinha junto). Agora a apresentação é só leitura: nada de
+  ponteiro nas formas e os contornos de hover/selecionado desligados no deck.
 - **Vídeo em lâmina importada volta a preencher o quadro**: o vídeo era desenhado dentro de um
   invólucro sem estilo (o `height:100%` caía para o tamanho natural, ~300×150), então a área do
   vídeo ficava transparente e **os cartões de trás apareciam através dela** (na lâmina 8 do deck
