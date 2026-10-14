@@ -3651,6 +3651,23 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/md/docx.ts · o exportador não depende da UI
+
+### 2026-10-14 · (este commit) · import direto do mermaid
+- **Local:** `src/md/docx.ts`, import de `renderMermaidInto`
+- **Linha:** `import { renderMermaidInto } from "./diagram"` → `from "./diagram/mermaid"`
+- **Porquê:** o índice `./diagram` reexporta `openDiagramBuilder`, e o construtor passou a
+  importar o seletor (refactor `14d163d`, "selects nativos trocam pelo menu do app") — e o
+  seletor registra listeners de `document` **na carga do módulo**. O bundler inclui módulo
+  com efeito colateral, então o exportador passou a carregar a UI toda: no app é peso
+  desnecessário, e no teste do ABNT do `.docx` (Node, sem DOM) quebrava na importação com
+  `document is not defined` — o teste do grupo DOCX estava verde quando foi entregue e
+  quebrou com esse refactor; foi a **verificação final integrada** das regras ABNT que
+  pegou. O import direto corta a dependência de tela sem mudar comportamento nenhum do
+  export.
+
+---
+
 ## Próximos registros
 
 Este documento foi **semeado** com as mudanças mais recentes (até 2026-10-13). A partir daqui,

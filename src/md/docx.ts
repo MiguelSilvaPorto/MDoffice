@@ -20,7 +20,10 @@ import {
 import { marked, type Token, type Tokens } from "marked";
 import * as files from "../files";
 import { docDirOf, joinPath } from "../util";
-import { renderMermaidInto } from "./diagram";
+// direto do mermaid, NÃO do índice `./diagram`: o índice reexporta o construtor de
+// diagramas, que puxa a UI (seletor, template) — e o exportador não deve arrastar a UI
+// (nem no app, nem no teste, onde `document` não existe)
+import { renderMermaidInto } from "./diagram/mermaid";
 
 type Block = Paragraph | Table;
 

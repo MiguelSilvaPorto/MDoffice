@@ -32,6 +32,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Exportador Markdown → .docx não arrasta mais a interface**: o import de
+  `renderMermaidInto` era feito pelo índice `./diagram`, que reexporta o construtor de
+  diagramas — e o construtor puxa o seletor, que registra listeners de `document` na carga
+  do módulo. O exportador passou a carregar a UI inteira junto: no app é só peso, mas o
+  teste que valida o `.docx` gerado (roda no Node, sem DOM) quebrava com `document is not
+  defined`. Agora o import é direto de `./diagram/mermaid`. Nenhuma mudança de
+  comportamento: o export só deixou de depender de código de tela.
 - **Regras ABNT de estrutura (E01–E03 e P01)**: o motor passou a conferir o trabalho pela
   estrutura que as normas cobram, e não só pela tipografia. **E01** cobra os elementos
   pré-textuais obrigatórios (resumo, abstract e sumário — NBR 14724:2024); **E02** confere a
