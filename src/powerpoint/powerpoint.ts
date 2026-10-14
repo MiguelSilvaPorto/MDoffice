@@ -2464,6 +2464,14 @@ export class PowerPointHost {
     if (ctrl && !e.shiftKey && (k === "b" || k === "i" || k === "u") && this.selecao.length) return this.consumir(e, () => this.run(k === "b" ? "negrito" : k === "i" ? "italico" : "sublinhado"));
 
     if (e.key === "Escape") {
+      // prévia de animação em andamento: o Escape para e devolve a forma ao normal
+      if (this.animPreview) {
+        this.consumir(e, () => {
+          this.animPreview?.cancelar();
+          this.animPreview = null;
+        });
+        return;
+      }
       if (this.ferramenta) this.consumir(e, () => this.run("ferramenta", ""));
       else if (this.selecao.length) this.consumir(e, () => this.selecionar([]));
       return;
@@ -2678,7 +2686,7 @@ export class PowerPointHost {
     }, chave);
   }
 
-  /** Aplica um efeito à seleção (a ordem é a da aplicação). */
+  /** Aplica um efeito à seleção (a ordem é a da aplicação) e já mostra como ele toca. */
   private aplicarAnimacao(tipo: AnimacaoTipo): void {
     if (!this.selecao.length) return;
     const ids = comGrupos(this.atual(), this.selecao);
@@ -2687,6 +2695,8 @@ export class PowerPointHost {
       for (const id of ids) nova = comAnimacao(nova, id, tipo);
       return nova;
     }, "animacao");
+    // como no PowerPoint: aplicar mostra o efeito tocando; a prévia devolve a forma ao normal
+    this.preverAnimacoes();
   }
 
   /** Muda o início do efeito da forma principal (ao clicar / com / depois do anterior). */
@@ -2743,7 +2753,8 @@ export class PowerPointHost {
     const lista = normalizarAnimacoes(this.atual().animacoes);
     if (!lista?.length) return;
     this.animPreview?.cancelar();
-    this.animPreview = iniciarAnimacoes(this.slideEl, lista, { automatico: true });
+    // limparNoFim: a prévia é só uma espiada — no fim a forma volta ao estado de projeto
+    this.animPreview = iniciarAnimacoes(this.slideEl, lista, { automatico: true, limparNoFim: true });
   }
 
   // ------------------------------------------------------------------

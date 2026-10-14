@@ -76,7 +76,9 @@ avisado ao abrir (nunca some em silêncio).
   (trajetória, voar e limpar), **por parágrafo** (cada parágrafo num passo), ordem (↑↓), remover e
   prévia; as formas animadas ganham **selos numerados** no palco, o **painel de animação** (aba
   lateral) lista a ordem e o `.pptx` faz round-trip do `p:timing`/`p:animMotion` (o que não é
-  modelado volta cru, com aviso).
+  modelado volta cru, com aviso). **Aplicar já mostra o efeito tocando** e a **prévia devolve a
+  lâmina ao estado de projeto** ao terminar (o **Esc** interrompe na hora) — nada fica aplicado
+  no palco fora da apresentação.
 - **Lâminas**: arrastar as miniaturas para reordenar (na faixa do topo ou na vertical),
   ocultar, renomear e resetar (com ida e volta no `.pptx`), duplicar e excluir. **Nova lâmina** e
   **Layout** abrem uma **galeria em grade** com a **miniatura de cada layout** (os espaços como

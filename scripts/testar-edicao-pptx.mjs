@@ -573,6 +573,79 @@ const AN = await empacotar("src/powerpoint/edicao/animacao.ts", "animacao.mjs");
       AN.CLASSE_ANIMACAO.rodaFora === "saida"
   );
   ok("animação: texturas não têm direção", !AN.aceitaDirecaoAnimacao("dividir") && !AN.aceitaDirecaoAnimacao("persianas") && !AN.aceitaDirecaoAnimacao("dissolver") && !AN.aceitaDirecaoAnimacao("roda"));
+
+  // trocar o efeito de uma forma: os padrões do tipo novo valem; o que é escolha da forma fica
+  ok(
+    "animação: trocar o efeito volta aos padrões do tipo novo (duração)",
+    JSON.stringify(AN.comAnimacao([{ forma: "s1", tipo: "surgir", duracao: 0.5, atraso: 0.25 }], "s1", "ampliar")) === JSON.stringify([{ forma: "s1", tipo: "ampliar", duracao: 2, atraso: 0.25 }]),
+    JSON.stringify(AN.comAnimacao([{ forma: "s1", tipo: "surgir", duracao: 0.5, atraso: 0.25 }], "s1", "ampliar"))
+  );
+  ok(
+    "animação: trocar para trajetória usa a direção padrão dela",
+    JSON.stringify(AN.comAnimacao([{ forma: "s1", tipo: "voar", direcao: "cima" }], "s1", "trajetoria")) === JSON.stringify([{ forma: "s1", tipo: "trajetoria", duracao: 2, direcao: "direita" }]),
+    JSON.stringify(AN.comAnimacao([{ forma: "s1", tipo: "voar", direcao: "cima" }], "s1", "trajetoria"))
+  );
+  ok(
+    "animação: reaplicar o mesmo efeito mantém as escolhas",
+    JSON.stringify(AN.comAnimacao([{ forma: "s1", tipo: "surgir", inicio: "depois", duracao: 1 }], "s1", "surgir")) === JSON.stringify([{ forma: "s1", tipo: "surgir", inicio: "depois", duracao: 1 }]),
+    JSON.stringify(AN.comAnimacao([{ forma: "s1", tipo: "surgir", inicio: "depois", duracao: 1 }], "s1", "surgir"))
+  );
+}
+
+// ---------------------------------------------------------------- jogador das animações (DOM falso)
+// A prévia do editor toca a sequência e no fim devolve a lâmina ao estado de projeto; a
+// apresentação (F5) NÃO limpa — lá o estado final é o estado da lâmina.
+{
+  const RA = await empacotar("src/powerpoint/render/animacao.ts", "render-animacao.mjs");
+  globalThis.window = { matchMedia: () => ({ matches: false }), setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout };
+  const espera = (ms) => new Promise((r) => setTimeout(r, ms));
+  const criarEl = (id) => {
+    const classes = new Set();
+    const props = new Map();
+    return {
+      dataset: { shape: id },
+      classList: {
+        add: (...cs) => cs.forEach((c) => classes.add(c)),
+        remove: (...cs) => cs.forEach((c) => classes.delete(c)),
+        contains: (c) => classes.has(c),
+      },
+      style: { setProperty: (k, v) => props.set(k, v), removeProperty: (k) => props.delete(k) },
+      addEventListener: () => {},
+      querySelectorAll: () => [],
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 100, height: 50 }),
+      _classes: classes,
+    };
+  };
+  const el = criarEl("s1");
+  const raiz = { querySelectorAll: () => [el], clientWidth: 400, clientHeight: 300, getBoundingClientRect: () => ({ left: 0, top: 0, width: 400, height: 300 }) };
+  const limpo = () => !el._classes.has("forma-amplia") && !el._classes.has("forma-surge") && !el._classes.has("forma-some") && !el._classes.has("forma-oculta");
+
+  // prévia de um efeito fixo (ampliar): aplica e, no fim, devolve a forma ao normal
+  RA.iniciarAnimacoes(raiz, [{ forma: "s1", tipo: "ampliar", duracao: 0.1 }], { automatico: true, limparNoFim: true });
+  await espera(60);
+  ok("jogador: a prévia aplica o efeito fixo", el._classes.has("forma-amplia"));
+  await espera(250);
+  ok("jogador: a prévia limpa no fim (a forma volta ao normal)", limpo());
+
+  // apresentação (sem limparNoFim): o estado final fica
+  RA.iniciarAnimacoes(raiz, [{ forma: "s1", tipo: "ampliar", duracao: 0.1 }], { automatico: true });
+  await espera(250);
+  ok("jogador: na apresentação o efeito fixo fica", el._classes.has("forma-amplia"));
+  el._classes.clear();
+
+  // prévia de uma saída (sumir): depois da prévia a forma volta a aparecer
+  RA.iniciarAnimacoes(raiz, [{ forma: "s1", tipo: "sumir", duracao: 0.1 }], { automatico: true, limparNoFim: true });
+  await espera(60);
+  ok("jogador: a prévia da saída aplica", el._classes.has("forma-some"));
+  await espera(250);
+  ok("jogador: a prévia da saída devolve a forma", limpo());
+
+  // cancelar (troca de lâmina, Escape) limpa na hora
+  const c = RA.iniciarAnimacoes(raiz, [{ forma: "s1", tipo: "surgir", duracao: 5 }], { automatico: true });
+  await espera(40);
+  c.cancelar();
+  ok("jogador: cancelar limpa na hora", limpo());
+  delete globalThis.window;
 }
 
 // ---------------------------------------------------------------- round-trip do p:timing

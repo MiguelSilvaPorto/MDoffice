@@ -5082,6 +5082,53 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   não foi aplicada no fecho da pasta padrão. A entrada volta ao lugar certo: o que está na `main`
   mora em **Adicionado**, e o dono da tarefa promove no **mesmo commit** em que o código entra.
 
+## src/powerpoint/render/animacao.ts
+
+### 2026-10-14 · desfazer da animação · a prévia limpa no fim (limparNoFim)
+- **Local:** as opções do `iniciarAnimacoes`, o `cancelar` (agora uma const nomeada), o `voltar` e o
+  `correr`
+- **Linha:** `novo` — `limparNoFim?: boolean`: quando a sequência acaba e não há próximo passo,
+  `setTimeout(voltar, ms + 120)` chama o `cancelar` (tira as classes e as variáveis do efeito);
+  o `cancelar` virou uma const para o `voltar` poder chamá-lo
+- **Porquê:** o jogador é o mesmo da apresentação — e lá o estado final **é** o estado da lâmina
+  (não se mexe). Na prévia do editor, porém, um efeito fixo (Ampliar, Girar, Transparência,
+  trajetória, saídas) ficava **aplicado no palco** depois de tocar, e "desfazer" só removeria a
+  animação — o usuário relatou exatamente isso. A limpeza com `ms + 120` espera a animação acabar
+  (mesma folga da rede de segurança dos efeitos suaves).
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · desfazer da animação · aplicar já toca, Esc interrompe
+- **Local:** `preverAnimacoes`, `aplicarAnimacao` e o `Escape` do `aoTecla`
+- **Linha:** a prévia passa `limparNoFim: true`; `aplicarAnimacao` chama `preverAnimacoes()` depois
+  de aplicar (como o PowerPoint, que toca o efeito escolhido); o `Escape` cancela a prévia em
+  andamento antes das outras ações dele (ferramenta/seleção)
+- **Porquê:** com a limpeza no fim, a prévia pode rodar sozinha a cada aplicação — é ela que dá o
+  retorno visual do efeito; o Esc é a saída manual para quem não quer esperar.
+
+## src/powerpoint/edicao/animacao.ts
+
+### 2026-10-14 · desfazer da animação · trocar o efeito usa os padrões do tipo novo
+- **Local:** `comAnimacao`
+- **Linha:** ao trocar o tipo, a base do efeito novo só herda `inicio`, `atraso` e `porParagrafo`
+  (antes herdava tudo, inclusive `duracao` e `direcao`)
+- **Porquê:** descoberto ao reproduzir o relato — aplicar **Ampliar** numa forma que tinha
+  **Surgir** nascia com 0,5 s (a duração do fade) em vez dos 2 s do tipo, e trocar para a
+  trajetória mantinha a direção do voo. Duração e direção são do tipo (têm padrão próprio); início,
+  atraso e "por parágrafo" são escolhas da forma e continuam valendo.
+
+## scripts/testar-edicao-pptx.mjs
+
+### 2026-10-14 · desfazer da animação · testes do jogador (DOM falso) e da troca de efeito
+- **Local:** bloco novo "jogador das animações (DOM falso)" e o bloco das animações puras
+- **Linha:** `novo` — um DOM falso mínimo (classList/style/querySelectorAll) roda o
+  `iniciarAnimacoes` de verdade: a prévia aplica o efeito fixo e **limpa no fim**; na apresentação
+  (sem `limparNoFim`) o estado final **fica**; a prévia de uma saída devolve a forma; o `cancelar`
+  limpa na hora. Mais três casos de `comAnimacao`: trocar volta aos padrões do tipo novo (duração e
+  direção) e reaplicar o mesmo efeito mantém as escolhas
+- **Porquê:** o defeito só aparecia com o jogador rodando (nenhum teste puro o pegaria); o DOM
+  falso deixa o teste no mesmo `node scripts/testar-edicao-pptx.mjs`, sem dependência nova.
+
 ---
 
 ## Próximos registros

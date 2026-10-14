@@ -378,7 +378,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **Aplicar animação não deixa mais a forma presa**: a **prévia** (e a prévia que toca ao aplicar
+  um efeito, como no PowerPoint) agora **devolve a forma ao normal** quando termina — antes, um
+  efeito de ênfase (Ampliar, Girar, Transparência) deixava a forma maior/girada/transparente no
+  palco e uma saída (Sumir, Desaparecer, Encolher) a deixava **invisível**, sem jeito de desfazer
+  só o estado visual. O **Esc** interrompe uma prévia em andamento e devolve tudo na hora, e
+  **trocar o efeito** de uma forma agora usa os padrões do efeito novo (a duração do antigo não
+  contamina mais: Ampliar volta a nascer com 2 s).
 
 ### Adicionado (na main)
 

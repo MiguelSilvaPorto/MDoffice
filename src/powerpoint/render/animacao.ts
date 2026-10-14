@@ -152,10 +152,17 @@ function agrupar(alvos: Alvo[]): Passo[] {
   return passos;
 }
 
+/**
+ * Prepara e toca as animações de uma lâmina.
+ * - `automatico`: toca a sequência inteira sem esperar cliques (a prévia do editor);
+ * - `limparNoFim`: no fim da sequência a lâmina volta ao estado de projeto (prévia);
+ *   sem ele o estado final fica (a apresentação, onde o fim é o estado real da lâmina);
+ * - `atrasoMs`: espera antes do primeiro passo.
+ */
 export function iniciarAnimacoes(
   raiz: HTMLElement,
   animacoes: Animacao[] | undefined,
-  opts: { atrasoMs?: number; automatico?: boolean } = {}
+  opts: { atrasoMs?: number; automatico?: boolean; limparNoFim?: boolean } = {}
 ): ControleAnimacoes {
   const vazio: ControleAnimacoes = { proximo: () => false, cancelar: () => {} };
   const lista = animacoes ?? [];
@@ -252,6 +259,57 @@ export function iniciarAnimacoes(
     return maior;
   };
 
+  /** Cancela: para tudo e limpa as classes (troca de lâmina, fechar a apresentação, fim da prévia). */
+  const cancelar = (): void => {
+    vivo = false;
+    window.clearTimeout(timer);
+    const els = new Set<HTMLElement>();
+    for (const alvo of alvos) if (alvo.el) els.add(alvo.el);
+    for (const el of els) {
+      el.classList.remove(
+        OCULTA,
+        SURGE,
+        SOME,
+        PULSA,
+        AMPLIA,
+        GIRA,
+        TRANSP,
+        TRAJ,
+        VOA,
+        VOA_FORA,
+        ZOOM,
+        ENCOLHE,
+        LIMPA,
+        LIMPA_FORA,
+        CAIXA,
+        CAIXA_FORA,
+        CIRCULO,
+        CIRCULO_FORA,
+        LOSANGO,
+        LOSANGO_FORA,
+        DIVIDIR,
+        DIVIDIR_FORA,
+        PERSIANAS,
+        PERSIANAS_FORA,
+        DISSOLVE,
+        DISSOLVE_FORA,
+        RODA,
+        RODA_FORA
+      );
+      el.style.removeProperty("--anim-dur");
+      el.style.removeProperty("--traj-x");
+      el.style.removeProperty("--traj-y");
+      el.style.removeProperty("--voa-x");
+      el.style.removeProperty("--voa-y");
+      el.style.removeProperty("--wipe-lado");
+    }
+  };
+
+  /** Volta a lâmina ao estado de projeto: tira tudo que o jogador aplicou (fim da prévia). */
+  const voltar = (): void => {
+    if (vivo) cancelar();
+  };
+
   /** Corre os passos automáticos em sequência; para quando o próximo espera clique. */
   const correr = (): void => {
     if (!vivo) return;
@@ -261,6 +319,9 @@ export function iniciarAnimacoes(
     const ms = tocarPasso(p);
     const proximo = passos[indice];
     if (proximo && (proximo.auto || opts.automatico)) timer = window.setTimeout(correr, ms);
+    // prévia: quando a sequência acaba, nada fica aplicado (a lâmina volta ao projeto);
+    // na apresentação o estado final É o estado da lâmina, então não se mexe
+    else if (!proximo && opts.limparNoFim) timer = window.setTimeout(voltar, ms + 120);
   };
 
   const atraso = Math.max(0, opts.atrasoMs ?? 0);
@@ -274,49 +335,6 @@ export function iniciarAnimacoes(
       correr();
       return true;
     },
-    cancelar(): void {
-      vivo = false;
-      window.clearTimeout(timer);
-      const els = new Set<HTMLElement>();
-      for (const alvo of alvos) if (alvo.el) els.add(alvo.el);
-      for (const el of els) {
-        el.classList.remove(
-          OCULTA,
-          SURGE,
-          SOME,
-          PULSA,
-          AMPLIA,
-          GIRA,
-          TRANSP,
-          TRAJ,
-          VOA,
-          VOA_FORA,
-          ZOOM,
-          ENCOLHE,
-          LIMPA,
-          LIMPA_FORA,
-          CAIXA,
-          CAIXA_FORA,
-          CIRCULO,
-          CIRCULO_FORA,
-          LOSANGO,
-          LOSANGO_FORA,
-          DIVIDIR,
-          DIVIDIR_FORA,
-          PERSIANAS,
-          PERSIANAS_FORA,
-          DISSOLVE,
-          DISSOLVE_FORA,
-          RODA,
-          RODA_FORA
-        );
-        el.style.removeProperty("--anim-dur");
-        el.style.removeProperty("--traj-x");
-        el.style.removeProperty("--traj-y");
-        el.style.removeProperty("--voa-x");
-        el.style.removeProperty("--voa-y");
-        el.style.removeProperty("--wipe-lado");
-      }
-    },
+    cancelar,
   };
 }

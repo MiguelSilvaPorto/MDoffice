@@ -262,11 +262,17 @@ export function normalizarAnimacoes(lista: Animacao[] | undefined): Animacao[] |
   return out.length ? out : undefined;
 }
 
-/** Aplica um efeito à forma: troca o existente no lugar (preserva a ordem) ou acrescenta no fim. */
+/**
+ * Aplica um efeito à forma: troca o existente no lugar (preserva a ordem) ou acrescenta no fim.
+ * O efeito novo usa os padrões DELE (duração e direção são do tipo, não da forma); o que é
+ * escolha da forma — início, atraso e "por parágrafo" — continua quando o efeito muda.
+ */
 export function comAnimacao(lista: Animacao[] | undefined, forma: string, tipo: AnimacaoTipo): Animacao[] {
   const atual = normalizarAnimacoes(lista) ?? [];
   const i = atual.findIndex((a) => a.forma === forma);
-  const novo = normalizarAnimacao({ ...(i >= 0 ? atual[i] : { forma }), forma, tipo })!;
+  const anterior = i >= 0 ? atual[i] : undefined;
+  const base: Partial<Animacao> = anterior && anterior.tipo === tipo ? anterior : { inicio: anterior?.inicio, atraso: anterior?.atraso, porParagrafo: anterior?.porParagrafo };
+  const novo = normalizarAnimacao({ ...base, forma, tipo })!;
   if (i >= 0) atual[i] = novo;
   else atual.push(novo);
   return atual;
