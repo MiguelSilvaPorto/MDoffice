@@ -163,7 +163,7 @@ export class Painel {
     return [
       `<div class="pf-linha"><span>Família</span><span class="pf-estilo-fams">${familias}</span></div>`,
       radios("est-int", "est-cor-int", e.intensidade, INTENSIDADES.map((i) => [i.id, i.nome] as [string, string])),
-      radios("est-bri", "est-cor-bri", e.brilho, [["nada", "Sem brilho"], ["lustro", "Lustro"]] as [string, string][]),
+      radios("est-bri", "est-cor-bri", e.brilho, [["nada", "Sem brilho"], ["lustro", "Lustro"], ["dobra", "Dobra"]] as [string, string][]),
       linhaNum("Ângulo", "est-cor-angulo", e.angulo ?? 45, 15, 0, 360, "°"),
       linhaCor("Cor-base", "est-cor-base", base || null),
       `<button type="button" class="btn small" data-click="estilo-cor" data-valor="desligar">Desligar estilo (editar à mão)</button>`,

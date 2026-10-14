@@ -844,6 +844,7 @@ console.log("\nestilos de cor (galeria, painel e o vivo)");
     /estilo-cor:familia:\$\{id\}/.test(fitaEst) &&
       /estilo-cor:intensidade:(suave|" \+ )?/.test(fitaEst) &&
       /estilo-cor:brilho:/.test(fitaEst) &&
+      /estilo-cor:brilho:dobra/.test(fitaEst) &&
       /estilo-cor:angulo:/.test(fitaEst) &&
       /estilo-cor:cor:\$\{c\}/.test(fitaEst) &&
       /estilo-cor:desligar/.test(fitaEst),
@@ -876,7 +877,7 @@ console.log("\nestilos de cor (galeria, painel e o vivo)");
   );
   checa(
     "o painel assina o estilo (redesenha quando ele muda) e manda os comandos certos",
-    /s\.midia, s\.src, s\.estilo\]\)/.test(painelEst) && /case "est-cor-base":/.test(pptEst) && /case "est-cor-int":/.test(pptEst) && /case "est-cor-bri":/.test(pptEst) && /case "est-cor-angulo":/.test(pptEst),
+    /s\.midia, s\.src, s\.estilo\]\)/.test(painelEst) && /\["dobra", "Dobra"\]/.test(painelEst) && /case "est-cor-base":/.test(pptEst) && /case "est-cor-int":/.test(pptEst) && /case "est-cor-bri":/.test(pptEst) && /case "est-cor-angulo":/.test(pptEst),
     "sem a assinatura o painel não acompanharia o estilo"
   );
   checa(

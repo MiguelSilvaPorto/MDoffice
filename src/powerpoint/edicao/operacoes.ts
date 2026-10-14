@@ -45,6 +45,12 @@ export function clonarFormas(alvo: Shape[], dx = 0, dy = 0): Shape[] {
       if (de && para) c.liga = { ...c.liga, de, para, grupo: g ?? c.liga.grupo };
       else delete c.liga;
     }
+    if (c.capa) {
+      // a capa só continua presa quando a forma-base veio junto; senão vira uma forma comum
+      const de = ids.get(c.capa.de);
+      if (de) c.capa = { ...c.capa, de };
+      else delete c.capa;
+    }
     delete c.fixa;
     return c;
   });

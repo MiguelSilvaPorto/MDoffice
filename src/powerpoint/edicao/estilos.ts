@@ -317,9 +317,21 @@ export function atualizarEstilos(slide: Slide, d: Dim, tema: { acento: string })
       continue;
     }
     const esq = esquemaDoEstilo(s.estilo, tema);
-    const nova = aplicarEsquemaNaForma(s, esq);
-    saida.push(nova);
-    if (s.estilo.brilho === "dobra") saida.push(capaDaDobra(nova, d, capaDe.get(s.id)?.id));
+    let nova = aplicarEsquemaNaForma(s, esq);
+    if (s.estilo.brilho === "dobra") {
+      // a capa nasce AGRUPADA com a base (mesmo `grupo` e vizinhas na ordem das formas — é assim
+      // que o .pptx as leva como um grupo). O grupo só nasce junto da capa: se o usuário
+      // desagrupar depois, o recálculo respeita (não volta a agrupar).
+      const capaAtual = capaDe.get(s.id);
+      if (!nova.grupo) {
+        const g = capaAtual ? capaAtual.grupo : uid();
+        if (g) nova = { ...nova, grupo: g };
+      }
+      saida.push(nova);
+      saida.push(capaDaDobra(nova, d, capaAtual?.id));
+    } else {
+      saida.push(nova);
+    }
   }
 
   const comFundo = slide.bgEstilo ? { ...slide, bg: fillDoFundo(slide.bgEstilo, tema) } : slide;

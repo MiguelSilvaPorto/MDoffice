@@ -7064,3 +7064,61 @@ antigas quando fizer sentido.
 - **Linha:** `novo`
 - **Porquê:** é uma mudança do módulo PowerPoint (não de interface geral), e a entrada entra já
   promovida, como o fechamento exige.
+## src/powerpoint/edicao/estilos.ts
+
+### 2026-10-14 · estilos de cor · a capa nasce agrupada com a base (R3)
+- **Local:** `atualizarEstilos` (o ramo do `brilho === "dobra"`)
+- **Linha:** `saida.push(nova); if (brilho === "dobra") saida.push(capaDaDobra(nova, …))` →
+  o ramo escolhe o grupo: `+ if (!nova.grupo) { const g = capaAtual ? capaAtual.grupo : uid(); … }`
+  antes de empurrar a base e a capa
+- **Porquê:** a capa precisa viajar junto — e no `.pptx` o exportador agrupa **formas seguidas com
+  o mesmo `grupo`** num `p:grpSp`, então o grupo (e a vizinhança na ordem) é o que faz a dobra
+  abrir no PowerPoint como UM grupo editável. O grupo **só nasce junto da capa**: se o usuário
+  desagrupar depois, o recálculo respeita (não volta a agrupar a cada quadro) — a alternativa
+  (um grupo derivado do id da base, sempre re-aplicado) faria o "Desagrupar" parecer quebrado.
+  Quando a capa já existe mas perdeu o grupo, ele é restaurado da própria capa.
+
+## src/powerpoint/edicao/operacoes.ts
+
+### 2026-10-14 · estilos de cor · a capa na cópia (R3)
+- **Local:** `clonarFormas` (duplicar, colar e Ctrl+arrastar)
+- **Linha:** `+ if (c.capa) { const de = ids.get(c.capa.de); if (de) c.capa = { …c.capa, de }; else delete c.capa; }`
+- **Porquê:** mesmo desenho do `liga`: a cópia só continua presa quando a **forma-base veio
+  junto** (o grude aponta para o id NOVO); copiada sozinha, a capa vira uma forma comum em vez de
+  apontar para uma base que não foi copiada. Sem isso, duplicar um cartão com dobra deixaria a
+  cópia do brilho presa ao cartão ORIGINAL — o recálculo a puxaria de volta por cima dele.
+
+## src/powerpoint/ui/fita.ts · src/powerpoint/ui/painel.ts
+
+### 2026-10-14 · estilos de cor · o acabamento Dobra (R3)
+- **Local:** `menuEstilos` (a fileira "Brilho") e o `radios("est-bri", …)` do `htmlEstilo`
+- **Linha:** `+ ${op(atual?.brilho === "dobra", "estilo-cor:brilho:dobra", "Dobra")}` ·
+  `[["nada", "Sem brilho"], ["lustro", "Lustro"], ["dobra", "Dobra"]]`
+- **Porquê:** o motor e o host já aceitavam `dobra` desde a R1/R2 (`ehBrilho` nasceu com os três)
+  — faltava só a porta na interface. Nada de caso novo no despacho: o mesmo
+  `estilo-cor:brilho:` leva os três, e o `estiloCor` liga/atualiza a receita; o recálculo cria a
+  capa (ou a remove, quando o brilho muda para nada/lustro).
+
+## scripts/testar-estilos.mjs · scripts/testar-edicao-pptx.mjs · scripts/testar-layout.mts
+
+### 2026-10-14 · estilos de cor · a dobra, a cópia e o caso de ouro (R3)
+- **Local:** o bloco "a dobra agrupada e a cópia" (motor), o bloco "estilos de cor no `.pptx`" e
+  os dois checks novos de layout
+- **Linha:** `+ 7 verificações` (nasce agrupada e vizinha, desagrupar respeitado, a cópia presa na
+  cópia, grupo novo, o estilo da cópia, copiar só a capa) · `+ 7 verificações` no arquivo
+  (`a:gradFill` com a parada 45000, o `a:lin` do ângulo, o alfa do lustro, o contorno no tom
+  profundo, o `outerShdw`, o `p:grpSp` com 2 formas, a capa `custGeom` translúcida) ·
+  `+ o "Dobra" na galeria e no painel`
+- **Porquê:** a dobra é o primeiro caso do app em que **duas formas** são um objeto visual — as
+  verificações prendem as duas pontas: o grupo que nasce (e o que não renasce) e o arquivo que o
+  PowerPoint vai abrir. O caso de ouro usa o MESMO `Escritor` do app, então o que o teste lê é o
+  XML que iria no `.pptx` de verdade.
+
+## docs/powerpoint.md · docs/estilos-de-cor-plano.md
+
+### 2026-10-14 · estilos de cor · a dobra no doc e a R3 no plano (R3)
+- **Local:** a seção "Estilos de cor" (as balas do Brilho e do `.pptx`) e a checklist do plano
+- **Linha:** `+ o Lustro e a Dobra explicados (a capa agrupada, o desagrupar, a cópia)` ·
+  `+ a Dobra e o grupo no p:grpSp` · `+ R3 marcada como entregue`
+- **Porquê:** a dobra muda o que o usuário vê (e o que ele encontra no PowerPoint: um grupo) —
+  o doc do módulo precisa dizer; e o plano é o que permite retomar a R4/R5 numa sessão nova.

@@ -151,6 +151,29 @@ const para = (runs, extra = {}) => ({ runs, align: "esquerda", lvl: 0, marL: 0, 
   ok("limpar formatação não mexe no resto do texto", limpo[0].runs.map((r) => r.text).join("") === "abcdef" && limpo[0].runs.length === 1);
 }
 
+// ---------------------------------------------------------------- estilos de cor no .pptx (o caso de ouro)
+const E = await empacotar("src/powerpoint/edicao/estilos.ts", "estilos.mjs");
+const RE = await empacotar("src/powerpoint/pptxexport/rica.ts", "rica-estilos.mjs");
+{
+  const setup = { aspect: "16:9", theme: "claro", showNumber: false, footer: "", fontFamily: "Segoe UI", fontSize: 18, bg: "" };
+  const tema = { acento: "1F9D55" };
+  const base = forma("a", 10, 12, 34, 12, { estilo: { familia: "esmeralda", intensidade: "media", brilho: "lustro", angulo: 45 } });
+  const comEstilo = E.atualizarEstilos(slide([base]), dim, tema);
+  const esq = E.esquemaDoEstilo(base.estilo, tema);
+  const xml = new RE.Escritor(setup).lamina({ md: "", layout: "conteudo", notes: "", shapes: comEstilo.shapes }).xml;
+  ok("pptx: o gradiente do estilo vai nativo (a cor no meio da rampa)", xml.includes("<a:gradFill") && xml.includes('<a:gs pos="45000"><a:srgbClr val="1F9D55"/>'));
+  ok("pptx: o ângulo do estilo vira o `a:lin` do arquivo", xml.includes(`<a:lin ang="${45 * 60000}"`));
+  ok("pptx: a parada do lustro leva o alfa (branco translúcido)", xml.includes('<a:srgbClr val="FFFFFF"><a:alpha val="24000"/></a:srgbClr>'));
+  ok("pptx: o contorno sai no tom profundo da rampa", xml.includes(`<a:ln w="${Math.round(0.75 * 12700)}"`) && xml.includes(`<a:srgbClr val="${esq.escuro}"><a:alpha val="55000"/>`));
+  ok("pptx: a sombra leve vai no efeito (outerShdw)", xml.includes("<a:outerShdw") && xml.includes(`blurRad="${Math.round(12 * 12700)}"`));
+
+  // a dobra vira duas formas vizinhas no mesmo grupo (é o que o PowerPoint abre como um grupo)
+  const comDobra = E.atualizarEstilos(slide([{ ...base, estilo: { ...base.estilo, brilho: "dobra" } }]), dim, tema);
+  const xmlDobra = new RE.Escritor(setup).lamina({ md: "", layout: "conteudo", notes: "", shapes: comDobra.shapes }).xml;
+  ok("pptx: a dobra sai como grupo (base + capa no mesmo grpSp)", xmlDobra.includes("<p:grpSp>") && (xmlDobra.match(/<p:sp>/g) ?? []).length === 2);
+  ok("pptx: a capa do brilho é um caminho livre translúcido", xmlDobra.includes("<a:custGeom") && /<a:alpha val="16000"\/>/.test(xmlDobra));
+}
+
 // ---------------------------------------------------------------- marca-texto no .pptx (escrita e leitura)
 const R = await empacotar("src/powerpoint/pptxexport/rica.ts", "rica.mjs");
 const TI = await empacotar("src/powerpoint/pptximport/texto.ts", "imptexto.mjs");

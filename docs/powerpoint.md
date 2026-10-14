@@ -175,14 +175,20 @@ avisado ao abrir (nunca some em silêncio).
   desvia o matiz para o frio (verde vira teal) em vez de só escurecer. Sem cor própria, o estilo
   usa a **cor do tema** e acompanha os Modelos.
 - A galeria ainda ajusta **Intensidade** (Suave/Média/Forte — o quanto a rampa abre), **Brilho**
-  (Sem brilho/Lustro), **Ângulo** (0/45/90/135) e a **Cor do estilo**; o mesmo conjunto aparece na
-  seção **Estilo** do painel Formatar, que também traz o **Desligar estilo**.
+  (**Sem brilho**, **Lustro** ou **Dobra**), **Ângulo** (0/45/90/135) e a **Cor do estilo**; o
+  mesmo conjunto aparece na seção **Estilo** do painel Formatar, que também traz o **Desligar
+  estilo**. O **Lustro** é a faixa clara translúcida dentro do próprio gradiente; a **Dobra** é o
+  brilho diagonal da referência: uma **forma-capa** (paralelogramo com gradiente de branco) que
+  nasce **agrupada com a forma** e acompanha a caixa e o giro dela em qualquer mudança — apagar a
+  forma leva a capa junto, **desagrupar manda** (o recálculo não volta a agrupar) e
+  **copiar/colar** remapeia o grude para as cópias (copiar só a capa a solta, virando forma comum).
 - Com o estilo ligado, **ele manda** no preenchimento, no contorno, na sombra e na cor do texto:
   trocar a orientação do **gradiente** vira o **ângulo** do estilo; e editar a pintura à mão
   (contorno, sombra, estilos rápidos, "sem preenchimento") **desliga o estilo**, deixando o que
   estava na tela como pintura normal, editável. O **Desligar estilo** faz o mesmo sem mudar nada.
-- No `.pptx` o gradiente vai **nativo** (paradas com transparência) e abre no PowerPoint com o
-  mesmo visual; o conceito "vivo" não existe no arquivo — reimportar traz o visual como pintura.
+- No `.pptx` o gradiente vai **nativo** (parada a parada, com transparência), o contorno e a
+  sombra vão no lugar certo e a **Dobra abre como um grupo** (base + capa no mesmo `p:grpSp`,
+  editável lá); o conceito "vivo" não existe no arquivo — reimportar traz o visual como pintura.
 
 ## Apresentar (F5)
 

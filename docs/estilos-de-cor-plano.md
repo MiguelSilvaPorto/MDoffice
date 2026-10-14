@@ -13,7 +13,9 @@
 - [x] **R2 — estilo na forma** (galeria na fita + seção no painel + vivo + lustro) — entregue
   (2026-10-14). `estiloCor`/`comPintura` no host, `estilos.ts` ganhou `ligarEstilo`/`soltarEstilo`;
   a cor do preenchimento é a cor-base e a pintura manual solta o estilo.
-- [ ] **R3 — dobra** (forma-capa) + caso de ouro de exportação no `.pptx`
+- [x] **R3 — dobra** (forma-capa) + caso de ouro de exportação no `.pptx` — entregue (2026-10-14).
+  A capa nasce agrupada com a base (e o desagrupar manda); a cópia remapeia o grude; o
+  `test:pptx-edicao` prende o `a:gradFill`/alfas/`p:grpSp` do estilo.
 - [ ] **R4 — fundo da lâmina** com estilo
 - [ ] **R5 — modelos** (Design) com estilo
 - [ ] **R6 — polimento** (opcional)

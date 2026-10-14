@@ -389,6 +389,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   exatamente reto, com os cantos descendo como foram desenhados. O encaixe passou a rodar **por
   último** (depois da suavização), senão a média móvel puxava os pontos do topo de volta para os
   cantos.
+- **Estilos de cor (R3 — o brilho em dobra)**: o acabamento **Dobra** entrou na galeria e no
+  painel: além do **Lustro** (a faixa clara dentro da própria rampa), agora dá para pôr o
+  **brilho diagonal** da referência — uma **forma-capa** translúcida (paralelogramo com gradiente
+  de branco) que nasce **agrupada com a forma** e acompanha caixa e giro em qualquer mudança.
+  Apagar a forma leva a capa junto, **desagrupar manda** (o recálculo não volta a agrupar) e
+  **copiar/colar** remapeia o grude para as cópias (copiar só a capa a solta, vira forma comum).
+  De quebra, o **caso de ouro de exportação** entrou no `test:pptx-edicao`: o gradiente sai
+  **nativo** (parada a parada, com o alfa do lustro), o ângulo vira o `a:lin`, o contorno vai no
+  tom profundo com o alfa, a sombra no efeito, e a **dobra abre no PowerPoint como um grupo**
+  (base + capa no mesmo `p:grpSp`) — a volta traz o visual como pintura.
 
 ### Adicionado (na main)
 

@@ -13,7 +13,9 @@ import { pathToFileURL } from "node:url";
 const raiz = new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 const tmp = mkdtempSync(join(tmpdir(), "pp-estilos-"));
 await build({ entryPoints: [join(raiz, "src/powerpoint/edicao/estilos.ts")], bundle: true, platform: "node", format: "esm", outfile: join(tmp, "estilos.mjs"), logLevel: "error" });
+await build({ entryPoints: [join(raiz, "src/powerpoint/edicao/operacoes.ts")], bundle: true, platform: "node", format: "esm", outfile: join(tmp, "operacoes.mjs"), logLevel: "error" });
 const E = await import(pathToFileURL(join(tmp, "estilos.mjs")).href);
+const O = await import(pathToFileURL(join(tmp, "operacoes.mjs")).href);
 
 let falhas = 0;
 const ok = (nome, cond, detalhe = "") => {
@@ -227,6 +229,31 @@ const parada = (fill, pos) => fill.stops.find((p) => Math.abs(p.pos - pos) < 0.0
   const d2 = E.atualizarEstilos(lâmina([comDobra]), dim, tema);
   const solto2 = E.soltarEstilo(d2, ["a"]);
   ok("soltar: a capa da dobra fica como forma comum", solto2.shapes.length === 2 && !solto2.shapes[1].capa && !solto2.shapes[0].estilo);
+}
+
+// ---------------------------------------------------------------- a dobra agrupada e a cópia (R3)
+{
+  const base = forma("a", 10, 10, 30, 10, { estilo: { ...E.estiloDaFamilia("esmeralda"), brilho: "dobra" } });
+  const d1 = E.atualizarEstilos(lâmina([base]), dim, tema);
+  const [b1, c1] = d1.shapes;
+  ok("dobra: a base e a capa nascem no mesmo grupo", !!b1.grupo && b1.grupo === c1.grupo, JSON.stringify([b1.grupo, c1.grupo]));
+  ok("dobra: a capa continua vizinha da base", c1.capa?.de === "a" && d1.shapes.length === 2);
+
+  // desagrupar manda: o recálculo não volta a agrupar (o grupo só nasce junto da capa)
+  const desagrupado = O.desagruparFormas(d1, ["a"]);
+  const d2 = E.atualizarEstilos(desagrupado, dim, tema);
+  ok("dobra: depois de desagrupar, o recálculo respeita", !d2.shapes[0].grupo && !d2.shapes[1].grupo && d2.shapes[1].capa?.de === "a");
+
+  // copiar a base + a capa: o grude acompanha as cópias (e o grupo é novo)
+  const copiadas = O.clonarFormas(d1.shapes);
+  const [b2, c2] = copiadas;
+  ok("cópia: a capa fica presa na CÓPIA da base", c2.capa?.de === b2.id && b2.id !== b1.id);
+  ok("cópia: o grupo é novo e compartilhado pelas duas", !!b2.grupo && b2.grupo === c2.grupo && b2.grupo !== b1.grupo);
+  ok("cópia: a base copiada continua com o estilo vivo", b2.estilo?.brilho === "dobra" && b2.estilo?.familia === "esmeralda");
+
+  // copiar só a capa: vira forma comum (sem grude inventado)
+  const soCapa = O.clonarFormas([c1])[0];
+  ok("cópia: copiar só a capa solta o grude", !soCapa.capa && soCapa.id !== c1.id);
 }
 
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");

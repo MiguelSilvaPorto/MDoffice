@@ -982,6 +982,7 @@ export class Fita {
       <div class="pp-linhas-op">
         ${op(atual?.brilho === "nada", "estilo-cor:brilho:nada", "Sem brilho")}
         ${op(atual?.brilho === "lustro", "estilo-cor:brilho:lustro", "Lustro")}
+        ${op(atual?.brilho === "dobra", "estilo-cor:brilho:dobra", "Dobra")}
       </div>
       <div class="pp-pop-t">Ângulo</div>
       <div class="pp-linhas-op">
