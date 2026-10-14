@@ -7584,3 +7584,14 @@ antigas quando fizer sentido.
   `+ R5 marcada como entregue (R6 fica como polimento opcional)`
 - **Porquê:** é a última frente combinada do plano — o doc fecha o ciclo (formas, fundo e modelos)
   e o plano atualizado diz que só resta o polimento.
+
+## CHANGELOG.md
+
+### 2026-10-14 · promoção · a entrada da R5 entra no "Adicionado"
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** 1 entrada movida — **Estilos de cor (R5 — os Modelos)** (`f38f274`); a seção ficou com
+  "- (nada no momento)"
+- **Porquê:** o commit já está na `main`, mas a promoção não cabe no mesmo commit do `fechar.ps1`.
+  A conferência olhou que a entrada ainda **não** estava em "Adicionado" e que as das outras
+  sessões (**Conectar sem piscar e na caixa certa**, `9144ba7`) já tinham sido promovidas pelas
+  donas — nada de outra worktree foi tocado.

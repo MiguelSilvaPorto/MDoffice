@@ -384,6 +384,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- (nada no momento)
+
+### Adicionado (na main)
+
+**Backend**
+
+- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
+
+**Frontend**
+
 - **Estilos de cor (R5 — os Modelos)**: o botão **Template** ganhou três modelos com a cara da
   referência — **Esmeralda**, **Oceano** e **Ameixa** — que levam o **Estilo de Cor** no fundo das
   lâminas (a rampa da família, com o acento do próprio modelo) e cujo cartão mostra a **prévia da
@@ -393,15 +403,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   do fundo sai — senão o recálculo a reescreveria logo depois). E **salvar a apresentação como
   modelo** guarda o estilo do fundo do deck junto, então o modelo criado por você reproduz o
   gradiente em qualquer apresentação.
-
-
-### Adicionado (na main)
-
-**Backend**
-
-- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
-
-**Frontend**
 
 - **Estilos de cor (R4 — o fundo da lâmina)**: as mesmas famílias agora pintam o **fundo**: no
   popover **Formatar fundo** (e na seção Fundo do painel quando nada está selecionado) entrou o
