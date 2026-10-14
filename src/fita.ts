@@ -290,3 +290,34 @@ export function ligarAjusteAlturaFita(o: { el: HTMLElement; modo?: "zoom" | "met
 
   aplicar();
 }
+
+/**
+ * Faz a roda do mouse andar de LADO num trecho que passa da largura (as fitas e a galeria de
+ * Estilos, por exemplo).
+ *
+ * Esses trechos rolam na horizontal com a barra escondida; na galeria de Estilos, sem botão
+ * próprio, não havia como alcançar o que ficava cortado — a roda ali não fazia nada. Agora a roda
+ * vertical vira rolagem lateral, como nas galerias do Office, com três cuidados:
+ * - um trecho DENTRO de outro (a galeria dentro da fita) pega o gesto para si — o evento fica
+ *   marcado como tratado (`defaultPrevented`) e o de fora não rola junto nem encadeia;
+ * - `Ctrl`/`Shift`/roda lateral seguem o caminho normal (zoom e rolagem nativa);
+ * - o gesto é do trecho que tem o que rolar: quando ele não passa da largura, o evento segue
+ *   livre (quem estiver atrás decide).
+ */
+export function ligarRodaHorizontal(el: HTMLElement): void {
+  el.addEventListener(
+    "wheel",
+    (e) => {
+      if (e.defaultPrevented) return; // um trecho de dentro já pegou o gesto
+      if (e.ctrlKey || e.metaKey || e.shiftKey) return; // zoom (Ctrl+roda) e atalhos ficam de fora
+      if (Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return; // roda lateral: rolagem normal
+      const max = el.scrollWidth - el.clientWidth;
+      if (max <= 1) return; // não há o que rolar: o gesto segue livre
+      // o gesto é DESTE trecho — mesmo no fim ele não "vaza" para o de fora (a galeria no fim
+      // não deve arrastar a fita inteira, que é o que aconteceria por encadeamento)
+      e.preventDefault();
+      el.scrollLeft = Math.max(0, Math.min(max, el.scrollLeft + e.deltaY));
+    },
+    { passive: false }
+  );
+}

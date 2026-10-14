@@ -4,7 +4,7 @@ import { FONT_FAMILIES, FONT_SIZES } from "./schema";
 import { DEFAULT_SETUP, type PageSetup } from "./model";
 import { h, toast } from "../util";
 import { melhorarSelects } from "../seletor";
-import { ligarAjusteAlturaFita, ligarRecolherFita } from "../fita";
+import { ligarAjusteAlturaFita, ligarRecolherFita, ligarRodaHorizontal } from "../fita";
 
 export interface RibbonHooks {
   editor: WordEditor;
@@ -268,24 +268,10 @@ export class Ribbon {
       }
     });
 
-    // Rolagem horizontal com a roda do mouse (scroll) sobre a fita
+    // A rolagem horizontal com a roda do mouse é feita pelo `ligarRodaHorizontal` (fita.ts),
+    // ligado nos próprios trechos que rolam (a galeria de Estilos e os painéis) — um handler
+    // só, que respeita o trecho de dentro.
     const panelsContainer = host.querySelector<HTMLElement>(".wd-ribbon-panels");
-    if (panelsContainer) {
-      panelsContainer.addEventListener(
-        "wheel",
-        (e: WheelEvent) => {
-          const activePanel = panelsContainer.querySelector<HTMLElement>(".wd-rpanel:not([hidden])");
-          if (!activePanel) return;
-          if (Math.abs(e.deltaY) > 0 || Math.abs(e.deltaX) > 0) {
-            e.preventDefault();
-            const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
-            activePanel.scrollLeft += delta;
-            this.updateNavButtons();
-          }
-        },
-        { passive: false }
-      );
-    }
 
     // Botões de navegação lateral (< e >)
     const prevBtn = host.querySelector<HTMLButtonElement>(".wd-ribbon-nav.prev");
@@ -316,6 +302,8 @@ export class Ribbon {
     if (tabsEl && panelsContainer) ligarRecolherFita({ el: host, abas: tabsEl, paineis: panelsContainer });
     // ajustar o tamanho da faixa arrastando a borda de baixo
     ligarAjusteAlturaFita({ el: host, modo: "metricas" });
+    // a roda anda de lado no que passa da largura: a galeria de Estilos e os painéis da fita
+    host.querySelectorAll<HTMLElement>(".rb-styles, .wd-rpanel").forEach(ligarRodaHorizontal);
   }
 
   private setPainter(mode: "off" | "once" | "sticky"): void {

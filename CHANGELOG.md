@@ -1220,6 +1220,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   `.btn.danger` do base pintava o **fundo** enquanto o `.st-btn.danger` pintava o **texto**. Agora
   ele é o botão do lugar — fundo normal, texto vermelho e borda no tom — e o **vermelho sólido com
   texto branco fica só no hover e na confirmação** (o apagar pede dois cliques).
+- **A roda do mouse anda de lado nas fitas e na galeria de Estilos**: as partes que passam da
+  largura (a **galeria de Estilos** do Word, os **painéis** das três fitas e as **abas** das
+  Apresentações) rolam na horizontal com a barra escondida — e sem botão próprio na galeria não
+  havia como alcançar o que ficava cortado: quem via o "Título 3" não chegava à "Citação". Agora a
+  roda vertical vira **rolagem lateral** (como nas galerias do Office), com três cuidados: o trecho
+  de dentro pega o gesto para si (a galeria rolando **não** arrasta a fita inteira, nem no fim),
+  `Ctrl`/`Shift`/roda lateral seguem o caminho normal (o zoom continua do `Ctrl` + roda) e um trecho
+  sem o que rolar deixa o evento passar. O handler virou **uma função só**
+  (`ligarRodaHorizontal`, em `src/fita.ts`): o Excel e o PowerPoint tinham cópias inline — o Word,
+  nenhuma. 4 verificações novas em `npm run test:layout`.
 
 **Ferramentas (dev)**
 

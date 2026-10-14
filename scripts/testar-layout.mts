@@ -1370,5 +1370,37 @@ console.log("\nPowerPoint: duplicar lâmina na fita e no clique direito da minia
   );
 }
 
+// ---------------------------------------------------------------- roda horizontal nas fitas
+
+console.log("\nroda do mouse anda de lado nas fitas e galerias");
+
+{
+  const fita = ler("src/fita.ts");
+  const word = ler("src/word/ribbon.ts");
+  const excel = ler("src/excel/ribbon.ts");
+  const ppt = ler("src/powerpoint/powerpoint.ts");
+  checa(
+    "a rolagem lateral com a roda é uma função só (compartilhada)",
+    /export function ligarRodaHorizontal\(/.test(fita) && /defaultPrevented/.test(fita) && /passive: false/.test(fita),
+    "cada fita ficaria com a sua cópia inline"
+  );
+  checa(
+    "a galeria de Estilos do Word recebe a roda",
+    /\.rb-styles, \.wd-rpanel/.test(word),
+    "o 'Título 3' volta a ficar sem alcance ao lado"
+  );
+  checa(
+    "as três fitas usam a função (sem handler inline duplicado)",
+    !/\.scrollLeft \+= e\.deltaY/.test(excel + ppt) && /ligarRodaHorizontal/.test(word) && /ligarRodaHorizontal/.test(excel) && /ligarRodaHorizontal/.test(ppt),
+    "sobrou cópia inline ou faltou ligar numa das fitas"
+  );
+  checa(
+    "o gesto é do trecho de dentro (mesmo no fim) e Ctrl/Shift ficam de fora",
+    /e\.ctrlKey \|\| e\.metaKey \|\| e\.shiftKey/.test(fita) &&
+      /if \(max <= 1\) return;[\s\S]{0,240}e\.preventDefault\(\);[\s\S]{0,240}Math\.min\(max, el\.scrollLeft \+ e\.deltaY\)/.test(fita),
+    "encadearia para a fita ou roubaria o zoom (Ctrl+roda)"
+  );
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

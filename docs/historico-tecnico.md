@@ -8166,3 +8166,62 @@ antigas quando fizer sentido.
 - **Linha:** `+ 1 entrada` — **Copiar formatação (o Pincel de Formatação)**
 - **Porquê:** a tarefa ainda não está na `main`; a entrada só é promovida quando o `fechar.ps1`
   entregar (mesma regra das entradas vizinhas).
+
+## src/fita.ts
+
+### 2026-10-14 · roda horizontal · o gesto de rolagem lateral vira função compartilhada
+- **Local:** o novo `ligarRodaHorizontal` (no fim do arquivo, junto dos controles da faixa)
+- **Linha:** `novo`
+- **Porquê:** as fitas rolam na horizontal com a barra escondida (`overflow-x: auto;
+  scrollbar-width: none`) e cada uma tinha a sua história: o **Excel** e o **PowerPoint** tinham
+  cópias inline (um handler no contêiner que rolava o painel ativo) e o **Word**, nenhuma — a roda
+  sobre a **galeria de Estilos** não fazia nada, e quem via o "Título 3" cortado não alcançava a
+  "Citação" (o pedido veio com o print dele). A função centraliza o gesto com três decisões:
+  (1) o trecho **de dentro** pega o gesto para si (`defaultPrevented`), então a galeria rolando
+  não arrasta a fita inteira **nem no fim** (encadear moveria a galeria para fora da vista);
+  (2) `Ctrl`/`Shift`/roda lateral passam direto (o zoom continua do `Ctrl` + roda);
+  (3) um trecho que **não passa da largura** deixa o evento livre (`max <= 1`).
+
+## src/word/ribbon.ts
+
+### 2026-10-14 · roda horizontal · a galeria de Estilos entra na rolagem e o handler antigo sai
+- **Local:** a ligação dos controles da fita (depois do `ligarAjusteAlturaFita`) e o handler
+  inline do contêiner (removido)
+- **Linha:** `+ host.querySelectorAll(".rb-styles, .wd-rpanel").forEach(ligarRodaHorizontal)`;
+  o bloco `panelsContainer.addEventListener("wheel", …)` saiu (a declaração do `panelsContainer`
+  ficou, que o `ligarRecolherFita` usa)
+- **Porquê:** com os dois handlers, a roda sobre o painel rolava **duas vezes** (o antigo não
+  olhava `defaultPrevented`) — foi o que a medição mostrou (172 px no meio de uma animação suave
+  para 200). Agora quem rola é o próprio trecho (a galeria, os painéis), um handler só.
+
+## src/excel/ribbon.ts · src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · roda horizontal · as cópias inline viram chamada da função
+- **Local:** `excel/ribbon.ts` — o fim do construtor (o handler em `panelsEl`); `powerpoint.ts` —
+  a ligação da fita (`paineisFita`)
+- **Linha:** os blocos `addEventListener("wheel", …)` inline saíram →
+  `host.querySelectorAll(".xl-panel").forEach(ligarRodaHorizontal)` e
+  `this.fita.el.querySelectorAll(".ppr-painel, .ppr-abas").forEach(ligarRodaHorizontal)`
+- **Porquê:** mesma regra nos três lugares, sem três cópias para manter. Em PPT as **abas** também
+  rolam (`overflow-x`), por isso entram na lista — no Excel as abas não rolam (sem `overflow`), a
+  chamada fica só nos painéis.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · roda horizontal · 4 verificações
+- **Local:** o bloco "roda do mouse anda de lado nas fitas e galerias"
+- **Linha:** `novo`
+- **Porquê:** prende a função única (com `defaultPrevented` e `passive: false`), a galeria de
+  Estilos ligada, as três fitas usando a função **sem** cópia inline e os guardas (Ctrl/Shift e o
+  `max <= 1`). A verificação no navegador mediu o comportamento real: a roda rolou a galeria até o
+  fim (0 → 159 px), o painel **não** andou junto, o gesto ficou na galeria no fim, `Ctrl` + roda
+  não rolou e a roda sobre o painel andou a fita (com `scroll-behavior: smooth`, esperando a
+  animação).
+
+## CHANGELOG.md
+
+### 2026-10-14 · roda horizontal · a entrada no Geral
+- **Local:** Geral → Adicionado → Frontend
+- **Linha:** `novo`
+- **Porquê:** a mudança é das três fitas e do módulo compartilhado (não de um módulo só), então a
+  categoria é **Geral**; a entrada entra já promovida, como o fechamento exige.
