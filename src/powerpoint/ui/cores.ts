@@ -39,6 +39,10 @@ export interface OpcoesCores {
   titulo?: string;
   /** blocos extras (HTML) com botões data-extra="valor"; o clique chama `aoExtra(valor)` */
   extra?: string;
+  /** sem forma escolhida: o menu abre com a dica e os controles desabilitados (não há onde aplicar) */
+  semSelecao?: boolean;
+  /** o texto que explica o que fazer quando não há forma escolhida */
+  dica?: string;
 }
 
 /** Abre o seletor; `aoEscolher(null)` = "sem cor", `aoEscolher("RRGGBB")` = cor. */
@@ -46,6 +50,7 @@ export function abrirCores(ancora: HTMLElement, op: OpcoesCores, aoEscolher: (co
   const doc = (op.paleta ?? []).slice(0, 10);
   const html = `
     ${op.titulo ? `<div class="pp-pop-t">${op.titulo}</div>` : ""}
+    ${op.semSelecao && op.dica ? `<p class="pp-pop-dica">${op.dica}</p>` : ""}
     ${doc.length ? `<div class="pp-pop-t">Cores do documento</div><div class="pp-swatches">${doc.map(quad).join("")}</div>` : ""}
     <div class="pp-pop-t">Cores padrão</div>
     <div class="pp-swatches grade">${PADRAO.flat().map(quad).join("")}</div>
@@ -59,6 +64,10 @@ export function abrirCores(ancora: HTMLElement, op: OpcoesCores, aoEscolher: (co
     ${op.semCor !== undefined ? `<button type="button" class="pp-pop-item" data-sem-cor>${op.semCor}</button>` : ""}
     ${op.extra ?? ""}`;
   const el = abrirPopup(ancora, html, { classe: "pp-cores" });
+  // Sem forma escolhida não há onde pintar: o menu fica só de aviso (o clique não faz nada).
+  if (op.semSelecao) {
+    for (const c of el.querySelectorAll<HTMLButtonElement | HTMLInputElement>("button, input")) c.disabled = true;
+  }
   const escolher = (c: string | null) => {
     if (c) lembrar(c);
     fecharPopup();

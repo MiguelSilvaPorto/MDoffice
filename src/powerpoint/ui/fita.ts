@@ -887,9 +887,11 @@ export class Fita {
         this.menuContorno(ancora);
         return;
       case "sombra": {
+        // sem forma escolhida o menu abre só de aviso: antes o botão ficava mudo (desabilitado)
+        const temForma = !!est.forma;
         const el = abrirPopup(
           ancora,
-          `${SOMBRAS_PRONTAS.map((s, i) => `<button type="button" class="pp-pop-item" data-sombra="${i}">${previaSombra(s.sombra)}${s.nome}</button>`).join("")}`,
+          `${temForma ? "" : `<p class="pp-pop-dica">Selecione uma forma na lâmina para aplicar o efeito.</p>`}${SOMBRAS_PRONTAS.map((s, i) => `<button type="button" class="pp-pop-item" data-sombra="${i}"${temForma ? "" : " disabled"}>${previaSombra(s.sombra)}${s.nome}</button>`).join("")}`,
           { classe: "pp-pop-menu" }
         );
         el.addEventListener("click", (ev) => {
@@ -988,6 +990,7 @@ export class Fita {
   private menuPreenchimento(ancora: HTMLElement): void {
     const est = this.hooks.estado();
     const f = est.forma?.fillX;
+    const tem = !!est.forma;
     abrirCores(
       ancora,
       {
@@ -995,6 +998,8 @@ export class Fita {
         paleta: est.paleta,
         semCor: "Sem preenchimento",
         titulo: "Preenchimento",
+        semSelecao: !tem,
+        dica: "Selecione uma forma na lâmina para pintar o preenchimento.",
         extra: `<div class="pp-pop-t">Gradiente</div>
           <div class="pp-gradientes">
             ${["cima", "baixo", "esquerda", "direita", "diagonal", "radial"].map((g) => `<button type="button" class="pp-grad" data-extra="grad:${g}" title="Gradiente ${g}"><span class="g-${g}"></span></button>`).join("")}
@@ -1062,6 +1067,7 @@ export class Fita {
   private menuContorno(ancora: HTMLElement): void {
     const est = this.hooks.estado();
     const l = est.forma?.ln;
+    const tem = !!est.forma;
     const espessuras = [0.25, 0.5, 0.75, 1, 1.5, 2.25, 3, 4.5, 6];
     const tracos: [string, string][] = [["solid", "Contínuo"], ["dash", "Tracejado"], ["dot", "Pontilhado"], ["dashDot", "Traço e ponto"], ["lgDash", "Traço longo"]];
     const pontas: [string, string][] = [["", "Nenhuma"], ["triangle", "Triângulo"], ["arrow", "Seta aberta"], ["stealth", "Seta fina"], ["diamond", "Losango"], ["oval", "Círculo"]];
@@ -1072,6 +1078,8 @@ export class Fita {
         paleta: est.paleta,
         semCor: "Sem contorno",
         titulo: "Contorno",
+        semSelecao: !tem,
+        dica: "Selecione uma forma na lâmina para desenhar o contorno.",
         extra: `<div class="pp-pop-t">Espessura</div>
           <div class="pp-linhas-op">${espessuras.map((w) => `<button type="button" class="pp-op${l?.w === w ? " on" : ""}" data-extra="espessura:${w}"><span style="height:${Math.max(1, w)}px"></span>${String(w).replace(".", ",")} pt</button>`).join("")}</div>
           <div class="pp-pop-t">Tipo de traço</div>
@@ -1207,7 +1215,9 @@ export class Fita {
     dis("agrupar", st.formas.length < 2);
     dis("desagrupar", !st.temGrupo);
     dis("slide-del", st.total <= 1);
-    for (const c of ["preench", "contorno", "sombra", "ordem", "z-topo", "z-fundo", "z-frente", "z-tras"]) dis(c, !tem);
+    // Preenchimento, contorno e efeitos NÃO entram: sem forma escolhida o botão abre o menu com
+    // a dica (o clique mudo era o que parecia "botão que não abre"). Os de ordem continuam mudos.
+    for (const c of ["ordem", "z-topo", "z-fundo", "z-frente", "z-tras"]) dis(c, !tem);
     for (const b of this.el.querySelectorAll<HTMLElement>("[data-layout]")) b.classList.toggle("on", b.dataset.layout === st.layout);
 
     // aba Transições: tipo, direção, duração e a prévia

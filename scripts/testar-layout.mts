@@ -1440,6 +1440,67 @@ console.log("\nPowerPoint: duplicar lâmina na fita e no clique direito da minia
     /menuDaLamina\(e: MouseEvent, i: number\): void \{\r?\n\s+e\.preventDefault\(\)/.test(ppt),
     "o menu do navegador apareceria por cima"
   );
+console.log("menus da fita: o clique nunca fica mudo");
+
+const fitaSrc = ler("src/powerpoint/ui/fita.ts");
+// O Contorno (o relato: "clicado de novo, não abre"): desabilitado sem forma escolhida, o botão
+// engolia o clique. Agora ele abre o menu com a dica e os itens desabilitados — o padrão que os
+// Estilos de cor já usavam (d32f4db).
+checa(
+  "Preenchimento/Contorno/Efeitos NÃO entram na lista dos desabilitados sem forma",
+  !/\["preench", "contorno", "sombra", "ordem"/.test(fitaSrc) &&
+    /for \(const c of \["ordem", "z-topo", "z-fundo", "z-frente", "z-tras"\]\) dis\(c, !tem\);/.test(fitaSrc),
+  "o botão voltaria a engolir o clique"
+);
+checa(
+  "o menu do Contorno abre com a dica (e sem seleção)",
+  /semSelecao: !tem,\r?\n\s+dica: "Selecione uma forma na lâmina para desenhar o contorno\."/.test(fitaSrc),
+  "o menu abriria mudo"
+);
+checa(
+  "o menu do Preenchimento abre com a dica (e sem seleção)",
+  /dica: "Selecione uma forma na lâmina para pintar o preenchimento\."/.test(fitaSrc) && /semSelecao: !tem,/.test(fitaSrc),
+  "o menu abriria mudo"
+);
+checa(
+  "o menu dos Efeitos abre com a dica e os cartões desabilitados",
+  /temForma \? "" : `<p class="pp-pop-dica">Selecione uma forma na lâmina para aplicar o efeito\.<\/p>`/.test(fitaSrc) &&
+    /class="pp-pop-item" data-sombra="\$\{i\}"\$\{temForma \? "" : " disabled"\}/.test(fitaSrc),
+  "os efeitos abririam mudo"
+);
+
+const coresSrc = ler("src/powerpoint/ui/cores.ts");
+checa(
+  "o seletor de cores aceita a dica e o modo sem seleção",
+  /semSelecao\?: boolean;/.test(coresSrc) &&
+    /dica\?: string;/.test(coresSrc) &&
+    /op\.semSelecao && op\.dica \? `<p class="pp-pop-dica">\$\{op\.dica\}<\/p>`/.test(coresSrc) &&
+    /if \(op\.semSelecao\) \{\r?\n\s+for \(const c of el\.querySelectorAll<HTMLButtonElement \| HTMLInputElement>\("button, input"\)\) c\.disabled = true;/.test(coresSrc),
+  "sem seleção os controles continuariam clicáveis (nada aconteceria)"
+);
+
+const popupSrc = ler("src/powerpoint/ui/popup.ts");
+// O menu do Contorno é alto: numa janela baixa ele subia e TAPAVA o próprio botão — o clique
+// seguinte caía no menu. Agora ele encolhe (rolagem interna) e nunca cobre a âncora.
+checa(
+  "o popup nunca cobre a âncora (função pura de posição)",
+  /export function posicaoDoPopup\(/.test(popupSrc) &&
+    /if \(altura <= abaixo\) return \{ left, top: r\.bottom \+ VAO, maxAltura: null \};/.test(popupSrc) &&
+    /return \{ left, top: r\.bottom \+ VAO, maxAltura: Math\.max\(MINIMO, abaixo\) \};/.test(popupSrc) &&
+    !/if \(top \+ h > window\.innerHeight - 8\) top = Math\.max\(8, r\.top - h - 4\);/.test(popupSrc),
+  "subir por cima do botão voltaria"
+);
+checa(
+  "o abrirPopup aplica a altura máxima (rolagem por dentro)",
+  /const p = posicaoDoPopup\(r, el\.offsetWidth, el\.offsetHeight, \{ w: window\.innerWidth, h: window\.innerHeight \}, op\.alinharDireita\);/.test(popupSrc) &&
+    /if \(p\.maxAltura !== null\) el\.style\.maxHeight = `\$\{p\.maxAltura\}px`;/.test(popupSrc),
+  "o menu passaria da janela em vez de rolar"
+);
+checa(
+  "os controles desabilitados do menu ficam apagados (e sem hover)",
+  /\.pp-sw:disabled,\r?\n\.pp-op:disabled,\r?\n\.pp-grad:disabled \{\r?\n\s+opacity: 0\.4;/.test(pp) && /\.pp-op:hover:not\(:disabled\),/.test(pp) && /\.pp-sw:hover:not\(:disabled\) \{/.test(pp),
+  "um controle desabilitado ainda pareceria clicável"
+);
 }
 
 // ---------------------------------------------------------------- roda horizontal nas fitas

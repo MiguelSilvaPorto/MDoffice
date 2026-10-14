@@ -554,9 +554,17 @@ button.ppr.big .ppr-gal-ic svg {
   cursor: pointer;
 }
 
-.pp-sw:hover {
+.pp-sw:hover:not(:disabled) {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+
+/* sem forma escolhida os controles do menu ficam desabilitados (só a dica explica) */
+.pp-sw:disabled,
+.pp-op:disabled,
+.pp-grad:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .pp-pop-hex {
@@ -915,7 +923,7 @@ button.ppr.big .ppr-gal-ic svg {
   cursor: pointer;
 }
 
-.pp-op:hover,
+.pp-op:hover:not(:disabled),
 .pp-op.on {
   border-color: var(--accent);
 }

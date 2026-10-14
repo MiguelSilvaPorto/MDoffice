@@ -402,6 +402,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - **Arranjos: triângulos e painéis de fundo não viram mais "cartões"** — antes uma forma grande e decorativa (ex.: os triângulos verdes) ou um painel atrás dos cartões era tratado como cartão, engolia os de verdade e o arranjo saía desordenado; agora eles ficam parados e só os cartões com conteúdo se arrumam. Teste: `npm run test:arranjos`.
 
+- **Fita: os menus de forma abrem mesmo sem forma escolhida — e nunca por cima do botão**: o
+  **Contorno** (o relato: "clicado de novo, não abre"), o **Preenchimento** e os **Efeitos**
+  ficavam **desabilitados** sem forma escolhida e engoliam o clique sem dizer nada. Agora os três
+  abrem o menu com a **dica** (o padrão que os **Estilos de cor** já usavam — `d32f4db`): o menu
+  traz "Selecione uma forma na lâmina para desenhar o contorno." (idem preenchimento e efeito) e os
+  itens **desabilitados** — nada de clique mudo. E o menu **não cobre mais o próprio botão**: numa
+  janela baixa ele subia e tapava a fita (o clique seguinte caía no menu); agora ele **encolhe**
+  com rolagem por dentro e fica sempre **abaixo** — ou, quando lá há mais espaço, acima,
+  **terminando antes da âncora**. Os botões de ordem (Trazer para frente etc.) seguem desabilitados
+  sem seleção, como no PowerPoint.
 
 - **Designs criados na hora (o gerador das Ideias)**: as ideias só combinavam o catálogo (19
   designs × 3 acabamentos). Agora **três cartões de cada fornada são criados pelo app**: uma

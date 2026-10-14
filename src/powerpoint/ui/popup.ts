@@ -15,6 +15,45 @@ export interface OpcoesPopup {
   alinharDireita?: boolean;
 }
 
+/** Caixa da âncora (o `getBoundingClientRect()` do botão) e janela útil. */
+export interface Caixa {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+/** Margem das bordas da janela e o vão entre a âncora e o menu. */
+const MARGEM = 8;
+const VAO = 4;
+/** Abaixo disso o menu não é útil nem rolando: prefere o lado com mais espaço. */
+const MINIMO = 160;
+
+/**
+ * Onde o menu abre: logo abaixo da âncora — e **nunca por cima dela**. Quando não cabe embaixo,
+ * o menu encolhe (com rolagem interna) em vez de subir: subir tapava o próprio botão e o clique
+ * seguinte (o de reabrir/fechar) caía no menu em vez do botão. Só vai para cima quando lá há
+ * mais espaço, e aí termina ANTES da âncora (`top + maxAltura = topo da âncora - VAO`).
+ */
+export function posicaoDoPopup(
+  r: Caixa,
+  largura: number,
+  altura: number,
+  janela: { w: number; h: number },
+  alinharDireita = false
+): { left: number; top: number; maxAltura: number | null } {
+  let left = alinharDireita ? r.right - largura : r.left;
+  left = Math.max(MARGEM, Math.min(left, janela.w - largura - MARGEM));
+  const abaixo = Math.max(0, janela.h - (r.bottom + VAO) - MARGEM);
+  const acima = Math.max(0, r.top - VAO - MARGEM);
+  if (altura <= abaixo) return { left, top: r.bottom + VAO, maxAltura: null };
+  if (acima > Math.max(abaixo, MINIMO)) {
+    const maxAltura = acima;
+    return { left, top: Math.max(MARGEM, r.top - VAO - Math.min(altura, maxAltura)), maxAltura };
+  }
+  return { left, top: r.bottom + VAO, maxAltura: Math.max(MINIMO, abaixo) };
+}
+
 /** Abre um popup logo abaixo do elemento âncora. Devolve o elemento raiz. */
 export function abrirPopup(ancora: HTMLElement, html: string, op: OpcoesPopup = {}): HTMLElement {
   fecharPopup();
@@ -23,14 +62,10 @@ export function abrirPopup(ancora: HTMLElement, html: string, op: OpcoesPopup = 
   el.innerHTML = html;
   document.body.append(el);
   const r = ancora.getBoundingClientRect();
-  const w = el.offsetWidth;
-  const h = el.offsetHeight;
-  let left = op.alinharDireita ? r.right - w : r.left;
-  left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
-  let top = r.bottom + 4;
-  if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 4);
-  el.style.left = `${left}px`;
-  el.style.top = `${top}px`;
+  const p = posicaoDoPopup(r, el.offsetWidth, el.offsetHeight, { w: window.innerWidth, h: window.innerHeight }, op.alinharDireita);
+  if (p.maxAltura !== null) el.style.maxHeight = `${p.maxAltura}px`;
+  el.style.left = `${p.left}px`;
+  el.style.top = `${p.top}px`;
 
   const fora = (e: MouseEvent) => {
     const t = e.target as Node;

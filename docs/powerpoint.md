@@ -69,6 +69,11 @@ avisado ao abrir (nunca some em silêncio).
   e aceita **digitação**: dá para escrever qualquer tamanho (com vírgula) ou qualquer nome de fonte,
   com a lista do app (e as fontes do próprio deck) no botão ao lado; tamanho misto fica em branco,
   como no Office, e digitar aplica a todos os trechos escolhidos.
+- **Menus de forma (Preenchimento, Contorno e Efeitos) sem forma escolhida**: o botão continua
+  **clicável** e o menu abre com a **dica** — "Selecione uma forma na lâmina para…" — e os itens
+  **desabilitados**, em vez de engolir o clique (o relato: "clicado de novo, não abre"); e o menu
+  **nunca cobre o próprio botão**: quando não cabe embaixo ele **encolhe** com rolagem por dentro,
+  em vez de subir por cima da fita — o clique seguinte no botão continua sendo do botão.
 - **Tabelas**: inserir, editar células (Tab anda entre elas), mesclar/dividir, linhas e
   colunas, estilos, bordas e sombreamento — com ida e volta fiel no `.pptx` (`a:tbl`).
 - **Gráficos**: inserir, editar os dados no painel, desenho em SVG e exportação como imagem.

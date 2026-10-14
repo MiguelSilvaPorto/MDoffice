@@ -8544,3 +8544,101 @@ antigas quando fizer sentido.
   agora aplica **só na lâmina atual** (a mesma que a prévia mostra) em vez de todas — a checagem
   foi reescrita para prender o comportamento novo, e a entrada correspondente já estava no
   CHANGELOG ("Arranjos: o clique aplica só na lâmina atual").
+
+## src/powerpoint/ui/popup.ts
+
+### 2026-10-14 — o menu não cobre o próprio botão (o Contorno numa janela baixa)
+- **Local:** `posicaoDoPopup` (nova, exportada) e o miolo de `abrirPopup` (entre o `append` e os
+  ouvintes de fora)
+- **Linha:** `- if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 4);` e
+  `+ const p = posicaoDoPopup(r, el.offsetWidth, el.offsetHeight, { w: window.innerWidth, h:
+  window.innerHeight }, op.alinharDireita); + if (p.maxAltura !== null) el.style.maxHeight =
+  `${p.maxAltura}px`;`
+- **Porquê:** quando o menu não cabia embaixo, ele **subia**: a última linha o colocava acima da
+  âncora e, com um menu alto (o do Contorno: 533px com a espessura, o traço e as pontas), ele
+  **tapava o próprio botão** — o clique seguinte "no Contorno" caía no menu (a pessoa clicava em
+  "Sem contorno" ou na espessura sem querer, ou em nada). O relato ("clicado de novo no contorno
+  ele não abre") casa com esse estado. Agora a regra é: **abre abaixo**; se não couber, o menu
+  **encolhe** com `max-height` (o `.pp-popup` já rola por dentro) — e só vai para cima quando lá
+  há mais espaço, terminando **antes da âncora** (`top + maxAltura = r.top - 4`). O mínimo de
+  160px evita um menu inútil e o `VAO`/`MARGEM` (4/8) ficaram como constantes nomeadas. A função
+  ficou **pura** (caixa da âncora + tamanho do menu + janela → left/top/maxAltura) para o teste
+  de comportamento poder prendê-la sem navegador.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 — Preenchimento, Contorno e Efeitos não engolem mais o clique sem seleção
+- **Local:** `menuPreenchimento` e `menuContorno` (as opções do `abrirCores`), o `case "sombra"`
+  do `abrirMenu` e a lista do `dis(…)` no `atualizar()`
+- **Linha:** `- for (const c of ["preench", "contorno", "sombra", "ordem", "z-topo", "z-fundo",
+  "z-frente", "z-tras"]) dis(c, !tem);` → `+ for (const c of ["ordem", "z-topo", "z-fundo",
+  "z-frente", "z-tras"]) dis(c, !tem);` e `+ semSelecao: !tem, dica: "Selecione uma forma na
+  lâmina para desenhar o contorno."` (idem preenchimento e efeitos)
+- **Porquê:** sem forma escolhida o botão era **desabilitado** — um botão desabilitado não emite
+  `click`, então o clique era **mudo** (o `aoClicar` tem `if (b.disabled) return` e nem chega
+  nele). É o mesmo defeito que o **Estilos de cor** tinha (`d32f4db`) e o padrão é o mesmo: o
+  botão continua clicável e o menu **explica** por que não dá para aplicar (dica + itens
+  desabilitados). Os botões de **ordem** ficam como estavam (no PowerPoint também ficam
+  apagados), e o `preench` da tabela segue normal (com a tabela escolhida há forma). O clique em
+  item desabilitado não roda o `run` — nada de passo vazio no histórico.
+
+## src/powerpoint/ui/cores.ts
+
+### 2026-10-14 — o seletor de cores aceita a dica e o modo "sem seleção"
+- **Local:** `OpcoesCores` (`semSelecao`/`dica`), o começo do `html` e o trecho depois do
+  `abrirPopup`
+- **Linha:** `+ ${op.semSelecao && op.dica ? `<p class="pp-pop-dica">${op.dica}</p>` : ""}` e
+  `+ if (op.semSelecao) { for (const c of el.querySelectorAll<HTMLButtonElement |
+  HTMLInputElement>("button, input")) c.disabled = true; }`
+- **Porquê:** o aviso e o "tudo desabilitado" valem para os três menus (Contorno, Preenchimento e
+  Fundo da lâmina) de uma vez, sem repetir o HTML item a item. Desabilitar **depois** do
+  `abrirPopup` cobre o que veio do `extra` (espessura, traço, pontas, gradientes) e os campos de
+  cor — inclusive o `input[type=color]`, que abriria o seletor do sistema sem ter onde aplicar.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-14 — os controles desabilitados do menu ficam apagados (e sem hover)
+- **Local:** `.pp-sw:hover` e `.pp-op:hover` (ganharam `:not(:disabled)`) e o bloco novo
+  `.pp-sw:disabled, .pp-op:disabled, .pp-grad:disabled`
+- **Linha:** `- .pp-sw:hover {` → `+ .pp-sw:hover:not(:disabled) {` e `+ { opacity: 0.4; cursor:
+  default }` para os três
+- **Porquê:** com o menu "sem seleção" os controles ficam desabilitados — e as regras de hover
+  (que não checavam `:disabled`) continuariam acendendo a borda/contorno, dando a impressão de
+  que o clique vale. O `.pp-pop-item:disabled` já tinha `opacity: .4`; os quadradinhos de cor, os
+  botões de opção e os gradientes agora seguem o mesmo desenho.
+
+## scripts/testar-menus-fita.mjs
+
+### 2026-10-14 — o posicionamento dos menus (novo teste de comportamento)
+- **Local:** arquivo novo; monta `src/powerpoint/ui/popup.ts` com o esbuild e chama
+  `posicaoDoPopup` direto (o mesmo caminho dos outros testes de comportamento)
+- **Linha:** 14 checagens — abre abaixo com espaço de sobra; **encolhe** em vez de subir na janela
+  baixa; âncora no alto/rodapé; janela minúscula; bordas da janela (`left`); e uma **varredura**
+  de 100 casos (altura de janela × posição da âncora) provando que **nenhum cobre a âncora**; e
+  o `+ "test:menus": "node scripts/testar-menus-fita.mjs"` no `package.json`, ao lado do `test:layout`
+- **Porquê:** o defeito do relato é de **geometria** — sem um teste que calcule a posição, um
+  ajuste futuro na fórmula pode trazer o "sobe e tapa o botão" de volta sem ninguém ver. A
+  varredura é o que dá a garantia ("o menu nunca cobre a âncora"), não os casos escolhidos a dedo.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 — 8 checagens novas: o clique nunca fica mudo
+- **Local:** seção nova no fim do arquivo (`console.log("menus da fita: o clique nunca fica
+  mudo")`)
+- **Linha:** `+ a lista do `dis` sem preench/contorno/sombra`, `+ as dicas dos três menus`, `+ o
+  modo sem seleção no cores.ts`, `+ a `posicaoDoPopup` no popup.ts` e `+ o `:disabled` no CSS`
+- **Porquê:** prende o contrato contra a regressão mais provável — alguém "arrumar" o botão
+  voltando a desabilitá-lo sem seleção (o clique mudo volta) ou voltar a subir o menu por cima do
+  botão. A checagem também confere que o texto antigo do posicionamento **saiu** (o
+  `if (top + h > …)`), porque só a presença do novo não provaria a troca.
+
+## docs/powerpoint.md e CHANGELOG.md
+
+### 2026-10-14 — a regra dos menus sem seleção e do menu que não tapa o botão
+- **Local:** `docs/powerpoint.md` (o item da fita, junto do "Fonte e tamanho como no PowerPoint") e
+  o **Não adicionado → PowerPoint → Frontend** do `CHANGELOG.md`
+- **Linha:** `+ o item "Menus de forma (Preenchimento, Contorno e Efeitos) sem forma escolhida"` e
+  `+ a entrada "Fita: os menus de forma abrem mesmo sem forma escolhida — e nunca por cima do botão"`
+- **Porquê:** muda o que o app faz (um clique que não fazia nada agora explica; o menu não tapa o
+  botão) — o documento do módulo e o changelog são parte da entrega. A entrada fica em **Não
+  adicionado** até o `fechar.ps1` integrar na `main`.
