@@ -1746,13 +1746,23 @@ export class PowerPointHost {
       case "modelo-criar": {
         // salva o visual do deck atual como um modelo do usuário (fica no botão Template)
         const modelo = criarModeloUsuario(this.slides, this.setup, String(value ?? ""));
+        if (!modelo) {
+          // o armazenamento local recusou: sem o aviso, a pessoa acharia que o modelo foi criado
+          toast("Não foi possível salvar o modelo: o armazenamento do app está cheio ou indisponível.", "err", 7000);
+          return;
+        }
         toast(`Modelo "${modelo.nome}" salvo no botão Template.`, "ok", 4200);
         return;
       }
-      case "modelo-excluir":
-        removerModeloUsuario(String(value ?? ""));
-        toast("Modelo removido.", "ok", 3000);
+      case "modelo-excluir": {
+        const nome = lerModelosUsuario().find((m) => m.id === String(value ?? ""))?.nome;
+        if (!removerModeloUsuario(String(value ?? ""))) {
+          toast("Não foi possível remover o modelo: o armazenamento do app está cheio ou indisponível.", "err", 7000);
+          return;
+        }
+        toast(nome ? `Modelo "${nome}" removido.` : "Modelo removido.", "ok", 3000);
         return;
+      }
       case "ideias":
         // o botão da fita (aba Design ▸ grupo Designer) abre o painel já na aba das Ideias
         this.mostrarPainelLateral();

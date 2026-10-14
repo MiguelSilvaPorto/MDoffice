@@ -7810,6 +7810,7 @@ antigas quando fizer sentido.
 - **Local:** PowerPoint → Adicionado → Frontend
 - **Linha:** `novo`
 - **Porquê:** mudança do módulo PowerPoint; a entrada entra já promovida, como o fechamento exige.
+
 ## src/powerpoint/edicao/ligacoes.ts
 
 ### 2026-10-14 · estilos de cor · a cor do conector de uma caixa estilizada (R6)
@@ -8296,3 +8297,100 @@ antigas quando fizer sentido.
   A entrada do **Copiar formatação** (Pincel) que estava na mesma lista ficou onde estava de
   propósito: o commit dela (`8b49df4`) também está na `main`, mas a sessão dela pode estar no meio
   da própria promoção — mexer aqui só criaria um conflito inútil para quem chegar depois.
+
+## src/powerpoint/ui/modelos.ts
+
+### 2026-10-14 · templates do usuário · a galeria com os SEUS modelos em cima
+- **Local:** `desenhar()` (a montagem dos cartões)
+- **Linha:** `MODELOS.map(…) + usuario.map(…) + <button data-criar>` →
+  `CARTAO_CRIAR + usuario.map(…) + <div class="pp-pop-t pp-tpls-t">Modelos do app</div> + MODELOS.map(…)`
+- **Porquê:** o relato ("só dá para criar um só template") foi **reproduzido no navegador** (vite dev
+  + Chrome pelo CDP, sem precisar do app empacotado): a galeria abre no topo de uma grade de 22
+  presets e o cartão "+" ficava a **691px** de um popup de **558px** — fora da tela. Quem criava um
+  modelo reabria a galeria (que volta ao topo) e não via nem o cartão novo nem o "+", concluindo que
+  só dava para criar um. O "+" primeiro mantém a criação à vista sem rolagem; os modelos do usuário
+  vêm logo depois (é onde a pessoa olha) e o título **"Modelos do app"** marca onde começa o catálogo.
+- **Local:** `desenhar()` (o `scrollTop` em volta do `innerHTML`) e o novo `realcar(id)`
+- **Linha:** `const rolagem = el.scrollTop` … `el.scrollTop = rolagem`; novo —
+  `scrollIntoView({ block: "nearest" })` + `.pp-tpl-novo` por 1,8s
+- **Porquê:** o `×` redesenha a grade: sem devolver a rolagem, cada exclusão jogava a galeria para o
+  topo (com muitos modelos, a pessoa se perde). E o cartão que acabou de nascer precisa ser **visto**
+  — o realce responde "foi este que você criou".
+- **Local:** o fim do `desenhar()`
+- **Linha:** `if (r.bottom > window.innerHeight - 8) { … }` → `+ if (r.right > window.innerWidth - 8) { el.style.left = … }`
+- **Porquê:** medido no navegador: o `abrirPopup` posiciona o popup com o conteúdo **vazio**
+  (`min-width: 190px` do `.pp-popup`) e a grade de 3 colunas tem 364px — o popup ficava em
+  `1196..1560` numa janela de **1424**, ou seja, a **terceira coluna inteira fora da tela** (é o que
+  o print do relato mostra: duas colunas). Com o reencaixe horizontal, os 26 cartões aparecem.
+- **Local:** o ramo `[data-criar]` do clique (depois do `await pedirTexto`), `abrirModelos`
+- **Linha:** `abrirModelos(ancora, aoEscolher, acoes)` → `abrirModelos(ancora, aoEscolher, acoes, novo?.id)`,
+  com o id achado pela diferença de tamanho da lista (`antes` → `lerModelosUsuario()`)
+- **Porquê:** a galeria reabre e precisa saber **qual** cartão destacar. A diferença de tamanho
+  (e não "o último da lista") distingue "criou" de "o armazenamento recusou" — sem isso o realce
+  cairia num modelo antigo justamente quando a criação falhasse.
+
+## src/powerpoint/modelosUsuario.ts
+
+### 2026-10-14 · templates do usuário · o armazenamento que recusa não mente
+- **Local:** `gravarModelosUsuario`, `criarModeloUsuario`, `removerModeloUsuario`
+- **Linha:** `void` → `boolean` (gravar/remover) e `ModeloPPT` → `ModeloPPT | null` (criar)
+- **Porquê:** o `catch` silencioso fazia o modelo **sumir**: a galeria lê do mesmo `localStorage`,
+  então uma gravação recusada (cheia, bloqueada) devolvia a lista antiga e a pessoa não entendia por
+  que o cartão não aparecia. O retorno é o que permite o host dizer o que aconteceu.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · templates do usuário · os avisos de criar e apagar
+- **Local:** os casos `modelo-criar` e `modelo-excluir` do `run`
+- **Linha:** `toast(\`Modelo "${modelo.nome}" salvo…\`)` → `if (!modelo) { toast(…, "err", 7000); return; }`;
+  e o `modelo-excluir` (que era de uma linha) ganhou o nome do modelo no aviso
+- **Porquê:** o aviso de erro é o par do retorno acima (sem ele, a criação recusada era comemorada
+  com um toast de sucesso). O nome no aviso de remoção diz **o que** saiu — o `×` está sempre à
+  vista e um clique sem intenção precisa deixar rastro.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · templates do usuário · o × à vista, o título da seção e o cartão novo
+- **Local:** `.pp-tpl-x`; `.pp-pop-modelos .pp-pop-t` → `.pp-pop-modelos > .pp-pop-t`; novos `.pp-tpls-t` e `.pp-tpl-novo`
+- **Linha:** `.pp-tpl-x`: `display: none` → `display: flex` (18px, pastilha escura com `×` branco e
+  borda clara; `:hover` no `--danger`); o sticky do título passou a exigir o **filho direto**
+- **Porquê:** o `×` só aparecia no `:hover` do cartão — quem não passa o mouse por cima não descobre
+  que pode apagar (o relato pede o `×` "no cantinho"). A pastilha escura é o que fica legível sobre
+  as prévias **claras e escuras** (a prévia tem as cores do próprio modelo, não as do tema do app).
+  O `.pp-pop-modelos > .pp-pop-t` é preciso: o título da seção (`.pp-tpls-t`, dentro da grade) usa a
+  mesma classe `.pp-pop-t` e ficaria **preso** no topo se o seletor continuasse valendo para
+  descendentes.
+- **Local:** novo `.pp-tpl-novo`
+- **Linha:** `box-shadow: 0 0 0 2px var(--accent)`
+- **Porquê:** é o destaque do cartão recém-criado (o `realcar` do `ui/modelos.ts` põe e tira a classe).
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · templates do usuário · as 8 verificações da galeria
+- **Local:** a seção nova "galeria do Template: criar quantos modelos quiser e apagar os próprios";
+  e o regex do título sticky, na seção que já existia
+- **Linha:** `novo` (o regex do sticky passou a aceitar o `>`)
+- **Porquê:** prende o que quebrou e é fácil de quebrar de novo: a **ordem** (o "+" antes do
+  catálogo), o título da seção, o realce do cartão novo, o `×` **só** nos modelos do usuário e
+  **sempre à vista**, a rolagem preservada ao apagar, o reencaixe na janela e os avisos quando o
+  armazenamento recusa. A verificação no navegador (vite dev + CDP) confirmou o antes e o depois:
+  o "+" foi de 691px (fora da tela, 558px de popup) para **33px**, a terceira coluna voltou
+  (`cartoesNaTela: 26 de 26`) e criar 3 modelos + apagar 2 pelo `×` funcionou ponta a ponta.
+
+## docs/powerpoint.md
+
+### 2026-10-14 · templates do usuário · a bala dos Modelos
+- **Local:** "Editar as lâminas" → a bala **Modelos** (botão **Template**)
+- **Linha:** a bala passa a descrever as duas seções da galeria (seus modelos com o `×`, e os do
+  app) e o cartão **Novo modelo**
+- **Porquê:** o documento do módulo é onde se procura o que o app sabe fazer; a bala antiga dizia
+  "salvar o visual atual como cartão" sem dizer onde ele aparece nem que dá para apagar.
+
+## CHANGELOG.md
+
+### 2026-10-14 · templates do usuário · a entrada no PowerPoint
+- **Local:** PowerPoint → **Não adicionado** → Frontend
+- **Linha:** `novo`
+- **Porquê:** mudança do módulo PowerPoint. A entrada fica em "Não adicionado" até o commit do
+  `fechar.ps1` entregar a `main`; a promoção para "Adicionado" é um passo separado (não cabe no
+  mesmo commit do fechamento), como na promoção das entradas da R6 e das Ideias.

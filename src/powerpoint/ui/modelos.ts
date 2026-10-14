@@ -1,5 +1,11 @@
 // Galeria do botão Template (fita): cartões com a prévia de cada modelo — fundo, texto, acento e fonte.
-// Além dos presets, lista os modelos criados pelo usuário e o cartão "+" (criar a partir do deck atual).
+//
+// A grade tem DUAS seções e a ordem é de propósito: **Seus modelos** (o cartão "+", para guardar
+// esta apresentação quantas vezes quiser, e os cartões que a pessoa já guardou — cada um com o ×
+// no canto para apagar) e os **modelos do app**. O catálogo são 22 cartões: com ele na frente, o
+// "+" e os modelos do usuário ficavam no fim de uma grade que rola, então quem criava um modelo
+// abria a galeria de novo e não achava nem o cartão novo nem como criar outro (parecia que só
+// dava para criar um). O "+" primeiro mantém a criação à vista, sem rolagem.
 import { MODELOS, type ModeloPPT } from "../edicao/modelos";
 import { FAMILIAS, rampaDeTons } from "../edicao/estilos";
 import { lerModelosUsuario } from "../modelosUsuario";
@@ -16,7 +22,7 @@ export interface AcoesModelos {
   excluir?: (id: string) => void;
 }
 
-/** Cartão de prévia: o mesmo desenho para os presets e para os modelos do usuário. */
+/** Cartão de prévia: o mesmo desenho para os modelos do app e para os do usuário. */
 function cartao(m: ModeloPPT, dados: string): string {
   const t = themeOf(m.tema);
   const bg = m.cores?.bg || m.bg || t.bg;
@@ -42,28 +48,54 @@ function cartao(m: ModeloPPT, dados: string): string {
     </button>`;
 }
 
-/** Abre a galeria de modelos; `aoEscolher` recebe o modelo clicado. */
-export function abrirModelos(ancora: HTMLElement, aoEscolher: (m: ModeloPPT) => void, acoes: AcoesModelos = {}): void {
+/** O cartão que salva a apresentação atual como um modelo seu — vem sempre no começo da grade. */
+const CARTAO_CRIAR = `<button type="button" class="pp-tpl pp-tpl-mais" data-criar title="Salvar esta apresentação como um modelo seu (pode criar quantos quiser)">
+      <span class="pp-tpl-previa pp-tpl-previa-mais"><span class="pp-tpl-mais-sinal">+</span></span>
+      <span class="pp-tpl-nome">Novo modelo</span>
+    </button>`;
+
+/**
+ * Abre a galeria de modelos; `aoEscolher` recebe o modelo clicado.
+ * `idNovo` é o modelo recém-criado: o cartão dele fica em destaque e à vista (a grade pode ser
+ * longa e o cartão novo nasceria fora da tela).
+ */
+export function abrirModelos(ancora: HTMLElement, aoEscolher: (m: ModeloPPT) => void, acoes: AcoesModelos = {}, idNovo?: string): void {
   const el = abrirPopup(ancora, "", { classe: "pp-pop-modelos", alinharDireita: true });
 
   const desenhar = (): void => {
     const usuario = lerModelosUsuario();
+    const rolagem = el.scrollTop;
     const cartoes =
-      MODELOS.map((m, i) => cartao(m, `data-i="${i}"`)).join("") +
+      CARTAO_CRIAR +
       usuario.map((m) => cartao(m, `data-u="${esc(m.id)}"`)).join("") +
-      `<button type="button" class="pp-tpl pp-tpl-mais" data-criar title="Salvar esta apresentação como um modelo seu">
-        <span class="pp-tpl-previa pp-tpl-previa-mais"><span class="pp-tpl-mais-sinal">+</span></span>
-        <span class="pp-tpl-nome">Novo modelo</span>
-      </button>`;
+      `<div class="pp-pop-t pp-tpls-t">Modelos do app</div>` +
+      MODELOS.map((m, i) => cartao(m, `data-i="${i}"`)).join("");
     el.innerHTML = `<div class="pp-pop-t">Modelos de apresentação</div><div class="pp-tpls">${cartoes}</div>`;
-    // o popup pode ter crescido: se passar da janela, sobe (o abrirPopup só posiciona na abertura)
+    // apagar um cartão redesenha a grade: a rolagem de onde a pessoa estava volta (sem isto a
+    // galeria saltaria para o topo a cada ×)
+    el.scrollTop = rolagem;
+    // o popup pode ter crescido: se passar da janela, sobe e é puxado para a esquerda (o abrirPopup
+    // só posiciona na abertura, quando o conteúdo ainda está vazio — sem isto a última coluna da
+    // grade fica fora da tela e o catálogo parece ter menos modelos)
     const r = el.getBoundingClientRect();
     if (r.bottom > window.innerHeight - 8) {
       const topo = Math.max(8, (parseFloat(el.style.top) || 0) - (r.bottom - (window.innerHeight - 8)));
       el.style.top = `${topo}px`;
     }
+    if (r.right > window.innerWidth - 8) {
+      const esquerda = Math.max(8, (parseFloat(el.style.left) || 0) - (r.right - (window.innerWidth - 8)));
+      el.style.left = `${esquerda}px`;
+    }
+  };
+  const realcar = (id: string): void => {
+    const cartaoNovo = [...el.querySelectorAll<HTMLElement>("[data-u]")].find((b) => b.dataset.u === id);
+    if (!cartaoNovo) return;
+    cartaoNovo.scrollIntoView({ block: "nearest" });
+    cartaoNovo.classList.add("pp-tpl-novo");
+    window.setTimeout(() => cartaoNovo.classList.remove("pp-tpl-novo"), 1800);
   };
   desenhar();
+  if (idNovo) realcar(idNovo);
 
   el.addEventListener("click", (e) => {
     const t = e.target as HTMLElement;
@@ -86,9 +118,13 @@ export function abrirModelos(ancora: HTMLElement, aoEscolher: (m: ModeloPPT) => 
           valor: "Meu modelo",
         });
         if (nome === null) return;
+        const antes = lerModelosUsuario().length;
         acoes.criar?.(nome);
-        // reabre a galeria com o cartão novo (a âncora continua na fita)
-        if (ancora.isConnected) abrirModelos(ancora, aoEscolher, acoes);
+        // o modelo novo é o último da lista; sem ele (o armazenamento recusou) não há o que realçar
+        const lista = lerModelosUsuario();
+        const novo = lista.length > antes ? lista[lista.length - 1] : null;
+        // reabre a galeria com o cartão novo à vista (a âncora continua na fita)
+        if (ancora.isConnected) abrirModelos(ancora, aoEscolher, acoes, novo?.id);
       })();
       return;
     }

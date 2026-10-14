@@ -829,8 +829,67 @@ console.log("\npopup do Template: cabe na janela e rola");
   checa("a lista rola dentro do popup", /\.pp-popup\s*\{[^}]*overflow:\s*auto/.test(css), "o popup precisa ser o contêiner de rolagem");
   checa(
     "o título fica visível ao rolar",
-    /\.pp-pop-modelos \.pp-pop-t\s*\{[^}]*position:\s*sticky/.test(css),
+    /\.pp-pop-modelos\s*>\s*\.pp-pop-t\s*\{[^}]*position:\s*sticky/.test(css),
     "sem o título fixo, ao rolar o usuário perde a referência"
+  );
+}
+
+console.log("\ngaleria do Template: criar quantos modelos quiser e apagar os próprios");
+{
+  const ui = ler("src/powerpoint/ui/modelos.ts");
+  const css = ler("src/styles/powerpoint-edicao.css");
+  const host = ler("src/powerpoint/powerpoint.ts");
+  // a ordem do que é montado em `desenhar()`: o cartão de criar primeiro, o catálogo por último
+  const corpo = ui.slice(ui.indexOf("const desenhar"), ui.indexOf("const realcar"));
+  const posCriar = corpo.indexOf("CARTAO_CRIAR");
+  const posUsuario = corpo.indexOf("usuario.map(");
+  const posCatalogo = corpo.indexOf("MODELOS.map(");
+  checa(
+    "o cartão de criar vem antes do catálogo (fica à vista sem rolar)",
+    posCriar >= 0 && posCriar < posUsuario && posUsuario < posCatalogo,
+    "no fim de uma grade de 22 presets o '+' e os modelos do usuário saem da tela e parece que só dá para criar um"
+  );
+  checa(
+    "os modelos da pessoa vêm antes do catálogo",
+    posUsuario >= 0 && posUsuario < posCatalogo,
+    "quem cria um modelo precisa achar o cartão novo sem rolar até o fim"
+  );
+  checa(
+    "as duas seções estão separadas por um título na grade",
+    /class="pp-pop-t pp-tpls-t">Modelos do app</.test(ui) && /\.pp-tpls-t\s*\{[^}]*grid-column:\s*1 \/ -1/.test(css),
+    "sem o título, os cartões do app e os do usuário ficam misturados"
+  );
+  checa(
+    "o cartão recém-criado fica em destaque e à vista",
+    /scrollIntoView\(\{\s*block:\s*"nearest"\s*\}\)/.test(ui) && /classList\.add\("pp-tpl-novo"\)/.test(ui) && /\.pp-tpl-novo\s*\{[^}]*box-shadow/.test(css),
+    "sem o realce, o cartão novo nasce fora da vista e parece que a criação não funcionou"
+  );
+  checa(
+    "o × aparece sempre, só nos modelos do usuário",
+    /m\.usuario \? `<span class="pp-tpl-x"/.test(ui) && /\.pp-tpl-x\s*\{[^}]*display:\s*flex/.test(css) && !/\.pp-tpl-x\s*\{[^}]*display:\s*none/.test(css),
+    "o × só no hover passava despercebido; e o do app não pode ser apagado"
+  );
+  checa(
+    "o × não apaga o modelo errado (o clique no × não aplica o cartão)",
+    /const remover = t\.closest<HTMLElement>\("\[data-x\]"\);\s*\n\s*if \(remover\) \{\s*\n\s*e\.stopPropagation\(\)/.test(ui),
+    "o clique no × tem que sair antes de aplicar o modelo"
+  );
+  checa(
+    "apagar mantém a rolagem onde a pessoa estava",
+    /const rolagem = el\.scrollTop/.test(ui) && /el\.scrollTop = rolagem/.test(ui),
+    "redesenhar a grade joga a rolagem para o topo (a cada × a pessoa se perde)"
+  );
+  checa(
+    "a galeria é reencaixada na janela depois de desenhar",
+    /r\.right > window\.innerWidth - 8/.test(ui) && /el\.style\.left = /.test(ui),
+    "o abrirPopup posiciona o popup vazio (min-width 190px): com a grade de 3 colunas a última coluna fica fora da tela"
+  );
+  checa(
+    "o armazenamento que recusa não passa em branco",
+    /export function criarModeloUsuario\([^)]*\): ModeloPPT \| null/.test(ler("src/powerpoint/modelosUsuario.ts")) &&
+      /if \(!modelo\) \{/.test(host) &&
+      /if \(!removerModeloUsuario\(/.test(host),
+    "sem isso o modelo some sem a pessoa saber por quê"
   );
 }
 

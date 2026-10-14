@@ -17,31 +17,34 @@ export function lerModelosUsuario(): ModeloPPT[] {
   }
 }
 
-/** Grava a lista inteira (silencioso quando o armazenamento não está disponível). */
-export function gravarModelosUsuario(lista: ModeloPPT[]): void {
+/** Grava a lista inteira. Devolve `false` quando o armazenamento recusa (cheio, bloqueado). */
+export function gravarModelosUsuario(lista: ModeloPPT[]): boolean {
   try {
     localStorage.setItem(CHAVE, JSON.stringify(lista));
+    return true;
   } catch {
     /* sem armazenamento */
+    return false;
   }
 }
 
 /**
  * Cria um modelo a partir do deck atual e o guarda no fim da lista.
  * Nome repetido ganha um sufixo (2, 3…) para não confundir na hora de aplicar.
+ * Devolve `null` quando o armazenamento recusa a gravação — o modelo não existiria depois e o
+ * host precisa dizer isso, em vez de comemorar um modelo que sumiu.
  */
-export function criarModeloUsuario(slides: Slide[], setup: DeckSetup, nome: string): ModeloPPT {
+export function criarModeloUsuario(slides: Slide[], setup: DeckSetup, nome: string): ModeloPPT | null {
   const lista = lerModelosUsuario();
   const base = (nome ?? "").trim() || "Meu modelo";
   let nomeFinal = base;
   let n = 2;
   while (lista.some((m) => m.nome.toLowerCase() === nomeFinal.toLowerCase())) nomeFinal = `${base} ${n++}`;
   const modelo = modeloDoDeck(slides, setup, nomeFinal, `usuario-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`);
-  gravarModelosUsuario([...lista, modelo]);
-  return modelo;
+  return gravarModelosUsuario([...lista, modelo]) ? modelo : null;
 }
 
-/** Remove um modelo do usuário pelo id. */
-export function removerModeloUsuario(id: string): void {
-  gravarModelosUsuario(lerModelosUsuario().filter((m) => m.id !== id));
+/** Remove um modelo do usuário pelo id. Devolve `false` quando o armazenamento recusou a gravação. */
+export function removerModeloUsuario(id: string): boolean {
+  return gravarModelosUsuario(lerModelosUsuario().filter((m) => m.id !== id));
 }

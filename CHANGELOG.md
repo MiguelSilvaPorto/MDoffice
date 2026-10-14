@@ -412,6 +412,18 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - **Arranjos: o clique aplica só na lâmina atual** — antes a fórmula era aplicada em todas as lâminas do deck (e sem refazer os estilos e ligações derivados); agora vale para a lâmina que a prévia mostra, como qualquer edição, e dá para desfazer.
 
+- **A galeria do Template põe os SEUS modelos em cima e o catálogo embaixo**: o cartão
+  **Novo modelo** (guardar esta apresentação) vem **primeiro** e cada modelo que você criou fica
+  logo depois dele, com um **× no canto** para apagar só o que é seu (os modelos do app não têm ×).
+  Antes o catálogo vinha na frente e o "+" era o **último** cartão de uma grade de 22 modelos que
+  rola: quem criava um modelo abria a galeria de novo e não achava nem o cartão novo (ele nascia
+  fora da tela) nem como criar outro — parecia que só dava para criar **um**. O cartão recém-criado
+  entra em **destaque** e é trazido à vista, apagar mantém a rolagem onde você estava e a grade é
+  reencaixada na janela depois de desenhar (o popup era posicionado com o conteúdo ainda vazio e a
+  **última coluna saía da tela** — é também por isso que o print do relato mostrava duas colunas).
+  Se o armazenamento do app recusar a gravação (cheio ou indisponível), o aviso aparece — em vez de
+  um modelo que some sem explicação.
+
 ### Adicionado (na main)
 
 **Backend**

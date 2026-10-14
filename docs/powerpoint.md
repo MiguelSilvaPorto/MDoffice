@@ -110,10 +110,13 @@ avisado ao abrir (nunca some em silêncio).
   lâmina por gesto** (como no PowerPoint; um "tapa" não passa várias). Com a lâmina **ampliada**,
   a roda rola o quadro primeiro e só troca ao chegar ao fim; `Ctrl` + roda é o **zoom** (mirando o
   ponteiro).
-- **Modelos**: o botão **Template** aplica modelos de estilo (tema, cores e fonte) ao deck;
-  dá para salvar o visual atual como cartão e aplicar/remover depois. O catálogo traz os
-  presets do app **mais os 13 designs no formato do DeckCraft** (8 temas originais + 5
-  esquemas de cor, cada um com as próprias cores e fonte).
+- **Modelos**: o botão **Template** aplica modelos de estilo (tema, cores e fonte) ao deck.
+  A galeria tem duas seções: **seus modelos** — o cartão **Novo modelo**, que guarda o visual da
+  apresentação atual (quantas vezes você quiser), e os modelos que você já criou, cada um com um
+  **× no canto** para apagar; e os **modelos do app**, abaixo do título *Modelos do app*. O cartão
+  recém-criado entra em destaque e à vista, e o × só existe nos modelos do usuário. O catálogo traz
+  os presets do app **mais os 13 designs no formato do DeckCraft** (8 temas originais + 5 esquemas
+  de cor, cada um com as próprias cores e fonte).
 - **Ideias de design** (aba do painel lateral, ou **Página Inicial ▸ Designer ▸ Ideias de design** na
   fita): mostra **esta lâmina** desenhada em cada ideia, em cartões clicáveis — clicar aplica à
   apresentação inteira. Cada ideia é um **design** (as cores e a fonte) com um **acabamento**:
