@@ -482,5 +482,17 @@ checa(
   "os valores precisam bater com o base.css"
 );
 
+// ---------------------------------------------------------------- roda do mouse troca de lâmina
+
+console.log("\nroda do mouse: sobe/desce lâmina");
+
+const rodaLaminas = ler("src/powerpoint/roda-laminas.ts");
+checa("a decisão da roda é separada e testável", /export function criarRodaDeLaminas/.test(rodaLaminas));
+checa("a roda ignora Ctrl (o zoom continua sendo dele)", /if \(e\.ctrlKey \|\| e\.metaKey\) return;/.test(rodaLaminas));
+checa("a inércia do gesto não passa várias lâminas", /ESPERA_DA_TROCA/.test(rodaLaminas) && /t - ultimaTroca < ESPERA_DA_TROCA/.test(rodaLaminas));
+checa("a roda lateral não troca de lâmina", /Math\.abs\(e\.deltaX\) > Math\.abs\(e\.deltaY\)/.test(rodaLaminas));
+checa("com a lâmina ampliada a roda rola o quadro primeiro", /temRolagem &&/.test(rodaLaminas) && /scrollTop \+ canvas\.clientHeight < canvas\.scrollHeight/.test(rodaLaminas));
+checa("o editor liga a roda do palco à troca de lâmina", /ligarRodaDeLaminas\(this\.canvas, \(direcao\) => this\.irPara\(this\.indice \+ direcao\)\)/.test(ppt));
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

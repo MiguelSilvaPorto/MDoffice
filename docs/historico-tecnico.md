@@ -5766,7 +5766,7 @@ antigas quando fizer sentido.
   a linha em branco dupla que a resolução do conflito deixou no CHANGELOG saiu na mesma passada
 - **Porquê:** mesma razão das rodadas anteriores (registrar no estado de autoria e promover no
   fechamento não cabem no mesmo commit). Desta vez a resolução do conflito do rebase tinha
-  deixado duas linhas em branco na emenda — a conferência olha o arquivo inteiro, não só as
+  deixado duas linhas em branco na emenda - a conferência olha o arquivo inteiro, não só as
   entradas: `\n\n\n` zero depois da limpeza.
 
 ## src/powerpoint/powerpoint.ts · src/powerpoint/ui/fita.ts
@@ -5799,3 +5799,56 @@ antigas quando fizer sentido.
   está na `main`
 - **Porquê:** mesma razão das rodadas anteriores (registrar no estado de autoria e promover no
   fechamento não cabem no mesmo commit).
+
+## src/powerpoint/roda-laminas.ts
+
+### 2026-10-14 · esta tarefa · a roda do mouse troca de lâmina (novo arquivo)
+- **Local:** arquivo novo — `criarRodaDeLaminas` (decisão) e `ligarRodaDeLaminas` (ligação no canvas)
+- **Linha:** “novo arquivo”
+- **Porquê:** no editor a roda sem Ctrl só tentava rolar o quadro — com a lâmina ajustada não havia
+  o que rolar e ela não fazia nada; no PowerPoint a roda **sobe/desce lâmina**. A decisão ficou numa
+  função de fábrica com estado próprio (acumulado do gesto + espera) para poder ser testada sem DOM:
+  um gesto vale `PASSO_DA_RODA` (40 px), a `ESPERA_DA_TROCA` (260 ms) engole a inércia do mesmo
+  gesto (sem ela, um “tapa” na roda passaria várias lâminas) e, quando o quadro ainda tem para onde
+  rolar naquele sentido (`podeRolar`), a resposta é “rolar” — a lâmina ampliada continua rolando
+  primeiro e a troca acontece no fim da rolagem (ou quando nada rola). A ligação ignora `Ctrl`
+  (o zoom tem ouvinte próprio) e a roda lateral (`deltaX > deltaY`), e converte `deltaMode`
+  (linha/página) para pixels.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · esta tarefa · o palco liga a roda à troca de lâmina
+- **Local:** perto do ouvinte de Ctrl + roda (zoom)
+- **Linha:** comentário do zoom (“sem Ctrl, a roda só rola a lâmina”) → “sem Ctrl, a roda troca de
+  lâmina”; entra `ligarRodaDeLaminas(this.canvas, (direcao) => this.irPara(this.indice + direcao))`
+- **Porquê:** `irPara` já sai da edição de texto e repinta — é o mesmo caminho das setas do teclado
+  (Â baixo ↔ próxima), então a roda não inventa um segundo jeito de trocar de lâmina. O `canvas`
+  (`.pp-canvas`) é quem rola e quem recebe a roda.
+
+## scripts/testar-edicao-pptx.mjs
+
+### 2026-10-14 · esta tarefa · a decisão da roda testada sem DOM
+- **Local:** seção nova “roda do mouse: troca de lâmina” (fim do arquivo)
+- **Linha:** 10 checagens — gesto troca, inércia não passa adiante, para cima volta, rolagem
+  primeiro, troca no fim da rolagem, gesto pequeno segura, dois pequenos somam, rolar zera o
+  acumulado e os valores do passo/espera
+- **Porquê:** o relógio é injetado (`agora`), então o teste prende o comportamento temporal sem
+  esperar de verdade; é o tipo de regra (limiar + espera) que volta a quebrar sem ninguém notar.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · esta tarefa · checagens da ligação da roda
+- **Local:** fim do arquivo, seção “roda do mouse: sobe/desce lâmina”
+- **Linha:** 6 checagens — decisão separada, Ctrl ignorado, espera presente, roda lateral
+  ignorada, rolagem primeiro com a lâmina ampliada e a ligação no palco
+- **Porquê:** são as invariantes que não podem “voltar atrás” sem alguém perceber (por exemplo,
+  alguém remover o `return` do Ctrl e a roda roubar o zoom).
+
+## docs/powerpoint.md
+
+### 2026-10-14 · esta tarefa · a documentação da navegação pela roda
+- **Local:** “Editar as lâminas”, depois do item de **Lâminas**
+- **Linha:** bala nova — roda do mouse sobe/desce uma lâmina por gesto; ampliada, rola o quadro
+  primeiro; `Ctrl` + roda é zoom
+- **Porquê:** é comportamento visível e fácil de descobrir errado (quem não sabe tenta rolar o
+  quadro e troca de lâmina sem querer).

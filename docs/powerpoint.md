@@ -75,6 +75,10 @@ avisado ao abrir (nunca some em silêncio).
   silhuetas cinzas, na proporção do deck) — no "Layout" o atual vem destacado; clicar cria a
   lâmina com aquele layout (ou aplica na atual). A **lâmina nova entra no fim** da apresentação
   (o "+" da faixa fica no fim) e já fica selecionada.
+- **Navegar com a roda do mouse**: com o ponteiro sobre a lâmina, girar a roda **sobe/desce uma
+  lâmina por gesto** (como no PowerPoint; um "tapa" não passa várias). Com a lâmina **ampliada**,
+  a roda rola o quadro primeiro e só troca ao chegar ao fim; `Ctrl` + roda é o **zoom** (mirando o
+  ponteiro).
 - **Modelos**: o botão **Template** aplica modelos de estilo (tema, cores e fonte) ao deck;
   dá para salvar o visual atual como cartão e aplicar/remover depois.
 - **Configurar apresentação**: proporção (16:9 / 4:3), tema (claro/escuro/contraste), fonte

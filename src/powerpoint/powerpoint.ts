@@ -39,6 +39,7 @@ import { comAnimacao, comAtraso, comDirecao, comDuracao, comInicio, comPorParagr
 import { iniciarAnimacoes, type ControleAnimacoes } from "./render/animacao";
 import { caixaDaMidia, comCorteDaMidia, comOpcaoMidia, comVolumeDaMidia, midiaPadrao, normalizarMidia, MIDIA_ROTULOS, tipoDeArquivo } from "./edicao/midia";
 import { capturarQuadro, cartaoParaPng } from "./render/midia";
+import { ligarRodaDeLaminas } from "./roda-laminas";
 import {
   addCategoria,
   addSerie,
@@ -345,8 +346,8 @@ export class PowerPointHost {
     range?.addEventListener("input", () => this.setZoom(+range.value));
 
     // Ctrl + roda do mouse amplia/reduz mirando o PONTEIRO: o ponto que está
-    // debaixo do cursor continua debaixo dele (como no PowerPoint). Sem Ctrl,
-    // a roda só rola a lâmina normalmente.
+    // debaixo do cursor continua debaixo dele (como no PowerPoint). Sem Ctrl, a roda
+    // troca de lâmina (logo abaixo).
     this.canvas.addEventListener(
       "wheel",
       (e) => {
@@ -358,6 +359,10 @@ export class PowerPointHost {
       },
       { passive: false }
     );
+
+    // roda do mouse sem Ctrl: sobe/desce UMA lâmina por gesto, como no PowerPoint.
+    // Com a lâmina ampliada, a roda rola o quadro primeiro; no fim, troca de lâmina.
+    ligarRodaDeLaminas(this.canvas, (direcao) => this.irPara(this.indice + direcao));
 
     // arrastar uma imagem do computador para a lâmina
     this.canvas.addEventListener("dragover", (e) => {

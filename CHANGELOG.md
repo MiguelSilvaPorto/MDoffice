@@ -588,6 +588,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **digitação** — qualquer tamanho (com vírgula, de 1 a 4096) ou qualquer nome de fonte; tamanho
   misto fica em branco e digitar aplica a todos os trechos. A lista de fontes do app ganhou as
   clássicas do Windows/Office e o diálogo **Configurar apresentação** passou a usá-la.
+- **A roda do mouse troca de lâmina**: com o ponteiro sobre a lâmina, girar a roda **sobe/desce
+  uma lâmina por gesto**, como no PowerPoint (um “tapa” não passa várias — a inércia do mesmo
+  gesto é engolida). Com a lâmina **ampliada**, a roda rola o quadro primeiro e só troca quando
+  chega ao fim (ou quando a lâmina inteira está à vista). `Ctrl` + roda continua sendo o **zoom**.
 
 ---
 
@@ -923,3 +927,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Teste de layout com o campo editável**: mais 10 checagens em `npm run test:layout` para o
   modo editável (o valor digitado vira opção, vírgula e min/max, a escolha na lista não é aplicada
   duas vezes, as duas fitas marcadas como editáveis e a lista de fontes única).
+- **Testes da roda do mouse**: a decisão da roda virou módulo próprio (`src/powerpoint/roda-laminas.ts`)
+  e ganhou 10 checagens em `npm run test:pptx-edicao` (gesto, inércia, rolagem primeiro, soma de
+  movimentos pequenos) + 6 em `npm run test:layout` (Ctrl é do zoom, roda lateral ignorada e a
+  ligação no palco).

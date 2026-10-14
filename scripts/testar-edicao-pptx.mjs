@@ -992,5 +992,27 @@ const MM = await empacotar("src/powerpoint/edicao/mermaid.ts", "mermaid.mjs");
   ok("fluxo: código vazio não gera nada", MM.fluxoParaFormas(MM.lerFluxoMermaid(""), dim, estilo).length === 0);
 }
 
+// ---------------------------------------------------------------- roda do mouse: troca de lâmina
+const RODA = await empacotar("src/powerpoint/roda-laminas.ts", "roda.mjs");
+{
+  let relogio = 10_000;
+  const trocas = [];
+  const roda = RODA.criarRodaDeLaminas({ irPara: (d) => trocas.push(d), agora: () => relogio });
+  ok("roda: um gesto para baixo troca para a próxima", roda({ dy: 100, podeRolar: false }) === "trocar" && trocas.join() === "1");
+  ok("roda: a inércia do mesmo gesto não passa adiante", roda({ dy: 100, podeRolar: false }) === "segurar" && trocas.length === 1);
+  relogio += RODA.ESPERA_DA_TROCA + 40;
+  ok("roda: para cima volta uma lâmina", roda({ dy: -100, podeRolar: false }) === "trocar" && trocas.join() === "1,-1");
+  relogio += RODA.ESPERA_DA_TROCA + 40;
+  ok("roda: com a lâmina ampliada, primeiro rola a tela", roda({ dy: 100, podeRolar: true }) === "rolar" && trocas.length === 2);
+  ok("roda: no fim da rolagem o gesto troca", roda({ dy: 100, podeRolar: false }) === "trocar" && trocas.length === 3);
+  relogio += RODA.ESPERA_DA_TROCA + 40;
+  ok("roda: gesto pequeno (menos que o passo) segura", roda({ dy: 20, podeRolar: false }) === "segurar" && trocas.length === 3);
+  ok("roda: dois movimentos pequenos somam o gesto", roda({ dy: 30, podeRolar: false }) === "trocar" && trocas.length === 4);
+  relogio += RODA.ESPERA_DA_TROCA + 40;
+  roda({ dy: 100, podeRolar: true });
+  ok("roda: rolar zera o que estava acumulado", roda({ dy: 30, podeRolar: false }) === "segurar");
+  ok("roda: o passo e a espera existem", RODA.PASSO_DA_RODA === 40 && RODA.ESPERA_DA_TROCA === 260);
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);
