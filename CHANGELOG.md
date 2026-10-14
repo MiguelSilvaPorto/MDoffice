@@ -599,6 +599,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Sem o painel "Contexto para IA"**: a aba de pastas vinculadas saiu da barra lateral (não fazia
+  mais sentido), junto com o modal "Pastas de contexto para IA", o item do menu **⋯**, o atalho do
+  menu do botão direito do editor, o tipo `LinkedFolder` e o comando `inspect_folders` (Rust, que
+  só servia a ele). O **Copiar para IA**, o **Pacote para IA** e o painel de **Projetos** ficam
+  como estavam, e o menu do editor agora só tem o **Copiar** — sem abrir quando não há seleção.
 - **Ícones de tipo no estilo adotado (contorno)**: os ícones das **abas**, das **listas**
   (Recentes/Projetos) e dos **menus** deixaram a folha preenchida e passaram ao **contorno** —
   folha com o canto dobrado, interior vazio e a marca do formato no traço: **#** (Markdown),

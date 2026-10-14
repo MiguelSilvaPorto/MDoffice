@@ -351,7 +351,7 @@ correções simples de imagem e réguas.
 - **Importar do Office** (.docx/.xlsx/.xlsm/.pptx) direto pelo Início.
 - **Exportar** Markdown para HTML/PDF/Word/TXT/pacote IA, com documento bilíngue.
 - **Interface e dicionário em português** (o DeckCraft é inglês-only hoje).
-- **Desenho assistido** e diagramas Mermaid no Markdown; projetos, contexto para IA e busca no conteúdo.
+- **Desenho assistido** e diagramas Mermaid no Markdown; projetos e busca no conteúdo.
 
 ## Arquitetura e plataformas (contexto)
 

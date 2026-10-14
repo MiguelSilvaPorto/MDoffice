@@ -812,6 +812,25 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   perder a âncora, o `.active` voltar a pintar o fundo). O teste é estático e roda em
   `npm run test:layout`.
 
+## index.html · src/sidebar.ts · src/app/aiContext.ts · src/app/app.ts · src/app/toolbar.ts · src/app/types.ts · src/files.ts · src/styles/welcome.css · src/styles/workspace.css · src-tauri/src/commands/projects.rs · src-tauri/src/lib.rs · src-tauri/src/commands/tests.rs
+
+### 2026-10-14 · este commit · o "Contexto para IA" saiu
+- **Local:** a aba `data-side="context"` e o painel `#sp-context` (index.html); `SidePanel` e a
+  busca que saía do Contexto (sidebar.ts); `chooseFolders`, `showFolderContext`, `folderTreeText`,
+  `folderMarkdown`, `linkFolders` e `renderLinkedFolders`, mais o item "Pasta" e as pastas rápidas
+  do menu do editor (aiContext.ts); `linkedFolders` e a carga de `mdc.linked-folders` (app.ts); o
+  item "Vincular pastas (contexto)…" e o `case "folders"` (toolbar.ts); `LinkedFolder` (types.ts);
+  `inspectFolders`/`FolderEntry`/`FolderSnapshot` (files.ts); o bloco `.folder-*` (welcome.css) e
+  `#sp-context .recent:hover` (workspace.css); `scan_folder`, `scan_folder_inner`,
+  `inspect_folders` e o teste da árvore (projects.rs/lib.rs/tests.rs)
+- **Linha:** removidos (o recurso inteiro)
+- **Porquê:** o usuário pediu para remover o painel "Contexto para IA" — a lista de pastas
+  vinculadas não fazia mais sentido. A remoção foi até o fim: a UI (aba, painel, modal, itens de
+  menu) e o que só existia para ela (o comando Rust de inspeção de pastas e o teste da árvore).
+  Ficaram intactos o **Copiar para IA**, o **Pacote para IA** (`.zip`), o menu do editor — agora só
+  com o **Copiar**, e sem abrir quando não há seleção (antes ele ficava vazio) — e o painel de
+  **Projetos**, que usa `pickFolders`/`list_markdown`.
+
 ## index.html
 
 ### 2026-10-13 · este commit · atalho de pasta e caminho salvo no topbar
