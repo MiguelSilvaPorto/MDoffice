@@ -8498,3 +8498,16 @@ antigas quando fizer sentido.
   o número medido no harness (61 px de texto para "Desaparecer"). A primeira versão da checagem dos
   grupos procurava `grupo("Duração")` no arquivo inteiro e **falhava de propósito errado**: a aba
   **Transições** tem um grupo Duração legítimo — a busca passou a valer só no corpo do `animacoes()`.
+
+## CHANGELOG.md
+
+### 2026-10-14 · promoção · a entrada da galeria do Template entra no "Adicionado"
+- **Local:** PowerPoint → "Não adicionado" → Frontend → "Adicionado" → Frontend (topo)
+- **Linha:** 1 entrada movida — **A galeria do Template põe os SEUS modelos em cima e o catálogo
+  embaixo** (`24e92e3`); a seção "Não adicionado" ficou com o que sobrou da rodada (as entradas do
+  **Copiar formatação** e dos **Arranjos**, que continuam lá de propósito: quem cuida delas é a
+  sessão de cada tarefa)
+- **Porquê:** o commit está na `main` (conferido com `git merge-base --is-ancestor 24e92e3 main`
+  antes de mover), então a promoção não afirma nada falso. Como nas rodadas anteriores, ela anda
+  num passo curto de docs porque o commit do `fechar.ps1` já foi usado para entregar o código —
+  promover junto seria afirmar "está na main" antes de estar.

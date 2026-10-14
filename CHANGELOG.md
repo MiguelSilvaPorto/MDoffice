@@ -414,6 +414,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - **Arranjos: o clique aplica só na lâmina atual** — antes a fórmula era aplicada em todas as lâminas do deck (e sem refazer os estilos e ligações derivados); agora vale para a lâmina que a prévia mostra, como qualquer edição, e dá para desfazer.
 
+### Adicionado (na main)
+
+**Backend**
+
+- **Arranjos: o conteúdo não se desloca mais do cartão** — o bloco inteiro (cartão + o que sai dele) é centrado no espaço e todas as formas andam por ele; a detecção roda uma vez e usa mapas por id, em vez de `find` por forma.
+
+- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
+
+**Frontend**
+
 - **A galeria do Template põe os SEUS modelos em cima e o catálogo embaixo**: o cartão
   **Novo modelo** (guardar esta apresentação) vem **primeiro** e cada modelo que você criou fica
   logo depois dele, com um **× no canto** para apagar só o que é seu (os modelos do app não têm ×).
@@ -425,16 +435,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **última coluna saía da tela** — é também por isso que o print do relato mostrava duas colunas).
   Se o armazenamento do app recusar a gravação (cheio ou indisponível), o aviso aparece — em vez de
   um modelo que some sem explicação.
-
-### Adicionado (na main)
-
-**Backend**
-
-- **Arranjos: o conteúdo não se desloca mais do cartão** — o bloco inteiro (cartão + o que sai dele) é centrado no espaço e todas as formas andam por ele; a detecção roda uma vez e usa mapas por id, em vez de `find` por forma.
-
-- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
-
-**Frontend**
 
 - **Arrastar a caixa pelo vazio (forma sem fundo)**: uma caixa de texto sem preenchimento só
   pegava o clique **nas letras** — o resto do retângulo era clique-através, então tentar arrastar
