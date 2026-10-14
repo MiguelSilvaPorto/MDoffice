@@ -19,6 +19,7 @@ import type { Tone } from "./broker/writing";
 import type { AppSettings } from "./settings";
 import type { AppIcon } from "./app/appIcon";
 import type { AbaHistorico } from "./historyUi";
+import { melhorarSelects } from "./seletor";
 import {
   ATALHOS,
   GRUPOS as GRUPOS_DE_ATALHOS,
@@ -111,8 +112,6 @@ export interface SettingsCtx {
   /** Ícone da janela escolhido (claro/escuro). */
   appIcon: () => AppIcon;
   setAppIcon: (v: AppIcon) => void;
-  /** Abre o menu suspenso do app (o mesmo do ⋯) ancorado no elemento. */
-  menu: (ancora: HTMLElement, opcoes: { rotulo: string; ativo?: boolean; escolher: () => void }[]) => void;
 }
 
 const NAV: { id: SettingsSection; label: string; desc: string; icon: string }[] = [
@@ -151,13 +150,13 @@ function toggle(id: string, label: string, desc: string, on: boolean, icon: stri
 }
 
 /**
- * Botão que abre o menu do app no lugar de um `<select>` nativo: a lista do
- * `<select>` é desenhada pelo sistema (cinza claro) e não segue o tema.
- * `opcoes` = [valor, rótulo]; `atual` marca a escolhida no menu.
+ * Um `<select>` das Configurações: o `melhorarSelects` (ver `src/seletor.ts`) troca a lista
+ * cinza do sistema pelo menu do app. `opcoes` = [valor, rótulo]; `atual` marca a escolhida.
  */
 function dd(chave: string, opcoes: [string, string][], atual: string): string {
-  const rotulo = opcoes.find((o) => o[0] === atual)?.[1] ?? opcoes[0]?.[1] ?? "";
-  return `<button type="button" class="st-select st-dd" data-dd="${chave}" data-valor="${atual}" aria-haspopup="menu"><span data-dd-txt>${rotulo}</span></button>`;
+  return `<select class="st-select" data-k="${chave}">${opcoes
+    .map(([valor, rotulo]) => `<option value="${valor}"${valor === atual ? " selected" : ""}>${rotulo}</option>`)
+    .join("")}</select>`;
 }
 
 export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section: SettingsSection = "escrita"): void {
@@ -594,6 +593,9 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
          precisa estar à vista onde a pessoa acabou de clicar — não no alto. -->
     <span class="st-saved" aria-live="polite"></span>`;
 
+  // os `<select>` desta página abrem o menu do app (a lista do sistema não segue o tema)
+  melhorarSelects(host);
+
   const q = <T extends HTMLElement>(sel: string) => host.querySelector<T>(sel)!;
   const saved = q(".st-saved");
   let savedTimer: number | undefined;
@@ -612,24 +614,10 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     return node;
   };
 
-  /** Liga um dropdown `dd()`: clicar abre o menu do app e a escolha atualiza o botão. */
-  const ligarDd = (chave: string, opcoes: [string, string][], aoEscolher: (valor: string) => void): void => {
-    const btn = q<HTMLButtonElement>(`[data-dd="${chave}"]`);
-    btn.addEventListener("click", () => {
-      const atual = btn.dataset.valor ?? "";
-      ctx.menu(
-        btn,
-        opcoes.map(([valor, rotulo]) => ({
-          rotulo,
-          ativo: valor === atual,
-          escolher: () => {
-            btn.dataset.valor = valor;
-            const txt = btn.querySelector<HTMLElement>("[data-dd-txt]");
-            if (txt) txt.textContent = rotulo;
-            aoEscolher(valor);
-          },
-        }))
-      );
+  /** Liga um `dd()`: a escolha chega pelo `change` do select (a lista é o menu do app). */
+  const ligarDd = (chave: string, _opcoes: [string, string][], aoEscolher: (valor: string) => void): void => {
+    q<HTMLSelectElement>(`[data-k="${chave}"]`).addEventListener("change", (e) => {
+      aoEscolher((e.target as HTMLSelectElement).value);
     });
   };
 

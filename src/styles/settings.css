@@ -776,12 +776,9 @@ button.st-row:hover .st-chev {
 .st-select {
   flex: none;
   appearance: none;
-  padding: 7px 30px 7px 11px;
+  padding: 7px 11px;
   color: var(--fg);
-  background-color: var(--panel-2);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9.5 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 9px center;
+  background: var(--panel-2);
   border: 1px solid var(--border);
   border-radius: 9px;
   font: inherit;
@@ -789,28 +786,13 @@ button.st-row:hover .st-chev {
   transition: border-color 0.12s ease;
 }
 
-[data-theme="dark"] .st-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2393a0b4' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9.5 6 6 6-6'/%3E%3C/svg%3E");
-}
-
 .st-select:hover {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
-/* Dropdown do app no lugar do <select> nativo: a lista do sistema não segue o tema.
-   O visual do botão é o do .st-select; aqui só o comportamento de botão. */
-button.st-dd {
-  display: inline-flex;
-  align-items: center;
+/* nas Configurações o rótulo longo encurta com "…" (a cara é quem mostra) */
+#settings-page .st-select {
   max-width: 230px;
-  cursor: pointer;
-  text-align: left;
-}
-
-button.st-dd [data-dd-txt] {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* ---------- botões das linhas ---------- */

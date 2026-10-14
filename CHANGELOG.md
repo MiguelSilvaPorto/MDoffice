@@ -601,6 +601,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   DOM — valor, opções e o evento `change` seguem valendo para todo o código existente — e a tela
   mostra uma “cara” com o rótulo atual e o chevron. **Esc fecha só a lista** (o diálogo por baixo
   continua), clicar fora fecha e opção desabilitada não abre.
+- **Configurações com o seletor unificado**: os seis campos que usavam um botão próprio de menu
+  (intensidade das sugestões, versões guardadas, política/cópias/prazo do backup e estilo do
+  desenho) agora são `<select>` melhorados pelo **mesmo controle do resto do app**
+  (`src/seletor.ts`): a lista aberta é o menu suspenso do app, no tema. O componente antigo
+  (`dd`/`ctx.menu`) sai — uma implementação só.
 
 **Ferramentas (dev)**
 

@@ -155,10 +155,6 @@ export const pagesMethods = {
       repairAlignments: () => this.repairAlignments(),
       appIcon: () => appIconAtual(),
       setAppIcon: (v) => definirIconeApp(v),
-      menu: (ancora, opcoes) =>
-        this.openMenu(ancora, (menu) => {
-          for (const o of opcoes) this.ddItem(menu, { label: o.rotulo, checked: o.ativo, onPick: o.escolher });
-        }),
     };
   },
 

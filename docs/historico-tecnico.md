@@ -3570,7 +3570,7 @@ antigas quando fizer sentido.
 - **Linha:** bala nova depois da bala do grupo S ("Conferência ABNT de sumário e numeração")
 - **Porquê:** o resumo e o abstract são funcionalidades visíveis (o aviso sai no painel de
   revisão, com o número contado e o trecho); o documento do módulo acompanha o que o app faz.
-- **Local:** `scripts/testar-regras-abnt.mts` — sem mudança neste commit
+- **Local:** `scripts/testar-regras-abnt.mts` - sem mudança neste commit
 - **Porquê:** a tarefa do grupo S já tinha corrigido `carregadas >= 10` e o `.map(I.regraDeToml)`
   (que passava o índice como registro) na main; no rebase a versão dela prevaleceu e este
   commit não reescreve a mesma linha.
@@ -3679,3 +3679,32 @@ antigas quando fizer sentido.
   interface (mesmo em pasta de rede) e que nenhuma alteração fica sem salvar
 - **Porquê:** o comportamento visível mudou (o app engasgava a cada salvamento em UNC/SMB e podia
   deixar o fim do texto sem gravar).
+## src/settingsPage.ts
+
+### 2026-10-14 · esta tarefa · os `dd` viram selects de verdade
+- **Local:** `dd()` e `ligarDd()`; `melhorarSelects(host)` no fim do render
+- **Linha:** `<button class="st-select st-dd" data-dd data-valor>` → `<select class="st-select"
+  data-k>` com as opções; `ligarDd` deixa de montar o menu à mão e passa a escutar o `change`
+- **Porquê:** o componente `dd`/`ctx.menu` duplicava o que o `src/seletor.ts` já faz (menu
+  suspenso do app no lugar da lista do sistema). Agora as Configurações usam o **mesmo controle**
+  do resto do app: a lista, o item marcado, o Esc e o clique-fora vêm de um lugar só. O código
+  que consome os valores (os seis `ligarDd`) não mudou de forma — só quem mostra a lista.
+
+## src/app/pages.ts
+
+### 2026-10-14 · esta tarefa · `menu` fora do contexto das Configurações
+- **Local:** `settingsContext()`
+- **Linha:** campo `menu:` removido (era o único consumidor do `openMenu`+`ddItem` pela página)
+- **Porquê:** sem o `dd`, nada na página precisa abrir o menu do app por conta própria — o
+  seletor cuida disso. Fica uma implementação só e o contexto encolhe.
+
+## src/styles/settings.css
+
+### 2026-10-14 · esta tarefa · `.st-select` sem seta desenhada e `.st-dd` removido
+- **Local:** bloco `.st-select` e o `button.st-dd`/`[data-dd-txt]`
+- **Linha:** `.st-select` perde a `background-image` do chevron (e o override do tema escuro) —
+  quem mostra a seta agora é a cara do controle; `button.st-dd` e `[data-dd-txt]` saem;
+  `#settings-page .st-select { max-width: 230px }` preserva o limite do rótulo longo
+- **Porquê:** com o seletor unificado o chevron vinha em dobro (fundo do botão antigo + seta da
+  cara) e o `.st-dd` ficou sem uso. O `.st-select` continua servindo os diálogos do Word (com a
+  seta da própria cara).
