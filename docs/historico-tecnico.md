@@ -2283,6 +2283,83 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   clique da aba e no menu de contexto botão direito) desde que essa versão entrou. Era o último
   `window.prompt` do app fora dos diálogos que esta tarefa trocou.
 
+## src/broker/data/informal.ts
+
+### 2026-10-14 · formalidade base · catálogo por classe (18 → 75)
+- **Local:** `INFORMAL` e os novos `ROTULO_CLASSE`, `PESO_CLASSE` e `ehClasseMarcador`
+- **Linha:** `{ rx, message, fix?, suggestion? }` → `{ rx, message, fix?, sugestoes?, classe, seguro, tom, exemplo }`, com internetês, contração, muleta, gíria, oralidade, atenuação, redundância e vagueza
+- **Porquê:** o catálogo antigo trocava palavra por palavra e não dizia o tipo nem o risco. A `classe` alimenta o MIP e o agrupamento do painel; `seguro` separa o que o app pode corrigir sozinho do que só pode sugerir (quando a troca mexe no sentido ou depende de contexto); `tom` é o tom mínimo em que o padrão aparece (neutro = caso claro; formal = opinião de estilo); `exemplo` é a frase que o teste usa para provar que cada padrão casa. O internetês que `data/abbreviations.ts` já corrigia continua com aquela regra; aqui ele ganhou classe para a métrica.
+
+## src/broker/types.ts
+
+### 2026-10-14 · formalidade base · tipos do marcador e do MIP
+- **Local:** `WritingIssue`, `WritingStats` e os novos `ClasseMarcador`/`MarcadorInformal`
+- **Linha:** `classe?: "ponto-final" | "quebra-frase"` → `... | ClasseMarcador`; `WritingStats` ganhou `mip`, `mipDepois`, `marcadores` e `marcadoresPorClasse`
+- **Porquê:** a classe do marcador precisa viajar com o aviso (painel e MIP) e as estatísticas precisam carregar o número antes/depois e as ocorrências com trecho e risco; tudo é preenchido por `stats()`.
+
+## src/broker/style/formalidade.ts
+
+### 2026-10-14 · formalidade base · regras de frase por janela (novo arquivo)
+- **Local:** `emCitacao`, `abreFrase`, `aGente`, `aiConector`, `entaoConector`, `voceVeQue` e `haAtras`
+- **Linha:** novo arquivo (a regra `aGente` saiu de `register.ts` e ganhou a alternativa impessoal)
+- **Porquê:** há trocas que não cabem numa regex de palavra — dependem do que vem antes/depois. “a gente + verbo” oferece “Nós vemos” e, quando o verbo fecha a oração (ou pede “que”), a impessoal “Vê-se” (sem arriscar concordância com objeto); “Aí eu fui” vira “Então, eu”/“Em seguida, eu” (só abrindo a frase: “aí” locativo fica em paz); “então” repetido no mesmo parágrafo pede variação; “você vê que” vira impessoal; “há três anos atrás” perde o “atrás”. Tudo fora de citação (`>`) e com o risco na mensagem.
+
+## src/broker/style/register.ts
+
+### 2026-10-14 · formalidade base · tom por nível, exclusões e maiúscula de início
+- **Local:** `informalRegister`
+- **Linha:** `rule.fix`/`rule.suggestion` → catálogo com `tom`/`classe`/`seguro`; entram os guardas de citação (`emCitacao`), e-mail e sigla em caixa alta; a troca/sugestão sai com maiúscula quando o trecho abre a frase
+- **Porquê:** o tom mínimo por padrão substitui o critério antigo (“neutro = só o que tem fix”) por política explícita; citação, e-mail e sigla não são informalidade; a maiúscula dentro do fix evita a disputa de intervalo com a regra de maiúsculas (antes “pra” no começo de parágrafo virava só “Pra”). `aGente` saiu daqui para `formalidade.ts`.
+
+## src/broker/style/index.ts
+
+### 2026-10-14 · formalidade base · ordem das regras
+- **Local:** `RULES`
+- **Linha:** `informalRegister` passou para antes de `lowercaseAfterPeriod`/`paragraphStartLowercase`; as regras de janela entraram na posição da antiga `aGente` (depois de `missingFinalPeriod` e antes de `...REGRAS_ABNT`)
+- **Porquê:** a primeira regra que casa o trecho vence; com o registro antes, a troca do catálogo (que já traz a maiúscula) vence a regra de maiúsculas no mesmo intervalo. As janelas ficam depois porque o intervalo delas costuma ser maior — e o “maior vence” na aplicação. A integração com a tarefa das regras ABNT em TOML manteve o bloco `...REGRAS_ABNT` no lugar.
+
+## src/broker/style/punctuation.ts
+
+### 2026-10-14 · formalidade base · a decisão do “entretanto” documentada
+- **Local:** comentários de `commasAroundExpressions` e `adversativeComma`
+- **Linha:** comentário reforçado (sem mudança de comportamento): a adversativa leva **só a vírgula de antes**; a segunda vírgula é aceita quando a conjunção vem intercalada, mas o app só emite a obrigatória
+- **Porquê:** o teste do “entretanto” pedia as duas vírgulas e o corpus (caso 16, “porém”) exige só a de antes. A decisão do corpus foi mantida — é a vírgula obrigatória em qualquer leitura e a edição menos intrusiva — e o teste foi alinhado; o porquê ficou escrito no código para não se perder de novo.
+
+## src/broker/stats.ts
+
+### 2026-10-14 · formalidade base · MIP e ocorrências (`marcadoresInformais` novo)
+- **Local:** `marcadoresInformais` (novo, exportado) e `stats`
+- **Linha:** `stats` ganhou `mip`, `mipDepois`, `marcadores` e `marcadoresPorClasse`; a varredura roda as regras de marcador direto (sem a dedupe do `checkStyle`) e sempre no tom formal
+- **Porquê:** a métrica mede o TEXTO — inclusive o internetês que `data/abbreviations.ts` já corrigia e que a dedupe do `checkStyle` esconderia — enquanto o tom decide só o que vira aviso. `mipDepois` estima o número se o app aplicasse sozinho o que tem correção; as ocorrências trazem frase, classe e risco para o painel.
+
+## src/broker/review.ts
+
+### 2026-10-14 · formalidade base · MIP, classes e risco no painel
+- **Local:** cards de `render`, seção nova de marcadores e chips da lista de avisos
+- **Linha:** cards “MIP … por 1.000 palavras” e “MIP depois das correções seguras”; seção “Marcadores informais” com contagem por classe e até 8 frases com “Ir” e “confira o sentido”; sugestões extras aparecem mesmo quando existe “Corrigir”
+- **Porquê:** o painel é onde a formalidade fica visível: número antes/depois, o que é de cada classe, o trecho em volta e o risco — e as duas alternativas das sugestões (ex.: “Nós vemos” e “Vê-se”) não ficam escondidas atrás do botão de corrigir.
+
+## src/settingsPage.ts
+
+### 2026-10-14 · formalidade base · nota do MIP na aba Escrita
+- **Local:** seção “Escrita” (depois das notas do tom)
+- **Linha:** novo `st-note` explicando o MIP e as classes
+- **Porquê:** a aba Escrita é onde o tom é escolhido; quem escolhe “Formal” precisa saber que o painel (F7) mostra o indicador e o que ele conta.
+
+## scripts/testar-correcao.mjs
+
+### 2026-10-14 · formalidade base · entretanto alinhado + verificações novas
+- **Local:** bloco de vírgulas e os blocos novos de “formalidade” (catálogo, seguro × sugestão, tom, janelas, exclusões, MIP e aplicação)
+- **Linha:** `“entretanto” intercalado não duplica vírgulas` → espera `"…, entretanto faltou teste."` (uma vírgula); novo bundle `F` (checkStyle + tom + stats + catálogo) montado por `empacotarFonte`; plugin `?raw` do esbuild (as regras ABNT em TOML)
+- **Porquê:** a expectativa antiga pedia as duas vírgulas, contra a decisão do corpus. As verificações novas provam cada padrão pelo próprio exemplo, a política seguro × sugestão, os três tons, as janelas de frase, as exclusões (citação, código, URL, sigla e e-mail) e o MIP (fórmula inclusive: peso 3 ÷ 4 palavras = 750).
+
+## docs/md.md
+
+### 2026-10-14 · formalidade base · o módulo de escrita
+- **Local:** “Escrita assistida (português, offline)”
+- **Linha:** bala nova depois do “Modo formal”
+- **Porquê:** o documento do módulo descreve o que o app faz; o catálogo por classe, as frases por janela e o MIP são funcionalidades visíveis.
+
 ---
 
 ## Próximos registros

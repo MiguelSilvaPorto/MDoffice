@@ -11,9 +11,9 @@ export function commasAroundExpressions({ text, mask, push }: RuleCtx): void {
   // "isto é" nunca casava).
   //
   // As conjunções adversativas ("porém", "contudo", "entretanto", "todavia")
-  // NÃO entram aqui de propósito: quem cuida delas é `adversativeComma`, que
-  // pede só a vírgula de antes. Com as duas regras ligadas, "mas" e "porém"
-  // recebiam vírgula antes E depois, o que não é a pontuação da conjunção.
+  // NÃO entram aqui de propósito: quem cuida delas é `adversativeComma`, que pede
+  // a vírgula de antes (a obrigatória). Com as duas regras ligadas, "mas" e "porém"
+  // recebiam vírgula antes E depois, e aí a vírgula chegava duplicada.
   const entreVirgulas = /(?<![\p{L}\d])(ou seja|isto é|por exemplo|em outras palavras|ou melhor|no entanto|portanto|além disso|além do mais)(?![\p{L}\d])/giu;
   while ((m = entreVirgulas.exec(mask)) !== null) {
     const ini = m.index;
@@ -92,7 +92,12 @@ export function longRunWithoutPunct({ mask, push }: RuleCtx): void {
 /** Vírgula antes de “mas”, “porém”, “contudo”… */
 export function adversativeComma({ mask, push }: RuleCtx): void {
   let m: RegExpExecArray | null;
-  // vírgula antes de "mas", "porém", "contudo"…
+  // A adversativa coordenativa pede a vírgula de ANTES ("entregou o projeto, entretanto
+  // faltou teste"). A segunda vírgula ("..., entretanto, ...") é aceita quando a
+  // conjunção vem intercalada, mas o app só emite a que é obrigatória em qualquer
+  // leitura — é a mesma decisão do corpus (caso 16, "porém") e do commit que tirou as
+  // adversativas da regra de expressões: com as duas regras no mesmo trecho, "mas" e
+  // "porém" recebiam vírgula antes E depois, e aí a vírgula chegava duplicada.
   const adversativeRx = /(?<![\p{L},;:\n])([\p{L}]{2,})\s+(mas|porém|contudo|entretanto|todavia)(?![\p{L}])/giu;
   while ((m = adversativeRx.exec(mask)) !== null) {
     const conjStart = m.index + m[0].length - m[2].length;

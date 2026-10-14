@@ -1,5 +1,6 @@
-// Painel de revisão do texto: ortografia, estilo, sinônimos e estatísticas.
+// Painel de revisão do texto: ortografia, estilo, formalidade (MIP), sinônimos e estatísticas.
 import { h } from "../util";
+import { ehClasseMarcador, ROTULO_CLASSE } from "./data/informal";
 import { synonymsFor, type WritingIssue, type WritingStats } from "./writing";
 
 export interface ReviewOptions {
@@ -75,6 +76,8 @@ export function openReviewModal(opts: ReviewOptions): ReviewHandle {
     return b;
   };
 
+  const fmt = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+
   const render = (issues: WritingIssue[], stats: WritingStats) => {
     // resumo
     statsHost.innerHTML = "";
@@ -84,6 +87,8 @@ export function openReviewModal(opts: ReviewOptions): ReviewHandle {
       ["Média por frase", `${stats.avgWordsPerSentence} palavras`],
       ["Frases longas", String(stats.longSentences)],
       ["Avisos", String(issues.length)],
+      ["MIP — marcadores informais por 1.000 palavras", fmt(stats.mip)],
+      ["MIP depois das correções seguras", fmt(stats.mipDepois)],
     ];
     for (const [label, value] of cards) {
       statsHost.append(h("div", { class: "rv-card" }, [h("span", { class: "rv-card-value", text: value }), h("span", { class: "rv-card-label", text: label })]));
@@ -105,6 +110,46 @@ export function openReviewModal(opts: ReviewOptions): ReviewHandle {
           );
         }
         wordsHost.append(row);
+      }
+    }
+
+    // formalidade: o MIP por classe e as frases marcadas (trecho + risco)
+    if (stats.marcadoresPorClasse.length) {
+      wordsHost.append(
+        h("h3", { text: `Marcadores informais — MIP ${fmt(stats.mip)} agora, ${fmt(stats.mipDepois)} depois das correções seguras` })
+      );
+      const classes = h("div", { class: "rv-word-row" });
+      for (const c of stats.marcadoresPorClasse) {
+        classes.append(h("span", { class: "rv-word", text: `${ROTULO_CLASSE[c.classe]} ${c.count}×` }));
+      }
+      wordsHost.append(classes);
+      for (const m of stats.marcadores.slice(0, 8)) {
+        const row = h("div", { class: "rv-item style" });
+        const texto = h("div", { class: "rv-item-text" });
+        texto.append(h("b", { text: m.word }));
+        texto.append(h("span", { text: ` — ${m.frase || m.message}` }));
+        row.append(texto);
+        const acoes = h("div", { class: "rv-item-actions" });
+        acoes.append(
+          h("span", {
+            class: "cm-issue-chip ghost",
+            text: m.seguro ? "troca segura" : "confira o sentido",
+            title: m.seguro ? "Troca previsível: o sentido não muda" : "A troca depende do contexto — confira antes de aplicar",
+          })
+        );
+        acoes.append(
+          chip(
+            "Ir",
+            "Ir para o trecho no editor",
+            () => opts.onGoTo({ from: m.from, to: m.to, word: m.word, kind: "style", message: m.message, suggestions: [] }),
+            true
+          )
+        );
+        row.append(acoes);
+        wordsHost.append(row);
+      }
+      if (stats.marcadores.length > 8) {
+        wordsHost.append(h("div", { class: "rv-empty", text: `… e mais ${stats.marcadores.length - 8} marcador(es) — veja a lista completa nos avisos.` }));
       }
     }
 
@@ -130,8 +175,18 @@ export function openReviewModal(opts: ReviewOptions): ReviewHandle {
         if (issue.fix) {
           actions.append(chip(`Corrigir: ${issue.fix}`, "Aplicar a correção", () => opts.onFix(issue)));
         }
-        for (const s of issue.suggestions.slice(0, issue.fix ? 0 : 4)) {
+        for (const s of issue.suggestions.filter((s) => s !== issue.fix).slice(0, issue.fix ? 3 : 4)) {
           actions.append(chip(s, `Trocar por “${s}”`, () => opts.onFix({ ...issue, fix: s })));
+        }
+        // marcador informal sem correção direta: a troca é sugestão, não correção
+        if (ehClasseMarcador(issue.classe) && issue.fix === undefined) {
+          actions.append(
+            h("span", {
+              class: "cm-issue-chip ghost",
+              text: "confira o sentido",
+              title: "A troca depende do contexto (ou pode mudar o sentido) — confira antes de aplicar",
+            })
+          );
         }
         actions.append(chip("Ir", "Ir para o trecho no editor", () => opts.onGoTo(issue), true));
         if (issue.kind === "spell") {

@@ -196,6 +196,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
           </div>
           <p class="st-seg-desc" data-tone-desc></p>
           <p class="st-note">Vale para o assistente de escrita, a correção automática e o português enviado à tradução.</p>
+          <p class="st-note">O painel de revisão (F7) mostra o <b>MIP</b> — marcadores informais por 1.000 palavras — antes e depois das correções seguras, com a contagem por classe (internetês, contração, muleta, gíria, oralidade, atenuação, redundância e vagueza) e o risco de cada troca.</p>
 
           <h4 class="st-group">Digitação e sugestões</h4>
           <div class="st-list">

@@ -1,15 +1,41 @@
 // Testa a correção automática: regras de pontuação/limpeza, política da varredura e o ritmo aprendido.
 // Uso: node scripts/testar-correcao.mjs
 import { build } from "esbuild";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const raiz = new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 const tmp = mkdtempSync(join(tmpdir(), "correcao-"));
+
+/**
+ * O `?raw` do Vite, que o esbuild não conhece sozinho: as regras ABNT vivem em
+ * `src/broker/abnt/regras/*.toml` e entram no pacote como texto (é assim que o app
+ * as carrega também). Sem este plugin, empacotar `style/index.ts` falha no primeiro
+ * `.toml?raw`.
+ */
+const pluginRaw = {
+  name: "raw",
+  setup(api) {
+    api.onResolve({ filter: /\?raw$/ }, (args) => ({
+      path: resolve(dirname(args.importer), args.path.replace(/\?raw$/, "")),
+      namespace: "raw",
+    }));
+    api.onLoad({ filter: /.*/, namespace: "raw" }, (args) => ({
+      contents: readFileSync(args.path, "utf8"),
+      loader: "text",
+    }));
+  },
+};
+
 const empacotar = async (entrada, saida) => {
-  await build({ entryPoints: [join(raiz, entrada)], bundle: true, platform: "node", format: "esm", outfile: join(tmp, saida), logLevel: "error" });
+  await build({ entryPoints: [join(raiz, entrada)], bundle: true, platform: "node", format: "esm", outfile: join(tmp, saida), logLevel: "error", plugins: [pluginRaw] });
+  return import(pathToFileURL(join(tmp, saida)).href);
+};
+/** Empacota um módulo escrito aqui (para juntar checkStyle + tom + stats + catálogo NUM bundle só). */
+const empacotarFonte = async (fonte, saida) => {
+  await build({ stdin: { contents: fonte, resolveDir: raiz, loader: "ts" }, bundle: true, platform: "node", format: "esm", outfile: join(tmp, saida), logLevel: "error", plugins: [pluginRaw] });
   return import(pathToFileURL(join(tmp, saida)).href);
 };
 
@@ -22,6 +48,18 @@ const ok = (nome, cond, detalhe = "") => {
 const S = await empacotar("src/broker/style/index.ts", "style.mjs");
 const A = await empacotar("src/broker/autofix.ts", "autofix.mjs");
 const R = await empacotar("src/broker/personal/autofmt.ts", "autofmt.mjs");
+// Módulos de formalidade: checkStyle + tom + stats + catálogo no MESMO bundle, para
+// o setTone() daqui valer para o checkStyle que está sendo chamado.
+const F = await empacotarFonte(
+  `export { checkStyle } from "./src/broker/style/index.ts";
+   export { setTone } from "./src/broker/tone.ts";
+   export { stats, marcadoresInformais } from "./src/broker/stats.ts";
+   export { INFORMAL, ROTULO_CLASSE } from "./src/broker/data/informal.ts";`,
+  "formalidade.mjs"
+);
+const CLASSES = new Set(Object.keys(F.ROTULO_CLASSE));
+const ehMarcador = (i) => CLASSES.has(i.classe);
+const porClasse = (texto, classe) => F.checkStyle(texto).filter((i) => i.classe === classe);
 
 /** Aplica todos os fixes numa transação, como o editor (em caso de sobreposição, o maior vence). */
 const aplicar = (texto) => {
@@ -65,7 +103,9 @@ igual("conectivo no início da frase", "Por isso decidimos mudar o plano", "Por 
 igual("“porém” abrindo a frase", "Porém decidimos mudar o plano", "Porém, decidimos mudar o plano.");
 igual("“entretanto” abrindo a frase", "Entretanto faltou testar o sistema", "Entretanto, faltou testar o sistema.");
 igual("“portanto” intercalado nos dois lados", "ele chegou atrasado portanto perdemos a reunião", "Ele chegou atrasado, portanto, perdemos a reunião.");
-igual("“entretanto” intercalado não duplica vírgulas", "O time entregou o projeto entretanto faltou teste", "O time entregou o projeto, entretanto, faltou teste.");
+igual("“entretanto” intercalado não duplica vírgulas", "O time entregou o projeto entretanto faltou teste", "O time entregou o projeto, entretanto faltou teste.");
+igual("“porém” intercalado ganha só a vírgula de antes", "O plano deu certo porém faltou verba", "O plano deu certo, porém faltou verba.");
+igual("“entretanto” já com vírgula antes não é tocado", "O time entregou o projeto, entretanto faltou teste.", "O time entregou o projeto, entretanto faltou teste.");
 igual("frase subordinada longa ganha vírgula", "A reunião foi longa pois muita coisa estava pendente", "A reunião foi longa, pois muita coisa estava pendente.");
 igual("não mexe em código", "Use `no entanto` no texto", "Use `no entanto` no texto.");
 igual("não mexe em número", "O valor é 1.000,00", "O valor é 1.000,00.");
@@ -110,6 +150,126 @@ igual("quebra de frase comprida só entra no “Corrigir tudo”", "um dois trê
     JSON.stringify(errado)
   );
 }
+
+// ---------------------------------------------------------------- formalidade (Onda 3)
+// Catálogo informal → formal por classe, seguro × sugestão, tom e MIP.
+// Exemplos por classe (o catálogo inteiro é provado no primeiro bloco):
+//   internetês: "vc vai ao evento?", "me avise qdo chegar", "qto custa o projeto?"
+//   contração: "vou pra casa agora", "o arquivo tá pronto", "o prazo é curto, né?"
+//   muleta: "tipo assim, o sistema falhou", "sei lá o que aconteceu", "digamos assim…"
+//   gíria: "um baita problema", "ok, podemos seguir", "o resultado ficou da hora"
+//   vagueza: "essa coisa ficou estranha", "um monte de gente reclamou"
+//   oralidade: "o pessoal terminou a tarefa", "tem muita gente que diz o contrário"
+//   atenuação: "acho que o prazo é curto", "mais ou menos 30 participantes"
+//   redundância: "vamos subir para cima", "repetir de novo", "a verdade real"
+{
+  const semCaso = F.INFORMAL.filter((p) => !F.marcadoresInformais(p.exemplo).some((m) => m.classe === p.classe)).map((p) => p.exemplo);
+  ok("catálogo: todo padrão casa o próprio exemplo", semCaso.length === 0, semCaso.join(" | "));
+  ok("catálogo: 50+ padrões por classe", F.INFORMAL.length >= 50, `${F.INFORMAL.length}`);
+  const classes = new Set(F.INFORMAL.map((p) => p.classe));
+  ok(
+    "catálogo: cobre as 8 classes",
+    ["internetes", "contracao", "muleta", "giria", "oralidade", "atenuacao", "redundancia", "vagueza"].every((c) => classes.has(c)),
+    Array.from(classes).join(",")
+  );
+  const incoerentes = F.INFORMAL.filter((p) => (p.fix !== undefined) !== p.seguro);
+  ok("catálogo: seguro e correção direta andam juntos", incoerentes.length === 0, incoerentes.map((p) => p.exemplo).join(" | "));
+}
+{
+  // seguro = pode corrigir sozinho (tem correção direta); sugestão = só propõe
+  const pra = porClasse("Vou pra casa agora.", "contracao");
+  ok("seguro: “pra → para” tem correção direta", pra.length === 1 && pra[0].fix === "para" && pra[0].suggestions.length === 0, JSON.stringify(pra));
+  const inicio = porClasse("pra começar, o plano mudou", "contracao");
+  ok("seguro: no começo da frase a troca já sai com maiúscula", inicio.length === 1 && inicio[0].fix === "Para", JSON.stringify(inicio));
+  const acho = porClasse("Vamos decidir, acho que o prazo é curto", "atenuacao");
+  ok(
+    "sugestão: “acho que” não corrige sozinho e traz duas alternativas",
+    acho.length === 1 && acho[0].fix === undefined && acho[0].suggestions.includes("considera-se que") && acho[0].suggestions.includes("entende-se que") && /risco/.test(acho[0].message),
+    JSON.stringify(acho)
+  );
+  const conclusao = porClasse("Retomamos na conclusão final do texto", "redundancia");
+  ok("sugestão: “conclusão final” só sugere", conclusao.some((i) => i.fix === undefined && i.suggestions.includes("conclusão")), JSON.stringify(conclusao));
+  const cima = porClasse("Vamos subir para cima.", "redundancia");
+  ok("seguro: redundância tem correção direta", cima.length === 1 && cima[0].fix === "subir", JSON.stringify(cima));
+  const prg = porClasse("Isso é pra gente revisar", "contracao");
+  ok("“pra gente” dispara uma troca só", prg.length === 1 && prg[0].fix === "para nós", JSON.stringify(prg));
+}
+{
+  // tom: informal não opina; neutro só os casos claros; formal aponta tudo
+  F.setTone("formal");
+  const formal = F.checkStyle("acho que dá pra melhorar").filter(ehMarcador).map((i) => i.classe);
+  ok("tom formal: casos claros e sutis aparecem", formal.includes("contracao") && formal.includes("atenuacao"), formal.join(","));
+  F.setTone("neutro");
+  const neutro = F.checkStyle("acho que dá pra melhorar").filter(ehMarcador).map((i) => i.classe);
+  ok("tom neutro: só o caso claro", neutro.includes("contracao") && !neutro.includes("atenuacao"), neutro.join(","));
+  F.setTone("informal");
+  const informal = F.checkStyle("acho que dá pra melhorar").filter(ehMarcador);
+  ok("tom informal: nenhum marcador de registro", informal.length === 0, informal.map((i) => i.word).join(","));
+  F.setTone("formal");
+}
+{
+  // frase formal por janelas (oralidade e atenuação que dependem do contexto)
+  const oral = (t) => F.checkStyle(t).filter((i) => i.classe === "oralidade");
+  const ag = oral("A gente vê que o prazo é curto.");
+  ok("a gente: oferece “nós vemos” e a impessoal “Vê-se”", ag.length === 1 && ag[0].fix === "Nós vemos" && ag[0].suggestions.includes("Vê-se"), JSON.stringify(ag));
+  const agObj = oral("a gente analisou os dados.");
+  ok("a gente + objeto: só orienta (a concordância mudaria)", agObj.length === 1 && agObj[0].fix === undefined, JSON.stringify(agObj));
+  const agMin = oral("a gente vê que o prazo é curto.");
+  ok("a gente minúsculo no começo da frase sai em maiúscula", agMin.length === 1 && agMin[0].fix === "Nós vemos", JSON.stringify(agMin));
+  const ai = oral("Aí eu fui ao mercado.");
+  ok("“Aí eu fui”: sugere “Então, eu” e “Em seguida, eu”", ai.length === 1 && ai[0].suggestions.includes("Então, eu") && ai[0].suggestions.includes("Em seguida, eu"), JSON.stringify(ai));
+  ok("“aí” locativo fica em paz", oral("Aí está o problema.").length === 0);
+  const ent = F.checkStyle("Então eu fui ao mercado.").filter((i) => i.classe === "muleta");
+  ok("“Então eu fui”: sugere “Portanto, eu”", ent.length === 1 && ent[0].suggestions.includes("Portanto, eu"), JSON.stringify(ent));
+  const rep = F.checkStyle("Era curto e então cortamos tudo, então reescrevemos.").filter((i) => i.classe === "muleta");
+  ok("“então” repetido: a 2ª vez pede variação", rep.length === 1 && rep[0].suggestions.includes("logo"), JSON.stringify(rep));
+  const vv = oral("Você vê que o prazo mudou.");
+  ok("“você vê que” → impessoal", vv.length === 1 && vv[0].suggestions.includes("Observa-se que"), JSON.stringify(vv));
+  const ha = F.checkStyle("Ele saiu há três anos atrás.").filter((i) => i.classe === "redundancia");
+  ok("“há três anos atrás” → “há três anos”", ha.length === 1 && ha[0].fix === "há três anos", JSON.stringify(ha));
+}
+{
+  // exclusões: citação, código, URL, sigla e e-mail
+  const marcas = (t) => F.checkStyle(t).filter(ehMarcador);
+  ok("citação (>) fica fora do registro", marcas("> vc deve revisar o texto").length === 0, marcas("> vc deve revisar o texto").map((i) => i.word).join(","));
+  ok("citação com oralidade fica fora", marcas("> A gente vê que o prazo é curto.").length === 0);
+  ok("bloco de código fica fora", marcas("```\nvc tb qdo msm\n```").length === 0);
+  ok("URL fica fora", marcas("veja https://exemplo.com/vc?q=1 agora").length === 0);
+  ok("sigla em caixa alta não é internetês", marcas("O exame de TB deu positivo.").length === 0, marcas("O exame de TB deu positivo.").map((i) => i.word).join(","));
+  ok("e-mail fica fora", marcas("escreva para vc@exemplo.com agora").length === 0);
+}
+{
+  // MIP: marcadores informais por 1.000 palavras, antes/depois e por classe
+  F.setTone("formal");
+  const s = F.stats("A gente vê que o prazo é curto, mas o time tá confiante.");
+  ok("MIP: conta os marcadores do texto", s.mip > 0 && s.mipDepois < s.mip, `mip=${s.mip} depois=${s.mipDepois}`);
+  ok(
+    "MIP: contagem por classe",
+    s.marcadoresPorClasse.some((c) => c.classe === "oralidade") && s.marcadoresPorClasse.some((c) => c.classe === "contracao"),
+    JSON.stringify(s.marcadoresPorClasse)
+  );
+  ok(
+    "MIP: cada marcador traz trecho, frase e risco",
+    s.marcadores.length === 2 && s.marcadores.every((m) => m.frase.includes(m.word) && typeof m.seguro === "boolean"),
+    JSON.stringify(s.marcadores.map((m) => [m.word, m.frase]))
+  );
+  const limpo = F.stats("A análise do relatório foi concluída pela equipe.");
+  ok("MIP: texto formal sem marcadores zera", limpo.mip === 0 && limpo.marcadores.length === 0, `mip=${limpo.mip}`);
+  F.setTone("informal");
+  const semTom = F.stats("Vou pra casa agora.");
+  ok("MIP: a métrica não depende do tom", semTom.mip > 0, `mip=${semTom.mip}`);
+  ok("MIP: peso 3 ÷ 4 palavras × 1.000 = 750", semTom.mip === 750, `mip=${semTom.mip}`);
+  F.setTone("formal");
+}
+
+// ---------------------------------------------------------------- formalidade: aplicação
+igual("formalidade: internetês entra na correção", "qto custa o projeto?", "Quanto custa o projeto?");
+igual("formalidade: contração entra na correção", "O arquivo tá pronto.", "O arquivo está pronto.");
+igual("formalidade: redundância entra na correção", "Vamos subir para cima.", "Vamos subir.");
+igual("formalidade: muleta com troca fixa entra", "O sistema falhou tipo assim.", "O sistema falhou por exemplo.");
+igual("formalidade: sugestão não entra na correção automática", "eu acho que o prazo é curto", "Eu acho que o prazo é curto.");
+igual("formalidade: “pra gente” vira uma troca só", "Isso é pra gente revisar", "Isso é para nós revisar.");
+igual("formalidade: citação não é tocada", "> acho que o prazo é curto.", "> acho que o prazo é curto.");
 
 // ---------------------------------------------------------------- política da varredura
 const T = "eu comprei pao mas esqueci o leite";

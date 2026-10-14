@@ -86,6 +86,15 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   (“…de verdade → . Eu resolvi…”), aplicável pelo **“Corrigir tudo (estilo)”**.
 - **Modo formal**: “pra/tá/a gente” → linguagem formal, com o verbo ajustado pela frase
   (“a gente vai” → “nós vamos”); modo **informal** e **neutro** também disponíveis.
+- **Formalidade por classe + MIP**: o catálogo informal → formal tem 75 padrões por classe
+  (internetês, contração, muleta, gíria, oralidade, atenuação, redundância e vagueza) — com o
+  que **corrige sozinho** (“pra → para”, “vc → você”, “subir para cima → subir”) separado do
+  que **só sugere** (“acho que” → “considera-se que”/“entende-se que”, “coisa” →
+  “item/elemento/aspecto”), cada sugestão com o risco. As **frases** ganham janelas de contexto
+  (“a gente vê que” → “nós vemos”/“vê-se que”; “Aí eu fui” → “Então, eu”/“Em seguida, eu”;
+  “então” repetido; “há três anos atrás” → “há três anos”), sem tocar citação (`>`), código,
+  URL, sigla ou e-mail. O painel de revisão mostra o **MIP** — marcadores informais por 1.000
+  palavras — antes e depois das correções seguras, por classe, com o trecho de cada marcador.
 - **Espaço esquecido** e **“Você quis dizer…?”**: palavras coladas viram duas; palavras a uma
   letra de uma comum ganham sugestão.
 - **“Formatar texto”** (comando): varredura automática de pontuação com ritmo aprendido.

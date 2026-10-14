@@ -9,7 +9,8 @@ import { commasAroundExpressions, safeSentenceBreak, longRunWithoutPunct, advers
 import { duplicatedPunct, frasesColadas } from "./limpeza";
 import { lowercaseAfterPeriod, paragraphStartLowercase } from "./capitalization";
 import { phrases } from "./phrases";
-import { informalRegister, aGente } from "./register";
+import { informalRegister } from "./register";
+import { aGente, aiConector, entaoConector, voceVeQue, haAtras } from "./formalidade";
 import { REGRAS_ABNT } from "../abnt";
 import { personalLongSentence } from "./personal";
 import { fazerImpessoal } from "./concordancia";
@@ -25,6 +26,7 @@ const RULES: Rule[] = [
   repeatedPunct,
   duplicatedPunct,
   frasesColadas,
+  informalRegister,
   commasAroundExpressions,
   safeSentenceBreak,
   longRunWithoutPunct,
@@ -36,8 +38,11 @@ const RULES: Rule[] = [
   introConnectiveComma,
   adverbialComma,
   missingFinalPeriod,
-  informalRegister,
   aGente,
+  aiConector,
+  entaoConector,
+  voceVeQue,
+  haAtras,
   fazerImpessoal,
   ...REGRAS_ABNT,
   personalLongSentence,
