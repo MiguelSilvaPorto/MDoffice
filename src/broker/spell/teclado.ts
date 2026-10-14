@@ -47,3 +47,8 @@ export function custoDeTecla(a: string, b: string): number {
   if (a === b) return 0;
   return saoVizinhas(a, b) ? CUSTO_VIZINHA : 1;
 }
+
+/** As teclas ao lado desta (sem ela mesma) — usado para gerar as trocas que valem a pena. */
+export function teclasVizinhasDe(tecla: string): string[] {
+  return [...(VIZINHAS.get(tecla) ?? [])];
+}

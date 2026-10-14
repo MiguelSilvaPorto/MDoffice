@@ -2669,6 +2669,67 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   PowerPoint vai entender depois); o teste prende o comportamento das duas famílias (nativa e
   livre) para ninguém "otimizar" isso sem perceber a perda.
 
+## src/broker/spell/uso.ts (novo)
+
+### 2026-10-13 · contexto decide · pergunta quando a palavra existe mas não combina
+- **Local:** arquivo inteiro (`VANTAGEM_MINIMA`, `PISO_FREQUENCIA`, `contaBigrama`, `trocaPorContexto`)
+- **Linha:** `novo`
+- **Porquê:** os erros "invisíveis" do F0 (a forma escrita é palavra do dicionário — "media",
+  "aguda", "resta") não tinham por onde ser acusados. O contexto resolve: para a palavra escrita,
+  o módulo gera as trocas de CLASSE que dão palavra real e compara, no modelo de n-gramas (o mesmo
+  `pt.json` do fantasma, que já vive no thread principal), o quanto cada leitura combina com a
+  palavra ANTERIOR. Só devolve quando a escrita **não aparece** naquele contexto e a candidata
+  aparece com **≥ 20×** de vantagem, com piso de 100 usos no corpus. Guardas de conservação: a
+  escrita e o contexto precisam estar no vocabulário (termo técnico/estrangeiro não é questionado),
+  o resultado é **sugestão** (`fix`, para "Corrigir tudo"/revisão) e **nunca** `auto`.
+
+## src/broker/spell/confusoes.ts
+
+### 2026-10-13 · contexto decide · variantes de classe e acento
+- **Local:** `parceirosDe` (novo), `ACENTOS`/`SEM_ACENTO` (novos) e `variantesDeClasse` (novo)
+- **Linha:** `novo`
+- **Porquê:** a pergunta por contexto precisa de um conjunto **pequeno** de candidatos plausíveis —
+  não o alfabeto inteiro. `parceirosDe` dá os parceiros de confusão/teclado de cada letra e
+  `variantesDeClasse` monta as variantes de uma troca barata: substituição por parceiro, **acento
+  nas duas direções** (o erro de escrita mais comum: "media"→"média"), "h" mudo, letra dobrada e as
+  trocas de par ("x"↔"ch", "ss"↔"ç").
+
+## src/broker/spell/teclado.ts
+
+### 2026-10-13 · contexto decide · as vizinhas de uma tecla
+- **Local:** `teclasVizinhasDe` (novo)
+- **Linha:** `novo`
+- **Porquê:** `confusoes.ts` precisava perguntar "quem é vizinho desta tecla?" sem duplicar o mapa
+  ABNT2 — a função expõe o conjunto já montado.
+
+## src/broker/check.ts
+
+### 2026-10-13 · contexto decide · a pergunta no caminho da palavra existente
+- **Local:** `checkText`, no `else` do `commonNeighbor`
+- **Linha:** novo bloco que chama `trocaPorContexto(token.word, contexto[token.word], getLanguageModel())`
+  e, quando há resposta, cria o aviso `kind: "style"` com `suggestions`/`fix` (sem `auto`)
+- **Porquê:** o `else` já existia para o "você quis dizer" por uso; agora, quando ele não tem o que
+  dizer, o contexto tem a chance — e só então (nada de dois avisos no mesmo trecho). O aviso chega
+  como pergunta: "«resta» existe, mas o contexto pede «desta»?".
+
+## scripts/testar-correcao.mjs
+
+### 2026-10-13 · contexto decide · 10 verificações
+- **Local:** bloco "uso e contexto" + 3 casos de `variantesDeClasse`
+- **Linha:** `novo`
+- **Porquê:** cobre a decisão (acha a leitura, não opina sem contexto/modelo/vocabulário, respeita a
+  escrita que já combina e o início de frase) e o gerador de variantes (acento nas duas direções,
+  par de letras, "h" mudo e dobra). O modelo de teste tem o formato do `LangModel` real.
+
+## docs/medicao-corretor.md
+
+### 2026-10-13 · contexto decide · quinta medição registrada
+- **Local:** seção de medições comparadas
+- **Linha:** nova tabela (r@1 83%, r@3 87%, FP 0,00) + o que ficou fora de alcance
+- **Porquê:** o "media" do conjunto sintético segue invisível porque a palavra de contexto dele
+  ("severidade") não está no vocabulário do modelo — é limitação honesta, não bug, e o documento
+  precisa dizer isso para a próxima medição não parecer estagnada.
+
 ---
 
 ## Próximos registros

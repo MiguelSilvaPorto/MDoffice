@@ -266,6 +266,30 @@ Leitura curta: as três classes do alvo andaram — "letra a mais" r@1 **87%**, 
 "silva" em vez de "salva"; "media" → "média"; "xama" → "chama" — a forma escrita é palavra do
 dicionário). Esses pedem **contexto/uso** (F3/F4), não mais edição: é a próxima fronteira.
 
+### Quinta medição — o contexto decide a palavra que existe
+
+O F3 entrou: quando a escrita é palavra real mas não combina com a frase, o app pergunta por
+contexto (`spell/uso.ts`), comparando a leitura escrita com as trocas de classe no modelo de
+n-gramas. Mesmo conjunto:
+
+| métrica | ranking das letras | contexto decide |
+| --- | ---: | ---: |
+| r@1 total | 82% | **83%** |
+| r@3 total | 86% | **87%** |
+| precisão do 1º lugar | 87% | 87% |
+| auto% | 81% | 81% |
+| acerto do `best` | 95% | 95% |
+| falsos positivos / 1000 palavras | 0,00 | **0,00** |
+| p50 / p95 ms por palavra | 0,175 / 1,084 | 0,178 / 0,918 |
+
+Leitura curta: o ganho é pequeno em pontos (1 p.p. em cada recall) mas de **natureza nova** — pela
+primeira vez o app acusa uma palavra que existe ("o maior ganho **resta** aba" → "desta"), o que
+antes era impossível sem IA. E o ruído **continuou zero**, que era o risco da mudança. O que segue
+fora de alcance: casos em que a palavra de contexto **não está no vocabulário** do modelo (o
+"media" do conjunto sintético vem depois de "severidade", palavra que o corpus de 30 mil não tem),
+e os ambíguos de verdade ("slva" → "salva" ou "silva"). Ambos precisariam de um contexto mais largo
+(as duas palavras anteriores) ou de vocabulário maior — matéria do F4.
+
 ---
 
 *Números do commit `120cc9e`. Se um rebase trouxer mudanças ao corretor, esta linha de base

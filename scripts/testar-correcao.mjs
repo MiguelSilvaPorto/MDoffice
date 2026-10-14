@@ -530,6 +530,41 @@ const TC = await empacotar("src/broker/spell/teclado.ts", "teclado.mjs");
   ok("confusões: variantes trocam pares de letras", variantes.includes("exceçao") && variantes.includes("excesao"), variantes.slice(0, 6).join(", "));
   ok("confusões: o limite segura a explosão", CF.variantesDeConfusao("excessosss", 5).length <= 5);
   ok("confusões: troca sem relação custa a edição inteira", CF.distanciaPonderada("casa", "lua", 2) > 2);
+
+  // variantes de classe (acento nas duas direções, par de letras, "h" mudo e dobra)
+  ok("variantes de classe: acento nas duas direções", CF.variantesDeClasse("media").includes("média") && CF.variantesDeClasse("média").includes("media"));
+  ok("variantes de classe: par de letras (x↔ch)", CF.variantesDeClasse("xama").includes("chama"));
+  ok("variantes de classe: h mudo e dobra", CF.variantesDeClasse("hoje").includes("oje") && CF.variantesDeClasse("lissta").includes("lista"));
+}
+
+// ---------------------------------------------------------------- uso e contexto
+const USO = await empacotar("src/broker/spell/uso.ts", "uso.mjs");
+
+{
+  // Modelo de teste com o formato do LangModel (o uso real vem de ghost/model.ts).
+  const modelo = {
+    idOf: new Map([
+      ["<s>", 0],
+      ["a", 1],
+      ["media", 2],
+      ["média", 3],
+      ["severidade", 4],
+      ["chama", 5],
+      ["xama", 6],
+    ]),
+    data: { n: [0, 5000, 300, 900, 1200, 800, 700] },
+    total: 10000,
+    bigram: (id) => ({ succ: id === 1 || id === 0 ? [{ id: 3, count: id === 1 ? 600 : 400 }] : [], total: id === 1 || id === 0 ? 700 : 0 }),
+    display: (id) => ["<s>", "a", "media", "média", "severidade", "chama", "xama"][id],
+  };
+  const t1 = USO.trocaPorContexto("media", "a", modelo);
+  ok("uso: acha a leitura que o contexto pede", t1?.palavra === "média" && t1.vantagem >= 20, JSON.stringify(t1));
+  ok("uso: sem contexto não opina", USO.trocaPorContexto("media", undefined, modelo) === null);
+  ok("uso: contexto fora do vocabulário não opina", USO.trocaPorContexto("media", "inexistente", modelo) === null);
+  ok("uso: escrita fora do vocabulário não opina", USO.trocaPorContexto("zzzzz", "a", modelo) === null);
+  ok("uso: escrita que já combina não é questionada", USO.trocaPorContexto("média", "a", modelo) === null);
+  ok("uso: sem modelo não opina", USO.trocaPorContexto("media", "a", null) === null);
+  ok("uso: início de frase conta como contexto", USO.trocaPorContexto("media", "<s>", modelo)?.palavra === "média");
 }
 
 // ---------------------------------------------------------------- trecho longo: dividir e encurtar

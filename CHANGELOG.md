@@ -361,6 +361,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   "ficar") e "mdia" subiu para o topo da lista (era "dia"). Medido: recall@1 **78% → 82%**,
   precisão do 1º **83% → 87%**, acerto da auto-correção **92% → 95%** e auto-aplicações erradas
   **19 → 13**.
+- **O contexto decide a palavra que existe**: quando a forma escrita é palavra de verdade mas não
+  combina com a frase ("o maior ganho **resta** aba"), o app pergunta — comparando, no modelo de
+  n-gramas, a leitura escrita com as trocas de classe (acento nos dois sentidos, x↔ch, g↔j, c↔ç,
+  tecla vizinha, "h" mudo, dobra). É **sugestão** ("o contexto pede «desta»?"), nunca correção
+  automática. Recall@1 **82% → 83%**, recall@3 **86% → 87%**, falsos positivos seguem **0,00**.
 
 **Ferramentas (dev)**
 

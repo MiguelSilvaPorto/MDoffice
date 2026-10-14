@@ -7,6 +7,8 @@ import { maskNonProse } from "./mask";
 import { commonNeighbor } from "./neighbor";
 import { normalizarTexto, paraOriginal } from "./normalizar";
 import { checkWords } from "./spell";
+import { trocaPorContexto } from "./spell/uso";
+import { getLanguageModel } from "./ghost/model";
 import { checkStyle } from "./style";
 import type { WritingIssue } from "./types";
 import { rerankSuggestions } from "./personal/rerank";
@@ -104,6 +106,24 @@ export async function checkText(bruto: string, ignore: Set<string>): Promise<Wri
           suggestions: [near],
           fix: near,
         });
+      } else {
+        // A palavra existe, mas o CONTEXTO pode pedir outra leitura: "a media das notas" é
+        // "média"; "há aguda a prever" é "ajuda". Quem decide é o uso no corpus (o modelo de
+        // n-gramas): a escrita não aparece depois daquela palavra e uma troca de classe
+        // aparece com muita vantagem. Fica como PERGUNTA (fix para "Corrigir tudo"/revisão),
+        // nunca como correção automática — a palavra existe, o sentido é que decide.
+        const troca = trocaPorContexto(token.word, contexto[token.word], getLanguageModel());
+        if (troca) {
+          issues.push({
+            from: token.from,
+            to: token.to,
+            word: token.word,
+            kind: "style",
+            message: `“${token.word}” existe, mas o contexto pede “${troca.palavra}”?`,
+            suggestions: [troca.palavra],
+            fix: troca.palavra,
+          });
+        }
       }
     }
   }

@@ -11,7 +11,7 @@
 //
 // Puro: tabelas e contas, sem DOM.
 
-import { custoDeTecla } from "./teclado";
+import { custoDeTecla, teclasVizinhasDe } from "./teclado";
 
 /** Custo de trocar uma letra pela outra quando são confundidas na escrita. */
 const PARES: [string, string, number][] = [
@@ -25,6 +25,17 @@ const PARES: [string, string, number][] = [
   ["o", "u", 0.5],
   ["m", "n", 0.4],
 ];
+
+/** Letras que a escrita (ou o teclado) confunde com esta — as duas direções. */
+export function parceirosDe(letra: string): string[] {
+  const out = new Set<string>();
+  for (const [a, b] of PARES) {
+    if (a === letra) out.add(b);
+    else if (b === letra) out.add(a);
+  }
+  for (const viz of teclasVizinhasDe(letra)) out.add(viz);
+  return [...out];
+}
 
 const CUSTO_DO_PAR = (() => {
   const mapa = new Map<string, number>();
@@ -104,8 +115,7 @@ export function distanciaPonderada(a: string, b: string, max: number): number {
 }
 
 /** Trocas de PARES de letras que a escrita confunde (as duas direções). */
-const PARES_DE_LETRAS: [string, string][] = [
-  ["ss", "ç"],
+const PARES_DE_LETRAS: [string, string][] = [  ["ss", "ç"],
   ["ss", "s"],
   ["sç", "ç"],
   ["xc", "ç"],
@@ -157,4 +167,62 @@ export function variantesDeConfusao(palavra: string, limite = 80): string[] {
   for (const [de, para] of PARES_DE_LETRAS) trocar(de, para);
   for (const [de, para] of DOBRAS) trocar(de, para);
   return out;
+}
+
+/** Vogais acentuadas de cada vogal (e o ç), para gerar as variantes de acento. */
+const ACENTOS: Record<string, string[]> = {
+  a: ["á", "â", "ã", "à"],
+  e: ["é", "ê"],
+  i: ["í"],
+  o: ["ó", "ô", "õ"],
+  u: ["ú"],
+  c: ["ç"],
+};
+
+/** O contrário: a letra sem acento, para quem escreveu com acento a mais. */
+const SEM_ACENTO: Record<string, string> = {
+  á: "a",
+  â: "a",
+  ã: "a",
+  à: "a",
+  é: "e",
+  ê: "e",
+  í: "i",
+  ó: "o",
+  ô: "o",
+  õ: "o",
+  ú: "u",
+  ç: "c",
+};
+
+/**
+ * Todas as variantes de UMA troca de CLASSE (as baratas): substituição por parceiro de
+ * confusão/tecla vizinha, acento (nas duas direções), inserção de "h" mudo ou de letra
+ * dobrada, remoção de "h" mudo ou da segunda letra de uma dobra, e as trocas de par
+ * ("x"↔"ch", "ss"↔"ç"). É a matéria-prima da pergunta por contexto: poucas variantes,
+ * todas plausíveis como erro de digitação.
+ */
+export function variantesDeClasse(palavra: string): string[] {
+  const base = palavra.toLowerCase();
+  const out = new Set<string>();
+  for (let i = 0; i < base.length; i++) {
+    for (const p of parceirosDe(base[i])) out.add(base.slice(0, i) + p + base.slice(i + 1));
+    // acento: o erro de escrita mais comum de todos ("media" → "média", "analise" → "análise"),
+    // nas duas direções (tirar o acento de quem tem também vale)
+    for (const a of ACENTOS[base[i]] ?? []) out.add(base.slice(0, i) + a + base.slice(i + 1));
+    const sem = SEM_ACENTO[base[i]];
+    if (sem) out.add(base.slice(0, i) + sem + base.slice(i + 1));
+  }
+  for (let i = 0; i <= base.length; i++) {
+    out.add(base.slice(0, i) + "h" + base.slice(i));
+    const anterior = base[i - 1];
+    if (anterior && /[a-zà-ÿç]/.test(anterior)) out.add(base.slice(0, i) + anterior + base.slice(i));
+  }
+  for (let i = 0; i < base.length; i++) {
+    if (base[i] === "h") out.add(base.slice(0, i) + base.slice(i + 1));
+    if (base[i] === base[i + 1] && /[a-zà-ÿç]/.test(base[i])) out.add(base.slice(0, i) + base.slice(i + 1));
+  }
+  for (const v of variantesDeConfusao(base)) out.add(v);
+  out.delete(base);
+  return [...out];
 }
