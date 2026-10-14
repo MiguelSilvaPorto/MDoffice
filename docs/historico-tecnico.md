@@ -467,6 +467,11 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ## package.json
 
+### 2026-10-14 · 4cfd23f · script do teste do diff
+- **Local:** scripts
+- **Linha:** nova linha `"test:diff": "node scripts/testar-diff-troca.mjs"`
+- **Porquê:** o diff da troca (o que colore o popup) é lógica pura e ganhou teste próprio na suíte.
+
 ### 2026-10-13 · este commit · script do teste da lixeira
 - **Local:** scripts
 - **Linha:** nova linha `"test:lixeira": "node scripts/testar-lixeira.mts"`
@@ -1558,6 +1563,16 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   mortos: o `ignoredHere` só filtra a ortografia, o estilo não consulta o dicionário. O `title` do
   chip ficou com o texto completo porque o preview pode encurtar com "…".
 
+### 2026-10-14 · 4cfd23f · diff colorido no popup
+- **Local:** `fixPreview` → `fixPreviewParts` (novo), `addChipDom`/`spanTexto` (novos) e os chips
+  "Trocar por"/"Corrigir" no `showIssuePopup`
+- **Linha:** o chip "Corrigir" passou a montar `<span>`s por parte (contexto neutro, `cm-issue-rem`
+  para o que sai, `cm-issue-add` para o que entra) usando `partesDaTroca`; o "Trocar por" virou
+  `removido → sugestão` colorido
+- **Porquê:** o chip mostrava só o resultado aplicado — não dava para ver o que o app ia tirar e
+  pôr. Agora o vermelho riscado é o que sai e o verde é o que entra; quando só um lado muda, o
+  comum fica neutro (o diff mínimo evita repetir a palavra inteira).
+
 ## src/app/assistant.ts
 
 ### 2026-10-13 · este commit · "Ignorar neste texto" para avisos de estilo
@@ -1587,6 +1602,13 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   aviso inteiro (e não só o texto) porque a chave do "ignorar" é mensagem + trecho.
 
 ## src/styles/slides.css
+
+### 2026-10-14 · 4cfd23f · cores do diff no popup
+- **Local:** depois de `.cm-issue-chip.ghost`
+- **Linha:** novas regras `.cm-issue-rem` (cor `--danger` + riscado), `.cm-issue-add` (cor `--ok`,
+  negrito) e `.cm-issue-seta` (a seta do "Trocar por")
+- **Porquê:** as cores reusam os mesmos tokens do diff do histórico (`--ok`/`--danger`), então o
+  vermelho/verde significam a mesma coisa nas duas telas e funcionam no tema claro e no escuro.
 
 ### 2026-10-13 · este commit · chip do aviso encurta com "…"
 - **Local:** `.cm-issue-chip`
@@ -1929,6 +1951,24 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   reticências são três pontos) e abreviações`
 - **Porquê:** o documento do módulo descreve o que entra sozinho na pausa; a regra nova é uma
   correção automática e precisa aparecer ali.
+
+## src/md/diffTroca.ts
+
+### 2026-10-14 · 4cfd23f · diff da troca (novo arquivo)
+- **Local:** `diffDaTroca` (miolo comum/sai/entra) e `partesDaTroca` (partes prontas para exibir)
+- **Linha:** novo arquivo
+- **Porquê:** o popup precisa colorir só o que muda. O diff mínimo evita repetir a palavra inteira
+  ("pronto" → "pronto." colore só o ponto); quando os DOIS lados mudam, a exibição mostra os
+  trechos inteiros — repetir só o miolo leria como "responsavoável". Lógica pura, testável fora do
+  editor (que depende do DOM).
+
+## scripts/testar-diff-troca.mjs
+
+### 2026-10-14 · 4cfd23f · teste do diff (novo arquivo)
+- **Local:** arquivo inteiro (9 verificações de exibição + 3 do diff mínimo)
+- **Linha:** novo (`npm run test:diff`)
+- **Porquê:** cobre os casos reais das regras — ponto final, palavra trocada, inserção/remoção puras,
+  vírgula antes de "mas", expressão intercalada, pontuação duplicada e maiúscula no começo.
 
 ---
 

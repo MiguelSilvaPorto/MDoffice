@@ -46,6 +46,9 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Popup do aviso com diff colorido**: a correção mostra o que **sai** em vermelho riscado e o
+  que **entra** em verde — nos chips "Trocar por" (palavra → sugestão) e "Corrigir" (o trecho com
+  a troca destacada, ficando neutro o que não muda).
 - Editor CodeMirror 6 com realce de sintaxe e pré-visualização ao vivo lado a lado.
 - **Seleção de texto sem pintura dupla**: o destaque da linha do cursor só aparece com a
   seleção vazia — antes ele caía por cima da seleção e parecia "duas coisas selecionadas".
