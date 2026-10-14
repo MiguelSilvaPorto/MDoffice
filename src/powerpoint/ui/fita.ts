@@ -219,7 +219,6 @@ export class Fita {
            ${pequeno("ordem", `<span class="ppr-seta">⧉</span>`, "Organizar", "Ordem, alinhamento, grupo e giro", true)}
          </div>`
       ),
-      grupo("Edição", `<div class="ppr-col">${pequeno("sel-tudo", `<span class="ppr-seta">▦</span>`, "Selecionar tudo", "Selecionar todas as formas (Ctrl+A)")}</div>`),
     ].join("");
   }
 
