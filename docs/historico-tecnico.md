@@ -5962,3 +5962,12 @@ antigas quando fizer sentido.
 - **Porquê:** o apresentador é a tela mais "na frente do público"; um comportamento desses
   quebrando em silêncio estraga a fala. As checagens prendem o que é observável por padrão de
   código, como o resto do arquivo já faz.
+
+## CHANGELOG.md
+
+### 2026-10-14 · esta tarefa · promoção das duas entradas que estavam na main
+- **Local:** seções "Não adicionado" do PowerPoint (1) e do Geral (1)
+- **Linha:** 2 entradas movidas para o "Adicionado" da mesma categoria — **zoom e marcação ao
+  vivo na apresentação** (`e80b957`) e **medição que não vai para o commit** (`28805e7`)
+- **Porquê:** mesma razão das rodadas anteriores (registrar no estado de autoria e promover no
+  fechamento não cabem no mesmo commit).

@@ -378,13 +378,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Zoom e marcação ao vivo na apresentação (F5)**: `Ctrl` + roda dá **zoom no ponto do mouse**,
-  `+`/`−` aproximam e afastam e **arrastar com zoom move a tela** (o clique parado continua
-  avançando), com um chip no HUD mostrando a porcentagem — clique nele, `Z` ou `Esc` voltam a
-  100%. E dá para **marcar a lâmina durante a fala**: **caneta** (`P`), **marca-texto** (`H`) e
-  **borracha** (`E`; `Shift+E` limpa a lâmina), com o traço desenhado num canvas **dentro da
-  lâmina** — ele acompanha o zoom e a marcação fica guardada **por lâmina**. Os três botões
-  entraram no HUD e a ajuda (`?`) lista os atalhos novos.
+- (nada no momento)
 
 ### Adicionado (na main)
 
@@ -393,6 +387,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **Zoom e marcação ao vivo na apresentação (F5)**: `Ctrl` + roda dá **zoom no ponto do mouse**,
+  `+`/`−` aproximam e afastam e **arrastar com zoom move a tela** (o clique parado continua
+  avançando), com um chip no HUD mostrando a porcentagem — clique nele, `Z` ou `Esc` voltam a
+  100%. E dá para **marcar a lâmina durante a fala**: **caneta** (`P`), **marca-texto** (`H`) e
+  **borracha** (`E`; `Shift+E` limpa a lâmina), com o traço desenhado num canvas **dentro da
+  lâmina** — ele acompanha o zoom e a marcação fica guardada **por lâmina**. Os três botões
+  entraram no HUD e a ajuda (`?`) lista os atalhos novos.
 
 - **Nova lâmina vai para o fim**: o botão **+ Nova lâmina** (que fica no fim da faixa) e o
   **Nova lâmina** da fita criavam a lâmina **logo depois da atual** — onde você estava olhando —
@@ -620,10 +622,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 **Frontend**
 
 - (nada no momento)
+- (nada no momento)
 
 **Ferramentas (dev)**
 
-- **Medição não vai para o commit — e a entrada do CHANGELOG promove no fecho**: dois deslizes no fechamento da concordância de número. O **JSON da medição** (`medida-concord.json`, 133 KB) ficou na raiz e entrou no commit com o `git add -A`: medição é **arquivo de trabalho** (o número mora em `docs/medicao-corretor.md`), e na dúvida `git status` antes do `fechar.ps1` mostra o que vai junto. E a **entrada do CHANGELOG** ficou em “Não adicionado” mesmo com o código já na `main`: quando o commit do `fechar.ps1` entra na `main`, a entrada precisa **já estar** em “Adicionado” — quem fecha promove, no mesmo commit.
 
 ### Adicionado (na main)
 
@@ -659,6 +661,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **Medição não vai para o commit — e a entrada do CHANGELOG promove no fecho**: dois deslizes no fechamento da concordância de número. O **JSON da medição** (`medida-concord.json`, 133 KB) ficou na raiz e entrou no commit com o `git add -A`: medição é **arquivo de trabalho** (o número mora em `docs/medicao-corretor.md`), e na dúvida `git status` antes do `fechar.ps1` mostra o que vai junto. E a **entrada do CHANGELOG** ficou em “Não adicionado” mesmo com o código já na `main`: quando o commit do `fechar.ps1` entra na `main`, a entrada precisa **já estar** em “Adicionado” — quem fecha promove, no mesmo commit.
 
 - **Troca de abas animada**: trocar de documento tinha ficado "seco" — só a barra lateral e os
   painéis animavam. Agora a **nova aba ativa entra com um "pop"** e o **documento desliza do lado
