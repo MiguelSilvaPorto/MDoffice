@@ -32,11 +32,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Avisos de estilo com a correção pronta no popup**: clicar num aviso como **"Frase muito
-  comprida"** agora mostra o trecho **já corrigido** ("… do novo projeto. E combinamos de …") com
-  um clique para aplicar - antes o popup só dizia "comece nova frase aqui". Nesses avisos os botões
-  de dicionário ("Ignorar palavra", "Adicionar ao dicionário") dão lugar a **"Ignorar neste
-  texto"**, que dispensa o aviso somente naquele documento (nos outros ele continua).
+- (nada no momento)
 
 ### Adicionado (na main)
 
@@ -45,6 +41,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — arquivos, imagens e rascunhos passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **Avisos de estilo com a correção pronta no popup**: clicar num aviso como **"Frase muito
+  comprida"** agora mostra o trecho **já corrigido** ("… do novo projeto. E combinamos de …") com
+  um clique para aplicar - antes o popup só dizia "comece nova frase aqui". Nesses avisos os botões
+  de dicionário ("Ignorar palavra", "Adicionar ao dicionário") dão lugar a **"Ignorar neste
+  texto"**, que dispensa o aviso somente naquele documento (nos outros ele continua).
 
 - **Exportador Markdown → .docx não arrasta mais a interface**: o import de
   `renderMermaidInto` era feito pelo índice `./diagram`, que reexporta o construtor de
@@ -363,18 +365,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Zoom do PowerPoint até 800%**: o teto era 400%; agora o slider, o **+ / −** e o
-  **Ctrl + roda** vão a **800%** (a lâmina é HTML/vetorial, então ampliar não perde nitidez, e
-  a rolagem continua de verdade). Para a faixa nova não custar 70 cliques, o passo do botão e
-  da roda **cresce com o nível** — 10% até 150%, 25% até 250%, 50% até 500%, 100% daí em
-  diante (do 100% ao 800% em ~17 passos) —, o mesmo conceito que as pranchetas de desenho já
-  usavam; o slider continua fino (10%).
-- **Dica das alças de canto no visual do app**: o balão nativo do sistema (`title`) saiu; passar o
-  mouse numa alça de canto mostra uma caixa do próprio app com **"Canto superior direito · 40%"**
-  (valor em destaque) e a dica de uso — **"Arraste arredonda os 4 cantos escolhidos · Shift+clique
-  soma ou tira"** (o texto acompanha quantos cantos estão na escolha). A caixa abre para o lado de
-  dentro da lâmina (direita→esquerda nas alças da direita, cima→baixo nas de cima) e **some durante
-  o arrasto**, quando quem manda é o aviso com o valor ao vivo.
+- (nada no momento)
 
 ### Adicionado (na main)
 
@@ -383,6 +374,20 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **Zoom do PowerPoint até 800%**: o teto era 400%; agora o slider, o **+ / −** e o
+  **Ctrl + roda** vão a **800%** (a lâmina é HTML/vetorial, então ampliar não perde nitidez, e
+  a rolagem continua de verdade). Para a faixa nova não custar 70 cliques, o passo do botão e
+  da roda **cresce com o nível** — 10% até 150%, 25% até 250%, 50% até 500%, 100% daí em
+  diante (do 100% ao 800% em ~17 passos) —, o mesmo conceito que as pranchetas de desenho já
+  usavam; o slider continua fino (10%).
+
+- **Dica das alças de canto no visual do app**: o balão nativo do sistema (`title`) saiu; passar o
+  mouse numa alça de canto mostra uma caixa do próprio app com **"Canto superior direito · 40%"**
+  (valor em destaque) e a dica de uso — **"Arraste arredonda os 4 cantos escolhidos · Shift+clique
+  soma ou tira"** (o texto acompanha quantos cantos estão na escolha). A caixa abre para o lado de
+  dentro da lâmina (direita→esquerda nas alças da direita, cima→baixo nas de cima) e **some durante
+  o arrasto**, quando quem manda é o aviso com o valor ao vivo.
 
 - **Correção no Draw**: o retângulo desenhado torto (a mão nunca acerta o ângulo) virava
   **retângulo arredondado** e a forma saía maior que o traço — o arredondamento era medido na
@@ -489,63 +494,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Formalidade base (Onda 3)**: o catálogo informal → formal cresceu de **18 para 75 padrões**, agora classificados por **classe** (internetês, contração, muleta, gíria, oralidade, atenuação, redundância e vagueza), com política explícita de **seguro** (o app pode corrigir sozinho — 45 padrões) × **sugestão** (30 padrões, quando a troca depende do sentido) e tom mínimo (neutro × formal). Entraram as **regras de frase por janelas** — “a gente vê que” → “nós vemos”/“vê-se que”, “Aí eu fui” → “Então, eu”/“Em seguida, eu”, “então” repetido, “você vê que” → “observa-se que” e “há três anos atrás” → “há três anos” —, com exclusão de citação (`>`), código, URL, sigla e e-mail. O painel de revisão (F7) passa a mostrar o **MIP** (marcadores informais por 1.000 palavras) antes e depois das correções seguras, a contagem por classe e o trecho/risco de cada marcador.
-- **Teste do “entretanto” alinhado ao comportamento decidido**: a adversativa leva só a vírgula de antes (“…, entretanto faltou teste.”), como o corpus já exigia (caso 16, “porém”); a expectativa antiga do teste pedia as duas vírgulas.
-- **Corretor aprende com as recusas e por classe de erro**: desfazer um ajuste automático (ou digitar por cima) desconta o par aprendido, e o app passa a reconhecer classes (transposição, tecla vizinha, acento, dígrafo) para acertar antes de conhecer o par exato.
-- **Salvamento automático com feedback imediato e caminho do arquivo**: enquanto o documento é editado ou gravado, o badge exibe "Salvando…" com ícone de nuvem pulsando; assim que o salvamento é concluído, o badge volta para "Salvo" e exibe logo à sua direita o caminho da pasta/arquivo salvo com botão de atalho para abrir/revelar no explorador de arquivos.
-- **Ícones de tipo redesenhados**: cada tipo passou a ser uma **folha de documento** na cor do
-  formato (com o canto dobrado) e a marca dentro — M↓ no Markdown, W no Word, a planilha no Excel
-  e o gráfico de pizza no PowerPoint —, no lugar do quadradinho com a letra solta; vale nas abas,
-  nas listas, nos menus, na busca e no Início.
-- **Citação ABNT atualizada para a NBR 10520:2023**: o corretor aceita Caixa Mista `(Silva, 2020)` e passa a sugestão (não erro) para quem escreve em CAIXA ALTA; "et al." opcional.
-- **Corretor com contexto e decisão por confiança**: as sugestões passam a usar os **bigramas** do
-  modelo de n-gramas (`public/ngrams/ctx-pt.json`) — "vou para a caza" vira "casa" com muito mais
-  chance — e o auto-aplicar deixa de ser regra fixa: decide por **probabilidade com margem**
-  (vencedor × segundo colocado), empate vira sugestão e o limiar se calibra com o histórico de
-  desfazer.
-- **O limiar do corretor se calibra com o uso**: desfazer uma correção que o app aplicou sozinho
-  sobe o limiar (o corretor fica mais exigente); as que ficam de pé o descem. O limiar em vigor vai
-  para o worker a cada veredito, e a calibragem funciona até sem armazenamento local.
-- **Correção automática de novo nos casos claros**: a decisão por probabilidade tinha deixado
-  passar para "só sugestão" erros óbvios como **"atensao" → "atenção"**; a dominância de uso (5×)
-  voltou a aplicá-los sozinha — medido no corpus: **32/32 casos corrigidos e 32/32 textos
-  corretos preservados**.
-- **O corretor conhece as confusões do português e o teclado ABNT2**: a nota dos candidatos passa a
-  ser **ponderada por classe** (c↔ç, s↔z, g↔j, e↔i, o↔u, m↔n, "h" mudo, letra dobrada, inversão de
-  vizinhas) e pela **vizinhança de teclas**; as **grafias prováveis** (ss↔ç, ch↔x, dobradas) são
-  procuradas direto no vocabulário. "excessao" → **exceção**, "analize" → **análise**, "pesquiza" →
-  **pesquisa** e "obrigdao" → **obrigado** agora saem certos - e sozinhos. Corpus: **34/34**.
-- **"Você quis dizer" sem falsos positivos**: o aviso só aparece quando a diferença é **erro de
-  digitação típico** (inversão de letras, tecla vizinha do ABNT2, confusão c↔ç/s↔z/g↔j/m↔n, "h"
-  mudo ou letra dobrada). Antes qualquer troca de letra valia e palavras reais eram questionadas
-  ("paridade" → "caridade", "parse" → "passe"); medido com o harness: **3,25 → 0,00 falsos
-  positivos por 1000 palavras**, com o acerto da auto-correção em 92%.
-- **Ranking das letras faltando/sobrando**: a frequência ganhou **teto** (palavra comum não passa
-  mais por cima de um candidato melhor por edição) e o candidato que **preserva o começo da
-  palavra** ganha um bônus pequeno. "aparee" → **aparece** (era "para"), "fecar" → **fechar** (era
-  "ficar") e "mdia" subiu para o topo da lista (era "dia"). Medido: recall@1 **78% → 82%**,
-  precisão do 1º **83% → 87%**, acerto da auto-correção **92% → 95%** e auto-aplicações erradas
-  **19 → 13**.
-- **O contexto decide a palavra que existe**: quando a forma escrita é palavra de verdade mas não
-  combina com a frase ("o maior ganho **resta** aba"), o app pergunta — comparando, no modelo de
-  n-gramas, a leitura escrita com as trocas de classe (acento nos dois sentidos, x↔ch, g↔j, c↔ç,
-  tecla vizinha, "h" mudo, dobra). É **sugestão** ("o contexto pede «desta»?"), nunca correção
-  automática. Recall@1 **82% → 83%**, recall@3 **86% → 87%**, falsos positivos seguem **0,00**.
+- (nada no momento)
 
 **Ferramentas (dev)**
 
-- **Harness de medição do corretor (F0) com linha de base registrada**: `scripts/avaliar-correcao.mts`
-  mede o corretor real (`checkText`) contra um conjunto rotulado — os 25 pares de palavra de
-  `test/docs/gramatical.md` e 270 erros sintéticos por classe (acento, c↔ç, s↔ss, x↔ch, g↔j,
-  transposição, letra a mais/menos, tecla vizinha) gerados de parágrafos limpos de `docs/*.md` —,
-  com recall@1/@3, precisão do 1º lugar, falsos positivos por 1000 palavras, taxa e acerto da
-  auto-aplicação, ms/palavra (p50/p95) e o payload que o worker carrega; saída legível, `--json`
-  e `--classe=`. Aplicar: `node scripts/avaliar-correcao.mts`. Baseline do commit `120cc9e` em
-  `docs/medicao-corretor.md`: detecção 97%, r@1 76%, r@3 85%, FP 3,25/1000, auto-aplicação 76%
-  com 10,7% delas erradas, p95 0,152 ms/palavra e 7,5 MB de payload no worker. No fechamento um
-  rebase trouxe o corretor com confusões/teclado (`760095e`); a mesma medição rodou no commit novo
-  (`cdd1c84`): r@1 80%, r@3 89%, x↔ch 33%→67%, FP igual e p95 0,998 ms/palavra — a comparação está
-  no documento. Nada muda no comportamento do corretor.
 
 ### Adicionado (na main)
 
@@ -581,6 +533,74 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **Formalidade base (Onda 3)**: o catálogo informal → formal cresceu de **18 para 75 padrões**, agora classificados por **classe** (internetês, contração, muleta, gíria, oralidade, atenuação, redundância e vagueza), com política explícita de **seguro** (o app pode corrigir sozinho — 45 padrões) × **sugestão** (30 padrões, quando a troca depende do sentido) e tom mínimo (neutro × formal). Entraram as **regras de frase por janelas** — “a gente vê que” → “nós vemos”/“vê-se que”, “Aí eu fui” → “Então, eu”/“Em seguida, eu”, “então” repetido, “você vê que” → “observa-se que” e “há três anos atrás” → “há três anos” —, com exclusão de citação (`>`), código, URL, sigla e e-mail. O painel de revisão (F7) passa a mostrar o **MIP** (marcadores informais por 1.000 palavras) antes e depois das correções seguras, a contagem por classe e o trecho/risco de cada marcador.
+
+- **Teste do “entretanto” alinhado ao comportamento decidido**: a adversativa leva só a vírgula de antes (“…, entretanto faltou teste.”), como o corpus já exigia (caso 16, “porém”); a expectativa antiga do teste pedia as duas vírgulas.
+
+- **Corretor aprende com as recusas e por classe de erro**: desfazer um ajuste automático (ou digitar por cima) desconta o par aprendido, e o app passa a reconhecer classes (transposição, tecla vizinha, acento, dígrafo) para acertar antes de conhecer o par exato.
+
+- **Salvamento automático com feedback imediato e caminho do arquivo**: enquanto o documento é editado ou gravado, o badge exibe "Salvando…" com ícone de nuvem pulsando; assim que o salvamento é concluído, o badge volta para "Salvo" e exibe logo à sua direita o caminho da pasta/arquivo salvo com botão de atalho para abrir/revelar no explorador de arquivos.
+
+- **Ícones de tipo redesenhados**: cada tipo passou a ser uma **folha de documento** na cor do
+  formato (com o canto dobrado) e a marca dentro — M↓ no Markdown, W no Word, a planilha no Excel
+  e o gráfico de pizza no PowerPoint —, no lugar do quadradinho com a letra solta; vale nas abas,
+  nas listas, nos menus, na busca e no Início.
+
+- **Citação ABNT atualizada para a NBR 10520:2023**: o corretor aceita Caixa Mista `(Silva, 2020)` e passa a sugestão (não erro) para quem escreve em CAIXA ALTA; "et al." opcional.
+
+- **Corretor com contexto e decisão por confiança**: as sugestões passam a usar os **bigramas** do
+  modelo de n-gramas (`public/ngrams/ctx-pt.json`) — "vou para a caza" vira "casa" com muito mais
+  chance — e o auto-aplicar deixa de ser regra fixa: decide por **probabilidade com margem**
+  (vencedor × segundo colocado), empate vira sugestão e o limiar se calibra com o histórico de
+  desfazer.
+
+- **O limiar do corretor se calibra com o uso**: desfazer uma correção que o app aplicou sozinho
+  sobe o limiar (o corretor fica mais exigente); as que ficam de pé o descem. O limiar em vigor vai
+  para o worker a cada veredito, e a calibragem funciona até sem armazenamento local.
+
+- **Correção automática de novo nos casos claros**: a decisão por probabilidade tinha deixado
+  passar para "só sugestão" erros óbvios como **"atensao" → "atenção"**; a dominância de uso (5×)
+  voltou a aplicá-los sozinha — medido no corpus: **32/32 casos corrigidos e 32/32 textos
+  corretos preservados**.
+
+- **O corretor conhece as confusões do português e o teclado ABNT2**: a nota dos candidatos passa a
+  ser **ponderada por classe** (c↔ç, s↔z, g↔j, e↔i, o↔u, m↔n, "h" mudo, letra dobrada, inversão de
+  vizinhas) e pela **vizinhança de teclas**; as **grafias prováveis** (ss↔ç, ch↔x, dobradas) são
+  procuradas direto no vocabulário. "excessao" → **exceção**, "analize" → **análise**, "pesquiza" →
+  **pesquisa** e "obrigdao" → **obrigado** agora saem certos - e sozinhos. Corpus: **34/34**.
+
+- **"Você quis dizer" sem falsos positivos**: o aviso só aparece quando a diferença é **erro de
+  digitação típico** (inversão de letras, tecla vizinha do ABNT2, confusão c↔ç/s↔z/g↔j/m↔n, "h"
+  mudo ou letra dobrada). Antes qualquer troca de letra valia e palavras reais eram questionadas
+  ("paridade" → "caridade", "parse" → "passe"); medido com o harness: **3,25 → 0,00 falsos
+  positivos por 1000 palavras**, com o acerto da auto-correção em 92%.
+
+- **Ranking das letras faltando/sobrando**: a frequência ganhou **teto** (palavra comum não passa
+  mais por cima de um candidato melhor por edição) e o candidato que **preserva o começo da
+  palavra** ganha um bônus pequeno. "aparee" → **aparece** (era "para"), "fecar" → **fechar** (era
+  "ficar") e "mdia" subiu para o topo da lista (era "dia"). Medido: recall@1 **78% → 82%**,
+  precisão do 1º **83% → 87%**, acerto da auto-correção **92% → 95%** e auto-aplicações erradas
+  **19 → 13**.
+
+- **O contexto decide a palavra que existe**: quando a forma escrita é palavra de verdade mas não
+  combina com a frase ("o maior ganho **resta** aba"), o app pergunta — comparando, no modelo de
+  n-gramas, a leitura escrita com as trocas de classe (acento nos dois sentidos, x↔ch, g↔j, c↔ç,
+  tecla vizinha, "h" mudo, dobra). É **sugestão** ("o contexto pede «desta»?"), nunca correção
+  automática. Recall@1 **82% → 83%**, recall@3 **86% → 87%**, falsos positivos seguem **0,00**.
+
+- **Harness de medição do corretor (F0) com linha de base registrada**: `scripts/avaliar-correcao.mts`
+  mede o corretor real (`checkText`) contra um conjunto rotulado — os 25 pares de palavra de
+  `test/docs/gramatical.md` e 270 erros sintéticos por classe (acento, c↔ç, s↔ss, x↔ch, g↔j,
+  transposição, letra a mais/menos, tecla vizinha) gerados de parágrafos limpos de `docs/*.md` —,
+  com recall@1/@3, precisão do 1º lugar, falsos positivos por 1000 palavras, taxa e acerto da
+  auto-aplicação, ms/palavra (p50/p95) e o payload que o worker carrega; saída legível, `--json`
+  e `--classe=`. Aplicar: `node scripts/avaliar-correcao.mts`. Baseline do commit `120cc9e` em
+  `docs/medicao-corretor.md`: detecção 97%, r@1 76%, r@3 85%, FP 3,25/1000, auto-aplicação 76%
+  com 10,7% delas erradas, p95 0,152 ms/palavra e 7,5 MB de payload no worker. No fechamento um
+  rebase trouxe o corretor com confusões/teclado (`760095e`); a mesma medição rodou no commit novo
+  (`cdd1c84`): r@1 80%, r@3 89%, x↔ch 33%→67%, FP igual e p95 0,998 ms/palavra — a comparação está
+  no documento. Nada muda no comportamento do corretor.
 
 - **F4 do corretor — a promoção por contexto para de errar**: o `rerankSuggestions` (a camada que reordena as sugestões pelo trigrama/bigrama e pelo lado direito da frase) promovia com evidência **fraca**, e o bônus de classe/uso podiam promovê-la sozinhos — na medição isso custava acerto (“messmo” → “**mesh**” ✗, “revissão” → “**previsão**” ✗). Agora **a promoção é do contexto**: piso próprio (0,06), no mínimo **3×** o contexto do 1º do dicionário + margem, e o bônus de classe/uso só escolhem entre candidatas que o contexto já sustenta. Com o modelo ligado, o r@1 voltou de **84% para 85%** (empata com a rodada sem modelo em vez de perder 1 p.p.), a precisão do 1º segue **91%** e os falsos positivos **0,00**. A varredura de limiares (8 pisos × 5 fatores × 4 margens sobre as evidências reais de 54 casos do conjunto) mostrou que **nenhuma** configuração faz a promoção ganhar nesse corpus — a régua ficou conservadora de propósito: promove quando o contexto é de fato decisivo, fora disso não chuta.
 - **Harness: medição caso a caso**: o `--json` do `scripts/avaliar-correcao.mts` agora leva a lista `medidas` (cada erro com conjunto, classe, sugestões, auto e trecho) — é o que permite comparar duas rodadas (com/sem modelo, antes/depois) **por índice** e ver exatamente quais casos mudaram, em vez de só o total.

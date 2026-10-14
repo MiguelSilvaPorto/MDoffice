@@ -4578,3 +4578,23 @@ antigas quando fizer sentido.
 - **Porquê:** o teste de layout é onde o zoom da prancheta já é conferido por padrão de
   código; a checagem equivalente do PowerPoint entra no mesmo lugar para o teto não voltar em
   silêncio numa refatoração futura.
+
+## CHANGELOG.md
+
+### 2026-10-14 · esta tarefa · promoção das entradas que já estavam na main
+- **Local:** as três seções "Não adicionado" que ainda tinham entrada (MD*, PowerPoint e
+  Geral)
+- **Linha:** 17 entradas movidas para o "Adicionado" da mesma categoria — 1 no MD\*
+  (avisos de estilo com a correção no popup), 2 no PowerPoint (zoom até 800%, dica das
+  alças de canto) e 14 no Geral (formalidade base, teste do entretanto, recusas e classes
+  de erro, salvamento com status e caminho, ícones de tipo, citação NBR 10520:2023,
+  contexto/confiança, limiar calibrado, correção automática de novo, confusões e ABNT2,
+  você-quis-dizer, ranking de letras, o contexto decide, harness F0)
+- **Porquê:** a regra do projeto é promover a entrada ao entrar na `main`, mas as tarefas
+  fecharam registrando o trabalho no estado de autoria e a promoção ficou para depois. Cada
+  entrada foi **conferida contra o histórico antes de mudar de lugar** — o commit de cada
+  uma é ancestral de `main` (55a7a7d, 03c69de, feb0a5f, a076ff6, c8546ab, 8f2a404,
+  1458cc9, da8c937, 05e81ee, 8e7bdf3, 465fc96, 760095e, 3d3edb9, 2621b8b, b092658,
+  fbf41dd) —, nada foi promovido por impressão. As seções de origem ficaram com
+  "- (nada no momento)" nos dois lados, e o arquivo passou pelo teste de sobrou-marcador e
+  de linha em branco dupla.
