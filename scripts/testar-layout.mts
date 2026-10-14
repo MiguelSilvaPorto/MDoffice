@@ -776,5 +776,13 @@ checa(
   "o hover ou o confirmando perderam o fundo vermelho"
 );
 
+// ---------------------------------------------------------------- docs sem marcador de conflito
+
+console.log("\ndocs sem marcador de conflito");
+
+for (const arq of ["CHANGELOG.md", "README.md", "docs/historico-tecnico.md", "docs/powerpoint.md", "docs/funcionalidades.md"]) {
+  checa(`${arq} sem marcador de conflito esquecido`, !/^(<{7,}|={7,}|>{7,})/m.test(ler(arq)), "sobrou <<<<<<< / ======= / >>>>>>> de um rebase");
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

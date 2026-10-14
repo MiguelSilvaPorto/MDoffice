@@ -6691,7 +6691,6 @@ antigas quando fizer sentido.
 - **Porquê:** a mudança é de interface do app inteiro (não de um módulo), então a categoria é
   **Geral** — e a entrada entra já promovida, como o fechamento exige.
 
-<<<<<<< HEAD
 ## src/styles/settings.css
 
 ### 2026-10-14 · esta tarefa · o botão de perigo não fica vermelho em cima de vermelho
@@ -6716,7 +6715,7 @@ antigas quando fizer sentido.
   e o vermelho sólido no hover/confirmando
 - **Porquê:** é um defeito de cascata (duas classes disputando fundo e cor): a checagem de CSS
   prende a combinação sem precisar de navegador, e falha se alguém "limpar" o bloco.
-=======
+
 ## src/powerpoint/edicao/modelos.ts · src/powerpoint/powerpoint.ts · src/styles/powerpoint-edicao.css
 
 ### 2026-10-14 · esta tarefa · Ideias: "Gerar mais" e acabamentos
@@ -6763,4 +6762,24 @@ antigas quando fizer sentido.
   comando `"modelo"` — os dois mudaram nesta tarefa; deixá-los passando teria prendido o código
   velho. As checagens novas prendem o que o usuário pediu: mais ideias (o botão e a fornada) e
   ideias que mexem nas formas (o mapa por papel e os dois acabamentos).
->>>>>>> 004e7c2 (feat(powerpoint): ideias de design com Gerar mais e acabamentos (cores novas, cantos arredondados, contorno de acento). O recolorir remapeia as cores proprias das formas pelo PAPEL de cada uma - a marca vira o acento, os fundos claros viram tinta do acento e as escuras viram o texto - em vez de so trocar o fundo e o texto: no deck real do usuario (12 laminas, 511 formas), 128 formas trocam de cor contra 44 antes, e o deck termina com as 4 cores do design. O botao Gerar mais ideias percorre as combinacoes de design x acabamento (8 por vez, 57 hoje) e a previa do cartao usa o mapa do deck inteiro.)
+
+## docs/historico-tecnico.md · scripts/testar-layout.mts
+
+### 2026-10-14 · esta tarefa · marcador de conflito commitado (limpeza e trava)
+
+- **Local:** `docs/historico-tecnico.md` — o bloco de conflito no fim do arquivo (entradas do
+  botão de perigo × entradas das Ideias); `scripts/testar-layout.mts` — seção nova "docs sem
+  marcador de conflito"
+- **Linha:** `- <<<<<<< HEAD` · `- =======` · `- >>>>>>> 004e7c2 (…)` (os dois lados ficaram:
+  a entrada do botão de perigo e a das Ideias); `+ 5 checagens` (`CHANGELOG.md`, `README.md`,
+  `docs/historico-tecnico.md`, `docs/powerpoint.md`, `docs/funcionalidades.md`)
+- **Porquê:** o fechamento da tarefa das Ideias tinha um conflito no histórico. A resolução foi
+  feita à mão e **conferida** (nenhum marcador no arquivo), mas o `fechar.ps1` — ao continuar o
+  rebase — desfez a resolução e restaurou a versão com os marcadores; o `git add` seguinte
+  estagiou essa versão e o commit entrou com `<<<<<<<`, `=======` e `>>>>>>>` no arquivo. A
+  sequência ficou visível: depois do primeiro `fechar.ps1` o `git status` ainda mostrava `UU
+  docs/historico-tecnico.md`, sinal de que o índice tinha voltado ao estado de conflito — a
+  conferência precisa acontecer **depois** do `git add`, e não antes. A checagem nova prende o
+  defeito no lugar certo (o teste falha se um marcador reaparecer em qualquer um dos cinco
+  arquivos que os agentes mais editam): o `=` sozinho é ambíguo com título setext, por isso a
+  lista foi conferida antes — nenhum dos cinco arquivos usa `===` no começo de linha.

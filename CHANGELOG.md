@@ -706,7 +706,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Ferramentas (dev)**
 
-- (nada no momento)
+- **Marcador de conflito no histórico (limpeza)**: o fechamento da tarefa das Ideias deixou um
+  bloco de conflito (`<<<<<<<` / `=======` / `>>>>>>>`) **commitado** no
+  `docs/historico-tecnico.md` — a resolução tinha sido feita e conferida, mas o `fechar.ps1`
+  desfez o arquivo ao continuar o rebase, e o `git add` seguinte estagiou a versão com os
+  marcadores. Os três marcadores saíram (os dois lados ficaram: a entrada do botão de perigo e a
+  das Ideias) e o `testar-layout` agora **falha** se um marcador voltar em `CHANGELOG.md`,
+  `README.md` ou nos docs dos módulos — o defeito não passa mais despercebido.
 
 ### Adicionado (na main)
 
