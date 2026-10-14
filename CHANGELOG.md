@@ -378,6 +378,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Botão "Ideias de design" na fita** (aba **Design** ▸ grupo **Designer**): as Ideias existiam
+  só pela aba do painel lateral; agora o botão abre o painel já na aba das Ideias — o mesmo
+  lugar do *Design Ideas* do PowerPoint (aba Design). A aba Design ganhou o grupo **Designer**
+  com a estrela do app, e o clique também **mostra o painel** se ele estiver escondido.
 - **Sem sombra agora tira a sombra de verdade** (e a família toda): as opções que **removem** um
   formato — **Sem sombra**, **Sem contorno**, **Sem preenchimento**, opacidade de volta a **100%**
   e o ajuste antigo ao mexer nos **cantos** — não surtiam efeito quando aplicadas pela fita ou pelo

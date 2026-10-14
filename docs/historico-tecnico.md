@@ -6473,3 +6473,22 @@ antigas quando fizer sentido.
   `main` depois do ponto em que a minha branch nasceu) — resultado: a mesma entrada em duas
   seções. A conferência da promoção agora olha se a entrada **já existe** em "Adicionado" antes
   de mover: entrada duplicada é pior que entrada atrasada, porque mente nas duas seções.
+
+## src/powerpoint/ui/fita.ts · src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · esta tarefa · botão "Ideias de design" na fita
+- **Local:** `fita.ts` — o grupo novo "Designer" na aba `design()`; `powerpoint.ts` — o caso
+  `"ideias"` no despacho de comandos
+- **Linha:** `+ grupo("Designer", grande("ideias", ic("i-spark"), "Ideias de design", …))`;
+  `+ case "ideias": this.mostrarPainelLateral(); this.mostrarLateral("ideias"); return;`
+- **Porquê:** as Ideias (entrega anterior) só eram alcançáveis pela aba do painel lateral — o
+  usuário pediu o botão na fita, e o lugar certo é o do PowerPoint: **aba Design**. O botão faz
+  as duas coisas que o gesto espera: **mostra o painel** (se estiver escondido — `mostrarPainelLateral`
+  clica no botão de alternância) e **troca a aba** (`mostrarLateral("ideias")`); só uma das duas
+  deixaria o clique "sem efeito" quando o painel já estivesse em outra aba. O grupo ganhou o nome
+  "Designer" (como no PowerPoint) e a estrela do app (`i-spark`, já no sprite).
+- **Local:** `scripts/testar-layout.mts` e `docs/powerpoint.md`
+- **Linha:** `novo` — 1 checagem (o botão existe **e** o caso abre o painel na aba certa) e a
+  menção do caminho da fita no doc do módulo
+- **Porquê:** botão de fita sem caso no despacho é o defeito clássico (já aconteceu com o "Nova
+  lâmina" — o comentário em `powerpoint.ts` registra); a checagem prende os dois lados juntos.

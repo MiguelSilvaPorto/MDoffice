@@ -1558,6 +1558,11 @@ export class PowerPointHost {
         removerModeloUsuario(String(value ?? ""));
         toast("Modelo removido.", "ok", 3000);
         return;
+      case "ideias":
+        // o botão da fita (aba Design ▸ grupo Designer) abre o painel já na aba das Ideias
+        this.mostrarPainelLateral();
+        this.mostrarLateral("ideias");
+        return;
 
       // ---- transição de entrada da lâmina ----
       case "transicao": {

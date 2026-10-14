@@ -580,6 +580,8 @@ export class Fita {
       ),
       grupo("Personalizar", `${grande("fundo", ic("i-bucket"), "Formatar fundo", "Cor, gradiente ou imagem de fundo da lâmina", true)}${grande("configure", ic("i-gear"), "Tamanho", "Proporção e tamanho da lâmina")}`),
       grupo("Layout", `${grande("layout", ic("i-columns"), "Layout", "Layout da lâmina", true)}`),
+      // como no PowerPoint (Design ▸ Design Ideas): abre o painel com a lâmina atual em cada modelo
+      grupo("Designer", `${grande("ideias", ic("i-spark"), "Ideias de design", "Sugestões de visual para a apresentação — a lâmina atual em cada modelo, geradas no seu computador")}`),
     ].join("");
   }
 
