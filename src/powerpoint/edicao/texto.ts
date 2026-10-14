@@ -25,6 +25,12 @@ export function textoDosParas(paras: Para[]): string {
   return paras.map((p) => p.runs.map((r) => r.text).join("")).join("\n");
 }
 
+/** A forma tem texto de verdade? (o "\u200b" que segura o parágrafo vazio não conta) */
+export function temTexto(paras: Para[] | undefined): boolean {
+  if (!paras?.length) return false;
+  return textoDosParas(paras).replace(/\u200b/g, "").trim() !== "";
+}
+
 /** Parágrafo vazio com o estilo de digitação dado (é o que uma caixa nova tem). */
 export function paraVazio(estilo: Pick<EstiloRun, "size">, align: TextAlign = "esquerda"): Para {
   return { runs: [], align, lvl: 0, marL: 0, indent: 0, spcBef: 0, spcAft: 0, endSize: estilo.size };

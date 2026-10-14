@@ -210,7 +210,7 @@ export class PowerPointHost {
       aoSelecionar: (ids) => this.selecionar(ids),
       aoSelecionarCantos: (c) => this.selecionarCantos(c),
       aoTransformar: (patches, fase) => this.aoTransformar(patches, fase),
-      aoEditarTexto: (id) => this.entrarEdicao(id),
+      aoEditarTexto: (id, ponto) => this.entrarEdicao(id, undefined, ponto),
       aoCriar: (c) => this.aoCriar(c),
       aoDuplicarParaArrastar: () => this.duplicarParaArrastar(),
       aoCelulas: (sel) => this.selecionarCelulas(sel),
@@ -1201,7 +1201,7 @@ export class PowerPointHost {
   // edição de texto dentro das formas e das células de tabela
   // ------------------------------------------------------------------
 
-  private entrarEdicao(id: string, cel?: [number, number]): void {
+  private entrarEdicao(id: string, cel?: [number, number], ponto?: { x: number; y: number }): void {
     const s = this.atual().shapes.find((x) => x.id === id);
     if (!s || s.bloqueada || (s.paras === undefined && !s.tabela)) return;
     this.editando = id;
@@ -1214,12 +1214,20 @@ export class PowerPointHost {
     const rt = this.rtEmEdicao();
     if (rt) {
       rt.focus();
-      const fim = document.createRange();
-      fim.selectNodeContents(rt);
-      fim.collapse(false);
       const sel = window.getSelection();
+      const faixa = document.createRange();
+      // O caret vai ONDE o ponteiro clicou: é o começo do gesto de selecionar o texto (o arrasto
+      // segue daí). Sem o ponto — os caminhos que não vêm do mouse —, vai para o fim, como antes.
+      const pos = ponto ? document.caretPositionFromPoint(ponto.x, ponto.y) : null;
+      if (pos && rt.contains(pos.offsetNode)) {
+        faixa.setStart(pos.offsetNode, pos.offset);
+        faixa.collapse(true);
+      } else {
+        faixa.selectNodeContents(rt);
+        faixa.collapse(false);
+      }
       sel?.removeAllRanges();
-      sel?.addRange(fim);
+      sel?.addRange(faixa);
     }
   }
 

@@ -34,6 +34,16 @@ export function centro(r: Ret): { x: number; y: number } {
   return { x: r.x + r.w / 2, y: r.y + r.h / 2 };
 }
 
+/**
+ * O ponto (mesma unidade do retângulo) caiu na BEIRADA — a faixa de `banda` por dentro do
+ * contorno? É a faixa que agarra a forma para mover; por dentro dela, o clique é do texto
+ * (ver o palco). Ponto fora do retângulo não é beirada.
+ */
+export function pertoDaBorda(r: Ret, p: { x: number; y: number }, banda: number): boolean {
+  if (p.x < r.x || p.x > r.x + r.w || p.y < r.y || p.y > r.y + r.h) return false;
+  return Math.min(p.x - r.x, r.x + r.w - p.x, p.y - r.y, r.y + r.h - p.y) <= banda;
+}
+
 /** Gira o ponto (px,py) em torno de (cx,cy). */
 export function girarPonto(px: number, py: number, cx: number, cy: number, graus: number): { x: number; y: number } {
   const a = graus * RAD;

@@ -56,6 +56,23 @@ const dim = { w: 960, h: 540 };
   ok("ângulo do ponteiro: acima = 0°", perto(G.anguloDoPonteiro(100, 50, 100, 100), 0) && perto(G.anguloDoPonteiro(150, 100, 100, 100), 90));
 }
 
+// ---------------------------------------------------------------- beirada da forma (mover) x texto (selecionar)
+{
+  const caixa = { x: 100, y: 100, w: 400, h: 200 }; // em pt
+  ok("no meio da caixa não é beirada", !G.pertoDaBorda(caixa, { x: 300, y: 200 }, 6));
+  ok("a 3 pt da esquerda é beirada", G.pertoDaBorda(caixa, { x: 103, y: 200 }, 6));
+  ok("a 3 pt do topo é beirada", G.pertoDaBorda(caixa, { x: 300, y: 103 }, 6));
+  ok("a 3 pt da direita é beirada", G.pertoDaBorda(caixa, { x: 497, y: 200 }, 6));
+  ok("a 3 pt de baixo é beirada", G.pertoDaBorda(caixa, { x: 300, y: 297 }, 6));
+  ok("a 7 pt da borda já é texto", !G.pertoDaBorda(caixa, { x: 107, y: 200 }, 6) && !G.pertoDaBorda(caixa, { x: 300, y: 293 }, 6));
+  ok("exatamente em cima do contorno é beirada", G.pertoDaBorda(caixa, { x: 100, y: 100 }, 6) && G.pertoDaBorda(caixa, { x: 500, y: 300 }, 6));
+  ok("fora da caixa não é beirada", !G.pertoDaBorda(caixa, { x: 99, y: 200 }, 6) && !G.pertoDaBorda(caixa, { x: 300, y: 301 }, 6));
+  const t = T.temTexto;
+  ok("forma vazia não tem texto", !t(undefined) && !t([]) && !t([{ runs: [], align: "esquerda", lvl: 0, marL: 0, indent: 0, spcBef: 0, spcAft: 0, endSize: 18 }]));
+  ok("o \\u200b do parágrafo vazio não conta como texto", !t([{ runs: [{ text: "\u200b" }], align: "esquerda", lvl: 0, marL: 0, indent: 0, spcBef: 0, spcAft: 0, endSize: 18 }]));
+  ok("com texto de verdade conta", t([{ runs: [{ text: "A no trabalho" }], align: "esquerda", lvl: 0, marL: 0, indent: 0, spcBef: 0, spcAft: 0, endSize: 18 }]));
+}
+
 // ---------------------------------------------------------------- operações em várias formas
 const forma = (id, x, y, w, h, extra = {}) => ({ id, kind: "forma", box: { x, y, w, h }, text: "", fontFamily: "A", fontSize: 18, color: "000000", bold: false, italic: false, align: "esquerda", fill: "", src: "", rot: 0, geom: "rect", ...extra });
 const slide = (shapes) => ({ md: "", layout: "conteudo", notes: "", shapes });

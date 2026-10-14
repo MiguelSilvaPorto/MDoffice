@@ -5350,6 +5350,79 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   as verificações leem o CSS e travam o contrato — inclusive o da impressão, que é o caminho do
   PDF.
 
+## src/powerpoint/stage.ts · src/powerpoint/edicao/geometria.ts · src/powerpoint/edicao/texto.ts
+
+### 2026-10-14 · texto da forma · o clique no texto é do texto (e o mover fica na beirada)
+- **Local:** `aoPressionar` (o ramo "clique numa forma", depois do Shift/Ctrl), `desenharSelecao`,
+  `aoDuploClique`, `afastamentoPt`; em `geometria.ts`, `pertoDaBorda` (nova); em `texto.ts`,
+  `temTexto` (nova); a constante `BANDA_BEIRADA_PX`
+- **Linha:** `+ if (jaSelecionada && ctx.selecao.length === 1 && … && alvo.closest(".pp-shape-text")
+  && temTexto(forma.paras) && !pertoDaBorda(paraPt(forma.box, ctx.dim), this.pontoEmPt(e, ctx.dim),
+  this.pxEmPt(ctx.dim, BANDA_BEIRADA_PX))) { this.hooks.aoEditarTexto(forma.id, { x: e.clientX,
+  y: e.clientY }); return; }` (sem `preventDefault` de propósito) · `aoEditarTexto` ganhou o
+  `ponto` · `aoDuploClique`: `+ if (ctx.editando === id) return;` e o ponto no hook · `desenharSelecao`:
+  `+ el.classList.toggle("pp-texto-um", sel.length === 1 && temTexto(sel[0].paras) && !sel[0].bloqueada)`
+  · `afastamentoPt` virou `pxEmPt(dim, 9)` (o `pxEmPt` é o novo; o piso sem largura medida continua 6)
+- **Porquê:** o relato com print ("não consigo selecionar texto pois quando tento selecionar o texto
+  ele arrasta") — o clique dentro da forma SEMPRE caía no ramo do `mover` e o texto só era
+  alcançável por **duplo clique**; e o duplo clique nativo **não chega**: o `preventDefault()` do
+  `pointerdown` engole os eventos de mouse derivados (mousedown/click/dblclick) — o próprio código
+  já sabia disso (as alças de canto detectam o duplo clique à mão, "o evento nativo se perde") e
+  faltava o mesmo cuidado no texto. Agora o clique no texto de uma forma **escolhida** entra na
+  edição — e como **não** se chama `preventDefault`, o `mousedown` de compatibilidade cai no
+  `contenteditable` recém-criado e a **seleção nativa segue no mesmo gesto** (quando não segue, o
+  caret já está onde o ponteiro clicou e o arrasto seguinte seleciona). O `mover` não sumiu: fica na
+  **beirada** da forma (a faixa de `BANDA_BEIRADA_PX` = 6 px por dentro do contorno — `pertoDaBorda`
+  é pura e testada), o primeiro arrasto de uma forma **não escolhida** continua movendo e, com
+  **várias** formas escolhidas (grupo), o arrasto continua movendo o conjunto — a regra vale só na
+  escolha de UMA. O `\u200b` que segura o parágrafo vazio não conta como texto (`temTexto`): caixa
+  vazia continua se movendo por qualquer ponto. O cursor acompanha (`pp-texto-um` no `.pp-slide`):
+  sem escolha (ou com várias) é `move`, com uma escolhida e com texto é `text`.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · texto da forma · o caret vai onde o ponteiro clicou
+- **Local:** `entrarEdicao` (o terceiro parâmetro `ponto`) e a ponte da fita (`aoEditarTexto`)
+- **Linha:** `aoEditarTexto: (id) => this.entrarEdicao(id)` → `(id, ponto) => this.entrarEdicao(id,
+  undefined, ponto)` · o caret: `+ const pos = ponto ? document.caretPositionFromPoint(ponto.x,
+  ponto.y) : null; if (pos && rt.contains(pos.offsetNode)) { faixa.setStart(pos.offsetNode,
+  pos.offset); faixa.collapse(true); } else { … collapse(false) }` (o `selectNodeContents` +
+  `collapse(false)` era o único caminho: o caret caía sempre no FIM do texto)
+- **Porquê:** o gesto novo (clicar no texto e arrastar para selecionar) precisa do caret **no ponto
+  do clique** — sem isso o cursor pularia para o fim do texto e a seleção começaria no lugar errado.
+  O `rt.contains(pos.offsetNode)` é a guarda de quem clicou fora do texto em edição (o
+  `caretPositionFromPoint` devolve a posição mais próxima, que pode cair em outro nó): nesse caso o
+  caminho antigo (fim do texto) continua. Vale também para o **duplo clique** (o hook passou a
+  mandar o ponto) e para as **células de tabela** (o `rt` é a célula em edição — o caret vai na
+  célula clicada).
+
+## src/styles/powerpoint.css
+
+### 2026-10-14 · texto da forma · o cursor diz quem manda em cada estado
+- **Local:** `.pp-shape-text.pp-rt` e a regra nova logo abaixo
+- **Linha:** `cursor: text` → `cursor: move` no estado base · `+ .pp-slide.pp-texto-um
+  .pp-shape.selected .pp-shape-text.pp-rt { cursor: text; }`
+- **Porquê:** o cursor prometia "texto" numa forma **não escolhida**, onde arrastar **move** (a
+  promessa era falsa desde sempre); agora ele acompanha a regra do palco: sem escolha (ou com
+  várias) → `move`; com **uma** forma escolhida e com texto → `text` (é o estado em que o arrasto
+  seleciona o texto). A classe `pp-texto-um` sai do palco, onde a condição é a mesma do gesto — uma
+  regra só, sem CSS adivinhando o estado.
+
+## scripts/testar-edicao-pptx.mjs · scripts/testar-layout.mts
+
+### 2026-10-14 · texto da forma · 10 verificações puras + 6 de contrato
+- **Local:** o bloco "beirada da forma (mover) x texto (selecionar)" e a seção "PowerPoint: o texto
+  da forma escolhida é do texto (e o mover fica na beirada)"
+- **Linha:** `+ 8 verificações de pertoDaBorda` (meio, os quatro lados, os 7 pt que já são texto, o
+  contorno exato e o fora da caixa) e `+ 2 de temTexto` (vazio/`\u200b`/texto de verdade) ·
+  `+ 6 de layout` (a regra no `aoPressionar`, a ausência do `preventDefault`, a beirada com
+  `BANDA_BEIRADA_PX`, o caret no `caretPositionFromPoint`, a guarda do duplo clique e o par de
+  cursores com a classe do palco)
+- **Porquê:** a conta da beirada é o que decide entre mover e selecionar — é pura e cabe no teste;
+  o resto é contrato (o `preventDefault`, o caret e o cursor não aparecem em teste de unidade, mas
+  são o gesto inteiro). Sem eles, alguém "simplifica" a regra de volta ao `mover` e o defeito
+  volta igual.
+
 ---
 
 ## Próximos registros

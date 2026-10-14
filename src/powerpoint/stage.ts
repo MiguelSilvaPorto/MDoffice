@@ -11,6 +11,7 @@ import {
   envolventeDe,
   normalizarAngulo,
   paraPt,
+  pertoDaBorda,
   redimensionar,
   seCruzam,
   type Alca,
@@ -20,11 +21,14 @@ import {
 import type { Animacao, Lado, Shape, ShapeBox } from "./schema";
 import { CANTO_ROTULO, CANTOS, cantosDe, valoresComSelecao, type Canto } from "./edicao/formato";
 import { alvoDaConexao, bolinhaDaConexao } from "./edicao/ligacoes";
+import { temTexto } from "./edicao/texto";
 
 const ZOOM_MIN = 40;
 /** Até 800%: a lâmina é HTML (vetorial), então ampliar não perde nitidez. */
 const ZOOM_MAX = 800;
 const ZOOM_PASSO = 10;
+/** Faixa (px na tela) da beirada da forma que agarra para mover: por dentro dela, o clique é do texto. */
+const BANDA_BEIRADA_PX = 6;
 
 /**
  * Passo do zoom por clique/roda/atalho: cresce com o nível, como nas pranchetas de
@@ -79,8 +83,8 @@ export interface StageHooks {
   aoSelecionar: (ids: string[]) => void;
   /** formas mudaram de caixa/rotação; `final` = soltou o mouse; `inicio` = guarda o estado anterior para desfazer */
   aoTransformar: (patches: Map<string, Partial<Shape>>, fase: "inicio" | "meio" | "fim") => void;
-  /** duplo clique numa forma (entrar no texto) */
-  aoEditarTexto: (id: string) => void;
+  /** duplo clique numa forma (entrar no texto); `ponto` = onde o ponteiro clicou (o caret vai lá) */
+  aoEditarTexto: (id: string, ponto?: { x: number; y: number }) => void;
   /** terminou de arrastar com uma ferramenta de criação */
   aoCriar: (criacao: { box: ShapeBox; clique: boolean; x0: number; y0: number; x1: number; y1: number }) => void;
   /** Ctrl+arrastar: duplica a seleção e devolve os ids das cópias */
@@ -251,6 +255,9 @@ export class Stage {
     el.querySelectorAll(".pp-sel, .pp-guia, .pp-marquee, .pp-celsel, .pp-selo, .pp-lig-ponto").forEach((n) => n.remove());
     const ctx = this.hooks.contexto();
     const sel = ctx.shapes.filter((s) => ctx.selecao.includes(s.id));
+    // O cursor do texto: com UMA forma escolhida e com texto, o clique no texto é do texto (ver
+    // aoPressionar) — e o cursor diz isso; sem escolha ou com várias, pegar a forma é mover.
+    el.classList.toggle("pp-texto-um", sel.length === 1 && temTexto(sel[0].paras) && !sel[0].bloqueada);
     const html: string[] = [];
     const caixa = (b: ShapeBox, rot: number, extra: string, alcas: boolean, dentro = "", dono?: string) => {
       // `dono`: as alças pertencem a UMA forma (as 4 de canto, menores) — arrastar
@@ -607,6 +614,28 @@ export class Stage {
       ids = ctx.comGrupos([forma.id]);
       this.hooks.aoSelecionar(ids);
     }
+
+    // Clique no TEXTO de uma forma já escolhida: o gesto é do texto — entra na edição e o
+    // arrasto seleciona (sem preventDefault, para o navegador seguir com a seleção nativa).
+    // É o que faltava: sem isso, arrastar por cima do texto movia a forma e o texto ficava
+    // inalcançável (a edição só abria por duplo clique, e o duplo clique nativo não sobrevive
+    // ao preventDefault daqui). O mover fica na BEIRADA da forma (`BANDA_BEIRADA_PX`) e, com
+    // várias formas escolhidas, o arrasto continua movendo o conjunto.
+    if (
+      jaSelecionada &&
+      ctx.selecao.length === 1 &&
+      !e.shiftKey &&
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !forma.bloqueada &&
+      alvo.closest(".pp-shape-text") &&
+      temTexto(forma.paras) &&
+      !pertoDaBorda(paraPt(forma.box, ctx.dim), this.pontoEmPt(e, ctx.dim), this.pxEmPt(ctx.dim, BANDA_BEIRADA_PX))
+    ) {
+      this.hooks.aoEditarTexto(forma.id, { x: e.clientX, y: e.clientY });
+      return;
+    }
+
     // começa a arrastar tudo que está selecionado
     const ctx2 = this.hooks.contexto();
     const mover = ctx2.shapes.filter((s) => ctx2.selecao.includes(s.id) && !s.bloqueada);
@@ -630,10 +659,15 @@ export class Stage {
     return { x: (p.x / 100) * dim.w, y: (p.y / 100) * dim.h };
   }
 
+  /** `px` na tela -> pt da lâmina (a lâmina encolhe com o zoom, então 1 pt não é 1 px). */
+  private pxEmPt(dim: Dim, px: number): number {
+    const larguraPx = this.slideEl?.getBoundingClientRect().width ?? 0;
+    return larguraPx > 0 ? (px * dim.w) / larguraPx : px / 1.5;
+  }
+
   /** Afastamento das alças de canto, em pt: ~9 px na tela, igual em qualquer zoom. */
   private afastamentoPt(dim: Dim): number {
-    const larguraPx = this.slideEl?.getBoundingClientRect().width ?? 0;
-    return larguraPx > 0 ? (9 * dim.w) / larguraPx : 6;
+    return this.pxEmPt(dim, 9);
   }
 
   /** Pontos em % da lâmina -> pt (para o reconhecimento e a forma). */
@@ -945,6 +979,9 @@ export class Stage {
     const ctx = this.hooks.contexto();
     const s = ctx.shapes.find((x) => x.id === id);
     if (!s || (s.fixa && !ctx.fixasSelecionaveis)) return;
-    this.hooks.aoEditarTexto(id);
+    // Já está no texto dessa forma: o duplo clique aqui é para escolher a palavra — redesenhar
+    // agora (com outra entrada na edição) apagaria a seleção que o navegador acabou de fazer.
+    if (ctx.editando === id) return;
+    this.hooks.aoEditarTexto(id, { x: e.clientX, y: e.clientY });
   }
 }

@@ -416,6 +416,48 @@ checa(
   "cada forma ganharia haste de girar e a tela ficaria poluída"
 );
 
+// ---------------------------------------------------------------- PowerPoint: texto x mover
+
+console.log("\nPowerPoint: o texto da forma escolhida é do texto (e o mover fica na beirada)");
+{
+  const textoCss = ler("src/styles/powerpoint.css");
+  checa(
+    "clicar no texto de uma forma escolhida entra na edição (o arrasto seleciona)",
+    /if \(\s*jaSelecionada &&\s*ctx\.selecao\.length === 1 &&[\s\S]*?alvo\.closest\("\.pp-shape-text"\) &&\s*temTexto\(forma\.paras\) &&[\s\S]*?\) \{\s*this\.hooks\.aoEditarTexto\(forma\.id, \{ x: e\.clientX, y: e\.clientY \}\);\s*return;\s*\}/.test(palcoPpt),
+    "sem isso o arrasto por cima do texto volta a mover a forma (o relato)"
+  );
+  checa(
+    "a regra é a do gesto: nada de preventDefault (o navegador segue com a seleção)",
+    !/aoEditarTexto\(forma\.id, \{ x: e\.clientX, y: e\.clientY \}\);\s*e\.preventDefault/.test(palcoPpt),
+    "com preventDefault a seleção nativa do texto não começaria"
+  );
+  checa(
+    "o mover fica na beirada da forma (a faixa de BANDA_BEIRADA_PX)",
+    /pertoDaBorda\(paraPt\(forma\.box, ctx\.dim\), this\.pontoEmPt\(e, ctx\.dim\), this\.pxEmPt\(ctx\.dim, BANDA_BEIRADA_PX\)\)/.test(palcoPpt) &&
+      /const BANDA_BEIRADA_PX = 6;/.test(palcoPpt) &&
+      /export function pertoDaBorda\(/.test(ler("src/powerpoint/edicao/geometria.ts"))
+  );
+  checa(
+    "o caret vai onde o ponteiro clicou (e sem ponto, para o fim, como antes)",
+    /aoEditarTexto: \(id, ponto\) => this\.entrarEdicao\(id, undefined, ponto\)/.test(ppt) &&
+      /document\.caretPositionFromPoint\(ponto\.x, ponto\.y\)/.test(ppt) &&
+      /faixa\.selectNodeContents\(rt\);\s*faixa\.collapse\(false\);/.test(ppt),
+    "o caret cairia sempre no fim do texto"
+  );
+  checa(
+    "duplo clique dentro da edição não redesenha (a palavra escolhida fica)",
+    /if \(ctx\.editando === id\) return;/.test(palcoPpt),
+    "o redesenho apagaria a seleção que o navegador acabou de fazer"
+  );
+  checa(
+    "o cursor diz quem manda em cada estado",
+    /\.pp-shape-text\.pp-rt \{[\s\S]*?cursor: move;/.test(textoCss) &&
+      /\.pp-slide\.pp-texto-um \.pp-shape\.selected \.pp-shape-text\.pp-rt \{\s*cursor: text;\s*\}/.test(textoCss) &&
+      /classList\.toggle\("pp-texto-um", sel\.length === 1 && temTexto\(sel\[0\]\.paras\) && !sel\[0\]\.bloqueada\);/.test(palcoPpt),
+    "sem escolha (ou com várias) pegar a forma é mover; com uma e com texto, o texto é do texto"
+  );
+}
+
 // 6. Boas-vindas: o logo é o ÍCONE DO APP (o mesmo da janela), não o "M↓" num quadradinho.
 console.log("\npasta padrão dos documentos (Documentos/mdOffice com as quatro subpastas)");
 {

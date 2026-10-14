@@ -418,6 +418,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   modelo** guarda o estilo do fundo do deck junto, então o modelo criado por você reproduz o
   gradiente em qualquer apresentação.
 
+- **Texto dentro da forma: dá para selecionar — e o mover ficou na beirada**: com a forma **escolhida**, arrastar por cima do **texto** movia a forma ✗, e o texto ficava inalcançável: a edição só abria por **duplo clique**, e o duplo clique nativo morria no `preventDefault` do ponteiro (os eventos de mouse derivados não saem). Agora o clique no texto de uma forma **escolhida** entra na edição e o **arrasto seleciona o texto** ✓ — o **caret cai onde o ponteiro clicou** e o duplo clique escolhe a palavra (o redesenho não apaga mais a seleção). O **mover** fica na **beirada** da forma (a faixa de ~6 px por dentro do contorno) e, com **várias** formas escolhidas, o arrasto continua movendo o conjunto; sem a forma escolhida, o primeiro arrasto pega e move, como sempre. O **cursor** troca (`mover` ↔ `texto`) para dizer quem manda em cada estado.
+
 - **Estilos de cor (R4 — o fundo da lâmina)**: as mesmas famílias agora pintam o **fundo**: no
   popover **Formatar fundo** (e na seção Fundo do painel quando nada está selecionado) entrou o
   **"Fundo com estilo"** com os cartões das famílias — um clique dá ao fundo o **gradiente da

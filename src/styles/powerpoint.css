@@ -918,8 +918,14 @@ body.home-open #powerpoint-pane {
   white-space: pre-wrap;
   word-break: normal;
   overflow-wrap: break-word;
-  cursor: text;
+  cursor: move;
   font-synthesis: weight style;
+}
+
+/* Com UMA forma escolhida e com texto, o clique no texto é do texto (ver o palco): o cursor
+   diz isso. Sem escolha (ou com várias), pegar a forma é mover — daí o `move` acima. */
+.pp-slide.pp-texto-um .pp-shape.selected .pp-shape-text.pp-rt {
+  cursor: text;
 }
 
 .pp-shape-text.pp-rt > p {

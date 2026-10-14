@@ -48,6 +48,12 @@ avisado ao abrir (nunca some em silêncio).
   (máscara) e tabelas. No `.pptx` o app grava a forma **nativa** mais fiel (Retângulo arredondado,
   um canto, par de cima/baixo ou diagonais) e avisa quando o arranjo só existe como **forma livre**
   — que desenha igual, como o “Combinar formas” do PowerPoint.
+- **Texto dentro da forma**: com a forma **escolhida**, clicar no texto **entra na edição** e o
+  arrasto **seleciona o texto** (o caret cai onde o ponteiro clicou; o duplo clique escolhe a
+  palavra). O **mover** fica na **beirada** da forma — a faixa de ~6 px por dentro do contorno — e,
+  com **várias** formas escolhidas, o arrasto continua movendo o conjunto; sem a forma escolhida, o
+  primeiro arrasto pega e move, como sempre. O **cursor** troca (`mover` ↔ `texto`) para dizer quem
+  manda em cada estado.
 - **Texto formatado por trecho**: negrito/itálico/sublinhado/riscado, marca-texto,
   sobrescrito, versalete, espaçamento, caixa alta/baixa, cor e limpar formatação.
 - **Fonte e tamanho como no PowerPoint**: o campo da fita mostra o que o texto **tem** — mesmo
