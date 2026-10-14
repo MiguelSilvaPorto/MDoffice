@@ -8751,3 +8751,50 @@ antigas quando fizer sentido.
   ela promete (a garantia de que o menu nunca cobre a âncora). Completar a entrada já promovida é
   edição de documentação do que **está** na `main`: não passa por "Não adicionado" nem precisa de
   nova promoção.
+
+## .git (histórico) · public/ngrams
+
+### 2026-10-14 · modelo do corretor · os n-gramas saem do versionamento e do histórico
+- **Local:** a pasta `public/ngrams` (os quatro JSONs) — operação no repositório, fora do fluxo de
+  worktree (reescrita de histórico não tem como passar por worktree: todas a compartilham)
+- **Linha:** `git rm --cached public/ngrams/*.json` + `+ public/ngrams/*.json` no `.gitignore` +
+  `public/ngrams/LEIA.md` (novo) · histórico da `main` reescrito com `git filter-repo --invert-paths`
+  num **clone espelho isolado** e `git push --force-with-lease` · `git gc` no repositório
+- **Porquê:** os JSONs são **regeneráveis** (`npm run corpus`) e cada regeneração reescreve o
+  arquivo inteiro — 4 commits de n-gramas deixaram ~14 MB no histórico e a próxima regeneração
+  incharia de novo. Fora do git eles seguem o padrão que o repositório já usa para dado pesado
+  (`public/ort`, `public/modelos`, `public/dicionario`): ignorados + ligados por *junction* nas
+  worktrees. Decisões que valem a leitura: a reescrita rodou num **clone espelho** porque a `main`
+  anda a cada poucos minutos (o primeiro `filter-branch` na cópia principal perdeu a corrida e
+  recusou atualizar a ref — a checagem dele funcionou); o push foi **protegido por lease** (falha
+  se o GitHub tiver andado, em vez de apagar commit de outra sessão) e a sincronização da cópia
+  local foi conferida contra o snapshot; e a reescrita cobriu **só a `main`** de propósito — as
+  branches abertas das outras sessões continuam válidas e, quando fecharem (rebase na `main`
+  limpa), os blobs antigos ficam inalcançáveis e o próximo `gc` os descarta (`size-pack` de
+  11,5 MB → alvo ~4,5 MB, o tamanho do clone já limpo). Backup antes de tudo:
+  `%TEMP%\opencode\mdcreator-backup-20261014-1752.bundle` (todos os refs) e uma cópia dos JSONs
+  em `%TEMP%\opencode\ngrams-20261014-1752`.
+
+## tools/worktrees/_comum.ps1 · limpar-agendada.ps1
+
+### 2026-10-14 · modelo do corretor · a pasta dos n-gramas entra nas ligações
+- **Local:** `$script:PastasLigadas` (as duas listas — a que liga, na abertura, e a que desliga, na
+  limpeza)
+- **Linha:** `... 'public\dicionario')` → `... 'public\dicionario', 'public\ngrams')`
+- **Porquê:** com os JSONs fora do git, uma worktree nova nasceria **sem o modelo** (o corretor
+  perderia a qualidade e alguém "consertaria" commitando os arquivos de volta — exatamente o que a
+  limpeza desfaz). A pasta entra na mesma lista do `public/ort` e do `public/modelos`: a worktree
+  compartilha os arquivos da cópia principal, e a limpeza remove a ligação (nunca o alvo — o
+  `limpar.ps1` só apaga links). As duas listas andam juntas de propósito: a de limpeza não lê a da
+  abertura.
+
+## scripts/regerar-ngrams.mjs
+
+### 2026-10-14 · modelo do corretor · o comentário do rollback
+- **Local:** o cabeçalho do script (o parágrafo do harness)
+- **Linha:** `dá para voltar o modelo com `git checkout -- public/ngrams`` → `dá para voltar o modelo
+  guardando uma cópia de `public/ngrams` antes (os JSONs não são versionados; ver o LEIA.md)`
+- **Porquê:** o `git checkout -- public/ngrams` era o rollback de quando os JSONs eram versionados;
+  depois da limpeza ele não existe mais (o comando devolveria "pathspec" vazio ou erro), e um
+  roteiro datado é pior que nenhum: quem regenerar e não gostar precisa saber que a cópia é o
+  backup. O `LEIA.md` da pasta é o documento canônico (o comentário só aponta para ele).

@@ -1296,6 +1296,20 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Ferramentas (dev)**
 
+- **O modelo do corretor saiu do git (e o histórico dele foi removido)**: os quatro JSONs
+  (`pt/ctx-pt/freq-pt/syn-pt`, ~9,5 MB) eram versionados e **cada regeneração reescrevia o arquivo
+  inteiro** — 4 commits de n-gramas somavam ~14 MB no histórico. Agora eles moram **fora do git**
+  (como `public/ort` e `public/modelos` já faziam): o `.gitignore` ignora os JSONs, um `LEIA.md` na
+  pasta explica a geração, as worktrees **ligam a pasta à cópia principal** (`abrir.ps1`) e o
+  `regerar-ngrams.mjs` passou a dizer para guardar uma cópia antes de regenerar (não há mais
+  `git checkout --`). O **histórico da `main` foi reescrito** com `git filter-repo` (num clone
+  isolado; os JSONs saíram de todos os commits) e o `main` do GitHub foi atualizado com **push
+  forçado protegido por lease** — o commit da limpeza está em **Adicionado** porque a operação roda
+  direto na `main`. De quebra, o repositório ganhou o primeiro **`git gc`** em muito tempo:
+  o `.git` caiu de **111 MB (objetos soltos, sem pack) para 11,5 MB**. As branches de tarefa
+  abertas ainda seguram os blobs antigos (a `main` delas é a antiga); quando fecharem (rebase na
+  `main` limpa) eles ficam inalcançáveis e o próximo `gc` os descarta — o alvo é ~4,5 MB.
+
 - **`test:excel` está quebrado em checkout limpo (achado, não consertado)**: o segundo teste (`testar-grade-excel.mjs`) compila o motor com `tsc` sem os tipos do `?raw` (erros `TS2307` sobre `.toml?raw`/`.css?raw`) e, quando compila, o stub de DOM não cobre o seletor novo do app (`melhorarSelects` explode) ✗. Na cópia principal ele passa por acaso: o `temp/` está compilado de antes ✗. Fica registrado para quem for consertar (é teste, não app).
 - **Marcador de conflito no CHANGELOG (limpeza)**: o fechamento da tarefa do ícone das boas-vindas resolveu um conflito de rebase e deixou a **linha de fecho** (`>>>>>>> 074695b …`) no arquivo — o `git diff --check` acusa, mas nem o `fechar.ps1` nem os testes olham o CHANGELOG. A linha saiu e o `git grep` do repositório inteiro ficou **limpo** (era o único marcador). Fica a lição: ao resolver conflito, conferir os **três** marcadores (`<<<<<<<`, `=======`, `>>>>>>>`) e rodar `git diff --check` antes de `git add`.
 - **Teste da formalização** (`npm run test:formalizar`, 47 verificações): prova o plano de trocas de ponta a ponta — o que entra (catálogo + janelas de frase, com classe e risco), o que **não** entra (citação, código, texto já formal), a aplicação (ordem, sobreposição, limites para a prévia pintar), a queda do MIP e a **janela inteira** num DOM de mentira (abre, pinta, decide e aplica); prende ainda os dois consertos do catálogo e confere que toda classe que a janela usa existe no CSS.

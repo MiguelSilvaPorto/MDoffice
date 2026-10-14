@@ -5,7 +5,7 @@
 
 # Pastas que a worktree enxerga por JUNCTION (link para a copia principal) em vez de copia:
 # dependencias e arquivos pesados que o git ignora e que o app precisa para rodar.
-$script:PastasLigadas = @('node_modules', 'public\modelos', 'public\ort', 'public\dicionario')
+$script:PastasLigadas = @('node_modules', 'public\modelos', 'public\ort', 'public\dicionario', 'public\ngrams')
 
 # Executa um comando externo sem morrer com o stderr do PS 5.1 e checa o exit code.
 function Exec {

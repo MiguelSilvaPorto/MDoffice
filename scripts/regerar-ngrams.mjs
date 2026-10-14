@@ -6,7 +6,7 @@
 //
 // Depois de rodar, o juiz é o harness: `node scripts/avaliar-correcao.mts` (com e sem
 // `--sem-modelo`) e `npm run test:correcao`; se os números piorarem, dá para voltar o modelo
-// com `git checkout -- public/ngrams`.
+// guardando uma cópia de `public/ngrams` antes (os JSONs não são versionados; ver o LEIA.md).
 import { spawnSync } from "node:child_process";
 import { statSync } from "node:fs";
 import { dirname, join } from "node:path";

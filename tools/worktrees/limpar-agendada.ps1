@@ -35,7 +35,7 @@ param(
 $ErrorActionPreference = 'Continue'
 $script:LeitorCarregado = $false
 $script:Avisados = @{}
-$script:PastasLigadas = @('node_modules', 'public\modelos', 'public\ort', 'public\dicionario')
+$script:PastasLigadas = @('node_modules', 'public\modelos', 'public\ort', 'public\dicionario', 'public\ngrams')
 
 # -- localiza a copia principal ------------------------------------------------
 if (-not $Principal) {
