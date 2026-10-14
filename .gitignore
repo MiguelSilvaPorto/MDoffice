@@ -18,3 +18,6 @@ public/modelos/
 
 # worktrees de tarefas (tools/worktrees)
 .worktrees/
+
+# corpus de texto do build dos n-gramas (o manifesto fica em scripts/corpus-wikipedia.txt)
+corpus/

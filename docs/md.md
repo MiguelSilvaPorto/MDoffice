@@ -172,7 +172,10 @@ dentro do documento e contar com uma escrita assistida de português que roda of
 
 - A continuação aparece em cinza depois do cursor: **Tab** aceita tudo, **Alt+→** palavra por
   palavra, **Alt+↓/↑** alternam até 3 opções e **Esc** descarta. Vem de três fontes: modelo
-  do português embutido, o próprio documento e uma memória dos seus textos recentes.
+  do português embutido, o próprio documento e uma memória dos seus textos recentes. O modelo
+  embutido é feito de **contagens** de palavras e sequências (1–3 palavras) de um corpus da
+  **Wikipédia em português** (CC BY-SA 4.0) — nenhum trecho de texto é copiado para o app, e o
+  corpus pode ser refeito com `scripts/baixar-corpus.mjs` + `scripts/build-ngrams.mjs`.
 - **IA ajuda nas sugestões** (Configurações): numa pausa, a IA local escolhe entre candidatos
   o que combina com a frase — só para completar palavra e só quando tem confiança.
 - **Aprende com você**: aceitar e recusar ajustam a confiança — recusar uma correção do

@@ -318,6 +318,32 @@ conservadora: fica pronta para promover quando o contexto for decisivo de verdad
 atrapalha. O caso “media” → “média” segue fora de alcance **por desenho** (a razão pelo lado
 direito é 0,15 — o modelo não sustenta a troca), e é o tipo de caso em que acusar seria chute.
 
+### Sétima medição — o corpus novo da Wikipédia (resultado negativo, e por quê)
+
+O F4 seguinte tentou atacar a raiz do problema: o modelo vinha de um corpus que ninguém
+conseguia refazer, com buracos (“**severidade**” fora do vocabulário, “**mesh**” dentro). A
+cadeia agora é reproduzível (`npm run corpus`: baixa os artigos **destacados e bons** da
+Wikipédia PT — CC BY-SA 4.0 —, conta os n-gramas e deriva o contexto e a frequência). Com
+**30 MB / 718 artigos**, o modelo ficou **menor** (4,8 MB contra 6,9 MB), o vocabulário com as
+mesmas 30.003 palavras (agora com “severidade” e sem “mesh”) — e o harness disse **não**:
+
+| métrica | modelo antigo | Wikipédia 30 MB |
+| --- | ---: | ---: |
+| r@1 total | **85%** | 80% ✗ |
+| r@3 total | 88% | 84% ✗ |
+| precisão do 1º lugar | 91% | 88% ✗ |
+| auto% / acerto do `best` | 83% / 94% | 80% / 93% ✗ |
+| falsos positivos / 1000 palavras | **0,00** | 1,64 ✗ |
+| payload do worker | 7,5 MB | 7,3 MB |
+
+Caso a caso: **6 ganhos** (plural em “ss”/“j”: “fixass” → fixas, “checajens” → checagens) e
+**19 perdas** — quase todas em palavras do dia a dia do app (“simplifiçar”, “cliçar” →
+clicar, “segurass” → seguras, “porcentajens” → porcentagens): a frequência da enciclopédia
+não é a frequência de quem escreve documentação técnica. **A lição:** o corpus precisa ser do
+**registro** dos textos do app (técnico/formal), não enciclopédico — e provavelmente **misto**
+(docs do projeto + web técnica + Wikipédia para o fundo). O modelo antigo ficou no lugar, e o
+próximo passo é `node scripts/regerar-ngrams.mjs` com um corpus assim; o harness é quem decide.
+
 ---
 
 *Números do commit `120cc9e`. Se um rebase trouxer mudanças ao corretor, esta linha de base

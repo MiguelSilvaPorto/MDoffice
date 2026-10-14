@@ -4788,6 +4788,52 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** as três recusas cobrem exatamente as variantes que o modelo não representa — se
   aceitasse, o arquivo reexportado sairia com a variante errada.
 
+## scripts/baixar-corpus.mjs (novo) · scripts/corpus-texto.mjs (novo)
+
+### 2026-10-14 · corpus dos n-gramas · o baixador que refaz o corpus
+- **Local:** `baixar-corpus.mjs` inteiro (`buscar`, `titulosDaWikipedida`, `arquivoDe`, o laço com
+  trabalhadores) e `corpus-texto.mjs` (`textoDoHtml`)
+- **Linha:** `novo`
+- **Porquê:** o modelo de sugestões (`public/ngrams/pt.json`) veio de um corpus que **ninguém
+  consegue refazer** — não há os textos no repositório nem o registro de onde vieram — e ele é
+  pequeno demais para o trabalho de contexto do F4 (a palavra **“severidade” não existe** no
+  vocabulário, e “mesh” existe). O baixador traz artigos **destacados e bons** da Wikipédia em
+  português (CC BY-SA 4.0; só o *texto* vai para `corpus/`, fora do Git, e o modelo guarda
+  **contagens**, nunca trechos): lista de títulos pela API (`categorymembers`), texto pela
+  **REST** (`/api/rest_v1/page/html/…`), e um limpador que deixa a prosa e tira tabela (o
+  infobox é tabela), figura, nota de rodapé, nota de edição e o rabo de referências.
+- **Linha (por que a REST e não `prop=extracts`):** a API de extratos devolve **um** extrato
+  completo por pedido (`exlimit` só vale junto com `exintro`) — em lote, vinha quase tudo vazio
+  e o rendimento era péssimo (0,17 MB/min com ~90% de páginas descartadas). A REST devolve o
+  artigo inteiro por pedido (~2–8 s, renderizado no servidor) e, com 4 pedidos em paralelo, o
+  corpus anda a ~0,6 MB/min.
+- **Linha (retomada):** o alvo `--mb` é o **total no disco**, cada artigo já baixado é pulado
+  pelo título sanitizado no nome do arquivo, e o manifesto (`scripts/corpus-wikipedia.txt`) é
+  versionado — é ele que permite o redo determinístico (`--titulos=...`).
+- **Porquê (o limpador em módulo próprio):** `textoDoHtml` ficava dentro do `baixar-corpus.mjs`,
+  que é um **CLI** — importá-lo para testar executaria o download inteiro (aconteceu: o teste
+  disparou um download). Função pura em `corpus-texto.mjs`, testável sem rede.
+
+## scripts/regerar-ngrams.mjs (novo) · scripts/build-ngrams.mjs · package.json
+
+### 2026-10-14 · corpus dos n-gramas · a cadeia num comando e a pasta como corpus
+- **Local:** `regerar-ngrams.mjs` (novo) e, no `build-ngrams.mjs`, a leitura das entradas
+- **Linha:** `+ as quatro etapas (baixar → contar → gerar-contexto → gerar-frequência)` ·
+  `- const [out, ...inputs]` → `+ const [out, ...entradas]` com `flatMap` que **expande pasta em *.txt`
+- **Porquê:** com o corpus em mais de mil arquivos, a linha de comando estourava o limite do
+  Windows — e a sequência de quatro comandos era fácil de errar. Agora: `npm run corpus`
+  (retomável), com o resumo dos tamanhos no fim e o lembrete do harness. `npm run test:corpus`
+  prende o limpador (14 verificações): prosa fica, tabela/referência/nota de edição saem,
+  entidade vira texto, o reboque de “Ver também” é cortado e o corpus fica fora do Git.
+
+## docs/md.md
+
+### 2026-10-14 · corpus dos n-gramas · de onde vem o modelo (e a licença)
+- **Local:** “Sugestões enquanto você digita”
+- **Linha:** `+ “O modelo embutido é feito de contagens … de um corpus da Wikipédia em português (CC BY-SA 4.0) — nenhum trecho é copiado … e o corpus pode ser refeito com scripts/baixar-corpus.mjs + scripts/build-ngrams.mjs.”`
+- **Porquê:** o modelo vinha sem procedência nem licença no documento do módulo. O corpus novo é
+  CC BY-SA e precisa de atribuição — que agora está onde o usuário lê o que o app usa.
+
 ---
 
 ## Próximos registros

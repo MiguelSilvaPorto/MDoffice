@@ -1,17 +1,29 @@
 // Gera o modelo de idioma da sugestão de palavras (public/ngrams/pt.json) a partir de textos em português.
 // Só guarda CONTAGENS de palavras e sequências de 2–3 palavras (nenhum texto do corpus é copiado).
 //
-// Uso:  node scripts/build-ngrams.mjs <saida.json> <corpus1.txt> [corpus2.txt ...] [--holdout=20 --test=<teste.txt>]
+// Uso:  node scripts/build-ngrams.mjs <saida.json> <corpus1.txt|pasta> [corpus2.txt ...] [--holdout=20 --test=<teste.txt>]
 //   --holdout=N  separa 1 parágrafo a cada N para um arquivo de teste (--test=...), fora do modelo
 //   --vocab=N    tamanho do vocabulário (padrão 22000)
 //   --trimin=N   descarta contextos de trigrama com menos de N ocorrências (padrão 4)
+//
+// Uma PASTA vale como o conjunto dos `*.txt` dentro dela (o corpus baixado por
+// `baixar-corpus.mjs` passa de mil arquivos: na linha de comando não caberia).
 import fs from "node:fs";
+import { join } from "node:path";
 
 const args = process.argv.slice(2);
 const opt = Object.fromEntries(args.filter((a) => a.startsWith("--")).map((a) => a.slice(2).split("=")));
-const [out, ...inputs] = args.filter((a) => !a.startsWith("--"));
+const [out, ...entradas] = args.filter((a) => !a.startsWith("--"));
+const inputs = entradas.flatMap((caminho) => {
+  if (!fs.statSync(caminho).isDirectory()) return [caminho];
+  return fs
+    .readdirSync(caminho)
+    .filter((f) => f.endsWith(".txt"))
+    .sort()
+    .map((f) => join(caminho, f));
+});
 if (!out || !inputs.length) {
-  console.error("uso: node scripts/build-ngrams.mjs <saida.json> <corpus.txt...> [--holdout=N --test=arquivo --vocab=N]");
+  console.error("uso: node scripts/build-ngrams.mjs <saida.json> <corpus.txt|pasta> [...] [--holdout=N --test=arquivo --vocab=N]");
   process.exit(1);
 }
 const VOCAB = +(opt.vocab ?? 22000);
