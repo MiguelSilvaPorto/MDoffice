@@ -4333,6 +4333,18 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   quadradinho — ou o arquivo do ícone sumir —, o teste acusa. O `test:layout` já lê arquivos e CSS
   (é o lugar certo para esse tipo de contrato visual).
 
+## CHANGELOG.md
+
+### 2026-10-14 · marcador de conflito · a linha de fecho que ficou no arquivo
+- **Local:** Geral → Adicionado → Frontend, entre a entrada da lista dos seletores e a da formalidade
+- **Linha:** `- >>>>>>> 074695b (fix(ui): boas-vindas com o icone atual do app …)` → removida
+- **Porquê:** ao resolver o conflito do rebase da tarefa do ícone das boas-vindas, os marcadores de
+  abertura e do meio saíram, mas a **linha de fecho** ficou no arquivo e foi para a `main`. Nada no
+  fluxo olha o conteúdo do CHANGELOG (o `fechar.ps1` só exige que o arquivo seja tocado; os testes
+  não leem o changelog), então o defeito passou. Agora o repositório inteiro está limpo
+  (`git grep -E '^(<<<<<<< |=======$|>>>>>>> )'` não acha nada) e a entrada “Ferramentas (dev)”
+  registra a lição: conferir os **três** marcadores e rodar `git diff --check` antes de `git add`.
+
 ---
 
 ## Próximos registros

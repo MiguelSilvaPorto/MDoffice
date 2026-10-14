@@ -570,7 +570,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   (Word, Excel, PowerPoint e Configurações).
 
 - **Boas-vindas com o ícone atual do app**: o cartão “Bem-vindo ao mdOffice” (na pré-visualização e no `F1`) ainda mostrava o **quadradinho roxo com “M↓”** — o logo abandonado — e agora mostra o **ícone do app** (as folhas azul/laranja com a folha branca), na versão **clara ou escura** conforme o tema e a escolha das Configurações (a mesma chave que troca o ícone da janela). O CSS do antigo gradiente saiu, e o `test:layout` passa a prender as três coisas: a imagem do ícone, a escolha claro/escuro e a ausência do quadradinho antigo.
->>>>>>> 074695b (fix(ui): boas-vindas com o icone atual do app (claro/escuro), no lugar do quadradinho M-para-baixo)
 - **Formalidade base (Onda 3)**: o catálogo informal → formal cresceu de **18 para 75 padrões**, agora classificados por **classe** (internetês, contração, muleta, gíria, oralidade, atenuação, redundância e vagueza), com política explícita de **seguro** (o app pode corrigir sozinho — 45 padrões) × **sugestão** (30 padrões, quando a troca depende do sentido) e tom mínimo (neutro × formal). Entraram as **regras de frase por janelas** — “a gente vê que” → “nós vemos”/“vê-se que”, “Aí eu fui” → “Então, eu”/“Em seguida, eu”, “então” repetido, “você vê que” → “observa-se que” e “há três anos atrás” → “há três anos” —, com exclusão de citação (`>`), código, URL, sigla e e-mail. O painel de revisão (F7) passa a mostrar o **MIP** (marcadores informais por 1.000 palavras) antes e depois das correções seguras, a contagem por classe e o trecho/risco de cada marcador.
 
 - **Teste do “entretanto” alinhado ao comportamento decidido**: a adversativa leva só a vírgula de antes (“…, entretanto faltou teste.”), como o corpus já exigia (caso 16, “porém”); a expectativa antiga do teste pedia as duas vírgulas.
@@ -760,6 +759,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Ferramentas (dev)**
 
+- **Marcador de conflito no CHANGELOG (limpeza)**: o fechamento da tarefa do ícone das boas-vindas resolveu um conflito de rebase e deixou a **linha de fecho** (`>>>>>>> 074695b …`) no arquivo — o `git diff --check` acusa, mas nem o `fechar.ps1` nem os testes olham o CHANGELOG. A linha saiu e o `git grep` do repositório inteiro ficou **limpo** (era o único marcador). Fica a lição: ao resolver conflito, conferir os **três** marcadores (`<<<<<<<`, `=======`, `>>>>>>>`) e rodar `git diff --check` antes de `git add`.
 - **Teste da formalização** (`npm run test:formalizar`, 47 verificações): prova o plano de trocas de ponta a ponta — o que entra (catálogo + janelas de frase, com classe e risco), o que **não** entra (citação, código, texto já formal), a aplicação (ordem, sobreposição, limites para a prévia pintar), a queda do MIP e a **janela inteira** num DOM de mentira (abre, pinta, decide e aplica); prende ainda os dois consertos do catálogo e confere que toda classe que a janela usa existe no CSS.
 - Fluxo de **worktrees** obrigatório: `abrir.ps1`, `fechar.ps1`, `limpar.ps1`, `status.ps1`,
   `limpar-agendada.ps1` e proteção opcional da `main`.
