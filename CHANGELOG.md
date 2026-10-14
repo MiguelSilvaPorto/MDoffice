@@ -299,6 +299,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O ajuste da fita do Word agora encolhe de verdade (e do jeito certo)**: arrastar a borda de baixo da fita aplicava **zoom** na faixa inteira — a fonte encolhia junto, ficava ilegível abaixo de ~90% e, na prática, o ajuste “só aumentava” ✗. Agora a fita do Word usa o **mesmo modo das Apresentações**: a escala (`--fita-escala`) move as **métricas** (alturas, ícones, espaçamentos e os cartões de estilo) com **piso de fonte** (11,5 px nos botões, 10 px no rótulo do grupo) — e abaixo de ~88% entra o modo **compacto**, em que os botões grandes deixam de empilhar ícone + nome e viram **uma linha só**, devolvendo a altura que se foi buscar no arrasto. Duplo clique na borda (ou as setas, com a borda em foco) volta ao normal, como antes.
+
+**Frontend**
+
 - **Formalizar no Word (com prévia antes/depois)**: o comando **“Formalizar texto”** (`Ctrl+Alt+F`) agora também atende o documento Word — por um botão novo na fita (**Revisão → Revisão de Texto → Formalizar**) ou pela busca de comandos. Pega a **seleção**; sem seleção, o documento inteiro, e abre a **mesma janela** do Markdown: antes × depois, **MIP** ao vivo, trocas seguras já marcadas e as de sentido com o risco e as alternativas. Cada troca entra **no lugar dela**, numa transação só — o texto em volta e o **formato** dele ficam intactos, e o formato do próprio trecho trocado é mantido (negrito continua negrito) —, e `Ctrl+Z` desfaz tudo de uma vez. O corretor do Word reacende em seguida, já sobre o texto formal.
 - Motor `.docx`: editar o documento direto na folha (sem Markdown) e abrir `.docx` do Word.
 - Folha **A4/Carta** com margens, orientação, cabeçalho, rodapé e “Página X de Y”.

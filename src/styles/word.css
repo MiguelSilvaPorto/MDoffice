@@ -206,16 +206,18 @@ body.settings-open #word-pane {
 .rb-body {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: calc(3px * var(--fita-escala, 1));
   flex: 1;
-  min-height: 52px;
+  /* a altura acompanha o ajuste da fita, com piso para a fileira não sumir */
+  min-height: max(38px, calc(52px * var(--fita-escala, 1)));
 }
 
 .rb-glabel {
-  padding-top: 1px;
+  padding-top: calc(1px * var(--fita-escala, 1));
   color: var(--muted, var(--fg));
   opacity: 0.75;
-  font-size: 10px;
+  /* o rótulo do grupo é o menor texto da fita: acompanha a escala, com piso */
+  font-size: max(10px, calc(10px * var(--fita-escala, 1)));
   text-align: center;
   white-space: nowrap;
 }
@@ -223,14 +225,14 @@ body.settings-open #word-pane {
 .rb-rows {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: calc(4px * var(--fita-escala, 1));
 }
 
 .rb-row,
 .rb-col {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: calc(2px * var(--fita-escala, 1));
 }
 
 .rb-col {
@@ -242,36 +244,63 @@ body.settings-open #word-pane {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  min-width: 28px;
-  height: 28px;
-  padding: 0 6px;
+  gap: calc(5px * var(--fita-escala, 1));
+  min-width: max(24px, calc(28px * var(--fita-escala, 1)));
+  height: max(22px, calc(28px * var(--fita-escala, 1)));
+  padding: 0 calc(6px * var(--fita-escala, 1));
   color: var(--fg);
   background: transparent;
   border: 1px solid transparent;
   border-radius: 6px;
-  font-size: 13px;
+  /* a fonte acompanha o ajuste, com piso: abaixo do piso o texto ficaria ilegível */
+  font-size: max(11.5px, calc(13px * var(--fita-escala, 1)));
   cursor: pointer;
   white-space: nowrap;
 }
 
 .rb .ic {
-  width: 17px;
-  height: 17px;
+  width: max(14px, calc(17px * var(--fita-escala, 1)));
+  height: max(14px, calc(17px * var(--fita-escala, 1)));
 }
 
 .rb.big {
   flex-direction: column;
-  gap: 2px;
-  min-width: 46px;
-  height: 50px;
-  padding: 3px 5px;
+  gap: calc(2px * var(--fita-escala, 1));
+  min-width: max(38px, calc(46px * var(--fita-escala, 1)));
+  height: max(30px, calc(50px * var(--fita-escala, 1)));
+  padding: calc(3px * var(--fita-escala, 1)) calc(5px * var(--fita-escala, 1));
   font-size: 11.5px;
 }
 
 .rb.big .ic {
-  width: 22px;
-  height: 22px;
+  width: max(16px, calc(22px * var(--fita-escala, 1)));
+  height: max(16px, calc(22px * var(--fita-escala, 1)));
+}
+
+/* ------------------------------------------------------------------
+   Fita baixa (arrastada para menos de ~88%): o botão grande deixa de
+   empilhar ícone + nome e vira uma linha só — é o que devolve a altura
+   que a pessoa foi buscar arrastando, e o texto continua legível. O
+   mesmo desenho da fita das Apresentações (classe posta pelo fita.ts).
+   ------------------------------------------------------------------ */
+
+.fita-compacta .rb.big {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: calc(5px * var(--fita-escala, 1));
+  min-width: 0;
+  height: max(22px, calc(28px * var(--fita-escala, 1)));
+  padding: 0 calc(6px * var(--fita-escala, 1));
+}
+
+.fita-compacta .rb.big .ic {
+  width: max(14px, calc(17px * var(--fita-escala, 1)));
+  height: max(14px, calc(17px * var(--fita-escala, 1)));
+}
+
+.fita-compacta .rb-body {
+  min-height: max(30px, calc(38px * var(--fita-escala, 1)));
 }
 
 .rb:hover:not(:disabled) {
@@ -345,10 +374,10 @@ body.settings-open #word-pane {
 .rb-styles {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: calc(3px * var(--fita-escala, 1));
   max-width: min(340px, 30vw);
   overflow-x: auto;
-  padding: 2px;
+  padding: calc(2px * var(--fita-escala, 1));
   scrollbar-width: none;
 }
 
@@ -359,9 +388,9 @@ body.settings-open #word-pane {
   justify-content: center;
   gap: 1px;
   flex: none;
-  width: 80px;
-  height: 48px;
-  padding: 2px 3px;
+  width: max(64px, calc(80px * var(--fita-escala, 1)));
+  height: max(32px, calc(48px * var(--fita-escala, 1)));
+  padding: calc(2px * var(--fita-escala, 1)) calc(3px * var(--fita-escala, 1));
   color: var(--fg);
   background: var(--panel);
   border: 1px solid var(--border);

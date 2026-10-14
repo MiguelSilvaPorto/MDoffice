@@ -643,5 +643,24 @@ console.log("\npopup do Template: cabe na janela e rola");
   );
 }
 
+console.log("\nfita do Word: o ajuste escala métricas (como as Apresentações)");
+{
+  const rib = ler("src/word/ribbon.ts");
+  const css = ler("src/styles/word.css");
+  checa(
+    "a fita do Word usa o modo métricas",
+    /ligarAjusteAlturaFita\(\{ el: host, modo: "metricas" \}\)/.test(rib),
+    "sem isso o arrasto aplica zoom e encolhe a fonte junto (fica ilegível e não vale a pena encolher)"
+  );
+  const escaladas = (css.match(/var\(--fita-escala/g) ?? []).length;
+  checa("as métricas acompanham a escala", escaladas >= 12, `${escaladas} valores`);
+  checa("a fonte tem piso (nada de texto ilegível)", /font-size: max\(11\.5px, calc\(13px \* var\(--fita-escala/.test(css));
+  checa(
+    "fita baixa vira compacta (ícone + nome numa linha)",
+    /\.fita-compacta \.rb\.big\s*\{[^}]*flex-direction:\s*row/.test(css),
+    "sem o modo compacto a fita não perde altura de verdade"
+  );
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

@@ -315,7 +315,7 @@ export class Ribbon {
     const tabsEl = host.querySelector<HTMLElement>(".wd-ribbon-tabs");
     if (tabsEl && panelsContainer) ligarRecolherFita({ el: host, abas: tabsEl, paineis: panelsContainer });
     // ajustar o tamanho da faixa arrastando a borda de baixo
-    ligarAjusteAlturaFita({ el: host });
+    ligarAjusteAlturaFita({ el: host, modo: "metricas" });
   }
 
   private setPainter(mode: "off" | "once" | "sticky"): void {

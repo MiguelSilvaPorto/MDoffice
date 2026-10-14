@@ -5202,6 +5202,31 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o defeito era de geometria e só aparecia olhando o caminho final — os testes antigos
   checavam que o "L" ficava livre (e continua ficando), mas não olhavam **como** ele saía.
 
+## src/word/ribbon.ts · src/styles/word.css
+
+### 2026-10-14 · fita do Word · o ajuste passa a escalar métricas (como as Apresentações)
+- **Local:** `ligarAjusteAlturaFita` (a chamada, no fim do construtor da fita) e as métricas `.rb-*` do CSS
+- **Linha:** `ligarAjusteAlturaFita({ el: host })` → `{ el: host, modo: "metricas" }` · os vinte e tantos
+  valores fixos do CSS (`.rb-body`, `.rb-glabel`, `.rb-rows`, `.rb-row/.rb-col`, `.rb`, `.rb .ic`,
+  `.rb.big`, `.rb-styles`, `.rb-style`) viraram `calc(N * var(--fita-escala, 1))` com `max()` de piso
+  na fonte e nos ícones · `+ o bloco .fita-compacta` (o botão grande vira ícone + nome numa linha)
+- **Porquê:** o ajuste arrastando a borda de baixo da fita usava o modo **zoom** (o padrão do
+  `fita.ts`): aplica `zoom` na faixa inteira, então a **fonte encolhe junto** e abaixo de ~90% fica
+  ilegível — na prática o ajuste “só aumentava” ✗ (a queixa). A fita das **Apresentações** já usava
+  o modo `metricas` (publica `--fita-escala` e o CSS escala alturas, ícones e espaçamentos, com piso
+  de fonte) e é o que o usuário pediu para replicar. A fita do **Excel** ficou como estava: a fita
+  dela tem classes próprias (sem `.rb-*`) e trocar só o modo a deixaria **sem** resposta ao arrasto
+  ✗ — quem quiser o mesmo lá repete o par (modo + CSS). O `fita-compacta` entrou com seletor
+  **genérico** justamente para a fita do Excel poder usá-lo depois sem mudar o CSS de novo.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · fita do Word · 4 verificações
+- **Local:** a seção “fita do Word: o ajuste escala métricas”
+- **Linha:** `+ o modo métricas na chamada, + as métricas com --fita-escala, + o piso de fonte, + o modo compacto`
+- **Porquê:** o defeito era de comportamento e voltaria fácil (basta alguém “simplificar” a chamada
+  de volta ao padrão ✗) — o teste lê o TS e o CSS e trava a regra.
+
 ---
 
 ## Próximos registros
