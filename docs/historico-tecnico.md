@@ -6492,3 +6492,15 @@ antigas quando fizer sentido.
   menção do caminho da fita no doc do módulo
 - **Porquê:** botão de fita sem caso no despacho é o defeito clássico (já aconteceu com o "Nova
   lâmina" — o comentário em `powerpoint.ts` registra); a checagem prende os dois lados juntos.
+
+## CHANGELOG.md
+
+### 2026-10-14 · esta tarefa · promoção das duas entradas que estavam na main
+- **Local:** seção "Não adicionado" do PowerPoint (2 entradas)
+- **Linha:** movidas para o topo do "Adicionado" do PowerPoint — **Botão "Ideias de design" na
+  fita** (`0f8887d`) e **Sem sombra agora tira a sombra de verdade** (`4ad2d47`); a seção ficou
+  com "- (nada no momento)" nos dois lados
+- **Porquê:** mesma razão das rodadas anteriores (registrar no estado de autoria e promover no
+  fechamento não cabem no mesmo commit). Antes de mover, a conferência olhou que as duas ainda
+  **não** estavam em "Adicionado" — a lição da rodada anterior, quando o rebase re-inseriu uma
+  entrada já promovida.

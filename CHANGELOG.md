@@ -378,16 +378,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Botão "Ideias de design" na fita** (aba **Design** ▸ grupo **Designer**): as Ideias existiam
-  só pela aba do painel lateral; agora o botão abre o painel já na aba das Ideias — o mesmo
-  lugar do *Design Ideas* do PowerPoint (aba Design). A aba Design ganhou o grupo **Designer**
-  com a estrela do app, e o clique também **mostra o painel** se ele estiver escondido.
-- **Sem sombra agora tira a sombra de verdade** (e a família toda): as opções que **removem** um
-  formato — **Sem sombra**, **Sem contorno**, **Sem preenchimento**, opacidade de volta a **100%**
-  e o ajuste antigo ao mexer nos **cantos** — não surtiam efeito quando aplicadas pela fita ou pelo
-  painel. O motivo: o `patchFormas` espalha o resultado por cima da forma original e uma chave
-  **apagada** (`delete`) continuava viva na original; agora o campo removido vira `undefined`, que
-  o espalhamento respeita. Testes novos prendem cada um dos cinco casos.
+- (nada no momento)
 
 
 ### Adicionado (na main)
@@ -397,6 +388,18 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **Botão "Ideias de design" na fita** (aba **Design** ▸ grupo **Designer**): as Ideias existiam
+  só pela aba do painel lateral; agora o botão abre o painel já na aba das Ideias — o mesmo
+  lugar do *Design Ideas* do PowerPoint (aba Design). A aba Design ganhou o grupo **Designer**
+  com a estrela do app, e o clique também **mostra o painel** se ele estiver escondido.
+
+- **Sem sombra agora tira a sombra de verdade** (e a família toda): as opções que **removem** um
+  formato — **Sem sombra**, **Sem contorno**, **Sem preenchimento**, opacidade de volta a **100%**
+  e o ajuste antigo ao mexer nos **cantos** — não surtiam efeito quando aplicadas pela fita ou pelo
+  painel. O motivo: o `patchFormas` espalha o resultado por cima da forma original e uma chave
+  **apagada** (`delete`) continuava viva na original; agora o campo removido vira `undefined`, que
+  o espalhamento respeita. Testes novos prendem cada um dos cinco casos.
 
 - **Popup do Template cabe na janela (e rola com o título à vista)**: com os 19 modelos — mais os que o usuário cria — o popup chegava à **borda inferior** da janela e a última linha ficava **cortada no meio**, parecendo que faltavam modelos. Agora ele tem teto próprio (`min(64vh, 560px)`, menor que os 78vh gerais dos popups da fita) e o título **“Modelos de apresentação” fica fixo** enquanto a grade rola por baixo — e o “Novo modelo” continua sendo o último, alcançável com a rolagem. Três verificações novas no `test:layout`.
 - **Ideias de design** (aba nova no painel lateral): mostra **esta lâmina** desenhada em cada
