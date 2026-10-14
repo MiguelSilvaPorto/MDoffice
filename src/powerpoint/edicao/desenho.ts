@@ -534,18 +534,54 @@ export function dicaDoTraco(pontos: PontoTraco[], assistente: boolean): string {
 // a forma
 // ---------------------------------------------------------------------------
 
-/** Traço livre -> caminho do custGeom (comandos M/L/Z, em pt, relativos à caixa). */
-export function caminhoLivre(pontos: PontoTraco[], bb: Ret = bboxDe(pontos)): CustPath {
-  let eps = Math.max(0.8, Math.hypot(bb.w, bb.h) * 0.012);
-  let pts = simplificar(pontos, eps);
-  while (pts.length > 260 && eps < 40) {
-    eps *= 1.6;
-    pts = simplificar(pontos, eps);
+/** Média móvel leve: tira o tremor da mão sem perder as pontas do traço. */
+function suavizarPontos(pontos: PontoTraco[]): PontoTraco[] {
+  const n = pontos.length;
+  if (n < 5) return pontos.slice();
+  const out: PontoTraco[] = [];
+  for (let i = 0; i < n; i++) {
+    let sx = 0;
+    let sy = 0;
+    let c = 0;
+    for (let k = Math.max(0, i - 2); k <= Math.min(n - 1, i + 2); k++) {
+      sx += pontos[k].x;
+      sy += pontos[k].y;
+      c++;
+    }
+    out.push({ x: sx / c, y: sy / c });
   }
-  const cmds: (string | number)[] = [];
+  out[0] = { ...pontos[0] };
+  out[n - 1] = { ...pontos[n - 1] };
+  return out;
+}
+
+/** Traço livre -> caminho do custGeom (M + cúbicas + Z, em pt, relativos à caixa), já suave. */
+export function caminhoLivre(pontos: PontoTraco[], bb: Ret = bboxDe(pontos)): CustPath {
   const n10 = (v: number) => Math.round(v * 10) / 10;
-  for (let i = 0; i < pts.length; i++) {
-    cmds.push(i === 0 ? "M" : "L", n10(pts[i].x - bb.x), n10(pts[i].y - bb.y));
+  const suave = suavizarPontos(pontos);
+  let eps = Math.max(1, Math.hypot(bb.w, bb.h) * 0.008);
+  let pts = simplificar(suave, eps);
+  while (pts.length > 120 && eps < 40) {
+    eps *= 1.6;
+    pts = simplificar(suave, eps);
+  }
+  // Catmull-Rom virando cúbicas: o caminho passa pelos pontos e sai CURVO, sem as quinas da polilinha
+  const get = (i: number) => pts[Math.min(pts.length - 1, Math.max(0, i))];
+  const cmds: (string | number)[] = ["M", n10(pts[0].x - bb.x), n10(pts[0].y - bb.y)];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = get(i - 1);
+    const p1 = get(i);
+    const p2 = get(i + 1);
+    const p3 = get(i + 2);
+    cmds.push(
+      "C",
+      n10(p1.x + (p2.x - p0.x) / 6 - bb.x),
+      n10(p1.y + (p2.y - p0.y) / 6 - bb.y),
+      n10(p2.x - (p3.x - p1.x) / 6 - bb.x),
+      n10(p2.y - (p3.y - p1.y) / 6 - bb.y),
+      n10(p2.x - bb.x),
+      n10(p2.y - bb.y)
+    );
   }
   const primeiro = pontos[0];
   const ultimo = pontos[pontos.length - 1];

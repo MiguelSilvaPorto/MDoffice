@@ -295,17 +295,34 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
   ok("traço curto demais: fica livre", D.reconhecerTraco([{ x: 100, y: 100 }, { x: 104, y: 101 }, { x: 106, y: 100 }]) === null);
 
   const cp = D.caminhoLivre(rabisco());
-  ok("desenho livre: caminho começa com M", cp.cmds[0] === "M" && cp.cmds.includes("L"));
-  const xs = [];
-  const ys = [];
-  for (let i = 1; i + 1 < cp.cmds.length; i += 3) {
-    if (typeof cp.cmds[i] === "number" && typeof cp.cmds[i + 1] === "number") {
-      xs.push(cp.cmds[i]);
-      ys.push(cp.cmds[i + 1]);
+  ok("desenho livre: caminho começa com M e sai em curvas", cp.cmds[0] === "M" && cp.cmds.includes("C"));
+  const coordsDe = (cmds) => {
+    const out = [];
+    let i = 0;
+    while (i < cmds.length) {
+      const c = cmds[i];
+      if (c === "M") i += 3;
+      else if (c === "C") {
+        for (let k = 0; k < 6; k += 2) out.push([cmds[i + 1 + k], cmds[i + 2 + k]]);
+        i += 7;
+      } else if (c === "L") {
+        out.push([cmds[i + 1], cmds[i + 2]]);
+        i += 3;
+      } else break;
     }
+    return out;
+  };
+  const coords = coordsDe(cp.cmds);
+  ok("desenho livre: coordenadas dentro da caixa", coords.every(([x, y]) => x >= -1 && x <= cp.w + 1 && y >= -1 && y <= cp.h + 1), `${cp.w}x${cp.h} (${coords.length} pontos)`);
+  ok("desenho livre: pontos enxutos", cp.cmds.filter((c) => c === "C").length <= 120, `${cp.cmds.filter((c) => c === "C").length} curvas`);
+  // traço com "quinas": o caminho sai em cúbicas (C), não em segmentos retos (L)
+  const quebrado = [];
+  for (let i = 0; i <= 36; i++) {
+    const q = Math.floor(i / 9);
+    quebrado.push({ x: 120 + i * 7, y: 200 + q * 25 + (i % 9) * 3 });
   }
-  ok("desenho livre: coordenadas dentro da caixa", xs.every((v) => v >= -1 && v <= cp.w + 1) && ys.every((v) => v >= -1 && v <= cp.h + 1), `${cp.w}x${cp.h}`);
-  ok("desenho livre: pontos enxutos", xs.length <= 261, `${xs.length} pontos`);
+  const cpQuinas = D.caminhoLivre(quebrado);
+  ok("desenho livre: sem quinas de polilinha (nada de L, tudo C)", !cpQuinas.cmds.includes("L") && cpQuinas.cmds.includes("C"));
   const fechado = D.caminhoLivre(percorrer([{ x: 100, y: 100 }, { x: 220, y: 100 }, { x: 220, y: 210 }, { x: 100, y: 210 }], 12));
   ok("desenho livre fechado: termina com Z", fechado.cmds[fechado.cmds.length - 1] === "Z");
 }
