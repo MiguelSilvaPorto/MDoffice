@@ -2869,3 +2869,53 @@ antigas quando fizer sentido.
 - **Linha:** bala nova
 - **Porquê:** as regras S01–S04 são visíveis (avisos no editor) e o documento do módulo descreve
   o que o app faz.
+
+## src/broker/abnt/verificadores/resumo.ts
+
+### 2026-10-14 · (este commit) · os verificadores do resumo e do abstract
+- **Local:** `extensao-resumo` (E09/A01), `abstract-presente` (E10), `palavras-chave-resumo`
+  (A02) e `resumo-sem-citacao` (A03)
+- **Linha:** `{}` → quatro verificadores (a saída `Aviso[]` com trecho, mensagem e o número
+  contado); a contagem usa o `contarPalavras` do modelo
+- **Porquê:** E09 e A01 são o MESMO exame declarado duas vezes (uma conta só, dois ids e duas
+  normas) — a norma da mensagem vem de `regra.norma`, para as duas nunca divergirem. A
+  contagem exclui a linha "Palavras-chave:" (o rótulo é de outro elemento do trabalho) e o
+  número sai na mensagem: "612 palavras" é o que a pessoa precisa para enxugar. A ausência
+  (E10 e A02) ancora no fim do resumo — o vizinho que existe, onde o elemento entraria — e é
+  silêncio quando nem RESUMO existe: sem isso, "falta o abstract" apareceria em qualquer
+  texto solto, e quem cobra a existência do resumo é a regra de estrutura (E01). O `Aviso`
+  precisa de trecho (o motor descarta faixa vazia), então o título sem texto e o resumo vazio
+  ancoram na faixa que existe. A03 procura só o parentético "(Silva, 2020)" — o padrão
+  inequívoco, com autores múltiplos, et al., página e letra de chamada — e não sugere troca:
+  remover a citação mecanicamente pode quebrar a frase; quem reescreve é quem escreve.
+
+## src/broker/abnt/regras/ (E09, E10, A01–A03) · src/broker/abnt/index.ts · scripts/testar-abnt-resumo.mts · package.json · docs/md.md
+
+### 2026-10-14 · (este commit) · as cinco regras em TOML e o teste do grupo
+- **Local:** `src/broker/abnt/regras/e09-resumo-extensao.toml`, `e10-abstract.toml`,
+  `a01-resumo-extensao.toml`, `a02-palavras-chave.toml`, `a03-resumo-sem-citacao.toml`
+- **Linha:** novos — declaração `tipo = "estrutura"` com `verifica` (e `opcoes = { minimo =
+  150, maximo = 500 }` no E09/A01); a faixa é dado, não constante no código
+- **Porquê:** a regra continua dado e o julgamento continua código declarado; as cinco
+  entram como `warning` (conferência, nada de troca automática) e nenhuma tem `auto`.
+- **Local:** `src/broker/abnt/index.ts`, `FONTES`
+- **Linha:** os cinco `.toml?raw` entram no fim da lista — depois das dez antigas e das quatro
+  do grupo S (S01–S04)
+- **Porquê:** a ordem da lista importa (o motor para na primeira regra que avisa um trecho);
+  as novas entram depois das que já estavam para não mudar o comportamento delas.
+- **Local:** `scripts/testar-abnt-resumo.mts` (novo) e `package.json`
+- **Linha:** `novo` — 39 checagens, todo exame com os dois lados (acusa e não acusa), e o
+  script `test:abnt-resumo`
+- **Porquê:** as bordas são testadas nos dois sentidos: 150 e 500 não acusam, 501 e 145
+  acusam; a linha das palavras-chave não entra na conta (145 + 10 = 155 se entrasse, e o
+  aviso sumiria); "Palavras-chave" em negrito/sem hífen/caixa alta não acusa, singular/sem
+  dois-pontos/sem termos acusa; citação só dentro do resumo. Os avisos de ausência são
+  conferidos pelo TRECHO da âncora (não só pela mensagem).
+- **Local:** `docs/md.md`, "Escrita assistida"
+- **Linha:** bala nova depois da bala do grupo S ("Conferência ABNT de sumário e numeração")
+- **Porquê:** o resumo e o abstract são funcionalidades visíveis (o aviso sai no painel de
+  revisão, com o número contado e o trecho); o documento do módulo acompanha o que o app faz.
+- **Local:** `scripts/testar-regras-abnt.mts` — sem mudança neste commit
+- **Porquê:** a tarefa do grupo S já tinha corrigido `carregadas >= 10` e o `.map(I.regraDeToml)`
+  (que passava o índice como registro) na main; no rebase a versão dela prevaleceu e este
+  commit não reescreve a mesma linha.

@@ -1,0 +1,11 @@
+# E10 — o resumo em língua estrangeira (abstract) tem de estar presente (NBR 14724:2024).
+#
+# Sem bloco RESUMO no documento o verificador é silêncio (quem cobra a existência do
+# resumo é o E01); com resumo, ele ancora no fim dele — é ali que o ABSTRACT entra.
+id = "abnt.e10"
+norma = "nbr14724:2024"
+grupo = "E"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "abstract-presente"
+mensagem = "(o verificador escreve a mensagem)"

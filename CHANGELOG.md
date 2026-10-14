@@ -50,6 +50,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   ("complete os dados da referência"), o aviso sai sem sugestão, em vez de obrigar a
   inventar uma troca. É a base das 31 regras restantes do catálogo (grupos E, C, R, S, A,
   P e T) e vem com o contrato escrito em `docs/abnt-como-escrever-regras.md`.
+- **Motor ABNT — resumo e abstract (E09, E10, A01–A03)**: as primeiras regras que usam o
+  motor novo, todas de conferência (nenhuma troca automática). **E09/A01** são o mesmo exame
+  declarado duas vezes — a extensão do resumo fora da faixa de **150–500 palavras**, contada
+  no bloco RESUMO e dita no aviso (a linha “Palavras-chave:” não entra na conta) —, uma vez
+  sob a NBR 14724:2024 e outra sob a NBR 6028:2021. **E10** cobra o **ABSTRACT** quando o
+  trabalho tem RESUMO e não tem o resumo em língua estrangeira (título sem texto também
+  acusa); **A02** cobra o rótulo **“Palavras-chave:”** (plural e dois-pontos incluídos) e
+  **A03** acusa citação autor-data — “(Silva, 2020)” — dentro do resumo. Os avisos de
+  ausência ancoram no fim do resumo, onde o elemento entraria, e sem RESUMO no documento as
+  regras são silêncio (quem cobra o resumo é a regra de estrutura).
 - **Avisos de estilo com a correção pronta no popup**: clicar num aviso como **"Frase muito
   comprida"** agora mostra o trecho **já corrigido** ("… do novo projeto. E combinamos de …") com
   um clique para aplicar — antes o popup só dizia "comece nova frase aqui". Nesses avisos os botões

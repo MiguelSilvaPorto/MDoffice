@@ -25,6 +25,11 @@ import s01 from "./regras/s01.toml?raw";
 import s02 from "./regras/s02.toml?raw";
 import s03 from "./regras/s03.toml?raw";
 import s04 from "./regras/s04.toml?raw";
+import e09ResumoExtensao from "./regras/e09-resumo-extensao.toml?raw";
+import e10Abstract from "./regras/e10-abstract.toml?raw";
+import a01ResumoExtensao from "./regras/a01-resumo-extensao.toml?raw";
+import a02PalavrasChave from "./regras/a02-palavras-chave.toml?raw";
+import a03ResumoCitacao from "./regras/a03-resumo-sem-citacao.toml?raw";
 
 const FONTES: { nome: string; texto: string }[] = [
   { nome: "horas.toml", texto: horas },
@@ -41,6 +46,11 @@ const FONTES: { nome: string; texto: string }[] = [
   { nome: "s02.toml", texto: s02 },
   { nome: "s03.toml", texto: s03 },
   { nome: "s04.toml", texto: s04 },
+  { nome: "e09-resumo-extensao.toml", texto: e09ResumoExtensao },
+  { nome: "e10-abstract.toml", texto: e10Abstract },
+  { nome: "a01-resumo-extensao.toml", texto: a01ResumoExtensao },
+  { nome: "a02-palavras-chave.toml", texto: a02PalavrasChave },
+  { nome: "a03-resumo-sem-citacao.toml", texto: a03ResumoCitacao },
 ];
 
 /** Perfil institucional: sobrescreve versão de norma e o que fazer com cada regra. */

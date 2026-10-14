@@ -1,0 +1,12 @@
+# A03 — o resumo não leva citação (NBR 6028:2021).
+#
+# Procura o padrão autor-data entre parênteses, "(Silva, 2020)", dentro do bloco
+# RESUMO. A regra só acusa (não sugere troca): remover a citação mecanicamente pode
+# quebrar a frase — quem reescreve é quem escreve.
+id = "abnt.a03"
+norma = "nbr6028:2021"
+grupo = "A"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "resumo-sem-citacao"
+mensagem = "(o verificador escreve a mensagem)"

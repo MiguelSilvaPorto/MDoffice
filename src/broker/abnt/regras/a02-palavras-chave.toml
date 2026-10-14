@@ -1,0 +1,13 @@
+# A02 — palavras-chave presentes e no formato "Palavras-chave:" (NBR 6028:2021).
+#
+# O verificador procura o rótulo no bloco RESUMO; ausente, ancora no fim do resumo
+# (o vizinho que existe, onde o parágrafo entraria). O número de termos (manuais
+# pedem comumente de 3 a 5) é orientação na mensagem, não conferência: não há
+# consenso na norma.
+id = "abnt.a02"
+norma = "nbr6028:2021"
+grupo = "A"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "palavras-chave-resumo"
+mensagem = "(o verificador escreve a mensagem)"

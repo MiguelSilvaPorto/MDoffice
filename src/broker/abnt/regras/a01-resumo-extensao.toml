@@ -1,0 +1,12 @@
+# A01 — extensão do resumo na faixa de 150 a 500 palavras (NBR 6028:2021).
+#
+# É o mesmo exame do E09 (mesmo verificador `extensao-resumo`), sob outra norma:
+# uma só implementação, dois ids — a contagem não pode divergir entre eles.
+id = "abnt.a01"
+norma = "nbr6028:2021"
+grupo = "A"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "extensao-resumo"
+opcoes = { minimo = 150, maximo = 500 }
+mensagem = "(o verificador escreve a mensagem)"

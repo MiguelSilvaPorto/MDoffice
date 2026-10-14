@@ -109,6 +109,11 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   pré-textual como RESUMO está listado? — e confere a **numeração progressiva**: "3" → "3.1", e um
   "1.2" que não continua o "3" é acusado. O aviso de **subseção única** ("2 METODOLOGIA" com só
   uma "2.1") é sugestão de forma; nada disso é corrigido sozinho.
+- **Conferência ABNT do resumo e abstract**: com um **RESUMO** no texto, o assistente conta as
+  palavras do resumo — a faixa é **150–500**, e o aviso diz quantas contou —, cobra o
+  **ABSTRACT** (e o texto nele) e o rótulo **“Palavras-chave:”** (no plural e com dois-pontos)
+  e acusa citação autor-data (“(Silva, 2020)”) dentro do resumo — resumo não leva citação.
+  Nada disso é corrigido sozinho.
 - **“Formatar texto”** (comando): varredura automática de pontuação com ritmo aprendido.
 
 ## Sugestões enquanto você digita

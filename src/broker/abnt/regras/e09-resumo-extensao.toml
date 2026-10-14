@@ -1,0 +1,13 @@
+# E09 — o resumo do trabalho tem de ter de 150 a 500 palavras (NBR 14724:2024).
+#
+# A contagem é a do bloco RESUMO e exclui a linha "Palavras-chave:"; o verificador
+# `extensao-resumo` diz o número na mensagem. A MESMA implementação é declarada como
+# A01 (NBR 6028:2021): uma conta só, dois ids, duas normas.
+id = "abnt.e09"
+norma = "nbr14724:2024"
+grupo = "E"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "extensao-resumo"
+opcoes = { minimo = 150, maximo = 500 }
+mensagem = "(o verificador escreve a mensagem)"
