@@ -32,6 +32,20 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Avisos de estilo com a correção pronta no popup**: clicar num aviso como **"Frase muito
+  comprida"** agora mostra o trecho **já corrigido** ("… do novo projeto. E combinamos de …") com
+  um clique para aplicar - antes o popup só dizia "comece nova frase aqui". Nesses avisos os botões
+  de dicionário ("Ignorar palavra", "Adicionar ao dicionário") dão lugar a **"Ignorar neste
+  texto"**, que dispensa o aviso somente naquele documento (nos outros ele continua).
+
+### Adicionado (na main)
+
+**Backend**
+
+- (nada específico do módulo — arquivos, imagens e rascunhos passam pelos comandos do **Geral**)
+
+**Frontend**
+
 - **Exportador Markdown → .docx não arrasta mais a interface**: o import de
   `renderMermaidInto` era feito pelo índice `./diagram`, que reexporta o construtor de
   diagramas — e o construtor puxa o seletor, que registra listeners de `document` na carga
@@ -39,6 +53,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   teste que valida o `.docx` gerado (roda no Node, sem DOM) quebrava com `document is not
   defined`. Agora o import é direto de `./diagram/mermaid`. Nenhuma mudança de
   comportamento: o export só deixou de depender de código de tela.
+
 - **Regras ABNT de estrutura (E01–E03 e P01)**: o motor passou a conferir o trabalho pela
   estrutura que as normas cobram, e não só pela tipografia. **E01** cobra os elementos
   pré-textuais obrigatórios (resumo, abstract e sumário — NBR 14724:2024); **E02** confere a
@@ -50,6 +65,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   ausência ancora no fim do documento e explica por que a regra falou — o verificador só age
   quando o documento tem **cara de trabalho** (ao menos dois elementos reconhecidos e um
   indício de corpo do texto), para um texto qualquer não virar "TCC sem resumo".
+
 - **Regras ABNT do sumário e da numeração (S01–S04)**: o motor de estrutura agora compara o
   **sumário** com os títulos do texto — subseção que falta, entrada sobrando, ordem trocada e
   pré-textuais listados (RESUMO, LISTAS…) — e confere a **numeração progressiva**: a subseção
@@ -58,6 +74,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   ("2 METODOLOGIA" com uma só "2.1"), que é **sugestão de forma**, nunca automática. O sumário
   em Markdown é aceito como lista com numeração, destaque, link e pontilhado de página; nada
   disso é corrigido sozinho — a máquina não sabe qual seção o autor quis dizer.
+
 - **Motor ABNT — contexto de documento e regras de estrutura**: o motor sabia conferir
   padrão de texto, mas não sabia *onde* no documento — e as normas cobram exatamente isso
   ("a lista de referências existe", "o sumário bate com os títulos", "o resumo tem
@@ -68,6 +85,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   ("complete os dados da referência"), o aviso sai sem sugestão, em vez de obrigar a
   inventar uma troca. É a base das 31 regras restantes do catálogo (grupos E, C, R, S, A,
   P e T) e vem com o contrato escrito em `docs/abnt-como-escrever-regras.md`.
+
 - **Motor ABNT — resumo e abstract (E09, E10, A01–A03)**: as primeiras regras que usam o
   motor novo, todas de conferência (nenhuma troca automática). **E09/A01** são o mesmo exame
   declarado duas vezes — a extensão do resumo fora da faixa de **150–500 palavras**, contada
@@ -78,6 +96,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **A03** acusa citação autor-data — “(Silva, 2020)” — dentro do resumo. Os avisos de
   ausência ancoram no fim do resumo, onde o elemento entraria, e sem RESUMO no documento as
   regras são silêncio (quem cobra o resumo é a regra de estrutura).
+
 - **Motor ABNT — forma de cada tipo de referência (NBR 6023:2025)**: as referências passam a
   ser conferidas **por tipo** — **livro** (local e editora), **capítulo** ("In:" com a obra
   completa), **artigo** (título do periódico antes de "v./n." e as páginas), **site**
@@ -89,11 +108,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   patente…) e fica quieta na dúvida; cada teste tem **os dois lados** — a entrada que acusa e a
   referência **completa** do mesmo tipo, que não pode acusar —, e uma **bibliografia com uma
   referência completa de cada tipo** sai sem nenhum aviso.
-- **Avisos de estilo com a correção pronta no popup**: clicar num aviso como **"Frase muito
-  comprida"** agora mostra o trecho **já corrigido** ("… do novo projeto. E combinamos de …") com
-  um clique para aplicar - antes o popup só dizia "comece nova frase aqui". Nesses avisos os botões
-  de dicionário ("Ignorar palavra", "Adicionar ao dicionário") dão lugar a **"Ignorar neste
-  texto"**, que dispensa o aviso somente naquele documento (nos outros ele continua).
+
 - **Motor ABNT — validação do `.docx` exportado (E04–E08 e E12)**: margem, fonte, entrelinha,
   papel, paginação e quebra de seção não existem no Markdown — só no arquivo final. O motor ganhou
   o validador que **abre o `.docx` exportado** (JSZip + varredura do XML, sem UI e sem depender do
@@ -107,6 +122,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   entrelinha 1,25, sem paginação e sem quebra entre seções primárias; o export da sessão Word, no
   setup padrão, com margens superior/base de 2,5 cm, Calibri 11, entrelinha 1,15 e sem quebra
   (configurado em ABNT, o mesmo exportador não acusa nada).
+
 - **Citações ABNT — C01, C03, C04 e C06 (NBR 10520:2023)**: as conferências de citação que
   faltavam do catálogo. **C01** acusa a citação autor-data entre parênteses **sem o ano**
   ("(Silva)") — o critério é apertado de propósito (lista fechada de sobrenomes em caixa mista):
@@ -117,6 +133,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   (“…. (Silva, 2020).” → um ponto só, o de fora) e corrige — as demais acusam sem sugerir troca
   (o ano e a página são desconhecidos). C01/C03/C06 são regras declaradas em TOML; C04 é
   verificador do documento; teste próprio com os dois lados em `scripts/testar-abnt-citacoes.mts`.
+
 - **ABNT em tabelas, figuras e listas (T01, T02 e E11)**: três verificadores novos no motor
   ABNT. A **tabela** pede a identificação e o título na linha imediatamente acima ("Tabela 1 –
   …") e a **fonte logo abaixo** ("Fonte: …", normas do IBGE); a **figura** pede a legenda acima
@@ -126,6 +143,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   siglas) são conferidas contra o documento: lista sem nenhum item e item que aponta para uma
   figura/tabela que não existe — ou sigla que não é usada no texto — são avisados, porque a
   lista só pode conter os itens que existem.
+
 - **Lista de referências conferida de ponta a ponta (ABNT NBR 6023:2025)**: quatro avisos novos
   no painel de revisão, olhando a lista como um todo. **R01** — a lista existe (o aviso sai no
   fim do trabalho, onde ela entraria, e só quando o documento se comporta como trabalho: tem
@@ -137,14 +155,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   casam por palavra) e a citação repetida vira um aviso só. **R12** — destaque tipográfico
   uniforme: **sugestão**, nunca automática, e só quando a lista mistura entradas com e sem
   negrito/itálico no título. Nenhuma das quatro corrige o texto sozinha.
-
-### Adicionado (na main)
-
-**Backend**
-
-- (nada específico do módulo — arquivos, imagens e rascunhos passam pelos comandos do **Geral**)
-
-**Frontend**
 
 - **Popup do aviso com diff colorido**: a correção mostra o que **sai** em vermelho riscado e o
   que **entra** em verde — nos chips "Trocar por" (palavra → sugestão) e "Corrigir" (o trecho com
@@ -442,25 +452,9 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Backend**
 
-- **Salvamento automático em pasta de rede (UNC/SMB) não trava mais a interface**: os comandos
-  de arquivo e de backup passaram a rodar no pool de tarefas do Tauri (`#[tauri::command(async)]`).
-  No Tauri 2 um comando síncrono roda na **thread principal** — e ler/gravar num share de rede
-  (centenas de ms a segundos por operação) travava a janela e filava o IPC a cada salvamento. Cada
-  salvamento também gasta **uma ida ao disco a menos** (não checa mais `exists()` da pasta antes de
-  gravar: a pasta é criada só quando a gravação responde "não encontrei" e tenta de novo) e a cópia
-  de backup lê o documento **uma única vez** (antes o `same_bytes` + `fs::copy` reliam o original
-  por raiz, em série — 4 leituras de rede por cópia com duas pastas).
+- (nada no momento)
 
 **Frontend**
-
-- **Fila do salvamento automático (nada de pedido descartado)**: um salvamento por vez e o pedido
-  que chega durante uma gravação **deixa de ser ignorado** — ao terminar, a fila grava de novo com
-  o texto mais recente. Antes (`if (this.saving) return`), em pasta de rede o autosave disparado
-  durante uma gravação lenta era simplesmente descartado e a última parte do que foi digitado
-  ficava sem salvar até a próxima tecla/blur/fechar. Rajadas de pedidos durante a gravação viram
-  **uma** gravação (coalescência), a digitação nunca espera o disco e o indicador "Salvando…"
-  continua refletindo o estado real. Teste novo: `npm run test:salvamento` (fila exercitada com um
-  "disco lento" de mentira + contratos do Rust).
 
 - **Formalidade base (Onda 3)**: o catálogo informal → formal cresceu de **18 para 75 padrões**, agora classificados por **classe** (internetês, contração, muleta, gíria, oralidade, atenuação, redundância e vagueza), com política explícita de **seguro** (o app pode corrigir sozinho — 45 padrões) × **sugestão** (30 padrões, quando a troca depende do sentido) e tom mínimo (neutro × formal). Entraram as **regras de frase por janelas** — “a gente vê que” → “nós vemos”/“vê-se que”, “Aí eu fui” → “Então, eu”/“Em seguida, eu”, “então” repetido, “você vê que” → “observa-se que” e “há três anos atrás” → “há três anos” —, com exclusão de citação (`>`), código, URL, sigla e e-mail. O painel de revisão (F7) passa a mostrar o **MIP** (marcadores informais por 1.000 palavras) antes e depois das correções seguras, a contagem por classe e o trecho/risco de cada marcador.
 - **Teste do “entretanto” alinhado ao comportamento decidido**: a adversativa leva só a vírgula de antes (“…, entretanto faltou teste.”), como o corpus já exigia (caso 16, “porém”); a expectativa antiga do teste pedia as duas vírgulas.
@@ -524,6 +518,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Backend**
 
+- **Salvamento automático em pasta de rede (UNC/SMB) não trava mais a interface**: os comandos
+  de arquivo e de backup passaram a rodar no pool de tarefas do Tauri (`#[tauri::command(async)]`).
+  No Tauri 2 um comando síncrono roda na **thread principal** — e ler/gravar num share de rede
+  (centenas de ms a segundos por operação) travava a janela e filava o IPC a cada salvamento. Cada
+  salvamento também gasta **uma ida ao disco a menos** (não checa mais `exists()` da pasta antes de
+  gravar: a pasta é criada só quando a gravação responde "não encontrei" e tenta de novo) e a cópia
+  de backup lê o documento **uma única vez** (antes o `same_bytes` + `fs::copy` reliam o original
+  por raiz, em série — 4 leituras de rede por cópia com duas pastas).
+
 - Comandos Rust/Tauri: **arquivos** (abrir/salvar), **assets** (copiar imagens com nome limpo),
   **rascunhos**, **projetos** (árvore), **busca** no conteúdo, **pacote IA** (.zip) e **backup**.
 - **App renomeado no lado nativo**: crate `mdoffice`, lib `mdoffice_lib`, identificador
@@ -545,6 +548,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **Fila do salvamento automático (nada de pedido descartado)**: um salvamento por vez e o pedido
+  que chega durante uma gravação **deixa de ser ignorado** — ao terminar, a fila grava de novo com
+  o texto mais recente. Antes (`if (this.saving) return`), em pasta de rede o autosave disparado
+  durante uma gravação lenta era simplesmente descartado e a última parte do que foi digitado
+  ficava sem salvar até a próxima tecla/blur/fechar. Rajadas de pedidos durante a gravação viram
+  **uma** gravação (coalescência), a digitação nunca espera o disco e o indicador "Salvando…"
+  continua refletindo o estado real. Teste novo: `npm run test:salvamento` (fila exercitada com um
+  "disco lento" de mentira + contratos do Rust).
 
 - **Formalizar texto com prévia antes/depois**: o comando novo (**Ctrl+Alt+F**, no menu “Escrever” e no painel de revisão) pega a **seleção** — ou o documento inteiro quando não há seleção — e mostra **antes × depois** lado a lado, com o **MIP ao vivo** e os trechos trocados pintados (vermelho no antes, verde no depois). As **trocas seguras** (com correção pronta — a mesma régua do MIP) já entram marcadas; as que **dependem do sentido** esperam a decisão, com o risco explicado no tooltip e as alternativas em chips (“a gente analisou” → “Nós analisamos” **ou** “analisou-se”); os avisos sem troca pronta (“sei lá…”) só informam, sem caixa. Nada dentro de citação (`>`), código, URL, sigla ou e-mail, e aplicar é **uma transação**: Ctrl+Z desfaz tudo de uma vez.
 - **Dois consertos no catálogo que a prévia revelou**: “dar uma olhada **no** relatório” virava “examinar **no** relatório” — a troca agora leva a preposição junto (“examinar o relatório”, “examinar a planilha”, “examinar as contas”…) e a forma solta, sem objeto, virou **sugestão** (“examinar”, “revisar”, “conferir”); e “um monte de **gente**” virava “muitos gente” — agora é **sugestão** com as quatro formas (muitos/muitas/vários/várias). As duas eram marcadas como **troca segura**, e a formatação em massa as aplicava assim mesmo.

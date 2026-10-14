@@ -3685,6 +3685,7 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   pegou. O import direto corta a dependência de tela sem mudar comportamento nenhum do
   export.
 
+<<<<<<< HEAD
 ## src/word/project.ts (novo)
 
 ### 2026-10-14 · formalizar no Word · o mapa documento ↔ texto e a volta
@@ -3756,6 +3757,29 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Local:** “Escrita assistida (também no Word)”
 - **Linha:** `+ o item "Formalizar"` (atalho, botão da fita, seleção/documento e o formato preservado)
 - **Porquê:** funcionalidade visível no motor Word: o documento do módulo precisa dizer como usar.
+=======
+## docs/ · a conferência final da entrega ABNT
+
+### 2026-10-14 · (este commit) · entrega conferida, changelog promovido
+- **Local:** `docs/abnt-entrega-por-grupo.md` e `docs/abnt-pendencias.md` (novos)
+- **Linha:** `novo`
+- **Porquê:** as 31 regras que faltavam do catálogo entraram em nove frentes em paralelo,
+  cada uma com o teste próprio — e alguém precisava dizer, num lugar só, o que entrou, com
+  que evidência, em que estado ficou e o que deliberadamente não foi feito. O documento de
+  entrega registra a bateria final integrada (tsc limpo; dez testes por frente; teste de ouro
+  com as **42 regras em 4,0 ms**; corpus **34/34 e 34/34**; `test:backup`; build do pacote em
+  25,4 s) e o que a conferência pegou — o teste do `.docx` quebrado por um refactor de UI
+  externo, corrigido em `46ec4b1`. O de pendências separa limitação consciente de trabalho
+  não feito (imagem sem alt na máscara, modo ABNT do export, seletor de perfil, relatório
+  por norma, comandos ainda síncronos, medição real de SMB).
+- **Local:** `CHANGELOG.md`
+- **Linha:** `Não adicionado → Adicionado` (12 entradas: as dez frentes ABNT, mais as duas do
+  salvamento em rede)
+- **Porquê:** a regra do projeto é promover a entrada ao entrar na `main`; os agentes
+  registraram no estado de autoria e a promoção ficou para a conferência. Nenhuma entrada de
+  outra worktree foi tocada — a de "Avisos de estilo" segue em "Não adicionado", como deve
+  (o trabalho dela ainda não está na `main`).
+>>>>>>> cdcc105 (docs(abnt): entrega por grupo conferida e changelog promovido. Documento de entrega com a verificacao final integrada (tsc limpo; 42 regras em TOML no pipeline de texto + 6 do docx; teste de ouro 4,0 ms com as 42; corpus 34/34 e 34/34; test:backup; build do pacote em 25,4 s) e o que a conferencia pegou: o teste do docx quebrado por um refactor de UI externo (14d163d), corrigido em 46ec4b1. Documento de pendencias separando limitacao consciente de trabalho nao feito (imagem sem alt na mascara, modo ABNT do export, seletor de perfil, relatorio por norma, comandos ainda sincronos, medicao real de SMB). CHANGELOG: 12 entradas promovidas de Nao adicionado para Adicionado, sem tocar nas de outras worktrees.)
 
 ---
 
