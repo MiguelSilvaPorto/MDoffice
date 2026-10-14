@@ -1,6 +1,7 @@
 // Pontes com o backend Rust (comandos do Tauri) e diálogos nativos.
 import { invoke } from "@tauri-apps/api/core";
 import { open as dlgOpen, save as dlgSave } from "@tauri-apps/plugin-dialog";
+import { joinPath } from "./util";
 
 export const MD_FILTER = { name: "Markdown", extensions: ["md", "markdown", "txt", "mdx"] };
 export const IMG_FILTER = {
@@ -222,6 +223,17 @@ export async function copyAssets(fromDoc: string, toDoc: string): Promise<number
 /** Pasta padrão de documentos (…/Documentos/mdOffice), criada se não existir. */
 export async function defaultDocsDir(): Promise<string> {
   return await invoke<string>("default_docs_dir");
+}
+
+/** Cria (ou confirma) uma pasta dentro de outra: devolve o caminho da pasta. */
+export async function createFolder(parent: string, name: string): Promise<string> {
+  try {
+    return await invoke<string>("create_folder", { parent, name });
+  } catch (e) {
+    // "já existe uma pasta com esse nome" é o caso normal (a pasta padrão nasce uma vez)
+    if (/existe|exist/i.test(String(e))) return joinPath(parent, name);
+    throw e;
+  }
 }
 
 /** Caminho livre (.md) dentro de uma pasta, sem sobrescrever nada existente. */

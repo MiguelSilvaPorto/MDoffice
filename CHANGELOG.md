@@ -621,11 +621,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
-- (nada no momento)
+- **Documento novo já salvo na pasta padrão do app (`Documentos\mdOffice`)**: criar um documento não pergunta mais nada — ele **nasce salvo** na subpasta do próprio tipo, uma para cada: **`Markdown`**, **`Word`**, **`Excel`** e **`PowerPoint`** (`Documento.md`, `Documento.docx`, `Documento.xlsx`, `Documento.pptx`; o nome livre vira `Documento-2`, `Documento-3`… e a checagem é no disco, então dois seguidos nunca colidem). Vale para o `Ctrl+N`, para os cards do Início e para os **+** das abas de cada motor ✓. A raiz entra sozinha na lista de **Projetos** da barra lateral, então as subpastas aparecem na árvore como pastas normais ✓ — e **"Salvar como…" continua perguntando**, já sugerindo a subpasta do tipo (mudou de pasta? as imagens de `assets/` seguem o documento, como sempre ✓). Quem quiser outro lugar salva onde quiser e nada é imposto.
+- **A árvore de projetos lista `.xlsx`/`.xlsm`/`.pptx`**: antes só `.md`/`.docx` apareciam — planilha e apresentação ficavam **invisíveis no painel** mesmo estando na pasta do projeto ✗. O teste do Rust cobre as quatro pastas padrão (ordem alfabética, `txt`/imagem fora, pasta vazia fora).
 
 **Ferramentas (dev)**
 
+- **`test:excel` está quebrado em checkout limpo (achado, não consertado)**: o segundo teste (`testar-grade-excel.mjs`) compila o motor com `tsc` sem os tipos do `?raw` (erros `TS2307` sobre `.toml?raw`/`.css?raw`) e, quando compila, o stub de DOM não cobre o seletor novo do app (`melhorarSelects` explode) ✗. Na cópia principal ele passa por acaso: o `temp/` está compilado de antes ✗. Fica registrado para quem for consertar (é teste, não app).
 
 ### Adicionado (na main)
 

@@ -269,6 +269,21 @@ export class Sidebar {
 
   // ---------- projetos ----------
 
+  /**
+   * Põe uma pasta na lista de projetos, por código (a pasta padrão do app entra assim).
+   * Idempotente: se já estiver na lista, não duplica.
+   */
+  async addProjectPath(this: Sidebar, path: string): Promise<void> {
+    if (!path) return;
+    if (!this.projects.some((x) => x.toLowerCase() === path.toLowerCase())) {
+      this.projects.push(path);
+      this.open.add(path);
+      this.persist();
+      await this.refresh();
+    }
+    this.show("projects");
+  }
+
   private async addFolder(): Promise<void> {
     const picked = await this.hooks.pickFolders();
     for (const p of picked) {

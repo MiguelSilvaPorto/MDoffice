@@ -5,8 +5,9 @@ arquivos `.docx` de verdade.
 
 ## Documento e páginas
 
-- **Novo documento Word**: **+ → Documento Word** cria o documento já editável na folha;
-  **Abrir** aceita `.docx` do Word.
+- **Novo documento Word**: **+ → Documento Word** cria o documento já editável na folha **e já
+  salvo** em `Documentos\mdOffice\Word\Documento.docx` (a pasta padrão do app — "Salvar como…"
+  escolhe outro lugar); **Abrir** aceita `.docx` do Word.
 - Folha **A4/Carta** com margens configuráveis (tamanho, orientação, margens, cabeçalho,
   rodapé e “Página X de Y”) em **Layout → Configurar Página**.
 - **Páginas de verdade**: o texto flui de uma página para a outra e parágrafos longos se

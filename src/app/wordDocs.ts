@@ -27,6 +27,8 @@ export const wordDocsMethods = {
     const tab = this.addWordTab(this.wordHost.createTab());
     await this.switchTo(tab.id);
     this.wordHost.focus();
+    // nasce salvo na pasta padrão do app (Documentos/mdOffice/Word), sem perguntar nada
+    await this.nascerNoPadrao("word");
   },
 
   async readDocx(this: App, path: string): Promise<{ doc: PMNode; setup: PageSetup }> {
@@ -178,7 +180,7 @@ export const wordDocsMethods = {
         const suggested = `${tabLabel(tab)}.docx`;
         let defaultPath = suggested;
         try {
-          defaultPath = joinPath(await files.defaultDocsDir(), suggested);
+          defaultPath = joinPath(await this.pastaPadraoDoTipo("word"), suggested);
         } catch {
           /* só o nome */
         }

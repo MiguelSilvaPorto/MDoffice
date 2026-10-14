@@ -4984,6 +4984,95 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   ferramentas, a navegação e as animações/transições/mídia/PDF)
 - **Porquê:** o documento do módulo descreve o que o app faz; o modo apresentação mudou inteiro.
 
+## src/pastas.ts (novo)
+
+### 2026-10-14 · pasta padrão · a regra das pastas, pura
+- **Local:** arquivo inteiro (`TipoComPasta`, `PASTA_DO_TIPO`, `EXTENSAO_DO_TIPO`, `nomeLivre`,
+  `juntarPasta`, `comRaizPadrao`)
+- **Linha:** `novo`
+- **Porquê:** o documento novo precisa de um lugar previsível: `Documentos\mdOffice\<Tipo>\`, com
+  `Markdown`, `Word`, `Excel` e `PowerPoint`. A regra (nome da pasta, extensão, nome livre e a
+  junção de caminho com o separador do sistema) fica pura — sem DOM e sem Tauri — para ser testada
+  no Node e mudar num lugar só. `nomeLivre` existe porque dois documentos novos seguidos não podem
+  colidir: `Documento`, `Documento-2`, `Documento-3`…
+
+## src/app/pastaPadrao.ts (novo)
+
+### 2026-10-14 · pasta padrão · o fluxo que resolve, cria e salva
+- **Local:** arquivo inteiro (`raizPadrao`, `pastaPadraoDoTipo`, `caminhoPadraoLivre`, `pastaPadraoMethods`)
+- **Linha:** `novo`
+- **Porquê:** a raiz vem do Rust (`default_docs_dir` = `…/Documentos/mdOffice`, que já existia sem
+  ninguém usar) e o módulo garante as quatro subpastas na primeira chamada (com `create_folder`,
+  tolerando "já existe"), resolve um caminho livre **checando o disco** (`existsText`) e expõe o
+  `nascerNoPadrao(tipo)`: põe o caminho na aba, marca como não-rascunho, salva pelo fluxo do
+  próprio motor (que pula o diálogo quando a aba já tem caminho), registra a raiz nos projetos e
+  refresca a barra lateral. O erro não é engolido: vira aviso com o caminho de saída ("Salvar
+  como…").
+
+## src/files.ts
+
+### 2026-10-14 · pasta padrão · a ponte para criar pasta
+- **Local:** `createFolder` (novo) e o import do `joinPath`
+- **Linha:** `+ export async function createFolder(parent, name)` — chama `create_folder` e trata
+  "já existe uma pasta com esse nome" como sucesso (devolvendo o caminho)
+- **Porquê:** o comando do Rust recusa quando a pasta existe; a pasta padrão nasce uma vez e é
+  conferida sempre — o app não pode falhar por isso.
+
+## src/sidebar.ts
+
+### 2026-10-14 · pasta padrão · a raiz entra nos projetos por código
+- **Local:** `addProjectPath` (novo, público)
+- **Linha:** `+ async addProjectPath(path)` — deduplica (sem diferenciar caixa), guarda e redesenha
+- **Porquê:** a pasta padrão precisa aparecer na lista de projetos sem passar pelo seletor nativo
+  (`addFolder` continua sendo o caminho de quem escolhe uma pasta na mão).
+
+## src/app/tabs.ts · src/app/wordDocs.ts · src/app/excelDocs.ts · src/app/powerpointDocs.ts
+
+### 2026-10-14 · pasta padrão · os quatro documentos novos nascem salvos
+- **Local:** `newDoc`, `newWordDoc`, `newExcelDoc`, `newPowerPointDoc`
+- **Linha:** `+ await this.nascerNoPadrao("md" | "word" | "excel" | "ppt")` · as duas mensagens
+  antigas ("use Ctrl+Shift+S para salvar como…") saíram
+- **Porquê:** o documento novo era um rascunho até o usuário salvar (com diálogo). Agora ele nasce
+  no lugar previsível — e a mensagem antiga, que ensinava o caminho antigo, saiu junto.
+
+## src/app/documents.ts · src/app/wordDocs.ts · src/app/excelDocs.ts · src/app/powerpointDocs.ts
+
+### 2026-10-14 · pasta padrão · o diálogo já sugere a subpasta do tipo
+- **Local:** o `defaultPath` dos quatro "Salvar como…"
+- **Linha:** `joinPath(await files.defaultDocsDir(), suggested)` → `joinPath(await this.pastaPadraoDoTipo("<tipo>"), suggested)`
+- **Porquê:** quem salva em outro lugar tem a pasta certa já aberta — antes a sugestão era a raiz,
+  sem a subpasta do tipo.
+
+## src-tauri/src/commands/projects.rs · src-tauri/src/commands/tests.rs
+
+### 2026-10-14 · pasta padrão · a árvore de projetos lista os quatro tipos
+- **Local:** `scan_markdown` (a lista de extensões) e o teste novo
+  `a_arvore_do_projeto_lista_os_quatro_tipos_e_esconde_o_resto`
+- **Linha:** `+ .xlsx`, `+ .xlsm`, `+ .pptx` · `+ o teste que monta as quatro pastas padrão e confere
+  ordem, formatos e o que fica fora (txt, png, pasta vazia)`
+- **Porquê:** planilha e apresentação não apareciam na árvore — o painel de projetos só conhecia
+  `.md`/`.docx`. O teste prende a regra nova (e roda em `cargo test`: 30 testes ✓).
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · pasta padrão · 10 verificações
+- **Local:** a seção nova “pasta padrão dos documentos”
+- **Linha:** `+ as checagens das quatro subpastas, das extensões, do separador do sistema, do nome
+  sem colisão, do "nascerNoPadrao" nos quatro fluxos, da ponte de criação e das extensões na
+  árvore do Rust`
+- **Porquê:** sem isso, trocar um nome de pasta (ou esquecer um dos quatro fluxos) passaria em
+  silêncio — o teste lê o código e o módulo puro.
+
+## docs/md.md · docs/word.md · docs/excel.md · docs/powerpoint.md
+
+### 2026-10-14 · pasta padrão · onde o documento novo vive
+- **Local:** “Documentos e imagens” (md), “Novo documento Word”, “A planilha”, “Abrir e salvar .pptx”
+- **Linha:** `+ o item da pasta padrão (Documentos\mdOffice\<Tipo>\)` em cada um, e o item dos
+  rascunhos atualizado (o rascunho continua sendo o que **ainda não foi salvo**)
+- **Porquê:** é mudança de comportamento visível nos quatro motores; o documento de cada módulo
+  precisa dizer para onde o documento novo vai — e o teste do Excel (um achado, não desta tarefa)
+  ficou registrado em Ferramentas (dev).
+
 ---
 
 ## Próximos registros

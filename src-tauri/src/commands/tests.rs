@@ -3,6 +3,7 @@
 use super::assets::copy_assets;
 use super::bundle::export_portable_bundle;
 use super::files::{gravar_bytes, rename_file, unique_md_path};
+use super::projects::list_markdown;
 use super::storage::soma_pasta;
 use super::trash::{limpar, mover, read_index};
 use std::fs;
@@ -249,6 +250,39 @@ fn soma_o_tamanho_de_uma_pasta_recursivamente() {
     assert_eq!(soma_pasta(&root), 35);
     assert_eq!(soma_pasta(&root.join("nao-existe")), 0);
     fs::remove_dir_all(&root).expect("limpa arquivos de teste");
+}
+
+#[test]
+fn a_arvore_do_projeto_lista_os_quatro_tipos_e_esconde_o_resto() {
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("relógio válido")
+        .as_nanos();
+    let raiz = std::env::temp_dir().join(format!("mdoffice-projetos-{nonce}"));
+    // as quatro subpastas padrão do app + uma vazia (que não deve aparecer)
+    for pasta in ["Markdown", "Word", "Excel", "PowerPoint", "Vazia"] {
+        fs::create_dir_all(raiz.join(pasta)).expect("cria a pasta");
+    }
+    fs::write(raiz.join("Markdown/Documento.md"), "texto").expect("cria md");
+    fs::write(raiz.join("Word/Documento.docx"), b"x").expect("cria docx");
+    fs::write(raiz.join("Excel/Documento.xlsx"), b"x").expect("cria xlsx");
+    fs::write(raiz.join("PowerPoint/Documento.pptx"), b"x").expect("cria pptx");
+    fs::write(raiz.join("Excel/Documento.xlsm"), b"x").expect("cria xlsm");
+    fs::write(raiz.join("Markdown/LEIA-ME.txt"), "txt").expect("cria txt");
+    fs::write(raiz.join("Markdown/imagem.png"), b"x").expect("cria png");
+
+    let arvore = list_markdown(raiz.to_string_lossy().to_string()).expect("lê a árvore");
+    let nomes: Vec<&str> = arvore.iter().map(|n| n.name.as_str()).collect();
+    assert_eq!(nomes, vec!["Excel", "Markdown", "PowerPoint", "Word"], "só as pastas com documento, em ordem");
+
+    let excel: Vec<&str> = arvore[0].children.iter().map(|n| n.name.as_str()).collect();
+    assert_eq!(excel, vec!["Documento.xlsm", "Documento.xlsx"], "planilha aparece nos dois formatos");
+    let markdown: Vec<&str> = arvore[1].children.iter().map(|n| n.name.as_str()).collect();
+    assert_eq!(markdown, vec!["Documento.md"], "txt e imagem não entram na árvore");
+    let word: Vec<&str> = arvore[3].children.iter().map(|n| n.name.as_str()).collect();
+    assert_eq!(word, vec!["Documento.docx"]);
+
+    fs::remove_dir_all(&raiz).expect("limpa arquivos de teste");
 }
 
 #[test]

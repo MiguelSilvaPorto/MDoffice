@@ -1,4 +1,4 @@
-//! Lista de documentos ("árvore" de .md/.docx) das pastas dos projetos.
+//! Lista de documentos ("árvore" de .md/.docx/.xlsx/.pptx) das pastas dos projetos.
 
 use serde::Serialize;
 use std::fs;
@@ -48,7 +48,14 @@ fn scan_markdown(dir: &Path, depth: usize, budget: &mut usize) -> Vec<MdNode> {
             }
         } else if kind.is_file() {
             let lower = name.to_lowercase();
-            if lower.ends_with(".md") || lower.ends_with(".markdown") || lower.ends_with(".mdx") || lower.ends_with(".docx") {
+            if lower.ends_with(".md")
+                || lower.ends_with(".markdown")
+                || lower.ends_with(".mdx")
+                || lower.ends_with(".docx")
+                || lower.ends_with(".xlsx")
+                || lower.ends_with(".xlsm")
+                || lower.ends_with(".pptx")
+            {
                 *budget = budget.saturating_sub(1);
                 docs.push(MdNode {
                     name,

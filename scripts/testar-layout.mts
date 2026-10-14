@@ -379,8 +379,50 @@ checa(
 );
 
 // 6. Boas-vindas: o logo é o ÍCONE DO APP (o mesmo da janela), não o "M↓" num quadradinho.
-console.log("\nboas-vindas: o logo é o ícone do app");
+console.log("\npasta padrão dos documentos (Documentos/mdOffice com as quatro subpastas)");
 {
+  const pastas = await import("../src/pastas.ts");
+  checa(
+    "cada tipo tem a sua subpasta",
+    pastas.PASTA_DO_TIPO.md === "Markdown" &&
+      pastas.PASTA_DO_TIPO.word === "Word" &&
+      pastas.PASTA_DO_TIPO.excel === "Excel" &&
+      pastas.PASTA_DO_TIPO.ppt === "PowerPoint",
+    JSON.stringify(pastas.PASTA_DO_TIPO)
+  );
+  checa(
+    "cada tipo nasce com a extensão certa",
+    pastas.EXTENSAO_DO_TIPO.md === "md" && pastas.EXTENSAO_DO_TIPO.word === "docx" && pastas.EXTENSAO_DO_TIPO.excel === "xlsx" && pastas.EXTENSAO_DO_TIPO.ppt === "pptx"
+  );
+  checa(
+    "o caminho usa o separador do sistema e não duplica a barra",
+    pastas.comRaizPadrao("C:\\Users\\ana\\Documents\\mdOffice", "md") === "C:\\Users\\ana\\Documents\\mdOffice\\Markdown" &&
+      pastas.juntarPasta("/home/ana/mdOffice/", "Word") === "/home/ana/mdOffice/Word",
+    pastas.comRaizPadrao("C:\\Users\\ana\\Documents\\mdOffice", "md")
+  );
+  checa(
+    "o nome novo não colide com o que existe",
+    pastas.nomeLivre([], "md") === "Documento.md" &&
+      pastas.nomeLivre(["Documento.md"], "md") === "Documento-2.md" &&
+      pastas.nomeLivre(["documento.md", "Documento-2.md"], "md") === "Documento-3.md",
+    pastas.nomeLivre(["Documento.md"], "md")
+  );
+
+  // o documento novo nasce pela pasta padrão: os quatro fluxos chamam nascerNoPadrao
+  const fluxos = [
+    ["src/app/tabs.ts", "md"],
+    ["src/app/wordDocs.ts", "word"],
+    ["src/app/excelDocs.ts", "excel"],
+    ["src/app/powerpointDocs.ts", "ppt"],
+  ] as [string, string][];
+  for (const [arquivo, tipo] of fluxos) {
+    checa(`${arquivo}: o documento novo nasce na pasta padrão`, new RegExp(`nascerNoPadrao\\("${tipo}"\\)`).test(ler(arquivo)), "sem isso o documento novo continua rascunho");
+  }
+  checa("a ponte cria a pasta no disco", /create_folder/.test(ler("src/files.ts")));
+  checa("a árvore de projetos lista os quatro tipos", /\.xlsx/.test(ler("src-tauri/src/commands/projects.rs")) && /\.pptx/.test(ler("src-tauri/src/commands/projects.rs")));
+}
+
+console.log("\nboas-vindas: o logo é o ícone do app");{
   const preview = ler("src/md/preview.ts");
   const css = ler("src/styles/preview.css");
   checa("o cartão usa a imagem do ícone do app", /class="welcome-logo" src="\/icones\/mdoffice-\$\{icone\}\.png"/.test(preview), "o cartão voltaria ao logo antigo");

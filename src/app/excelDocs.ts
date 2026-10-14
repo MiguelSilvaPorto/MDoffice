@@ -33,7 +33,8 @@ export const excelDocsMethods = {
     const tab = this.addExcelTab(this.excelHost.createTab());
     await this.switchTo(tab.id);
     this.excelHost.focus();
-    toast("Planilha criada — use Ctrl+Shift+S para salvar como .xlsx numa pasta sua.", "ok", 3800);
+    // nasce salva na pasta padrão do app (Documentos/mdOffice/Excel), sem perguntar nada
+    await this.nascerNoPadrao("excel");
   },
 
   /** Lê os bytes de um .xlsx do disco (data URL -> Uint8Array). */
@@ -198,7 +199,7 @@ export const excelDocsMethods = {
         const suggested = `${tabLabel(tab)}.xlsx`;
         let defaultPath = suggested;
         try {
-          defaultPath = joinPath(await files.defaultDocsDir(), suggested);
+          defaultPath = joinPath(await this.pastaPadraoDoTipo("excel"), suggested);
         } catch {
           /* só o nome */
         }

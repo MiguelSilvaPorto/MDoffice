@@ -26,9 +26,15 @@ dentro do documento e contar com uma escrita assistida de português que roda of
 
 - **Imagens**: insira pelo botão *Imagem*, **cole com `Ctrl+V`** ou **arraste o arquivo** para
   a janela. Tudo é copiado para `assets/` com nome limpo (sem acentos/espaços).
-- **Rascunhos na pasta do app**: documento criado e ainda não salvo **não vai para Documentos** —
-  fica na pasta de dados do app, com as imagens em `assets/`. Ao reabrir, o último rascunho é
-  restaurado; ao usar **Salvar como**, o documento **e as imagens** vão juntos e o rascunho sai.
+- **Documento novo já salvo na pasta padrão**: `Ctrl+N` (ou o card do Início) cria o documento e
+  o guarda de uma vez em `Documentos\mdOffice\Markdown\Documento.md` — **sem perguntar pasta**. A
+  raiz entra sozinha nos **Projetos** da barra lateral, com uma subpasta por tipo
+  (`Markdown`, `Word`, `Excel`, `PowerPoint`); "Salvar como…" continua perguntando, já sugerindo
+  a subpasta do tipo.
+- **Rascunhos na pasta do app**: o documento que ainda não foi salvo (ou que você editou e não
+  salvou) **não vai para Documentos** — fica na pasta de dados do app, com as imagens em
+  `assets/`. Ao reabrir, o último rascunho é restaurado; ao salvar, o documento **e as imagens**
+  vão juntos e o rascunho sai.
 - **Como o documento é organizado**: par `.md` + pasta `assets/`, referências relativas —
   pode mover/zipar junto sem quebrar nada ([detalhes](estrutura-do-projeto.md)).
 

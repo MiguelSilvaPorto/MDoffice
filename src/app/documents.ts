@@ -144,7 +144,7 @@ export const documentsMethods = {
         const suggested = this.isDraft || !this.path ? `${this.docTitleForFileName()}.md` : baseName(this.path);
         let defaultPath = suggested;
         try {
-          defaultPath = joinPath(await files.defaultDocsDir(), suggested);
+          defaultPath = joinPath(await this.pastaPadraoDoTipo("md"), suggested);
         } catch {
           /* usa apenas o nome do arquivo */
         }

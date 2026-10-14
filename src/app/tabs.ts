@@ -503,6 +503,8 @@ export const tabsMethods = {
     const tab = newTab(this.editor.createState(""));
     this.tabs.push(tab);
     await this.switchTo(tab.id);
+    // nasce salvo na pasta padrão do app (Documentos/mdOffice/Markdown), sem perguntar nada
+    await this.nascerNoPadrao("md");
   },
 
   /** Cria um documento novo dentro da pasta de um projeto e abre numa aba. */

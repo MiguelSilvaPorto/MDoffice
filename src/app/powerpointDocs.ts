@@ -36,7 +36,8 @@ export const powerpointDocsMethods = {
     const tab = this.addPptTab(this.pptHost.createTab());
     await this.switchTo(tab.id);
     this.pptHost.focus();
-    toast("Apresentação criada — use Ctrl+Shift+S para salvar como .pptx numa pasta sua.", "ok", 3800);
+    // nasce salva na pasta padrão do app (Documentos/mdOffice/PowerPoint), sem perguntar nada
+    await this.nascerNoPadrao("ppt");
   },
 
   /** Lê os bytes de um .pptx do disco (data URL -> Uint8Array). */
@@ -183,7 +184,7 @@ export const powerpointDocsMethods = {
         const suggested = `${tabLabel(tab)}.pptx`;
         let defaultPath = suggested;
         try {
-          defaultPath = joinPath(await files.defaultDocsDir(), suggested);
+          defaultPath = joinPath(await this.pastaPadraoDoTipo("ppt"), suggested);
         } catch {
           /* só o nome */
         }

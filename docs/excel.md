@@ -5,6 +5,9 @@ Planilha com grade que cresce sob demanda, fórmulas em português e abertura de
 
 ## A planilha
 
+- **Planilha nova já salva na pasta padrão**: `+ → Planilha Excel` cria e guarda de uma vez em
+  `Documentos\mdOffice\Excel\Documento.xlsx`, sem perguntar pasta ("Salvar como…" escolhe outro
+  lugar). A raiz entra sozinha nos **Projetos**, com uma subpasta por tipo.
 - **Grade que cresce sozinha**: role ou escreva além do fim e novas linhas/colunas aparecem
   (rolagem infinita), sem tamanho fixo.
 - **Desfazer/refazer** funcionam de qualquer ponto da planilha (`Ctrl+Z` / `Ctrl+Y`).
