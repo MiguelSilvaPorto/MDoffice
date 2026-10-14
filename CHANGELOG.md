@@ -378,7 +378,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **Estilos de cor — o motor (R1, primeira rodada)**: o sistema que vai dar às formas o gradiente
+  bonito da referência começou pela base que ninguém vê: um módulo puro de cor que converte
+  hex↔HSL, gera a **rampa de tons** que preserva a saturação e **desvia o matiz no tom escuro**
+  (o verde vira teal, como na imagem), monta o **esquema casado** (gradiente em diagonal,
+  contorno no tom profundo, sombra leve e a cor do texto por contraste), já sabe o **brilho**
+  (lustro na própria rampa e a dobra como forma-capa) e o recálculo **vivo** (trocar a cor ou o
+  tema refaz a rampa inteira). Nada muda na tela ainda: a galeria, o fundo e os modelos são as
+  rodadas seguintes — o modelo ganhou os campos (`estilo`, `capa`, `bgEstilo`) e o `test:estilos`
+  cobre as 55 regras (cor, rampa, esquema, aplicação, capa e recálculo).
 
 
 ### Adicionado (na main)

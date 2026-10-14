@@ -6504,3 +6504,66 @@ antigas quando fizer sentido.
   fechamento não cabem no mesmo commit). Antes de mover, a conferência olhou que as duas ainda
   **não** estavam em "Adicionado" — a lição da rodada anterior, quando o rebase re-inseriu uma
   entrada já promovida.
+
+## src/powerpoint/schema.ts
+
+### 2026-10-14 · estilos de cor · os tipos e os campos do estilo vivo
+- **Local:** `Shape` (depois de `liga`) e os tipos novos antes de `Tabela`; `Slide` (depois de `bg`)
+- **Linha:** `+ estilo?: EstiloForma;` · `+ capa?: { de: string };` · `+ bgEstilo?: EstiloForma;` ·
+  `+ os tipos FamiliaEstilo/IntensidadeEstilo/BrilhoEstilo/EstiloForma`
+- **Porquê:** o estilo é VIVO: a forma guarda a receita (família, intensidade, brilho, cor-base e
+  ângulo) e a aparência é derivada — trocar a cor, a intensidade ou o tema refaz a rampa. Os
+  tipos moram no schema (e não no módulo do motor) porque os campos os referenciam — mesma razão
+  de `Lado`/`Liga`; assim não há ciclo entre modelo e edição. `capa` é o brilho-dobra (forma
+  derivada, como as ligações) e `bgEstilo` é o fundo da lâmina com estilo (o `bg` passa a ser
+  derivado). Todos opcionais: nada muda para quem não usa estilo.
+
+## src/powerpoint/edicao/estilos.ts (novo arquivo)
+
+### 2026-10-14 · estilos de cor · o motor (R1 do plano)
+- **Local:** novo módulo puro (sem DOM)
+- **Linha:** `novo` — `hexParaHsl`/`hslParaHex` (ida e volta, com a volta do matiz normalizada),
+  `luminancia`/`contrastePara`, `FAMILIAS`/`FAMILIAS_ORDEM`/`INTENSIDADES`, `rampaDeTons`,
+  `LUSTRO`, `esquemaDoEstilo`, `corDoEstilo`, `aplicarEsquemaNaForma`, `capaDaDobra`,
+  `fillDoFundo` e `atualizarEstilos`
+- **Porquê:** é a base do sistema de estilos de cor — o que faz o gradiente "bonito" da
+  referência. A rampa preserva a saturação e DESVIA o matiz no tom escuro (a Esmeralda sai de
+  `1F9D55` para o teal `0E5746` com +20°), o esquema casa contorno, sombra e a cor do texto por
+  contraste, e `atualizarEstilos` é o ponto do "vivo" (mesmo desenho do `atualizarLigacoes`:
+  guarda de custo devolvendo a MESMA lâmina, órfãos removidos, idempotente). Detalhes que valem a
+  leitura: o tom escuro usa `s * 1.08` (não perde frescor) e o claro `s * 0.9`; a abertura por
+  intensidade é em luz (0-1: +8/−10, +13/−17, +18/−24) — **o teste da R1 pegou o primeiro erro
+  exatamente aqui**: os valores nasceram em "pontos" (8, 13…) e eram somados como fração, então
+  tudo batia no teto/piso (claro `E6F9ED`, escuro `072C23`, iguais nas três intensidades); com a
+  fração, a média dá `32CC67 → 1F9D55 → 0E5746`. O ângulo padrão é 45 (a "diagonal" do app —
+  0 = esquerda→direita), e não 135 como no plano original. A capa da dobra é um paralelogramo
+  translúcido com a mesma caixa e giro da base, com o id preservado no recálculo; no fundo a
+  dobra vira lustro (sem forma extra). O texto acompanha só os trechos que usavam a cor anterior
+  da forma — os com cor própria ficam.
+
+## scripts/testar-estilos.mjs (novo arquivo) · package.json
+
+### 2026-10-14 · estilos de cor · 55 verificações
+- **Local:** teste novo (e o script `test:estilos`)
+- **Linha:** `novo` — cor (ida e volta, primárias, cinza, volta do matiz, contraste claro/escuro),
+  rampa (a luz sobe/desce, o desvio do matiz nos dois sinais, saturação, intensidades), esquema
+  (diagonal, 3 paradas, ordem, contorno/sombra, texto, cor do estilo/família/tema, lustro,
+  ângulo), aplicação (muda o que deve, preserva caixa/texto/cantos, não muta a original, trechos
+  com cor própria ficam), capa (caixa/giro, presa à base, caminho fechado, alfa sutil, id
+  estável) e o recálculo vivo (mesma referência sem estilos, derivação, troca de cor e de tema,
+  cor fixa não segue, capa nasce/segue/sai/fica órfã, idempotência, fundo)
+- **Porquê:** é um motor de números: sem os testes, um ajuste de "gosto" (uma abertura, um
+  desvio) muda a cara de todas as formas em silêncio. As asserções prendem as PROPRIEDADES (o
+  escuro esfria, o claro sobe, a ordem das paradas, o id estável) — os hex exatos ficam livres
+  para o polimento visual da R6.
+
+## docs/estilos-de-cor-plano.md (novo arquivo)
+
+### 2026-10-14 · estilos de cor · o plano no repositório
+- **Local:** documento novo (cópia do plano da R1, com o progresso das rodadas)
+- **Linha:** `novo`
+- **Porquê:** o sistema é grande e foi combinado em rodadas para caber em sessões com pouco
+  token: o plano viaja com o repositório para qualquer sessão nova (ou outro agente) retomar da
+  rodada pendente sem depender da conversa. O documento marca a R1 como entregue e registra as
+  correções que a implementação fez no plano (ângulo 45 no lugar de 135; a assinatura da capa
+  sem o esquema; a abertura das intensidades como implementada).

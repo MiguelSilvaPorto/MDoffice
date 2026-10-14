@@ -72,6 +72,8 @@ export interface Slide {
   shapes: Shape[];
   /** fundo próprio da lâmina (veio de um .pptx); vazio = fundo do tema/deck */
   bg?: Fill;
+  /** fundo com estilo vivo (Estilos de Cor): o `bg` é derivado da receita a cada mudança */
+  bgEstilo?: EstiloForma;
   /** oculta na apresentação (F5): continua editável, mas o apresentador pula a lâmina */
   show?: boolean;
   /** nome próprio da lâmina (aparece na miniatura e vira o `name` do `p:cSld` no .pptx) */
@@ -221,6 +223,10 @@ export interface Shape {
   grupo?: string;
   /** ligação presa (ferramenta Conectar): a geometria do conector é DERIVADA das formas ligadas */
   liga?: Liga;
+  /** estilo de cor VIVO (ferramenta Estilos de Cor): a aparência é derivada da receita */
+  estilo?: EstiloForma;
+  /** brilho-dobra: forma-capa derivada de outra (mesma caixa e giro da forma-base) */
+  capa?: { de: string };
   /** travada: aparece, mas não se move nem se redimensiona pelo palco */
   bloqueada?: boolean;
   /** texto alternativo (acessibilidade) */
@@ -272,6 +278,30 @@ export interface Liga {
   parte: "a" | "b";
   /** as duas partes andam juntas (e ficam juntas na seleção) */
   grupo: string;
+}
+
+/** Família de estilo de cor: a receita da rampa (cor própria e desvio do matiz no tom escuro). */
+export type FamiliaEstilo = "esmeralda" | "oceano" | "ameixa" | "ambar" | "rubi" | "grafite" | "propria";
+
+/** O quanto a rampa abre: o tom claro sobe e o escuro desce. */
+export type IntensidadeEstilo = "suave" | "media" | "forte";
+
+/** Acabamento do brilho: nada, lustro (faixa clara na própria rampa) ou dobra (forma-capa). */
+export type BrilhoEstilo = "nada" | "lustro" | "dobra";
+
+/**
+ * Estilo de cor VIVO de uma forma: a forma guarda a receita (família, intensidade e brilho) e a
+ * cor-base, e a aparência (preenchimento, contorno, sombra e cor do texto) é DERIVADA a cada
+ * mudança da lâmina — trocar a cor ou o tema refaz a rampa inteira. Vazio em `base` = cor do tema.
+ */
+export interface EstiloForma {
+  familia: FamiliaEstilo;
+  intensidade: IntensidadeEstilo;
+  brilho: BrilhoEstilo;
+  /** cor-base (hex sem #); vazio = cor própria da família e, sem ela, o acento do tema */
+  base?: string;
+  /** ângulo do gradiente em graus (0 = esquerda→direita, 90 = cima→baixo); padrão 45 (diagonal) */
+  angulo?: number;
 }
 
 export interface Tabela {
