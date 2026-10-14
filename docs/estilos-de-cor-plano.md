@@ -16,7 +16,9 @@
 - [x] **R3 — dobra** (forma-capa) + caso de ouro de exportação no `.pptx` — entregue (2026-10-14).
   A capa nasce agrupada com a base (e o desagrupar manda); a cópia remapeia o grude; o
   `test:pptx-edicao` prende o `a:gradFill`/alfas/`p:grpSp` do estilo.
-- [ ] **R4 — fundo da lâmina** com estilo
+- [x] **R4 — fundo da lâmina** com estilo — entregue (2026-10-14). "Fundo com estilo" no popover
+  do fundo e na seção da lâmina do painel; no fundo a dobra vira lustro e o "Aplicar a todas"
+  leva a receita junto.
 - [ ] **R5 — modelos** (Design) com estilo
 - [ ] **R6 — polimento** (opcional)
 

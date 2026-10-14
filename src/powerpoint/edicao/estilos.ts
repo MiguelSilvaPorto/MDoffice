@@ -296,6 +296,19 @@ export function soltarEstilo(slide: Slide, ids: string[]): Slide {
   return mudou ? { ...slide, shapes } : slide;
 }
 
+/** Liga ou atualiza o estilo do FUNDO da lâmina (a mesma receita; no fundo a dobra vira lustro). */
+export function ligarEstiloFundo(slide: Slide, patch: Partial<EstiloForma>, padrao: EstiloForma): Slide {
+  return { ...slide, bgEstilo: { ...(slide.bgEstilo ?? padrao), ...patch } };
+}
+
+/** Solta o estilo do fundo: o gradiente derivado fica como pintura, editável à mão. */
+export function soltarEstiloFundo(slide: Slide): Slide {
+  if (!slide.bgEstilo) return slide;
+  const n: Slide = { ...slide };
+  delete n.bgEstilo;
+  return n;
+}
+
 /**
  * Recalcula tudo que é derivado do estilo na lâmina: as formas com estilo (preenchimento,
  * contorno, sombra, cor do texto e a capa da dobra) e o fundo com estilo. Apagar a forma-base

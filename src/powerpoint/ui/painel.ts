@@ -5,7 +5,7 @@ import { FAMILIAS, FAMILIAS_ORDEM, INTENSIDADES, rampaDeTons } from "../edicao/e
 import { GRAFICO_TIPOS, paletaDeSeries } from "../edicao/grafico";
 import { MIDIA_ROTULOS } from "../edicao/midia";
 import { ORDEM_LAYOUTS, ROTULOS_LAYOUT } from "../edicao/layouts";
-import type { Fill, Line, Shadow, Shape } from "../schema";
+import type { EstiloForma, Fill, Line, Shadow, Shape } from "../schema";
 import { abrirCores } from "./cores";
 import { cmParaPt, ptParaCm, type EstadoUI } from "./estado";
 import { melhorarSelects, fecharSeletor } from "../../seletor";
@@ -121,7 +121,7 @@ export class Painel {
       f ? f.geom : "",
       // o espaçamento de caracteres do painel segue o trecho escolhido no texto
       est.trecho && est.trecho.spc !== "misto" ? est.trecho.spc : null,
-      est.formas.length ? "" : [est.bg, est.layout, est.setup.theme],
+      est.formas.length ? "" : [est.bg, est.bgEstilo, est.layout, est.setup.theme],
     ]);
   }
 
@@ -403,23 +403,43 @@ export class Painel {
   private htmlLamina(est: EstadoUI): string {
     const f = est.bg;
     const tipo = !f ? "tema" : f.kind === "none" ? "tema" : f.kind;
-    const partes = [
-      `<div class="pf-titulo">Lâmina ${est.indice + 1} de ${est.total}</div>`,
-      secao(
-        "fundo",
-        "Fundo",
-        [
+    const controles = est.bgEstilo
+      ? [this.htmlEstiloFundo(est.bgEstilo), `<button type="button" class="btn small" data-click="fundo-todas">Aplicar a todas as lâminas</button>`].join("")
+      : [
           radios("bg", "bg-tipo", tipo, [["tema", "Do tema"], ["solid", "Sólido"], ["gradient", "Gradiente"], ["image", "Imagem"]]),
           f?.kind === "solid" ? linhaCor("Cor", "bg-cor", f.color ?? "FFFFFF") : "",
           f?.kind === "gradient" ? `${linhaCor("Cor inicial", "bg-grad-cor:0", f.stops?.[0]?.color ?? "FFFFFF")}${linhaCor("Cor final", "bg-grad-cor:1", f.stops?.[f.stops.length - 1]?.color ?? "000000")}${linhaNum("Ângulo", "bg-grad-angulo", f.angle ?? 90, 15, 0, 360, "°")}` : "",
           f?.kind === "image" ? `<button type="button" class="btn small" data-click="fundo-imagem">Trocar imagem…</button>` : "",
           `<button type="button" class="btn small" data-click="fundo-todas">Aplicar a todas as lâminas</button>`,
-        ].join("")
-      ),
+        ].join("");
+    const partes = [
+      `<div class="pf-titulo">Lâmina ${est.indice + 1} de ${est.total}</div>`,
+      secao("fundo", "Fundo", controles),
       secao("layout", "Layout", linhaSel("Layout", "layout-sel", est.layout, ORDEM_LAYOUTS.map((id) => [id, ROTULOS_LAYOUT[id]] as [string, string]))),
       `<p class="pf-dica">Selecione uma forma na lâmina para formatar o preenchimento, a linha, os efeitos, o tamanho e o texto dela. <b>Clique e arraste</b> para desenhar com uma forma escolhida em <b>Inserir</b>.</p>`,
     ];
     return partes.join("");
+  }
+
+  /** A seção "Fundo" com estilo (as mesmas famílias das formas; no fundo a dobra vira lustro). */
+  private htmlEstiloFundo(e: EstiloForma): string {
+    const base = (e.base ?? "").trim() || FAMILIAS[e.familia]?.base || "";
+    const familias = FAMILIAS_ORDEM.map((id) => {
+      const rec = FAMILIAS[id];
+      const cor = rec.base || base || "8A8F98";
+      const r = rampaDeTons(cor, e.intensidade, rec.desvio);
+      const previa = id === "propria" ? `background:#${cor}` : `background:linear-gradient(135deg,#${r.claro},#${r.cor} 45%,#${r.escuro})`;
+      return `<button type="button" class="pf-estilo-fam${e.familia === id ? " on" : ""}" data-click="fundo-estilo" data-valor="familia:${id}" title="${rec.nome}" aria-label="${rec.nome}" aria-pressed="${e.familia === id}"><span style="${previa}"></span></button>`;
+    }).join("");
+    return [
+      `<div class="pf-linha"><span>Família</span><span class="pf-estilo-fams">${familias}</span></div>`,
+      radios("est-fundo-int", "fundo-est-int", e.intensidade, INTENSIDADES.map((i) => [i.id, i.nome] as [string, string])),
+      radios("est-fundo-bri", "fundo-est-bri", e.brilho === "dobra" ? "lustro" : e.brilho, [["nada", "Sem brilho"], ["lustro", "Lustro"]] as [string, string][]),
+      linhaNum("Ângulo", "fundo-est-angulo", e.angulo ?? 45, 15, 0, 360, "°"),
+      linhaCor("Cor-base", "fundo-est-cor", base || null),
+      `<button type="button" class="btn small" data-click="fundo-estilo" data-valor="desligar">Desligar o estilo do fundo</button>`,
+      `<p class="pf-nota">O fundo segue a mesma receita das formas: a cor-base refaz a rampa e, sem cor própria, ele acompanha o tema. No fundo não há dobra — o brilho fica no lustro.</p>`,
+    ].join("");
   }
 }
 

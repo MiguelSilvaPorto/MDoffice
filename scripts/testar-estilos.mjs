@@ -256,5 +256,25 @@ const parada = (fill, pos) => fill.stops.find((p) => Math.abs(p.pos - pos) < 0.0
   ok("cópia: copiar só a capa solta o grude", !soCapa.capa && soCapa.id !== c1.id);
 }
 
+// ---------------------------------------------------------------- o fundo com estilo (R4)
+{
+  const semFundo = lâmina([]);
+  const l1 = E.ligarEstiloFundo(semFundo, { familia: "esmeralda", base: "" }, E.estiloDaFamilia("esmeralda"));
+  ok("fundo: ligar cria a receita", l1.bgEstilo.familia === "esmeralda" && l1.bgEstilo.brilho === "lustro" && l1.bgEstilo.angulo === 45);
+  const d1 = E.atualizarEstilos(l1, dim, tema);
+  ok("fundo: o bg vira o gradiente da rampa", d1.bg.kind === "gradient" && parada(d1.bg, 45).color === "1F9D55");
+  const l2 = E.ligarEstiloFundo(d1, { intensidade: "forte" }, E.estiloDaFamilia("esmeralda"));
+  ok("fundo: ajustar preserva o resto da receita", l2.bgEstilo.intensidade === "forte" && l2.bgEstilo.familia === "esmeralda");
+  const solto = E.soltarEstiloFundo(d1);
+  ok("fundo: soltar remove a receita e mantém o gradiente como pintura", !solto.bgEstilo && solto.bg.kind === "gradient");
+  ok("fundo: depois de soltar, o recálculo devolve a MESMA lâmina", E.atualizarEstilos(solto, dim, tema) === solto);
+  ok("fundo: sem estilo, soltar devolve a mesma lâmina", E.soltarEstiloFundo(semFundo) === semFundo);
+  const doTema = E.ligarEstiloFundo(semFundo, {}, E.estiloDaFamilia("propria"));
+  ok("fundo: sem cor própria, usa o acento do tema", parada(E.atualizarEstilos(doTema, dim, { acento: "336699" }).bg, 45).color === "336699");
+  const comDobra = E.ligarEstiloFundo(semFundo, { brilho: "dobra" }, E.estiloDaFamilia("esmeralda"));
+  const d2 = E.atualizarEstilos(comDobra, dim, tema);
+  ok("fundo: a dobra vira lustro (e não cria forma)", d2.bg.stops.some((p) => p.color === "FFFFFF" && p.alpha < 1) && d2.shapes.length === 0);
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);

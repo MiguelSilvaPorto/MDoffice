@@ -934,6 +934,24 @@ console.log("\nestilos de cor (galeria, painel e o vivo)");
     /\.pp-estilo-cartao\s*\{/.test(cssEst) && /\.pp-estilo-previa\s*\{/.test(cssEst) && /\.pf-estilo-fam\s*\{/.test(cssEst),
     "faltou estilo das prévias"
   );
+  checa(
+    "o fundo da lâmina também tem estilo (fita, painel e host)",
+    /data-extra="fundo-estilo:familia:\$\{id\}"/.test(fitaEst) &&
+      /data-extra="fundo-estilo:desligar"/.test(fitaEst) &&
+      /private htmlEstiloFundo\(e: EstiloForma\)/.test(painelEst) &&
+      /data-click="fundo-estilo" data-valor="desligar"/.test(painelEst) &&
+      /case "fundo-estilo":\s*this\.fundoEstilo\(String\(value \?\? ""\)\)/.test(pptEst) &&
+      /private fundoEstilo\(acao: string\)/.test(pptEst),
+    "o fundo com estilo ficaria sem porta"
+  );
+  checa(
+    "com estilo no fundo, a cor vira a base e a edição manual o solta",
+    /case "fundo-cor":[\s\S]{0,400}ligarEstiloFundo\(s, \{ base: String\(value\)\.toUpperCase\(\) \}/.test(pptEst) &&
+      /case "fundo-grad": \{[\s\S]{0,400}ligarEstiloFundo\(s, \{ angulo: ang\[dir\]/.test(pptEst) &&
+      /case "fundo-todas": \{[\s\S]{0,700}if \(bgEstilo\) n\.bgEstilo = bgEstilo/.test(pptEst) &&
+      /bgEstilo: this\.atual\(\)\.bgEstilo/.test(pptEst),
+    "o vivo do fundo (cor, ângulo e aplicar a todas) ficaria pela metade"
+  );
 }
 
 // ---------------------------------------------------------------- docs sem marcador de conflito

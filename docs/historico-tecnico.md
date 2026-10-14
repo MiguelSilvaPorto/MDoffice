@@ -7337,3 +7337,77 @@ antigas quando fizer sentido.
   mover), então a promoção não afirma nada falso; como nas rodadas anteriores, ela anda num passo
   curto de docs porque o registro de autoria e a promoção não cabem no mesmo commit do
   `fechar.ps1`. Nada de worktree em andamento foi tocado.
+## src/powerpoint/edicao/estilos.ts
+
+### 2026-10-14 · estilos de cor · ligar e soltar o fundo (R4)
+- **Local:** depois de `soltarEstilo` — o par do fundo
+- **Linha:** `novo` — `ligarEstiloFundo(slide, patch, padrao)` e `soltarEstiloFundo(slide)`
+- **Porquê:** o fundo tem UMA receita por lâmina (não há seleção nem ids): `ligarEstiloFundo`
+  cria/atualiza o `bgEstilo` com o mesmo contrato do `ligarEstilo` (nasce com o padrão, o ajuste
+  preserva o resto) e `soltarEstiloFundo` tira a receita **deixando o `bg` derivado como pintura**
+  — é o "Desligar" do fundo, e é o que também protege as edições manuais do painel. O motor
+  (`atualizarEstilos`/`fillDoFundo`) já tratava o `bgEstilo` desde a R1; aqui só entraram as duas
+  operações que a interface precisa.
+
+## src/powerpoint/ui/estado.ts · src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · estilos de cor · o estado do fundo e o host (R4)
+- **Local:** `EstadoUI` (o campo `bgEstilo`) e, no host, o estado da fita/painel + `fundoEstilo`
+  + os casos `fundo-est-*` + `bg-tipo`/`fundo-cor`/`fundo-grad`/`bg-grad-angulo`/`fundo-todas`
+- **Linha:** `+ bgEstilo?: EstiloForma;` no `EstadoUI` e `+ bgEstilo: this.atual().bgEstilo` no
+  estado · `+ private fundoEstilo(acao)` · `case "fundo-cor"`: com estilo, a cor vira
+  `ligarEstiloFundo(s, { base: … })` · `case "fundo-grad"`: com estilo, vira `{ angulo }` ·
+  `case "bg-tipo"`: com estilo, "gradiente" não mexe e o resto solta · `case "fundo-todas"`:
+  leva o `bgEstilo` junto
+- **Porquê:** a fita e o painel só sabem o que mostrar pelo `EstadoUI` — sem o campo, o cartão
+  ativo e os controles do fundo não teriam de onde sair. O roteamento segue a MESMA regra das
+  formas (cor → base, orientação → ângulo, tipo/radial → pintura manual), porque duas regras
+  diferentes para o mesmo conceito confundiriam. O `fundo-todas` foi o caso que quase escapou:
+  ele copiava só o `bg` (o gradiente derivado de uma lâmina) — sem o `bgEstilo`, as outras
+  lâminas receberiam a pintura e a lâmina de origem continuaria viva, e a divergência apareceria
+  só no próximo recálculo (o `bg` de todas seria reescrito pela receita da lâmina atual). Agora a
+  receita viaja junto, e quem aplicar "todas" fica com o deck inteiro vivo.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · estilos de cor · o Fundo com estilo no popover (R4)
+- **Local:** `menuFundo` (o `extra` do `abrirCores`)
+- **Linha:** `+ a seção "Fundo com estilo" com os cartões das famílias (data-extra
+  fundo-estilo:familia:<id>) e o "Desligar o estilo do fundo" quando há receita`
+- **Porquê:** o popover do fundo já tinha o mecanismo do `data-extra` (as orientações de
+  gradiente o usam) — então a seção nova não precisou de fiação: o mesmo `aoExtra` despacha
+  `fundo-estilo:…` para o host. A prévia de cada cartão usa a MESMA rampa/`intensidade` da receita
+  atual, como na galeria das formas; o "Desligar" só aparece quando existe algo para desligar.
+
+## src/powerpoint/ui/painel.ts
+
+### 2026-10-14 · estilos de cor · a seção do fundo no painel (R4)
+- **Local:** `htmlLamina` (o `controles` condicional), `htmlEstiloFundo` e `assinar`
+- **Linha:** `+ const controles = est.bgEstilo ? [htmlEstiloFundo(est.bgEstilo), …] : [os controles
+  de sempre]` · `+ private htmlEstiloFundo(e)` · `assinar`: `+ est.bgEstilo` no ramo da lâmina
+- **Porquê:** com estilo, os controles crus do fundo (tipo, cor, paradas) mentiriam — o recálculo
+  os derruba na próxima mudança; a seção vira a da receita, com a mesma fileira de famílias das
+  formas. O brilho do fundo só oferece **Sem brilho/Lustro**: a dobra é uma forma-capa e, no
+  fundo, viraria uma forma em cada lâmina — o motor já converte `dobra` em `lustro`, e a interface
+  diz isso na nota em vez de oferecer um botão que mentiria. O `assinar` ganhou o `bgEstilo` pelo
+  mesmo motivo do `estilo` nas formas: sem ele o painel não redesenha quando só a receita muda.
+
+## scripts/testar-estilos.mjs · scripts/testar-layout.mts
+
+### 2026-10-14 · estilos de cor · o fundo testado (R4)
+- **Local:** o bloco "o fundo com estilo" e os dois checks novos de layout
+- **Linha:** `+ 9 verificações` (ligar cria a receita, o bg vira a rampa, o ajuste preserva, soltar
+  mantém a pintura, sem estilo devolve a mesma lâmina, o tema acompanha, a dobra vira lustro sem
+  criar forma) · `+ 2 checagens` (as portas da fita/painel/host e o roteamento com o `fundo-todas`)
+- **Porquê:** o fundo é o caso em que o "vivo" tem a superfície mais visível do deck — os testes
+  prendem a rampa no `bg`, o desligar e a regra do tema; e as checagens de layout prendem o que
+  não se vê no motor: as portas e o `bgEstilo` chegando ao estado da interface.
+
+## docs/powerpoint.md · docs/estilos-de-cor-plano.md
+
+### 2026-10-14 · estilos de cor · o fundo no doc e a R4 no plano (R4)
+- **Local:** a seção "Estilos de cor" (a bala nova do fundo) e a checklist do plano
+- **Linha:** `+ a bala do fundo com estilo (as mesmas famílias, o vivo e a dobra que vira lustro)` ·
+  `+ R4 marcada como entregue`
+- **Porquê:** o fundo muda o que o usuário vê na lâmina inteira e a seção é onde ele procura; e o
+  plano atualizado é o que permite a R5 (Modelos) retomar numa sessão nova.

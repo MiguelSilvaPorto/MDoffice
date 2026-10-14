@@ -1043,6 +1043,20 @@ export class Fita {
           <div class="pp-gradientes">
             ${["cima", "baixo", "esquerda", "direita", "diagonal", "radial"].map((g) => `<button type="button" class="pp-grad" data-extra="fundo-grad:${g}" title="Gradiente ${g}"><span class="g-${g}"></span></button>`).join("")}
           </div>
+          <div class="pp-pop-t">Fundo com estilo</div>
+          <div class="pp-estilos-gal">
+            ${FAMILIAS_ORDEM.filter((id) => id !== "propria")
+              .map((id) => {
+                const rec = FAMILIAS[id];
+                const r = rampaDeTons(rec.base, est.bgEstilo?.intensidade ?? "media", rec.desvio);
+                return `<button type="button" class="pp-estilo-cartao${est.bgEstilo?.familia === id ? " on" : ""}" data-extra="fundo-estilo:familia:${id}" title="${rec.nome}">
+                  <span class="pp-estilo-previa" style="background:linear-gradient(135deg,#${r.claro} 0%,#${r.cor} 45%,#${r.escuro} 100%)"></span>
+                  <span class="pp-estilo-nome">${rec.nome}</span>
+                </button>`;
+              })
+              .join("")}
+          </div>
+          ${est.bgEstilo ? `<button type="button" class="pp-pop-item" data-extra="fundo-estilo:desligar">Desligar o estilo do fundo</button>` : ""}
           <button type="button" class="pp-pop-item" data-extra="fundo-imagem:">Imagem do computador…</button>
           <button type="button" class="pp-pop-item" data-extra="fundo-todas:">Aplicar este fundo a todas as lâminas</button>`,
       },

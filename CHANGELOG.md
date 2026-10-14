@@ -396,6 +396,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Estilos de cor (R4 — o fundo da lâmina)**: as mesmas famílias agora pintam o **fundo**: no
+  popover **Formatar fundo** (e na seção Fundo do painel quando nada está selecionado) entrou o
+  **"Fundo com estilo"** com os cartões das famílias — um clique dá ao fundo o **gradiente da
+  rampa com lustro** (no fundo não há dobra: o brilho fica no lustro). O fundo é **vivo** como as
+  formas: escolher uma **cor** vira a **cor-base** (a rampa se refaz), as **orientações de
+  gradiente** viram o **ângulo**, sem cor própria ele **acompanha o tema**, e editar o fundo à
+  mão (tipo, cor do tema, gradiente radial) **solta o estilo**, deixando o gradiente atual como
+  pintura. O **"Aplicar a todas as lâminas"** leva o estilo junto (senão as outras voltariam ao
+  tema) e o painel ganhou Família, Intensidade, Brilho, Ângulo, Cor-base e o **Desligar o estilo
+  do fundo**.
 - **Ideias de design: o texto não some mais** (e o contraste é conferido): com um design escuro, o
   texto das formas ficava **claro sobre cartão branco** e desaparecia (print do usuário). Duas
   causas: o branco puro dos cartões ficava fora do remapeamento e a cor do texto era escolhida

@@ -195,6 +195,13 @@ avisado ao abrir (nunca some em silêncio).
 - No `.pptx` o gradiente vai **nativo** (parada a parada, com transparência), o contorno e a
   sombra vão no lugar certo e a **Dobra abre como um grupo** (base + capa no mesmo `p:grpSp`,
   editável lá); o conceito "vivo" não existe no arquivo — reimportar traz o visual como pintura.
+- **O fundo da lâmina também aceita estilo**: no popover **Formatar fundo** há a seção **Fundo com
+  estilo** (as mesmas famílias, com a prévia real) e o painel da lâmina traz Família, Intensidade,
+  Brilho, Ângulo, Cor-base e o **Desligar o estilo do fundo**. O fundo é vivo como as formas —
+  escolher uma cor vira a **cor-base** (a rampa se refaz), as orientações de gradiente viram o
+  **ângulo**, sem cor própria ele acompanha o tema e a edição manual solta o estilo, deixando o
+  gradiente como pintura. No fundo **não há dobra**: o brilho fica no lustro. "Aplicar a todas as
+  lâminas" leva o estilo junto.
 
 ## Apresentar (F5)
 

@@ -9,7 +9,7 @@ import { fluxoParaFormas, lerFluxoMermaid } from "./edicao/mermaid";
 import { ligarAjusteAlturaFita, ligarRecolherFita } from "../fita";
 import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, novaImagem, type EstiloDeck, type ItemGaleria } from "./edicao/criar";
 import { dicaDoTraco, formaDoTraco, type Pincel } from "./edicao/desenho";
-import { atualizarEstilos, ehBrilho, ehFamilia, ehIntensidade, estiloDaFamilia, ligarEstilo, soltarEstilo } from "./edicao/estilos";
+import { atualizarEstilos, ehBrilho, ehFamilia, ehIntensidade, estiloDaFamilia, ligarEstilo, ligarEstiloFundo, soltarEstilo, soltarEstiloFundo } from "./edicao/estilos";
 import { atualizarLigacoes, ligacaoParaFormas } from "./edicao/ligacoes";
 import { ajustarCor, CANTOS, comAjuste, comCantos, comLinha, comOpacidade, comPreenchimento, comRaioDeCanto, comSombra, gradiente, SOMBRAS_PRONTAS, solido, corPrincipal, type Canto } from "./edicao/formato";
 import { aspectSize, stageRatio } from "./schema";
@@ -685,6 +685,36 @@ export class PowerPointHost {
     }
   }
 
+  /** Fundo com estilo: a mesma receita das formas (no fundo a dobra vira lustro, sem forma-capa). */
+  private fundoEstilo(acao: string): void {
+    const [op, valor = ""] = acao.split(":");
+    if (op === "desligar") {
+      this.editar((s) => soltarEstiloFundo(s), "fundo");
+      return;
+    }
+    if (op === "familia" && ehFamilia(valor)) {
+      this.editar((s) => ligarEstiloFundo(s, { familia: valor, base: "" }, estiloDaFamilia(valor)), "fundo");
+      return;
+    }
+    if (op === "intensidade" && ehIntensidade(valor)) {
+      this.editar((s) => ligarEstiloFundo(s, { intensidade: valor }, estiloDaFamilia("esmeralda")), "fundo");
+      return;
+    }
+    if (op === "brilho" && ehBrilho(valor)) {
+      this.editar((s) => ligarEstiloFundo(s, { brilho: valor }, estiloDaFamilia("esmeralda")), "fundo");
+      return;
+    }
+    if (op === "angulo") {
+      const ang = Math.round(Math.max(0, Math.min(360, Number(valor))));
+      if (!Number.isFinite(ang)) return;
+      this.editar((s) => ligarEstiloFundo(s, { angulo: ang }, estiloDaFamilia("esmeralda")), "fundo");
+      return;
+    }
+    if (op === "cor" && /^[0-9A-Fa-f]{6}$/.test(valor)) {
+      this.editar((s) => ligarEstiloFundo(s, { base: valor.toUpperCase() }, estiloDaFamilia("propria")), "fundo");
+    }
+  }
+
   /** Aplica uma edição à lâmina atual: guarda o desfazer, troca a lâmina e redesenha. */
   private editar(fn: (s: Slide) => Slide, chave = ""): void {
     const antes = this.atual();
@@ -954,6 +984,7 @@ export class PowerPointHost {
       fontes: this.fontesDoDeck(),
       setup: this.setup,
       bg: this.atual().bg,
+      bgEstilo: this.atual().bgEstilo,
       temGrupo: formas.some((s) => !!s.grupo),
       largura: forma ? (forma.box.w / 100) * d.w : 0,
       altura: forma ? (forma.box.h / 100) * d.h : 0,
@@ -2054,6 +2085,21 @@ export class PowerPointHost {
       case "est-cor-bri":
         this.estiloCor("brilho:" + String(value ?? ""));
         return;
+      case "fundo-estilo":
+        this.fundoEstilo(String(value ?? ""));
+        return;
+      case "fundo-est-int":
+        this.fundoEstilo("intensidade:" + String(value ?? ""));
+        return;
+      case "fundo-est-bri":
+        this.fundoEstilo("brilho:" + String(value ?? ""));
+        return;
+      case "fundo-est-angulo":
+        this.fundoEstilo("angulo:" + String(value ?? ""));
+        return;
+      case "fundo-est-cor":
+        this.fundoEstilo("cor:" + String(value ?? ""));
+        return;
 
       // ---- tamanho, posição, giro ----
       case "tamanho-w":
@@ -2121,6 +2167,18 @@ export class PowerPointHost {
 
       // ---- fundo da lâmina ----
       case "bg-tipo": {
+        // com estilo no fundo, "gradiente" é o que ele já é; o resto é edição manual (solta o estilo)
+        if (sl.bgEstilo) {
+          if (value === "gradient") return;
+          if (value === "tema") return this.editar((s) => ({ ...soltarEstiloFundo(s), bg: undefined }), "fundo");
+          if (value === "image") {
+            this.editar((s) => soltarEstiloFundo(s), "fundo");
+            return this.run("fundo-imagem");
+          }
+          const t = themeOf(this.setup.theme);
+          const atual = sl.bg?.kind === "solid" ? sl.bg.color! : t.bg;
+          return this.editar((s) => ({ ...soltarEstiloFundo(s), bg: solido(atual) }), "fundo");
+        }
         if (value === "tema") return this.editar((s) => ({ ...s, bg: undefined }));
         if (value === "image") return this.run("fundo-imagem");
         const t = themeOf(this.setup.theme);
@@ -2130,19 +2188,31 @@ export class PowerPointHost {
       }
       case "fundo-cor":
       case "bg-cor":
-        return this.editar((s) => ({ ...s, bg: value === "tema" ? undefined : solido(String(value)) }), "fundo");
+        // com estilo no fundo, a cor escolhida é a COR-BASE (a rampa inteira se refaz)
+        if (sl.bgEstilo && value !== "tema") return this.editar((s) => ligarEstiloFundo(s, { base: String(value).toUpperCase() }, estiloDaFamilia("propria")), "fundo");
+        return this.editar((s) => ({ ...soltarEstiloFundo(s), bg: value === "tema" ? undefined : solido(String(value)) }), "fundo");
       case "fundo-grad": {
-        const base = sl.bg?.kind === "solid" ? sl.bg.color! : this.estilo().acento;
+        const dir = String(value);
         const ang: Record<string, number> = { baixo: 90, cima: 270, direita: 0, esquerda: 180, diagonal: 45 };
-        const bg: Fill = value === "radial" ? { ...gradiente(ajustarCor(base, 1.3), ajustarCor(base, 0.75)), radial: true, angle: undefined } : gradiente(ajustarCor(base, 1.3), ajustarCor(base, 0.75), ang[String(value)] ?? 90);
-        return this.editar((s) => ({ ...s, bg }));
+        if (sl.bgEstilo && dir !== "radial") return this.editar((s) => ligarEstiloFundo(s, { angulo: ang[dir] ?? 90 }, estiloDaFamilia("esmeralda")), "fundo");
+        const base = sl.bg?.kind === "solid" ? sl.bg.color! : this.estilo().acento;
+        const bg: Fill = dir === "radial" ? { ...gradiente(ajustarCor(base, 1.3), ajustarCor(base, 0.75)), radial: true, angle: undefined } : gradiente(ajustarCor(base, 1.3), ajustarCor(base, 0.75), ang[dir] ?? 90);
+        return this.editar((s) => ({ ...soltarEstiloFundo(s), bg }), "fundo");
       }
       case "bg-grad-angulo":
+        if (sl.bgEstilo) return this.editar((s) => ligarEstiloFundo(s, { angulo: Number(value) }, estiloDaFamilia("esmeralda")), "fundo");
         return this.editar((s) => (s.bg?.kind === "gradient" ? { ...s, bg: { ...s.bg, angle: Number(value) } } : s), "fundo");
       case "fundo-todas": {
+        // o estilo do fundo viaja junto com o gradiente (senão as outras lâminas voltariam ao tema)
         const bg = sl.bg;
+        const bgEstilo = sl.bgEstilo;
         this.registrar();
-        this.slides = this.slides.map((x) => ({ ...x, bg }));
+        this.slides = this.slides.map((x) => {
+          const n: Slide = { ...x, bg };
+          if (bgEstilo) n.bgEstilo = bgEstilo;
+          else delete n.bgEstilo;
+          return n;
+        });
         this.markDirty();
         this.pintar();
         return;

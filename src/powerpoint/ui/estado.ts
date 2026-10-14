@@ -2,7 +2,7 @@
 import type { EstadoTrecho } from "../edicao/texto";
 import type { Canto } from "../edicao/formato";
 import type { CelulasSel, Ferramenta } from "../stage";
-import type { Animacao, DeckSetup, Fill, Para, Shape, SlideLayout, Transicao } from "../schema";
+import type { Animacao, DeckSetup, EstiloForma, Fill, Para, Shape, SlideLayout, Transicao } from "../schema";
 
 export interface EstadoUI {
   temLamina: boolean;
@@ -35,6 +35,8 @@ export interface EstadoUI {
   fontes: string[];
   setup: DeckSetup;
   bg?: Fill;
+  /** o fundo tem estilo vivo (Estilos de Cor): os controles do fundo viram os da receita */
+  bgEstilo?: EstiloForma;
   /** transição de entrada da lâmina atual (normalizada) */
   transicao?: Transicao;
   /** a lâmina tem uma transição do .pptx que o app não representa (fica guardada crua) */
