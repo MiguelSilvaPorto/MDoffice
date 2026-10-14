@@ -88,6 +88,69 @@ export const PREDICADOS: Record<string, string> = {
   nao_espaco: `[^${CLASSES.espaco}]`,
 };
 
+/**
+ * Blocos do documento reconhecidos por título de seção.
+ *
+ * É vocabulário fechado porque o nome do bloco é referência de dado (`contexto.blocos`)
+ * e precisa significar a mesma coisa para todas as regras. A comparação é feita sobre o
+ * título NORMALIZADO (caixa alta, sem acento, sem numeração) — ver `normalizarTitulo`.
+ * "REFERÊNCIAS BIBLIOGRÁFICAS" casa com `referencias` porque depois do sinônimo vem um
+ * espaço; "LISTAS DE FIGURAS" não casa com `lista-de-figuras` (o plural muda a palavra).
+ */
+export const BLOCOS: Record<string, string[]> = {
+  referencias: ["REFERÊNCIAS", "REFERENCIAS"],
+  resumo: ["RESUMO"],
+  abstract: ["ABSTRACT"],
+  sumario: ["SUMÁRIO", "SUMARIO"],
+  "lista-de-figuras": ["LISTA DE FIGURAS", "LISTA DE ILUSTRAÇÕES", "ÍNDICE DE FIGURAS"],
+  "lista-de-tabelas": ["LISTA DE TABELAS", "ÍNDICE DE TABELAS"],
+  "lista-de-siglas": ["LISTA DE SIGLAS", "LISTA DE ABREVIATURAS E SIGLAS"],
+  "lista-de-abreviaturas": ["LISTA DE ABREVIATURAS"],
+  "lista-de-simbolos": ["LISTA DE SÍMBOLOS"],
+  glossario: ["GLOSSÁRIO", "GLOSSARIO"],
+  apendices: ["APÊNDICES", "APÊNDICE"],
+  anexos: ["ANEXOS", "ANEXO"],
+  capa: ["CAPA"],
+  "folha-de-aprovacao": ["FOLHA DE APROVAÇÃO", "FOLHA DE APROVACAO"],
+  "folha-de-rosto": ["FOLHA DE ROSTO"],
+};
+
+/**
+ * Normaliza título de seção para comparar com `BLOCOS`: sem numeração, sem acento,
+ * caixa alta, espaços colapsados, sem dois-pontos no fim.
+ * "3.2 Referências Bibliográficas:" → "REFERENCIAS BIBLIOGRAFICAS".
+ */
+export function normalizarTitulo(titulo: string): string {
+  return titulo
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toUpperCase()
+    .replace(/^\s*\d+(?:\.\d+)*\.?\s+/, "") // "3.2 REFERÊNCIAS" → "REFERÊNCIAS"
+    .replace(/\s+/g, " ")
+    .replace(/:\s*$/, "")
+    .trim();
+}
+
+/** O título normalizado casa com o sinônimo (igual ou começando com ele + espaço)? */
+export function tituloCasa(normalizado: string, sinonimo: string): boolean {
+  // o sinônimo é escrito em caixa alta NOS DOIS SENTIDOS (com e sem acento) porque quem
+  // compara é este teste; normalizar aqui evita a segunda lista virar armadilha
+  const alvo = normalizarTitulo(sinonimo);
+  return normalizado === alvo || normalizado.startsWith(`${alvo} `);
+}
+
+/**
+ * Tipos de regra. `texto` é a regra de regex do dialeto fechado; `estrutura` é o
+ * verificador que olha o documento (seções, parágrafos, listas); `docx` roda no
+ * arquivo exportado, fora do texto, e é carregado por quem valida o `.docx`.
+ */
+export const TIPOS = ["texto", "estrutura", "docx"] as const;
+export type TipoRegra = (typeof TIPOS)[number];
+
+/** Onde a regra de texto procura: no texto todo ou dentro de blocos nomeados. */
+export const ESCOPOS = ["texto", "bloco"] as const;
+export type Escopo = (typeof ESCOPOS)[number];
+
 /** Formatações de captura aceitas em `{nome:formato}`. */
 export const FORMATOS = ["minusculo", "mapa"] as const;
 export type Formato = (typeof FORMATOS)[number];
@@ -105,15 +168,30 @@ export interface RegraToml {
   severidade: "error" | "warning" | "suggestion";
   /** `auto` = pode ser aplicada sozinha (o antigo `safe`) */
   auto?: boolean;
-  regex: string;
+  /** `texto` (padrão), `estrutura` (verificador do documento) ou `docx` (arquivo exportado) */
+  tipo?: TipoRegra;
+  /** onde a regra de texto procura (padrão `texto`) */
+  escopo?: Escopo;
+  /** com `escopo = "bloco"`: os blocos em que a regra vale (`referencias`, `resumo`…) */
+  contexto?: { blocos?: string[] };
+  /** com `tipo = "estrutura"`: o nome do verificador (em `verificadores/`) */
+  verifica?: string;
+  /** parâmetros do verificador — a forma é de quem o escreve, documentada no arquivo dele */
+  opcoes?: Record<string, unknown>;
+  /** obrigatório nas regras de `texto`; o lint recusa a que não tiver */
+  regex?: string;
   /** intenção, não sintaxe: o motor liga `i` por conta disso */
   ignorar_caixa?: boolean;
   /** de qual grupo nomeado do regex sai o trecho que o aviso cobre e a troca substitui */
-  trecho: string;
+  trecho?: string;
   antes?: string;
   depois?: string;
   /** não acusa quando a troca ficaria igual ao que já está escrito */
   pular_se_igual?: boolean;
+  /**
+   * A troca. É opcional: regra de aviso (que não sabe a correção — "completar os dados
+   * da referência") acusa sem ele, e o aviso sai sem sugestão.
+   */
   substituir?: string;
   mensagem: string;
   transformar?: Transformador;

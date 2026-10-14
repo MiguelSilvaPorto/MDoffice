@@ -5,7 +5,7 @@
 // contradisse a si mesma (`{hs}` de grupo não capturante, `[espaco]` que é regex
 // válida) foram pegas por leitura humana, não por máquina.
 
-import { CLASSES, FORMATOS, LISTAS, PREDICADOS, TRANSFORMADORES, type RegraCrua, type RegraToml } from "./esquema";
+import { BLOCOS, CLASSES, ESCOPOS, FORMATOS, LISTAS, PREDICADOS, TIPOS, TRANSFORMADORES, type RegraCrua, type RegraToml } from "./esquema";
 
 /** Escapes que o schema aceita no texto do padrão. */
 const ESCAPES_OK = new Set([
@@ -124,15 +124,71 @@ export function lerCapturas(texto: string): { nome: string; formato?: string }[]
  * "conserta" nada em silêncio.
  */
 export function conferirRegra(crua: RegraCrua, reclamar: (erro: string) => void): RegraToml | null {
-  const faltando = (["id", "norma", "grupo", "severidade", "regex", "trecho"] as const).filter(
-    (campo) => !crua[campo]
-  );
+  const erro = (texto: string) => reclamar(texto);
+
+  const faltando = (["id", "norma", "grupo", "severidade"] as const).filter((campo) => !crua[campo]);
   if (faltando.length) {
     reclamar(`faltam campos: ${faltando.join(", ")}`);
     return null;
   }
+
+  const tipo = crua.tipo ?? "texto";
+  if (!(TIPOS as readonly string[]).includes(tipo)) {
+    erro(`tipo desconhecido: ${tipo} (aceitos: ${TIPOS.join(", ")})`);
+    return null;
+  }
+
+  // Regra que não é de texto: quem julga é o verificador; o que se confere aqui é a
+  // DECLARAÇÃO (e o que ela não pode carregar — campo de regex em regra de estrutura
+  // seria dado morto, e dado morto mente).
+  if (tipo !== "texto") {
+    if (!crua.verifica) {
+      erro(`falta \`verifica\` (regra de ${tipo} sem verificador não verifica nada)`);
+      return null;
+    }
+    const soDaTexto = ["regex", "trecho", "substituir", "transformar", "antes", "depois", "mapa", "pular_se_igual", "ignorar_caixa", "contexto", "escopo"] as const;
+    for (const campo of soDaTexto) {
+      if (crua[campo] !== undefined) {
+        erro(`regra de ${tipo} não usa \`${campo}\` (quem decide o que olhar é o verificador)`);
+        return null;
+      }
+    }
+    return crua as RegraToml;
+  }
+
+  if (!crua.regex) {
+    erro("falta `regex`");
+    return null;
+  }
+  if (!crua.trecho) {
+    erro("falta `trecho`");
+    return null;
+  }
+  const trecho = crua.trecho;
   const regra = crua as RegraToml;
-  const erro = (texto: string) => reclamar(texto);
+
+  // Onde a regra procura. Bloco é a seção nomeada pelo título (ver `BLOCOS`).
+  const escopo = regra.escopo ?? "texto";
+  if (!(ESCOPOS as readonly string[]).includes(escopo)) {
+    erro(`escopo desconhecido: ${escopo} (aceitos: ${ESCOPOS.join(", ")})`);
+    return null;
+  }
+  if (escopo === "bloco") {
+    const blocos = regra.contexto?.blocos;
+    if (!Array.isArray(blocos) || !blocos.length) {
+      erro(`escopo "bloco" exige \`contexto.blocos\` (ex.: contexto = { blocos = ["referencias"] })`);
+      return null;
+    }
+    for (const bloco of blocos) {
+      if (!(bloco in BLOCOS)) {
+        erro(`bloco desconhecido: ${bloco} (conhecidos: ${Object.keys(BLOCOS).join(", ")})`);
+        return null;
+      }
+    }
+  } else if (regra.contexto) {
+    erro('`contexto` só vale com `escopo = "bloco"`');
+    return null;
+  }
 
   // A mensagem é obrigatória quando não há transformador: é ele que a escreve.
   if (!regra.mensagem && !regra.transformar) {
@@ -153,7 +209,7 @@ export function conferirRegra(crua: RegraCrua, reclamar: (erro: string) => void)
     return null;
   }
 
-  const v = varrerPadrao(regra.regex);
+  const v = varrerPadrao(crua.regex);
   if (v.recusados.length) {
     erro(`sintaxe fora do dialeto: ${[...new Set(v.recusados)].join(", ")}`);
     return null;
@@ -177,9 +233,9 @@ export function conferirRegra(crua: RegraCrua, reclamar: (erro: string) => void)
     }
   }
 
-  if (!v.grupos.includes(regra.trecho)) {
+  if (!v.grupos.includes(trecho)) {
     erro(
-      `trecho "${regra.trecho}" não é grupo nomeado do regex` +
+      `trecho "${trecho}" não é grupo nomeado do regex` +
         (v.grupos.length ? ` (tem: ${v.grupos.join(", ")})` : " (o regex não tem grupo nomeado)")
     );
     return null;
@@ -210,11 +266,10 @@ export function conferirRegra(crua: RegraCrua, reclamar: (erro: string) => void)
     }
   }
 
-  if (!regra.substituir && !regra.transformar) {
-    erro("a regra não tem `substituir` nem `transformar`: não há como produzir a correção");
-    return null;
-  }
-
+  // Regra de aviso é regra: sem `substituir` nem `transformador` ela acusa sem
+  // sugerir a correção — é o caso de "completar os dados da referência", em que a
+  // máquina não sabe o dado que falta. (Antes isto era recusado; o catálogo mostrou
+  // que metade das regras é de conferência, não de troca.)
   return regra;
 }
 

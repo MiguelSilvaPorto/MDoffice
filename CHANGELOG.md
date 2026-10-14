@@ -32,6 +32,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Motor ABNT — contexto de documento e regras de estrutura**: o motor sabia conferir
+  padrão de texto, mas não sabia *onde* no documento — e as normas cobram exatamente isso
+  ("a lista de referências existe", "o sumário bate com os títulos", "o resumo tem
+  150–500 palavras"). Agora a regra pode declarar **escopo de bloco** (`referencias`,
+  `resumo`, `sumário`, listas…) ou **tipo "estrutura"**, que delega a um verificador com o
+  modelo do documento na mão (títulos, parágrafos, linhas tipadas, contagem de palavras).
+  Regra de conferência também passou a existir: quando a correção não é conhecida
+  ("complete os dados da referência"), o aviso sai sem sugestão, em vez de obrigar a
+  inventar uma troca. É a base das 31 regras restantes do catálogo (grupos E, C, R, S, A,
+  P e T) e vem com o contrato escrito em `docs/abnt-como-escrever-regras.md`.
 - **Avisos de estilo com a correção pronta no popup**: clicar num aviso como **"Frase muito
   comprida"** agora mostra o trecho **já corrigido** ("… do novo projeto. E combinamos de …") com
   um clique para aplicar — antes o popup só dizia "comece nova frase aqui". Nesses avisos os botões

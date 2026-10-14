@@ -83,7 +83,7 @@ export function aplicarPerfil(regras: RegraToml[], perfil: Perfil): RegraToml[] 
 }
 
 /** As regras ABNT prontas para o motor de estilo, na ordem original. */
-export const REGRAS_ABNT: Rule[] = carregarRegras().map(regraDeToml);
+export const REGRAS_ABNT: Rule[] = carregarRegras().map((regra) => regraDeToml(regra));
 
 /**
  * Lê o perfil base que embarca no app.
@@ -104,6 +104,13 @@ export function perfilBase(): Perfil {
   return cru;
 }
 
-export { CLASSES, LISTAS, PREDICADOS };
+export { CLASSES, LISTAS, PREDICADOS, BLOCOS, normalizarTitulo, tituloCasa } from "./esquema";
 export { regraDeToml };
 export type { RegraToml };
+
+// O modelo do documento e os verificadores: é o que as regras de contexto e de
+// estrutura usam, e o que quem escreve regra nova precisa alcançar para testar.
+export { documentoDe, ancoraNoFim, ancoraNoInicio, contarPalavras } from "./documento";
+export type { Documento, Secao, Paragrafo, Linha, Faixa } from "./documento";
+export { VERIFICADORES, verificador } from "./verificadores";
+export type { Aviso, Verificador } from "./verificadores";

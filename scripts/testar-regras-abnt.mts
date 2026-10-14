@@ -155,8 +155,18 @@ console.log("\nlint da carga");
   recusa("classe usada fora de colchetes", { ...base, regex: "(?<trecho><<digito>>)" });
   recusa("lista usada dentro de colchetes", { ...base, regex: "(?<trecho>[<<meses>>])" });
   recusa("trecho que não é grupo nomeado", { ...base, trecho: "outro" });
-  recusa("sem substituir e sem transformar", { ...base, substituir: undefined });
   recusa("predicado desconhecido", { ...base, antes: "predicado_inventado" });
+  recusa("escopo de bloco sem contexto", { ...base, escopo: "bloco" });
+  recusa("bloco desconhecido", { ...base, escopo: "bloco", contexto: { blocos: ["introducao"] } });
+  recusa("tipo desconhecido", { ...base, tipo: "mágica" });
+  recusa("regra de estrutura sem verificador", {
+    ...base,
+    tipo: "estrutura",
+    regex: undefined,
+    trecho: undefined,
+    substituir: undefined,
+    mensagem: undefined,
+  });
 }
 
 // ---------------------------------------------------------------- 3. teste de ouro

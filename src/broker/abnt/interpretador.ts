@@ -1,12 +1,15 @@
 // ABNT — o interpretador: transforma uma regra em TOML numa regra do app.
 //
 // O contrato de saída é o que já existe (`RuleCtx`), então o motor de estilo continua
-// chamando `Rule` e não sabe de onde a regra veio.
+// chamando `Rule` e não sabe de onde a regra veio — nem se ela é um padrão ou um
+// verificador do documento.
 
 import type { Rule, RuleCtx } from "../style/types";
 import type { RegraToml, Transformador } from "./esquema";
 import { PREDICADOS } from "./esquema";
 import { expandir } from "./lint";
+import { documentoDe, type Faixa } from "./documento";
+import { VERIFICADORES, type Verificador } from "./verificadores";
 
 interface ResultadoTransformador {
   sugestoes: string[];
@@ -79,21 +82,67 @@ function preencher(texto: string, grupos: Record<string, string>, regra: RegraTo
  *    nunca depois do fim. Retomar pelo fim pularia um match válido que se sobrepõe ao
  *    rejeitado.
  * 3. **A troca acontece sobre o trecho**, não sobre o match inteiro.
+ * 4. **`escopo = "bloco"`** deixa a regra valer só dentro das seções pedidas — fora
+ *    delas é silêncio, inclusive quando o bloco não existe no documento.
+ * 5. **`tipo = "estrutura"`** delega ao verificador; o TOML fica sendo a declaração
+ *    (id, norma, severidade, parâmetros) e o julgamento mora em `verificadores/`.
+ *
+ * O `registro` existe para o TESTE poder injetar um verificador de mentira sem mexer
+ * no registro de verdade (`regraDeToml(regra, { meu: () => [...] })`).
  */
-export function regraDeToml(regra: RegraToml): Rule {
+export function regraDeToml(regra: RegraToml, registro: Record<string, Verificador> = VERIFICADORES): Rule {
+  const tipo = regra.tipo ?? "texto";
+
+  if (tipo === "docx") {
+    throw new Error(`regra ${regra.id} é do .docx: não roda no texto (quem a usa é o validador do arquivo exportado)`);
+  }
+
+  if (tipo === "estrutura") {
+    const impl = registro[regra.verifica ?? ""];
+    if (!impl) {
+      const conhecidos = Object.keys(registro);
+      throw new Error(
+        `regra ${regra.id}: verificador desconhecido "${regra.verifica ?? ""}" (conhecidos: ${conhecidos.join(", ") || "nenhum"})`
+      );
+    }
+    return ({ text, push }: RuleCtx) => {
+      const doc = documentoDe(text);
+      for (const aviso of impl(doc, regra)) {
+        // o verificador responde pelo que devolve: faixa fora do texto é recortada
+        // aqui para o aviso não virar span inválido no editor
+        const de = Math.max(0, Math.min(aviso.from, text.length));
+        const ate = Math.max(de, Math.min(aviso.to, text.length));
+        push(de, ate, aviso.mensagem, aviso.fix, aviso.sugestoes ?? [], (aviso.auto ?? regra.auto) === true);
+      }
+    };
+  }
+
+  if (!regra.regex) throw new Error(`regra ${regra.id}: regra de texto sem regex (o lint deveria ter recusado)`);
   const fonte = expandir(regra.regex);
   const flags = regra.ignorar_caixa ? "giu" : "gu";
   const rx = new RegExp(fonte, flags);
   const predAntes = regra.antes ? new RegExp(PREDICADOS[regra.antes], "u") : null;
   const predDepois = regra.depois ? new RegExp(PREDICADOS[regra.depois], "u") : null;
   const transformador = regra.transformar ? IMPLEMENTACOES[regra.transformar] : null;
+  const nomeDoTrecho = regra.trecho ?? "trecho";
 
-  return ({ mask, push }: RuleCtx) => {
+  return ({ text, mask, push }: RuleCtx) => {
+    // o modelo do documento só é lido quando a regra precisa dele (bloco)
+    const regioes: Faixa[] | null =
+      regra.escopo === "bloco" ? documentoDe(text).regioesDeBlocos(regra.contexto?.blocos ?? []) : null;
+
     rx.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = rx.exec(mask)) !== null) {
       const inicio = m.index;
       const fim = m.index + m[0].length;
+
+      // escopo de bloco: fora dos blocos pedidos a regra não acusa — e a retomada segue
+      // a mesma regra do descarte (um caractere depois do INÍCIO)
+      if (regioes && !regioes.some((f) => inicio >= f.from && fim <= f.to)) {
+        rx.lastIndex = inicio + 1;
+        continue;
+      }
 
       // bordas: sem caractere antes/depois é verdadeiro (é o que substitui o
       // lookbehind/lookahead sem consumir nada)
@@ -107,7 +156,7 @@ export function regraDeToml(regra: RegraToml): Rule {
       // grupos nomeados, o bruto e o trecho
       const grupos: Record<string, string> = {};
       for (const [nome, valor] of Object.entries(m.groups ?? {})) grupos[nome] = valor ?? "";
-      const trechoRel = m.groups?.[regra.trecho];
+      const trechoRel = m.groups?.[nomeDoTrecho];
       if (trechoRel === undefined) continue;
       const deslocamento = m[0].indexOf(trechoRel);
       const de = inicio + (deslocamento >= 0 ? deslocamento : 0);
@@ -126,13 +175,17 @@ export function regraDeToml(regra: RegraToml): Rule {
         sugestoes = saida.sugestoes;
         mensagem = saida.mensagem;
         fix = saida.fix;
-      } else {
-        fix = preencher(regra.substituir ?? "", grupos, regra);
+      } else if (regra.substituir !== undefined) {
+        fix = preencher(regra.substituir, grupos, regra);
         if (regra.pular_se_igual && fix === mask.slice(de, ate)) {
           rx.lastIndex = inicio + 1;
           continue;
         }
         sugestoes = [fix];
+        mensagem = preencher(regra.mensagem ?? "", grupos, regra);
+      } else {
+        // regra de aviso: acusa sem saber a troca ("completar os dados da referência")
+        sugestoes = [];
         mensagem = preencher(regra.mensagem ?? "", grupos, regra);
       }
 

@@ -25,7 +25,8 @@
     "icon": "tauri icon app-icon.png",
     "prep:dicionario": "node scripts/copiar-dicionario.mjs",
     "prep:modelo": "node scripts/baixar-modelo.mjs",
-    "test:abnt": "node scripts/testar-regras-abnt.mts"
+    "test:abnt": "node scripts/testar-regras-abnt.mts",
+    "test:abnt-contexto": "node scripts/testar-abnt-contexto.mts"
   },
   "dependencies": {
     "@codemirror/commands": "^6.6.0",

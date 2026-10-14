@@ -2131,6 +2131,61 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/broker/abnt/ (base nova) · scripts/abnt/ · docs/abnt-como-escrever-regras.md
+
+### 2026-10-14 · (este commit) · contexto de documento, escopo de bloco e verificadores
+- **Local:** `src/broker/abnt/esquema.ts`, `RegraToml`
+- **Linha:** `novo` — `tipo` (`texto`/`estrutura`/`docx`), `escopo` (`texto`/`bloco`),
+  `contexto.blocos`, `verifica`, `opcoes`; `regex` e `trecho` viraram opcionais e
+  `substituir` também (regra de aviso)
+- **Porquê:** as 31 regras restantes do catálogo (E, C, R, S, A, P, T) não são todas
+  padrão de texto. "A lista de referências existe" e "o sumário bate com os títulos" só
+  se respondem olhando o documento; e "complete os dados da referência" não sabe a troca —
+  obrigar toda regra a ter `substituir` forçaria a inventar correção. O tipo e o escopo
+  são declarados no TOML e o lint os confere na carga.
+- **Local:** `src/broker/abnt/documento.ts` (novo)
+- **Linha:** `novo` — `documentoDe(texto)`: linhas tipadas, parágrafos, seções, blocos
+- **Porquê:** é a única fonte de "onde começa a seção de referências" e "o que é um
+  parágrafo" — sem ela, cada regra reinventa a leitura e duas regras discordam. A leitura
+  é do texto ORIGINAL (não da máscara: título mascarado deixaria de ser título) e tem
+  cache de uma entrada, como o `checkStyle`. O `\r` do CRLF fica fora da faixa da linha
+  (o app normaliza antes, mas o modelo não depende disso para estar certo). `BLOCOS` e
+  `normalizarTitulo` moram no esquema: o nome do bloco é vocabulário, e o lint o confere.
+- **Local:** `src/broker/abnt/lint.ts`, `conferirRegra`
+- **Linha:** `antes → depois`: campos comuns + ramo por tipo; `escopo = "bloco"` exige
+  `contexto.blocos` conhecido; campo de regex em regra de estrutura é RECUSADO
+- **Porquê:** a sintaxe continua fechada, agora incluindo o que cada tipo pode carregar —
+  campo morto mente (uma `regex` numa regra de estrutura sugere que ela casa padrão, e
+  não casa). A obrigação de `substituir` saiu pelo motivo acima.
+- **Local:** `src/broker/abnt/interpretador.ts`, `regraDeToml`
+- **Linha:** `antes → depois`: o match é filtrado pelos blocos do escopo; `tipo =
+  "estrutura"` delega ao verificador e recorta faixa fora do texto; regra sem
+  `substituir` acusa sem sugestão; aceita um registro injetado (para teste)
+- **Porquê:** o filtro de bloco segue a mesma regra do descarte (retoma um caractere
+  depois do INÍCIO quando está fora); o recorte de faixa evita span inválido no editor
+  quando o verificador erra a conta; o registro injetado é o que permite testar o
+  despacho do verificador sem escrever um verificador de mentira de verdade.
+- **Local:** `src/broker/abnt/verificadores/` (novo)
+- **Linha:** `novo` — contrato (`tipos.ts`), sete arquivos por grupo e o registro (`index.ts`)
+- **Porquê:** o julgamento estrutural é código, mas é código DECLARADO: um mapa
+  `nome → função`, um arquivo por grupo (dois trabalhos em paralelo não brigam pelo mesmo
+  arquivo) e o registro que agrega. Verificador desconhecido derruba a carga com a lista
+  dos conhecidos. As opções do TOML entram por `opcaoTexto`/`opcaoLista`/`opcaoNumero`,
+  que reclamam quando falta — em vez de `undefined` circulando.
+- **Local:** `scripts/abnt/ferramentas.mts` (novo), `scripts/testar-abnt-contexto.mts`
+  (novo) e `scripts/testar-regras-abnt.mts`
+- **Linha:** `novo` e `antes → depois`: a recusa "sem substituir e sem transformar" saiu;
+  entraram as recusas de escopo/tipo
+- **Porquê:** o ajudante concentra o empacotamento com o plugin `?raw` (que já falhou por
+  estar duplicado em dois `build()`) e deixa o teste de cada grupo ser só os casos. O teste
+  da base confere escopo de bloco, regra de aviso, despacho de verificador, recorte de
+  faixa e o modelo do documento — antes de qualquer regra nova depender disso.
+- **Local:** `docs/abnt-como-escrever-regras.md` (novo)
+- **Porquê:** o contrato em prosa, com os dois lados de cada teste e o que o lint recusa.
+  É o que permite mais de uma pessoa (ou agente) escrever regra sem inventar dialeto.
+
+---
+
 ## Próximos registros
 
 Este documento foi **semeado** com as mudanças mais recentes (até 2026-10-13). A partir daqui,
