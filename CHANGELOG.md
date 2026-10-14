@@ -464,6 +464,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   "depois" encadeiam sozinhos. O `.pptx` escreve um efeito por parágrafo **não vazio** (`pRg`) com
   `bldLst build="p"` e o importador colapsa o build de volta numa animação; se a cobertura dos
   parágrafos não bater com o texto da forma, o timing volta cru, com aviso.
+- **Animações, degrau 5**: os presets clássicos **Voar** e **Zoom** (entrada) e **Voar fora** e
+  **Encolher** (saída), com o **Voar escolhendo a borda** no grupo Direção (padrão "de baixo", como
+  o PowerPoint). A forma voa de fora da lâmina (medida na hora), o zoom cresce do centro com fade
+  e o encolher termina invisível. Round-trip do `p:timing` com `anim` de `ppt_x`/`ppt_y` (tavLst
+  de/para), escala 0–100% e fade; diagonais e as variantes do zoom (subtype 16/32) ficam crus,
+  com aviso.
 - **Diálogos do app no lugar de janelas do sistema**: **Novo modelo** (botão Template) e
   **Renomear lâmina** agora usam o diálogo de texto do app — com o tema, dica, Enter/OK,
   Esc/Cancelar e clique fora; ao criar, a galeria reabre já com o cartão novo.

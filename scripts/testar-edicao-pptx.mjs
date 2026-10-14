@@ -536,6 +536,14 @@ const AN = await empacotar("src/powerpoint/edicao/animacao.ts", "animacao.mjs");
   const comPP = AN.comPorParagrafo(comTraj, "s1", true);
   ok("animação: comPorParagrafo liga e desliga o build", comPP[0].porParagrafo === true && AN.comPorParagrafo(comPP, "s1", false)[0].porParagrafo === undefined);
   ok("animação: paragrafosDe conta só os não vazios", JSON.stringify(AN.paragrafosDe({ paras: [{ runs: [1] }, { runs: [] }, { runs: [2, 3] }] })) === "[0,2]");
+
+  // voar e zoom: direção padrão do voar e classes
+  ok("animação: voar nasce com direção baixo", AN.normalizarAnimacao({ forma: "s1", tipo: "voar" }).direcao === "baixo");
+  ok(
+    "animação: classes de voar/zoom",
+    AN.CLASSE_ANIMACAO.voar === "entrada" && AN.CLASSE_ANIMACAO.zoom === "entrada" && AN.CLASSE_ANIMACAO.voarFora === "saida" && AN.CLASSE_ANIMACAO.encolher === "saida"
+  );
+  ok("animação: direção vale no voar e na trajetória", AN.aceitaDirecaoAnimacao("voar") && AN.aceitaDirecaoAnimacao("voarFora") && AN.aceitaDirecaoAnimacao("trajetoria") && !AN.aceitaDirecaoAnimacao("zoom"));
 }
 
 // ---------------------------------------------------------------- round-trip do p:timing
@@ -630,6 +638,33 @@ const TEXP = await empacotar("src/powerpoint/pptxexport/timing.ts", "timing-exp.
   ok("timing: trajetória com outra distância fica crua", !TIMP.lerTiming(meia, spids).animacoes);
   const curva = TEXP.xmlTiming([{ forma: "s1", tipo: "trajetoria", direcao: "direita" }], ids, []).replace('path="M 0 0 L 0.25 0 E"', 'path="M 0 0 C 0 -0.25 0.25 -0.25 0.25 0 E"');
   ok("timing: trajetória em curva fica crua", !TIMP.lerTiming(curva, spids).animacoes);
+
+  // Voar (entrada/saída): round-trip das quatro direções (subtypes 1/2/4/8, um eixo parado)
+  for (const [direcao, sub] of [["cima", 1], ["direita", 2], ["baixo", 4], ["esquerda", 8]]) {
+    for (const [tipo, classe] of [["voar", "entr"], ["voarFora", "exit"]]) {
+      const m = [{ forma: "s1", tipo, duracao: 0.5, direcao }];
+      const xmlV = TEXP.xmlTiming(m, ids, []);
+      const volta = TIMP.lerTiming(xmlV, spids);
+      ok(
+        `timing: round-trip ${tipo} ${direcao}`,
+        xmlV.includes(`presetID="2" presetClass="${classe}" presetSubtype="${sub}"`) && JSON.stringify(volta.animacoes) === JSON.stringify(m),
+        JSON.stringify([m, volta])
+      );
+    }
+  }
+  // Voar diagonal (os dois eixos se movem) fica cru
+  const diagonal = TEXP.xmlTiming([{ forma: "s1", tipo: "voar", direcao: "direita" }], ids, []).replace('val="#ppt_y"', 'val="1+#ppt_h/2"');
+  ok("timing: voar diagonal fica cru", !TIMP.lerTiming(diagonal, spids).animacoes);
+
+  // Zoom/Encolher: round-trip e a variante (subtype 16) ficando crua
+  for (const [tipo, classe] of [["zoom", "entr"], ["encolher", "exit"]]) {
+    const m = [{ forma: "s1", tipo, duracao: 1 }];
+    const xmlZ = TEXP.xmlTiming(m, ids, []);
+    const volta = TIMP.lerTiming(xmlZ, spids);
+    ok(`timing: round-trip ${tipo}`, xmlZ.includes(`presetID="53" presetClass="${classe}"`) && JSON.stringify(volta.animacoes) === JSON.stringify(m), JSON.stringify([m, volta]));
+  }
+  const zoomVariante = TEXP.xmlTiming([{ forma: "s1", tipo: "zoom" }], ids, []).replace('presetSubtype="0"', 'presetSubtype="16"');
+  ok("timing: zoom com variante (subtype 16) fica cru", !TIMP.lerTiming(zoomVariante, spids).animacoes);
 
   // "por parágrafo": um efeito por parágrafo NÃO vazio + bldP build="p"; o importador colapsa de volta
   {

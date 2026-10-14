@@ -20,16 +20,16 @@ export interface TimingLido {
 
 const RE_TIMING = /<p:timing\b[\s\S]*?<\/p:timing>/;
 
-/** Preset do PowerPoint -> tipo do modelo (aparecer = 1; surgir/sumir = fade = 10; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9; trajetória em linha = 64). */
+/** Preset do PowerPoint -> tipo do modelo (aparecer = 1; surgir/sumir = fade = 10; voar = 2; zoom = 53; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9; trajetória em linha = 64). */
 const PRESETS: Record<string, Record<string, AnimacaoTipo>> = {
-  entr: { "1": "aparecer", "10": "surgir" },
+  entr: { "1": "aparecer", "10": "surgir", "2": "voar", "53": "zoom" },
   emph: { "26": "pulsar", "6": "ampliar", "8": "girar", "9": "transparencia" },
-  exit: { "1": "desaparecer", "10": "sumir" },
+  exit: { "1": "desaparecer", "10": "sumir", "2": "voarFora", "53": "encolher" },
   path: { "64": "trajetoria" },
 };
 
-/** Subtypes aceitos na trajetória (as quatro direções do preset "Linhas"; 0 aparece em arquivos antigos). */
-const SUB_TRAJETORIA = ["0", "1", "2", "4", "8"];
+/** Subtypes aceitos nos efeitos com direção (as quatro direções; 0 aparece em arquivos antigos). */
+const SUBS_DIRECAO = ["0", "1", "2", "4", "8"];
 
 /** Linha reta de 25% da lâmina (`M 0 0 L x y E`) -> direção; qualquer outro caminho fica fora do modelo. */
 function direcaoDaLinha(caminhoTexto: string): AnimacaoDirecao | undefined {
@@ -40,6 +40,24 @@ function direcaoDaLinha(caminhoTexto: string): AnimacaoDirecao | undefined {
   if (!Number.isFinite(x) || !Number.isFinite(y)) return undefined;
   if (Math.abs(y) < 1e-6 && Math.abs(Math.abs(x) - 0.25) < 1e-6) return x > 0 ? "direita" : "esquerda";
   if (Math.abs(x) < 1e-6 && Math.abs(Math.abs(y) - 0.25) < 1e-6) return y > 0 ? "baixo" : "cima";
+  return undefined;
+}
+
+/** Valor de um `p:tav` (0 = de, 100000 = para) dentro de um `p:anim`. */
+function valorTav(anim: No, tm: string): string | undefined {
+  const tav = (filho(anim, "tavLst")?.c ?? []).find((t) => t.n === "tav" && t.a.tm === tm);
+  return tav ? caminho(tav, "val/strVal")?.a.val : undefined;
+}
+
+/** Valor de voo fora da borda ("1+#ppt_w/2"…) -> direção; `#ppt_x`/`#ppt_y` = eixo parado. */
+function direcaoDoValor(v: string | undefined, eixo: "x" | "y"): AnimacaoDirecao | undefined | "parado" {
+  if (!v) return undefined;
+  if (eixo === "x" && (v === "#ppt_x")) return "parado";
+  if (eixo === "y" && (v === "#ppt_y")) return "parado";
+  if (eixo === "x" && v.startsWith("1+#ppt_w")) return "direita";
+  if (eixo === "x" && v.startsWith("0-#ppt_w")) return "esquerda";
+  if (eixo === "y" && v.startsWith("1+#ppt_h")) return "baixo";
+  if (eixo === "y" && v.startsWith("0-#ppt_h")) return "cima";
   return undefined;
 }
 
@@ -97,8 +115,8 @@ function lerEfeito(ctn: No, seqInterativa: boolean): EfeitoLido | undefined {
   const tipo = PRESETS[classe]?.[preset];
   if (!tipo) return undefined;
   const sub = ctn.a.presetSubtype ?? "0";
-  if (tipo !== "trajetoria" && sub !== "0") return undefined;
-  if (tipo === "trajetoria" && !SUB_TRAJETORIA.includes(sub)) return undefined;
+  const comDirecao = tipo === "trajetoria" || tipo === "voar" || tipo === "voarFora";
+  if (comDirecao ? !SUBS_DIRECAO.includes(sub) : sub !== "0") return undefined;
   // repetição, reversão e suavização do próprio efeito: fora do modelo
   if (ctn.a.repeatCount !== undefined || ctn.a.autoRev !== undefined || ctn.a.accel !== undefined || ctn.a.decel !== undefined) return undefined;
   // o atraso do efeito é modelado (o XML usa milissegundos); gatilho por evento não
@@ -132,6 +150,40 @@ function lerEfeito(ctn: No, seqInterativa: boolean): EfeitoLido | undefined {
   } else if (tipo === "surgir" || tipo === "sumir") {
     if (!so("set", "animEffect") || atributoDoSet(set!) !== "style.visibility") return undefined;
     if (!animEff || animEff.a.filter !== "fade" || animEff.a.transition !== (tipo === "surgir" ? "in" : "out")) return undefined;
+  } else if (tipo === "voar" || tipo === "voarFora") {
+    if (!so("set", "anim") || atributoDoSet(set!) !== "style.visibility") return undefined;
+    const anims = comportamentos.filter((b) => b.n === "anim");
+    const ax = anims.find((x) => achar(x, "attrName")?.t === "ppt_x");
+    const ay = anims.find((x) => achar(x, "attrName")?.t === "ppt_y");
+    if (!ax || !ay) return undefined;
+    const entra = tipo === "voar";
+    const fromX = valorTav(ax, "0");
+    const toX = valorTav(ax, "100000");
+    const fromY = valorTav(ay, "0");
+    const toY = valorTav(ay, "100000");
+    const paradoX = fromX === "#ppt_x" && toX === "#ppt_x";
+    const paradoY = fromY === "#ppt_y" && toY === "#ppt_y";
+    const dirX = paradoX ? "parado" : direcaoDoValor(entra ? fromX : toX, "x");
+    const dirY = paradoY ? "parado" : direcaoDoValor(entra ? fromY : toY, "y");
+    // exatamente um eixo se move (diagonais e valores desconhecidos ficam fora)
+    if (dirX === "parado" && typeof dirY === "string" && dirY !== "parado") direcao = dirY;
+    else if (dirY === "parado" && typeof dirX === "string" && dirX !== "parado") direcao = dirX;
+    else return undefined;
+    // o eixo que se move parte/chega no lugar de verdade (#ppt_x/#ppt_y)
+    if ((direcao === "esquerda" || direcao === "direita") && (entra ? toX : fromX) !== "#ppt_x") return undefined;
+    if ((direcao === "cima" || direcao === "baixo") && (entra ? toY : fromY) !== "#ppt_y") return undefined;
+  } else if (tipo === "zoom" || tipo === "encolher") {
+    if (!so("anim", "animEffect", "set") || atributoDoSet(set!) !== "style.visibility") return undefined;
+    const anims = comportamentos.filter((b) => b.n === "anim");
+    const aw = anims.find((x) => achar(x, "attrName")?.t === "ppt_w");
+    const ah = anims.find((x) => achar(x, "attrName")?.t === "ppt_h");
+    if (!aw || !ah) return undefined;
+    const entra = tipo === "zoom";
+    const deW = entra ? "0" : "#ppt_w";
+    const paraH = entra ? "#ppt_h" : "0";
+    if (valorTav(aw, "0") !== deW || valorTav(aw, "100000") !== (entra ? "#ppt_w" : "0")) return undefined;
+    if (valorTav(ah, "0") !== (entra ? "0" : "#ppt_h") || valorTav(ah, "100000") !== paraH) return undefined;
+    if (!animEff || animEff.a.filter !== "fade" || animEff.a.transition !== (entra ? "in" : "out")) return undefined;
   } else if (tipo === "pulsar" || tipo === "ampliar") {
     if (!so("animScale")) return undefined;
   } else if (tipo === "girar") {

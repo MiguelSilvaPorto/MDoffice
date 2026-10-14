@@ -4216,6 +4216,92 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o colapso é o que mantém o round-trip fiel — o teste cobre o caminho feliz e as
   duas recusas.
 
+## src/powerpoint/schema.ts
+
+### 2026-10-14 · voar e zoom · os tipos novos
+- **Local:** `AnimacaoTipo`
+- **Linha:** `voar`, `zoom` (entrada) e `voarFora`, `encolher` (saída)
+- **Porquê:** são os presets clássicos que faltavam depois de aparecer/surgir (o DeckCraft os lista
+  logo em seguida); o modelo já tinha direção e animação por eixo, então os tipos novos são só
+  tabela + comportamento.
+
+## src/powerpoint/edicao/animacao.ts
+
+### 2026-10-14 · voar e zoom · tabelas, direção por tipo e a dica consolidada
+- **Local:** `TIPOS_ANIMACAO`, `CLASSE_ANIMACAO`, rótulos/dicas, `DIRECAO_POR_TIPO`,
+  `aceitaDirecaoAnimacao`, `direcaoDeAnimacao`
+- **Linha:** os quatro tipos entram nas tabelas; a direção passa a valer também no `voar`/`voarFora`
+  (com **padrão "baixo"**, o do PowerPoint) via `DIRECAO_POR_TIPO`; a
+  `DICAS_DIRECAO_TRAJETORIA` foi **removida** — os botões de direção agora usam um título neutro
+  ("Direção do efeito: X") que serve à trajetória e ao voo
+- **Porquê:** o padrão de direção muda por efeito (trajetória = direita; voar = de baixo); a dica
+  por tipo virou redundante quando a direção deixou de ser exclusiva da trajetória.
+
+## src/powerpoint/render/animacao.ts
+
+### 2026-10-14 · voar e zoom · o jogador mede a borda do voo
+- **Local:** as classes novas, `CLASSE_EFEITO` (mapa tipo -> classe), `EFEITO_FIXO` e o `aplicar`
+- **Linha:** `forma-voa`, `forma-voa-fora`, `forma-zoom`, `forma-encolhe`; o voo calcula
+  `--voa-x`/`--voa-y` a partir do retângulo do elemento contra o da lâmina (o centro parte do
+  lado de fora da borda: `-(cx + w/2)` à esquerda, `largura - cx + w/2` à direita etc.); o mapa
+  `CLASSE_EFEITO` substitui a cadeia de ternários (um tipo novo sem classe agora não compila)
+- **Porquê:** o "de fora da borda" do PowerPoint depende da posição e do tamanho da forma — medir
+  na hora vale na prévia e no F5. Zoom volta ao estado natural no fim; voarFora/encolher terminam
+  noutro estado e ficam com a classe.
+
+## src/styles/slides.css
+
+### 2026-10-14 · voar e zoom · keyframes
+- **Local:** depois dos keyframes da trajetória
+- **Linha:** `forma-voa`/`forma-voa-fora` (translate de/para `--voa-x/--voa-y`) e
+  `forma-zoom`/`forma-encolhe` (scale 0,05 com fade; o encolher termina invisível);
+  `prefers-reduced-motion` inclui os quatro
+- **Porquê:** as propriedades `translate`/`scale` compõem com o `transform` da forma, como na
+  ênfase e na trajetória.
+
+## src/powerpoint/pptxexport/timing.ts
+
+### 2026-10-14 · voar e zoom · anim com tavLst
+- **Local:** `PRESET`, `valoresDoVoo`, `alvoDe`, `animProp` e os comportamentos
+- **Linha:** `voar`/`voarFora` = presetID **2**, `zoom`/`encolher` = **53**; o voo escreve dois
+  `p:anim` de `ppt_x`/`ppt_y` com de/para do PowerPoint ("1+#ppt_w/2" → "#ppt_x"…) e o eixo parado
+  como "#ppt_x"→"#ppt_x"; o zoom escreve `ppt_w`/`ppt_h` de 0 a 100% com fade; o `alvoDe` separa o
+  alvo (forma ou parágrafo) para o `animProp` reusar; o subtype do voo sai da direção (1/2/4/8)
+- **Porquê:** é a estrutura que o PowerPoint usa (a mesma do DeckCraft) — o `anim` com `tavLst` é
+  o que faz a forma voar no arquivo, e o `alvoDe` evita duplicar o pRg do build.
+
+## src/powerpoint/pptximport/timing.ts
+
+### 2026-10-14 · voar e zoom · ler o tavLst e validar os eixos
+- **Local:** `PRESETS`, `SUBS_DIRECAO` (era `SUB_TRAJETORIA`), `valorTav`, `direcaoDoValor` e o
+  `lerEfeito`
+- **Linha:** presets 2/53 nas classes certas; subtypes de direção valem para trajetória e voo
+  (zoom só 0); o voo exige `set` + os dois `anim`, deriva a direção do eixo que se move (de para
+  entrada, para para saída) e recusa diagonais (os dois eixos) e valores desconhecidos; o zoom
+  confere os de/para de `ppt_w`/`ppt_h` e o fade
+- **Porquê:** a geometria é a fonte da verdade (o subtype pode faltar); exigir "exatamente um eixo"
+  mantém o tudo-ou-nada — diagonal não é representável e volta cru.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · voar e zoom · prévias e o título de direção
+- **Local:** `previaAnimacao` (4 desenhos novos) e a montagem dos botões de direção
+- **Linha:** Voar (forma na borda + seta + destino tracejado), Zoom (pequena + contorno grande +
+  setas para fora), Voar fora (seta de saída + destino) e Encolher (grande + contorno pequeno +
+  setas para dentro); o título da direção virou `Direção do efeito: {rótulo}`
+- **Porquê:** os novos efeitos entram sozinhos nos grupos do "Mais animações" (as classes já os
+  separam); as prévias precisam dizer o que muda em cada um.
+
+## scripts/testar-edicao-pptx.mjs
+
+### 2026-10-14 · voar e zoom · testes
+- **Local:** blocos das animações e do round-trip
+- **Linha:** novos — direção padrão "baixo" no voar, classes, `aceitaDirecaoAnimacao`; round-trip
+  de **Voar e Voar fora** nas 4 direções (subtype certo) e de **Zoom/Encolher**; voo diagonal
+  (os dois eixos) e zoom com subtype 16 ficando crus
+- **Porquê:** as duas recusas são o que garante que variante não modelada não vira animação
+  errada no arquivo do usuário.
+
 ---
 
 ## Próximos registros

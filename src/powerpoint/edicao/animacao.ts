@@ -11,7 +11,7 @@ export const DURACAO_PADRAO = 0.5;
 const DURACAO_POR_TIPO: Partial<Record<AnimacaoTipo, number>> = { girar: 2, ampliar: 2, trajetoria: 2 };
 
 /** Tipos na ordem da galeria (entrada, ênfase, saída e trajetória). */
-export const TIPOS_ANIMACAO: AnimacaoTipo[] = ["aparecer", "surgir", "pulsar", "ampliar", "girar", "transparencia", "desaparecer", "sumir", "trajetoria"];
+export const TIPOS_ANIMACAO: AnimacaoTipo[] = ["aparecer", "surgir", "voar", "zoom", "pulsar", "ampliar", "girar", "transparencia", "desaparecer", "sumir", "voarFora", "encolher", "trajetoria"];
 
 /** Classe de cada efeito (agrupa a galeria e decide a validação do .pptx). */
 export type AnimacaoClasse = "entrada" | "enfase" | "saida" | "trajetoria";
@@ -19,36 +19,48 @@ export type AnimacaoClasse = "entrada" | "enfase" | "saida" | "trajetoria";
 export const CLASSE_ANIMACAO: Record<AnimacaoTipo, AnimacaoClasse> = {
   aparecer: "entrada",
   surgir: "entrada",
+  voar: "entrada",
+  zoom: "entrada",
   pulsar: "enfase",
   ampliar: "enfase",
   girar: "enfase",
   transparencia: "enfase",
   desaparecer: "saida",
   sumir: "saida",
+  voarFora: "saida",
+  encolher: "saida",
   trajetoria: "trajetoria",
 };
 
 export const ROTULOS_ANIMACAO: Record<AnimacaoTipo, string> = {
   aparecer: "Aparecer",
   surgir: "Surgir",
+  voar: "Voar",
+  zoom: "Zoom",
   pulsar: "Pulsar",
   ampliar: "Ampliar",
   girar: "Girar",
   transparencia: "Transparência",
   desaparecer: "Desaparecer",
   sumir: "Sumir",
+  voarFora: "Voar fora",
+  encolher: "Encolher",
   trajetoria: "Trajetória",
 };
 
 export const DICAS_ANIMACAO: Record<AnimacaoTipo, string> = {
   aparecer: "Aparecer: a forma entra de uma vez, quando o efeito chegar",
   surgir: "Surgir: a forma entra suavemente (fade)",
+  voar: "Voar: a forma entra voando da borda escolhida em Direção",
+  zoom: "Zoom: a forma cresce do centro com um fade",
   pulsar: "Pulsar: a forma cresce um pouco e volta ao tamanho",
   ampliar: "Ampliar/Reduzir: a forma cresce e fica maior",
   girar: "Girar: a forma dá uma volta completa",
   transparencia: "Transparência: a forma fica meio transparente",
   desaparecer: "Desaparecer: a forma sai de uma vez",
   sumir: "Sumir: a forma sai suavemente (fade)",
+  voarFora: "Voar fora: a forma sai voando para a borda escolhida em Direção",
+  encolher: "Encolher: a forma diminui até sumir, com um fade",
   trajetoria: "Trajetória: a forma anda em linha reta (escolha a direção ao lado)",
 };
 
@@ -86,27 +98,24 @@ export const ATRASOS_ANIMACAO: { valor: number; rotulo: string }[] = [
 /** Início padrão de um efeito novo. */
 export const INICIO_PADRAO: AnimacaoInicio = "clicar";
 
-/** Direções da trajetória (na ordem da fita) e a padrão. */
+/** Direções da trajetória/do voar (na ordem da fita) e a padrão. */
 export const DIRECOES_ANIMACAO: AnimacaoDirecao[] = ["esquerda", "direita", "cima", "baixo"];
 
 export const DIRECAO_PADRAO: AnimacaoDirecao = "direita";
 
-export const DICAS_DIRECAO_TRAJETORIA: Record<AnimacaoDirecao, string> = {
-  esquerda: "A forma anda para a esquerda",
-  direita: "A forma anda para a direita",
-  cima: "A forma anda para cima",
-  baixo: "A forma anda para baixo",
-};
+/** Direção padrão de cada efeito com direção (o PowerPoint usa "de baixo" no Voar). */
+const DIRECAO_POR_TIPO: Partial<Record<AnimacaoTipo, AnimacaoDirecao>> = { trajetoria: "direita", voar: "baixo", voarFora: "baixo" };
 
-/** Só a trajetória tem direção. */
+/** Trajetória e Voar (entrada/saída) têm direção. */
 export function aceitaDirecaoAnimacao(tipo: AnimacaoTipo | undefined): boolean {
-  return tipo === "trajetoria";
+  return tipo === "trajetoria" || tipo === "voar" || tipo === "voarFora";
 }
 
 /** Direção efetiva: os tipos sem direção caem no padrão (só para o código não tratar "nenhuma"). */
 export function direcaoDeAnimacao(a: Animacao | undefined): AnimacaoDirecao {
-  if (!aceitaDirecaoAnimacao(a?.tipo)) return DIRECAO_PADRAO;
-  return a?.direcao && DIRECOES_ANIMACAO.includes(a.direcao) ? a.direcao : DIRECAO_PADRAO;
+  const padrao = (a?.tipo ? DIRECAO_POR_TIPO[a.tipo] : undefined) ?? DIRECAO_PADRAO;
+  if (!aceitaDirecaoAnimacao(a?.tipo)) return padrao;
+  return a?.direcao && DIRECOES_ANIMACAO.includes(a.direcao) ? a.direcao : padrao;
 }
 
 /** Efeitos instantâneos (sem duração): aparecer e desaparecer. */

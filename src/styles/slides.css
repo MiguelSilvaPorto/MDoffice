@@ -688,6 +688,70 @@
   }
 }
 
+/* voar: a forma entra/sai pela borda escolhida (o jogador mede --voa-x/--voa-y em px) */
+
+.forma-voa {
+  animation: forma-voa var(--anim-dur, 500ms) ease both;
+}
+
+.forma-voa-fora {
+  animation: forma-voa-fora var(--anim-dur, 500ms) ease both;
+}
+
+@keyframes forma-voa {
+  from {
+    translate: var(--voa-x, 0px) var(--voa-y, 0px);
+  }
+
+  to {
+    translate: 0 0;
+  }
+}
+
+@keyframes forma-voa-fora {
+  from {
+    translate: 0 0;
+  }
+
+  to {
+    translate: var(--voa-x, 0px) var(--voa-y, 0px);
+  }
+}
+
+/* zoom: cresce do centro com fade; encolher é o inverso (e termina invisível) */
+
+.forma-zoom {
+  animation: forma-zoom var(--anim-dur, 500ms) ease both;
+}
+
+.forma-encolhe {
+  animation: forma-encolhe var(--anim-dur, 500ms) ease both;
+}
+
+@keyframes forma-zoom {
+  from {
+    scale: 0.05;
+    opacity: 0;
+  }
+
+  to {
+    scale: 1;
+    opacity: 1;
+  }
+}
+
+@keyframes forma-encolhe {
+  from {
+    scale: 1;
+    opacity: 1;
+  }
+
+  to {
+    scale: 0.05;
+    opacity: 0;
+  }
+}
+
 /* movimento reduzido: o efeito aplica na hora (o jogador já usa duração 0) */
 @media (prefers-reduced-motion: reduce) {
   .forma-surge,
@@ -696,7 +760,11 @@
   .forma-amplia,
   .forma-gira,
   .forma-transp,
-  .forma-traj {
+  .forma-traj,
+  .forma-voa,
+  .forma-voa-fora,
+  .forma-zoom,
+  .forma-encolhe {
     animation-duration: 1ms;
   }
 }

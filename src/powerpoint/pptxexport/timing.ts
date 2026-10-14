@@ -5,16 +5,20 @@
 import type { Animacao, AnimacaoDirecao, Shape } from "../schema";
 import { atrasoDe, direcaoDeAnimacao, duracaoEfetiva, inicioDe, paragrafosDe } from "../edicao/animacao";
 
-/** presetID/presetClass de cada tipo (aparecer = 1; surgir/sumir = fade = 10; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9; trajetória em linha = 64). */
+/** presetID/presetClass de cada tipo (aparecer = 1; surgir/sumir = fade = 10; voar = 2; zoom = 53; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9; trajetória em linha = 64). */
 const PRESET: Record<Animacao["tipo"], { id: number; classe: "entr" | "emph" | "exit" | "path" }> = {
   aparecer: { id: 1, classe: "entr" },
   surgir: { id: 10, classe: "entr" },
+  voar: { id: 2, classe: "entr" },
+  zoom: { id: 53, classe: "entr" },
   pulsar: { id: 26, classe: "emph" },
   ampliar: { id: 6, classe: "emph" },
   girar: { id: 8, classe: "emph" },
   transparencia: { id: 9, classe: "emph" },
   desaparecer: { id: 1, classe: "exit" },
   sumir: { id: 10, classe: "exit" },
+  voarFora: { id: 2, classe: "exit" },
+  encolher: { id: 53, classe: "exit" },
   trajetoria: { id: 64, classe: "path" },
 };
 
@@ -28,6 +32,16 @@ const CAMINHO_LINHA: Record<AnimacaoDirecao, string> = {
   baixo: "M 0 0 L 0 0.25 E",
   cima: "M 0 0 L 0 -0.25 E",
 };
+
+/** De/para do Voar em cada eixo: a forma parte de (ou vai para) fora da borda (valores do PowerPoint). */
+function valoresDoVoo(dir: AnimacaoDirecao, entra: boolean): { attr: string; from: string; to: string }[] {
+  const x = dir === "direita" ? "1+#ppt_w/2" : dir === "esquerda" ? "0-#ppt_w/2" : "#ppt_x";
+  const y = dir === "baixo" ? "1+#ppt_h/2" : dir === "cima" ? "0-#ppt_h/2" : "#ppt_y";
+  return [
+    entra ? { attr: "ppt_x", from: x, to: "#ppt_x" } : { attr: "ppt_x", from: "#ppt_x", to: x },
+    entra ? { attr: "ppt_y", from: y, to: "#ppt_y" } : { attr: "ppt_y", from: "#ppt_y", to: y },
+  ];
+}
 
 interface Efeito {
   a: Animacao;
@@ -91,6 +105,12 @@ export function xmlTiming(animacoes: Animacao[] | undefined, ids: Record<string,
   let n = 0;
   const id = (): number => ++n;
 
+  /** O alvo do comportamento: a forma ou um parágrafo (no build "por parágrafo"). */
+  const alvoDe = (e: Efeito): string =>
+    e.paragraph !== undefined
+      ? `<p:tgtEl><p:spTgt spid="${e.spid}"><p:txEl><p:pRg st="${e.paragraph}" end="${e.paragraph}"/></p:txEl></p:spTgt></p:tgtEl>`
+      : `<p:tgtEl><p:spTgt spid="${e.spid}"/></p:tgtEl>`;
+
   /** Um comportamento (`p:cBhvr`): alvo, duração e, se pedido, atraso; `extras` vai no próprio cTn. */
   const cbhvr = (e: Efeito, dur: number, delay: number | null, attrs: string[], extras = ""): string => {
     const ctn =
@@ -98,12 +118,12 @@ export function xmlTiming(animacoes: Animacao[] | undefined, ids: Record<string,
         ? `<p:cTn id="${id()}" dur="${Math.max(1, dur)}" fill="hold"${extras}/>`
         : `<p:cTn id="${id()}" dur="${Math.max(1, dur)}" fill="hold"${extras}><p:stCondLst><p:cond delay="${delay}"/></p:stCondLst></p:cTn>`;
     const nomes = attrs.length ? `<p:attrNameLst>${attrs.map((a) => `<p:attrName>${a}</p:attrName>`).join("")}</p:attrNameLst>` : "";
-    const alvo =
-      e.paragraph !== undefined
-        ? `<p:spTgt spid="${e.spid}"><p:txEl><p:pRg st="${e.paragraph}" end="${e.paragraph}"/></p:txEl></p:spTgt>`
-        : `<p:spTgt spid="${e.spid}"/>`;
-    return `<p:cBhvr>${ctn}<p:tgtEl>${alvo}</p:tgtEl>${nomes}</p:cBhvr>`;
+    return `<p:cBhvr>${ctn}${alvoDe(e)}${nomes}</p:cBhvr>`;
   };
+  /** Animação de uma propriedade (`ppt_x`…): de/para em `tavLst` (o Voar e o Zoom usam). */
+  const animProp = (e: Efeito, dur: number, attr: string, from: string, to: string): string =>
+    `<p:anim calcmode="lin" valueType="num"><p:cBhvr additive="base"><p:cTn id="${id()}" dur="${Math.max(1, dur)}" fill="hold"/>${alvoDe(e)}<p:attrNameLst><p:attrName>${attr}</p:attrName></p:attrNameLst></p:cBhvr>` +
+    `<p:tavLst><p:tav tm="0"><p:val><p:strVal val="${from}"/></p:val></p:tav><p:tav tm="100000"><p:val><p:strVal val="${to}"/></p:val></p:tav></p:tavLst></p:anim>`;
   const setVis = (e: Efeito, delay: number, visivel: boolean): string =>
     `<p:set>${cbhvr(e, 1, delay, ["style.visibility"])}<p:to><p:strVal val="${visivel ? "visible" : "hidden"}"/></p:to></p:set>`;
   const animEffect = (e: Efeito, saida: boolean, dur: number): string =>
@@ -112,13 +132,17 @@ export function xmlTiming(animacoes: Animacao[] | undefined, ids: Record<string,
   const animScale = (e: Efeito, dur: number, escala: number, autoRev: boolean): string =>
     `<p:animScale>${cbhvr(e, dur, null, [], autoRev ? ' autoRev="1"' : "")}<p:by x="${escala}" y="${escala}"/></p:animScale>`;
 
-  /** Os comportamentos de cada tipo: entrada/saída por visibilidade e fade; ênfase por escala/rotação/opacidade; trajetória por movimento. */
+  /** Os comportamentos de cada tipo: entrada/saída por visibilidade e fade; ênfase por escala/rotação/opacidade; trajetória e voo por movimento. */
   const comportamentos = (e: Efeito): string => {
     const dur = durMs(e.a);
     if (e.a.tipo === "aparecer") return setVis(e, 0, true);
     if (e.a.tipo === "desaparecer") return setVis(e, 0, false);
     if (e.a.tipo === "surgir") return setVis(e, 0, true) + animEffect(e, false, dur);
     if (e.a.tipo === "sumir") return animEffect(e, true, dur) + setVis(e, Math.max(0, dur - 1), false);
+    if (e.a.tipo === "voar") return setVis(e, 0, true) + valoresDoVoo(direcaoDeAnimacao(e.a), true).map((v) => animProp(e, dur, v.attr, v.from, v.to)).join("");
+    if (e.a.tipo === "voarFora") return valoresDoVoo(direcaoDeAnimacao(e.a), false).map((v) => animProp(e, dur, v.attr, v.from, v.to)).join("") + setVis(e, Math.max(0, dur - 1), false);
+    if (e.a.tipo === "zoom") return setVis(e, 0, true) + animProp(e, dur, "ppt_w", "0", "#ppt_w") + animProp(e, dur, "ppt_h", "0", "#ppt_h") + animEffect(e, false, dur);
+    if (e.a.tipo === "encolher") return animProp(e, dur, "ppt_w", "#ppt_w", "0") + animProp(e, dur, "ppt_h", "#ppt_h", "0") + animEffect(e, true, dur) + setVis(e, Math.max(0, dur - 1), false);
     if (e.a.tipo === "pulsar") return animScale(e, dur, 105000, true);
     if (e.a.tipo === "ampliar") return animScale(e, dur, 150000, false);
     if (e.a.tipo === "girar") return `<p:animRot by="21600000">${cbhvr(e, dur, null, [])}</p:animRot>`;
@@ -132,7 +156,7 @@ export function xmlTiming(animacoes: Animacao[] | undefined, ids: Record<string,
 
   const effectPar = (e: Efeito): string => {
     const { id: preset, classe } = PRESET[e.a.tipo];
-    const sub = e.a.tipo === "trajetoria" ? SUB_DIRECAO[direcaoDeAnimacao(e.a)] : 0;
+    const sub = e.a.tipo === "trajetoria" || e.a.tipo === "voar" || e.a.tipo === "voarFora" ? SUB_DIRECAO[direcaoDeAnimacao(e.a)] : 0;
     return (
       `<p:par><p:cTn id="${id()}" presetID="${preset}" presetClass="${classe}" presetSubtype="${sub}" fill="hold" grpId="${e.grp}" nodeType="${e.nodeType}">` +
       `<p:stCondLst><p:cond delay="${atrasoMs(e.a)}"/></p:stCondLst><p:childTnLst>${comportamentos(e)}</p:childTnLst></p:cTn></p:par>`

@@ -4,7 +4,7 @@ import { SOMBRAS_PRONTAS } from "../edicao/formato";
 import { GRAFICO_TIPOS } from "../edicao/grafico";
 import { ROTULOS_PRESET, type PresetTabela } from "../edicao/tabela";
 import { DICAS_DIRECAO, DICAS_TRANSICAO, DIRECOES_TRANSICAO, DURACOES_TRANSICAO, ROTULOS_DIRECAO, ROTULOS_TRANSICAO, TIPOS_TRANSICAO, aceitaDirecao, direcaoDe, duracaoDe, formatarDuracao } from "../edicao/transicao";
-import { DICAS_ANIMACAO, DICAS_INICIO, ATRASOS_ANIMACAO, CLASSE_ANIMACAO, DICAS_DIRECAO_TRAJETORIA, DIRECOES_ANIMACAO, DURACOES_ANIMACAO, INICIOS_ANIMACAO, ROTULOS_ANIMACAO, ROTULOS_INICIO, TIPOS_ANIMACAO, aceitaDirecaoAnimacao, atrasoDe, direcaoDeAnimacao, duracaoDeAnimacao, inicioDe, suave } from "../edicao/animacao";
+import { DICAS_ANIMACAO, DICAS_INICIO, ATRASOS_ANIMACAO, CLASSE_ANIMACAO, DIRECOES_ANIMACAO, DURACOES_ANIMACAO, INICIOS_ANIMACAO, ROTULOS_ANIMACAO, ROTULOS_INICIO, TIPOS_ANIMACAO, aceitaDirecaoAnimacao, atrasoDe, direcaoDeAnimacao, duracaoDeAnimacao, inicioDe, suave } from "../edicao/animacao";
 import type { AnimacaoTipo, SlideLayout, TransicaoDirecao, TransicaoTipo } from "../schema";
 import { abrirCores } from "./cores";
 import { FONTES_COMUNS, TAMANHOS, cmParaPt, ptParaCm, type EstadoUI } from "./estado";
@@ -62,6 +62,30 @@ function previaAnimacao(tipo: AnimacaoTipo): string {
       `<rect x="4" y="6" width="8" height="8" rx="1" fill="currentColor" fill-opacity=".5"/>` +
       traco("M13 10h7M17.5 7.5 20 10 17.5 12.5") +
       `<rect x="20" y="6" width="8" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".65"/>`,
+    // entra voando (forma na borda + seta + destino tracejado)
+    voar:
+      moldura +
+      `<rect x="3" y="6" width="8" height="8" rx="1" fill="currentColor" fill-opacity=".5"/>` +
+      traco("M12 10h5M14.5 7.5 17 10 14.5 12.5") +
+      `<rect x="17" y="5" width="12" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".65"/>`,
+    // cresce do centro (forma pequena + contorno do tamanho final + setas para fora)
+    zoom:
+      moldura +
+      `<rect x="12" y="4" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".65"/>` +
+      `<rect x="17" y="7.5" width="8" height="5" rx="1" fill="currentColor" fill-opacity=".6"/>` +
+      traco("M15.5 7.5 12.5 4.5M26.5 7.5 29.5 4.5"),
+    // sai voando (forma + seta + destino tracejado na borda)
+    voarFora:
+      moldura +
+      `<rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" fill-opacity=".4"/>` +
+      traco("M15 10h6M18.5 7.5 21 10 18.5 12.5") +
+      `<rect x="21" y="7" width="8" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".65"/>`,
+    // encolhe até sumir (forma grande + contorno pequeno + setas para dentro)
+    encolher:
+      moldura +
+      `<rect x="9" y="3" width="20" height="14" rx="2" fill="currentColor" fill-opacity=".35"/>` +
+      traco("M14 6.5 16.5 8.5M24 6.5 21.5 8.5") +
+      `<rect x="17.5" y="7.5" width="7" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".8"/>`,
   };
   return `<svg class="ppr-anim-svg" viewBox="0 0 32 20" aria-hidden="true">${desenhos[tipo]}</svg>`;
 }
@@ -414,7 +438,7 @@ export class Fita {
       (t) =>
         `<button type="button" class="ppr-anim-item" data-cmd="animacao:${t}" title="${DICAS_ANIMACAO[t]}" aria-label="${ROTULOS_ANIMACAO[t]}">${previaAnimacao(t)}<span class="ppr-trans-nome">${ROTULOS_ANIMACAO[t]}</span></button>`
     ).join("");
-    const direcoes = DIRECOES_ANIMACAO.map((d) => btn(`animacao-direcao:${d}`, `<span class="ppr-trans-dir">${FLECHAS_DIRECAO[d]}</span>`, `Direção da trajetória — ${DICAS_DIRECAO_TRAJETORIA[d]}`, "trans-dir")).join("");
+    const direcoes = DIRECOES_ANIMACAO.map((d) => btn(`animacao-direcao:${d}`, `<span class="ppr-trans-dir">${FLECHAS_DIRECAO[d]}</span>`, `Direção do efeito: ${ROTULOS_DIRECAO[d]}`, "trans-dir")).join("");
     const inicios = INICIOS_ANIMACAO.map((i) => btn(`animacao-inicio:${i}`, ROTULOS_INICIO[i], `Início do efeito — ${DICAS_INICIO[i]}`, "fmt")).join("");
     const duracoes = DURACOES_ANIMACAO.map((d) => btn(`animacao-duracao:${d.valor}`, d.rotulo, `Duração do efeito: ${d.rotulo}`, "fmt")).join("");
     const atrasos = ATRASOS_ANIMACAO.map((d) =>

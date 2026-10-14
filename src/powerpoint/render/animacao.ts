@@ -13,9 +13,35 @@ const AMPLIA = "forma-amplia";
 const GIRA = "forma-gira";
 const TRANSP = "forma-transp";
 const TRAJ = "forma-traj";
+const VOA = "forma-voa";
+const VOA_FORA = "forma-voa-fora";
+const ZOOM = "forma-zoom";
+const ENCOLHE = "forma-encolhe";
+
+/** Classe de cada tipo (aparecer/desaparecer são só visibilidade e saem antes). */
+const CLASSE_EFEITO: Record<Exclude<Animacao["tipo"], "aparecer" | "desaparecer">, string> = {
+  surgir: SURGE,
+  sumir: SOME,
+  pulsar: PULSA,
+  ampliar: AMPLIA,
+  girar: GIRA,
+  transparencia: TRANSP,
+  trajetoria: TRAJ,
+  voar: VOA,
+  voarFora: VOA_FORA,
+  zoom: ZOOM,
+  encolher: ENCOLHE,
+};
 
 /** Efeitos que terminam num estado novo (a classe fica segurando o fim da animação). */
-const EFEITO_FIXO: Partial<Record<Animacao["tipo"], string>> = { ampliar: AMPLIA, girar: GIRA, transparencia: TRANSP, trajetoria: TRAJ };
+const EFEITO_FIXO: Partial<Record<Animacao["tipo"], string>> = {
+  ampliar: AMPLIA,
+  girar: GIRA,
+  transparencia: TRANSP,
+  trajetoria: TRAJ,
+  voarFora: VOA_FORA,
+  encolher: ENCOLHE,
+};
 
 export interface ControleAnimacoes {
   /** Toca o próximo passo pendente (o clique da apresentação). false = não havia o que tocar. */
@@ -132,11 +158,20 @@ export function iniciarAnimacoes(
         el.style.setProperty("--traj-x", `${dir === "esquerda" ? -dist : dir === "direita" ? dist : 0}px`);
         el.style.setProperty("--traj-y", `${dir === "cima" ? -dist : dir === "baixo" ? dist : 0}px`);
       }
+      // voar (entrada e saída): a forma parte de fora da borda escolhida (medida na lâmina)
+      if (a.tipo === "voar" || a.tipo === "voarFora") {
+        const dir = direcaoDeAnimacao(a);
+        const caixa = el.getBoundingClientRect();
+        const palco = raiz.getBoundingClientRect();
+        const cx = caixa.left - palco.left + caixa.width / 2;
+        const cy = caixa.top - palco.top + caixa.height / 2;
+        el.style.setProperty("--voa-x", `${dir === "esquerda" ? -(cx + caixa.width / 2) : dir === "direita" ? larg - cx + caixa.width / 2 : 0}px`);
+        el.style.setProperty("--voa-y", `${dir === "cima" ? -(cy + caixa.height / 2) : dir === "baixo" ? alt - cy + caixa.height / 2 : 0}px`);
+      }
       // efeitos que terminam noutro estado: a classe fica (o CSS segura o fim da animação)
-      const fixa = EFEITO_FIXO[a.tipo];
-      const classe = a.tipo === "surgir" ? SURGE : a.tipo === "sumir" ? SOME : a.tipo === "pulsar" ? PULSA : fixa!;
+      const classe = CLASSE_EFEITO[a.tipo as Exclude<Animacao["tipo"], "aparecer" | "desaparecer">];
       el.classList.add(classe);
-      if (fixa) return;
+      if (EFEITO_FIXO[a.tipo]) return;
       // efeitos que voltam ao estado normal (surgir/sumir/pulsar): limpam no fim
       const fim = () => {
         if (!vivo) return;
@@ -192,10 +227,12 @@ export function iniciarAnimacoes(
       const els = new Set<HTMLElement>();
       for (const alvo of alvos) if (alvo.el) els.add(alvo.el);
       for (const el of els) {
-        el.classList.remove(OCULTA, SURGE, SOME, PULSA, AMPLIA, GIRA, TRANSP, TRAJ);
+        el.classList.remove(OCULTA, SURGE, SOME, PULSA, AMPLIA, GIRA, TRANSP, TRAJ, VOA, VOA_FORA, ZOOM, ENCOLHE);
         el.style.removeProperty("--anim-dur");
         el.style.removeProperty("--traj-x");
         el.style.removeProperty("--traj-y");
+        el.style.removeProperty("--voa-x");
+        el.style.removeProperty("--voa-y");
       }
     },
   };
