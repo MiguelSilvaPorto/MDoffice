@@ -7968,3 +7968,15 @@ antigas quando fizer sentido.
   `main`: promover as duas de uma vez é o que deixa a seção vazia de verdade — a conferência do
   script olha se a entrada **já existe** em "Adicionado" antes de mover, então não há risco de
   duplicar se a outra sessão promover depois.
+## CHANGELOG.md
+
+### 2026-10-14 · promoção · a entrada do seletor entra no "Adicionado" (Geral)
+- **Local:** Geral → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** 1 entrada movida — **A lista dos seletores ficou do tamanho do campo** (`efaf9ce`); a
+  seção ficou com "- (nada no momento)"
+- **Porquê:** o commit já está na `main`, mas a promoção não cabe no mesmo commit do `fechar.ps1`.
+  A conferência olhou o bloco inteiro antes de mover: as **duas** entradas do PowerPoint (a **aba
+  Arranjos**, `79a4d1d`, e a **saída do grupo Tema**, `69ca23f`) foram DELIBERADAMENTE deixadas —
+  os commits já estão na `main`, mas existe um `docs: promove…` (8d7755d) **em voo** de outra
+  sessão, fora da `main`, que move exatamente essas duas. Promover aqui criaria um conflito inútil
+  no fecho dela; quem chega primeiro resolve, e a dela já está no caminho.
