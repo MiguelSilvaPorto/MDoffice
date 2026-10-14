@@ -4721,3 +4721,34 @@ antigas quando fizer sentido.
   fbf41dd) —, nada foi promovido por impressão. As seções de origem ficaram com
   "- (nada no momento)" nos dois lados, e o arquivo passou pelo teste de sobrou-marcador e
   de linha em branco dupla.
+
+## src/powerpoint/stage.ts · src/powerpoint/powerpoint.ts · src/styles/powerpoint.css
+
+### 2026-10-14 · esta tarefa · botão direito arrasta a tela (panorama)
+- **Local:** `stage.ts` — o `Modo` ganhou a variante `panorama`; `aoPressionar` trata o
+  `button === 2` antes do guard de botão esquerdo; `aplicar` rola a caixa; `aoSoltar` guarda a
+  marca; `consumirPanorama()` é o que o menu pergunta
+- **Linha:** `+ if (e.button === 2) { … this.modo = { t: "panorama", caixa, x0, y0, esquerda,
+  topo, moveu: false } … }`; `+ modo.caixa.scrollLeft = modo.esquerda - dx` (e o `scrollTop`);
+  `+ this.panMoveu = modo.moveu`
+- **Porquê:** com o zoom até 800%, o palco só reagia ao botão esquerdo (seleção/arrasto de
+  forma) e a navegação era a barra de rolagem — arrastar a tela é o gesto que falta. O
+  compasso é o inverso do movimento do ponteiro (o conteúdo acompanha a mão), como num mapa.
+  A **zona morta de 3 px** existe para o clique direito parado continuar abrindo o menu de
+  contexto: o navegador dispara `contextmenu` logo depois do `pointerup`, então a marca
+  (`panMoveu`) sobrevive de um evento para o outro e é **consumida** por quem lê — sem ela, o
+  menu abriria no fim de todo arrasto.
+- **Local:** `powerpoint.ts` (`menuDeContexto`) e `powerpoint.css` (`.pp-panorama`)
+- **Linha:** `+ if (this.stage.consumirPanorama()) return;` e `+ .pp-frame.pp-panorama * {
+  cursor: grabbing !important }`
+- **Porquê:** o menu é do `powerpoint.ts` — o palco não pode impedi-lo sem saber se foi
+  clique ou arrasto, daí a consulta. O cursor "agarrando" fica na **moldura** (`.pp-frame`),
+  não no `.pp-slide`: o `className` do slide é reescrito a cada desenho (a classe sumiria no
+  meio do arrasto), e o `!important` é para vencer os cursores dos filhos (texto, alças,
+  mídia) enquanto o botão está pressionado.
+- **Local:** `scripts/testar-layout.mts` e `docs/powerpoint.md`
+- **Linha:** `novo` — 3 checagens na seção do PowerPoint (o ramo do botão direito, a marca
+  consumida pelo menu e o cursor) e a linha do arrasto no doc do módulo
+- **Porquê:** o teste de layout prende invariantes de interação que já quebraram uma vez; o
+  par "arrastar não abre o menu / clique parado abre" é exatamente o tipo de regra que volta
+  em silêncio numa refatoração do menu.

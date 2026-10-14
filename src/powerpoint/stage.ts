@@ -102,7 +102,17 @@ type Modo =
   | { t: "criar"; x0: number; y0: number }
   | { t: "canto"; ids: string[]; alvo: Canto; sel: Canto[]; colapsar: boolean; mexeu: boolean; partida: { x: number; y: number }; ref: { box: ShapeBox; rot: number }; inicial: Map<string, [number, number, number, number]> }
   | { t: "traco"; pontos: { x: number; y: number }[] }
-  | { t: "celulas"; id: string; r0: number; c0: number };
+  | { t: "celulas"; id: string; r0: number; c0: number }
+  | {
+      /** botão direito pressionado: move a TELA (panorama) em vez de mexer na lâmina */
+      t: "panorama";
+      caixa: HTMLElement;
+      x0: number;
+      y0: number;
+      esquerda: number;
+      topo: number;
+      moveu: boolean;
+    };
 
 export class Stage {
   private frame: HTMLElement | null = null;
@@ -110,6 +120,8 @@ export class Stage {
   private hooks: StageHooks;
   private zoom = 100;
   private modo: Modo | null = null;
+  /** o último clique direito foi um arrasto de panorama? (o menu de contexto pergunta e consome) */
+  private panMoveu = false;
   private guias: Guia[] = [];
   private rect: ShapeBox | null = null;
   /** traço à mão em andamento (em % da lâmina), só no modo desenho */
@@ -337,8 +349,44 @@ export class Stage {
     return { x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 };
   }
 
+  /**
+   * O último clique direito foi um arrasto (panorama)? Consome a marca.
+   *
+   * Quem pergunta é o menu de contexto: botão direito + arrastar move a TELA (e não abre o
+   * menu); clique parado continua abrindo. O navegador dispara `contextmenu` logo depois do
+   * `pointerup`, então a marca precisa sobreviver de um evento para o outro — e o arrasto
+   * só conta depois de passar a zona morta de 3 px (clique tremido não vira arrasto).
+   */
+  consumirPanorama(): boolean {
+    const moveu = this.panMoveu;
+    this.panMoveu = false;
+    return moveu;
+  }
+
   private aoPressionar(e: PointerEvent): void {
-    if (!this.slideEl || e.button !== 0) return;
+    if (!this.slideEl) return;
+
+    // botão direito pressionado: arrastar move a tela (panorama). Sem arrasto, o clique
+    // segue para o menu de contexto (ver `consumirPanorama`).
+    if (e.button === 2) {
+      const caixa = this.canvasDe(this.frame);
+      if (!caixa) return;
+      this.slideEl.setPointerCapture(e.pointerId);
+      this.modo = {
+        t: "panorama",
+        caixa,
+        x0: e.clientX,
+        y0: e.clientY,
+        esquerda: caixa.scrollLeft,
+        topo: caixa.scrollTop,
+        moveu: false,
+      };
+      this.frame?.classList.add("pp-panorama"); // cursor de "agarrando" em toda a moldura
+      e.preventDefault();
+      return;
+    }
+
+    if (e.button !== 0) return;
     const alvo = e.target as HTMLElement;
     const ctx = this.hooks.contexto();
     const p = this.pontoEmPct(e);
@@ -545,6 +593,18 @@ export class Stage {
   private aplicar(e: PointerEvent): void {
     const modo = this.modo;
     if (!modo || !this.slideEl) return;
+
+    // panorama: o quanto o ponteiro andou é o quanto a caixa rola (ao contrário)
+    if (modo.t === "panorama") {
+      const dx = e.clientX - modo.x0;
+      const dy = e.clientY - modo.y0;
+      if (!modo.moveu && Math.abs(dx) + Math.abs(dy) > 3) modo.moveu = true;
+      if (!modo.moveu) return;
+      modo.caixa.scrollLeft = modo.esquerda - dx;
+      modo.caixa.scrollTop = modo.topo - dy;
+      return;
+    }
+
     const ctx = this.hooks.contexto();
     const p = this.pontoEmPct(e);
 
@@ -745,6 +805,14 @@ export class Stage {
     } catch {
       /* já liberado */
     }
+
+    // panorama: a marca fica para o menu de contexto decidir se abre (arrasto não abre)
+    if (modo.t === "panorama") {
+      this.panMoveu = modo.moveu;
+      this.frame?.classList.remove("pp-panorama");
+      return;
+    }
+
     const ctx = this.hooks.contexto();
     if (modo.t === "traco") {
       const pontos = this.pontosEmPt(modo.pontos, ctx.dim);

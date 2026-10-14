@@ -523,6 +523,13 @@ body.home-open #powerpoint-pane {
   overflow: hidden;
 }
 
+/* Botão direito + arrastar = panorama: o cursor de "agarrando" vale em toda a moldura
+   — os filhos têm cursor próprio (texto, alças, mídia), daí o !important. */
+.pp-frame.pp-panorama,
+.pp-frame.pp-panorama * {
+  cursor: grabbing !important;
+}
+
 /* A lâmina é um container de tamanho: o texto das formas usa `cqw`, então
    os pt escalam junto com a lâmina (igual no PowerPoint). */
 .pp-slide {

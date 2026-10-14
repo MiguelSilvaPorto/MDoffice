@@ -283,6 +283,23 @@ checa(
   /setZoom\(this\.stage\.zoomAtual \+ \(e\.deltaY < 0 \? passoZoom\(this\.stage\.zoomAtual\) : -passoZoom\(this\.stage\.zoomAtual\)\), ponto\)/.test(ppt),
   "a roda não ancora no ponteiro ou não usa o passo"
 );
+checa(
+  "botão direito + arrastar move a tela (panorama)",
+  /if \(e\.button === 2\)/.test(palcoPpt) &&
+    /t: "panorama"/.test(palcoPpt) &&
+    /modo\.caixa\.scrollLeft = modo\.esquerda - dx;/.test(palcoPpt) &&
+    /modo\.caixa\.scrollTop = modo\.topo - dy;/.test(palcoPpt),
+  "sem o arrasto do botão direito, navegar no zoom alto é só pela barra"
+);
+checa(
+  "clique direito parado continua abrindo o menu (o arrasto é consumido antes)",
+  /consumirPanorama\(\): boolean/.test(palcoPpt) && /if \(this\.stage\.consumirPanorama\(\)\) return;/.test(ppt),
+  "o menu abriria depois de arrastar (ou sumiria no clique parado)"
+);
+checa(
+  "o cursor vira 'agarrando' durante o arrasto",
+  /\.pp-frame\.pp-panorama[\s\S]{0,120}cursor: grabbing/.test(ler("src/styles/powerpoint.css"))
+);
 
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

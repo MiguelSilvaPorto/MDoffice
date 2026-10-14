@@ -88,6 +88,9 @@ avisado ao abrir (nunca some em silêncio).
 - **Zoom até 800%** ancorado no ponteiro (Ctrl + roda do mouse), com rolagem de verdade; o
   passo do clique/roda cresce no zoom alto (do 100% ao 800% em ~17 passos) e o slider
   continua fino.
+- **Botão direito + arrastar move a tela** (panorama) — o jeito de navegar no zoom alto, em
+  qualquer direção; o cursor vira "agarrando" durante o arrasto e o menu de contexto só abre
+  no clique direito parado.
 - **Faixa de lâminas** no topo ou na vertical (Exibir → Faixa vertical).
 
 ## Testes

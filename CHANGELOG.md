@@ -365,7 +365,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **Botão direito + arrastar move a tela no PowerPoint**: com o zoom alto (até 800%), navegar
+  era só pela barra de rolagem — agora **botão direito pressionado + arrastar** move a tela em
+  qualquer direção, com o cursor virando "agarrando" e o arrasto acompanhando o ponteiro
+  (nada de soltar e pegar de novo a cada tela). O **clique direito parado continua abrindo o
+  menu de contexto**: o arrasto só conta depois de 3 px e, quando conta, o menu não abre.
 
 ### Adicionado (na main)
 

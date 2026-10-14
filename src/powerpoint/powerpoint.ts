@@ -2478,6 +2478,8 @@ export class PowerPointHost {
   // ------------------------------------------------------------------
 
   private menuDeContexto(e: MouseEvent): void {
+    // botão direito + arrasto = panorama: não abre o menu (o clique parado continua abrindo)
+    if (this.stage.consumirPanorama()) return;
     e.preventDefault();
     const alvo = e.target as HTMLElement;
     const formaEl = alvo.closest<HTMLElement>(".pp-shape[data-shape]");
