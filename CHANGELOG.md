@@ -270,6 +270,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Formalizar no Word (com prévia antes/depois)**: o comando **“Formalizar texto”** (`Ctrl+Alt+F`) agora também atende o documento Word — por um botão novo na fita (**Revisão → Revisão de Texto → Formalizar**) ou pela busca de comandos. Pega a **seleção**; sem seleção, o documento inteiro, e abre a **mesma janela** do Markdown: antes × depois, **MIP** ao vivo, trocas seguras já marcadas e as de sentido com o risco e as alternativas. Cada troca entra **no lugar dela**, numa transação só — o texto em volta e o **formato** dele ficam intactos, e o formato do próprio trecho trocado é mantido (negrito continua negrito) —, e `Ctrl+Z` desfaz tudo de uma vez. O corretor do Word reacende em seguida, já sobre o texto formal.
 - Motor `.docx`: editar o documento direto na folha (sem Markdown) e abrir `.docx` do Word.
 - Folha **A4/Carta** com margens, orientação, cabeçalho, rodapé e “Página X de Y”.
 - **Páginas de verdade**: o texto flui entre as páginas e parágrafos se dividem.

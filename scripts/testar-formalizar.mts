@@ -13,9 +13,9 @@
 //
 // Roda com: npm run test:formalizar
 import { build } from "esbuild";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const raiz = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -49,12 +49,13 @@ const pluginRaw = {
 
 const empacotar = async (entrada: string, saida: string) => {
   await build({
-    entryPoints: [join(raiz, entrada)],
+    entryPoints: [isAbsolute(entrada) ? entrada : join(raiz, entrada)],
     bundle: true,
     platform: "node",
     format: "esm",
     outfile: join(tmp, saida),
     logLevel: "error",
+    nodePaths: [join(raiz, "node_modules")],
     plugins: [pluginRaw as never],
   });
   return import(pathToFileURL(join(tmp, saida)).href);
@@ -276,13 +277,25 @@ const docEl = new El("body");
 };
 
 const J = (await empacotar("src/formalizar.ts", "janela.mjs")) as {
-  abrirFormalizar: (op: { texto: string; origem: string; aplicar: (novo: string) => void }) => void;
+  abrirFormalizar: (op: {
+    texto: string;
+    origem: string;
+    aplicar: (novo: string, aplicadas: { de: [number, number]; para: [number, number] }[]) => void;
+  }) => void;
 };
 
 {
   const texto = "A gente vai dar uma olhada no msm relatório e eu acho que dá, sabe?";
   let aplicado: string | null = null;
-  J.abrirFormalizar({ texto, origem: "seleção", aplicar: (novo) => (aplicado = novo) });
+  let aplicadas: { de: [number, number]; para: [number, number] }[] = [];
+  J.abrirFormalizar({
+    texto,
+    origem: "seleção",
+    aplicar: (novo, trocasAplicadas) => {
+      aplicado = novo;
+      aplicadas = trocasAplicadas;
+    },
+  });
 
   const modal = docEl.procurar("fz-modal")[0];
   checa("a janela entra no body", modal !== undefined);
@@ -318,9 +331,125 @@ const J = (await empacotar("src/formalizar.ts", "janela.mjs")) as {
   const botao = modal.procurar("primary")[0];
   checa("o botão diz quantas trocas vão", /Aplicar 4 troca/.test(botao.textContent), botao.textContent);
   botao.disparar("click");
+  checa("aplicar entrega o texto final", aplicado === "Nós vamos examinar o mesmo relatório e entende-se que dá, sabe?", String(aplicado));
   checa(
-    "aplicar entrega o texto final",
-    aplicado === "Nós vamos examinar o mesmo relatório e entende-se que dá, sabe?",    String(aplicado)
+    "aplicar entrega também onde cada troca caiu (é o que o Word usa)",
+    aplicadas.length === 4 &&
+      aplicadas.every((a) => texto.slice(a.de[0], a.de[1]).trim().length > 0 && (aplicado as string).slice(a.para[0], a.para[1]).trim().length > 0),
+    JSON.stringify(aplicadas)
+  );
+}
+
+console.log("o mapa do Word (documento ↔ texto)");
+{
+  const W = (await empacotar("src/word/project.ts", "word-mapa.mjs")) as {
+    project: (doc: unknown) => { texto: string; blocos: { proj: number; pm: number; len: number }[] };
+    projectRange: (doc: unknown, de?: number, ate?: number) => { texto: string; blocos: { proj: number; pm: number; len: number }[] };
+    toPm: (blocos: { proj: number; pm: number; len: number }[], idx: number) => { pos: number; bloco: number } | null;
+  };
+  interface DocWord {
+    child: (i: number) => { nodeSize: number };
+  }
+  const S = (await empacotar("src/word/schema.ts", "word-schema.mjs")) as {
+    schema: { node: (tipo: string, attrs: unknown, conteudo?: unknown[]) => DocWord; text: (t: string) => unknown };
+  };
+
+  const par = (t: string) => S.schema.node("paragraph", null, t ? [S.schema.text(t)] : []);
+  const p1 = "A gente vai revisar o relatório.";
+  const p3 = "Vou dar uma olhada no prazo, sabe?";
+  const doc = S.schema.node("doc", null, [par(p1), par(""), par(p3)]);
+  const tamanho = (i: number) => doc.child(i).nodeSize;
+  const inicioP3 = 1 + tamanho(0) + tamanho(1); // abre p1 + p1 + p2 (vazio) + abre p3
+
+  const proj = W.project(doc);
+  checa("a projeção junta os parágrafos com quebra de linha", proj.texto === `${p1}\n\n${p3}`, JSON.stringify(proj.texto));
+  checa("o mapa guarda o parágrafo vazio (é a linha em branco)", proj.blocos.length === 3, String(proj.blocos.length));
+  checa("o bloco vazio começa onde o texto diz", proj.blocos[1].proj === p1.length + 1, `${proj.blocos[1].proj}`);
+  checa("o 3º bloco começa onde o texto diz", proj.blocos[2].proj === p1.length + 2, `${proj.blocos[2].proj}`);
+  checa("a posição no documento do 3º parágrafo bate", proj.blocos[2].pm === inicioP3, `${proj.blocos[2].pm} vs ${inicioP3}`);
+  checa("o índice do texto volta para a posição certa", W.toPm(proj.blocos, proj.blocos[2].proj)?.pos === inicioP3);
+  checa("índice fora dos blocos não tem posição", W.toPm(proj.blocos, proj.texto.length + 5) === null);
+  checa(
+    "índices em parágrafos diferentes têm blocos diferentes",
+    W.toPm(proj.blocos, 0)!.bloco !== W.toPm(proj.blocos, proj.texto.length - 1)!.bloco
+  );
+
+  const projSel = W.projectRange(doc, inicioP3 + 4, inicioP3 + 14);
+  checa("a seleção projeta só o trecho pedido", projSel.texto === p3.slice(4, 14), JSON.stringify(projSel.texto));
+  checa("a seleção tem um bloco só (não atravessa parágrafo)", projSel.blocos.length === 1, String(projSel.blocos.length));
+  checa("a seleção mapeia de volta para a posição certa", W.toPm(projSel.blocos, 0)?.pos === inicioP3 + 4, `${W.toPm(projSel.blocos, 0)?.pos}`);
+}
+
+console.log("aplicar no Word (troca no lugar, formato em paz)");
+{
+  const entrada = join(tmp, "palavra.ts");
+  const caminho = (p: string) => join(raiz, p).replace(/\\/g, "/");
+  writeFileSync(
+    entrada,
+    `export { project, projectRange, toPm, transacaoDasTrocas } from "${caminho("src/word/project.ts")}";\n` +
+      `export { schema } from "${caminho("src/word/schema.ts")}";\n` +
+      `export { EditorState } from "prosemirror-state";\n`
+  );
+  interface TextoPM {
+    isText?: boolean;
+    text?: string;
+    marks?: { type: { name: string } }[];
+    textContent: string;
+    childCount: number;
+    child: (i: number) => TextoPM;
+    descendants: (f: (n: TextoPM) => void) => void;
+  }
+  interface DocPM extends TextoPM {}
+  interface EstadoPM {
+    doc: DocPM;
+    apply: (tr: unknown) => { doc: DocPM };
+  }
+  const W = (await empacotar(entrada, "palavra.mjs")) as {
+    project: (doc: DocPM) => { texto: string; blocos: { proj: number; pm: number; len: number }[] };
+    transacaoDasTrocas: (
+      estado: EstadoPM,
+      blocos: { proj: number; pm: number; len: number }[],
+      novo: string,
+      aplicadas: { de: [number, number]; para: [number, number] }[]
+    ) => { steps: unknown[] } | null;
+    schema: {
+      node: (tipo: string, attrs: unknown, conteudo?: unknown[]) => DocPM;
+      text: (t: string, marcas?: unknown[]) => unknown;
+      mark: (nome: string) => unknown;
+    };
+    EditorState: { create: (cfg: { doc: DocPM }) => EstadoPM };
+  };
+
+  const marcado = (t: string, marca: string) => W.schema.text(t, [W.schema.mark(marca)]);
+  const doc = W.schema.node("doc", null, [
+    W.schema.node("paragraph", null, [marcado("A gente vai", "bold"), W.schema.text(" revisar o relatório.")]),
+    W.schema.node("paragraph", null, [W.schema.text("Vou dar uma olhada no prazo, "), marcado("sabe?", "italic")]),
+  ]);
+  const estado = W.EditorState.create({ doc });
+  const proj = W.project(doc);
+  const trocas = F.trocasDeFormalizacao(proj.texto).filter((t) => t.risco === "segura");
+  const resultado = F.aplicarTrocas(proj.texto, trocas);
+  const tr = W.transacaoDasTrocas(estado, proj.blocos, resultado.texto, resultado.aplicadas);
+  checa("a transação sai com uma troca por troca", tr !== null && tr.steps.length === resultado.aplicadas.length, `${tr?.steps.length} vs ${resultado.aplicadas.length}`);
+
+  const dep = estado.apply(tr!).doc;
+  checa("o 1º parágrafo sai formalizado", dep.child(0).textContent === "Nós vamos revisar o relatório.", dep.child(0).textContent);
+  checa("o 2º parágrafo sai formalizado", dep.child(1).textContent === "Vou examinar o prazo, sabe?", dep.child(1).textContent);
+  checa("nenhum parágrafo nasce ou morre", dep.childCount === doc.childCount, `${dep.childCount} vs ${doc.childCount}`);
+
+  const pedacos: { texto: string; marcas: string[] }[] = [];
+  dep.descendants((n) => {
+    if (n.isText) pedacos.push({ texto: n.text ?? "", marcas: (n.marks ?? []).map((m) => m.type.name) });
+  });
+  checa(
+    "a troca herda o formato do trecho que substituiu",
+    pedacos.some((p) => p.texto.startsWith("Nós vamos") && p.marcas.includes("bold")),
+    JSON.stringify(pedacos)
+  );
+  checa(
+    "o formato do resto fica em paz",
+    pedacos.some((p) => p.texto.includes("revisar o relatório.") && p.marcas.length === 0) && pedacos.some((p) => p.texto.includes("sabe?") && p.marcas.includes("italic")),
+    JSON.stringify(pedacos)
   );
 }
 

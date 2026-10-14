@@ -34,6 +34,8 @@ export interface WordHostOpts {
   onFind?: () => void;
   onReplace?: () => void;
   onReview?: () => void;
+  /** Formalizar o texto (prévia antes/depois) — a fita chama em Revisão → Formalizar. */
+  onFormalizar?: () => void;
   onAddons?: () => void;
 }
 
@@ -112,6 +114,7 @@ export class WordHost {
       onFind: () => this.opts.onFind?.(),
       onReplace: () => this.opts.onReplace?.(),
       onReview: () => this.opts.onReview?.(),
+      onFormalizar: () => this.opts.onFormalizar?.(),
       onAddons: () => this.opts.onAddons?.(),
     });
 

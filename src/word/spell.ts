@@ -4,6 +4,7 @@ import { Plugin, PluginKey } from "prosemirror-state";
 import { Decoration, DecorationSet, type EditorView } from "prosemirror-view";
 import type { Node as PMNode } from "prosemirror-model";
 import { checkText, type WritingIssue } from "../broker/writing";
+import { project, toPm } from "./project";
 
 export interface WordSpellHooks {
   /** Palavras que o usuário mandou ignorar (dicionário pessoal + só neste texto). */
@@ -27,45 +28,6 @@ interface SState {
 }
 
 const key = new PluginKey<SState>("word-spell");
-
-interface BlockMap {
-  proj: number;
-  pm: number;
-  len: number;
-}
-
-/** Texto do documento (um parágrafo por linha) e como voltar de cada letra para a posição no documento. */
-function project(doc: PMNode): { text: string; blocks: BlockMap[] } {
-  const parts: string[] = [];
-  const blocks: BlockMap[] = [];
-  let proj = 0;
-  doc.descendants((node, pos) => {
-    if (node.type.name === "code_block") return false;
-    if (!node.isTextblock) return true;
-    let t = "";
-    node.forEach((child) => {
-      t += child.isText ? child.text : " "; // imagem/quebra ocupam 1 posição: o espaço mantém o mapa 1:1
-    });
-    blocks.push({ proj, pm: pos + 1, len: t.length });
-    parts.push(t);
-    proj += t.length + 1;
-    return false;
-  });
-  return { text: parts.join("\n"), blocks };
-}
-
-function toPm(blocks: BlockMap[], idx: number): { pos: number; block: number } | null {
-  let lo = 0;
-  let hi = blocks.length - 1;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    const b = blocks[mid];
-    if (idx < b.proj) hi = mid - 1;
-    else if (idx > b.proj + b.len) lo = mid + 1;
-    else return { pos: b.pm + (idx - b.proj), block: mid };
-  }
-  return null;
-}
 
 let popup: HTMLElement | null = null;
 
@@ -182,7 +144,7 @@ export function spellPlugin(hooks: WordSpellHooks): Plugin<SState> & { recheck: 
         if (!hooks.enabled()) return;
         const doc = view.state.doc;
         const my = ++token;
-        const { text, blocks } = project(doc);
+        const { texto: text, blocos: blocks } = project(doc);
         let issues: WritingIssue[] = [];
         try {
           issues = text.trim() ? await checkText(text, hooks.getIgnore()) : [];
@@ -194,8 +156,8 @@ export function spellPlugin(hooks: WordSpellHooks): Plugin<SState> & { recheck: 
         for (const issue of issues) {
           const a = toPm(blocks, issue.from);
           const b = toPm(blocks, Math.max(issue.from, issue.to - 1));
-          if (!a || !b || a.block !== b.block) continue;
-          const to = b.pos + 1;
+          if (!a || !b || a.bloco !== b.bloco) continue;
+        const to = b.pos + 1;
           if (to <= a.pos) continue;
           found.push({ from: a.pos, to, issue });
         }

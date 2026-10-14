@@ -6,7 +6,7 @@
 // acompanham cada clique — e quem aplica ao documento é o app (uma transação só: Ctrl+Z desfaz).
 
 import { ROTULO_CLASSE } from "./broker/data/informal";
-import { aplicarTrocas, mipDe, trocasDeFormalizacao, ROTULO_RISCO, type TrocaFormal } from "./broker/formalizar";
+import { aplicarTrocas, mipDe, trocasDeFormalizacao, ROTULO_RISCO, type TrocaAplicada, type TrocaFormal } from "./broker/formalizar";
 import { h, toast } from "./util";
 
 export interface OpcoesFormalizar {
@@ -14,8 +14,12 @@ export interface OpcoesFormalizar {
   texto: string;
   /** de onde veio o texto, para o cabeçalho: "seleção" ou "documento inteiro" */
   origem: string;
-  /** aplica o texto formalizado no alvo (o app decide onde e como) */
-  aplicar: (novo: string) => void;
+  /**
+   * Aplica o texto formalizado no alvo. `aplicadas` diz onde cada troca caiu (no original e
+   * no texto novo): quem aplica por trecho — o Word, que preserva o formato — usa isso;
+   * quem troca o bloco inteiro de uma vez (o Markdown) pode ignorar.
+   */
+  aplicar: (novo: string, aplicadas: TrocaAplicada[]) => void;
 }
 
 const fmt = (n: number) => String(n).replace(".", ",");
@@ -142,7 +146,7 @@ export function abrirFormalizar(op: OpcoesFormalizar): void {
     const novas = trocas.filter((_, i) => escolhidas.has(i));
     const resultado = aplicarTrocas(op.texto, novas);
     fechar();
-    op.aplicar(resultado.texto);
+    op.aplicar(resultado.texto, resultado.aplicadas);
   });
 
   antes.textContent = op.texto;

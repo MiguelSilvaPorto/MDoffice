@@ -19,6 +19,8 @@ export interface RibbonHooks {
   onReplace?: () => void;
   /** Painel lateral / editor de revisão */
   onReview?: () => void;
+  /** Formalizar o texto com prévia antes/depois */
+  onFormalizar?: () => void;
   /** Suplementos / extensões */
   onAddons?: () => void;
 }
@@ -169,7 +171,8 @@ export class Ribbon {
 
         <div class="wd-rpanel" data-panel="review" hidden>
           ${group("Revisão de Texto", `
-            ${btn("editor-panel", icon("i-feather") + "<span>Editor</span>", "Editor de ortografia e escrita", "big")}`)}
+            ${btn("editor-panel", icon("i-feather") + "<span>Editor</span>", "Editor de ortografia e escrita", "big")}
+            ${btn("formalizar", icon("i-spark") + "<span>Formalizar</span>", "Formalizar o texto (prévia antes/depois) — Ctrl+Alt+F", "big")}`)}
           ${group("Voz", `
             ${btn("dictate", icon("i-mic") + "<span>Ditar</span>", "Ditar texto por voz", "big")}`)}
           ${group("Suplementos", `
@@ -513,6 +516,10 @@ export class Ribbon {
       }
       case "editor-panel": {
         this.hooks.onReview?.();
+        return;
+      }
+      case "formalizar": {
+        this.hooks.onFormalizar?.();
         return;
       }
       case "addons": {

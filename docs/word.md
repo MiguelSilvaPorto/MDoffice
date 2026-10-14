@@ -35,6 +35,10 @@ arquivos `.docx` de verdade.
   (sugestões enquanto digita) funciona aqui também, com **Tab/Alt+→/Alt+↓**.
 - **Revisar texto** (`F7`) e a **revisão inteligente** analisam o documento Word como o
   Markdown (regras, sinônimos e a IA local).
+- **Formalizar** (`Ctrl+Alt+F` ou **Revisão → Revisão de Texto → Formalizar**): a mesma janela
+  do Markdown, com **antes × depois** e o MIP caindo ao vivo. Pega a seleção (sem seleção, o
+  documento inteiro) e aplica cada troca **no lugar dela** — o texto em volta e o formato ficam
+  como estavam, e negrito/cor do próprio trecho trocado são mantidos. `Ctrl+Z` desfaz tudo.
 - O **histórico de versões**, as **abas**, a **Estrutura** e a busca valem igual ao Markdown.
 
 ## Salvar e exportar

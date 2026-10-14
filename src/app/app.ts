@@ -270,6 +270,7 @@ export class App {
         this.sidebar.focusSearch();
       },
       onReview: () => this.openReview(),
+      onFormalizar: () => this.openFormalizar(),
       onAddons: () => toast("Painel de Suplementos do mdOffice.", "info", 2400),
     });
     this.pptHost = new PowerPointHost({

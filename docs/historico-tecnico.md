@@ -3685,6 +3685,78 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   pegou. O import direto corta a dependência de tela sem mudar comportamento nenhum do
   export.
 
+## src/word/project.ts (novo)
+
+### 2026-10-14 · formalizar no Word · o mapa documento ↔ texto e a volta
+- **Local:** arquivo inteiro (`BlockMap`, `projectRange`, `project`, `toPm`, `transacaoDasTrocas`)
+- **Linha:** `novo`
+- **Porquê:** o corretor tinha a projeção escondida dentro do `spell.ts` e só do documento
+  inteiro. O formalizador precisa do mesmo mapa (as trocas nascem no texto) **e** do caminho de
+  volta — e a seleção também entra. `projectRange` generaliza o que existia: cada bloco copiado
+  guarda `proj` (início no texto), `pm` (posição no documento) e `len`; o parágrafo **vazio**
+  continua entrando quando o pedaço o cobre, senão a linha em branco do texto sumiria e o que o
+  corretor vê mudaria em relação ao que sempre viu. `transacaoDasTrocas` monta a transação que
+  aplica cada troca **no lugar dela** (do fim para o começo, para as posições não se mexerem):
+  o texto fora das trocas fica intacto, com o formato dele.
+
+## src/word/spell.ts
+
+### 2026-10-14 · formalizar no Word · o corretor usa o mapa compartilhado
+- **Local:** o `project`/`toPm` locais saíram; ficou `import { project, toPm } from "./project"`
+- **Linha:** `- function project(doc)` e `- function toPm(blocks, idx)` (movidos) · `{ texto: text, blocos: blocks } = project(doc)` · `a.bloco !== b.bloco`
+- **Porquê:** uma implementação só do mapa, usada por quem lê o texto (corretor) e por quem
+  troca trechos (formalizador). O comportamento é o mesmo — inclusive os parágrafos vazios.
+
+## src/formalizar.ts
+
+### 2026-10-14 · formalizar no Word · quem aplica recebe onde cada troca caiu
+- **Local:** `OpcoesFormalizar.aplicar` e o clique do botão
+- **Linha:** `aplicar: (novo: string) => void` → `aplicar: (novo: string, aplicadas: TrocaAplicada[]) => void`; `op.aplicar(resultado.texto, resultado.aplicadas)`
+- **Porquê:** o Markdown troca o trecho inteiro de uma vez (e pode ignorar), mas o Word precisa
+  aplicar **por trecho** para não perder o formato — e os limites já existiam no resultado da
+  prévia (`de` no original, `para` no texto novo).
+
+## src/app/formalizar.ts
+
+### 2026-10-14 · formalizar no Word · um comando só, dois editores
+- **Local:** `openFormalizar` (despacho por aba), `openFormalizarWord` e `aplicarFormalizacaoWord` (novos)
+- **Linha:** `+ if (this.tab.kind === "word") return this.openFormalizarWord();` · `+ transacaoDasTrocas(view.state, blocos, novo, aplicadas)`
+- **Porquê:** o atalho e a paleta continuam sendo um comando para o usuário; a diferença (CodeMirror
+  × ProseMirror) mora aqui. No Word a transação sai de `word/project.ts`, o despacho dispara o
+  `onChange` do host (autosave) e o corretor é reacendido para sublinhar o texto já formal.
+
+## src/word/host.ts · src/word/ribbon.ts
+
+### 2026-10-14 · formalizar no Word · o botão na fita
+- **Local:** `WordHostOpts.onFormalizar` (novo) + o repasse às `RibbonHooks`; grupo “Revisão de Texto” e o `case "formalizar"`
+- **Linha:** `+ ${btn("formalizar", icon("i-spark") + "<span>Formalizar</span>", "Formalizar o texto (prévia antes/depois) — Ctrl+Alt+F", "big")}` · `+ case "formalizar": { this.hooks.onFormalizar?.(); return; }`
+- **Porquê:** no Word o usuário não tem a paleta na mão: a fita é onde ele procura revisão. O
+  botão fica ao lado do **Editor** (mesmo grupo), sem tocar no que já existia.
+
+## src/app/app.ts
+
+### 2026-10-14 · formalizar no Word · a ponte do host
+- **Local:** as opções do `new WordHost({...})`
+- **Linha:** `+ onFormalizar: () => this.openFormalizar(),`
+- **Porquê:** o host não conhece o app; ele só avisa que o botão foi clicado.
+
+## scripts/testar-formalizar.mts
+
+### 2026-10-14 · formalizar no Word · 65 verificações (o formato entra na prova)
+- **Local:** a seção “o mapa do Word” e “aplicar no Word”
+- **Linha:** `+ 18 checagens` (projeção com parágrafo vazio, seleção no meio de um parágrafo,
+  `toPm`) e a prova de ponta a ponta com `EditorState` de verdade: uma troca por passo,
+  parágrafos preservados, o **formato herdado** pela troca e o resto com o formato em paz.
+- **Porquê:** é a promessa do recurso no Word — “troca no lugar, formato em paz” — e ela precisa
+  de prova, não de inspeção visual.
+
+## docs/word.md
+
+### 2026-10-14 · formalizar no Word · o módulo documentado
+- **Local:** “Escrita assistida (também no Word)”
+- **Linha:** `+ o item "Formalizar"` (atalho, botão da fita, seleção/documento e o formato preservado)
+- **Porquê:** funcionalidade visível no motor Word: o documento do módulo precisa dizer como usar.
+
 ---
 
 ## Próximos registros
