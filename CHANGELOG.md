@@ -773,6 +773,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **proporção, o rodapé e o número da lâmina** continuam valendo para os decks (importados,
   exportados e salvos) — só não têm mais esse editor. O **"Configurar planilha"** do Excel fica
   como está.
+- **Prévia das sombras na galeria "Efeitos" (tema escuro)**: a prévia era um retângulo com o fundo
+  do próprio painel e a sombra desenhada **por fora** dele — no tema escuro a sombra preta caía
+  sobre o menu escuro e a galeria ficava **sem prévia nenhuma**. Agora cada opção desenha a
+  **forma** (um quadradinho claro) sobre uma **mesa de tom médio**: a sombra preta e o brilho
+  branco aparecem nos dois temas, com recorte na mesa e o deslocamento da prévia em 80% do real
+  para caber. Vale para os seis presets (inclusive **Brilho suave**); 4 verificações novas em
+  `npm run test:layout`.
 
 ---
 

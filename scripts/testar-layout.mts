@@ -1042,5 +1042,30 @@ console.log("\ncache do WebView: teto escolhido na tela e aplicado na janela");
   );
 }
 
+// ---------------------------------------------------------------- prévia das sombras (tema escuro)
+
+console.log("\nPowerPoint: prévia das sombras na galeria de Efeitos");
+
+{
+  const fita = ler("src/powerpoint/ui/fita.ts");
+  const css = ler("src/styles/powerpoint-edicao.css");
+  checa(
+    "a prévia desenha a forma sobre uma mesa própria",
+    /function previaSombra\(/.test(fita) && /ppr-sombra-forma/.test(fita) && /previaSombra\(s\.sombra\)/.test(fita),
+    "a sombra voltou a cair no fundo do menu"
+  );
+  checa(
+    "a mesa é de tom médio (não o fundo do painel)",
+    /\.ppr-sombra-previa\s*\{[^}]*background:\s*#[0-9a-f]{6}/i.test(css) && !/\.ppr-sombra-previa\s*\{[^}]*var\(--panel-2\)/s.test(css),
+    "com o fundo do painel a sombra preta some no tema escuro"
+  );
+  checa("a sombra fica recortada na mesa", /\.ppr-sombra-previa\s*\{[^}]*overflow:\s*hidden/.test(css), "sem recorte a sombra escapa do quadradinho");
+  checa(
+    "a forma da prévia é clara (contrasta com a mesa)",
+    /\.ppr-sombra-forma\s*\{[^}]*background:\s*#fff/.test(css),
+    "a forma precisa contrastar com a mesa nos dois temas"
+  );
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

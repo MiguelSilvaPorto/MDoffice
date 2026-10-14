@@ -6,7 +6,7 @@ import { GRAFICO_TIPOS } from "../edicao/grafico";
 import { ROTULOS_PRESET, type PresetTabela } from "../edicao/tabela";
 import { DICAS_DIRECAO, DICAS_TRANSICAO, DIRECOES_TRANSICAO, DURACOES_TRANSICAO, ROTULOS_DIRECAO, ROTULOS_TRANSICAO, TIPOS_TRANSICAO, aceitaDirecao, direcaoDe, duracaoDe, formatarDuracao } from "../edicao/transicao";
 import { DICAS_ANIMACAO, DICAS_INICIO, ATRASOS_ANIMACAO, CLASSE_ANIMACAO, DIRECOES_ANIMACAO, DURACOES_ANIMACAO, INICIOS_ANIMACAO, ROTULOS_ANIMACAO, ROTULOS_INICIO, TIPOS_ANIMACAO, aceitaDirecaoAnimacao, atrasoDe, direcaoDeAnimacao, duracaoDeAnimacao, inicioDe, suave } from "../edicao/animacao";
-import type { AnimacaoTipo, TransicaoDirecao, TransicaoTipo } from "../schema";
+import type { AnimacaoTipo, Shadow, TransicaoDirecao, TransicaoTipo } from "../schema";
 import { abrirCores } from "./cores";
 import { FONTES_COMUNS, TAMANHOS, cmParaPt, ptParaCm, type EstadoUI } from "./estado";
 import { abrirGaleria, iconeDeForma } from "./galeria";
@@ -32,6 +32,22 @@ const grupo = (nome: string, corpo: string) => `<div class="ppr-grupo"><div clas
 
 /** Setas da direção da transição (a lâmina entra por esse lado). */
 const FLECHAS_DIRECAO: Record<TransicaoDirecao, string> = { esquerda: "←", direita: "→", cima: "↑", baixo: "↓" };
+
+/**
+ * Prévia de uma sombra pronta para a galeria "Efeitos".
+ *
+ * A sombra é desenhada pela própria **forma** (um quadradinho claro) sobre uma **mesa de tom
+ * médio**: a sombra preta e o brilho branco ficam visíveis nos dois temas. Antes a forma era o
+ * retângulo do painel e a sombra caía FORA dele, sobre o fundo do menu — no tema escuro a
+ * galeria ficava sem prévia nenhuma (sombra preta sobre painel escuro).
+ */
+function previaSombra(s: Shadow | null): string {
+  // a prévia é esquemática: a sombra entra com 80% do deslocamento real para caber na mesa
+  const desloc = s
+    ? `box-shadow:${Math.round(s.dist * 0.8 * Math.cos((s.dir * Math.PI) / 180))}px ${Math.round(s.dist * 0.8 * Math.sin((s.dir * Math.PI) / 180))}px ${Math.round(s.blur / 2)}px #${s.color}${Math.round(s.alpha * 255).toString(16).padStart(2, "0")}`
+    : "";
+  return `<span class="ppr-sombra-previa"><span class="ppr-sombra-forma" style="${desloc}"></span></span>`;
+}
 
 /** Prévia visual de cada animação: a forma é o retângulo; a seta mostra se ela entra ou sai. */
 function previaAnimacao(tipo: AnimacaoTipo): string {
@@ -832,7 +848,7 @@ export class Fita {
       case "sombra": {
         const el = abrirPopup(
           ancora,
-          `${SOMBRAS_PRONTAS.map((s, i) => `<button type="button" class="pp-pop-item" data-sombra="${i}"><span class="ppr-sombra-previa" style="${s.sombra ? `box-shadow:${Math.round(s.sombra.dist * Math.cos((s.sombra.dir * Math.PI) / 180))}px ${Math.round(s.sombra.dist * Math.sin((s.sombra.dir * Math.PI) / 180))}px ${Math.round(s.sombra.blur / 2)}px #${s.sombra.color}${Math.round(s.sombra.alpha * 255).toString(16).padStart(2, "0")}` : ""}"></span>${s.nome}</button>`).join("")}`,
+          `${SOMBRAS_PRONTAS.map((s, i) => `<button type="button" class="pp-pop-item" data-sombra="${i}">${previaSombra(s.sombra)}${s.nome}</button>`).join("")}`,
           { classe: "pp-pop-menu" }
         );
         el.addEventListener("click", (ev) => {

@@ -7411,3 +7411,46 @@ antigas quando fizer sentido.
   `+ R4 marcada como entregue`
 - **Porquê:** o fundo muda o que o usuário vê na lâmina inteira e a seção é onde ele procura; e o
   plano atualizado é o que permite a R5 (Modelos) retomar numa sessão nova.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · prévia das sombras · a forma sobre uma mesa (tema escuro)
+- **Local:** a nova `previaSombra` (ao lado de `previaAnimacao`) e o `case "sombra"` da galeria
+- **Linha:** a galeria montava `<span class="ppr-sombra-previa" style="box-shadow:…">` — a sombra
+  caía FORA do retângulo, sobre o fundo do menu → `previaSombra(s.sombra)` desenha
+  `<span class="ppr-sombra-previa"><span class="ppr-sombra-forma" style="box-shadow:…"></span></span>`
+- **Porquê:** no tema escuro a prévia sumia: a "forma" era o retângulo do próprio painel
+  (`--panel-2`) e a sombra preta (alpha .22–.5) era desenhada por fora, sobre o menu escuro —
+  preto sobre preto. Agora a sombra cai numa **mesa** de tom médio e a forma é clara, então ela
+  aparece nos dois temas (inclusive o **Brilho suave**, branco, que ficava apagado no claro). O
+  deslocamento entra em **80%** do real porque a prévia é pequena e "Forte embaixo" (dist 8)
+  escaparia da mesa.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · prévia das sombras · a mesa de tom médio
+- **Local:** `.ppr-sombra-previa` (alterado) e `.ppr-sombra-forma` (novo)
+- **Linha:** `background: var(--panel-2)` → `background: #8b93a3` (tom médio fixo, igual nos dois
+  temas); `24×16` → `32×22` com `display: inline-flex` centralizando a forma e `overflow: hidden`
+  (a sombra não escapa); `+ .ppr-sombra-forma` = 14×10, raio 2, `background: #fff`
+- **Porquê:** o tom médio é o que deixa **as duas** pontas visíveis — sombra preta e brilho branco
+  — em tema claro e escuro; o retângulo do painel garantia contraste zero em um deles. O recorte
+  mantém a sombra dentro da mesa (como a galeria do PowerPoint faz).
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · prévia das sombras · 4 verificações
+- **Local:** o bloco "PowerPoint: prévia das sombras na galeria de Efeitos"
+- **Linha:** `novo`
+- **Porquê:** prende a forma sobre a mesa, a mesa de tom médio (e não o fundo do painel), o
+  recorte e a forma clara — os quatro pontos que fazem a prévia existir no tema escuro. A
+  conferência no navegador confirmou com print nos dois temas (as seis opções com a sombra ou o
+  brilho visíveis).
+
+## CHANGELOG.md
+
+### 2026-10-14 · prévia das sombras · a entrada no PowerPoint
+- **Local:** PowerPoint → Adicionado → Frontend
+- **Linha:** `novo`
+- **Porquê:** defeito de interface do módulo PowerPoint; a entrada entra já promovida, como o
+  fechamento exige.

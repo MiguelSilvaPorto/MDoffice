@@ -965,13 +965,25 @@ button.ppr.big .ppr-gal-ic svg {
   border-color: var(--accent);
 }
 
+/* prévia da sombra: a forma sobre uma "mesa" de tom médio — a sombra preta e o brilho branco
+   aparecem nos dois temas (no escuro, a forma era o próprio painel e a sombra sumia) */
 .ppr-sombra-previa {
-  display: inline-block;
-  width: 24px;
-  height: 16px;
-  background: var(--panel-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 22px;
+  overflow: hidden;
+  background: #8b93a3;
   border: 1px solid var(--border);
   border-radius: 3px;
+}
+
+.ppr-sombra-forma {
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+  background: #fff;
 }
 
 /* ---------- painel lateral ---------- */
