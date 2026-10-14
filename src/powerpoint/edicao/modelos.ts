@@ -2,6 +2,11 @@
 // Aplicar um modelo ao deck troca as cores da paleta antiga pelas do novo tema nos textos,
 // preenchimentos, contornos e fundos — o que foi escolhido fora da paleta fica como está.
 // Funções puras: devolvem lâminas novas, sem mexer nas originais.
+//
+// As Ideias de design usam o mesmo `aplicarModelo` com um TRATAMENTO a mais: além de trocar a
+// paleta, elas remapeiam as cores PRÓPRIAS das formas (um organograma importado tem verdes que
+// não estão em tema nenhum) para as cores do design, e podem arredondar os cantos ou dar
+// contorno de acento — é o que faz a lâmina parecer outro estilo, e não só outro fundo.
 import type { CelulaTab, DeckSetup, Fill, Para, Run, Shape, Slide, ThemeId } from "../schema";
 import { themeOf } from "../themes";
 import { corDeContraste, estiloDoDeck } from "./criar";
@@ -54,8 +59,71 @@ export interface EstiloAtual {
   fontFamily: string;
 }
 
+/** O que uma ideia propõe além das cores e da fonte: o acabamento das formas. */
+export type TratamentoIdeia = "recolorir" | "cantos" | "contorno";
+
+/** Como cada tratamento aparece no cartão da ideia. */
+export const ROTULO_TRATAMENTO: Record<TratamentoIdeia, string> = {
+  recolorir: "cores novas",
+  cantos: "cantos arredondados",
+  contorno: "contorno de acento",
+};
+
+/** Mistura duas cores (hex sem #): `peso` é quanto da segunda entra no resultado. */
+function misturar(a: string, b: string, peso: number): string {
+  const ch = (h: string, i: number) => parseInt(h.slice(i * 2, i * 2 + 2), 16);
+  return [0, 1, 2]
+    .map((i) => Math.max(0, Math.min(255, Math.round(ch(a, i) * (1 - peso) + ch(b, i) * peso))))
+    .map((n) => n.toString(16).padStart(2, "0").toUpperCase())
+    .join("");
+}
+
+/** Luminosidade e saturação (HSL) de uma cor hex sem # — é por elas que o papel é decidido. */
+function matiz(hex: string): { l: number; s: number } {
+  const v = [0, 1, 2].map((i) => parseInt(hex.slice(i * 2, i * 2 + 2), 16) / 255);
+  const max = Math.max(...v);
+  const min = Math.min(...v);
+  const l = (max + min) / 2;
+  return { l, s: max === min ? 0 : (max - min) / (l < 0.5 ? max + min : 2 - max - min) };
+}
+
+/**
+ * O destino de cada cor própria do deck na paleta do design, pelo PAPEL que ela cumpre — e não
+ * pela frequência: as escuras são texto (viram o texto do design), as claras são fundos da
+ * família da marca (viram uma tinta do acento) e as saturadas são a marca (viram o acento). É
+ * isso que faz o organograma inteiro acompanhar o design, em vez de só o fundo e o texto.
+ */
+export function mapaDasCoresProprias(
+  slides: Slide[],
+  tema: { fg: string; bg: string; accent: string; muted: string },
+  destino: { fg: string; bg: string; accent: string; muted: string }
+): Map<string, string> {
+  const limpa = (c: string) => c.replace(/^#/, "").toUpperCase();
+  const doTema = new Set([tema.fg, tema.bg, tema.accent, tema.muted, "FFFFFF", "000000"].map(limpa));
+  const tinta = misturar(destino.accent, destino.bg, 0.86); // fundo claro da família do acento
+  const mapa = new Map<string, string>();
+  const ver = (c: string | undefined): void => {
+    if (!c) return;
+    const h = limpa(c);
+    if (!/^[0-9A-F]{6}$/.test(h) || doTema.has(h) || mapa.has(h)) return;
+    const { l, s } = matiz(h);
+    mapa.set(h, l < 0.25 ? destino.fg : l > 0.72 ? tinta : s >= 0.3 ? destino.accent : l < 0.5 ? destino.fg : destino.muted);
+  };
+  for (const sl of slides) {
+    for (const s of sl.shapes) {
+      ver(s.color);
+      ver(s.fillX?.kind === "solid" ? s.fillX.color : s.fill);
+      ver(s.ln?.color);
+      for (const p of s.paras ?? []) for (const r of p.runs) ver(r.color);
+      for (const linha of s.tabela?.celulas ?? []) for (const cel of linha) ver(cel.fill?.kind === "solid" ? cel.fill.color : undefined);
+    }
+    ver(sl.bg?.kind === "solid" ? sl.bg.color : undefined);
+  }
+  return mapa;
+}
+
 /** Aplica o modelo às lâminas: troca as cores do tema antigo pelas do novo e ajusta a fonte. */
-export function aplicarModelo(slides: Slide[], de: EstiloAtual, modelo: ModeloPPT): Slide[] {
+export function aplicarModelo(slides: Slide[], de: EstiloAtual, modelo: ModeloPPT, tratamento?: TratamentoIdeia): Slide[] {
   const ta = themeOf(de.theme);
   const t0 = themeOf(modelo.tema);
   // um modelo do usuário traz as próprias cores; os presets usam as do tema
@@ -73,11 +141,17 @@ export function aplicarModelo(slides: Slide[], de: EstiloAtual, modelo: ModeloPP
     [ta.accent.toUpperCase(), tb.accent],
     [(de.bg || ta.bg).toUpperCase(), bgNovo],
   ]);
+  // Tratamento de ideia: as formas com cor própria (fora da paleta) entram no mapa pelo papel
+  // de cada cor — a marca vira o acento, os fundos claros viram tinta do acento e o texto vira
+  // o texto do design
+  if (tratamento) {
+    for (const [c, novo] of mapaDasCoresProprias(slides, ta, tb)) mapa.set(c, novo);
+  }
   const fonteAntiga = de.fontFamily || ta.font;
   const cor = (c: string | undefined): string | undefined => (c ? (mapa.get(c.replace(/^#/, "").toUpperCase()) ?? c) : c);
   const fonte = (f: string | undefined): string | undefined => (!f || f === fonteAntiga ? modelo.fonte : f);
-  // texto sobre forma pintada com o acento antigo: refaz o contraste para continuar legível
-  const contrasteAntigo = corDeContraste(ta.accent);
+  // texto sobre forma pintada com o acento antigo — ou com uma cor própria que virou o acento
+  // novo: refaz o contraste para continuar legível
   const contrasteNovo = corDeContraste(tb.accent);
   const fill = (f: Fill | undefined): Fill | undefined => {
     if (!f) return f;
@@ -85,8 +159,12 @@ export function aplicarModelo(slides: Slide[], de: EstiloAtual, modelo: ModeloPP
     if (f.kind === "gradient") return { ...f, stops: f.stops?.map((s) => ({ ...s, color: cor(s.color) ?? s.color })) };
     return f;
   };
-  const ehAcento = (s: Shape) => (s.fillX?.kind === "solid" ? s.fillX.color : s.fill)?.toUpperCase() === ta.accent.toUpperCase();
-  const corDeTexto = (s: Shape, c: string): string => (ehAcento(s) && c.toUpperCase() === contrasteAntigo ? contrasteNovo : cor(c) ?? c);
+  const corDeTexto = (s: Shape, c: string): string => {
+    const bruta = (s.fillX?.kind === "solid" ? s.fillX.color : s.fill)?.replace(/^#/, "").toUpperCase() ?? "";
+    const nova = mapa.get(bruta);
+    if (nova && nova.toUpperCase() === tb.accent.toUpperCase() && c.toUpperCase() === corDeContraste(bruta)) return contrasteNovo;
+    return cor(c) ?? c;
+  };
   const runs = (s: Shape, rs: Run[]): Run[] => rs.map((r) => ({ ...r, color: corDeTexto(s, r.color), font: fonte(r.font) ?? r.font }));
   const paras = (s: Shape, ps: Para[]): Para[] => ps.map((p) => ({ ...p, runs: runs(s, p.runs) }));
   const celula = (c: CelulaTab): CelulaTab => ({
@@ -95,16 +173,30 @@ export function aplicarModelo(slides: Slide[], de: EstiloAtual, modelo: ModeloPP
     paras: c.paras.map((p) => ({ ...p, runs: p.runs.map((r) => ({ ...r, color: cor(r.color) ?? r.color, font: fonte(r.font) ?? r.font })) })),
     estilo: c.estilo ? { ...c.estilo, color: cor(c.estilo.color) ?? c.estilo.color, font: fonte(c.estilo.font) ?? c.estilo.font } : c.estilo,
   });
-  const forma = (s: Shape): Shape => ({
-    ...s,
-    color: corDeTexto(s, s.color),
-    fontFamily: fonte(s.fontFamily) ?? s.fontFamily,
-    fill: cor(s.fill) ?? s.fill,
-    fillX: fill(s.fillX),
-    ln: s.ln ? { ...s.ln, color: cor(s.ln.color) ?? s.ln.color } : s.ln,
-    paras: s.paras ? paras(s, s.paras) : s.paras,
-    tabela: s.tabela ? { ...s.tabela, celulas: s.tabela.celulas.map((linha) => linha.map(celula)) } : s.tabela,
-  });
+  const forma = (s: Shape): Shape => {
+    const f: Shape = {
+      ...s,
+      color: corDeTexto(s, s.color),
+      fontFamily: fonte(s.fontFamily) ?? s.fontFamily,
+      fill: cor(s.fill) ?? s.fill,
+      fillX: fill(s.fillX),
+      ln: s.ln ? { ...s.ln, color: cor(s.ln.color) ?? s.ln.color } : s.ln,
+      paras: s.paras ? paras(s, s.paras) : s.paras,
+      tabela: s.tabela ? { ...s.tabela, celulas: s.tabela.celulas.map((linha) => linha.map(celula)) } : s.tabela,
+    };
+    // Acabamento das ideias: cantos arredondados nos quadros pintados (o raio vira o "adj" do
+    // preset, na mesma unidade do resto do app: 100000 × raio ÷ lado menor)…
+    if (tratamento === "cantos" && !f.tabela && (f.fillX?.kind === "solid" || f.fill) && (!f.geom || f.geom === "rect")) {
+      f.geom = "roundRect";
+      f.adj = f.adj ?? { adj: 12000 };
+    }
+    // …e contorno na cor de acento nas formas pintadas: o desenho fica marcado, como um
+    // diagrama, em vez de um bloco de cor
+    if (tratamento === "contorno" && !f.tabela && (f.fillX?.kind === "solid" || f.fill)) {
+      f.ln = { alpha: 1, cap: "flat", join: "miter", ...f.ln, color: tb.accent, w: Math.max(f.ln?.w ?? 0, 1.25) };
+    }
+    return f;
+  };
   return slides.map((sl) => ({ ...sl, bg: fill(sl.bg), shapes: sl.shapes.map(forma) }));
 }
 

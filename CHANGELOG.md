@@ -382,7 +382,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **Ideias de design com "Gerar mais ideias" e acabamentos**: as ideias mostravam só 8 cartões
+  e, num deck importado, trocavam apenas o fundo e o texto — as formas do organograma têm cores
+  próprias (verdes) que não estão em tema nenhum e ficavam intactas. Agora cada ideia é um
+  **design + acabamento** (*cores novas*, *cantos arredondados* ou *contorno de acento*) e o
+  botão **Gerar mais ideias** percorre as combinações, 8 por vez, com o contador à mostra. O
+  *cores novas* remapeia as cores próprias das formas **pelo papel de cada uma** — a cor da
+  marca vira o acento, os fundos claros viram uma tinta do acento e as cores escuras viram o
+  texto —, então o organograma inteiro passa para a paleta do design (no deck real do usuário,
+  128 formas trocam de cor, contra 44 antes). A prévia do cartão usa o mapa do **deck inteiro**,
+  para o cartão mostrar exatamente o que o clique faz.
 
 ### Adicionado (na main)
 

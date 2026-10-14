@@ -16,7 +16,7 @@ import type { Dim } from "./edicao/geometria";
 import { Historico } from "./edicao/historico";
 import { formasDoLayout, novaLamina } from "./edicao/layouts";
 import { migrarSlides, registrarMidia } from "./edicao/migrar";
-import { MODELOS, aplicarModelo, type EstiloAtual, type ModeloPPT } from "./edicao/modelos";
+import { MODELOS, ROTULO_TRATAMENTO, aplicarModelo, type EstiloAtual, type ModeloPPT, type TratamentoIdeia } from "./edicao/modelos";
 import { criarModeloUsuario, lerModelosUsuario, removerModeloUsuario } from "./modelosUsuario";
 import {
   agruparFormas,
@@ -171,6 +171,8 @@ export class PowerPointHost {
   private destinoImagem = "inserir";
   private destinoMidia: string | null = null;
   private lateral: "formatar" | "notas" | "animacao" | "ideias" = "formatar";
+  /** qual lote de ideias está à mostra (o botão "Gerar mais ideias" avança) */
+  private loteIdeias = 0;
   /** célula em edição (quando a forma em edição é uma tabela) e células selecionadas */
   private celulaEdit: [number, number] | null = null;
   private celulas: CelulasSel | null = null;
@@ -274,8 +276,9 @@ export class PowerPointHost {
             <textarea class="pp-notes" data-notes placeholder="O que falar nesta lâmina..."></textarea>
           </div>
           <div class="pp-side-corpo" data-ideias-corpo hidden>
-            <div class="pp-side-head"><span>Ideias de design</span><span class="pp-side-hint">geradas no seu computador</span></div>
-            <p class="pp-ideias-dica">Escolha um visual para a apresentação: cada cartão mostra <b>esta lâmina</b> no design. Clicar aplica na apresentação inteira.</p>
+            <div class="pp-side-head"><span>Ideias de design</span><span class="pp-side-hint" data-ideias-hint>geradas no seu computador</span></div>
+            <p class="pp-ideias-dica">Escolha um visual para a apresentação: cada cartão mostra <b>esta lâmina</b> no design — cores, fonte e acabamento. Clicar aplica na apresentação inteira.</p>
+            <button type="button" class="btn small pp-ideias-mais" data-ideias-mais title="Outras combinações de design e acabamento">Gerar mais ideias</button>
             <div class="pp-ideias" data-ideias></div>
           </div>
         </aside>
@@ -421,6 +424,11 @@ export class PowerPointHost {
     aplicar(guardado("pp-side-oculto") === "1");
     this.pane.classList.remove("pp-side-anima");
     for (const b of this.pane.querySelectorAll<HTMLElement>("[data-side-toggle]")) b.addEventListener("click", () => aplicar(!this.pane.classList.contains("pp-side-oculto")));
+    // "Gerar mais ideias": avança o lote — cada lote percorre combinações novas de design e acabamento
+    this.pane.querySelector<HTMLElement>("[data-ideias-mais]")?.addEventListener("click", () => {
+      this.loteIdeias++;
+      this.pintarIdeias();
+    });
     const alca = this.pane.querySelector<HTMLElement>("[data-side-resize]")!;
     alca.addEventListener("pointerdown", (e) => {
       e.preventDefault();
@@ -467,6 +475,11 @@ export class PowerPointHost {
    * `cqw`, então o texto das formas escala junto e o cartão mostra exatamente o que o clique
    * vai aplicar — sem desenho à parte para manter em dia.
    */
+  /**
+   * Redesenha o painel das Ideias: uma fornada de combinações de design × acabamento, com a
+   * lâmina atual desenhada em cada uma. "Gerar mais ideias" avança para a fornada seguinte —
+   * são `modelos × tratamentos` combinações, então dá para passar por todas sem repetir.
+   */
   private pintarIdeias(): void {
     const host = this.pane.querySelector<HTMLElement>("[data-ideias]");
     if (!host) return;
@@ -475,13 +488,27 @@ export class PowerPointHost {
     const ctx = this.ctxRender(false);
     const largura = 960; // referência da prévia (o cqw do texto sai daqui)
     const altura = Math.round(largura / stageRatio(this.setup));
+    const modelos = [...MODELOS, ...lerModelosUsuario()];
+    const tratamentos: TratamentoIdeia[] = ["recolorir", "cantos", "contorno"];
+    const porLote = 8;
+    const total = modelos.length * tratamentos.length;
+    // o tratamento gira a cada ideia e o modelo a cada três: a fornada já mistura os acabamentos
+    const ideias: { m: ModeloPPT; t: TratamentoIdeia }[] = [];
+    for (let k = 0; k < Math.min(porLote, total); k++) {
+      const g = this.loteIdeias * porLote + k;
+      ideias.push({ m: modelos[Math.floor(g / tratamentos.length) % modelos.length], t: tratamentos[g % tratamentos.length] });
+    }
+    const dica = this.pane.querySelector<HTMLElement>("[data-ideias-hint]");
+    if (dica) dica.textContent = `${ideias.length} de ${total} combinações — geradas no seu computador`;
     host.textContent = "";
-    for (const m of [...MODELOS, ...lerModelosUsuario()]) {
-      const [comModelo] = aplicarModelo([atual], de, m);
+    for (const { m, t } of ideias) {
+      // a prévia sai do DECK INTEIRO (e não só da lâmina atual): é o mapa de cores do deck todo
+      // que o clique aplica, então o cartão mostra exatamente o que vai acontecer
+      const comModelo = aplicarModelo(this.slides, de, m, t)[this.indice] ?? atual;
       const cartao = document.createElement("button");
       cartao.type = "button";
       cartao.className = "pp-ideia";
-      cartao.title = `${m.nome} — ${m.descricao}`;
+      cartao.title = `${m.nome} · ${ROTULO_TRATAMENTO[t]} — ${m.descricao}`;
       const moldura = document.createElement("span");
       moldura.className = "pp-ideia-moldura";
       const previa = document.createElement("span");
@@ -495,9 +522,9 @@ export class PowerPointHost {
       moldura.append(previa);
       const nome = document.createElement("span");
       nome.className = "pp-ideia-nome";
-      nome.textContent = m.nome;
+      nome.textContent = t === "recolorir" ? m.nome : `${m.nome} · ${ROTULO_TRATAMENTO[t]}`;
       cartao.append(moldura, nome);
-      cartao.addEventListener("click", () => this.run("modelo", m.id));
+      cartao.addEventListener("click", () => this.run("ideia", `${m.id}|${t}`));
       host.append(cartao);
     }
     // a escala sai depois do layout: cada prévia cabe na largura que o painel tiver agora
@@ -1563,6 +1590,13 @@ export class PowerPointHost {
         this.mostrarPainelLateral();
         this.mostrarLateral("ideias");
         return;
+      case "ideia": {
+        // cartão das Ideias: aplica o design com o acabamento proposto ("id|tratamento")
+        const [id, t] = String(value ?? "").split("|");
+        const m = [...MODELOS, ...lerModelosUsuario()].find((x) => x.id === id);
+        if (m) this.usarModelo(m, t as TratamentoIdeia);
+        return;
+      }
 
       // ---- transição de entrada da lâmina ----
       case "transicao": {
@@ -3165,9 +3199,9 @@ export class PowerPointHost {
   }
 
   /** Aplica um modelo (tema + fundo + fonte) ao deck inteiro, trocando as cores do tema antigo. */
-  private usarModelo(modelo: ModeloPPT): void {
+  private usarModelo(modelo: ModeloPPT, tratamento?: TratamentoIdeia): void {
     this.registrar();
-    this.slides = aplicarModelo(this.slides, { theme: this.setup.theme, bg: this.setup.bg, fontFamily: this.setup.fontFamily }, modelo);
+    this.slides = aplicarModelo(this.slides, { theme: this.setup.theme, bg: this.setup.bg, fontFamily: this.setup.fontFamily }, modelo, tratamento);
     this.setSetup({ theme: modelo.tema, bg: modelo.bg, fontFamily: modelo.fonte });
   }
 

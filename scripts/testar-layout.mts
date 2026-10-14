@@ -510,14 +510,29 @@ console.log("\nídeias de design (a lâmina atual em cada modelo)");
     /data-lateral="ideias">Ideias</.test(ppt) && /data-ideias-corpo/.test(ppt) && /data-ideias>/.test(ppt)
   );
   checa(
-    "cada cartão desenha A LÂMINA ATUAL com o modelo aplicado (não um desenho à parte)",
-    /aplicarModelo\(\[atual\], de, m\)/.test(ppt) && /htmlFormaRica\(f, ctx\)/.test(ppt) && /pp-ideia-slide/.test(ppt)
+    "cada cartão desenha A LÂMINA ATUAL com o design e o acabamento aplicados (não um desenho à parte)",
+    /aplicarModelo\(this\.slides, de, m, t\)\[this\.indice\]/.test(ppt) && /htmlFormaRica\(f, ctx\)/.test(ppt) && /pp-ideia-slide/.test(ppt)
   );
   checa(
     "a prévia é a lâmina de verdade reduzida por transform (com a largura do painel)",
     /previa\.style\.transform = `scale\(\$\{w \/ largura\}\)`/.test(ppt) && /largura = 960/.test(ppt)
   );
-  checa("clicar aplica o modelo (o mesmo comando do Template)", /cartao\.addEventListener\("click", \(\) => this\.run\("modelo", m\.id\)\)/.test(ppt));
+  checa(
+    "clicar aplica o design com o acabamento do cartão (comando ideia com id|tratamento)",
+    /this\.run\("ideia", `\$\{m\.id\}\|\$\{t\}`\)/.test(ppt) && /case "ideia":[\s\S]{0,320}this\.usarModelo\(m, t as TratamentoIdeia\)/.test(ppt)
+  );
+  checa(
+    "o botão Gerar mais ideias avança o lote (fornadas de combinações novas)",
+    /data-ideias-mais/.test(ppt) && /this\.loteIdeias\+\+/.test(ppt) && /this\.loteIdeias \* porLote/.test(ppt)
+  );
+  checa(
+    "cada fornada mistura design e acabamento (recolorir, cantos arredondados, contorno)",
+    /tratamentos: TratamentoIdeia\[\] = \["recolorir", "cantos", "contorno"\]/.test(ppt) && /ROTULO_TRATAMENTO\[t\]/.test(ppt)
+  );
+  checa(
+    "o tratamento alcança as cores próprias das formas (o verde do organograma vira o acento)",
+    /mapaDasCoresProprias\(slides, ta, tb\)/.test(mod) && /tratamento === "cantos"/.test(mod) && /tratamento === "contorno"/.test(mod) && /geom = "roundRect"/.test(mod)
+  );
   checa(
     "o painel acompanha a lâmina atual (redesenha junto com o palco)",
     /if \(this\.lateral === "ideias"\) this\.pintarIdeias\(\)/.test(ppt)

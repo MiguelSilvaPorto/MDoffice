@@ -349,6 +349,49 @@ const M = await empacotar("src/powerpoint/edicao/modelos.ts", "modelos.mjs");
   ok("tabela: texto e preenchimento das células trocam junto", rt[0].shapes[0].tabela.celulas[0][0].paras[0].runs[0].color === "F4F5F8" && rt[0].shapes[0].tabela.celulas[0][0].fill.color === "818CF8");
 }
 
+// ideias de design: o tratamento alcança as cores próprias das formas e o acabamento
+{
+  const mk = (shapes, bg) => ({ md: "", layout: "conteudo", notes: "", shapes, bg });
+  const run = (color, font) => ({ text: "Oi", size: 18, bold: false, italic: false, underline: false, strike: false, color, font });
+  const para = (r) => ({ runs: [r], align: "esquerda", lvl: 0, marL: 0, indent: 0, spcBef: 0, spcAft: 0, endSize: 18 });
+  const caixa = (extra = {}) => ({ id: "t", kind: "texto", box: { x: 8, y: 10, w: 80, h: 20 }, text: "Oi", fontFamily: "Segoe UI", fontSize: 18, color: "1C212B", bold: false, italic: false, align: "esquerda", fill: "", src: "", rot: 0, ...extra });
+  // deck importado: quadros com um verde próprio (fora de qualquer paleta) e texto branco
+  const verde = (id) => caixa({ id, kind: "forma", geom: "rect", color: "FFFFFF", fill: "2EA36F", fillX: { kind: "solid", color: "2EA36F" }, paras: [para(run("FFFFFF", "Segoe UI"))] });
+  const temaClaro = { fg: "1C212B", bg: "FFFFFF", accent: "4F46E5", muted: "94A3B8" };
+  const deck = [
+    mk([verde("a"), verde("b"), caixa({ id: "c", color: "2EA36F", paras: [para(run("2EA36F", "Segoe UI"))] })], { kind: "solid", color: "FFFFFF" }),
+    mk(
+      [
+        caixa({ id: "d", kind: "forma", fill: "4F46E5", fillX: { kind: "solid", color: "4F46E5" } }),
+        caixa({ id: "e", kind: "forma", fill: "0F2738", fillX: { kind: "solid", color: "0F2738" } }),
+        caixa({ id: "f", kind: "forma", fill: "E8F7EE", fillX: { kind: "solid", color: "E8F7EE" } }),
+        caixa({ id: "g", color: "64748B", paras: [para(run("64748B", "Segoe UI"))] }),
+      ],
+      { kind: "solid", color: "FFFFFF" }
+    ),
+  ];
+  const de = { theme: "claro", bg: "", fontFamily: "Segoe UI" };
+  const ocean = M.MODELOS.find((m) => m.id === "ocean");
+  const destino = { fg: "13293D", bg: "E8F1F2", accent: "1B98E0", muted: "247BA0" };
+  const mp = M.mapaDasCoresProprias(deck, temaClaro, destino);
+  ok(
+    "ideias: o mapa leva a marca para o acento, o escuro para o texto e o claro para a tinta do acento",
+    mp.get("2EA36F") === "1B98E0" && mp.get("0F2738") === "13293D" && mp.get("E8F7EE") === "CBE5EF" && mp.get("64748B") === "13293D" && !mp.has("4F46E5") && !mp.has("1C212B") && !mp.has("FFFFFF")
+  );
+  const semTrat = M.aplicarModelo(deck, de, ocean);
+  ok("ideias: sem tratamento o verde próprio fica como está (o comportamento antigo)", semTrat[0].shapes[0].fillX.color === "2EA36F" && semTrat[0].shapes[0].geom === "rect");
+  const rec = M.aplicarModelo(deck, de, ocean, "recolorir");
+  ok("ideias: recolorir leva o verde próprio para o acento (preenchimento e texto)", rec[0].shapes[0].fill === "1B98E0" && rec[0].shapes[0].fillX.color === "1B98E0" && rec[0].shapes[2].paras[0].runs[0].color === "1B98E0");
+  const sun = M.MODELOS.find((m) => m.id === "sunset");
+  const recSun = M.aplicarModelo(deck, de, sun, "recolorir");
+  ok("ideias: texto sobre o quadro que virou acento claro escurece (contraste refeito)", recSun[0].shapes[0].fillX.color === "FF9F1C" && recSun[0].shapes[0].paras[0].runs[0].color === "1C212B");
+  const cantos = M.aplicarModelo(deck, de, ocean, "cantos");
+  ok("ideias: cantos arredondados nos quadros pintados (raio 12% no adj) e recoloridos junto", cantos[0].shapes[0].geom === "roundRect" && cantos[0].shapes[0].adj.adj === 12000 && cantos[0].shapes[1].geom === "roundRect" && cantos[0].shapes[0].fillX.color === "1B98E0" && cantos[0].shapes[2].geom === undefined);
+  const cont = M.aplicarModelo(deck, de, ocean, "contorno");
+  ok("ideias: contorno de acento nas formas pintadas (1,25 pt no mínimo)", cont[0].shapes[0].ln.color === "1B98E0" && cont[0].shapes[0].ln.w === 1.25 && cont[0].shapes[2].ln === undefined);
+  ok("ideias: aplicar não mexe nas lâminas originais", deck[0].shapes[0].fillX.color === "2EA36F" && deck[0].shapes[0].geom === "rect");
+}
+
 // modelos criados pelo usuário: o visual do deck vira um modelo reaplicável
 {
   const mk = (shapes, bg) => ({ md: "", layout: "conteudo", notes: "", shapes, bg });

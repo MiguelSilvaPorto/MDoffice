@@ -6691,6 +6691,7 @@ antigas quando fizer sentido.
 - **Porquê:** a mudança é de interface do app inteiro (não de um módulo), então a categoria é
   **Geral** — e a entrada entra já promovida, como o fechamento exige.
 
+<<<<<<< HEAD
 ## src/styles/settings.css
 
 ### 2026-10-14 · esta tarefa · o botão de perigo não fica vermelho em cima de vermelho
@@ -6715,3 +6716,51 @@ antigas quando fizer sentido.
   e o vermelho sólido no hover/confirmando
 - **Porquê:** é um defeito de cascata (duas classes disputando fundo e cor): a checagem de CSS
   prende a combinação sem precisar de navegador, e falha se alguém "limpar" o bloco.
+=======
+## src/powerpoint/edicao/modelos.ts · src/powerpoint/powerpoint.ts · src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · esta tarefa · Ideias: "Gerar mais" e acabamentos
+
+- **Local:** `modelos.ts` — tipo `TratamentoIdeia`, `ROTULO_TRATAMENTO`, `mapaDasCoresProprias`,
+  os auxiliares `misturar`/`matiz` e o parâmetro novo de `aplicarModelo`
+- **Linha:** `+ mapaDasCoresProprias(slides, ta, tb)` no mapa de cores; `+ if (tratamento)` com
+  `cantos` (rect → roundRect, `adj: 12000`) e `contorno` (contorno no acento, 1,25 pt);
+  `corDeTexto` trocou `ehAcento` por "a cor do fundo mapeia para o acento novo"
+- **Porquê:** as Ideias trocavam só o fundo e o texto num deck importado, porque as cores das
+  formas (os verdes do organograma) não estão em tema nenhum e ficavam intactas. O primeiro
+  critério que tentei — as **cores mais frequentes** — falhou na verificação com o deck real do
+  usuário (12 lâminas, 511 formas): as cores de **texto** (cinzas escuros, muito repetidos)
+  ocupavam as primeiras posições e empurravam os verdes para fora da lista; pior, um verde era
+  mapeado para "texto" e o acento do design nem aparecia nos preenchimentos (15 formas trocavam,
+  contra 44 das brancas). A correção foi classificar por **papel**, não por frequência: escura
+  (L < 0,25) é texto, clara (L > 0,72) é fundo da família (vira uma tinta do acento, mistura de
+  86% do fundo do design com 14% do acento) e saturada (S ≥ 0,3) é a marca (vira o acento). Com
+  isso o mesmo deck passa de 44 para **128 formas** recoloridas e termina com apenas quatro
+  cores de preenchimento — todas da paleta do design. O `corDeTexto` precisou acompanhar: o
+  contraste é refeito também quando a cor própria do quadro vira o acento (senão o texto branco
+  ficaria ilegível num acento claro, como o do Sunset).
+- **Local:** `powerpoint.ts` — o HTML do painel (`data-ideias-hint`, `data-ideias-mais`), o
+  campo `loteIdeias`, o `pintarIdeias()`, o caso `"ideia"` e a assinatura de `usarModelo`
+- **Linha:** `+ data-ideias-mais` (botão "Gerar mais ideias"); `+ this.loteIdeias++`;
+  `pintarIdeias` monta a fornada por `modelos[floor(g/3) % n]` × `tratamentos[g % 3]` (o
+  tratamento gira a cada ideia, o modelo a cada três: a fornada já mistura os acabamentos);
+  `+ case "ideia"` lê `"id|tratamento"` e chama `usarModelo(m, t as TratamentoIdeia)`
+- **Porquê:** o usuário pediu (1) um botão para gerar mais ideias e (2) ideias que reformatem a
+  lâmina de verdade, não só o fundo. O botão avança fornadas de 8 sobre as `designs ×
+  acabamentos` combinações (57 hoje: 19 designs × 3 acabamentos) e o contador "8 de 57" mostra
+  onde se está. A prévia passou a sair do **deck inteiro** (`aplicarModelo(this.slides, de, m,
+  t)[this.indice]`) em vez de só a lâmina atual: o mapa de cores que o clique aplica é o do deck
+  todo, então uma cor que só aparece em outra lâmina deixaria o cartão mentindo. O `Template` da
+  fita continua chamando `aplicarModelo` sem tratamento — o comportamento antigo (o que está
+  fora da paleta fica como está) segue sendo o dele.
+- **Local:** `scripts/testar-edicao-pptx.mjs`, `scripts/testar-layout.mts`, `docs/powerpoint.md`
+  e `src/styles/powerpoint-edicao.css`
+- **Linha:** `novo` — 7 checagens de unidade (o mapa por papel com os quatro destinos, o sem
+  tratamento intacto, o recolorir, o contraste refeito, os cantos, o contorno e as originais
+  preservadas), 4 de layout (o botão, a fornada, o caso e o tratamento no fonte) e o
+  `.pp-ideias-mais`
+- **Porquê:** o teste do cartão que existia verificava `aplicarModelo([atual], de, m)` e o
+  comando `"modelo"` — os dois mudaram nesta tarefa; deixá-los passando teria prendido o código
+  velho. As checagens novas prendem o que o usuário pediu: mais ideias (o botão e a fornada) e
+  ideias que mexem nas formas (o mapa por papel e os dois acabamentos).
+>>>>>>> 004e7c2 (feat(powerpoint): ideias de design com Gerar mais e acabamentos (cores novas, cantos arredondados, contorno de acento). O recolorir remapeia as cores proprias das formas pelo PAPEL de cada uma - a marca vira o acento, os fundos claros viram tinta do acento e as escuras viram o texto - em vez de so trocar o fundo e o texto: no deck real do usuario (12 laminas, 511 formas), 128 formas trocam de cor contra 44 antes, e o deck termina com as 4 cores do design. O botao Gerar mais ideias percorre as combinacoes de design x acabamento (8 por vez, 57 hoje) e a previa do cartao usa o mapa do deck inteiro.)

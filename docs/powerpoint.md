@@ -94,10 +94,20 @@ avisado ao abrir (nunca some em silêncio).
   presets do app **mais os 13 designs no formato do DeckCraft** (8 temas originais + 5
   esquemas de cor, cada um com as próprias cores e fonte).
 - **Ideias de design** (aba do painel lateral, ou **Design ▸ Designer ▸ Ideias de design** na
-  fita): mostra **esta lâmina** desenhada em cada modelo do catálogo, em cartões clicáveis —
-  clicar aplica o modelo à apresentação inteira. As ideias são geradas **no computador** (sem
-  nuvem), como no *Design Ideas* do DeckCraft: a prévia é a lâmina de verdade reduzida, então o
-  cartão mostra exatamente o que o clique faz.
+  fita): mostra **esta lâmina** desenhada em cada ideia, em cartões clicáveis — clicar aplica à
+  apresentação inteira. Cada ideia é um **design** (as cores e a fonte) com um **acabamento**:
+  - *cores novas*: troca a paleta e, o mais importante, **remapeia as cores próprias das formas**
+    pelo papel de cada uma — a cor da marca vira o acento, os fundos claros viram uma tinta do
+    acento e as cores escuras viram o texto. Um organograma importado (com verdes que não estão
+    em tema nenhum) passa inteiro para a paleta do design, em vez de só o fundo e o texto;
+  - *cantos arredondados*: os quadros pintados ganham cantos arredondados (raio de 12%);
+  - *contorno de acento*: os quadros pintados ganham contorno na cor de acento do design.
+
+  O botão **Gerar mais ideias** percorre as combinações (designs × acabamentos, 8 por vez) e o
+  contador ao lado do título mostra quantas estão à mostra. As ideias são geradas **no
+  computador** (sem nuvem), como no *Design Ideas* do DeckCraft: a prévia é a lâmina de verdade
+  reduzida — com o mapa de cores do deck inteiro —, então o cartão mostra exatamente o que o
+  clique faz.
 - **Configurar apresentação**: proporção (16:9 / 4:3), tema (claro/escuro/contraste), fonte
   padrão, tamanho, rodapé e número da lâmina.
 

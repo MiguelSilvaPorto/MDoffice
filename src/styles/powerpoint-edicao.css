@@ -2072,6 +2072,11 @@ button.ppr.trans-dir {
   line-height: 1.35;
 }
 
+.pp-ideias-mais {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
 .pp-ideias {
   display: flex;
   flex-direction: column;
