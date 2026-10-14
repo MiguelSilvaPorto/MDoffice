@@ -118,7 +118,10 @@ avisado ao abrir (nunca some em silêncio).
   a ela**: o resultado encaixa nas bordas e nos centros das formas de baixo quando está perto.
 - O que o assistente **não** reconhece fica como **desenho livre** — um caminho de verdade,
   **suavizado** (duas passadas de média móvel + curvas, com passo fino para não cortar os cantos),
-  que também vai para o arquivo; com o **assistente desligado**, todo traço fica livre.
+  que também vai para o arquivo; com o **assistente desligado**, todo traço fica livre. No modo
+  assistente o desenho livre **encaixa nos eixos**: os trechos quase horizontais/verticais viram
+  retas de verdade — o "L" desenhado alguns graus torto sai **reto, com o canto em 90°** — e o que
+  é diagonal de propósito (fora da tolerância de ~9°) fica como foi desenhado.
 - Enquanto o lápis está ligado, a **barrinha do pincel** define **cor**, **espessura** (1, 2, 4
   ou 8 pt) e o assistente, e mostra o que está sendo entendido ("entendi: Círculo"); **Esc** sai.
 

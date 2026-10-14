@@ -5175,6 +5175,33 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o defeito era visual e fácil de voltar (basta alguém tirar o teto para a última linha
   ser cortada de novo) — o teste lê o CSS e trava a regra.
 
+## src/powerpoint/edicao/desenho.ts
+
+### 2026-10-14 · encaixe do desenho · `alinharNosEixos` e a extração do `pontosDoLivre`
+- **Local:** `pontosDoLivre` (novo, extraído do `caminhoLivre`), `alinharNosEixos` (novo) e o
+  ramo de desenho livre do `formaDoTraco`
+- **Linha:** `novo` — o encaixe classifica cada trecho pela direção numa **janela de ±2 pontos**
+  (o tremor que sobra no passo fino fazia um segmento curto parecer diagonal), agrupa as corridas
+  de 3+ trechos no mesmo eixo e dá a **mesma coordenada** (a média) a todos os pontos da corrida;
+  no `formaDoTraco`, o ramo livre passa `alinharNosEixos(pontos)` quando o assistente está ligado
+  (e a caixa sai dos pontos já encaixados)
+- **Porquê:** o relato ("o desenho no modo assistente fica um pouco torto") — um "L" com canto
+  arredondado não é reconhecido como forma (é o certo: não é um arco nem um retângulo fechado) e
+  caía no desenho livre **como foi desenhado**, torto. A leitura por segmento sozinha não resolvia:
+  no passo fino do caminho (eps ≈ 1 pt) o tremor restante engana a direção — a janela de pontos é
+  o que torna a leitura estável. O mínimo de 3 trechos evita mexer em detalhes curtos, e a
+  tolerância de 9° deixa a diagonal de propósito como está.
+
+## scripts/testar-desenho-assistido.mjs
+
+### 2026-10-14 · encaixe do desenho · 8 verificações novas
+- **Local:** bloco novo "encaixe nos eixos (assistente)"
+- **Linha:** `novo` — o "L" torto do relato vira duas retas (uma só coordenada em cada aresta, e
+  no lugar onde a mão passou); a diagonal de propósito (38°) mantém a inclinação; o traço continua
+  desenho livre; com o assistente desligado o caminho sai como desenhado (a caixa muda)
+- **Porquê:** o defeito era de geometria e só aparecia olhando o caminho final — os testes antigos
+  checavam que o "L" ficava livre (e continua ficando), mas não olhavam **como** ele saía.
+
 ---
 
 ## Próximos registros

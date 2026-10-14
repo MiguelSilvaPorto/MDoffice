@@ -415,6 +415,41 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
   ok("dica: desenho livre sem assistente", D.dicaDoTraco(percorrer([{ x: 100, y: 80 }, { x: 300, y: 80 }, { x: 300, y: 220 }, { x: 100, y: 220 }]), false) === "Desenho livre");
 }
 
+// ---------------------------------------------------------------- encaixe nos eixos (assistente)
+{
+  // o "L" do relato: uma aresta torta, o canto arredondado e a outra aresta (tudo com tremor)
+  const cantoTorto = (() => {
+    const pts = [...reta(300, 260, 300, 180, 14, 2, 31)];
+    for (let i = 1; i <= 10; i++) {
+      const a = ((90 + (i / 10) * 90) * Math.PI) / 180;
+      pts.push({ x: 300 + 40 * Math.cos(a) + tremor(rng(37), 1.5), y: 140 + 40 * Math.sin(a) + tremor(rng(41), 1.5) });
+    }
+    pts.push(...reta(340, 140, 430, 140, 14, 2, 43));
+    return pts;
+  })();
+  const alinhado = D.alinharNosEixos(cantoTorto);
+  const distintos = (arr, campo) => new Set(arr.map((p) => Math.round(p[campo] * 10) / 10)).size;
+  const vertical = alinhado.filter((p) => p.y > 200);
+  const horizontal = alinhado.filter((p) => p.x > 360);
+  ok("encaixe: a aresta vertical do L vira reta", vertical.length >= 3 && distintos(vertical, "x") === 1, `${distintos(vertical, "x")} x(s) distintos`);
+  ok("encaixe: a aresta horizontal do L vira reta", horizontal.length >= 2 && distintos(horizontal, "y") === 1, `${distintos(horizontal, "y")} y(s) distintos`);
+  ok("encaixe: o L fica onde a mão passou", perto(vertical[0].x, 300, 4) && perto(horizontal[0].y, 140, 4), `${vertical[0].x.toFixed(1)}, ${horizontal[0].y.toFixed(1)}`);
+  // diagonal de propósito (38°) não vira reta nem muda de inclinação
+  const diagonal = reta(100, 100, 300, 260, 30, 2, 77);
+  const diagAl = D.alinharNosEixos(diagonal);
+  const xs = diagAl.map((p) => p.x);
+  const ys = diagAl.map((p) => p.y);
+  const faixaX = Math.max(...xs) - Math.min(...xs);
+  const faixaY = Math.max(...ys) - Math.min(...ys);
+  const incl = (diagAl[diagAl.length - 1].y - diagAl[0].y) / (diagAl[diagAl.length - 1].x - diagAl[0].x);
+  ok("encaixe: traço diagonal fica como está", diagAl.length >= 3 && faixaX > 150 && faixaY > 120 && Math.abs(incl - 0.8) < 0.15, `faixa ${faixaX.toFixed(0)}x${faixaY.toFixed(0)}, inclinação ${incl.toFixed(2)}`);
+  // o traço não reconhecido continua desenho livre — mas com o caminho encaixado
+  const assistido = D.formaDoTraco(cantoTorto, pincel, est, dim, []);
+  const cru = D.formaDoTraco(cantoTorto, { ...pincel, assistente: false }, est, dim, []);
+  ok("encaixe: o L continua desenho livre", assistido?.geom === "custom" && !!assistido.paths?.length && assistido.name === "Desenho livre", JSON.stringify({ geom: assistido?.geom }));
+  ok("encaixe: com o assistente desligado o traço fica como desenhado", cru?.geom === "custom" && JSON.stringify(cru.box) !== JSON.stringify(assistido.box), JSON.stringify({ com: assistido?.box, sem: cru?.box }));
+}
+
 console.log("");
 console.log(falhas ? `${falhas} falha(s)` : "Tudo certo.");
 process.exit(falhas ? 1 : 0);

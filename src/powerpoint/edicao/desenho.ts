@@ -647,9 +647,8 @@ function suavizarPontos(pontos: PontoTraco[]): PontoTraco[] {
   return out;
 }
 
-/** Traço livre -> caminho do custGeom (M + cúbicas + Z, em pt, relativos à caixa), já suave. */
-export function caminhoLivre(pontos: PontoTraco[], bb: Ret = bboxDe(pontos)): CustPath {
-  const n10 = (v: number) => Math.round(v * 10) / 10;
+/** Pontos do desenho livre já suavizados e simplificados (é o que o caminho usa). */
+function pontosDoLivre(pontos: PontoTraco[], bb: Ret): PontoTraco[] {
   // duas passadas: o tremor da mão sai de verdade (uma passada deixava o "serrilhado")
   const suave = suavizarPontos(suavizarPontos(pontos));
   // passo de simplificação mais fino: a curva acompanha o traço em vez de cortar os cantos
@@ -659,6 +658,62 @@ export function caminhoLivre(pontos: PontoTraco[], bb: Ret = bboxDe(pontos)): Cu
     eps *= 1.6;
     pts = simplificar(suave, eps);
   }
+  return pts;
+}
+
+/**
+ * Encaixe nos eixos do desenho livre (modo assistente): os trechos quase horizontais/verticais
+ * viram retas de verdade — o "L" desenhado alguns graus torto sai reto, com o canto em 90°.
+ * O que é diagonal de propósito (fora da tolerância) fica como o traço desenhou.
+ *
+ * A direção de cada trecho sai de uma JANELA de pontos (±2): no passo fino do caminho o tremor
+ * que sobra faria um segmento curto parecer diagonal e o encaixe não pegaria nada.
+ */
+export function alinharNosEixos(pontos: PontoTraco[], tolGraus = 9): PontoTraco[] {
+  const pts = pontosDoLivre(pontos, bboxDe(pontos)).map((p) => ({ ...p }));
+  const n = pts.length;
+  if (n < 4) return pts;
+  const tol = Math.sin((tolGraus * Math.PI) / 180);
+  const tipo: ("h" | "v" | null)[] = [];
+  for (let i = 0; i < n - 1; i++) {
+    const a = pts[Math.max(0, i - 2)];
+    const b = pts[Math.min(n - 1, i + 2)];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len = Math.hypot(dx, dy);
+    if (len < 2) tipo.push(null);
+    else tipo.push(Math.abs(dy) / len <= tol ? "h" : Math.abs(dx) / len <= tol ? "v" : null);
+  }
+  // corridas de trechos no mesmo eixo (com um mínimo de 3 trechos: reta de verdade, não um
+  // trecho curto que o tremor disfarçou): todos os pontos da corrida ganham a mesma coordenada
+  // (a média — o traço fica no lugar onde a mão passou, sem "puxar" para um lado)
+  let i = 0;
+  while (i < tipo.length) {
+    const t = tipo[i];
+    if (!t) {
+      i++;
+      continue;
+    }
+    let j = i;
+    while (j + 1 < tipo.length && tipo[j + 1] === t) j++;
+    if (j - i + 1 >= 3) {
+      let soma = 0;
+      for (let k = i; k <= j + 1; k++) soma += t === "h" ? pts[k].y : pts[k].x;
+      const media = soma / (j - i + 2);
+      for (let k = i; k <= j + 1; k++) {
+        if (t === "h") pts[k].y = media;
+        else pts[k].x = media;
+      }
+    }
+    i = j + 1;
+  }
+  return pts;
+}
+
+/** Traço livre -> caminho do custGeom (M + cúbicas + Z, em pt, relativos à caixa), já suave. */
+export function caminhoLivre(pontos: PontoTraco[], bb: Ret = bboxDe(pontos)): CustPath {
+  const n10 = (v: number) => Math.round(v * 10) / 10;
+  const pts = pontosDoLivre(pontos, bb);
   // Catmull-Rom virando cúbicas: o caminho passa pelos pontos e sai CURVO, sem as quinas da polilinha
   const get = (i: number) => pts[Math.min(pts.length - 1, Math.max(0, i))];
   const cmds: (string | number)[] = ["M", n10(pts[0].x - bb.x), n10(pts[0].y - bb.y)];
@@ -775,9 +830,12 @@ export function formaDoTraco(pontos: PontoTraco[], pincel: Pincel, est: EstiloDe
     if (rec.flipV) s.flipV = true;
     return comPincel(s, pincel, { head: rec.head, tail: rec.tail });
   }
-  const s = baseDaForma(est, d, encaixarNoPalco(bboxDe(pontos), formas, d, Math.max(6, d.w * 0.01)));
+  // modo assistente: o desenho livre encaixa nos eixos (as retas quase retas ficam retas e o
+  // canto em 90°) — é o "não se encaixa" que o traço torto do relato mostrava
+  const pontosLivre = pincel.assistente ? alinharNosEixos(pontos) : pontos;
+  const s = baseDaForma(est, d, encaixarNoPalco(bboxDe(pontosLivre), formas, d, Math.max(6, d.w * 0.01)));
   s.geom = "custom";
   s.name = "Desenho livre";
-  s.paths = [caminhoLivre(pontos)];
+  s.paths = [caminhoLivre(pontosLivre)];
   return comPincel(s, pincel);
 }

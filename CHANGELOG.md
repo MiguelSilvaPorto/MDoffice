@@ -387,6 +387,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   tema refaz a rampa inteira). Nada muda na tela ainda: a galeria, o fundo e os modelos são as
   rodadas seguintes — o modelo ganhou os campos (`estilo`, `capa`, `bgEstilo`) e o `test:estilos`
   cobre as 55 regras (cor, rampa, esquema, aplicação, capa e recálculo).
+- **Desenho assistido: o traço livre encaixa nos eixos**: no modo assistente, um traço que não é
+  reconhecido como forma (um "L" com canto arredondado, por exemplo) saía **torto, como foi
+  desenhado**. Agora os trechos quase horizontais/verticais viram **retas de verdade** — o "L"
+  alguns graus torto sai **reto, com o canto em 90°** — e o que é diagonal de propósito fica como
+  está. O encaixe lê a direção numa **janela de pontos** (o tremor que sobra no caminho fino
+  enganava a leitura por segmento) e só age em trechos com **3+ segmentos** alinhados.
 
 
 ### Adicionado (na main)
