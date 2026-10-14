@@ -30,6 +30,8 @@ export interface ModeloPPT {
   estilo?: { familia: FamiliaEstilo; intensidade: IntensidadeEstilo; brilho: BrilhoEstilo };
   /** criado pelo usuário: aparece junto dos presets, com opção de remover */
   usuario?: boolean;
+  /** criado na hora pelo gerador (Ideias): o cartão mostra "Novo" e não entra no catálogo */
+  gerado?: boolean;
 }
 
 export const MODELOS: ModeloPPT[] = [

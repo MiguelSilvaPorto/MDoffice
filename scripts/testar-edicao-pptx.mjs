@@ -578,6 +578,40 @@ const A = await empacotar("src/powerpoint/edicao/arranjos.ts", "arranjos.mjs");
   ok("arranjos: lâmina de tópicos (sem cartões) usa os textos como unidades e guarda o título", g("tt").box.y === 6 && g("p1").box.y > g("tt").box.y && g("p1").box.y === g("p2").box.y && g("p2").box.x > g("p1").box.x);
 }
 
+// gerador de designs: paletas criadas na hora, misturadas na fornada das Ideias
+const GEN = await empacotar("src/powerpoint/edicao/gerador.ts", "gerador.mjs");
+{
+  const a = GEN.gerarDesign(3);
+  const b = GEN.gerarDesign(3);
+  ok("gerador: a mesma semente devolve o mesmo design (a prévia é o que o clique aplica)", JSON.stringify(a) === JSON.stringify(b) && a.id === "gerado-3" && a.gerado === true);
+  const oito = Array.from({ length: 8 }, (_, n) => GEN.gerarDesign(n));
+  ok("gerador: oito sementes seguidas dão oito paletas diferentes", new Set(oito.map((d) => d.cores.accent)).size === 8);
+  ok("gerador: oito nomes diferentes", new Set(oito.map((d) => d.nome)).size >= 7);
+  ok(
+    "gerador: o texto contrasta com o fundo em todos (WCAG 4,5:1)",
+    oito.every((d) => M.contrasteDeCores(d.cores.fg, d.bg) >= 4.5),
+    oito.map((d) => `${d.cores.fg}/${d.bg}=${M.contrasteDeCores(d.cores.fg, d.bg).toFixed(1)}`).join(" ")
+  );
+  ok("gerador: fundo claro e escuro alternam", oito.filter((d) => d.tema === "claro").length === 4 && oito.filter((d) => d.tema === "escuro").length === 4);
+  ok(
+    "gerador: cores em hex de seis dígitos e fonte do catálogo",
+    oito.every((d) => [d.bg, d.cores.fg, d.cores.accent, d.cores.muted].every((c) => /^[0-9A-F]{6}$/.test(c))) && oito.every((d) => typeof d.fonte === "string" && d.fonte.length > 2)
+  );
+  ok("gerador: os esquemas giram (análogo, complementar, triádico)", GEN.esquemaDe(0) === "análogo" && GEN.esquemaDe(1) === "complementar" && GEN.esquemaDe(2) === "triádico");
+  ok("gerador: a matiz espalha (duas sementes seguidas ficam longe)", Math.abs(GEN.matizDaSemente(0) - GEN.matizDaSemente(1)) > 90);
+  const mk = (shapes, bg) => ({ md: "", layout: "conteudo", notes: "", shapes, bg });
+  const run = (color) => ({ text: "Oi", size: 18, bold: false, italic: false, underline: false, strike: false, color, font: "Segoe UI" });
+  const para = (r) => ({ runs: [r], align: "esquerda", lvl: 0, marL: 0, indent: 0, spcBef: 0, spcAft: 0, endSize: 18 });
+  const caixa = (extra = {}) => ({ id: "t", kind: "texto", box: { x: 8, y: 10, w: 80, h: 20 }, text: "Oi", fontFamily: "Segoe UI", fontSize: 18, color: "1C212B", bold: false, italic: false, align: "esquerda", fill: "", src: "", rot: 0, ...extra });
+  const deckG = [mk([caixa({ paras: [para(run("1C212B"))] })], { kind: "solid", color: "FFFFFF" })];
+  const gerado = GEN.gerarDesign(4);
+  const aplicado = M.aplicarModelo(deckG, { theme: "claro", bg: "", fontFamily: "Segoe UI" }, gerado);
+  ok(
+    "gerador: o design criado na hora aplica como qualquer modelo (fundo, texto e fonte)",
+    aplicado[0].bg.color === gerado.bg && aplicado[0].shapes[0].paras[0].runs[0].color === gerado.cores.fg && aplicado[0].shapes[0].fontFamily === gerado.fonte
+  );
+}
+
 // modelos criados pelo usuário: o visual do deck vira um modelo reaplicável
 {
   const mk = (shapes, bg) => ({ md: "", layout: "conteudo", notes: "", shapes, bg });

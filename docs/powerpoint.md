@@ -143,6 +143,15 @@ avisado ao abrir (nunca some em silêncio).
   computador** (sem nuvem), como no *Design Ideas* do DeckCraft: a prévia é a lâmina de verdade
   reduzida — com o mapa de cores do deck inteiro —, então o cartão mostra exatamente o que o
   clique faz.
+
+  Além dos designs do catálogo, **o app cria designs na hora**: a cada fornada entram três
+  cartões **Novo**, com uma paleta montada na hora a partir de uma cor de partida (o **ângulo de
+  ouro** espalha as paletas), um **esquema harmônico** (análogo, complementar ou triádico), fundo
+  claro ou escuro alternado e uma fonte que combina — o nome sai da cor ("Verde análogo"). A
+  semente avança a cada fornada, então as paletas **não se repetem**, e o design é
+  **determinístico**: o `gerado-N` volta pela mesma função, e é isso que faz a prévia do cartão
+  ser exatamente o que o clique aplica. O texto de cada paleta é conferido contra o fundo
+  (**WCAG 4,5:1**) antes de a ideia aparecer.
 - **Arranjos** (aba do painel lateral, ou **Página Inicial ▸ Designer ▸ Arranjos** na fita): reorganiza a
   lâmina em **fórmulas padrão**, mantendo o visual (cores, estilos, imagens):
 

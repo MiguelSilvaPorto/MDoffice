@@ -631,11 +631,11 @@ console.log("\nídeias de design (a lâmina atual em cada modelo)");
   );
   checa(
     "clicar aplica o design com o acabamento do cartão (comando ideia com id|tratamento)",
-    /this\.run\("ideia", `\$\{m\.id\}\|\$\{t\}`\)/.test(ppt) && /case "ideia":[\s\S]{0,320}this\.usarModelo\(m, t as TratamentoIdeia\)/.test(ppt)
+    /this\.run\("ideia", `\$\{m\.id\}\|\$\{t\}`\)/.test(ppt) && /case "ideia":[\s\S]{0,560}this\.usarModelo\(m, t as TratamentoIdeia\)/.test(ppt)
   );
   checa(
     "o botão Gerar mais ideias avança o lote (fornadas de combinações novas)",
-    /data-ideias-mais/.test(ppt) && /this\.loteIdeias\+\+/.test(ppt) && /this\.loteIdeias \* porLote/.test(ppt)
+    /data-ideias-mais/.test(ppt) && /this\.loteIdeias\+\+/.test(ppt) && /this\.loteIdeias \* (doCatalogo|criadasPorLote)/.test(ppt)
   );
   checa(
     "cada fornada mistura design e acabamento (recolorir, cantos arredondados, contorno)",
@@ -659,6 +659,19 @@ console.log("\nídeias de design (a lâmina atual em cada modelo)");
       !/grupo\("Designer"/.test(designFita) &&
       /case "ideias":[\s\S]{0,200}mostrarLateral\("ideias"\)/.test(ppt),
     "o botão da fita ficaria sem efeito (ou o painel não trocaria de aba)"
+  );
+  const geradorMod = ler("src/powerpoint/edicao/gerador.ts");
+  checa(
+    "o gerador de designs existe (paleta harmônica, esquema, nome e fonte)",
+    /export function gerarDesign/.test(geradorMod) && /export function esquemaDe/.test(geradorMod) && /export function nomeDoDesign/.test(geradorMod) && /function hsl\(/.test(geradorMod)
+  );
+  checa(
+    "a fornada das Ideias mistura designs criados na hora (o cartão diz Novo)",
+    /gerarDesign\(semente\)/.test(ppt) && /criadas na hora/.test(ppt) && /Novo · \$\{rotulo\}/.test(ppt)
+  );
+  checa(
+    "clicar num design criado na hora aplica o mesmo design (a semente volta do id)",
+    /id\.startsWith\("gerado-"\) \? gerarDesign\(Number\(id\.slice\("gerado-"\.length\)\)\)/.test(ppt)
   );
 }
 
@@ -691,9 +704,9 @@ console.log("\narranjos (a lâmina reorganizada em fórmulas padrão)");
     /aplicarArranjo\(atual, id, variante, ratio\)/.test(ppt) && /pp-ideia-slide/.test(ppt) && /htmlFormaRica\(f, ctx\)/.test(ppt)
   );
   checa(
-    "clicar aplica a fórmula em todas as lâminas",
+    "clicar aplica a fórmula na lâmina atual (a mesma que a prévia mostra)",
     /this\.run\("arranjo", `\$\{id\}\|\$\{variante\}`\)/.test(ppt) &&
-      /case "arranjo":[\s\S]{0,420}this\.slides = this\.slides\.map\(\(sl\) => aplicarArranjo\(sl, arranjo\.id, Number\(v\) \|\| 0, ratio\)\)/.test(ppt)
+      /case "arranjo":[\s\S]{0,420}substituirSlide\(aplicarArranjo\(sl, arranjo\.id, Number\(v\) \|\| 0, ratio\)\)/.test(ppt)
   );
   checa(
     "o botão da fita abre o painel na aba dos Arranjos",

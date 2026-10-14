@@ -8511,3 +8511,36 @@ antigas quando fizer sentido.
   antes de mover), então a promoção não afirma nada falso. Como nas rodadas anteriores, ela anda
   num passo curto de docs porque o commit do `fechar.ps1` já foi usado para entregar o código —
   promover junto seria afirmar "está na main" antes de estar.
+
+## src/powerpoint/edicao/gerador.ts · src/powerpoint/powerpoint.ts · src/powerpoint/edicao/modelos.ts
+
+### 2026-10-14 · esta tarefa · o gerador de designs (paletas criadas na hora)
+
+- **Local:** `gerador.ts` (arquivo novo) — `gerarDesign`, `esquemaDe`, `matizDaSemente`,
+  `nomeDaCor`, `nomeDoDesign`, `hsl` e as listas `FONTES`/`NOMES_COR`; `modelos.ts` — o campo
+  `gerado?: boolean` no `ModeloPPT`; `powerpoint.ts` — a fornada das Ideias e o caso `"ideia"`
+- **Linha:** `+ gerado?: boolean`; na fornada, `criadasPorLote = 3` (o resto vem do catálogo) e
+  `+ ideias.push({ m: gerarDesign(semente), t: ... })`; no cartão, `m.gerado ? "Novo · …" : …`;
+  no caso `"ideia"`, `?? (id.startsWith("gerado-") ? gerarDesign(Number(id.slice("gerado-".length))) : undefined)`
+- **Porquê:** o usuário percebeu que os 57 cartões não eram 57 designs: são 19 do catálogo × 3
+  acabamentos, calculados pelo app — nada é criado. Ele pediu que o app **tente gerar designs de
+  verdade**. O gerador usa o **ângulo de ouro** (137,508°) como passo da matiz: sementes seguidas
+  caem longe no círculo de cor, então as paletas não se parecem nem se repetem (a oito primeiras
+  têm oito acentos distintos, com teste). O esquema gira entre análogo (+28°), complementar
+  (+180°) e triádico (+120°), o fundo alterna claro/escuro, e a fonte sai da mesma semente — o
+  design é **determinístico**, e é isso que sustenta a promessa do cartão: o `gerado-N` volta
+  pela mesma função, então a prévia é exatamente o que o clique aplica. O texto de cada paleta
+  passa pelo contraste **WCAG 4,5:1** já existente nas Ideias (`contrasteDeCores`): medido 14,9 e
+  15,9 nas primeiras, sem nenhuma correção necessária — a escolha de luminosidade (fundo 96% ×
+  texto 14% no claro; fundo 9% × texto 96% no escuro) já nasce legível, e o teste prende isso.
+- **Local:** `scripts/testar-edicao-pptx.mjs` (9 checagens novas) e `scripts/testar-layout.mts`
+  (3 novas) — e três checagens antigas ajustadas
+- **Linha:** `novo`; e `{0,320}` → `{0,560}` na checagem do caso `"ideia"`, `porLote` →
+  `(doCatalogo|criadasPorLote)` na do "Gerar mais", e a do arranjo passou a prender
+  `substituirSlide(aplicarArranjo(...))`
+- **Porquê:** as checagens antigas prendiam o código de ontem. Duas quebraram por mudanças desta
+  tarefa (o caso `"ideia"` ficou mais longo com a semente e o lote ganhou dois contadores) e a
+  terceira por uma mudança de **outra sessão** que chegou na `main` no meio do caminho: o arranjo
+  agora aplica **só na lâmina atual** (a mesma que a prévia mostra) em vez de todas — a checagem
+  foi reescrita para prender o comportamento novo, e a entrada correspondente já estava no
+  CHANGELOG ("Arranjos: o clique aplica só na lâmina atual").

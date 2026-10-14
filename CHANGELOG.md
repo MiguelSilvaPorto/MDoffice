@@ -402,6 +402,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - **Arranjos: triângulos e painéis de fundo não viram mais "cartões"** — antes uma forma grande e decorativa (ex.: os triângulos verdes) ou um painel atrás dos cartões era tratado como cartão, engolia os de verdade e o arranjo saía desordenado; agora eles ficam parados e só os cartões com conteúdo se arrumam. Teste: `npm run test:arranjos`.
 
+
+- **Designs criados na hora (o gerador das Ideias)**: as ideias só combinavam o catálogo (19
+  designs × 3 acabamentos). Agora **três cartões de cada fornada são criados pelo app**: uma
+  paleta montada na hora a partir de uma cor de partida (o **ângulo de ouro** espalha as
+  paletas), um **esquema harmônico** (análogo, complementar ou triádico), fundo claro ou escuro
+  alternado e uma fonte que combina — o nome sai da cor ("Verde análogo") e o cartão diz
+  **Novo**. A semente avança a cada fornada, então as paletas **não se repetem**; o design é
+  **determinístico** (o `gerado-N` volta pela mesma função), e é isso que faz a prévia do cartão
+  ser exatamente o que o clique aplica. O texto de cada paleta é conferido contra o fundo
+  (**WCAG 4,5:1**, medido em 14,9 e 15,9 nas oito primeiras) antes de a ideia aparecer.
 - **Copiar formatação (o Pincel de Formatação)**: a apresentação ganhou o botão que faltava na
   **Área de Transferência** da fita — com uma forma escolhida, ele **copia a pintura e o formato do
   texto** dela (preenchimento, contorno, sombra, transparência, a receita do **Estilo de Cor** e

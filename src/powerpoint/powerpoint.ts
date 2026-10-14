@@ -19,6 +19,7 @@ import { formasDoLayout, novaLamina } from "./edicao/layouts";
 import { migrarSlides, registrarMidia } from "./edicao/migrar";
 import { MODELOS, ROTULO_TRATAMENTO, aplicarModelo, type EstiloAtual, type ModeloPPT, type TratamentoIdeia } from "./edicao/modelos";
 import { ARRANJOS, aplicarArranjo, rotuloDoArranjo, unidadesDa, variantesDe, type Arranjo } from "./edicao/arranjos";
+import { gerarDesign } from "./edicao/gerador";
 import { criarModeloUsuario, lerModelosUsuario, removerModeloUsuario } from "./modelosUsuario";
 import { aplicarFormato, copiarFormato, type FormatoPincel } from "./edicao/pincel";
 import {
@@ -503,15 +504,22 @@ export class PowerPointHost {
     const modelos = [...MODELOS, ...lerModelosUsuario()];
     const tratamentos: TratamentoIdeia[] = ["recolorir", "cantos", "contorno"];
     const porLote = 8;
+    const criadasPorLote = 3; // designs que o app CRIA na hora; o resto vem do catálogo
+    const doCatalogo = porLote - criadasPorLote;
     const total = modelos.length * tratamentos.length;
-    // o tratamento gira a cada ideia e o modelo a cada três: a fornada já mistura os acabamentos
+    // o tratamento gira a cada ideia e o modelo a cada três: a fornada já mistura os acabamentos;
+    // no fim entram os designs criados na hora (a semente avança a cada fornada, então não repetem)
     const ideias: { m: ModeloPPT; t: TratamentoIdeia }[] = [];
-    for (let k = 0; k < Math.min(porLote, total); k++) {
-      const g = this.loteIdeias * porLote + k;
+    for (let k = 0; k < Math.min(doCatalogo, total); k++) {
+      const g = this.loteIdeias * doCatalogo + k;
       ideias.push({ m: modelos[Math.floor(g / tratamentos.length) % modelos.length], t: tratamentos[g % tratamentos.length] });
     }
+    for (let k = 0; k < criadasPorLote; k++) {
+      const semente = this.loteIdeias * criadasPorLote + k;
+      ideias.push({ m: gerarDesign(semente), t: tratamentos[semente % tratamentos.length] });
+    }
     const dica = this.pane.querySelector<HTMLElement>("[data-ideias-hint]");
-    if (dica) dica.textContent = `${ideias.length} de ${total} combinações — geradas no seu computador`;
+    if (dica) dica.textContent = `${ideias.length} ideias por vez — ${criadasPorLote} criadas na hora`;
     host.textContent = "";
     for (const { m, t } of ideias) {
       // a prévia sai do DECK INTEIRO (e não só da lâmina atual): é o mapa de cores do deck todo
@@ -534,7 +542,8 @@ export class PowerPointHost {
       moldura.append(previa);
       const nome = document.createElement("span");
       nome.className = "pp-ideia-nome";
-      nome.textContent = t === "recolorir" ? m.nome : `${m.nome} · ${ROTULO_TRATAMENTO[t]}`;
+      const rotulo = t === "recolorir" ? m.nome : `${m.nome} · ${ROTULO_TRATAMENTO[t]}`;
+      nome.textContent = m.gerado ? `Novo · ${rotulo}` : rotulo;
       cartao.append(moldura, nome);
       cartao.addEventListener("click", () => this.run("ideia", `${m.id}|${t}`));
       host.append(cartao);
@@ -1777,7 +1786,7 @@ export class PowerPointHost {
       case "ideia": {
         // cartão das Ideias: aplica o design com o acabamento proposto ("id|tratamento")
         const [id, t] = String(value ?? "").split("|");
-        const m = [...MODELOS, ...lerModelosUsuario()].find((x) => x.id === id);
+        const m = [...MODELOS, ...lerModelosUsuario()].find((x) => x.id === id) ?? (id.startsWith("gerado-") ? gerarDesign(Number(id.slice("gerado-".length))) : undefined);
         if (m) this.usarModelo(m, t as TratamentoIdeia);
         return;
       }
