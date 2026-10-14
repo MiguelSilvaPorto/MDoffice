@@ -6,6 +6,7 @@ import DOMPurify from "dompurify";
 import { direcaoDe, duracaoDe } from "./edicao/transicao";
 import { deckFromMarkdown } from "./markdown";
 import { DEFAULT_SETUP, stageRatio } from "./model";
+import { THEME_COLORS } from "./schema";
 import type { Deck, DeckSetup, Slide, Transicao, TransicaoTipo } from "./schema";
 import { fundoValor } from "./render/forma";
 import { iniciarAnimacoes, type ControleAnimacoes } from "./render/animacao";
@@ -43,14 +44,38 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   overlay.className = `slides-overlay tema-${setup.theme}`;
   overlay.innerHTML = `
     <div class="slides-stage" data-stage></div>
+    <div class="slides-grade" data-grade hidden></div>
+    <div class="slides-laser" data-laser hidden></div>
     <div class="slides-notes" data-notes hidden></div>
     <div class="slides-tela" data-tela hidden></div>
-    <div class="slides-bar">
-      <span class="slides-title" data-title></span>
-      <span class="slides-count" data-count></span>
-      <span class="slides-goto" data-goto hidden></span>
-      <span class="slides-help">← → ↑ ↓ / PgUp PgDn navega · Home/End início/fim · nº + Enter vai para a lâmina · B/W tela preta/branca · N notas · Esc sai · Ctrl+P PDF</span>
-      <button class="btn" data-close>Fechar</button>
+    <div class="slides-hud" data-hud>
+      <i class="slides-progress"><b data-prog></b></i>
+      <div class="slides-linha">
+        <span class="slides-title" data-title></span>
+        <span class="slides-nav">
+          <button class="sl-btn" data-nav="prev" title="Lâmina anterior (←)" aria-label="Lâmina anterior">‹</button>
+          <button class="sl-btn sl-contador" data-tool="grade" title="Ver todas as lâminas (G)" aria-label="Grade de lâminas"><span data-count></span></button>
+          <button class="sl-btn" data-nav="next" title="Próxima lâmina (→)" aria-label="Próxima lâmina">›</button>
+        </span>
+        <span class="slides-goto" data-goto hidden></span>
+        <span class="slides-espaco"></span>
+        <span class="slides-tools">
+          <button class="sl-btn" data-tool="tempo" title="Mostrar o tempo decorrido (T)"><span data-relogio hidden>00:00</span><span data-relogio-off>Tempo</span></button>
+          <button class="sl-btn" data-tool="notas" title="Notas do apresentador (N)">Notas</button>
+          <button class="sl-btn" data-tool="tela" title="Tela preta (B) ou branca (W)">Tela</button>
+          <button class="sl-btn" data-tool="ajuda" title="Atalhos do teclado (?)">?</button>
+          <button class="sl-btn sl-sair" data-close title="Encerrar a apresentação (Esc)">Encerrar</button>
+        </span>
+      </div>
+      <div class="slides-ajuda" data-ajuda hidden>
+        <b>Atalhos</b>
+        <span>← → ↑ ↓ / PgUp PgDn / clique / roda navega</span>
+        <span>nº + Enter vai para a lâmina</span>
+        <span>B/W tela preta ou branca</span>
+        <span>N notas · G grade de lâminas · T tempo</span>
+        <span>segure L (ou Ctrl) para o laser</span>
+        <span>botão direito volta · Esc encerra</span>
+      </div>
     </div>`;
   document.body.append(overlay);
   document.body.classList.add("apresentando");
@@ -62,8 +87,20 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   const rotulo = overlay.querySelector<HTMLElement>("[data-title]")!;
   const tela = overlay.querySelector<HTMLElement>("[data-tela]")!;
   const goto = overlay.querySelector<HTMLElement>("[data-goto]")!;
+  const prog = overlay.querySelector<HTMLElement>("[data-prog]")!;
+  const grade = overlay.querySelector<HTMLElement>("[data-grade]")!;
+  const laser = overlay.querySelector<HTMLElement>("[data-laser]")!;
+  const ajuda = overlay.querySelector<HTMLElement>("[data-ajuda]")!;
+  const relogio = overlay.querySelector<HTMLElement>("[data-relogio]")!;
+  const relogioOff = overlay.querySelector<HTMLElement>("[data-relogio-off]")!;
   let atual = 0;
   let mostrarNotas = false;
+  let inicioEm = Date.now(); // relógio da apresentação (o "Tempo")
+  let relogioLigado = false;
+  let relogioTimer = 0;
+  let ociosoTimer = 0; // esconde o HUD e o cursor depois de um tempo sem mexer
+  let laserOn = false;
+  let gradeAberta = false;
   let digitos = ""; // número sendo digitado para "ir para a lâmina"
   let telaCor: "preta" | "branca" | null = null; // tela preta/branca (B/W)
   let pinturaSeq = 0; // marked é assíncrono: uma pintura antiga não pode sobrescrever a nova
@@ -126,19 +163,21 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   };
 
   /** Monta o conteúdo de uma lâmina num elemento próprio (o palco só troca as camadas). */
-  const conteudoDa = async (slide: Slide): Promise<HTMLElement> => {
+  const conteudoDa = async (slide: Slide, pos = atual): Promise<HTMLElement> => {
     const secao = document.createElement("section");
     // lâmina com formas (importada de .pptx ou montada no palco): desenha as formas, como no palco, em escala cheia
     if (slide.shapes.length && desenharFormas) {
       secao.className = "slide-rica";
-      const fundo = fundoValor(slide.bg, setup.media ?? {});
-      if (fundo) secao.style.background = fundo;
+      // fundo da lâmina; sem fundo próprio, vale o do tema do deck (senão o texto claro
+      // do tema escuro sumiria no branco do palco)
+      const fundo = fundoValor(slide.bg, setup.media ?? {}) || `#${THEME_COLORS[setup.theme]?.bg ?? "FFFFFF"}`;
+      secao.style.background = fundo;
       secao.innerHTML = desenharFormas(slide);
       return secao;
     }
     const html = await marked.parse(slide.md, { gfm: true, async: true });
     secao.className = `slide layout-${slide.layout}`;
-    secao.innerHTML = sanitize(String(html)) + (setup.showNumber ? `<span class="slide-num">${atual + 1}</span>` : "");
+    secao.innerHTML = sanitize(String(html)) + (setup.showNumber ? `<span class="slide-num">${pos + 1}</span>` : "");
     return secao;
   };
 
@@ -216,8 +255,9 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     anim = iniciarAnimacoes(camada, slide.animacoes, { atrasoMs: transicaoMs });
     tocarMidias();
     contador.textContent = `${atual + 1} / ${ordem.length}`;
-    notas.textContent = slide.notes;
-    notas.hidden = !mostrarNotas || !slide.notes;
+    prog.style.width = `${((atual + 1) / ordem.length) * 100}%`;
+    notas.textContent = slide.notes || "— esta lâmina não tem notas —";
+    notas.hidden = !mostrarNotas;
   };
   void pintar();
 
@@ -258,10 +298,123 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     tela.hidden = false;
     tela.classList.toggle("preta", cor === "preta");
     tela.classList.toggle("branca", cor === "branca");
+    acordar();
+  };
+
+  // ---- HUD: notas, tempo, grade, laser e o descanso da barra ----
+
+  /** Mostra a barra (e o cursor); sem mexer por um tempo, esconde os dois. */
+  const acordar = (): void => {
+    overlay.classList.remove("ocioso");
+    window.clearTimeout(ociosoTimer);
+    if (gradeAberta || telaCor || !ajuda.hidden) return; // com um painel aberto a barra fica
+    ociosoTimer = window.setTimeout(() => overlay.classList.add("ocioso"), 2600);
+  };
+
+  const alternarNotas = (): void => {
+    mostrarNotas = !mostrarNotas;
+    notas.hidden = !mostrarNotas;
+    overlay.querySelector('[data-tool="notas"]')?.classList.toggle("on", mostrarNotas);
+    acordar();
+  };
+
+  const alternarAjuda = (): void => {
+    ajuda.hidden = !ajuda.hidden;
+    overlay.querySelector('[data-tool="ajuda"]')?.classList.toggle("on", !ajuda.hidden);
+    acordar();
+  };
+
+  // Tempo (T): conta desde a abertura da apresentação
+  const doisDigitos = (n: number): string => String(n).padStart(2, "0");
+  const atualizarRelogio = (): void => {
+    const s = Math.floor((Date.now() - inicioEm) / 1000);
+    relogio.textContent = `${doisDigitos(Math.floor(s / 60))}:${doisDigitos(s % 60)}`;
+  };
+  const alternarTempo = (): void => {
+    relogioLigado = !relogioLigado;
+    relogio.hidden = !relogioLigado;
+    relogioOff.hidden = relogioLigado;
+    window.clearInterval(relogioTimer);
+    if (relogioLigado) {
+      atualizarRelogio();
+      relogioTimer = window.setInterval(atualizarRelogio, 1000);
+    }
+    overlay.querySelector('[data-tool="tempo"]')?.classList.toggle("on", relogioLigado);
+    acordar();
+  };
+
+  // Laser: um ponto vermelho segue o mouse enquanto L (ou Ctrl) estiver pressionado
+  const ligarLaser = (ligado: boolean): void => {
+    if (laserOn === ligado) return;
+    laserOn = ligado;
+    laser.hidden = !ligado;
+  };
+  const moverLaser = (x: number, y: number): void => {
+    laser.style.transform = `translate(${x}px, ${y}px)`;
+  };
+
+  /**
+   * Grade de lâminas (G): miniaturas para pular direto. Cada célula é o PRÓPRIO conteúdo
+   * desenhado no tamanho do palco e reduzido por transform — fiel, sem thumbnail separado.
+   */
+  const fecharGrade = (): void => {
+    gradeAberta = false;
+    grade.hidden = true;
+    grade.textContent = "";
+    acordar();
+  };
+  const abrirGrade = (): void => {
+    if (gradeAberta) {
+      fecharGrade();
+      return;
+    }
+    gradeAberta = true;
+    grade.hidden = false;
+    acordar();
+    const caixa = document.createElement("div");
+    caixa.className = "slides-grade-caixa";
+    grade.append(caixa);
+    const larguraPalco = stage.clientWidth || window.innerWidth;
+    const alturaPalco = stage.clientHeight || window.innerHeight;
+    const ratio = stageRatio(setup);
+    const larguraSlide = Math.min(larguraPalco, alturaPalco * ratio);
+    const alturaSlide = larguraSlide / ratio;
+    const k = 220 / larguraSlide; // cada miniatura fica com ~220px de largura
+    ordem.forEach((idx, pos) => {
+      const cel = document.createElement("button");
+      cel.type = "button";
+      cel.className = `slides-cel${pos === atual ? " on" : ""}`;
+      cel.title = `Lâmina ${pos + 1}`;
+      const moldura = document.createElement("span");
+      moldura.className = "slides-cel-moldura";
+      moldura.style.width = `${Math.round(larguraSlide * k)}px`;
+      moldura.style.height = `${Math.round(alturaSlide * k)}px`;
+      const dentro = document.createElement("span");
+      dentro.className = "slides-cel-conteudo";
+      dentro.style.width = `${larguraSlide}px`;
+      dentro.style.height = `${alturaSlide}px`;
+      dentro.style.transform = `scale(${k})`;
+      moldura.append(dentro);
+      const numero = document.createElement("b");
+      numero.textContent = String(pos + 1);
+      cel.append(moldura, numero);
+      cel.addEventListener("click", (e) => {
+        e.stopPropagation();
+        fecharGrade();
+        irPara(pos);
+      });
+      caixa.append(cel);
+      void conteudoDa(deck.slides[idx], pos).then((el) => {
+        if (gradeAberta) dentro.append(el);
+      });
+    });
   };
 
   const fechar = () => {
     document.removeEventListener("keydown", onKey, true);
+    document.removeEventListener("keyup", onKeyUp, true);
+    window.clearInterval(relogioTimer);
+    window.clearTimeout(ociosoTimer);
     encerrarTransicao();
     anim?.cancelar();
     anim = null;
@@ -271,8 +424,13 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     document.body.classList.remove("apresentando");
   };
   const onKey = (e: KeyboardEvent) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return; // atalhos do sistema (Ctrl+P etc.) passam direto
+    if (e.ctrlKey || e.metaKey || e.altKey) {
+      // Ctrl (ou Cmd) segurado vira laser; o resto passa direto (Ctrl+P imprime etc.)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "l") ligarLaser(true);
+      return;
+    }
     const tecla = e.key.toLowerCase();
+    acordar();
     // tela preta/branca: B e W alternam; qualquer outra tecla volta para a lâmina
     if (telaCor) {
       e.preventDefault();
@@ -283,8 +441,10 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     }
     if (e.key === "Escape") {
       e.preventDefault();
-      if (digitos) limparDigitos(); // o primeiro Esc cancela o número digitado
-      else fechar();
+      if (gradeAberta) fecharGrade(); // primeiro o painel aberto...
+      else if (!ajuda.hidden) alternarAjuda();
+      else if (digitos) limparDigitos(); // ...depois o número digitado...
+      else fechar(); // ...e só então a apresentação
       return;
     }
     if (/^\d$/.test(e.key)) {
@@ -310,8 +470,23 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
       limparDigitos(); // qualquer outra tecla cancela o número pendente
     }
     if (tecla === "n") {
-      mostrarNotas = !mostrarNotas;
-      notas.hidden = !mostrarNotas || !deck.slides[ordem[atual]].notes;
+      alternarNotas();
+      return;
+    }
+    if (tecla === "g") {
+      abrirGrade();
+      return;
+    }
+    if (tecla === "t") {
+      alternarTempo();
+      return;
+    }
+    if (tecla === "?") {
+      alternarAjuda();
+      return;
+    }
+    if (tecla === "l") {
+      ligarLaser(true);
       return;
     }
     if (tecla === "b") {
@@ -342,25 +517,69 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
       ir(-1);
     }
   };
+  const onKeyUp = (e: KeyboardEvent): void => {
+    if (e.key.toLowerCase() === "l" || e.key === "Control" || e.key === "Meta") ligarLaser(false);
+  };
   document.addEventListener("keydown", onKey, true);
+  document.addEventListener("keyup", onKeyUp, true);
+
+  // botões do HUD: nenhum deles navega
+  const botao = (sel: string, fn: () => void): void => {
+    overlay.querySelectorAll<HTMLElement>(sel).forEach((b) =>
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        fn();
+      })
+    );
+  };
+  botao('[data-nav="prev"]', () => ir(-1));
+  botao('[data-nav="next"]', () => ir(1));
+  botao('[data-tool="grade"]', abrirGrade);
+  botao('[data-tool="tempo"]', alternarTempo);
+  botao('[data-tool="notas"]', alternarNotas);
+  botao('[data-tool="tela"]', () => mostrarTela("preta"));
+  botao('[data-tool="ajuda"]', alternarAjuda);
+  botao("[data-close]", fechar);
+
   overlay.addEventListener("click", (e) => {
+    const alvo = e.target as HTMLElement;
+    if (alvo.closest(".slides-hud, .slides-grade, .slides-notes")) return; // o clique é dos controles
     if (telaCor) {
       limparTela(); // clique volta da tela preta/branca
       return;
     }
-    const alvo = e.target as HTMLElement;
     if (alvo.closest("a")) return;
     if (alvo.closest("audio,video")) return; // controles da mídia: o clique é do player
-    if (alvo.closest("[data-close]")) {
-      fechar();
-      return;
-    }
     ir(1);
   });
-  overlay.querySelector<HTMLElement>("[data-close]")!.addEventListener("click", (e) => {
-    e.stopPropagation();
-    fechar();
+  // botão direito volta uma lâmina (o menu do sistema não abre)
+  overlay.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    const alvo = e.target as HTMLElement;
+    if (alvo.closest(".slides-hud, .slides-grade, .slides-notes, audio, video")) return;
+    if (telaCor) {
+      limparTela();
+      return;
+    }
+    ir(-1);
   });
+  // roda do mouse navega (2% de delta acumulado? não: um passo por evento, como nas setas)
+  overlay.addEventListener(
+    "wheel",
+    (e) => {
+      const alvo = e.target as HTMLElement;
+      if (telaCor || alvo.closest(".slides-hud, .slides-grade, .slides-notes")) return;
+      e.preventDefault();
+      acordar();
+      ir(e.deltaY > 0 ? 1 : -1);
+    },
+    { passive: false }
+  );
+  overlay.addEventListener("mousemove", (e) => {
+    acordar();
+    if (laserOn) moverLaser(e.clientX, e.clientY);
+  });
+  acordar();
 }
 
 // ---------------------------------------------------------------------------

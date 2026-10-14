@@ -15,7 +15,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4vh 5vw;
+  padding: 0; /* full-bleed: a lâmina ocupa a tela do app; a barra flutua por cima */
   cursor: pointer;
 }
 
@@ -38,8 +38,10 @@
 }
 
 .slide {
-  width: min(1100px, 92vw);
+  width: min(100vw, calc(100vh * var(--slide-ratio, 1.7778)));
   max-height: 100%;
+  aspect-ratio: var(--slide-ratio, 16 / 9);
+  padding: 4.5% 5.5%;
   overflow: auto;
   font-size: clamp(18px, 2.4vw, 34px);
   line-height: 1.4;
@@ -84,37 +86,243 @@
   padding: 0.3em 0.6em;
 }
 
-.slides-bar {
+/* ---------------- HUD da apresentação: flutua embaixo e some sozinho ---------------- */
+
+.slides-hud {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  padding: 8px 16px 12px;
+  color: #eef1f6;
+  background: linear-gradient(to top, rgba(8, 11, 16, 0.94), rgba(8, 11, 16, 0.7) 72%, transparent);
+  backdrop-filter: blur(6px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+/* sem mexer por um tempo, a barra e o cursor somem: é apresentação */
+.slides-overlay.ocioso .slides-hud {
+  opacity: 0;
+  transform: translateY(14px);
+  pointer-events: none;
+}
+
+.slides-overlay.ocioso {
+  cursor: none;
+}
+
+.slides-progress {
+  display: block;
+  height: 3px;
+  margin: 0 2px 9px;
+  border-radius: 999px;
+  background: rgba(127, 137, 152, 0.28);
+  overflow: hidden;
+}
+
+.slides-progress b {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: var(--accent, #6366f1);
+  transition: width 0.22s ease;
+}
+
+.slides-linha {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 8px 14px;
-  padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.06);
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  font-size: 13px;
+  gap: 10px;
+  min-width: 0;
 }
 
 .slides-title {
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.slides-count {
-  opacity: 0.75;
+.slides-espaco {
+  flex: 1;
+}
+
+.sl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 30px;
+  padding: 5px 11px;
+  color: inherit;
+  background: rgba(127, 137, 152, 0.16);
+  border: 1px solid rgba(127, 137, 152, 0.26);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sl-btn:hover {
+  background: rgba(127, 137, 152, 0.32);
+}
+
+.sl-btn.on {
+  color: #fff;
+  background: var(--accent, #6366f1);
+  border-color: transparent;
+}
+
+.sl-contador {
+  min-width: 56px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sl-sair:hover {
+  color: #fff;
+  background: rgba(220, 68, 68, 0.85);
+  border-color: transparent;
 }
 
 /* número sendo digitado para "ir para a lâmina" (nº + Enter) */
 .slides-goto {
   padding: 2px 10px;
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(127, 137, 152, 0.22);
   border-radius: 999px;
   font-variant-numeric: tabular-nums;
 }
 
-.slides-help {
-  opacity: 0.6;
-  margin-left: auto;
-  text-align: right;
+.slides-ajuda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(127, 137, 152, 0.22);
+  font-size: 12.5px;
+  opacity: 0.85;
+}
+
+/* o `display: flex` acima venceria o `hidden` do atributo */
+.slides-ajuda[hidden] {
+  display: none;
+}
+
+.slides-ajuda b {
+  margin-right: 4px;
+}
+
+.slides-overlay.tema-claro .slides-hud {
+  color: #14181f;
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.78) 72%, transparent);
+}
+
+/* grade de lâminas (G): miniaturas para pular direto */
+.slides-grade {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  padding: 4vh 4vw 14vh;
+  overflow: auto;
+  background: rgba(6, 8, 12, 0.86);
+  backdrop-filter: blur(4px);
+}
+
+.slides-grade-caixa {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 220px);
+  justify-content: center;
+  gap: 16px;
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.slides-cel {
+  position: relative;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+.slides-cel:hover {
+  border-color: rgba(255, 255, 255, 0.65);
+}
+
+.slides-cel.on {
+  border-color: var(--accent, #6366f1);
+}
+
+.slides-cel-moldura {
+  display: block;
+  position: relative;
+  overflow: hidden;
+}
+
+.slides-cel-conteudo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+/* a lâmina preenche a moldura da miniatura (no palco ela se dimensiona pela janela) */
+.slides-cel-conteudo .slide,
+.slides-cel-conteudo .slide-rica {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+}
+
+.slides-cel b {
+  position: absolute;
+  left: 7px;
+  bottom: 5px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(10, 13, 18, 0.75);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* laser (segure L ou Ctrl): um ponto que segue o mouse */
+.slides-laser {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 7;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ff4438 0%, rgba(255, 68, 56, 0.7) 42%, rgba(255, 68, 56, 0) 72%);
+  pointer-events: none;
+}
+
+/* dica na tela preta/branca: qualquer tecla ou clique volta */
+.slides-tela::after {
+  content: "Qualquer tecla ou clique volta para a lâmina";
+  position: fixed;
+  left: 50%;
+  bottom: 7vh;
+  transform: translateX(-50%);
+  font-size: 13px;
+}
+
+.slides-tela.preta::after {
+  color: rgba(238, 241, 246, 0.4);
+}
+
+.slides-tela.branca::after {
+  color: rgba(20, 24, 31, 0.35);
 }
 
 /* tela preta/branca (teclas B e W): cobre a apresentação até qualquer tecla ou clique voltar */
@@ -144,7 +352,10 @@
     color: #000;
   }
 
-  .slides-bar {
+  .slides-hud,
+  .slides-grade,
+  .slides-laser,
+  .slides-notes {
     display: none !important;
   }
 
@@ -172,14 +383,28 @@
 }
 
 .slides-notes {
-  margin: 0 auto 8px;
-  max-width: min(1100px, 92vw);
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.08);
+  position: fixed;
+  left: 50%;
+  bottom: 78px;
+  transform: translateX(-50%);
+  z-index: 4;
+  width: min(760px, 92vw);
+  max-height: 30vh;
+  overflow: auto;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(20, 25, 34, 0.94);
   color: #e9edf5;
-  font-size: 14px;
-  line-height: 1.45;
+  border: 1px solid rgba(127, 137, 152, 0.28);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+.slides-overlay.tema-claro .slides-notes {
+  background: rgba(255, 255, 255, 0.97);
+  color: #14181f;
+  border-color: rgba(20, 25, 34, 0.14);
 }
 
 .slides-overlay.tema-claro {
@@ -408,7 +633,7 @@
 .slide-rica {
   position: relative;
   aspect-ratio: var(--slide-ratio, 16 / 9);
-  width: min(100%, calc((100vh - 120px) * var(--slide-ratio, 1.7778)));
+  width: min(100vw, calc(100vh * var(--slide-ratio, 1.7778)));
   background: #fff;
   overflow: hidden;
   container-type: inline-size;
@@ -448,7 +673,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4vh 5vw;
+  padding: 0; /* full-bleed: a lâmina encosta nas bordas (o HUD flutua por cima) */
 }
 
 /* a camada que sai não recebe cliques (o palco inteiro avança a apresentação) */

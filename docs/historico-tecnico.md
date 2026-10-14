@@ -4915,6 +4915,60 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   (quando o commit entra na `main`, ela já está em “Adicionado”). As duas lições vão para a
   entrada “Ferramentas (dev)” do próprio CHANGELOG.
 
+## src/powerpoint/presenter.ts
+
+### 2026-10-14 · apresentação redesenhada · o HUD, a grade, o tempo e o laser
+- **Local:** `openDeckView` — o HTML da sobreposição, `conteudoDa` (ganhou `pos`), `pintar`,
+  `acordar`, `alternarNotas/Tempo/Ajuda`, `ligarLaser`, `abrirGrade/fecharGrade`, `onKey/onKeyUp` e
+  os ouvintes de clique/roda/contextmenu/mousemove
+- **Linha:** a barra de texto (`slides-bar` com a linha de atalhos) → `slides-hud` (progresso,
+  navegação, contador clicável, Tempo/Notas/Tela/?/Encerrar); teclas novas G/T/?/L; `Esc` fecha
+  grade/ajuda antes de sair; o relógio conta desde `inicioEm`
+- **Porquê:** o pedido foi "redesign inteiro" — a barra antiga era uma lista de atalhos e não tinha
+  ferramenta nenhuma na hora de apresentar. O HUD some sozinho (barra e cursor) para a lâmina ficar
+  limpa e volta com qualquer movimento; a grade usa o PRÓPRIO conteúdo desenhado no tamanho do palco
+  e reduzido (fiel, sem thumbnail separado); o laser é um ponto que segue o mouse enquanto L ou Ctrl
+  estiverem pressionados.
+
+### 2026-10-14 · apresentação redesenhada · o fundo do tema na lâmina rica
+- **Local:** `conteudoDa`
+- **Linha:** `const fundo = fundoValor(slide.bg, …); if (fundo) secao.style.background = fundo;` →
+  `const fundo = fundoValor(slide.bg, …) || \`#${THEME_COLORS[setup.theme]?.bg ?? "FFFFFF"}\``
+- **Porquê:** no tema escuro a lâmina ficava branca com o texto claro por cima — sumia. Agora, sem
+  fundo próprio, a lâmina usa o fundo do tema (é o que o palco do editor já fazia).
+
+## src/styles/slides.css
+
+### 2026-10-14 · apresentação redesenhada · full-bleed e o HUD novo
+- **Local:** `.slides-stage`, `.slides-camada`, `.slide`, `.slide-rica`, `.slides-hud` (novo),
+  `.slides-notes`, `.slides-grade`, `.slides-cel*`, `.slides-laser`, `.slides-tela::after` e
+  `.slides-ajuda[hidden]`
+- **Linha:** os recuos (`padding: 4vh 5vw` na camada) → `0`; a lâmina passou a
+  `width: min(100vw, calc(100vh * var(--slide-ratio)))`; a barra antiga deu lugar ao HUD que some
+  com `.slides-overlay.ocioso` (barra e `cursor: none`); as notas viraram painel flutuante; a
+  grade, o laser e a dica da tela preta/branca são novos
+- **Porquê:** a lâmina precisa COBRIR a tela do app (só as barras laterais do formato) e o HUD
+  flutua sobre ela. O `padding` estava na CAMADA (não no palco) — foi o que a medição de 1336 px
+  denunciou. O `.slides-ajuda[hidden] { display: none }` existe porque o `display: flex` da classe
+  vencia o `hidden` do atributo: os atalhos nasciam abertos.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · apresentação redesenhada · 8 verificações novas
+- **Local:** bloco "PowerPoint: modo apresentação (F5)"
+- **Linha:** `novo`
+- **Porquê:** prende as decisões do redesign (full-bleed, HUD, esconder sozinho, grade com o
+  conteúdo real, teclas novas, `Esc` em camadas, tempo e o fundo do tema). A verificação no
+  navegador confirmou o resto, com prints do HUD e da grade.
+
+## docs/powerpoint.md
+
+### 2026-10-14 · apresentação redesenhada · a seção do F5
+- **Local:** "Apresentar (F5)"
+- **Linha:** a bala única do "modo apresentação completo" → quatro balas (full-bleed + HUD, as
+  ferramentas, a navegação e as animações/transições/mídia/PDF)
+- **Porquê:** o documento do módulo descreve o que o app faz; o modo apresentação mudou inteiro.
+
 ---
 
 ## Próximos registros

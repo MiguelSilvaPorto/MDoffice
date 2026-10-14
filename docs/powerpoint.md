@@ -103,13 +103,23 @@ avisado ao abrir (nunca some em silêncio).
 
 ## Apresentar (F5)
 
-- **Modo apresentação completo**: avançar/voltar lâmina, **tela preta/branca**, **transições**
-  entre lâminas, mídia tocando e as **notas do apresentador**.
+- **A lâmina cobre a tela do app** (full-bleed: só as barras laterais do formato) e a barra virou um
+  **HUD que se esconde sozinho** — barra e cursor somem depois de um tempo sem mexer e voltam com
+  qualquer movimento.
+- **Ferramentas no HUD**: progresso e contador clicável, navegação `‹ ›`, **grade de lâminas** (`G`,
+  com a miniatura real de cada uma), **tempo decorrido** (`T`), **notas do apresentador** (`N`),
+  **tela preta/branca** (`B`/`W`), **laser** (segure `L` ou `Ctrl`), **ajuda** (`?`) e **Encerrar**
+  (`Esc`).
+- **Navegação**: setas / `PgUp` / `PgDn` / `Espaço` / clique / **roda do mouse** avançam e voltam; o
+  **botão direito volta** uma lâmina; `nº` + `Enter` pula direto para a lâmina; `Esc` fecha primeiro
+  a grade/ajuda e só depois a apresentação.
 - A lâmina vai **limpa**: os contornos de edição (hover/seleção das formas) não aparecem.
 - Na **barra superior**, o botão **Apresentar** aparece enquanto a apresentação está aberta (entre
   o menu **⋯** e os controles da janela) e começa na hora — o mesmo caminho de Exibir ▸ Apresentar.
 - **Animações de forma** tocam na ordem: o clique primeiro toca o efeito pendente ("ao clicar")
   e só depois troca de lâmina; "com o anterior"/"depois do anterior" encadeiam sozinhos.
+- **Transições** entre lâminas, **mídia** tocando (o player continua entre as lâminas) e
+  **`Ctrl+P`** imprime uma lâmina por página (PDF).
 
 ## Interface do módulo
 

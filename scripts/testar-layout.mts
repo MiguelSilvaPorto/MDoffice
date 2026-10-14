@@ -494,5 +494,20 @@ checa("a roda lateral não troca de lâmina", /Math\.abs\(e\.deltaX\) > Math\.ab
 checa("com a lâmina ampliada a roda rola o quadro primeiro", /temRolagem &&/.test(rodaLaminas) && /scrollTop \+ canvas\.clientHeight < canvas\.scrollHeight/.test(rodaLaminas));
 checa("o editor liga a roda do palco à troca de lâmina", /ligarRodaDeLaminas\(this\.canvas, \(direcao\) => this\.irPara\(this\.indice \+ direcao\)\)/.test(ppt));
 
+// ---------------------------------------------------------------- apresentação (F5) redesenhada
+
+console.log("\nPowerPoint: modo apresentação (F5)");
+
+const apresen = ler("src/powerpoint/presenter.ts");
+const cssSlides = ler("src/styles/slides.css");
+checa("a lâmina é full-bleed (a camada não tem recuo)", /\.slides-camada \{[^}]*padding: 0/s.test(cssSlides), "a lâmina não cobre a tela");
+checa("o HUD tem progresso e as ferramentas novas", /data-prog/.test(apresen) && /data-tool="grade"/.test(apresen) && /data-tool="tempo"/.test(apresen));
+checa("a barra se esconde sozinha e o cursor vai junto", /classList\.add\("ocioso"\)/.test(apresen) && /\.slides-overlay\.ocioso \{[^}]*cursor: none/s.test(cssSlides));
+checa("a grade desenha o conteúdo real de cada lâmina", /slides-cel-conteudo/.test(apresen) && /conteudoDa\(deck\.slides\[idx\], pos\)/.test(apresen));
+checa("teclas novas: G grade, T tempo, ? ajuda e L laser", /tecla === "g"/.test(apresen) && /tecla === "t"/.test(apresen) && /tecla === "\?"/.test(apresen) && /ligarLaser\(true\)/.test(apresen));
+checa("Esc fecha a grade/ajuda antes de sair", /gradeAberta\) fecharGrade\(\)/.test(apresen) && /!ajuda\.hidden\) alternarAjuda\(\)/.test(apresen));
+checa("o tempo conta desde a abertura da apresentação", /inicioEm = Date\.now\(\)/.test(apresen) && /setInterval\(atualizarRelogio, 1000\)/.test(apresen));
+checa("a lâmina sem fundo próprio usa o fundo do tema", /THEME_COLORS\[setup\.theme\]/.test(apresen));
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

@@ -592,6 +592,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   uma lâmina por gesto**, como no PowerPoint (um “tapa” não passa várias — a inércia do mesmo
   gesto é engolida). Com a lâmina **ampliada**, a roda rola o quadro primeiro e só troca quando
   chega ao fim (ou quando a lâmina inteira está à vista). `Ctrl` + roda continua sendo o **zoom**.
+- **Modo apresentação (F5) redesenhado**: a lâmina agora **cobre a tela do app** (full-bleed — só as
+  barras laterais do formato) e a barra virou um **HUD que se esconde sozinho**: barra e cursor somem
+  depois de um tempo sem mexer e voltam com qualquer movimento. Ele traz progresso, navegação `‹ ›`,
+  contador clicável, **grade de lâminas** (`G`, com a miniatura real de cada uma), **tempo decorrido**
+  (`T`), notas (`N`), tela preta/branca (`B`/`W`), **laser** (segure `L` ou `Ctrl`), ajuda (`?`) e
+  Encerrar (`Esc`). A **roda do mouse** e o **botão direito** também navegam, e o `Esc` fecha a
+  grade/ajuda antes de sair. De quebra, a lâmina sem fundo próprio passa a usar o **fundo do tema**
+  — antes o tema escuro ficava com texto claro sumindo no branco do palco.
 
 ---
 
