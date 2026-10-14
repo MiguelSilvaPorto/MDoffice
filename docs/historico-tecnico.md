@@ -8725,3 +8725,29 @@ antigas quando fizer sentido.
   (Arranjos, Pincel de Formatação, Arranjos só na lâmina atual) ficaram
   intactas; a entrada do gerador saiu na promoção paralela da outra sessão (a nota acima,
   `7bdccb1`) — as duas notas convivem porque as duas rodadas chegaram juntas. Aquela promoção deixou uma **cópia** do gerador no "Não adicionado" (a entrada já estava no "Adicionado"); a cópia saiu nesta resolução de rebase, junto da minha entrada — deixá-la seria uma entrada prometendo trabalho que já entrou.
+
+## _resolver.mjs (raiz do repositório)
+
+### 2026-10-14 — o resolvedor de rebase temporário saiu do repositório
+- **Local:** o arquivo `_resolver.mjs` (raiz), criado para resolver os conflitos do rebase das
+  promoções do CHANGELOG desta rodada
+- **Linha:** `- _resolver.mjs (58 linhas, script auxiliar de resolução de conflito)` — o arquivo foi
+  apagado do repositório (entrou no commit `fde5181` por engano e saiu agora)
+- **Porquê:** o `fechar.ps1` **commita o que estiver solto na worktree** (é assim que ele "commita o
+  que faltar") e o script auxiliar ainda estava lá na hora do fecho — ele foi junto. A lição fica
+  registrada: **temporário de ferramenta não mora na worktree** — ou vive na pasta de temporários
+  do sistema (como as prévias e o driver CDP desta rodada, que ficaram em `%TEMP%\opencode`) ou é
+  apagado **antes** de rodar o `fechar.ps1`. As resoluções de conflito seguem acontecendo na
+  worktree (é o que a regra pede), mas o script que as faz é descartável e não entra no commit.
+
+## CHANGELOG.md
+
+### 2026-10-14 — a entrada do Contorno ganha o nome do teste (já está no "Adicionado")
+- **Local:** PowerPoint → **Adicionado** → Frontend → a entrada "Fita: os menus de forma abrem
+  mesmo sem forma escolhida"
+- **Linha:** `+ Teste: `npm run test:menus` (o posicionamento dos menus, com varredura de 100
+  janelas provando que o menu nunca cobre a âncora).`
+- **Porquê:** a entrada foi promovida em `fde5181` sem citar o teste novo — e o teste é parte do que
+  ela promete (a garantia de que o menu nunca cobre a âncora). Completar a entrada já promovida é
+  edição de documentação do que **está** na `main`: não passa por "Não adicionado" nem precisa de
+  nova promoção.

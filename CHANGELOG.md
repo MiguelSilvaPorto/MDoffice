@@ -432,7 +432,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   janela baixa ele subia e tapava a fita (o clique seguinte caía no menu); agora ele **encolhe**
   com rolagem por dentro e fica sempre **abaixo** — ou, quando lá há mais espaço, acima,
   **terminando antes da âncora**. Os botões de ordem (Trazer para frente etc.) seguem desabilitados
-  sem seleção, como no PowerPoint.
+  sem seleção, como no PowerPoint. Teste: `npm run test:menus` (o posicionamento dos menus, com
+  varredura de 100 janelas provando que o menu nunca cobre a âncora).
 
 - **A galeria do Template põe os SEUS modelos em cima e o catálogo embaixo**: o cartão
   **Novo modelo** (guardar esta apresentação) vem **primeiro** e cada modelo que você criou fica
