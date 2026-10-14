@@ -160,6 +160,18 @@ export interface OpcoesCandidatos {
 export const PESO_FREQUENCIA = 3.7;
 
 /**
+ * Teto do bônus de frequência. Sem ele, palavra muito comum passa por cima de qualquer
+ * candidato melhor por edição: "aparee" virava "para" (122 mil ocorrências!) e "mdia"
+ * virava "dia" (12 mil). O teto mantém a frequência como desempate forte, não como dona
+ * da decisão — medido no harness de avaliação (`scripts/avaliar-correcao.mts`).
+ */
+export const TETO_FREQUENCIA = 1.5;
+
+/** Bônus por preservar o começo da palavra: erro de digitação raramente troca a 1ª letra. */
+const PREFIXO_2 = 0.3;
+const PREFIXO_1 = 0.15;
+
+/**
  * Palavras reais mais prováveis para uma palavra desconhecida, da melhor para a
  * pior. Devolve lista vazia quando não há nada razoável — é melhor não sugerir
  * do que sugerir palavra sem relação.
@@ -180,8 +192,11 @@ export function candidatos(
   const considerar = (i: number, custo: number) => {
     const c = indice.normalizadas[i];
     const n = frequencia.contagem.get(c) ?? 0;
-    const pesoFreq = Math.log1p(n) / frequencia.maxLog;
-    const nota = -custo + peso * pesoFreq;
+    const pesoFreq = Math.min(TETO_FREQUENCIA, peso * (Math.log1p(n) / frequencia.maxLog));
+    // O começo da palavra sobrevive ao erro de digitação com muita frequência: "mdia" é
+    // "mídia" antes de ser "dia", "fecar" é "fechar" antes de "ficar".
+    const prefixo = p.length >= 3 && c.length >= 3 ? (p.slice(0, 2) === c.slice(0, 2) ? PREFIXO_2 : p[0] === c[0] ? PREFIXO_1 : 0) : 0;
+    const nota = -custo + pesoFreq + prefixo;
     const atual = achados.get(c);
     if (atual === undefined || nota > atual.nota) {
       achados.set(c, { palavra: indice.palavras[i], distancia: custo, contagem: n, nota });

@@ -316,6 +316,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   mudo ou letra dobrada). Antes qualquer troca de letra valia e palavras reais eram questionadas
   ("paridade" → "caridade", "parse" → "passe"); medido com o harness: **3,25 → 0,00 falsos
   positivos por 1000 palavras**, com o acerto da auto-correção em 92%.
+- **Ranking das letras faltando/sobrando**: a frequência ganhou **teto** (palavra comum não passa
+  mais por cima de um candidato melhor por edição) e o candidato que **preserva o começo da
+  palavra** ganha um bônus pequeno. "aparee" → **aparece** (era "para"), "fecar" → **fechar** (era
+  "ficar") e "mdia" subiu para o topo da lista (era "dia"). Medido: recall@1 **78% → 82%**,
+  precisão do 1º **83% → 87%**, acerto da auto-correção **92% → 95%** e auto-aplicações erradas
+  **19 → 13**.
 
 **Ferramentas (dev)**
 

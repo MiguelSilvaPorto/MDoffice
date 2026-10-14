@@ -244,6 +244,28 @@ para 19; em troca, o recall cedeu ~2 p.p. no conjunto sintético — parte dele 
 34/34**. O alvo do F1 que fica na mesa é o **ranking das classes "letra a menos" e "letra a mais"**
 (`mdia`→"dia", `fecar`→"ficar", `lissta`→"está"): o gabarito está na lista, mas não em 1º.
 
+### Quarta medição — ranking das letras faltando/sobrando
+
+O ranking ganhou **teto de frequência** e **bônus de prefixo** (ver histórico técnico): a palavra
+muito comum deixou de decidir sozinha contra uma edição melhor. Mesmo conjunto:
+
+| métrica | `neighbor` corrigido | ranking das letras |
+| --- | ---: | ---: |
+| r@1 total | 78% | **82%** |
+| r@3 total | 86% | 86% |
+| precisão do 1º lugar | 83% | **87%** |
+| auto% | 80% | 81% |
+| acerto do `best` | 92% | **95%** |
+| `auto ≠ gabarito` | 19 | **13** |
+| falsos positivos / 1000 palavras | 0,00 | 0,00 |
+| p50 / p95 ms por palavra | 0,182 / 1,026 | 0,175 / 1,084 |
+
+Leitura curta: as três classes do alvo andaram — "letra a mais" r@1 **87%**, "letra a menos" r@1
+66% (era 60%) — e a **precisão do 1º lugar subiu 4 p.p.**, com as auto-aplicações erradas caindo de
+19 para 13. O que sobrou de ruim é de outra natureza: casos **ambíguos ou invisíveis** ("slva" →
+"silva" em vez de "salva"; "media" → "média"; "xama" → "chama" — a forma escrita é palavra do
+dicionário). Esses pedem **contexto/uso** (F3/F4), não mais edição: é a próxima fronteira.
+
 ---
 
 *Números do commit `120cc9e`. Se um rebase trouxer mudanças ao corretor, esta linha de base

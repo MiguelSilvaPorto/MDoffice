@@ -2384,6 +2384,30 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o documento é o termômetro do F1; deixar o número velho sem o novo faria a próxima
   medição parecer igual à primeira.
 
+## src/broker/spell/candidatos.ts
+
+### 2026-10-13 · ranking das letras · teto de frequência e bônus de prefixo
+- **Local:** `TETO_FREQUENCIA`/`PREFIXO_2`/`PREFIXO_1` (novos) e o `considerar` de `candidatos`
+- **Linha:** `nota = -custo + peso·log1p(n)/maxLog` →
+  `nota = -custo + min(TETO_FREQUENCIA, peso·log1p(n)/maxLog) + bônus de prefixo`
+- **Porquê:** o F0 mostrou que, nas classes "letra a menos/a mais", o gabarito aparecia na lista mas
+  não em 1º — e a sonda (descartável) mostrou por quê: a **frequência dominava**. "aparee" virava
+  "para" (122.736 ocorrências, nota 1,54 contra 0,76), "fecar" virava "ficar" (2.415 contra 399) e
+  "mdia" virava "dia" (12.023 contra 473). Duas medidas: (1) **teto** de 1,5 no bônus de frequência
+  — ela continua sendo um desempate forte, mas não decide sozinha contra uma edição melhor; (2)
+  **bônus por preservar o começo** (0,3 para as duas primeiras letras, 0,15 para a primeira), porque
+  erro de digitação raramente troca o início da palavra. Medido com o harness: recall@1 78%→**82%**,
+  precisão do 1º 83%→**87%**, acerto do `best` 92%→**95%**, auto-aplicações erradas 19→**13**,
+  falsos positivos seguem **0,00**; corpus **34/34 e 34/34**.
+
+## docs/medicao-corretor.md
+
+### 2026-10-13 · ranking das letras · quarta medição registrada
+- **Local:** seção de medições comparadas
+- **Linha:** nova tabela com o commit desta tarefa
+- **Porquê:** cada fase do F1 registra a sua medição; o documento é o termômetro e sem o número novo
+  a próxima mudança não teria com o que se comparar.
+
 ---
 
 ## Próximos registros
