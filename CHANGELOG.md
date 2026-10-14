@@ -423,6 +423,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   ser exatamente o que o clique aplica. O texto de cada paleta é conferido contra o fundo
   (**WCAG 4,5:1**, medido em 14,9 e 15,9 nas oito primeiras) antes de a ideia aparecer.
 
+### Adicionado (na main)
+
+**Backend**
+
+- **Arranjos: o conteúdo não se desloca mais do cartão** — o bloco inteiro (cartão + o que sai dele) é centrado no espaço e todas as formas andam por ele; a detecção roda uma vez e usa mapas por id, em vez de `find` por forma.
+
+- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
+
+**Frontend**
+
 - **Curva por pontos de parada e modo Pontos no Draw**: desenhar contornos e curvas suaves à mão livre
   costumava deixar pontos tortos ou traços ondulados. Agora o PowerPoint oferece duas soluções integradas:
   - **Ferramenta dedicada Curva** na fita (**Inserir ▸ Linhas ▸ Curva**): clique na lâmina para marcar pontos
@@ -433,27 +443,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
     segurar `Alt` para marcar o nó como canto reto/quina (marcador quadrado); segurar `Shift` para travar o segmento
     a cada 45°; `Backspace`/`Delete` para remover o último ponto; `Enter` ou duplo-clique para concluir curva aberta;
     e `Esc` para cancelar.
-- **Copiar formatação (o Pincel de Formatação)**: a apresentação ganhou o botão que faltava na
-  **Área de Transferência** da fita — com uma forma escolhida, ele **copia a pintura e o formato do
-  texto** dela (preenchimento, contorno, sombra, transparência, a receita do **Estilo de Cor** e
-  fonte/tamanho/cor/negrito/alinhamento dos trechos) e o **ponteiro vira “copiar”**: cada clique
-  numa forma veste o formato copiado, sem mexer na **caixa, no giro nem no texto** do alvo. O
-  **duplo clique** deixa o pincel **ligado** (pinta várias formas) e o **Esc** sai; clicar no botão
-  de novo também desliga. Numa forma com **Estilo de Cor**, a receita vai junto (o alvo passa a usar
-  a mesma rampa) — e quando a cópia não tem receita, o **estilo vivo do alvo é solto**, para a
-  pintura não ser derrubada pelo recálculo no próximo movimento.
-
-- **Arranjos: o clique aplica só na lâmina atual** — antes a fórmula era aplicada em todas as lâminas do deck (e sem refazer os estilos e ligações derivados); agora vale para a lâmina que a prévia mostra, como qualquer edição, e dá para desfazer.
-
-### Adicionado (na main)
-
-**Backend**
-
-- **Arranjos: o conteúdo não se desloca mais do cartão** — o bloco inteiro (cartão + o que sai dele) é centrado no espaço e todas as formas andam por ele; a detecção roda uma vez e usa mapas por id, em vez de `find` por forma.
-
-- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
-
-**Frontend**
 
 - **A galeria do Template põe os SEUS modelos em cima e o catálogo embaixo**: o cartão
   **Novo modelo** (guardar esta apresentação) vem **primeiro** e cada modelo que você criou fica

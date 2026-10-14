@@ -8706,3 +8706,10 @@ antigas quando fizer sentido.
 - **Local:** novos blocos de teste para `svgPathDePontosPct` e `formaDeCurva`
 - **Linha:** testes cobrindo curva aberta, curva fechada, nós retos com comando `L` e estrutura das formas geradas.
 - **Porquê:** assegura cobertura de testes automatizados e previne regressões.
+
+## CHANGELOG.md
+
+### 2026-10-14 · promoção · a entrada de curva por pontos entra no "Adicionado"
+- **Local:** PowerPoint → "Não adicionado" → Frontend → "Adicionado" → Frontend (topo)
+- **Linha:** 1 entrada movida — **Curva por pontos de parada e modo Pontos no Draw** (`ad3f479`)
+- **Porquê:** o commit está na `main` (entregue no commit anterior); a promoção atualiza o CHANGELOG para refletir o estado entregue na `main`.
