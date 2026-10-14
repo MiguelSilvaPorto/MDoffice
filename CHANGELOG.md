@@ -814,6 +814,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   select). É o que as fitas do **Word** e do **PowerPoint** usam para não ficar presas a listas
   fixas de fonte e tamanho. A lista de fontes comuns virou **uma só** (`src/fontes.ts`),
   compartilhada pelos dois motores, com as clássicas do Windows/Office.
+- **A tela de carregamento não se mexe mais**: no intervalo entre o HTML e o pacote do app
+  (CSS + JS), a página ficava sem estilo e mais alta que a janela — dava para rolar com a roda do
+  mouse ou arrastar a barra de rolagem por baixo da tela de carregamento. Agora o `html`/`body` já
+  nascem travados no próprio `index.html`, com os MESMOS valores do `base.css` (nada muda quando o
+  app assume).
 
 **Ferramentas (dev)**
 

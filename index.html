@@ -30,6 +30,21 @@
       Ela é removida em src/main.ts assim que o app termina de iniciar.
     -->
     <style>
+      /* Trava a rolagem da PÁGINA já aqui, com os MESMOS valores do CSS do app
+         (src/styles/base.css) — assim nada muda quando o pacote chega. O CSS do
+         app (CSS + JS) só carrega depois; nesse intervalo a página fica sem
+         estilo, mais alta que a janela, e dá para rolar com a roda ou arrastar a
+         barra por baixo da tela de carregamento. */
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        position: fixed;
+        inset: 0;
+      }
+
       #boot {
         position: fixed;
         inset: 0;

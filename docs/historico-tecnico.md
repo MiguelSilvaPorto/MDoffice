@@ -4683,6 +4683,27 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** sem isso, o nível podia voltar a ser “30 ms mais lento” sem ninguém notar — foi
   exatamente o que aconteceu com o logo das boas-vindas e o marcador do CHANGELOG.
 
+## index.html
+
+### 2026-10-14 · tela de carregamento · a página nasce travada
+- **Local:** `<style>` embutido (antes de `#boot`)
+- **Linha:** `novo` — `html, body { width: 100%; height: 100%; margin: 0; overflow: hidden;
+  position: fixed; inset: 0 }`
+- **Porquê:** o comentário da própria tela já explica por que o estilo dela mora no HTML: o pacote
+  (CSS + JS) chega depois. Só que nesse intervalo o `base.css` ainda não zerou o overflow de
+  `html/body` — a página sem estilo fica mais alta que a janela e dá para rolar com a roda ou
+  arrastar a barra por baixo da tela de carregamento. A trava usa os MESMOS valores do `base.css`
+  (`position: fixed`, `inset: 0`), então a troca para o CSS do app não muda nada.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · tela de carregamento · 2 verificações novas
+- **Local:** bloco "tela de carregamento"
+- **Linha:** `novo` — o HTML precisa nascer com `html, body` travados e com os mesmos valores do
+  `base.css`
+- **Porquê:** é um defeito só visível no intervalo do carregamento (e o teste de layout é o lugar
+  do repositório que olha o `index.html`).
+
 ---
 
 ## Próximos registros

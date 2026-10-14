@@ -446,5 +446,21 @@ checa(
 );
 checa("o diálogo do PowerPoint usa a lista do app", /FONTES_COMUNS\.map/.test(ler("src/app/powerpointDocs.ts")), "lista fixa voltou ao diálogo");
 
+// ---------------------------------------------------------------- tela de carregamento
+
+console.log("\ntela de carregamento");
+
+const indexHtml = ler("index.html");
+checa(
+  "a página já nasce travada (sem rolagem antes do CSS do app)",
+  /html,\s*body\s*\{[^}]*overflow:\s*hidden/s.test(indexHtml),
+  "sem isto dá para rolar por baixo da tela de carregamento"
+);
+checa(
+  "a trava usa os MESMOS valores do app (position fixed + inset 0)",
+  /html,\s*body\s*\{[^}]*position:\s*fixed[^}]*inset:\s*0/s.test(indexHtml),
+  "os valores precisam bater com o base.css"
+);
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);
