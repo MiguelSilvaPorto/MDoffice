@@ -5423,6 +5423,37 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   são o gesto inteiro). Sem eles, alguém "simplifica" a regra de volta ao `mover` e o defeito
   volta igual.
 
+## src/powerpoint/stage.ts
+
+### 2026-10-14 · texto da forma (2) · o vazio ao lado do texto não larga a escolha
+- **Local:** `aoPressionar` — o ramo do vazio (`!clicavel || !forma`), a regra do texto no ramo
+  "clique numa forma" e os ajudantes novos `gestoDoTexto` e `noTextoPintado`
+- **Linha:** `+ const um = ctx.selecao.length === 1 ? … : undefined; if (um && this.gestoDoTexto(um,
+  ctx, e) && this.noTextoPintado(um.id, e)) { this.hooks.aoEditarTexto(um.id, { … }); return; }`
+  **antes** do `retangulo`/`aoSelecionar([])` · a condição do ramo da forma virou
+  `this.gestoDoTexto(forma, ctx, e)` (mesma regra, um lugar só) · `+ noTextoPintado`: a caixa do
+  texto **e o que transborda** (`div.querySelectorAll("*")`), com a folga de `BANDA_BEIRADA_PX`
+- **Porquê:** o relato ("se eu tentar selecionar o lado em branco/vazio ele deseleciona a box") —
+  o texto pode **passar do quadro** (`.pp-shape-text` tem `inset: 0`, mas o conteúdo transborda:
+  `overflow: visible`), então o vazio ao lado/embaixo do texto **não pertence a nenhum
+  `.pp-shape`**: o clique caía no ramo do vazio e **largava a escolha** ✗. `noTextoPintado` mede
+  o que o texto **pinta** (a união dos retângulos do div e de tudo dentro dele) — é o que o olho
+  lê como "a caixa" — e o gesto do texto passa a valer ali. A **ordem** é a decisão: a conta roda
+  **antes** de limpar a seleção, senão o `aoSelecionar([])` já teria apagado a escolha (e a própria
+  condição depende dela). As guardas continuam depois: a **beirada** do quadro vence (mover) e o
+  fora de tudo continua limpando a escolha.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · texto da forma (2) · 1 verificação nova (e a antiga atualizada)
+- **Local:** a seção "PowerPoint: o texto da forma escolhida é do texto (e o mover fica na beirada)"
+- **Linha:** a checagem da regra passou a exigir o ajudante (`gestoDoTexto`) · `+ a checagem do
+  vazio ao lado/embaixo` (a chamada antes do `aoSelecionar([])`, o `noTextoPintado` e a varredura
+  dos filhos do div)
+- **Porquê:** é a ordem dentro do `aoPressionar` que faz a regra valer — e um refactor que mova o
+  bloco para depois do `aoSelecionar([])` (ou que troque o ajudante por uma condição inline)
+  quebraria o gesto em silêncio; o teste lê o TS e trava as duas coisas.
+
 ---
 
 ## Próximos registros

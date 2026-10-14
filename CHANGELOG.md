@@ -412,6 +412,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O vazio ao lado do texto não larga mais a caixa**: com a forma **escolhida**, clicar/puxar no **vazio** ao lado ou embaixo do texto **deselecionava a caixa** ✗ — o quadro da forma pode ser **menor que o texto** (o texto transborda), então esse vazio cai **fora** do quadro e o clique não encontrava a forma. Agora o gesto do texto alcança **o que o texto pinta** (a caixa do texto **e o que passa dela**): o clique nesse vazio **entra na edição** e vai para o texto, sem largar a escolha. A **beirada** do quadro continua movendo e o clique **fora de tudo** continua limpando a escolha, como sempre.
+
 - **Estilos de cor (R6 — polimento)**: dois ajustes de acabamento. O **conector que sai de uma
   caixa com Estilo de Cor** agora usa a **cor-base da rampa** (a parada do meio) — antes ele pegava
   a **ponta clara** do gradiente, então a ligação saía mais clara que a caixa (num gradiente de

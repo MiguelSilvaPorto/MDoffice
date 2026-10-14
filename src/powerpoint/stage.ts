@@ -572,6 +572,14 @@ export class Stage {
     const forma = id ? ctx.shapes.find((s) => s.id === id) : undefined;
     const clicavel = forma && (!forma.fixa || ctx.fixasSelecionaveis);
     if (!clicavel || !forma) {
+      // Fora de qualquer forma, mas sobre o TEXTO da forma escolhida (o texto pode passar do
+      // quadro: `overflow: visible`): o gesto ainda é do texto — entra na edição em vez de
+      // largar a escolha. É o vazio ao lado/embaixo do texto que PARECE da caixa.
+      const um = ctx.selecao.length === 1 ? ctx.shapes.find((s) => s.id === ctx.selecao[0]) : undefined;
+      if (um && this.gestoDoTexto(um, ctx, e) && this.noTextoPintado(um.id, e)) {
+        this.hooks.aoEditarTexto(um.id, { x: e.clientX, y: e.clientY });
+        return;
+      }
       // vazio: começa um retângulo de seleção (e, sem Shift, limpa a seleção)
       this.slideEl.setPointerCapture(e.pointerId);
       const soma = e.shiftKey || e.ctrlKey || e.metaKey;
@@ -621,17 +629,7 @@ export class Stage {
     // inalcançável (a edição só abria por duplo clique, e o duplo clique nativo não sobrevive
     // ao preventDefault daqui). O mover fica na BEIRADA da forma (`BANDA_BEIRADA_PX`) e, com
     // várias formas escolhidas, o arrasto continua movendo o conjunto.
-    if (
-      jaSelecionada &&
-      ctx.selecao.length === 1 &&
-      !e.shiftKey &&
-      !e.ctrlKey &&
-      !e.metaKey &&
-      !forma.bloqueada &&
-      alvo.closest(".pp-shape-text") &&
-      temTexto(forma.paras) &&
-      !pertoDaBorda(paraPt(forma.box, ctx.dim), this.pontoEmPt(e, ctx.dim), this.pxEmPt(ctx.dim, BANDA_BEIRADA_PX))
-    ) {
+    if (!e.shiftKey && !e.ctrlKey && !e.metaKey && this.gestoDoTexto(forma, ctx, e) && alvo.closest(".pp-shape-text")) {
       this.hooks.aoEditarTexto(forma.id, { x: e.clientX, y: e.clientY });
       return;
     }
@@ -657,6 +655,39 @@ export class Stage {
   private pontoEmPt(e: { clientX: number; clientY: number }, dim: Dim): { x: number; y: number } {
     const p = this.pontoEmPct(e);
     return { x: (p.x / 100) * dim.w, y: (p.y / 100) * dim.h };
+  }
+
+  /**
+   * O gesto é do TEXTO da forma? Uma forma escolhida (sozinha), com texto, e o ponto fora da
+   * BEIRADA dela — na beirada quem manda é o mover (ver `aoPressionar`).
+   */
+  private gestoDoTexto(forma: Shape, ctx: ContextoPalco, e: { clientX: number; clientY: number }): boolean {
+    return (
+      ctx.selecao.length === 1 &&
+      ctx.selecao[0] === forma.id &&
+      !forma.bloqueada &&
+      temTexto(forma.paras) &&
+      !pertoDaBorda(paraPt(forma.box, ctx.dim), this.pontoEmPt(e, ctx.dim), this.pxEmPt(ctx.dim, BANDA_BEIRADA_PX))
+    );
+  }
+
+  /**
+   * O ponto cai sobre o texto PINTADO da forma: a caixa do texto e o que **transborda** dela.
+   * O texto pode passar do quadro (`overflow: visible`) — e o vazio ao lado/embaixo do texto,
+   * que parece da caixa, fica FORA do quadro: sem esta conta, o clique ali largaria a escolha.
+   */
+  private noTextoPintado(id: string, e: { clientX: number; clientY: number }): boolean {
+    const div = this.slideEl?.querySelector<HTMLElement>(`[data-shape="${id}"] .pp-shape-text`);
+    if (!div) return false;
+    const partes = [div, ...Array.from(div.querySelectorAll<HTMLElement>("*"))];
+    const r = partes.map((n) => n.getBoundingClientRect());
+    const folga = BANDA_BEIRADA_PX; // a mesma folga do gesto, agora em px de tela
+    return (
+      e.clientX >= Math.min(...r.map((x) => x.left)) - folga &&
+      e.clientX <= Math.max(...r.map((x) => x.right)) + folga &&
+      e.clientY >= Math.min(...r.map((x) => x.top)) - folga &&
+      e.clientY <= Math.max(...r.map((x) => x.bottom)) + folga
+    );
   }
 
   /** `px` na tela -> pt da lâmina (a lâmina encolhe com o zoom, então 1 pt não é 1 px). */

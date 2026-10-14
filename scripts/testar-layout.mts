@@ -423,8 +423,15 @@ console.log("\nPowerPoint: o texto da forma escolhida é do texto (e o mover fic
   const textoCss = ler("src/styles/powerpoint.css");
   checa(
     "clicar no texto de uma forma escolhida entra na edição (o arrasto seleciona)",
-    /if \(\s*jaSelecionada &&\s*ctx\.selecao\.length === 1 &&[\s\S]*?alvo\.closest\("\.pp-shape-text"\) &&\s*temTexto\(forma\.paras\) &&[\s\S]*?\) \{\s*this\.hooks\.aoEditarTexto\(forma\.id, \{ x: e\.clientX, y: e\.clientY \}\);\s*return;\s*\}/.test(palcoPpt),
+    /if \(!e\.shiftKey && !e\.ctrlKey && !e\.metaKey && this\.gestoDoTexto\(forma, ctx, e\) && alvo\.closest\("\.pp-shape-text"\)\) \{\s*this\.hooks\.aoEditarTexto\(forma\.id, \{ x: e\.clientX, y: e\.clientY \}\);\s*return;\s*\}/.test(palcoPpt) &&
+      /private gestoDoTexto\(forma: Shape, ctx: ContextoPalco, e: \{ clientX: number; clientY: number \}\): boolean/.test(palcoPpt),
     "sem isso o arrasto por cima do texto volta a mover a forma (o relato)"
+  );
+  checa(
+    "o vazio ao lado/embaixo do texto não larga a escolha (o texto pode passar do quadro)",
+    /const um = ctx\.selecao\.length === 1 \? ctx\.shapes\.find\(\(s\) => s\.id === ctx\.selecao\[0\]\) : undefined;\s*if \(um && this\.gestoDoTexto\(um, ctx, e\) && this\.noTextoPintado\(um\.id, e\)\)/.test(palcoPpt) &&
+      /private noTextoPintado\(id: string, e: \{ clientX: number; clientY: number \}\): boolean/.test(palcoPpt),
+    "com o texto transbordando o quadro, o clique no vazio deselecionaria a caixa (o relato)"
   );
   checa(
     "a regra é a do gesto: nada de preventDefault (o navegador segue com a seleção)",
