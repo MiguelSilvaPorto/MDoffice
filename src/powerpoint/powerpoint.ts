@@ -18,7 +18,7 @@ import { Historico } from "./edicao/historico";
 import { formasDoLayout, novaLamina } from "./edicao/layouts";
 import { migrarSlides, registrarMidia } from "./edicao/migrar";
 import { MODELOS, ROTULO_TRATAMENTO, aplicarModelo, type EstiloAtual, type ModeloPPT, type TratamentoIdeia } from "./edicao/modelos";
-import { ARRANJOS, aplicarArranjo, rotuloDoArranjo, unidadesDa, variantesDe, type Arranjo } from "./edicao/arranjos";
+import { ARRANJOS, aplicarArranjo, arranjoLegivel, rotuloDoArranjo, unidadesDa, variantesDe, type Arranjo } from "./edicao/arranjos";
 import { gerarDesign } from "./edicao/gerador";
 import { criarModeloUsuario, lerModelosUsuario, removerModeloUsuario } from "./modelosUsuario";
 import { aplicarFormato, copiarFormato, type FormatoPincel } from "./edicao/pincel";
@@ -599,6 +599,11 @@ export class PowerPointHost {
       previa.style.height = `${altura}px`;
       pendentes.push(() => {
         const comArranjo = aplicarArranjo(atual, id, variante, ratio);
+        // a fórmula que reduz os cartões a tiras ilegíveis não é oferecida
+        if (!arranjoLegivel(atual, comArranjo)) {
+          cartao.remove();
+          return;
+        }
         previa.style.background = fundoValor(comArranjo.bg, this.setup.media ?? {}) || `#${themeOf(this.setup.theme).bg}`;
         previa.innerHTML = comArranjo.shapes.length
           ? comArranjo.shapes.map((f) => htmlFormaRica(f, ctx)).join("")
@@ -619,6 +624,12 @@ export class PowerPointHost {
       if (token !== this.arranjosToken) return;
       pendentes.shift()?.();
       if (pendentes.length) requestAnimationFrame(proxima);
+      else if (!host.querySelector(".pp-ideia")) {
+        const aviso = document.createElement("p");
+        aviso.className = "pp-ideias-vazio";
+        aviso.textContent = "Nenhum arranjo cabe nesta lâmina sem deixar o conteúdo ilegível.";
+        host.append(aviso);
+      }
     };
     requestAnimationFrame(proxima);
   }

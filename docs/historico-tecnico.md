@@ -8798,3 +8798,13 @@ antigas quando fizer sentido.
   depois da limpeza ele não existe mais (o comando devolveria "pathspec" vazio ou erro), e um
   roteiro datado é pior que nenhum: quem regenerar e não gostar precisa saber que a cópia é o
   backup. O `LEIA.md` da pasta é o documento canônico (o comentário só aponta para ele).
+
+### 2026-10-14 · fix/arranjos-gradiente · Detecção que funciona em deck importado (gradiente, concêntrico, pequeno) e arranjo legível
+- **Arquivo/local:** `src/powerpoint/edicao/arranjos.ts` — `pintado()`, `AREA_MIN`/`AREA_SEM_TEXTO`, novo `envolve()`, `analisar()`,
+  novo `arranjoLegivel()`; `src/powerpoint/powerpoint.ts` — `pintarArranjos()` (esconde o ilegível e avisa se não sobra nada);
+  `scripts/testar-arranjos.mjs`.
+- **Linha:** `pintado`: `fillX.kind === "solid"` → qualquer `fillX` que não seja `none`; `AREA_MIN` 2 → 1 (abaixo de 2 exige texto
+  dentro); aninhamento: `dentro(o, c)` → `envolve(o, c)` (o de fora precisa ser MAIOR).
+- **Porquê:** medido num .pptx real (organograma de T.I.): 0 cartões detectados — gradiente não contava como pintado, os cartões têm
+  1,9% (< 2%) e o cartão de fora e o branco de dentro, concêntricos, descartavam-se mutuamente. Sem cartões, o app caía no modo "cada
+  texto é uma unidade" (29 caixas). Depois: 11 cartões, 0 colisões. Lista/Faixa/Destaque com 11 cartões dão tiras de ~2%: não são oferecidos.

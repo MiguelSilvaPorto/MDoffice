@@ -165,6 +165,11 @@ avisado ao abrir (nunca some em silêncio).
   - cada **cartão** é detectado com tudo o que está dentro dele (avatar, logo, textos) — num deck
     importado o cartão costuma ser uma **imagem** com os textos soltos por cima, então a detecção
     é por contenção (o que está por dentro anda junto);
+  - o **cartão pode ter qualquer preenchimento** (sólido, **gradiente** ou imagem) e **cartões
+    concêntricos** (o de fora e o branco de dentro) contam como um só; a partir de **1% da lâmina**
+    (abaixo de 2% precisa ter texto dentro, senão é enfeite);
+  - a fórmula que deixaria os cartões **ilegíveis** (por exemplo, Lista ou Faixa com 11 cartões)
+    **não é oferecida** — o painel só mostra os arranjos que cabem;
   - os cartões ganham o **mesmo tamanho** (o do maior, ajustado para caber no espaço da fórmula) e
     o conteúdo escala junto, com o texto num mínimo de 8pt;
   - **enfeites não são cartões**: uma forma grande, pintada e sem texto que não é retângulo

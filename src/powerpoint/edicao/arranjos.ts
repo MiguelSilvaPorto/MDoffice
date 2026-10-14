@@ -40,7 +40,9 @@ export interface Unidade {
 const MARGEM = 6;
 const ESPACO = 2.5;
 /** Um cartão não pode passar disso da lâmina (senão é fundo) nem ser menor que isso (senão é ícone). */
-const AREA_MIN = 2; // % da área da lâmina
+const AREA_MIN = 1; // % da área da lâmina
+/** Abaixo disto o cartão precisa ter texto (ou ser imagem): senão é um enfeite pequeno, não um cartão. */
+const AREA_SEM_TEXTO = 2;
 const AREA_MAX = 80;
 /** O conteúdo não cresce mais que isso (um cartão pequeno não vira um outdoor). */
 const ESCALA_MAX = 1.8;
@@ -57,13 +59,19 @@ function dentro(fora: Shape, dentro: Shape): boolean {
   return cx >= fora.box.x && cx <= fora.box.x + fora.box.w && cy >= fora.box.y && cy <= fora.box.y + fora.box.h;
 }
 
+/** `fora` envolve `dentro`: o centro dele cai na caixa e ele é MENOR (dois cartões concêntricos —
+ *  o de fora e o branco de dentro — não podem se descartar um ao outro). */
+function envolve(fora: Shape, dentroDe: Shape): boolean {
+  return fora !== dentroDe && area(fora.box) > area(dentroDe.box) && dentro(fora, dentroDe);
+}
+
 function temTexto(s: Shape): boolean {
   return (s.paras ?? []).some((p) => p.runs.some((r) => (r.text ?? "").trim()));
 }
 
 /** Pinta ou mostra imagem — o que faz de uma forma um cartão. */
 function pintado(s: Shape): boolean {
-  return s.kind === "imagem" || !!s.src || s.fillX?.kind === "solid" || !!s.fill;
+  return s.kind === "imagem" || !!s.src || (!!s.fillX && s.fillX.kind !== "none") || !!s.fill;
 }
 
 /** Geometrias que um cartão pode ter (retângulo e variações de cantos); triângulo, seta, estrela,
@@ -77,7 +85,7 @@ function geomDeCartao(s: Shape): boolean {
  *  cartão e não anda com ninguém — fica onde está, como as decorações fixas do modelo. */
 function ehDecoracao(s: Shape): boolean {
   if (s.kind === "imagem" || !!s.src || temTexto(s)) return false;
-  if (!pintado(s) || porcao(s.box) < AREA_MIN) return false;
+  if (!pintado(s) || porcao(s.box) < AREA_SEM_TEXTO) return false;
   return !geomDeCartao(s) || (s.opacity !== undefined && s.opacity < 0.7);
 }
 
@@ -96,11 +104,11 @@ function emOrdem(a: Shape, b: Shape): number {
  *  de fundo, que envolvem vários cartões e por isso ficam parados. */
 function analisar(slide: Slide): { cards: Shape[]; paineis: Set<string> } {
   const vivas = slide.shapes.filter((s) => !s.fixa && !s.liga);
-  const candidatos = vivas.filter(ehCartao);
+  const candidatos = vivas.filter(ehCartao).filter((c) => porcao(c.box) >= AREA_SEM_TEXTO || c.kind === "imagem" || !!c.src || temTexto(c) || vivas.some((o) => o !== c && temTexto(o) && dentro(c, o)));
   // um painel que envolve vários cartões é fundo, não cartão: os cartões dele é que contam
-  const paineis = new Set(candidatos.filter((c) => candidatos.filter((o) => o !== c && dentro(c, o)).length >= 2).map((c) => c.id));
+  const paineis = new Set(candidatos.filter((c) => candidatos.filter((o) => envolve(c, o)).length >= 2).map((c) => c.id));
   const reais = candidatos.filter((c) => !paineis.has(c.id));
-  return { cards: reais.filter((c) => !reais.some((o) => o !== c && dentro(o, c))).sort(emOrdem), paineis };
+  return { cards: reais.filter((c) => !reais.some((o) => envolve(o, c))).sort(emOrdem), paineis };
 }
 
 /** As formas que não andam: fixas do modelo, conectores e o que está dentro de um cartão. */
@@ -286,4 +294,24 @@ export function aplicarArranjo(slide: Slide, id: Arranjo, variante: number, rati
       return { ...escalaDoTexto(s, escala.get(s.id) ?? 1), box: caixa };
     });
   return { ...slide, shapes };
+}
+
+/** Os menores lados que um cartão pode ter depois do arranjo (nas unidades do app) sem ficar ilegível. */
+const LARGURA_MIN = 7;
+const ALTURA_MIN = 5;
+
+/**
+ * O arranjo deixou os cartões num tamanho que dá para ler? Com muitos cartões, fórmulas como Lista
+ * e Faixa os reduzem a tiras de 2% da lâmina: nesse caso a fórmula não é oferecida.
+ */
+export function arranjoLegivel(original: Slide, novo: Slide): boolean {
+  const unidades = unidadesDa(original);
+  if (unidades.length < 2) return true;
+  const caixas = new Map(novo.shapes.map((s) => [s.id, s.box]));
+  return unidades.every((u) => {
+    const bs = u.ids.map((id) => caixas.get(id)).filter((b): b is ShapeBox => !!b);
+    if (!bs.length) return true;
+    const c = caixaDe(bs);
+    return c.w >= LARGURA_MIN && c.h >= ALTURA_MIN;
+  });
 }

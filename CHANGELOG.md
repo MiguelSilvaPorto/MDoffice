@@ -400,6 +400,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Arranjos: cartões com gradiente, cartões concêntricos e cartões pequenos agora são detectados, e só aparecem os arranjos legíveis** — antes, num deck importado (organograma com cartões em gradiente, 1,9% da lâmina cada), nenhum cartão era detectado e o app embaralhava as 29 caixas de texto; o cartão de fora e o branco de dentro também se descartavam um ao outro. Agora a Lista/Faixa/Destaque com muitos cartões (tiras de 2%) deixam de ser oferecidas.
+
 - **Arranjos: triângulos e painéis de fundo não viram mais "cartões"** — antes uma forma grande e decorativa (ex.: os triângulos verdes) ou um painel atrás dos cartões era tratado como cartão, engolia os de verdade e o arranjo saía desordenado; agora eles ficam parados e só os cartões com conteúdo se arrumam. Teste: `npm run test:arranjos`.
 
 ### Adicionado (na main)

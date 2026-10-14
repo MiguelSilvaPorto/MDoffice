@@ -43,6 +43,19 @@ for (const [id, v] of [["grade", 2], ["grade", 3], ["lista", 0], ["destaque", 0]
   ok(`${id} ${v || ""}: tudo dentro da lâmina`.trim(), caixas.every((b) => b.x >= 0 && b.y >= 0 && b.x + b.w <= 100.01 && b.y + b.h <= 100.01));
   ok(`${id} ${v || ""}: o enfeite não se mexeu`.trim(), JSON.stringify(novo.shapes.find((s) => s.id === triangulo.id).box) === JSON.stringify(triangulo.box));
 }
+// cartões com GRADIENTE e um cartão branco concêntrico dentro de cada um (como num deck importado)
+const grad = { kind: "gradient", stops: [{ pos: 0, color: "18A303", alpha: 1 }, { pos: 100, color: "0A6E3A", alpha: 1 }] };
+const dupla = (x, y, t) => [forma(x, y, 19, 10, { geom: "roundRect", fill: "", fillX: grad }), forma(x + 0.2, y + 0.2, 18.6, 9.6, { geom: "roundRect", fill: "FFFFFF" }), texto(x + 2, y + 3, 14, 3, t)];
+const slide2 = { id: "y", layout: "blank", md: "", notes: "", shapes: [titulo, ...dupla(10, 30, "A"), ...dupla(35, 30, "B"), ...dupla(60, 30, "C"), ...dupla(10, 60, "D")] };
+const un2 = A.unidadesDa(slide2);
+ok("cartões com gradiente são detectados", un2.length === 4, `unidades=${un2.length}`);
+ok("o cartão de fora e o branco concêntrico não se descartam (3 formas por unidade)", un2.every((u) => u.ids.length === 3), un2.map((u) => u.ids.length).join(","));
+
+// com muitos cartões, a lista vira tiras ilegíveis: não é oferecida; a grade 3 colunas é
+const muitos = { id: "z", layout: "blank", md: "", notes: "", shapes: [titulo, ...Array.from({ length: 11 }, (_, i) => dupla(5 + (i % 4) * 22, 20 + Math.floor(i / 4) * 25, `P${i}`)).flat()] };
+ok("11 cartões: a Lista não cabe", !A.arranjoLegivel(muitos, A.aplicarArranjo(muitos, "lista", 0, 16 / 9)));
+ok("4 cartões: a Grade 2 cabe", A.arranjoLegivel(slide2, A.aplicarArranjo(slide2, "grade", 2, 16 / 9)));
+
 if (falhas) {
   console.log(`\n${falhas} falha(s)`);
   process.exit(1);
