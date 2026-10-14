@@ -18,7 +18,9 @@ export function iconeDeForma(item: ItemGaleria, tam = 26): string {
     if (item.linha?.head) setas += `<path d="M5 3.5L0 0L3.5 5Z" fill="currentColor"/>`;
   }
   const oy = (22 - h) / 2;
-  return `<svg viewBox="-2 ${-oy - 2} ${w + 4} ${22 + 4 - oy * 0}" width="${tam}" height="${tam}" aria-hidden="true"><g transform="translate(0 ${oy})">${caminhos}${setas}</g></svg>`;
+  // o conteúdo fica sempre centrado em y=11 (o `oy` centra as formas mais baixas): o viewBox
+  // tem que ser simétrico em torno disso, senão o desenho sai alguns pixels abaixo do centro
+  return `<svg viewBox="-2 -2 26 26" width="${tam}" height="${tam}" aria-hidden="true"><g transform="translate(0 ${oy})">${caminhos}${setas}</g></svg>`;
 }
 
 /** Abre a galeria; `aoEscolher` recebe o item clicado. */

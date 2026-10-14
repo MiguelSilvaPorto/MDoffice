@@ -61,6 +61,9 @@ checa("cada painel fica na célula 1/1", /\.ppr-painel\s*\{[^}]*grid-area:\s*1\s
 checa("o painel inativo não some do layout", /\.ppr-painel\[hidden\]\s*\{[^}]*display:\s*flex/.test(pp), "display: flex ausente em .ppr-painel[hidden]");
 checa("o painel inativo fica invisível (clique/foco/leitura)", /\.ppr-painel\[hidden\]\s*\{[^}]*visibility:\s*hidden/.test(pp), "visibility ausente em .ppr-painel[hidden]");
 checa("o rótulo da aba reserva a largura do negrito", /\.ppr-aba-rot::after\s*\{[^}]*font-weight:\s*600/.test(pp) && /\.ppr-aba-rot::after\s*\{[^}]*visibility:\s*hidden/.test(pp), "regra .ppr-aba-rot::after ausente");
+checa("o preview da Formas segue o tamanho do ícone grande", /button\.ppr\.big \.ppr-gal-ic svg\s*\{[^}]*width:\s*var\(--pe-icone-g\)/.test(pp), "regra button.ppr.big .ppr-gal-ic svg ausente");
+checa("na fita compacta o preview usa o ícone normal", /fita-compacta button\.ppr\.big \.ppr-gal-ic svg\s*\{[^}]*width:\s*var\(--pe-icone\)/.test(pp), "regra .fita-compacta .ppr-gal-ic svg ausente");
+checa("o preview da forma fica centrado no próprio ícone", /viewBox="-2 -2 26 26"/.test(ler("src/powerpoint/ui/galeria.ts")), "viewBox assimétrico no iconeDeForma");
 
 // 4. Barra lateral: recolher animado (largura), pílula deslizante no seletor de painéis e
 //    troca de painel sem o "pop" com escala.

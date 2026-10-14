@@ -396,11 +396,25 @@ button.ppr.cor .car {
 
 .ppr-gal-ic {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
   color: var(--fi-ppt, #d24a17);
 }
 
 .ppr-gal-ic svg {
   display: block;
+}
+
+/* o preview da forma segue o mesmo tamanho dos outros ícones (senão vaza do botão na fita baixa) */
+button.ppr.big .ppr-gal-ic svg {
+  width: var(--pe-icone-g);
+  height: var(--pe-icone-g);
+}
+
+.pp-ribbon.ppr.fita-compacta button.ppr.big .ppr-gal-ic svg {
+  width: var(--pe-icone);
+  height: var(--pe-icone);
 }
 
 .ppr-sombra-ic {
