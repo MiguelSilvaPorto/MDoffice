@@ -420,6 +420,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Entra o **painel de animação** na aba lateral: a lista da lâmina na ordem, com selecionar,
   mover (↑↓) e remover item a item. O round-trip do `p:timing` cobre tudo isso (ênfase por
   escala/rotação/opacidade, `autoRev` do pulsar e o atraso no `p:cond`).
+- **Animações, degrau 3**: **trajetória em linha** nas quatro direções (a forma anda 25% da
+  lâmina; a direção se escolhe no grupo **Direção**), com prévia, F5 e round-trip do
+  `p:animMotion` (presetID 64 e os subtypes do PowerPoint: cima 1, direita 2, baixo 4, esquerda
+  8); o cartão **Trajetória** entra na fita e o grupo **Trajetórias** no "Mais animações".
+  **Correção**: o despacho da fita do degrau 2 tinha dois `slice` com um caractere a mais — os
+  botões "Com anterior"/"Depois" e as durações de 1 s/2 s não chegavam ao motor (caíam no padrão
+  em silêncio). Agora um **teste de contrato** confere cada prefixo do despacho contra o `slice`.
 - **Diálogos do app no lugar de janelas do sistema**: **Novo modelo** (botão Template) e
   **Renomear lâmina** agora usam o diálogo de texto do app — com o tema, dica, Enter/OK,
   Esc/Cancelar e clique fora; ao criar, a galeria reabre já com o cartão novo.

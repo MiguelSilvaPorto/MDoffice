@@ -2,11 +2,11 @@
 // a mesma que o DeckCraft escreve (validada contra arquivos reais): grupos de clique,
 // lotes "com/depois do anterior" (com o atraso acumulado) e os comportamentos de cada efeito.
 // O que a lâmina trouxe cru (`timingXml`) volta como veio, sem passar por aqui.
-import type { Animacao, Shape } from "../schema";
-import { atrasoDe, duracaoEfetiva, inicioDe } from "../edicao/animacao";
+import type { Animacao, AnimacaoDirecao, Shape } from "../schema";
+import { atrasoDe, direcaoDeAnimacao, duracaoEfetiva, inicioDe } from "../edicao/animacao";
 
-/** presetID/presetClass de cada tipo (aparecer = 1; surgir/sumir = fade = 10; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9). */
-const PRESET: Record<Animacao["tipo"], { id: number; classe: "entr" | "emph" | "exit" }> = {
+/** presetID/presetClass de cada tipo (aparecer = 1; surgir/sumir = fade = 10; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9; trajetória em linha = 64). */
+const PRESET: Record<Animacao["tipo"], { id: number; classe: "entr" | "emph" | "exit" | "path" }> = {
   aparecer: { id: 1, classe: "entr" },
   surgir: { id: 10, classe: "entr" },
   pulsar: { id: 26, classe: "emph" },
@@ -15,6 +15,18 @@ const PRESET: Record<Animacao["tipo"], { id: number; classe: "entr" | "emph" | "
   transparencia: { id: 9, classe: "emph" },
   desaparecer: { id: 1, classe: "exit" },
   sumir: { id: 10, classe: "exit" },
+  trajetoria: { id: 64, classe: "path" },
+};
+
+/** presetSubtype das direções da trajetória (os do PowerPoint: cima 1, direita 2, baixo 4, esquerda 8). */
+const SUB_DIRECAO: Record<AnimacaoDirecao, number> = { cima: 1, direita: 2, baixo: 4, esquerda: 8 };
+
+/** Caminho de uma linha reta de 25% da lâmina, na direção pedida (o mesmo dos presets "Linhas"). */
+const CAMINHO_LINHA: Record<AnimacaoDirecao, string> = {
+  direita: "M 0 0 L 0.25 0 E",
+  esquerda: "M 0 0 L -0.25 0 E",
+  baixo: "M 0 0 L 0 0.25 E",
+  cima: "M 0 0 L 0 -0.25 E",
 };
 
 interface Efeito {
@@ -83,7 +95,7 @@ export function xmlTiming(animacoes: Animacao[] | undefined, ids: Record<string,
   const animScale = (e: Efeito, dur: number, escala: number, autoRev: boolean): string =>
     `<p:animScale>${cbhvr(e, dur, null, [], autoRev ? ' autoRev="1"' : "")}<p:by x="${escala}" y="${escala}"/></p:animScale>`;
 
-  /** Os comportamentos de cada tipo: entrada/saída por visibilidade e fade; ênfase por escala/rotação/opacidade. */
+  /** Os comportamentos de cada tipo: entrada/saída por visibilidade e fade; ênfase por escala/rotação/opacidade; trajetória por movimento. */
   const comportamentos = (e: Efeito): string => {
     const dur = durMs(e.a);
     if (e.a.tipo === "aparecer") return setVis(e, 0, true);
@@ -93,14 +105,19 @@ export function xmlTiming(animacoes: Animacao[] | undefined, ids: Record<string,
     if (e.a.tipo === "pulsar") return animScale(e, dur, 105000, true);
     if (e.a.tipo === "ampliar") return animScale(e, dur, 150000, false);
     if (e.a.tipo === "girar") return `<p:animRot by="21600000">${cbhvr(e, dur, null, [])}</p:animRot>`;
+    if (e.a.tipo === "trajetoria") {
+      const caminho = CAMINHO_LINHA[direcaoDeAnimacao(e.a)];
+      return `<p:animMotion origin="layout" path="${caminho}" pathEditMode="relative" ptsTypes="">${cbhvr(e, dur, null, ["ppt_x", "ppt_y"])}</p:animMotion>`;
+    }
     // transparência: opacidade para 0,50 (fica assim)
     return `<p:set>${cbhvr(e, dur, null, ["style.opacity"])}<p:to><p:strVal val="0.50"/></p:to></p:set>`;
   };
 
   const effectPar = (e: Efeito): string => {
     const { id: preset, classe } = PRESET[e.a.tipo];
+    const sub = e.a.tipo === "trajetoria" ? SUB_DIRECAO[direcaoDeAnimacao(e.a)] : 0;
     return (
-      `<p:par><p:cTn id="${id()}" presetID="${preset}" presetClass="${classe}" presetSubtype="0" fill="hold" grpId="${e.grp}" nodeType="${e.nodeType}">` +
+      `<p:par><p:cTn id="${id()}" presetID="${preset}" presetClass="${classe}" presetSubtype="${sub}" fill="hold" grpId="${e.grp}" nodeType="${e.nodeType}">` +
       `<p:stCondLst><p:cond delay="${atrasoMs(e.a)}"/></p:stCondLst><p:childTnLst>${comportamentos(e)}</p:childTnLst></p:cTn></p:par>`
     );
   };

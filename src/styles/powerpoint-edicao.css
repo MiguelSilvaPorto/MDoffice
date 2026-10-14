@@ -1658,7 +1658,7 @@ button.ppr.cor {
 
 /* a galeria da aba Animações: cartões um pouco mais largos (nomes como "Desaparecer") */
 .ppr-anim {
-  grid-template-columns: repeat(5, 54px);
+  grid-template-columns: repeat(6, 54px);
 }
 
 .ppr-anim-wrap {

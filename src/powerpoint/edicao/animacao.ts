@@ -1,20 +1,20 @@
 // Animações de forma: os tipos que a aba Animações mostra, o início, a duração, o atraso e a
 // normalização. Funções puras sobre a `Animacao` do modelo — a fita, o painel, a prévia, o F5 e
 // o round-trip do .pptx leem daqui.
-import type { Animacao, AnimacaoInicio, AnimacaoTipo } from "../schema";
+import type { Animacao, AnimacaoDirecao, AnimacaoInicio, AnimacaoTipo } from "../schema";
 import { formatarDuracao } from "./transicao";
 
 /** Duração padrão (segundos) dos efeitos com transição. */
 export const DURACAO_PADRAO = 0.5;
 
-/** Durações padrão por tipo (as do PowerPoint): girar e ampliar são mais lentos. */
-const DURACAO_POR_TIPO: Partial<Record<AnimacaoTipo, number>> = { girar: 2, ampliar: 2 };
+/** Durações padrão por tipo (as do PowerPoint): girar/ampliar e a trajetória são mais lentos. */
+const DURACAO_POR_TIPO: Partial<Record<AnimacaoTipo, number>> = { girar: 2, ampliar: 2, trajetoria: 2 };
 
-/** Tipos na ordem da galeria (entrada, ênfase e saída). */
-export const TIPOS_ANIMACAO: AnimacaoTipo[] = ["aparecer", "surgir", "pulsar", "ampliar", "girar", "transparencia", "desaparecer", "sumir"];
+/** Tipos na ordem da galeria (entrada, ênfase, saída e trajetória). */
+export const TIPOS_ANIMACAO: AnimacaoTipo[] = ["aparecer", "surgir", "pulsar", "ampliar", "girar", "transparencia", "desaparecer", "sumir", "trajetoria"];
 
 /** Classe de cada efeito (agrupa a galeria e decide a validação do .pptx). */
-export type AnimacaoClasse = "entrada" | "enfase" | "saida";
+export type AnimacaoClasse = "entrada" | "enfase" | "saida" | "trajetoria";
 
 export const CLASSE_ANIMACAO: Record<AnimacaoTipo, AnimacaoClasse> = {
   aparecer: "entrada",
@@ -25,6 +25,7 @@ export const CLASSE_ANIMACAO: Record<AnimacaoTipo, AnimacaoClasse> = {
   transparencia: "enfase",
   desaparecer: "saida",
   sumir: "saida",
+  trajetoria: "trajetoria",
 };
 
 export const ROTULOS_ANIMACAO: Record<AnimacaoTipo, string> = {
@@ -36,6 +37,7 @@ export const ROTULOS_ANIMACAO: Record<AnimacaoTipo, string> = {
   transparencia: "Transparência",
   desaparecer: "Desaparecer",
   sumir: "Sumir",
+  trajetoria: "Trajetória",
 };
 
 export const DICAS_ANIMACAO: Record<AnimacaoTipo, string> = {
@@ -47,6 +49,7 @@ export const DICAS_ANIMACAO: Record<AnimacaoTipo, string> = {
   transparencia: "Transparência: a forma fica meio transparente",
   desaparecer: "Desaparecer: a forma sai de uma vez",
   sumir: "Sumir: a forma sai suavemente (fade)",
+  trajetoria: "Trajetória: a forma anda em linha reta (escolha a direção ao lado)",
 };
 
 /** Quando o efeito começa, na ordem da fita. */
@@ -82,6 +85,29 @@ export const ATRASOS_ANIMACAO: { valor: number; rotulo: string }[] = [
 
 /** Início padrão de um efeito novo. */
 export const INICIO_PADRAO: AnimacaoInicio = "clicar";
+
+/** Direções da trajetória (na ordem da fita) e a padrão. */
+export const DIRECOES_ANIMACAO: AnimacaoDirecao[] = ["esquerda", "direita", "cima", "baixo"];
+
+export const DIRECAO_PADRAO: AnimacaoDirecao = "direita";
+
+export const DICAS_DIRECAO_TRAJETORIA: Record<AnimacaoDirecao, string> = {
+  esquerda: "A forma anda para a esquerda",
+  direita: "A forma anda para a direita",
+  cima: "A forma anda para cima",
+  baixo: "A forma anda para baixo",
+};
+
+/** Só a trajetória tem direção. */
+export function aceitaDirecaoAnimacao(tipo: AnimacaoTipo | undefined): boolean {
+  return tipo === "trajetoria";
+}
+
+/** Direção efetiva: os tipos sem direção caem no padrão (só para o código não tratar "nenhuma"). */
+export function direcaoDeAnimacao(a: Animacao | undefined): AnimacaoDirecao {
+  if (!aceitaDirecaoAnimacao(a?.tipo)) return DIRECAO_PADRAO;
+  return a?.direcao && DIRECOES_ANIMACAO.includes(a.direcao) ? a.direcao : DIRECAO_PADRAO;
+}
 
 /** Efeitos instantâneos (sem duração): aparecer e desaparecer. */
 export function instantaneo(tipo: AnimacaoTipo | undefined): boolean {
@@ -130,6 +156,7 @@ export function normalizarAnimacao(a: Animacao | undefined | null): Animacao | u
   if (suave(a.tipo)) out.duracao = duracaoDeAnimacao(a);
   const atraso = atrasoDe(a);
   if (atraso > 0) out.atraso = atraso;
+  if (aceitaDirecaoAnimacao(a.tipo)) out.direcao = direcaoDeAnimacao(a);
   return out;
 }
 
@@ -184,6 +211,16 @@ export function comAtraso(lista: Animacao[] | undefined, forma: string, atraso: 
   const i = atual.findIndex((a) => a.forma === forma);
   if (i < 0) return atual;
   atual[i] = normalizarAnimacao({ ...atual[i], atraso })!;
+  return atual;
+}
+
+/** Muda a direção da trajetória da forma (só vale no tipo `trajetoria`). */
+export function comDirecao(lista: Animacao[] | undefined, forma: string, direcao: AnimacaoDirecao): Animacao[] | undefined {
+  const atual = normalizarAnimacoes(lista);
+  if (!atual) return atual;
+  const i = atual.findIndex((a) => a.forma === forma);
+  if (i < 0 || !aceitaDirecaoAnimacao(atual[i].tipo)) return atual;
+  atual[i] = normalizarAnimacao({ ...atual[i], direcao })!;
   return atual;
 }
 

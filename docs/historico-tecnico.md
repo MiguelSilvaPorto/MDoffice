@@ -3778,6 +3778,103 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   outra worktree foi tocada — a de "Avisos de estilo" segue em "Não adicionado", como deve
   (o trabalho dela ainda não está na `main`).
 
+## src/powerpoint/schema.ts
+
+### 2026-10-14 · trajetória · o tipo e a direção no modelo
+- **Local:** `AnimacaoTipo`, `AnimacaoDirecao` e `Animacao`
+- **Linha:** novo tipo `trajetoria`; `direcao?: AnimacaoDirecao` (esquerda/direita/cima/baixo)
+- **Porquê:** a trajetória é o item P1 que faltava do mapa de edição; a direção é a opção do
+  preset "Linhas" do PowerPoint (a distância fica fixa em 25% da lâmina, como no preset).
+
+## src/powerpoint/edicao/animacao.ts
+
+### 2026-10-14 · trajetória · direção, padrões e normalização
+- **Local:** `TIPOS_ANIMACAO`, `CLASSE_ANIMACAO` (nova classe `trajetoria`), `DIRECOES_ANIMACAO`,
+  `DICAS_DIRECAO_TRAJETORIA`, `aceitaDirecaoAnimacao`, `direcaoDeAnimacao`, `comDirecao` e o
+  `normalizarAnimacao`
+- **Linha:** `trajetoria` entra com duração padrão de **2 s**; a direção padrão é `direita` e só
+  é guardada no tipo `trajetoria`
+- **Porquê:** as regras seguem o mesmo molde da transição (direção só nos tipos que aceitam);
+  a dica de direção ganhou nome próprio (`DICAS_DIRECAO_TRAJETORIA`) para não colidir com a das
+  transições na fita.
+
+## src/powerpoint/render/animacao.ts
+
+### 2026-10-14 · trajetória · o jogador mede a lâmina
+- **Local:** `EFEITO_FIXO` (era `ENFASE_FIXA`) e o `aplicar()` do `tocar`
+- **Linha:** a trajetória calcula a distância na hora (`0.25 * largura` ou `0.25 * altura` da
+  raiz, medida em `clientWidth/Height`) e escreve `--traj-x`/`--traj-y` em px antes da classe
+  `forma-traj`; o `cancelar()` limpa as variáveis
+- **Porquê:** o keyframe precisa de px (o `translate: %` é relativo à própria forma, não à
+  lâmina); medir a raiz faz a mesma conta valer na prévia e no F5. A trajetória termina noutro
+  lugar, então a classe fica (como ampliar/girar/transparência).
+
+## src/styles/slides.css
+
+### 2026-10-14 · trajetória · o keyframe do movimento
+- **Local:** depois dos keyframes de ênfase
+- **Linha:** `.forma-traj` + `@keyframes forma-traj` (`translate: var(--traj-x) var(--traj-y)`);
+  `prefers-reduced-motion` inclui a classe
+- **Porquê:** a propriedade `translate` compõe com o `transform` da forma (rotação/espelho), como
+  as da ênfase.
+
+## src/powerpoint/pptxexport/timing.ts
+
+### 2026-10-14 · trajetória · animMotion no XML
+- **Local:** `PRESET`, `SUB_DIRECAO`, `CAMINHO_LINHA`, `comportamentos` e `effectPar`
+- **Linha:** `trajetoria` = presetID **64**, classe `path`, subtype pela direção (cima 1, direita
+  2, baixo 4, esquerda 8 — os do PowerPoint); o comportamento é um `p:animMotion origin="layout"
+  path="M 0 0 L ±0.25 0|0 ±0.25 E" pathEditMode="relative"` com os atributos `ppt_x`/`ppt_y`
+- **Porquê:** é a estrutura do preset "Linhas" (a mesma que o DeckCraft escreve); o subtype por
+  direção é o que o PowerPoint usa para mostrar a direção certa na lista.
+
+## src/powerpoint/pptximport/timing.ts
+
+### 2026-10-14 · trajetória · ler o animMotion e a direção
+- **Local:** `PRESETS` (classe `path`), `SUB_TRAJETORIA`, `direcaoDaLinha` e o `lerEfeito`
+- **Linha:** presetID 64 vira `trajetoria`; a direção sai do **caminho** (linha reta de exatamente
+  25%); subtypes aceitos 0/1/2/4/8; qualquer outro caminho (curva, outra distância) fica cru
+- **Porquê:** a geometria manda (o subtype pode faltar ou divergir); aceitar só o caminho padrão
+  mantém a promessa do tudo-ou-nada — o que não é modelado volta como veio.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · trajetória · cartão, Direção e Mais animações — e o fix dos slices
+- **Local:** `previaAnimacao` (desenho da trajetória), `animacoes()` (cartão novo + grupo
+  **Direção**), o case `animacao-mais` (grupo **Trajetórias**) e o despacho do clique
+- **Linha:** a fileira rápida vai a **6 cartões** (`.ppr-anim` com 6 colunas) e a direção usa os
+  mesmos botões de seta da transição; **correção**: `animacao-inicio` `slice(17)` → `slice(16)` e
+  `animacao-duracao` `slice(18)` → `slice(17)` — os valores chegavam cortados ("om", "icar", "")
+  e os botões "Com anterior"/"Depois" e as durações de 1 s/2 s caíam no padrão em silêncio
+- **Porquê:** o off-by-one só apareceu ao conferir os prefixos um a um; o teste de contrato novo
+  compara cada prefixo com o `slice` para isso não voltar em nenhum despacho.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · trajetória · direção no host e no painel
+- **Local:** case `animacao-direcao`, `mudarDirecaoAnimacao` e o `renderAnimacoes`
+- **Linha:** o painel mostra a direção da trajetória na linha de info ("Trajetória · Cima ·
+  Depois · 2 s"); a direção passa pelo mesmo `editarAnimacoes` (undo coalescido)
+- **Porquê:** a direção é mais uma propriedade do efeito; o painel é a visão completa da lâmina.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · trajetória · seis colunas na galeria
+- **Local:** `.ppr-anim`
+- **Linha:** `repeat(5, 54px)` → `repeat(6, 54px)`
+- **Porquê:** o cartão da Trajetória entra na mesma fileira dos outros cinco (sem quebrar linha).
+
+## scripts/testar-edicao-pptx.mjs
+
+### 2026-10-14 · trajetória · testes (e o contrato do despacho)
+- **Local:** blocos das animações, do round-trip e o bloco novo "contrato do despacho da fita"
+- **Linha:** novos — direção/duração padrão da trajetória, `comDirecao`, round-trip das quatro
+  direções (com o subtype certo), caminho com outra distância e em curva ficando crus; o contrato
+  lê o fonte da fita e confere **cada** prefixo `cmd.startsWith("x:")` contra o `slice(N)` usado
+  (14 despachos) — teria pegado o off-by-one do degrau 2
+- **Porquê:** o valor cortado não quebrava nada visível (caía no padrão); só um teste que compara
+  prefixo × slice prende isso para todos os despachos, não só os que lembrarmos de testar.
+
 ---
 
 ## Próximos registros

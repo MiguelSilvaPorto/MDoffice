@@ -5,7 +5,7 @@
 // A regra é tudo-ou-nada por lâmina: se qualquer efeito (ou detalhe: ênfase, trajetória,
 // por parágrafo, gatilho, atraso, repetição…) ficar fora do modelo, a lâmina inteira fica
 // com o XML original e volta como veio na exportação — nada se perde no round-trip.
-import type { Animacao, AnimacaoInicio, AnimacaoTipo } from "../schema";
+import type { Animacao, AnimacaoDirecao, AnimacaoInicio, AnimacaoTipo } from "../schema";
 import { normalizarAnimacao } from "../edicao/animacao";
 import { caminho, filho, lerXml, type No } from "./xmltree";
 
@@ -20,12 +20,28 @@ export interface TimingLido {
 
 const RE_TIMING = /<p:timing\b[\s\S]*?<\/p:timing>/;
 
-/** Preset do PowerPoint -> tipo do modelo (aparecer = 1; surgir/sumir = fade = 10; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9). */
+/** Preset do PowerPoint -> tipo do modelo (aparecer = 1; surgir/sumir = fade = 10; ênfase: pulsar = 26, ampliar = 6, girar = 8, transparência = 9; trajetória em linha = 64). */
 const PRESETS: Record<string, Record<string, AnimacaoTipo>> = {
   entr: { "1": "aparecer", "10": "surgir" },
   emph: { "26": "pulsar", "6": "ampliar", "8": "girar", "9": "transparencia" },
   exit: { "1": "desaparecer", "10": "sumir" },
+  path: { "64": "trajetoria" },
 };
+
+/** Subtypes aceitos na trajetória (as quatro direções do preset "Linhas"; 0 aparece em arquivos antigos). */
+const SUB_TRAJETORIA = ["0", "1", "2", "4", "8"];
+
+/** Linha reta de 25% da lâmina (`M 0 0 L x y E`) -> direção; qualquer outro caminho fica fora do modelo. */
+function direcaoDaLinha(caminhoTexto: string): AnimacaoDirecao | undefined {
+  const m = /^M\s+0\s+0\s+L\s+(-?[\d.]+)\s+(-?[\d.]+)\s+E$/.exec(caminhoTexto.trim());
+  if (!m) return undefined;
+  const x = Number(m[1]);
+  const y = Number(m[2]);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return undefined;
+  if (Math.abs(y) < 1e-6 && Math.abs(Math.abs(x) - 0.25) < 1e-6) return x > 0 ? "direita" : "esquerda";
+  if (Math.abs(x) < 1e-6 && Math.abs(Math.abs(y) - 0.25) < 1e-6) return y > 0 ? "baixo" : "cima";
+  return undefined;
+}
 
 const INICIO_POR_NODE: Record<string, AnimacaoInicio> = {
   clickEffect: "clicar",
@@ -62,6 +78,7 @@ interface EfeitoLido {
   spid: string;
   duracao?: number;
   atraso?: number;
+  direcao?: AnimacaoDirecao;
 }
 
 /** O atributo que um `p:set` mexe (style.visibility, style.opacity…). */
@@ -76,7 +93,9 @@ function lerEfeito(ctn: No, seqInterativa: boolean): EfeitoLido | undefined {
   const preset = ctn.a.presetID ?? "0";
   const tipo = PRESETS[classe]?.[preset];
   if (!tipo) return undefined;
-  if ((ctn.a.presetSubtype ?? "0") !== "0") return undefined;
+  const sub = ctn.a.presetSubtype ?? "0";
+  if (tipo !== "trajetoria" && sub !== "0") return undefined;
+  if (tipo === "trajetoria" && !SUB_TRAJETORIA.includes(sub)) return undefined;
   // repetição, reversão e suavização do próprio efeito: fora do modelo
   if (ctn.a.repeatCount !== undefined || ctn.a.autoRev !== undefined || ctn.a.accel !== undefined || ctn.a.decel !== undefined) return undefined;
   // o atraso do efeito é modelado (o XML usa milissegundos); gatilho por evento não
@@ -96,6 +115,7 @@ function lerEfeito(ctn: No, seqInterativa: boolean): EfeitoLido | undefined {
   const animEff = comportamentos.find((b) => b.n === "animEffect");
   const set = comportamentos.find((b) => b.n === "set");
   const instantaneo = tipo === "aparecer" || tipo === "desaparecer";
+  let direcao: AnimacaoDirecao | undefined;
   if (instantaneo) {
     if (!so("set") || atributoDoSet(set!) !== "style.visibility") return undefined;
   } else if (tipo === "surgir" || tipo === "sumir") {
@@ -105,6 +125,11 @@ function lerEfeito(ctn: No, seqInterativa: boolean): EfeitoLido | undefined {
     if (!so("animScale")) return undefined;
   } else if (tipo === "girar") {
     if (!so("animRot")) return undefined;
+  } else if (tipo === "trajetoria") {
+    if (!so("animMotion")) return undefined;
+    const motion = comportamentos.find((b) => b.n === "animMotion");
+    direcao = motion?.a.path ? direcaoDaLinha(motion.a.path) : undefined;
+    if (!direcao) return undefined;
   } else {
     // transparência: um set de opacidade
     if (!so("set") || atributoDoSet(set!) !== "style.opacity") return undefined;
@@ -120,6 +145,7 @@ function lerEfeito(ctn: No, seqInterativa: boolean): EfeitoLido | undefined {
     spid: tgt.a.spid,
     ...(!instantaneo && dur > 1 ? { duracao: dur / 1000 } : {}),
     ...(atrasoMs > 0 ? { atraso: atrasoMs / 1000 } : {}),
+    ...(direcao ? { direcao } : {}),
   };
 }
 
@@ -180,7 +206,7 @@ export function lerTiming(xml: string, spids: Map<string, string>): TimingLido {
       };
     }
     vistos.add(forma);
-    const n = normalizarAnimacao({ forma, tipo: e.tipo, inicio: e.inicio, duracao: e.duracao, atraso: e.atraso });
+    const n = normalizarAnimacao({ forma, tipo: e.tipo, inicio: e.inicio, duracao: e.duracao, atraso: e.atraso, direcao: e.direcao });
     if (!n) return { bruta, avisos: [] };
     animacoes.push(n);
   }

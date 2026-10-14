@@ -671,6 +671,23 @@
   }
 }
 
+/* trajetória em linha: o jogador mede a lâmina e escreve --traj-x/--traj-y em px
+   (25% da largura ou da altura, como o preset "Linhas" do PowerPoint) */
+
+.forma-traj {
+  animation: forma-traj var(--anim-dur, 2000ms) ease both;
+}
+
+@keyframes forma-traj {
+  from {
+    translate: 0 0;
+  }
+
+  to {
+    translate: var(--traj-x, 0px) var(--traj-y, 0px);
+  }
+}
+
 /* movimento reduzido: o efeito aplica na hora (o jogador já usa duração 0) */
 @media (prefers-reduced-motion: reduce) {
   .forma-surge,
@@ -678,7 +695,8 @@
   .forma-pulsa,
   .forma-amplia,
   .forma-gira,
-  .forma-transp {
+  .forma-transp,
+  .forma-traj {
     animation-duration: 1ms;
   }
 }

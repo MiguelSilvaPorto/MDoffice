@@ -1,7 +1,7 @@
 // Testa a lógica de edição da apresentação (sem abrir o app): geometria, operações em várias formas e texto.
 // Uso: node scripts/testar-edicao-pptx.mjs
 import { build } from "esbuild";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -518,6 +518,17 @@ const AN = await empacotar("src/powerpoint/edicao/animacao.ts", "animacao.mjs");
   ok("animação: atraso fora dos limites é aparado", AN.atrasoDe({ forma: "s1", tipo: "surgir", atraso: 99 }) === 60 && AN.atrasoDe({ forma: "s1", tipo: "surgir", atraso: -1 }) === 0);
   ok("animação: comAtraso muda o atraso do efeito", AN.comAtraso(lista, "s1", 1)[0].atraso === 1);
   ok("animação: comAtraso em forma sem efeito não faz nada", JSON.stringify(AN.comAtraso(lista, "s9", 1)) === JSON.stringify(lista));
+
+  // trajetória: direção, duração padrão e classe
+  const traj = AN.normalizarAnimacao({ forma: "s1", tipo: "trajetoria" });
+  ok("animação: trajetória nasce com 2 s e direção padrão", traj.duracao === 2 && traj.direcao === "direita", JSON.stringify(traj));
+  ok("animação: trajetória guarda a direção escolhida", AN.normalizarAnimacao({ forma: "s1", tipo: "trajetoria", direcao: "cima" }).direcao === "cima");
+  ok("animação: direção inválida cai no padrão", AN.direcaoDeAnimacao({ forma: "s1", tipo: "trajetoria", direcao: "x" }) === "direita");
+  ok("animação: só a trajetória aceita direção", AN.aceitaDirecaoAnimacao("trajetoria") && !AN.aceitaDirecaoAnimacao("pulsar") && AN.normalizarAnimacao({ forma: "s1", tipo: "pulsar", direcao: "cima" }).direcao === undefined);
+  ok("animação: classe da trajetória", AN.CLASSE_ANIMACAO.trajetoria === "trajetoria");
+  const comTraj = AN.comAnimacao(undefined, "s1", "trajetoria");
+  ok("animação: comDirecao muda a direção da trajetória", AN.comDirecao(comTraj, "s1", "baixo")[0].direcao === "baixo");
+  ok("animação: comDirecao em efeito sem direção não faz nada", JSON.stringify(AN.comDirecao(lista, "s2", "cima")) === JSON.stringify(lista));
 }
 
 // ---------------------------------------------------------------- round-trip do p:timing
@@ -595,6 +606,36 @@ const TEXP = await empacotar("src/powerpoint/pptxexport/timing.ts", "timing-exp.
   // "depois do anterior" com atraso: o lote seguinte espera atraso + duração do anterior
   const encadeado = TEXP.xmlTiming([{ forma: "s1", tipo: "surgir", atraso: 0.5, duracao: 1 }, { forma: "s2", tipo: "desaparecer", inicio: "depois" }], ids, []);
   ok("timing: o lote seguinte espera atraso + duração", encadeado.includes('<p:cond delay="1500"/>'), encadeado.slice(0, 700));
+
+  // trajetória: round-trip das quatro direções (subtypes do PowerPoint: cima 1, direita 2, baixo 4, esquerda 8)
+  for (const [direcao, sub] of [["cima", 1], ["direita", 2], ["baixo", 4], ["esquerda", 8]]) {
+    const m = [{ forma: "s1", tipo: "trajetoria", duracao: 2, direcao }];
+    const xmlT = TEXP.xmlTiming(m, ids, []);
+    const volta = TIMP.lerTiming(xmlT, spids);
+    ok(
+      `timing: round-trip trajetória ${direcao}`,
+      xmlT.includes(`presetID="64" presetClass="path" presetSubtype="${sub}"`) && xmlT.includes("<p:animMotion") && JSON.stringify(volta.animacoes) === JSON.stringify(m),
+      JSON.stringify([m, volta])
+    );
+  }
+  // caminho fora do padrão fica cru: distância diferente e curva
+  const meia = TEXP.xmlTiming([{ forma: "s1", tipo: "trajetoria", direcao: "direita" }], ids, []).replace('path="M 0 0 L 0.25 0 E"', 'path="M 0 0 L 0.5 0 E"');
+  ok("timing: trajetória com outra distância fica crua", !TIMP.lerTiming(meia, spids).animacoes);
+  const curva = TEXP.xmlTiming([{ forma: "s1", tipo: "trajetoria", direcao: "direita" }], ids, []).replace('path="M 0 0 L 0.25 0 E"', 'path="M 0 0 C 0 -0.25 0.25 -0.25 0.25 0 E"');
+  ok("timing: trajetória em curva fica crua", !TIMP.lerTiming(curva, spids).animacoes);
+}
+
+// ---------------------------------------------------------------- contrato do despacho da fita
+{
+  // cada prefixo do despacho precisa bater com o slice usado: um off-by-one aqui
+  // faz o botão mandar valor errado (foi assim que "animacao-inicio" e
+  // "animacao-duracao" passaram com 17/18 em vez de 16/17)
+  const fitaSrc = readFileSync(join(raiz, "src/powerpoint/ui/fita.ts"), "utf8");
+  const despachos = [...fitaSrc.matchAll(/cmd\.startsWith\("([a-z-]+):"\)\) this\.hooks\.run\("[a-z-]+", cmd\.slice\((\d+)\)\)/g)];
+  ok("fita: os despachos com slice foram encontrados", despachos.length >= 8, `achou ${despachos.length}`);
+  for (const [, prefixo, n] of despachos) {
+    ok(`fita: slice do prefixo "${prefixo}:"`, Number(n) === prefixo.length + 1, `esperado ${prefixo.length + 1}, veio ${n}`);
+  }
 }
 
 // ---------------------------------------------------------------- exportação: spid amarrado à forma

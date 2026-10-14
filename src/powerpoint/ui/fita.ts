@@ -4,7 +4,7 @@ import { SOMBRAS_PRONTAS } from "../edicao/formato";
 import { GRAFICO_TIPOS } from "../edicao/grafico";
 import { ROTULOS_PRESET, type PresetTabela } from "../edicao/tabela";
 import { DICAS_DIRECAO, DICAS_TRANSICAO, DIRECOES_TRANSICAO, DURACOES_TRANSICAO, ROTULOS_DIRECAO, ROTULOS_TRANSICAO, TIPOS_TRANSICAO, aceitaDirecao, direcaoDe, duracaoDe, formatarDuracao } from "../edicao/transicao";
-import { DICAS_ANIMACAO, DICAS_INICIO, ATRASOS_ANIMACAO, CLASSE_ANIMACAO, DURACOES_ANIMACAO, INICIOS_ANIMACAO, ROTULOS_ANIMACAO, ROTULOS_INICIO, TIPOS_ANIMACAO, atrasoDe, duracaoDeAnimacao, inicioDe, suave } from "../edicao/animacao";
+import { DICAS_ANIMACAO, DICAS_INICIO, ATRASOS_ANIMACAO, CLASSE_ANIMACAO, DICAS_DIRECAO_TRAJETORIA, DIRECOES_ANIMACAO, DURACOES_ANIMACAO, INICIOS_ANIMACAO, ROTULOS_ANIMACAO, ROTULOS_INICIO, TIPOS_ANIMACAO, aceitaDirecaoAnimacao, atrasoDe, direcaoDeAnimacao, duracaoDeAnimacao, inicioDe, suave } from "../edicao/animacao";
 import type { AnimacaoTipo, SlideLayout, TransicaoDirecao, TransicaoTipo } from "../schema";
 import { abrirCores } from "./cores";
 import { FONTES_COMUNS, TAMANHOS, cmParaPt, ptParaCm, type EstadoUI } from "./estado";
@@ -56,6 +56,12 @@ function previaAnimacao(tipo: AnimacaoTipo): string {
     desaparecer: moldura + forma(0.5, ' stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".7"') + sai,
     // sai suavemente
     sumir: moldura + forma(0.12) + `<rect x="17" y="7" width="8" height="6" rx="1" fill="currentColor" fill-opacity=".3"/>` + sai,
+    // anda em linha (a forma sai daqui e o tracejado mostra onde ela chega)
+    trajetoria:
+      moldura +
+      `<rect x="4" y="6" width="8" height="8" rx="1" fill="currentColor" fill-opacity=".5"/>` +
+      traco("M13 10h7M17.5 7.5 20 10 17.5 12.5") +
+      `<rect x="20" y="6" width="8" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" stroke-opacity=".65"/>`,
   };
   return `<svg class="ppr-anim-svg" viewBox="0 0 32 20" aria-hidden="true">${desenhos[tipo]}</svg>`;
 }
@@ -400,14 +406,15 @@ export class Fita {
     ].join("");
   }
 
-  /** Aba Animações: efeito por forma (entrada/ênfase/saída), início, duração, atraso, ordem e prévia. */
+  /** Aba Animações: efeito por forma (entrada/ênfase/saída/trajetória), início, direção, duração, atraso, ordem e prévia. */
   private animacoes(): string {
     // a fita mostra as mais usadas; o botão "Mais" abre a galeria completa por classe
-    const rapidas: AnimacaoTipo[] = ["aparecer", "surgir", "pulsar", "desaparecer", "sumir"];
+    const rapidas: AnimacaoTipo[] = ["aparecer", "surgir", "pulsar", "desaparecer", "sumir", "trajetoria"];
     const galeria = rapidas.map(
       (t) =>
         `<button type="button" class="ppr-anim-item" data-cmd="animacao:${t}" title="${DICAS_ANIMACAO[t]}" aria-label="${ROTULOS_ANIMACAO[t]}">${previaAnimacao(t)}<span class="ppr-trans-nome">${ROTULOS_ANIMACAO[t]}</span></button>`
     ).join("");
+    const direcoes = DIRECOES_ANIMACAO.map((d) => btn(`animacao-direcao:${d}`, `<span class="ppr-trans-dir">${FLECHAS_DIRECAO[d]}</span>`, `Direção da trajetória — ${DICAS_DIRECAO_TRAJETORIA[d]}`, "trans-dir")).join("");
     const inicios = INICIOS_ANIMACAO.map((i) => btn(`animacao-inicio:${i}`, ROTULOS_INICIO[i], `Início do efeito — ${DICAS_INICIO[i]}`, "fmt")).join("");
     const duracoes = DURACOES_ANIMACAO.map((d) => btn(`animacao-duracao:${d.valor}`, d.rotulo, `Duração do efeito: ${d.rotulo}`, "fmt")).join("");
     const atrasos = ATRASOS_ANIMACAO.map((d) =>
@@ -420,6 +427,7 @@ export class Fita {
          <button type="button" class="ppr fmt tem-menu" data-cmd="animacao-mais" data-menu="1" title="Mais animações: girar, ampliar, transparência…">Mais<span class="car">▾</span></button></div>
          <span class="ppr-trans-nota" data-anim-nota hidden title="As animações deste arquivo não são representadas pelo app: voltam como vieram na exportação">Original preservada</span>`
       ),
+      grupo("Direção", `<div class="ppr-linha">${direcoes}</div>`),
       grupo("Início", `<div class="ppr-linha">${inicios}</div>`),
       grupo("Duração", `<div class="ppr-linha">${duracoes}<span class="ppr-trans-dur" data-anim-dur></span></div>`),
       grupo("Atraso", `<div class="ppr-linha">${atrasos}<span class="ppr-trans-dur" data-anim-atraso></span></div>`),
@@ -511,9 +519,10 @@ export class Fita {
     else if (cmd.startsWith("transicao-direcao:")) this.hooks.run("transicao-direcao", cmd.slice(18));
     else if (cmd.startsWith("transicao-duracao:")) this.hooks.run("transicao-duracao", cmd.slice(18));
     else if (cmd.startsWith("transicao:")) this.hooks.run("transicao", cmd.slice(10));
-    else if (cmd.startsWith("animacao-inicio:")) this.hooks.run("animacao-inicio", cmd.slice(17));
-    else if (cmd.startsWith("animacao-duracao:")) this.hooks.run("animacao-duracao", cmd.slice(18));
+    else if (cmd.startsWith("animacao-inicio:")) this.hooks.run("animacao-inicio", cmd.slice(16));
+    else if (cmd.startsWith("animacao-duracao:")) this.hooks.run("animacao-duracao", cmd.slice(17));
     else if (cmd.startsWith("animacao-atraso:")) this.hooks.run("animacao-atraso", cmd.slice(16));
+    else if (cmd.startsWith("animacao-direcao:")) this.hooks.run("animacao-direcao", cmd.slice(17));
     else if (cmd.startsWith("animacao:")) this.hooks.run("animacao", cmd.slice(9));
     else this.hooks.run(cmd);
   }
@@ -558,6 +567,7 @@ export class Fita {
           ["Entrada", TIPOS_ANIMACAO.filter((t) => CLASSE_ANIMACAO[t] === "entrada")],
           ["Ênfase", TIPOS_ANIMACAO.filter((t) => CLASSE_ANIMACAO[t] === "enfase")],
           ["Saída", TIPOS_ANIMACAO.filter((t) => CLASSE_ANIMACAO[t] === "saida")],
+          ["Trajetórias", TIPOS_ANIMACAO.filter((t) => CLASSE_ANIMACAO[t] === "trajetoria")],
         ];
         const html = classes
           .map(
@@ -978,6 +988,11 @@ export class Fita {
     }
     const anAtrasoTxt = this.el.querySelector<HTMLElement>("[data-anim-atraso]");
     if (anAtrasoTxt) anAtrasoTxt.textContent = efAtraso > 0 ? formatarDuracao(efAtraso) : "";
+    const efTraj = !!ef && aceitaDirecaoAnimacao(ef.tipo);
+    for (const b of this.el.querySelectorAll<HTMLButtonElement>("[data-cmd^='animacao-direcao:']")) {
+      b.disabled = !efTraj;
+      b.classList.toggle("on", efTraj && b.dataset.cmd === `animacao-direcao:${direcaoDeAnimacao(ef)}`);
+    }
     const efPos = st.animacaoPos ?? -1;
     dis("animacao-subir", !ef || efPos <= 0);
     dis("animacao-descer", !ef || efPos < 0 || efPos >= (st.animacaoTotal ?? 0) - 1);

@@ -2,7 +2,7 @@
 // usam este mesmo jogador. Recebe a raiz com as formas (`[data-shape]`) e a lista de animações
 // da lâmina e devolve um controle: "próximo" (o clique da apresentação) e "cancelar".
 import type { Animacao } from "../schema";
-import { atrasoDe, duracaoEfetiva, entrada, inicioDe } from "../edicao/animacao";
+import { atrasoDe, direcaoDeAnimacao, duracaoEfetiva, entrada, inicioDe } from "../edicao/animacao";
 
 /** Classes que o CSS anima (styles/slides.css). */
 const OCULTA = "forma-oculta";
@@ -12,9 +12,10 @@ const PULSA = "forma-pulsa";
 const AMPLIA = "forma-amplia";
 const GIRA = "forma-gira";
 const TRANSP = "forma-transp";
+const TRAJ = "forma-traj";
 
-/** Ênfase que termina num estado novo (a classe fica segurando o fim da animação). */
-const ENFASE_FIXA: Partial<Record<Animacao["tipo"], string>> = { ampliar: AMPLIA, girar: GIRA, transparencia: TRANSP };
+/** Efeitos que terminam num estado novo (a classe fica segurando o fim da animação). */
+const EFEITO_FIXO: Partial<Record<Animacao["tipo"], string>> = { ampliar: AMPLIA, girar: GIRA, transparencia: TRANSP, trajetoria: TRAJ };
 
 export interface ControleAnimacoes {
   /** Toca o próximo passo pendente (o clique da apresentação). false = não havia o que tocar. */
@@ -56,6 +57,11 @@ export function iniciarAnimacoes(
   const passos = agrupar(lista).filter((p) => p.efeitos.some((e) => elementos.has(e.forma)));
   if (!passos.length) return vazio;
 
+  // a trajetória anda 25% da lâmina (o mesmo que o preset "Linhas" do PowerPoint):
+  // as medidas saem da própria lâmina, então valem na prévia e no F5
+  const larg = raiz.clientWidth || raiz.getBoundingClientRect().width || 0;
+  const alt = raiz.clientHeight || raiz.getBoundingClientRect().height || 0;
+
   // estado inicial: efeitos de entrada escondem a forma até o passo dela chegar
   for (const a of lista) {
     if (entrada(a.tipo)) elementos.get(a.forma)?.classList.add(OCULTA);
@@ -85,8 +91,15 @@ export function iniciarAnimacoes(
       }
       el.classList.remove(OCULTA);
       el.style.setProperty("--anim-dur", `${Math.max(1, ms)}ms`);
-      // ênfase que termina noutro estado: a classe fica (o CSS segura o fim da animação)
-      const fixa = ENFASE_FIXA[a.tipo];
+      // trajetória: a distância sai da lâmina e vai para as variáveis do keyframe
+      if (a.tipo === "trajetoria") {
+        const dir = direcaoDeAnimacao(a);
+        const dist = 0.25 * (dir === "esquerda" || dir === "direita" ? larg : alt);
+        el.style.setProperty("--traj-x", `${dir === "esquerda" ? -dist : dir === "direita" ? dist : 0}px`);
+        el.style.setProperty("--traj-y", `${dir === "cima" ? -dist : dir === "baixo" ? dist : 0}px`);
+      }
+      // efeitos que terminam noutro estado: a classe fica (o CSS segura o fim da animação)
+      const fixa = EFEITO_FIXO[a.tipo];
       const classe = a.tipo === "surgir" ? SURGE : a.tipo === "sumir" ? SOME : a.tipo === "pulsar" ? PULSA : fixa!;
       el.classList.add(classe);
       if (fixa) return;
@@ -143,8 +156,10 @@ export function iniciarAnimacoes(
       vivo = false;
       window.clearTimeout(timer);
       for (const el of elementos.values()) {
-        el.classList.remove(OCULTA, SURGE, SOME, PULSA, AMPLIA, GIRA, TRANSP);
+        el.classList.remove(OCULTA, SURGE, SOME, PULSA, AMPLIA, GIRA, TRANSP, TRAJ);
         el.style.removeProperty("--anim-dur");
+        el.style.removeProperty("--traj-x");
+        el.style.removeProperty("--traj-y");
       }
     },
   };
