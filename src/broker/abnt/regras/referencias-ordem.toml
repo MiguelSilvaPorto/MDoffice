@@ -1,0 +1,16 @@
+# R02 (NBR 6023:2025) — a lista em ordem alfabética.
+#
+# A chave é o primeiro sobrenome (ou o primeiro elemento da entidade), do campo antes da
+# vírgula/ponto que fecha a autoria; a comparação é do Intl.Collator("pt-BR"), não uma
+# ordenação inventada. Entrada sem chave confiável (título, fragmento, parágrafo que nem
+# é referência) não entra na conta — e por isso não quebra a ordem.
+#
+# Quem detecta e escreve a mensagem é o verificador "referencias-ordem"
+# (src/broker/abnt/verificadores/referencias.ts).
+id = "abnt.r02"
+norma = "nbr6023:2025"
+grupo = "R"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "referencias-ordem"
+mensagem = "(o verificador escreve a mensagem)"

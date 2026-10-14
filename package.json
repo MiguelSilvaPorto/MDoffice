@@ -36,7 +36,8 @@
     "test:abnt-citacoes": "node scripts/testar-abnt-citacoes.mts",
     "test:abnt-estrutura": "node scripts/testar-abnt-estrutura.mts",
     "test:abnt-tabelas": "node scripts/testar-abnt-tabelas.mts",
-    "test:abnt-referencias-tipos": "node scripts/testar-abnt-referencias-tipos.mts"
+    "test:abnt-referencias-tipos": "node scripts/testar-abnt-referencias-tipos.mts",
+    "test:abnt-referencias": "node scripts/testar-abnt-referencias.mts"
   },
   "dependencies": {
     "@codemirror/commands": "^6.6.0",

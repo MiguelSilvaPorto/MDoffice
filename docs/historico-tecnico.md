@@ -2425,6 +2425,13 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** bala nova depois do “Modo formal”
 - **Porquê:** o documento do módulo descreve o que o app faz; o catálogo por classe, as frases por janela e o MIP são funcionalidades visíveis.
 
+### 2026-10-14 · esta tarefa · os avisos de ABNT nas referências
+- **Local:** seção “Escrita assistida (português, offline)”, bala nova no fim
+- **Linha:** novo
+- **Porquê:** conferir a lista de referências (existir, ordem, cruzamento com as citações e
+  destaque uniforme) aparece no painel de revisão como os outros avisos; o documento do módulo
+  precisava dizer isso.
+
 ## src/broker/neighbor.ts
 
 ### 2026-10-13 · vizinho sem falso positivo · a edição precisa ser erro de digitação
@@ -3439,6 +3446,60 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** `+ o item "Formalizar texto com prévia"` e a palavra "formalização" nas duas listas
 - **Porquê:** é funcionalidade visível (comando, atalho e painel): o documento do módulo precisa
   dizer como usar e o que as trocas fazem.
+
+## src/broker/abnt/verificadores/referencias.ts
+
+### 2026-10-14 · esta tarefa · as regras da lista de referências (R01, R02, R11 e R12)
+- **Local:** arquivo inteiro — os quatro verificadores (`referencias-existe`, `referencias-ordem`,
+  `referencias-cruzamento`, `referencias-destaque`) e os ajudantes que eles compartilham (entradas
+  da lista, chave do autor, anos, citações autor-data, colador)
+- **Linha:** o esqueleto vazio vira o mapa com as quatro entradas
+- **Porquê:** são as quatro regras do catálogo que olham a LISTA inteira, e não a forma de cada
+  tipo (R03–R10 ficam em `referencias-tipos.ts`, de outro trabalho). Três decisões de precisão,
+  todas na direção do catálogo (falso positivo é pior que falso negativo): **R01** só cobra a
+  lista quando o documento se comporta como trabalho — tem citação autor-data ou um elemento do
+  gênero (resumo, sumário, capa…) — e ancora em `ancoraNoFim(doc)`, porque é ali que o elemento
+  pós-textual entraria; sem o bloco, a **R11** fica em silêncio (uma acusação por citação seria
+  ruído: quem cobra a lista é a R01). A **R02** tira a chave do primeiro campo (antes da
+  vírgula/ponto: "SILVA, João." → SILVA; "BRASIL. Lei…" → BRASIL) e devolve `null` quando não dá
+  para saber — entrada por título com artigo, fragmento, parágrafo que nem é referência —, então
+  o que não tem chave confiável não entra na conta nem quebra a ordem; a comparação é do
+  `Intl.Collator("pt-BR")` com sensibilidade "base" (acento e caixa não decidem, e nenhuma
+  ordenação foi inventada aqui); só entradas que parecem referência (têm ano ou "s.d.") contam, e
+  cada item de lista é uma entrada própria. A **R11** coleta as citações autor-data das duas
+  formas — "(Furtado, 2019)" (com ";" para várias no mesmo parêntese) e a narrativa "Silva
+  (2020)" — fora da própria lista e fora de código/links (máscara); a busca é folgada DE
+  PROPÓSITO: basta a entrada ter o mesmo ano e uma palavra do autor em qualquer campo, o que
+  cobre SOBRENOME composto, entidade com sigla, "et al." e vários autores — o limite é falso
+  negativo, não falso positivo; o sentido inverso (referência não citada) ficou de fora pela
+  mesma razão, e citação repetida vira um aviso só. A **R12** é a leitura grosseira que a
+  confiança baixa comporta: destaque é negrito/itálico menos os latinismos que a norma pede em
+  itálico ("*In*", "*et al.*", "[*S.l.*]"), o asterisco de item de lista não conta, e o aviso sai
+  uma vez por lista — na primeira entrada sem destaque — e só quando a lista MISTURA (a regra é
+  a uniformidade, não o destaque em si).
+
+## src/broker/abnt/regras/referencias-*.toml · src/broker/abnt/index.ts
+
+### 2026-10-14 · esta tarefa · as quatro regras entram como dado, no fim da carga
+- **Local:** quatro arquivos novos em `regras/` e a lista `FONTES` de `abnt/index.ts`
+- **Linha:** `novo` — `tipo = "estrutura"` + `verifica = …`; as entradas entram no FIM de `FONTES`
+- **Porquê:** a declaração (id `abnt.r01`/`r02`/`r11`/`r12`, norma, severidade, qual verificador
+  julga) fica no TOML, como manda o contrato, e o julgamento mora no verificador. No fim da lista
+  de propósito: a ordem importa quando duas regras avisam o mesmo trecho, e as dez antigas ficam
+  na frente. A R12 é `suggestion` com `auto = false` (a confiança baixa do catálogo).
+
+## scripts/testar-abnt-referencias.mts · package.json · scripts/testar-regras-abnt.mts
+
+### 2026-10-14 · esta tarefa · o teste da lista (e o registro do verificador que o `map` comia)
+- **Local:** arquivo novo de teste; script `test:abnt-referencias`; o teste de ouro das dez
+- **Linha:** no teste de ouro, `I.carregarRegras().map(I.regraDeToml)` → filtro pelos ids das dez
+  + `.map((r) => I.regraDeToml(r))`; `carregadas === 10` → `carregadas >= 10`
+- **Porquê:** o teste novo dá os dois lados de cada regra (51 checagens) pelo caminho do app
+  (TOML → lint → verificador → máscara). No teste de ouro apareceram dois problemas antigos que
+  só uma regra de estrutura expõe: o `map` entrega três argumentos, e o índice caía no parâmetro
+  `registro` do `regraDeToml` — a carga quebrava com "verificador desconhecido … (conhecidos:
+  nenhum)"; e a comparação "regras em TOML == as dez funções" passou a precisar do filtro das
+  dez, porque o catálogo cresce por tarefas paralelas (a contagem virou piso, não total).
 
 ---
 

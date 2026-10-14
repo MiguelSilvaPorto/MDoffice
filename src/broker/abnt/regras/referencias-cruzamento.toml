@@ -1,0 +1,16 @@
+# R11 (NBR 6023:2025) — citação ↔ referência: toda citação autor-data tem entrada na lista.
+#
+# O sentido é um só (citação → lista): a referência não citada não é acusada, porque o
+# custo em falso positivo é alto (sigla, entidade, sobrenome composto, várias obras do
+# mesmo autor). E sem lista o verificador fica em silêncio: quem cobra a lista é a R01 —
+# não uma acusação por citação. Citação é avisada uma vez só, mesmo repetida no texto.
+#
+# Quem detecta e escreve a mensagem é o verificador "referencias-cruzamento"
+# (src/broker/abnt/verificadores/referencias.ts).
+id = "abnt.r11"
+norma = "nbr6023:2025"
+grupo = "R"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "referencias-cruzamento"
+mensagem = "(o verificador escreve a mensagem)"

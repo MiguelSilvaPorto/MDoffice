@@ -306,7 +306,10 @@ console.log("\nnormalização: NFD e CRLF (famílias 5 e 6 da especificação)")
   const N = await empacotar("src/broker/normalizar.ts", "normalizar.mjs");
   const I = await empacotar("src/broker/abnt/index.ts", "index3.mjs");
   const M = await empacotar("src/broker/mask.ts", "mask2.mjs");
-  const regras = I.carregarRegras().map((r) => I.regraDeToml(r));
+  // as dez do teste de ouro (as famílias 5 e 6 medem a NORMALIZAÇÃO, não o catálogo novo)
+  const regras = I.carregarRegras()
+    .filter((r: { id: string }) => IDS_ANTIGAS.includes(r.id))
+    .map((r: unknown) => I.regraDeToml(r));
 
   const rodarRegras = (texto: string) => {
     const mask = M.maskNonProse(texto);
@@ -393,7 +396,7 @@ console.log("\nperfil: regra desligada, suavizada e endurecida");
 
 // ------------------------------------- 6. medição (o número que reabre a questão)
 
-console.log("\nmedição: as dez regras sobre um TCC");
+console.log("\nmedição: as regras carregadas sobre um TCC");
 {
   const I = await empacotar("src/broker/abnt/index.ts", "index5.mjs");
   const M = await empacotar("src/broker/mask.ts", "mask3.mjs");

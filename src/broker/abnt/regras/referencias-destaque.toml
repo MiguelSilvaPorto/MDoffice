@@ -1,0 +1,17 @@
+# R12 (NBR 6023:2025) — destaque tipográfico uniforme no título das referências.
+#
+# Confiança baixa: `suggestion`, nunca automática, e só acusa quando a lista MISTURA
+# entradas com e sem destaque (negrito/itálico no título). Lista toda sem destaque não
+# vira aviso — a regra é a uniformidade, não o destaque em si; os latinismos que a norma
+# pede em itálico ("et al.", "In", "[S.l.]") não contam como destaque do título.
+#
+# Quem detecta e escreve a mensagem é o verificador "referencias-destaque"
+# (src/broker/abnt/verificadores/referencias.ts).
+id = "abnt.r12"
+norma = "nbr6023:2025"
+grupo = "R"
+severidade = "suggestion"
+auto = false
+tipo = "estrutura"
+verifica = "referencias-destaque"
+mensagem = "(o verificador escreve a mensagem)"

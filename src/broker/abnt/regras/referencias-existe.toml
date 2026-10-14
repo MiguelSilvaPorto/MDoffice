@@ -1,0 +1,16 @@
+# R01 (NBR 6023:2025) — a lista de referências existe (elemento pós-textual).
+#
+# O verificador só cobra quando o documento mostra que é um trabalho: tem citação
+# autor-data ou um elemento do gênero (resumo, sumário, capa…). Nota solta fica em
+# silêncio — é a mesma direção de todo o arquivo de referências: falso positivo é pior
+# que falso negativo.
+#
+# Quem detecta e escreve a mensagem é o verificador "referencias-existe"
+# (src/broker/abnt/verificadores/referencias.ts).
+id = "abnt.r01"
+norma = "nbr6023:2025"
+grupo = "R"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "referencias-existe"
+mensagem = "(o verificador escreve a mensagem)"

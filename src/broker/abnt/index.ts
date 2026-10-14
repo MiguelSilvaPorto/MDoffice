@@ -49,6 +49,10 @@ import r07Lei from "./regras/r07-lei.toml?raw";
 import r08Tese from "./regras/r08-tese.toml?raw";
 import r09Evento from "./regras/r09-evento.toml?raw";
 import r10Patente from "./regras/r10-patente.toml?raw";
+import referenciasExiste from "./regras/referencias-existe.toml?raw";
+import referenciasOrdem from "./regras/referencias-ordem.toml?raw";
+import referenciasCruzamento from "./regras/referencias-cruzamento.toml?raw";
+import referenciasDestaque from "./regras/referencias-destaque.toml?raw";
 
 const FONTES: { nome: string; texto: string }[] = [
   { nome: "horas.toml", texto: horas },
@@ -89,6 +93,12 @@ const FONTES: { nome: string; texto: string }[] = [
   { nome: "r08-tese.toml", texto: r08Tese },
   { nome: "r09-evento.toml", texto: r09Evento },
   { nome: "r10-patente.toml", texto: r10Patente },
+  // as regras da lista de referências (R01, R02, R11 e R12) entram no fim de propósito:
+  // a ordem importa quando duas regras avisam o mesmo trecho — as dez antigas ficam primeiro
+  { nome: "referencias-existe.toml", texto: referenciasExiste },
+  { nome: "referencias-ordem.toml", texto: referenciasOrdem },
+  { nome: "referencias-cruzamento.toml", texto: referenciasCruzamento },
+  { nome: "referencias-destaque.toml", texto: referenciasDestaque },
 ];
 
 /** Perfil institucional: sobrescreve versão de norma e o que fazer com cada regra. */

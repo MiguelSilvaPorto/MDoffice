@@ -119,6 +119,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   siglas) são conferidas contra o documento: lista sem nenhum item e item que aponta para uma
   figura/tabela que não existe — ou sigla que não é usada no texto — são avisados, porque a
   lista só pode conter os itens que existem.
+- **Lista de referências conferida de ponta a ponta (ABNT NBR 6023:2025)**: quatro avisos novos
+  no painel de revisão, olhando a lista como um todo. **R01** — a lista existe (o aviso sai no
+  fim do trabalho, onde ela entraria, e só quando o documento se comporta como trabalho: tem
+  citação autor-data ou elemento como resumo/sumário). **R02** — ordem alfabética pela chave do
+  primeiro sobrenome/entidade, comparada pelo `Intl.Collator("pt-BR")` (acento e caixa não
+  decidem a ordem) e com o ponteiro na entrada que fura. **R11** — cruzamento citação ↔
+  referência: toda citação autor-data (inclusive a narrativa, "Silva (2020)") precisa de entrada
+  com o mesmo ano; o casamento é folgado de propósito (sigla, SOBRENOME composto e "et al."
+  casam por palavra) e a citação repetida vira um aviso só. **R12** — destaque tipográfico
+  uniforme: **sugestão**, nunca automática, e só quando a lista mistura entradas com e sem
+  negrito/itálico no título. Nenhuma das quatro corrige o texto sozinha.
 
 ### Adicionado (na main)
 

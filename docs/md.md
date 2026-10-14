@@ -147,6 +147,15 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   e acusa citação autor-data (“(Silva, 2020)”) dentro do resumo — resumo não leva citação.
   Nada disso é corrigido sozinho.
 - **“Formatar texto”** (comando): varredura automática de pontuação com ritmo aprendido.
+- **Avisos de ABNT**: as regras das normas entram no mesmo painel de revisão. Nas referências
+  (NBR 6023:2025), a **lista é conferida como um todo**: se ela existe (o aviso aponta o fim do
+  trabalho, onde ela entraria, e só quando o documento se comporta como trabalho — tem citação
+  ou elemento como resumo/sumário); se está em **ordem alfabética** pela chave do primeiro
+  sobrenome/entidade (SANTOS antes de SILVA; acento e caixa não decidem a ordem); se cada
+  **citação autor-data** tem entrada na lista (a narrativa “Silva (2020)” também conta; sigla,
+  SOBRENOME composto e “et al.” casam por palavra; citação repetida vira um aviso só); e se o
+  **destaque do título** é uniforme (sugestão, só quando a lista mistura negrito/itálico com
+  entradas sem destaque). São avisos de conferência — nenhum corrige o texto sozinho.
 
 ## Sugestões enquanto você digita
 
