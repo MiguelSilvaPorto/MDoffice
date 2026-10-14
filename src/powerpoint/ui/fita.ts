@@ -307,7 +307,7 @@ export class Fita {
       ),
       grupo(
         "Lâminas",
-        `${grande("slide-novo", ic("i-plus"), "Nova lâmina", "Nova lâmina depois da atual: escolha o layout", true)}
+        `${grande("slide-novo", ic("i-plus"), "Nova lâmina", "Nova lâmina no fim: escolha o layout", true)}
          <div class="ppr-col">
            ${pequeno("layout", ic("i-columns"), "Layout", "Layout da lâmina", true)}
            ${pequeno("slide-dup", ic("i-dup"), "Duplicar", "Duplicar lâmina")}
@@ -385,7 +385,7 @@ export class Fita {
 
   private inserir(): string {
     return [
-      grupo("Lâminas", `${grande("slide-novo", ic("i-plus"), "Nova lâmina", "Nova lâmina depois da atual: escolha o layout", true)}`),
+      grupo("Lâminas", `${grande("slide-novo", ic("i-plus"), "Nova lâmina", "Nova lâmina no fim: escolha o layout", true)}`),
       grupo("Tabelas", `${grande("tabela-grade", ic("i-grid"), "Tabela", "Inserir uma tabela", true)}`),
       grupo("Gráficos", `${grande("grafico-menu", ic("i-chart"), "Gráfico", "Inserir um gráfico (colunas, barras, linhas, pizza…)", true)}`),
       grupo(

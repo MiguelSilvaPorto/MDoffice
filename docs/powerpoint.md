@@ -73,7 +73,8 @@ avisado ao abrir (nunca some em silêncio).
   ocultar, renomear e resetar (com ida e volta no `.pptx`), duplicar e excluir. **Nova lâmina** e
   **Layout** abrem uma **galeria em grade** com a **miniatura de cada layout** (os espaços como
   silhuetas cinzas, na proporção do deck) — no "Layout" o atual vem destacado; clicar cria a
-  lâmina com aquele layout (ou aplica na atual).
+  lâmina com aquele layout (ou aplica na atual). A **lâmina nova entra no fim** da apresentação
+  (o "+" da faixa fica no fim) e já fica selecionada.
 - **Modelos**: o botão **Template** aplica modelos de estilo (tema, cores e fonte) ao deck;
   dá para salvar o visual atual como cartão e aplicar/remover depois.
 - **Configurar apresentação**: proporção (16:9 / 4:3), tema (claro/escuro/contraste), fonte

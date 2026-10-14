@@ -5726,3 +5726,25 @@ antigas quando fizer sentido.
   fechamento não cabem no mesmo commit). Desta vez a resolução do conflito do rebase tinha
   deixado duas linhas em branco na emenda — a conferência olha o arquivo inteiro, não só as
   entradas: `\n\n\n` zero depois da limpeza.
+
+## src/powerpoint/powerpoint.ts · src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · esta tarefa · a lâmina nova vai para o fim
+- **Local:** o caso `slide-novo`/`slide-new` (o mesmo para a fita e para o "+" da faixa);
+  as dicas dos dois botões; o import de `./slides` (limpeza)
+- **Linha:** `lista.splice(this.indice + 1, 0, nova)` → `lista.push(nova)` e
+  `this.indice = this.indice + 1` → `this.indice = lista.length - 1`; "Nova lâmina depois da
+  atual" → "Nova lâmina no fim"; `insertSlide` saiu do import (estava morto)
+- **Porquê:** o "+ Nova lâmina" fica **no fim** da faixa de miniaturas, então a lâmina nova no
+  meio (depois da atual, onde o usuário estava olhando) parecia fora de lugar — o relato foi
+  direto ("coloca mais um slide para onde vc está olhando e não no final"). A herança ficou
+  como era (a lâmina nova copia fundo e decorações fixas da atual, via `novaLamina(layout,
+  estilo, sl)`) e a faixa rola até a nova porque o `pintar` já centraliza a miniatura ativa.
+  `insertSlide` (o modelo que insere "depois de") ficou sem uso: o caso monta a lâmina com
+  herança e agora anexa; se um dia voltar a inserir no meio (o menu de contexto, por exemplo),
+  é ele que deve ser chamado.
+- **Local:** `scripts/testar-layout.mts` e `docs/powerpoint.md`
+- **Linha:** `novo` — 2 checagens (o `push` + o índice no fim, e as dicas dizendo "no fim") e a
+  linha do doc do módulo
+- **Porquê:** era um comportamento afirmado em dica e em teste nenhum; a checagem prende o
+  destino da lâmina nova para ele não voltar em silêncio.

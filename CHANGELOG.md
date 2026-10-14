@@ -378,7 +378,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **Nova lâmina vai para o fim**: o botão **+ Nova lâmina** (que fica no fim da faixa) e o
+  **Nova lâmina** da fita criavam a lâmina **logo depois da atual** — onde você estava olhando —
+  e ela parecia fora de lugar. Agora a lâmina nova entra **no fim** da apresentação (herdando
+  fundo e decorações da lâmina atual, como antes) e já fica selecionada, com a faixa rolando até
+  ela; as dicas dos dois botões passaram a dizer "no fim".
 
 ### Adicionado (na main)
 

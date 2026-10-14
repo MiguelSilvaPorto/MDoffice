@@ -425,6 +425,17 @@ checa(
   /case "layout"[\s\S]{0,400}galeriaDeLayouts\(est\.setup, est\.layout\)/.test(fitaPpt),
   "o menu de Layout não destaca o atual"
 );
+checa(
+  "a lâmina nova entra no FIM (e não depois da atual)",
+  /lista\.push\(nova\)/.test(ppt) &&
+    /this\.indice = lista\.length - 1/.test(ppt) &&
+    !/lista\.splice\(this\.indice \+ 1, 0, nova\)/.test(ppt),
+  "a lâmina voltaria a entrar no meio (depois da atual)"
+);
+checa(
+  "as dicas dizem que a lâmina nova vai para o fim",
+  /Nova lâmina no fim/.test(fitaPpt) && /Nova lâmina no fim/.test(ppt) && !/depois da atual/.test(fitaPpt + ppt)
+);
 
 const cssPpt = ler("src/styles/powerpoint-edicao.css");
 checa("css: a grade da galeria existe", /\.pp-lays\s*\{[^}]*grid-template-columns/s.test(cssPpt));

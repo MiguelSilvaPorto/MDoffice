@@ -64,7 +64,7 @@ import { deckFromMarkdown } from "./markdown";
 import { openDeckView } from "./presenter";
 import { aoCarregarFontes, fundoValor, htmlFormaRica, parasComEstilo, parasComTexto, registrarFontes, type CtxRender } from "./render/forma";
 import { shapeText } from "./shapes";
-import { clampIndex, duplicateSlide, insertSlide, moveSlide, removeSlide, replaceSlide, resetSlide, setLayout } from "./slides";
+import { clampIndex, duplicateSlide, moveSlide, removeSlide, replaceSlide, resetSlide, setLayout } from "./slides";
 import { Stage, passoZoom, type CelulasSel, type Ferramenta } from "./stage";
 import { THEMES, stageVars, themeOf } from "./themes";
 import { abrirCores } from "./ui/cores";
@@ -691,7 +691,7 @@ export class PowerPointHost {
     const add = document.createElement("button");
     add.type = "button";
     add.className = "pp-thumb-add";
-    add.title = "Nova lâmina depois da atual";
+    add.title = "Nova lâmina no fim";
     add.setAttribute("aria-label", "Nova lâmina");
     add.innerHTML = '<svg class="ic"><use href="#i-plus"/></svg><span>Nova lâmina</span>';
     add.addEventListener("click", () => this.run("slide-new"));
@@ -1368,10 +1368,13 @@ export class PowerPointHost {
         // a lâmina nova herda o fundo e as decorações fixas da atual e já vem com as caixas do layout escolhido
         const layout = (value as SlideLayout) || (sl.shapes.length ? "conteudo" : "conteudo");
         const nova = novaLamina(layout, this.estilo(), sl);
+        // vai para o FIM da apresentação: o "+" da faixa fica no fim, e era onde o usuário
+        // esperava a lâmina nova; antes ela entrava logo depois da ATUAL — onde ele estava
+        // olhando — e parecia fora de lugar
         const lista = this.slides.slice();
-        lista.splice(this.indice + 1, 0, nova);
+        lista.push(nova);
         this.slides = lista;
-        this.indice = this.indice + 1;
+        this.indice = lista.length - 1;
         this.selecao = [];
         this.editando = null;
         this.markDirty();
