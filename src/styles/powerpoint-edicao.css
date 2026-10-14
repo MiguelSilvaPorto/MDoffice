@@ -1454,6 +1454,59 @@ button.ppr.cor {
   z-index: 52;
 }
 
+/* dica da alça de canto: caixa do app no lugar do balão nativo do sistema */
+.pp-canto-dica {
+  position: absolute;
+  left: 0;
+  bottom: 17px;
+  display: none;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 9px;
+  color: var(--fg);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  font-size: 11.5px;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 60;
+}
+
+.pp-canto:hover .pp-canto-dica {
+  display: flex;
+}
+
+/* a alça do lado direito abre a dica para a esquerda; as de cima, para baixo */
+.pp-canto[data-canto="tr"] .pp-canto-dica,
+.pp-canto[data-canto="br"] .pp-canto-dica {
+  left: auto;
+  right: 0;
+}
+
+.pp-canto[data-canto="tl"] .pp-canto-dica,
+.pp-canto[data-canto="tr"] .pp-canto-dica {
+  bottom: auto;
+  top: 17px;
+}
+
+.pp-canto-nome b {
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.pp-canto-dica small {
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+/* durante o arrasto quem manda é o HUD com o valor ao vivo */
+.pp-slide.pp-arrastando-canto .pp-canto-dica {
+  display: none;
+}
+
 .pp-gira {
   position: absolute;
   left: 50%;

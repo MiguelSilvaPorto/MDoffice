@@ -338,13 +338,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Cantos: o clique escolhe só aquele canto (e o grupo iguala tudo)**: clicar numa alça de canto
-  agora escolhe **só ela** no ajuste (antes, com os quatro marcados, o clique mantinha os quatro e
-  o arrasto mexia em todos); clique **parado** num canto já marcado deixa só ele, `Shift+clique`
-  soma/remove **sem arrastar** (não muda valor sem querer) e o arrasto mexe **apenas nos cantos
-  escolhidos**, com cada canto guardando o valor que tinha. Com **várias formas selecionadas**, o
-  quadro do grupo ganha as quatro alças: arrastar (ou usar os presets do painel) iguala os cantos
-  de **todas as caixas** de uma vez, e o painel avisa quando as formas têm valores diferentes.
+- **Dica das alças de canto no visual do app**: o balão nativo do sistema (`title`) saiu; passar o
+  mouse numa alça de canto mostra uma caixa do próprio app com **"Canto superior direito · 40%"**
+  (valor em destaque) e a dica de uso — **"Arraste arredonda os 4 cantos escolhidos · Shift+clique
+  soma ou tira"** (o texto acompanha quantos cantos estão na escolha). A caixa abre para o lado de
+  dentro da lâmina (direita→esquerda nas alças da direita, cima→baixo nas de cima) e **some durante
+  o arrasto**, quando quem manda é o aviso com o valor ao vivo.
 
 ### Adicionado (na main)
 
@@ -426,6 +425,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   No arquivo, o app grava a forma **nativa** mais fiel (Retângulo arredondado, um canto, par de
   cima/baixo ou diagonais) e avisa quando o arranjo só existe como **forma livre** — que desenha
   igual, como o “Combinar formas” do PowerPoint.
+- **Cantos: o clique escolhe só aquele canto (e o grupo iguala tudo)**: clicar numa alça de canto
+  agora escolhe **só ela** no ajuste (antes, com os quatro marcados, o clique mantinha os quatro e
+  o arrasto mexia em todos); clique **parado** num canto já marcado deixa só ele, `Shift+clique`
+  soma/remove **sem arrastar** (não muda valor sem querer) e o arrasto mexe **apenas nos cantos
+  escolhidos**, com cada canto guardando o valor que tinha. Com **várias formas selecionadas**, o
+  quadro do grupo ganha as quatro alças: arrastar (ou usar os presets do painel) iguala os cantos
+  de **todas as caixas** de uma vez, e o painel avisa quando as formas têm valores diferentes.
 
 ---
 

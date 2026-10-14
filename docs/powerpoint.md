@@ -29,8 +29,9 @@ avisado ao abrir (nunca some em silêncio).
   soma/remove sem arrastar; clique parado num canto já escolhido deixa só ele) e arraste para
   arredondar **apenas os escolhidos** — cada canto guarda o próprio valor (dá para ter o sup. esq.
   em 50% e o inf. dir. em 30%, por exemplo), com precisão (passo de 0,5%; `Alt` = 0,1%) e o valor na
-  tela; duplo clique na alça deixa o canto quadrado. O mini-diagrama do painel mostra e escolhe os
-  quatro, com presets **Quadrado · Padrão · Suave · Pílula** e **Todos/Opostos**. Com **várias
+  tela; duplo clique na alça deixa o canto quadrado e, ao passar o mouse, uma **dica do app** mostra
+  o nome do canto, o valor e o que o arrasto faz (o balão do sistema não aparece). O mini-diagrama
+  do painel mostra e escolhe os quatro, com presets **Quadrado · Padrão · Suave · Pílula** e **Todos/Opostos**. Com **várias
   formas selecionadas**, as alças do quadro do grupo (e o painel) aplicam o mesmo raio a **todas** —
   é assim que caixas com cantos diferentes ficam iguais. Vale para formas, caixas de texto, imagens
   (máscara) e tabelas. No `.pptx` o app grava a forma **nativa** mais fiel (Retângulo arredondado,

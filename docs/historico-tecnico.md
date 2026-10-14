@@ -2849,6 +2849,17 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê (grupo):** as alças do quadro são o mesmo gesto em escala de grupo — arrastar iguala os
   cantos escolhidos de **todas** as caixas numa tacada, sem depender do painel.
 
+### 2026-10-14 · este commit · dica própria na alça de canto
+- **Local:** `desenharSelecao` (`alca`), `aoPressionar` (início do arrasto) e `aoSoltar`
+- **Linha:** o `title` da alça saiu e entrou um `<span class="pp-canto-dica">` **dentro** da alça,
+  com o nome do canto, o valor em destaque e a dica de uso ("Arraste arredonda os N cantos
+  escolhidos · Shift+clique soma ou tira", acompanhando a escolha); a classe
+  `pp-arrastando-canto` no palco esconde a dica enquanto o mouse está preso
+- **Porquê:** o balão que aparecia era o do **sistema** (`title`), fora do visual do app e sem
+  estilo. A dica como filho da alça se reconstrói junto com ela (nada de elemento solto para
+  sincronizar) e o `aria-label` mantém o nome acessível. Durante o arrasto o valor ao vivo é o do
+  HUD — a dica fixa ficaria mentindo, por isso a classe de arrasto a tira do caminho.
+
 ## src/powerpoint/powerpoint.ts
 
 ### 2026-10-14 · este commit · estado dos cantos escolhidos e as ações
@@ -2894,6 +2905,14 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o preset diagonal agora existe no desenho e no arquivo — oferecê-lo na galeria
   completa a família de cantos; o visual das alças segue o das alças de redimensionar (mesmo
   tamanho/z-index) e a HUD usa a cor do acento para ler no claro e no escuro.
+
+### 2026-10-14 · este commit · estilos da dica de canto
+- **Local:** bloco novo `.pp-canto-dica` (com `.pp-canto-nome b`, `small` e o caso de arrasto)
+- **Linha:** caixa `var(--panel)` com borda, raio 8 e `var(--shadow)`, 11,5px; abre **para dentro da
+  lâmina** por canto (`tl/tr` para baixo; `tr/br` alinhadas à direita) e some com
+  `.pp-slide.pp-arrastando-canto`
+- **Porquê:** a dica precisa parecer do app (nada de UI do sistema) e não vazar da lâmina: as
+  posições por canto resolvem isso só com `data-canto`, sem JS de posicionamento.
 
 ## scripts/testar-edicao-pptx.mjs
 

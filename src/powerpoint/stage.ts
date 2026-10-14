@@ -246,8 +246,17 @@ export class Stage {
         br: [100 - pctX(valores[2]), 100 - pctY(valores[2])],
         bl: [pctX(valores[3]), 100 - pctY(valores[3])],
       };
-      const alca = (id: Canto) =>
-        `<span class="pp-canto${ctx.cantosSel.includes(id) ? " on" : ""}" data-canto="${id}" title="Canto ${CANTO_ROTULO[id]} — ${r1(valores[CANTOS.indexOf(id)])}%" style="left:${pos[id][0]}%;top:${pos[id][1]}%"></span>`;
+      const alca = (id: Canto) => {
+        const escolhido = ctx.cantosSel.includes(id);
+        const n = ctx.cantosSel.length;
+        const valor = r1(valores[CANTOS.indexOf(id)]);
+        const acao = escolhido && n > 1 ? `Arraste arredonda os ${n} cantos escolhidos` : "Arraste para arredondar";
+        return (
+          `<span class="pp-canto${escolhido ? " on" : ""}" data-canto="${id}" aria-label="Canto ${CANTO_ROTULO[id]} — ${valor}%" style="left:${pos[id][0]}%;top:${pos[id][1]}%">` +
+          `<span class="pp-canto-dica"><span class="pp-canto-nome">Canto ${CANTO_ROTULO[id]} · <b>${valor}%</b></span><small>${acao} · Shift+clique soma ou tira</small></span>` +
+          `</span>`
+        );
+      };
       return CANTOS.map(alca).join("") + (this.hudCanto ? `<span class="pp-canto-hud">${this.hudCanto}</span>` : "");
     };
     /** O maior raio de cada canto entre as formas escolhidas (posição das alças do grupo). */
@@ -388,6 +397,7 @@ export class Stage {
             ? { box: { ...escolhidas[0].box }, rot: escolhidas[0].rot }
             : { box: envolventeDe(escolhidas, ctx.dim) ?? { ...escolhidas[0].box }, rot: 0 };
         this.slideEl.setPointerCapture(e.pointerId);
+        this.slideEl.classList.add("pp-arrastando-canto");
         this.hooks.aoTransformar(new Map(), "inicio");
         this.hudCanto = null;
         this.modo = { t: "canto", ids: [...inicial.keys()], alvo: id, sel: selC, colapsar, mexeu: false, partida: p, ref, inicial };
@@ -756,6 +766,7 @@ export class Stage {
     }
     if (modo.t === "canto" && !modo.mexeu) this.cliqueCanto = { id: modo.alvo, t: performance.now() };
     if (modo.t === "canto" && modo.colapsar && !modo.mexeu) this.hooks.aoSelecionarCantos([modo.alvo]);
+    this.slideEl.classList.remove("pp-arrastando-canto");
     this.guias = [];
     this.hudCanto = null;
     this.hooks.aoTransformar(new Map(), "fim");
