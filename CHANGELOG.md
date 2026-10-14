@@ -378,11 +378,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Nova lâmina vai para o fim**: o botão **+ Nova lâmina** (que fica no fim da faixa) e o
-  **Nova lâmina** da fita criavam a lâmina **logo depois da atual** — onde você estava olhando —
-  e ela parecia fora de lugar. Agora a lâmina nova entra **no fim** da apresentação (herdando
-  fundo e decorações da lâmina atual, como antes) e já fica selecionada, com a faixa rolando até
-  ela; as dicas dos dois botões passaram a dizer "no fim".
+- (nada no momento)
 
 ### Adicionado (na main)
 
@@ -391,6 +387,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **Nova lâmina vai para o fim**: o botão **+ Nova lâmina** (que fica no fim da faixa) e o
+  **Nova lâmina** da fita criavam a lâmina **logo depois da atual** — onde você estava olhando —
+  e ela parecia fora de lugar. Agora a lâmina nova entra **no fim** da apresentação (herdando
+  fundo e decorações da lâmina atual, como antes) e já fica selecionada, com a faixa rolando até
+  ela; as dicas dos dois botões passaram a dizer "no fim".
 
 - **Apresentação sem a "caixa de seleção"**: no modo apresentação, passar o mouse sobre uma forma
   acendia o **contorno de hover/seleção** do editor por cima do desenho (o editor reativa o

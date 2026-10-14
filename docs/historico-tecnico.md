@@ -5748,3 +5748,12 @@ antigas quando fizer sentido.
   linha do doc do módulo
 - **Porquê:** era um comportamento afirmado em dica e em teste nenhum; a checagem prende o
   destino da lâmina nova para ele não voltar em silêncio.
+
+## CHANGELOG.md
+
+### 2026-10-14 · esta tarefa · promoção da entrada da lâmina nova no fim
+- **Local:** seção "Não adicionado" do PowerPoint (1 entrada)
+- **Linha:** movida para o topo do "Adicionado" do PowerPoint — o commit dela (`f69c3b9`) já
+  está na `main`
+- **Porquê:** mesma razão das rodadas anteriores (registrar no estado de autoria e promover no
+  fechamento não cabem no mesmo commit).
