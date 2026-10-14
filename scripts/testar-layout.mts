@@ -3,7 +3,7 @@
 // PowerPoint). O Word já tinha a regra; faltavam Excel e PowerPoint.
 //
 // Roda com: npm run test:layout
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -325,6 +325,18 @@ checa(
   "o cursor vira 'agarrando' durante o arrasto",
   /\.pp-frame\.pp-panorama[\s\S]{0,120}cursor: grabbing/.test(ler("src/styles/powerpoint.css"))
 );
+
+// 6. Boas-vindas: o logo é o ÍCONE DO APP (o mesmo da janela), não o "M↓" num quadradinho.
+console.log("\nboas-vindas: o logo é o ícone do app");
+{
+  const preview = ler("src/md/preview.ts");
+  const css = ler("src/styles/preview.css");
+  checa("o cartão usa a imagem do ícone do app", /class="welcome-logo" src="\/icones\/mdoffice-\$\{icone\}\.png"/.test(preview), "o cartão voltaria ao logo antigo");
+  checa("a escolha claro/escuro acompanha o tema e as Configurações", /dataset\.theme === "dark" \? "escuro" : "claro"/.test(preview) && /loadJSON<string>\("mdc\.appicon", tema\)/.test(preview));
+  checa("os dois ícones existem em public/icones", existsSync(join(raiz, "public/icones/mdoffice-claro.png")) && existsSync(join(raiz, "public/icones/mdoffice-escuro.png")));
+  checa("o quadradinho roxo antigo não pinta mais o logo", !/gradient\(135deg, #4f46e5, #7c3aed\)/.test(css), "o gradiente antigo continua no CSS");
+  checa("o logo continua com 48 px", /\.welcome-logo\s*\{[^}]*width:\s*48px/.test(css));
+}
 
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

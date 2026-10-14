@@ -4,7 +4,7 @@ import DOMPurify from "dompurify";
 import hljs from "highlight.js";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { invoke } from "@tauri-apps/api/core";
-import { copyText, docDirOf, joinPath, escapeHtml, toast } from "../util";
+import { copyText, docDirOf, joinPath, escapeHtml, toast, loadJSON } from "../util";
 import { createDrawEditor, type DrawDoc } from "./draw";
 import { createTextDrawEditor, TextBoard, TEXT_DRAW_PLACEHOLDER, detectTraceStyle } from "./textdraw";
 import { renderMermaidInto } from "./diagram";
@@ -93,10 +93,21 @@ function textBlockAt(markdown: string, index: number): string | null {
   return null;
 }
 
-export function welcomeHtml(): string {
+/**
+ * O ícone do app que está valendo: a escolha das Configurações (`mdc.appicon`, a mesma chave de
+ * `app/appIcon.ts`), com o tema como padrão. Serve para o cartão de boas-vindas mostrar o mesmo
+ * ícone da janela — sem importar o módulo do Tauri (que só troca o ícone de verdade).
+ */
+export function iconeDoApp(): "claro" | "escuro" {
+  const tema: "claro" | "escuro" = document.documentElement.dataset.theme === "dark" ? "escuro" : "claro";
+  const escolha = loadJSON<string>("mdc.appicon", tema);
+  return escolha === "claro" || escolha === "escuro" ? escolha : tema;
+}
+
+export function welcomeHtml(icone: "claro" | "escuro" = iconeDoApp()): string {
   return `
   <div class="welcome">
-    <div class="welcome-logo">M↓</div>
+    <img class="welcome-logo" src="/icones/mdoffice-${icone}.png" alt="" width="48" height="48">
     <h1>Bem-vindo ao mdOffice</h1>
     <p>Escreva Markdown à esquerda; o resultado aparece formatado ao lado.</p>
     <ul>

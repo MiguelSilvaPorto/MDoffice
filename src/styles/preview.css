@@ -55,16 +55,12 @@
   overflow-wrap: anywhere;
 }
 
+/* O ícone do app (o mesmo da janela e das Configurações) — imagem, não o "M↓" num quadradinho. */
 .welcome-logo {
-  display: grid;
-  place-items: center;
   width: 48px;
   height: 48px;
   border-radius: 14px;
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
-  color: #fff;
-  font-size: 20px;
-  font-weight: 700;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.18);
 }
 
 .welcome h1 {

@@ -4302,6 +4302,37 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** as duas recusas são o que garante que variante não modelada não vira animação
   errada no arquivo do usuário.
 
+## src/md/preview.ts
+
+### 2026-10-14 · ícone das boas-vindas · o logo abandonado sai
+- **Local:** `welcomeHtml` (o cartão) e a nova `iconeDoApp`
+- **Linha:** `<div class="welcome-logo">M↓</div>` → `<img class="welcome-logo" src="/icones/mdoffice-${icone}.png" …>` · `+ iconeDoApp(): "claro" | "escuro"` (a escolha `mdc.appicon`, com o tema como padrão) · `+ loadJSON` no import do `../util`
+- **Porquê:** o cartão de boas-vindas (pré-visualização e `F1`) tinha ficado com o **quadradinho roxo e
+  o “M↓”** — o logo antigo, aposentado quando os ícones viraram as folhas de documento —, enquanto a
+  janela, o Instalador e as Configurações usam o ícone novo (as folhas azul/laranja com a folha
+  branca). Agora o cartão mostra o **ícone do app de verdade**, na versão clara ou escura. A escolha
+  é lida pela mesma chave das Configurações (`mdc.appicon`), **sem** importar o `app/appIcon.ts`
+  (que carrega a API do Tauri só para trocar o ícone da janela): o `preview.ts` continua sem
+  dependência de janela. O parâmetro com padrão deixa o `welcomeHtml` ser chamado como sempre.
+
+## src/styles/preview.css
+
+### 2026-10-14 · ícone das boas-vindas · a regra do quadradinho roxo
+- **Local:** `.welcome-logo`
+- **Linha:** `display: grid; place-items: center; … background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; font-size: 20px; font-weight: 700;` → `width/height: 48px; border-radius: 14px; box-shadow: …`
+- **Porquê:** a regra desenhava o quadradinho do logo antigo; agora ela só dá **tamanho e canto** à
+  imagem do ícone (que já tem o próprio fundo e a própria sombra interna). O tamanho de 48 px — e o
+  encaixe no cartão — ficam como estavam.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · ícone das boas-vindas · 5 verificações
+- **Local:** a seção nova “boas-vindas: o logo é o ícone do app”
+- **Linha:** `+ as checagens da imagem do ícone, da escolha claro/escuro, da existência dos dois PNGs, da ausência do gradiente antigo e dos 48 px`
+- **Porquê:** o logo antigo sobreviveu anos porque nada prendia o cartão: agora, se alguém voltar ao
+  quadradinho — ou o arquivo do ícone sumir —, o teste acusa. O `test:layout` já lê arquivos e CSS
+  (é o lugar certo para esse tipo de contrato visual).
+
 ---
 
 ## Próximos registros
