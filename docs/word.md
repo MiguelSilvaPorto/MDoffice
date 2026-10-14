@@ -13,6 +13,11 @@ arquivos `.docx` de verdade.
 - **Páginas de verdade**: o texto flui de uma página para a outra e parágrafos longos se
   dividem entre elas (paginação calculada, não é só uma folha rolando).
 - **Zoom** (barra inferior) e régua de trabalho na coluna de escrita.
+- **Tema escuro**: a folha **escurece junto** — papel e tinta acompanham o tema (é o mesmo
+  desenho da prévia do Markdown), então escrever à noite não leva clarão; “Preto” do documento
+  entra como **tinta automática** (é o que o Word grava em “Automático”) e o **marca-texto**
+  mantém o texto escuro por cima. **Imprimir e Exportar PDF saem sempre em papel branco**, com o
+  tema que estiver na tela.
 
 ## Fita (no desenho do Word Online)
 

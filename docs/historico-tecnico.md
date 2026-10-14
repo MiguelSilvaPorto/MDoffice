@@ -5312,6 +5312,44 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   **caminho**; o teste lê os comandos do `CustPath` e trava a regra (com cúbica, o `y` do topo
   variava e a barriga voltava).
 
+## src/styles/word.css
+
+### 2026-10-14 · folha do Word · papel e tinta viram variáveis (o tema escuro troca uma vez)
+- **Local:** o bloco `.wd-sheet` (as variáveis e o novo `[data-theme="dark"] .wd-sheet`), as regras
+  que pintam dentro da folha (`.wd-doc`, títulos, `blockquote`, `pre`, `code`, `hr`, `a`, `td/th`,
+  `.wd-pagebreak`, cabeçalho/rodapé e o rótulo da quebra) e o `@media print`
+- **Linha:** `background: #ffffff` + `color: #1f2328` → `background: var(--wd-papel)` +
+  `color: var(--wd-tinta)`, com dez variáveis novas (`--wd-papel`, `--wd-tinta`, `--wd-fraca`,
+  `--wd-rotulo`, `--wd-citacao`, `--wd-bloco`, `--wd-codigo`, `--wd-hr`, `--wd-filete`,
+  `--wd-link`) definidas na própria folha · os valores do tema claro são **idênticos** aos que
+  estavam fixos (a tela clara não muda) · `+ [data-theme="dark"] .wd-sheet` com os tons escuros
+  (papel `#15181e`, tinta `#e6e8ee` — os mesmos da prévia do Markdown) · `+ [data-theme="dark"]
+  .wd-doc mark` com o texto escuro por cima do realce · `+ [data-theme="dark"] .wd-doc
+  span[style*="color:#000000"]` (e `rgb(0, 0, 0)`) virando `var(--wd-tinta)` · dentro do
+  `@media print`, `+ body.word-open .wd-sheet` repondo as dez variáveis nos tons claros
+- **Porquê:** o relato com print ("quero que no tema escuro o papel fique escuro") — a folha era
+  **branca fixa** e a prévia do Markdown já escurecia (o app ficava incoerente). O caminho das
+  variáveis é o mesmo da prévia (`preview.css` troca os `--md-*` no tema escuro): um lugar só
+  define a paleta da folha. O `@media print` repõe os claros porque o impresso (e o **Exportar
+  PDF**, que é `window.print()` — `host.print`) não segue o tema da tela. Dois casos que sumiriam
+  na folha escura e por isso têm regra própria: o **marca-texto** (a paleta é toda clara — texto
+  escuro por cima, inclusive quando o trecho realçado veio com preto explícito ✗ senão o realce
+  virava borrão claro sobre claro) e o **preto puro do documento** — o Word grava `w:color`
+  000000 no que é "Automático", o `props.ts` do import mantém a cor explícita, e o preto passaria
+  a ser ilegível; ele passa a ser lido como **tinta automática** (na impressão já volta a ser
+  escuro pelo reset). Cor explícita que não seja preto continua como o autor escolheu.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · folha do Word no tema escuro · 7 verificações
+- **Local:** a seção “Word: a folha escurece junto com o tema (o papel)”
+- **Linha:** `+ as variáveis na folha, + o bloco do tema escuro, + o que a folha pinta (texto,
+  código, cabeçalho, link), + os filetes e o rótulo da quebra, + o realce, + o preto como tinta
+  automática, + o papel branco na impressão`
+- **Porquê:** o defeito é de cor e voltaria fácil (basta alguém fixar um tom na folha de novo ✗);
+  as verificações leem o CSS e travam o contrato — inclusive o da impressão, que é o caminho do
+  PDF.
+
 ---
 
 ## Próximos registros

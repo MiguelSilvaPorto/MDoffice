@@ -714,6 +714,55 @@ console.log("\nfita do Word: o ajuste escala métricas (como as Apresentações)
   );
 }
 
+// ---------------------------------------------------------------- a folha do Word no tema escuro
+
+console.log("\nWord: a folha escurece junto com o tema (o papel)");
+{
+  const css = ler("src/styles/word.css");
+  checa(
+    "o papel e a tinta da folha saem de variáveis",
+    /\.wd-sheet \{[\s\S]*?--wd-papel: #ffffff;[\s\S]*?--wd-tinta: #1f2328;[\s\S]*?background: var\(--wd-papel\);[\s\S]*?color: var\(--wd-tinta\);/.test(css),
+    "com os tons fixos na folha, o tema escuro não tem onde trocar"
+  );
+  checa(
+    "no tema escuro a folha escurece e a tinta clareia",
+    /\[data-theme="dark"\] \.wd-sheet \{[\s\S]*?--wd-papel: #15181e;[\s\S]*?--wd-tinta: #e6e8ee;/.test(css),
+    "a folha continuaria branca no tema escuro (o relato)"
+  );
+  checa(
+    "o que a folha pinta sozinha acompanha (texto, código, cabeçalho, link)",
+    /\.wd-doc \{[\s\S]*?color: var\(--wd-tinta\);/.test(css) &&
+      /\.wd-doc pre \{[\s\S]*?background: var\(--wd-bloco\);/.test(css) &&
+      /\.wd-doc code \{[\s\S]*?background: var\(--wd-codigo\);/.test(css) &&
+      /\.wd-doc a \{[\s\S]*?color: var\(--wd-link\);/.test(css) &&
+      /\.wd-hdr-first,[\s\S]*?color: var\(--wd-fraca\);/.test(css),
+    "sobraria branco fixo dentro da folha (texto, código ou cabeçalho)"
+  );
+  checa(
+    "os filetes e o rótulo da quebra de página acompanham",
+    /\.wd-doc td,\s*\.wd-doc th \{[\s\S]*?border: 1px solid var\(--wd-filete\);/.test(css) &&
+      /\.wd-pagebreak \{[\s\S]*?border-top: 1px dashed var\(--wd-filete\);/.test(css) &&
+      /\.wd-pagebreak span \{[\s\S]*?background: var\(--wd-papel\);/.test(css),
+    "as bordas e o rótulo ficariam com os tons do papel branco"
+  );
+  checa(
+    "o texto sobre o realce continua escuro (marca-texto é claro)",
+    /\[data-theme="dark"\] \.wd-doc mark,[\s\S]*?color: #1f2328;/.test(css),
+    "no escuro o marca-texto viraria um borrão claro sobre claro"
+  );
+  checa(
+    'o "preto" do documento vira a tinta do papel no tema escuro',
+    /\[data-theme="dark"\] \.wd-doc span\[style\*="color:#000000"\],/.test(css) &&
+      /\[data-theme="dark"\] \.wd-doc mark span\[style\*="color:#000000"\]/.test(css),
+    "documento importado com preto explícito (é o que o Word grava em \"Automático\") sumiria na folha escura"
+  );
+  checa(
+    "imprimir e exportar PDF saem em papel branco, com o tema que estiver",
+    /@media print \{[\s\S]*?body\.word-open \.wd-sheet \{[\s\S]*?--wd-papel: #ffffff;[\s\S]*?--wd-tinta: #1f2328;/.test(css),
+    "no tema escuro o PDF sairia com papel escuro"
+  );
+}
+
 // ---------------------------------------------------------------- dica (tooltip do app)
 
 console.log("\ndicas do app (o balão no lugar do title nativo)");

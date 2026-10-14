@@ -549,13 +549,66 @@ body.settings-open #word-pane {
   transform-origin: 0 0;
 }
 
+/* ------------------------------------------------------------------
+   O papel e a tinta da folha saem daqui.
+   Tudo o que a folha pinta sozinha (fundo, texto, filetes, código,
+   citação, link, cabeçalho) lê estas variáveis: o tema escuro troca uma
+   vez e a folha inteira acompanha — como a prévia do Markdown já faz. O
+   bloco do @media print repõe os tons claros: impresso sai sempre em
+   papel branco, mesmo com o app no tema escuro.
+   ------------------------------------------------------------------ */
 .wd-sheet {
   position: relative;
   width: var(--pg-w, 794px);
   min-height: var(--pg-h, 1123px);
-  background: #ffffff;
-  color: #1f2328;
+  --wd-papel: #ffffff; /* fundo da folha */
+  --wd-tinta: #1f2328; /* texto padrão do documento */
+  --wd-fraca: #6b7280; /* cabeçalho e rodapé */
+  --wd-rotulo: #9aa1ad; /* rótulo "quebra de página" */
+  --wd-citacao: #4b5563; /* texto da citação */
+  --wd-bloco: #f3f4f6; /* fundo do bloco de código */
+  --wd-codigo: #eef0f3; /* fundo do código no meio da linha */
+  --wd-hr: #c4c8d0; /* o filete do <hr> */
+  --wd-filete: #b8bec8; /* bordas de tabela e a linha da quebra de página */
+  --wd-link: #0b5bd3; /* link */
+  background: var(--wd-papel);
+  color: var(--wd-tinta);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), 0 8px 28px rgba(0, 0, 0, 0.14);
+}
+
+/* Tema escuro: a folha escurece junto com a interface (os tons são os da prévia do
+   Markdown) e a sombra afunda — a folha fica um degrau acima do palco (#0a0b0e). */
+[data-theme="dark"] .wd-sheet {
+  --wd-papel: #15181e;
+  --wd-tinta: #e6e8ee;
+  --wd-fraca: #93a0b4;
+  --wd-rotulo: #93a0b4;
+  --wd-citacao: #9aa3b2;
+  --wd-bloco: #191d24;
+  --wd-codigo: #1e232c;
+  --wd-hr: #2b303b;
+  --wd-filete: #2b303b;
+  --wd-link: #a5b4fc;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
+/* O realce é de marca-texto (a paleta é toda clara): o texto por cima dele continua
+   escuro mesmo na folha escura — senão viraria um borrão claro sobre claro. Vale
+   também para o texto que veio com preto explícito dentro do realce (ver abaixo). */
+[data-theme="dark"] .wd-doc mark,
+[data-theme="dark"] .wd-doc mark span[style*="color:#000000"],
+[data-theme="dark"] .wd-doc mark span[style*="rgb(0, 0, 0)"] {
+  color: #1f2328;
+}
+
+/* "Preto" puro é a tinta automática: o Word grava `w:color` 000000 no que é
+   "Automático", então documento importado chega com preto explícito — e sumiria na
+   folha escura. Aqui o preto vira a tinta do papel (na impressão ela já volta a ser
+   escura pelo reset do @media print). Cor explícita que não seja preto continua
+   como o autor escolheu. */
+[data-theme="dark"] .wd-doc span[style*="color:#000000"],
+[data-theme="dark"] .wd-doc span[style*="rgb(0, 0, 0)"] {
+  color: var(--wd-tinta);
 }
 
 .wd-hdr-first,
@@ -565,7 +618,7 @@ body.settings-open #word-pane {
   align-items: center;
   justify-content: center;
   padding: 0 var(--ml, 90px);
-  color: #6b7280;
+  color: var(--wd-fraca);
   font: 9pt "Segoe UI", sans-serif;
   text-align: center;
   user-select: none;
@@ -595,7 +648,7 @@ body.settings-open #word-pane {
   font-family: var(--wd-font, Calibri, sans-serif);
   font-size: var(--wd-size, 11pt);
   line-height: 1.15;
-  color: #1f2328;
+  color: var(--wd-tinta);
   white-space: break-spaces; /* Tab e espaços no fim da linha quebram em vez de passar da margem da página */
   word-wrap: break-word;
   tab-size: 4;
@@ -618,7 +671,7 @@ body.settings-open #word-pane {
   margin: 12pt 0 4pt;
   font-weight: 700;
   line-height: 1.2;
-  color: #1f2328;
+  color: var(--wd-tinta);
 }
 
 .wd-doc h1 {
@@ -663,14 +716,14 @@ body.settings-open #word-pane {
 .wd-doc blockquote {
   margin: 8pt 0;
   padding: 2px 0 2px 14px;
-  color: #4b5563;
+  color: var(--wd-citacao);
   border-left: 3px solid #a5b4fc;
 }
 
 .wd-doc pre {
   margin: 8pt 0;
   padding: 8px 10px;
-  background: #f3f4f6;
+  background: var(--wd-bloco);
   border-radius: 4px;
   font: 9.5pt Consolas, "Courier New", monospace;
   white-space: pre-wrap;
@@ -678,7 +731,7 @@ body.settings-open #word-pane {
 
 .wd-doc code {
   padding: 0 3px;
-  background: #eef0f3;
+  background: var(--wd-codigo);
   border-radius: 3px;
   font-family: Consolas, "Courier New", monospace;
   font-size: 0.92em;
@@ -687,11 +740,11 @@ body.settings-open #word-pane {
 .wd-doc hr {
   margin: 10pt 0;
   border: 0;
-  border-top: 1px solid #c4c8d0;
+  border-top: 1px solid var(--wd-hr);
 }
 
 .wd-doc a {
-  color: #0b5bd3;
+  color: var(--wd-link);
   text-decoration: underline;
 }
 
@@ -717,7 +770,7 @@ body.settings-open #word-pane {
   min-width: 24px;
   padding: 4px 7px;
   vertical-align: top;
-  border: 1px solid #b8bec8;
+  border: 1px solid var(--wd-filete);
 }
 
 .wd-doc td > p,
@@ -752,7 +805,7 @@ body.settings-open #word-pane {
   position: relative;
   height: 0;
   margin: 8px 0;
-  border-top: 1px dashed #b8bec8;
+  border-top: 1px dashed var(--wd-filete);
   user-select: none;
 }
 
@@ -762,8 +815,8 @@ body.settings-open #word-pane {
   left: 50%;
   padding: 0 8px;
   transform: translateX(-50%);
-  color: #9aa1ad;
-  background: #fff;
+  color: var(--wd-rotulo);
+  background: var(--wd-papel);
   font: 9px "Segoe UI", sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1031,8 +1084,20 @@ body.settings-open #word-pane {
     transform: none !important;
   }
 
+  /* Papel branco e tinta escura no impresso, mesmo com o app no tema escuro: o que
+     sai no papel (e no PDF) não segue o tema da tela. */
   body.word-open .wd-sheet {
     box-shadow: none;
+    --wd-papel: #ffffff;
+    --wd-tinta: #1f2328;
+    --wd-fraca: #6b7280;
+    --wd-rotulo: #9aa1ad;
+    --wd-citacao: #4b5563;
+    --wd-bloco: #f3f4f6;
+    --wd-codigo: #eef0f3;
+    --wd-hr: #c4c8d0;
+    --wd-filete: #b8bec8;
+    --wd-link: #0b5bd3;
   }
 }
 
