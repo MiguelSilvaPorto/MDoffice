@@ -35,7 +35,10 @@ avisado ao abrir (nunca some em silêncio).
   arrastar uma delas redimensiona **só aquela forma**, sem desfazer a seleção; o quadro do grupo
   segue com as 8 para redimensionar todas de uma vez, e no canto em que as duas caem no mesmo
   ponto quem atende é a alça da forma), **agrupar/desagrupar**, ordem (frente/trás), alinhar,
-  distribuir, copiar/colar, duplicar e desfazer/refazer, e o **Copiar formatação** (o Pincel de
+  distribuir, copiar/colar, duplicar e desfazer/refazer. Arrastar: a forma **escolhida** pega o
+  ponteiro em **qualquer ponto do miolo** (cursor de mover) — inclusive as caixas de texto **sem
+  preenchimento**, que fora da seleção continuam clique-através para não esconder o que está
+  embaixo. E o **Copiar formatação** (o Pincel de
   Formatação): com uma forma escolhida, o clique no botão guarda a pintura e o formato do texto dela
   e o **ponteiro vira “copiar”** — cada clique numa forma veste o formato guardado, sem mexer na
   caixa, no giro nem no texto do alvo; **duplo clique** deixa o pincel **ligado** (pinta várias) e o

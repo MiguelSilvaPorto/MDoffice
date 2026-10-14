@@ -1447,6 +1447,16 @@ button.ppr.big .ppr-gal-ic svg {
   pointer-events: none;
 }
 
+/* ...menos quando ela está ESCOLHIDA: aí o miolo inteiro vira área de arrasto (e o cursor avisa).
+   Sem isso só as letras pegavam o ponteiro — arrastar uma caixa de texto era quase impossível,
+   porque o clique no vazio caía na lâmina e ainda desfazia a seleção. Editando, não vale: o
+   texto (`.pp-rt`) já cobre a caixa e quem manda é o cursor de texto. */
+.pp-shape.pp-rica.pp-sem-fundo.pp-pega,
+.pp-shape.pp-rica.pp-sem-fundo.pp-pega .pp-rt span {
+  pointer-events: auto;
+  cursor: move;
+}
+
 .pp-shape.pp-rica .pp-geo {
   pointer-events: none;
 }

@@ -1402,5 +1402,31 @@ console.log("\nroda do mouse anda de lado nas fitas e galerias");
   );
 }
 
+console.log("\narrastar a caixa: forma sem fundo escolhida pega o miolo");
+{
+  const css = ler("src/styles/powerpoint-edicao.css");
+  const forma = ler("src/powerpoint/render/forma.ts");
+  const host = ler("src/powerpoint/powerpoint.ts");
+  checa(
+    "o vazio da forma sem fundo continua clique-através",
+    /\.pp-shape\.pp-rica\.pp-sem-fundo\s*\{[^}]*pointer-events:\s*none/.test(css),
+    "o clique-atraves e o que deixa escolher o que esta embaixo"
+  );
+  checa(
+    "escolhida, o miolo vira área de arrasto (e o cursor avisa)",
+    /\.pp-shape\.pp-rica\.pp-sem-fundo\.pp-pega[^{]*\{[^}]*pointer-events:\s*auto[^}]*cursor:\s*move/.test(css),
+    "sem isso só as letras pegam o clique e arrastar a caixa fica quase impossível"
+  );
+  checa(
+    "o render marca a forma escolhida (pp-pega), menos enquanto edita",
+    /const pega = semFundo && !ctx\.editando && !!ctx\.selecionadas\?\.includes\(s\.id\)/.test(forma) && /pega \? " pp-pega"/.test(forma)
+  );
+  checa(
+    "a lâmina leva a seleção para o render",
+    /this\.ctxRender\(true, this\.selecao\)/.test(host) && /selecionadas, editavel/.test(host),
+    "sem a selecao no contexto o pp-pega nunca apareceria"
+  );
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

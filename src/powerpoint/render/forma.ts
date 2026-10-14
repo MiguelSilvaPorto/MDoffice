@@ -15,6 +15,8 @@ export interface CtxRender {
   /** imagens do deck (id -> data URL) */
   media: Record<string, string>;
   selecionada?: string | null;
+  /** ids na seleção: a forma SEM FUNDO escolhida vira área de arrasto (ver `.pp-pega`) */
+  selecionadas?: string[];
   /** texto editável (palco) ou só desenho (miniaturas) */
   editavel: boolean;
   /** id da forma cujo texto está sendo editado agora (só ela tem contenteditable) */
@@ -488,7 +490,11 @@ export function htmlFormaRica(s: Shape, ctx: CtxRender): string {
   if (s.rot) est.push(`transform:rotate(${n3(s.rot)}deg)`);
   if (s.opacity !== undefined && s.opacity < 1) est.push(`opacity:${n3(s.opacity)}`);
   const semFundo = s.kind !== "imagem" && (!s.fillX || s.fillX.kind === "none");
-  const classes = `pp-shape pp-rica${sel ? " selected" : ""}${s.fixa ? " pp-fixa" : ""}${ctx.editando === s.id ? " pp-editando" : ""}${semFundo ? " pp-sem-fundo" : ""}${s.bloqueada ? " pp-bloqueada" : ""}`;
+  // Forma sem fundo ESCOLHIDA: o miolo vira área de arrasto. Sem isso o vazio é clique-atraves
+  // e só as letras pegam o ponteiro — arrastar uma caixa de texto ficava quase impossível (e o
+  // clique no vazio ainda desfazia a seleção). Editando, o texto já cobre a caixa.
+  const pega = semFundo && !ctx.editando && !!ctx.selecionadas?.includes(s.id);
+  const classes = `pp-shape pp-rica${sel ? " selected" : ""}${s.fixa ? " pp-fixa" : ""}${ctx.editando === s.id ? " pp-editando" : ""}${semFundo ? " pp-sem-fundo" : ""}${pega ? " pp-pega" : ""}${s.bloqueada ? " pp-bloqueada" : ""}`;
   const attrs = `class="${classes}" data-shape="${s.id}" data-kind="${s.kind}" style="${est.join(";")}"`;
   if (s.kind === "imagem" && s.src) {
     const url = urlDaMidia(s.src, ctx.media);

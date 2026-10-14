@@ -8241,3 +8241,46 @@ antigas quando fizer sentido.
 - **Porquê:** a prévia mostra só a lâmina atual, mas o clique reorganizava todas (inclusive as que o usuário não viu) e
   não passava por `substituirSlide`, que refaz estilos e ligações derivados. Aplicar numa lâmina só é previsível e mais leve.
 - **Promoção:** as duas entradas de `fix/arranjos-encaixe` (`f77eabd`) passam para "Adicionado" no PowerPoint.
+
+## src/powerpoint/render/forma.ts · src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · esta tarefa · a forma sem fundo escolhida vira área de arrasto
+- **Local:** `forma.ts` — `CtxRender.selecionadas` e o cálculo do `pp-pega` em `htmlFormaRica`;
+  `powerpoint.ts` — `ctxRender(editavel, selecionadas)` e `pintarSlide` passando `this.selecao`
+- **Linha:** `+ const pega = semFundo && !ctx.editando && !!ctx.selecionadas?.includes(s.id);` e
+  `+ ${pega ? " pp-pega" : ""}` nas classes; `this.ctxRender(true)` → `this.ctxRender(true, this.selecao)`
+- **Porquê:** a forma sem fundo nasceu clique-através (o miolo não pode roubar o clique do que
+  está embaixo — uma caixa de texto sobre uma imagem), mas isso deixava só as **letras** como
+  alvo: arrastar a caixa pelo vazio caía na lâmina, limpava a seleção e começava um retângulo de
+  seleção. O meio-termo é o estado: **escolhida**, o interior inteiro pega o ponteiro (é quando a
+  pessoa quer mover); **solta**, continua clique-através. O `ctxRender` passou a receber a seleção
+  porque o `selecionada` (um id só) sempre foi `null` no editor — a classe `selected` existe no
+  CSS mas nunca aparecia na lâmina; em vez de mexer nela (o `selected` pinta borda e anel do
+  acento, o que brigaria com o quadro laranja do palco), o `pp-pega` é uma classe própria. Enquanto
+  o texto está em edição o `pp-pega` não entra: o `.pp-rt` cobre a caixa inteira e quem manda é o
+  cursor de texto.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · esta tarefa · a regra do `pp-pega`
+- **Local:** junto das regras do `.pp-sem-fundo` (a do clique-através continua logo acima)
+- **Linha:** `novo` — `.pp-shape.pp-rica.pp-sem-fundo.pp-pega, .pp-shape.pp-rica.pp-sem-fundo.pp-pega .pp-rt span { pointer-events: auto; cursor: move; }`
+- **Porquê:** o `pointer-events: auto` é o que faltava para o miolo pegar o ponteiro; o
+  `cursor: move` é a metade que avisa — antes, o cursor sobre o texto (que É um alvo de arrasto
+  quando não se está editando) continuava de I-beam, convidando a pessoa a tentar selecionar
+  texto em vez de arrastar a caixa. Os dois seletores cobrem o miolo vazio (o div) e as letras
+  (os spans, que já eram `auto`, mas herdavam o cursor do `.pp-rt`).
+
+## scripts/testar-edicao-pptx.mjs · scripts/testar-layout.mts
+
+### 2026-10-14 · esta tarefa · as travas do arrasto
+- **Local:** `testar-edicao-pptx.mjs` — bloco "arrastar a caixa (área de pega)" (5 asserções, com
+  `render/forma.ts` empacotado); `testar-layout.mts` — seção "arrastar a caixa" (4 checagens)
+- **Linha:** `novo` — no render: solta continua clique-através (sem `pp-pega`), escolhida ganha
+  `pp-sem-fundo pp-pega`, com fundo não precisa, editando não ganha e outra forma escolhida não
+  arrasta esta; no layout: a regra do clique-através preservada, a do `pp-pega` com
+  `pointer-events: auto` + `cursor: move`, o cálculo no render e a seleção chegando ao contexto
+- **Porquê:** o defeito era invisível para os testes (tudo "funcionava": a caixa existia e as
+  letras respondiam) e volta fácil numa simplificação do CSS — o par "solta passa / escolhida
+  pega" é exatamente a regra que alguém pode achar que é só uma classe a mais. O teste do render
+  prova a decisão a partir do dado (forma + seleção), não do CSS.

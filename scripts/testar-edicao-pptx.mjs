@@ -650,6 +650,26 @@ const GR = await empacotar("src/powerpoint/render/grafico.ts", "grafico-render.m
   ok("forma sem gráfico não desenha nada", vazio === "");
 }
 
+// ---------------------------------------------------------------- arrastar a caixa (área de pega)
+const FR = await empacotar("src/powerpoint/render/forma.ts", "forma-render.mjs");
+{
+  const ctx = { larguraPt: 960, alturaPt: 540, media: {}, editavel: true };
+  const caixa = { id: "c1", kind: "forma", box: { x: 10, y: 10, w: 30, h: 12 }, text: "A no trabalho", fontFamily: "A", fontSize: 16, color: "000000", bold: false, italic: false, align: "centro", fill: "", src: "", rot: 0, geom: "rect", paras: [] };
+  const solta = FR.htmlFormaRica(caixa, ctx);
+  ok("caixa sem fundo não escolhida: o miolo deixa o clique passar", solta.includes("pp-sem-fundo") && !solta.includes("pp-pega"), solta.slice(0, 130));
+  const escolhida = FR.htmlFormaRica(caixa, { ...ctx, selecionadas: [caixa.id] });
+  ok("caixa sem fundo ESCOLHIDA: o miolo vira área de arrasto (pp-pega)", escolhida.includes("pp-sem-fundo pp-pega"), escolhida.slice(0, 130));
+  ok(
+    "caixa com fundo não precisa do pp-pega (o miolo já pega)",
+    !FR.htmlFormaRica({ ...caixa, fillX: { kind: "solid", color: "FFFFFF" } }, { ...ctx, selecionadas: [caixa.id] }).includes("pp-pega")
+  );
+  ok(
+    "editando o texto, quem pega o ponteiro é o texto (sem pp-pega)",
+    !FR.htmlFormaRica(caixa, { ...ctx, selecionadas: [caixa.id], editando: caixa.id }).includes("pp-pega")
+  );
+  ok("outra forma escolhida não arrasta esta", !FR.htmlFormaRica(caixa, { ...ctx, selecionadas: ["outra"] }).includes("pp-pega"));
+}
+
 // ---------------------------------------------------------------- transições de lâmina
 const TR = await empacotar("src/powerpoint/edicao/transicao.ts", "transicao.mjs");
 {

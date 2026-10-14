@@ -808,9 +808,9 @@ export class PowerPointHost {
   // desenho
   // ------------------------------------------------------------------
 
-  private ctxRender(editavel: boolean): CtxRender {
+  private ctxRender(editavel: boolean, selecionadas?: string[]): CtxRender {
     const { w, h } = this.dim();
-    return { larguraPt: w, alturaPt: h, media: this.setup.media ?? {}, selecionada: null, editavel, editando: editavel ? this.editando : null, celulaEdit: editavel ? this.celulaEdit : null };
+    return { larguraPt: w, alturaPt: h, media: this.setup.media ?? {}, selecionada: null, selecionadas, editavel, editando: editavel ? this.editando : null, celulaEdit: editavel ? this.celulaEdit : null };
   }
 
   /** redesenha tudo: miniaturas + lâmina + fita + painel */
@@ -856,7 +856,7 @@ export class PowerPointHost {
       md.onclick = () => this.editarMarkdown();
       return;
     }
-    const ctx = this.ctxRender(true);
+    const ctx = this.ctxRender(true, this.selecao);
     this.slideEl.innerHTML = slide.shapes.map((s) => htmlFormaRica(s, ctx)).join("") + (this.grade ? `<div class="pp-grade"></div>` : "");
     if (this.editando) this.ligarEdicao(this.editando);
   }
