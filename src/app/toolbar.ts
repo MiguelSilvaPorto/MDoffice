@@ -213,6 +213,9 @@ export const toolbarMethods = {
           case "copy-ai":
             void this.copyForAI();
             break;
+          case "present":
+            this.presentActive();
+            break;
           case "welcome":
             this.showWelcome();
             break;

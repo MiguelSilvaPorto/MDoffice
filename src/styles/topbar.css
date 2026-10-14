@@ -357,6 +357,15 @@
   gap: 5px;
 }
 
+/* o "Apresentar" da barra superior só existe com uma apresentação (PowerPoint) ativa */
+#tb-present {
+  display: none;
+}
+
+body.ppt-open #tb-present {
+  display: inline-flex;
+}
+
 .tb-icon-btn {
   width: 28px;
   height: 28px;

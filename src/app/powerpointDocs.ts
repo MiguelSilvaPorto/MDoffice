@@ -92,6 +92,11 @@ export const powerpointDocsMethods = {
     document.body.classList.remove("ppt-open");
   },
 
+  /** Inicia a apresentação da aba ativa (o botão "Apresentar" da barra superior). */
+  presentActive(this: App): void {
+    if (this.tab.kind === "ppt") this.pptHost.present();
+  },
+
   onPptChange(this: App): void {
     if (this.tab.kind !== "ppt") return;
     const was = this.dirty;

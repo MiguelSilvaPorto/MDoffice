@@ -86,6 +86,13 @@ checa("o botão ativo do seletor deixa o fundo para a pílula", /\.sb-tab\.activ
 checa("o Início destaca a aba só pela cor (sem pintar o fundo)", !/\.sb-tab\[data-side="home"\]\.active[^{]*\{[^}]*background/.test(home));
 checa("a troca de painel usa o passo curto (mdc-painel), sem escala", /\.sb-panel:not\(\[hidden\]\)[^{]*\{[^}]*mdc-painel/.test(mov));
 
+// 4.1 Barra superior: o "Apresentar" só aparece com uma apresentação (PowerPoint) ativa.
+console.log("barra superior: Apresentar com apresentação");
+
+const tb = ler("src/styles/topbar.css");
+checa("o Apresentar da barra só aparece com apresentação ativa", /#tb-present\s*\{[^}]*display:\s*none/.test(tb) && /body\.ppt-open #tb-present\s*\{[^}]*display:\s*inline-flex/.test(tb), "regra de visibilidade do #tb-present ausente");
+checa("o botão existe no index.html com a ação de apresentar", /id="tb-present"[^>]*data-act="present"/.test(html), "button#tb-present ausente no index.html");
+
 // 5. Configurações ▸ Aparência: tema, nível de animação (3 cartões) e cantos (2 cartões),
 //    todos em cartões clicáveis lado a lado, com prévia.
 console.log("configurações: aparência em cartões (tema, animação e cantos)");
