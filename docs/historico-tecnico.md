@@ -6414,3 +6414,16 @@ antigas quando fizer sentido.
   doc do módulo com as Ideias e o catálogo novo
 - **Porquê:** é a mecânica inteira de uma aba nova; sem as checagens, um refactor do painel
   derrubaria a prévia ou o clique em silêncio.
+
+## CHANGELOG.md
+
+### 2026-10-14 · esta tarefa · promoção das Ideias + a duplicata que o rebase re-inseriu
+- **Local:** seção "Não adicionado" do PowerPoint
+- **Linha:** a entrada **Ideias de design** (`cbf2144`) foi para o topo do "Adicionado"; a
+  duplicata de **Aplicar animação não deixa mais a forma presa** saiu de "Não adicionado" (ela
+  já estava em "Adicionado" desde a promoção anterior)
+- **Porquê:** a resolução do conflito do rebase desta tarefa pegou "o meu lado" do CHANGELOG, que
+  ainda tinha a entrada da forma presa em "Não adicionado" (a promoção dela tinha acontecido na
+  `main` depois do ponto em que a minha branch nasceu) — resultado: a mesma entrada em duas
+  seções. A conferência da promoção agora olha se a entrada **já existe** em "Adicionado" antes
+  de mover: entrada duplicada é pior que entrada atrasada, porque mente nas duas seções.

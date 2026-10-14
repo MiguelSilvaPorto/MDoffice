@@ -378,21 +378,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Ideias de design** (aba nova no painel lateral): mostra **esta lâmina** desenhada em cada
-  modelo do catálogo, em cartões clicáveis — clicar aplica o modelo à apresentação inteira. É a
-  ideia do *Design Ideas* do **DeckCraft**, offline como lá ("geradas no seu computador"): a
-  prévia é a lâmina de verdade reduzida por `transform`, então o cartão mostra exatamente o que
-  o clique faz. Junto veio o **catálogo do DeckCraft**: **13 designs novos** — os 8 temas
-  originais (Harbor, Ember, Meadow, Nocturne, Paper, Coral Reef, Slate e DeckCraft) e os 5
-  esquemas de cor (Grayscale, Ocean, Sunset, Forest e Berry) —, cada um com as próprias cores
-  (fundo, texto, acento e secundária) e fonte, no mesmo formato dos modelos do usuário.
-- **Aplicar animação não deixa mais a forma presa**: a **prévia** (e a prévia que toca ao aplicar
-  um efeito, como no PowerPoint) agora **devolve a forma ao normal** quando termina — antes, um
-  efeito de ênfase (Ampliar, Girar, Transparência) deixava a forma maior/girada/transparente no
-  palco e uma saída (Sumir, Desaparecer, Encolher) a deixava **invisível**, sem jeito de desfazer
-  só o estado visual. O **Esc** interrompe uma prévia em andamento e devolve tudo na hora, e
-  **trocar o efeito** de uma forma agora usa os padrões do efeito novo (a duração do antigo não
-  contamina mais: Ampliar volta a nascer com 2 s).
+- (nada no momento)
 
 
 ### Adicionado (na main)
@@ -402,6 +388,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **Ideias de design** (aba nova no painel lateral): mostra **esta lâmina** desenhada em cada
+  modelo do catálogo, em cartões clicáveis — clicar aplica o modelo à apresentação inteira. É a
+  ideia do *Design Ideas* do **DeckCraft**, offline como lá ("geradas no seu computador"): a
+  prévia é a lâmina de verdade reduzida por `transform`, então o cartão mostra exatamente o que
+  o clique faz. Junto veio o **catálogo do DeckCraft**: **13 designs novos** — os 8 temas
+  originais (Harbor, Ember, Meadow, Nocturne, Paper, Coral Reef, Slate e DeckCraft) e os 5
+  esquemas de cor (Grayscale, Ocean, Sunset, Forest e Berry) —, cada um com as próprias cores
+  (fundo, texto, acento e secundária) e fonte, no mesmo formato dos modelos do usuário.
 
 - **Conectar formas (Inserir ▸ Diagrama)**: a ferramenta **Conectar** liga **formas que já
   existem** — nada é recriado. Com o modo ligado, passar o mouse sobre uma forma mostra as
