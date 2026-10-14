@@ -382,7 +382,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **Desenho assistido: o arco agora tem que passar pelo traço** (e a linha não engole os cantos):
+  um traço do **topo de um cartão** (retas com cantos) virava um **arco largo que bojava por baixo
+  do desenho** — o ajuste elíptico era aceito pela **média** do desvio, que é pequena quando o
+  traço só "se parece" com a elipse. Agora o aceite olha o **desvio máximo** da curva: o topo do
+  cartão fica **livre** (e o encaixe nos eixos deixa a aresta reta com os cantos) ou, quando os
+  cantos são rasos, sai como **linha em cima da aresta** — a tolerância da linha caiu de 5% para
+  2,5% do comprimento, que era o que deixava os cantos passarem por "linha".
 
 ### Adicionado (na main)
 

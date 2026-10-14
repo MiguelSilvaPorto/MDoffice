@@ -5227,6 +5227,34 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o defeito era de comportamento e voltaria fácil (basta alguém “simplificar” a chamada
   de volta ao padrão ✗) — o teste lê o TS e o CSS e trava a regra.
 
+## src/powerpoint/edicao/desenho.ts
+
+### 2026-10-14 · arco fiel · o desvio MÁXIMO do ajuste (e a linha sem 5% de folga)
+- **Local:** `ajustarElipse` (agora devolve `desvioMax`), `ajustarElipseOrientada` (`absolutoMax`) e
+  os aceites do arco e da linha no `reconhecerTraco`
+- **Linha:** `absolutoMax = desvioMax * min(rx, ry)` e o arco passa a exigir
+  `absolutoMax <= max(3.5, diag * 0.006)`; a linha cai de `max(5, len * 0.05)` para
+  `max(5, len * 0.025)`
+- **Porquê:** o relato ("a linha que desenhei era para cobrir aquela parte") — o traço do topo do
+  cartão (retas com cantos) virava um **arco largo que passava por baixo do desenho**. O ajuste
+  elíptico é bom em média (o traço "se parece" com a elipse) mas os cantos ficam longe da curva: a
+  média escondia o defeito, o máximo o denuncia (medido: arcos legítimos ≤ 1,6 pt; topo de cartão
+  8,3–13,3 pt). A linha tinha o problema espelhado: com 5% de folga no comprimento, os cantos
+  passavam por "reta" e o traço virava uma linha sem eles (medido: retas de verdade 2,7 pt; topo de
+  cartão 8,9–25,8 pt).
+
+## scripts/testar-desenho-assistido.mjs
+
+### 2026-10-14 · arco fiel · o `topoDeCaixa` ganha densidade e lado (e 4 verificações novas)
+- **Local:** o helper `topoDeCaixa` (parâmetros `pontosReta` e `lado`) e o bloco do arco
+- **Linha:** `novo` — o topo denso (10 pontos) fica **livre** (antes virava linha); o topo com
+  cantos grandes fica **livre** (antes virava o arco bojudo); o ajuste desse traço mostra
+  `absoluto` pequeno e `absolutoMax` grande (o critério novo); o topo raso vira **linha** em cima
+  da aresta
+- **Porquê:** os três traços do relato só apareciam com a densidade de pontos do desenho real (o
+  helper do teste tinha 6 pontos na reta e um deles escapava por sorte) — os casos agora prendem os
+  dois erros (linha sem cantos e arco bojudo) e o acerto (linha em cima da aresta).
+
 ---
 
 ## Próximos registros

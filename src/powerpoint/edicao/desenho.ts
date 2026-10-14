@@ -293,7 +293,7 @@ function resolverSistema(M: number[][], b: number[]): number[] | null {
  * A·x² + C·y² + D·x + E·y + F = 0, com A + C = 1): é o que faz o arco seguir uma curva
  * LARGA de verdade — com o círculo, o topo de uma caixa virava "meio círculo".
  */
-export function ajustarElipse(pontos: PontoTraco[]): { cx: number; cy: number; rx: number; ry: number; desvio: number } | null {
+export function ajustarElipse(pontos: PontoTraco[]): { cx: number; cy: number; rx: number; ry: number; desvio: number; desvioMax: number } | null {
   const n = pontos.length;
   if (n < 8) return null;
   // A·(x² - y²) + D·x + E·y + F = -y²  (mínimos quadrados, 4 incógnitas)
@@ -352,8 +352,13 @@ export function ajustarElipse(pontos: PontoTraco[]): { cx: number; cy: number; r
   const rx = Math.sqrt(rx2);
   const ry = Math.sqrt(ry2);
   let dev = 0;
-  for (const p of pontos) dev += Math.abs(Math.hypot((p.x - cx) / rx, (p.y - cy) / ry) - 1);
-  return { cx, cy, rx, ry, desvio: dev / n };
+  let devMax = 0;
+  for (const p of pontos) {
+    const d = Math.abs(Math.hypot((p.x - cx) / rx, (p.y - cy) / ry) - 1);
+    dev += d;
+    devMax = Math.max(devMax, d);
+  }
+  return { cx, cy, rx, ry, desvio: dev / n, desvioMax: devMax };
 }
 
 /**
@@ -365,7 +370,7 @@ export function ajustarElipse(pontos: PontoTraco[]): { cx: number; cy: number; r
  */
 export function ajustarElipseOrientada(
   pontos: PontoTraco[]
-): { cx: number; cy: number; rx: number; ry: number; rot: number; absoluto: number } | null {
+): { cx: number; cy: number; rx: number; ry: number; rot: number; absoluto: number; absolutoMax: number } | null {
   if (pontos.length < 8) return null;
   let cx = 0;
   let cy = 0;
@@ -395,13 +400,14 @@ export function ajustarElipseOrientada(
       ry: e.ry,
       rot,
       absoluto: e.desvio * Math.min(e.rx, e.ry),
+      absolutoMax: e.desvioMax * Math.min(e.rx, e.ry),
     };
   };
   // o ajuste alinhado aos eixos é o "de sempre": só troca por um girado quando ele é
   // CLARAMENTE melhor (um arco pequeno cabe em muitas elipses — sem essa preferência, um
   // arco quase circular ganhava uma elipse girada com desvio só um pouco menor)
   const base = candidato(0);
-  let melhor: { cx: number; cy: number; rx: number; ry: number; rot: number; absoluto: number } | null = base;
+  let melhor: ReturnType<typeof candidato> = base;
   for (let rot = -45; rot <= 45.001; rot += 3) {
     const c = candidato(rot);
     if (c && melhor !== null && c.absoluto < melhor.absoluto) melhor = c;
@@ -533,6 +539,9 @@ export function reconhecerTraco(pontos: PontoTraco[]): TracoReconhecido | null {
     Math.min(ajuste.rx, ajuste.ry) > 14 &&
     Math.min(ajuste.rx, ajuste.ry) >= 0.22 * Math.max(ajuste.rx, ajuste.ry) &&
     ajuste.absoluto <= Math.max(2.5, diag * 0.018) &&
+    // a curva tem que PASSAR pelo traço: a média sozinha aceitava o topo de um cartão (retas com
+    // cantos) como arco largo, e o arco saía bojando por baixo do desenho — o desvio MÁXIMO pega
+    ajuste.absolutoMax <= Math.max(3.5, diag * 0.006) &&
     Math.max(ajuste.rx, ajuste.ry) <= diag * 4
   ) {
     const { cx, cy, rx, ry, rot } = ajuste;
@@ -580,7 +589,9 @@ export function reconhecerTraco(pontos: PontoTraco[]): TracoReconhecido | null {
   const reta = ajustarReta(interno);
   if (reta) {
     const len = Math.hypot(reta.b.x - reta.a.x, reta.b.y - reta.a.y);
-    const tol = Math.max(5, len * 0.05);
+    // 2,5% do comprimento (era 5%): com a tolerância larga, o TOPO DE UM CARTÃO (retas com
+    // cantos) passava por "linha" e o desenho perdia os cantos
+    const tol = Math.max(5, len * 0.025);
     if (len > 36 && reta.maxDev <= tol) {
       // miolo reto: projeta as pontas na reta ideal e limita a extensão
       const tDe = (p: PontoTraco) => (p.x - reta.origin.x) * reta.dir.x + (p.y - reta.origin.y) * reta.dir.y;

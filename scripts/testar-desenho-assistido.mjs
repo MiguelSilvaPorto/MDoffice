@@ -145,7 +145,7 @@ function arcoElipse(cx, cy, rx, ry, a0graus, a1graus, amp = 1.5, seed = 23) {
 }
 
 /** Traço do TOPO de uma caixa: lado curto + canto + reta + canto + lado (o contorno de um card). */
-function topoDeCaixa(x0, y0, x1, raio, amp = 2, seed = 29) {
+function topoDeCaixa(x0, y0, x1, raio, amp = 2, seed = 29, pontosReta = 6, lado = 20) {
   const rnd = rng(seed);
   const pts = [];
   const ponto = (x, y) => pts.push({ x: x + tremor(rnd, amp), y: y + tremor(rnd, amp) });
@@ -155,11 +155,11 @@ function topoDeCaixa(x0, y0, x1, raio, amp = 2, seed = 29) {
       ponto(cx + Math.cos(a) * raio, cy + Math.sin(a) * raio);
     }
   };
-  ponto(x0, y0 + raio + 20);
+  ponto(x0, y0 + raio + lado);
   canto(x0 + raio, y0 + raio, Math.PI, 1.5 * Math.PI);
-  for (let i = 1; i <= 6; i++) ponto(x0 + raio + ((x1 - raio - x0 - raio) * i) / 6, y0);
+  for (let i = 1; i <= pontosReta; i++) ponto(x0 + raio + ((x1 - raio - x0 - raio) * i) / pontosReta, y0);
   canto(x1 - raio, y0 + raio, 1.5 * Math.PI, 2 * Math.PI);
-  ponto(x1, y0 + raio + 20);
+  ponto(x1, y0 + raio + lado);
   return pts;
 }
 
@@ -283,6 +283,23 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
   ok("arco largo: caixa elíptica (não vira círculo)", largo && perto(largo.box.w, 520, 14) && perto(largo.box.h, 180, 14), JSON.stringify(largo?.box));
   const topo = D.reconhecerTraco(topoDeCaixa(150, 120, 650, 70));
   ok("topo de caixa com quinas: fica livre (não é arco)", topo === null, JSON.stringify(topo));
+
+  // o traço do TOPO DE CARTÃO do relato, com a reta mais densa: virava "Linha" (perdia os cantos)
+  // — a tolerância da reta era 5% do comprimento e engolia os cantos
+  ok("topo de caixa denso: fica livre (não vira linha)", D.reconhecerTraco(topoDeCaixa(150, 120, 650, 70, 2, 29, 10)) === null, JSON.stringify(D.reconhecerTraco(topoDeCaixa(150, 120, 650, 70, 2, 29, 10))));
+  // ... e com cantos grandes virava um ARCO largo que passava POR BAIXO do desenho (o print do
+  // relato): a média do ajuste era pequena, mas o desvio máximo não — é ele que manda agora
+  const comCantos = D.reconhecerTraco(topoDeCaixa(100, 100, 700, 110, 2, 29, 10, 40));
+  ok("topo de cartão com cantos grandes: fica livre (não vira arco bojudo)", comCantos === null, JSON.stringify(comCantos));
+  const ajusteTopo = D.ajustarElipseOrientada(topoDeCaixa(100, 100, 700, 110, 2, 29, 10, 40));
+  ok(
+    "ajuste do topo do cartão: o desvio máximo denuncia (média pequena, máximo grande)",
+    ajusteTopo !== null && ajusteTopo.absoluto < 8 && ajusteTopo.absolutoMax > 8,
+    JSON.stringify(ajusteTopo && { media: +ajusteTopo.absoluto.toFixed(1), max: +ajusteTopo.absolutoMax.toFixed(1) })
+  );
+  // cantos rasos: aí sim é uma LINHA em cima da aresta (é o "cobrir aquela parte" do relato)
+  const raso = D.reconhecerTraco(topoDeCaixa(100, 100, 800, 40, 2, 29, 10, 15));
+  ok("topo raso: vira linha em cima da aresta", raso?.geom === "line" && perto(raso.box.y, 100, 6) && raso.box.h < 4, JSON.stringify(raso?.box));
 
   // traço desenhado TORTO: a elipse é procurada COM orientação — a forma sai girada no mesmo
   // ângulo e a curva passa pelo traço (antes, o ajuste alinhado aos eixos saía grande e a

@@ -123,7 +123,9 @@ avisado ao abrir (nunca some em silêncio).
   procura a **orientação**: a curva desenhada **torta** sai como arco **girado no mesmo ângulo do
   desenho** e a caixa acompanha (a curva passa pelo traço, não por perto dele). E uma elipse em
   forma de "faca" (duas retas com um canto, por exemplo) **não vira arco** — vai para o desenho
-  livre.
+  livre. O ajuste tem que **passar pelo traço**: o **desvio máximo** da curva (não só a média)
+  barra o topo de um cartão (retas com cantos), que virava um arco bojudo **por baixo** do
+  desenho — esse traço sai como **linha** (cantos rasos) ou desenho livre com a aresta encaixada.
 - **Desenhar por cima de uma forma existente** (mesmo apagada — a cor não importa) sai **alinhado
   a ela**: o resultado encaixa nas bordas e nos centros das formas de baixo quando está perto.
 - O que o assistente **não** reconhece fica como **desenho livre** — um caminho de verdade,
