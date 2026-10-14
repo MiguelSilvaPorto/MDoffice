@@ -142,7 +142,7 @@ Não é uma fita: é uma tela cheia que substitui fita, lâminas e barra de stat
 | Copy | Copia a seleção | Com apresentação aberta | Duas folhas sobrepostas | Ctrl+C |
 | Format | Pincel de formatação; clique duplo o deixa fixo | Com texto ou forma selecionada; marca enquanto ativo | Pincel sobre retângulo | Ctrl+Shift+C |
 
-**Notas para recriar no mdOffice:** a fita do mdOffice já tem Colar, Recortar, Copiar e Desfazer/Refazer no grupo Área de Transferência; faltam o menu do Colar (colar mantendo formatação / colar formatação) e o Pincel de Formatação com modo fixo. O Duplicar (Ctrl+D) do mdOffice não existe neste grupo do DeckCraft.
+**Notas para recriar no mdOffice:** a fita do mdOffice já tem Colar, Recortar, Copiar, Desfazer/Refazer e o **Pincel de Formatação** (o "Copiar formatação", com o modo fixo do duplo clique e o Esc para sair) no grupo Área de Transferência; falta o menu do Colar (colar mantendo formatação / colar formatação). O Duplicar (Ctrl+D) do mdOffice não existe neste grupo do DeckCraft.
 
 ### Grupo "Lâminas"
 

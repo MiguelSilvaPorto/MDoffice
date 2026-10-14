@@ -35,7 +35,11 @@ avisado ao abrir (nunca some em silêncio).
   arrastar uma delas redimensiona **só aquela forma**, sem desfazer a seleção; o quadro do grupo
   segue com as 8 para redimensionar todas de uma vez, e no canto em que as duas caem no mesmo
   ponto quem atende é a alça da forma), **agrupar/desagrupar**, ordem (frente/trás), alinhar,
-  distribuir, copiar/colar, duplicar e desfazer/refazer.
+  distribuir, copiar/colar, duplicar e desfazer/refazer, e o **Copiar formatação** (o Pincel de
+  Formatação): com uma forma escolhida, o clique no botão guarda a pintura e o formato do texto dela
+  e o **ponteiro vira “copiar”** — cada clique numa forma veste o formato guardado, sem mexer na
+  caixa, no giro nem no texto do alvo; **duplo clique** deixa o pincel **ligado** (pinta várias) e o
+  `Esc` sai. A pintura viva (**Estilo de Cor**) vai junto: o alvo passa a usar a mesma receita.
 - **Cantos assistidos**: **clique numa alça de canto** para editar só aquele canto (`Shift+clique`
   soma/remove sem arrastar; clique parado num canto já escolhido deixa só ele) e arraste para
   arredondar **apenas os escolhidos** — cada canto guarda o próprio valor (dá para ter o sup. esq.

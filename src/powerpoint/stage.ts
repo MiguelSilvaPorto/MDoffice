@@ -46,8 +46,8 @@ export function passoZoom(atual: number): number {
 const r1 = (v: number) => Math.round(v * 10) / 10;
 const r2 = (v: number) => Math.round(v * 100) / 100;
 
-/** Ferramenta ativa: desenhar arrastando, o lápis do "Draw" ou o "Conectar" (ligar formas). */
-export type Ferramenta = { tipo: "forma"; id: string } | { tipo: "texto" } | { tipo: "desenho" } | { tipo: "conectar" } | null;
+/** Ferramenta ativa: desenhar arrastando, o lápis do "Draw", o "Conectar" (ligar formas) ou o pincel de formatação. */
+export type Ferramenta = { tipo: "forma"; id: string } | { tipo: "texto" } | { tipo: "desenho" } | { tipo: "conectar" } | { tipo: "pincel" } | null;
 
 export interface ContextoPalco {
   shapes: Shape[];
@@ -99,6 +99,8 @@ export interface StageHooks {
   aoTracoAndamento: (pontos: { x: number; y: number }[]) => void;
   /** modo conectar: a bolinha de origem e a de destino foram escolhidas */
   aoLigar: (l: { de: string; ladoDe: Lado; para: string; ladoPara: Lado }) => void;
+  /** pincel de formatação: a forma clicada recebe o formato copiado (null = clique no vazio) */
+  aoPincelar: (id: string | null) => void;
 }
 
 type Modo =
@@ -380,7 +382,10 @@ export class Stage {
       }
     }
     el.insertAdjacentHTML("beforeend", html.join(""));
-    el.classList.toggle("criando", !!ctx.ferramenta);
+    // o pincel de formatação não é uma ferramenta de desenhar: o ponteiro vira o "copiar" (cursor de
+    // cruz fica para quem cria/rabisca)
+    el.classList.toggle("criando", !!ctx.ferramenta && ctx.ferramenta.tipo !== "pincel");
+    el.classList.toggle("pincel-fmt", ctx.ferramenta?.tipo === "pincel");
   }
 
   // ------------------------------------------------------------------
@@ -458,6 +463,17 @@ export class Stage {
         this.ligOrigem = null; // clique fora das bolinhas cancela a origem
         this.desenharSelecao();
       }
+      e.preventDefault();
+      return;
+    }
+
+    // pincel de formatação: o clique entrega a forma sob o ponteiro (o vazio não tem o que pintar;
+    // a seleção e as alças ficam paradas — o pincel está armado até aplicar, desligar ou Esc)
+    if (ctx.ferramenta?.tipo === "pincel") {
+      const formaEl = alvo.closest<HTMLElement>(".pp-shape[data-shape]");
+      const id = formaEl?.dataset.shape;
+      const forma = id ? ctx.shapes.find((s) => s.id === id) : undefined;
+      this.hooks.aoPincelar(forma && (!forma.fixa || ctx.fixasSelecionaveis) ? forma.id : null);
       e.preventDefault();
       return;
     }
@@ -1008,6 +1024,8 @@ export class Stage {
     if (!formaEl) return;
     const id = formaEl.dataset.shape!;
     const ctx = this.hooks.contexto();
+    // pincel de formatação armado: o duplo clique continua sendo um clique de pintura, não abre o texto
+    if (ctx.ferramenta?.tipo === "pincel") return;
     const s = ctx.shapes.find((x) => x.id === id);
     if (!s || (s.fixa && !ctx.fixasSelecionaveis)) return;
     // Já está no texto dessa forma: o duplo clique aqui é para escolher a palavra — redesenhar

@@ -400,8 +400,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
-
+- **Copiar formatação (o Pincel de Formatação)**: a apresentação ganhou o botão que faltava na
+  **Área de Transferência** da fita — com uma forma escolhida, ele **copia a pintura e o formato do
+  texto** dela (preenchimento, contorno, sombra, transparência, a receita do **Estilo de Cor** e
+  fonte/tamanho/cor/negrito/alinhamento dos trechos) e o **ponteiro vira “copiar”**: cada clique
+  numa forma veste o formato copiado, sem mexer na **caixa, no giro nem no texto** do alvo. O
+  **duplo clique** deixa o pincel **ligado** (pinta várias formas) e o **Esc** sai; clicar no botão
+  de novo também desliga. Numa forma com **Estilo de Cor**, a receita vai junto (o alvo passa a usar
+  a mesma rampa) — e quando a cópia não tem receita, o **estilo vivo do alvo é solto**, para a
+  pintura não ser derrubada pelo recálculo no próximo movimento.
 
 ### Adicionado (na main)
 

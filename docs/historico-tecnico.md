@@ -8073,3 +8073,96 @@ antigas quando fizer sentido.
 - **Linha:** `+ 1 entrada` — **Prancheta de letras: botão direito + arrastar move a tela**
 - **Porquê:** a tarefa ainda não está na `main`; a entrada só é promovida quando o `fechar.ps1`
   entregar.
+
+## src/powerpoint/edicao/pincel.ts (novo arquivo)
+
+### 2026-10-14 · esta tarefa · o motor do pincel de formatação
+- **Local:** `copiarFormato`, `aplicarFormato`, `textoComFormato`, `preenchimento` e o tipo
+  `FormatoPincel`
+- **Linha:** `novo arquivo` — a cópia leva `fill` (o `fillX` rico ou o `fill` simples; vazio =
+  `{ kind: "none" }`), `ln`, `shadow`, `opacity`, a receita `estilo` e o texto (fonte, tamanho, cor,
+  negrito/itálico, alinhamento + o primeiro trecho e o primeiro parágrafo como modelo); a aplicação
+  usa os mesmos `comPreenchimento`/`comLinha`/`comSombra`/`comOpacidade` da fita e **não** toca em
+  `box`, `rot`, `text`, `id`, `geom` nem nos links
+- **Porquê:** é o "Copiar formatação" que o Word já tinha e a apresentação não — repetir
+  preenchimento, contorno, sombra e fonte forma a forma era o trabalho manual que o pincel elimina.
+  O módulo é **puro** (como `formato.ts`/`estilos.ts`) para o teste de execução alcançar as duas
+  pontas sem DOM; a cópia é **profunda** porque o formato guardado vive entre cliques — se a origem
+  fosse editada no meio, o pincel pintaria o formato novo em vez do copiado. O **primeiro trecho** é
+  o modelo do texto (não o trecho "mais comum"): é a mesma convenção do estilo de digitação do app
+  (o texto novo herda o vizinho) e não exige contar caracteres. Sem receita de estilo na cópia, o
+  `aplicarFormato` **solta** o `estilo`/`capa` do alvo: é a regra das outras pinturas manuais
+  (`comPintura`), senão o recálculo vivo derrubaria a pintura no próximo movimento.
+
+## src/powerpoint/stage.ts · src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · esta tarefa · o pincel no palco e o estado no host
+- **Local:** `stage.ts` — o tipo `Ferramenta`, o hook `aoPincelar`, o ramo do pincel no
+  `aoPressionar`, o `pincel-fmt` no `desenharSelecao` e a guarda no `aoDuploClique`; `powerpoint.ts`
+  — o estado `pincelFmt`, o `case "copiar-formato"` no `run`, `alternarPincelFormato`, `aoPincelar`,
+  a limpeza no `case "ferramenta"` e no `load`
+- **Linha:** `+ { tipo: "pincel" }` na união · `+ aoPincelar: (id: string | null) => void`
+  (e `aoPincelar: (id) => this.aoPincelar(id)` na fiação) · `+ this.pincelFmt = { formato:
+  copiarFormato(origem), fixo }` · `+ if (!p.fixo) this.run("ferramenta", "")` · o
+  `classList.toggle("criando", …)` ganhou `&& ctx.ferramenta.tipo !== "pincel"`
+- **Porquê:** o pincel é uma **ferramenta** (como o Conectar), não um modo novo de arrastar: com ela
+  armada o palco **consome o clique** — entrega a forma ao host e não move nem seleciona (o arrasto
+  de 2 px ao clicar não pode arrastar a forma que está sendo pintada, e as alças do quadro ficam
+  paradas). O clique no vazio chama o hook com `null` e o pincel **fica armado** (como no
+  PowerPoint, onde o clique errado não gasta o pincel). O "uma vez" se desarma **depois** de pintar
+  (`if (!p.fixo)`) e o modo fixo (duplo clique) pinta até o Esc — a alternativa (desarmar ao
+  selecionar) quebraria o "pintar várias". A guarda no `aoDuploClique` é pelo caminho: sem ela,
+  pintar com pressa abriria a edição do texto do alvo.
+
+## src/powerpoint/ui/fita.ts · src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · esta tarefa · o botão na Área de Transferência e o cursor de copiar
+- **Local:** `fita.ts` — o grupo "Área de Transferência" da `inicio()`, o `dblclick` do host e o
+  estado no `atualizar()`; `powerpoint-edicao.css` — depois de `.pp-slide.criando`
+- **Linha:** `+ pequeno("copiar-formato", ic("i-brush"), "Copiar formatação", …)` na coluna do
+  Desfazer/Refazer (a coluna do Recortar/Copiar/Duplicar tem três botões e é ela que define a altura
+  do grupo — um quarto ali cresceria a fita inteira) · `+ on("copiar-formato", st.ferramenta?.tipo
+  === "pincel")` e `dis("copiar-formato", !tem)` · `+ .pp-slide.pincel-fmt { cursor: copy }`
+- **Porquê:** o botão mora onde o usuário o procurou (e onde a referência o põe: Home ▸ Área de
+  Transferência ▸ Format, com o duplo clique fixando e o botão aceso enquanto ativo). O ícone é o
+  `i-brush` do Pincel de Formatação do Word — o símbolo que o app já usa para "copiar formatação" —
+  e o rótulo é o nome do comando ("Copiar formatação"), que o usuário pediu. O `cursor: copy` no
+  palco é o que diz que o clique vai **copiar** e não selecionar; a cruz de criação (`criando`) fica
+  só para quem desenha. **Sem atalho**: o `Ctrl+Shift+C` da referência já é o "Copiar para a IA" do
+  app — um segundo dono da mesma tecla quebraria (ou sumiria com) o existente.
+
+## scripts/testar-pincel.mjs (novo arquivo) · scripts/testar-layout.mts · package.json
+
+### 2026-10-14 · esta tarefa · os testes do pincel
+- **Local:** o teste de execução do motor (esbuild + módulo puro, como `testar-estilos.mjs`), o bloco
+  novo do `testar-layout.mts` e o script `test:pincel` no `package.json`
+- **Linha:** `+ 20 verificações` no teste de execução (a cópia peça por peça, a **profundidade** da
+  cópia, o `fill` simples, o vazio, a aplicação sem tocar no que é do alvo, a quebra de linha, o
+  estilo com e sem receita, o alvo sem `paras`) · `+ 11 checagens` no teste de layout (o botão no
+  grupo, o duplo clique, o estado aceso/desabilitado, a ferramenta no palco, o hook, o cursor, a
+  guarda do duplo clique, o motor, a receita, o armar/desarmar e o `soltarEstilo` no caminho da
+  aplicação)
+- **Porquê:** o pincel é a primeira coisa do app que **copia e cola formato entre formas** — cada
+  ponta (o que entra na cópia, o que fica no alvo, o desfecho do estilo vivo) é uma escolha que já
+  daria errado em silêncio. O teste de execução prende o comportamento (a caixa e o texto do alvo
+  **não** podem mudar; o `paras` do alvo **não** pode nascer); o de layout prende a fiação (botão →
+  comando → hook → aplicação), que é onde a fita e o palco já se desconectaram antes.
+
+## docs/powerpoint.md · docs/ui-deckcraft-abas.md
+
+### 2026-10-14 · esta tarefa · o pincel no doc do módulo e na referência
+- **Local:** a bala "Formas" da seção "Editar as lâminas" (o fim da lista de ações) e a nota do grupo
+  "Área de Transferência" do DeckCraft
+- **Linha:** `+ o Copiar formatação (o Pincel de Formatação): … o ponteiro vira "copiar" … duplo
+  clique … Esc` · a nota passa de "faltam … o Pincel de Formatação com modo fixo" para "já tem … o
+  Pincel de Formatação (o "Copiar formatação", com o modo fixo …); falta o menu do Colar"
+- **Porquê:** o doc do módulo é o que a próxima pessoa lê para saber o que o app faz; a nota da
+  referência estava prestes a mandar alguém "recriar" o que já existe — as duas andam juntas.
+
+## CHANGELOG.md
+
+### 2026-10-14 · esta tarefa · a entrada em "Não adicionado"
+- **Local:** PowerPoint → **Não adicionado** → Frontend (topo)
+- **Linha:** `+ 1 entrada` — **Copiar formatação (o Pincel de Formatação)**
+- **Porquê:** a tarefa ainda não está na `main`; a entrada só é promovida quando o `fechar.ps1`
+  entregar (mesma regra das entradas vizinhas).

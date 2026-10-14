@@ -18,6 +18,7 @@
     "test:desenho": "node scripts/testar-desenho-assistido.mjs",
     "test:ligacoes": "node scripts/testar-ligacoes.mjs",
     "test:estilos": "node scripts/testar-estilos.mjs",
+    "test:pincel": "node scripts/testar-pincel.mjs",
     "test:formalizar": "node scripts/testar-formalizar.mts",
     "test:corpus": "node scripts/testar-corpus.mjs",
     "test:diff": "node scripts/testar-diff-troca.mjs",

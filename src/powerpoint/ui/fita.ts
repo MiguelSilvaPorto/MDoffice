@@ -295,6 +295,11 @@ export class Fita {
       if (t.closest("button") && !t.closest("select, input, .sel-face")) e.preventDefault();
     });
     host.addEventListener("click", (e) => this.aoClicar(e));
+    // o duplo clique no "Copiar formatação" arma o modo fixo (como no Pincel de Formatação do Word)
+    host.addEventListener("dblclick", (e) => {
+      if (!(e.target as HTMLElement).closest('[data-cmd="copiar-formato"]')) return;
+      this.hooks.run("copiar-formato", "fixo");
+    });
     host.addEventListener("change", (e) => this.aoMudar(e));
     host.addEventListener("keydown", (e) => {
       const t = e.target as HTMLElement;
@@ -319,6 +324,7 @@ export class Fita {
          <div class="ppr-col">
            ${pequeno("desfazer", ic("i-undo"), "Desfazer", "Desfazer (Ctrl+Z)")}
            ${pequeno("refazer", ic("i-redo"), "Refazer", "Refazer (Ctrl+Y)")}
+           ${pequeno("copiar-formato", ic("i-brush"), "Copiar formatação", "Copiar a formatação da forma escolhida: clique na origem e depois na forma que deve vesti-la (duplo clique deixa o pincel ligado; Esc sai)")}
          </div>`
       ),
       grupo(
@@ -1154,6 +1160,9 @@ export class Fita {
     dis("desfazer", !st.podeDesfazer);
     dis("refazer", !st.podeRefazer);
     dis("colar", !st.temCopia);
+    // o "Copiar formatação" precisa de uma forma de origem; armado, fica aceso (e clicável para desligar)
+    dis("copiar-formato", !tem);
+    on("copiar-formato", st.ferramenta?.tipo === "pincel");
     dis("recortar", !tem);
     dis("copiar", !tem);
     dis("duplicar", !tem);

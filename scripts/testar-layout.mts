@@ -1133,6 +1133,85 @@ console.log("\nestilos de cor (galeria, painel e o vivo)");
   );
 }
 
+// ---------------------------------------------------------------- pincel de formatação (copiar formatação)
+
+console.log("\npincel de formatação (copiar formatação)");
+
+{
+  const fitaPin = ler("src/powerpoint/ui/fita.ts");
+  const pptPin = ler("src/powerpoint/powerpoint.ts");
+  const palcoPin = ler("src/powerpoint/stage.ts");
+  const motorPin = ler("src/powerpoint/edicao/pincel.ts");
+  const cssPin = ler("src/styles/powerpoint-edicao.css");
+
+  checa(
+    "o botão fica na Área de Transferência, junto de Recortar/Copiar/Duplicar",
+    /grupo\(\s*"Área de Transferência",[\s\S]{0,1000}copiar-formato/.test(fitaPin) && /pequeno\("copiar-formato", ic\("i-brush"\), "Copiar formatação"/.test(fitaPin),
+    "o botão do pincel saiu da Área de Transferência"
+  );
+  checa(
+    "o duplo clique arma o modo fixo (como no Pincel de Formatação do Word)",
+    /addEventListener\("dblclick"[\s\S]{0,240}copiar-formato[\s\S]{0,120}run\("copiar-formato", "fixo"\)/.test(fitaPin),
+    "o duplo clique não chegaria à fita"
+  );
+  checa(
+    "a fita acende o botão com o pincel armado e o desabilita sem forma escolhida",
+    /on\("copiar-formato", st\.ferramenta\?\.tipo === "pincel"\)/.test(fitaPin) && /dis\("copiar-formato", !tem\)/.test(fitaPin),
+    "o botão ficaria mudo (sem estado e sem guarda)"
+  );
+  checa(
+    "o palco tem a ferramenta pincel, o hook e o clique que entrega a forma",
+    /export type Ferramenta = [^\n]*\{ tipo: "pincel" \}/.test(palcoPin) &&
+      /aoPincelar: \(id: string \| null\) => void/.test(palcoPin) &&
+      /ctx\.ferramenta\?\.tipo === "pincel"[\s\S]{0,400}this\.hooks\.aoPincelar\(/.test(palcoPin) &&
+      /el\.classList\.toggle\("pincel-fmt", ctx\.ferramenta\?\.tipo === "pincel"\)/.test(palcoPin),
+    "o clique com o pincel não chegaria ao host"
+  );
+  checa(
+    "o pincel não usa a cruz de desenhar — o cursor vira o 'copiar'",
+    /tipo !== "pincel"\)/.test(palcoPin) && /\.pp-slide\.pincel-fmt\s*,\s*\n?\.pp-slide\.pincel-fmt \*\s*\{[^}]*cursor:\s*copy/s.test(cssPin),
+    "a cruz de criação ficaria no pincel"
+  );
+  checa(
+    "o duplo clique na forma não abre o texto com o pincel armado",
+    /aoDuploClique[\s\S]{0,600}if \(ctx\.ferramenta\?\.tipo === "pincel"\) return;/.test(palcoPin),
+    "pintar viraria editar o texto"
+  );
+  checa(
+    "o motor copia a pintura e o formato do texto (sem tocar no que é do alvo)",
+    /export function copiarFormato\(f: Shape\): FormatoPincel/.test(motorPin) &&
+      /export function aplicarFormato\(alvo: Shape, fmt: FormatoPincel\): Shape/.test(motorPin) &&
+      /comPreenchimento\(alvo, copia\(fmt\.fill\)\)/.test(motorPin) &&
+      /comOpacidade\(n, fmt\.opacity\)/.test(motorPin) &&
+      /paras: alvo\.paras \? textoComFormato\(alvo\.paras, fmt\) : alvo\.paras/.test(motorPin),
+    "faltou pintura ou texto na cópia"
+  );
+  checa(
+    "a receita do estilo vivo vai junto (e sem ela o alvo solta o estilo)",
+    /estilo: f\.estilo \? copia\(f\.estilo\) : undefined/.test(motorPin) && /if \(fmt\.estilo\) n\.estilo = copia\(fmt\.estilo\)/.test(motorPin) && /delete n\.estilo;/.test(motorPin),
+    "o estilo do alvo ficaria pela metade"
+  );
+  checa(
+    "o host arma/desarma o pincel (clique de novo, Esc, recarregar a apresentação)",
+    /case "copiar-formato":\s*return this\.alternarPincelFormato\(value === "fixo"\)/.test(pptPin) &&
+      /private alternarPincelFormato\(fixo: boolean\)/.test(pptPin) &&
+      /this\.ferramenta\?\.tipo === "pincel" && !fixo/.test(pptPin) &&
+      /case "ferramenta":[\s\S]{0,320}this\.pincelFmt = null/.test(pptPin) &&
+      /load\(data: PowerPointTabData\): void \{[\s\S]{0,900}this\.pincelFmt = null/.test(pptPin),
+    "o pincel ficaria armado depois de sair da ferramenta"
+  );
+  checa(
+    "aplicar não gasta o pincel fixo (e o 'uma vez' se desarma depois de pintar)",
+    /private aoPincelar\(id: string \| null\)[\s\S]{0,700}if \(!p\.fixo\) this\.run\("ferramenta", ""\)/.test(pptPin) && /if \(!alvo \|\| alvo\.bloqueada\) return;/.test(pptPin),
+    "o pincel desarmaria cedo (ou pintaria forma travada)"
+  );
+  checa(
+    "sem receita de estilo na cópia, o alvo solta o estilo antes de vestir a pintura",
+    /patchFormas\(fmt\.estilo \? s : soltarEstilo\(s, \[id\]\), \[id\], \(f\) => aplicarFormato\(f, fmt\)\)/.test(pptPin),
+    "a pintura seria derrubada pelo recálculo no próximo movimento"
+  );
+}
+
 // ---------------------------------------------------------------- docs sem marcador de conflito
 
 console.log("\ndocs sem marcador de conflito");

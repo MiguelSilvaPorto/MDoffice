@@ -1486,6 +1486,12 @@ button.ppr.big .ppr-gal-ic svg {
   cursor: crosshair !important;
 }
 
+/* pincel de formatação armado: o ponteiro vira o "copiar" (o clique aplica o formato à forma) */
+.pp-slide.pincel-fmt,
+.pp-slide.pincel-fmt * {
+  cursor: copy !important;
+}
+
 /* desenho à mão (Draw): o traço ao vivo, por cima da lâmina */
 .pp-traco {
   position: absolute;

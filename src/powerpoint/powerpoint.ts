@@ -20,6 +20,7 @@ import { migrarSlides, registrarMidia } from "./edicao/migrar";
 import { MODELOS, ROTULO_TRATAMENTO, aplicarModelo, type EstiloAtual, type ModeloPPT, type TratamentoIdeia } from "./edicao/modelos";
 import { ARRANJOS, aplicarArranjo, rotuloDoArranjo, unidadesDa, variantesDe, type Arranjo } from "./edicao/arranjos";
 import { criarModeloUsuario, lerModelosUsuario, removerModeloUsuario } from "./modelosUsuario";
+import { aplicarFormato, copiarFormato, type FormatoPincel } from "./edicao/pincel";
 import {
   agruparFormas,
   alinharFormas,
@@ -161,6 +162,8 @@ export class PowerPointHost {
   private editando: string | null = null;
   private ferramenta: Ferramenta = null;
   private pincel: Pincel = lerPincel();
+  /** pincel de formatação armado: o formato copiado e se ele é fixo (o duplo clique na fita o fixa) */
+  private pincelFmt: { formato: FormatoPincel; fixo: boolean } | null = null;
   private fixas = false;
   private encaixe = lerFlag("mdc.pp.encaixe", true);
   private grade = lerFlag("mdc.pp.grade", false);
@@ -218,6 +221,7 @@ export class PowerPointHost {
       aoTraco: (t) => this.aoTraco(t),
       aoTracoAndamento: (pontos) => this.aoTracoAndamento(pontos),
       aoLigar: (l) => this.aoLigar(l),
+      aoPincelar: (id) => this.aoPincelar(id),
     });
     this.montar();
     // fonte da web carregou: as medidas de entrelinha mudam, então redesenha (sem derrubar quem está digitando)
@@ -1826,6 +1830,8 @@ export class PowerPointHost {
       }
       case "copiar":
         return this.copiar();
+      case "copiar-formato":
+        return this.alternarPincelFormato(value === "fixo");
       case "recortar":
         this.copiar();
         return this.run("excluir");
@@ -1890,6 +1896,8 @@ export class PowerPointHost {
         return;
       case "ferramenta":
         this.ferramenta = value === "texto" ? (this.ferramenta?.tipo === "texto" ? null : { tipo: "texto" }) : null;
+        // o pincel de formatação vive junto da ferramenta: sair dela (Esc, outro botão) esquece o formato copiado
+        this.pincelFmt = null;
         this.atualizarPincel();
         this.stage.desenharSelecao();
         this.fita.atualizar();
@@ -2685,6 +2693,40 @@ export class PowerPointHost {
   // copiar e colar
   // ------------------------------------------------------------------
 
+  /**
+   * "Copiar formatação" (o Pincel de Formatação): guarda o formato da forma principal da seleção e
+   * arma a ferramenta de pintura. Clicar de novo no botão (ou Esc) desliga; o duplo clique na fita
+   * arma o modo fixo, em que o pincel pinta várias formas até ser desligado.
+   */
+  private alternarPincelFormato(fixo: boolean): void {
+    if (this.ferramenta?.tipo === "pincel" && !fixo) {
+      this.run("ferramenta", "");
+      return;
+    }
+    const origem = this.principal();
+    if (!origem) return;
+    this.pincelFmt = { formato: copiarFormato(origem), fixo };
+    this.ferramenta = { tipo: "pincel" };
+    this.atualizarPincel();
+    this.stage.desenharSelecao();
+    this.fita.atualizar();
+  }
+
+  /**
+   * O clique do pincel de formatação: o alvo veste o formato copiado (a geometria, a caixa, o giro e
+   * o texto dele ficam). Clique no vazio ou em forma travada não gasta o pincel — ele fica armado.
+   */
+  private aoPincelar(id: string | null): void {
+    const p = this.pincelFmt;
+    if (!p || !id) return;
+    const alvo = this.atual().shapes.find((s) => s.id === id);
+    if (!alvo || alvo.bloqueada) return;
+    const fmt = p.formato;
+    // sem receita de estilo na cópia, o estilo vivo do alvo é solto antes (a pintura fica dona)
+    this.editar((s) => patchFormas(fmt.estilo ? s : soltarEstilo(s, [id]), [id], (f) => aplicarFormato(f, fmt)));
+    if (!p.fixo) this.run("ferramenta", "");
+  }
+
   private copiar(): void {
     const ids = comGrupos(this.atual(), this.selecao);
     const formas = this.atual().shapes.filter((s) => ids.includes(s.id));
@@ -3391,6 +3433,7 @@ export class PowerPointHost {
     this.selecao = data.selecionada ? [data.selecionada] : [];
     this.editando = null;
     this.ferramenta = null;
+    this.pincelFmt = null;
     this.atualizarPincel();
     this.hist.limpar();
     this.pane.style.setProperty("--slide-ratio", String(stageRatio(this.setup)));
