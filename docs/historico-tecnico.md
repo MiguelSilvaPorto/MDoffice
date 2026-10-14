@@ -4557,3 +4557,24 @@ antigas quando fizer sentido.
   setas sub/sobrescritas e a espera do painel)
 - **Porquê:** são regras que já quebraram uma vez e não têm como voltar sem alguém notar: o teste
   de layout é o lugar onde o repositório prende esse tipo de invariante.
+
+## src/powerpoint/stage.ts · src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · esta tarefa · zoom do PowerPoint até 800%
+- **Local:** `stage.ts` (constantes do topo, `passoZoom` novo, `zoomIn`/`zoomOut`) e
+  `powerpoint.ts` (a roda com Ctrl e as ações `zoom-in`/`zoom-out`)
+- **Linha:** `const ZOOM_MAX = 400` → `800`; `setZoom(zoom + ZOOM_PASSO)` →
+  `passoZoom(zoom)`; `zoomAtual + 10` → `zoomAtual + passoZoom(zoomAtual)`
+- **Porquê:** o pedido foi 800% e o passo fixo de 10% custaria **70 cliques** no "+" para
+  atravessar a faixa nova. O passo adaptativo copia o conceito que a prancheta de desenho já
+  usa (`passoZoom` = 0.25/0.5/1 na escala 0.5–8; `aa76c73` levou o teto dela a 800%): na
+  escala percentual, 10 até 150, 25 até 250, 50 até 500, 100 daí em diante — e o slider fica
+  com o passo fino de propósito, porque lá o ponteiro não paga o custo de cada passo. A
+  lâmina é HTML e o zoom é aplicado pela largura do quadro (`--pp-zoom`), não por
+  `transform: scale`: a 800% a área de rolagem continua existindo e nada perde nitidez.
+- **Local:** `scripts/testar-layout.mts` e `docs/powerpoint.md`
+- **Linha:** `novo` — seção "PowerPoint: zoom até 800%" (4 checagens de padrão) e a linha do
+  zoom no doc do módulo (400% → 800%, com o passo)
+- **Porquê:** o teste de layout é onde o zoom da prancheta já é conferido por padrão de
+  código; a checagem equivalente do PowerPoint entra no mesmo lugar para o teto não voltar em
+  silêncio numa refatoração futura.

@@ -363,6 +363,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Zoom do PowerPoint até 800%**: o teto era 400%; agora o slider, o **+ / −** e o
+  **Ctrl + roda** vão a **800%** (a lâmina é HTML/vetorial, então ampliar não perde nitidez, e
+  a rolagem continua de verdade). Para a faixa nova não custar 70 cliques, o passo do botão e
+  da roda **cresce com o nível** — 10% até 150%, 25% até 250%, 50% até 500%, 100% daí em
+  diante (do 100% ao 800% em ~17 passos) —, o mesmo conceito que as pranchetas de desenho já
+  usavam; o slider continua fino (10%).
 - **Dica das alças de canto no visual do app**: o balão nativo do sistema (`title`) saiu; passar o
   mouse numa alça de canto mostra uma caixa do próprio app com **"Canto superior direito · 40%"**
   (valor em destaque) e a dica de uso — **"Arraste arredonda os 4 cantos escolhidos · Shift+clique

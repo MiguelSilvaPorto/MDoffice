@@ -21,9 +21,22 @@ import type { Animacao, Shape, ShapeBox } from "./schema";
 import { CANTO_ROTULO, CANTOS, cantosDe, valoresComSelecao, type Canto } from "./edicao/formato";
 
 const ZOOM_MIN = 40;
-/** Até 400%: a lâmina é HTML (vetorial), então ampliar não perde nitidez. */
-const ZOOM_MAX = 400;
+/** Até 800%: a lâmina é HTML (vetorial), então ampliar não perde nitidez. */
+const ZOOM_MAX = 800;
 const ZOOM_PASSO = 10;
+
+/**
+ * Passo do zoom por clique/roda/atalho: cresce com o nível, como nas pranchetas de
+ * desenho já fazem. Sem isso, atravessar a faixa nova (100% → 800%) custaria 70 cliques
+ * no "+"; com ele, ~17. O slider continua com o passo fino (`ZOOM_PASSO`), porque lá o
+ * ponteiro não paga o custo de cada passo.
+ */
+export function passoZoom(atual: number): number {
+  if (atual < 150) return 10;
+  if (atual < 250) return 25;
+  if (atual < 500) return 50;
+  return 100;
+}
 
 const r1 = (v: number) => Math.round(v * 10) / 10;
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -138,7 +151,7 @@ export class Stage {
 
   /**
    * Aplica o zoom pela LARGURA do quadro (não por `transform: scale`).
-   * A diferença importa: `transform` não afeta o layout, então a 400% a lâmina
+   * A diferença importa: `transform` não afeta o layout, então no zoom alto a lâmina
    * extrapolaria sem criar área de rolagem — não daria para ver o resto dela.
    * Mexendo na largura, o palco rola de verdade.
    *
@@ -193,11 +206,11 @@ export class Stage {
   }
 
   zoomIn(ancora?: { x: number; y: number }): number {
-    return this.setZoom(this.zoom + ZOOM_PASSO, ancora);
+    return this.setZoom(this.zoom + passoZoom(this.zoom), ancora);
   }
 
   zoomOut(ancora?: { x: number; y: number }): number {
-    return this.setZoom(this.zoom - ZOOM_PASSO, ancora);
+    return this.setZoom(this.zoom - passoZoom(this.zoom), ancora);
   }
 
   zoomReset(): number {

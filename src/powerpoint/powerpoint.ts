@@ -64,7 +64,7 @@ import { openDeckView } from "./presenter";
 import { aoCarregarFontes, fundoValor, htmlFormaRica, parasComEstilo, parasComTexto, registrarFontes, type CtxRender } from "./render/forma";
 import { shapeText } from "./shapes";
 import { clampIndex, duplicateSlide, insertSlide, moveSlide, removeSlide, replaceSlide, resetSlide, setLayout } from "./slides";
-import { Stage, type CelulasSel, type Ferramenta } from "./stage";
+import { Stage, passoZoom, type CelulasSel, type Ferramenta } from "./stage";
 import { THEMES, stageVars, themeOf } from "./themes";
 import { abrirCores } from "./ui/cores";
 import { Fita } from "./ui/fita";
@@ -352,8 +352,8 @@ export class PowerPointHost {
         if (!e.ctrlKey && !e.metaKey) return;
         e.preventDefault();
         const ponto = { x: e.clientX, y: e.clientY };
-        // dy < 0 = roda para cima = ampliar
-        this.setZoom(this.stage.zoomAtual + (e.deltaY < 0 ? 10 : -10), ponto);
+        // dy < 0 = roda para cima = ampliar (o passo cresce no zoom alto, como nos botões)
+        this.setZoom(this.stage.zoomAtual + (e.deltaY < 0 ? passoZoom(this.stage.zoomAtual) : -passoZoom(this.stage.zoomAtual)), ponto);
       },
       { passive: false }
     );
@@ -1928,9 +1928,9 @@ export class PowerPointHost {
 
       // ---- exibição ----
       case "zoom-in":
-        return this.setZoom(this.stage.zoomAtual + 10);
+        return this.setZoom(this.stage.zoomAtual + passoZoom(this.stage.zoomAtual));
       case "zoom-out":
-        return this.setZoom(this.stage.zoomAtual - 10);
+        return this.setZoom(this.stage.zoomAtual - passoZoom(this.stage.zoomAtual));
       case "zoom-reset":
         return this.setZoom(100);
       case "alt-encaixe":

@@ -254,5 +254,32 @@ checa(
   "o zoom não ancora no ponteiro"
 );
 
+// ---------------------------------------------------------------- PowerPoint: zoom até 800%
+
+console.log("\nPowerPoint: zoom até 800% (palco rola de verdade)");
+
+const palcoPpt = ler("src/powerpoint/stage.ts");
+const ppt = ler("src/powerpoint/powerpoint.ts");
+
+checa("o teto do zoom é 800%", /const ZOOM_MAX = 800;/.test(palcoPpt), "o teto continua 400%");
+checa(
+  "o passo cresce no zoom alto (800% sem setenta cliques)",
+  /export function passoZoom\(atual: number\): number \{/.test(palcoPpt) &&
+    /if \(atual < 150\) return 10;/.test(palcoPpt) &&
+    /if \(atual < 250\) return 25;/.test(palcoPpt) &&
+    /if \(atual < 500\) return 50;/.test(palcoPpt),
+  "o passo continua fixo"
+);
+checa(
+  "o clique no + / − usa o passo adaptativo",
+  /this\.setZoom\(this\.stage\.zoomAtual \+ passoZoom\(this\.stage\.zoomAtual\)\)/.test(ppt) &&
+    /this\.setZoom\(this\.stage\.zoomAtual - passoZoom\(this\.stage\.zoomAtual\)\)/.test(ppt)
+);
+checa(
+  "a roda (Ctrl) usa o passo adaptativo e ancora no ponteiro",
+  /setZoom\(this\.stage\.zoomAtual \+ \(e\.deltaY < 0 \? passoZoom\(this\.stage\.zoomAtual\) : -passoZoom\(this\.stage\.zoomAtual\)\), ponto\)/.test(ppt),
+  "a roda não ancora no ponteiro ou não usa o passo"
+);
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

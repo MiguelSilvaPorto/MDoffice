@@ -85,7 +85,9 @@ avisado ao abrir (nunca some em silêncio).
 - **Painel Formatar/Animação/Notas** à direita: pode ser escondido, redimensionado e reaberto pela
   aba “« Formatar”; o painel de animação lista os efeitos da lâmina na ordem (selecionar, mover e
   remover) e as notas ficam na aba **Notas**.
-- **Zoom até 400%** ancorado no ponteiro (Ctrl + roda do mouse), com rolagem de verdade.
+- **Zoom até 800%** ancorado no ponteiro (Ctrl + roda do mouse), com rolagem de verdade; o
+  passo do clique/roda cresce no zoom alto (do 100% ao 800% em ~17 passos) e o slider
+  continua fino.
 - **Faixa de lâminas** no topo ou na vertical (Exibir → Faixa vertical).
 
 ## Testes
