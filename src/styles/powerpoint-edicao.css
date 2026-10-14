@@ -314,7 +314,7 @@ button.ppr.big .car {
 }
 
 .ppr-sel {
-  height: var(--pe-aba-alt);
+  height: var(--pe-altura);
   padding: 0 var(--pe-4);
   color: var(--fg);
   background: var(--panel-2);
@@ -364,9 +364,20 @@ button.ppr .ppr-barra {
 }
 
 button.ppr.cor {
+  position: relative;
   flex-direction: column;
   gap: 0;
   padding: 0 5px;
+}
+
+/* a setinha do menu fica no canto do botão, sem empurrar o "A"/"ab" para cima */
+button.ppr.cor .car {
+  position: absolute;
+  right: 1px;
+  bottom: 0;
+  margin: 0;
+  font-size: 8px;
+  line-height: 1;
 }
 
 .ppr-sep {

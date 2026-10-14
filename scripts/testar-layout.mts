@@ -202,5 +202,29 @@ checa(
   "faltam os ouvintes na janela"
 );
 
+// ---------- seletor do app: o controle cabe na linha e acompanha o contexto ----------
+
+console.log("\nseletor do app (no lugar do <select> nativo)");
+
+const sel = ler("src/seletor.ts");
+checa("o rótulo vazio fica em branco (sem o '—' de antes)", /rot\.textContent = rotuloDe\(select\);/.test(sel));
+checa("a lista aberta fecha antes de redesenhar um painel", /export function fecharSeletor\(/.test(sel));
+checa("a setinha acompanha o tamanho do contexto (1em)", /\.sel-face \.ic\s*\{[^}]*width:\s*1em/.test(ler("src/styles/base.css")));
+
+// nas fitas, o seletor tem a altura dos botões da mesma linha (senão fica torto)
+checa("Word: .rb-select tem a altura do .rb (28px)", /\.rb-select\s*\{[^}]*height:\s*28px/.test(ler("src/styles/word.css")));
+checa("PowerPoint: .ppr-sel usa a altura dos botões", /\.ppr-sel\s*\{[^}]*height:\s*var\(--pe-altura\)/.test(ler("src/styles/powerpoint-edicao.css")));
+checa("Excel: .xl-select tem a altura do .xl (26px)", /\.xl-select\s*\{[^}]*height:\s*26px/.test(ler("src/styles/excel.css")));
+
+// a setinha do menu dos botões de cor fica dentro do botão (antes estourava a linha)
+checa("PowerPoint: a setinha do botão de cor fica no canto", /button\.ppr\.cor\s*\{[^}]*position:\s*relative/.test(ler("src/styles/powerpoint-edicao.css")));
+
+// "A maior/A menor": a seta de baixo é subscrita (a de cima continua sobrescrita)
+checa("PowerPoint: diminuir fonte com a seta embaixo", /A<sub>▼<\/sub>/.test(ler("src/powerpoint/ui/fita.ts")));
+checa("Word: diminuir fonte com a seta embaixo", /A<sub>▼<\/sub>/.test(ler("src/word/ribbon.ts")));
+
+// o painel do PowerPoint se redesenha sozinho: não pode matar a lista aberta
+checa("PowerPoint: o painel espera a lista fechar antes de redesenhar", /fecharSeletor\(this\.el\)/.test(ler("src/powerpoint/ui/painel.ts")));
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

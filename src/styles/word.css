@@ -318,7 +318,7 @@ body.settings-open #word-pane {
 }
 
 .rb-select {
-  height: 26px;
+  height: 28px;
   padding: 0 6px;
   color: var(--fg);
   background: var(--panel);

@@ -264,7 +264,7 @@ body.home-open #excel-pane {
 }
 
 .xl-select {
-  height: 24px;
+  height: 26px;
   padding: 0 6px;
   color: var(--fg);
   background: var(--panel-2);

@@ -4304,3 +4304,91 @@ antigas quando fizer sentido.
 - **Porquê:** com o seletor unificado o chevron vinha em dobro (fundo do botão antigo + seta da
   cara) e o `.st-dd` ficou sem uso. O `.st-select` continua servindo os diálogos do Word (com a
   seta da própria cara).
+
+## src/seletor.ts
+
+### 2026-10-14 · esta tarefa · valor vazio em branco e lista que fecha com o painel
+- **Local:** `sincronizarSeletor` e o novo `fecharSeletor`
+- **Linha:** `rot.textContent = rotuloDe(select) || "—"` → `rot.textContent = rotuloDe(select)`;
+  novo export `fecharSeletor(raiz?)` fecha a lista aberta quando o select está dentro de `raiz`
+- **Porquê:** o “—” entrava onde o `<select>` nativo mostrava vazio (tamanho misto no PowerPoint,
+  entrelinha “padrão” no Word): em vez de dizer “sem valor”, parecia um controle quebrado — é o
+  que o print da fita mostrava. E painel que se redesenha (o do PowerPoint troca o `innerHTML`
+  inteiro) deixava a lista aberta presa a um select que saiu do DOM: a escolha era perdida.
+  `fecharSeletor` existe para o redesenho começar com a lista fechada.
+
+## src/styles/base.css
+
+### 2026-10-14 · esta tarefa · a setinha acompanha o contexto
+- **Local:** `.sel-face .ic`
+- **Linha:** `width/height: 12px` → `1em`
+- **Porquê:** a fita do PowerPoint escala tudo por `--fita-escala` (a pessoa aumenta a faixa): com
+  12 px fixos a setinha encolhia em relação à caixa. `1em` segue o `font-size` do contexto (na
+  fita, a fonte já escala) e nas telas de tamanho normal continua ~12 px.
+
+## src/styles/word.css
+
+### 2026-10-14 · esta tarefa · `.rb-select` na altura do `.rb`
+- **Local:** `.rb-select`
+- **Linha:** `height: 26px` → `28px`
+- **Porquê:** o campo ficava 2 px mais baixo que os botões da mesma linha (A▲/A▼/Aa) — o
+  desalinhamento aparecia como “torto” na fita.
+
+## src/word/ribbon.ts
+
+### 2026-10-14 · esta tarefa · setas de tamanho sub/sobrescritas
+- **Local:** botões `size-up` e `size-down`
+- **Linha:** `A<small>▲</small>`/`A<small>▼</small>` → `A<sup>▲</sup>`/`A<sub>▼</sub>`
+- **Porquê:** como itens de flex, os dois `<small>` ficavam centralizados na mesma altura — o
+  “diminuir” precisa da seta embaixo, como no Word.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · esta tarefa · `.ppr-sel` na altura dos botões e setinha do cor dentro
+- **Local:** `.ppr-sel`, `button.ppr.cor` e `button.ppr.cor .car`
+- **Linha:** `.ppr-sel { height: var(--pe-aba-alt) }` → `var(--pe-altura)` (24 → 26 na escala 1);
+  `button.ppr.cor` ganhou `position: relative` e `button.ppr.cor .car` virou absoluto no canto
+  (`right: 1px; bottom: 0; font-size: 8px; line-height: 1`)
+- **Porquê:** os campos ficavam 2 px mais baixos que os botões da linha. Nos botões de cor o
+  conteúdo é uma pilha (letra + barrinha + setinha do menu): com a setinha no fluxo, a pilha
+  passava dos 26 px do botão — a letra subia e o “▾” vazava para fora, deixando a fileira torta.
+  Fora do fluxo, a pilha centraliza e a seta mora no canto, sem empurrar nada.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · esta tarefa · `A▼` desce de verdade e a lista fecha antes de remontar as opções
+- **Local:** botão `menor` e `atualizar()` (seletores de fonte e tamanho)
+- **Linha:** `A<sup>▼</sup>` → `A<sub>▼</sub>`; `fecharSeletor(selFonte)`/`fecharSeletor(selTam)`
+  antes do `innerHTML =` que remonta as opções
+- **Porquê:** com `sup` a seta de diminuir ficava na mesma altura da de aumentar (supõe-se “maior”
+  nas duas). E o `atualizar()` troca as opções quando o documento muda: com a lista aberta, a
+  pessoa veria a lista antiga ser trocada embaixo do dedo — fechá-la antes é o que mantém a
+  escolha coerente.
+
+## src/styles/excel.css
+
+### 2026-10-14 · esta tarefa · `.xl-select` na altura do `.xl`
+- **Local:** `.xl-select`
+- **Linha:** `height: 24px` → `26px`
+- **Porquê:** mesmo desalinhamento de 2 px entre o campo de formato de número e os botões da
+  linha (R$, %, 000).
+
+## src/powerpoint/ui/painel.ts
+
+### 2026-10-14 · esta tarefa · o redesenho não mata a lista aberta
+- **Local:** `atualizar()`
+- **Linha:** a condição de “está digitando” ganhou o caso da cara do seletor
+  (`ativo?.closest(".sel-wrap")`) e `fecharSeletor(this.el)` roda antes do `innerHTML`
+- **Porquê:** o painel troca o conteúdo inteiro quando a assinatura do estado muda; com um seletor
+  aberto, o controle ia embora e a lista ficava órfã (a escolha não chegava a aplicar). Com a
+  espera, a lista termina a escolha e o redesenho acontece depois — e, se um redesenho escapar,
+  o `fecharSeletor` garante que ele comece com a lista fechada.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · esta tarefa · seção do seletor no teste de layout
+- **Local:** bloco novo “seletor do app (no lugar do `<select>` nativo)”
+- **Linha:** 10 checagens novas (sem “—”, setinha `1em`, alturas das três fitas, setinha do cor,
+  setas sub/sobrescritas e a espera do painel)
+- **Porquê:** são regras que já quebraram uma vez e não têm como voltar sem alguém notar: o teste
+  de layout é o lugar onde o repositório prende esse tipo de invariante.

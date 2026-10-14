@@ -21,10 +21,10 @@ function rotuloDe(select: HTMLSelectElement): string {
   return op ? (op.label || op.textContent || "").trim() : "";
 }
 
-/** A cara do controle acompanha o estado atual do select. */
+/** A cara do controle acompanha o estado atual do select (vazio = em branco, como o nativo). */
 export function sincronizarSeletor(select: HTMLSelectElement): void {
   const rot = select.closest<HTMLElement>(".sel-wrap")?.querySelector<HTMLElement>("[data-sel-rotulo]");
-  if (rot) rot.textContent = rotuloDe(select) || "—";
+  if (rot) rot.textContent = rotuloDe(select);
 }
 
 function fecharMenu(animar = true): void {
@@ -156,4 +156,12 @@ export function melhorarSeletor(select: HTMLSelectElement): void {
 /** Melhora todos os `<select>` de um contêiner (chame depois de montar a tela). */
 export function melhorarSelects(raiz: ParentNode): void {
   raiz.querySelectorAll<HTMLSelectElement>("select").forEach((s) => melhorarSeletor(s));
+}
+
+/**
+ * Fecha a lista aberta quando o select que a abriu está dentro de `raiz`
+ * (usado antes de redesenhar um painel: sem isso a lista fica presa a um controle que sumiu).
+ */
+export function fecharSeletor(raiz?: ParentNode): void {
+  if (aberto && (!raiz || raiz.contains(aberto.select))) fecharMenu();
 }

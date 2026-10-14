@@ -148,8 +148,9 @@ button {
 
 .sel-face .ic {
   flex: none;
-  width: 12px;
-  height: 12px;
+  /* 1em: a setinha acompanha a escala do contexto (fita do PowerPoint ao aumentar) */
+  width: 1em;
+  height: 1em;
   color: var(--muted);
 }
 

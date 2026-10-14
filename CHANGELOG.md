@@ -298,6 +298,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Seleção do app na fita e em “Configurar página”**: os seletores de **Fonte** e **Tamanho** e os
   quatro do diálogo de página (papel, orientação, fonte e tamanho padrão) trocam a lista cinza do
   sistema pelo menu suspenso do app.
+- **Setas de tamanho e campos na linha da fita**: o `A▲`/`A▼` de aumentar/diminuir a fonte agora
+  aponta para os dois lados (a seta de diminuir fica **embaixo** do A, como no Word) e os
+  seletores de **Fonte** e **Tamanho** ficaram na **mesma altura dos botões** da linha (28 px) —
+  antes o campo ficava 2 px mais baixo que os vizinhos.
 
 ---
 
@@ -336,6 +340,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   na tela, no duplo clique e no menu de contexto.
 - **Seleção do app no formato do número**: o seletor da fita troca a lista cinza do sistema pelo
   menu suspenso do app (o valor e o comportamento são os mesmos).
+- **Seletor de formato de número na altura da linha**: o campo do grupo **Número** passou a ter a
+  mesma altura dos botões ao lado (26 px) — estava 2 px mais baixo.
 
 ---
 
@@ -450,6 +456,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   escolhidos**, com cada canto guardando o valor que tinha. Com **várias formas selecionadas**, o
   quadro do grupo ganha as quatro alças: arrastar (ou usar os presets do painel) iguala os cantos
   de **todas as caixas** de uma vez, e o painel avisa quando as formas têm valores diferentes.
+- **Fita e painel com os campos no lugar**: o campo de **tamanho** vazio volta a ficar **em
+  branco** (mostrava um “—” que parecia erro — é assim que o PowerPoint mostra tamanho misto) e
+  os seletores de **fonte/tamanho** ficam na **mesma altura dos botões** (26 px). No grupo Fonte,
+  o `A▼` de diminuir agora **desce** (era sobrescrito como o `A▲`) e a setinha de menu dos botões
+  de cor (A/ab) mora **dentro** do botão, sem estourar a linha. E no painel a **lista aberta** de
+  um seletor não morre mais quando o painel se redesenha (antes a escolha era perdida).
 
 ---
 
@@ -667,6 +679,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   desenho) agora são `<select>` melhorados pelo **mesmo controle do resto do app**
   (`src/seletor.ts`): a lista aberta é o menu suspenso do app, no tema. O componente antigo
   (`dd`/`ctx.menu`) sai — uma implementação só.
+- **Seletor do app acertado**: o controle que substitui o `<select>` nativo ficou **em branco** no
+  valor vazio (mostrava um “—” que parecia erro) e a **setinha acompanha o tamanho do contexto**
+  (1em — na fita do PowerPoint ela cresce junto quando a faixa é aumentada). A lista aberta
+  **fecha antes** de um painel se redesenhar (`fecharSeletor`), em vez de ficar presa a um
+  controle que sumiu.
 
 **Ferramentas (dev)**
 
@@ -710,5 +727,9 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   com fontes e plano por fases V0–V4 (`docs/pesquisa-sugestoes-velocidade-tamanho.md`).
 - **Monitor da `main` suja**: além do hook que bloqueia o commit na `main`, o mesmo instalador
   (`instalar-monitor.ps1`) agora agenda o `monitor-main.ps1`: a cada poucos minutos ele registra
-  no log quando a **cópia principal** fica com alterações soltas (trabalho direto na `main` —
+  no log quando a **cópia principal** fica com alterações soltas (trabalho direto na `main` -
   edição, que o hook não tem como impedir) e quando ela volta a ficar limpa.
+- **Teste de layout com a seção do seletor**: `npm run test:layout` ganhou 10 checagens das regras
+  que apareceram tortas no seletor (valor vazio sem o “—”, setinha `1em`, alto dos selects nas três
+  fitas, setinha do botão de cor dentro do botão, setas de aumentar/diminuir e a lista que fecha
+  antes de um painel se redesenhar).

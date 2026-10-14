@@ -101,8 +101,8 @@ export class Ribbon {
                 <select class="rb-select size" data-sel="size" title="Tamanho da letra" aria-label="Tamanho da letra">
                   ${FONT_SIZES.map((s) => `<option value="${s}">${s}</option>`).join("")}
                 </select>
-                ${btn("size-up", "A<small>▲</small>", "Aumentar tamanho da fonte")}
-                ${btn("size-down", "A<small>▼</small>", "Diminuir tamanho da fonte")}
+                ${btn("size-up", "A<sup>▲</sup>", "Aumentar tamanho da fonte")}
+                ${btn("size-down", "A<sub>▼</sub>", "Diminuir tamanho da fonte")}
                 ${btn("change-case", "Aa ▾", "Maiúsculas / Minúsculas")}
                 ${btn("clear", icon("i-clear-format"), "Limpar formatação")}
               </div>

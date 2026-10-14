@@ -11,7 +11,7 @@ import { FONTES_COMUNS, TAMANHOS, cmParaPt, ptParaCm, type EstadoUI } from "./es
 import { abrirGaleria, iconeDeForma } from "./galeria";
 import { abrirModelos } from "./modelos";
 import { abrirPopup, fecharPopup } from "./popup";
-import { melhorarSelects } from "../../seletor";
+import { melhorarSelects, fecharSeletor } from "../../seletor";
 import { GALERIA } from "../edicao/criar";
 import { ORDEM_LAYOUTS, ROTULOS_LAYOUT } from "../edicao/layouts";
 
@@ -206,7 +206,7 @@ export class Fita {
              <select class="ppr-sel fonte" data-sel="font" title="Fonte" aria-label="Fonte"></select>
              <select class="ppr-sel tam" data-sel="size" title="Tamanho da fonte" aria-label="Tamanho da fonte"></select>
              ${btn("maior", "A<sup>▲</sup>", "Aumentar fonte (Ctrl+Shift+>)", "fmt")}
-             ${btn("menor", "A<sup>▼</sup>", "Diminuir fonte (Ctrl+Shift+<)", "fmt")}
+             ${btn("menor", "A<sub>▼</sub>", "Diminuir fonte (Ctrl+Shift+<)", "fmt")}
            </div>
            <div class="ppr-linha">
              ${btn("negrito", "<b>N</b>", "Negrito (Ctrl+B)", "fmt")}
@@ -1008,6 +1008,8 @@ export class Fita {
       const lista = [...new Set([...(atual ? [atual] : []), ...st.fontes, ...FONTES_COMUNS])];
       const sig = lista.join("|") + "#" + atual;
       if (selFonte.dataset.sig !== sig) {
+        // a lista aberta seria trocada embaixo do usuário: fecha antes de remontar as opções
+        fecharSeletor(selFonte);
         selFonte.innerHTML = (atual ? "" : `<option value="" selected></option>`) + lista.map((f) => `<option value="${f}"${f === atual ? " selected" : ""} style="font-family:'${f}'">${f}</option>`).join("");
         selFonte.dataset.sig = sig;
       }
@@ -1019,6 +1021,7 @@ export class Fita {
       const lista = [...new Set([...(atual ? [atual] : []), ...TAMANHOS])].sort((a, b) => a - b);
       const sig = lista.join("|") + "#" + atual;
       if (selTam.dataset.sig !== sig) {
+        fecharSeletor(selTam);
         selTam.innerHTML = (atual ? "" : `<option value="" selected></option>`) + lista.map((s) => `<option value="${s}"${s === atual ? " selected" : ""}>${String(s).replace(".", ",")}</option>`).join("");
         selTam.dataset.sig = sig;
       }
