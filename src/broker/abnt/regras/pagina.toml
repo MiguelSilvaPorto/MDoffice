@@ -1,0 +1,13 @@
+# "pág. 15", "pag 15" e "pg 15" viram "p. 15".
+id = "abnt.pagina"
+norma = "abnt:tipografia"
+grupo = "T"
+severidade = "warning"
+auto = true
+ignorar_caixa = true
+regex = '(?<trecho>(?:p[áa]g|pag|pg)\.?[<<espaco>>]*(?<num>[0-9]+))'
+trecho = "trecho"
+antes = "nao_letra"
+depois = "nao_letra"
+substituir = "p. {num}"
+mensagem = "[ABNT] A abreviatura padrão de página é “p. {num}”"

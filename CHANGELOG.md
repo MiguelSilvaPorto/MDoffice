@@ -86,6 +86,20 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   "duvida" → "dúvida"). É pergunta, nunca correção sozinha: o acento troca o sentido. As medidas
   são as mesmas do "você quis dizer…" — a forma escrita tem de ser rara, a acentuada tem de ser
   bem mais usada e existir de verdade.
+- **Regras ABNT em TOML**: as dez regras de norma e tipografia deixaram de ser funções no
+  código e passaram a ser **dado** (`src/broker/abnt/regras/*.toml`), com **id estável**,
+  **versão de norma** de cada uma e **perfil institucional** — por regra, `off` (a instituição
+  não usa), `soft` (vira sugestão, nunca automática) ou `hard` (vira erro). É o `Config` do
+  catálogo: as universidades divergem entre si, e a divergência passa a ser dado, não código.
+  O schema é **fechado**: `\d`, `\s`, `\b` e os demais shorthands são recusados na carga (o
+  significado muda de motor para motor), `<<classe>>` só vale dentro de `[ ]`, `{nome}` só vale
+  como grupo nomeado do próprio regex. Um **teste de ouro** exige que as regras em TOML
+  produzam exatamente os mesmos avisos que as dez funções antigas, em quatro famílias de caso
+  (acento colado à borda, vizinhos, bordas do texto, match descartado ao lado de um válido).
+  O texto agora é **normalizado (NFC + LF) antes das regras**, com o aviso voltando para a
+  posição do original — texto colado do macOS ou de PDF vem em NFD, e nesse formato a regra das
+  siglas errava o alvo e a troca **apagava a letra acentuada**. Medido: as dez regras sobre um
+  TCC de 57 mil caracteres levam **1,8 ms** por verificação.
 - **Correção automática**: palavras erradas com certeza, maiúsculas, espaços, pontuação,
   abreviações; ao terminar o parágrafo e ao salvar; cada correção é um passo de `Ctrl+Z`.
 - **Ponto e vírgula automáticos** e **modo formal** (“a gente” com o verbo conjugado);

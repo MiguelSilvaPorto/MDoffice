@@ -13,11 +13,35 @@ import fs from "node:fs";
 import { build } from "esbuild";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const raiz = new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 const tmp = mkdtempSync(join(tmpdir(), "correcoes-"));
+
+/**
+ * O `?raw` do Vite, que o esbuild não conhece sozinho.
+ *
+ * As regras ABNT vivem em `src/broker/abnt/regras/*.toml` e entram no pacote como
+ * texto (é assim que o app as carrega também). Sem este plugin, empacotar `check.ts`
+ * falha no primeiro `.toml?raw`.
+ */
+const pluginRaw = {
+  name: "raw",
+  setup(api: {
+    onResolve: (o: { filter: RegExp }, cb: (a: { path: string; importer: string }) => unknown) => void;
+    onLoad: (o: { filter: RegExp; namespace: string }, cb: (a: { path: string }) => unknown) => void;
+  }) {
+    api.onResolve({ filter: /\?raw$/ }, (args) => ({
+      path: resolve(dirname(args.importer), args.path.replace(/\?raw$/, "")),
+      namespace: "raw",
+    }));
+    api.onLoad({ filter: /.*/, namespace: "raw" }, (args) => ({
+      contents: fs.readFileSync(args.path, "utf8"),
+      loader: "text",
+    }));
+  },
+};
 
 const empacotar = async (entrada: string, saida: string) => {
   await build({
@@ -27,6 +51,7 @@ const empacotar = async (entrada: string, saida: string) => {
     format: "esm",
     outfile: join(tmp, saida),
     logLevel: "error",
+    plugins: [pluginRaw as never],
   });
   return import(pathToFileURL(join(tmp, saida)).href);
 };
@@ -289,6 +314,7 @@ console.log("\n=== aprendizado com o uso ===");
       format: "esm",
       outfile: saida,
       logLevel: "error",
+      plugins: [pluginRaw as never],
     });
     return import(pathToFileURL(saida).href);
   })();

@@ -1980,6 +1980,87 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** cobre os casos reais das regras — ponto final, palavra trocada, inserção/remoção puras,
   vírgula antes de "mas", expressão intercalada, pontuação duplicada e maiúscula no começo.
 
+## src/broker/abnt/ (novo) · src/broker/normalizar.ts (novo) · src/broker/check.ts · src/broker/style/abnt.ts
+
+### 2026-10-14 · (este commit) · as regras ABNT viram dado
+- **Local:** `src/broker/abnt/` (`esquema.ts`, `lint.ts`, `interpretador.ts`, `toml.ts`,
+  `index.ts`, `regras/*.toml`, `perfis/abnt.toml`)
+- **Linha:** `novo` — as dez regras de `style/abnt.ts` passam a viver em TOML
+- **Porquê:** as dez funções não tinham **id estável** (não dava para citar uma regra num
+  relatório), não sabiam de **versão de norma** (a NBR 14724 de 2024 substituiu a de 2011, a
+  6023 tem edição de 2025, e as instituições migram em ritmos diferentes) e não aceitavam
+  **perfil institucional** — o que UFAPE e UNIFESP divergem estava em código, se é que estava.
+  O TOML fecha os três e mantém o comportamento: o teste de ouro exige aviso idêntico.
+- **Local:** `esquema.ts`, `CLASSES` e `PREDICADOS`
+- **Linha:** `novo` — vocabulário FECHADO
+- **Porquê:** `\d`, `\s`, `\w` e `\b` significam coisas diferentes em cada motor (ASCII no
+  JavaScript com a flag `u`, Unicode no `regex` do Rust). Em vez de documentar a divergência,
+  o schema a torna impossível: o TOML só aceita as classes da tabela (`<<espaco>>`, `<<digito>>`)
+  e os predicados de borda. `espaco` é o `\s` do JavaScript **code point a code point** — e é
+  um teste gerado que o confere contra `/\s/u`, não a memória de quem escreveu (a primeira
+  versão esqueceu `\u000B`, a tabulação vertical).
+- **Local:** `lint.ts`, `conferirRegra` e `varrerPadrao`
+- **Linha:** `novo` — recusa na carga
+- **Porquê:** as afirmações do schema não podem viver em prosa. Três vezes nesta tarefa a
+  especificação contradisse a si mesma (`{hs}` de um grupo não capturante, `[espaco]` que é
+  regex válida, `\u000B` faltando) e as três foram pegas por leitura humana. O lint vira
+  máquina: escapes recusados lidos um a um (não por busca do texto `\b`, que daria falso
+  positivo em `\\b` e em `[\b]`), `{nome}` que precisa ser grupo nomeado, `<<nome>>` que
+  precisa existir, classe só dentro de colchetes, lista só fora.
+- **Local:** `interpretador.ts`, `regraDeToml`
+- **Linha:** `novo` — e três decisões que não são detalhe
+- **Porquê:** (1) o **match é só o trecho**; as bordas são predicados, porque um grupo de
+  contexto consumido apareceria no span e faria o vizinho sumir — em "14hs 15hs" o primeiro
+  match comeria o espaço e o segundo perderia o caractere de que precisa. (2) **ao descartar,
+  a busca retoma um caractere depois do INÍCIO do descartado**, nunca depois do fim: retomar
+  pelo fim pularia um match válido que se sobrepõe ao rejeitado. (3) **a troca acontece sobre
+  o trecho**, não sobre o match inteiro.
+- **Local:** `toml.ts`
+- **Linha:** `novo` — leitor do subconjunto
+- **Porquê:** não há parser de TOML no projeto e o `node_modules` das worktrees é *junction*:
+  trazer uma dependência nova quebraria as outras worktrees até a cópia principal instalar.
+  O subconjunto (texto literal e básico, booleano, número, tabela em linha, seção `[a.b]`) é
+  pequeno e fechado, e o que ele não aceita ele recusa com a linha. Se o formato crescer
+  (arrays de tabelas, datas), trocar por um parser de verdade em vez de estender este.
+- **Local:** `index.ts`, `aplicarPerfil`
+- **Linha:** `novo` — `off` tira a regra, `soft` rebaixa para sugestão sem automático, `hard` sobe para erro
+- **Porquê:** é onde a divergência entre instituições deixa de ser código.
+
+### 2026-10-14 · (este commit) · normalizar antes de mascarar
+- **Local:** `src/broker/normalizar.ts` (novo) e `src/broker/check.ts`, `checkText`
+- **Linha:** `novo` — `text` passa a ser `normalizarTexto(bruto).texto`, e os avisos voltam com
+  `paraOriginal(...)` antes de sair
+- **Porquê:** texto colado do macOS e de PDF vem em **NFD**: o "Á" é "A" mais uma marca solta, a
+  marca não é `\p{L}`, e a classe literal `[A-ZÁÉÍÓÚ]` da regra das siglas não casa — o aviso
+  saía deslocado e a troca **apagava a letra acentuada**. A normalização é conserto, não seguro
+  de portabilidade. A ordem (normalizar → mapa → mascarar → regras → spans de volta) é
+  obrigatória por dois motivos: a máscara depende de "mesmo comprimento", que a normalização
+  acabou de mudar, e precisa ser construída sobre o texto que as regras vão ver. O span que
+  sai está sempre em **índice de caractere do texto original** — o editor conta em UTF-16 e o
+  Rust em byte UTF-8, então cada borda converte.
+- **Local:** `src/broker/style/abnt.ts`
+- **Linha:** deixou de ser registrado em `style/index.ts`; o arquivo fica marcado como
+  **referência do teste de ouro** e nada mais o importa (sai do pacote por tree-shaking)
+- **Porquê:** as regras em TOML precisam ser comparadas contra o comportamento ANTERIOR. Sem a
+  referência, o teste de ouro viraria "TOML contra TOML".
+
+### 2026-10-14 · (este commit) · o teste e a medição
+- **Local:** `scripts/testar-regras-abnt.mts` (novo) e `package.json` (`test:abnt`)
+- **Linha:** `novo` — quatro partes: classes geradas, lint, teste de ouro e as famílias 5 e 6
+- **Porquê:** as classes são conferidas **code point a code point** (0 a 0x10FFFF) contra
+  `/\s/u`, `/\d/u` e `/\w/u`; para os predicados sobre `\p{L}` o teste diz no próprio nome do
+  caso que é **circular** (confere o complemento e a borda, não a escolha da classe), para
+  ninguém ler mais do que ele prova. O lint é testado pelos dois lados: as dez passam e dez
+  exemplos quebrados de propósito são recusados. O teste de ouro compara aviso por aviso, em 30
+  textos, contra as dez funções antigas. As famílias 5 e 6 (NFD e CRLF) são do pipeline e
+  mostram o estrago que a falta de normalização fazia. E a medição que fica: **1,8 ms** para as
+  dez regras sobre 57 mil caracteres — se as 41 regras subirem muito esse número, é ele que
+  reabre a questão.
+- **Local:** `scripts/testar-correcoes.mts`
+- **Linha:** `novo` — plugin `?raw` no empacotamento (nos dois `build()`, não só no primeiro)
+- **Porquê:** as regras entram no pacote como texto, do mesmo jeito que no app. O primeiro
+  `build()` já tinha o plugin e o segundo não: o erro aparecia só na parte do aprendizado.
+
 ---
 
 ## Próximos registros

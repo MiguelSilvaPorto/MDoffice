@@ -1,0 +1,12 @@
+# Hífen duplo entre espaços vira travessão (orações intercaladas, incisos).
+id = "abnt.travessao"
+norma = "abnt:tipografia"
+grupo = "T"
+severidade = "warning"
+auto = true
+regex = '(?<trecho>[<<espaco>>]+--[<<espaco>>]+)'
+trecho = "trecho"
+antes = "nao_espaco"
+depois = "nao_espaco"
+substituir = " — "
+mensagem = "[ABNT/Tipografia] Use travessão “ — ” para orações intercaladas (incisos)"

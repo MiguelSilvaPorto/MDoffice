@@ -1,0 +1,13 @@
+# "14:30hs" vira "14h30": no padrão brasileiro a hora não usa dois pontos com sufixo.
+id = "abnt.horas_dois_pontos"
+norma = "abnt:tipografia"
+grupo = "T"
+severidade = "warning"
+auto = true
+ignorar_caixa = true
+regex = '(?<trecho>(?<hora>[0-9]{1,2}):(?<min>[0-9]{2})[<<espaco>>]*(?:hs?|hrs))'
+trecho = "trecho"
+antes = "nao_letra_nem_digito"
+depois = "nao_letra_nem_digito"
+substituir = "{hora}h{min}"
+mensagem = "[ABNT] No padrão brasileiro use “{hora}h{min}”"

@@ -1,0 +1,12 @@
+# Meses do ano em minúscula nas datas ("14 de Outubro" vira "14 de outubro").
+id = "abnt.meses"
+norma = "abnt:tipografia"
+grupo = "T"
+severidade = "warning"
+auto = true
+regex = '(?<trecho>(?<dia>[0-9]{1,2})[<<espaco>>]+de[<<espaco>>]+(?<mes><<meses>>))'
+trecho = "trecho"
+antes = "nao_letra"
+depois = "nao_letra"
+substituir = "{dia} de {mes:minusculo}"
+mensagem = "[ABNT] Meses do ano são grafados com inicial minúscula: “{mes:minusculo}”"

@@ -1,4 +1,10 @@
 // Regras da ABNT e tipografia brasileira.
+//
+// ATENÇÃO: estas dez funções NÃO são mais registradas no motor de estilo — as regras
+// vivem em `src/broker/abnt/regras/*.toml` desde a conversão para dado. Este arquivo
+// fica como REFERÊNCIA do teste de ouro (`scripts/testar-regras-abnt.mts`), que exige
+// que as regras em TOML produzam exatamente os mesmos avisos que estas funções.
+// Nada mais o importa, então ele não entra no pacote do app.
 
 import type { RuleCtx } from "./types";
 

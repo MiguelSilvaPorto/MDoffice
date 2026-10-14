@@ -1,0 +1,12 @@
+# "ONG's" vira "ONGs": plural de sigla em português não leva apóstrofo.
+id = "abnt.siglas_plural"
+norma = "abnt:tipografia"
+grupo = "T"
+severidade = "warning"
+auto = true
+regex = "(?<trecho>(?<sigla>[A-ZÁÉÍÓÚ]{2,})'s)"
+trecho = "trecho"
+antes = "nao_letra"
+depois = "nao_letra"
+substituir = "{sigla}s"
+mensagem = "[ABNT] Plural de sigla em português não leva apóstrofo: “{sigla}s”"

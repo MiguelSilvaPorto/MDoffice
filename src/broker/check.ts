@@ -5,6 +5,7 @@ import { concordanciaDeNumero } from "./concordancia";
 import { carregarFrequencia, contagem } from "./frequencia";
 import { maskNonProse } from "./mask";
 import { commonNeighbor } from "./neighbor";
+import { normalizarTexto, paraOriginal } from "./normalizar";
 import { checkWords } from "./spell";
 import { checkStyle } from "./style";
 import type { WritingIssue } from "./types";
@@ -12,10 +13,19 @@ import { rerankSuggestions } from "./personal/rerank";
 import { personalIndex } from "./ghost/memory";
 import { DocumentIndex } from "./ghost/documentIndex";
 
-export async function checkText(text: string, ignore: Set<string>): Promise<WritingIssue[]> {
+export async function checkText(bruto: string, ignore: Set<string>): Promise<WritingIssue[]> {
   // A frequência é a mesma tabela que o corretor usa. Espera curta: se não
   // chegar, as regras que dependem dela ficam quietas e nada quebra.
   await Promise.race([carregarFrequencia(), new Promise((r) => setTimeout(r, 1500))]);
+
+  // NORMALIZAR ANTES DE MASCARAR, e nesta ordem por dois motivos: a máscara depende de
+  // "mesmo comprimento" (que a normalização acabou de mudar) e precisa ser construída
+  // sobre o texto que as regras vão ver. Todo aviso nasce em posição do texto
+  // normalizado e volta ao original no fim — em índice de caractere, que é a unidade
+  // do schema (o editor conta em UTF-16, o Rust em byte UTF-8).
+  const norm = normalizarTexto(bruto);
+  const text = norm.texto;
+
   const issues = checkStyle(text);
   const mask = maskNonProse(text);
   const rx = /[\p{L}][\p{L}'-]{2,}/gu;
@@ -129,5 +139,9 @@ export async function checkText(text: string, ignore: Set<string>): Promise<Writ
     }
     fundidos.push(i);
   }
-  return fundidos.sort((a, b) => a.from - b.from);
+  // De volta ao texto ORIGINAL: os avisos nasceram em posições do normalizado, e quem
+  // consome (o editor) conta posições no que está escrito na tela.
+  return fundidos
+    .map((i) => ({ ...i, from: paraOriginal(norm, i.from), to: paraOriginal(norm, i.to) }))
+    .sort((a, b) => a.from - b.from);
 }

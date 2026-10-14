@@ -1,0 +1,23 @@
+# Perfil ABNT base.
+#
+# O perfil é o que o catálogo chama de `Config`: as instituições divergem entre si, e a
+# divergência é DADO, não código. Um perfil institucional faz `estende = "abnt"` e
+# sobrescreve só o que difere.
+#
+# `[norma]` diz quais versões de norma este perfil segue — as instituições migram em
+# ritmos diferentes (há guia universitário de 2025 ainda citando a NBR 6023 de 2018).
+nome = "ABNT base"
+
+[norma]
+nbr14724 = "2024"
+nbr10520 = "2023"
+nbr6023 = "2025"
+
+# `[regras]` aceita, por id:
+#   "off"  — a instituição não usa esta regra
+#   "soft" — vira sugestão e nunca é aplicada sozinha
+#   "hard" — vira erro
+#
+# O caso clássico é o itálico das expressões latinas: UFAPE e UNIFESP discordam, então
+# quem não exige escreve `"abnt.latinismos" = "soft"` em vez de ver aviso indevido.
+[regras]

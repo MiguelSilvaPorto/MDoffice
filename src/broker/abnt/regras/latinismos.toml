@@ -1,0 +1,15 @@
+# Termos em latim devem vir em itálico. A borda une o "\b" do original (o "\w"
+# do JavaScript, que é ASCII) com o "\p{L}" da classe: nem letra, nem dígito, nem
+# asterisco, nem sublinhado.
+id = "abnt.latinismos"
+norma = "abnt:tipografia"
+grupo = "T"
+severidade = "warning"
+auto = true
+ignorar_caixa = true
+regex = '(?<trecho><<latinismo>>)'
+trecho = "trecho"
+antes = "nao_letra_nem_digito_nem_asterisco_nem_sublinhado"
+depois = "nao_letra_nem_digito_nem_asterisco_nem_sublinhado"
+substituir = "*{trecho}*"
+mensagem = "[ABNT] Termos em latim devem ser destacados em itálico: “*{trecho}*”"

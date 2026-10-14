@@ -1,0 +1,11 @@
+# Citação autor-data (NBR 10520:2023): sobrenome em caixa mista — "(Silva, 2020)".
+# A 10520:2023 substituiu a 10520:2002 (que pedia CAIXA ALTA); na transição as duas
+# formas são aceitas, então esta regra NUNCA tem correção automática: é sugestão.
+id = "abnt.citacao_autor_data"
+norma = "nbr10520:2023"
+grupo = "C"
+severidade = "suggestion"
+auto = false
+regex = '(?<trecho>\((?<autor>[A-ZÁÉÍÓÚa-záéíóúçãõâêô]+(?:[<<espaco>>]*;[<<espaco>>]*[A-ZÁÉÍÓÚa-záéíóúçãõâêô]+)*),[<<espaco>>]*(?<ano>[0-9]{4}(?:,[<<espaco>>]*p\.[<<espaco>>]*[0-9]+)?)\))'
+trecho = "trecho"
+transformar = "caixa_mista_autor"

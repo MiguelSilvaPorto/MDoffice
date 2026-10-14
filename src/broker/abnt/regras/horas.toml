@@ -1,0 +1,13 @@
+# Horas no padrão ABNT: "14hs" e "14hrs" viram "14h".
+id = "abnt.horas"
+norma = "abnt:tipografia"
+grupo = "T"
+severidade = "warning"
+auto = true
+ignorar_caixa = true
+regex = '(?<trecho>(?<hora>[0-9]{1,2})[<<espaco>>]*(?<unidade>hs|hrs))'
+trecho = "trecho"
+antes = "nao_letra_nem_digito"
+depois = "nao_letra_nem_digito"
+substituir = "{hora}h"
+mensagem = "[ABNT] O símbolo de horas é apenas “h” (use “{hora}h”, evite “{unidade}”)"

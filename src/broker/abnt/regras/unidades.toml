@@ -1,0 +1,16 @@
+# Espaço obrigatório entre número e unidade ("10km" vira "10 km") e normalização da
+# temperatura ("25ºc" vira "25 °C"). A borda de antes exclui '#' para não mexer em
+# "#10" de uma referência de seção.
+id = "abnt.unidades"
+norma = "abnt:ibge"
+grupo = "T"
+severidade = "warning"
+auto = true
+ignorar_caixa = true
+regex = '(?<trecho>(?<num>[0-9]+(?:[.,][0-9]+)?)[<<espaco>>]*(?<unidade>km|kg|cm|mm|mg|ml|min|kb|mb|gb|tb|khz|mhz|ghz|[º°]c))'
+trecho = "trecho"
+antes = "nao_letra_nem_digito_nem_cerquilha"
+depois = "nao_palavra_ascii"
+substituir = "{num} {unidade:mapa}"
+mensagem = "[ABNT/IBGE] Espaço obrigatório entre número e unidade: “{num} {unidade:mapa}”"
+mapa = { "ºc" = "°C", "°c" = "°C" }

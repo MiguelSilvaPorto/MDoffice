@@ -10,7 +10,7 @@ import { duplicatedPunct, frasesColadas } from "./limpeza";
 import { lowercaseAfterPeriod, paragraphStartLowercase } from "./capitalization";
 import { phrases } from "./phrases";
 import { informalRegister, aGente } from "./register";
-import { abntHours, abntHoursColon, abntUnits, abntMonths, abntAcronymPlural, abntCitation, abntPage, abntEtAl, abntDash, abntLatin } from "./abnt";
+import { REGRAS_ABNT } from "../abnt";
 import { personalLongSentence } from "./personal";
 import { fazerImpessoal } from "./concordancia";
 import type { Rule } from "./types";
@@ -39,16 +39,7 @@ const RULES: Rule[] = [
   informalRegister,
   aGente,
   fazerImpessoal,
-  abntHours,
-  abntHoursColon,
-  abntUnits,
-  abntMonths,
-  abntAcronymPlural,
-  abntCitation,
-  abntPage,
-  abntEtAl,
-  abntDash,
-  abntLatin,
+  ...REGRAS_ABNT,
   personalLongSentence,
 ];
 
