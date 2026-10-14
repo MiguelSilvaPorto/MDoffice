@@ -396,7 +396,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Backend**
 
-- **Arranjos: o conteúdo não se desloca mais do cartão** — o bloco inteiro (cartão + o que sai dele) é centrado no espaço e todas as formas andam por ele; a detecção roda uma vez e usa mapas por id, em vez de `find` por forma.
+- (nada no momento)
 
 **Frontend**
 
@@ -410,16 +410,20 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   a mesma rampa) — e quando a cópia não tem receita, o **estilo vivo do alvo é solto**, para a
   pintura não ser derrubada pelo recálculo no próximo movimento.
 
-- **Aba Arranjos não trava mais ao clicar** — as prévias são desenhadas uma por quadro e reaproveitadas enquanto a lâmina não muda (antes, seis lâminas inteiras eram remontadas de forma síncrona a cada clique ou edição).
 
+- **Arranjos: o clique aplica só na lâmina atual** — antes a fórmula era aplicada em todas as lâminas do deck (e sem refazer os estilos e ligações derivados); agora vale para a lâmina que a prévia mostra, como qualquer edição, e dá para desfazer.
 
 ### Adicionado (na main)
 
 **Backend**
 
+- **Arranjos: o conteúdo não se desloca mais do cartão** — o bloco inteiro (cartão + o que sai dele) é centrado no espaço e todas as formas andam por ele; a detecção roda uma vez e usa mapas por id, em vez de `find` por forma.
+
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **Aba Arranjos não trava mais ao clicar** — as prévias são desenhadas uma por quadro e reaproveitadas enquanto a lâmina não muda (antes, seis lâminas inteiras eram remontadas de forma síncrona a cada clique ou edição).
 
 - **Aba Design sem o grupo "Tema"**: os três botões (**Tema claro**, **Tema escuro** e **Alto
   contraste**) saíram da fita do PowerPoint: o clique não mudava nada visível no deck (quem manda

@@ -8234,3 +8234,10 @@ antigas quando fizer sentido.
   relativos à caixa total → o bloco inteiro é centrado e todas as formas andam por ele; `cartoes()` 3× → 1×; `find` → `Map`.
 - **Porquê:** `pintar()` roda a cada mudança e, com a aba aberta, remontava seis lâminas de 960px: a interface congelava por instante.
   O cartão ia para um lugar e o que saía dele ficava deslocado, o que bagunçava o encaixe.
+
+### 2026-10-14 · fix/arranjos-alinhamento · Arranjos aplicam só na lâmina atual
+- **Arquivo/local:** `src/powerpoint/powerpoint.ts` — `run()`, caso `"arranjo"`; `docs/powerpoint.md` (aba Arranjos).
+- **Linha:** `this.slides = this.slides.map((sl) => aplicarArranjo(sl, …))` → `this.substituirSlide(aplicarArranjo(sl, …))`.
+- **Porquê:** a prévia mostra só a lâmina atual, mas o clique reorganizava todas (inclusive as que o usuário não viu) e
+  não passava por `substituirSlide`, que refaz estilos e ligações derivados. Aplicar numa lâmina só é previsível e mais leve.
+- **Promoção:** as duas entradas de `fix/arranjos-encaixe` (`f77eabd`) passam para "Adicionado" no PowerPoint.

@@ -147,8 +147,8 @@ avisado ao abrir (nunca some em silêncio).
     cartões), porque a vizinhança dos cartões mudou — dá para desfazer;
   - o cartão e o que sai dele andam como **um bloco** (nada fica deslocado) e as prévias são desenhadas
     aos poucos, sem travar o app;
-  - a prévia é a **sua lâmina** reorganizada e o clique aplica a fórmula em todas as lâminas (as
-    que não têm conteúdo para arrumar — uma lâmina de título, por exemplo — ficam como estão).
+  - a prévia é a **sua lâmina** reorganizada e o clique aplica a fórmula **só na lâmina atual** (se ela não tem conteúdo para
+    arrumar — uma lâmina de título, por exemplo — fica como está).
 
   Como o arranjo não troca cores nem fontes, dá para aplicar um arranjo e depois combinar com
   qualquer ideia de design.

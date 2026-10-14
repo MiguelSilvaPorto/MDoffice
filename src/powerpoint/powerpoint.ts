@@ -1771,13 +1771,13 @@ export class PowerPointHost {
         this.mostrarLateral("arranjos");
         return;
       case "arranjo": {
-        // cartão dos Arranjos: aplica a fórmula ("id|variante") em todas as lâminas
+        // cartão dos Arranjos: aplica a fórmula ("id|variante") só na lâmina atual (a que a prévia mostra)
         const [id, v] = String(value ?? "").split("|");
         const arranjo = ARRANJOS.find((a) => a.id === id);
         if (arranjo) {
           this.registrar();
           const ratio = stageRatio(this.setup);
-          this.slides = this.slides.map((sl) => aplicarArranjo(sl, arranjo.id, Number(v) || 0, ratio));
+          this.substituirSlide(aplicarArranjo(sl, arranjo.id, Number(v) || 0, ratio));
         }
         return;
       }
