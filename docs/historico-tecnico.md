@@ -7715,3 +7715,14 @@ antigas quando fizer sentido.
   R0 lia `stops[0]`) — o teste prende os DOIS contratos (duas paradas continua como sempre; três
   paradas vale a base) e o histórico registra o cruzamento, que é o tipo de coisa que volta se
   ninguém escrever. A R6 fecha o plano: o que resta é a calibragem visual, que é do usuário.
+
+## CHANGELOG.md
+
+### 2026-10-14 · promoção · as duas entradas do PowerPoint entram no "Adicionado"
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** 2 entradas movidas — **Estilos de cor (R6 — polimento)** (`d32f4db`) e **As Ideias de
+  design ganharam um atalho na Página Inicial** (`d969853`); a seção ficou com "- (nada no momento)"
+- **Porquê:** os dois commits já estão na `main`, mas a promoção não cabe no mesmo commit do
+  `fechar.ps1`. A conferência olhou o bloco inteiro antes de mover: a entrada da **duplicar lâmina**
+  (`238e39c`, de outra sessão) já estava promovida pela dona, e nada de worktree em andamento foi
+  tocado.

@@ -384,18 +384,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **As Ideias de design ganharam um atalho na Página Inicial**: o botão saiu da aba **Design**
-  (grupo Designer) e passou para o **fim da Página Inicial**, no mesmo grupo **Designer** — o
-  atalho fica junto das tarefas do dia a dia e no mesmo lugar da referência (o DeckCraft põe as
-  *Design Ideas* na Home). O clique faz o de sempre: **mostra o painel** e abre a aba **Ideias**,
-  com esta lâmina desenhada em cada modelo. A aba **Design** continua com Tema, Personalizar (fundo)
-  e Layout, sem repetir o comando.
-- **Estilos de cor (R6 — polimento)**: dois ajustes de acabamento. O **conector que sai de uma
-  caixa com Estilo de Cor** agora usa a **cor-base da rampa** (a parada do meio) — antes ele pegava
-  a **ponta clara** do gradiente, então a ligação saía mais clara que a caixa (num gradiente de
-  duas paradas, o empate continua com a primeira, o comportamento de sempre). E o **menu de
-  estilos**, aberto **sem forma escolhida**, avisa ("selecione uma forma na lâmina…") e deixa os
-  cartões e controles **desabilitados** — antes os cliques não faziam nada, sem explicação.
+- (nada no momento)
 
 ### Adicionado (na main)
 
@@ -404,6 +393,20 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **Estilos de cor (R6 — polimento)**: dois ajustes de acabamento. O **conector que sai de uma
+  caixa com Estilo de Cor** agora usa a **cor-base da rampa** (a parada do meio) — antes ele pegava
+  a **ponta clara** do gradiente, então a ligação saía mais clara que a caixa (num gradiente de
+  duas paradas, o empate continua com a primeira, o comportamento de sempre). E o **menu de
+  estilos**, aberto **sem forma escolhida**, avisa ("selecione uma forma na lâmina…") e deixa os
+  cartões e controles **desabilitados** — antes os cliques não faziam nada, sem explicação.
+
+- **As Ideias de design ganharam um atalho na Página Inicial**: o botão saiu da aba **Design**
+  (grupo Designer) e passou para o **fim da Página Inicial**, no mesmo grupo **Designer** — o
+  atalho fica junto das tarefas do dia a dia e no mesmo lugar da referência (o DeckCraft põe as
+  *Design Ideas* na Home). O clique faz o de sempre: **mostra o painel** e abre a aba **Ideias**,
+  com esta lâmina desenhada em cada modelo. A aba **Design** continua com Tema, Personalizar (fundo)
+  e Layout, sem repetir o comando.
 
 - **Estilos de cor (R5 — os Modelos)**: o botão **Template** ganhou três modelos com a cara da
   referência — **Esmeralda**, **Oceano** e **Ameixa** — que levam o **Estilo de Cor** no fundo das
