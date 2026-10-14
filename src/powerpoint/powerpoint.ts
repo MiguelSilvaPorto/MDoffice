@@ -18,6 +18,7 @@ import { Historico } from "./edicao/historico";
 import { formasDoLayout, novaLamina } from "./edicao/layouts";
 import { migrarSlides, registrarMidia } from "./edicao/migrar";
 import { MODELOS, ROTULO_TRATAMENTO, aplicarModelo, type EstiloAtual, type ModeloPPT, type TratamentoIdeia } from "./edicao/modelos";
+import { ARRANJOS, aplicarArranjo, rotuloDoArranjo, unidadesDa, variantesDe, type Arranjo } from "./edicao/arranjos";
 import { criarModeloUsuario, lerModelosUsuario, removerModeloUsuario } from "./modelosUsuario";
 import {
   agruparFormas,
@@ -170,7 +171,7 @@ export class PowerPointHost {
   private animPreview: ControleAnimacoes | null = null;
   private destinoImagem = "inserir";
   private destinoMidia: string | null = null;
-  private lateral: "formatar" | "notas" | "animacao" | "ideias" = "formatar";
+  private lateral: "formatar" | "notas" | "animacao" | "ideias" | "arranjos" = "formatar";
   /** qual lote de ideias está à mostra (o botão "Gerar mais ideias" avança) */
   private loteIdeias = 0;
   /** célula em edição (quando a forma em edição é uma tabela) e células selecionadas */
@@ -264,6 +265,7 @@ export class PowerPointHost {
             <button type="button" data-lateral="animacao">Animação</button>
             <button type="button" data-lateral="notas">Notas</button>
             <button type="button" data-lateral="ideias">Ideias</button>
+            <button type="button" data-lateral="arranjos">Arranjos</button>
             <button type="button" class="pp-side-fechar" data-side-toggle title="Esconder o painel" aria-label="Esconder o painel">»</button>
           </div>
           <div class="pp-side-corpo pp-painel" data-formatar></div>
@@ -280,6 +282,11 @@ export class PowerPointHost {
             <p class="pp-ideias-dica">Escolha um visual para a apresentação: cada cartão mostra <b>esta lâmina</b> no design — cores, fonte e acabamento. Clicar aplica na apresentação inteira.</p>
             <button type="button" class="btn small pp-ideias-mais" data-ideias-mais title="Outras combinações de design e acabamento">Gerar mais ideias</button>
             <div class="pp-ideias" data-ideias></div>
+          </div>
+          <div class="pp-side-corpo" data-arranjos-corpo hidden>
+            <div class="pp-side-head"><span>Arranjos da lâmina</span><span class="pp-side-hint">gerados no seu computador</span></div>
+            <p class="pp-ideias-dica">Reorganiza o que <b>já está</b> nesta lâmina numa fórmula padrão — o visual (cores, estilos, imagens) continua o mesmo. As linhas de ligação saem nas fórmulas que achatam a hierarquia; dá para desfazer.</p>
+            <div class="pp-ideias" data-arranjos></div>
           </div>
         </aside>
         <button type="button" class="pp-side-aba" data-side-toggle title="Mostrar o painel" aria-label="Mostrar o painel">« Formatar</button>
@@ -453,13 +460,14 @@ export class PowerPointHost {
     if (this.pane.classList.contains("pp-side-oculto")) this.pane.querySelector<HTMLElement>("[data-side-toggle]")?.click();
   }
 
-  private mostrarLateral(qual: "formatar" | "notas" | "animacao" | "ideias"): void {
+  private mostrarLateral(qual: "formatar" | "notas" | "animacao" | "ideias" | "arranjos"): void {
     this.lateral = qual;
     for (const b of this.pane.querySelectorAll<HTMLElement>("[data-lateral]")) b.classList.toggle("on", b.dataset.lateral === qual);
     this.pane.querySelector<HTMLElement>("[data-formatar]")!.hidden = qual !== "formatar";
     this.pane.querySelector<HTMLElement>("[data-animacao-corpo]")!.hidden = qual !== "animacao";
     this.pane.querySelector<HTMLElement>("[data-notas-corpo]")!.hidden = qual !== "notas";
     this.pane.querySelector<HTMLElement>("[data-ideias-corpo]")!.hidden = qual !== "ideias";
+    this.pane.querySelector<HTMLElement>("[data-arranjos-corpo]")!.hidden = qual !== "arranjos";
     if (qual === "notas") this.notes.focus();
     else if (qual === "animacao") this.renderAnimacoes();
     else if (qual === "ideias") this.pintarIdeias();
@@ -525,6 +533,51 @@ export class PowerPointHost {
       nome.textContent = t === "recolorir" ? m.nome : `${m.nome} · ${ROTULO_TRATAMENTO[t]}`;
       cartao.append(moldura, nome);
       cartao.addEventListener("click", () => this.run("ideia", `${m.id}|${t}`));
+      host.append(cartao);
+    }
+    // a escala sai depois do layout: cada prévia cabe na largura que o painel tiver agora
+    for (const moldura of host.querySelectorAll<HTMLElement>(".pp-ideia-moldura")) {
+      const previa = moldura.firstElementChild as HTMLElement | null;
+      const w = moldura.clientWidth;
+      if (previa && w > 0) previa.style.transform = `scale(${w / largura})`;
+    }
+  }
+
+  /** Redesenha o painel dos Arranjos: a lâmina atual em cada fórmula (a grade abre em variantes). */
+  private pintarArranjos(): void {
+    const host = this.pane.querySelector<HTMLElement>("[data-arranjos]");
+    if (!host) return;
+    const atual = this.atual();
+    const ctx = this.ctxRender(false);
+    const largura = 960; // referência da prévia (o cqw do texto sai daqui)
+    const ratio = stageRatio(this.setup);
+    const altura = Math.round(largura / ratio);
+    const quantas = unidadesDa(atual).length;
+    const ideias: { id: Arranjo; variante: number }[] = [];
+    for (const a of ARRANJOS) for (const v of variantesDe(a.id, quantas)) ideias.push({ id: a.id, variante: v });
+    host.textContent = "";
+    for (const { id, variante } of ideias) {
+      const comArranjo = aplicarArranjo(atual, id, variante, ratio);
+      const cartao = document.createElement("button");
+      cartao.type = "button";
+      cartao.className = "pp-ideia";
+      cartao.title = `${rotuloDoArranjo(id, variante, quantas)} — ${ARRANJOS.find((a) => a.id === id)?.descricao ?? ""}`;
+      const moldura = document.createElement("span");
+      moldura.className = "pp-ideia-moldura";
+      const previa = document.createElement("span");
+      previa.className = "pp-slide pp-ideia-slide";
+      previa.style.width = `${largura}px`;
+      previa.style.height = `${altura}px`;
+      previa.style.background = fundoValor(comArranjo.bg, this.setup.media ?? {}) || `#${themeOf(this.setup.theme).bg}`;
+      previa.innerHTML = comArranjo.shapes.length
+        ? comArranjo.shapes.map((f) => htmlFormaRica(f, ctx)).join("")
+        : sanitize(String(marked.parse(comArranjo.md, { gfm: true, async: false }))).slice(0, 600);
+      moldura.append(previa);
+      const nome = document.createElement("span");
+      nome.className = "pp-ideia-nome";
+      nome.textContent = rotuloDoArranjo(id, variante, quantas);
+      cartao.append(moldura, nome);
+      cartao.addEventListener("click", () => this.run("arranjo", `${id}|${variante}`));
       host.append(cartao);
     }
     // a escala sai depois do layout: cada prévia cabe na largura que o painel tiver agora
@@ -749,6 +802,7 @@ export class PowerPointHost {
     this.atualizarUI();
     // com o painel de Ideias aberto, ele acompanha a lâmina atual (e o modelo aplicado)
     if (this.lateral === "ideias") this.pintarIdeias();
+    if (this.lateral === "arranjos") this.pintarArranjos();
   }
 
   /** só a lâmina e a seleção (usado enquanto se arrasta, para não refazer as miniaturas a cada quadro) */
@@ -1684,6 +1738,22 @@ export class PowerPointHost {
         const [id, t] = String(value ?? "").split("|");
         const m = [...MODELOS, ...lerModelosUsuario()].find((x) => x.id === id);
         if (m) this.usarModelo(m, t as TratamentoIdeia);
+        return;
+      }
+      case "arranjos":
+        // o botão da fita (aba Design ▸ grupo Designer) abre o painel já na aba dos Arranjos
+        this.mostrarPainelLateral();
+        this.mostrarLateral("arranjos");
+        return;
+      case "arranjo": {
+        // cartão dos Arranjos: aplica a fórmula ("id|variante") em todas as lâminas
+        const [id, v] = String(value ?? "").split("|");
+        const arranjo = ARRANJOS.find((a) => a.id === id);
+        if (arranjo) {
+          this.registrar();
+          const ratio = stageRatio(this.setup);
+          this.slides = this.slides.map((sl) => aplicarArranjo(sl, arranjo.id, Number(v) || 0, ratio));
+        }
         return;
       }
 

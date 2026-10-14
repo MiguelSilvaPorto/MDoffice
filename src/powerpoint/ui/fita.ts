@@ -397,8 +397,9 @@ export class Fita {
          </div>`
       ),
       // Ideias de design: no DeckCraft o atalho mora na Página Inicial (grupo próprio no fim da aba) e
-      // abre o painel com a lâmina atual desenhada em cada modelo
-      grupo("Designer", `${grande("ideias", ic("i-spark"), "Ideias de design", "Sugestões de visual para a apresentação — a lâmina atual em cada modelo, geradas no seu computador")}`),
+      // abre o painel com a lâmina atual desenhada em cada modelo. Os Arranjos são o irmão dele: a
+      // mesma lâmina reorganizada em fórmulas padrão, então moram no mesmo grupo.
+      grupo("Designer", `${grande("ideias", ic("i-spark"), "Ideias de design", "Sugestões de visual para a apresentação — a lâmina atual em cada modelo, geradas no seu computador")}${grande("arranjos", ic("i-columns"), "Arranjos", "Reorganiza a lâmina numa fórmula padrão (grade, lista, destaque, faixa)")}`),
     ].join("");
   }
 

@@ -7835,3 +7835,54 @@ antigas quando fizer sentido.
   neste commit)
 - **Porquê:** a tarefa ainda não está na `main`; a entrada só é promovida quando o `fechar.ps1`
   entregar. O ajuste na entrada vizinha evita a descrição contraditória sobre a mesma aba.
+
+## src/powerpoint/edicao/arranjos.ts · src/powerpoint/powerpoint.ts · src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · esta tarefa · Arranjos (a lâmina reorganizada em fórmulas padrão)
+
+- **Local:** `arranjos.ts` (arquivo novo) — `ARRANJOS`, `unidadesDa`, `variantesDe`,
+  `rotuloDoArranjo`, `aplicarArranjo` e os auxiliares `dentro`/`ehCartao`/`ehLinhaSolta`/`espacos`/
+  `escalaDoTexto`; `powerpoint.ts` — a aba, o `pintarArranjos()` e os casos `"arranjos"`/`"arranjo"`;
+  `fita.ts` — o botão no grupo Designer
+- **Linha:** `+ data-lateral="arranjos"` e `+ data-arranjos-corpo` no painel; `+ pintarArranjos()`
+  (mesma prévia das Ideias: a lâmina de verdade reduzida por `transform`); `+ case "arranjo"` lê
+  `"id|variante"` e aplica em todas as lâminas com `aplicarArranjo(sl, id, variante, ratio)`;
+  `+ grande("arranjos", ic("i-columns"), …)` no grupo Designer (Página Inicial)
+- **Porquê:** o usuário pediu a terceira peça das ideias — "as ideias ainda não reorganizam slides
+  em novas fórmulas padrões". O visual já mudava (design + acabamento); a **arrumação** não.
+- **Local:** a detecção das unidades em `unidadesDa`
+- **Linha:** `+ cartoes(slide)` (formas pintadas ou imagem entre 2% e 80% da área da lâmina, só as
+  de fora) e o conteúdo pelo **centro dentro da caixa** do cartão (o menor que contém)
+- **Porquê:** num deck importado o cartão quase sempre é uma **imagem** com os textos soltos por
+  cima (na verificação com o deck real: 10 imagens + 10 textos dentro dos cartões, 3 textos de
+  cabeçalho fora). Agrupar por proximidade erraria o que é "de dentro"; a contenção acerta — e a
+  mesma regra já tinha resolvido a superfície dos textos nas Ideias. A **área em % da lâmina**
+  (área ÷ 100, porque a lâmina vale 100 × 100) precisou de limite próprio: a primeira versão usou
+  os limites em %² e nenhum cartão passava do teto (a suíte pegou na hora).
+- **Local:** as fórmulas e o tamanho uniforme em `aplicarArranjo`
+- **Linha:** `+ espacos(id, variante, quantas, topo)` (os espaços crus; a centralização saiu de
+  dentro dele) e o cálculo de `cartao`/`cartaoGrande` com `k`/`kGrande`
+- **Porquê:** o **destaque** precisa de um cartão maior de verdade: na primeira versão todos os
+  cartões saíam do mesmo tamanho (o teto de 1,6 engolia a vantagem do primeiro espaço) e o teste
+  "o primeiro espaço é maior" reprovou — o teto do destaque subiu para 2,4 e a centralização passou
+  a usar o tamanho de cada espaço. Os dois eixos do app são independentes (x/w em % da largura,
+  y/h em % da altura): "mesmo tamanho" e "mesma proporção" só fazem sentido com o fator da
+  proporção (`ratio`) — é ele que converte a altura para a régua da largura em `fisico()`.
+- **Local:** o que não anda e o que sai
+- **Linha:** `+ ehLinhaSolta(s, emCartao)` no filtro final: `!s.liga && !ehLinhaSolta(...)`
+- **Porquê:** as linhas do organograma do deck importado **não** são conectores: vêm como
+  **retângulo fino** (a verificação achou um `roundRect` de 0BA050 com 0,5 de altura). Sem essa
+  regra elas ficariam paradas por cima dos cartões reorganizados. O filtro exige traço fino
+  (≤ 1 de espessura, proporção ≥ 5) e **fora** de cartão — a barrinha de destaque dentro do cartão
+  é conteúdo e anda com ele (tem teste). As formas `fixa` do modelo e os textos do cabeçalho
+  (na faixa do topo) também não se movem, e uma lâmina sem conteúdo para arrumar (título com dois
+  textos) volta intacta — o `aplicarArranjo` devolve a **mesma** lâmina, e é isso que impede o
+  clique de estragar uma capa.
+- **Local:** `scripts/testar-edicao-pptx.mjs` (18 checagens novas) e `scripts/testar-layout.mts`
+  (8 novas)
+- **Linha:** `novo`
+- **Porquê:** o motor é puro e o que importa é o que ele promete: cartões do mesmo tamanho, texto
+  escalando junto, nada fora da lâmina, nenhum cartão sobreposto, fixas paradas, título parado,
+  conectores e traços fora, e as quatro fórmulas com a geometria certa (lista empilha, faixa
+  alinha, destaque dá o primeiro maior). A verificação com o deck real (12 lâminas) fechou o
+  quadro: 3-4 unidades por lâmina e zero problemas nas quatro fórmulas.

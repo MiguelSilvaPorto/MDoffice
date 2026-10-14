@@ -127,6 +127,24 @@ avisado ao abrir (nunca some em silêncio).
   computador** (sem nuvem), como no *Design Ideas* do DeckCraft: a prévia é a lâmina de verdade
   reduzida — com o mapa de cores do deck inteiro —, então o cartão mostra exatamente o que o
   clique faz.
+- **Arranjos** (aba do painel lateral, ou **Página Inicial ▸ Designer ▸ Arranjos** na fita): reorganiza a
+  lâmina em **fórmulas padrão**, mantendo o visual (cores, estilos, imagens):
+
+  - *Grade* (2×2, 3×2, 4×2… conforme a quantidade), *Lista*, *Destaque* (o primeiro cartão grande
+    e o resto numa coluna ao lado) e *Faixa* (tudo numa linha);
+  - cada **cartão** é detectado com tudo o que está dentro dele (avatar, logo, textos) — num deck
+    importado o cartão costuma ser uma **imagem** com os textos soltos por cima, então a detecção
+    é por contenção (o que está por dentro anda junto);
+  - os cartões ganham o **mesmo tamanho** (o do maior, ajustado para caber no espaço da fórmula) e
+    o conteúdo escala junto, com o texto num mínimo de 8pt;
+  - as **formas fixas do modelo** (decorações) e os **textos do cabeçalho** (título, subtítulo,
+    legenda) **não se movem**; as **linhas de ligação saem** (conectores e traços finos fora dos
+    cartões), porque a vizinhança dos cartões mudou — dá para desfazer;
+  - a prévia é a **sua lâmina** reorganizada e o clique aplica a fórmula em todas as lâminas (as
+    que não têm conteúdo para arrumar — uma lâmina de título, por exemplo — ficam como estão).
+
+  Como o arranjo não troca cores nem fontes, dá para aplicar um arranjo e depois combinar com
+  qualquer ideia de design.
 
 ## Desenho à mão (Draw)
 

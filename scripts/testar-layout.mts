@@ -630,6 +630,46 @@ console.log("\nídeias de design (a lâmina atual em cada modelo)");
   );
 }
 
+// Arranjos: reorganizar a lâmina em fórmulas padrão (grade, lista, destaque, faixa)
+console.log("\narranjos (a lâmina reorganizada em fórmulas padrão)");
+{
+  const mod = ler("src/powerpoint/edicao/arranjos.ts");
+  checa(
+    "o motor de arranjo existe com as quatro fórmulas",
+    /export type Arranjo = "grade" \| "lista" \| "destaque" \| "faixa"/.test(mod) && /id: "grade"/.test(mod) && /id: "faixa"/.test(mod) && /export function aplicarArranjo/.test(mod)
+  );
+  checa(
+    "a unidade é o cartão com o que está dentro dele (contenção, não agrupamento)",
+    /export function unidadesDa/.test(mod) && /dentro\(c, s\)/.test(mod) && /caixaDe\(/.test(mod)
+  );
+  checa(
+    "os cartões ficam do mesmo tamanho e o conteúdo escala junto (texto com mínimo de 8pt)",
+    /const cartao = \{/.test(mod) && /escalaDoTexto\(s, escala\.get\(s\.id\) \?\? 1\)/.test(mod) && /Math\.max\(8,/.test(mod)
+  );
+  checa(
+    "as formas fixas do modelo não se movem e as linhas de ligação saem",
+    /!s\.liga && !ehLinhaSolta/.test(mod) && /function ehLinhaSolta/.test(mod) && /s\.fixa/.test(mod)
+  );
+  checa(
+    "o painel tem a aba e o corpo dos Arranjos",
+    /data-lateral="arranjos">Arranjos</.test(ppt) && /data-arranjos-corpo/.test(ppt) && /data-arranjos>/.test(ppt)
+  );
+  checa(
+    "o cartão mostra a lâmina de verdade reorganizada (a mesma prévia das Ideias)",
+    /aplicarArranjo\(atual, id, variante, ratio\)/.test(ppt) && /pp-ideia-slide/.test(ppt) && /htmlFormaRica\(f, ctx\)/.test(ppt)
+  );
+  checa(
+    "clicar aplica a fórmula em todas as lâminas",
+    /this\.run\("arranjo", `\$\{id\}\|\$\{variante\}`\)/.test(ppt) &&
+      /case "arranjo":[\s\S]{0,420}this\.slides = this\.slides\.map\(\(sl\) => aplicarArranjo\(sl, arranjo\.id, Number\(v\) \|\| 0, ratio\)\)/.test(ppt)
+  );
+  checa(
+    "o botão da fita abre o painel na aba dos Arranjos",
+    /grande\("arranjos", ic\("i-columns"\)/.test(fitaPpt) && /case "arranjos":[\s\S]{0,200}mostrarLateral\("arranjos"\)/.test(ppt)
+  );
+  checa("o painel acompanha a lâmina atual (redesenha junto com o palco)", /if \(this\.lateral === "arranjos"\) this\.pintarArranjos\(\)/.test(ppt));
+}
+
 // ---------------------------------------------------------------- fonte e tamanho livres
 
 console.log("\nfonte e tamanho livres nas fitas");

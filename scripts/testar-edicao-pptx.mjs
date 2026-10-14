@@ -493,6 +493,91 @@ const M = await empacotar("src/powerpoint/edicao/modelos.ts", "modelos.mjs");
   ok("ideias: aplicar não mexe nas lâminas originais", deck[0].shapes[0].fillX.color === "2EA36F" && deck[0].shapes[0].geom === "rect");
 }
 
+// arranjos: reorganizar a lâmina em fórmulas padrão (grade, lista, destaque, faixa)
+const A = await empacotar("src/powerpoint/edicao/arranjos.ts", "arranjos.mjs");
+{
+  const run = (text) => ({ text, size: 18, bold: false, italic: false, underline: false, strike: false, color: "1C212B", font: "Segoe UI" });
+  const para = (text) => ({ runs: [run(text)], align: "esquerda", lvl: 0, marL: 0, indent: 0, spcBef: 0, spcAft: 0, endSize: 18 });
+  const caixa = (id, x, y, w, h, extra = {}) => ({ id, kind: "forma", box: { x, y, w, h }, text: "", fontFamily: "Segoe UI", fontSize: 18, color: "1C212B", bold: false, italic: false, align: "esquerda", fill: "E5E7EB", src: "", rot: 0, ...extra });
+  const texto = (id, x, y, w, h, txt, extra = {}) => caixa(id, x, y, w, h, { kind: "texto", fill: "", paras: [para(txt)], ...extra });
+  const ratio = 16 / 9;
+  const lamina = {
+    md: "",
+    layout: "conteudo",
+    notes: "",
+    bg: { kind: "solid", color: "FFFFFF" },
+    shapes: [
+      caixa("fixa1", 70, 2, 25, 30, { fixa: true }),
+      texto("titulo", 6, 6, 50, 10, "CONHEÇA A EQUIPE"),
+      caixa("c1", 10, 30, 20, 12),
+      texto("t1", 12, 32, 16, 8, "Ana"),
+      caixa("c2", 40, 30, 20, 12),
+      texto("t2", 42, 32, 16, 8, "Bruno"),
+      caixa("c3", 10, 50, 20, 12),
+      texto("t3", 12, 52, 16, 8, "Diego"),
+      caixa("c4", 40, 50, 20, 12),
+      texto("t4", 42, 52, 16, 8, "Miguel"),
+      caixa("lig", 10, 42, 50, 2, { liga: { de: "c1", para: "c3", grupo: "g" } }),
+    ],
+  };
+  const u = A.unidadesDa(lamina);
+  ok("arranjos: acha as unidades (o cartão e o que está dentro dele)", u.length === 4 && u[0].ids.length === 2 && u[0].ids[0] === "c1" && u[0].ids[1] === "t1");
+  ok("arranjos: ordem de leitura (cima para baixo, esquerda para a direita)", JSON.stringify(u.map((x) => x.ids[0])) === JSON.stringify(["c1", "c2", "c3", "c4"]));
+  const grade = A.aplicarArranjo(lamina, "grade", 2, ratio);
+  const c = (id) => grade.shapes.find((s) => s.id === id);
+  const dentro = (fora, d) => {
+    const cx = d.box.x + d.box.w / 2;
+    const cy = d.box.y + d.box.h / 2;
+    return cx >= fora.box.x && cx <= fora.box.x + fora.box.w && cy >= fora.box.y && cy <= fora.box.y + fora.box.h;
+  };
+  const cruza = (a, b) => a.box.x < b.box.x + b.box.w && b.box.x < a.box.x + a.box.w && a.box.y < b.box.y + b.box.h && b.box.y < a.box.y + a.box.h;
+  ok(
+    "arranjos: a grade dá o MESMO tamanho a todos os cartões",
+    c("c1").box.w === c("c2").box.w && c("c1").box.h === c("c2").box.h && c("c3").box.w === c("c1").box.w && c("c4").box.h === c("c1").box.h
+  );
+  ok("arranjos: o texto anda junto com o cartão", dentro(c("c1"), c("t1")) && dentro(c("c4"), c("t4")));
+  ok(
+    "arranjos: o texto escala na mesma proporção do cartão",
+    Math.abs(c("t1").paras[0].runs[0].size / 18 - c("c1").box.w / 20) < 0.01 && c("t1").paras[0].runs[0].size > 18
+  );
+  ok("arranjos: os cartões não se sobrepõem", !cruza(c("c1"), c("c2")) && !cruza(c("c1"), c("c3")) && !cruza(c("c3"), c("c4")));
+  ok("arranjos: nada sai da lâmina", grade.shapes.every((s) => s.box.x >= 0 && s.box.y >= 0 && s.box.x + s.box.w <= 100 && s.box.y + s.box.h <= 100));
+  ok("arranjos: os conectores saem (a vizinhança dos cartões mudou)", !grade.shapes.some((s) => s.liga));
+  ok("arranjos: as formas fixas do modelo não se movem", JSON.stringify(c("fixa1").box) === JSON.stringify({ x: 70, y: 2, w: 25, h: 30 }));
+  ok("arranjos: o título do topo fica onde está", JSON.stringify(c("titulo").box) === JSON.stringify({ x: 6, y: 6, w: 50, h: 10 }));
+  ok("arranjos: aplicar não mexe na lâmina original", lamina.shapes.find((s) => s.id === "c1").box.x === 10);
+  const lista = A.aplicarArranjo(lamina, "lista", 0, ratio);
+  const l = (id) => lista.shapes.find((s) => s.id === id);
+  ok("arranjos: a lista empilha tudo numa coluna", l("c1").box.x === l("c2").box.x && l("c2").box.x === l("c3").box.x && l("c1").box.y < l("c2").box.y && l("c2").box.y < l("c3").box.y);
+  const faixa = A.aplicarArranjo(lamina, "faixa", 0, ratio);
+  const f = (id) => faixa.shapes.find((s) => s.id === id);
+  ok("arranjos: a faixa põe tudo numa linha", f("c1").box.y === f("c2").box.y && f("c2").box.y === f("c4").box.y && f("c1").box.x < f("c2").box.x && f("c2").box.x < f("c3").box.x);
+  const destaque = A.aplicarArranjo(lamina, "destaque", 0, ratio);
+  const d = (id) => destaque.shapes.find((s) => s.id === id);
+  ok("arranjos: o destaque dá o primeiro espaço grande e o resto na coluna ao lado", d("c1").box.w > d("c2").box.w && d("c1").box.x < d("c2").box.x && d("c2").box.x === d("c3").box.x);
+  ok(
+    "arranjos: as variantes da grade respeitam a quantidade de cartões",
+    JSON.stringify(A.variantesDe("grade", 4)) === JSON.stringify([2, 3, 4]) && JSON.stringify(A.variantesDe("grade", 2)) === JSON.stringify([2]) && JSON.stringify(A.variantesDe("lista", 4)) === JSON.stringify([0])
+  );
+  ok("arranjos: o rótulo diz a fórmula", A.rotuloDoArranjo("grade", 3, 6) === "Grade 3×2" && A.rotuloDoArranjo("lista", 0, 6) === "Lista");
+  const linha = A.aplicarArranjo({ ...lamina, shapes: [...lamina.shapes, caixa("traco", 20, 42, 40, 0.5, { fill: "0BA050" }), caixa("barra", 12, 34, 4, 0.6, { fill: "0BA050" })] }, "grade", 2, ratio);
+  ok(
+    "arranjos: o traço fino fora dos cartões sai; a barrinha de dentro do cartão fica",
+    !linha.shapes.some((s) => s.id === "traco") && linha.shapes.some((s) => s.id === "barra")
+  );
+  const titulo = { md: "", layout: "titulo", notes: "", shapes: [texto("a", 8, 28, 84, 24, "Título"), texto("b", 8, 55, 84, 14, "Subtítulo")] };
+  ok("arranjos: lâmina de título (dois textos) fica como está", A.aplicarArranjo(titulo, "lista", 0, ratio) === titulo);
+  const topicos = {
+    md: "",
+    layout: "conteudo",
+    notes: "",
+    shapes: [texto("tt", 6, 6, 60, 12, "Título"), texto("p1", 6, 30, 88, 10, "Um"), texto("p2", 6, 45, 88, 10, "Dois"), texto("p3", 6, 60, 88, 10, "Três")],
+  };
+  const gradeTop = A.aplicarArranjo(topicos, "grade", 2, ratio);
+  const g = (id) => gradeTop.shapes.find((s) => s.id === id);
+  ok("arranjos: lâmina de tópicos (sem cartões) usa os textos como unidades e guarda o título", g("tt").box.y === 6 && g("p1").box.y > g("tt").box.y && g("p1").box.y === g("p2").box.y && g("p2").box.x > g("p1").box.x);
+}
+
 // modelos criados pelo usuário: o visual do deck vira um modelo reaplicável
 {
   const mk = (shapes, bg) => ({ md: "", layout: "conteudo", notes: "", shapes, bg });

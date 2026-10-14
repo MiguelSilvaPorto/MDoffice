@@ -389,6 +389,21 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   na cara é o **Template**, o **fundo da lâmina** e as cores das formas). A aba fica com
   **Personalizar** e **Layout**, e o comando interno (`theme:`) saiu junto.
 
+- **Aba "Arranjos": a lâmina reorganizada em fórmulas padrão**: as ideias mexiam no visual, mas a
+  arrumação ficava sempre a mesma — o usuário pediu para reorganizar a lâmina em fórmulas padrão.
+  A aba nova (painel lateral + botão **Página Inicial ▸ grupo Designer ▸ Arranjos** na fita) propõe a lâmina
+  atual em **grade** (2×2, 3×2, 4×2…), **lista**, **destaque** (o primeiro cartão grande e o resto
+  numa coluna ao lado) e **faixa** (tudo numa linha). Cada cartão é detectado com **tudo o que está
+  dentro dele** (avatar, logo, textos — num deck importado o cartão costuma ser uma imagem com os
+  textos soltos por cima, e a detecção é por contenção), os cartões ganham o **mesmo tamanho** (o
+  do maior, ajustado para caber) com o conteúdo escalando junto (texto com mínimo de 8pt), e as
+  **formas fixas do modelo não se movem** (as decorações) nem os **textos do cabeçalho** (título,
+  subtítulo, legenda). As **linhas de ligação saem** — conectores e traços finos fora dos cartões —
+  porque a vizinhança dos cartões mudou; a barrinha de destaque dentro do cartão anda com ele. O
+  visual (cores, estilos, imagens) fica como está: dá para aplicar um arranjo e depois combinar com
+  qualquer ideia de design. Verificado no deck real do usuário: 3-4 unidades por lâmina, nada fora
+  da lâmina e nenhum cartão sobreposto nas quatro fórmulas.
+
 ### Adicionado (na main)
 
 **Backend**
