@@ -338,5 +338,29 @@ console.log("\nboas-vindas: o logo é o ícone do app");
   checa("o logo continua com 48 px", /\.welcome-logo\s*\{[^}]*width:\s*48px/.test(css));
 }
 
+// 7. Ícones de tipo (abas, listas, menus): o estilo adotado é o CONTORNO na cor do formato.
+console.log("\nícones de tipo em contorno (o estilo adotado)");
+{
+  const fi = ler("src/fileIcons.ts");
+  const fiCss = ler("src/styles/fileicons.css");
+  checa(
+    "a folha é contorno (interior vazio, traço na cor do tipo)",
+    /\.fi-sheet,\s*\.fi-mark\s*\{[^}]*fill:\s*none[^}]*stroke:\s*var\(--fi\)/s.test(fiCss),
+    "a folha voltou a ser preenchida"
+  );
+  checa(
+    "a paleta é a do conjunto adotado (md roxo, word azul, excel verde, ppt laranja)",
+    /--fi-md:\s*#7c3aed/.test(fiCss) && /--fi-word:\s*#2b6ce4/.test(fiCss) && /--fi-excel:\s*#16a34a/.test(fiCss) && /--fi-ppt:\s*#ea580c/.test(fiCss)
+  );
+  checa(
+    "cada tipo tem a sua marca (md com #, word com linhas, excel com grade, ppt com barras)",
+    /md: `<path class="fi-mark" d="M10\.8 10\.1/.test(fi) &&
+      /word: `<path class="fi-mark" d="M7\.4 10\.2h9\.2/.test(fi) &&
+      /fi-thin" d="M11\.5 12\.3v5\.1/.test(fi) &&
+      /fi-bar" d="M9\.9 14\.2v-1\.6/.test(fi)
+  );
+  checa("o desenho antigo (folha preenchida) saiu", !/fi-tile|fi-solid/.test(fi) && !/\.fi-tile|\.fi-solid/.test(fiCss));
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

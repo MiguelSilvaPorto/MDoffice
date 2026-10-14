@@ -35,32 +35,32 @@ export function kindOfTab(kind: "doc" | "settings" | "word" | "ppt" | "xlsx" | u
 
 /**
  * A folha clássica de documento (retângulo com o canto superior direito dobrado) — a mesma
- * silhueta em todos os tipos, para ler como "arquivo"; o que muda é a cor (CSS) e a marca.
+ * silhueta em todos os tipos. Agora em CONTORNO (o estilo adotado para os ícones): o traço
+ * vem da cor do tipo (CSS), o interior é vazio e o que muda entre os tipos é a marca.
  */
 const FOLHA =
-  `<path class="fi-tile" d="M6.4 1.8h7l6.4 6.4V20.6a1.6 1.6 0 0 1-1.6 1.6H6.4a1.6 1.6 0 0 1-1.6-1.6V3.4a1.6 1.6 0 0 1 1.6-1.6Z"/>` +
-  `<path class="fi-fold" d="M13.4 1.8l6.4 6.4h-6.4z"/>`;
+  `<path class="fi-sheet" d="M6 2h9l4.5 4.5v14.6a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z"/>` +
+  `<path class="fi-sheet" d="M15 2v3.5a1 1 0 0 0 1 1h3.5"/>`;
 
 /**
- * A marca (branca) dentro da folha, por tipo — não só uma letra, para ser reconhecível pela forma:
- *  - Markdown: a marca "M↓" (M com seta para baixo);
- *  - Word: um W desenhado com traço;
- *  - Excel: a planilha (cabeçalho cheio e grade);
- *  - PowerPoint: o gráfico de pizza.
- * O desenho vive abaixo da dobra (y ≳ 9.6), senão encosta no canto dobrado.
+ * A marca (na cor do tipo) dentro da folha, por tipo — o desenho é o do conjunto adotado:
+ *  - Markdown: o "#" do formato;
+ *  - Word: as linhas de texto (a última mais curta);
+ *  - Excel: a planilha (faixa de cabeçalho cheia e grade);
+ *  - PowerPoint: o gráfico de colunas com a seta.
+ * O desenho vive abaixo da dobra (y ≥ 9.4), senão encosta no canto dobrado.
  */
 const GLYPH: Record<Exclude<FileKind, "settings" | "other">, string> = {
-  md:
-    `<path class="fi-line" d="M7 19.2v-8.4l2.9 4 2.9-4v8.4"/>` +
-    `<path class="fi-line" d="M15.9 10.8v6.6M13.7 15.1l2.2 2.3 2.2-2.3"/>`,
-  word: `<path class="fi-line" d="M6.8 10.9l2.6 8.2 3.3-6.4 3.3 6.4 2.6-8.2"/>`,
+  md: `<path class="fi-mark" d="M10.8 10.1 9.9 17M13.6 10.1 12.7 17M8 12.3h8.4M7.8 15h8.4"/>`,
+  word: `<path class="fi-mark" d="M7.4 10.2h9.2M7.4 12.4h9.2M7.4 14.6h9.2M7.4 16.8h4.4"/>`,
   excel:
-    `<rect class="fi-line" x="6.6" y="10.2" width="11.4" height="9.2" rx="1.5"/>` +
-    `<path class="fi-solid" d="M6.6 11.7a1.5 1.5 0 0 1 1.5-1.5h8.4a1.5 1.5 0 0 1 1.5 1.5v1.9H6.6z"/>` +
-    `<path class="fi-line fi-thin" d="M10.4 13.6v5.8M14.2 13.6v5.8M6.6 16.55h11.4"/>`,
+    `<rect class="fi-mark" x="7.2" y="9.8" width="9.6" height="7.6" rx="0.9"/>` +
+    `<path class="fi-fill" d="M7.2 10.7a0.9 0.9 0 0 1 0.9-0.9h7.8a0.9 0.9 0 0 1 0.9 0.9v1.5H7.2z"/>` +
+    `<path class="fi-mark fi-thin" d="M11.5 12.3v5.1M14.9 12.3v5.1M7.2 14.9h9.6"/>`,
   ppt:
-    `<circle class="fi-line" cx="12.3" cy="14.9" r="5"/>` +
-    `<path class="fi-solid" d="M12.3 14.9V9.9a5 5 0 0 1 5 5z"/>`,
+    `<rect class="fi-mark" x="7.2" y="9.4" width="9.6" height="6.2" rx="0.9"/>` +
+    `<path class="fi-mark fi-bar" d="M9.9 14.2v-1.6M12 14.2v-3M14.1 14.2v-4.3"/>` +
+    `<path class="fi-mark fi-thin" d="M12 16.6v2.8M10.2 19.6h3.6"/>`,
 };
 
 /**

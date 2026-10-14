@@ -545,7 +545,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **Ícones de tipo no estilo adotado (contorno)**: os ícones das **abas**, das **listas**
+  (Recentes/Projetos) e dos **menus** deixaram a folha preenchida e passaram ao **contorno** —
+  folha com o canto dobrado, interior vazio e a marca do formato no traço: **#** (Markdown),
+  linhas de texto (Word), planilha com faixa de cabeçalho (Excel) e gráfico com seta
+  (PowerPoint). A paleta é a do conjunto adotado (**md roxo `#7C3AED`, Word azul `#2B6CE4`,
+  Excel verde `#16A34A`, PowerPoint laranja `#EA580C`), a mesma nos dois temas — a identidade
+  do formato não muda com o tema. O traço foi calibrado para 16 px (o tamanho das abas) e
+  conferido rasterizado em 16, 17 e 22 px, claro e escuro.
 
 **Ferramentas (dev)**
 

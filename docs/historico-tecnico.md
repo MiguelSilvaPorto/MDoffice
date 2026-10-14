@@ -5155,3 +5155,27 @@ antigas quando fizer sentido.
   anda em passos curtos de docs. Como nas rodadas anteriores, cada entrada foi conferida
   contra o histórico (o commit é ancestral de `main`) antes de mudar de lugar, e as seções de
   origem ficaram com "- (nada no momento)" nos dois lados.
+
+## src/fileIcons.ts · src/styles/fileicons.css
+
+### 2026-10-14 · esta tarefa · ícones de tipo em contorno (o estilo adotado)
+- **Local:** `fileIcons.ts` — `FOLHA` e `GLYPH`; `fileicons.css` — a paleta e as classes do
+  desenho
+- **Linha:** a folha preenchida (`fi-tile`/`fi-fold`, marca branca `fi-line`/`fi-solid`) saiu;
+  entrou a folha em contorno (`fi-sheet`, `fi-mark`, `fi-thin`, `fi-bar`, `fi-fill`) e a
+  paleta adotada: `--fi-md #7c3aed`, `--fi-word #2b6ce4`, `--fi-excel #16a34a`,
+  `--fi-ppt #ea580c`
+- **Porquê:** o usuário adotou o conjunto de `A:\icones-finais` (folha com canto dobrado em
+  contorno + a marca do formato) para os ícones pequenos de tipo — os das **abas** e da
+  **lista de documentos**, que é onde o tipo do arquivo se lê de relance. O desenho de 128 do
+  conjunto não desce para 16 px como está (traço 5/128 vira fio de cabelo): a marca foi
+  redesenhada no viewBox de 24 com traço 1.4–1.8, calibrado para o tamanho real, e conferida
+  rasterizada com o `sharp` em 16/17/22 px nos dois temas — o desenho é o mesmo, o traço é que
+  muda. A paleta do conjunto substituiu a antiga (o md era teal e virou roxo) e vale nos dois
+  temas: é a identidade do formato, não um detalhe de tema. A cor antiga saiu também do
+  bloco `[data-theme="dark"]`, que ficaria redundante.
+- **Local:** `scripts/testar-layout.mts`
+- **Linha:** `novo` — seção "ícones de tipo em contorno": contorno com interior vazio, paleta
+  adotada, a marca de cada tipo e o desenho antigo fora
+- **Porquê:** é o mesmo lugar onde os invariantes visuais do app já ficam presos; sem ele, uma
+  volta ao estilo antigo passaria despercebida.

@@ -1,17 +1,12 @@
 /* ---------- ícones por tipo de arquivo (src/fileIcons.ts) ---------- */
 
+/* A paleta é a do conjunto adotado (A:\icones-finais): a mesma nos dois temas — o traço é
+   vivo por natureza e a identidade do formato não muda com o tema. */
 :root {
-  --fi-md: #0f8f84;
-  --fi-word: #2563b0;
-  --fi-excel: #1b8a4b;
-  --fi-ppt: #d24a17;
-}
-
-[data-theme="dark"] {
-  --fi-md: #14b8a6;
-  --fi-word: #3b82d6;
-  --fi-excel: #28a860;
-  --fi-ppt: #e8602a;
+  --fi-md: #7c3aed;
+  --fi-word: #2b6ce4;
+  --fi-excel: #16a34a;
+  --fi-ppt: #ea580c;
 }
 
 .fi {
@@ -37,31 +32,35 @@
   --fi: var(--fi-ppt);
 }
 
-.fi-tile {
-  fill: var(--fi);
-}
-
-/* o canto dobrado da folha: um branco leve sobre a cor do tipo */
-.fi-fold {
-  fill: #fff;
-  opacity: 0.38;
-}
-
-/* desenho branco dentro da folha */
-.fi-line {
+/* a folha e a marca em contorno: traço na cor do tipo, interior vazio */
+.fi-sheet,
+.fi-mark {
   fill: none;
-  stroke: #fff;
-  stroke-width: 2;
+  stroke: var(--fi);
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.fi-thin {
+.fi-sheet {
+  stroke-width: 1.6;
+}
+
+.fi-mark {
   stroke-width: 1.4;
 }
 
-.fi-solid {
-  fill: #fff;
+/* partes finas (grade da planilha, seta do gráfico) e grossas (barras) da marca */
+.fi-thin {
+  stroke-width: 1.1;
+}
+
+.fi-bar {
+  stroke-width: 1.8;
+}
+
+/* parte cheia da marca (a faixa de cabeçalho da planilha) */
+.fi-fill {
+  fill: var(--fi);
   stroke: none;
 }
 
