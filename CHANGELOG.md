@@ -396,6 +396,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Botão Apresentar na barra superior**: com uma apresentação aberta, o botão **Apresentar**
+  aparece na barra de cima (entre o menu **⋯** e os controles da janela) e começa a apresentação
+  na hora — o mesmo caminho de **Exibir ▸ Apresentar**. Ele só existe com uma apresentação ativa:
+  nos outros documentos some sozinho (`body.ppt-open`).
 - **Fluxo do Mermaid na lâmina**: em **Inserir ▸ Fluxo do Mermaid**, colar um `flowchart`
   (TD/TB/LR/RL; nós `A[Texto]`, `A(Texto)`, `A((Texto))` e `A{Texto}`; setas `-->`, `---`,
   `-.->`, `==>`; rótulo `-->|texto|` ou `-- texto -->`) cria **cartões nativos** ligados por

@@ -255,6 +255,19 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   lâmina para o desenho ao vivo (SVG `viewBox 0 0 100 100`, com `non-scaling-stroke`) e vira pt
   na hora de reconhecer; a classe `.criando` que já existia deixa o cursor de cruz no modo.
 
+## src/app/toolbar.ts · src/app/powerpointDocs.ts · src/styles/topbar.css · scripts/testar-layout.mts · index.html
+
+### 2026-10-14 · este commit · o Apresentar na barra superior
+- **Local:** o botão `#tb-present` (index.html, logo depois do menu **⋯**); `#tb-present` com
+  `body.ppt-open` (topbar.css); `case "present"` (toolbar.ts); `presentActive`
+  (powerpointDocs.ts); duas checagens novas (testar-layout.mts)
+- **Linha:** botão novo na barra; `presentActive` chama `this.pptHost.present()` quando a aba é
+  `ppt`
+- **Porquê:** o usuário pediu um botão de apresentação na barra superior (à esquerda do minimizar)
+  — o comando só existia em **Exibir ▸ Apresentar**. A visibilidade não precisou de JS: o app já
+  marca `body.ppt-open` enquanto uma apresentação está ativa, então o CSS esconde o botão fora
+  dela — e o clique reaproveita o mesmo caminho do `present` da fita.
+
 ## src/app/powerpointDocs.ts · src/app/excelDocs.ts
 
 ### 2026-10-13 · 4bbd1b4 · diálogos "Configurar" compactos

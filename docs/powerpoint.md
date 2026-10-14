@@ -100,6 +100,8 @@ avisado ao abrir (nunca some em silêncio).
 
 - **Modo apresentação completo**: avançar/voltar lâmina, **tela preta/branca**, **transições**
   entre lâminas, mídia tocando e as **notas do apresentador**.
+- Na **barra superior**, o botão **Apresentar** aparece enquanto a apresentação está aberta (entre
+  o menu **⋯** e os controles da janela) e começa na hora — o mesmo caminho de Exibir ▸ Apresentar.
 - **Animações de forma** tocam na ordem: o clique primeiro toca o efeito pendente ("ao clicar")
   e só depois troca de lâmina; "com o anterior"/"depois do anterior" encadeiam sozinhos.
 
