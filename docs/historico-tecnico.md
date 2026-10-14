@@ -6783,3 +6783,19 @@ antigas quando fizer sentido.
   defeito no lugar certo (o teste falha se um marcador reaparecer em qualquer um dos cinco
   arquivos que os agentes mais editam): o `=` sozinho é ambíguo com título setext, por isso a
   lista foi conferida antes — nenhum dos cinco arquivos usa `===` no começo de linha.
+
+## CHANGELOG.md
+
+### 2026-10-14 · esta tarefa · promoção das duas entradas que estavam na main
+- **Local:** seções "Não adicionado" do PowerPoint e do Geral (2 entradas)
+- **Linha:** movidas para o "Adicionado" de cada categoria — **Ideias de design com "Gerar mais
+  ideias" e acabamentos** (`5a43050`) no PowerPoint/Frontend e **Marcador de conflito no
+  histórico (limpeza)** (`c2a955c`) no Geral/Ferramentas (dev); as duas seções ficaram com
+  "- (nada no momento)"
+- **Porquê:** mesma razão das rodadas anteriores (registrar no estado de autoria e promover no
+  fechamento não cabem no mesmo commit). A rodada anterior tinha sido descartada de propósito:
+  ela nasceu antes da correção dos marcadores e carregava o `docs/historico-tecnico.md` com o
+  bloco de conflito no fim — promover a partir daquela base arriscava trazer os marcadores de
+  volta para a `main` (exatamente o defeito que a tarefa anterior tinha acabado de limpar). A
+  promoção foi refeita a partir da `main` já corrigida, com a checagem nova do `testar-layout`
+  passando antes do fechamento.

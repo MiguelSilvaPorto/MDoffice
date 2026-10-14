@@ -382,6 +382,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- (nada no momento)
+
+### Adicionado (na main)
+
+**Backend**
+
+- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
+
+**Frontend**
+
 - **Ideias de design com "Gerar mais ideias" e acabamentos**: as ideias mostravam só 8 cartões
   e, num deck importado, trocavam apenas o fundo e o texto — as formas do organograma têm cores
   próprias (verdes) que não estão em tema nenhum e ficavam intactas. Agora cada ideia é um
@@ -392,14 +402,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   texto —, então o organograma inteiro passa para a paleta do design (no deck real do usuário,
   128 formas trocam de cor, contra 44 antes). A prévia do cartão usa o mapa do **deck inteiro**,
   para o cartão mostrar exatamente o que o clique faz.
-
-### Adicionado (na main)
-
-**Backend**
-
-- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
-
-**Frontend**
 
 - **Estilos de cor — o motor (R1, primeira rodada)**: o sistema que vai dar às formas o gradiente
   bonito da referência começou pela base que ninguém vê: um módulo puro de cor que converte
@@ -703,16 +705,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 **Frontend**
 
 - (nada no momento)
+- (nada no momento)
 
 **Ferramentas (dev)**
 
-- **Marcador de conflito no histórico (limpeza)**: o fechamento da tarefa das Ideias deixou um
-  bloco de conflito (`<<<<<<<` / `=======` / `>>>>>>>`) **commitado** no
-  `docs/historico-tecnico.md` — a resolução tinha sido feita e conferida, mas o `fechar.ps1`
-  desfez o arquivo ao continuar o rebase, e o `git add` seguinte estagiou a versão com os
-  marcadores. Os três marcadores saíram (os dois lados ficaram: a entrada do botão de perigo e a
-  das Ideias) e o `testar-layout` agora **falha** se um marcador voltar em `CHANGELOG.md`,
-  `README.md` ou nos docs dos módulos — o defeito não passa mais despercebido.
 
 ### Adicionado (na main)
 
@@ -748,6 +744,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **Marcador de conflito no histórico (limpeza)**: o fechamento da tarefa das Ideias deixou um
+  bloco de conflito (`<<<<<<<` / `=======` / `>>>>>>>`) **commitado** no
+  `docs/historico-tecnico.md` — a resolução tinha sido feita e conferida, mas o `fechar.ps1`
+  desfez o arquivo ao continuar o rebase, e o `git add` seguinte estagiou a versão com os
+  marcadores. Os três marcadores saíram (os dois lados ficaram: a entrada do botão de perigo e a
+  das Ideias) e o `testar-layout` agora **falha** se um marcador voltar em `CHANGELOG.md`,
+  `README.md` ou nos docs dos módulos — o defeito não passa mais despercebido.
 
 - **Documento novo já salvo na pasta padrão do app (`Documentos\mdOffice`)**: criar um documento não pergunta mais nada — ele **nasce salvo** na subpasta do próprio tipo, uma para cada: **`Markdown`**, **`Word`**, **`Excel`** e **`PowerPoint`** (`Documento.md`, `Documento.docx`, `Documento.xlsx`, `Documento.pptx`; o nome livre vira `Documento-2`, `Documento-3`… e a checagem é no disco, então dois seguidos nunca colidem). Vale para o `Ctrl+N`, para os cards do Início e para os **+** das abas de cada motor ✓. A raiz entra sozinha na lista de **Projetos** da barra lateral, então as subpastas aparecem na árvore como pastas normais ✓ — e **"Salvar como…" continua perguntando**, já sugerindo a subpasta do tipo (mudou de pasta? as imagens de `assets/` seguem o documento, como sempre ✓). Quem quiser outro lugar salva onde quiser e nada é imposto.
 - **A árvore de projetos lista `.xlsx`/`.xlsm`/`.pptx`**: antes só `.md`/`.docx` apareciam — planilha e apresentação ficavam **invisíveis no painel** mesmo estando na pasta do projeto ✗. O teste do Rust cobre as quatro pastas padrão (ordem alfabética, `txt`/imagem fora, pasta vazia fora).
