@@ -263,6 +263,31 @@
   height: auto;
 }
 
+/* com área de várias linhas (código, ex.: fluxo do Mermaid) a janela respira mais */
+.modal.dialogo-texto:has(textarea) {
+  width: min(600px, 94vw);
+}
+
+.modal.dialogo-texto textarea {
+  width: 100%;
+  min-height: 160px;
+  padding: 8px 10px;
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+}
+
+.modal.dialogo-texto textarea:focus {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
 .modal.dialogo-texto .wm-body {
   padding: 14px 18px 8px;
 }

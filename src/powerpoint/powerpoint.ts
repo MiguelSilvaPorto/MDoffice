@@ -5,6 +5,7 @@ import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { $, escapeHtml, toast } from "../util";
 import { pedirTexto } from "../dialogoTexto";
+import { fluxoParaFormas, lerFluxoMermaid } from "./edicao/mermaid";
 import { ligarAjusteAlturaFita, ligarRecolherFita } from "../fita";
 import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, novaImagem, type EstiloDeck, type ItemGaleria } from "./edicao/criar";
 import { dicaDoTraco, formaDoTraco, type Pincel } from "./edicao/desenho";
@@ -1584,6 +1585,8 @@ export class PowerPointHost {
         const tipo = (GRAFICO_TIPOS.some((t) => t.id === value) ? value : "colunas") as GraficoTipo;
         return this.inserirGrafico(tipo);
       }
+      case "mermaid-fluxo":
+        return void this.abrirFluxoMermaid();
       case "desenho":
         this.ferramenta = this.ferramenta?.tipo === "desenho" ? null : { tipo: "desenho" };
         this.atualizarPincel();
@@ -2024,6 +2027,50 @@ export class PowerPointHost {
     this.selecao = [forma.id];
     this.markDirty();
     this.pintar();
+  }
+
+  /**
+   * Inserir ▸ Fluxo do Mermaid: cola-se o `flowchart` e o app monta os cartões e os conectores de
+   * cantos suaves na lâmina (tudo nativo e editável). O diálogo valida na hora: sem nó, não fecha.
+   */
+  private async abrirFluxoMermaid(): Promise<void> {
+    const codigo = await pedirTexto({
+      titulo: "Fluxo do Mermaid",
+      rotulo: "Código do fluxograma",
+      dica: "Um `flowchart TD` (ou LR). Ex.: A[Pedido] --> B[Análise]; um rótulo sai com -->|sim|.",
+      ok: "Criar na lâmina",
+      linhas: 9,
+      validar: (v) => (lerFluxoMermaid(v).nos.length ? null : "Não encontrei nenhum nó — comece com `flowchart TD` e escreva A[Texto] --> B[Texto]."),
+    });
+    if (codigo === null) return;
+    const fluxo = lerFluxoMermaid(codigo);
+    const formas = fluxoParaFormas(fluxo, this.dim(), this.estilo());
+    if (!formas.length) {
+      toast("O fluxo não tem nada para desenhar.", "info", 3200);
+      return;
+    }
+    // lâmina recém-criada (só com as caixas do layout): vira "Em branco" e recebe o fluxo.
+    // Se já tem conteúdo, o fluxo ganha uma lâmina nova em branco logo depois — nada fica por baixo.
+    const vazia = !this.atual().shapes.some((s) => !s.fixa);
+    if (vazia) {
+      this.editar((s) => ({ ...s, layout: "vazio" as SlideLayout, shapes: [...formas] }));
+    } else {
+      const nova = novaLamina("vazio" as SlideLayout, this.estilo(), this.atual());
+      const lista = this.slides.slice();
+      lista.splice(this.indice + 1, 0, { ...nova, shapes: [...nova.shapes, ...formas] });
+      this.registrar();
+      this.slides = lista;
+      this.indice += 1;
+      this.editando = null;
+      this.markDirty();
+      this.pintar();
+    }
+    this.selecionar(formas.map((f) => f.id));
+    toast(
+      `${fluxo.nos.length} cartão(ões) e ${fluxo.arestas.length} conector(es) criados${vazia ? " nesta lâmina" : " numa lâmina nova em branco"}.`,
+      "ok",
+      4200
+    );
   }
 
   // ------------------------------------------------------------------

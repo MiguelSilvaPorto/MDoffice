@@ -377,7 +377,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **Fluxo do Mermaid na lâmina**: em **Inserir ▸ Fluxo do Mermaid**, colar um `flowchart`
+  (TD/TB/LR/RL; nós `A[Texto]`, `A(Texto)`, `A((Texto))` e `A{Texto}`; setas `-->`, `---`,
+  `-.->`, `==>`; rótulo `-->|texto|` ou `-- texto -->`) cria **cartões nativos** ligados por
+  **conectores de cantos suaves** — a linha é uma **forma livre com curvas de 90°** no lugar
+  do canto reto, com seta no fim (o `---` sai sem seta) e tracejado no `-.->`. O nível de cada
+  nó sai do encadeamento das setas (com guarda de ciclo), a ordem dentro do nível segue os
+  pais e o conjunto sai centrado na lâmina. Numa lâmina recém-criada o fluxo usa ela (que vira
+  "Em branco"); se a atual já tem conteúdo, o fluxo ganha uma **lâmina nova em branco** logo
+  depois — nada fica por baixo. Os cartões e os conectores são formas comuns (mover, colorir,
+  agrupar, editar texto) e o `.pptx` guarda igual: cartões como formas do PowerPoint e
+  conectores como forma livre com a seta.
 
 ### Adicionado (na main)
 
@@ -567,6 +577,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 **Frontend**
 
 - **O nível “Completa” ganhou cara própria — e o “Padrão” deixou de ser igual a ele**: os dois níveis eram praticamente indistinguíveis (o “Completa” só mexia **30–100 ms** nas durações e **1 px** no hover). Agora o “Completa” **entra com mola** (a curva passa do ponto e assenta, `cubic-bezier(0.34,1.56,0.64,1)`), viaja **o dobro** (modais e painéis 26 px, menus 14 px, abas 16 px), a **cascata do Início** abre mais espaçada (70/140/210/280 ms), a **paleta (Ctrl+K) entra em escadinha** (26 ms por item), os itens da paleta deslizam de lado, o toast e a barra lateral usam a mola, e o hover sobe **3 px** (com sombra maior nos cartões) — o “Padrão” continua curto e direto, como sempre foi, e o “Discreta” segue sem entrada e sem elevação. A **prévia de cada cartão** mostra o ritmo (a do “Completa” dá dois tempos com um estufo no fim) e a descrição diz o que muda. A rede de segurança do movimento de saída subiu de **420 para 640 ms** (senão o modal saía antes de a animação do completo acabar).
+- **Diálogo de texto com várias linhas (modo código)**: o diálogo de uma linha do app
+  (`pedirTexto`, usado em "Novo modelo", renomear lâmina etc.) ganhou a opção de virar uma
+  **área de várias linhas** — Enter quebra a linha e **Ctrl+Enter** (ou o botão) confirma —,
+  com fonte monoespaçada e a janela um pouco mais larga. É o campo que o Fluxo do Mermaid do
+  PowerPoint usa para colar o `flowchart`; a validação e o "clicar fora cancela" continuam
+  iguais.
 
 **Ferramentas (dev)**
 

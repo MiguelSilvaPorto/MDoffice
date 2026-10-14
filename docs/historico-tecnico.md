@@ -5512,3 +5512,92 @@ antigas quando fizer sentido.
   digitação
 - **Porquê:** é comportamento visível: quem lê a documentação precisa saber que a lista de tamanhos
   não é limite.
+
+## src/powerpoint/edicao/mermaid.ts
+
+### 2026-10-14 · esta tarefa · fluxo do Mermaid em formas nativas (novo arquivo)
+- **Local:** o arquivo inteiro — leitura (`lerFluxoMermaid`), níveis (`niveisDoFluxo`),
+  caminho (`caminhoSuave`) e conversão (`fluxoParaFormas`), com as medidas em `MEDIDAS_PADRAO`
+- **Linha:** `novo` — o parser aceita `flowchart|graph` com TD/TB/BT/LR/RL, nós
+  `A[..] \| A(..) \| A((..)) \| A{..}`, setas `-->`, `---`, `-.->`, `==>` e rótulo `|texto|`
+  (a forma `-- texto -->` é normalizada para `|texto|` antes); o layout dá o nível pelo maior
+  caminho a partir das raízes (DFS com `naPilha` contra ciclo), ordena cada nível pela média
+  dos pais (2 passadas) e centra o conjunto na lâmina; a aresta sai como **custGeom** com
+  cantos em `Q` (raio 9 pt) e `tail: "triangle"` — no conector alinhado, só um `L`
+- **Porquê:** o pedido era uma ferramenta para não montar o fluxo à mão e **sem os cantos
+  retos** do conector comum. Cada nó precisa continuar sendo uma forma do PowerPoint (texto
+  editável, mover, colorir), então o cartão é `roundRect` com o preenchimento claro do acento
+  do deck — e a única forma de o canto da **linha** ser curvo é geometria livre: o preset
+  `bentConnector3` é reto e o `curvedConnector3` é uma curva em S, que não é o "cotovelo
+  arredondado" de um organograma. Usar `Q` (quadrática) em vez de `C` é o menor caminho que o
+  OOXML (`a:quadBezTo`) e o `tracadoLivre` já desenham igual na tela e no arquivo. O conector
+  entra **antes** dos cartões no vetor (z-order: o cartão cobre a ponta da linha) e com
+  `fillX: none`, que é o que faz o motor aplicar o marcador do fim (`marker-end`); os nós
+  aceitam também elipse (`((texto))`) e o raio maior do `(texto)` (`adj: 50000`). A guarda de
+  ciclo existe porque um `flowchart` com ciclo travaria o DFS; o pior caso é o ciclo ficar com
+  o nível da primeira visita.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · esta tarefa · Inserir ▸ Fluxo do Mermaid
+- **Local:** o `case "mermaid-fluxo"` (junto de `grafico-inserir`) e o método
+  `abrirFluxoMermaid`
+- **Linha:** `+ case "mermaid-fluxo": return void this.abrirFluxoMermaid();` e o método com
+  `pedirTexto({ ... linhas: 9, validar: ... })`, `fluxoParaFormas(fluxo, this.dim(), this.estilo())`
+  e a escolha da lâmina: `+ const vazia = !this.atual().shapes.some((s) => !s.fixa)`
+- **Porquê:** o diálogo do app já existia e era o lugar certo para colar o código — só faltava
+  o modo de várias linhas; a validação feita com `lerFluxoMermaid` evita criar "nada" e explica
+  a sintaxe sem sair da janela. A regra da lâmina é o que impede o caso feio do primeiro teste
+  no app: a lâmina inicial do deck-modelo tem texto, e o fluxo centrado caía por cima dele.
+  Lâmina só com as caixas do layout vira "Em branco" e recebe o fluxo; lâmina com conteúdo
+  ganha uma lâmina nova em branco logo depois (com as decorações fixas herdadas da atual, como
+  o "Nova lâmina" faz). Um único passo de desfazer (`editar` num caso, `registrar`+`pintar` no
+  outro) e a seleção final é o fluxo inteiro.
+
+## src/dialogoTexto.ts · src/styles/modals.css
+
+### 2026-10-14 · esta tarefa · diálogo de texto com várias linhas (modo código)
+- **Local:** `OpcoesTexto.linhas`; o corpo do modal (`input` → `input, textarea`); o teclado
+  (Enter confirma → no modo código só Ctrl+Enter); `modals.css`
+  (`.dialogo-texto:has(textarea)` e o estilo do `textarea`)
+- **Linha:** `+ linhas?: number`; `+ ${op.linhas && op.linhas > 1 ? \`<textarea rows="...">\` : \`<input ...>\`}`;
+  `+ if (multilinha && !e.ctrlKey && !e.metaKey) return;`; `+ width: min(600px, 94vw)`, fonte
+  monoespaçada e `min-height: 160px`
+- **Porquê:** o diálogo é compartilhado ("Novo modelo", renomear lâmina) e não podia ganhar um
+  irmão só para o fluxo: a opção nova é aditiva e o comportamento antigo (Enter confirma) fica
+  intacto quando `linhas` não vem. Com Enter confirmando, colar código fecharia a janela no
+  meio da colagem — daí o Ctrl+Enter; o `resize: vertical` e o `:has` existem para a janela
+  acompanhar o conteúdo sem mexer no tamanho dos outros diálogos.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · esta tarefa · o botão do Fluxo do Mermaid
+- **Local:** `inserir()`, grupo novo "Diagrama" entre "Ilustrações" e "Mídia"
+- **Linha:** `+ grupo("Diagrama", \`${grande("mermaid-fluxo", ic("i-flow"), "Fluxo do Mermaid", "..."\`)}`
+- **Porquê:** o `i-flow` já existe no sprite do app (caixas com conectores) e a aba Inserir é
+  onde o resto das criações mora; o botão fica no mesmo lugar para quem procura "como faço um
+  fluxograma".
+
+## scripts/testar-edicao-pptx.mjs
+
+### 2026-10-14 · esta tarefa · as travas do fluxo do Mermaid
+- **Local:** bloco "fluxo do Mermaid" (novo, antes do resumo final)
+- **Linha:** `novo` — 16 asserções: leitura (6 nós com comentário e `style` fora, formas e
+  textos, 7 arestas com rótulo e cadeia, tracejada e sem seta), níveis, cartões/conectores,
+  curva `Q` no desvio e reta no alinhado, seta (e o `---` sem), o preenchimento `none`, a caixa
+  dentro da lâmina, o `.pptx` (`roundRect` nativo, `custGeom` + `quadBezTo` + `tailEnd`) e a
+  direção LR (B à direita de A, cartão em pé)
+- **Porquê:** o teste pegou um defeito real antes de fechar (no LR os cartões saíam deitados,
+  46×118 — as metades do cartão estavam trocadas), e a exportação é a parte que ninguém vê
+  quebrar: sem prender `quadBezTo`/`tailEnd`, uma troca de geometria só apareceria no arquivo
+  aberto no PowerPoint. As asserções do arquivo usam o mesmo `Escritor` das outras e ficam
+  junto do teste de edição, que é onde o desenho das formas já é conferido.
+
+## docs/powerpoint.md
+
+### 2026-10-14 · esta tarefa · o fluxo do Mermaid no doc do módulo
+- **Local:** seção "Editar as lâminas" — item novo
+- **Linha:** `novo` — o item do **Inserir ▸ Fluxo do Mermaid** (o que entra no código, o que
+  sai na lâmina, as regras da lâmina nova e a edição posterior)
+- **Porquê:** a tarefa muda o que o app faz e o doc do módulo é onde a pessoa procura o recurso;
+  o AGENTS pede o doc do módulo atualizado a cada mudança de comportamento.

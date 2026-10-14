@@ -889,5 +889,73 @@ const ESCR = await empacotar("src/powerpoint/pptxexport/rica.ts", "rica.mjs");
   ok("mídia sem capa não quebra a lâmina", typeof semCapa.xml === "string" && semCapa.xml.includes("<p:sp"));
 }
 
+// ---------------------------------------------------------------- fluxo do Mermaid
+const MM = await empacotar("src/powerpoint/edicao/mermaid.ts", "mermaid.mjs");
+{
+  const codigo = [
+    "flowchart TD",
+    "  %% comentário",
+    "  A[Pedido] --> B(Análise)",
+    "  A --> C((Orçamento))",
+    "  B --> D{Aprovar?}",
+    "  C --> D",
+    "  D -->|sim| E[Produção]",
+    "  D -.-> F[Revisão]",
+    "  E --- F",
+    "  style A fill:#f00",
+  ].join("\n");
+  const fluxo = MM.lerFluxoMermaid(codigo);
+  ok("fluxo: direção TD", fluxo.direcao === "TD");
+  ok("fluxo: 6 nós (comentário e style ficam de fora)", fluxo.nos.length === 6, JSON.stringify(fluxo.nos.map((n) => n.id)));
+  ok(
+    "fluxo: textos e formas dos nós",
+    fluxo.nos.find((n) => n.id === "A").texto === "Pedido" && fluxo.nos.find((n) => n.id === "B").forma === "redondo" && fluxo.nos.find((n) => n.id === "C").forma === "circulo",
+    JSON.stringify(fluxo.nos)
+  );
+  ok(
+    "fluxo: 7 arestas, com rótulo e cadeia",
+    fluxo.arestas.length === 7 && fluxo.arestas.some((a) => a.de === "D" && a.para === "E" && a.rotulo === "sim"),
+    JSON.stringify(fluxo.arestas)
+  );
+  ok(
+    "fluxo: tracejada e sem seta",
+    fluxo.arestas.some((a) => a.de === "D" && a.para === "F" && a.tracejada) && fluxo.arestas.some((a) => a.de === "E" && a.para === "F" && a.semSeta)
+  );
+  const niveis = MM.niveisDoFluxo(fluxo);
+  ok("fluxo: níveis (A=0, D=2, E=3)", niveis.get("A") === 0 && niveis.get("D") === 2 && niveis.get("E") === 3, JSON.stringify([...niveis]));
+
+  const estilo = { fonte: "Segoe UI", tamanho: 18, corTexto: "1C212B", acento: "107C41", paleta: [] };
+  const formas = MM.fluxoParaFormas(fluxo, dim, estilo);
+  const cartoes = formas.filter((f) => f.geom !== "custom");
+  const conectores = formas.filter((f) => f.geom === "custom");
+  ok("fluxo: um cartão por nó e um conector por aresta", cartoes.length === 6 && conectores.length === 7, `${cartoes.length}/${conectores.length}`);
+  ok("fluxo: o conector com desvio sai em curva (quadrática)", conectores.some((c) => c.paths[0].cmds.includes("Q")));
+  ok(
+    "fluxo: conector normal tem seta e o '---' sai sem",
+    conectores.filter((c) => c.ln.tail === "triangle").length === 6 && conectores.some((c) => !c.ln.tail)
+  );
+  ok("fluxo: conector reto entre cartões alinhados é uma linha", conectores.some((c) => !c.paths[0].cmds.includes("Q")));
+  ok("fluxo: tracejada vira traço 'dash'", conectores.some((c) => c.ln.dash === "dash"));
+  ok("fluxo: conector sem preenchimento", conectores.every((c) => c.fillX.kind === "none"));
+  ok("fluxo: cartões com texto centralizado", cartoes.every((c) => c.paras[0].align === "centro" && c.anchor === "ctr" && c.paras[0].runs[0].text.length > 0));
+  ok(
+    "fluxo: nada sai da lâmina",
+    formas.every((f) => f.box.x >= -0.01 && f.box.y >= -0.01 && f.box.x + f.box.w <= 100.01 && f.box.y + f.box.h <= 100.01),
+    JSON.stringify(formas.map((f) => [Math.round(f.box.x), Math.round(f.box.y), Math.round(f.box.w), Math.round(f.box.h)]))
+  );
+  const setupFluxo = { aspect: "16:9", theme: "claro", showNumber: false, footer: "", fontFamily: "Segoe UI", fontSize: 18, bg: "" };
+  const xml = new R.Escritor(setupFluxo).lamina({ md: "", layout: "conteudo", notes: "", shapes: [cartoes[0], conectores[0]] }).xml;
+  ok("fluxo: cartão vira roundRect nativo", xml.includes('<a:prstGeom prst="roundRect"'));
+  ok(
+    "fluxo: conector vai como forma livre, sem preenchimento e com a seta",
+    xml.includes("<a:custGeom") && xml.includes("<a:quadBezTo") && xml.includes('<a:tailEnd type="triangle"/>') && xml.includes("<a:noFill/>") && !xml.includes("<a:prstDash")
+  );
+  const lr = MM.fluxoParaFormas(MM.lerFluxoMermaid("flowchart LR\n A --> B"), dim, estilo);
+  const [cartaoA, cartaoB] = lr.filter((f) => f.geom !== "custom");
+  ok("fluxo LR: B fica à direita de A", cartaoB.box.x > cartaoA.box.x + cartaoA.box.w - 0.01, JSON.stringify([cartaoA.box, cartaoB.box]));
+  ok("fluxo LR: o cartão continua em pé (largura × altura)", cartaoA.box.w > cartaoA.box.h, JSON.stringify(cartaoA.box));
+  ok("fluxo: código vazio não gera nada", MM.fluxoParaFormas(MM.lerFluxoMermaid(""), dim, estilo).length === 0);
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);

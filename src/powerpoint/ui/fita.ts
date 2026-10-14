@@ -398,6 +398,10 @@ export class Fita {
          ${grande("image", ic("i-image"), "Imagem", "Inserir imagem do computador")}`
       ),
       grupo(
+        "Diagrama",
+        `${grande("mermaid-fluxo", ic("i-flow"), "Fluxo do Mermaid", "Cole um flowchart e o app cria os cartões ligados por conectores de cantos suaves")}`
+      ),
+      grupo(
         "Mídia",
         `<div class="ppr-col">
            ${pequeno("midia:video", ic("i-video"), "Vídeo", "Inserir um vídeo do computador")}

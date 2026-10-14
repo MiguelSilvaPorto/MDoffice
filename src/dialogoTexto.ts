@@ -18,6 +18,11 @@ export interface OpcoesTexto {
   ok?: string;
   /** valida e devolve a mensagem de erro, ou null quando estiver tudo bem */
   validar?: (valor: string) => string | null;
+  /**
+   * Com 2+, o campo vira uma área de várias linhas (código): Enter quebra a linha e
+   * Ctrl+Enter confirma (além do botão).
+   */
+  linhas?: number;
 }
 
 /** Pergunta um texto com o visual do app. Devolve o valor digitado ou `null` se cancelar. */
@@ -34,7 +39,7 @@ export function pedirTexto(op: OpcoesTexto): Promise<string | null> {
       <div class="wm-body">
         <label class="st-field">
           <span class="st-field-label"><b data-rotulo></b>${op.dica ? "<small data-dica></small>" : ""}</span>
-          <input type="text" spellcheck="false" autocomplete="off">
+          ${op.linhas && op.linhas > 1 ? `<textarea rows="${op.linhas}" spellcheck="false" autocomplete="off"></textarea>` : `<input type="text" spellcheck="false" autocomplete="off">`}
         </label>
         <p class="dg-erro" data-erro hidden></p>
       </div>
@@ -50,13 +55,15 @@ export function pedirTexto(op: OpcoesTexto): Promise<string | null> {
     modal.querySelector("[data-titulo]")!.textContent = op.titulo;
     modal.querySelector("[data-rotulo]")!.textContent = op.rotulo;
     if (op.dica) modal.querySelector("[data-dica]")!.textContent = op.dica;
-    const entrada = modal.querySelector<HTMLInputElement>("input")!;
+    const entrada = modal.querySelector<HTMLInputElement | HTMLTextAreaElement>("input, textarea")!;
+    const multilinha = entrada instanceof HTMLTextAreaElement;
     const erro = modal.querySelector<HTMLElement>("[data-erro]")!;
     const ok = modal.querySelector<HTMLButtonElement>("[data-ok]")!;
     ok.textContent = op.ok ?? "OK";
     entrada.value = op.valor ?? "";
     entrada.focus();
-    entrada.select();
+    if (multilinha) entrada.setSelectionRange(entrada.value.length, entrada.value.length);
+    else entrada.select();
 
     let feito = false;
     const fim = (valor: string | null) => {
@@ -83,6 +90,7 @@ export function pedirTexto(op: OpcoesTexto): Promise<string | null> {
         e.stopPropagation();
         fim(null);
       } else if (e.key === "Enter") {
+        if (multilinha && !e.ctrlKey && !e.metaKey) return; // no código, Enter quebra a linha
         e.preventDefault();
         e.stopPropagation();
         confirmar();

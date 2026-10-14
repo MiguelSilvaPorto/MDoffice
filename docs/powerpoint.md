@@ -47,6 +47,15 @@ avisado ao abrir (nunca some em silêncio).
 - **Tabelas**: inserir, editar células (Tab anda entre elas), mesclar/dividir, linhas e
   colunas, estilos, bordas e sombreamento — com ida e volta fiel no `.pptx` (`a:tbl`).
 - **Gráficos**: inserir, editar os dados no painel, desenho em SVG e exportação como imagem.
+- **Fluxo do Mermaid**: colar um `flowchart` em **Inserir ▸ Fluxo do Mermaid** monta os
+  **cartões** (formas nativas, com texto editável) ligados por **conectores de cantos suaves** —
+  cada linha é uma forma livre com curvas de 90° no lugar do canto reto, com seta no fim (o `---`
+  sai sem seta) e tracejado no `-.->`. O código dá a direção (TD/TB/BT/LR/RL), as formas
+  (`[..]`, `(..)`, `((..))`, `{..}`) e os rótulos (`-->|texto|` ou `-- texto -->`); o nível de
+  cada nó sai do encadeamento das setas e o conjunto sai centrado. Numa lâmina recém-criada o
+  fluxo usa ela (que vira "Em branco"); se a atual já tem conteúdo, o fluxo ganha uma **lâmina
+  nova em branco** logo depois. Depois de criado, é tudo forma comum: mover, colorir, agrupar e
+  editar o texto.
 - **Mídia**: inserir áudio/vídeo, tocar no F5 com corte, volume e repetição, e ida e volta no `.pptx`.
 - **Transições de lâmina**: galeria, direção, duração, no F5 e no arquivo.
 - **Animações de forma**: aba própria com **Aparecer**, **Surgir**, **Voar**, **Zoom**, **Limpar**,
