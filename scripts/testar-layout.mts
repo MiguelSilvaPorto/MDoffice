@@ -776,6 +776,79 @@ checa(
   "o hover ou o confirmando perderam o fundo vermelho"
 );
 
+// ---------------------------------------------------------------- estilos de cor (R2)
+
+console.log("\nestilos de cor (galeria, painel e o vivo)");
+
+{
+  const fitaEst = ler("src/powerpoint/ui/fita.ts");
+  const pptEst = ler("src/powerpoint/powerpoint.ts");
+  const painelEst = ler("src/powerpoint/ui/painel.ts");
+  const motorEst = ler("src/powerpoint/edicao/estilos.ts");
+  const cssEst = ler("src/styles/powerpoint-edicao.css");
+
+  checa(
+    "o motor expõe as receitas, o ligar/soltar e os guardas das opções",
+    /export const FAMILIAS/.test(motorEst) && /export function ligarEstilo/.test(motorEst) && /export function soltarEstilo/.test(motorEst) && /export const ehFamilia/.test(motorEst) && /export function estiloDaFamilia/.test(motorEst),
+    "faltou peça do motor que a UI usa"
+  );
+  checa(
+    "o estilo deriva ANTES das ligações (o conector lê a cor da caixa já derivada)",
+    /atualizarEstilos\(slide[\s\S]{0,360}atualizarLigacoes\(comEstilo/.test(pptEst),
+    "a ordem do recálculo no substituirSlide mudou — o conector pegaria a cor antiga"
+  );
+  checa(
+    "a galeria fica no grupo Estilos de Cor (aba Formato da Forma) e abre pela fita",
+    /grupo\(\s*"Estilos de Cor",\s*`\$\{grande\("estilos"/.test(fitaEst) && /case "estilos":\s*this\.menuEstilos\(ancora\)/.test(fitaEst) && /private menuEstilos\(ancora: HTMLElement\)/.test(fitaEst),
+    "o botão da fita ficaria sem menu"
+  );
+  checa(
+    "a galeria oferece família, intensidade, brilho, ângulo, cor e desligar",
+    /estilo-cor:familia:\$\{id\}/.test(fitaEst) &&
+      /estilo-cor:intensidade:(suave|" \+ )?/.test(fitaEst) &&
+      /estilo-cor:brilho:/.test(fitaEst) &&
+      /estilo-cor:angulo:/.test(fitaEst) &&
+      /estilo-cor:cor:\$\{c\}/.test(fitaEst) &&
+      /estilo-cor:desligar/.test(fitaEst),
+    "faltou uma opção na galeria"
+  );
+  checa(
+    "a fita despacha estilo-cor e o host tem o caso",
+    /else if \(cmd\.startsWith\("estilo-cor:"\)\) this\.hooks\.run\("estilo-cor", cmd\.slice\(11\)\)/.test(fitaEst) && /case "estilo-cor":\s*this\.estiloCor\(String\(value \?\? ""\)\)/.test(pptEst) && /private estiloCor\(acao: string\)/.test(pptEst),
+    "o comando da galeria não chega ao host"
+  );
+  checa(
+    "com estilo, a cor do preenchimento vira a cor-BASE (a rampa se refaz)",
+    /case "preench": \{[\s\S]{0,1200}ligarEstilo\(s, estilizadas, \{ base: String\(value\) \}/.test(pptEst) && /const estilizadas = this\.idsComEstilo\(\)/.test(pptEst),
+    "escolher cor numa forma estilizada não atualizaria a rampa"
+  );
+  checa(
+    "a orientação do gradiente vira o ângulo do estilo",
+    /case "gradiente": \{[\s\S]{0,900}ligarEstilo\(s, estilizadas, \{ angulo: ang\[dir\]/.test(pptEst),
+    "o gradiente da fita não acompanharia o estilo"
+  );
+  checa(
+    "pintura manual (contorno/sombra) solta o estilo antes de aplicar",
+    /private comPintura\(fn: \(s: Slide\) => Slide/.test(pptEst) && /case "contorno":\s*this\.comPintura\(/.test(pptEst) && /case "sombra-pronta":\s*this\.comPintura\(/.test(pptEst) && /this\.comPintura\(\(s\) => patchFormas\(s, this\.selecao, aplicar\)\)/.test(pptEst),
+    "a edição manual seria derrubada pelo recálculo no próximo movimento"
+  );
+  checa(
+    "o painel ganha a seção Estilo no lugar do preenchimento cru",
+    /private htmlEstilo\(f: Shape\)/.test(painelEst) && /if \(f\.estilo\) partes\.push\(secao\("estilo", "Estilo", this\.htmlEstilo\(f\)\)\)/.test(painelEst) && /data-click="estilo-cor" data-valor="desligar"/.test(painelEst),
+    "a seção do painel ficou de fora"
+  );
+  checa(
+    "o painel assina o estilo (redesenha quando ele muda) e manda os comandos certos",
+    /s\.midia, s\.src, s\.estilo\]\)/.test(painelEst) && /case "est-cor-base":/.test(pptEst) && /case "est-cor-int":/.test(pptEst) && /case "est-cor-bri":/.test(pptEst) && /case "est-cor-angulo":/.test(pptEst),
+    "sem a assinatura o painel não acompanharia o estilo"
+  );
+  checa(
+    "css: os cartões da galeria e as famílias do painel têm estilo próprio",
+    /\.pp-estilo-cartao\s*\{/.test(cssEst) && /\.pp-estilo-previa\s*\{/.test(cssEst) && /\.pf-estilo-fam\s*\{/.test(cssEst),
+    "faltou estilo das prévias"
+  );
+}
+
 // ---------------------------------------------------------------- docs sem marcador de conflito
 
 console.log("\ndocs sem marcador de conflito");

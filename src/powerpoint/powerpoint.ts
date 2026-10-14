@@ -9,6 +9,7 @@ import { fluxoParaFormas, lerFluxoMermaid } from "./edicao/mermaid";
 import { ligarAjusteAlturaFita, ligarRecolherFita } from "../fita";
 import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, novaImagem, type EstiloDeck, type ItemGaleria } from "./edicao/criar";
 import { dicaDoTraco, formaDoTraco, type Pincel } from "./edicao/desenho";
+import { atualizarEstilos, ehBrilho, ehFamilia, ehIntensidade, estiloDaFamilia, ligarEstilo, soltarEstilo } from "./edicao/estilos";
 import { atualizarLigacoes, ligacaoParaFormas } from "./edicao/ligacoes";
 import { ajustarCor, CANTOS, comAjuste, comCantos, comLinha, comOpacidade, comPreenchimento, comRaioDeCanto, comSombra, gradiente, SOMBRAS_PRONTAS, solido, corPrincipal, type Canto } from "./edicao/formato";
 import { aspectSize, stageRatio } from "./schema";
@@ -629,9 +630,60 @@ export class PowerPointHost {
   }
 
   private substituirSlide(slide: Slide): void {
-    // as ligações são derivadas: qualquer mudança na lâmina reposiciona os conectores presos
-    const comLigacoes = slide.shapes.some((s) => s.liga);
-    this.slides = replaceSlide(this.deck, this.indice, comLigacoes ? atualizarLigacoes(slide, this.dim(), this.estilo().acento) : slide).slides;
+    // o que é derivado se redesenha a cada mudança: primeiro os ESTILOS (a cor da forma), depois
+    // as LIGAÇÕES (o conector lê a cor da caixa já derivada — trocar esta ordem quebra a cor)
+    const temEstilo = slide.shapes.some((s) => s.estilo || s.capa) || !!slide.bgEstilo;
+    const temLigacao = slide.shapes.some((s) => s.liga);
+    const comEstilo = temEstilo ? atualizarEstilos(slide, this.dim(), this.estilo()) : slide;
+    this.slides = replaceSlide(this.deck, this.indice, temLigacao ? atualizarLigacoes(comEstilo, this.dim(), this.estilo().acento) : comEstilo).slides;
+  }
+
+  /** As formas da seleção que têm estilo vivo. */
+  private idsComEstilo(): string[] {
+    return this.atual()
+      .shapes.filter((s) => s.estilo && this.selecao.includes(s.id))
+      .map((s) => s.id);
+  }
+
+  /**
+   * Edição de pintura manual (contorno, sombra…): numa forma com estilo vivo, o estilo é SOLTO
+   * antes — a pintura fica dona em vez de o recálculo derrubar a escolha no próximo movimento.
+   */
+  private comPintura(fn: (s: Slide) => Slide, chave = ""): void {
+    const estilizadas = this.idsComEstilo();
+    this.editar((s) => fn(estilizadas.length ? soltarEstilo(s, estilizadas) : s), chave);
+  }
+
+  /** Estilos de cor (galeria, painel e cor do preenchimento): liga, ajusta ou solta o estilo. */
+  private estiloCor(acao: string): void {
+    const ids = this.selecao;
+    if (!ids.length) return;
+    const [op, valor = ""] = acao.split(":");
+    if (op === "desligar") {
+      this.editar((s) => soltarEstilo(s, ids), "estilo");
+      return;
+    }
+    if (op === "familia" && ehFamilia(valor)) {
+      this.editar((s) => ligarEstilo(s, ids, { familia: valor, base: "" }, estiloDaFamilia(valor)), "estilo");
+      return;
+    }
+    if (op === "intensidade" && ehIntensidade(valor)) {
+      this.editar((s) => ligarEstilo(s, ids, { intensidade: valor }, estiloDaFamilia("esmeralda")), "estilo");
+      return;
+    }
+    if (op === "brilho" && ehBrilho(valor)) {
+      this.editar((s) => ligarEstilo(s, ids, { brilho: valor }, estiloDaFamilia("esmeralda")), "estilo");
+      return;
+    }
+    if (op === "angulo") {
+      const ang = Math.round(Math.max(0, Math.min(360, Number(valor))));
+      if (!Number.isFinite(ang)) return;
+      this.editar((s) => ligarEstilo(s, ids, { angulo: ang }, estiloDaFamilia("esmeralda")), "estilo");
+      return;
+    }
+    if (op === "cor" && /^[0-9A-Fa-f]{6}$/.test(valor)) {
+      this.editar((s) => ligarEstilo(s, ids, { base: valor.toUpperCase() }, estiloDaFamilia("propria")), "estilo");
+    }
   }
 
   /** Aplica uma edição à lâmina atual: guarda o desfazer, troca a lâmina e redesenha. */
@@ -1825,6 +1877,18 @@ export class PowerPointHost {
       // ---- preenchimento ----
       case "preench": {
         if (!ids.length) return;
+        // com estilo vivo, a cor escolhida é a COR-BASE do estilo (a rampa inteira se refaz) e
+        // "sem preenchimento" é edição manual: o estilo é solto e a pintura fica
+        const estilizadas = this.idsComEstilo();
+        const outras = ids.filter((id) => !estilizadas.includes(id));
+        if (estilizadas.length) {
+          const manual: Fill | undefined = value === "none" ? { kind: "none" } : solido(String(value));
+          this.editar((s) => {
+            const n = value === "none" ? soltarEstilo(s, estilizadas) : ligarEstilo(s, estilizadas, { base: String(value) }, estiloDaFamilia("propria"));
+            return outras.length ? patchFormas(n, outras, (f) => comPreenchimento(f, manual)) : n;
+          }, "estilo");
+          return;
+        }
         const fill: Fill | undefined = value === "none" ? { kind: "none" } : solido(String(value));
         this.editar((s) => patchFormas(s, ids, (f) => comPreenchimento(f, fill)));
         return;
@@ -1843,13 +1907,20 @@ export class PowerPointHost {
         this.editar((s) => patchFormas(s, ids, (f) => (f.fillX && f.fillX.kind !== "none" ? comPreenchimento(f, { ...f.fillX, alpha: 1 - Math.max(0, Math.min(100, Number(value))) / 100 }) : {})), "pf-transp");
         return;
       case "gradiente": {
+        // com estilo vivo, a orientação escolhida vira o ÂNGULO do estilo (o radial é edição
+        // manual: solta o estilo e entra como pintura)
+        const estilizadas = this.idsComEstilo();
+        const dir = String(value);
+        const ang: Record<string, number> = { baixo: 90, cima: 270, direita: 0, esquerda: 180, diagonal: 45 };
+        if (estilizadas.length && dir !== "radial") {
+          this.editar((s) => ligarEstilo(s, estilizadas, { angulo: ang[dir] ?? 90 }, estiloDaFamilia("esmeralda")), "estilo");
+          return;
+        }
         const base = corPrincipal(principal?.fillX) ?? this.estilo().acento;
         const c1 = ajustarCor(base, 1.3);
         const c2 = ajustarCor(base, 0.75);
-        const dir = String(value);
-        const ang: Record<string, number> = { baixo: 90, cima: 270, direita: 0, esquerda: 180, diagonal: 45 };
         const fill: Fill = dir === "radial" ? { ...gradiente(c1, c2), radial: true, angle: undefined } : gradiente(c1, c2, ang[dir] ?? 90);
-        this.editar((s) => patchFormas(s, ids, (f) => comPreenchimento(f, fill)));
+        this.editar((s) => patchFormas(estilizadas.length ? soltarEstilo(s, estilizadas) : s, ids, (f) => comPreenchimento(f, fill)));
         return;
       }
       case "grad-tipo":
@@ -1890,58 +1961,58 @@ export class PowerPointHost {
 
       // ---- linha ----
       case "contorno":
-        this.editar((s) => patchFormas(s, ids, (f) => (value === "none" ? comLinha(f, null) : comLinha(f, { color: String(value) }))));
+        this.comPintura((s) => patchFormas(s, ids, (f) => (value === "none" ? comLinha(f, null) : comLinha(f, { color: String(value) }))));
         return;
       case "ln-tipo":
-        this.editar((s) => patchFormas(s, ids, (f) => (value === "none" ? comLinha(f, null) : comLinha(f, f.ln ?? { color: ajustarCor(corPrincipal(f.fillX) ?? "4F46E5", 0.7), w: 1 }))));
+        this.comPintura((s) => patchFormas(s, ids, (f) => (value === "none" ? comLinha(f, null) : comLinha(f, f.ln ?? { color: ajustarCor(corPrincipal(f.fillX) ?? "4F46E5", 0.7), w: 1 }))));
         return;
       case "ln-cor":
-        this.editar((s) => patchFormas(s, ids, (f) => comLinha(f, { color: String(value) })), "ln-cor");
+        this.comPintura((s) => patchFormas(s, ids, (f) => comLinha(f, { color: String(value) })), "ln-cor");
         return;
       case "ln-w":
       case "espessura":
-        this.editar((s) => patchFormas(s, ids, (f) => comLinha(f, { w: Math.max(0, Number(String(value).replace(",", "."))) })), "ln-w");
+        this.comPintura((s) => patchFormas(s, ids, (f) => comLinha(f, { w: Math.max(0, Number(String(value).replace(",", "."))) })), "ln-w");
         return;
       case "ln-transp":
-        this.editar((s) => patchFormas(s, ids, (f) => comLinha(f, { alpha: 1 - Math.max(0, Math.min(100, Number(value))) / 100 })), "ln-transp");
+        this.comPintura((s) => patchFormas(s, ids, (f) => comLinha(f, { alpha: 1 - Math.max(0, Math.min(100, Number(value))) / 100 })), "ln-transp");
         return;
       case "ln-dash":
       case "traco":
-        this.editar((s) => patchFormas(s, ids, (f) => comLinha(f, { dash: value as never })));
+        this.comPintura((s) => patchFormas(s, ids, (f) => comLinha(f, { dash: value as never })));
         return;
       case "ln-head":
       case "ponta-ini":
-        this.editar((s) => patchFormas(s, ids, (f) => comLinha(f, { head: (value || undefined) as never })));
+        this.comPintura((s) => patchFormas(s, ids, (f) => comLinha(f, { head: (value || undefined) as never })));
         return;
       case "ln-tail":
       case "ponta-fim":
-        this.editar((s) => patchFormas(s, ids, (f) => comLinha(f, { tail: (value || undefined) as never })));
+        this.comPintura((s) => patchFormas(s, ids, (f) => comLinha(f, { tail: (value || undefined) as never })));
         return;
       case "ln-cap":
-        this.editar((s) => patchFormas(s, ids, (f) => comLinha(f, { cap: value as never })));
+        this.comPintura((s) => patchFormas(s, ids, (f) => comLinha(f, { cap: value as never })));
         return;
 
       // ---- efeitos ----
       case "sombra-pronta":
-        this.editar((s) => patchFormas(s, ids, (f) => comSombra(f, SOMBRAS_PRONTAS[Number(value)]?.sombra ?? null)));
+        this.comPintura((s) => patchFormas(s, ids, (f) => comSombra(f, SOMBRAS_PRONTAS[Number(value)]?.sombra ?? null)));
         return;
       case "sd-on":
-        this.editar((s) => patchFormas(s, ids, (f) => comSombra(f, value === "1" ? {} : null)));
+        this.comPintura((s) => patchFormas(s, ids, (f) => comSombra(f, value === "1" ? {} : null)));
         return;
       case "sd-cor":
-        this.editar((s) => patchFormas(s, ids, (f) => comSombra(f, { color: String(value) })), "sd");
+        this.comPintura((s) => patchFormas(s, ids, (f) => comSombra(f, { color: String(value) })), "sd");
         return;
       case "sd-transp":
-        this.editar((s) => patchFormas(s, ids, (f) => comSombra(f, { alpha: 1 - Math.max(0, Math.min(100, Number(value))) / 100 })), "sd");
+        this.comPintura((s) => patchFormas(s, ids, (f) => comSombra(f, { alpha: 1 - Math.max(0, Math.min(100, Number(value))) / 100 })), "sd");
         return;
       case "sd-blur":
-        this.editar((s) => patchFormas(s, ids, (f) => comSombra(f, { blur: Math.max(0, Number(value)) })), "sd");
+        this.comPintura((s) => patchFormas(s, ids, (f) => comSombra(f, { blur: Math.max(0, Number(value)) })), "sd");
         return;
       case "sd-dist":
-        this.editar((s) => patchFormas(s, ids, (f) => comSombra(f, { dist: Math.max(0, Number(value)) })), "sd");
+        this.comPintura((s) => patchFormas(s, ids, (f) => comSombra(f, { dist: Math.max(0, Number(value)) })), "sd");
         return;
       case "sd-dir":
-        this.editar((s) => patchFormas(s, ids, (f) => comSombra(f, { dir: Number(value) })), "sd");
+        this.comPintura((s) => patchFormas(s, ids, (f) => comSombra(f, { dir: Number(value) })), "sd");
         return;
       case "opac":
         this.editar((s) => patchFormas(s, ids, (f) => comOpacidade(f, Math.max(0, Math.min(100, Number(value))) / 100)), "opac");
@@ -1971,6 +2042,21 @@ export class PowerPointHost {
       }
       case "estilo":
         return this.estiloRapido(String(value));
+      case "estilo-cor":
+        this.estiloCor(String(value ?? ""));
+        return;
+      case "est-cor-base":
+        this.estiloCor("cor:" + String(value ?? ""));
+        return;
+      case "est-cor-angulo":
+        this.estiloCor("angulo:" + String(value ?? ""));
+        return;
+      case "est-cor-int":
+        this.estiloCor("intensidade:" + String(value ?? ""));
+        return;
+      case "est-cor-bri":
+        this.estiloCor("brilho:" + String(value ?? ""));
+        return;
 
       // ---- tamanho, posição, giro ----
       case "tamanho-w":
@@ -2447,7 +2533,8 @@ export class PowerPointHost {
       if (n.paras) n = { ...n, color: corTexto, paras: parasComEstilo(n.paras, { color: corTexto }) };
       return n;
     };
-    this.editar((s) => patchFormas(s, this.selecao, aplicar));
+    // os estilos rápidos são pintura manual: numa forma com estilo vivo, o estilo é solto antes
+    this.comPintura((s) => patchFormas(s, this.selecao, aplicar));
   }
 
   // ------------------------------------------------------------------

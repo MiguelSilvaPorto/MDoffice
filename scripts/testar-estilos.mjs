@@ -194,5 +194,40 @@ const parada = (fill, pos) => fill.stops.find((p) => Math.abs(p.pos - pos) < 0.0
   ok("fundo: a lâmina ganha uma referência nova", c1 !== slide && c1.shapes.length === 1);
 }
 
+// ---------------------------------------------------------------- ligar e soltar (a galeria e o painel)
+{
+  ok(
+    "guardas: família, intensidade e brilho reconhecem só o que existe",
+    E.ehFamilia("esmeralda") && !E.ehFamilia("verde") && E.ehIntensidade("forte") && !E.ehIntensidade("mediaa") && E.ehBrilho("dobra") && E.ehBrilho("lustro") && !E.ehBrilho("brilho")
+  );
+  const pad = E.estiloDaFamilia("esmeralda");
+  ok("padrão da galeria: média, lustro e diagonal", pad.intensidade === "media" && pad.brilho === "lustro" && pad.angulo === 45 && pad.familia === "esmeralda" && pad.base === undefined);
+  ok("padrão com cor própria", E.estiloDaFamilia("propria", "336699").base === "336699");
+
+  const f1 = forma("a", 10, 10, 30, 10);
+  const f2 = forma("b", 50, 50, 20, 10);
+  const s1 = E.ligarEstilo(lâmina([f1, f2]), ["a"], { familia: "esmeralda", base: "" }, pad);
+  ok("ligar: nasce com o padrão mais o ajuste", s1.shapes[0].estilo.familia === "esmeralda" && s1.shapes[0].estilo.brilho === "lustro" && s1.shapes[0].estilo.base === "");
+  ok("ligar: só a seleção muda", s1.shapes[1] === f2);
+  const s2 = E.ligarEstilo(s1, ["a"], { intensidade: "forte" }, pad);
+  ok("ligar: o ajuste preserva o resto da receita", s2.shapes[0].estilo.intensidade === "forte" && s2.shapes[0].estilo.angulo === 45);
+  ok("ligar: sem seleção, a lâmina volta a mesma", E.ligarEstilo(s1, [], { intensidade: "forte" }, pad) === s1);
+
+  // o fluxo inteiro: ligar → derivar → soltar (a pintura fica como está)
+  const d1 = E.atualizarEstilos(s2, dim, tema);
+  ok("vivo: ligar o estilo já deriva a pintura", d1.shapes[0].fillX.kind === "gradient" && d1.shapes[0].color === "FFFFFF");
+  const solto = E.soltarEstilo(d1, ["a"]);
+  ok("soltar: a receita sai e a pintura fica", !solto.shapes[0].estilo && solto.shapes[0].fillX.kind === "gradient" && solto.shapes[0].ln.color === d1.shapes[0].ln.color && solto.shapes[0].color === "FFFFFF");
+  ok("soltar: depois de soltar, o recálculo devolve a MESMA lâmina", E.atualizarEstilos(solto, dim, tema) === solto);
+  const semEstilo = lâmina([f1]);
+  ok("soltar: sem estilo para soltar, a lâmina volta a mesma", E.soltarEstilo(semEstilo, ["a"]) === semEstilo);
+
+  // a capa da dobra vira forma comum (não some) quando o estilo é solto
+  const comDobra = forma("a", 10, 10, 30, 10, { estilo: { ...E.estiloDaFamilia("esmeralda"), brilho: "dobra" } });
+  const d2 = E.atualizarEstilos(lâmina([comDobra]), dim, tema);
+  const solto2 = E.soltarEstilo(d2, ["a"]);
+  ok("soltar: a capa da dobra fica como forma comum", solto2.shapes.length === 2 && !solto2.shapes[1].capa && !solto2.shapes[0].estilo);
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);

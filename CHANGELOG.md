@@ -389,6 +389,23 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   cartão fica **livre** (e o encaixe nos eixos deixa a aresta reta com os cantos) ou, quando os
   cantos são rasos, sai como **linha em cima da aresta** — a tolerância da linha caiu de 5% para
   2,5% do comprimento, que era o que deixava os cantos passarem por "linha".
+- **Estilos de cor (R2 — a cara do sistema)**: na aba **Formato da Forma**, o botão **Estilos**
+  (grupo **Estilos de Cor**) abre a galeria das famílias — **Esmeralda, Oceano, Ameixa, Âmbar,
+  Rubi, Grafite** e "Da sua cor" — com a **prévia real** da rampa em cada cartão; um clique dá à
+  forma o **gradiente diagonal de 3 tons**, o **lustro**, o contorno no tom profundo, a sombra
+  leve e a **cor do texto por contraste** (a caixa da referência em dois cliques). O estilo é
+  **vivo**: a forma guarda a receita e a pintura é **derivada** — **trocar a cor** (o
+  preenchimento) refaz a **rampa inteira** (o tom escuro desvia o matiz para o frio: verde vira
+  teal) e, sem cor própria, o estilo usa a **cor do tema** e acompanha os Modelos. A galeria
+  ajusta **Intensidade** (Suave/Média/Forte), **Brilho** (Sem brilho/Lustro), **Ângulo**
+  (0/45/90/135) e a **Cor do estilo**; o painel Formatar ganhou a seção **Estilo** com os mesmos
+  controles e o **Desligar estilo**. Com o estilo ligado, ele manda no preenchimento, no
+  contorno, na sombra e na cor do texto — trocar a orientação do gradiente vira o **ângulo** do
+  estilo, e editar a pintura à mão (contorno, sombra, estilos rápidos, "sem preenchimento")
+  **desliga o estilo**, deixando o que estava na tela como pintura normal, editável. No `.pptx`
+  o gradiente vai **nativo** (paradas com transparência) e abre igual no PowerPoint; o conceito
+  "vivo" não existe no arquivo — reimportar traz o visual como pintura. **R3** traz o brilho em
+  dobra e o caso de ouro de exportação; **R4** e **R5**, fundo e modelos.
 
 ### Adicionado (na main)
 

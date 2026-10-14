@@ -1,6 +1,7 @@
 // A fita da apresentação, no desenho do PowerPoint: abas (Página Inicial, Inserir, Formato da Forma, Design, Exibir),
 // grupos com o nome embaixo, botões grandes e pequenos. Tudo é despachado por `run(comando, valor)` para o host.
 import { SOMBRAS_PRONTAS } from "../edicao/formato";
+import { ANGULOS_ESTILO, FAMILIAS, FAMILIAS_ORDEM, rampaDeTons } from "../edicao/estilos";
 import { GRAFICO_TIPOS } from "../edicao/grafico";
 import { ROTULOS_PRESET, type PresetTabela } from "../edicao/tabela";
 import { DICAS_DIRECAO, DICAS_TRANSICAO, DIRECOES_TRANSICAO, DURACOES_TRANSICAO, ROTULOS_DIRECAO, ROTULOS_TRANSICAO, TIPOS_TRANSICAO, aceitaDirecao, direcaoDe, duracaoDe, formatarDuracao } from "../edicao/transicao";
@@ -475,6 +476,10 @@ export class Fita {
         `<div class="ppr-estilos">${ESTILOS_RAPIDOS.map((e) => `<button type="button" class="ppr-estilo" data-cmd="${e.cmd}" title="${e.nome}" aria-label="${e.nome}"><span class="ppr-estilo-${e.cmd.slice(7)}"></span></button>`).join("")}</div>`
       ),
       grupo(
+        "Estilos de Cor",
+        `${grande("estilos", ic("i-brush"), "Estilos", "Gradientes bonitos: escolha uma família e a forma ganha a rampa, o brilho, o contorno e a cor do texto casados", true)}`
+      ),
+      grupo(
         "Preenchimento e Contorno",
         `<div class="ppr-col">
            ${pequeno("preench", ic("i-bucket"), "Preenchimento", "Preenchimento da forma", true)}
@@ -646,6 +651,7 @@ export class Fita {
     else if (cmd.startsWith("forma-rapida:")) this.hooks.run("forma-inserir", cmd.slice(13));
     else if (cmd.startsWith("ferramenta:")) this.hooks.run("ferramenta", cmd.slice(11));
     else if (cmd.startsWith("midia:")) this.hooks.run("midia", cmd.slice(6));
+    else if (cmd.startsWith("estilo-cor:")) this.hooks.run("estilo-cor", cmd.slice(11));
     else if (cmd.startsWith("estilo:")) this.hooks.run("estilo", cmd.slice(7));
     else if (cmd.startsWith("transicao-direcao:")) this.hooks.run("transicao-direcao", cmd.slice(18));
     else if (cmd.startsWith("transicao-duracao:")) this.hooks.run("transicao-duracao", cmd.slice(18));
@@ -690,6 +696,9 @@ export class Fita {
     switch (cmd) {
       case "galeria":
         abrirGaleria(ancora, (item) => run("forma-inserir", String(GALERIA.indexOf(item))));
+        return;
+      case "estilos":
+        this.menuEstilos(ancora);
         return;
       case "modelo":
         abrirModelos(ancora, (m) => run("modelo", m.id), {
@@ -939,6 +948,56 @@ export class Fita {
       (c) => this.hooks.run("preench", c ?? "none"),
       (x) => this.hooks.run(x.startsWith("grad:") ? "gradiente" : x === "imagem" ? "preench-imagem" : x, x.startsWith("grad:") ? x.slice(5) : undefined)
     );
+  }
+
+  /** A galeria dos Estilos de Cor: famílias com prévia real, intensidade, brilho, ângulo e cor. */
+  private menuEstilos(ancora: HTMLElement): void {
+    const est = this.hooks.estado();
+    const atual = est.forma?.estilo;
+    const intensidade = atual?.intensidade ?? "media";
+    const cartoes = FAMILIAS_ORDEM.filter((id) => id !== "propria")
+      .map((id) => {
+        const rec = FAMILIAS[id];
+        const r = rampaDeTons(rec.base, intensidade, rec.desvio);
+        return `<button type="button" class="pp-estilo-cartao${atual?.familia === id ? " on" : ""}" data-cmd="estilo-cor:familia:${id}" title="${rec.nome}">
+          <span class="pp-estilo-previa" style="background:linear-gradient(135deg,#${r.claro} 0%,#${r.cor} 45%,#${r.escuro} 100%)"></span>
+          <span class="pp-estilo-nome">${rec.nome}</span>
+        </button>`;
+      })
+      .join("");
+    const op = (on: boolean, cmd: string, nome: string) => `<button type="button" class="pp-op${on ? " on" : ""}" data-cmd="${cmd}">${nome}</button>`;
+    const base = (atual?.base ?? "").trim() || FAMILIAS[atual?.familia ?? "propria"]?.base || est.paleta[0] || "1F9D55";
+    const cores = [...new Set([base, ...est.paleta.slice(0, 8)])]
+      .map((c) => `<button type="button" class="pp-estilo-cor" data-cmd="estilo-cor:cor:${c}" title="#${c}" aria-label="Cor #${c}" style="background:#${c}"></button>`)
+      .join("");
+    const html = `
+      <div class="pp-pop-t">Estilos de cor</div>
+      <div class="pp-estilos-gal">${cartoes}</div>
+      <div class="pp-pop-t">Intensidade</div>
+      <div class="pp-linhas-op">
+        ${op(intensidade === "suave", "estilo-cor:intensidade:suave", "Suave")}
+        ${op(intensidade === "media", "estilo-cor:intensidade:media", "Média")}
+        ${op(intensidade === "forte", "estilo-cor:intensidade:forte", "Forte")}
+      </div>
+      <div class="pp-pop-t">Brilho</div>
+      <div class="pp-linhas-op">
+        ${op(atual?.brilho === "nada", "estilo-cor:brilho:nada", "Sem brilho")}
+        ${op(atual?.brilho === "lustro", "estilo-cor:brilho:lustro", "Lustro")}
+      </div>
+      <div class="pp-pop-t">Ângulo</div>
+      <div class="pp-linhas-op">
+        ${ANGULOS_ESTILO.map((a) => op((atual?.angulo ?? 45) === a, `estilo-cor:angulo:${a}`, `${a}°`)).join("")}
+      </div>
+      <div class="pp-pop-t">Cor do estilo</div>
+      <div class="pp-estilo-cores">${cores}</div>
+      <button type="button" class="pp-pop-item" data-cmd="estilo-cor:desligar">Desligar estilo (editar à mão)</button>`;
+    const el = abrirPopup(ancora, html, { classe: "pp-pop-menu" });
+    el.addEventListener("click", (ev) => {
+      const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-cmd]");
+      if (!b) return;
+      fecharPopup();
+      this.hooks.run("estilo-cor", b.dataset.cmd!.slice("estilo-cor:".length));
+    });
   }
 
   private menuContorno(ancora: HTMLElement): void {

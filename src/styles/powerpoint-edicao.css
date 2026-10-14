@@ -909,6 +909,62 @@ button.ppr.big .ppr-gal-ic svg {
   background: var(--fg);
 }
 
+/* Estilos de Cor: a galeria das famílias (cartão com a prévia real do gradiente) */
+.pp-estilos-gal {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.pp-estilo-cartao {
+  padding: 0;
+  border: 1.5px solid transparent;
+  border-radius: 7px;
+  background: none;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.pp-estilo-cartao:hover,
+.pp-estilo-cartao.on {
+  border-color: var(--accent);
+}
+
+.pp-estilo-previa {
+  display: block;
+  height: 34px;
+  border-radius: 5px;
+}
+
+.pp-estilo-nome {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 10.5px;
+}
+
+.pp-estilo-cores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.pp-estilo-cor {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.pp-estilo-cor:hover {
+  border-color: var(--accent);
+}
+
 .ppr-sombra-previa {
   display: inline-block;
   width: 24px;
@@ -1161,6 +1217,36 @@ button.ppr.big .ppr-gal-ic svg {
 
 .pf-cor[data-vazio] {
   background: repeating-linear-gradient(45deg, #ddd 0 4px, #fff 4px 8px);
+}
+
+/* Estilo vivo: a fileira de famílias (cada uma com a prévia da rampa) */
+.pf-estilo-fams {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.pf-estilo-fam {
+  width: 24px;
+  height: 18px;
+  padding: 0;
+  border: 1.5px solid transparent;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+}
+
+.pf-estilo-fam span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 2.5px;
+}
+
+.pf-estilo-fam:hover,
+.pf-estilo-fam.on {
+  border-color: var(--accent);
 }
 
 .pf-check {

@@ -1,6 +1,7 @@
 // Painel "Formatar" (à direita): tudo que a fita não cabe, com números exatos — preenchimento (sólido, gradiente com
 // paradas, imagem), contorno, sombra, cantos, tamanho e posição em cm, rotação, texto, recorte de imagem e fundo da lâmina.
 import { AJUSTES_POR_GEOM, CANTOS, CANTO_ROTULO, cantosDe, raioDeCanto, representacaoDeCantos, type Canto } from "../edicao/formato";
+import { FAMILIAS, FAMILIAS_ORDEM, INTENSIDADES, rampaDeTons } from "../edicao/estilos";
 import { GRAFICO_TIPOS, paletaDeSeries } from "../edicao/grafico";
 import { MIDIA_ROTULOS } from "../edicao/midia";
 import { ORDEM_LAYOUTS, ROTULOS_LAYOUT } from "../edicao/layouts";
@@ -115,7 +116,7 @@ export class Painel {
   private assinar(est: EstadoUI): string {
     const f = est.forma;
     return JSON.stringify([
-      est.formas.map((s) => [s.id, s.box, s.rot, s.fillX, s.ln, s.shadow, s.opacity, s.adj, s.cantos, s.anchor, s.ins, s.wrap, s.vert, s.crop, s.flipH, s.flipV, s.bloqueada, s.autofit, s.grafico, s.midia, s.src]),
+      est.formas.map((s) => [s.id, s.box, s.rot, s.fillX, s.ln, s.shadow, s.opacity, s.adj, s.cantos, s.anchor, s.ins, s.wrap, s.vert, s.crop, s.flipH, s.flipV, s.bloqueada, s.autofit, s.grafico, s.midia, s.src, s.estilo]),
       est.cantosSel,
       f ? f.geom : "",
       // o espaçamento de caracteres do painel segue o trecho escolhido no texto
@@ -137,7 +138,8 @@ export class Painel {
     if (f.grafico) partes.push(secao("grafico", "Gráfico", this.htmlGrafico(f)));
     if (f.midia) partes.push(secao("midia", "Mídia", this.htmlMidia(f)));
     if (f.kind === "imagem") partes.push(secao("imagem", "Imagem", this.htmlImagem(f)));
-    if (f.kind !== "imagem" && !(f.geom === "line" || f.geom?.endsWith("Connector3") || f.geom === "straightConnector1")) partes.push(secao("preench", "Preenchimento", this.htmlPreenchimento(f)));
+    if (f.estilo) partes.push(secao("estilo", "Estilo", this.htmlEstilo(f)));
+    else if (f.kind !== "imagem" && !(f.geom === "line" || f.geom?.endsWith("Connector3") || f.geom === "straightConnector1")) partes.push(secao("preench", "Preenchimento", this.htmlPreenchimento(f)));
     partes.push(secao("linha", "Linha", this.htmlLinha(f)));
     partes.push(secao("efeitos", "Efeitos", this.htmlEfeitos(f)));
     const ajustes = this.htmlAjustes(f, est);
@@ -145,6 +147,28 @@ export class Painel {
     partes.push(secao("tamanho", "Tamanho e posição", this.htmlTamanho(f, est)));
     if (f.paras !== undefined) partes.push(secao("texto", "Texto", this.htmlTexto(f, est)));
     return partes.join("");
+  }
+
+  /** A seção "Estilo" (quando a forma tem estilo vivo): a receita, a cor-base e o desligar. */
+  private htmlEstilo(f: Shape): string {
+    const e = f.estilo!;
+    const base = (e.base ?? "").trim() || FAMILIAS[e.familia]?.base || "";
+    const familias = FAMILIAS_ORDEM.map((id) => {
+      const rec = FAMILIAS[id];
+      const cor = rec.base || base || "8A8F98";
+      const r = rampaDeTons(cor, e.intensidade, rec.desvio);
+      const previa = id === "propria" ? `background:#${cor}` : `background:linear-gradient(135deg,#${r.claro},#${r.cor} 45%,#${r.escuro})`;
+      return `<button type="button" class="pf-estilo-fam${e.familia === id ? " on" : ""}" data-click="estilo-cor" data-valor="familia:${id}" title="${rec.nome}" aria-label="${rec.nome}" aria-pressed="${e.familia === id}"><span style="${previa}"></span></button>`;
+    }).join("");
+    return [
+      `<div class="pf-linha"><span>Família</span><span class="pf-estilo-fams">${familias}</span></div>`,
+      radios("est-int", "est-cor-int", e.intensidade, INTENSIDADES.map((i) => [i.id, i.nome] as [string, string])),
+      radios("est-bri", "est-cor-bri", e.brilho, [["nada", "Sem brilho"], ["lustro", "Lustro"]] as [string, string][]),
+      linhaNum("Ângulo", "est-cor-angulo", e.angulo ?? 45, 15, 0, 360, "°"),
+      linhaCor("Cor-base", "est-cor-base", base || null),
+      `<button type="button" class="btn small" data-click="estilo-cor" data-valor="desligar">Desligar estilo (editar à mão)</button>`,
+      `<p class="pf-nota">O estilo manda no preenchimento, no contorno, na sombra e na cor do texto. A cor-base refaz a rampa inteira; sem cor própria, o estilo acompanha o tema.</p>`,
+    ].join("");
   }
 
   private htmlPreenchimento(f: Shape): string {

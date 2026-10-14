@@ -158,6 +158,29 @@ avisado ao abrir (nunca some em silêncio).
   derivado das caixas, **arrastar a própria ligação não muda a rota** — para ajustar, mova as
   formas ligadas (ou apague a ligação e refaça).
 
+## Estilos de cor
+
+- Na aba **Formato da Forma**, o botão **Estilos** (grupo **Estilos de Cor**) abre a galeria: as
+  **famílias** — Esmeralda, Oceano, Ameixa, Âmbar, Rubi, Grafite e "Da sua cor" — aparecem como
+  cartões com a **prévia real** da rampa. Um clique aplica na seleção: a forma ganha o **gradiente
+  em diagonal** (3 tons), o **lustro** (a faixa clara translúcida), o contorno no **tom profundo**,
+  uma sombra leve e a **cor do texto por contraste** (claro sobre a cor escura). É o visual da
+  referência (verde → teal) em dois cliques.
+- O estilo é **vivo**: a forma guarda a receita (família, intensidade, brilho, ângulo e cor-base) e
+  a aparência é **derivada** a cada mudança da lâmina. Por isso, **trocar a cor** da forma (o
+  preenchimento) muda a **cor-base** e a **rampa inteira se refaz** — do claro ao tom escuro, que
+  desvia o matiz para o frio (verde vira teal) em vez de só escurecer. Sem cor própria, o estilo
+  usa a **cor do tema** e acompanha os Modelos.
+- A galeria ainda ajusta **Intensidade** (Suave/Média/Forte — o quanto a rampa abre), **Brilho**
+  (Sem brilho/Lustro), **Ângulo** (0/45/90/135) e a **Cor do estilo**; o mesmo conjunto aparece na
+  seção **Estilo** do painel Formatar, que também traz o **Desligar estilo**.
+- Com o estilo ligado, **ele manda** no preenchimento, no contorno, na sombra e na cor do texto:
+  trocar a orientação do **gradiente** vira o **ângulo** do estilo; e editar a pintura à mão
+  (contorno, sombra, estilos rápidos, "sem preenchimento") **desliga o estilo**, deixando o que
+  estava na tela como pintura normal, editável. O **Desligar estilo** faz o mesmo sem mudar nada.
+- No `.pptx` o gradiente vai **nativo** (paradas com transparência) e abre no PowerPoint com o
+  mesmo visual; o conceito "vivo" não existe no arquivo — reimportar traz o visual como pintura.
+
 ## Apresentar (F5)
 
 - **A lâmina cobre a tela do app** (full-bleed: só as barras laterais do formato) e a barra virou um
@@ -209,3 +232,6 @@ avisado ao abrir (nunca some em silêncio).
 - `npm run test:ligacoes` — a rota do conector (reta, "Z" e "L"), a divisão em duas partes com o
   corte contínuo, as cores por trecho (branco cai na origem), o redesenho ao mover/redimensionar,
   a remoção ao apagar a caixa e a cópia da ligação (remapeada ou solta).
+- `npm run test:estilos` — o motor das cores (HSL de ida e volta, rampa com o desvio do matiz,
+  contraste), o esquema casado, a capa do brilho, o ligar/soltar do estilo e o recálculo vivo
+  (trocar a cor ou o tema, órfãos, idempotência).

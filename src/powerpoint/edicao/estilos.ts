@@ -5,7 +5,7 @@
 // cor-base, e `atualizarEstilos` redesenha tudo a cada mudança da lâmina — trocar a cor, a
 // intensidade ou o tema refaz a rampa inteira.
 import { uid } from "../../util";
-import type { EstiloForma, FamiliaEstilo, Fill, GradStop, IntensidadeEstilo, Line, Shape, Shadow, Slide } from "../schema";
+import type { BrilhoEstilo, EstiloForma, FamiliaEstilo, Fill, GradStop, IntensidadeEstilo, Line, Shape, Shadow, Slide } from "../schema";
 import { comLinha, comPreenchimento, comSombra } from "./formato";
 import type { Dim } from "./geometria";
 
@@ -240,6 +240,60 @@ export function capaDaDobra(base: Shape, d: Dim, id?: string): Shape {
 export function fillDoFundo(e: EstiloForma, tema: { acento: string }): Fill {
   const receita: EstiloForma = e.brilho === "dobra" ? { ...e, brilho: "lustro" } : e;
   return esquemaDoEstilo(receita, tema).fill;
+}
+
+// ---------------------------------------------------------------------------
+// ligar e soltar (o que a galeria, o painel e o preenchimento usam)
+// ---------------------------------------------------------------------------
+
+/** Os ângulos oferecidos na galeria (o padrão é 45 — a diagonal do app). */
+export const ANGULOS_ESTILO = [0, 45, 90, 135];
+
+export const ehFamilia = (v: string): v is FamiliaEstilo => Object.prototype.hasOwnProperty.call(FAMILIAS, v);
+export const ehIntensidade = (v: string): v is IntensidadeEstilo => INTENSIDADES.some((i) => i.id === v);
+export const ehBrilho = (v: string): v is BrilhoEstilo => v === "nada" || v === "lustro" || v === "dobra";
+
+/** O estilo padrão da galeria: média, com lustro, na diagonal — a cara da referência em dois cliques. */
+export function estiloDaFamilia(familia: FamiliaEstilo, base?: string): EstiloForma {
+  const e: EstiloForma = { familia, intensidade: "media", brilho: "lustro", angulo: 45 };
+  if (base) e.base = base;
+  return e;
+}
+
+/** Liga ou atualiza o estilo nas formas escolhidas: as que ainda não têm nascem com o padrão. */
+export function ligarEstilo(slide: Slide, ids: string[], patch: Partial<EstiloForma>, padrao: EstiloForma): Slide {
+  const alvo = new Set(ids);
+  let mudou = false;
+  const shapes = slide.shapes.map((s) => {
+    if (!alvo.has(s.id)) return s;
+    mudou = true;
+    return { ...s, estilo: { ...(s.estilo ?? padrao), ...patch } };
+  });
+  return mudou ? { ...slide, shapes } : slide;
+}
+
+/**
+ * Solta o estilo (o "Desligar estilo"): a pintura derivada fica como está, editável à mão, e a
+ * capa da dobra vira forma comum (mantém o desenho). Nada acontece com quem não tem estilo.
+ */
+export function soltarEstilo(slide: Slide, ids: string[]): Slide {
+  const alvo = new Set(ids);
+  let mudou = false;
+  const shapes = slide.shapes.map((s) => {
+    let n: Shape | null = null;
+    if (s.estilo && alvo.has(s.id)) {
+      n = { ...s };
+      delete n.estilo;
+    }
+    if (s.capa && (alvo.has(s.id) || alvo.has(s.capa.de))) {
+      n = n ?? { ...s };
+      delete n.capa;
+    }
+    if (!n) return s;
+    mudou = true;
+    return n;
+  });
+  return mudou ? { ...slide, shapes } : slide;
 }
 
 /**

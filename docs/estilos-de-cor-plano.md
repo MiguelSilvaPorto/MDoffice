@@ -10,7 +10,9 @@
 
 - [x] **R1 — motor de cor** (`src/powerpoint/edicao/estilos.ts`) + `test:estilos` — entregue
   (2026-10-14). Tipos e campos opcionais já no `schema.ts` (`estilo`, `capa`, `bgEstilo`).
-- [ ] **R2 — estilo na forma** (galeria na fita + painel + vivo + lustro)
+- [x] **R2 — estilo na forma** (galeria na fita + seção no painel + vivo + lustro) — entregue
+  (2026-10-14). `estiloCor`/`comPintura` no host, `estilos.ts` ganhou `ligarEstilo`/`soltarEstilo`;
+  a cor do preenchimento é a cor-base e a pintura manual solta o estilo.
 - [ ] **R3 — dobra** (forma-capa) + caso de ouro de exportação no `.pptx`
 - [ ] **R4 — fundo da lâmina** com estilo
 - [ ] **R5 — modelos** (Design) com estilo

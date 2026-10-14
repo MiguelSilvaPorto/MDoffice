@@ -6827,3 +6827,102 @@ antigas quando fizer sentido.
   volta para a `main` (exatamente o defeito que a tarefa anterior tinha acabado de limpar). A
   promoção foi refeita a partir da `main` já corrigida, com a checagem nova do `testar-layout`
   passando antes do fechamento.
+
+## src/powerpoint/edicao/estilos.ts
+
+### 2026-10-14 · estilos de cor · ligar e soltar (R2)
+- **Local:** depois de `fillDoFundo` — o bloco "ligar e soltar"
+- **Linha:** `novo` — `ANGULOS_ESTILO`, os guardas `ehFamilia`/`ehIntensidade`/`ehBrilho`,
+  `estiloDaFamilia`, `ligarEstilo` e `soltarEstilo`; o import ganhou `BrilhoEstilo`
+- **Porquê:** o host e a UI precisam de operações puras sobre a lâmina para não repetir regra em
+  cada caso do despacho: `ligarEstilo` cria o estilo com o PADRÃO da galeria (média, lustro,
+  diagonal) e atualiza só o que veio no ajuste (trocar a intensidade preserva a família, o
+  ângulo e a cor), e `soltarEstilo` desliga a receita **sem mexer na pintura** — o que estava na
+  tela fica como edição manual. `soltarEstilo` também tira o `capa` da forma do brilho (a capa
+  vira forma comum e continua desenhada) e devolve a MESMA lâmina quando não há nada a soltar,
+  que é o que deixa o "sem estilo" custar zero. O guarda `ehBrilho` já aceita `dobra` (o motor
+  nasceu com ela; a R3 é que liga o botão).
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-14 · estilos de cor · o vivo no host (R2)
+- **Local:** `substituirSlide`, `idsComEstilo`, `comPintura`, `estiloCor`, os casos do despacho
+  (`estilo-cor`, `est-cor-base`, `est-cor-angulo`, `est-cor-int`, `est-cor-bri`), `preench`,
+  `gradiente`, os blocos "linha" e "efeitos" e `estiloRapido`
+- **Linha:** `substituirSlide`: `+ const comEstilo = temEstilo ? atualizarEstilos(slide, …)` antes
+  de `atualizarLigacoes` · `+ private estiloCor(acao)` (familia/intensidade/brilho/angulo/cor/
+  desligar) · `+ private comPintura(fn)` · `case "preench"`: com estilo, a cor vira `estilo.base`
+  via `ligarEstilo` · `case "gradiente"`: com estilo, a orientação vira `estilo.angulo` (o radial
+  solta o estilo) · `editar` → `comPintura` nos casos de contorno, `ln-*`, `sombra-pronta` e
+  `sd-*` e no `estiloRapido`
+- **Porquê:** a ordem do recálculo é a decisão central — os **estilos vêm antes das ligações**
+  porque o conector lê a cor da caixa pela primeira parada do gradiente derivado; trocar a ordem
+  faria o conector pegar a cor antiga por um quadro. O `comPintura` existe para a regra "edição
+  manual solta o estilo": sem ele, escolher um contorno ou uma sombra numa forma estilizada
+  parecia funcionar e **voltava sozinho** no próximo movimento (o recálculo roda a cada mudança
+  da lâmina). O preenchimento é o caminho da cor viva: com estilo, a cor escolhida é a
+  **cor-base**, e "sem preenchimento" é tratado como pintura manual (solta e limpa). Mistura de
+  formas com e sem estilo na mesma seleção é resolvida em duas vias dentro de um ÚNICO `editar`
+  — um passo de desfazer só.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · estilos de cor · a galeria (R2)
+- **Local:** o grupo novo na aba `formato()`, `menuEstilos` e o despacho de `estilo-cor:`
+- **Linha:** `+ grupo("Estilos de Cor", grande("estilos", ic("i-brush"), …))` ·
+  `+ case "estilos": this.menuEstilos(ancora)` · `+ private menuEstilos(ancora)` ·
+  `+ else if (cmd.startsWith("estilo-cor:")) this.hooks.run("estilo-cor", cmd.slice(11))`
+- **Porquê:** o cartão precisa mostrar o que o clique faz — a prévia de cada família é a **rampa
+  de verdade** daquele momento (intensidade atual inclusive), montada com `rampaDeTons` em vez de
+  uma cor de exemplo. As cores da cor-base saem da **paleta do deck** (mais a cor atual), então o
+  ajuste rápido usa as cores que o usuário já tem. O menu segue o desenho dos outros popovers
+  (`abrirPopup` + `data-cmd`), com o `fecharPopup()` antes do despacho.
+
+## src/powerpoint/ui/painel.ts
+
+### 2026-10-14 · estilos de cor · a seção Estilo (R2)
+- **Local:** `html` (o `if (f.estilo)`), `htmlEstilo`, os imports e `assinar`
+- **Linha:** `+ if (f.estilo) partes.push(secao("estilo", "Estilo", this.htmlEstilo(f)))` com o
+  `else if` do "Preenchimento" no caminho antigo · `+ private htmlEstilo(f)` (famílias, intensidade,
+  brilho, ângulo, cor-base e o desligar) · `assinar`: `+ s.estilo` · imports de `estilos`
+- **Porquê:** com estilo ligado, o editor de gradiente cru **mentiria** (o recálculo o derruba na
+  próxima mudança), então a seção de preenchimento sai de cena e o lugar é da receita — os
+  controles que mandam de verdade. A **cor-base** usa o `linhaCor` de sempre (o seletor de cores
+  completo, com a paleta) e, vazio, mostra "—": é o sinal de "usa a cor do tema". O `assinar`
+  ganhou `s.estilo` porque sem isso o painel não redesenha quando só a receita muda (a assinatura
+  é o que evita redesenhar o painel a cada quadro).
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · estilos de cor · cartões, cores e famílias (R2)
+- **Local:** depois de `.pp-op span` (fita) e depois de `.pf-cor[data-vazio]` (painel)
+- **Linha:** `+ .pp-estilos-gal`, `.pp-estilo-cartao`, `.pp-estilo-previa`, `.pp-estilo-nome`,
+  `.pp-estilo-cores`, `.pp-estilo-cor`, `.pf-estilo-fams`, `.pf-estilo-fam`
+- **Porquê:** a galeria em grade de 3 colunas cabe no popover sem cortar os nomes; a prévia
+  arredondada (5 px) e o realce do cartão ativo usam o acento do app, como os outros cartões da
+  fita; no painel, a fileira de famílias é de 24×18 px para caber ao lado do rótulo sem quebrar
+  a linha em telas estreitas.
+
+## scripts/testar-estilos.mjs · scripts/testar-layout.mts
+
+### 2026-10-14 · estilos de cor · ligar/soltar e as checagens de integração (R2)
+- **Local:** o bloco "ligar e soltar" (teste do motor) e a seção "estilos de cor" (teste de layout)
+- **Linha:** `+ 9 verificações` do ligar/soltar (guardas, padrão da galeria, criação com padrão,
+  ajuste preservando a receita, sem seleção, o fluxo ligar→derivar→soltar, a capa virando forma
+  comum) · `+ 11 checagens` de layout (o grupo, o menu, o despacho, a ordem do recálculo, a cor
+  do preenchimento virando base, o gradiente virando ângulo, o `comPintura` no contorno/sombra/
+  estilos rápidos, a seção do painel, a assinatura e o CSS)
+- **Porquê:** o que é "vivo" só aparece em movimento — um teste do motor prende as operações
+  puras, e o teste de layout prende o que só existe em texto (o despacho, a ordem no
+  `substituirSlide`, a seção do painel): a ordem do recálculo, por exemplo, é invisível até um
+  conector sair com a cor errada.
+
+## docs/powerpoint.md
+
+### 2026-10-14 · estilos de cor · a seção do módulo (R2)
+- **Local:** a seção "Estilos de cor" (depois de "Conectar formas") e a lista de **Testes**
+- **Linha:** `+ a seção` (galeria, o vivo, o que o estilo manda, o desligar e o que vai para o
+  `.pptx`) e `+ npm run test:estilos`
+- **Porquê:** é funcionalidade visível e cheia de regras (a cor refaz a rampa, o tema acompanha, a
+  pintura manual solta o estilo) — o doc do módulo é onde o usuário procura; e o `test:estilos`
+  entrou na lista junto dos outros testes do PowerPoint.
