@@ -5,15 +5,15 @@ import { GRAFICO_TIPOS } from "../edicao/grafico";
 import { ROTULOS_PRESET, type PresetTabela } from "../edicao/tabela";
 import { DICAS_DIRECAO, DICAS_TRANSICAO, DIRECOES_TRANSICAO, DURACOES_TRANSICAO, ROTULOS_DIRECAO, ROTULOS_TRANSICAO, TIPOS_TRANSICAO, aceitaDirecao, direcaoDe, duracaoDe, formatarDuracao } from "../edicao/transicao";
 import { DICAS_ANIMACAO, DICAS_INICIO, ATRASOS_ANIMACAO, CLASSE_ANIMACAO, DIRECOES_ANIMACAO, DURACOES_ANIMACAO, INICIOS_ANIMACAO, ROTULOS_ANIMACAO, ROTULOS_INICIO, TIPOS_ANIMACAO, aceitaDirecaoAnimacao, atrasoDe, direcaoDeAnimacao, duracaoDeAnimacao, inicioDe, suave } from "../edicao/animacao";
-import type { AnimacaoTipo, SlideLayout, TransicaoDirecao, TransicaoTipo } from "../schema";
+import type { AnimacaoTipo, TransicaoDirecao, TransicaoTipo } from "../schema";
 import { abrirCores } from "./cores";
 import { FONTES_COMUNS, TAMANHOS, cmParaPt, ptParaCm, type EstadoUI } from "./estado";
 import { abrirGaleria, iconeDeForma } from "./galeria";
 import { abrirModelos } from "./modelos";
 import { abrirPopup, fecharPopup } from "./popup";
+import { galeriaDeLayouts } from "./layoutPreview";
 import { melhorarSelects, fecharSeletor } from "../../seletor";
 import { GALERIA } from "../edicao/criar";
-import { ORDEM_LAYOUTS, ROTULOS_LAYOUT } from "../edicao/layouts";
 
 export interface HooksFita {
   estado: () => EstadoUI;
@@ -166,8 +166,6 @@ const ABAS = [
   { id: "design", nome: "Design" },
   { id: "exibir", nome: "Exibir" },
 ];
-
-const LAYOUTS: [SlideLayout, string][] = ORDEM_LAYOUTS.map((id) => [id, ROTULOS_LAYOUT[id]]);
 
 const ESTILOS_RAPIDOS: { nome: string; cmd: string }[] = [
   { nome: "Destaque cheio", cmd: "estilo:cheio" },
@@ -712,13 +710,9 @@ export class Fita {
       }
       // "Nova lâmina" pergunta QUAL layout a lâmina nova deve ter. Sem este
       // menu o botão ficava sem efeito nenhum (ele é um botão de menu).
+      // A galeria mostra cada layout como miniatura (silhuetas dos espaços).
       case "slide-novo": {
-        const el = abrirPopup(
-          ancora,
-          `<div class="pp-pop-rot">Nova lâmina</div>` +
-            LAYOUTS.map(([id, nome]) => `<button type="button" class="pp-pop-item" data-lay="${id}">${nome}</button>`).join(""),
-          { classe: "pp-pop-menu" }
-        );
+        const el = abrirPopup(ancora, galeriaDeLayouts(est.setup), { classe: "pp-pop-galeria pp-pop-layouts" });
         el.addEventListener("click", (ev) => {
           const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-lay]");
           if (!b) return;
@@ -779,12 +773,13 @@ export class Fita {
         return;
       }
       case "layout": {
-        const el = abrirPopup(ancora, LAYOUTS.map(([id, n]) => `<button type="button" class="pp-pop-item${est.layout === id ? " on" : ""}" data-layout="${id}">${n}</button>`).join(""), { classe: "pp-pop-menu" });
+        // a mesma galeria do "Nova lâmina", com o layout atual em destaque
+        const el = abrirPopup(ancora, galeriaDeLayouts(est.setup, est.layout), { classe: "pp-pop-galeria pp-pop-layouts" });
         el.addEventListener("click", (ev) => {
-          const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-layout]");
+          const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-lay]");
           if (!b) return;
           fecharPopup();
-          run("layout", b.dataset.layout);
+          run("layout", b.dataset.lay);
         });
         return;
       }

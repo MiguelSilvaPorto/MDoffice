@@ -362,5 +362,31 @@ console.log("\nícones de tipo em contorno (o estilo adotado)");
   checa("o desenho antigo (folha preenchida) saiu", !/fi-tile|fi-solid/.test(fi) && !/\.fi-tile|\.fi-solid/.test(fiCss));
 }
 
+// ---------------------------------------------------------------- PowerPoint: galeria de layouts
+
+console.log("\nPowerPoint: galeria de layouts (Nova lâmina / Layout)");
+
+const miniLayout = ler("src/powerpoint/ui/layoutPreview.ts");
+checa("a galeria desenha os 6 layouts da ordem oficial", /ORDEM_LAYOUTS\.map/.test(miniLayout));
+checa("a miniatura sai dos MESMOS espaços do layout", /caixasDoLayout\(/.test(miniLayout));
+checa("a miniatura acompanha a proporção do deck", /stageRatio\(setup\)/.test(miniLayout));
+
+const fitaPpt = ler("src/powerpoint/ui/fita.ts");
+checa(
+  "Nova lâmina abre a galeria (não a lista de texto)",
+  /case "slide-novo"[\s\S]{0,400}galeriaDeLayouts\(est\.setup\)/.test(fitaPpt),
+  "o menu ainda é a lista de texto"
+);
+checa(
+  "Layout abre a mesma galeria com o atual destacado",
+  /case "layout"[\s\S]{0,400}galeriaDeLayouts\(est\.setup, est\.layout\)/.test(fitaPpt),
+  "o menu de Layout não destaca o atual"
+);
+
+const cssPpt = ler("src/styles/powerpoint-edicao.css");
+checa("css: a grade da galeria existe", /\.pp-lays\s*\{[^}]*grid-template-columns/s.test(cssPpt));
+checa("css: o item da galeria existe", /\.pp-lay\s*\{/.test(cssPpt));
+checa("css: o layout atual fica destacado", /\.pp-lay\.on\s*\{/.test(cssPpt));
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

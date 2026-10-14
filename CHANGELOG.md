@@ -532,6 +532,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   o `A▼` de diminuir agora **desce** (era sobrescrito como o `A▲`) e a setinha de menu dos botões
   de cor (A/ab) mora **dentro** do botão, sem estourar a linha. E no painel a **lista aberta** de
   um seletor não morre mais quando o painel se redesenha (antes a escolha era perdida).
+- **"Nova lâmina" e "Layout" com galeria de miniaturas**: os dois menus eram uma lista de nomes;
+  agora abrem uma **grade de 2 colunas** com a **miniatura de cada layout** — os espaços como
+  silhuetas cinzas (barra do título, linhas do corpo), na proporção do deck (16:9 ou 4:3) e com o
+  nome embaixo. No "Layout" o layout atual vem destacado. A miniatura sai do MESMO dado que monta a
+  lâmina nova (`caixasDoLayout`): mudou um layout, ela acompanha sozinha.
 
 ---
 

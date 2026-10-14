@@ -16,7 +16,7 @@ export const ROTULOS_LAYOUT: Record<SlideLayout, string> = {
 
 export const ORDEM_LAYOUTS: SlideLayout[] = ["titulo", "conteudo", "duas", "secao", "soTitulo", "vazio"];
 
-interface Caixa {
+export interface Caixa {
   box: ShapeBox;
   dica: string;
   tamanho: number;
@@ -56,6 +56,12 @@ function caixas(layout: SlideLayout): Caixa[] {
     default:
       return [];
   }
+}
+
+/** Os espaços de um layout (posição, tamanho e estilo). É o MESMO dado da lâmina nova — a
+ *  miniatura da galeria sai daqui, então mudou um layout a miniatura acompanha. */
+export function caixasDoLayout(layout: SlideLayout): Caixa[] {
+  return caixas(layout);
 }
 
 function paraDoLayout(c: Caixa, est: EstiloDeck): Para {

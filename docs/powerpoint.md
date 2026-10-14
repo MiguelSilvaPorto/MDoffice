@@ -54,7 +54,10 @@ avisado ao abrir (nunca some em silêncio).
   **selos numerados** no palco, o **painel de animação** (aba lateral) lista a ordem e o `.pptx`
   faz round-trip do `p:timing`/`p:animMotion` (o que não é modelado volta cru, com aviso).
 - **Lâminas**: arrastar as miniaturas para reordenar (na faixa do topo ou na vertical),
-  ocultar, renomear e resetar (com ida e volta no `.pptx`), duplicar e excluir.
+  ocultar, renomear e resetar (com ida e volta no `.pptx`), duplicar e excluir. **Nova lâmina** e
+  **Layout** abrem uma **galeria em grade** com a **miniatura de cada layout** (os espaços como
+  silhuetas cinzas, na proporção do deck) — no "Layout" o atual vem destacado; clicar cria a
+  lâmina com aquele layout (ou aplica na atual).
 - **Modelos**: o botão **Template** aplica modelos de estilo (tema, cores e fonte) ao deck;
   dá para salvar o visual atual como cartão e aplicar/remover depois.
 - **Configurar apresentação**: proporção (16:9 / 4:3), tema (claro/escuro/contraste), fonte

@@ -4564,6 +4564,59 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o último caso documenta a regra (o filter manda, não o subtype) e os outros garantem
   que variante não modelada não vira animação errada.
 
+## src/powerpoint/edicao/layouts.ts
+
+### 2026-10-14 · galeria de layouts · os espaços ficam visíveis para a miniatura
+- **Local:** `Caixa` (agora exportado) e `caixasDoLayout` (novo)
+- **Linha:** `novo` — a função interna `caixas()` ganhou um leitor público
+- **Porquê:** a miniatura da galeria precisa das posições, tamanhos e estilos dos espaços, e a
+  regra é uma só: duplicar o dado faria a miniatura mentir no dia em que um layout mudasse.
+
+## src/powerpoint/ui/layoutPreview.ts (novo)
+
+### 2026-10-14 · galeria de layouts · a miniatura e a grade
+- **Local:** `miniaturaDeLayout`, `silhueta`, `galeriaDeLayouts`
+- **Linha:** `novo arquivo` — SVG de 160 unidades no formato do deck (`stageRatio`), com a área de
+  cada espaço em cinza claro + barra do título (na âncora), linha do subtítulo e até 3 linhas do
+  corpo; a galeria monta a grade de 2 colunas com `data-lay` e marca o atual (`.on`)
+- **Porquê:** o menu era uma lista de texto e no PowerPoint a escolha é visual. Silhuetas (e não o
+  texto da dica) leem melhor num cartão de 120×68, e a proporção segue o deck para o 4:3 não mentir.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · galeria de layouts · os dois menus viram a mesma galeria
+- **Local:** `case "slide-novo"` e `case "layout"` (e o `LAYOUTS` local, removido)
+- **Linha:** as listas de `pp-pop-item` → `galeriaDeLayouts(est.setup)` /
+  `galeriaDeLayouts(est.setup, est.layout)`
+- **Porquê:** os dois botões fazem a mesma pergunta ("qual layout?") e ganham a mesma resposta
+  visual. O `LAYOUTS` ficou sem uso e saiu junto (o dado vive em `layoutPreview`/`layouts`).
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · galeria de layouts · a grade, o item e o destaque
+- **Local:** `.pp-pop-layouts`, `.pp-lays`, `.pp-lay`, `.pp-lay.on`, `.pp-mini`
+- **Linha:** `novo` — grade de 2 colunas (popup de 300–340px), item com miniatura + nome, hover no
+  acento e o atual com contorno interno
+- **Porquê:** mesmo visual da galeria de Formas; a miniatura ganhou sombra leve para parecer uma
+  lâmina e não um retângulo solto.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · galeria de layouts · 8 verificações novas
+- **Local:** bloco "PowerPoint: galeria de layouts (Nova lâmina / Layout)"
+- **Linha:** `novo` — a ordem dos layouts, a miniatura saindo do `caixasDoLayout`, a proporção do
+  deck, os dois casos da fita usando a galeria (com o atual no "Layout") e o CSS
+- **Porquê:** prende as decisões; a verificação no navegador confirmou o resto (6 itens, o clique
+  criando a lâmina — 3 → 4 na faixa — e o destaque do atual).
+
+## docs/powerpoint.md
+
+### 2026-10-14 · galeria de layouts · a menção
+- **Local:** "Editar as lâminas" → bala "Lâminas"
+- **Linha:** `…duplicar e excluir.` → `…duplicar e excluir. **Nova lâmina** e **Layout** abrem uma galeria…`
+- **Porquê:** o documento do módulo descreve o que o app faz; a galeria é a porta de entrada da
+  lâmina nova.
+
 ---
 
 ## Próximos registros
