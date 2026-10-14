@@ -1,0 +1,422 @@
+// Desenho à mão assistido (a opção "Draw" da galeria de Formas): reconhece um traço rabiscado
+// e devolve a forma exata no lugar dele — retângulo, retângulo arredondado, elipse, triângulo,
+// linha e seta. O que não for reconhecido vira um caminho livre (custGeom), que também vai
+// para o .pptx. Adaptado do reconhecedor da prancheta (src/md/draw/recognize.ts), agora em pt
+// e devolvendo formas do deck. Tudo puro (sem DOM), para dar para testar no Node.
+import { clamp, uid } from "../../util";
+import type { CustPath, Shape } from "../schema";
+import type { EstiloDeck } from "./criar";
+import { dePt, type Dim, type Ret } from "./geometria";
+
+export interface PontoTraco {
+  x: number;
+  y: number;
+}
+
+/** O pincel do modo Draw: cor, espessura e o assistente ligado/desligado. */
+export interface Pincel {
+  /** cor do traço (hex sem #) */
+  cor: string;
+  /** espessura em pt */
+  w: number;
+  /** true = reconhece o traço e ajusta a forma; false = mantém o rabisco */
+  assistente: boolean;
+}
+
+export interface TracoReconhecido {
+  geom: "rect" | "roundRect" | "ellipse" | "triangle" | "line";
+  /** caixa da forma em pt */
+  box: Ret;
+  /** ajustes da geometria (roundRect: raio do canto em 1/100000) */
+  adj?: Record<string, number>;
+  /** pontas de seta (linha rabiscada com cabeça) */
+  head?: boolean;
+  tail?: boolean;
+  flipH?: boolean;
+  flipV?: boolean;
+  /** rótulo do que foi reconhecido (para a dica na tela) */
+  rotulo: string;
+}
+
+// ---------------------------------------------------------------------------
+// primitivas (mesma família da prancheta, em pt)
+// ---------------------------------------------------------------------------
+
+export function bboxDe(pontos: PontoTraco[]): Ret {
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  for (const p of pontos) {
+    x0 = Math.min(x0, p.x);
+    y0 = Math.min(y0, p.y);
+    x1 = Math.max(x1, p.x);
+    y1 = Math.max(y1, p.y);
+  }
+  if (!isFinite(x0)) return { x: 0, y: 0, w: 0, h: 0 };
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+
+/** Simplificação Ramer–Douglas–Peucker. */
+export function simplificar(pontos: PontoTraco[], eps: number): PontoTraco[] {
+  if (pontos.length <= 2) return pontos.slice();
+  const guardar = new Array<boolean>(pontos.length).fill(false);
+  guardar[0] = true;
+  guardar[pontos.length - 1] = true;
+  const pilha: [number, number][] = [[0, pontos.length - 1]];
+  while (pilha.length) {
+    const [i0, i1] = pilha.pop()!;
+    let maior = -1;
+    let idx = -1;
+    for (let i = i0 + 1; i < i1; i++) {
+      const d = distanciaAoSegmento(pontos[i], pontos[i0], pontos[i1]);
+      if (d > maior) {
+        maior = d;
+        idx = i;
+      }
+    }
+    if (maior > eps && idx > 0) {
+      guardar[idx] = true;
+      pilha.push([i0, idx], [idx, i1]);
+    }
+  }
+  return pontos.filter((_, i) => guardar[i]);
+}
+
+function distanciaAoSegmento(p: PontoTraco, a: PontoTraco, b: PontoTraco): number {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const l2 = dx * dx + dy * dy;
+  if (l2 === 0) return Math.hypot(p.x - a.x, p.y - a.y);
+  const t = clamp(((p.x - a.x) * dx + (p.y - a.y) * dy) / l2, 0, 1);
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+}
+
+function distanciaAoRetangulo(p: PontoTraco, b: Ret): number {
+  const x1 = b.x + b.w;
+  const y1 = b.y + b.h;
+  const dx = Math.max(b.x - p.x, 0, p.x - x1);
+  const dy = Math.max(b.y - p.y, 0, p.y - y1);
+  const fora = Math.hypot(dx, dy);
+  if (fora > 0) return fora;
+  return Math.min(p.x - b.x, x1 - p.x, p.y - b.y, y1 - p.y);
+}
+
+function cobreQuatroLados(pontos: PontoTraco[], b: Ret, tol: number): number {
+  const lados = { cima: false, baixo: false, esq: false, dir: false };
+  for (const p of pontos) {
+    if (Math.abs(p.y - b.y) <= tol) lados.cima = true;
+    if (Math.abs(p.y - (b.y + b.h)) <= tol) lados.baixo = true;
+    if (Math.abs(p.x - b.x) <= tol) lados.esq = true;
+    if (Math.abs(p.x - (b.x + b.w)) <= tol) lados.dir = true;
+  }
+  return (lados.cima ? 1 : 0) + (lados.baixo ? 1 : 0) + (lados.esq ? 1 : 0) + (lados.dir ? 1 : 0);
+}
+
+interface Reta {
+  a: PontoTraco;
+  b: PontoTraco;
+  origin: PontoTraco;
+  dir: PontoTraco;
+  maxDev: number;
+}
+
+/** Ajusta a reta ideal (mínimos quadrados) ao conjunto de pontos. */
+export function ajustarReta(pontos: PontoTraco[]): Reta | null {
+  const n = pontos.length;
+  if (n < 3) return null;
+  let mx = 0;
+  let my = 0;
+  for (const p of pontos) {
+    mx += p.x;
+    my += p.y;
+  }
+  mx /= n;
+  my /= n;
+  let sxx = 0;
+  let syy = 0;
+  let sxy = 0;
+  for (const p of pontos) {
+    const dx = p.x - mx;
+    const dy = p.y - my;
+    sxx += dx * dx;
+    syy += dy * dy;
+    sxy += dx * dy;
+  }
+  const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+  const dir = { x: Math.cos(ang), y: Math.sin(ang) };
+  let t0 = Infinity;
+  let t1 = -Infinity;
+  let maxDev = 0;
+  for (const p of pontos) {
+    const dx = p.x - mx;
+    const dy = p.y - my;
+    const t = dx * dir.x + dy * dir.y;
+    t0 = Math.min(t0, t);
+    t1 = Math.max(t1, t);
+    maxDev = Math.max(maxDev, Math.abs(-dx * dir.y + dy * dir.x));
+  }
+  return {
+    a: { x: mx + dir.x * t0, y: my + dir.y * t0 },
+    b: { x: mx + dir.x * t1, y: my + dir.y * t1 },
+    origin: { x: mx, y: my },
+    dir,
+    maxDev,
+  };
+}
+
+/** Para um canto arredondado de raio r, o ponto do traço mais próximo do canto fica a ~0,41r dele. */
+function raioDosCantos(pontos: PontoTraco[], bb: Ret): number {
+  const cantos: PontoTraco[] = [
+    { x: bb.x, y: bb.y },
+    { x: bb.x + bb.w, y: bb.y },
+    { x: bb.x, y: bb.y + bb.h },
+    { x: bb.x + bb.w, y: bb.y + bb.h },
+  ];
+  const ds: number[] = [];
+  for (const c of cantos) {
+    let d = Infinity;
+    for (const p of pontos) d = Math.min(d, Math.hypot(p.x - c.x, p.y - c.y));
+    ds.push(d);
+  }
+  ds.sort((a, b) => a - b);
+  const mediana = (ds[1] + ds[2]) / 2;
+  // 2,5 pt de folga: ninguém acerta o canto exato com a mão
+  return Math.max(0, (mediana - 2.5) / 0.414);
+}
+
+/** A ponta (início/fim) tem uma seta? As "asas" aparecem nos dois lados da reta ajustada. */
+function temSeta(pontos: PontoTraco[], reta: Reta, lado: "inicio" | "fim"): boolean {
+  const tDe = (p: PontoTraco) => (p.x - reta.origin.x) * reta.dir.x + (p.y - reta.origin.y) * reta.dir.y;
+  const sDe = (p: PontoTraco) => (p.x - reta.origin.x) * reta.dir.y - (p.y - reta.origin.y) * reta.dir.x;
+  const ts = pontos.map(tDe);
+  const tMin = Math.min(...ts);
+  const tMax = Math.max(...ts);
+  const janela = Math.max(14, (tMax - tMin) * 0.2);
+  const tol = Math.max(6, (tMax - tMin) * 0.06);
+  let acima = false;
+  let abaixo = false;
+  for (const p of pontos) {
+    const t = tDe(p);
+    if (lado === "inicio" ? t > tMin + janela : t < tMax - janela) continue;
+    const s = sDe(p);
+    if (s > tol) acima = true;
+    if (s < -tol) abaixo = true;
+  }
+  return acima && abaixo;
+}
+
+/** Junta cantos muito próximos (traço tremido gera "quinas" repetidas). */
+function cantosLimpos(cantos: PontoTraco[], diag: number): PontoTraco[] {
+  const out: PontoTraco[] = [];
+  for (const p of cantos) {
+    const ult = out[out.length - 1];
+    if (ult && Math.hypot(p.x - ult.x, p.y - ult.y) < diag * 0.08) continue;
+    out.push(p);
+  }
+  return out;
+}
+
+/** Triângulo com o ápice para baixo (o preset padrão aponta para cima → precisa de flipV). */
+function apexEmBaixo(tres: PontoTraco[]): boolean {
+  let iA = 0;
+  let maior = -1;
+  for (let i = 0; i < 3; i++) {
+    const outros = tres.filter((_, k) => k !== i);
+    const d = Math.abs(tres[i].y - (outros[0].y + outros[1].y) / 2);
+    if (d > maior) {
+      maior = d;
+      iA = i;
+    }
+  }
+  const outros = tres.filter((_, k) => k !== iA);
+  return tres[iA].y > (outros[0].y + outros[1].y) / 2;
+}
+
+// ---------------------------------------------------------------------------
+// o reconhecimento
+// ---------------------------------------------------------------------------
+
+/**
+ * Assistente do Draw: tenta transformar um traço à mão livre numa forma limpa.
+ * Devolve `null` quando é melhor manter o traço como está (desenho livre).
+ */
+export function reconhecerTraco(pontos: PontoTraco[]): TracoReconhecido | null {
+  if (pontos.length < 8) return null;
+  const bb = bboxDe(pontos);
+  const diag = Math.hypot(bb.w, bb.h);
+  if (diag < 30) return null;
+
+  const primeiro = pontos[0];
+  const ultimo = pontos[pontos.length - 1];
+  const gap = Math.hypot(primeiro.x - ultimo.x, primeiro.y - ultimo.y);
+  const fechado = gap <= Math.max(22, diag * 0.22);
+  const eps = Math.max(3, diag * 0.045);
+  const simplificado = simplificar(pontos, eps);
+  const cantos = fechado && simplificado.length > 2 ? simplificado.slice(0, -1) : simplificado;
+
+  if (fechado) {
+    // --- retângulo (ou arredondado)? (4–10 cantos e tudo junto da borda) ---
+    if (cantos.length >= 4 && cantos.length <= 10) {
+      const tol = Math.max(5, diag * 0.09);
+      let junto = true;
+      for (const p of pontos) {
+        if (distanciaAoRetangulo(p, bb) > tol) {
+          junto = false;
+          break;
+        }
+      }
+      if (junto && cobreQuatroLados(pontos, bb, tol) >= 4) {
+        // "quase" alinhado aos eixos → endireita nos eixos; torto de verdade fica livre
+        const ang = Math.atan2(cantos[1].y - cantos[0].y, cantos[1].x - cantos[0].x);
+        const quarto = Math.PI / 2;
+        const off = Math.abs(((ang % quarto) + quarto) % quarto);
+        if (Math.min(off, quarto - off) >= (24 * Math.PI) / 180) return null;
+        const raio = raioDosCantos(pontos, bb);
+        if (raio >= Math.max(6, Math.min(bb.w, bb.h) * 0.08)) {
+          const adj = Math.round(clamp((100000 * raio) / Math.min(bb.w, bb.h), 4000, 50000));
+          return { geom: "roundRect", box: bb, adj: { adj }, rotulo: "Retângulo arredondado" };
+        }
+        return { geom: "rect", box: bb, rotulo: "Retângulo" };
+      }
+    }
+
+    // --- elipse / círculo? (desvio médio em relação à elipse da caixa) ---
+    const cx = bb.x + bb.w / 2;
+    const cy = bb.y + bb.h / 2;
+    const rx = Math.max(bb.w / 2, 1);
+    const ry = Math.max(bb.h / 2, 1);
+    let desvio = 0;
+    for (const p of pontos) desvio += Math.abs(Math.hypot((p.x - cx) / rx, (p.y - cy) / ry) - 1);
+    if (desvio / pontos.length < 0.12) return { geom: "ellipse", box: bb, rotulo: "Elipse" };
+
+    // --- triângulo? ---
+    const tres = cantosLimpos(cantos, diag);
+    if (tres.length === 3) {
+      return { geom: "triangle", box: bb, flipV: apexEmBaixo(tres) || undefined, rotulo: "Triângulo" };
+    }
+    return null;
+  }
+
+  // --- linha reta? (corta os "ganchos" que a mão faz nas pontas) ---
+  const n = pontos.length;
+  const trim = Math.max(3, Math.floor(n * 0.18));
+  const interno = n > trim * 2 + 4 ? pontos.slice(trim, n - trim) : pontos;
+  const reta = ajustarReta(interno);
+  if (reta) {
+    const len = Math.hypot(reta.b.x - reta.a.x, reta.b.y - reta.a.y);
+    const tol = Math.max(5, len * 0.05);
+    if (len > 36 && reta.maxDev <= tol) {
+      // miolo reto: projeta as pontas na reta ideal e limita a extensão
+      const tDe = (p: PontoTraco) => (p.x - reta.origin.x) * reta.dir.x + (p.y - reta.origin.y) * reta.dir.y;
+      const t0 = tDe(reta.a);
+      const t1 = tDe(reta.b);
+      const pad = Math.max(30, len * 0.25);
+      // as pontas são os extremos do traço (numa seta as "asas" vêm antes da ponta);
+      // o sentido do desenho decide qual extremo é o início (o marcador segue o traço)
+      const ts = pontos.map(tDe);
+      const vai = tDe(pontos[0]) <= tDe(pontos[n - 1]);
+      const tA = clamp(vai ? Math.min(...ts) : Math.max(...ts), t0 - pad, t1 + pad);
+      const tB = clamp(vai ? Math.max(...ts) : Math.min(...ts), t0 - pad, t1 + pad);
+      if (Math.abs(tB - tA) > 36) {
+        const a = { x: reta.origin.x + reta.dir.x * tA, y: reta.origin.y + reta.dir.y * tA };
+        const b = { x: reta.origin.x + reta.dir.x * tB, y: reta.origin.y + reta.dir.y * tB };
+        // o marcador segue o SENTIDO do desenho: "head" na ponta inicial, "tail" na final
+        const setaBaixa = temSeta(pontos, reta, "inicio");
+        const setaAlta = temSeta(pontos, reta, "fim");
+        const head = vai ? setaBaixa : setaAlta;
+        const tail = vai ? setaAlta : setaBaixa;
+        return {
+          geom: "line",
+          box: { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) },
+          head: head || undefined,
+          tail: tail || undefined,
+          flipH: a.x > b.x || undefined,
+          flipV: a.y > b.y || undefined,
+          rotulo: head || tail ? "Seta" : "Linha",
+        };
+      }
+    }
+  }
+  return null;
+}
+
+/** Dica para mostrar na tela enquanto o traço está sendo desenhado. */
+export function dicaDoTraco(pontos: PontoTraco[], assistente: boolean): string {
+  if (!assistente) return "Desenho livre";
+  return reconhecerTraco(pontos)?.rotulo ?? "Desenho livre";
+}
+
+// ---------------------------------------------------------------------------
+// a forma
+// ---------------------------------------------------------------------------
+
+/** Traço livre -> caminho do custGeom (comandos M/L/Z, em pt, relativos à caixa). */
+export function caminhoLivre(pontos: PontoTraco[], bb: Ret = bboxDe(pontos)): CustPath {
+  let eps = Math.max(0.8, Math.hypot(bb.w, bb.h) * 0.012);
+  let pts = simplificar(pontos, eps);
+  while (pts.length > 260 && eps < 40) {
+    eps *= 1.6;
+    pts = simplificar(pontos, eps);
+  }
+  const cmds: (string | number)[] = [];
+  const n10 = (v: number) => Math.round(v * 10) / 10;
+  for (let i = 0; i < pts.length; i++) {
+    cmds.push(i === 0 ? "M" : "L", n10(pts[i].x - bb.x), n10(pts[i].y - bb.y));
+  }
+  const primeiro = pontos[0];
+  const ultimo = pontos[pontos.length - 1];
+  const gap = Math.hypot(primeiro.x - ultimo.x, primeiro.y - ultimo.y);
+  if (gap <= Math.max(10, Math.hypot(bb.w, bb.h) * 0.1)) cmds.push("Z");
+  return { w: Math.max(1, n10(bb.w)), h: Math.max(1, n10(bb.h)), cmds, fill: "none", stroke: true };
+}
+
+function baseDaForma(est: EstiloDeck, d: Dim, boxPt: Ret): Shape {
+  const b = dePt(boxPt, d);
+  return {
+    id: uid(),
+    kind: "forma",
+    box: { x: clamp(b.x, 0, 100), y: clamp(b.y, 0, 100), w: clamp(b.w, 0, 100), h: clamp(b.h, 0, 100) },
+    text: "",
+    fontFamily: est.fonte,
+    fontSize: est.tamanho,
+    color: est.corTexto,
+    bold: false,
+    italic: false,
+    align: "centro",
+    fill: "",
+    src: "",
+    rot: 0,
+  };
+}
+
+function comPincel(s: Shape, pincel: Pincel, setas?: { head?: boolean; tail?: boolean }): Shape {
+  s.fillX = { kind: "none" };
+  s.ln = { color: pincel.cor, alpha: 1, w: pincel.w, dash: "solid", cap: "round", join: "round" };
+  if (setas?.head) s.ln.head = "triangle";
+  if (setas?.tail) s.ln.tail = "triangle";
+  return s;
+}
+
+/**
+ * O traço vira forma: reconhecido pelo assistente (ou desenho livre quando o assistente
+ * está desligado ou quando o traço não bate com nenhuma forma).
+ */
+export function formaDoTraco(pontos: PontoTraco[], pincel: Pincel, est: EstiloDeck, d: Dim): Shape | null {
+  if (pontos.length < 2) return null;
+  const rec = pincel.assistente ? reconhecerTraco(pontos) : null;
+  if (rec) {
+    const s = baseDaForma(est, d, rec.box);
+    s.geom = rec.geom;
+    s.name = rec.rotulo;
+    if (rec.adj) s.adj = { ...rec.adj };
+    if (rec.flipH) s.flipH = true;
+    if (rec.flipV) s.flipV = true;
+    return comPincel(s, pincel, { head: rec.head, tail: rec.tail });
+  }
+  const s = baseDaForma(est, d, bboxDe(pontos));
+  s.geom = "custom";
+  s.name = "Desenho livre";
+  s.paths = [caminhoLivre(pontos)];
+  return comPincel(s, pincel);
+}

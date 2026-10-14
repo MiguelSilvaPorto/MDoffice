@@ -527,7 +527,7 @@ export class Fita {
     const run = (c: string, v?: string) => this.hooks.run(c, v);
     switch (cmd) {
       case "galeria":
-        abrirGaleria(ancora, (item) => run("forma-inserir", String(GALERIA.indexOf(item))));
+        abrirGaleria(ancora, (item) => run("forma-inserir", String(GALERIA.indexOf(item))), () => run("desenho"));
         return;
       case "modelo":
         abrirModelos(ancora, (m) => run("modelo", m.id), {

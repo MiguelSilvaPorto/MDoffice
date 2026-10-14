@@ -7,6 +7,7 @@ import { $, toast } from "../util";
 import { pedirTexto } from "../dialogoTexto";
 import { ligarAjusteAlturaFita, ligarRecolherFita } from "../fita";
 import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, novaImagem, type EstiloDeck, type ItemGaleria } from "./edicao/criar";
+import { dicaDoTraco, formaDoTraco, type Pincel } from "./edicao/desenho";
 import { ajustarCor, CANTOS, comAjuste, comCantos, comLinha, comOpacidade, comPreenchimento, comRaioDeCanto, comSombra, gradiente, SOMBRAS_PRONTAS, solido, corPrincipal, type Canto } from "./edicao/formato";
 import { aspectSize, stageRatio } from "./schema";
 import type { Dim } from "./edicao/geometria";
@@ -65,6 +66,7 @@ import { shapeText } from "./shapes";
 import { clampIndex, duplicateSlide, insertSlide, moveSlide, removeSlide, replaceSlide, resetSlide, setLayout } from "./slides";
 import { Stage, type CelulasSel, type Ferramenta } from "./stage";
 import { THEMES, stageVars, themeOf } from "./themes";
+import { abrirCores } from "./ui/cores";
 import { Fita } from "./ui/fita";
 import { Painel } from "./ui/painel";
 import { abrirPopup, fecharPopup } from "./ui/popup";
@@ -123,6 +125,27 @@ const gravarFlag = (chave: string, v: boolean): void => {
   }
 };
 
+const CHAVE_PINCEL = "mdc.pp.pincel";
+/** O pincel do Draw guardado entre sessões (cor, espessura e assistente). */
+function lerPincel(): Pincel {
+  try {
+    const v = JSON.parse(localStorage.getItem(CHAVE_PINCEL) ?? "null") as Partial<Pincel> | null;
+    if (v && typeof v === "object") {
+      return { cor: typeof v.cor === "string" ? v.cor : "", w: Number(v.w) > 0 ? Number(v.w) : 2, assistente: v.assistente !== false };
+    }
+  } catch {
+    /* sem armazenamento */
+  }
+  return { cor: "", w: 2, assistente: true };
+}
+function gravarPincel(p: Pincel): void {
+  try {
+    localStorage.setItem(CHAVE_PINCEL, JSON.stringify(p));
+  } catch {
+    /* sem armazenamento */
+  }
+}
+
 export class PowerPointHost {
   private pane: HTMLElement;
   private opts: PowerPointHostOptions;
@@ -133,6 +156,7 @@ export class PowerPointHost {
   private selecao: string[] = [];
   private editando: string | null = null;
   private ferramenta: Ferramenta = null;
+  private pincel: Pincel = lerPincel();
   private fixas = false;
   private encaixe = lerFlag("mdc.pp.encaixe", true);
   private grade = lerFlag("mdc.pp.grade", false);
@@ -176,6 +200,7 @@ export class PowerPointHost {
         celulas: this.celulasDaSelecao(),
         cantosSel: this.cantosSel,
         animacoes: normalizarAnimacoes(this.atual().animacoes) ?? [],
+        pincel: this.ferramenta?.tipo === "desenho" ? { cor: this.pincelUsado().cor, w: this.pincel.w } : null,
       }),
       aoSelecionar: (ids) => this.selecionar(ids),
       aoSelecionarCantos: (c) => this.selecionarCantos(c),
@@ -184,6 +209,8 @@ export class PowerPointHost {
       aoCriar: (c) => this.aoCriar(c),
       aoDuplicarParaArrastar: () => this.duplicarParaArrastar(),
       aoCelulas: (sel) => this.selecionarCelulas(sel),
+      aoTraco: (t) => this.aoTraco(t),
+      aoTracoAndamento: (pontos) => this.aoTracoAndamento(pontos),
     });
     this.montar();
     // fonte da web carregou: as medidas de entrelinha mudam, então redesenha (sem derrubar quem está digitando)
@@ -205,6 +232,17 @@ export class PowerPointHost {
     this.pane.innerHTML = `
       <div id="pp-ribbon" class="pp-ribbon ppr" role="toolbar" aria-label="Ferramentas da apresentação"></div>
       <div id="pp-stage">
+        <div class="pp-pincel" data-pincel hidden>
+          <button type="button" class="pp-pincel-cor" data-pincel-cor title="Cor do traço" aria-label="Cor do traço"></button>
+          <span class="pp-pincel-sep"></span>
+          <button type="button" class="pp-pincel-w" data-pincel-w="1" title="Traço fino (1 pt)">1</button>
+          <button type="button" class="pp-pincel-w" data-pincel-w="2" title="Traço médio (2 pt)">2</button>
+          <button type="button" class="pp-pincel-w" data-pincel-w="4" title="Traço grosso (4 pt)">4</button>
+          <button type="button" class="pp-pincel-w" data-pincel-w="8" title="Traço bem grosso (8 pt)">8</button>
+          <span class="pp-pincel-sep"></span>
+          <button type="button" class="pp-pincel-assist" data-pincel-assist title="Assistente: reconhece o traço e ajusta a forma (retângulo, retângulo arredondado, círculo, triângulo, linha e seta)">Assistente</button>
+          <span class="pp-pincel-dica" data-pincel-dica></span>
+        </div>
         <div class="pp-left">
           <div class="pp-strip" data-strip aria-label="Lâminas"></div>
           <div class="pp-canvas" data-canvas>
@@ -269,6 +307,7 @@ export class PowerPointHost {
 
     this.stage.attach(this.frame, this.slideEl);
     this.notes.attach(this.notesEl, (notes) => this.mudarNotas(notes));
+    this.ligarPincel();
 
     this.ligarPainelLateral();
     // abas do painel lateral
@@ -800,9 +839,11 @@ export class PowerPointHost {
     if (f.tipo === "texto") {
       const box = c.clique ? caixaCentrada(c.x0, c.y0, 240, 40, d) : c.box;
       forma = novaCaixaDeTexto(box, est);
-    } else {
+    } else if (f.tipo === "forma") {
       const item = GALERIA[Number(f.id)];
       forma = this.formaDoItem(item, c, est, d);
+    } else {
+      return;
     }
     this.registrar();
     this.substituirSlide({ ...this.atual(), shapes: [...this.atual().shapes, forma] });
@@ -830,6 +871,75 @@ export class PowerPointHost {
     }
     const box = c.clique ? caixaCentrada(c.x0, c.y0, 180, item.geom === "ellipse" || item.geom === "star5" || item.geom === "heart" ? 180 : 110, d) : c.box;
     return novaForma(item, box, est);
+  }
+
+  // ------------------------------------------------------------------
+  // desenho à mão (Draw)
+  // ------------------------------------------------------------------
+
+  /** O pincel em uso: a cor cai no acento do deck enquanto não foi escolhida. */
+  private pincelUsado(): Pincel {
+    return { cor: this.pincel.cor || this.estilo().acento, w: this.pincel.w, assistente: this.pincel.assistente };
+  }
+
+  /** Liga os controles da barrinha do pincel (cor, espessura e assistente). */
+  private ligarPincel(): void {
+    const barra = $<HTMLElement>("[data-pincel]", this.pane);
+    barra.querySelector<HTMLElement>("[data-pincel-cor]")?.addEventListener("click", (e) => {
+      const est = this.estilo();
+      abrirCores(e.currentTarget as HTMLElement, { atual: this.pincelUsado().cor, paleta: est.paleta, titulo: "Cor do traço" }, (cor) => {
+        this.pincel.cor = cor ?? est.acento;
+        gravarPincel(this.pincel);
+        this.atualizarPincel();
+      });
+    });
+    for (const b of barra.querySelectorAll<HTMLElement>("[data-pincel-w]")) {
+      b.addEventListener("click", () => {
+        this.pincel.w = Number(b.dataset.pincelW) || 2;
+        gravarPincel(this.pincel);
+        this.atualizarPincel();
+      });
+    }
+    barra.querySelector<HTMLElement>("[data-pincel-assist]")?.addEventListener("click", () => {
+      this.pincel.assistente = !this.pincel.assistente;
+      gravarPincel(this.pincel);
+      this.atualizarPincel();
+    });
+    this.atualizarPincel();
+  }
+
+  /** Mostra/esconde a barrinha do pincel e reflete cor, espessura e assistente. */
+  private atualizarPincel(): void {
+    const barra = this.pane.querySelector<HTMLElement>("[data-pincel]");
+    if (!barra) return;
+    const ativo = this.ferramenta?.tipo === "desenho";
+    barra.hidden = !ativo;
+    if (!ativo) return;
+    const p = this.pincelUsado();
+    const cor = barra.querySelector<HTMLElement>("[data-pincel-cor]");
+    if (cor) cor.style.background = `#${p.cor}`;
+    for (const b of barra.querySelectorAll<HTMLElement>("[data-pincel-w]")) b.classList.toggle("on", Number(b.dataset.pincelW) === this.pincel.w);
+    barra.querySelector("[data-pincel-assist]")?.classList.toggle("on", this.pincel.assistente);
+    const dica = barra.querySelector<HTMLElement>("[data-pincel-dica]");
+    if (dica) dica.textContent = "Rabisque na lâmina — Esc para sair";
+  }
+
+  /** Terminou um traço: vira forma (assistida) ou desenho livre, no lugar em que foi feito. */
+  private aoTraco(t: { pontos: { x: number; y: number }[] }): void {
+    const forma = formaDoTraco(t.pontos, this.pincelUsado(), this.estilo(), this.dim());
+    if (!forma) return;
+    this.registrar();
+    this.substituirSlide({ ...this.atual(), shapes: [...this.atual().shapes, forma] });
+    this.selecao = [forma.id];
+    this.markDirty();
+    this.pintar();
+    this.atualizarPincel();
+  }
+
+  /** Traço em andamento: mostra o que o assistente está entendendo. */
+  private aoTracoAndamento(pontos: { x: number; y: number }[]): void {
+    const dica = this.pane.querySelector<HTMLElement>("[data-pincel-dica]");
+    if (dica) dica.textContent = `entendi: ${dicaDoTraco(pontos, this.pincel.assistente)}`;
   }
 
   // ------------------------------------------------------------------
@@ -1408,13 +1518,21 @@ export class PowerPointHost {
         const tipo = (GRAFICO_TIPOS.some((t) => t.id === value) ? value : "colunas") as GraficoTipo;
         return this.inserirGrafico(tipo);
       }
+      case "desenho":
+        this.ferramenta = this.ferramenta?.tipo === "desenho" ? null : { tipo: "desenho" };
+        this.atualizarPincel();
+        this.stage.desenharSelecao();
+        this.fita.atualizar();
+        return;
       case "forma-inserir":
         this.ferramenta = { tipo: "forma", id: String(value ?? "5") };
+        this.atualizarPincel();
         this.stage.desenharSelecao();
         this.fita.atualizar();
         return;
       case "ferramenta":
         this.ferramenta = value === "texto" ? (this.ferramenta?.tipo === "texto" ? null : { tipo: "texto" }) : null;
+        this.atualizarPincel();
         this.stage.desenharSelecao();
         this.fita.atualizar();
         return;
@@ -2717,6 +2835,7 @@ export class PowerPointHost {
     this.selecao = data.selecionada ? [data.selecionada] : [];
     this.editando = null;
     this.ferramenta = null;
+    this.atualizarPincel();
     this.hist.limpar();
     this.pane.style.setProperty("--slide-ratio", String(stageRatio(this.setup)));
     this.stage.zoomReset();

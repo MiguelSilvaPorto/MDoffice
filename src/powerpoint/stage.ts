@@ -28,8 +28,8 @@ const ZOOM_PASSO = 10;
 const r1 = (v: number) => Math.round(v * 10) / 10;
 const r2 = (v: number) => Math.round(v * 100) / 100;
 
-/** Ferramenta de criação ativa (arrastar na lâmina para desenhar). */
-export type Ferramenta = { tipo: "forma"; id: string } | { tipo: "texto" } | null;
+/** Ferramenta de criação ativa (arrastar na lâmina para desenhar) — ou o lápis do "Draw". */
+export type Ferramenta = { tipo: "forma"; id: string } | { tipo: "texto" } | { tipo: "desenho" } | null;
 
 export interface ContextoPalco {
   shapes: Shape[];
@@ -47,6 +47,8 @@ export interface ContextoPalco {
   cantosSel: Canto[];
   /** animações da lâmina, na ordem — viram selos numerados sobre as formas (aba Animações) */
   animacoes: Animacao[];
+  /** estilo do lápis (só no modo desenho): cor e espessura do traço ao vivo */
+  pincel: { cor: string; w: number } | null;
 }
 
 export interface CelulasSel {
@@ -73,6 +75,10 @@ export interface StageHooks {
   aoCelulas: (sel: CelulasSel | null) => void;
   /** os cantos escolhidos para a edição mudaram (alças de canto do palco) */
   aoSelecionarCantos: (cantos: Canto[]) => void;
+  /** terminou um traço à mão (pontos em pt da lâmina) */
+  aoTraco: (t: { pontos: { x: number; y: number }[] }) => void;
+  /** o traço em andamento mudou (para a dica na tela) */
+  aoTracoAndamento: (pontos: { x: number; y: number }[]) => void;
 }
 
 type Modo =
@@ -82,6 +88,7 @@ type Modo =
   | { t: "retangulo"; x0: number; y0: number; soma: boolean; base: string[] }
   | { t: "criar"; x0: number; y0: number }
   | { t: "canto"; ids: string[]; dono: string; alvo: Canto; sel: Canto[]; inicial: Map<string, [number, number, number, number]> }
+  | { t: "traco"; pontos: { x: number; y: number }[] }
   | { t: "celulas"; id: string; r0: number; c0: number };
 
 export class Stage {
@@ -92,6 +99,8 @@ export class Stage {
   private modo: Modo | null = null;
   private guias: Guia[] = [];
   private rect: ShapeBox | null = null;
+  /** traço à mão em andamento (em % da lâmina), só no modo desenho */
+  private traco: { x: number; y: number }[] | null = null;
   private quadro = 0;
   private ultimo: PointerEvent | null = null;
   /** aviso flutuante do arrasto de canto ("22% · 3 cantos"), desenhado junto da seleção */
@@ -274,6 +283,13 @@ export class Stage {
     for (const g of this.guias) {
       html.push(g.eixo === "v" ? `<div class="pp-guia v" style="left:${g.pos}%"></div>` : `<div class="pp-guia h" style="top:${g.pos}%"></div>`);
     }
+    if (this.traco && this.traco.length > 1) {
+      const d = this.traco.map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join("");
+      html.push(
+        `<svg class="pp-traco" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">` +
+          `<path d="${d}" fill="none" stroke="#${ctx.pincel?.cor ?? "888888"}" stroke-width="${ctx.pincel?.w ?? 2}" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`
+      );
+    }
     if (this.rect) {
       const b = this.rect;
       html.push(`<div class="pp-marquee" style="left:${b.x}%;top:${b.y}%;width:${b.w}%;height:${b.h}%"></div>`);
@@ -303,11 +319,17 @@ export class Stage {
     // controles da mídia (player de áudio/vídeo): o clique é do player, não do palco
     if (alvo.closest("[data-player]")) return;
 
-    // ferramenta de criação ativa: começa a desenhar
+    // ferramenta de criação ativa: começa a desenhar (ou a rabiscar, no modo desenho)
     if (ctx.ferramenta) {
       this.slideEl.setPointerCapture(e.pointerId);
-      this.modo = { t: "criar", x0: p.x, y0: p.y };
-      this.rect = null;
+      if (ctx.ferramenta.tipo === "desenho") {
+        this.modo = { t: "traco", pontos: [p] };
+        this.traco = this.modo.pontos;
+        this.desenharSelecao();
+      } else {
+        this.modo = { t: "criar", x0: p.x, y0: p.y };
+        this.rect = null;
+      }
       e.preventDefault();
       return;
     }
@@ -452,6 +474,11 @@ export class Stage {
   private afastamentoPt(dim: Dim): number {
     const larguraPx = this.slideEl?.getBoundingClientRect().width ?? 0;
     return larguraPx > 0 ? (9 * dim.w) / larguraPx : 6;
+  }
+
+  /** Pontos em % da lâmina -> pt (para o reconhecimento e a forma). */
+  private pontosEmPt(pontos: { x: number; y: number }[], dim: Dim): { x: number; y: number }[] {
+    return pontos.map((p) => ({ x: (p.x / 100) * dim.w, y: (p.y / 100) * dim.h }));
   }
 
   private aoMover(e: PointerEvent): void {
@@ -628,6 +655,14 @@ export class Stage {
       return;
     }
 
+    if (modo.t === "traco") {
+      const ult = modo.pontos[modo.pontos.length - 1];
+      if (Math.hypot(p.x - ult.x, p.y - ult.y) >= 0.12) modo.pontos.push(p);
+      this.desenharSelecao();
+      this.hooks.aoTracoAndamento(this.pontosEmPt(modo.pontos, ctx.dim));
+      return;
+    }
+
     if (modo.t === "criar") {
       let x1 = p.x;
       let y1 = p.y;
@@ -659,6 +694,13 @@ export class Stage {
       /* já liberado */
     }
     const ctx = this.hooks.contexto();
+    if (modo.t === "traco") {
+      const pontos = this.pontosEmPt(modo.pontos, ctx.dim);
+      this.traco = null;
+      this.desenharSelecao();
+      if (pontos.length > 1) this.hooks.aoTraco({ pontos });
+      return;
+    }
     if (modo.t === "criar") {
       const p = this.pontoEmPct(e);
       let x1 = p.x;
