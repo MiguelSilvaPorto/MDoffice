@@ -3159,6 +3159,95 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** o seletor de traço abre a lista do app; o `change` que o editor escutava continua
   igual.
 
+## src/broker/abnt/verificadores/tabelas.ts
+
+### 2026-10-14 · T01, T02 e E11 · vizinhança da tabela/figura e listas pré-textuais
+- **Local:** `conferirVizinhanca`, `conferirIdentificacoes` e `conferirSiglas` (novos)
+- **Linha:** `novo arquivo` — o mapa `VERIFICADORES` estava vazio: entram
+  `tabela-titulo-e-fonte` (T01), `figura-legenda-e-fonte` (T02) e `listas-itens-existentes` (E11)
+- **Porquê:** T01 e T02 são o mesmo desenho porque a norma pede o mesmo arranjo — a primeira
+  linha **não vazia acima** do bloco (linhas consecutivas de `tabela` ou `imagem`) tem de abrir
+  com o rótulo (`Tabela`/`Quadro`; `Figura`/`Ilustração`/`Gráfico`/`Imagem`/`Quadro`, tolerando
+  negrito, crases e o `#` de título) e a primeira **abaixo** com `Fonte:` — dois-pontos exigidos
+  (é a forma da norma; `Fontes:`, negrito e crases passam). O aviso de fonte sai **sem
+  `fix`/sugestão de propósito**: a máquina não sabe a autoria e “Fonte: elaborado pelo autor”
+  também é errado quando o dado é de terceiros. A âncora do título é a primeira linha do bloco
+  e a da fonte, a última — onde os dois elementos entram (e é o que a mensagem diz). E11 segue
+  só a direção que a norma cobra (“listas só com itens existentes”, não “toda figura na lista”):
+  acusa (1) a lista **sem nenhum item** no corpo da seção — ancorada no próprio título, porque é
+  ele que se remove — e (2) o item cuja identificação (`Tabela 5`, `Figura 2`) não aparece em
+  NENHUM lugar do texto **fora da própria lista** (a identificação é procurada com zero à
+  esquerda e ponto/vírgula tolerados, e é esse comportamento tolerante que evita o falso
+  positivo). A lista de siglas confere palavra por palavra do texto (fora da lista) se a sigla
+  listada é usada — lista de siglas que relaciona sigla morta também não é “só com itens
+  existentes”. Falso positivo é pior que falso negativo: rótulo desconhecido acima de uma tabela
+  de rascunho vira aviso, mas identificação escrita em outro formato (ex.: “Tabela 4.1”) passa.
+
+## src/broker/abnt/regras/ (T01, T02 e E11)
+
+### 2026-10-14 · as três regras viram dado
+- **Local:** `tabela-titulo-e-fonte.toml`, `figura-legenda-e-fonte.toml` e
+  `listas-itens-existentes.toml` (novos)
+- **Linha:** `novo` — `abnt.t01` (`ibge:1993`, grupo T), `abnt.t02` (`nbr14724:2024`, grupo T)
+  e `abnt.e11` (`nbr14724:2024`, grupo E), todas `tipo = "estrutura"` e `severidade = "warning"`
+- **Porquê:** a declaração fica em dado, como o contrato manda: os rótulos aceitos na linha de
+  cima, o rótulo da fonte e as listas conferidas pela E11 são opções do TOML, lidas pelos
+  verificadores com `opcaoLista`/`opcaoTexto` (com o padrão canônico ao lado). `mensagem` é o
+  aviso de que quem escreve a mensagem é o verificador — a regra de estrutura não carrega regex
+  (o lint recusaria) e, por isso, não sabe montar aviso sozinha.
+
+## src/broker/abnt/index.ts
+
+### 2026-10-14 · as três regras entram na carga
+- **Local:** imports dos `.toml?raw` e lista `FONTES`
+- **Linha:** `antes → depois`: três imports novos no fim do bloco e três entradas no fim de
+  `FONTES`
+- **Porquê:** acrescentar no fim preserva a ordem das dez originais (o motor para na primeira
+  regra que avisa um trecho) e é o ponto combinado para várias tarefas em paralelo.
+
+## scripts/testar-abnt-tabelas.mts
+
+### 2026-10-14 · o teste do grupo, com os dois lados
+- **Local:** novo arquivo (35 checagens)
+- **Linha:** `novo` — cada caso com o texto que acusa e o correto que **não** acusa; os avisos
+  são conferidos por contagem, mensagem e **âncora**; o aviso de fonte prova que sai sem
+  `fix`/`safe`/sugestão
+- **Porquê:** o contrato manda todo teste ter os dois lados, e nesta família a âncora importa
+  tanto quanto o aviso (o título ancora no topo do bloco, a fonte embaixo). Entram os casos
+  tolerantes que a precisão exige: negrito, `FONTE:` em caixa alta, `Quadro`/`Gráfico` acima,
+  lista com tabela no corpo não é “vazia” e a identificação no `alt` da imagem conta como
+  existente para a E11.
+
+## scripts/testar-regras-abnt.mts
+
+### 2026-10-14 · duas correções que a primeira regra de estrutura expôs
+- **Local:** lint da carga (contagem) e o `map` do teste de ouro / normalização / medição
+- **Linha:** `carregadas === 10` → `carregadas >= 10`;
+  `I.carregarRegras().map(I.regraDeToml)` → `.map((r) => I.regraDeToml(r))` (três pontos)
+- **Porquê:** (1) o teste nasceu quando existiam dez regras; a intenção dele é “as dez
+  continuam passando no lint”, não “existem exatamente dez” — os grupos novos acrescentam
+  regras ao mesmo carregamento. (2) o `map` passava o **índice** como segundo argumento
+  (`registro`) do `regraDeToml`; com as dez regras de texto ninguém usava o registro e o erro
+  ficou invisível — na primeira regra de estrutura ele estoura (“verificador desconhecido
+  (conhecidos: nenhum)”). O `index.ts` já tinha sido corrigido do mesmo jeito na base.
+
+## package.json
+
+### 2026-10-14 · script do teste novo
+- **Local:** `scripts`
+- **Linha:** `novo` `"test:abnt-tabelas": "node scripts/testar-abnt-tabelas.mts"`
+- **Porquê:** o teste do grupo roda como os outros (`npm run test:abnt-tabelas`), o que mantém
+  a família ABNT verificável sem decorar caminho de script.
+
+## docs/md.md
+
+### 2026-10-14 · o módulo de escrita ganha as regras de tabela, figura e lista
+- **Local:** “Escrita assistida (português, offline)”, depois do bullet do MIP
+- **Linha:** bullet novo sobre os avisos de ABNT em tabelas, figuras e listas pré-textuais
+- **Porquê:** são avisos visíveis no editor; o documento do módulo descreve o que o app faz, e
+  o recorte do aviso de fonte (“não sugere a troca: a autoria não é conhecida”) é uma decisão
+  do produto que o usuário precisa entender.
+
 ---
 
 ## Próximos registros

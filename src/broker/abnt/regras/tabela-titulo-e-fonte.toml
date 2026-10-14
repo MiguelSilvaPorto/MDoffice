@@ -1,0 +1,12 @@
+# T01 — tabela (normas do IBGE): identificação e título ACIMA, fonte ABAIXO.
+# O aviso da fonte sai SEM substituição de propósito: a máquina não sabe a autoria
+# (fonte de terceiros é o caso comum). Quem julga é "tabela-titulo-e-fonte", em
+# src/broker/abnt/verificadores/tabelas.ts.
+id = "abnt.t01"
+norma = "ibge:1993"
+grupo = "T"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "tabela-titulo-e-fonte"
+opcoes = { rotulos_titulo = ["Tabela", "Quadro"], rotulo_fonte = "Fonte" }
+mensagem = "(o verificador escreve a mensagem)"

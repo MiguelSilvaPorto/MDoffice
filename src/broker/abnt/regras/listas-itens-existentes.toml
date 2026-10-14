@@ -1,0 +1,12 @@
+# E11 — listas pré-textuais (figuras, tabelas e siglas) só com itens que existem
+# (NBR 14724): a lista sem nenhum item e o item que aponta para o que o documento não
+# tem são acusados; a lista de siglas confere sigla por sigla se ela é usada no texto.
+# Quem julga é "listas-itens-existentes", em src/broker/abnt/verificadores/tabelas.ts.
+id = "abnt.e11"
+norma = "nbr14724:2024"
+grupo = "E"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "listas-itens-existentes"
+opcoes = { listas = ["lista-de-figuras", "lista-de-tabelas", "lista-de-siglas"] }
+mensagem = "(o verificador escreve a mensagem)"

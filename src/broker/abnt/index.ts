@@ -38,6 +38,9 @@ import e01 from "./regras/e01.toml?raw";
 import e02 from "./regras/e02.toml?raw";
 import e03 from "./regras/e03.toml?raw";
 import p01 from "./regras/p01.toml?raw";
+import tabelaTituloFonte from "./regras/tabela-titulo-e-fonte.toml?raw";
+import figuraLegendaFonte from "./regras/figura-legenda-e-fonte.toml?raw";
+import listasItensExistentes from "./regras/listas-itens-existentes.toml?raw";
 
 const FONTES: { nome: string; texto: string }[] = [
   { nome: "horas.toml", texto: horas },
@@ -67,6 +70,9 @@ const FONTES: { nome: string; texto: string }[] = [
   { nome: "e02.toml", texto: e02 },
   { nome: "e03.toml", texto: e03 },
   { nome: "p01.toml", texto: p01 },
+  { nome: "tabela-titulo-e-fonte.toml", texto: tabelaTituloFonte },
+  { nome: "figura-legenda-e-fonte.toml", texto: figuraLegendaFonte },
+  { nome: "listas-itens-existentes.toml", texto: listasItensExistentes },
 ];
 
 /** Perfil institucional: sobrescreve versão de norma e o que fazer com cada regra. */

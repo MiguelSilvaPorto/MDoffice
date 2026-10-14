@@ -99,6 +99,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   (“…. (Silva, 2020).” → um ponto só, o de fora) e corrige — as demais acusam sem sugerir troca
   (o ano e a página são desconhecidos). C01/C03/C06 são regras declaradas em TOML; C04 é
   verificador do documento; teste próprio com os dois lados em `scripts/testar-abnt-citacoes.mts`.
+- **ABNT em tabelas, figuras e listas (T01, T02 e E11)**: três verificadores novos no motor
+  ABNT. A **tabela** pede a identificação e o título na linha imediatamente acima ("Tabela 1 –
+  …") e a **fonte logo abaixo** ("Fonte: …", normas do IBGE); a **figura** pede a legenda acima
+  ("Figura 1 – …") e a fonte abaixo quando não é de autoria própria. Os avisos apontam a linha
+  onde o título e a fonte entram e **não sugerem a troca**: a máquina não conhece a autoria
+  (fonte de terceiros é o caso comum). As **listas pré-textuais** (de figuras, de tabelas e de
+  siglas) são conferidas contra o documento: lista sem nenhum item e item que aponta para uma
+  figura/tabela que não existe — ou sigla que não é usada no texto — são avisados, porque a
+  lista só pode conter os itens que existem.
 
 ### Adicionado (na main)
 

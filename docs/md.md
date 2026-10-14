@@ -110,6 +110,13 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   e o **ponto final duplicado** (“…. (Silva, 2020).” → um ponto só, o de fora), este com
   correção automática. As conferências que não sabem a correção (ano, página) avisam sem
   sugerir troca.
+- **Normas ABNT em tabelas, figuras e listas**: avisos de estrutura no texto — a tabela pede a
+  identificação e o título acima ("Tabela 1 – …") e **"Fonte:"** abaixo (normas do IBGE); a
+  figura pede a legenda acima ("Figura 1 – …") e a fonte abaixo quando não é de autoria própria;
+  e as listas pré-textuais (de figuras, de tabelas e de siglas) só podem conter itens que
+  existem — lista vazia, item apontando para uma figura/tabela que o documento não tem ou sigla
+  que não é usada no texto são avisados. O aviso de fonte ausente **não sugere a troca**: a
+  máquina não conhece a autoria.
 - **Espaço esquecido** e **“Você quis dizer…?”**: palavras coladas viram duas; palavras a uma
   letra de uma comum ganham sugestão.
 - **Conferência ABNT de sumário e numeração**: com um **SUMÁRIO** no texto, o assistente compara

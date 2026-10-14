@@ -1,0 +1,12 @@
+# T02 — figura (NBR 14724): identificação e legenda ACIMA ("Figura 1 – …") e fonte
+# ABAIXO quando a ilustração não é de autoria própria. O aviso sai sem substituição:
+# a máquina não sabe a origem. Quem julga é "figura-legenda-e-fonte", em
+# src/broker/abnt/verificadores/tabelas.ts.
+id = "abnt.t02"
+norma = "nbr14724:2024"
+grupo = "T"
+severidade = "warning"
+tipo = "estrutura"
+verifica = "figura-legenda-e-fonte"
+opcoes = { rotulos_legenda = ["Figura", "Ilustração", "Gráfico", "Imagem", "Quadro"], rotulo_fonte = "Fonte" }
+mensagem = "(o verificador escreve a mensagem)"
