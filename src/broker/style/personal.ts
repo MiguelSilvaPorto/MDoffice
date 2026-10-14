@@ -15,13 +15,17 @@ export function personalLongSentence({ mask, push }: RuleCtx): void {
     const n = (sent.match(/[\p{L}][\p{L}'-]*/gu) ?? []).length;
     if (n <= limit) continue;
     const start = m.index + (sent.length - sent.trimStart().length);
+    const corpo = sent.trim();
+    // A marca cobre a FRASE INTEIRA: é dela que a mensagem fala (antes eram 40 caracteres,
+    // e o aviso dizia "55 palavras" apontando um pedaço).
     push(
       start,
-      start + Math.min(sent.trim().length, 40),
+      start + corpo.length,
       `Frase de ${n} palavras — bem mais longa que o seu normal (você costuma escrever ${Math.round(prof.avgSentence)} por frase, e 90% das suas têm até ${prof.p90}). Que tal dividir em duas?`,
       undefined,
       [],
-      false
+      false,
+      "frase-longa"
     );
   }
 }

@@ -277,18 +277,22 @@ export class MdEditor {
    * ("responsavo" riscado → "responsável" verde).
    */
   private fixPreviewParts(view: EditorView, issue: WritingIssue): { tipo: "texto" | "rem" | "add"; texto: string }[] {
+    return this.previewParts(view, issue.from, issue.to, issue.fix ?? "");
+  }
+
+  /** O mesmo preview, para um trecho qualquer — os chips de "Dividir:" e "Encurtar:". */
+  private previewParts(view: EditorView, de: number, ate: number, insert: string): { tipo: "texto" | "rem" | "add"; texto: string }[] {
     const doc = view.state.doc;
-    const fix = issue.fix ?? "";
-    const from = Math.max(0, issue.from - 30);
-    const to = Math.min(doc.length, issue.to + 36);
-    const velho = doc.sliceString(issue.from, issue.to);
-    const antes = doc.sliceString(from, issue.from).replace(/\s+/g, " ").trimStart();
-    const depois = doc.sliceString(issue.to, to).replace(/\s+/g, " ").trimEnd();
+    const from = Math.max(0, de - 30);
+    const to = Math.min(doc.length, ate + 36);
+    const velho = doc.sliceString(de, ate);
+    const antes = doc.sliceString(from, de).replace(/\s+/g, " ").trimStart();
+    const depois = doc.sliceString(ate, to).replace(/\s+/g, " ").trimEnd();
     // só o miolo que muda de verdade fica colorido (prefixo/sufixo comuns ficam neutros)
     const partes: { tipo: "texto" | "rem" | "add"; texto: string }[] = [];
     if (from > 0) partes.push({ tipo: "texto", texto: "…" });
     if (antes) partes.push({ tipo: "texto", texto: antes });
-    partes.push(...partesDaTroca(velho, fix));
+    partes.push(...partesDaTroca(velho, insert));
     if (depois) partes.push({ tipo: "texto", texto: depois });
     if (to < doc.length) partes.push({ tipo: "texto", texto: "…" });
     return partes;
@@ -375,6 +379,51 @@ export class MdEditor {
           this.onIssuesChanged?.();
         }
       );
+      pop.append(row);
+    }
+
+    // Candidatos para DIVIDIR o trecho comprido: cada chip mostra o resultado e aplica no
+    // próprio trecho — nada entra sozinho.
+    if (issue.divisores?.length) {
+      const row = document.createElement("div");
+      row.className = "cm-issue-row";
+      const label = document.createElement("span");
+      label.className = "cm-issue-label";
+      label.textContent = "Dividir:";
+      row.append(label);
+      for (const d of issue.divisores) {
+        const partes = this.previewParts(view, d.from, d.to, d.insert);
+        addChipDom(
+          row,
+          (b) => {
+            for (const p of partes) b.append(spanTexto(p.tipo === "rem" ? "cm-issue-rem" : p.tipo === "add" ? "cm-issue-add" : "", p.texto));
+          },
+          d.rotulo,
+          () => {
+            view.dispatch({ changes: { from: d.from, to: d.to, insert: d.insert } });
+            this.closeIssuesPopup();
+            this.onIssuesChanged?.();
+          }
+        );
+      }
+      pop.append(row);
+    }
+
+    // Trocas que ENCURTAM o trecho mantendo o nexo — cada uma no próprio trecho.
+    if (issue.trocas?.length) {
+      const row = document.createElement("div");
+      row.className = "cm-issue-row";
+      const label = document.createElement("span");
+      label.className = "cm-issue-label";
+      label.textContent = "Encurtar:";
+      row.append(label);
+      for (const t of issue.trocas) {
+        addChip(row, t.rotulo, () => {
+          view.dispatch({ changes: { from: t.from, to: t.to, insert: t.para } });
+          this.closeIssuesPopup();
+          this.onIssuesChanged?.();
+        });
+      }
       pop.append(row);
     }
 

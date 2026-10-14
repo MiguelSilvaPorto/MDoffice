@@ -84,6 +84,13 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   **retomam a oração** no meio de um trecho (“…revisar hoje em dia, eu quero…”). Trechos de
   25+ palavras sem pontuação viram uma **sugestão de quebra** antes do pronome-sujeito
   (“…de verdade → . Eu resolvi…”), aplicável pelo **“Corrigir tudo (estilo)”**.
+- **Trecho longo: “Dividir:” e “Encurtar:”**: quando não há pronome para quebrar, o aviso oferece
+  **divisores** (vírgula antes de “porque”/“se”/“quando”…, “e” com sujeito novo, depois de “hoje em
+  dia”…) — inclusive as quebras que outras regras já acharam (“…detalhado. E oira…”). Junto vêm
+  até **três trocas que encurtam** o trecho mantendo o nexo (“ser capaz de” → “poder”,
+  “posteriormente” → “depois”, “fazer uso de” → “usar”). Cada chip mostra o resultado e aplica num
+  clique; a faixa do aviso cobre a **frase inteira** e, quando o aviso do seu perfil (“Frase de N
+  palavras”) fala da mesma frase, os dois viram **um aviso só**.
 - **Modo formal**: “pra/tá/a gente” → linguagem formal, com o verbo ajustado pela frase
   (“a gente vai” → “nós vamos”); modo **informal** e **neutro** também disponíveis.
 - **Formalidade por classe + MIP**: o catálogo informal → formal tem 75 padrões por classe

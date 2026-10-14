@@ -20,11 +20,25 @@ export const issueField = StateField.define<{ issues: WritingIssue[]; deco: Deco
     if (tr.docChanged) {
       // Os avisos precisam ANDAR junto com o texto: sem isso, digitar acima de uma palavra
       // sublinhada deixa o sublinhado preso na posição antiga (parece que ele "sobe").
+      // As sub-faixas (divisores e trocas) andam junto — senão o chip aplicaria no lugar errado.
+      const mapear = <T extends { from: number; to: number }>(lista?: T[]): T[] | undefined => {
+        if (!lista) return undefined;
+        const novos = lista
+          .map((d) => ({ ...d, from: tr.changes.mapPos(d.from, 1), to: tr.changes.mapPos(d.to, -1) }))
+          .filter((d) => d.to > d.from);
+        return novos.length ? novos : undefined;
+      };
       issues = issues
-        .map((i) => {
+        .map((i): WritingIssue | null => {
           const from = tr.changes.mapPos(i.from, 1);
           const to = tr.changes.mapPos(i.to, -1);
-          return to > from ? { ...i, from, to } : null;
+          if (to <= from) return null;
+          const novo: WritingIssue = { ...i, from, to };
+          const div = mapear(i.divisores);
+          if (div) novo.divisores = div;
+          const tro = mapear(i.trocas);
+          if (tro) novo.trocas = tro;
+          return novo;
         })
         .filter((i): i is WritingIssue => i !== null);
       changed = true;

@@ -26,7 +26,8 @@ export interface CtxVarredura {
 /**
  * O que a correção automática pode aplicar sozinha numa varredura:
  * - nunca toca a palavra sob o cursor;
- * - nunca reestrutura frase (classe "quebra-frase": só pelo aviso ou “Corrigir tudo”);
+ * - nunca reestrutura frase (classes "quebra-frase", "trecho-longo" e "frase-longa":
+ *   só pelo aviso ou “Corrigir tudo”);
  * - o ponto final (classe "ponto-final") só entra no parágrafo do cursor quando ele está concluído.
  */
 export function planejarVarredura(text: string, ctx: CtxVarredura): CorrecaoAuto[] {
@@ -35,7 +36,7 @@ export function planejarVarredura(text: string, ctx: CtxVarredura): CorrecaoAuto
     if (i.fix === undefined) continue;
     if (i.from < ctx.from || i.to > ctx.to) continue;
     if (i.from < ctx.pos && ctx.pos < i.to) continue; // dentro da palavra sob o cursor: não se mexe
-    if (i.classe === "quebra-frase") continue; // reestruturar frase só quando a pessoa pede
+    if (i.classe === "quebra-frase" || i.classe === "trecho-longo" || i.classe === "frase-longa") continue; // reestruturar frase só quando a pessoa pede
     if (i.classe === "ponto-final" && i.from >= ctx.parFrom && i.to <= ctx.parTo && !ctx.parConcluido) continue;
     out.push({ from: i.from, to: i.to, insert: i.fix });
   }

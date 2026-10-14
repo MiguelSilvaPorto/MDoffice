@@ -188,6 +188,15 @@ export function openReviewModal(opts: ReviewOptions): ReviewHandle {
             })
           );
         }
+        // Trecho longo: os candidatos de divisão e as trocas que encurtam (cada um no próprio trecho)
+        for (const d of (issue.divisores ?? []).slice(0, 3)) {
+          actions.append(
+            chip(`Dividir: ${d.rotulo}`, "Aplicar esta divisão", () => opts.onFix({ ...issue, from: d.from, to: d.to, fix: d.insert, divisores: undefined, trocas: undefined }))
+          );
+        }
+        for (const t of (issue.trocas ?? []).slice(0, 3)) {
+          actions.append(chip(t.rotulo, `Trocar por “${t.para}”`, () => opts.onFix({ ...issue, from: t.from, to: t.to, fix: t.para, divisores: undefined, trocas: undefined })));
+        }
         actions.append(chip("Ir", "Ir para o trecho no editor", () => opts.onGoTo(issue), true));
         if (issue.kind === "spell") {
           actions.append(chip("Ignorar", "Não avisar mais sobre esta palavra", () => opts.onIgnore(issue.word), true));

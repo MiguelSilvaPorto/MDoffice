@@ -532,5 +532,71 @@ const TC = await empacotar("src/broker/spell/teclado.ts", "teclado.mjs");
   ok("confusões: troca sem relação custa a edição inteira", CF.distanciaPonderada("casa", "lua", 2) > 2);
 }
 
+// ---------------------------------------------------------------- trecho longo: dividir e encurtar
+const E = await empacotar("src/broker/encurtar.ts", "encurtar.mjs");
+
+{
+  // O aviso do perfil ("Frase de N palavras") só liga com um perfil pronto — semeia um aqui.
+  // `checkStyle` e o perfil precisam ser o MESMO módulo: vão num bundle só.
+  const { writeFileSync } = await import("node:fs");
+  const caminho = (p) => join(raiz, p).replace(/\\/g, "/");
+  const juntoTs = join(tmp, "estilo-junto.ts");
+  writeFileSync(
+    juntoTs,
+    `export { checkStyle } from "${caminho("src/broker/style/index.ts")}";\n` +
+      `export { learnDocument } from "${caminho("src/broker/personal/profile.ts")}";\n`
+  );
+  await build({ entryPoints: [juntoTs], bundle: true, platform: "node", format: "esm", outfile: join(tmp, "estilo-junto.mjs"), logLevel: "error", plugins: [pluginRaw] });
+  const SJ = await import(pathToFileURL(join(tmp, "estilo-junto.mjs")).href);
+
+  const amostra = Array.from({ length: 30 }, (_, i) => `A equipe revisou o plano numero ${i} hoje e ajustou o cronograma do projeto naquela semana.`).join(" ");
+  SJ.learnDocument("teste", amostra);
+
+  // 1) o aviso do trecho longo marca o TRECHO INTEIRO e ganha o que fazer
+  const T1 = "o time inteiro trabalhou durante toda a semana para entregar o projeto novo no prazo e o cliente vai revisar tudo se o prazo permitir";
+  const a1 = SJ.checkStyle(T1).find((i) => i.classe === "trecho-longo");
+  ok("trecho longo: o aviso existe", !!a1);
+  ok("trecho longo: a marca cobre o trecho inteiro (não 60 caracteres)", !!a1 && T1.slice(a1.from, a1.to).split(/\s+/).length >= 25, a1 ? String(a1.to - a1.from) : "-");
+  ok("trecho longo: sem quebra pronta, o aviso é escolha (sem fix)", !!a1 && a1.fix === undefined);
+  ok("trecho longo: divisores incluem a vírgula antes de “se”", !!a1?.divisores?.some((d) => d.insert === ", se"));
+  ok("trecho longo: cada divisor tem o próprio trecho", !!a1?.divisores?.every((d) => d.to > d.from && T1.slice(d.from, d.to).trim().length > 0));
+  ok(
+    "política: o divisor sugerido no trecho longo nunca entra sozinho",
+    !A.planejarVarredura(T1, { pos: T1.length, from: 0, to: T1.length, parFrom: 0, parTo: T1.length, parConcluido: true }).some((c) => c.insert === ", se")
+  );
+
+  // 2) quando há pronome seguro, a quebra pronta continua — e continua fora da varredura
+  const T2 = "o time trabalhou durante toda a semana para entregar o projeto no prazo e na sexta eu revisei tudo com calma antes de enviar para o cliente";
+  const a2 = SJ.checkStyle(T2).find((i) => i.classe === "trecho-longo");
+  ok("trecho longo: com pronome seguro, a quebra pronta continua", !!a2 && a2.fix === ". Eu", a2?.fix ?? "-");
+  ok(
+    "política: a quebra por pronome nunca entra sozinha",
+    !A.planejarVarredura(T2, { pos: T2.length, from: 0, to: T2.length, parFrom: 0, parTo: T2.length, parConcluido: true }).some((c) => c.insert.startsWith(". "))
+  );
+
+  // 3) os dois avisos sobre a MESMA frase viram um só, com a marca da frase inteira
+  const T3 =
+    "Com o tempo, era para que o aplicativo corrigisse palavras automaticamente sem eu precisar revisar um algoritmo muito melhor capaz de ter essa capacidade crítica para ser capaz de pegar qualquer um documento detalhado e oira verifica se ele segue as regras abnt";
+  const longos = SJ.checkStyle(T3).filter((i) => i.classe === "frase-longa" || i.classe === "trecho-longo");
+  ok("frase longa: os avisos sobrepostos viram um só", longos.length === 1, `${longos.length}: ${longos.map((i) => i.classe).join(",")}`);
+  const fl = longos[0];
+  ok("frase longa: a marca cobre a frase inteira", !!fl && fl.classe === "frase-longa" && fl.from === 0 && fl.to === T3.length, fl ? `${fl.from}-${fl.to}` : "-");
+  ok("frase longa: divisores aproveitam a quebra que outra regra já achou", !!fl?.divisores?.some((d) => d.insert === ". E"));
+  ok("frase longa: divisores têm o “se” do trecho (vírgula antes)", !!fl?.divisores?.some((d) => d.insert === ", se"));
+  ok("frase longa: encurtar sugere “ser capaz de” → “poder”", !!fl?.trocas?.some((t) => t.para === "poder" && t.rotulo.includes("ser capaz de")));
+  ok("frase longa: no máximo 3 trocas", (fl?.trocas?.length ?? 0) <= 3);
+
+  // 4) o motor de encurtar: ganho de tamanho, caixa preservada e guardas
+  const t4 = "Posteriormente o time vai fazer uso de novas ferramentas para levar em conta o custo";
+  const trocas4 = E.encurtarTrecho(t4, 0, t4.length, 3);
+  ok("encurtar: “Posteriormente” → “Depois” (com a caixa)", trocas4.some((t) => t.rotulo === "“Posteriormente” → “Depois”"));
+  ok("encurtar: “fazer uso de” → “usar”", trocas4.some((t) => t.para === "usar"));
+  ok("encurtar: “levar em conta” → “considerar”", trocas4.some((t) => t.para === "considerar"));
+  const curto = "o time revisou tudo com calma";
+  ok("encurtar: nada quando o ganho é pequeno", E.encurtarTrecho(curto, 0, curto.length, 3).length === 0);
+  const capaz = "ele é capaz de tudo nessa vida";
+  ok("encurtar: “é capaz de tudo” fica (complemento não verbal)", !E.encurtarTrecho(capaz, 0, capaz.length, 3).some((t) => t.para === "pode"));
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);

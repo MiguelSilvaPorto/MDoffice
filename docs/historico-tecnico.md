@@ -2408,6 +2408,149 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** cada fase do F1 registra a sua medição; o documento é o termômetro e sem o número novo
   a próxima mudança não teria com o que se comparar.
 
+## src/broker/style/punctuation.ts
+
+### 2026-10-14 · trecho longo · a marca do trecho inteiro e a classe própria
+- **Local:** `longRunWithoutPunct`
+- **Linha:** no aviso (sem quebra), `inicio + Math.min(m[0].length, 60)` → `inicio + m[0].length`;
+  as duas chamadas ganharam a classe `"trecho-longo"` (era `"quebra-frase"` só na quebra)
+- **Porquê:** a mensagem fala do TRECHO, mas a faixa amarela cobria só 60 caracteres — o usuário
+  via "a seleção é curta" e não confiava no aviso. A classe própria separa este aviso dos
+  "quebra-frase" pequenos (o `. E` da `safeSentenceBreak`), que continuam como estão.
+
+### 2026-10-14 · trecho longo · o ponto seguro voltou a sair no primeiro achado
+- **Local:** `pontoSeguro` (perto do fim do arquivo)
+- **Linha:** `pontosSeguros(run)[0]` → laço com `return` no primeiro candidato (como era antes);
+  a regex do pronome virou `RX_PRONOME`, compilada uma vez
+- **Porquê:** a checagem roda a cada pausa e o trecho pode ser o documento inteiro; varrer tudo
+  para achar um ponto que a regra usa sozinho era trabalho jogado fora (o motor de divisores, que
+  precisa de todos, tem o teto de análise).
+
+## src/broker/style/personal.ts
+
+### 2026-10-14 · frase longa · a marca da frase inteira e a classe própria
+- **Local:** `personalLongSentence`
+- **Linha:** `start + Math.min(sent.trim().length, 40)` → `start + corpo.length` (a frase inteira);
+  a chamada ganhou a classe `"frase-longa"`
+- **Porquê:** o aviso contava 55 palavras e pintava 40 caracteres — a mensagem e a faixa diziam
+  coisas diferentes. A classe permite juntar este aviso com o do trecho sem pontuação quando
+  falam da mesma frase.
+
+## src/broker/style/index.ts
+
+### 2026-10-14 · trecho longo · a passada que junta avisos e dá o que fazer
+- **Local:** `enriquecerTrechosLongos` (nova), `rotuloDoDivisor` (nova) e `copia`
+- **Linha:** `novo` — depois das regras: junta os avisos sobrepostos (o do perfil absorve o do
+  trecho), coleta os divisores que outras regras já acham (correção que começa com pontuação),
+  chama `divisoresDoTrecho`/`encurtarTrecho`, deduplica por `from-to-insert`, descarta o que cai na
+  máscara (código/link) e põe os de frase nova na frente; `copia` passou a copiar `divisores` e
+  `trocas` fundo
+- **Porquê:** era o caso de duas faixas amarelas e dois popups sobre a mesma frase, e o aviso sem
+  pronome não tinha nada para clicar. A passada vê TODOS os avisos (as regras rodam em ordem e não
+  se enxergam), então é o lugar certo para deduplicar e ranquear.
+
+## src/broker/style/divisores.ts (novo)
+
+### 2026-10-14 · trecho longo · o motor de divisores
+- **Local:** `divisoresDoTrecho`, `palavrasDe`, `casaSequencia`
+- **Linha:** `novo arquivo` — candidatos: pronome-sujeito (`. Pronome`), subordinante
+  (", porque", ", se"…), "e" com pronome-sujeito (", e"), expressão adverbial ("hoje em dia,");
+  guardas: palavra anterior de encaixe ("e porque", "era para que", "é porque"), 4+ palavras antes,
+  adverbial que continua ("no começo de tudo") e teto de análise de 1500 caracteres
+- **Porquê:** sem pronome seguro, o aviso era um beco sem saída. A comparação é palavra a palavra
+  sobre UMA varredura (`matchAll`): a primeira versão usava ~40 regexes grandes e custava 17 ms por
+  trecho — a checagem inteira de 12 mil caracteres passou de 5,8 ms para 27,5 ms. Depois da troca,
+  o motor custa 1,2 ms.
+
+## src/broker/encurtar.ts (novo)
+
+### 2026-10-14 · trecho longo · o motor de encurtamento
+- **Local:** `encurtarTrecho`, `POR_PALAVRA`, `comCaixa`
+- **Linha:** `novo arquivo` — casa as entradas palavra a palavra (índice pela primeira palavra),
+  guarda a caixa da primeira letra, descarta ganho < 2 letras, pula "é capaz de tudo" (complemento
+  não verbal) e devolve até `max` trocas sem sobreposição, das que mais economizam para as menores
+- **Porquê:** era o pedido do usuário — sugerir palavras que mantêm o nexo e deixam o trecho menor.
+  Curado à mão de propósito: nada entra sozinho, e a troca aparece como chip ("Encurtar: …") com o
+  resultado à vista.
+
+## src/broker/data/encurtamentos.ts (novo)
+
+### 2026-10-14 · trecho longo · as trocas curadas
+- **Local:** `ENCURTAMENTOS`
+- **Linha:** `novo arquivo` — perífrases ("com o objetivo de" → "para", "ser capaz de" → "poder"),
+  verbo+substantivo que consome a preposição ("fazer uso de" → "usar") e palavras longas
+  ("posteriormente" → "depois", "na maioria das vezes" → "quase sempre")
+- **Porquê:** só entra o que não muda o sentido nem a concordância. As perífrases com complemento
+  variável ("fazer uma análise dos resultados" → "analisar dos resultados") ficaram de FORA: a
+  preposição sobrando quebraria a frase.
+
+## src/broker/types.ts
+
+### 2026-10-14 · trecho longo · os campos novos do aviso
+- **Local:** `WritingIssue` e os tipos novos `DivisorTrecho`/`TrocaTrecho`
+- **Linha:** `novo` — `divisores?: {from,to,insert,rotulo}[]`, `trocas?: {from,to,para,rotulo}[]` e
+  a classe ganhou `"trecho-longo"` e `"frase-longa"`
+- **Porquê:** cada chip mexe num trecho PRÓPRIO (o "Corrigir:" do aviso é preso à faixa dele), então
+  os candidatos carregam a própria posição. As classes novas mantêm esses avisos fora da varredura.
+
+## src/broker/autofix.ts
+
+### 2026-10-14 · trecho longo · as classes novas ficam fora da varredura
+- **Local:** `planejarVarredura`
+- **Linha:** `if (i.classe === "quebra-frase") continue;` →
+  `if (i.classe === "quebra-frase" || i.classe === "trecho-longo" || i.classe === "frase-longa") continue;`
+- **Porquê:** dividir frase (e reestruturar trecho longo) é escolha de quem escreve — a varredura
+  automática não encosta; os chips do popup/F7 é que aplicam.
+
+## src/md/editor.ts
+
+### 2026-10-14 · trecho longo · as seções "Dividir:" e "Encurtar:" no popup
+- **Local:** `previewParts` (generalização do `fixPreviewParts`) e `showIssuePopup`
+- **Linha:** `novo` — cada divisor vira um chip com o trecho já com a pontuação no lugar (diff
+  colorido, igual ao "Corrigir:") e cada troca vira um chip "“X” → “Y”"; o chip de divisor usa o
+  rótulo como dica
+- **Porquê:** o aviso de trecho longo era o único que só oferecia "Ignorar neste texto". Os chips
+  mostram o resultado ANTES de aplicar, que é o que o diff colorido já faz no resto do popup.
+
+## src/md/editor/issues.ts
+
+### 2026-10-14 · trecho longo · as sub-faixas andam com o texto
+- **Local:** `issueField.update`
+- **Linha:** o `mapPos` dos avisos passou a mapear também `divisores[].from/to` e `trocas[].from/to`
+  (os que colapsam saem)
+- **Porquê:** sem isso, digitar acima do trecho deixaria os chips aplicando no lugar errado — o
+  mesmo motivo que já existia para a faixa do aviso.
+
+## src/broker/review.ts
+
+### 2026-10-14 · trecho longo · os chips no F7
+- **Local:** `section` (render dos avisos)
+- **Linha:** `novo` — até 3 "Dividir: <rótulo>" e até 3 trocas por aviso, aplicadas via `onFix` com
+  a faixa do próprio candidato
+- **Porquê:** o painel de revisão é onde se revisa em lote; os divisores e as trocas precisavam
+  aparecer ali também, e o `onFix` já aplica qualquer `{from,to,fix}`.
+
+## scripts/testar-correcao.mjs
+
+### 2026-10-14 · trecho longo · 19 verificações novas
+- **Local:** bloco "trecho longo: dividir e encurtar" (fim) e o bundle `SJ` (estilo + perfil)
+- **Linha:** `novo` — verificações da marca do trecho inteiro, do aviso sem fix, dos divisores
+  (", se", o ". E" reaproveitado de outra regra), da junção dos dois avisos sobre a mesma frase, do
+  teto de 3 trocas e das guardas do encurtar (caixa preservada, "é capaz de tudo" fica, ganho
+  mínimo de 2 letras)
+- **Porquê:** o aviso do perfil só liga com um perfil pronto — o teste semeia um (`learnDocument`)
+  no MESMO bundle do `checkStyle` (bundles separados seriam cópias diferentes do módulo e o
+  `checkStyle` não enxergaria o perfil). As verificações seguram o comportamento pedido: aviso
+  acionável e marca que bate com a mensagem.
+
+## docs/md.md
+
+### 2026-10-14 · trecho longo · a menção na escrita assistida
+- **Local:** "Escrita assistida" → bala nova "Trecho longo: “Dividir:” e “Encurtar:”"
+- **Linha:** `novo`
+- **Porquê:** o documento do módulo descreve o que o app faz; o menu do trecho longo e a marca da
+  frase inteira precisam estar ali.
+
 ---
 
 ## Próximos registros

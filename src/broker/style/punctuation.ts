@@ -73,18 +73,20 @@ export function longRunWithoutPunct({ mask, push }: RuleCtx): void {
         `. ${pron[0].toUpperCase()}${pron.slice(1)}`,
         [],
         false,
-        "quebra-frase"
+        "trecho-longo"
       );
       continue;
     }
-    const fim = inicio + Math.min(m[0].length, 60);
+    // Sem quebra segura: só avisa — e a marca cobre o TRECHO INTEIRO, porque é dele que a
+    // mensagem fala (antes eram 60 caracteres, e parecia que o aviso apontava outra coisa).
     push(
       inicio,
-      fim,
+      inicio + m[0].length,
       "Esse trecho está muito longo sem vírgulas nem pontos — separe em orações (frases curtas leem melhor e a IA entende melhor)",
       undefined,
       [],
-      false
+      false,
+      "trecho-longo"
     );
   }
 }
@@ -124,7 +126,7 @@ export function introConnectiveComma({ mask, push }: RuleCtx): void {
  * Palavra que pode continuar a expressão ("no começo DE tudo", "com o tempo LIVRE"):
  * nesses casos a vírgula depois da expressão entraria no lugar errado.
  */
-const CONTINUA_EXPRESSAO = new Set([
+export const CONTINUA_EXPRESSAO = new Set([
   "de", "do", "da", "dos", "das", "para", "pra", "por", "com", "sem", "em", "no", "na", "nos", "nas",
   "que", "qual", "quais", "cujo", "cuja", "cujos", "cujas",
   "mais", "menos", "muito", "muita", "muitos", "muitas", "pouco", "pouca", "poucos", "poucas",
@@ -174,12 +176,15 @@ export function adverbialComma({ mask, push }: RuleCtx): void {
  * Palavras que, antes do pronome, indicam que ele NÃO abre oração nova
  * (subordinação, preposição, coordenação, advérbio…): o ponto não entra ali.
  */
-const ANTES_DO_PRONOME = new Set([
+export const ANTES_DO_PRONOME = new Set([
   "que", "se", "para", "pra", "por", "de", "do", "da", "dos", "das", "com", "sem", "em", "no", "na", "nos", "nas",
   "ao", "aos", "à", "às", "um", "uma", "quando", "porque", "enquanto", "como", "conforme", "segundo", "só", "até",
   "mas", "e", "ou", "nem", "entre", "sobre", "me", "te", "lhe", "nos", "vos", "também", "ainda", "já", "não", "nem",
   "talvez", "sempre", "nunca", "depois", "antes", "então", "aí", "aqui", "ali", "lá", "hoje", "ontem", "amanhã", "agora",
 ]);
+
+/** O pronome-sujeito que abre oração nova (a regex é compilada uma vez: a checagem roda a cada pausa). */
+const RX_PRONOME = /(?<=[\p{L}\d])(\s+)(a gente|vocês|você|eles|elas|nós|ele|ela|eu|tu)(?=\s+[\p{L}])/giu;
 
 /**
  * Ponto seguro dentro de um trecho comprido: antes de um pronome-sujeito que abre
@@ -188,9 +193,8 @@ const ANTES_DO_PRONOME = new Set([
  * vírgula dos adverbiais ("…hoje em dia, eu…").
  */
 function pontoSeguro(run: string): { espaco: number; pronome: string } | null {
-  const rx = /(?<=[\p{L}\d])(\s+)(a gente|vocês|você|eles|elas|nós|ele|ela|eu|tu)(?=\s+[\p{L}])/giu;
   let m: RegExpExecArray | null;
-  while ((m = rx.exec(run)) !== null) {
+  while ((m = RX_PRONOME.exec(run)) !== null) {
     const antes = run.slice(0, m.index);
     const palavra = (/([\p{L}]+)$/u.exec(antes)?.[1] ?? "").toLowerCase();
     if (ANTES_DO_PRONOME.has(palavra)) continue;

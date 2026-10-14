@@ -164,6 +164,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   "..." — antes o "...." era tratado como intencional e passava batido. A correção entra na
   varredura (na pausa, ao terminar o parágrafo e ao salvar) e o aviso mostra o trecho já
   corrigido; linhas pontilhadas longas (".....") continuam intactas.
+- **Trecho longo com "Dividir:" e "Encurtar:"**: o aviso de trecho comprido deixou de ser beco sem
+  saída — quando não há pronome para quebrar, ele agora oferece **divisores** (vírgula antes de
+  "porque", "se", "quando"…, "e" com sujeito novo, depois de "hoje em dia"…) e **aproveita as
+  quebras que outras regras já acharam** (". E deixará…"); junto vêm até **três trocas que
+  encurtam** o trecho mantendo o nexo ("ser capaz de" → "poder", "posteriormente" → "depois",
+  "fazer uso de" → "usar"). Cada chip mostra o resultado e aplica num clique; nada entra sozinho.
+  Quando os dois avisos falam da MESMA frase (o do perfil — "Frase de 55 palavras" — e o do trecho
+  sem pontuação), eles viram **um aviso só**.
+- **A marca do aviso agora cobre a frase inteira**: o "Frase de 55 palavras" pintava só 40
+  caracteres e o "trecho muito longo", 60 — a mensagem falava de uma coisa e a faixa amarela
+  mostrava outra. Agora a faixa vai do começo ao fim da frase/trecho.
 
 ---
 
