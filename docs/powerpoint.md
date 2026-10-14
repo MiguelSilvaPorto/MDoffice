@@ -70,8 +70,9 @@ avisado ao abrir (nunca some em silêncio).
   caixa sai com o raio e a proporção do traço, em vez de virar "meio círculo".
 - **Desenhar por cima de uma forma existente** (mesmo apagada — a cor não importa) sai **alinhado
   a ela**: o resultado encaixa nas bordas e nos centros das formas de baixo quando está perto.
-- O que o assistente **não** reconhece fica como **desenho livre** (um caminho de verdade, que
-  também vai para o arquivo); com o **assistente desligado**, todo traço fica livre.
+- O que o assistente **não** reconhece fica como **desenho livre** — um caminho de verdade,
+  **suavizado** (média móvel + curvas), que também vai para o arquivo; com o **assistente
+  desligado**, todo traço fica livre.
 - Enquanto o lápis está ligado, a **barrinha do pincel** define **cor**, **espessura** (1, 2, 4
   ou 8 pt) e o assistente, e mostra o que está sendo entendido ("entendi: Círculo"); **Esc** sai.
 

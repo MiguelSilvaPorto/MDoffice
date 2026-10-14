@@ -503,6 +503,17 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   uma forma existente (a cor/apagado dela não importa) encaixa o resultado nas bordas e centros
   dessa forma — a caixa traçada sai alinhada à caixa de baixo.
 
+### 2026-10-14 · este commit · desenho livre suave
+- **Local:** `caminhoLivre` e a nova `suavizarPontos`
+- **Linha:** o caminho do custGeom deixou de ser `M`/`L` (segmentos retos) e virou `M` +
+  **cúbicas `C`** (Catmull-Rom sobre os pontos simplificados, depois de uma média móvel de
+  janela 2); o passo do RDP subiu para 0,8% da diagonal e o teto caiu de 260 para **120 pontos**
+  (as curvas cobrem o intervalo com menos pontos)
+- **Porquê:** o usuário mostrou o traço livre saindo com quinas visíveis — a simplificação virava
+  uma polilinha. A média móvel tira o tremor (pontas preservadas) e o Catmull-Rom interpola
+  curvas que passam pelos pontos: o desenho sai suave e mais fiel. O render (`tracadoLivre`) e o
+  `.pptx` já entendiam `C`, então nada mudou fora do caminho.
+
 ## scripts/testar-desenho-assistido.mjs
 
 ### 2026-10-14 · este commit · os traços tortos do Draw (novo arquivo)
@@ -528,6 +539,14 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   elíptica (com o círculo, virava "meio círculo" ou linha), o topo de caixa com quinas fica
   livre, o mesmo topo traçado **sobre uma caixa** sai alinhado a ela, e o encaixe puro (bordas,
   centros e o "longe não mexe") fica travado.
+
+### 2026-10-14 · este commit · as travas do desenho livre suave
+- **Local:** asserções do `caminhoLivre` (o parser de `M`/`C`/`L` e um traço quebrado de propósito)
+- **Linha:** o parser passou a percorrer os comandos de verdade e entra a checagem "nada de L,
+  tudo C"
+- **Porquê:** o formato do caminho mudou (L → C); com o parser antigo as checagens passavam
+  **vazias** (0 pontos — foi o que aconteceu na primeira rodada). Agora os pontos contados e o
+  limite de curvas são reais, e o traço com quinas prova que a suavização acontece.
 
 ## src/powerpoint/edicao/grafico.ts
 

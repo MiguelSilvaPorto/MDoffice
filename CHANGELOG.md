@@ -383,6 +383,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Desenho livre suave**: o traço que o assistente não reconhece saía como uma **polilinha** (as
+  quinas da simplificação ficavam visíveis). Agora ele passa por uma **média móvel** (tira o
+  tremor da mão, sem mexer nas pontas) e vira **curvas cúbicas** (Catmull-Rom) — o desenho livre
+  sai limpo e fiel ao traço, na tela e no `.pptx`.
 - **Draw enxerga as formas de baixo e o arco segue curvas largas**: traçar o contorno de uma
   forma existente (mesmo **apagada** — a cor não importa, o app lê a geometria) agora sai
   **alinhado a ela**: a forma reconhecida (ou o desenho livre) encaixa nas bordas e nos centros
