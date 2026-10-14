@@ -238,6 +238,22 @@ checa("Word: diminuir fonte com a seta embaixo", /A<sub>▼<\/sub>/.test(ler("sr
 // o painel do PowerPoint se redesenha sozinho: não pode matar a lista aberta
 checa("PowerPoint: o painel espera a lista fechar antes de redesenhar", /fecharSeletor\(this\.el\)/.test(ler("src/powerpoint/ui/painel.ts")));
 
+// o grupo de escolha do painel (preenchimento: Do tema/Sólido/Gradiente/Imagem) desenha o
+// próprio círculo e destaca o escolhido — o controle nativo ficava pequeno e a seleção, fraca
+const peCss = ler("src/styles/powerpoint-edicao.css");
+checa(
+  "PowerPoint: o círculo da escolha é do app (nativo escondido)",
+  /\.pf-radios input\[type="radio"\]\s*\{[^}]*appearance:\s*none/s.test(peCss)
+);
+checa(
+  "PowerPoint: o escolhido fica destacado (fundo do tema no rótulo inteiro)",
+  /\.pf-radios label:has\(input:checked\)\s*\{[^}]*background:\s*var\(--accent-soft\)[^}]*border-color:\s*var\(--accent\)/s.test(peCss)
+);
+checa(
+  "PowerPoint: o círculo escolhido tem o ponto da cor de destaque",
+  /\.pf-radios input\[type="radio"\]:checked\s*\{[^}]*radial-gradient\(circle closest-side, var\(--accent\)/s.test(peCss)
+);
+
 // ---------------------------------------------------------------- prancheta: zoom até 800%
 
 console.log("\nprancheta: zoom até 800% (janela visível)");

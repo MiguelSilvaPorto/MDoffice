@@ -1115,15 +1115,59 @@ button.ppr.big .ppr-gal-ic svg {
 .pf-radios {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 12px;
+  gap: 4px;
   font-size: 12px;
 }
 
+/* Cada opção é um botão de escolha: o círculo é desenhado por nós (o controle nativo ficava
+   pequeno e a seleção era só um anel do sistema) e o rótulo escolhido ganha o fundo e a
+   borda do tema — a linha inteira vira a área de clique. */
 .pf-radios label {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  padding: 4px 9px 4px 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
   cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.pf-radios label:hover {
+  background: var(--accent-soft);
+}
+
+.pf-radios label:has(input:checked) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.pf-radios label:has(input:checked) span {
+  font-weight: 600;
+}
+
+.pf-radios label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.pf-radios input[type="radio"] {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex: none;
+  border: 1.5px solid var(--muted);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
+}
+
+.pf-radios input[type="radio"]:checked {
+  border-color: var(--accent);
+  background: radial-gradient(circle closest-side, var(--accent) 0 55%, transparent 62%);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .pf-parada {

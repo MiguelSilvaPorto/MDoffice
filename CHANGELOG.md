@@ -365,6 +365,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Escolha do painel com a cara do app**: os grupos de escolha do painel do PowerPoint
+  (preenchimento: **Do tema / Sólido / Gradiente / Imagem**, e os demais) usavam o controle
+  nativo — círculo pequeno e a escolha marcada só com um anel do sistema. Agora o **círculo é
+  desenhado pelo app** (maior, com o ponto na cor de destaque e um halo suave no escolhido) e
+  **a linha inteira do escolhido fica destacada** (fundo suave, borda na cor de destaque e
+  texto em semibold), com hover na linha e foco visível pelo teclado. Vale para todos os
+  grupos do painel (preenchimento, contorno, âncora e os demais).
 - **Botão direito + arrastar move a tela no PowerPoint**: com o zoom alto (até 800%), navegar
   era só pela barra de rolagem — agora **botão direito pressionado + arrastar** move a tela em
   qualquer direção, com o cursor virando "agarrando" e o arrasto acompanhando o ponteiro

@@ -4859,3 +4859,24 @@ antigas quando fizer sentido.
   no item marcado)
 - **Porquê:** é o mesmo lugar onde o resto do componente já está preso; o defeito era visível
   (cobria a tela) e volta em silêncio se alguém simplificar o CSS.
+
+## src/styles/powerpoint-edicao.css (grupo .pf-radios)
+
+### 2026-10-14 · esta tarefa · a escolha do painel com a cara do app
+- **Local:** bloco `.pf-radios` (regras de `label`, `input[type="radio"]` e os estados)
+- **Linha:** `gap: 4px 12px` → `gap: 4px` + rótulo com `padding` e borda; `+ appearance: none`,
+  `+ border: 1.5px solid var(--muted)`, `+ :checked` com `radial-gradient(...)` e
+  `box-shadow: 0 0 0 3px var(--accent-soft)`; `+ label:has(input:checked)` com fundo e borda
+  do tema
+- **Porquê:** o grupo usava o controle nativo — no WebView2 o círculo é pequeno e a seleção,
+  só um anel do sistema; em painel escuro ele quase não se distingue. Desenhar o círculo
+  (aparência e dot) dá o MESMO desenho em qualquer tema, e mover o destaque para a **linha
+  inteira** (via `:has`, padrão que as Configurações já usam em `.st-opcao`) amplia a área de
+  clique e deixa a leitura imediata. O `:focus-visible` no rótulo mantém a navegação por
+  teclado visível — o círculo sozinho não tem contraste suficiente para o foco. Vale para
+  todos os grupos do painel (preenchimento, contorno, âncora…), porque o componente é um só.
+- **Local:** `scripts/testar-layout.mts`
+- **Linha:** `novo` — 3 checagens (o círculo desenhado, o destaque do escolhido e o ponto do
+  escolhido)
+- **Porquê:** o teste de layout é onde os invariantes do painel já ficam presos; sem ele, uma
+  simplificação do CSS volta ao controle nativo sem ninguém notar.
