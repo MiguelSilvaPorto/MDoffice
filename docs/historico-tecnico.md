@@ -7454,3 +7454,16 @@ antigas quando fizer sentido.
 - **Linha:** `novo`
 - **Porquê:** defeito de interface do módulo PowerPoint; a entrada entra já promovida, como o
   fechamento exige.
+## CHANGELOG.md
+
+### 2026-10-14 · promoção · a entrada da R4 já veio promovida (e o marcador duplicado sai)
+- **Local:** seção "Não adicionado" do PowerPoint
+- **Linha:** a entrada **Estilos de cor (R4 — o fundo da lâmina)** (`6c1c48f`) já estava no
+  "Adicionado" quando esta conferência começou — o merge automático do rebase colou a entrada
+  nova direto no bloco certo (as duas sessões editaram a mesma seção: a outra promoveu as
+  entradas dela, e o rebase aplicou a minha em cima). O que sobrou foi um
+  `- (nada no momento)` **duplicado**, que saiu
+- **Porquê:** a conferência antes de promover (a lição das rodadas) — o estado final conferiu: o
+  código está na `main`, a entrada aparece **uma única vez**, no "Adicionado", e as entradas das
+  outras sessões ficaram intactas. O duplicado era resíduo do merge, não de uma promoção feita à
+  mão.

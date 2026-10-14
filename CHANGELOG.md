@@ -385,7 +385,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 **Frontend**
 
 - (nada no momento)
-- (nada no momento)
 
 
 ### Adicionado (na main)
