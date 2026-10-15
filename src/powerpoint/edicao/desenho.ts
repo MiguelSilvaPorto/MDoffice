@@ -6,6 +6,7 @@
 import { clamp, uid } from "../../util";
 import type { CustPath, Shape } from "../schema";
 import type { EstiloDeck } from "./criar";
+import { cantosDe } from "./formato";
 import { dePt, paraPt, type Dim, type Ret } from "./geometria";
 
 export interface PontoTraco {
@@ -850,30 +851,53 @@ export function caminhoLivre(pontos: PontoTraco[], bb: Ret = bboxDe(pontos)): Cu
 }
 
 /**
+ * Uma borda VISÍVEL de uma forma de baixo: a linha (`pos`) e o trecho em que ela existe de
+ * verdade. Num cartão de canto arredondado o canto do retângulo é VAZIO — a borda de cima só
+ * começa onde o arco do canto termina.
+ */
+type BordaVisivel = { pos: number; ini: number; fim: number; centro?: boolean };
+
+/**
  * Encaixa a caixa nas bordas e nos centros das formas de baixo quando está perto — é o
  * "enxergar a imagem de fundo": desenhar por cima de uma forma (mesmo apagada) sai alinhado a ela.
- * `centros: false` (os TRAÇOS) alinha só nas BORDAS: o meio de um traço não é referência de
+ *
+ * Os alvos são as bordas VISÍVEIS, não o retângulo do cartão: encaixar no retângulo punha o
+ * desenho "na borda de um quadrado, não no que está dentro dele" (relato do usuário, com print —
+ * o vão do canto arredondado não é borda). O trecho de uma borda só vale quando **cruza a faixa
+ * do desenho** (a borda de cima do cartão não vale para um traço na altura do canto) e a **ponta**
+ * do desenho entra no **fim do trecho** por perto — é o que tira o traço do vão do canto.
+ *
+ * `centros: false` (os TRAÇOS) alinha só nas bordas: o meio de um traço não é referência de
  * desenho, e o ímã do centro deslocava o traço inteiro para o meio da forma de baixo.
  */
 export function encaixarNoPalco(box: Ret, formas: Shape[], d: Dim, limiar: number, centros = true): Ret {
-  const xs: number[] = [];
-  const ys: number[] = [];
+  const horizontais: BordaVisivel[] = [];
+  const verticais: BordaVisivel[] = [];
   for (const f of formas) {
     if (f.rot && Math.abs(f.rot % 360) > 0.5) continue;
     const b = paraPt(f.box, d);
-    xs.push(b.x, b.x + b.w);
-    ys.push(b.y, b.y + b.h);
+    const c = cantosDe(f) ?? ([0, 0, 0, 0] as [number, number, number, number]);
+    const ss = Math.min(b.w, b.h);
+    const r = c.map((v) => (Math.max(0, Math.min(50, v)) / 100) * ss);
+    horizontais.push({ pos: b.y, ini: b.x + r[0], fim: b.x + b.w - r[1] });
+    horizontais.push({ pos: b.y + b.h, ini: b.x + r[3], fim: b.x + b.w - r[2] });
+    verticais.push({ pos: b.x, ini: b.y + r[0], fim: b.y + b.h - r[3] });
+    verticais.push({ pos: b.x + b.w, ini: b.y + r[1], fim: b.y + b.h - r[2] });
     if (centros) {
-      xs.push(b.x + b.w / 2);
-      ys.push(b.y + b.h / 2);
+      horizontais.push({ pos: b.y + b.h / 2, ini: b.x, fim: b.x + b.w, centro: true });
+      verticais.push({ pos: b.x + b.w / 2, ini: b.y, fim: b.y + b.h, centro: true });
     }
   }
-  if (!xs.length) return box;
-  const perto = (v: number, alvos: number[]) => {
-    let melhor = v;
+  if (!horizontais.length) return box;
+  const cruza = (a0: number, a1: number, b0: number, b1: number) => a0 <= b1 + 0.01 && a1 >= b0 - 0.01;
+  // a linha mais perto cujo trecho visível cruza a faixa do desenho
+  const naLinha = (v: number, faixa: [number, number], alvos: BordaVisivel[], soCentros = false) => {
+    let melhor: BordaVisivel | null = null;
     let dist = limiar;
     for (const t of alvos) {
-      const dd = Math.abs(t - v);
+      if (!!t.centro !== soCentros) continue;
+      if (!cruza(faixa[0], faixa[1], t.ini, t.fim)) continue;
+      const dd = Math.abs(t.pos - v);
       if (dd < dist) {
         dist = dd;
         melhor = t;
@@ -881,20 +905,59 @@ export function encaixarNoPalco(box: Ret, formas: Shape[], d: Dim, limiar: numbe
     }
     return melhor;
   };
-  let x = perto(box.x, xs);
-  let x2 = perto(box.x + box.w, xs);
-  let y = perto(box.y, ys);
-  let y2 = perto(box.y + box.h, ys);
+  // a ponta do desenho entra no fim do trecho visível das bordas que cruzam a faixa dela
+  const naPonta = (v: number, alvos: BordaVisivel[], faixa: [number, number]) => {
+    let melhor = v;
+    let dist = limiar;
+    for (const t of alvos) {
+      if (t.centro) continue;
+      if (!cruza(faixa[0], faixa[1], t.pos, t.pos)) continue;
+      for (const p of [t.ini, t.fim]) {
+        const dd = Math.abs(p - v);
+        if (dd < dist) {
+          dist = dd;
+          melhor = p;
+        }
+      }
+    }
+    return melhor;
+  };
+  const x0 = box.x;
+  const x1 = box.x + box.w;
+  const y0 = box.y;
+  const y1 = box.y + box.h;
+  // 1) as quatro bordas do desenho encostam nas linhas visíveis
+  const topo = naLinha(y0, [x0, x1], horizontais);
+  const base = naLinha(y1, [x0, x1], horizontais);
+  const esq = naLinha(x0, [y0, y1], verticais);
+  const dir = naLinha(x1, [y0, y1], verticais);
+  let y = topo ? topo.pos : y0;
+  let y2 = base ? base.pos : y1;
+  let x = esq ? esq.pos : x0;
+  let x2 = dir ? dir.pos : x1;
+  // 2) as pontas que NÃO encostaram numa linha entram no fim do trecho da borda visível: a borda
+  // de cima/baixo do desenho é um x e vale o fim de um trecho HORIZONTAL na altura dela; a borda
+  // esquerda/direita é um y e vale o fim de um trecho VERTICAL na largura dela
+  if (!esq) x = naPonta(x, horizontais, [y, y2]);
+  if (!dir) x2 = naPonta(x2, horizontais, [y, y2]);
+  if (!topo) y = naPonta(y, verticais, [x, x2]);
+  if (!base) y2 = naPonta(y2, verticais, [x, x2]);
   // nenhuma borda encostou? tenta o centro (desloca a caixa inteira)
-  if (centros && x === box.x && x2 === box.x + box.w) {
-    const dx = perto(box.x + box.w / 2, xs) - (box.x + box.w / 2);
-    x += dx;
-    x2 += dx;
+  if (centros && x === x0 && x2 === x1) {
+    const t = naLinha(x0 + box.w / 2, [y0, y1], verticais, true);
+    if (t) {
+      const dx = t.pos - (x0 + box.w / 2);
+      x += dx;
+      x2 += dx;
+    }
   }
-  if (centros && y === box.y && y2 === box.y + box.h) {
-    const dy = perto(box.y + box.h / 2, ys) - (box.y + box.h / 2);
-    y += dy;
-    y2 += dy;
+  if (centros && y === y0 && y2 === y1) {
+    const t = naLinha(y0 + box.h / 2, [x0, x1], horizontais, true);
+    if (t) {
+      const dy = t.pos - (y0 + box.h / 2);
+      y += dy;
+      y2 += dy;
+    }
   }
   return { x, y, w: Math.max(1, x2 - x), h: Math.max(1, y2 - y) };
 }

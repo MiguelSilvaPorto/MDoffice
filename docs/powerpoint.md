@@ -294,8 +294,12 @@ avisado ao abrir (nunca some em silêncio).
 - **Desenhar por cima de uma forma existente** (mesmo apagada — a cor não importa) sai **alinhado
   a ela**: a caixa encaixa nas bordas (e nos centros, nas formas reconhecidas) das formas de baixo
   quando está perto — o limiar é 2,5% da largura da lâmina (~24 pt) porque a mão que segue a borda
-  de um cartão erra mais que os ~10 pt do início. Nos **traços** (desenho livre e curva) o encaixe
-  é só nas **bordas**: o ímã do centro deslocava o traço inteiro para o meio da forma de baixo.
+  de um cartão erra mais que os ~10 pt do início. Os alvos são as bordas **visíveis**: num cartão de
+  canto arredondado o canto do retângulo é vazio e a linha desenhada no topo cola onde a borda
+  começa de verdade (no fim do arco do canto), não na quina que não existe; o trecho só vale quando
+  cruza a faixa do desenho e a ponta do traço entra no fim dele. Nos **traços** (desenho livre e
+  curva) o encaixe é só nas **bordas**: o ímã do centro deslocava o traço inteiro para o meio da
+  forma de baixo.
 - O que o assistente **não** reconhece fica como **desenho livre** — um caminho de verdade,
   **suavizado** (duas passadas de média móvel + curvas, com passo fino para não cortar os cantos),
   que também vai para o arquivo; com o **assistente desligado**, todo traço fica livre. No modo

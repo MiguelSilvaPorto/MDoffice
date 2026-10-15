@@ -413,6 +413,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O encaixe do desenho usa a borda VISÍVEL do cartão, não o retângulo dele**: num cartão de canto
+  arredondado o canto do retângulo é **vazio** — a linha desenhada no topo entrava nesse vão e
+  parava na quina que não existe (print do usuário: "gruda na borda de um quadrado, não o que está
+  dentro dele"). Agora os alvos do encaixe são os **trechos visíveis** das bordas (a borda de cima
+  começa onde o arco do canto termina), o trecho só vale quando cruza a faixa do desenho e a
+  **ponta** do traço entra no fim do trecho. Medido: a linha no topo cola em 205 (fim do canto) em
+  vez de 192 (o vão). Teste: `npm run test:desenho`.
+
 - **A aba Animações cabe na tela (sem rolar nem cortar o grupo "Animar")** — o plano do encaixe supunha que todo grupo encolhe junto com as métricas, mas a galeria de animações tinha 72 px fixos por cartão e a aba passava da largura mesmo no degrau compacto. Agora a galeria acompanha as métricas e o encaixe **confere no navegador** depois de aplicar o plano: se ainda sobra rolagem, encolhe mais as métricas e, por fim, manda mais um grupo para o menu. Medido num Chrome real: de 1500 a 900 px nenhuma aba rola; em 1338 px a aba Animações cabe inteira.
 
 - **Aba Design completa: Temas, Variantes, Personalizar e Designer**: a aba tinha só dois grupos

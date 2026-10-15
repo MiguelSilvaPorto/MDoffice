@@ -453,6 +453,31 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
   for (let i = 1; i <= 10; i++) meioTraco.push({ x: 500, y: 300 + i * 2 });
   const semCentro = D.formaDoTraco(meioTraco, pincel, est, dim, [existente]);
   ok("ímã do centro não desloca o traço (nos traços, só as bordas)", semCentro && perto((semCentro.box.x / 100) * dim.w, 400, 2), JSON.stringify(semCentro?.box));
+
+  // o canto arredondado NÃO é borda: a caixa gruda no TRECHO visível, não no retângulo do cartão
+  // (print do usuário: a linha do topo entrava no vão do canto — "gruda na borda de um quadrado,
+  // não o que está dentro dele"). Raio: 8% de min(480, 162) = 12,96pt -> a borda visível de cima
+  // começa em 192+12,96 = 204,96 e a da esquerda em 54+12,96 = 66,96.
+  const cartaoRedondo = { ...existente, cantos: [8, 8, 8, 8] };
+  const noTopo = [];
+  for (let i = 0; i <= 40; i++) noTopo.push({ x: 192 + (i * 308) / 40, y: 54 });
+  const linhaTopo = D.formaDoTraco(noTopo, pincel, est, dim, [cartaoRedondo]);
+  ok(
+    "canto arredondado: a linha no topo cola na BORDA visível (fora do vão do canto)",
+    linhaTopo && perto((linhaTopo.box.x / 100) * dim.w, 204.96, 1) && perto((linhaTopo.box.y / 100) * dim.h, 54, 0.5),
+    JSON.stringify(linhaTopo?.box)
+  );
+  const naEsquerda = [];
+  for (let i = 0; i <= 30; i++) naEsquerda.push({ x: 192, y: 54 + (i * 96) / 30 });
+  const linhaEsq = D.formaDoTraco(naEsquerda, pincel, est, dim, [cartaoRedondo]);
+  ok(
+    "canto arredondado: a linha na esquerda cola na BORDA visível (fora do vão do canto)",
+    linhaEsq && perto((linhaEsq.box.x / 100) * dim.w, 192, 0.5) && perto((linhaEsq.box.y / 100) * dim.h, 66.96, 1),
+    JSON.stringify(linhaEsq?.box)
+  );
+  // e o canto desenhado por dentro (o gesto da tarefa anterior) continua grudando no cartão
+  const cantoRedondo = D.formaDoTraco(dentro, pincel, est, dim, [cartaoRedondo]);
+  ok("canto arredondado: o canto por dentro continua grudando nas bordas do cartão", cantoRedondo && perto(cantoRedondo.box.x, 20, 0.35) && perto(cantoRedondo.box.y, 10, 0.35), JSON.stringify(cantoRedondo?.box));
 }
 
 // ---------------------------------------------------------------- a dica na tela

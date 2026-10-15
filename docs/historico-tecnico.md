@@ -11437,5 +11437,40 @@ antigas quando fizer sentido.
 - **Linha:** as duas entradas migraram inteiras, sem reescrita — só a posição mudou
 - **Porquê:** o fecho não promove (no instante do commit a entrada ainda não está na main), então a
   promoção anda depois: as juntas (2de3c92) e o encaixe no cartão (ee5b51e). Promovi só as entradas
-  DESTA linha de trabalho — as que seguem em "Não adicionado" (a aba Animações, a aba Design
+  DESTA linha de trabalho - as que seguem em "Não adicionado" (a aba Animações, a aba Design
   completa) são de sessões com trabalho aberto, mexer nelas criaria duplicata ou conflito.
+
+## src/powerpoint/edicao/desenho.ts
+
+### 2026-10-15 · o encaixe no canto arredondado · a borda visível
+- **Local:** `encaixarNoPalco` — os alvos deixaram de ser listas de números e viraram `BordaVisivel`
+  (`pos` + o trecho `ini..fim`), com o tipo novo logo acima da função
+- **Linha:** `xs.push(b.x, b.x + b.w, ...)` → `horizontais.push({ pos: b.y, ini: b.x + r[0], fim: b.x + b.w - r[1] })`
+  (e as três irmãs) · o `perto` de distância simples → `naLinha` com o teste `cruza` (o trecho tem
+  de cruzar a faixa do desenho) · `+ naPonta` (a ponta do traço entra no fim do trecho)
+- **Porquê:** o usuário desenhou a linha no topo do cartão e ela colou no **retângulo** do cartão —
+  o canto arredondado é vazio e o encaixe parava na quina que não existe ("gruda na borda de um
+  quadrado, não o que está dentro dele", com print). O raio sai do `cantosDe` (vale para `cantos`,
+  roundRect e afins); a ponta só entra pela borda quando a borda do desenho **não** encostou numa
+  linha — o canto desenhado por dentro continua grudando nas bordas do cartão (x/y), enquanto a
+  linha reta (sem altura) entra no fim do trecho visível. Medido: a linha no topo cola em 205 (fim
+  do canto) em vez de 192 (o vão).
+
+## scripts/testar-desenho-assistido.mjs
+
+### 2026-10-15 · o encaixe no canto arredondado · as checagens do vão
+- **Local:** o bloco "encaixe nas formas de baixo"
+- **Linha:** `+` três checagens — a linha no topo de um cartão com cantos [8,8,8,8] cola em 204,96
+  (fim do canto) e y = 54 · a linha na esquerda cola em 192 e y = 66,96 · o canto desenhado por
+  dentro continua grudando (20%/10%)
+- **Porquê:** as checagens antigas usavam cartão de canto reto, onde o retângulo e a borda
+  coincidem — o vão do canto só aparece com raio, e era exatamente o caso do print.
+
+## docs/powerpoint.md
+
+### 2026-10-15 · o encaixe no canto arredondado · a bala do "desenhar por cima"
+- **Local:** "Desenho à mão (Draw) e Curva por pontos" (a bala do "Desenhar por cima de uma forma")
+- **Linha:** `+` a frase das bordas visíveis (o canto do retângulo é vazio; a linha cola onde a
+  borda começa de verdade)
+- **Porquê:** a bala dizia que a caixa encaixa "nas bordas" — mas a borda do retângulo não é a
+  borda do cartão quando o canto é arredondado.
