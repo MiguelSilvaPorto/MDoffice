@@ -177,8 +177,20 @@ console.log("\na fiação nas três fitas");
   const fita = ler("src/fita.ts");
   ok(
     "o fita.ts usa a função do encaixe (nada de degraus soltos por aqui)",
-    /import \{ encaixarFita \} from "\.\/fitaEncaixe"/.test(fita) && /encaixarFita\(interno, larguras, \{/.test(fita),
+    /import \{ (AJUSTE_MIN, )?encaixarFita \} from "\.\/fitaEncaixe"/.test(fita) && /encaixarFita\(interno, larguras, \{/.test(fita),
     "o plano volta para dentro do fita.ts"
+  );
+  // o plano é uma ESTIMATIVA (supõe que todo grupo encolhe com as métricas): o que sobra de rolagem
+  // no DOM é conferido depois de aplicar — encolhe mais as métricas e, por fim, colapsa mais um grupo
+  ok(
+    "o encaixe confere o DOM depois do plano (sobrou rolagem: encolhe mais e colapsa mais um grupo)",
+    /painel\.scrollWidth > painel\.clientWidth \+ 1/.test(fita) && /aj >= AJUSTE_MIN/.test(fita) && /abertos\[i\]\.classList\.add\("fita-grupo-recolhido"\)/.test(fita),
+    "sem isso a aba Animações (galeria de largura própria) estourava a largura com o plano dizendo que cabia"
+  );
+  const cssPpt = ler("src/styles/powerpoint-edicao.css");
+  ok(
+    "a galeria de animações acompanha as métricas da fita (não tem mais 72px fixos)",
+    /\.ppr-anim \{[^}]*repeat\(7, calc\(72px \* var\(--fita-e\)\)\)/.test(cssPpt) && /\.ppr-anim-item \{[^}]*width: calc\(72px \* var\(--fita-e\)\)/.test(cssPpt)
   );
   ok(
     "e o ligarEncaixeFita recebe os seletores de cada fita",

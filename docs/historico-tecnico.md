@@ -10668,3 +10668,17 @@ antigas quando fizer sentido.
   e **sem reescrita**: o texto é o mesmo que nasceu na tarefa. A entrada da **fita em quatro
   degraus** (de outra sessão, promovida por ela no `80744cf`) ficou intacta no "Adicionado" dela; o
   resto de "Não adicionado" não foi tocado.
+
+
+### 2026-10-15 · fix/fita-animacoes-cabe · A aba Animações cabe na largura
+- **Arquivo/local:** `src/fita.ts` — `ligarEncaixeFita()` → `aplicar()` (conferência no DOM depois do plano) e o `import { AJUSTE_MIN, … }`;
+  `src/styles/powerpoint-edicao.css` — `.ppr-anim` (`grid-template-columns`) e `.ppr-anim-item` (`width`);
+  `scripts/testar-fita-encaixe.mjs` — a regra do import e dois testes novos.
+- **Linha:** `repeat(7, 72px)` / `width: 72px` → `repeat(7, calc(72px * var(--fita-e)))` / `width: calc(72px * var(--fita-e))`; depois de
+  aplicar o plano: `painel.scrollWidth > painel.clientWidth + 1` → baixa o `--fita-ajuste` de 0,05 em 0,05 até o piso e, se ainda sobrar,
+  colapsa o último grupo aberto (`fita-grupo-recolhido`), um a um.
+- **Porquê:** medido num Chrome real, o encaixe (`bc8d44c`) deixava Animações com +112 px de rolagem a 1338 px (e +20 já a 1500 px), com o plano
+  dizendo "compacto cabe" e nenhum grupo em menu: `encaixarFita` assume largura proporcional à escala, e a galeria (72 px fixos × 7) e o texto
+  com piso de fonte não encolhem junto. Corrigir só o CSS não bastaria para o próximo grupo de largura fixa — a conferência no DOM é a garantia.
+  Depois: 1500→900 px sem rolagem em nenhuma aba; a 1338 px Animações cabe inteira (compacta, sem menu).
+- **Observação:** o Vite deste ambiente serve arquivos velhos depois de editar (reiniciar para medir).

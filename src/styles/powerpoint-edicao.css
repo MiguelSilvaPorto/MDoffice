@@ -2125,7 +2125,9 @@ button.ppr.big .ppr-gal-ic svg {
 
 /* a galeria da aba Animações: cartões mais largos (nomes como "Desaparecer") e o "Mais" no fim */
 .ppr-anim {
-  grid-template-columns: repeat(7, 72px);
+  /* a galeria acompanha as métricas da fita (senão ela não encolhe no degrau compacto e a aba
+     Animações estoura a largura, mesmo com o plano dizendo que cabe) */
+  grid-template-columns: repeat(7, calc(72px * var(--fita-e)));
   gap: var(--pe-4);
 }
 
@@ -2199,7 +2201,7 @@ button.ppr.big .ppr-gal-ic svg {
 .ppr-anim-item {
   position: relative;
   gap: 2px;
-  width: 72px;
+  width: calc(72px * var(--fita-e));
   padding: 3px 3px 2px;
   border-radius: 5px;
   background: color-mix(in srgb, var(--fg) 4%, var(--panel-2));

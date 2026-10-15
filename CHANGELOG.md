@@ -32,8 +32,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-
-
 ### Adicionado (na main)
 
 **Backend**
@@ -414,6 +412,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada no momento)
 
 **Frontend**
+
+- **A aba Animações cabe na tela (sem rolar nem cortar o grupo "Animar")** — o plano do encaixe supunha que todo grupo encolhe junto com as métricas, mas a galeria de animações tinha 72 px fixos por cartão e a aba passava da largura mesmo no degrau compacto. Agora a galeria acompanha as métricas e o encaixe **confere no navegador** depois de aplicar o plano: se ainda sobra rolagem, encolhe mais as métricas e, por fim, manda mais um grupo para o menu. Medido num Chrome real: de 1500 a 900 px nenhuma aba rola; em 1338 px a aba Animações cabe inteira.
 
 - **Aba Design completa: Temas, Variantes, Personalizar e Designer**: a aba tinha só dois grupos
   (fundo e layout) e agora segue os quatro blocos do Office, com a cara do app. **Temas** abre a

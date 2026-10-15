@@ -14,7 +14,7 @@
 // As duas preferências ficam guardadas e valem para as três fitas (Word, Excel e Apresentações).
 
 import { EVENTO_MUDOU, combina, emCaptura, teclaVisivel } from "./app/keymap";
-import { encaixarFita } from "./fitaEncaixe";
+import { AJUSTE_MIN, encaixarFita } from "./fitaEncaixe";
 
 export interface OpcoesRecolherFita {
   /** raiz da faixa: recebe a classe `fita-recolhida` */
@@ -468,6 +468,26 @@ export function ligarEncaixeFita(o: OpcoesEncaixeFita): void {
       g.classList.toggle("fita-grupo-recolhido", colapsado);
       if (colapsado) botaoDo(g);
     });
+
+    // O plano é uma ESTIMATIVA: ele supõe que cada grupo encolhe junto com as métricas, e os que têm
+    // largura própria (a galeria de animações) ou texto com piso de fonte encolhem menos. Então,
+    // com o plano aplicado, confere-se no DOM: se ainda sobra rolagem, o último grupo aberto vira
+    // botão, e assim por diante (nunca fica um painel rolando).
+    if (plano.degrau !== "faixa-unica") {
+      // primeiro encolhe mais as métricas, aos poucos, até o piso — só depois um grupo vira botão
+      for (let aj = plano.ajuste - 0.05; aj >= AJUSTE_MIN - 1e-6 && painel.scrollWidth > painel.clientWidth + 1; aj -= 0.05) {
+        o.el.style.setProperty("--fita-ajuste", String(Math.round(aj * 100) / 100));
+        o.el.classList.toggle("fita-compacta", escala * aj < 0.88);
+      }
+      const abertos = grupos.filter((g) => !g.classList.contains("fita-grupo-recolhido"));
+      let colapsou = false;
+      for (let i = abertos.length - 1; i >= 0 && painel.scrollWidth > painel.clientWidth + 1; i--) {
+        abertos[i].classList.add("fita-grupo-recolhido");
+        botaoDo(abertos[i]);
+        colapsou = true;
+      }
+      if (colapsou) o.el.dataset.fitaDegrau = "menu";
+    }
   };
 
   let agendado = false;

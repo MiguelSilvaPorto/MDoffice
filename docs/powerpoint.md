@@ -146,6 +146,12 @@ avisado ao abrir (nunca some em silêncio).
   grupos colapsam sem sobrar nada. O tamanho que você escolhe arrastando a borda de baixo continua
   valendo (o ajuste **soma-se** a ele) e agora tem **teto**: o menor entre **1,5×** e **um terço da
   janela** — numa janela baixa a faixa não come a tela.
+  O plano é uma **estimativa** (supõe que todo grupo encolhe junto com as métricas), então depois
+  de aplicado o encaixe **confere no navegador**: se ainda sobra rolagem, encolhe mais as métricas
+  aos poucos e, só então, manda mais um grupo (o último) para o menu. A **galeria de animações**
+  deixou de ter 72 px fixos por cartão e acompanha as métricas — era ela que fazia a aba
+  **Animações** estourar a largura (medido num Chrome real, de 1500 a 900 px nenhuma aba rola mais;
+  em 1338 px a aba inteira, com a Prévia, o Painel e o Remover, cabe sem menu).
 - **Popups da fita (Formas, Template, Layout, cores, bordas…)**: abrir e **fechar
   pelo mesmo botão** — clicar de novo nele **recolhe** o que estava aberto (antes o clique no
   próprio botão era ignorado pelo "fecha ao clicar fora" e o comando rodava outra vez, reabrindo).
