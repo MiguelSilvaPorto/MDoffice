@@ -22,7 +22,8 @@
      a fita caber melhor; a FONTE tem piso, senão o texto fica ilegível.
      Tudo abaixo sai daqui: mudar a escala aqui ajusta a fita inteira.
      ------------------------------------------------------------------ */
-  --fita-e: var(--fita-escala, 1);
+  /* a escala do usuário (borda de baixo) × o ajuste automático à largura (src/fita.ts) */
+  --fita-e: calc(var(--fita-escala, 1) * var(--fita-ajuste, 1));
   --pe-1: calc(1px * var(--fita-e));
   --pe-2: calc(2px * var(--fita-e));
   --pe-3: calc(3px * var(--fita-e));
@@ -333,6 +334,16 @@ button.ppr.big > span:not(.car):not(.ppr-gal-ic) {
 /* as colunas de botões pequenos acompanham a linha única */
 .pp-ribbon.ppr.fita-compacta .ppr-linhas {
   gap: var(--pe-3);
+}
+
+/* fita estreita: os botões pequenos ficam só com o ícone (o nome está no title e no aria-label);
+   o nome é o <span> SEM classe — os ícones e a setinha (.car) têm classe e ficam */
+.pp-ribbon.ppr.fita-icones button.ppr.txt > span:not([class]) {
+  display: none;
+}
+
+.pp-ribbon.ppr.fita-icones button.ppr.txt {
+  padding: 0 var(--pe-5);
 }
 
 button.ppr .car {

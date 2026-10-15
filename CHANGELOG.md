@@ -415,6 +415,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A fita do PowerPoint cabe na tela sem rolar** — ela se ajusta sozinha à largura da janela: se o painel da aba não cabe, os espaços e ícones encolhem em degraus (a fonte não), os botões grandes ficam numa linha e, por último, os botões pequenos ficam só com o ícone (o nome fica na dica). Em 1338 px todas as abas cabem (Início estourava 353 px e Animações 218 px); a rolagem lateral fica só para janelas muito estreitas.
+
 - **Aba "Desenhar" na fita**: as ferramentas de traço ganharam o lugar próprio (como no PowerPoint de
   verdade): **Canetas** (**Draw** e **Curva**, que **saíram do Inserir**), **Traço** (**cor** na
   mesma paleta do pincel, espessuras **1/2/4/8**, **Livre/Pontos** e o **Assistente**), **Formas**

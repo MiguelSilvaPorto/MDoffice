@@ -126,6 +126,15 @@ avisado ao abrir (nunca some em silêncio).
   layout** (os espaços como silhuetas cinzas, na proporção do deck), onde o atual vem destacado —
   clicar cria a lâmina com aquele layout (ou aplica na atual) e passa a ser o "último". A **lâmina
   nova entra no fim** da apresentação e já fica selecionada.
+- **A fita cabe na largura da janela**: a faixa de opções **se ajusta sozinha** ao espaço — se o
+  painel da aba ativa não cabe, os espaços e os ícones encolhem em degraus (a **fonte não
+  encolhe**), depois os botões grandes ficam **numa linha** (fita compacta) e, por fim, os botões
+  pequenos ficam **só com o ícone** (o nome continua na dica e no `aria-label`). Medido num
+  navegador em **1338 px**, todas as abas cabem sem rolagem (Início e Animações eram as que
+  estouravam, em 353 e 218 px); em 1600 px basta um ajuste leve. Ao alargar a janela a fita
+  volta ao normal. A rolagem lateral fica só como último recurso em janelas muito estreitas
+  (abaixo de ~1200 px a aba Animações ainda rola). O tamanho que você escolhe arrastando a borda
+  de baixo continua valendo: o ajuste automático soma-se a ele.
 - **Popups da fita (Formas, Template, Layout, Nova lâmina, cores, bordas…)**: abrir e **fechar
   pelo mesmo botão** — clicar de novo nele **recolhe** o que estava aberto (antes o clique no
   próprio botão era ignorado pelo "fecha ao clicar fora" e o comando rodava outra vez, reabrindo).

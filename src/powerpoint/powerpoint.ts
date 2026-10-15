@@ -358,7 +358,8 @@ export class PowerPointHost {
     const abasFita = $(".ppr-abas", this.fita.el);
     const paineisFita = $(".ppr-paineis", this.fita.el);
     ligarRecolherFita({ el: this.fita.el, abas: abasFita, paineis: paineisFita });
-    ligarAjusteAlturaFita({ el: this.fita.el, modo: "metricas" });
+    // o painel da aba ativa se ajusta à largura da janela (espaços e ícones menores, depois compacta)
+    ligarAjusteAlturaFita({ el: this.fita.el, modo: "metricas", painel: ".ppr-painel" });
     // a roda anda de lado no que passa da largura (as abas e os painéis da fita)
     this.fita.el.querySelectorAll<HTMLElement>(".ppr-painel, .ppr-abas").forEach(ligarRodaHorizontal);
     this.painel = new Painel($("[data-formatar]", this.pane), { estado: () => this.estadoUI(), run: (c, v) => this.run(c, v) });

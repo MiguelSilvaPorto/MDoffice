@@ -9432,3 +9432,19 @@ antigas quando fizer sentido.
 - **Local:** Word → Adicionado → Frontend
 - **Linha:** `novo`
 - **Porquê:** mudança do módulo Word; a entrada entra já promovida, como o fechamento exige.
+
+### 2026-10-15 · feat/fita-cabe-na-tela · A fita se ajusta à largura da janela
+- **Arquivo/local:** `src/fita.ts` — `ligarAjusteAlturaFita()` (opção `painel`, `DEGRAUS_LARGURA`, `ajustarLargura()`/`agendarAjuste()`);
+  `src/powerpoint/powerpoint.ts` — a chamada passa `painel: ".ppr-painel"`; `src/styles/powerpoint-edicao.css` — `--fita-e` e `.fita-icones`.
+- **Linha:** `--fita-e: var(--fita-escala, 1)` → `calc(var(--fita-escala, 1) * var(--fita-ajuste, 1))`; novo `ResizeObserver` (largura) +
+  `MutationObserver` (`hidden`, troca de aba) que, em microtarefa, testam os degraus `[1, .92, .84, .84+ícones, .7+ícones]` até
+  `painel.scrollWidth <= clientWidth`; `fita-compacta` passa a valer para `escala × ajuste < 0.88`; `fita-icones` esconde o `<span>` sem
+  classe (o nome) dos botões `.txt` — os ícones (SVG e `<span class="ppr-…-ic">`) e a setinha `.car` têm classe e ficam.
+- **Porquê:** o painel é `nowrap` com rolagem horizontal; em 1338 px a aba Início passava 353 px (1647 de 1338) e Animações 218 px, então
+  grupos inteiros (Designer) ficavam fora da tela. Só encolher métricas não bastava (a 1200 px ainda sobravam 262 px): os grupos com botões
+  pequenos COM texto (Área de Transferência, Lâminas, Desenho) é que ocupam a largura, daí o degrau "só ícones". Os botões já têm `title`
+  e `aria-label`. Microtarefa e não `requestAnimationFrame`: o rAF pode ser adiado e o ajuste não disparava de forma confiável.
+- **Verificação:** medido num Chrome real (página-harness temporária com a fita e o CSS reais, controlada pelo DevTools Protocol, em tempo
+  real): 1920/1600/1440/1338 px sem rolagem em todas as abas; a 1200 px só Animações ainda rola (+127 px). No Chrome sem janela com "tempo
+  virtual" a medição era instável (artefato do teste, não do código). Obs.: o Vite deste ambiente serve arquivos antigos depois de editar
+  (precisa reiniciar). Só a fita do PowerPoint usa o ajuste; Word e Excel seguem como estavam.

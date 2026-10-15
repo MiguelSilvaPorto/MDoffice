@@ -168,10 +168,20 @@ export function ligarRecolherFita(o: OpcoesRecolherFita): { alternar: () => void
  * - `"metricas"`: publica `--fita-escala` e deixa o CSS escalar as métricas
  *   (alturas, ícones, espaçamentos) mantendo um piso para a fonte. É o modo das
  *   Apresentações, onde a fita tem muitos botões grandes.
+ *
+ * `painel` (só no modo `"metricas"`) é o seletor do painel que rola na horizontal: com ele a fita
+ * também se ajusta sozinha à LARGURA — se o painel da aba ativa não cabe, reduz os espaçamentos e
+ * os ícones em degraus (`--fita-ajuste`; a fonte tem piso) e, abaixo de ~88%, vira compacta (os
+ * botões grandes numa linha). A rolagem fica só como último recurso, em janela muito estreita.
  */
-export function ligarAjusteAlturaFita(o: { el: HTMLElement; modo?: "zoom" | "metricas" }): void {
+export function ligarAjusteAlturaFita(o: { el: HTMLElement; modo?: "zoom" | "metricas"; painel?: string }): void {
   let escala = lerEscala();
   const porMetricas = o.modo === "metricas";
+  // quanto a fita precisou encolher para caber na largura (1 = nada) e se os botões pequenos
+  // ficaram só com o ícone (o nome continua na dica)
+  let ajuste = 1;
+  let soIcones = false;
+  const porLargura = porMetricas && !!o.painel;
 
   // alça na borda de baixo (logo abaixo da faixa, sem cobrir os botões)
   const alca = document.createElement("div");
@@ -189,9 +199,11 @@ export function ligarAjusteAlturaFita(o: { el: HTMLElement; modo?: "zoom" | "met
   const aplicar = (): void => {
     // a escala vai para o CSS; cada fita decide o que fazer com ela
     o.el.style.setProperty("--fita-escala", String(escala));
+    o.el.style.setProperty("--fita-ajuste", String(ajuste));
     // fita baixa: os botões grandes viram "ícone + nome" numa linha, o que
     // devolve espaço vertical sem diminuir a fonte (o piso está no CSS)
-    if (porMetricas) o.el.classList.toggle("fita-compacta", escala < 0.88);
+    if (porMetricas) o.el.classList.toggle("fita-compacta", escala * ajuste < 0.88);
+    o.el.classList.toggle("fita-icones", soIcones);
     if (porMetricas) {
       // nada de `zoom`: ele encolheria também a fonte (o piso fica no CSS)
       o.el.style.removeProperty("zoom");
@@ -202,6 +214,38 @@ export function ligarAjusteAlturaFita(o: { el: HTMLElement; modo?: "zoom" | "met
     }
     alca.title = rotulo();
     alca.setAttribute("aria-valuenow", String(Math.round(escala * 100)));
+    agendarAjuste();
+  };
+
+  // ---- ajuste à largura: o painel da aba ativa tem que caber sem rolar ----
+  const painelAtivo = (): HTMLElement | null => (o.painel ? o.el.querySelector<HTMLElement>(`${o.painel}:not([hidden])`) : null);
+  const cabe = (): boolean => {
+    const p = painelAtivo();
+    return !p || p.scrollWidth <= p.clientWidth + 1;
+  };
+  let ajustando = false;
+  let agendado = false;
+  /** Do mais folgado ao mais apertado, o primeiro degrau em que o painel cabe (senão o último: rola). */
+  const ajustarLargura = (): void => {
+    agendado = false;
+    if (!porLargura || ajustando || o.el.offsetParent === null) return;
+    ajustando = true;
+    try {
+      for (const degrau of DEGRAUS_LARGURA) {
+        ajuste = degrau.ajuste;
+        soIcones = !!degrau.icones;
+        aplicar();
+        if (cabe()) break;
+      }
+    } finally {
+      ajustando = false;
+    }
+  };
+  const agendarAjuste = (): void => {
+    if (!porLargura || ajustando || agendado) return;
+    // microtarefa: roda logo depois da mudança, junto das outras (várias mudanças = um ajuste só)
+    agendado = true;
+    queueMicrotask(ajustarLargura);
   };
 
   const avisar = (): void => {
@@ -285,8 +329,26 @@ export function ligarAjusteAlturaFita(o: { el: HTMLElement; modo?: "zoom" | "met
     aplicar();
   });
 
+  // a janela (ou o painel lateral) mudou de largura, outra aba abriu ou os botões mudaram: refaz
+  if (porLargura) {
+    let larguraAntes = o.el.clientWidth;
+    new ResizeObserver(() => {
+      if (o.el.clientWidth === larguraAntes) return;
+      larguraAntes = o.el.clientWidth;
+      agendarAjuste();
+    }).observe(o.el);
+    new MutationObserver(agendarAjuste).observe(o.el, { subtree: true, attributes: true, attributeFilter: ["hidden"] });
+  }
+
   aplicar();
 }
+
+/**
+ * Os degraus do ajuste à largura, do mais folgado ao mais apertado: quanto as métricas da fita
+ * encolhem (a fonte tem piso no CSS; abaixo de ~88% a fita vira compacta) e quando os botões
+ * pequenos ficam só com o ícone.
+ */
+const DEGRAUS_LARGURA: { ajuste: number; icones?: boolean }[] = [{ ajuste: 1 }, { ajuste: 0.92 }, { ajuste: 0.84 }, { ajuste: 0.84, icones: true }, { ajuste: 0.7, icones: true }];
 
 /**
  * Faz a roda do mouse andar de LADO num trecho que passa da largura (as fitas e a galeria de
