@@ -1422,10 +1422,18 @@ const DES = await empacotar("src/powerpoint/edicao/desenho.ts", "desenho2.mjs");
     });
   }
   const forma = DES.formaDoTraco(pontos, pincel, estDesenho, dim);
-  ok("desenho: o traço torto sai como arco girado", forma?.geom === "arc" && Math.abs((forma.rot ?? 0) - 18) <= 4, JSON.stringify({ geom: forma?.geom, rot: forma?.rot }));
+  // o arco reconhecido vira CAMINHO com a caixa no PEDAÇO VISÍVEL — a elipse inteira (girada) tinha
+  // 340×260 e a caixa pegava esse retângulo enorme, "jogando para fora" do traço (print do usuário)
+  const wCaixa = (forma.box.w / 100) * dim.w;
+  const hCaixa = (forma.box.h / 100) * dim.h;
+  ok(
+    "desenho: o arco sai como caminho com a caixa no pedaço visível",
+    forma?.geom === "custom" && forma?.name === "Arco" && !!forma?.paths?.length && wCaixa <= 340 && hCaixa <= 260,
+    JSON.stringify({ geom: forma?.geom, w: +wCaixa.toFixed(1), h: +hCaixa.toFixed(1) })
+  );
   const setupDesenho = { aspect: "16:9", theme: "claro", showNumber: false, footer: "", fontFamily: "Segoe UI", fontSize: 18, bg: "" };
   const xml = new R.Escritor(setupDesenho).lamina({ md: "", layout: "conteudo", notes: "", shapes: [forma] }).xml;
-  ok("desenho: o arco girado vai no .pptx com rotação e ângulos", /prst="arc"/.test(xml) && /rot="\d+"/.test(xml) && /adj1/.test(xml) && /adj2/.test(xml));
+  ok("desenho: o arco vai no .pptx como custGeom com curvas", /custGeom/.test(xml) && /cubicBezTo/.test(xml));
 }
 
 // ---------------------------------------------------------------- animação: ida e volta no .pptx (p:timing)

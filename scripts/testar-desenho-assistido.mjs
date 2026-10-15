@@ -428,7 +428,15 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
   const comSeta = D.formaDoTraco(seta(120, 320, 460, 320), pincel, est, dim);
   ok("seta vira linha com ponta", comSeta?.geom === "line" && comSeta?.ln?.tail === "triangle" && !comSeta?.ln?.head);
   const comArco = D.formaDoTraco(arco(300, 240, 120, 180, 270), pincel, est, dim);
-  ok("arco vira forma de arco", comArco?.geom === "arc" && !!comArco?.adj?.adj1 && comArco?.fillX?.kind === "none");
+  // o arco vira CAMINHO com a caixa no PEDAÇO VISÍVEL: o preset tinha a caixa da elipse inteira
+  // (girada junto) — a caixa pegava um retângulo enorme e "jogava para fora" do desenho (print do
+  // usuário). O quarto de círculo de raio 120 tem de dar uma caixa de ~120×120, não 240×240.
+  const caixaArco = { x: (comArco.box.x / 100) * dim.w, y: (comArco.box.y / 100) * dim.h, w: (comArco.box.w / 100) * dim.w, h: (comArco.box.h / 100) * dim.h };
+  ok(
+    "arco vira caminho com a caixa no pedaço visível",
+    comArco?.geom === "custom" && comArco?.name === "Arco" && !!comArco?.paths?.length && comArco?.fillX?.kind === "none" && perto(caixaArco.w, 120, 8) && perto(caixaArco.h, 120, 8),
+    JSON.stringify({ geom: comArco?.geom, w: +caixaArco.w.toFixed(1), h: +caixaArco.h.toFixed(1) })
+  );
 }
 
 // ---------------------------------------------------------------- encaixe nas formas de baixo

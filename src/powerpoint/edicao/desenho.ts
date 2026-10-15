@@ -1033,6 +1033,33 @@ function limiarDoPalco(d: Dim): number {
   return Math.max(14, d.w * 0.025);
 }
 
+/**
+ * Os pontos do ARCO reconhecido, em pt da lâmina: amostra a elipse (o quadro + a rotação) do
+ * `adj1` ao `adj2`, no mesmo sentido do preset (o do relógio, como o renderizador e o OOXML).
+ * É o que permite a forma do arco ter a caixa no PEDAÇO VISÍVEL em vez da elipse inteira.
+ */
+function pontosDoArco(box: Ret, adj: Record<string, number>, rot: number): PontoTraco[] {
+  const cx = box.x + box.w / 2;
+  const cy = box.y + box.h / 2;
+  const rx = box.w / 2;
+  const ry = box.h / 2;
+  const g1 = (((adj.adj1 ?? 0) / 60000) * Math.PI) / 180;
+  const g2 = (((adj.adj2 ?? 0) / 60000) * Math.PI) / 180;
+  let sw = g2 - g1;
+  while (sw <= 0) sw += 2 * Math.PI;
+  const passos = Math.max(8, Math.ceil((sw / (Math.PI / 2)) * 12));
+  const c = Math.cos((rot * Math.PI) / 180);
+  const s = Math.sin((rot * Math.PI) / 180);
+  const pts: PontoTraco[] = [];
+  for (let i = 0; i <= passos; i++) {
+    const g = g1 + (sw * i) / passos;
+    const ex = rx * Math.cos(g);
+    const ey = ry * Math.sin(g);
+    pts.push({ x: cx + ex * c - ey * s, y: cy + ex * s + ey * c });
+  }
+  return pts;
+}
+
 function baseDaForma(est: EstiloDeck, d: Dim, boxPt: Ret): Shape {
   const b = dePt(boxPt, d);
   return {
@@ -1076,6 +1103,19 @@ export function formaDoTraco(pontos: PontoTraco[], pincel: Pincel, est: EstiloDe
   const marca = ehMarca(pincel);
   const rec = pincel.assistente && !marca ? reconhecerTraco(pontos) : null;
   if (rec) {
+    // O ARCO reconhecido vira CAMINHO com a caixa no pedaço VISÍVEL: o preset `arc` tem a caixa da
+    // elipse INTEIRA (girada junto) — a caixa pegava um retângulo enorme, "jogava para fora" do
+    // desenho e o encaixe mexia na elipse, não no traço (relato do usuário, com print). O caminho
+    // mantém a curva exata (a mesma elipse, amostrada) com a caixa colada nela.
+    if (rec.geom === "arc" && rec.adj) {
+      const ptsArco = pontosDoArco(rec.box, rec.adj, rec.rot ?? 0);
+      const bbArco = bboxDe(ptsArco);
+      const s = baseDaForma(est, d, encaixarNoPalco(bbArco, formas, d, limiarDoPalco(d), false));
+      s.geom = "custom";
+      s.name = "Arco";
+      s.paths = [caminhoDePontos(ptsArco, bbArco)];
+      return comPincel(s, pincel);
+    }
     // encaixa nas formas de baixo (bordas e centros) antes de montar: desenhar por cima de uma
     // forma existente sai alinhado a ela
     const box = encaixarNoPalco(rec.box, formas, d, limiarDoPalco(d));
@@ -1172,12 +1212,16 @@ export function formaDaTinta(s: Shape, d: Dim): Partial<Shape> | null {
   if (!pontos || pontos.length < 2) return null;
   const rec = reconhecerTraco(pontos);
   if (!rec) return null;
+  // o ARCO vira caminho com a caixa no pedaço VISÍVEL (o preset tem a caixa da elipse inteira, que
+  // "jogava para fora" do traço — o mesmo caso da criação, com print)
+  const arco = rec.geom === "arc" && rec.adj ? pontosDoArco(rec.box, rec.adj, rec.rot ?? 0) : null;
+  const alvo = arco ? bboxDe(arco) : rec.box;
   // mapeia a caixa reconhecida (pt) para a caixa ATUAL da forma (%), esticando o que a pessoa esticou
   const origem = dePt(bboxDe(pontos), d);
-  const alvo = dePt(rec.box, d);
+  const alvoPct = dePt(alvo, d);
   const sx = origem.w > 0.01 ? s.box.w / origem.w : 1;
   const sy = origem.h > 0.01 ? s.box.h / origem.h : 1;
-  const box = { x: s.box.x + (alvo.x - origem.x) * sx, y: s.box.y + (alvo.y - origem.y) * sy, w: alvo.w * sx, h: alvo.h * sy };
+  const box = { x: s.box.x + (alvoPct.x - origem.x) * sx, y: s.box.y + (alvoPct.y - origem.y) * sy, w: alvoPct.w * sx, h: alvoPct.h * sy };
   // a linha continua a do traço (cor, espessura, transparência); só ganha as pontas que o
   // reconhecedor viu no desenho
   const ln = s.ln ? { ...s.ln } : undefined;
@@ -1187,13 +1231,13 @@ export function formaDaTinta(s: Shape, d: Dim): Partial<Shape> | null {
   }
   return {
     box,
-    geom: rec.geom,
-    name: rec.rotulo,
-    adj: rec.adj ? { ...rec.adj } : undefined,
-    rot: rec.rot ?? s.rot,
+    geom: arco ? "custom" : rec.geom,
+    name: arco ? "Arco" : rec.rotulo,
+    adj: arco ? undefined : rec.adj ? { ...rec.adj } : undefined,
+    rot: arco ? undefined : rec.rot ?? s.rot,
     flipH: rec.flipH ? true : undefined,
     flipV: rec.flipV ? true : undefined,
-    paths: undefined,
+    paths: arco ? [caminhoDePontos(arco, bboxDe(arco))] : undefined,
     tinta: undefined,
     ...(ln ? { ln } : {}),
   };

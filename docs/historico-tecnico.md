@@ -11897,3 +11897,48 @@ antigas quando fizer sentido.
   pessoa precisa aprender para usar; o resto da seção é a **regra** do mapa (o que é uma face, o que
   vira buraco e por quê) — o pedido do usuário foi explícito sobre desenhar **sem sair nem 1 px** do
   contorno, e a regra é o que garante isso.
+
+## src/powerpoint/edicao/desenho.ts
+
+### 2026-10-15 · o arco com a caixa no pedaço visível · o caminho amostrado
+- **Local:** `pontosDoArco` (nova, antes do `baseDaForma`) e o ramo do arco no `formaDoTraco` e no
+  `formaDaTinta`
+- **Linha:** `+ pontosDoArco(box, adj, rot)` — amostra a elipse (o quadro + a rotação, do `adj1` ao
+  `adj2`, ~12 passos por quadrante) em pt; no `formaDoTraco`, `rec.geom === "arc"` passa a montar
+  `geom: "custom"`, `name: "Arco"` e `paths: [caminhoDePontos(ptsArco, bbArco)]` com a caixa em
+  `encaixarNoPalco(bboxDe(ptsArco), …, false)`; no `formaDaTinta`, o alvo do mapeamento passa a ser
+  `bboxDe(pontosDoArco(...))` e o patch devolve o caminho
+- **Porquê:** o usuário (print) mostrou o arco selecionado com uma caixa GIGANTE e girada pegando a
+  elipse inteira — "joga para fora" do desenho, e o encaixe (que roda na caixa) mexia na elipse em
+  vez do traço. Medido no quarto de círculo de raio 120: a caixa passou de 240×240 para 121×119. O
+  caminho mantém a curva exata (a mesma elipse, amostrada com ~12 passos/quadrante no Catmull-Rom
+  do `caminhoDePontos`) e a rotação fica embutida nos pontos — a forma não precisa mais de `adj`
+  nem `rot`. O reconhecedor não mudou (continua devolvendo "arc" + o quadro da elipse): a conversão
+  é na hora de MONTAR a forma, e vale também para o "Converter em forma".
+
+## scripts/testar-desenho-assistido.mjs
+
+### 2026-10-15 · o arco com a caixa no pedaço visível · a checagem da caixa
+- **Local:** o bloco "a forma montada" (a checagem "arco vira forma de arco" virou "arco vira
+  caminho com a caixa no pedaço visível")
+- **Linha:** `+` o quarto de círculo de raio 120 tem de dar caixa de ~120×120 (tolerância 8) —
+  antes eram 240×240
+- **Porquê:** era o caso do print e ele passava em silêncio (a caixa era a da elipse inteira).
+
+## scripts/testar-edicao-pptx.mjs
+
+### 2026-10-15 · o arco com a caixa no pedaço visível · o teste do .pptx
+- **Local:** o bloco "desenho" (a checagem "o traço torto sai como arco girado" virou "o arco sai
+  como caminho com a caixa no pedaço visível")
+- **Linha:** `geom === "custom"` + caixa ≤ 340×260 (a elipse girada media 340×260) + o XML com
+  `custGeom` e `cubicBezTo` (antes: `prst="arc"` + `rot` + `adj1/adj2`)
+- **Porquê:** o arco reconhecido deixou de ser o preset com rotação — o `.pptx` agora leva o
+  caminho com as curvas (o mesmo desenho no Office), e o teste prende isso.
+
+## docs/powerpoint.md
+
+### 2026-10-15 · o arco com a caixa no pedaço visível · a bala do arco
+- **Local:** "Desenho à mão (Draw) e Curva por pontos" (a bala do arco)
+- **Linha:** `+` a frase do caminho com a caixa no pedaço visível (o preset tem a elipse inteira)
+- **Porquê:** a bala dizia do arco e da cauda reta, mas não de onde fica a caixa depois do
+  reconhecimento — que era o que o print expôs.

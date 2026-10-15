@@ -300,7 +300,10 @@ avisado ao abrir (nunca some em silêncio).
   E a **cauda reta** das pontas barra o canto do cartão desenhado com **retas curtas + curva**: ele
   era aceito como arco de uma elipse enorme e girada (a forma cobria só a curva e "jogava para
   fora" no canto) — com reta na ponta (a ~0,5 pt da corda numa janela de ~50 pt, contra ~2–3 pt de
-  um arco de verdade) o traçado vai para o **desenho livre**, que cobre o desenho todo.
+  um arco de verdade) o traçado vai para o **desenho livre**, que cobre o desenho todo. Quando o
+  arco é reconhecido mesmo, a forma dele é um **caminho** com a mesma curva e a **caixa no pedaço
+  visível** (o preset `arc` tem a caixa da elipse inteira e girada — a seleção pegava um retângulo
+  enorme e o encaixe mexia na elipse, não no traço); no `.pptx` sai como custGeom com curvas.
 - **Desenhar por cima de uma forma existente** (mesmo apagada — a cor não importa) sai **alinhado
   a ela**: a caixa encaixa nas bordas (e nos centros, nas formas reconhecidas) das formas de baixo
   quando está perto — o limiar é 2,5% da largura da lâmina (~24 pt) porque a mão que segue a borda
