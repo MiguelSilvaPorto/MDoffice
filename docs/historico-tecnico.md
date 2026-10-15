@@ -12328,13 +12328,12 @@ antigas quando fizer sentido.
   desalinhado. Centrar e dar a ele o peso de um grupo (tracejado, altura mínima) resolve a leitura:
   quem abre a aba vê que ali mora o grupo inteiro, e a setinha diz que abre.
 - **Porquê (o piso):** o piso era 0,70 e a aba — que cresceu em grupos — passou a colapsar com a
-  janela ainda larga. Como as métricas não encolhem a FONTE (cada módulo tem piso de 10,5–11,5px no
+  janela ainda larga. Como as métricas não encolhem a FONTE (cada módulo tem piso de 10,5-11,5px no
   CSS), descer o piso para 0,62 deixa a faixa **preferir encolher a esconder**: alturas, ícones e
   espaços diminuem, o texto continua legível e os grupos continuam à vista. O teste do encaixe foi
   ajustado no ponto que mudou de propósito (a 1100 px o plano agora é **compacto**, não **menu**) e
   ganhou a checagem do grupo colapsado **centrado** — as duas coisas ficam presas no
   `test:encaixe`.
-
 
 ## src/powerpoint/ui/fita.ts
 
@@ -12433,3 +12432,79 @@ antigas quando fizer sentido.
   promoções anteriores. As demais entradas de "Não adicionado" (o grupo Diagrama fora do Desenhar, o
   Estúdio — Regiões, a aba Animações e as demais) ficaram **intactas** — são de sessões com trabalho
   aberto.
+
+## src/seletor.ts
+
+### 2026-10-15 · campo de fonte · digitar sugere (e a lista não fecha mais sozinha)
+- **Local:** `MenuAberto` (novos `wrap`, `ancora`, `itens` e `destaque`), o helper `semAcento()`,
+  os dois listeners do documento (Esc e clique fora), o antigo `abrirMenu` — que virou
+  `preencherMenu` + `posicionarMenu` + `abrirLista` + `alternarMenu` — e o `destacarItem`/`aplicarItem`
+- **Linha:** `interface MenuAberto { select, face, menu }` → `{ select, face, wrap, ancora, menu,
+  itens, destaque }`; `+ function semAcento(s: string)` (`normalize("NFD")` sem os diacríticos);
+  `aberto.face.contains(alvo)` → `aberto.wrap.contains(alvo)` no `mousedown`; no Esc, quando o foco
+  está no campo `campo.value = rotuloDe(select); fecharMenu(); return;` (antes: fechava e jogava o
+  foco na setinha); `+ campo.addEventListener("input", …)` que chama `abrirLista(select, face, wrap,
+  campo.value, 0)` (fora dos `data-num`); `+` setas/Enter no `keydown` do campo (`destacarItem(base +
+  passo)`, `aplicarItem(dele.destaque)` ou o `comprometer()` de sempre); `+ wrap.addEventListener
+  ("focusout", …)`; `+ .sel-wrap.sel-aberto` passa a ser ligado/desligado de verdade no abrir/fechar
+- **Porquê:** o relato ("escrevo o nome da fonte e ele não sugere, e ainda fecha o colapso que
+  estava aberto") tem duas causas distintas. A primeira é que **não existia sugestão nenhuma**: o
+  campo aceitava digitação desde o "fonte e tamanho livres", mas a lista só abria pela setinha, com
+  todas as opções — digitar não filtrava nem abria nada. A segunda é o `mousedown` que fecha a lista
+  "ao clicar fora": ele comparava o alvo com a **carinha** (a setinha), e o **campo** fica ao lado
+  dela dentro do mesmo controle — clicar no campo para digitar contava como "fora" e fechava a lista.
+  Entrar no modo de sugestão exigiu três decisões: (1) a comparação é **sem acento e sem caixa**
+  (`semAcento`), senão "times" não acharia "Times New Roman" numa lista com acentos; (2) a lista
+  aberta **não é recriada** a cada tecla — `preencherMenu` troca só os itens, porque recriar o menu
+  re-dispara a animação de entrada do `.dropdown` e a lista **pisca** a cada letra; (3) o `Enter`
+  passou a ter dois sentidos (aplica o destacado; sem destaque, vale o texto digitado, como antes) e
+  por isso as setas precisam **destacar** de verdade — com o realce do `:hover`, que é o que o Enter
+  aplica. O `focusout` fecha a lista quando o foco sai do controle pelo teclado (o clique fora já
+  era tratado pelo `mousedown`; o caso sem `relatedTarget` continua com ele, para não fechar no
+  clique do próprio menu).
+
+## src/styles/editor.css
+
+### 2026-10-15 · campo de fonte · o realce do destaque e a nota de "nada corresponde"
+- **Local:** o bloco `.sel-menu`, depois dos itens
+- **Linha:** `+ .sel-menu .dd-item.destacado` (mesmo `background: var(--accent-soft)` do `:hover`) e
+  `+ .sel-nota` (4px 8px, `var(--muted)`, 12px)
+- **Porquê:** o item destacado é o que o **Enter aplica** — sem o realce, o teclado escolheria algo
+  que não se vê (o `:hover` sozinho não serve: o mouse pode não estar na lista). E a nota é o que
+  explica o Enter num texto que não corresponde a nenhuma opção, no lugar de uma lista vazia.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · campo de fonte · as 8 checagens da sugestão (e 2 padrões atualizados)
+- **Local:** bloco novo "campo de fonte: a lista sugere enquanto se digita", logo depois de
+  "fonte e tamanho livres nas fitas"
+- **Linha:** `+ 8 checagens` — o `input` que abre filtrado, o `semAcento`/`NFD`, os `data-num` fora
+  da sugestão, a lista que **não se recria** (`preencherMenu` no lugar do menu novo), o
+  `wrap.contains` do `mousedown`, as setas + o Enter no destacado, o Esc que devolve o texto e o
+  `focusout`; `+` o CSS do `.destacado` e da `.sel-nota`. **Atualizadas** as duas que prendiam a
+  forma antiga: "a lista abre já no item marcado" (`const marcado = st.menu.querySelector(".dd-check")
+  ?.closest<HTMLElement>(".dd-item")` + `st.menu.scrollTop +=`) e "a escolha na lista não é aplicada
+  duas vezes" (`campo.value = rotulo` **antes** do `select.value = valor` e do `face.focus()`)
+- **Porquê:** o comportamento novo é do tipo que se perde numa "limpeza" (basta alguém voltar a
+  recriar o menu a cada tecla, ou comparar o clique com a `face` em vez do `wrap`, para o defeito
+  do relato voltar). As duas checagens antigas prendiam **nomes de variável**, não a regra; foram
+  reescritas para a forma nova sem afrouxar o que elas garantem.
+
+## docs/powerpoint.md · docs/word.md
+
+### 2026-10-15 · campo de fonte · a bala do campo ganha a sugestão
+- **Local:** a bala **Fonte e tamanho como no PowerPoint** (powerpoint.md) e **Fonte** (word.md)
+- **Linha:** `+ "Digitar sugere: a lista abre filtrada… setas andam, Enter escolhe o destacado, Esc
+  devolve o texto"` nos dois
+- **Porquê:** os dois documentos diziam que o campo **aceita digitação** e que a lista fica no botão
+  ao lado — foi exatamente essa leitura que fez o relato parecer "não previsto": digitar agora é
+  também o caminho para achar a fonte na lista.
+
+## CHANGELOG.md
+
+### 2026-10-15 · campo de fonte · a entrada no Geral
+- **Local:** Geral → **Não adicionado** → Frontend
+- **Linha:** `novo` (promovido a "Adicionado" no fechamento, como manda a regra)
+- **Porquê:** o controle é **do app todo** (fitas do PowerPoint e do Word, Excel, Configurações e
+  diálogos) — não é mudança de módulo, então a categoria é **Geral**, como o histórico do seletor
+  já registra.

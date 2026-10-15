@@ -127,6 +127,19 @@
   font-size: 12px;
 }
 
+/* o item que o Enter aplica: mesmo realce do hover (o mouse também move o destaque) */
+.sel-menu .dd-item.destacado,
+.sel-menu .dd-item:hover {
+  background: var(--accent-soft);
+}
+
+/* nada corresponde ao que foi digitado: a nota diz o que o Enter faz com o texto */
+.sel-nota {
+  padding: 4px 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .sel-menu .dd-item > span:first-child {
   overflow: hidden;
   text-overflow: ellipsis;

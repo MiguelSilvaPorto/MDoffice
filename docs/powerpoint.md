@@ -74,7 +74,10 @@ avisado ao abrir (nunca some em silêncio).
   que o `.pptx` use um tamanho fora da lista (41, 27, 17 pt…) ou uma fonte que o app não conhece —
   e aceita **digitação**: dá para escrever qualquer tamanho (com vírgula) ou qualquer nome de fonte,
   com a lista do app (e as fontes do próprio deck) no botão ao lado; tamanho misto fica em branco,
-  como no Office, e digitar aplica a todos os trechos escolhidos.
+  como no Office, e digitar aplica a todos os trechos escolhidos. **Digitar sugere**: a lista abre
+  filtrada pelo que se escreveu (sem ligar para maiúsculas nem acentos — "time" acha "Times New
+  Roman"), as setas andam pelos itens, o **Enter** escolhe o destacado, o **Esc** devolve o texto
+  que estava e a lista **não fecha** enquanto se digita.
 - **Menus de forma (Preenchimento, Contorno e Efeitos) sem forma escolhida**: o botão continua
   **clicável** e o menu abre com a **dica** — "Selecione uma forma na lâmina para…" — e os itens
   **desabilitados**, em vez de engolir o clique (o relato: "clicado de novo, não abre"); e o menu

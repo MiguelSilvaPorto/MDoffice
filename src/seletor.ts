@@ -5,8 +5,12 @@
 //
 // Com `data-editavel` o controle vira um **campo com lista** (como no Office): o valor
 // aparece num input que aceita digitação — o que o documento tem não fica preso às opções —
-// e a setinha abre a lista. `data-num` + `data-min`/`data-max` validam e normalizam números
-// (aceita vírgula e ponto). O valor digitado vira uma opção do próprio select na hora.
+// e a setinha abre a lista. **Digitar sugere**: a lista abre já filtrada pelo texto (ignorando
+// maiúsculas e acentos), as setas andam pelos itens, o Enter aplica o destacado e o Esc devolve
+// o texto que estava; a lista continua aberta enquanto se escreve, com os itens trocando no
+// lugar (sem piscar). `data-num` + `data-min`/`data-max` validam e normalizam números (aceita
+// vírgula e ponto) e NÃO sugerem — ali a lista é atalho, e o valor é livre. O valor digitado
+// vira uma opção do próprio select na hora.
 //
 // Uso: depois de montar uma tela/painel, chame `melhorarSelects(raiz)`.
 import { h } from "./util";
@@ -14,11 +18,24 @@ import { h } from "./util";
 interface MenuAberto {
   select: HTMLSelectElement;
   face: HTMLElement;
+  /** a caixa inteira (campo + setinha): clicar AQUI DENTRO não fecha a lista */
+  wrap: HTMLElement;
+  /** o que a lista usa para se posicionar (no modo editável é a caixa, não a setinha) */
+  ancora: HTMLElement;
   menu: HTMLElement;
+  /** itens à mostra, na ordem (o teclado anda por eles) */
+  itens: HTMLElement[];
+  /** índice do item destacado pelo teclado/mouse (-1 = nenhum) */
+  destaque: number;
 }
 
 let aberto: MenuAberto | null = null;
 const melhorados = new WeakSet<HTMLSelectElement>();
+
+/** Compara ignorando maiúsculas e acentos: digitar "times" acha "Times New Roman". */
+function semAcento(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
 
 /** O rótulo que o controle mostra (a opção escolhida). */
 function rotuloDe(select: HTMLSelectElement): string {
@@ -42,9 +59,10 @@ export function sincronizarSeletor(select: HTMLSelectElement): void {
 
 function fecharMenu(animar = true): void {
   if (!aberto) return;
-  const { face, menu } = aberto;
+  const { face, wrap, menu } = aberto;
   aberto = null;
   face.setAttribute("aria-expanded", "false");
+  wrap.classList.remove("sel-aberto");
   if (!animar) menu.classList.add("sem-despedida");
   menu.remove();
 }
@@ -61,7 +79,15 @@ document.addEventListener(
       // que o diálogo por baixo também feche
       e.preventDefault();
       e.stopImmediatePropagation();
-      const face = aberto.face;
+      const { face, wrap, select } = aberto;
+      const campo = wrap.querySelector<HTMLInputElement>(".sel-campo");
+      // Com o foco no campo, o Esc só devolve o texto que estava (sem sair do campo): é o
+      // "desfaz o que digitei" do Office, e o Esc seguinte sai do campo como sempre.
+      if (campo && document.activeElement === campo) {
+        campo.value = rotuloDe(select);
+        fecharMenu();
+        return;
+      }
       fecharMenu();
       face.focus();
     }
@@ -74,64 +100,136 @@ document.addEventListener(
   (e) => {
     if (!aberto) return;
     const alvo = e.target as Node;
-    // clicar na própria cara é alternância (o clique fecha): não fecha aqui
-    if (!aberto.menu.contains(alvo) && !aberto.face.contains(alvo)) fecharMenu();
+    // clicar DENTRO do controle (o campo ou a setinha) não fecha: é por onde se digita o
+    // filtro, e a lista tem de continuar à vista enquanto se escreve
+    if (!aberto.menu.contains(alvo) && !aberto.wrap.contains(alvo)) fecharMenu();
   },
   true
 );
 
-function abrirMenu(select: HTMLSelectElement, face: HTMLElement, ancora: HTMLElement = face): void {
+/**
+ * Realça um item (teclado ou mouse) e o mantém dentro da área visível da lista. O realce é o
+ * mesmo do `:hover` — e é ele que o Enter aplica.
+ */
+function destacarItem(i: number): void {
+  const st = aberto;
+  if (!st) return;
+  const total = st.itens.length;
+  st.destaque = total ? Math.max(0, Math.min(total - 1, i)) : -1;
+  st.itens.forEach((el, k) => el.classList.toggle("destacado", k === st.destaque));
+  const el = st.itens[st.destaque];
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  const rm = st.menu.getBoundingClientRect();
+  if (r.top < rm.top) st.menu.scrollTop += r.top - rm.top - 4;
+  else if (r.bottom > rm.bottom) st.menu.scrollTop += r.bottom - rm.bottom + 4;
+}
+
+/** Aplica a opção de um item da lista (clique do mouse ou Enter no item destacado). */
+function aplicarItem(i: number): void {
+  const st = aberto;
+  if (!st) return;
+  const item = st.itens[i];
+  if (!item) return;
+  const { select, face, wrap } = st;
+  const valor = item.dataset.valor ?? "";
+  const rotulo = item.dataset.rotulo ?? "";
+  const mudou = select.value !== valor;
+  fecharMenu();
+  // mostra o rótulo no campo antes de devolver o foco: sem isso o blur do campo
+  // aplicaria a escolha de novo (e um texto antigo por cima dela)
+  const campo = wrap.querySelector<HTMLInputElement>(".sel-campo");
+  if (campo) campo.value = rotulo;
+  if (mudou) {
+    select.value = valor; // o setter interceptado sincroniza a cara
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+  face.focus();
+}
+
+/** Põe o menu embaixo do controle (e, sem caber, em cima), com a largura do campo no mínimo. */
+function posicionarMenu(st: MenuAberto): void {
+  const r = st.ancora.getBoundingClientRect();
+  // o menu abraça o conteúdo, com a largura do CAMPO como mínimo (como a lista nativa) — sem
+  // isso ele herdava os 250px dos menus "⋯" e um seletor de números virava uma janela
+  st.menu.style.minWidth = `${Math.ceil(r.width)}px`;
+  const w = st.menu.offsetWidth;
+  const hh = st.menu.offsetHeight;
+  let top = r.bottom + 4;
+  if (top + hh > window.innerHeight - 8) top = Math.max(8, r.top - hh - 4);
+  st.menu.style.left = `${Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8))}px`;
+  st.menu.style.top = `${top}px`;
+}
+
+/**
+ * (Re)constrói os itens do menu aberto para o texto digitado — vazio mostra a lista toda (é o
+ * caso da setinha). Trocar os itens SEM recriar o menu é o que faz o "sugere enquanto escreve"
+ * não piscar: a entrada animada do `.dropdown` toca uma vez só, na abertura.
+ */
+function preencherMenu(filtro: string, destacar: number): void {
+  const st = aberto;
+  if (!st) return;
+  const alvo = semAcento(filtro.trim());
+  st.menu.textContent = "";
+  st.itens = [];
+  st.destaque = -1;
+  for (const op of Array.from(st.select.options)) {
+    if (op.disabled) continue;
+    const rotulo = (op.label || op.textContent || "").trim();
+    if (alvo && !semAcento(rotulo).includes(alvo)) continue;
+    const item = h("button", { class: "dd-item", type: "button" });
+    item.dataset.valor = op.value;
+    item.dataset.rotulo = rotulo;
+    item.append(h("span", { text: rotulo }));
+    if (op.value === st.select.value) item.insertAdjacentHTML("beforeend", '<svg class="ic dd-check"><use href="#i-check"/></svg>');
+    item.addEventListener("click", () => aplicarItem(st.itens.indexOf(item)));
+    item.addEventListener("mouseover", () => destacarItem(st.itens.indexOf(item)));
+    st.itens.push(item);
+    st.menu.append(item);
+  }
+  if (!st.itens.length) {
+    // nada corresponde ao que foi digitado: a nota diz o que o Enter faz com o texto
+    const nota = h("div", { class: "sel-nota" });
+    nota.textContent = "Nada corresponde — Enter usa o texto digitado";
+    st.menu.append(nota);
+  }
+  posicionarMenu(st);
+  if (destacar >= 0) {
+    destacarItem(destacar);
+    return;
+  }
+  // a lista pode ser longa (tamanhos de fonte, fontes): abre já no item marcado, centrado
+  const marcado = st.menu.querySelector(".dd-check")?.closest<HTMLElement>(".dd-item");
+  if (marcado) {
+    const rItem = marcado.getBoundingClientRect();
+    const rMenu = st.menu.getBoundingClientRect();
+    st.menu.scrollTop += rItem.top - rMenu.top - (rMenu.height - rItem.height) / 2;
+  }
+}
+
+/** Abre a lista do seletor (ou só troca os itens, quando a lista aberta já é a deste controle). */
+function abrirLista(select: HTMLSelectElement, face: HTMLElement, ancora: HTMLElement, filtro: string, destacar: number): void {
+  if (aberto?.select === select) {
+    preencherMenu(filtro, destacar);
+    return;
+  }
+  fecharMenu(false);
+  const menu = h("div", { class: "dropdown sel-menu" }) as HTMLElement;
+  document.body.append(menu);
+  face.setAttribute("aria-expanded", "true");
+  const wrap = select.closest<HTMLElement>(".sel-wrap") ?? face;
+  wrap.classList.add("sel-aberto");
+  aberto = { select, face, wrap, ancora, menu, itens: [], destaque: -1 };
+  preencherMenu(filtro, destacar);
+}
+
+/** A setinha: abre a lista toda — ou fecha, se a lista aberta já for a deste controle. */
+function alternarMenu(select: HTMLSelectElement, face: HTMLElement, ancora: HTMLElement): void {
   if (aberto?.select === select) {
     fecharMenu();
     return;
   }
-  fecharMenu(false);
-  const atual = select.value;
-  const menu = h("div", { class: "dropdown sel-menu" }) as HTMLElement;
-  for (const op of Array.from(select.options)) {
-    if (op.disabled) continue;
-    const item = h("button", { class: "dd-item", type: "button" });
-    item.append(h("span", { text: (op.label || op.textContent || "").trim() }));
-    if (op.value === atual) item.insertAdjacentHTML("beforeend", '<svg class="ic dd-check"><use href="#i-check"/></svg>');
-    item.addEventListener("click", () => {
-      const mudou = select.value !== op.value;
-      fecharMenu();
-      // mostra o rótulo no campo antes de devolver o foco: sem isso o blur do campo
-      // aplicaria a escolha de novo (e um texto antigo por cima dela)
-      const wrap = select.closest<HTMLElement>(".sel-wrap");
-      const campo = wrap?.querySelector<HTMLInputElement>(".sel-campo");
-      if (campo) campo.value = (op.label || op.textContent || "").trim();
-      if (mudou) {
-        select.value = op.value; // o setter interceptado sincroniza a cara
-        select.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-      face.focus();
-    });
-    menu.append(item);
-  }
-  document.body.append(menu);
-  const r = ancora.getBoundingClientRect();
-  // o menu abraça o conteúdo, com a largura do CAMPO como mínimo (como a lista nativa) — sem
-  // isso ele herdava os 250px dos menus "⋯" e um seletor de números virava uma janela
-  menu.style.minWidth = `${Math.ceil(r.width)}px`;
-  const w = menu.offsetWidth;
-  const hh = menu.offsetHeight;
-  let top = r.bottom + 4;
-  if (top + hh > window.innerHeight - 8) top = Math.max(8, r.top - hh - 4);
-  menu.style.left = `${Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8))}px`;
-  menu.style.top = `${top}px`;
-
-  // a lista pode ser longa (tamanhos de fonte, fontes): abre já no item marcado, centrado
-  const marca = menu.querySelector(".dd-check");
-  const marcado = marca?.closest<HTMLElement>(".dd-item");
-  if (marcado) {
-    const rItem = marcado.getBoundingClientRect();
-    const rMenu = menu.getBoundingClientRect();
-    menu.scrollTop += rItem.top - rMenu.top - (rMenu.height - rItem.height) / 2;
-  }
-
-  face.setAttribute("aria-expanded", "true");
-  aberto = { select, face, menu };
+  abrirLista(select, face, ancora, "", -1);
 }
 
 /** Melhora UM select (idempotente). */
@@ -178,7 +276,17 @@ export function melhorarSeletor(select: HTMLSelectElement): void {
 
   face.addEventListener("click", () => {
     if (select.disabled) return;
-    abrirMenu(select, face, editavel ? wrap : face);
+    alternarMenu(select, face, editavel ? wrap : face);
+  });
+
+  // a lista não fica pendurada quando o foco sai do controle pelo teclado (Tab, atalho):
+  // ir para o menu não conta — é por onde se escolhe — e o clique fora quem fecha é o
+  // `mousedown` (que vem antes do blur), então o caso sem destino fica com ele
+  wrap.addEventListener("focusout", (e) => {
+    if (aberto?.select !== select) return;
+    const proximo = (e as FocusEvent).relatedTarget as Node | null;
+    if (!proximo || wrap.contains(proximo) || aberto.menu.contains(proximo)) return;
+    fecharMenu();
   });
 
   if (campo) {
@@ -221,14 +329,43 @@ export function melhorarSeletor(select: HTMLSelectElement): void {
       }
     };
     campo.addEventListener("keydown", (e) => {
+      const dele = aberto?.select === select ? aberto : null;
+      // os campos de número aceitam qualquer valor: neles a lista é atalho, não sugestão
+      const sugere = !select.hasAttribute("data-num");
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        const passo = e.key === "ArrowDown" ? 1 : -1;
+        if (dele) {
+          e.preventDefault();
+          // a primeira seta entra na lista pelo item marcado (ou pelo começo/fim)
+          const base = dele.destaque < 0 ? (passo > 0 ? -1 : dele.itens.length) : dele.destaque;
+          destacarItem(base + passo);
+          return;
+        }
+        if (sugere && passo > 0) {
+          e.preventDefault(); // seta para baixo abre a lista toda (como no Office)
+          abrirLista(select, face, wrap, "", -1);
+          return;
+        }
+      }
       if (e.key === "Enter") {
         e.preventDefault();
-        comprometer();
+        // com sugestão destacada, o Enter escolhe ela; sem sugestão, vale o texto digitado
+        if (dele && dele.destaque >= 0) aplicarItem(dele.destaque);
+        else comprometer();
         campo.select();
       } else if (e.key === "Escape") {
+        // com a lista aberta, quem trata o Esc é o listener do documento (captura) — o de
+        // sempre vale quando não há lista
+        if (dele) return;
         campo.value = rotuloDe(select);
         campo.blur();
       }
+    });
+    // digitar abre/atualiza a lista de sugestões (o "sugere enquanto escreve" do Office);
+    // a lista NÃO se recria: os itens é que trocam, então ela não pisca a cada tecla
+    campo.addEventListener("input", () => {
+      if (select.hasAttribute("data-num")) return;
+      abrirLista(select, face, wrap, campo.value, 0);
     });
     // como no Office: entrar no campo já deixa tudo escolhido (digitar substitui)
     campo.addEventListener("focus", () => campo.select());

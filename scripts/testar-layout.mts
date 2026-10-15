@@ -281,7 +281,7 @@ checa(
 );
 checa(
   "a lista abre já no item marcado",
-  /const marcado = marca\?\.closest<HTMLElement>\("\.dd-item"\)/.test(sel) && /menu\.scrollTop \+=/.test(sel)
+  /const marcado = st\.menu\.querySelector\("\.dd-check"\)\?\.closest<HTMLElement>\("\.dd-item"\);/.test(sel) && /st\.menu\.scrollTop \+=/.test(sel)
 );
 
 // nas fitas, o seletor tem a altura dos botões da mesma linha (senão fica torto)
@@ -1063,7 +1063,11 @@ console.log("\nfonte e tamanho livres nas fitas");
 checa("o seletor tem o modo editável (campo + setinha)", /data-editavel/.test(sel) && /\.sel-campo/.test(sel), "modo editável ausente em src/seletor.ts");
 checa("o valor digitado vira opção do select", /select\.append\(op\)/.test(sel), "o valor digitado não entra como opção");
 checa("número aceita vírgula e respeita min/max", /data-min/.test(sel) && /includes\(","\)/.test(sel), "normalização de número ausente");
-checa("a escolha na lista não é aplicada duas vezes", /if \(mudou\) \{\s*select\.value = op\.value/.test(sel), "ordem do face.focus() no item da lista");
+checa(
+  "a escolha na lista não é aplicada duas vezes",
+  /if \(campo\) campo\.value = rotulo;[\s\S]{0,200}if \(mudou\) \{\s*select\.value = valor;[\s\S]{0,200}face\.focus\(\)/.test(sel),
+  "ordem do face.focus() no item da lista"
+);
 checa("o campo do modo editável tem estilo próprio", /\.sel-editavel > \.sel-campo\s*\{/.test(ler("src/styles/base.css")), "regra .sel-editavel > .sel-campo ausente");
 // o menu do seletor é compacto: abraça o rótulo (com o campo como mínimo), linhas baixas e
 // altura presa — um seletor de números não pode abrir uma janela de 250px (print do usuário)
@@ -1103,6 +1107,55 @@ checa("fita do PowerPoint: fonte e tamanho editáveis", /data-sel="font" data-ed
 const fitaWordLivre = ler("src/word/ribbon.ts");
 checa("fita do Word: fonte e tamanho editáveis", /data-sel="font" data-editavel/.test(fitaWordLivre) && /data-sel="size" data-editavel data-num/.test(fitaWordLivre), "data-editavel ausente nos seletores");
 checa("o Word acrescenta o valor que a lista não tem", /valor que a lista não conhece/.test(fitaWordLivre), "sel() não cria opção para o valor do documento");
+
+// ---------------------------------------------------------------- campo de fonte: sugestões
+
+console.log("\ncampo de fonte: a lista sugere enquanto se digita");
+
+{
+  const sel = ler("src/seletor.ts");
+  const cssEditor = ler("src/styles/editor.css");
+  checa(
+    "digitar abre a lista filtrada pelo texto (sem ligar para acentos)",
+    /campo\.addEventListener\("input", \(\) => \{/.test(sel) && /abrirLista\(select, face, wrap, campo\.value, 0\)/.test(sel) && /function semAcento\(/.test(sel) && /normalize\("NFD"\)/.test(sel),
+    "o relato: digitar 'time' não sugeria 'Times New Roman'"
+  );
+  checa(
+    "os campos de número não sugerem (o valor é livre)",
+    /if \(select\.hasAttribute\("data-num"\)\) return;/.test(sel),
+    "no tamanho a lista é atalho: filtrar por número não faz sentido"
+  );
+  checa(
+    "a lista aberta NÃO se recria a cada tecla (nada de piscar)",
+    /if \(aberto\?\.select === select\) \{\s*preencherMenu\(filtro, destacar\);\s*return;\s*\}/.test(sel) && /function preencherMenu\(/.test(sel),
+    "recriar o menu re-dispara a animação de entrada do .dropdown a cada letra"
+  );
+  checa(
+    "clicar dentro do controle não fecha a lista",
+    /!aberto\.menu\.contains\(alvo\) && !aberto\.wrap\.contains\(alvo\)/.test(sel),
+    "o relato: a lista aberta fechava no clique do campo"
+  );
+  checa(
+    "as setas andam pelos itens e o Enter aplica o destacado",
+    /destacarItem\(base \+ passo\)/.test(sel) && /if \(dele && dele\.destaque >= 0\) aplicarItem\(dele\.destaque\);/.test(sel) && /destacarItem\(destacar\);/.test(sel),
+    "sem destaque o Enter volta a ser só o texto digitado"
+  );
+  checa(
+    "com a lista aberta, o Esc devolve o texto (sem sair do campo)",
+    /if \(campo && document\.activeElement === campo\) \{\s*campo\.value = rotuloDe\(select\);/.test(sel),
+    "o Esc fechava a lista e jogava o foco na setinha, aplicando o texto digitado no blur"
+  );
+  checa(
+    "a lista não fica pendurada quando o foco sai do controle",
+    /wrap\.addEventListener\("focusout"/.test(sel) && /wrap\.contains\(proximo\) \|\| aberto\.menu\.contains\(proximo\)/.test(sel),
+    "sair de Tab deixava a lista aberta sobre a lâmina"
+  );
+  checa(
+    "o item destacado e a nota de 'nada corresponde' têm estilo próprio",
+    /\.sel-menu \.dd-item\.destacado/.test(cssEditor) && /\.sel-nota\s*\{/.test(cssEditor),
+    "sem o realce o Enter aplica algo que não se vê"
+  );
+}
 
 // ---------------------------------------------------------------- fita: o mesmo botão recolhe o popup
 

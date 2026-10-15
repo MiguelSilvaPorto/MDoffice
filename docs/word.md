@@ -27,7 +27,8 @@ arquivos `.docx` de verdade.
   **cor da letra** e **destaque** (marca-texto), limpar formatação. Os dois campos **mostram o
   que o documento tem** (fonte ou tamanho vindo de um `.docx` fora da lista não some) e aceitam
   **digitação** — dá para escrever qualquer tamanho (com vírgula) ou qualquer nome de fonte, com
-  a lista do app no botão ao lado.
+  a lista do app no botão ao lado. **Digitar sugere** (a lista abre filtrada, sem ligar para
+  maiúsculas nem acentos; setas andam, **Enter** escolhe o destacado, **Esc** devolve o texto).
 - **Parágrafo**: marcadores e numeração com níveis, recuo, entrelinha, alinhamento
   (esquerda, centro, direita e **justificado**).
 - **Popups da fita (cor da letra, destaque, grade da tabela)**: abrir e **fechar pelo mesmo
