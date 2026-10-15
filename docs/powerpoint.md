@@ -426,3 +426,13 @@ fundo do app — e a lâmina leva uma **moldura de 1px** (\--lamina-borda\), que
 tanto quando a lâmina é escura quanto quando é clara. A **miniatura** da lista usa a mesma moldura,
 e a dica "Clique para adicionar o título/texto" fica em 55% de opacidade (era 40% e sumia no
 escuro). Os dois tokens ficam em \src/styles/tokens.css\.
+
+## O papel da apresentação: ela nasce clara
+
+A apresentação **nova** nasce com **papel branco** (tema **Claro**), e a **importação** de um
+`.pptx` também. O tema do **app** (claro/escuro) é da **interface**: ele não decide a cor da
+lâmina. Quem quer lâmina escura escolhe um **modelo escuro** na própria apresentação — **Design ▸
+Temas** (o catálogo tem o **Escuro** e o **Meia-noite**) — ou a variante **Grafite** (**Design ▸
+Variantes**), de propósito. O documento que já existe **mantém o tema que tinha**: o que está salvo
+no rascunho/histórico vence o padrão, então trocar o padrão de fábrica não repinta nada.
+Teste: `npm run test:lamina`.

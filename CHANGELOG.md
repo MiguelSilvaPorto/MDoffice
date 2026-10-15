@@ -415,6 +415,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A apresentação nova nasce clara — o tema do app não decide o papel da lâmina**: o padrão de
+  fábrica da apresentação era o tema **Escuro**, então quem usava o app no escuro abria uma lâmina
+  escura sem ter pedido. Agora ela nasce com **papel branco** (tema **Claro**) e o tema do app fica
+  onde deve — na **interface**; quem quer lâmina escura escolhe um modelo escuro na apresentação
+  (aba **Design ▸ Temas**, como o **Escuro** ou o **Meia-noite** do catálogo) ou a variante **Grafite**
+  (aba Design ▸ Variantes), de propósito. A **importação** de `.pptx` segue clara (não herda o tema
+  de quem chamou) e o documento que já existia **mantém o tema que tinha** — trocar o padrão de
+  fábrica não repinta rascunho nem histórico antigos. Teste: `npm run test:lamina`.
+
 - **A fita do PowerPoint cabe na tela sem rolar** — ela se ajusta sozinha à largura da janela: se o painel da aba não cabe, os espaços e ícones encolhem em degraus (a fonte não), os botões grandes ficam numa linha e, por último, os botões pequenos ficam só com o ícone (o nome fica na dica). Em 1338 px todas as abas cabem (Início estourava 353 px e Animações 218 px); a rolagem lateral fica só para janelas muito estreitas.
 
 - **Ferramentas de tinta na aba Desenhar**: o **marca-texto** (traço **largo e translúcido**, sem

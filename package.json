@@ -30,6 +30,7 @@
     "test:salvamento": "node scripts/testar-salvamento.mts",
     "test:layout": "node scripts/testar-layout.mts",
     "test:menus": "node scripts/testar-menus-fita.mjs",
+    "test:lamina": "node scripts/testar-tema-lamina.mjs",
     "test:pptx": "node scripts/testar-pptx.mjs",
     "test:pptx-edicao": "node scripts/testar-edicao-pptx.mjs",
     "preview": "vite preview",

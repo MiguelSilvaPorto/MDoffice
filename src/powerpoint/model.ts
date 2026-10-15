@@ -4,7 +4,10 @@ import { ASPECTS, aspectSize, stageRatio, type Deck, type DeckSetup, type Slide,
 
 export const DEFAULT_SETUP: DeckSetup = {
   aspect: "16:9",
-  theme: "escuro",
+  // A apresentação nova nasce CLARA (papel branco). O tema do app (claro/escuro) é da
+  // INTERFACE e não decide o papel da lâmina: quem quer lâmina escura escolhe o tema
+  // "Escuro" na apresentação (aba Design ▸ Temas), de propósito.
+  theme: "claro",
   showNumber: true,
   footer: "",
   fontFamily: "Segoe UI",

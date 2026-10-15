@@ -237,6 +237,8 @@ export async function pptxToDeck(bytes: Uint8Array, setupBase: DeckSetup = DEFAU
   const setup: DeckSetup = {
     ...setupBase,
     aspect: Math.abs(widthIn / heightIn - 16 / 9) < Math.abs(widthIn / heightIn - 4 / 3) ? "16:9" : "4:3",
+    // o tema do APP nunca decide o papel da lâmina: a importação também nasce clara (a cor de
+    // cada lâmina vem do arquivo; o tema é só o fundo de quem não trouxe cor própria)
     theme: "claro",
     showNumber: false,
     footer: "",

@@ -9626,3 +9626,51 @@ antigas quando fizer sentido.
 - **Porquê:** o doc do módulo é onde a pessoa descobre como usar; a paridade é o placar da
   referência — as duas linhas que estavam em aberto agora têm o que dizer, com o que **não** existe
   (tinta → texto, laço) anotado para não parecer completo.
+
+## src/powerpoint/model.ts · src/powerpoint/pptximport/index.ts
+
+### 2026-10-15 · a apresentação nasce clara · o tema do app sai do papel da lâmina
+
+- **Local:** `DEFAULT_SETUP` (`model.ts`) e o `setup` montado no fim do `pptxToDeck`
+  (`pptximport/index.ts`)
+- **Linha:** `theme: "escuro"` → `theme: "claro"` no padrão de fábrica; o `theme: "claro"` do
+  importador (que já estava lá, sem explicação) ganhou o comentário da regra
+- **Porquê:** o relato é do app: com o tema escuro ligado, a apresentação **nova** abria com a
+  lâmina escura — parecia que o tema do app mandava no papel da apresentação. Ele mandava, de
+  fato: `DEFAULT_SETUP.theme` era `"escuro"`, e nenhum módulo de `src/powerpoint/**` lê o tema do
+  app (varredura no teste novo), então o "escuro" era o padrão de fábrica que o app escuro apenas
+  deixava de disfarçar. A apresentação nasce **clara** (papel branco) e escurecer a lâmina vira o
+  que sempre devia ter sido: **escolha** dentro da apresentação (Design ▸ Temas ▸ um modelo escuro,
+  ou a variante Grafite). O ponto delicado é o que NÃO podia mudar junto: o tema que o documento já
+  tem vence o padrão (`deserialize` faz `{ ...DEFAULT_SETUP, ...snap.setup }`, e `load`/`restore` do
+  motor espalham o snapshot do mesmo jeito), então rascunho e histórico antigos continuam com o
+  tema que tinham. O importador já fixava `theme: "claro"` DEPOIS de espalhar o `setupBase` (era a
+  proteção certa, mas silenciosa — sem o comentário, alguém "limpa" o override e o tema de quem
+  chamou volta a mandar no papel da lâmina).
+
+## scripts/testar-tema-lamina.mjs · package.json
+
+### 2026-10-15 · a apresentação nasce clara · as travas da regra (12 checagens)
+
+- **Local:** script novo `testar-tema-lamina.mjs`, com o empacotamento por `esbuild` do
+  `model.ts`/`schema.ts`/`themes.ts` (o caminho dos testes de motor); `package.json` ganhou
+  `"test:lamina"`
+- **Linha:** `novo` — o padrão de fábrica, o papel branco do tema Claro e a tinta escura (via
+  `stageVars`), o par escuro quando o tema é escolhido, o documento salvo mantendo o tema (e o fundo
+  próprio vencendo), o override do importador e a varredura que nega `dataset.theme` /
+  `prefers-color-scheme` em todo o `src/powerpoint`
+- **Porquê:** é uma regra de PRODUTO, não um detalhe de cor: o tema do app é da interface e não pode
+  voltar a decidir a cor da lâmina. A varredura prende o caminho pelo qual o defeito voltaria (um
+  dia alguém "resolve" o escuro do app lendo `data-theme` lá dentro); as checagens de `deserialize`
+  prendem o outro lado (mudar o padrão não pode repintar documento que já existe). O teste importa
+  os módulos de verdade (e não lê o texto) onde o valor importa — `esbuild` + `import`, como em
+  `testar-estilos`.
+
+## docs/powerpoint.md
+
+### 2026-10-15 · a apresentação nasce clara · o doc do módulo
+
+- **Local:** seção nova no fim do documento ("O papel da apresentação: ela nasce clara")
+- **Linha:** `novo`
+- **Porquê:** a regra não estava escrita em lugar nenhum do doc do módulo — quem lê precisa saber
+  que o branco é o padrão e que o escuro é uma escolha (e onde ela mora).
