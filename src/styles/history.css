@@ -287,14 +287,47 @@
   overflow-wrap: anywhere;
 }
 
-.df.add {
-  background: color-mix(in srgb, var(--ok) 16%, transparent);
+/* Diff lado a lado: a esquerda o "antes", a direita o "depois"; cada linha pareia os dois lados. */
+.df-linha {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
-.df.del {
+.df-lado {
+  padding: 0 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.df-lado.esq {
+  border-right: 1px solid var(--border);
+}
+
+.df-lado.del {
   background: color-mix(in srgb, var(--danger) 16%, transparent);
   text-decoration: line-through;
   text-decoration-color: color-mix(in srgb, var(--danger) 55%, transparent);
+}
+
+.df-lado.add {
+  background: color-mix(in srgb, var(--ok) 16%, transparent);
+}
+
+/* o lado sem linha (o par que só existe do outro lado) fica apagado */
+.df-lado.vazio {
+  background: color-mix(in srgb, var(--fg) 4%, transparent);
+}
+
+/* a barra "Antes · Depois" fica grudada no topo enquanto o diff rola */
+.df-cab {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  color: var(--muted);
+  background: var(--panel);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .df.skip {

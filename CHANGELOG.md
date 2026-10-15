@@ -1139,7 +1139,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **Histórico: o diff agora é lado a lado**: o painel abria a mudança numa coluna única (a linha
+  vermelha "saiu" em cima, a verde "entrou" embaixo) — agora o **antes fica à esquerda** e o
+  **depois à direita**, **pareados linha a linha**, com uma barra **Antes · Depois** grudada no
+  topo enquanto o diff rola; o que não mudou sai igual dos dois lados, o lado sem linha fica
+  apagado e o trecho omitido vira um **⋯** atravessando as duas colunas. A legenda passou a
+  explicar esquerda/direita. Vale para **Versões** e para **Alterações** (o `test:log` prende o
+  pareamento: troca, inserção, remoção e bloco com excedente).
 
 **Ferramentas (dev)**
 

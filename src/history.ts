@@ -215,3 +215,55 @@ export function diffLines(oldText: string, newText: string): DiffLine[] {
   a.slice(a.length - tail).forEach((text) => out.push({ kind: "same", text }));
   return out;
 }
+
+// ---------- diferença lado a lado (duas colunas) ----------
+
+/** Uma linha do diff lado a lado: `esq` = o que estava (antes), `dir` = o que ficou (depois). */
+export interface LinhaDiff {
+  esq: DiffLine | null;
+  dir: DiffLine | null;
+  kind: "same" | "mudanca" | "pulo";
+}
+
+/**
+ * As linhas do diff em DUAS colunas (antes × depois): o que mudou é **pareado linha a linha**
+ * (esquerda × direita, como nas ferramentas de diff), o contexto sai igual nos dois lados e o
+ * trecho omitido vira um "pulo" (uma linha só para os dois). Devolve `[]` quando nada mudou —
+ * o chamador põe a mensagem de "igual".
+ */
+export function linhasLadoALado(oldText: string, newText: string, contexto = 2): LinhaDiff[] {
+  const lines = diffLines(oldText, newText);
+  if (!lines.some((l) => l.kind !== "same")) return [];
+  // mostra só o que mudou, com um pouco de contexto
+  const keep = new Set<number>();
+  lines.forEach((l, i) => {
+    if (l.kind !== "same") for (let k = Math.max(0, i - contexto); k <= Math.min(lines.length - 1, i + contexto); k++) keep.add(k);
+  });
+  const out: LinhaDiff[] = [];
+  let i = 0;
+  let gap = false;
+  while (i < lines.length) {
+    if (!keep.has(i)) {
+      if (!gap) out.push({ esq: null, dir: null, kind: "pulo" });
+      gap = true;
+      i++;
+      continue;
+    }
+    gap = false;
+    if (lines[i].kind === "same") {
+      out.push({ esq: lines[i], dir: lines[i], kind: "same" });
+      i++;
+      continue;
+    }
+    // bloco de mudança: junta os "del" e os "add" vizinhos e pareia um a um (o maior manda no número de linhas)
+    const dels: DiffLine[] = [];
+    const adds: DiffLine[] = [];
+    while (i < lines.length && lines[i].kind !== "same") {
+      (lines[i].kind === "del" ? dels : adds).push(lines[i]);
+      i++;
+    }
+    const n = Math.max(dels.length, adds.length);
+    for (let k = 0; k < n; k++) out.push({ esq: dels[k] ?? null, dir: adds[k] ?? null, kind: "mudanca" });
+  }
+  return out;
+}

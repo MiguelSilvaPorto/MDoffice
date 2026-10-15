@@ -3,7 +3,7 @@
 //  · Versões   — cópias completas guardadas dentro do app (a cada 5 min e ao salvar)
 //  · Alterações — linha do tempo dos commits: o patch de cada mudança, com o diff
 //  · Backup    — as cópias reais em disco, que sobrevivem a limpar os dados do app
-import { diffLines, listVersions, removeVersion, snapshot, type Version } from "./history";
+import { linhasLadoALado, listVersions, removeVersion, snapshot, type DiffLine, type Version } from "./history";
 import * as backup from "./backup";
 import { applyOps, listCommits, removeCommit, type Commit } from "./snapshots";
 import { copyText, h, toast } from "./util";
@@ -50,30 +50,33 @@ function whenStamp(stamp: string): string {
   return `${m[3]}/${m[2]}/${m[1]} às ${m[4]}:${m[5]}`;
 }
 
-/** Escreve o diff colorido (vermelho saiu / verde entrou) num elemento. */
+/**
+ * Escreve o diff **lado a lado** num elemento: a coluna da esquerda é o "antes" e a da direita o
+ * "depois" (ver `linhasLadoALado`). Uma barra "Antes · Depois" fica grudada no topo, e o trecho
+ * igual omitido vira um "⋯" atravessando as duas colunas.
+ */
 function pintarDiff(el: HTMLElement, antigo: string, novo: string, vazio: string): void {
-  const lines = diffLines(antigo, novo);
-  const changed = lines.filter((l) => l.kind !== "same").length;
+  const linhas = linhasLadoALado(antigo, novo);
   el.textContent = "";
-  if (!changed) {
+  if (!linhas.length) {
     el.append(h("div", { class: "df skip", text: vazio }));
     return;
   }
-  // mostra só o que mudou, com um pouco de contexto
-  const keep = new Set<number>();
-  lines.forEach((l, i) => {
-    if (l.kind !== "same") for (let k = Math.max(0, i - 2); k <= Math.min(lines.length - 1, i + 2); k++) keep.add(k);
-  });
-  let gap = false;
-  lines.forEach((l, i) => {
-    if (!keep.has(i)) {
-      if (!gap) el.append(h("div", { class: "df skip", text: "⋯" }));
-      gap = true;
-      return;
+  const lado = (l: DiffLine | null, papel: "esq" | "dir") =>
+    h("div", { class: `df-lado ${papel}${l ? ` ${l.kind}` : " vazio"}`, text: l ? l.text || " " : "" });
+  el.append(
+    h("div", { class: "df-linha df-cab" }, [
+      h("div", { class: "df-lado esq", text: "Antes" }),
+      h("div", { class: "df-lado dir", text: "Depois" }),
+    ])
+  );
+  for (const l of linhas) {
+    if (l.kind === "pulo") {
+      el.append(h("div", { class: "df skip", text: "⋯" }));
+      continue;
     }
-    gap = false;
-    el.append(h("div", { class: `df ${l.kind}`, text: (l.kind === "add" ? "+ " : l.kind === "del" ? "− " : "  ") + (l.text || " ") }));
-  });
+    el.append(h("div", { class: "df-linha" }, [lado(l.esq, "esq"), lado(l.dir, "dir")]));
+  }
 }
 
 export function openHistoryDialog(hooks: HistoryHooks): void {
@@ -189,7 +192,7 @@ export function openHistoryDialog(hooks: HistoryHooks): void {
       h("b", { text: v.label || (v.manual ? "Versão marcada" : "Versão automática") }),
       h("span", { class: "muted", text: ` · ${when(v.at)} (${ago(v.at)}) · ${view(v.text).length} caracteres` })
     );
-    legend.textContent = "Vermelho: estava nesta versão e saiu · Verde: entrou depois";
+    legend.textContent = "Esquerda: esta versão · direita: o texto de agora — vermelho saiu, verde entrou";
     btn.copy.disabled = btn.del.disabled = btn.restore.disabled = false;
     items.querySelectorAll<HTMLElement>(".hi-item").forEach((e) => e.classList.toggle("active", e.dataset.id === String(v.id)));
   };
@@ -258,7 +261,7 @@ export function openHistoryDialog(hooks: HistoryHooks): void {
       h("b", { text: c.text !== undefined ? "📌 Marco do documento" : "Alteração" }),
       h("span", { class: "muted", text: ` · ${when(c.at)} (${ago(c.at)}) · ${c.text !== undefined ? "texto completo" : c.summary}` })
     );
-    legend.textContent = "Vermelho: saiu nesta alteração · Verde: entrou nela";
+    legend.textContent = "Esquerda: como estava · direita: como ficou — vermelho saiu, verde entrou";
     btn.copy.disabled = false;
     btn.del.disabled = c.id === undefined;
     btn.restore.disabled = false;

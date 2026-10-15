@@ -10014,3 +10014,57 @@ antigas quando fizer sentido.
   promoção é uma tarefa de follow-up, depois que o commit chegou (1f5b960). Promovi só a entrada
   DESTA tarefa: as que seguem em "Não adicionado" pertencem a sessões com trabalho aberto ou com
   promoção em voo — mexer nelas criaria duplicata ou conflito.
+
+## src/history.ts
+
+### 2026-10-15 · o diff lado a lado · o pareamento puro
+- **Local:** `linhasLadoALado` (novo, depois de `diffLines`) + o tipo `LinhaDiff`
+- **Linha:** `novo` — parte do `diffLines` (o mesmo LCS de sempre), mantém o recorte de contexto
+  (±2) e devolve as linhas já em DUAS colunas: `same` (o mesmo texto nos dois lados), `mudanca`
+  (o bloco de del/add pareado índice a índice — o lado maior manda no número de linhas) e `pulo`
+  (uma linha só para o trecho omitido); `[]` quando nada mudou
+- **Porquê:** o pareamento é a única parte com regra (o que pareia com o quê, quantas linhas o
+  bloco ocupa, o que vira ⋯) e é puro — dava para testar no Node, ao contrário do desenho no DOM.
+  O bloco reúne TODOS os del e TODOS os add da região (o LCS pode intercalá-los) e pareia pela
+  ordem, como as ferramentas de diff fazem: o lado menor fica com o vazio ao lado do excedente.
+
+## src/historyUi.ts
+
+### 2026-10-15 · o diff lado a lado · a tela desenha duas colunas
+- **Local:** `pintarDiff` (reescrito) + o import do `linhasLadoALado` (o `diffLines` sai) + as duas
+  legendas
+- **Linha:** `- a lista .df única com o "+ / − / espaço" na frente` · `+ a barra .df-linha.df-cab`
+  (Antes · Depois) · `+ uma .df-linha por linha, com dois .df-lado (esq com o del, dir com o add,
+  e o .vazio para o lado sem par)`; as legendas passam a dizer "esquerda/direita"
+- **Porquê:** o pedido é lado a lado; o pareamento fica no `history.ts` e a tela só desenha. A
+  coluna "Antes" é a versão escolhida (ou o commit anterior) e a "Depois" o texto de agora (ou o
+  commit) — os dois chamadores já mandavam (antigo, novo) nessa ordem. O `pintarDiff` continua
+  sendo o único ponto de desenho: a aba Alterações, a Versões e o aviso do Backup passam por ele
+  (o Backup só usa o caminho do "sem linhas").
+
+## src/styles/history.css
+
+### 2026-10-15 · o diff lado a lado · as duas colunas e a barra grudada
+- **Local:** o bloco `.df*`
+- **Linha:** `- .df.add`/`- .df.del` (as cores da coluna única)` · `+ .df-linha` (a grade de duas
+  frações iguais)` · `+ .df-lado` (o padding/pre-wrap de cada lado)` · `+ .df-lado.esq`
+  (border-right = o filete entre as colunas)` · `+ .df-lado.del` (vermelho + riscado, a regra de
+  antes aplicada ao lado), `+ .df-lado.add` (verde)` · `+ .df-lado.vazio` (fundo de 4% — o lado
+  sem par)` · `+ .df-cab` (sticky no topo, maiúsculas e tom apagado)`; `.df`/`.df.skip` ficam (o ⋯
+  e o aviso)
+- **Porquê:** as cores mudaram de dono (antes a linha inteira, agora a METADE da linha) e o
+  filete central marca a divisa sem caixa. O cabeçalho sticky usa a superfície do painel para o
+  texto do diff não aparecer atrás dele ao rolar; sem isso a barra "Antes · Depois" só existiria
+  no topo do conteúdo.
+
+## scripts/testar-snapshots.mts
+
+### 2026-10-15 · o diff lado a lado · 7 verificações do pareamento
+- **Local:** a seção 10, depois do bloco do IndexedDB, e o import do `linhasLadoALado`
+- **Linha:** `novo` — sem mudanças não há linhas (o aviso da tela) · a troca vira UMA linha com o
+  antes à esquerda × o depois à direita · o contexto pareado · o pulo · inserção com a esquerda
+  vazia · remoção com a direita vazia · bloco com excedente (o lado maior manda)
+- **Porquê:** o pareamento é a regra que o usuário pediu ("lado a lado") e a que pode regredir em
+  silêncio — a tela ficaria com o "antes" de um lado e o "depois" do outro sem casar. O caso do
+  excedente é o que pega a conta do `max(dels, adds)`; a inserção e a remoção pegam os dois lados
+  vazios (sem eles, o "vazio" do CSS nunca apareceria).

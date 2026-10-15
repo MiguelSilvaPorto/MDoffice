@@ -1,5 +1,6 @@
 // Teste rápido da lógica de patch: aplica, desfaz e reconstrói versões.
 // Roda com: npx tsx scripts/testar-snapshots.mts
+import { linhasLadoALado } from "../src/history.ts";
 import { applyOps, diffText, revertOps } from "../src/snapshots.ts";
 
 let falhas = 0;
@@ -107,6 +108,36 @@ console.log("diff/apply/revert");
 
 // 9. ids do IndexedDB não são usados aqui: só a lógica pura
 checa("diffText de textos iguais devolve vazio", diffText("igual", "igual").length === 0);
+
+// 10. histórico: o diff lado a lado (antes × depois, pareados linha a linha)
+{
+  const antes = ["# T", "", "a", "b", "c", "d"].join("\n");
+  const depois = ["# T", "", "a", "B", "c", "d"].join("\n");
+  checa("sem mudanças não há linhas (a tela mostra o aviso)", linhasLadoALado(antes, antes).length === 0);
+  const rows = linhasLadoALado(antes, depois);
+  const mudanca = rows.filter((r) => r.kind === "mudanca");
+  checa(
+    "a troca vira UMA linha: o antes à esquerda, o depois à direita",
+    mudanca.length === 1 && mudanca[0].esq?.text === "b" && mudanca[0].dir?.text === "B",
+    JSON.stringify(mudanca)
+  );
+  checa(
+    "o contexto sai pareado nos dois lados",
+    rows.some((r) => r.kind === "same" && r.esq?.text === "a" && r.dir?.text === "a"),
+    JSON.stringify(rows.slice(0, 3))
+  );
+  checa("o trecho longe da mudança vira um pulo", rows.some((r) => r.kind === "pulo"), JSON.stringify(rows));
+  const ins = linhasLadoALado("a\nc", "a\nb\nc").filter((r) => r.kind === "mudanca");
+  checa("inserção deixa a esquerda vazia", ins.length === 1 && ins[0].esq === null && ins[0].dir?.text === "b", JSON.stringify(ins));
+  const rem = linhasLadoALado("a\nb\nc", "a\nc").filter((r) => r.kind === "mudanca");
+  checa("remoção deixa a direita vazia", rem.length === 1 && rem[0].esq?.text === "b" && rem[0].dir === null, JSON.stringify(rem));
+  const bloco = linhasLadoALado("x1\nx2\nx3", "y1\ny2").filter((r) => r.kind === "mudanca");
+  checa(
+    "bloco pareia até o fim e sobra o excedente do lado maior",
+    bloco.length === 3 && bloco[0].esq?.text === "x1" && bloco[1].dir?.text === "y2" && bloco[2].esq?.text === "x3" && bloco[2].dir === null,
+    JSON.stringify(bloco)
+  );
+}
 
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);
