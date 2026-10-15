@@ -1315,12 +1315,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **A dica não deixa o texto vazar da caixa (caminho longo)**: o balão do app trava em 320 px de
-  largura, mas um caminho (ou URL) não tem espaço para quebrar — o texto passava **por fora** da
-  caixa e cobria o conteúdo: era o balão do caminho da pasta, no print do usuário, invadindo a
-  lista de documentos. Agora o texto quebra **dentro** do balão (`overflow-wrap: anywhere`), no
-  ponto que for preciso. Teste: `npm run test:layout`.
-
   markdown passa pelo saneamento, como todo HTML de fora no app.
 
 - (nada no momento)
@@ -1408,6 +1402,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **A dica não deixa o texto vazar da caixa (caminho longo)**: o balão do app trava em 320 px de
+  largura, mas um caminho (ou URL) não tem espaço para quebrar — o texto passava **por fora** da
+  caixa e cobria o conteúdo: era o balão do caminho da pasta, no print do usuário, invadindo a
+  lista de documentos. Agora o texto quebra **dentro** do balão (`overflow-wrap: anywhere`), no
+  ponto que for preciso. Teste: `npm run test:layout`.
 
 - **Os cartões dos Recentes mostram o DOCUMENTO — cada tipo com a sua cara**: o cartão tinha
   sempre o mesmo papel branco com o texto cru (o Word "parecia slide", o Markdown mostrava a

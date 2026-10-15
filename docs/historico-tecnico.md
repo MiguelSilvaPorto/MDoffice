@@ -12130,3 +12130,15 @@ antigas quando fizer sentido.
   usuário). O `anywhere` deixa o navegador quebrar o trecho longo dentro do `max-width`, em vez de
   estourar o balão: no lab, a mesma dica passou de `texto: 400px` (vazando) para `texto: 318px`
   dentro da caixa. A verificação no `test:layout` prende a linha para a quebra não sumir.
+
+## CHANGELOG.md
+
+### 2026-10-15 · dica · a promoção da entrada (não adicionado → adicionado)
+- **Local:** Geral → **Não adicionado** → Frontend (a entrada da dica) e Geral → **Adicionado** →
+  Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não pode promover: no instante do commit da tarefa a entrada ainda não está na
+  main (a regra do repositório é "nunca promova o que ainda não entrou na main"), então a promoção é
+  uma tarefa de follow-up, depois que o commit chegou (385df1b). Promovi só a entrada DESTA tarefa:
+  as que seguem em "Não adicionado" (o menu dos grupos da fita e a faixa que não se recolhe) são de
+  sessões com trabalho aberto — mexer nelas criaria duplicata ou conflito.
