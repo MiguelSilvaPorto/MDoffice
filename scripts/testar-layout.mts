@@ -2075,6 +2075,40 @@ console.log("\nPowerPoint: arrastar a miniatura para reordenar (ponteiro, não H
 console.log("menus da fita: o clique nunca fica mudo");
 
 const fitaSrc = ler("src/powerpoint/ui/fita.ts");
+// O menu "Organizar"/"Alinhar e girar": o par dos extremos junto no topo, como no Office (o relato
+// veio com print: o "Enviar para trás" só aparecia na quarta linha, depois de "Avançar"/"Recuar").
+checa(
+  "o menu Organizar põe o par Trazer para a frente / Enviar para trás junto no topo",
+  /\["z-topo", "Trazer para a frente"\], \["z-fundo", "Enviar para trás"\], \["z-frente", "Avançar"\], \["z-tras", "Recuar"\]/.test(fitaSrc),
+  "os passos de camada voltariam para o meio do par (é o par que se usa junto)"
+);
+checa(
+  "o mesmo par aparece junto na fita e no menu do clique direito",
+  /pequeno\("z-topo"[^\n]*\r?\n\s*\$\{pequeno\("z-fundo"/.test(fitaSrc) &&
+    /\["z-topo", "Trazer para a frente", true\],\r?\n\s*\["z-fundo", "Enviar para trás", true\]/.test(ler("src/powerpoint/powerpoint.ts")),
+  "a fita e o clique direito já mostram o par junto: o menu não pode ser o único fora do padrão"
+);
+
+console.log("\ncomandos do PowerPoint: nenhum case repetido no switch");
+{
+  const ppt = ler("src/powerpoint/powerpoint.ts");
+  // Só o `switch` do `run`: o arquivo tem outros switches (o das cores, o do texto) que repetem
+  // comandos de propósito, porque são despachados por outro caminho.
+  const corpo = ppt.slice(ppt.indexOf("private run(cmd: string, value?: string): void {"));
+  const fim = corpo.indexOf("\n  private ");
+  const doRun = corpo.slice(0, fim > 0 ? fim : corpo.length);
+  const casos = [...doRun.matchAll(/case "([a-z0-9-]+)":/g)].map((m) => m[1]);
+  const repetidos = [...new Set(casos.filter((c, i) => casos.indexOf(c) !== i))];
+  // O `switch` pega o primeiro `case` que casa: um comando repetido deixa o segundo INALCANÇÁVEL
+  // (o Vite avisa no build). Foi assim que `modelo-criar` nasceu duas vezes — o do Template (deste
+  // arquivo) e o do Estúdio Modelo — e o botão "Modelo" da fita criava um cartão de Template.
+  checa("nenhum comando aparece em dois cases", repetidos.length === 0, `repetidos: ${repetidos.join(", ")}`);
+  checa(
+    "os dois 'criar modelo' têm nomes próprios (Template × Estúdio Modelo)",
+    /case "template-criar"/.test(doRun) && /case "modelo-criar"/.test(doRun) && /criar: \(nome\) => run\("template-criar", nome\)/.test(fitaSrc),
+    "com o mesmo nome, o case do Estúdio Modelo fica morto e o botão Modelo cria um cartão de Template"
+  );
+}
 // O Contorno (o relato: "clicado de novo, não abre"): desabilitado sem forma escolhida, o botão
 // engolia o clique. Agora ele abre o menu com a dica e os itens desabilitados — o padrão que os
 // Estilos de cor já usavam (d32f4db).

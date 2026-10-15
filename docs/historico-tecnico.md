@@ -12571,6 +12571,7 @@ antigas quando fizer sentido.
 - **Porquê:** o controle é **do app todo** (fitas do PowerPoint e do Word, Excel, Configurações e
   diálogos) — não é mudança de módulo, então a categoria é **Geral**, como o histórico do seletor
   já registra.
+
 ## src/powerpoint/stage.ts
 
 ### 2026-10-15 · esta tarefa · as formas sob um ponto (a pilha do menu)
@@ -12776,3 +12777,57 @@ antigas quando fizer sentido.
   **Ferramentas (dev)** — o lugar certo é o fim da lista do **Frontend**, antes do rótulo. O passo
   conferiu a seção inteira (rótulos `Backend`/`Frontend`/`Ferramentas (dev)`) e nada de worktree em
   andamento foi tocado.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-15 · menu Organizar · o par dos extremos junto no topo (pedido com print)
+- **Local:** o `case "ordem"` do `abrirMenu` (a lista do menu que os botões **Organizar** e
+  **Alinhar e girar** abrem)
+- **Linha:** `["z-topo", "Trazer para a frente"], ["z-frente", "Avançar"], ["z-tras", "Recuar"],
+  ["z-fundo", "Enviar para trás"]` → `["z-topo", "Trazer para a frente"], ["z-fundo", "Enviar para
+  trás"], ["z-frente", "Avançar"], ["z-tras", "Recuar"]`
+- **Porquê:** o relato veio com o print do menu: quem procura "Enviar para trás" para desfazer um
+  "Trazer para a frente" não o acha **embaixo** do que acabou de usar — ele estava na quarta linha,
+  depois de "Avançar" e "Recuar". A ordem agora é a do Office (os dois extremos primeiro, os passos
+  de camada depois) e casa com o resto do app: a coluna **Organizar** da fita (Página Inicial) e o
+  menu do **clique direito** já mostravam o par junto. A mudança vale para os dois botões que abrem
+  esse menu, porque a lista é uma só.
+
+## src/powerpoint/powerpoint.ts · src/powerpoint/ui/fita.ts
+
+### 2026-10-15 · dois "criar modelo" com o mesmo comando · o do Estúdio Modelo era código morto
+- **Local:** o `case "modelo-criar"` do `run` (o do Template) e o `criar` da galeria do Template no
+  `abrirMenu`; o `case "modelo-criar"` do Estúdio Modelo (fase 5) ficou como estava
+- **Linha:** `case "modelo-criar":` → `case "template-criar":` e
+  `criar: (nome) => run("modelo-criar", nome)` → `run("template-criar", nome)`
+- **Porquê:** o Estúdio Modelo (fase 5, `bb0ec02`) batizou o comando do botão **Modelo** ("esta box
+  vira modelo") de `modelo-criar` — o **mesmo** nome que o cartão **Novo modelo** do Template já
+  usava. Como o `switch` pega o primeiro `case` que casa, o do Estúdio Modelo **nunca rodava**: o
+  botão **Modelo** da fita criava um **cartão de Template** (com o aviso errado: "Modelo "Meu
+  modelo" salvo no botão Template.") e as cópias vinculadas não tinham como nascer. O Vite já
+  avisava no build ("This case clause will never be evaluated because it duplicates an earlier case
+  clause") e o `test:modelo` não pegava, porque a checagem dele (`/case "modelo-criar"/`) passava com
+  os dois. O nome do Template virou `template-criar` (2 pontos: o `case` e o `criar` da galeria); o
+  comando do Estúdio Modelo ficou com o nome que nasceu com ele. Conferido no navegador: o botão
+  **Modelo** agora avisa "Esta box virou modelo…" e **não** cria cartão de Template; o **Novo
+  modelo** do Template continua criando o cartão.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · menu Organizar e o comando repetido · as 4 verificações
+- **Local:** a seção "menus da fita: o clique nunca fica mudo" (2 checagens novas) e a seção nova
+  "comandos do PowerPoint: nenhum case repetido no switch"
+- **Linha:** `novo`
+- **Porquê:** a ordem do menu é uma escolha de uso (o par junto) que volta fácil numa reordenação; e
+  o comando repetido era **invisível** para os testes — o `test:modelo` procurava o `case` e
+  encontrava o do Template. A checagem nova varre só o `switch` do `run` (o arquivo tem outros
+  switches que repetem comandos de propósito, despachados por outro caminho) e barra qualquer
+  comando com dois `case`, que é como o defeito nasceu.
+
+## CHANGELOG.md
+
+### 2026-10-15 · menu Organizar · a entrada no PowerPoint
+- **Local:** PowerPoint → Não adicionado → Frontend
+- **Linha:** `novo` (2 entradas: a ordem do menu e o comando repetido)
+- **Porquê:** mudanças do módulo PowerPoint; as entradas ficam em "Não adicionado" até o commit do
+  `fechar.ps1` entregar a `main` (a promoção é um passo separado).

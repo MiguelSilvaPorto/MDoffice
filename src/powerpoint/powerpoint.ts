@@ -2724,8 +2724,11 @@ export class PowerPointHost {
         if (modelo) this.usarModelo(modelo);
         return;
       }
-      case "modelo-criar": {
-        // salva o visual do deck atual como um modelo do usuário (fica no botão Template)
+      case "template-criar": {
+        // salva o visual do deck atual como um modelo do usuário (fica no botão Template).
+        // O comando é `template-criar` (e não `modelo-criar`): o Estúdio Modelo usa `modelo-criar`
+        // para "esta box virou modelo" — com os dois no mesmo nome, o `case` de lá nunca rodava
+        // (o switch pega o primeiro) e o botão "Modelo" da fita criava um cartão de Template.
         const modelo = criarModeloUsuario(this.slides, this.setup, String(value ?? ""));
         if (!modelo) {
           // o armazenamento local recusou: sem o aviso, a pessoa acharia que o modelo foi criado

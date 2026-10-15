@@ -867,7 +867,7 @@ export class Fita {
         return;
       case "modelo":
         abrirModelos(ancora, (m) => run("modelo", m.id), {
-          criar: (nome) => run("modelo-criar", nome),
+          criar: (nome) => run("template-criar", nome),
           excluir: (id) => run("modelo-excluir", id),
         });
         return;
@@ -1071,8 +1071,12 @@ export class Fita {
         return;
       }
       case "ordem": {
+        // A ordem é a do Office: primeiro o par dos EXTREMOS ("Trazer para a frente" e, logo
+        // abaixo, "Enviar para trás") e só depois os passos de camada ("Avançar"/"Recuar") — é o
+        // par que se usa junto (pedido do usuário, com print do menu). Antes os passos ficavam no
+        // meio e o "Enviar para trás" só aparecia na quarta linha.
         const itens: [string, string][] = [
-          ["z-topo", "Trazer para a frente"], ["z-frente", "Avançar"], ["z-tras", "Recuar"], ["z-fundo", "Enviar para trás"],
+          ["z-topo", "Trazer para a frente"], ["z-fundo", "Enviar para trás"], ["z-frente", "Avançar"], ["z-tras", "Recuar"],
           ["agrupar", "Agrupar"], ["desagrupar", "Desagrupar"],
           ["al-esquerda", "Alinhar à esquerda"], ["al-centro", "Centralizar na horizontal"], ["al-direita", "Alinhar à direita"],
           ["al-topo", "Alinhar ao topo"], ["al-meio", "Centralizar na vertical"], ["al-base", "Alinhar embaixo"],
