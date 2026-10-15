@@ -1879,6 +1879,31 @@ console.log("\nmoldura da lâmina e relevo da página no tema escuro");
   );
 }
 
+// ---------------------------------------------------------------- molduras de prévia (palco, não papel)
+
+console.log("\nPowerPoint: as molduras das prévias são palco, não papel");
+{
+  const css = ler("src/styles/powerpoint-edicao.css");
+  const tokensCss = ler("src/styles/tokens.css");
+  // A moldura recorta a lâmina de verdade (Ideias/Arranjos no painel lateral e Variantes na aba
+  // Design): o vão em volta da lâmina é PALCO e acompanha o tema do app — o `#fff` fixo aparecia
+  // como um branco que não existe na tela quando o app estava no escuro.
+  checa(
+    "a moldura das Ideias/Arranjos usa o tom do palco",
+    /\.pp-ideia-moldura\s*\{[^}]*background:\s*var\(--palco-bg/.test(css),
+    "no tema escuro ela pintava um branco fixo"
+  );
+  checa("a moldura das Variantes usa o tom do palco", /\.pp-var-moldura\s*\{[^}]*background:\s*var\(--palco-bg/.test(css));
+  checa(
+    "nenhuma das duas voltou ao branco fixo",
+    !/\.pp-(ideia|var)-moldura\s*\{[^}]*background:\s*(#fff\b|#ffffff|white\b)/i.test(css)
+  );
+  checa(
+    "o token do palco existe nos dois temas (é ele que muda o tom em cada um)",
+    /:root\s*\{[\s\S]*?--palco-bg:\s*var\(--bg\)/.test(tokensCss) && /\[data-theme="dark"\]\s*\{[\s\S]*?--palco-bg:\s*#/.test(tokensCss)
+  );
+}
+
 // ---------------------------------------------------------------- painel lateral do PowerPoint
 
 console.log("\nPowerPoint: o painel lateral se encaixa (abas e janela estreita)");

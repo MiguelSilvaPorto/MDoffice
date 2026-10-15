@@ -427,6 +427,11 @@ tanto quando a lâmina é escura quanto quando é clara. A **miniatura** da list
 e a dica "Clique para adicionar o título/texto" fica em 55% de opacidade (era 40% e sumia no
 escuro). Os dois tokens ficam em \src/styles/tokens.css\.
 
+As **molduras das prévias** de lâmina — Ideias e Arranjos no painel lateral e a galeria de
+**Variantes** na aba Design — usam o mesmo tom do palco (\--palco-bg\): elas recortam a lâmina de
+verdade e o que pinta é o **vão em volta** dela, que é palco e não papel (o branco fixo que havia
+ali aparecia no tema escuro como um papel que não existe na tela).
+
 ## O papel da apresentação: ela nasce clara
 
 A apresentação **nova** nasce com **papel branco** (tema **Claro**), e a **importação** de um

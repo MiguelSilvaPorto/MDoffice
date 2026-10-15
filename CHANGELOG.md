@@ -424,6 +424,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   de quem chamou) e o documento que já existia **mantém o tema que tinha** — trocar o padrão de
   fábrica não repinta rascunho nem histórico antigos. Teste: `npm run test:lamina`.
 
+- **As molduras das prévias de lâmina (Ideias, Arranjos e Variantes) são palco, não papel**: o
+  cartão que recorta a prévia da lâmina tinha um **branco fixo** atrás dela, então no tema escuro
+  do app o vão em volta da lâmina aparecia como um papel branco que não existe na tela. A moldura
+  passou a usar o **tom do palco** (`--palco-bg`) — o mesmo do editor: escuro no tema escuro e
+  claro no claro. A lâmina recortada não muda (ela tem o fundo próprio, que é o que o cartão
+  mostra). Teste: `npm run test:layout`.
+
+- **A fita do PowerPoint cabe na tela sem rolar** — ela se ajusta sozinha à largura da janela: se o painel da aba não cabe, os espaços e ícones encolhem em degraus (a fonte não), os botões grandes ficam numa linha e, por último, os botões pequenos ficam só com o ícone (o nome fica na dica). Em 1338 px todas as abas cabem (Início estourava 353 px e Animações 218 px); a rolagem lateral fica só para janelas muito estreitas.
+
 - **A fita do PowerPoint cabe na tela sem rolar** — ela se ajusta sozinha à largura da janela: se o painel da aba não cabe, os espaços e ícones encolhem em degraus (a fonte não), os botões grandes ficam numa linha e, por último, os botões pequenos ficam só com o ícone (o nome fica na dica). Em 1338 px todas as abas cabem (Início estourava 353 px e Animações 218 px); a rolagem lateral fica só para janelas muito estreitas.
 
 - **Aba Design completa: Temas, Variantes, Personalizar e Designer**: a aba tinha só dois grupos

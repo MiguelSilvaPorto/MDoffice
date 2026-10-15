@@ -2685,7 +2685,8 @@ button.ppr.trans-dir {
 }
 
 /* a moldura recorta a lâmina de verdade, que entra em tamanho cheio e é reduzida por
-   transform (a escala sai no JS, com a largura que o painel tiver) */
+   transform (a escala sai no JS, com a largura que o painel tiver). O vão em volta da lâmina é
+   PALCO, não papel: no tema escuro o `#fff` fixo aparecia como um branco que não existe na tela. */
 .pp-ideia-moldura {
   position: relative;
   display: block;
@@ -2694,7 +2695,7 @@ button.ppr.trans-dir {
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--palco-bg, var(--panel));
 }
 
 .pp-ideia:hover .pp-ideia-moldura,
@@ -2745,6 +2746,7 @@ button.ppr.trans-dir {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
+/* mesmo vão das Ideias: a moldura é palco (o tom do editor), não papel branco */
 .pp-var-moldura {
   position: relative;
   display: block;
@@ -2752,7 +2754,7 @@ button.ppr.trans-dir {
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 4px;
-  background: #fff;
+  background: var(--palco-bg, var(--panel));
 }
 
 .pp-var-slide {

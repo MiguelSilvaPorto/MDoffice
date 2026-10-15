@@ -9687,3 +9687,51 @@ antigas quando fizer sentido.
   `fechar.ps1`. As outras entradas da mesma lista (a **fita que cabe na tela** e a **Aba Design
   completa**) ficaram onde estavam: são de sessões com trabalho aberto ou com promoção em voo —
   mexer nelas criaria duplicata ou conflito.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-15 · molduras de prévia · o vão em volta da lâmina é palco, não papel
+
+- **Local:** `.pp-ideia-moldura` (Ideias e Arranjos, no painel lateral) e `.pp-var-moldura`
+  (galeria de Variantes, aba Design)
+- **Linha:** `background: #fff` → `background: var(--palco-bg, var(--panel))` nas duas, com o
+  comentário da regra
+- **Porquê:** as duas molduras recortam a **lâmina de verdade** (a prévia entra em tamanho cheio e
+  é reduzida por `transform`), então o que a moldura pinta é o que aparece **em volta** da lâmina —
+  e ela pintava um **branco fixo**. No tema escuro do app isso é um papel que não existe na tela: o
+  mesmo defeito que o palco do editor já tinha resolvido com o `--palco-bg` (o token ganhou tom
+  próprio no escuro, `#1a1e26`, em `tokens.css`). A moldura passa a ser palco nos dois temas: claro
+  no claro (onde o branco fixo se confundia com o painel) e escuro no escuro. A lâmina recortada não
+  muda em nada — o fundo dela é inline, vindo do modelo que o cartão mostra (`.pp-ideia-slide` e
+  `.pp-var-slide`), e é ele que diz o visual que o clique aplica. O `var(--panel)` fica só como
+  reserva, para o caso de a moldura ser montada fora do escopo do app (o popup das Variantes vive
+  no `body`).
+- **Verificação:** a checagem é de CSS (as duas molduras e o token nos dois temas) — o defeito é
+  invisível para as checagens de estrutura, como o da moldura da lâmina (40ed357) também era. A
+  prévia das Ideias/Arranjos é 16:9 pela `--slide-ratio` do painel e a das Variantes carrega o
+  `aspect-ratio` inline, então o vão só aparece quando a prévia não cobre a moldura inteira
+  (arredondamento da escala, proporção própria do arquivo); é exatamente aí que o branco fixo
+  aparecia.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · molduras de prévia · 4 checagens
+
+- **Local:** seção "PowerPoint: as molduras das prévias são palco, não papel", logo depois da
+  seção "moldura da lâmina e relevo da página no tema escuro" (a mesma família de defeito)
+- **Linha:** `novo` — as duas molduras com `var(--palco-bg`, a negativa do branco fixo (`#fff`,
+  `#ffffff`, `white`) nas duas e a existência do token no `:root` e no `[data-theme="dark"]`
+- **Porquê:** a regra vale para os dois temas e para molduras que ainda vão nascer (a de Variantes
+  é de hoje) — sem a checagem, a próxima moldura de prévia nasce branca de novo. A checagem do
+  token prende o outro lado: se alguém remover o `--palco-bg` do escuro, a moldura cai no `--panel`
+  e o tom que o usuário pediu some sem nenhuma falha visível no teste.
+
+## docs/powerpoint.md
+
+### 2026-10-15 · molduras de prévia · a nota no tema escuro
+
+- **Local:** "Tema escuro: onde a lâmina começa e termina" (fim da seção)
+- **Linha:** `+` o parágrafo das molduras das prévias (Ideias/Arranjos e Variantes) usando o tom
+  do palco
+- **Porquê:** o documento do módulo é onde a regra do palco está escrita; a moldura da prévia é o
+  mesmo caso visto de outro lugar (a lâmina recortada dentro do painel).
