@@ -8,6 +8,7 @@ import { pedirTexto } from "../dialogoTexto";
 import { fluxoParaFormas, lerFluxoMermaid } from "./edicao/mermaid";
 import { ligarAjusteAlturaFita, ligarEncaixeFita, ligarRecolherFita, ligarRodaHorizontal } from "../fita";
 import { podeIsolar, caminhoDaBox, mascaraDaBox, nomeDaBox } from "./edicao/estudio";
+import { regioesDa, regiaoEm, caminhoDaRegiao, mascaraDaRegiao, type Regiao } from "./edicao/regioes";
 import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, novaImagem, type EstiloDeck, type ItemGaleria } from "./edicao/criar";
 import { dicaDoTraco, formaDoTraco, formaDeCurva, formaDaTinta, type Pincel } from "./edicao/desenho";
 import { atualizarEstilos, ehBrilho, ehFamilia, ehIntensidade, estiloDaFamilia, ligarEstilo, ligarEstiloFundo, soltarEstilo, soltarEstiloFundo } from "./edicao/estilos";
@@ -223,6 +224,12 @@ export class PowerPointHost {
   private estudio: string | null = null;
   /** o zoom de antes de entrar no Estúdio: ao sair, o palco volta para ele */
   private zoomAntesEstudio = 100;
+  /** o modo Regiões: o ponteiro acende a face sob ele e o clique isola (dentro do Estúdio) */
+  private modoRegioes = false;
+  /** a região isolada dentro da box (null = a fronteira é a box inteira) */
+  private regiao: Regiao | null = null;
+  /** o mapa de regiões da lâmina (refeito a cada pintura) */
+  private regioes: Regiao[] = [];
 
   private strip!: HTMLElement;
   private canvas!: HTMLElement;
@@ -322,6 +329,8 @@ export class PowerPointHost {
           <span class="pp-estudio-marca" aria-hidden="true"></span>
           <span class="pp-estudio-tag">Estúdio</span>
           <span class="pp-estudio-nome" data-estudio-nome></span>
+          <button type="button" class="pp-estudio-voltar" data-estudio-voltar hidden title="Voltar para a box inteira (Esc)">‹ Box</button>
+          <span class="pp-estudio-regiao" data-estudio-regiao hidden></span>
           <button type="button" class="btn small pp-estudio-sair" data-estudio-sair title="Sair do Estúdio (Esc)">Sair</button>
         </div>
         <div class="pp-left">
@@ -385,6 +394,11 @@ export class PowerPointHost {
     this.notesEl = $<HTMLTextAreaElement>("[data-notes]", this.pane);
     this.trilhaEstudio = $("[data-estudio]", this.pane);
     $("[data-estudio-sair]", this.pane).addEventListener("click", () => this.run("estudio"));
+    $("[data-estudio-voltar]", this.pane).addEventListener("click", () => this.voltarParaBox());
+    // o modo Regiões: o ponteiro acende a face sob ele e o clique a isola
+    this.slideEl.addEventListener("pointermove", (ev) => this.aoMoverNoPalco(ev));
+    this.slideEl.addEventListener("pointerleave", () => this.pintarRegiaoHover(null));
+    this.slideEl.addEventListener("click", (ev) => this.aoClicarNoPalco(ev));
 
     this.fita = new Fita($("#pp-ribbon", this.pane), { estado: () => this.estadoUI(), run: (c, v) => this.run(c, v) });
     // recolher a faixa (botão no canto das abas, duplo clique numa aba ou Ctrl+F1), ajustar a
@@ -1124,18 +1138,37 @@ export class PowerPointHost {
   private pintarEstudio(): void {
     const box = this.boxDoEstudio();
     // a box sumiu (apagada, desfeita, outra lâmina): o Estúdio fecha junto — nada de estado fantasma
-    if (this.estudio && !box) this.estudio = null;
+    if (this.estudio && !box) {
+      this.estudio = null;
+      this.regiao = null;
+      this.modoRegioes = false;
+    }
     this.pane.classList.toggle("pp-estudio-on", !!this.estudio);
+    // o mapa das regiões é da lâmina: refeito a cada pintura (as formas podem ter mudado de lugar)
+    this.regioes = box ? regioesDa(this.atual().shapes, this.dim(), nomeDaBox) : [];
+    // a região isolada é de UMA box: trocar de box (ou apagá-la) invalida a região
+    if (this.regiao && this.regiao.dono !== box?.id) this.regiao = null;
     if (this.trilhaEstudio) {
       this.trilhaEstudio.hidden = !this.estudio;
       const nome = this.trilhaEstudio.querySelector<HTMLElement>("[data-estudio-nome]");
       if (box && nome) nome.textContent = nomeDaBox(box);
+      const regiao = this.trilhaEstudio.querySelector<HTMLElement>("[data-estudio-regiao]");
+      if (regiao) {
+        regiao.hidden = !this.regiao;
+        regiao.textContent = this.regiao?.nome ?? "";
+      }
+      const voltar = this.trilhaEstudio.querySelector<HTMLElement>("[data-estudio-voltar]");
+      if (voltar) voltar.hidden = !this.regiao;
     }
     this.slideEl.querySelector(".pp-estudio-svg")?.remove();
     for (const el of this.slideEl.querySelectorAll<HTMLElement>("[data-shape]")) el.classList.remove("pp-estudio-box");
-    if (!box) return;
+    if (!box) {
+      this.pintarRegiaoHover(null);
+      return;
+    }
     const d = this.dim();
-    const caminho = mascaraDaBox(box, d);
+    // a fronteira: a box inteira ou a REGIÃO isolada (o contorno dela com os buracos)
+    const caminho = this.regiao ? mascaraDaRegiao(this.regiao, d) : mascaraDaBox(box, d);
     if (caminho) {
       const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       svg.setAttribute("class", "pp-estudio-svg");
@@ -1152,6 +1185,72 @@ export class PowerPointHost {
     for (const el of this.slideEl.querySelectorAll<HTMLElement>("[data-shape]")) {
       if (el.dataset.shape === box.id) el.classList.add("pp-estudio-box");
     }
+  }
+
+  // ------------------------------------------------------------------
+  // Regiões (o mapa dos contornos: a face sob o ponteiro e a região isolada)
+  // ------------------------------------------------------------------
+
+  /** O ponto do ponteiro em pt da lâmina (a unidade do mapa de regiões). */
+  private pontoNoPalco(ev: { clientX: number; clientY: number }): { x: number; y: number } | null {
+    const d = this.dim();
+    const r = this.slideEl.getBoundingClientRect();
+    if (!r.width || !r.height) return null;
+    return { x: ((ev.clientX - r.left) / r.width) * d.w, y: ((ev.clientY - r.top) / r.height) * d.h };
+  }
+
+  /** Com o modo Regiões ligado, o ponteiro acende a face sob ele. */
+  private aoMoverNoPalco(ev: PointerEvent): void {
+    if (!this.estudio || !this.modoRegioes) return;
+    const p = this.pontoNoPalco(ev);
+    this.pintarRegiaoHover(p ? regiaoEm(this.regioes, p) : null);
+  }
+
+  /** O realce da face sob o ponteiro (a mesma linguagem do palco: acento, sem roubar o ponteiro). */
+  private pintarRegiaoHover(r: Regiao | null): void {
+    this.slideEl.querySelector(".pp-regiao-svg")?.remove();
+    if (!r || !this.estudio) return;
+    const d = this.dim();
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "pp-estudio-svg pp-regiao-svg");
+    svg.setAttribute("viewBox", `0 0 ${d.w} ${d.h}`);
+    svg.setAttribute("preserveAspectRatio", "none");
+    svg.setAttribute("aria-hidden", "true");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", caminhoDaRegiao(r));
+    path.setAttribute("fill-rule", "evenodd");
+    svg.append(path);
+    this.slideEl.append(svg);
+  }
+
+  /** No modo Regiões o clique ISOLA a face sob o ponteiro (não muda a seleção). */
+  private aoClicarNoPalco(ev: MouseEvent): void {
+    if (!this.estudio || !this.modoRegioes) return;
+    const p = this.pontoNoPalco(ev);
+    if (!p) return;
+    const r = regiaoEm(this.regioes, p);
+    if (r) this.isolarRegiao(r);
+  }
+
+  /** Isola a região: a fronteira do Estúdio passa a ser aquela face (contorno + buracos). */
+  private isolarRegiao(r: Regiao): void {
+    this.regiao = r;
+    this.pintar();
+  }
+
+  /** Volta para a box inteira (a trilha tem o botão; o Esc faz o mesmo, antes de sair do Estúdio). */
+  private voltarParaBox(): void {
+    if (!this.regiao) return;
+    this.regiao = null;
+    this.pintar();
+  }
+
+  /** Liga/desliga o modo Regiões (só vale dentro do Estúdio). */
+  private alternarModoRegioes(): void {
+    if (!this.estudio) return;
+    this.modoRegioes = !this.modoRegioes;
+    if (!this.modoRegioes) this.pintarRegiaoHover(null);
+    this.atualizarUI();
   }
 
   /** No Estúdio, só o que está DENTRO da box entra na seleção (o resto está esmaecido). */
@@ -1188,6 +1287,8 @@ export class PowerPointHost {
   private sairDoEstudio(): void {
     if (!this.estudio) return;
     this.estudio = null;
+    this.regiao = null;
+    this.modoRegioes = false;
     this.stage.setZoom(this.zoomAntesEstudio);
     this.pintar();
   }
@@ -1588,6 +1689,8 @@ export class PowerPointHost {
       estudio: !!this.estudio,
       podeIsolar: podeIsolar(forma),
       estudioNome: isolada ? nomeDaBox(isolada) : undefined,
+      regioes: this.modoRegioes,
+      regiao: this.regiao?.nome,
       transicao: normalizarTransicao(this.atual().transicao),
       transicaoPreservada: !!this.atual().transicaoXml,
       animacao,
@@ -1605,6 +1708,8 @@ export class PowerPointHost {
   // ------------------------------------------------------------------
 
   private selecionar(ids: string[]): void {
+    // no modo Regiões o clique escolhe a FACE (a seleção fica de fora: o mapa é o protagonista)
+    if (this.modoRegioes && this.estudio) return;
     // Estúdio aberto: só o que está dentro da box entra na seleção
     if (this.estudio) ids = this.dentroDaBox(ids);
     const igual = ids.length === this.selecao.length && ids.every((x, i) => x === this.selecao[i]);
@@ -2644,6 +2749,10 @@ export class PowerPointHost {
         this.alternarEstudio();
         return;
       }
+      case "estudio-regioes": {
+        this.alternarModoRegioes();
+        return;
+      }
 
       case "tinta-forma": {
         // "Converter em forma": o traço escolhido passa pelo reconhecedor e vira a forma limpa
@@ -3655,7 +3764,9 @@ export class PowerPointHost {
         return;
       }
       if (this.ferramenta) this.consumir(e, () => this.run("ferramenta", ""));
-      // Estúdio aberto: o Esc sai do ambiente isolado (a trilha diz isso)
+      // Estúdio: o modo Regiões sai primeiro, depois a região, e por fim o ambiente isolado
+      else if (this.modoRegioes) this.consumir(e, () => this.alternarModoRegioes());
+      else if (this.regiao) this.consumir(e, () => this.voltarParaBox());
       else if (this.estudio) this.consumir(e, () => this.sairDoEstudio());
       else if (this.selecao.length) this.consumir(e, () => this.selecionar([]));
       return;
@@ -4427,6 +4538,8 @@ export class PowerPointHost {
     // trocar de lâmina fecha o Estúdio (a box é de uma lâmina só) e devolve o zoom de antes
     if (this.estudio) {
       this.estudio = null;
+      this.regiao = null;
+      this.modoRegioes = false;
       this.stage.setZoom(this.zoomAntesEstudio);
     }
     this.indice = novo;

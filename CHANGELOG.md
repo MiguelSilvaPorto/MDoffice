@@ -413,7 +413,21 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **A aba Animações cabe na tela (sem rolar nem cortar o grupo "Animar")** — o plano do encaixe supunha que todo grupo encolhe junto com as métricas, mas a galeria de animações tinha 72 px fixos por cartão e a aba passava da largura mesmo no degrau compacto. Agora a galeria acompanha as métricas e o encaixe **confere no navegador** depois de aplicar o plano: se ainda sobra rolagem, encolhe mais as métricas e, por fim, manda mais um grupo para o menu. Medido num Chrome real: de 1500 a 900 px nenhuma aba rola; em 1338 px a aba Animações cabe inteira.
+- **Estúdio · Regiões: o mapa dos contornos** (fase 2 do Estúdio) — dentro do Estúdio, o botão
+  **Regiões** liga o mapa: **passar o ponteiro acende a face sob ele** (véu do acento com contorno
+  tracejado) e **clicar isola aquela região** — a fronteira deixa de ser a box inteira e passa a ser
+  **o contorno da face com os buracos** dos elementos que estão dentro dela. É o que dá a precisão
+  pedida: no cartão com logo, nome e bolinhas, a face do cartão **não cobre** o logo nem o texto, a
+  face do logo tem a bolinha furada, a **rua entre dois cartões** é a face do palco e a área livre
+  desconta o que já está lá. A trilha vira `Lâmina 3 ▸ Card do Diego ‹ Box · Logo` (o **‹ Box**
+  volta para a box inteira) e o `Esc` sai do mapa, depois da região, e só então do Estúdio.
+  O mapa é um módulo puro (`edicao/regioes.ts`): contorno em **polígono** por geometria (com
+  **rotação**, raio por canto amostrado, elipse e triângulo), **buracos por interseção** (um texto
+  que passa por cima do logo é buraco do cartão **e** do logo — senão pintar a face cobriria o que
+  você está vendo) e profundidade pela árvore de contenção pelo centro (o mesmo critério dos
+  Arranjos). Teste: `npm run test:regioes`.
+
+- **Aba Animações cabe na tela (sem rolar nem cortar o grupo "Animar")** — o plano do encaixe supunha que todo grupo encolhe junto com as métricas, mas a galeria de animações tinha 72 px fixos por cartão e a aba passava da largura mesmo no degrau compacto. Agora a galeria acompanha as métricas e o encaixe **confere no navegador** depois de aplicar o plano: se ainda sobra rolagem, encolhe mais as métricas e, por fim, manda mais um grupo para o menu. Medido num Chrome real: de 1500 a 900 px nenhuma aba rola; em 1338 px a aba Animações cabe inteira.
 
 - **Estúdio: isolar uma box e trabalhar só nela** (fase 1 de um conjunto) — a aba **Desenhar** ganhou
   o grupo **Estúdio** com o botão **Isolar**: com uma box escolhida, o palco entra num **ambiente só

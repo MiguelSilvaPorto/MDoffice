@@ -11781,3 +11781,119 @@ antigas quando fizer sentido.
   as que seguem em "Não adicionado" (a aba Animações, o Estúdio do Desenhar, a aba Design completa
   e o Template com desenho) são de sessões com trabalho aberto, mexer nelas criaria duplicata ou
   conflito.
+
+## src/powerpoint/edicao/regioes.ts (arquivo novo)
+
+### 2026-10-15 · Estúdio (fase 2) · o mapa dos contornos
+
+- **Local:** `poligonoDaForma`, `poligonoDoPalco`, `areaDoPoligono`, `pontoDentro`,
+  `poligonosSeCruzam`, `regioesDa`, `regiaoEm`, `buracosDeDesenho`, `caminhoDaRegiao`,
+  `mascaraDaRegiao`
+- **Linha:** `novo` (módulo puro). O contorno sai em POLÍGONO em pt da lâmina: retângulo (4 pontos),
+  cantos arredondados (arcos amostrados em 5 pontos, com o raio por canto do `cantosDe`, limitado a
+  metade do menor lado), elipse (24 pontos), triângulo (3) e o retângulo da caixa para o resto — com
+  a **rotação** aplicada em torno do centro da caixa e os pontos repetidos removidos. Os buracos de
+  uma face são as formas **menores que CRUZAM** o contorno dela; a `profundidade` vem da árvore de
+  contenção **pelo centro** (o pai é o menor contorno que contém o centro da forma)
+- **Porquê:** a fase 1 isolou a box pelo contorno **externo** — com um logo, um texto e bolinhas
+  dentro do cartão, isso bastava para "entrar na box" mas não para desenhar com exatidão: a face do
+  cartão precisava saber **o que já está lá dentro**. Duas decisões moldaram o módulo. (1) Os
+  buracos são por **interseção**, e não pela árvore de contenção: na primeira versão, um texto cujo
+  centro caía dentro do logo virava "filho do logo", e a face do cartão **não o tinha como buraco**
+  — pintar a face do cartão cobriria o texto, exatamente o que o usuário pediu para não acontecer
+  (o teste prende esse caso: o cartão fura o logo **e** o texto). A árvore pelo centro fica só para
+  a **profundidade**, que é o que o `regiaoEm` usa para escolher a face de um ponto — e é o critério
+  que os Arranjos e o encaixe do desenho no cartão já usam no repositório. (2) `buracosDeDesenho`
+  tira os buracos que estão **inteiramente dentro de outro buraco**: o `evenodd` (e o `nonzero`)
+  volta a preencher o que está dentro de um buraco aninhado, então furar o logo dentro do buraco do
+  cartão **traria o logo de volta** para dentro da face do palco. O teste prende os dois lados: a
+  lista `buracos` (teste de ponto e, mais tarde, o recorte da pintura) tem todos; o **desenho** e a
+  **área** usam só os de fora. O contorno em polígono (e não no caminho exato com arcos do
+  `estudio.ts`) é de propósito: o polígono é o que o teste de ponto e a interseção precisam, e o
+  caminho com arcos de verdade continua sendo o do DESENHO (a máscara do Estúdio) — cada um no seu
+  papel, sem uma representação atrapalhar a outra.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-15 · Estúdio (fase 2) · o modo Regiões (o ponteiro, o clique e a fronteira)
+
+- **Local:** `modoRegioes`, `regiao` e `regioes` (campos), `pontoNoPalco`, `aoMoverNoPalco`,
+  `pintarRegiaoHover`, `aoClicarNoPalco`, `isolarRegiao`, `voltarParaBox`, `alternarModoRegioes`,
+  o `pintarEstudio()` (o mapa e a fronteira), o `case "estudio-regioes"`, o `selecionar()` e o
+  `Escape` do `aoTecla()`
+- **Linha:** `+` o mapa refeito a cada `pintarEstudio()` (`regioesDa(this.atual().shapes, dim, nomeDaBox)`);
+  `+` `pointermove`/`pointerleave`/`click` no `slideEl`; `+` o realce com `class="pp-estudio-svg pp-regiao-svg"`
+  e o `caminhoDaRegiao(r)`; a fronteira passa a `this.regiao ? mascaraDaRegiao(this.regiao, d) : mascaraDaBox(box, d)`;
+  `+` os slots `[data-estudio-regiao]` e `[data-estudio-voltar]` na trilha; `selecionar()`:
+  `+ if (this.modoRegioes && this.estudio) return;`; `Escape`: `+ modoRegioes → regiao → estudio`
+- **Porquê:** o modo é **modal de propósito** (como o pincel e a borracha): com o mapa ligado, o
+  clique pertence ao mapa — por isso a seleção é suspensa em `selecionar()` (o ponto único por onde
+  passam o clique, o laço e o teclado) em vez de tentar competir com o palco pelos eventos. O mapa é
+  refeito **na pintura** e não a cada movimento do ponteiro: mover o mouse só faz teste de ponto
+  (barato); mexer numa forma repinta e o mapa acompanha (senão a face acenderia no lugar velho). O
+  `Esc` em **três degraus** (mapa → região → Estúdio) é o que o usuário espera de um ambiente
+  aninhado: cada toque desfaz UM nível, e o **Sair** da trilha continua fechando tudo de uma vez. A
+  região é validada contra a box (`this.regiao.dono !== box?.id`) porque ela é de UMA box: trocar de
+  box (ou apagá-la) precisa invalidar a região — sem isso o Estúdio ficaria com uma fronteira que
+  não existe mais.
+
+## src/powerpoint/ui/estado.ts · src/powerpoint/ui/fita.ts
+
+### 2026-10-15 · Estúdio (fase 2) · o botão Regiões e o estado
+
+- **Local:** `EstadoUI` (`regioes`, `regiao?`) e o grupo Estúdio da aba Desenhar
+- **Linha:** `+ regioes: boolean; regiao?: string;`; `+` o botão `grande("estudio-regioes", …)` no
+  mesmo grupo do **Isolar**, com `on("estudio-regioes", st.regioes)` e `dis("estudio-regioes", !st.estudio)`,
+  e a dica que troca entre "mostrar o mapa" e "sair do mapa"
+- **Porquê:** o mapa **só existe dentro do Estúdio** (fora dele não há fronteira), então o botão fica
+  **desabilitado** em vez de escondido: apagado com a dica boa ele ensina o caminho (é o mesmo
+  contrato do "Converter em forma" e do próprio Isolar). O rótulo NÃO vira "Sair" aqui, ao
+  contrário do Isolar: o botão é um **modo** (acende e apaga), e o `Esc` já sai dele — trocar o texto
+  criaria dois botões "Sair" na mesma fita, cada um saindo de uma coisa diferente.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-15 · Estúdio (fase 2) · o realce da face e os chips da trilha
+
+- **Local:** `.pp-estudio-svg.pp-regiao-svg path`, `.pp-estudio-regiao`, `.pp-estudio-voltar` e o
+  `.ppr-regioes-ic`
+- **Linha:** `+` o realce com `fill: color-mix(in srgb, var(--accent) 14%, transparent)`,
+  `stroke: var(--accent)`, `stroke-dasharray: 5 3` e `vector-effect: non-scaling-stroke`; `+` o nome
+  da região e o chip **‹ Box** na trilha; `+` o ícone do modo (o tracejado com a divisão, desenhado
+  em CSS como os outros ícones próprios do app)
+- **Porquê:** o realce precisa ser lido **na hora do movimento** e sair do caminho: por isso um véu
+  claro do acento em vez de uma cor cheia. O `vector-effect: non-scaling-stroke` é o detalhe que
+  salva o traço no zoom alto e no baixo: o caminho está em pt da lâmina (o `viewBox`), então sem ele
+  o contorno tracejado viraria um risco grosso (ou sumiria) quando a lâmina é ampliada — no Estúdio
+  o zoom é justamente o que enquadra a box.
+
+## scripts/testar-regioes.mjs · scripts/testar-estudio.mjs · package.json
+
+### 2026-10-15 · Estúdio (fase 2) · o teste do mapa (43 checagens) e 2 checagens antigas ajustadas
+
+- **Local:** script novo (núcleo + fiação + CSS); `package.json` ganhou `"test:regioes"`;
+  `testar-estudio.mjs` — as checagens do fecho da lâmina e da box que sumiu
+- **Linha:** `novo` — o contorno de cada geometria (a área do retângulo, a da elipse dentro de 2%, a
+  do triângulo = metade da caixa, o canto que o raio corta, a rotação preservando a área), o CASO DO
+  USUÁRIO (o cartão com logo e texto: as faces, os buracos, a área e o ponto em cada uma), o texto
+  que passa por cima do logo, a rua entre duas boxes, o aninhamento de 4 níveis, as formas que se
+  cruzam e as geometrias sem área; `~` no teste da fase 1, as duas checagens passaram a exigir o
+  bloco de 3 linhas (o Estúdio agora limpa também a região e o mapa)
+- **Porquê:** o mapa é a peça que **decide onde a pintura pode cair** — um buraco faltando não
+  apareceria como erro em lugar nenhum: apareceria como uma pincelada cobrindo o logo do cartão
+  (fase 3). O teste do "texto por cima do logo" é o que trava a decisão de projeto (interseção, e
+  não o filho da árvore). As duas checagens ajustadas no teste da fase 1 prendem o mesmo risco de
+  antes (o zoom que volta e o modo que fecha quando a box some) — elas só passaram a aceitar as
+  linhas que a fase 2 acrescentou.
+
+## docs/powerpoint.md · CHANGELOG.md
+
+### 2026-10-15 · Estúdio (fase 2) · a seção das Regiões e a entrada
+
+- **Local:** a seção nova "Estúdio · Regiões: o mapa dos contornos" (antes de "Conectar formas") e o
+  CHANGELOG → **PowerPoint → Não adicionado → Frontend**
+- **Linha:** `novo` nas duas
+- **Porquê:** o gesto (acender a face, clicar isola, o ‹ Box e os três degraus do Esc) é o que a
+  pessoa precisa aprender para usar; o resto da seção é a **regra** do mapa (o que é uma face, o que
+  vira buraco e por quê) — o pedido do usuário foi explícito sobre desenhar **sem sair nem 1 px** do
+  contorno, e a regra é o que garante isso.

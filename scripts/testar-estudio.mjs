@@ -154,9 +154,16 @@ console.log("\no host: entrar, sair e o que o modo muda");
   ok("a trilha diz qual box e oferece o Sair", /data-estudio-nome/.test(ppt) && /data-estudio-sair/.test(ppt) && /nomeDaBox\(box\)/.test(ppt));
   ok("a sessão de cliques passa a respeitar a box (seleção só do que está dentro)", /if \(this\.estudio\) ids = this\.dentroDaBox\(ids\)/.test(ppt));
   ok("o Esc sai do Estúdio", /else if \(this\.estudio\) this\.consumir\(e, \(\) => this\.sairDoEstudio\(\)\)/.test(ppt));
-  ok("trocar de lâmina fecha o Estúdio (a box é de uma lâmina)", /if \(this\.estudio\) \{\s*this\.estudio = null;\s*this\.stage\.setZoom\(this\.zoomAntesEstudio\);/.test(ppt));
+  ok(
+    "trocar de lâmina fecha o Estúdio (a box é de uma lâmina)",
+    /if \(this\.estudio\) \{\s*this\.estudio = null;\s*this\.regiao = null;\s*this\.modoRegioes = false;\s*this\.stage\.setZoom\(this\.zoomAntesEstudio\);/.test(ppt),
+    "o zoom de antes volta e o mapa de regiões não atravessa a lâmina"
+  );
   ok("carregar outra aba/documento também fecha", /outra aba\/documento: o Estúdio não atravessa/.test(ppt));
-  ok("a box apagada fecha o Estúdio (nada de estado fantasma)", /if \(this\.estudio && !box\) this\.estudio = null;/.test(ppt));
+  ok(
+    "a box apagada fecha o Estúdio (nada de estado fantasma)",
+    /if \(this\.estudio && !box\) \{\s*this\.estudio = null;\s*this\.regiao = null;\s*this\.modoRegioes = false;/.test(ppt)
+  );
   ok("o zoom enquadra a box e centra", /private enquadrarBox\(s: Shape\)/.test(ppt) && /private centrarNaBox\(s: Shape\)/.test(ppt));
   ok(
     "o estado chega à fita com o nome da box",

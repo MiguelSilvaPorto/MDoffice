@@ -493,7 +493,8 @@ export class Fita {
       ),
       grupo(
         "Estúdio",
-        `${grande("estudio", `<span class="ppr-estudio-ic"></span>`, "Isolar", "Isolar a box escolhida: edite só ela, num ambiente separado (Esc sai)")}`
+        `${grande("estudio", `<span class="ppr-estudio-ic"></span>`, "Isolar", "Isolar a box escolhida: edite só ela, num ambiente separado (Esc sai)")}
+         ${grande("estudio-regioes", `<span class="ppr-regioes-ic"></span>`, "Regiões", "Mostrar o mapa de contornos: passar o ponteiro acende a face sob ele e clicar isola a região (Esc volta)")}`
       ),
       grupo(
         "Traço",
@@ -1328,6 +1329,16 @@ export class Fita {
       botaoEstudio.setAttribute("aria-label", botaoEstudio.title);
       botaoEstudio.classList.toggle("estudio-on", st.estudio);
       dis("estudio", !st.estudio && !st.podeIsolar);
+    }
+    // o mapa de contornos só vale DENTRO do Estúdio (fora dele não há fronteira para acender)
+    on("estudio-regioes", st.regioes);
+    dis("estudio-regioes", !st.estudio);
+    const botaoRegioes = this.el.querySelector<HTMLElement>('[data-cmd="estudio-regioes"]');
+    if (botaoRegioes) {
+      botaoRegioes.title = st.regioes
+        ? "Sair do mapa de contornos (Esc)"
+        : "Mostrar o mapa de contornos: passar o ponteiro acende a face sob ele e clicar isola a região";
+      botaoRegioes.setAttribute("aria-label", botaoRegioes.title);
     }
     on("pincel-assistente", st.pincel.assistente);
     for (const w of [1, 2, 4, 8]) on(`pincel:w:${w}`, st.pincel.w === w);

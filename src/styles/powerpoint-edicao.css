@@ -1639,6 +1639,57 @@ button.ppr.big .ppr-gal-ic svg {
   fill: color-mix(in srgb, var(--palco-bg) 82%, transparent);
 }
 
+/* o realce da face sob o ponteiro (modo Regiões): um véu do acento com o contorno tracejado */
+.pp-estudio-svg.pp-regiao-svg path {
+  fill: color-mix(in srgb, var(--accent) 14%, transparent);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.pp-estudio-regiao {
+  flex: none;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.pp-estudio-regiao[hidden],
+.pp-estudio-voltar[hidden] {
+  display: none;
+}
+
+.pp-estudio-voltar {
+  flex: none;
+  padding: 0 6px;
+  height: 18px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 10.5px;
+  cursor: pointer;
+}
+
+.pp-estudio-voltar:hover {
+  color: var(--fg);
+  border-color: var(--accent);
+}
+
+/* o ícone do modo Regiões: a marca tracejada com uma divisão dentro */
+.ppr-regioes-ic {
+  width: 16px;
+  height: 13px;
+  border: 2px dashed currentColor;
+  border-radius: 4px;
+  background: linear-gradient(to bottom right, transparent calc(50% - 1px), currentColor calc(50% - 1px), currentColor calc(50% + 1px), transparent calc(50% + 1px));
+}
+
 /* a box isolada: um contorno de destaque por cima da máscara */
 .pp-estudio-on .pp-estudio-box::after {
   content: "";

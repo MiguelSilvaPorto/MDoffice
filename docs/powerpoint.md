@@ -393,6 +393,28 @@ Este é o **primeiro passo** de um conjunto: o caminho da box é o mesmo que a *
 (vidro, pincel, balde), as **camadas** e as **cópias vinculadas** (modelo → cópias, com partes
 desvinculadas) vão usar como fronteira. Teste: `npm run test:estudio`.
 
+## Estúdio · Regiões: o mapa dos contornos
+
+Dentro do Estúdio, o botão **Regiões** liga o **mapa de contornos** da lâmina:
+
+- **passar o ponteiro acende a face sob ele** (um véu do acento com o contorno tracejado) — o mapa
+  divide o que está na lâmina nas **regiões de verdade**: a **face do cartão** (o contorno dele
+  menos o logo, o texto e as bolinhas que estão dentro), a **face de cada elemento**, a **rua entre
+  dois cartões** e o **palco** (a lâmina menos o que a ocupa);
+- **clicar isola aquela região**: a fronteira do Estúdio deixa de ser a box inteira e passa a ser a
+  **face escolhida** — com os **buracos** dela —, então o que você fizer ali dentro **não cobre** o
+  que estava na lâmina (o logo continua inteiro, o texto continua à vista);
+- a **trilha** vira `Lâmina 3 ▸ Card do Diego ‹ Box · Logo`: o **‹ Box** volta para a box inteira e o
+  `Esc` sai do mapa, depois da região, e só então do Estúdio.
+
+O que define cada face: o contorno em **polígono** (retângulo, cantos arredondados amostrados no
+**raio por canto**, elipse, triângulo — e a **rotação** da forma junto), os **buracos por
+interseção** (um texto que **passa por cima** de um logo é buraco do cartão **e** do logo: pintar a
+face do cartão não pode cobrir o que você está vendo) e a profundidade pela árvore de **contenção
+pelo centro** (o mesmo critério dos Arranjos e do desenho que gruda no cartão). Um buraco que está
+inteiramente dentro de outro não é desenhado de novo (o `evenodd` voltaria a preencher o que já
+estava furado). Teste: `npm run test:regioes`.
+
 ## Conectar formas
 
 - Na aba **Inserir**, o botão **Conectar** (grupo **Diagrama**, ao lado do Fluxo do Mermaid) liga

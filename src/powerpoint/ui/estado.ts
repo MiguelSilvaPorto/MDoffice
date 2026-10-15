@@ -74,6 +74,10 @@ export interface EstadoUI {
   podeIsolar: boolean;
   /** o nome da box isolada (a trilha do Estúdio) */
   estudioNome?: string;
+  /** o modo Regiões está ligado (o ponteiro acende a face e o clique isola) */
+  regioes: boolean;
+  /** o nome da região isolada dentro da box (a trilha mostra "Box › Região") */
+  regiao?: string;
 }
 
 // A lista de fontes comuns do app (fitas do PowerPoint e do Word). O campo de fonte
