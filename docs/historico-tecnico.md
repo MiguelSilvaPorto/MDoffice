@@ -12374,3 +12374,14 @@ antigas quando fizer sentido.
 - **Linha:** `+` a frase do 2×2 do grupo Desenho
 - **Porquê:** a bala descreve o que encolhe e o que colapsa — o grupo mais alto que a faixa era
   exatamente o que o print mostrava.
+
+## CHANGELOG.md
+
+### 2026-10-15 · os quatro botões do Desenho · a promoção da entrada
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não promove (no instante do commit a entrada ainda não está na main), então a
+  promoção anda depois: os quatro botões do Desenho em 2×2 (369d89f). Promovi só a entrada DESTA
+  tarefa — as que seguem em "Não adicionado" (o grupo Diagrama fora do Desenhar, o Estúdio —
+  Regiões, a aba Animações e as demais) são de sessões com trabalho aberto, mexer nelas criaria
+  duplicata ou conflito.

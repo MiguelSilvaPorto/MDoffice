@@ -413,12 +413,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Os quatro botões do grupo Desenho ficam juntos e mais compactos**: Preenchimento, Contorno,
-  Efeitos e Organizar estavam em **três numa coluna + o Organizar solto ao lado** (print do
-  usuário) — o grupo ficava mais alto que o resto da faixa e o quarto botão parecia de fora. Agora
-  são um **2×2** (Preenchimento/Contorno em cima, Efeitos/Organizar embaixo): o grupo fica uma
-  linha mais baixo e os quatro leem juntos.
-
 - **O grupo "Diagrama" saiu da aba Desenhar (era função repetida)**: **Fluxo do Mermaid** e
   **Conectar** já vivem na aba **Inserir** — são **inserção**, não desenho — e o atalho na aba
   Desenhar fazia exatamente a mesma coisa em dois lugares (pedido: *"o diagrama é função repetida, já
@@ -533,6 +527,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **Os quatro botões do grupo Desenho ficam juntos e mais compactos**: Preenchimento, Contorno,
+  Efeitos e Organizar estavam em **três numa coluna + o Organizar solto ao lado** (print do
+  usuário) — o grupo ficava mais alto que o resto da faixa e o quarto botão parecia de fora. Agora
+  são um **2×2** (Preenchimento/Contorno em cima, Efeitos/Organizar embaixo): o grupo fica uma
+  linha mais baixo e os quatro leem juntos.
 
 - **A lâmina inteira animando? É a TRANSIÇÃO — e agora ela aparece onde você trabalha**: aplicar uma
   animação numa forma grava **só na forma** (a exportação leva a animação por forma), mas quem já
