@@ -1323,7 +1323,7 @@ console.log("\npincel de formatação (copiar formatação)");
   );
   checa(
     "o duplo clique na forma não abre o texto com o pincel armado",
-    /aoDuploClique[\s\S]{0,600}if \(ctx\.ferramenta\?\.tipo === "pincel"\) return;/.test(palcoPin),
+    /aoDuploClique[\s\S]{0,1200}if \(ctx\.ferramenta\?\.tipo === "pincel"\) return;/.test(palcoPin),
     "pintar viraria editar o texto"
   );
   checa(
@@ -1345,7 +1345,7 @@ console.log("\npincel de formatação (copiar formatação)");
     /case "copiar-formato":\s*return this\.alternarPincelFormato\(value === "fixo"\)/.test(pptPin) &&
       /private alternarPincelFormato\(fixo: boolean\)/.test(pptPin) &&
       /this\.ferramenta\?\.tipo === "pincel" && !fixo/.test(pptPin) &&
-      /case "ferramenta":[\s\S]{0,320}this\.pincelFmt = null/.test(pptPin) &&
+      /case "ferramenta":[\s\S]{0,700}this\.pincelFmt = null/.test(pptPin) &&
       /load\(data: PowerPointTabData\): void \{[\s\S]{0,900}this\.pincelFmt = null/.test(pptPin),
     "o pincel ficaria armado depois de sair da ferramenta"
   );
@@ -1702,6 +1702,24 @@ console.log("\nPowerPoint: aba Animações (o desenho da fita)");
     "o popup Mais diz em qual forma o efeito vai cair",
     /pp-pop-dica/.test(fita) && /aplicar na forma <b>/.test(fita) && /\.pp-pop-anim \.pp-pop-rot\s*\{/.test(css),
     "o popup tapa a seleção"
+  );
+}
+
+// ---------------------------------------------------------------- recolher a faixa (chevron)
+
+console.log("\nfita: o botão de recolher decide pelo que está à vista");
+
+{
+  const fita = ler("src/fita.ts");
+  checa(
+    "o chevron recolhe o que está à vista (não o estado fixo)",
+    /const visivel = !\(recolhida && !temporaria\);[\s\S]{0,80}fixar\(visivel\)/.test(fita),
+    "com a faixa à mostra no modo recolhido (Template), o clique fixava aberta em vez de recolher"
+  );
+  checa(
+    "o botão continua anunciando o que vai fazer",
+    /const titulo = escondida[\s\S]{0,400}Recolher a faixa de opções/.test(fita),
+    "o título precisa acompanhar o estado visível"
   );
 }
 

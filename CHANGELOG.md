@@ -1309,6 +1309,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   sem o que rolar deixa o evento passar. O handler virou **uma função só**
   (`ligarRodaHorizontal`, em `src/fita.ts`): o Excel e o PowerPoint tinham cópias inline — o Word,
   nenhuma. 4 verificações novas em `npm run test:layout`.
+- **O botão de recolher a faixa faz o que anuncia (o caso do Template)**: com a faixa mostrada
+  "por enquanto" no modo recolhido — o que acontece ao clicar num botão da barra das abas, como o
+  **Template** —, o chevron usava o estado **fixo** em vez do que está à vista: ele anunciava
+  "Recolher a faixa de opções" e fazia o contrário (fixava aberta, e a faixa não fechava mais).
+  Agora o clique decide pelo que está à vista: aberta (mesmo que só por enquanto) → **recolhe**;
+  recolhida → fixa aberta. Vale para as três fitas (Word, PowerPoint e Excel).
 
 **Ferramentas (dev)**
 
@@ -1393,3 +1399,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   caixa e o lado) e 4 em `npm run test:layout` garantem que o palco usa a função (e não o DOM) e
   deixa os conectores fora do alvo — o defeito das bolinhas piscando e da ligação na caixa errada
   volta só com alguém vendo.
+- **Verificações do pincel de formatação voltaram a passar**: duas checagens de `testar-layout`
+  usavam janelas curtas de regex (600 e 320 caracteres) entre um marco e a guarda, e o código
+  cresceu em volta (876 e 495) — a `main` ficou com `test:layout` vermelho sem o pincel ter
+  quebrado nada. As janelas foram para 1200 e 700 (as guardas testadas são as mesmas).

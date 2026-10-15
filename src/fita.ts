@@ -94,7 +94,13 @@ export function ligarRecolherFita(o: OpcoesRecolherFita): { alternar: () => void
   botao.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
-    fixar(!recolhida);
+    // O clique decide pelo que está À VISTA: com a faixa aberta (mesmo que só "por enquanto",
+    // no modo recolhido — o caso de clicar no Template) ele RECOLHE; recolhida, ele fixa aberta.
+    // Antes usava o estado fixo: com a faixa à mostra e a preferência "recolhida" (a que o próprio
+    // botão anunciava como "Recolher a faixa de opções"), o clique fazia o contrário — fixava
+    // aberta e a faixa não fechava mais.
+    const visivel = !(recolhida && !temporaria);
+    fixar(visivel);
   });
 
   // duplo clique numa aba fixa ou solta a faixa (como no Office)

@@ -8916,3 +8916,43 @@ antigas quando fizer sentido.
   detalhe cosmético; ajustar a âncora (em vez de afrouxar a checagem) mantém o contrato. As novas
   prendem os dois lados da preferência (o padrão e a persistência) e a regra que o usuário pediu:
   o clique direto não pode voltar a criar sempre "Título e conteúdo".
+
+## src/fita.ts
+
+### 2026-10-15 · recolher a faixa · o chevron decide pelo que está à vista
+- **Local:** `ligarRecolherFita` — o clique do botão `.fita-recolher`
+- **Linha:** `fixar(!recolhida)` → `const visivel = !(recolhida && !temporaria); fixar(visivel)`
+- **Porquê:** no modo recolhido, clicar num botão da barra das abas (o **Template** — o relato veio
+  com a captura dele) mostra a faixa "por enquanto" (`temporaria = true`). O chevron então usava o
+  estado FIXO: `!recolhida` = `false` → "fixar aberta" — ele anunciava "Recolher a faixa de opções"
+  (o título segue o que está à vista) e fazia o contrário, e a faixa não fechava mais por ali.
+  Agora o clique decide pelo que o usuário vê: à vista → recolhe; recolhida → fixa aberta. Vale
+  para as três fitas (o módulo é compartilhado).
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · recolher a faixa · 2 verificações
+- **Local:** o bloco "fita: o botão de recolher decide pelo que está à vista"
+- **Linha:** `novo`
+- **Porquê:** prende a decisão pelo estado visível (`visivel` + `fixar(visivel)`) e que o título
+  continua acompanhando. A conferência no navegador percorreu o caso inteiro: recolhida → Template
+  (a faixa aparece por enquanto e a galeria abre) → chevron → **recolhe** (antes: fixava aberta);
+  escolher um modelo também deixa recolhida, e recolhida → chevron → abre e fixa.
+
+### 2026-10-15 · pincel de formatação · as duas janelas de regex que ficaram curtas
+- **Local:** as checagens "o duplo clique na forma não abre o texto com o pincel armado" e "o host
+  arma/desarma o pincel"
+- **Linha:** `{0,600}` → `{0,1200}` e `{0,320}` → `{0,700}`
+- **Porquê:** a `main` estava com `test:layout` **vermelho** (2 falhas) sem nada quebrado: as
+  guardas do pincel continuavam no lugar, mas o código cresceu em volta e a distância passou de
+  600/320 para **876/495** caracteres. A janela é só o alcance da checagem — as guardas testadas
+  são as mesmas; o pincel de formatação (do outro fechamento) segue intacto.
+
+## CHANGELOG.md
+
+### 2026-10-15 · recolher a faixa · as entradas no Geral
+- **Local:** Geral → Adicionado → Frontend (a correção) e → Ferramentas (dev) (as janelas)
+- **Linha:** `novo`
+- **Porquê:** a correção é do módulo compartilhado das fitas (não de um módulo só) e o conserto das
+  checagens é de ferramenta de teste; as duas entradas entram já promovidas, como o fechamento
+  exige.
