@@ -1477,6 +1477,11 @@ checa(
   ),
   "sem os tokens do app o balão volta a destoar"
 );
+checa(
+  "o texto da dica quebra dentro do balão (caminho longo não vaza)",
+  /\.dica\s*\{[^}]*overflow-wrap:\s*anywhere/.test(ler("src/styles/base.css")),
+  "sem a quebra, um caminho sem espaços passa por fora da caixa e cobre o conteúdo"
+);
 checa("a dica segue a preferência de cantos", /\.dica\b/.test(ler("src/styles/cantos.css")), "fora da lista dos cantos");
 checa(
   "a dica não sai na impressão",

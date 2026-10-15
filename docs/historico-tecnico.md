@@ -12117,3 +12117,16 @@ antigas quando fizer sentido.
 - **Porquê:** o defeito era visual (o corte de cor) e voltaria sem erro nenhum se alguém separasse
   as metades de novo; as travas prendem o contrato inteiro — **uma forma**, o gradiente
   **origem→destino**, o eixo igual ao do arquivo e a migração do documento antigo.
+
+## src/styles/base.css
+
+### 2026-10-15 · dica · o caminho longo não vaza mais da caixa
+- **Local:** a regra `.dica`
+- **Linha:** `+ overflow-wrap: anywhere;`
+- **Porquê:** o balão nasceu com `max-width: 320px` e `white-space: pre-line`, mas um caminho do
+  Windows não tem ponto de quebra (sem espaços — e a barra invertida não é oportunidade de quebra):
+  o texto era uma "palavra" de ~400 px, então a caixa ficava nos 320 px e o texto **vazava** para
+  fora dela, por cima do conteúdo (o balão do caminho da pasta, na árvore do projeto — print do
+  usuário). O `anywhere` deixa o navegador quebrar o trecho longo dentro do `max-width`, em vez de
+  estourar o balão: no lab, a mesma dica passou de `texto: 400px` (vazando) para `texto: 318px`
+  dentro da caixa. A verificação no `test:layout` prende a linha para a quebra não sumir.

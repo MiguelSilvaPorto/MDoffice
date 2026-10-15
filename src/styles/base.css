@@ -276,6 +276,10 @@ button {
   font-size: 12.5px;
   line-height: 1.35;
   white-space: pre-line;
+  /* caminho/URL não têm espaço para quebrar: sem isto o texto vaza da caixa e passa por cima
+     do conteúdo (o balão do caminho da pasta saía para fora — print do usuário). `anywhere`
+     quebra o trecho longo dentro do max-width, em vez de estourar o balão. */
+  overflow-wrap: anywhere;
   pointer-events: none;
   user-select: none;
   animation: dica-entra 120ms ease-out;
