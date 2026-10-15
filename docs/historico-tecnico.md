@@ -9842,3 +9842,17 @@ antigas quando fizer sentido.
 - **Porquê:** as três docs descreviam os dois sistemas separados — e a do `ui-deckcraft-abas` era a
   que **explicava** o nome "Designer" (contrariando o pedido atual). A nota do painel também
   ganhou o porquê do custo da prévia (uma por quadro), que é o que a mantém viável.
+
+
+## CHANGELOG.md
+
+### 2026-10-15 — promoção — a entrada da Composição entra no "Adicionado" (PowerPoint)
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** 1 entrada movida — **"Composição": as Ideias de design e os Arranjos viraram um sistema
+  só** (`decd34a`, worktree `feat/composicao`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não cabe
+  no mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que ainda
+  não entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** da lista do Frontend,
+  como as promoções anteriores; as entradas das outras sessões que estavam na seção (a lâmina que
+  nasce clara, a fita que cabe na tela, a aba Desenhar e a aba Design completa) ficaram **intactas**
+  — nenhuma delas entrou na `main` por este fecho.

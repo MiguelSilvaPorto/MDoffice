@@ -445,6 +445,18 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   (com as seis cores) e do Tamanho são desenhados no CSS do app — nada de arte do Office. Testes:
   `npm run test:estilos` e `npm run test:layout`.
 
+- **Template: os modelos agora têm DESENHO, não só cores** — barra lateral, faixas, cantos, círculos, moldura ou blocos, diferentes na capa/seção e no miolo; as decorações ficam nas bordas (nunca cobrem o texto), trocam ao mudar de modelo e de layout, aparecem em miniatura no cartão e vão no "Salvar como modelo". Saem os modelos Esmeralda, Oceano e Ameixa (fundo em gradiente ilegível) e entram Corporativo, Executivo e Terracota. Teste: `npm run test:modelos`.
+
+### Adicionado (na main)
+
+**Backend**
+
+- **Arranjos: o conteúdo não se desloca mais do cartão** — o bloco inteiro (cartão + o que sai dele) é centrado no espaço e todas as formas andam por ele; a detecção roda uma vez e usa mapas por id, em vez de `find` por forma.
+
+- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
+
+**Frontend**
+
 - **"Composição": as Ideias de design e os Arranjos viraram um sistema só**: os dois nasceram da
   mesma ideia e estavam se separando — duas abas no painel, dois botões na fita e um grupo com o
   nome do PowerPoint (**"Designer"**). Agora é **uma aba** (Composição), **um botão** na fita
@@ -463,18 +475,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   nada — e o filtro Arrumação explica em vez de repetir a mesma prévia. A prévia passou a usar o
   **ratio do deck** (num 4:3 ela dizia uma coisa e o clique fazia outra) e o nome da Microsoft saiu
   da interface (o grupo "Designer" deixou de existir).
-
-- **Template: os modelos agora têm DESENHO, não só cores** — barra lateral, faixas, cantos, círculos, moldura ou blocos, diferentes na capa/seção e no miolo; as decorações ficam nas bordas (nunca cobrem o texto), trocam ao mudar de modelo e de layout, aparecem em miniatura no cartão e vão no "Salvar como modelo". Saem os modelos Esmeralda, Oceano e Ameixa (fundo em gradiente ilegível) e entram Corporativo, Executivo e Terracota. Teste: `npm run test:modelos`.
-
-### Adicionado (na main)
-
-**Backend**
-
-- **Arranjos: o conteúdo não se desloca mais do cartão** — o bloco inteiro (cartão + o que sai dele) é centrado no espaço e todas as formas andam por ele; a detecção roda uma vez e usa mapas por id, em vez de `find` por forma.
-
-- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
-
-**Frontend**
 
 - **Ferramentas de tinta na aba Desenhar**: o **marca-texto** (traço **largo e translúcido**, sem
   virar forma: é marcação), a **borracha** (clique ou arraste **sobre os traços de tinta** para
