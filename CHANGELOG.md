@@ -1139,7 +1139,21 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **A fita cabe na largura em quatro degraus — e sem rolagem (PowerPoint, Word e Excel)**: a faixa
+  de opções deixou de empurrar botão para fora da tela. Do mais folgado ao mais apertado: (1)
+  **cheia**; (2) **compacta** — espaços e ícones menores, com **piso de fonte** (o Excel entrou
+  nesse caminho: saiu do `zoom`, que encolhia o texto junto); (3) os **grupos que não couberem
+  viram um botão** com o nome do grupo — clicar abre um menu com os controles daquele grupo, e o
+  **último** grupo colapsa primeiro, então o que se usa o tempo todo continua à vista; (4) **faixa
+  única** no modo recolhido (Ctrl+F1 ou duplo clique numa aba): os grupos da aba ativa ficam numa
+  linha de botões (o "mais" de cada grupo) e a faixa acompanha a aba ativa, em vez de sumir. Quem
+  decide é uma função pura (largura disponível × largura dos grupos, `src/fitaEncaixe.ts`), medida
+  em `npm run test:encaixe`; a conferência cobre **1400/1100/900/700 px** com a escala em
+  **0,7/1/1,5** e a pior combinação ainda deixa a fita inteira à vista. As **setinhas de rolar** do
+  Word e a roda do mouse nos painéis saíram (a galeria de Estilos continua rolando de lado, que ali
+  é galeria). A alça de altura ganhou **teto**: o menor entre **1,5×** e **um terço da janela** —
+  numa janela baixa a faixa não come a tela (o valor guardado segue sendo a sua preferência).
+  Testes: `npm run test:encaixe` e `npm run test:layout`.
 
 **Ferramentas (dev)**
 

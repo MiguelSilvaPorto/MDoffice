@@ -10155,3 +10155,153 @@ antigas quando fizer sentido.
   promoção é uma tarefa de follow-up, depois que o commit chegou (16500b9). Promovi só a entrada
   DESTA tarefa: as que seguem em "Não adicionado" pertencem a sessões com trabalho aberto ou com
   promoção em voo — mexer nelas criaria duplicata ou conflito.
+
+## src/fitaEncaixe.ts (arquivo novo)
+
+### 2026-10-15 · o encaixe da fita · os quatro degraus numa função pura
+
+- **Local:** `encaixarFita(disponivel, grupos, opcoes)` e as constantes `AJUSTE_MIN` (0,7) e
+  `LARGURA_BOTAO` (78), com o tipo `PlanoFita` (degrau, ajuste, abertos, noMenu, sobra)
+- **Linha:** `novo` — o plano: (1) `"cheio"` (natural ≤ disponível, ajuste 1); (2)
+  `preciso = disponivel / natural` ≥ `ajusteMin` → `"compacto"` com esse ajuste; (3) senão ajuste
+  no piso e colapso do **último para o primeiro** (`noMenu` cresce pela cauda) até
+  `Σ(abertos) × ajuste + noMenu × LARGURA_BOTAO + vaos <= disponivel` → `"menu"`; (4) `faixaUnica`
+  (o modo recolhido) → `"faixa-unica"` com todos em botão
+- **Porquê:** a fita já se ajustava à largura encolhendo métricas em cinco degraus fixos
+  (`DEGRAUS_LARGURA`, com um "só ícones" no fim) e, quando nem isso bastava, **rolava de lado** — o
+  grupo inteiro ficava fora da tela e o único jeito de alcançar era rolar ou as setinhas do Word. O
+  degrau que faltava é o do Office: **o grupo deixa de ser um bloco e passa a ser um botão com
+  menu**. Com ele, a conta muda de natureza (deixa de ser "quanto encolher" e passa a ser "quantos
+  grupos cabem"), e é isso que faz a função ser pura e o teste poder medir 12 combinações de largura
+  e escala sem abrir o app. O colapso é **do último para o primeiro** porque o começo da fita é o
+  que se usa o tempo todo (e é a ordem que o usuário pediu). O `gap` (o espaço entre grupos) entra
+  na conta do lado de fora da multiplicação: o vão não encolhe com as métricas, mas **continua
+  existindo** quando o grupo vira botão (o botão ocupa o lugar dele) — sem isso a conta fecharia
+  otimista e a última barra ficaria colada na borda. A `sobra` é devolvida de propósito: negativa
+  ela diz "nem os botões couberam" (uma largura impossível), e é o único caso em que a fita fica
+  apertada de verdade.
+
+## src/fita.ts
+
+### 2026-10-15 · o encaixe da fita · o plano aplicado no DOM (e a largura sai da alça de altura)
+
+- **Local:** `ligarEncaixeFita` (novo) e `ligarAjusteAlturaFita` (a largura saiu de lá);
+  `ligarRecolherFita` (a regra do "escolheu um comando fecha a faixa")
+- **Linha:** `- DEGRAUS_LARGURA`, `- ajuste/soIcones/porLargura`, `- ajustarLargura/agendarAjuste` e
+  os dois observadores de largura da alça; `+ ligarEncaixeFita({ el, painel, grupo, corpo, rotulo })`
+  com `ResizeObserver` (largura) + `MutationObserver` (`hidden` e `class`) + os eventos
+  `mdc:fita-escala`/`mdc:fita-recolhida`; `+ teto()`/`alturaNaEscala1()` e o clamp no arrasto e nas
+  setas; `+ window.resize → aplicar`; na regra do clique, `+ .fita-grupo-btn, .fita-grupo-pop`
+- **Porquê:** a alça de altura fazia duas coisas (altura **e** largura) e as duas ficaram grandes
+  demais para o mesmo lugar. A largura virou um controle próprio porque o **plano** dela depende de
+  duas medidas que só existem no DOM (a largura do painel e a de cada grupo) — a alça de altura só
+  publica a escala. O TETO da altura é do pedido: **o menor entre 1,5× e um terço da janela**; a
+  conta usa a altura que a faixa tem na escala 1 (a de agora dividida pela escala aplicada), e não
+  a escala solta, porque a altura de uma aba depende de quantos botões ela tem. O **valor guardado
+  continua sendo a preferência**: é a altura À VISTA que é limitada, então quem usa a janela
+  maximizada não perde o 1,5× só porque abriu o app numa janela baixa. Os seletores dos grupos vêm
+  de fora (`painel`/`grupo`/`corpo`/`rotulo`) porque as três fitas têm nomes de classe próprios —
+  o que é comum é a REGRA, não o HTML.
+- **Local:** o menu dos grupos colapsados
+- **Linha:** `+ const pop` no fim da raiz da faixa (`o.el.append(pop)`), o corpo do grupo é MOVIDO
+  para o menu (`pop.append(corpo)`) e devolvido ao fechar (`grupo.insertBefore(corpo, rotulo)`)
+- **Porquê:** os outros popups do app vivem no `body`, mas os comandos da fita são despachados por
+  **delegação na raiz** — um menu fora dela deixaria os controles mudos. Por isso o menu é um filho
+  da faixa (e a raiz ganhou `position: relative` no CSS). E é o corpo **de verdade** que entra no
+  menu: uma cópia perderia o estado dos `select`/`input` (o `value` não vai no HTML) e a ligação dos
+  campos; mover mantém tudo. Fechar devolve o corpo ao lugar dele (antes do rótulo) — sem isso o
+  grupo colapsado ficaria vazio na próxima abertura.
+
+## src/powerpoint/powerpoint.ts · src/word/ribbon.ts · src/excel/ribbon.ts
+
+### 2026-10-15 · o encaixe da fita · as três fitas no mesmo mecanismo
+
+- **Local:** os pontos onde as fitas ligam os controles compartilhados
+- **Linha:** as três passam a ligar `ligarEncaixeFita` com os próprios seletores
+  (`".ppr-painel"/".ppr-grupo"/".ppr-corpo"/".ppr-rotulo"`, `".wd-rpanel"/".rb-group"/".rb-body"/".rb-glabel"`,
+  `".xl-panel"/".xl-group"/".xl-body"/".xl-glabel"`); a alça passa a `modo: "metricas"` **nas três**
+  (o Excel largou o `zoom`); `- .ppr-painel`/`- .xl-panel` da lista da roda; no Word,
+  `- os botões .wd-ribbon-nav`, `- os ouvintes de scroll` e `- updateNavButtons()`
+- **Porquê:** o encaixe é do app, não de uma fita: o grupo que não cabe é o mesmo problema nas três,
+  e o usuário pediu as três. No Word as **setinhas** que ficavam por cima do conteúdo existiam para
+  alcançar o que a rolagem escondia — com o encaixe, não há o que alcançar (e uma seta de rolagem é
+  justamente o que "nada de barra de rolagem" quer dizer). A roda ficou só na **galeria de Estilos**
+  do Word (que é uma galeria) e na fila de abas do PowerPoint (que é uma fila de abas); o painel da
+  fita não rola mais em nenhuma das três.
+
+## src/styles/fita.css · powerpoint-edicao.css · word.css · excel.css
+
+### 2026-10-15 · o encaixe da fita · o botão do grupo, o menu e a faixa única
+
+- **Local:** `fita.css` — o bloco do recolher e um bloco novo do encaixe; `powerpoint-edicao.css`
+  `.ppr-painel`; `word.css` `.wd-ribbon`/`.wd-rpanel`/`.rb-*`; `excel.css` `.xl-ribbon`/`.xl-panel`/`.xl-*`
+- **Linha:** `.fita-recolhida … { display: none }` → `min-height: 0` (os painéis ficam, em modo
+  faixa única); `+ .fita-grupo-btn`, `+ .fita-grupo-recolhido > … { display: none }`,
+  `+ .fita-grupo-pop`, `+ .fita-modo-unico … { text-overflow: ellipsis }`; nos três módulos
+  `overflow-x: auto` → `overflow: hidden` no painel; no Word e no Excel
+  `+ --fita-e: calc(var(--fita-escala, 1) * var(--fita-ajuste, 1))` e as métricas da fita passaram a
+  multiplicar por `--fita-e` (o Word já fazia isso por `--fita-escala`), com pisos de fonte;
+  `- .wd-ribbon-nav*` (CSS morto, os botões saíram)
+- **Porquê:** o modo recolhido **escondia os painéis** — e com o quarto degrau ele é justamente onde
+  a faixa única aparece (os grupos em botão, acompanhando a aba ativa); sem trocar a regra, o degrau
+  4 não teria onde existir. O botão do grupo e o menu são o degrau 3 em CSS: o corpo e o rótulo saem,
+  o botão entra. O `text-overflow: ellipsis` é o que garante que a faixa única **nunca** passe da
+  largura (os botões encolhem em vez de empurrar). Trocar `overflow-x: auto` por `hidden` é o "nada
+  de barra de rolagem" levado a sério: quem garante o ajuste é o encaixe (e o teste mede 12
+  combinações); a rolagem escondida era a muleta que deixava o defeito passar despercebido. O
+  Excel entrando em `--fita-e` é o que faz o degrau "compacto" existir lá: com `zoom` a fita
+  encolhia a fonte junto (e o piso de fonte não tem como valer num zoom).
+- **Verificação:** `npm run test:encaixe` (função + fiação + CSS) e `npm run test:layout`. O
+  `test:excel` **não roda nesta worktree** por um defeito **antigo** do harness
+  (`testar-grade-excel.mjs` compila com `tsc` — que sai com erro nos imports `?raw` — e morre antes
+  de corrigir as extensões dos imports; o DOM simulado dele também não tem `hasAttribute`, que o
+  `seletor.ts` da `main` já usa). A `main` só passa porque reaproveita o `temp/` compilado em
+  outubro/2026; nada disso é efeito desta tarefa (o `tsc --noEmit` passa e a fita do Excel é
+  exercitada pelo `test:encaixe`).
+
+## scripts/testar-fita-encaixe.mjs · package.json
+
+### 2026-10-15 · o encaixe da fita · o teste do plano (12 combinações) e da fiação
+
+- **Local:** script novo; `package.json` ganhou `"test:encaixe"`
+- **Linha:** `novo` — os quatro degraus um por um, as bordas (sem grupos, largura impossível, `gap`,
+  botão mais largo), a conferência **1400/1100/900/700 px × escala 0,7/1/1,5** (sobra ≥ 0, abertos +
+  menu = todos, colapso sempre pela cauda, monotonicidade nas duas direções), a fiação nas três
+  fitas, o teto da alça e o CSS
+- **Porquê:** o defeito era de **encaixe**, não de um botão quebrado: sem medir largura × grupos, o
+  único jeito de saber se a fita cabe é abrir o app e olhar. O teste usa a **aba Início do
+  PowerPoint** como retrato (o total de 1647 px é a medida registrada quando a fita passou a se
+  ajustar; a divisão por grupo é a aproximação do conteúdo) e prende a REGRA: em todas as 12
+  combinações a fita cabe sem sobra negativa, nenhum grupo fica de fora e o aperto é monotônico. As
+  checagens de fiação existem porque o encaixe depende de três ligações frágeis: os seletores de
+  cada fita (nome de classe), o menu morar DENTRO da faixa (o despacho é por delegação) e o corpo
+  ser movido (e não copiado) — as três falham em silêncio no uso.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · o encaixe da fita · 4 checagens antigas ajustadas
+
+- **Local:** "fita do Word: o ajuste escala métricas" (2) e "roda do mouse anda de lado nas fitas e
+  galerias" (2)
+- **Linha:** `~` as métricas e o piso de fonte passam a procurar `var(--fita-e` (era
+  `var(--fita-escala`); `~` a checagem da roda passa a exigir a **galeria de Estilos** e a negar a
+  roda no painel (era `".rb-styles, .wd-rpanel"`), e a do Excel passa a exigir que ele **não** ligue
+  a roda (ele não tem galeria que role)
+- **Porquê:** as quatro checagens prendem exatamente as regras que esta tarefa mudou — a fita do
+  Word agora metrifica por `--fita-e` (escala × ajuste), e a roda saiu dos painéis porque o encaixe
+  tomou o lugar da rolagem. Atualizá-las é o certo (e não afrouxá-las): cada uma continua prendendo
+  o mesmo risco, com o nome novo.
+
+## docs/powerpoint.md · docs/word.md · docs/excel.md · CHANGELOG.md
+
+### 2026-10-15 · o encaixe da fita · os documentos e a entrada
+
+- **Local:** o item da fita que cabe na largura (nos três documentos de módulo) e o CHANGELOG →
+  **Geral → Não adicionado → Frontend**
+- **Linha:** `~` o item do PowerPoint deixou de descrever "só ícones" e "rolagem nas janelas
+  estreitas" e passou aos quatro degraus; `+` um item em Word e em Excel; `+` a entrada no Geral (a
+  fita é compartilhada — as três usam o mesmo mecanismo)
+- **Porquê:** a descrição antiga ficou **falsa** com esta tarefa (não há mais degrau de só ícones
+  nem rolagem de painel), e um documento que descreve o que o app não faz é pior que um documento
+  velho. A categoria é **Geral** porque o encaixe vale para as três fitas — repetir a mesma
+  entrada em PowerPoint, Word e Excel seria duplicata.

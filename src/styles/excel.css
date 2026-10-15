@@ -37,6 +37,12 @@ body.home-open #excel-pane {
   flex: none;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
+  /* a escala métrica da alça de altura × o aperto do encaixe à largura: a fita do Excel passou a
+     acompanhar as duas pela MESMA conta do Word e do PowerPoint (antes ela usava `zoom`, que
+     encolhia a fonte junto) */
+  --fita-e: calc(var(--fita-escala, 1) * var(--fita-ajuste, 1));
+  /* o menu dos grupos colapsados vive dentro da faixa: ela é a referência do posicionamento */
+  position: relative;
 }
 
 .xl-tabs {
@@ -82,12 +88,13 @@ body.home-open #excel-pane {
 
 .xl-panel {
   display: flex;
-  /* uma linha só: os grupos rolam na horizontal em vez de quebrar */
+  /* uma linha só: os grupos que não couberem viram um botão com menu (o ENCAIXE decide) */
   flex-wrap: nowrap;
   align-items: stretch;
-  padding: 6px 8px 4px;
-  min-height: 86px;
-  overflow-x: auto;
+  padding: calc(6px * var(--fita-e, 1)) calc(8px * var(--fita-e, 1)) calc(4px * var(--fita-e, 1));
+  min-height: max(62px, calc(86px * var(--fita-e, 1)));
+  /* nada de barra de rolagem: quem garante que os grupos caibam é o encaixe */
+  overflow: hidden;
   overflow-y: hidden;
 }
 
@@ -99,7 +106,7 @@ body.home-open #excel-pane {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 0 8px;
+  padding: 0 calc(8px * var(--fita-e, 1));
   border-right: 1px solid var(--border);
   flex: none;
 }
@@ -111,14 +118,15 @@ body.home-open #excel-pane {
 .xl-body {
   display: flex;
   align-items: stretch;
-  gap: 4px;
+  gap: calc(4px * var(--fita-e, 1));
   flex: 1;
 }
 
 .xl-glabel {
-  padding-top: 3px;
+  padding-top: calc(3px * var(--fita-e, 1));
   color: var(--muted);
-  font-size: 11px;
+  /* o rótulo do grupo é o menor texto da fita: acompanha a escala, com piso */
+  font-size: max(10px, calc(11px * var(--fita-e, 1)));
   text-align: center;
   white-space: nowrap;
 }
@@ -127,43 +135,44 @@ body.home-open #excel-pane {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 6px;
+  gap: calc(6px * var(--fita-e, 1));
 }
 
 .xl-row,
 .xl-col {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: calc(2px * var(--fita-e, 1));
 }
 
 .xl-col {
   flex-direction: column;
   align-items: stretch;
   justify-content: center;
-  gap: 1px;
+  gap: calc(1px * var(--fita-e, 1));
 }
 
 .xl {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  min-width: 28px;
-  height: 26px;
-  padding: 0 6px;
+  gap: calc(5px * var(--fita-e, 1));
+  min-width: max(24px, calc(28px * var(--fita-e, 1)));
+  height: max(22px, calc(26px * var(--fita-e, 1)));
+  padding: 0 calc(6px * var(--fita-e, 1));
   color: var(--fg);
   background: transparent;
   border: 1px solid transparent;
   border-radius: 3px;
-  font-size: 13px;
+  /* a fonte acompanha o ajuste, com piso: abaixo do piso o texto ficaria ilegível */
+  font-size: max(11.5px, calc(13px * var(--fita-e, 1)));
   cursor: pointer;
   white-space: nowrap;
 }
 
 .xl .ic {
-  width: 16px;
-  height: 16px;
+  width: max(14px, calc(16px * var(--fita-e, 1)));
+  height: max(14px, calc(16px * var(--fita-e, 1)));
 }
 
 .xl:hover {
@@ -197,17 +206,17 @@ body.home-open #excel-pane {
 .xl.big {
   flex-direction: column;
   justify-content: flex-start;
-  gap: 3px;
-  min-width: 58px;
+  gap: calc(3px * var(--fita-e, 1));
+  min-width: max(44px, calc(58px * var(--fita-e, 1)));
   height: auto;
-  padding: 6px 6px 3px;
+  padding: calc(6px * var(--fita-e, 1)) calc(6px * var(--fita-e, 1)) calc(3px * var(--fita-e, 1));
   font-size: 12px;
   align-self: stretch;
 }
 
 .xl.big .ic {
-  width: 30px;
-  height: 30px;
+  width: max(20px, calc(30px * var(--fita-e, 1)));
+  height: max(20px, calc(30px * var(--fita-e, 1)));
 }
 
 .xl.big > span:not(.xl-sigma):not(.xl-fx):not(.xl-zoomval) {

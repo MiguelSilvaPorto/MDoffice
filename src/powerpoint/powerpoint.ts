@@ -6,7 +6,7 @@ import DOMPurify from "dompurify";
 import { $, escapeHtml, toast } from "../util";
 import { pedirTexto } from "../dialogoTexto";
 import { fluxoParaFormas, lerFluxoMermaid } from "./edicao/mermaid";
-import { ligarAjusteAlturaFita, ligarRecolherFita, ligarRodaHorizontal } from "../fita";
+import { ligarAjusteAlturaFita, ligarEncaixeFita, ligarRecolherFita, ligarRodaHorizontal } from "../fita";
 import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, novaImagem, type EstiloDeck, type ItemGaleria } from "./edicao/criar";
 import { dicaDoTraco, formaDoTraco, formaDeCurva, formaDaTinta, type Pincel } from "./edicao/desenho";
 import { atualizarEstilos, ehBrilho, ehFamilia, ehIntensidade, estiloDaFamilia, ligarEstilo, ligarEstiloFundo, soltarEstilo, soltarEstiloFundo } from "./edicao/estilos";
@@ -358,16 +358,16 @@ export class PowerPointHost {
     this.notesEl = $<HTMLTextAreaElement>("[data-notes]", this.pane);
 
     this.fita = new Fita($("#pp-ribbon", this.pane), { estado: () => this.estadoUI(), run: (c, v) => this.run(c, v) });
-    // recolher a faixa (botão no canto das abas, duplo clique numa aba ou Ctrl+F1),
-    // ajustar o tamanho pela borda de baixo e, quando ela não cabe na janela,
-    // a roda do mouse rola os grupos na horizontal
+    // recolher a faixa (botão no canto das abas, duplo clique numa aba ou Ctrl+F1), ajustar a
+    // altura pela borda de baixo e ENCAIXAR a largura: os grupos que não couberem viram botão
     const abasFita = $(".ppr-abas", this.fita.el);
     const paineisFita = $(".ppr-paineis", this.fita.el);
     ligarRecolherFita({ el: this.fita.el, abas: abasFita, paineis: paineisFita });
-    // o painel da aba ativa se ajusta à largura da janela (espaços e ícones menores, depois compacta)
-    ligarAjusteAlturaFita({ el: this.fita.el, modo: "metricas", painel: ".ppr-painel" });
-    // a roda anda de lado no que passa da largura (as abas e os painéis da fita)
-    this.fita.el.querySelectorAll<HTMLElement>(".ppr-painel, .ppr-abas").forEach(ligarRodaHorizontal);
+    ligarAjusteAlturaFita({ el: this.fita.el, modo: "metricas" });
+    // os quatro degraus da largura (cheio, compacto, grupos em menu e a faixa única recolhida)
+    ligarEncaixeFita({ el: this.fita.el, painel: ".ppr-painel", grupo: ".ppr-grupo", corpo: ".ppr-corpo", rotulo: ".ppr-rotulo" });
+    // a roda anda de lado na fila de abas (o painel não rola mais: o encaixe garante o ajuste)
+    this.fita.el.querySelectorAll<HTMLElement>(".ppr-abas").forEach(ligarRodaHorizontal);
     this.painel = new Painel($("[data-formatar]", this.pane), { estado: () => this.estadoUI(), run: (c, v) => this.run(c, v) });
 
     this.stage.attach(this.frame, this.slideEl);

@@ -127,15 +127,14 @@
 .ppr-painel {
   grid-area: 1 / 1;
   display: flex;
-  /* uma linha só: os grupos rolam na horizontal em vez de quebrar (o topo
-     fica com altura previsível e sobra espaço para a lâmina) */
+  /* uma linha só: o grupo que não couber vira um botão com menu (o ENCAIXE decide) — nada de
+     rolar de lado para achar um botão */
   flex-wrap: nowrap;
   align-items: stretch;
   min-width: 0;
   padding: var(--pe-6) var(--pe-8) var(--pe-4);
   min-height: calc(92px * var(--fita-e));
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
 }
 
 .ppr-painel[hidden] {

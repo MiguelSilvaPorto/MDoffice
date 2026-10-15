@@ -32,6 +32,11 @@ Planilha com grade que cresce sob demanda, fórmulas em português e abertura de
 - **Fórmulas**: biblioteca (AutoSoma, Média, Contar números, Mínimo, Máximo), barra de
   fórmulas e **auditoria** (mostrar o texto das fórmulas em vez dos valores).
 - **Exibir**: zoom e mostrar fórmulas.
+- **A fita cabe na largura (sem rolagem)**: os mesmos quatro degraus das outras fitas — **cheia**,
+  **compacta** (as métricas da fita do Excel passaram a acompanhar a escala e o aperto, com piso de
+  fonte, em vez do `zoom` que encolhia o texto junto), **grupos em botão com menu** (o último
+  colapsa primeiro) e a **faixa única** no modo recolhido. A alça da borda de baixo ajusta a altura
+  **com teto** (o menor entre 1,5× e um terço da janela).
 
 ## Fórmulas
 

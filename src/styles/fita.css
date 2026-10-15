@@ -7,16 +7,113 @@
 
 /* ---------- recolher (Ctrl+F1 ou duplo clique numa aba; sem botão visível) ---------- */
 
-/* recolhida: os painéis somem e o contorno da faixa fica numa linha só */
+/* Recolhida, a faixa vira uma FAIXA ÚNICA: a linha das abas continua e, abaixo dela, os grupos da
+   aba ativa ficam em BOTÃO (o quarto degrau do encaixe), um ao lado do outro. Antes os painéis
+   sumiam de vez — o modo recolhido deixava de dizer até qual aba estava ativa. O espaço que volta é
+   o dos grupos abertos (a altura do painel), não o da linha inteira. */
 .wd-ribbon.fita-recolhida .wd-ribbon-panels,
 .xl-ribbon.fita-recolhida .xl-panels,
 .pp-ribbon.fita-recolhida .ppr-paineis {
-  display: none;
+  min-height: 0;
+}
+
+.wd-ribbon.fita-recolhida .wd-rpanel,
+.xl-ribbon.fita-recolhida .xl-panel,
+.pp-ribbon.fita-recolhida .ppr-painel {
+  min-height: 0;
+  align-items: center;
 }
 
 .xl-ribbon.fita-recolhida,
 .pp-ribbon.ppr.fita-recolhida {
   border-bottom: 0;
+}
+
+/* ---------- encaixe à largura: o grupo que não coube vira um botão com menu ---------- */
+
+/* A raiz da faixa é a referência do menu dos grupos: ele vive DENTRO dela (e não no body, como os
+   outros popups do app) para o despacho dos comandos continuar valendo — nas três fitas quem trata
+   o clique é um ouvinte na própria raiz. */
+.wd-ribbon,
+.xl-ribbon,
+.pp-ribbon.ppr {
+  position: relative;
+}
+
+.fita-grupo-btn {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  height: 24px;
+  padding: 0 7px;
+  color: var(--fg);
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.fita-grupo-btn:hover,
+.fita-grupo-btn[aria-expanded="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft, color-mix(in srgb, var(--accent) 12%, transparent));
+}
+
+/* o grupo colapsado: só o botão aparece (corpo e rótulo saem; o nome do grupo está no botão) */
+.fita-grupo-recolhido {
+  padding: 0 3px;
+}
+
+.fita-grupo-recolhido > .fita-grupo-btn {
+  display: inline-flex;
+}
+
+.fita-grupo-recolhido > .ppr-corpo,
+.fita-grupo-recolhido > .rb-body,
+.fita-grupo-recolhido > .xl-body,
+.fita-grupo-recolhido > .ppr-rotulo,
+.fita-grupo-recolhido > .rb-glabel,
+.fita-grupo-recolhido > .xl-glabel {
+  display: none;
+}
+
+/* o menu do grupo: os controles DE VERDADE (o corpo do grupo é MOVIDO para cá — nada de cópia) */
+.fita-grupo-pop {
+  position: absolute;
+  z-index: 60;
+  max-width: min(92%, 560px);
+  max-height: min(70vh, 460px);
+  overflow: auto;
+  padding: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow, 0 10px 30px rgba(0, 0, 0, 0.25));
+}
+
+.fita-grupo-pop > .ppr-corpo,
+.fita-grupo-pop > .rb-body,
+.fita-grupo-pop > .xl-body {
+  flex-wrap: wrap;
+  align-items: center;
+  max-width: 100%;
+}
+
+/* faixa única (modo recolhido): os botões dividem a linha e ENCOLHEM com elipse — a linha nunca
+   passa da largura (é o "mais" de cada grupo que guarda o que não coube) */
+.fita-modo-unico .fita-grupo-btn {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.fita-modo-unico .fita-grupo-nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ---------- ajustar o tamanho (borda de baixo) ---------- */

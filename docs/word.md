@@ -41,6 +41,11 @@ arquivos `.docx` de verdade.
   linhas/colunas, mesclar, dividir, sombrear, bordas) e marcas de parágrafo.
 - **Revisão de texto**: corretor de português (sublinhados e sugestões) e voz/suplementos — em
   **título** ele não pede ponto final (o corpo do texto continua pedindo normalmente).
+- **A fita cabe na largura (sem rolagem)**: as mesmas quatro etapas do PowerPoint — **cheia**,
+  **compacta** (espaços e ícones menores, com piso de fonte), **grupos em botão com menu** (o último
+  colapsa primeiro) e a **faixa única** quando a faixa está recolhida. As **setinhas de rolar** que
+  ficavam por cima do conteúdo saíram: o que não couber vira um botão com o nome do grupo. A alça da
+  borda de baixo ajusta a altura **com teto** (o menor entre 1,5× e um terço da janela).
 
 ## Escrita assistida (também no Word)
 

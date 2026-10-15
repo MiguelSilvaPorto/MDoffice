@@ -134,15 +134,18 @@ avisado ao abrir (nunca some em silêncio).
   **duas mini lâminas lado a lado** — **esquerda: como estava; direita: como ficou** — em vez do
   texto serializado do deck inteiro, que não dizia nada sobre o que está na tela. Quando a versão é
   de antes de a lâmina existir, o lado avisa em vez de sair em branco.
-- **A fita cabe na largura da janela**: a faixa de opções **se ajusta sozinha** ao espaço — se o
-  painel da aba ativa não cabe, os espaços e os ícones encolhem em degraus (a **fonte não
-  encolhe**), depois os botões grandes ficam **numa linha** (fita compacta) e, por fim, os botões
-  pequenos ficam **só com o ícone** (o nome continua na dica e no `aria-label`). Medido num
-  navegador em **1338 px**, todas as abas cabem sem rolagem (Início e Animações eram as que
-  estouravam, em 353 e 218 px); em 1600 px basta um ajuste leve. Ao alargar a janela a fita
-  volta ao normal. A rolagem lateral fica só como último recurso em janelas muito estreitas
-  (abaixo de ~1200 px a aba Animações ainda rola). O tamanho que você escolhe arrastando a borda
-  de baixo continua valendo: o ajuste automático soma-se a ele.
+- **A fita cabe na largura da janela, em quatro degraus (sem rolagem lateral)**: do mais folgado ao
+  mais apertado — (1) **cheia**, com as métricas em 1; (2) **compacta**, com espaços e ícones
+  menores (a **fonte não encolhe**: o piso está no CSS) e os botões grandes numa linha; (3) os
+  **grupos que não couberem viram um botão** com o nome do grupo, e clicar nele abre um menu com os
+  controles daquele grupo — o **último** grupo colapsa primeiro, então o que se usa o tempo todo fica
+  à vista; (4) **faixa única** com a faixa **recolhida** (Ctrl+F1 ou duplo clique numa aba): os
+  grupos da aba ativa ficam numa linha de botões — é o "mais" de cada grupo — e a faixa acompanha a
+  aba ativa. Quem decide é o **encaixe** (`src/fitaEncaixe.ts`), medido em `npm run test:encaixe`:
+  em 1338 px o Início abre inteiro (antes estourava 353 px) e a 700 px, com a escala em 1,5×, os
+  grupos colapsam sem sobrar nada. O tamanho que você escolhe arrastando a borda de baixo continua
+  valendo (o ajuste **soma-se** a ele) e agora tem **teto**: o menor entre **1,5×** e **um terço da
+  janela** — numa janela baixa a faixa não come a tela.
 - **Popups da fita (Formas, Template, Layout, Nova lâmina, cores, bordas…)**: abrir e **fechar
   pelo mesmo botão** — clicar de novo nele **recolhe** o que estava aberto (antes o clique no
   próprio botão era ignorado pelo "fecha ao clicar fora" e o comando rodava outra vez, reabrindo).

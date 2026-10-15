@@ -4,7 +4,7 @@ import { FONT_FAMILIES, FONT_SIZES } from "./schema";
 import { DEFAULT_SETUP, type PageSetup } from "./model";
 import { h, toast } from "../util";
 import { melhorarSelects } from "../seletor";
-import { ligarAjusteAlturaFita, ligarRecolherFita, ligarRodaHorizontal } from "../fita";
+import { ligarAjusteAlturaFita, ligarEncaixeFita, ligarRecolherFita, ligarRodaHorizontal } from "../fita";
 
 export interface RibbonHooks {
   editor: WordEditor;
@@ -71,12 +71,6 @@ export class Ribbon {
         <button type="button" class="wd-rtab wd-rtab-contextual" data-tab="table" role="tab" aria-selected="false" hidden>Tabela</button>
       </div>
       <div class="wd-ribbon-panels">
-        <button type="button" class="wd-ribbon-nav prev" title="Rolar para esquerda" hidden aria-label="Rolar para esquerda">
-          <svg class="ic" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
-        </button>
-        <button type="button" class="wd-ribbon-nav next" title="Rolar para direita" hidden aria-label="Rolar para direita">
-          <svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
-        </button>
         <div class="wd-rpanel active" data-panel="home">
           ${group("Desfazer", `
             <div class="rb-col">
@@ -270,42 +264,17 @@ export class Ribbon {
       }
     });
 
-    // A rolagem horizontal com a roda do mouse é feita pelo `ligarRodaHorizontal` (fita.ts),
-    // ligado nos próprios trechos que rolam (a galeria de Estilos e os painéis) — um handler
-    // só, que respeita o trecho de dentro.
     const panelsContainer = host.querySelector<HTMLElement>(".wd-ribbon-panels");
-
-    // Botões de navegação lateral (< e >)
-    const prevBtn = host.querySelector<HTMLButtonElement>(".wd-ribbon-nav.prev");
-    const nextBtn = host.querySelector<HTMLButtonElement>(".wd-ribbon-nav.next");
-    prevBtn?.addEventListener("click", () => {
-      const activePanel = host.querySelector<HTMLElement>(".wd-rpanel:not([hidden])");
-      if (activePanel) {
-        activePanel.scrollBy({ left: -240, behavior: "smooth" });
-        setTimeout(() => this.updateNavButtons(), 250);
-      }
-    });
-    nextBtn?.addEventListener("click", () => {
-      const activePanel = host.querySelector<HTMLElement>(".wd-rpanel:not([hidden])");
-      if (activePanel) {
-        activePanel.scrollBy({ left: 240, behavior: "smooth" });
-        setTimeout(() => this.updateNavButtons(), 250);
-      }
-    });
-
-    host.querySelectorAll<HTMLElement>(".wd-rpanel").forEach((panel) => {
-      panel.addEventListener("scroll", () => this.updateNavButtons(), { passive: true });
-    });
-    window.addEventListener("resize", () => this.updateNavButtons());
-    setTimeout(() => this.updateNavButtons(), 80);
 
     // recolher a faixa: botão no canto das abas, duplo clique numa aba ou Ctrl+F1
     const tabsEl = host.querySelector<HTMLElement>(".wd-ribbon-tabs");
     if (tabsEl && panelsContainer) ligarRecolherFita({ el: host, abas: tabsEl, paineis: panelsContainer });
-    // ajustar o tamanho da faixa arrastando a borda de baixo
+    // ajustar a ALTURA arrastando a borda de baixo (com o teto de um terço da janela)
     ligarAjusteAlturaFita({ el: host, modo: "metricas" });
-    // a roda anda de lado no que passa da largura: a galeria de Estilos e os painéis da fita
-    host.querySelectorAll<HTMLElement>(".rb-styles, .wd-rpanel").forEach(ligarRodaHorizontal);
+    // os quatro degraus da LARGURA: o grupo que não couber vira botão com menu (nada de rolagem)
+    ligarEncaixeFita({ el: host, painel: ".wd-rpanel", grupo: ".rb-group", corpo: ".rb-body", rotulo: ".rb-glabel" });
+    // a roda anda de lado na galeria de Estilos (que é uma galeria, não a fita)
+    host.querySelectorAll<HTMLElement>(".rb-styles").forEach(ligarRodaHorizontal);
   }
 
   private setPainter(mode: "off" | "once" | "sticky"): void {
@@ -325,19 +294,6 @@ export class Ribbon {
     this.el.querySelectorAll<HTMLElement>(".wd-rpanel").forEach((p) => {
       p.hidden = p.dataset.panel !== tab;
     });
-    this.updateNavButtons();
-  }
-
-  private updateNavButtons(): void {
-    const panels = this.el.querySelector<HTMLElement>(".wd-ribbon-panels");
-    if (!panels) return;
-    const panel = panels.querySelector<HTMLElement>(".wd-rpanel:not([hidden])");
-    const prevBtn = panels.querySelector<HTMLButtonElement>(".wd-ribbon-nav.prev");
-    const nextBtn = panels.querySelector<HTMLButtonElement>(".wd-ribbon-nav.next");
-    if (!panel || !prevBtn || !nextBtn) return;
-    const maxScroll = panel.scrollWidth - panel.clientWidth;
-    prevBtn.hidden = panel.scrollLeft <= 5;
-    nextBtn.hidden = panel.scrollLeft >= maxScroll - 5 || maxScroll <= 2;
   }
 
   // ---------- estado visual ----------
@@ -398,7 +354,6 @@ export class Ribbon {
         this.switchTab("home");
       }
     }
-    this.updateNavButtons();
   }
 
   // ---------- comandos ----------

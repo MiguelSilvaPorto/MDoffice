@@ -1253,9 +1253,11 @@ console.log("\nfita do Word: o ajuste escala métricas (como as Apresentações)
     /ligarAjusteAlturaFita\(\{ el: host, modo: "metricas" \}\)/.test(rib),
     "sem isso o arrasto aplica zoom e encolhe a fonte junto (fica ilegível e não vale a pena encolher)"
   );
-  const escaladas = (css.match(/var\(--fita-escala/g) ?? []).length;
+  // a escala métrica da fita é `--fita-e` = `--fita-escala` (alça de altura) × `--fita-ajuste` (o
+  // encaixe à largura): as métricas da fita do Word acompanham as duas
+  const escaladas = (css.match(/var\(--fita-e/g) ?? []).length;
   checa("as métricas acompanham a escala", escaladas >= 12, `${escaladas} valores`);
-  checa("a fonte tem piso (nada de texto ilegível)", /font-size: max\(11\.5px, calc\(13px \* var\(--fita-escala/.test(css));
+  checa("a fonte tem piso (nada de texto ilegível)", /font-size: max\(11\.5px, calc\(13px \* var\(--fita-e/.test(css));
   checa(
     "fita baixa vira compacta (ícone + nome numa linha)",
     /\.fita-compacta \.rb\.big\s*\{[^}]*flex-direction:\s*row/.test(css),
@@ -1854,13 +1856,13 @@ console.log("\nroda do mouse anda de lado nas fitas e galerias");
   );
   checa(
     "a galeria de Estilos do Word recebe a roda",
-    /\.rb-styles, \.wd-rpanel/.test(word),
+    /\.rb-styles"\)\.forEach\(ligarRodaHorizontal\)/.test(word),
     "o 'Título 3' volta a ficar sem alcance ao lado"
   );
   checa(
-    "as três fitas usam a função (sem handler inline duplicado)",
-    !/\.scrollLeft \+= e\.deltaY/.test(excel + ppt) && /ligarRodaHorizontal/.test(word) && /ligarRodaHorizontal/.test(excel) && /ligarRodaHorizontal/.test(ppt),
-    "sobrou cópia inline ou faltou ligar numa das fitas"
+    "as fitas usam a função no que AINDA rola (a galeria e as abas), sem cópia inline",
+    !/\.scrollLeft \+= e\.deltaY/.test(excel + ppt) && /ligarRodaHorizontal/.test(word) && /ligarRodaHorizontal/.test(ppt) && !/ligarRodaHorizontal/.test(excel),
+    "sobrou cópia inline — ou alguém religou a roda no painel da fita, que agora não rola (o encaixe decide o ajuste)"
   );
   checa(
     "o gesto é do trecho de dentro (mesmo no fim) e Ctrl/Shift ficam de fora",

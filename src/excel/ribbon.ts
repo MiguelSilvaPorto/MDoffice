@@ -2,7 +2,7 @@
 // Exibir), grupos com o nome embaixo, botões grandes (ícone em cima, nome embaixo) e pequenos.
 // Recebe o elemento pronto, escreve um template string e despacha tudo por `data-cmd`.
 import { h } from "../util";
-import { ligarAjusteAlturaFita, ligarRecolherFita, ligarRodaHorizontal } from "../fita";
+import { ligarAjusteAlturaFita, ligarEncaixeFita, ligarRecolherFita } from "../fita";
 import type { Alinhamento, FormatoNumero } from "./schema";
 import { melhorarSelects } from "../seletor";
 
@@ -251,10 +251,10 @@ export function fita(host: HTMLElement, hooks: RibbonHooks): HTMLElement {
   const tabsEl = host.querySelector<HTMLElement>(".xl-tabs");
   const panelsEl = host.querySelector<HTMLElement>(".xl-panels");
   if (tabsEl && panelsEl) ligarRecolherFita({ el: host, abas: tabsEl, paineis: panelsEl });
-  // ajustar o tamanho da faixa arrastando a borda de baixo
-  ligarAjusteAlturaFita({ el: host });
-  // a roda do mouse rola os grupos na horizontal quando a fita não cabe na janela
-  host.querySelectorAll<HTMLElement>(".xl-panel").forEach(ligarRodaHorizontal);
+  // ajustar a altura arrastando a borda de baixo (com o teto de um terço da janela)
+  ligarAjusteAlturaFita({ el: host, modo: "metricas" });
+  // os quatro degraus da largura: o grupo que não couber vira botão com menu (nada de rolagem)
+  ligarEncaixeFita({ el: host, painel: ".xl-panel", grupo: ".xl-group", corpo: ".xl-body", rotulo: ".xl-glabel" });
 
   return host;
 }

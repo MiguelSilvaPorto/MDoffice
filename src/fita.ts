@@ -14,6 +14,7 @@
 // As duas preferências ficam guardadas e valem para as três fitas (Word, Excel e Apresentações).
 
 import { EVENTO_MUDOU, combina, emCaptura, teclaVisivel } from "./app/keymap";
+import { encaixarFita } from "./fitaEncaixe";
 
 export interface OpcoesRecolherFita {
   /** raiz da faixa: recebe a classe `fita-recolhida` */
@@ -122,7 +123,9 @@ export function ligarRecolherFita(o: OpcoesRecolherFita): { alternar: () => void
   o.el.addEventListener("click", (e) => {
     if (!recolhida || !temporaria) return;
     const t = e.target as HTMLElement;
-    if (o.abas.contains(t) || t.closest("select, input, textarea, .wd-ribbon-nav")) return;
+    // O botão do grupo colapsado e o menu dele não fecham a faixa (é mexer na faixa, não sair
+    // dela); o `<select>`/`<input>` também não (o campo precisa continuar aberto para a escolha).
+    if (o.abas.contains(t) || t.closest("select, input, textarea, .wd-ribbon-nav, .fita-grupo-btn, .fita-grupo-pop")) return;
     const agora = performance.now();
     const repetido = ultimoClique !== null && ultimoClique.alvo === e.target && agora - ultimoClique.t < 450;
     ultimoClique = { alvo: e.target, t: agora };
@@ -185,21 +188,19 @@ export function ligarRecolherFita(o: OpcoesRecolherFita): { alternar: () => void
  *   encolhe junto e fica ilegível abaixo de ~90%.
  * - `"metricas"`: publica `--fita-escala` e deixa o CSS escalar as métricas
  *   (alturas, ícones, espaçamentos) mantendo um piso para a fonte. É o modo das
- *   Apresentações, onde a fita tem muitos botões grandes.
+ *   três fitas (Apresentações, Word e Excel).
  *
- * `painel` (só no modo `"metricas"`) é o seletor do painel que rola na horizontal: com ele a fita
- * também se ajusta sozinha à LARGURA — se o painel da aba ativa não cabe, reduz os espaçamentos e
- * os ícones em degraus (`--fita-ajuste`; a fonte tem piso) e, abaixo de ~88%, vira compacta (os
- * botões grandes numa linha). A rolagem fica só como último recurso, em janela muito estreita.
+ * A alça tem TETO: o menor entre `ESCALA_MAX` (1,5×) e um TERÇO da janela. Numa janela baixa, uma
+ * faixa de 1,5× comeria a tela e o documento sumiria — o teto é medido na hora do arrasto (e de
+ * novo quando a janela muda de tamanho); o valor guardado é a preferência, só a altura À VISTA é
+ * limitada.
+ *
+ * O aperto da LARGURA não é daqui: quem decide o que fazer quando a fita não cabe é o
+ * `ligarEncaixeFita` (os quatro degraus, em `fitaEncaixe.ts`).
  */
-export function ligarAjusteAlturaFita(o: { el: HTMLElement; modo?: "zoom" | "metricas"; painel?: string }): void {
+export function ligarAjusteAlturaFita(o: { el: HTMLElement; modo?: "zoom" | "metricas" }): void {
   let escala = lerEscala();
   const porMetricas = o.modo === "metricas";
-  // quanto a fita precisou encolher para caber na largura (1 = nada) e se os botões pequenos
-  // ficaram só com o ícone (o nome continua na dica)
-  let ajuste = 1;
-  let soIcones = false;
-  const porLargura = porMetricas && !!o.painel;
 
   // alça na borda de baixo (logo abaixo da faixa, sem cobrir os botões)
   const alca = document.createElement("div");
@@ -214,56 +215,36 @@ export function ligarAjusteAlturaFita(o: { el: HTMLElement; modo?: "zoom" | "met
   // o valor do tamanho não é anunciado a cada quadro do arrasto: vai no tooltip
   const rotulo = () => `Arraste para ajustar o tamanho da faixa de opções (${Math.round(escala * 100)}%) · duplo clique volta ao normal`;
 
+  /** A escala que está de fato no CSS (a preferência depois do teto) — é ela que mede a altura 1×. */
+  let aplicada = escala;
+  const alturaNaEscala1 = (): number => Math.max(80, o.el.getBoundingClientRect().height / (aplicada || 1));
+
+  /**
+   * O TETO da faixa: o menor entre `ESCALA_MAX` (1,5×) e um TERÇO da janela. A conta usa a altura
+   * que a faixa tem na escala 1 (a de agora dividida pela escala aplicada): assim o teto vale para
+   * a altura REAL, e não para a escala solta (que depende de quantos botões a aba tem).
+   */
+  const teto = (): number => {
+    const porJanela = window.innerHeight / 3 / alturaNaEscala1();
+    return Math.max(ESCALA_MIN, Math.min(ESCALA_MAX, porJanela));
+  };
+
   const aplicar = (): void => {
-    // a escala vai para o CSS; cada fita decide o que fazer com ela
-    o.el.style.setProperty("--fita-escala", String(escala));
-    o.el.style.setProperty("--fita-ajuste", String(ajuste));
-    // fita baixa: os botões grandes viram "ícone + nome" numa linha, o que
-    // devolve espaço vertical sem diminuir a fonte (o piso está no CSS)
-    if (porMetricas) o.el.classList.toggle("fita-compacta", escala * ajuste < 0.88);
-    o.el.classList.toggle("fita-icones", soIcones);
+    // a escala vai para o CSS; cada fita decide o que fazer com ela. O teto limita a altura À
+    // VISTA (o valor guardado é a preferência — a janela volta a crescer e ele volta inteiro).
+    const efetiva = Math.min(escala, teto());
+    o.el.style.setProperty("--fita-escala", String(efetiva));
     if (porMetricas) {
       // nada de `zoom`: ele encolheria também a fonte (o piso fica no CSS)
       o.el.style.removeProperty("zoom");
-    } else if (escala === 1) {
+    } else if (efetiva === 1) {
       o.el.style.removeProperty("zoom");
     } else {
-      o.el.style.setProperty("zoom", String(escala));
+      o.el.style.setProperty("zoom", String(efetiva));
     }
+    aplicada = efetiva;
     alca.title = rotulo();
-    alca.setAttribute("aria-valuenow", String(Math.round(escala * 100)));
-    agendarAjuste();
-  };
-
-  // ---- ajuste à largura: o painel da aba ativa tem que caber sem rolar ----
-  const painelAtivo = (): HTMLElement | null => (o.painel ? o.el.querySelector<HTMLElement>(`${o.painel}:not([hidden])`) : null);
-  const cabe = (): boolean => {
-    const p = painelAtivo();
-    return !p || p.scrollWidth <= p.clientWidth + 1;
-  };
-  let ajustando = false;
-  let agendado = false;
-  /** Do mais folgado ao mais apertado, o primeiro degrau em que o painel cabe (senão o último: rola). */
-  const ajustarLargura = (): void => {
-    agendado = false;
-    if (!porLargura || ajustando || o.el.offsetParent === null) return;
-    ajustando = true;
-    try {
-      for (const degrau of DEGRAUS_LARGURA) {
-        ajuste = degrau.ajuste;
-        soIcones = !!degrau.icones;
-        aplicar();
-        if (cabe()) break;
-      }
-    } finally {
-      ajustando = false;
-    }
-  };
-  const agendarAjuste = (): void => {
-    if (!porLargura || ajustando || agendado) return;
-    // microtarefa: roda logo depois da mudança, junto das outras (várias mudanças = um ajuste só)
-    agendado = true;
-    queueMicrotask(ajustarLargura);
+    alca.setAttribute("aria-valuenow", String(Math.round(efetiva * 100)));
   };
 
   const avisar = (): void => {
@@ -307,10 +288,10 @@ export function ligarAjusteAlturaFita(o: { el: HTMLElement; modo?: "zoom" | "met
     const y0 = e.clientY;
     const s0 = escala;
     // altura na escala 1 (a do começo do arrasto) manda na sensibilidade do gesto
-    const base = Math.max(80, o.el.getBoundingClientRect().height / (escala || 1));
+    const base = alturaNaEscala1();
     const mover = (ev: PointerEvent) => {
-      const s = Math.max(ESCALA_MIN, Math.min(ESCALA_MAX, s0 + (ev.clientY - y0) / base));
-      escala = Math.round(s * 100) / 100;
+      const s = s0 + (ev.clientY - y0) / base;
+      escala = Math.round(Math.max(ESCALA_MIN, Math.min(s, teto())) * 100) / 100;
       aplicar();
     };
     const soltar = (): void => {
@@ -333,7 +314,7 @@ export function ligarAjusteAlturaFita(o: { el: HTMLElement; modo?: "zoom" | "met
     if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
     e.preventDefault();
     const passo = e.key === "ArrowUp" ? 0.05 : -0.05;
-    escala = Math.round(Math.max(ESCALA_MIN, Math.min(ESCALA_MAX, escala + passo)) * 100) / 100;
+    escala = Math.round(Math.max(ESCALA_MIN, Math.min(teto(), escala + passo)) * 100) / 100;
     aplicar();
     gravarEscala(escala);
     avisar();
@@ -347,26 +328,194 @@ export function ligarAjusteAlturaFita(o: { el: HTMLElement; modo?: "zoom" | "met
     aplicar();
   });
 
-  // a janela (ou o painel lateral) mudou de largura, outra aba abriu ou os botões mudaram: refaz
-  if (porLargura) {
-    let larguraAntes = o.el.clientWidth;
-    new ResizeObserver(() => {
-      if (o.el.clientWidth === larguraAntes) return;
-      larguraAntes = o.el.clientWidth;
-      agendarAjuste();
-    }).observe(o.el);
-    new MutationObserver(agendarAjuste).observe(o.el, { subtree: true, attributes: true, attributeFilter: ["hidden"] });
-  }
+  // a janela mudou de ALTURA: o teto é um terço dela — a faixa volta para dentro do limite
+  window.addEventListener("resize", aplicar);
 
   aplicar();
 }
 
 /**
- * Os degraus do ajuste à largura, do mais folgado ao mais apertado: quanto as métricas da fita
- * encolhem (a fonte tem piso no CSS; abaixo de ~88% a fita vira compacta) e quando os botões
- * pequenos ficam só com o ícone.
+ * OS QUATRO DEGRAUS DA LARGURA (o plano vem do `fitaEncaixe.ts`, que é puro e testável): mede os
+ * grupos da aba ativa, decide o plano e o aplica.
+ *
+ * Quando um grupo não cabe, ele vira um **botão com o nome do grupo**; clicar abre o menu com os
+ * controles DAQUELE grupo — o corpo do grupo é MOVIDO para o menu, não copiado: os campos
+ * continuam ligados (o despacho das três fitas é por delegação na raiz da faixa, e o menu vive
+ * dentro dela) e o estado dos `select`/`input` é o de verdade. Fechar o menu devolve o corpo ao
+ * grupo, antes do rótulo.
+ *
+ * No modo recolhido (`fita-recolhida`) o plano é o quarto degrau: TODOS os grupos em botão, numa
+ * faixa só que acompanha a aba ativa — o "mais" de cada grupo é o menu dele.
+ *
+ * Nada de barra de rolagem: quem garante é o encaixe (e o último degrau é curto o bastante para
+ * qualquer janela em que o app abre); os botões encolhem com elipse (CSS) na faixa única.
  */
-const DEGRAUS_LARGURA: { ajuste: number; icones?: boolean }[] = [{ ajuste: 1 }, { ajuste: 0.92 }, { ajuste: 0.84 }, { ajuste: 0.84, icones: true }, { ajuste: 0.7, icones: true }];
+export interface OpcoesEncaixeFita {
+  /** raiz da faixa (a que tem as abas e os painéis) */
+  el: HTMLElement;
+  /** seletor do painel de cada aba (o que troca por `hidden`) */
+  painel: string;
+  /** seletor do grupo dentro do painel */
+  grupo: string;
+  /** seletor do corpo do grupo (o que é movido para o menu) */
+  corpo: string;
+  /** seletor do rótulo do grupo (dá o nome do botão) */
+  rotulo: string;
+}
+
+export function ligarEncaixeFita(o: OpcoesEncaixeFita): void {
+  // o menu dos grupos: criado uma vez, dentro da raiz da faixa (é o que mantém o despacho valendo)
+  const pop = document.createElement("div");
+  pop.className = "fita-grupo-pop";
+  pop.hidden = true;
+  o.el.append(pop);
+
+  /** O grupo que está com o corpo no menu (null = menu fechado). */
+  let aberto: { grupo: HTMLElement; corpo: HTMLElement; botao: HTMLButtonElement } | null = null;
+
+  const painelAtivo = (): HTMLElement | null => o.el.querySelector<HTMLElement>(`${o.painel}:not([hidden])`);
+
+  const escalaAtual = (): number => {
+    const v = Number(getComputedStyle(o.el).getPropertyValue("--fita-escala"));
+    return Number.isFinite(v) && v > 0 ? v : 1;
+  };
+
+  const fecharMenu = (): void => {
+    if (!aberto) return;
+    const { grupo, corpo, botao } = aberto;
+    const rotulo = grupo.querySelector<HTMLElement>(`:scope > ${o.rotulo}`);
+    grupo.insertBefore(corpo, rotulo ?? null);
+    aberto = null;
+    pop.hidden = true;
+    pop.style.removeProperty("left");
+    pop.style.removeProperty("top");
+    botao.setAttribute("aria-expanded", "false");
+  };
+
+  const abrirMenu = (grupo: HTMLElement, botao: HTMLButtonElement): void => {
+    fecharMenu();
+    const corpo = grupo.querySelector<HTMLElement>(`:scope > ${o.corpo}`);
+    if (!corpo) return;
+    // o corpo sai do grupo e vai para o menu: os controles são os mesmos (nada de cópia)
+    pop.append(corpo);
+    pop.hidden = false;
+    pop.style.left = "0px";
+    pop.style.top = "0px";
+    const r = botao.getBoundingClientRect();
+    const caixa = o.el.getBoundingClientRect();
+    const largura = pop.offsetWidth;
+    pop.style.left = `${Math.round(Math.max(0, Math.min(r.left - caixa.left, caixa.width - largura)))}px`;
+    pop.style.top = `${Math.round(r.bottom - caixa.top + 3)}px`;
+    aberto = { grupo, corpo, botao };
+    botao.setAttribute("aria-expanded", "true");
+  };
+
+  /** O botão do grupo (criado na primeira vez que ele colapsa; o nome vem do rótulo do grupo). */
+  const botaoDo = (grupo: HTMLElement): HTMLButtonElement => {
+    let b = grupo.querySelector<HTMLButtonElement>(":scope > .fita-grupo-btn");
+    if (!b) {
+      b = document.createElement("button");
+      b.type = "button";
+      b.className = "fita-grupo-btn";
+      b.innerHTML = `<span class="fita-grupo-nome"></span><span class="car" aria-hidden="true">▾</span>`;
+      b.setAttribute("aria-expanded", "false");
+      b.addEventListener("click", (e) => {
+        // o clique é do botão do grupo: não é comando da fita (o despacho procura `[data-cmd]`)
+        e.stopPropagation();
+        const botao = e.currentTarget as HTMLButtonElement;
+        if (aberto?.grupo === grupo) fecharMenu();
+        else abrirMenu(grupo, botao);
+      });
+      grupo.prepend(b);
+    }
+    const nome = (grupo.querySelector<HTMLElement>(o.rotulo)?.textContent ?? "").trim();
+    b.querySelector<HTMLElement>(".fita-grupo-nome")!.textContent = nome;
+    b.title = `${nome} — abrir os controles deste grupo`;
+    b.setAttribute("aria-label", b.title);
+    return b;
+  };
+
+  /** Aplica o plano dos quatro degraus na aba ativa. */
+  const aplicar = (): void => {
+    if (o.el.offsetParent === null) return; // fita escondida: não há o que medir
+    const painel = painelAtivo();
+    if (!painel) return;
+    fecharMenu();
+    const grupos = [...painel.querySelectorAll<HTMLElement>(o.grupo)];
+    if (!grupos.length) return;
+    // medir é SEMPRE com tudo aberto e as métricas em 1: a largura do grupo é a natural dele
+    for (const g of grupos) g.classList.remove("fita-grupo-recolhido");
+    o.el.style.setProperty("--fita-ajuste", "1");
+    const escala = escalaAtual();
+    const css = getComputedStyle(painel);
+    const gap = Number.parseFloat(css.columnGap) || 0;
+    const interno = painel.clientWidth - (Number.parseFloat(css.paddingLeft) || 0) - (Number.parseFloat(css.paddingRight) || 0);
+    const larguras = grupos.map((g) => g.getBoundingClientRect().width / escala);
+
+    const plano = encaixarFita(interno, larguras, {
+      escala,
+      gap: gap / escala,
+      faixaUnica: o.el.classList.contains("fita-recolhida"),
+    });
+
+    o.el.style.setProperty("--fita-ajuste", String(plano.ajuste));
+    // fita baixa: os botões grandes viram "ícone + nome" numa linha (o piso da fonte está no CSS)
+    o.el.classList.toggle("fita-compacta", escala * plano.ajuste < 0.88);
+    o.el.classList.toggle("fita-modo-unico", plano.degrau === "faixa-unica");
+    o.el.dataset.fitaDegrau = plano.degrau;
+    grupos.forEach((g, i) => {
+      const colapsado = plano.noMenu.includes(i);
+      g.classList.toggle("fita-grupo-recolhido", colapsado);
+      if (colapsado) botaoDo(g);
+    });
+  };
+
+  let agendado = false;
+  const agendar = (): void => {
+    if (agendado) return;
+    // microtarefa: roda logo depois da mudança (várias mudanças seguidas = um encaixe só)
+    agendado = true;
+    queueMicrotask(() => {
+      agendado = false;
+      aplicar();
+    });
+  };
+
+  // clicou fora do menu (e do botão que o abriu): fecha
+  document.addEventListener("pointerdown", (e) => {
+    if (!aberto) return;
+    const t = e.target as HTMLElement;
+    if (pop.contains(t) || t.closest(".fita-grupo-btn")) return;
+    fecharMenu();
+  });
+  // escolheu um comando do menu: fecha (menus com `data-menu` abrem popup próprio e ficam)
+  pop.addEventListener("click", (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>("[data-cmd]");
+    if (b && !b.hasAttribute("data-menu")) fecharMenu();
+  });
+  // Esc fecha o menu
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") fecharMenu();
+  });
+
+  // a janela mudou de largura, a aba trocou, o modo recolhido mudou ou os botões mudaram: reencaixa
+  let larguraAntes = o.el.clientWidth;
+  new ResizeObserver(() => {
+    if (o.el.clientWidth === larguraAntes) return;
+    larguraAntes = o.el.clientWidth;
+    agendar();
+  }).observe(o.el);
+  // Só o `hidden` (a troca de aba). O `class` NÃO entra aqui de propósito: o próprio encaixe mexe
+  // nas classes dos grupos, e observar isso o faria reencaixar a cada passagem (um laço).
+  new MutationObserver(agendar).observe(o.el, { subtree: true, attributes: true, attributeFilter: ["hidden"] });
+  // outra faixa mudou a altura (e com ela as métricas): reencaixa
+  document.addEventListener(EVENTO_ESCALA, agendar);
+  // recolher/expandir muda o modo (a faixa única do quarto degrau)
+  document.addEventListener(EVENTO, agendar);
+  window.addEventListener("resize", agendar);
+
+  aplicar();
+}
 
 /**
  * Faz a roda do mouse andar de LADO num trecho que passa da largura (as fitas e a galeria de
