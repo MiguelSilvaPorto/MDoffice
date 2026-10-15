@@ -9969,3 +9969,15 @@ antigas quando fizer sentido.
 - **Linha:** a bala passa a descrever a medida nas linhas (x na em pé, y na deitada; largura na de
   baixo, altura na da direita) e a virada nas bordas
 - **Porquê:** o documento do módulo descreve o que o app faz; a fita métrica mudou de lugar.
+
+## CHANGELOG.md
+
+### 2026-10-15 · a medida nas linhas · a promoção da entrada (não adicionado → adicionado)
+- **Local:** PowerPoint → **Não adicionado** → Frontend (a entrada da fita métrica) e PowerPoint →
+  **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não pode promover: no instante do commit da tarefa a entrada ainda não está
+  na main (a regra do repositório é "nunca promova o que ainda não entrou na main"), então a
+  promoção é uma tarefa de follow-up, depois que o commit chegou (1f5b960). Promovi só a entrada
+  DESTA tarefa: as que seguem em "Não adicionado" pertencem a sessões com trabalho aberto ou com
+  promoção em voo — mexer nelas criaria duplicata ou conflito.

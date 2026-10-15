@@ -415,14 +415,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **A fita métrica fica NAS LINHAS**: a medida do arrasto saiu do balão flutuante e passou a morar
-  nas próprias linhas do gesto (as mesmas guias rosa, que agora aparecem junto com a medida): ao
-  **mover**, a **linha em pé** mostra o **x** ("x 2,7 cm") e a **deitada** o **y** ("y 6,1 cm"),
-  com o rótulo colado nelas junto do canto; ao **redimensionar** ou **desenhar**, a **linha de
-  baixo** mostra a **largura** e a **da direita** a **altura**. Perto das bordas da lâmina o
-  rótulo vira para o outro lado (acima/abaixo, esquerda/direita) e tudo some ao soltar. Teste:
-  `npm run test:layout`.
-
 - **A apresentação nova nasce clara — o tema do app não decide o papel da lâmina**: o padrão de
   fábrica da apresentação era o tema **Escuro**, então quem usava o app no escuro abria uma lâmina
   escura sem ter pedido. Agora ela nasce com **papel branco** (tema **Claro**) e o tema do app fica
@@ -465,6 +457,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **A fita métrica fica NAS LINHAS**: a medida do arrasto saiu do balão flutuante e passou a morar
+  nas próprias linhas do gesto (as mesmas guias rosa, que agora aparecem junto com a medida): ao
+  **mover**, a **linha em pé** mostra o **x** ("x 2,7 cm") e a **deitada** o **y** ("y 6,1 cm"),
+  com o rótulo colado nelas junto do canto; ao **redimensionar** ou **desenhar**, a **linha de
+  baixo** mostra a **largura** e a **da direita** a **altura**. Perto das bordas da lâmina o
+  rótulo vira para o outro lado (acima/abaixo, esquerda/direita) e tudo some ao soltar. Teste:
+  `npm run test:layout`.
 
 - **"Composição": as Ideias de design e os Arranjos viraram um sistema só**: os dois nasceram da
   mesma ideia e estavam se separando — duas abas no painel, dois botões na fita e um grupo com o
