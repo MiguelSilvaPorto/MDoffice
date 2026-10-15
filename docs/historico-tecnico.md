@@ -5761,6 +5761,35 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   reintroduzir o gesto sem querer é silenciosa: alguém "restaura o Office" e a faixa volta a
   recolher por acidente).
 
+## src/app/tabs.ts
+
+### 2026-10-14 · start · sem sessão o app fica no Início (a recuperação legada sai)
+- **Local:** `restoreSession` (o fim) e o método `restoreLegacyDraft` (removido)
+- **Linha:** `- await this.restoreLegacyDraft();` → `+ this.showHome();`, com o comentário do
+  porquê · `- o método restoreLegacyDraft inteiro` (rascunho mais recente + `loadDraftFallback`)
+- **Porquê:** o relato ("quando o app atualiza alguma coisa no código e não tem nada aberto ele abre
+  o primeiro documento ou último que foi aberto não sei exatamente o que seria") — a sessão
+  (`mdc.session`) guarda os **caminhos** das abas abertas e é zerada ao fechar tudo, mas quando ela
+  vem vazia o start caía em `restoreLegacyDraft`: a recuperação de **antes das abas**, que reabria
+  o **rascunho mais recente** do app e, sem ele, o **`temp/rascunho.md`** do projeto (um arquivo
+  velho, que sempre volta — é o que mais confunde: o app reabre um texto que não se sabe de onde).
+  Agora, sem sessão, o app **fica no Início (o Hub)** — o mesmo estado que ele já usa ao fechar a
+  última aba (`closeTab` → `showHome`) — e o start fica coerente consigo mesmo. **Nada se perde**:
+  os rascunhos são listados em **Recentes ▸ "Rascunhos guardados no app"** (já existia) e abrem no
+  clique; o `temp/rascunho.md` continua no disco (dev), para abrir à mão. O
+  `files.loadDraftFallback()` fica sem uso no app (a ponte segue — é ela que lê o arquivo), e a
+  sessão de verdade (arquivos abertos) continua sendo restaurada, como era.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · start · 2 verificações
+- **Local:** a seção "start: sem sessão o app fica no Início (o Hub)"
+- **Linha:** `+ a sessão vazia indo para o Início depois do ramo do restored` · `+ a recuperação
+  legada ausente do arquivo, com a lista "Rascunhos guardados no app" ainda no menu`
+- **Porquê:** o defeito era de **ordem/fluxo de uma linha** (o que fazer quando não há sessão) e
+  voltaria fácil num ajuste de start — as duas leem o TS e travam as pontas: o Início no fim da
+  sessão vazia e a recuperação legada longe daqui (com a reachability dos rascunhos garantida).
+
 ---
 
 ## Próximos registros

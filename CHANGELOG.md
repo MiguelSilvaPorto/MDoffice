@@ -1212,6 +1212,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   existir, o lado avisa. Os outros módulos (Markdown, Word e Excel) seguem no diff de texto de
   sempre. Teste: `npm run test:log`.
 
+- **Sem sessão, o app fica no Início (não abre rascunho sozinho)**: ao recarregar com **nada aberto**, o app abria **sozinho** o último rascunho — e, no navegador, o `temp/rascunho.md` velho do projeto — sem se saber o que viria (relato: "não tem nada aberto e ele abre o primeiro documento ou último que foi aberto"). A sessão vazia caía na recuperação **legada** (de antes das abas): agora, sem sessão para reabrir, o app **fica no Início (o Hub)** — exatamente como quando se fecha a última aba — e a recuperação legada sai do start. **Nada se perde**: os rascunhos continuam guardados e à mão em **Recentes ▸ "Rascunhos guardados no app"**, e o texto do `temp/rascunho.md` (dev) segue no arquivo, para abrir quando quiser.
+
 - **Histórico: o diff agora é lado a lado**: o painel abria a mudança numa coluna única (a linha
   vermelha "saiu" em cima, a verde "entrou" embaixo) — agora o **antes fica à esquerda** e o
   **depois à direita**, **pareados linha a linha**, com uma barra **Antes · Depois** grudada no

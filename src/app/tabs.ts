@@ -14,7 +14,7 @@ import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { $, h, toast, baseName, docDirOf, stripExt, copyText, loadJSON, saveJSON, fmtTime, fmtAgo } from "../util";
 
 export const tabsMethods = {
-  /** Reabre as abas da sessão anterior; sem sessão, cai no rascunho mais recente. */
+  /** Reabre as abas da sessão anterior; sem sessão, o app fica no Início (o Hub). */
   async restoreSession(this: App): Promise<void> {
     const saved = loadJSON<{ paths: string[]; active: string | null; drafts: string[] } | null>("mdc.session", null);
     let restored = 0;
@@ -44,51 +44,10 @@ export const tabsMethods = {
         return;
       }
     }
-    await this.restoreLegacyDraft();
-  },
-
-  /** Antes das abas, o app guardava só o último rascunho; ainda recuperamos ele. */
-  async restoreLegacyDraft(this: App): Promise<void> {
-    try {
-      const drafts = await files.listDrafts();
-      const latest = drafts[0];
-      if (!latest || this.dirty || this.path) return;
-      const content = await files.loadDoc(latest.path);
-      if (!content.trim()) return;
-      this.path = latest.path;
-      this.isDraft = true;
-      this.autoFixArmed = false;
-      this.editor.setText(content);
-      this.tab.state = this.editor.getState();
-      this.dirty = false;
-      this.statusSaved = "Rascunho guardado no app";
-      this.setPreviewPath(latest.path);
-      this.afterTabChange();
-      await this.preview.render(content);
-      toast(
-        `Rascunho da sessão anterior restaurado (${baseName(latest.path)}). Use "Salvar como" para guardar numa pasta sua.`,
-        "info",
-        7500
-      );
-    } catch {
-      /* sem rascunhos do app */
-    }
-    // Navegador (dev) ou sem rascunho do app: recupera o temp/rascunho.md do projeto.
-    if (this.dirty || this.path) return;
-    try {
-      const texto = await files.loadDraftFallback();
-      if (!texto || !texto.trim()) return;
-      this.autoFixArmed = false;
-      this.editor.setText(texto);
-      this.tab.state = this.editor.getState();
-      this.dirty = false;
-      this.statusSaved = "Salvo automaticamente em temp/";
-      this.afterTabChange();
-      await this.preview.render(texto);
-      toast("Texto recuperado do salvamento automático (temp/rascunho.md).", "info", 6500);
-    } catch {
-      /* sem salvamento automático */
-    }
+    // Nada para reabrir: o app fica no INÍCIO (o Hub) — como quando se fecha a última aba — em vez
+    // de abrir sozinho o último rascunho (o relato: "não tem nada aberto e ele abre…"). Os
+    // rascunhos continuam guardados e à mão em **Recentes ▸ "Rascunhos guardados no app"**.
+    this.showHome();
   },
 
   /** Cria uma aba (sem ativá-la) para um arquivo já lido. */

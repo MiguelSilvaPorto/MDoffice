@@ -1089,6 +1089,23 @@ console.log("\nfita: não recolhe enquanto se escolhe num popup");
   );
 }
 
+// ---------------------------------------------------------------- start x sessão
+
+console.log("\nstart: sem sessão o app fica no Início (o Hub)");
+{
+  const tabs = ler("src/app/tabs.ts");
+  checa(
+    "a sessão vazia vai para o Início (o start não abre rascunho sozinho)",
+    /if \(restored\) \{[\s\S]*?return;\s*\}[\s\S]*?this\.showHome\(\);\s*\},/.test(tabs),
+    "sem isso o start cai na recuperação legada e abre o último rascunho sozinho"
+  );
+  checa(
+    "a recuperação legada (rascunho/fallback) saiu do start — e os rascunhos seguem no menu",
+    !/restoreLegacyDraft/.test(tabs) && !/loadDraftFallback/.test(tabs) && /Rascunhos guardados no app/.test(tabs),
+    "ou o rascunho volta a abrir sozinho, ou a lista de rascunhos some do menu de Recentes"
+  );
+}
+
 const listaFontes = ler("src/fontes.ts");
 
 checa(
