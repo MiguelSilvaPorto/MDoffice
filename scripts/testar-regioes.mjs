@@ -233,7 +233,7 @@ console.log("\no host: o mapa, o realce e a região isolada");
     "o realce é um SVG com o caminho da região (com os buracos)",
     /class", "pp-estudio-svg pp-regiao-svg"/.test(ppt) && /path\.setAttribute\("d", caminhoDaRegiao\(r\)\)/.test(ppt)
   );
-  ok("o clique isola a região (e não muda a seleção)", /private aoClicarNoPalco\(ev: MouseEvent\)/.test(ppt) && /if \(this\.modoRegioes && this\.estudio\) return;/.test(ppt));
+  ok("o clique isola a região (e não muda a seleção)", /private aoClicarNoPalco\(ev: MouseEvent\)/.test(ppt) && /if \(\(this\.modoRegioes \|\| this\.pintura !== "nenhuma"\) && this\.estudio\) return;/.test(ppt));
   ok("a fronteira do Estúdio passa a ser a região", /this\.regiao \? mascaraDaRegiao\(this\.regiao, d\) : mascaraDaBox\(box, d\)/.test(ppt));
   ok(
     "a trilha diz a região e oferece o voltar",
@@ -245,7 +245,7 @@ console.log("\no host: o mapa, o realce e a região isolada");
   ok(
     "os gestos estão ligados no palco (mover, sair e clicar)",
     /addEventListener\("pointermove", \(ev\) => this\.aoMoverNoPalco\(ev\)\)/.test(ppt) &&
-      /addEventListener\("pointerleave", \(\) => this\.pintarRegiaoHover\(null\)\)/.test(ppt) &&
+      /addEventListener\("pointerleave", \(\) => \{[\s\S]{0,80}pintarRegiaoHover\(null\)/.test(ppt) &&
       /addEventListener\("click", \(ev\) => this\.aoClicarNoPalco\(ev\)\)/.test(ppt)
   );
   const estado = ler("src/powerpoint/ui/estado.ts");

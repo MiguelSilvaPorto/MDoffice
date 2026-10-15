@@ -78,6 +78,10 @@ export interface EstadoUI {
   regioes: boolean;
   /** o nome da região isolada dentro da box (a trilha mostra "Box › Região") */
   regiao?: string;
+  /** a ferramenta de pintura ativa (só dentro do Estúdio) */
+  pintura: "nenhuma" | "pincel" | "balde" | "vidro";
+  /** a transparência da pintura (0,05 a 1) */
+  pinturaTransp: number;
 }
 
 // A lista de fontes comuns do app (fitas do PowerPoint e do Word). O campo de fonte

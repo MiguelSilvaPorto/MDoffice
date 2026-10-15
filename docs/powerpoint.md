@@ -418,6 +418,28 @@ pelo centro** (o mesmo critério dos Arranjos e do desenho que gruda no cartão)
 inteiramente dentro de outro não é desenhado de novo (o `evenodd` voltaria a preencher o que já
 estava furado). Teste: `npm run test:regioes`.
 
+## Estúdio · Pintura: pincel, balde e vidro (recortados na fronteira)
+
+Dentro do Estúdio, o grupo **Pintura** (aba Desenhar) põe uma ferramenta na mão:
+
+- **Pincel**: arraste e o traço aparece **já recortado** pela fronteira (a região isolada, ou a box
+  inteira) — o que passa do contorno simplesmente **não existe**, nem na prévia nem no resultado;
+- **Balde**: clique numa face e ela é pintada inteira (opaca), **já furando** o que está dentro dela;
+- **Vidro**: o mesmo, **translúcido** (a cor é a do traço, e a transparência vem do seletor
+  **Opaco/75/50/35/20%**).
+
+O que sai é uma **forma normal da lâmina** (geometria livre, `custGeom`), com o **alfa no
+preenchimento**: vale o desfazer, o histórico, a exportação — e o `.pptx` mostra **exatamente o que
+você fez**, em qualquer visualizador (o recorte é geometria, não uma máscara do app). Os buracos
+entram no caminho como **subcaminhos invertidos** (o truque do "donut" do OOXML, o mesmo do SVG):
+por isso a pintura **não cobre** o logo nem o texto que já estavam na face.
+
+**Limite desta fase:** a fronteira precisa ser **convexa** (retângulo, retângulo arredondado,
+elipse e triângulo são — e são as que o Estúdio isola). Numa fronteira côncava o app **avisa** e não
+pinta, em vez de entregar um recorte torto. O `Esc` sai da ferramenta (e depois do Estúdio).
+
+Teste: `npm run test:pintura`.
+
 ## Conectar formas
 
 - Na aba **Inserir**, o botão **Conectar** (grupo **Diagrama**, ao lado do Fluxo do Mermaid) liga

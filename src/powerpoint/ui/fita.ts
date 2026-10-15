@@ -512,6 +512,19 @@ export class Fita {
          ${grande("pincel-assistente", ic("i-spark"), "Assistente", "Assistente: reconhece o traço e ajusta a forma (retângulo, retângulo arredondado, círculo, triângulo, linha e seta)")}`
       ),
       grupo(
+        "Pintura",
+        `${grande("pintura:pincel", ic("i-draw"), "Pincel", "Pincel de pintura: rabisque dentro da fronteira — o traço é recortado nela (Esc sai)")}
+         ${grande("pintura:balde", ic("i-bucket"), "Balde", "Balde: pinta a face inteira sob o ponteiro, já furando o que está dentro dela")}
+         ${grande("pintura:vidro", `<span class="ppr-vidro-ic"></span>`, "Vidro", "Vidro: pinta a face com transparência (a cor do traço e o valor do seletor)")}
+         <select class="ppr-sel" data-transp title="Transparência da pintura" aria-label="Transparência da pintura">
+           <option value="1">Opaco</option>
+           <option value="0.75">75%</option>
+           <option value="0.5">50%</option>
+           <option value="0.35">35%</option>
+           <option value="0.2">20%</option>
+         </select>`
+      ),
+      grupo(
         "Formas",
         `${grande("galeria", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[5], 30)}</span>`, "Formas", "Escolha uma forma e desenhe na lâmina", true)}
          <div class="ppr-col">
@@ -1333,6 +1346,19 @@ export class Fita {
     // o mapa de contornos só vale DENTRO do Estúdio (fora dele não há fronteira para acender)
     on("estudio-regioes", st.regioes);
     dis("estudio-regioes", !st.estudio);
+    // Pintura: as ferramentas também só valem dentro do Estúdio (a fronteira é de lá)
+    on("pintura:pincel", st.pintura === "pincel");
+    on("pintura:balde", st.pintura === "balde");
+    on("pintura:vidro", st.pintura === "vidro");
+    dis("pintura:pincel", !st.estudio);
+    dis("pintura:balde", !st.estudio);
+    dis("pintura:vidro", !st.estudio);
+    const transp = this.el.querySelector<HTMLSelectElement>("[data-transp]");
+    if (transp) {
+      const valor = String(st.pinturaTransp);
+      if (transp.value !== valor) transp.value = valor;
+      transp.disabled = !st.estudio;
+    }
     const botaoRegioes = this.el.querySelector<HTMLElement>('[data-cmd="estudio-regioes"]');
     if (botaoRegioes) {
       botaoRegioes.title = st.regioes

@@ -1663,6 +1663,31 @@ button.ppr.big .ppr-gal-ic svg {
   display: none;
 }
 
+/* ---------- Pintura: o pincel, o balde e o vidro (fase 3) ---------- */
+
+/* com a ferramenta de pintura na mão, as formas não pegam o ponteiro (quem desenha é o palco) */
+.pp-pintura-on .pp-slide [data-shape] {
+  pointer-events: none;
+}
+
+.pp-pintura-on .pp-slide {
+  cursor: crosshair;
+}
+
+/* a prévia do traço já recortado pela fronteira */
+.pp-estudio-svg.pp-pintura-preview path {
+  stroke: none;
+}
+
+/* o ícone do Vidro: a marca do Estúdio com um brilho dentro (o painel translúcido) */
+.ppr-vidro-ic {
+  width: 16px;
+  height: 13px;
+  border: 2px solid currentColor;
+  border-radius: 4px;
+  background: linear-gradient(135deg, color-mix(in srgb, currentColor 35%, transparent) 0 45%, transparent 45% 100%);
+}
+
 .pp-estudio-voltar {
   flex: none;
   padding: 0 6px;

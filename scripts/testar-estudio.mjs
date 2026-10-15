@@ -156,7 +156,7 @@ console.log("\no host: entrar, sair e o que o modo muda");
   ok("o Esc sai do Estúdio", /else if \(this\.estudio\) this\.consumir\(e, \(\) => this\.sairDoEstudio\(\)\)/.test(ppt));
   ok(
     "trocar de lâmina fecha o Estúdio (a box é de uma lâmina)",
-    /if \(this\.estudio\) \{\s*this\.estudio = null;\s*this\.regiao = null;\s*this\.modoRegioes = false;\s*this\.stage\.setZoom\(this\.zoomAntesEstudio\);/.test(ppt),
+    /if \(this\.estudio\) \{\s*this\.estudio = null;[\s\S]{0,220}this\.stage\.setZoom\(this\.zoomAntesEstudio\);/.test(ppt),
     "o zoom de antes volta e o mapa de regiões não atravessa a lâmina"
   );
   ok("carregar outra aba/documento também fecha", /outra aba\/documento: o Estúdio não atravessa/.test(ppt));

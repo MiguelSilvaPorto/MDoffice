@@ -11594,6 +11594,63 @@ antigas quando fizer sentido.
   **fase 1** de um conjunto (pintura, camadas, cópias vinculadas), para ninguém ler o "Estúdio" como
   se ele já fizesse tudo o que foi conversado.
 
+## src/powerpoint/edicao/pintura.ts (arquivo novo)
+
+### 2026-10-15 · Estúdio (fase 3) · a pintura recortada na geometria
+
+- **Local:** `recortar` (Sutherland–Hodgman), `ehConvexo`, `sentidoAntiHorario`, `fitaDoTraco`,
+  `caixaDoPoligono`, `caminhoDaPintura`, `formaDaPintura`, `formaDoPincel`, `buracosDaFronteira`
+- **Linha:** `novo` (puro). A pincelada vira uma **fita** (o contorno do traço com largura, pela
+  direção média de cada ponto); a fita é **recortada** pela fronteira; o resultado vira um `CustPath`
+  (`M`/`L`/`Z`, coordenadas relativas à caixa) num `Shape` com `fillX` (cor + `alpha`)
+- **Porquê:** o pedido é "sem sair nem 1 px", e isso não se resolve com uma máscara de tela: precisa
+  estar **na geometria**, senão o `.pptx` (que é o que o usuário abre no PowerPoint) mostraria outra
+  coisa. Daí o recorte ser calculado no app: o polígono que sai **já está dentro**. Duas decisões
+  evitaram o pior caminho: (1) **Sutherland–Hodgman** só vale para janelas **convexas** — e as
+  fronteiras do Estúdio são (retângulo/arredondado/elipse/triângulo); uma fronteira côncava é
+  **recusada com aviso** em vez de recortada errado, porque o caminho alternativo (booleano de
+  polígonos genérico, com decomposição) é uma peça grande que esta fase não precisou; (2) os
+  **buracos** não são subtraídos: entram no caminho como subcaminhos em **sentido invertido** — o
+  truque do "donut" do OOXML, que o preenchimento (na tela e no arquivo) entende como miolo vazio.
+  Sem isso, o pincel que passasse por cima do logo teria de ser recortado contra o logo (mais um
+  booleano) — e a solução do sentido vale para **qualquer** buraco, convexo ou não. A fita é
+  poligonal (não bezier, como a tinta do Draw) de propósito: as arestas do recorte são retas de
+  verdade e a borda cortada fica exata, sem a suavização do caminho de tinta torcer a junta.
+
+## src/powerpoint/powerpoint.ts · ui/fita.ts · ui/estado.ts · styles/powerpoint-edicao.css
+
+### 2026-10-15 · Estúdio (fase 3) · o pincel, o balde e o vidro no palco
+
+- **Local:** `pintura`/`pinturaTransp`/`pinturaPontos`/`pinturaPendente` (campos),
+  `fronteiraDaPintura()`, `aoBaixarNoPalco()`, `aoSoltarNoPalco()`, `pintarPinturaPreview()`,
+  `soltarPintura()`, `cancelarPintura()`; o grupo **Pintura** da fita (as três ferramentas + o
+  seletor `data-transp`); o `EstadoUI` (`pintura`, `pinturaTransp`) e o `.pp-pintura-on`
+- **Linha:** `+` os gestos `pointerdown`/`pointerup` no palco e o ramo do pincel no `aoMoverNoPalco`;
+  `+` a prévia (`pp-estudio-svg pp-pintura-preview`) recortada a cada quadro; `+` `dis("pintura:*", !st.estudio)`;
+  `selecionar()`: `+ (this.modoRegioes || this.pintura !== "nenhuma") && this.estudio` (o clique é da
+  ferramenta); `Esc`: `+ else if (this.pintura !== "nenhuma")`; `sairDoEstudio()`/`irPara()`: `+` limpar
+  a ferramenta e o traço
+- **Porquê:** a pintura **não criou um motor paralelo**: ela solta uma **forma normal** na lâmina
+  (com `registrar()` + `editar`, o caminho de qualquer edição) — é o que faz o desfazer, o
+  histórico, o rascunho e a exportação valerem sem nenhuma linha nova. Com a ferramenta na mão, o
+  CSS tira o `pointer-events` das formas (`.pp-pintura-on`): sem isso o arrasto do palco moveria a
+  forma debaixo do pincel e a pincelada viraria um "mover" acidental. A prévia é recalculada a cada
+  movimento **já recortada** (e não o traço cru com um clip visual): é o que mostra, enquanto a mão
+  anda, exatamente o que vai ficar — o usuário pediu precisão, e a precisão precisa ser visível.
+
+## scripts/testar-pintura.mjs · package.json
+
+### 2026-10-15 · Estúdio (fase 3) · o teste do recorte (44 checagens)
+
+- **Local:** script novo; `package.json` ganhou `"test:pintura"`
+- **Linha:** `novo` — o recorte (a interseção com a área certa, o sujeito que passa inteiro, o que
+  some, o canto arredondado que come)
+- **Porquê:** a checagem central é a propriedade do pedido: **nenhum ponto do resultado fora da
+  fronteira** — com folga de 0,05 pt, porque o resultado encosta **exatamente** na borda (o teste de
+  ponto não aceita borda, e sem a folga o teste reprovaria o comportamento certo). O resto prende o
+  que é invisível até dar problema: a fita com a largura certa, o `custGeom` com a caixa em pt, os
+  **dois subcaminhos** (contorno + buraco), a área descontando o buraco e o alfa limitado.
+
 ## src/powerpoint/edicao/desenho.ts
 
 ### 2026-10-15 · a curva quase perfeita · o degrau no meio da reta

@@ -413,6 +413,19 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Estúdio · Pintura: desenhar dentro da fronteira, com translucidez** (fase 3) — o grupo **Pintura**
+  (aba Desenhar) traz **Pincel**, **Balde** e **Vidro** + a **transparência** (Opaco/75/50/35/20%),
+  e todos só valem **dentro do Estúdio** (a fronteira é de lá): o **Pincel** rabisca e o traço é
+  **recortado na geometria** a cada quadro (a prévia já vem cortada), o **Balde** pinta a **face**
+  sob o ponteiro e o **Vidro** pinta a face **translúcida**. O resultado é uma **forma normal** da
+  lâmina (geometria livre, `custGeom`) — desfazer, histórico, exportação e o `.pptx` valem sem
+  invenção: **o arquivo mostra exatamente o que você fez**, com o alfa no preenchimento. O que está
+  dentro da face (o logo, o nome) entra no caminho como **buraco** (subcaminho invertido, o truque
+  do "donut"): a pintura **não cobre** o que já estava lá, nem na tela nem no arquivo. O recorte é
+  **Sutherland–Hodgman** numa fronteira **convexa** (as do Estúdio são: retângulo, arredondado,
+  elipse, triângulo) — uma fronteira não convexa é **recusada com aviso**, em vez de pintar torto.
+  Teste: `npm run test:pintura`.
+
 - **Estúdio · Regiões: o mapa dos contornos** (fase 2 do Estúdio) — dentro do Estúdio, o botão
   **Regiões** liga o mapa: **passar o ponteiro acende a face sob ele** (véu do acento com contorno
   tracejado) e **clicar isola aquela região** — a fronteira deixa de ser a box inteira e passa a ser

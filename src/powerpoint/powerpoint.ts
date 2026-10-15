@@ -8,7 +8,8 @@ import { pedirTexto } from "../dialogoTexto";
 import { fluxoParaFormas, lerFluxoMermaid } from "./edicao/mermaid";
 import { ligarAjusteAlturaFita, ligarEncaixeFita, ligarRecolherFita, ligarRodaHorizontal } from "../fita";
 import { podeIsolar, caminhoDaBox, mascaraDaBox, nomeDaBox } from "./edicao/estudio";
-import { regioesDa, regiaoEm, caminhoDaRegiao, mascaraDaRegiao, type Regiao } from "./edicao/regioes";
+import { regioesDa, regiaoEm, caminhoDaRegiao, mascaraDaRegiao, poligonoDaForma, type Ponto, type Regiao } from "./edicao/regioes";
+import { recortar, fitaDoTraco, ehConvexo, formaDaPintura } from "./edicao/pintura";
 import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, novaImagem, type EstiloDeck, type ItemGaleria } from "./edicao/criar";
 import { dicaDoTraco, formaDoTraco, formaDeCurva, formaDaTinta, type Pincel } from "./edicao/desenho";
 import { atualizarEstilos, ehBrilho, ehFamilia, ehIntensidade, estiloDaFamilia, ligarEstilo, ligarEstiloFundo, soltarEstilo, soltarEstiloFundo } from "./edicao/estilos";
@@ -230,6 +231,13 @@ export class PowerPointHost {
   private regiao: Regiao | null = null;
   /** o mapa de regiões da lâmina (refeito a cada pintura) */
   private regioes: Regiao[] = [];
+  /** a ferramenta de pintura ativa (o que o palco desenha é recortado pela fronteira) */
+  private pintura: "nenhuma" | "pincel" | "balde" | "vidro" = "nenhuma";
+  /** a transparência da pintura (Vidro usa; o Balde pinta opaco) */
+  private pinturaTransp = 0.35;
+  /** o traço em andamento (pontos em pt da lâmina) */
+  private pinturaPontos: Ponto[] = [];
+  private pinturaPendente = false;
 
   private strip!: HTMLElement;
   private canvas!: HTMLElement;
@@ -397,8 +405,14 @@ export class PowerPointHost {
     $("[data-estudio-voltar]", this.pane).addEventListener("click", () => this.voltarParaBox());
     // o modo Regiões: o ponteiro acende a face sob ele e o clique a isola
     this.slideEl.addEventListener("pointermove", (ev) => this.aoMoverNoPalco(ev));
-    this.slideEl.addEventListener("pointerleave", () => this.pintarRegiaoHover(null));
+    this.slideEl.addEventListener("pointerleave", () => {
+      this.pintarRegiaoHover(null);
+      this.pintarPinturaPreview();
+    });
+    this.slideEl.addEventListener("pointerdown", (ev) => this.aoBaixarNoPalco(ev));
+    this.slideEl.addEventListener("pointerup", () => this.aoSoltarNoPalco());
     this.slideEl.addEventListener("click", (ev) => this.aoClicarNoPalco(ev));
+    this.pane.querySelector<HTMLSelectElement>("[data-transp]")?.addEventListener("change", (ev) => this.run(`pintura:transp:${(ev.target as HTMLSelectElement).value}`));
 
     this.fita = new Fita($("#pp-ribbon", this.pane), { estado: () => this.estadoUI(), run: (c, v) => this.run(c, v) });
     // recolher a faixa (botão no canto das abas, duplo clique numa aba ou Ctrl+F1), ajustar a
@@ -1144,6 +1158,8 @@ export class PowerPointHost {
       this.modoRegioes = false;
     }
     this.pane.classList.toggle("pp-estudio-on", !!this.estudio);
+    // com uma ferramenta de pintura na mão, as formas não pegam o ponteiro (quem desenha é o palco)
+    this.pane.classList.toggle("pp-pintura-on", !!this.estudio && this.pintura !== "nenhuma");
     // o mapa das regiões é da lâmina: refeito a cada pintura (as formas podem ter mudado de lugar)
     this.regioes = box ? regioesDa(this.atual().shapes, this.dim(), nomeDaBox) : [];
     // a região isolada é de UMA box: trocar de box (ou apagá-la) invalida a região
@@ -1201,6 +1217,15 @@ export class PowerPointHost {
 
   /** Com o modo Regiões ligado, o ponteiro acende a face sob ele. */
   private aoMoverNoPalco(ev: PointerEvent): void {
+    // com o pincel na mão, o movimento ACRESCENTA no traço (a prévia já vem recortada)
+    if (this.estudio && this.pintura === "pincel" && this.pinturaPendente) {
+      const ponto = this.pontoNoPalco(ev);
+      if (ponto) {
+        this.pinturaPontos.push(ponto);
+        this.pintarPinturaPreview();
+      }
+      return;
+    }
     if (!this.estudio || !this.modoRegioes) return;
     const p = this.pontoNoPalco(ev);
     this.pintarRegiaoHover(p ? regiaoEm(this.regioes, p) : null);
@@ -1253,6 +1278,96 @@ export class PowerPointHost {
     this.atualizarUI();
   }
 
+  // ------------------------------------------------------------------
+  // Pintura (fase 3): o pincel, o balde e o vidro — recortados na fronteira
+  // ------------------------------------------------------------------
+
+  /** A fronteira da pintura: a região isolada ou a box inteira (contorno + buracos). */
+  private fronteiraDaPintura(): { contorno: Ponto[]; buracos: Ponto[][] } | null {
+    if (this.regiao) return { contorno: this.regiao.contorno, buracos: this.regiao.buracos };
+    const box = this.boxDoEstudio();
+    if (!box) return null;
+    const contorno = poligonoDaForma(box, this.dim());
+    return contorno ? { contorno, buracos: [] } : null;
+  }
+
+  /** Solta a pintura na lâmina pelo caminho normal (desfazer, histórico e exportação valem). */
+  private soltarPintura(contorno: Ponto[], buracos: Ponto[][], cor: string, alpha: number, nome: string): void {
+    const id = `pin${Date.now().toString(36)}${Math.round(Math.random() * 1e4).toString(36)}`;
+    const nova = formaDaPintura(contorno, buracos, cor, alpha, id, this.dim(), nome);
+    if (!nova) return;
+    this.registrar();
+    this.editar((s) => ({ ...s, shapes: [...s.shapes, nova] }), "pintura");
+    this.selecionar([nova.id]);
+  }
+
+  private aoBaixarNoPalco(ev: PointerEvent): void {
+    if (!this.estudio || this.pintura === "nenhuma") return;
+    const p = this.pontoNoPalco(ev);
+    const f = this.fronteiraDaPintura();
+    if (!p || !f) return;
+    if (!ehConvexo(f.contorno)) {
+      toast("Esta fronteira não é convexa — a pintura ainda não recorta nela.", "info", 5200);
+      return;
+    }
+    if (this.pintura === "pincel") {
+      this.pinturaPendente = true;
+      this.pinturaPontos = [p];
+      this.pintarPinturaPreview();
+      return;
+    }
+    // balde e vidro pintam a FACE sob o ponteiro (ou a região já isolada)
+    const face = this.regiao ?? regiaoEm(this.regioes, p);
+    if (!face) return;
+    const cor = this.pincelUsado().cor;
+    const alpha = this.pintura === "vidro" ? this.pinturaTransp : 1;
+    this.soltarPintura(face.contorno, face.buracos, cor, alpha, this.pintura === "vidro" ? "Pintura · vidro" : "Pintura · balde");
+  }
+
+  /** Solta o pincel: a fita do traço é RECORTADA pela fronteira e vira uma forma. */
+  private aoSoltarNoPalco(): void {
+    if (!this.pinturaPendente) return;
+    this.pinturaPendente = false;
+    const pontos = this.pinturaPontos;
+    this.pinturaPontos = [];
+    this.slideEl.querySelector(".pp-pintura-preview")?.remove();
+    const f = this.fronteiraDaPintura();
+    if (!f || !pontos.length || !ehConvexo(f.contorno)) return;
+    const cortada = recortar(fitaDoTraco(pontos, this.pincel.w), f.contorno);
+    if (cortada.length < 3) return;
+    this.soltarPintura(cortada, f.buracos, this.pincelUsado().cor, this.pinturaTransp, "Pintura · pincel");
+  }
+
+  /** A prévia do traço (o polígono já recortado): o desenho acontece dentro da fronteira, à vista. */
+  private pintarPinturaPreview(): void {
+    this.slideEl.querySelector(".pp-pintura-preview")?.remove();
+    if (!this.estudio || this.pintura !== "pincel" || !this.pinturaPendente || !this.pinturaPontos.length) return;
+    const f = this.fronteiraDaPintura();
+    if (!f || !ehConvexo(f.contorno)) return;
+    const cortada = recortar(fitaDoTraco(this.pinturaPontos, this.pincel.w), f.contorno);
+    if (cortada.length < 3) return;
+    const d = this.dim();
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "pp-estudio-svg pp-pintura-preview");
+    svg.setAttribute("viewBox", `0 0 ${d.w} ${d.h}`);
+    svg.setAttribute("preserveAspectRatio", "none");
+    svg.setAttribute("aria-hidden", "true");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", caminhoDaRegiao({ contorno: cortada, buracos: f.buracos } as Regiao));
+    path.setAttribute("fill-rule", "nonzero");
+    path.setAttribute("fill", `#${this.pincelUsado().cor}`);
+    path.setAttribute("fill-opacity", String(this.pinturaTransp));
+    svg.append(path);
+    this.slideEl.append(svg);
+  }
+
+  /** Cancela um traço em andamento (trocar de ferramenta, sair do Estúdio, Esc). */
+  private cancelarPintura(): void {
+    this.pinturaPendente = false;
+    this.pinturaPontos = [];
+    this.slideEl.querySelector(".pp-pintura-preview")?.remove();
+  }
+
   /** No Estúdio, só o que está DENTRO da box entra na seleção (o resto está esmaecido). */
   private dentroDaBox(ids: string[]): string[] {
     const box = this.boxDoEstudio();
@@ -1289,6 +1404,8 @@ export class PowerPointHost {
     this.estudio = null;
     this.regiao = null;
     this.modoRegioes = false;
+    this.pintura = "nenhuma";
+    this.cancelarPintura();
     this.stage.setZoom(this.zoomAntesEstudio);
     this.pintar();
   }
@@ -1691,6 +1808,8 @@ export class PowerPointHost {
       estudioNome: isolada ? nomeDaBox(isolada) : undefined,
       regioes: this.modoRegioes,
       regiao: this.regiao?.nome,
+      pintura: this.pintura,
+      pinturaTransp: this.pinturaTransp,
       transicao: normalizarTransicao(this.atual().transicao),
       transicaoPreservada: !!this.atual().transicaoXml,
       animacao,
@@ -1708,8 +1827,8 @@ export class PowerPointHost {
   // ------------------------------------------------------------------
 
   private selecionar(ids: string[]): void {
-    // no modo Regiões o clique escolhe a FACE (a seleção fica de fora: o mapa é o protagonista)
-    if (this.modoRegioes && this.estudio) return;
+    // no modo Regiões (ou com uma ferramenta de pintura na mão) o clique é do mapa/pincel
+    if ((this.modoRegioes || this.pintura !== "nenhuma") && this.estudio) return;
     // Estúdio aberto: só o que está dentro da box entra na seleção
     if (this.estudio) ids = this.dentroDaBox(ids);
     const igual = ids.length === this.selecao.length && ids.every((x, i) => x === this.selecao[i]);
@@ -2312,6 +2431,11 @@ export class PowerPointHost {
     if (principal?.midia && this.comandoDeMidia(cmd, value)) return;
 
     // ---- comandos com valor no nome ----
+    if (cmd.startsWith("pintura:transp:")) {
+      this.pinturaTransp = Math.max(0.05, Math.min(1, Number(cmd.slice(15)) || 0.35));
+      this.atualizarUI();
+      return;
+    }
     if (cmd.startsWith("grad-cor:") || cmd.startsWith("grad-pos:")) return this.gradienteParada(cmd, value);
     if (cmd.startsWith("ajuste:")) {
       const chave = cmd.slice(7);
@@ -2751,6 +2875,22 @@ export class PowerPointHost {
       }
       case "estudio-regioes": {
         this.alternarModoRegioes();
+        return;
+      }
+      // ---- Pintura: o pincel, o balde e o vidro (só dentro do Estúdio) ----
+      case "pintura:pincel":
+      case "pintura:balde":
+      case "pintura:vidro": {
+        const qual = cmd.slice(8) as "pincel" | "balde" | "vidro";
+        this.pintura = this.pintura === qual ? "nenhuma" : qual;
+        this.cancelarPintura();
+        this.atualizarUI();
+        return;
+      }
+      case "pintura:nenhuma": {
+        this.pintura = "nenhuma";
+        this.cancelarPintura();
+        this.atualizarUI();
         return;
       }
 
@@ -3766,6 +3906,7 @@ export class PowerPointHost {
       if (this.ferramenta) this.consumir(e, () => this.run("ferramenta", ""));
       // Estúdio: o modo Regiões sai primeiro, depois a região, e por fim o ambiente isolado
       else if (this.modoRegioes) this.consumir(e, () => this.alternarModoRegioes());
+      else if (this.pintura !== "nenhuma") this.consumir(e, () => this.run("pintura:nenhuma"));
       else if (this.regiao) this.consumir(e, () => this.voltarParaBox());
       else if (this.estudio) this.consumir(e, () => this.sairDoEstudio());
       else if (this.selecao.length) this.consumir(e, () => this.selecionar([]));
@@ -4540,6 +4681,8 @@ export class PowerPointHost {
       this.estudio = null;
       this.regiao = null;
       this.modoRegioes = false;
+      this.pintura = "nenhuma";
+      this.cancelarPintura();
       this.stage.setZoom(this.zoomAntesEstudio);
     }
     this.indice = novo;
