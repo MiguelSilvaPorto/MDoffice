@@ -9674,3 +9674,16 @@ antigas quando fizer sentido.
 - **Linha:** `novo`
 - **Porquê:** a regra não estava escrita em lugar nenhum do doc do módulo — quem lê precisa saber
   que o branco é o padrão e que o escuro é uma escolha (e onde ela mora).
+
+## CHANGELOG.md
+
+### 2026-10-15 · esta tarefa · promoção das duas entradas da aba Desenhar
+- **Local:** PowerPoint → "Não adicionado" → Frontend → "Adicionado" → Frontend (topo)
+- **Linha:** 2 entradas movidas — **Ferramentas de tinta na aba Desenhar** (`ef63fcf`) e **Aba
+  "Desenhar" na fita** (`6cb19b0`)
+- **Porquê:** os dois commits estão na `main` (conferidos com `git merge-base --is-ancestor` antes
+  de mover), então a promoção não afirma nada falso; como nas rodadas anteriores, ela anda num
+  passo curto de docs porque o registro de autoria e a promoção não cabem no mesmo commit do
+  `fechar.ps1`. As outras entradas da mesma lista (a **fita que cabe na tela** e a **Aba Design
+  completa**) ficaram onde estavam: são de sessões com trabalho aberto ou com promoção em voo —
+  mexer nelas criaria duplicata ou conflito.
