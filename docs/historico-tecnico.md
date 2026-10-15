@@ -10529,3 +10529,17 @@ antigas quando fizer sentido.
   promoção é uma tarefa de follow-up, depois que o commit chegou (75060e6). Promovi só as entradas
   DESTA tarefa: as que seguem em "Não adicionado" pertencem a sessões com trabalho aberto ou com
   promoção em voo — mexer nelas criaria duplicata ou conflito.
+
+
+## CHANGELOG.md
+
+### 2026-10-15 — promoção — a entrada do "Nova lâmina" fora da fita entra no "Adicionado" (PowerPoint)
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** 1 entrada movida — **O "Nova lâmina" saiu da fita — o card do fim da faixa assumiu
+  tudo** (`37d55ef`, worktree `fix/nova-lamina-card`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não cabe
+  no mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que ainda
+  não entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** da lista do Frontend,
+  como as promoções anteriores; as entradas das outras sessões na seção (a prévia da lâmina no
+  Histórico, o encaixe da fita em quatro degraus, etc.) ficaram **intactas** — nenhuma delas entrou
+  na `main` por este fecho.
