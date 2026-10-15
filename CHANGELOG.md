@@ -413,6 +413,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O degrau no meio da reta encaixada saiu (a curva "quase perfeita" agora fecha)**: quando a mão
+  derrapa no meio de um trecho, o alinhamento nos eixos formava **duas retas com médias
+  diferentes** — o caminho fazia um degrau/barriga entre elas (print do usuário: "a curva do
+  assistente quase saiu perfeita"). Agora as corridas vizinhas quase colineares viram **uma só**
+  (a média sai do trecho inteiro): vale quando as médias estão a até 5 pt e os pontos do vão ficam
+  a até 8 pt da reta — um degrau de verdade, que a mão desenhou, tem a diferença maior e fica.
+  Teste: `npm run test:desenho`.
+
 - **A aba Animações cabe na tela (sem rolar nem cortar o grupo "Animar")** — o plano do encaixe supunha que todo grupo encolhe junto com as métricas, mas a galeria de animações tinha 72 px fixos por cartão e a aba passava da largura mesmo no degrau compacto. Agora a galeria acompanha as métricas e o encaixe **confere no navegador** depois de aplicar o plano: se ainda sobra rolagem, encolhe mais as métricas e, por fim, manda mais um grupo para o menu. Medido num Chrome real: de 1500 a 900 px nenhuma aba rola; em 1338 px a aba Animações cabe inteira.
 
 - **Estúdio: isolar uma box e trabalhar só nela** (fase 1 de um conjunto) — a aba **Desenhar** ganhou
@@ -426,14 +434,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   módulo puro (`edicao/estudio.ts`: retângulo, **cantos arredondados por canto**, elipse e triângulo;
   o resto cai no retângulo da caixa) — é ele que as próximas fases (pintura recortada, camadas e as
   **cópias vinculadas**) vão usar como fronteira. Teste: `npm run test:estudio`.
-
-- **As juntas entre a reta encaixada e a curva saíram suaves (sem quebras)**: o encaixe nos eixos
-  deixa os trechos quase retos como retas, mas a cúbica que continuava da reta saía na tangente do
-  vizinho de trás do traço — a reta encostava na curva de esguelha e ficava uma **quina** visível
-  (print do usuário: "ficou com umas quebras, não ficou suave"). Agora o braço da cúbica nas juntas
-  continua a **direção da reta** (um terço do trecho da curva, ~o arco de círculo que a mão faz) e o
-  `reto` do Alt continua fazendo quina. O ajuste vale para o caminho final **e** para a prévia
-  (mesma função nos dois). Teste: `npm run test:desenho`.
 
 - **Aba Design completa: Temas, Variantes, Personalizar e Designer**: a aba tinha só dois grupos
   (fundo e layout) e agora segue os quatro blocos do Office, com a cara do app. **Temas** abre a

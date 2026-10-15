@@ -716,8 +716,9 @@ function alinharPontos(pontos: PontoTraco[], tolGraus = 9): PontoTraco[] {
     else tipo.push(Math.abs(dy) / len <= tol ? "h" : Math.abs(dx) / len <= tol ? "v" : null);
   }
   // corridas de trechos no mesmo eixo (com um mínimo de 3 trechos: reta de verdade, não um
-  // trecho curto que o tremor disfarçou): todos os pontos da corrida ganham a mesma coordenada
-  // (a média — o traço fica no lugar onde a mão passou, sem "puxar" para um lado)
+  // trecho curto que o tremor disfarçou)
+  type Corrida = { t: "h" | "v"; i: number; j: number };
+  const corridas: Corrida[] = [];
   let i = 0;
   while (i < tipo.length) {
     const t = tipo[i];
@@ -727,16 +728,47 @@ function alinharPontos(pontos: PontoTraco[], tolGraus = 9): PontoTraco[] {
     }
     let j = i;
     while (j + 1 < tipo.length && tipo[j + 1] === t) j++;
-    if (j - i + 1 >= 3) {
-      let soma = 0;
-      for (let k = i; k <= j + 1; k++) soma += t === "h" ? pts[k].y : pts[k].x;
-      const media = soma / (j - i + 2);
-      for (let k = i; k <= j + 1; k++) {
-        if (t === "h") pts[k].y = media;
-        else pts[k].x = media;
+    if (j - i + 1 >= 3) corridas.push({ t, i, j });
+    i = j + 1;
+  }
+  // CORRIDAS VIZINHAS quase colineares viram UMA: a mão derrapa no meio do trecho, o alinhamento
+  // forma duas retas com médias diferentes e o caminho faz um DEGRAU entre elas (o print do
+  // usuário: "a curva do assistente quase saiu perfeita" — sobrava a barriga no meio da vertical).
+  // Vale quando as médias estão perto e os pontos do VÃO ficam perto da reta fundida — um degrau
+  // de verdade (que a mão desenhou) tem a diferença maior que isso e fica.
+  const mediaDe = (c: Corrida) => {
+    let soma = 0;
+    for (let k = c.i; k <= c.j + 1; k++) soma += c.t === "h" ? pts[k].y : pts[k].x;
+    return soma / (c.j - c.i + 2);
+  };
+  const pertoDaLinha = (c: Corrida, media: number) => {
+    for (let k = c.i; k <= c.j + 1; k++) {
+      if (Math.abs((c.t === "h" ? pts[k].y : pts[k].x) - media) > 8) return false;
+    }
+    return true;
+  };
+  const corridasJuntas: Corrida[] = [];
+  for (const c of corridas) {
+    const ant = corridasJuntas[corridasJuntas.length - 1];
+    if (ant && ant.t === c.t) {
+      const fundida: Corrida = { t: c.t, i: ant.i, j: c.j };
+      const media = mediaDe(fundida);
+      const vao: Corrida = { t: c.t, i: ant.j + 1, j: c.i - 1 };
+      if (Math.abs(mediaDe(ant) - mediaDe(c)) <= 5 && pertoDaLinha(vao, media)) {
+        ant.j = c.j;
+        continue;
       }
     }
-    i = j + 1;
+    corridasJuntas.push({ ...c });
+  }
+  // cada corrida (já fundida) ganha a média do trecho INTEIRO — o traço fica no lugar onde a mão
+  // passou, sem "puxar" para um lado
+  for (const c of corridasJuntas) {
+    const media = mediaDe(c);
+    for (let k = c.i; k <= c.j + 1; k++) {
+      if (c.t === "h") pts[k].y = media;
+      else pts[k].x = media;
+    }
   }
   return pts;
 }

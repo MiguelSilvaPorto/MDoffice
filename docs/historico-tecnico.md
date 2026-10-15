@@ -11593,3 +11593,35 @@ antigas quando fizer sentido.
   a pessoa descobre como usar e o que **não** dá para isolar; a entrada no CHANGELOG diz que é a
   **fase 1** de um conjunto (pintura, camadas, cópias vinculadas), para ninguém ler o "Estúdio" como
   se ele já fizesse tudo o que foi conversado.
+
+## src/powerpoint/edicao/desenho.ts
+
+### 2026-10-15 · a curva quase perfeita · o degrau no meio da reta
+- **Local:** `alinharPontos` — a aplicação das corridas virou dois passos (`corridasJuntas`, que
+  funde as vizinhas, e a média do trecho inteiro)
+- **Linha:** `+` a fusão: `Math.abs(mediaDe(ant) - mediaDe(c)) <= 5 && pertoDaLinha(vao, media)` —
+  com `pertoDaLinha` (os pontos do vão a até 8 pt da reta fundida) · a média passou a sair da
+  corrida FUNDIDA (o trecho inteiro)
+- **Porquê:** o print do usuário ("a curva do assistente quase saiu perfeita") trouxe um degrau no
+  meio da vertical: quando a mão derrapa no meio do trecho, a classificação por janela quebra a
+  reta em DUAS corridas com médias diferentes (medido no sintético: x 136,9 → 132,6 → 137,1) e o
+  caminho faz degrau entre elas. A fusão é segura porque o degrau de verdade (desenhado de
+  propósito) tem a diferença das médias maior que 5 pt ou os pontos do vão longe da reta
+  (o teste do "L" e o da diagonal continuam passando).
+
+## scripts/testar-desenho-assistido.mjs
+
+### 2026-10-15 · a curva quase perfeita · o teste da derrapada
+- **Local:** o bloco "encaixe nos eixos (assistente)"
+- **Linha:** `+` "encaixe: derrapada no meio da reta não faz degrau" — um traço sem tremor com uma
+  derrapada gaussiana de 6 pt em y=400 não pode deixar NENHUM ponto na faixa y 330..460 do caminho
+- **Porquê:** era o caso do print: antes sobravam 4 pontos em degrau (137,1 → 132,5 → 137,1) e o
+  teste prende isso sem depender de olho.
+
+## docs/powerpoint.md
+
+### 2026-10-15 · a curva quase perfeita · a bala do desenho livre
+- **Local:** "Desenho à mão (Draw) e Curva por pontos" (a bala do desenho livre)
+- **Linha:** `+` a frase das corridas vizinhas (médias a até 5 pt, vão a até 8 pt da reta)
+- **Porquê:** a bala dizia do encaixe e das juntas, mas não do degrau possível entre duas corridas
+  — que era justamente o que faltava para a curva fechar.

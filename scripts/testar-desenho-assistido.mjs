@@ -538,6 +538,14 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
   const faixaY = Math.max(...ys) - Math.min(...ys);
   const incl = (diagAl[diagAl.length - 1].y - diagAl[0].y) / (diagAl[diagAl.length - 1].x - diagAl[0].x);
   ok("encaixe: traço diagonal fica como está", diagAl.length >= 3 && faixaX > 150 && faixaY > 120 && Math.abs(incl - 0.8) < 0.15, `faixa ${faixaX.toFixed(0)}x${faixaY.toFixed(0)}, inclinação ${incl.toFixed(2)}`);
+  // a derrapada no MEIO do trecho (a mão abre um degrau e volta): o alinhamento formava DUAS retas
+  // com médias diferentes e o caminho fazia um degrau no meio da vertical (print do usuário: "a
+  // curva do assistente quase saiu perfeita"). O trecho tem de sair como UMA reta só — o degrau de
+  // verdade, que a mão desenhou de propósito, fica (vão maior que 2 trechos ou diferença > 5 pt).
+  const derrapada = [];
+  for (let y = 495; y >= 300; y -= 4) derrapada.push({ x: 137.5 - (495 - y) * 0.0035 - 6 * Math.exp(-(((y - 400) / 20) ** 2)), y });
+  const semDegrau = D.pontosDoDesenhoLivre(derrapada, true).filter((p) => p.y > 330 && p.y < 460);
+  ok("encaixe: derrapada no meio da reta não faz degrau", semDegrau.length === 0, JSON.stringify(semDegrau.map((p) => [Math.round(p.x * 10) / 10, Math.round(p.y)])));
   // o traço não reconhecido continua desenho livre — mas com o caminho encaixado
   const assistido = D.formaDoTraco(cantoTorto, pincel, est, dim, []);
   const cru = D.formaDoTraco(cantoTorto, { ...pincel, assistente: false }, est, dim, []);
