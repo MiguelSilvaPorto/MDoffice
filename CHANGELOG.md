@@ -1150,6 +1150,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Ferramentas (dev)**
 
+- **Os estragos das resoluções de conflito da tarefa do "fechar todos"**: (1) o
+  `npm run test:layout` **voltou a rodar** — a resolução daquela tarefa perdeu o fecho (`);` e `}`)
+  do bloco "histórico: a alteração mostra o documento" no `scripts/testar-layout.mts`, e o arquivo
+  foi para a `main` sem compilar (a suíte morria com `SyntaxError: Expected ',', got 'ident'`
+  **antes** de rodar qualquer checagem); (2) as **seções do histórico técnico** daquela tarefa
+  (`tabs.ts`, `keymap`/`commands`/`pages`/`layout`, os comandos de documento e as travas) voltaram
+  ao lugar — a promoção de outra sessão (`80744cf`) as havia descartado inteiras na resolução dela.
+  Teste: `npm run test:layout`.
+
 ### Adicionado (na main)
 
 **Backend**

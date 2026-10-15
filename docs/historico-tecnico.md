@@ -1,4 +1,4 @@
-# Histórico técnico
+﻿# Histórico técnico
 
 O "porquê" de cada mudança de linha do mdOffice. O [CHANGELOG](../CHANGELOG.md) conta **o que**
 mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local, a linha e o motivo.
@@ -10562,3 +10562,94 @@ antigas quando fizer sentido.
   na entrada nova do encaixe (a antiga falava de um degrau de "só ícones" e de uma rolagem de painel
   que a tarefa nova substituiu). As outras entradas que seguem em "Não adicionado" pertencem a
   sessões com trabalho aberto ou com promoção em voo — mexer nelas criaria duplicata ou conflito.
+## src/app/tabs.ts
+
+### 2026-10-15 · esta tarefa · o app funciona sem nenhuma aba aberta
+- **Local:** o `closeTab` (o ramo do `fechouTudo`), o `closeAll` novo, o `restoreSession`, o
+  `openTabMenu` e o helper `semDocumento`
+- **Linha:** `if (fechouTudo) this.tabs.push(newTab(…))` → `if (fechouTudo) this.tab = newTab(…)`
+  (fora da fileira); `+ await this.activate(this.tabs[Math.min(index, this.tabs.length - 1)] ?? this.tab)`;
+  `+ async closeAll()` (fecha de trás para frente); `+ if (!this.path && !this.dirty && this.tabs.length === 1 && this.tabs[0] === this.tab) { this.tabs = []; this.afterTabChange(); this.showHome(); }`
+  no fim do `restoreSession`; `+ { label: "Fechar todos", … }` no menu da aba
+- **Porquê:** o app inteiro assumia que **sempre há uma aba ativa** — fechar a última criava um
+  "Sem título" na fileira só para o editor ter onde existir. O jeito de tirar o "Sem título" sem
+  tocar nas 167 leituras de `this.tab` foi separar as duas coisas: o **documento de trabalho**
+  (o estado que o editor segura, sempre existe) e a **aba** (a entrada na fileira, que pode não
+  existir). Fechando a última, o documento vira um novo objeto **solto** — `this.tabs` fica vazio,
+  a fileira mostra só o "+" e o Início sobe. O `?? this.tab` na ativação é o que evita o
+  `this.tabs[-1]` (undefined) nessa hora. O `semDocumento()` é o aviso padrão dos comandos: sem
+  ele, o Ctrl+S abriria um "Salvar como" para um documento invisível. O `closeAll` fecha de trás
+  para frente para a **última** passar pelo fluxo normal (que já leva ao Início e trata
+
+## src/app/keymap.ts · src/app/commands.ts · src/app/pages.ts · src/app/layout.ts
+
+### 2026-10-15 · esta tarefa · as entradas do "Fechar todos" e a cara de "sem documento"
+- **Local:** o atalho novo (grupo **Abas**), o item da paleta, o `closeSettings` e o
+  `updateStats`/`setSaveState`/`refreshTitle`
+- **Linha:** `+ { id: "fechar-tudo", grupo: "Abas", rotulo: "Fechar todos os documentos", padrao: "Ctrl+Shift+W" }`;
+  `+ add("Documento", "Fechar todos os documentos", …)`; `+ if (!this.tabs.length) this.showHome()`
+  no `closeSettings`; a barra de status e o título ganharam o ramo "sem documento"
+- **Porquê:** o comando tem de estar onde as pessoas procuram (menu da aba, paleta e atalho — a
+  aba **Atalhos** das Configurações pega o `padrao` sozinha ✓). O `closeSettings` também precisava
+  saber: com a fileira vazia, fechar as Configurações caía num editor que não é uma aba — agora vai
+  ao Início. E o "sem documento" tem cara própria: "Nenhum documento aberto" na barra de status,
+  nada de contadores e o título da janela só "mdOffice" (era "Sem título.md — mdOffice").
+
+## src/app/documents.ts · aiContext.ts · assistant.ts · deepReview.ts · drawing.ts · historySearch.ts · media.ts · powerpointDocs.ts · formalizar.ts · toolbar.ts
+
+### 2026-10-15 · esta tarefa · os comandos de documento avisam quando não há documento
+- **Local:** o começo de `save`, `copyForAI`, `openExport`, `openReview`, `openDeepReview`,
+  `openDraw`, `openHistory`, `saveVersionNow`, `insertImageFromDialog`, `presentActive`,
+  `openFormalizar` e o `act()` da barra
+- **Linha:** `+ if (this.semDocumento()) return;` (no `save`, `return false`)
+- **Porquê:** sem documento, o `this.tab` é o documento de trabalho solto — e um comando como
+  "Desenhar" **inseriria no documento invisível**, o "Salvar" abriria o "Salvar como" e o
+  "Exportar" geraria um arquivo vazio. A guarda fica **dentro de cada método** (e não nos atalhos
+  ou na barra): assim a barra, os atalhos, a paleta e os menus ficam cobertos de uma vez, sem
+  listas paralelas de "o que precisa de documento" para manter em dia. O `act()` da barra guarda
+  as ações de escrita/inserção em bloco (menos "palette", "translate-settings" e "export", que
+  têm vida própria).
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · esta tarefa · as travas do "sem abas"
+- **Local:** seção "fechar todos: o app fica sem nenhuma aba, no Início" (8 checagens)
+- **Linha:** `novo` — fechar a última não empilha uma aba nova (e o teste **proíbe** o
+  `this.tabs.push` antigo), a ativação aceita a fileira vazia, o "Fechar todos" nas três entradas,
+  o início sem sessão, o `closeSettings`, as guardas dos comandos e a barra de status
+- **Porquê:** o defeito era invisível (o app continuava funcionando, só com um "Sem título" a
+  mais) e a correção tem um ponto frágil de propósito: o `?? this.tab` da ativação. A checagem
+  negativa (`!/if \(fechouTudo\) this\.tabs\.push/`) existe para a aba fantasma não voltar numa
+  simplificação — é exatamente o comportamento que a tarefa anterior tinha deixado.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · esta tarefa · o bloco do histórico volta a fechar (o teste volta a rodar)
+- **Local:** o fim do bloco "histórico: a alteração mostra o documento (não a serialização)"
+- **Linha:** `+  );` e `+ }` depois de `'a lista voltaria a mostrar "+4843 −7259" (tamanho do JSON)'`
+- **Porquê:** na tarefa do **fechar todos**, o `testar-layout.mts` conflitou com o bloco do
+  **histórico legível** (as duas sessões escreveram no fim do arquivo) e a resolução colou os dois
+  blocos: o lado da `main` terminava no meio do `checa(...)` e o fecho (`);` e `}`) ficou para trás
+  — o arquivo foi para a `main` sem compilar e o `npm run test:layout` morria com
+  `SyntaxError: Expected ',', got 'ident'` **antes de rodar qualquer checagem**. O susto ensina duas
+  coisas: (1) numa resolução de conflito, o **fecho do bloco** (`);`, `}`) faz parte da resolução —
+  quem move um bloco move o fecho junto; (2) a contagem de `FALHA` **não** detecta suíte que não
+  chega a rodar (0 "FALHA" com o script explodindo é falso verde) — a conferência tem de olhar o
+  **fim** da saída (`Tudo certo.`) e o código de saída, não só o contador.
+
+## docs/historico-tecnico.md
+
+### 2026-10-15 · esta tarefa · as seções do "fechar todos" voltam ao histórico
+- **Local:** o fim do arquivo, depois das promoções do `CHANGELOG.md`
+- **Linha:** `+` as seções `## src/app/tabs.ts`, `## src/app/keymap.ts · commands · pages · layout`,
+  `## src/app/documents.ts · aiContext · … · toolbar.ts` e `## scripts/testar-layout.mts` (com esta
+  entrada junto), como estavam em `5784eda` — o texto não foi reescrito
+- **Porquê:** o commit `80744cf` (a promoção de outra sessão) trouxe
+  `docs/historico-tecnico.md | 19 insertions(+), 60 deletions(-)` — e as **60 remoções** eram o
+  bloco inteiro desta tarefa, descartado na resolução do conflito de lá. Na `main` o porquê tinha
+  sumido sem rastro (`semDocumento`, `closeAll` e "o app funciona sem nenhuma aba aberta" não
+  apareciam mais no arquivo). O bloco voltou **inteiro e como estava**: o histórico é o registro de
+  por que cada linha existe — apagar o registro de uma tarefa entregue é perder a memória dela, não
+  "consolidar". É o segundo estrago da mesma entrega (o primeiro foi o `testar-layout.mts` acima):
+  os dois vieram de resoluções de conflito que trataram o arquivo inteiro em vez do trecho — vale a
+  regra de sempre: **resolver o conflito é reescrever só o trecho, nunca escolher um lado inteiro**.

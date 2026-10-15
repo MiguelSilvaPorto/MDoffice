@@ -2292,6 +2292,9 @@ console.log("\nhistórico: a alteração mostra o documento (não a serializaç�
       /pendente = \{ path, texto, projetar \}/.test(hist) &&
       /summary: ehAncora \? "marco do documento" : opts\.resumo \|\| summarize\(ops\)/.test(snaps),
     'a lista voltaria a mostrar "+4843 −7259" (tamanho do JSON)'
+  );
+}
+
 console.log("\nfechar todos: o app fica sem nenhuma aba, no Início");
 {
   const abas = ler("src/app/tabs.ts");
