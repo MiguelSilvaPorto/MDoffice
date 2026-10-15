@@ -12142,3 +12142,17 @@ antigas quando fizer sentido.
   uma tarefa de follow-up, depois que o commit chegou (385df1b). Promovi só a entrada DESTA tarefa:
   as que seguem em "Não adicionado" (o menu dos grupos da fita e a faixa que não se recolhe) são de
   sessões com trabalho aberto — mexer nelas criaria duplicata ou conflito.
+## CHANGELOG.md
+
+### 2026-10-15 · promoção · a entrada do conector em gradiente entra no "Adicionado" (PowerPoint)
+- **Local:** PowerPoint ▸ **Não adicionado** ▸ Frontend ▸ **Adicionado** ▸ Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **A ligação do Conectar vira uma transição (da cor da
+  origem para a do destino)** (`9a32f90`, worktree `feat/conector-gradiente`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não sai
+  no mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
+  entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
+  promoções anteriores. De passagem, ela ganhou a **linha em branco** que faltava antes dela — a
+  resolução do conflito da entrega a tinha colado no fim da entrada anterior (o item continuava
+  sendo um item, mas o arquivo ficava fora do padrão das outras entradas). As demais entradas de
+  "Não adicionado" (o Estádio, a aba Animações, o Estúdio Pintura…) ficaram **intactas** — são de
+  sessões com trabalho aberto.
