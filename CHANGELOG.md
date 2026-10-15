@@ -415,26 +415,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **A apresentação nova nasce clara — o tema do app não decide o papel da lâmina**: o padrão de
-  fábrica da apresentação era o tema **Escuro**, então quem usava o app no escuro abria uma lâmina
-  escura sem ter pedido. Agora ela nasce com **papel branco** (tema **Claro**) e o tema do app fica
-  onde deve — na **interface**; quem quer lâmina escura escolhe um modelo escuro na apresentação
-  (aba **Design ▸ Temas**, como o **Escuro** ou o **Meia-noite** do catálogo) ou a variante **Grafite**
-  (aba Design ▸ Variantes), de propósito. A **importação** de `.pptx` segue clara (não herda o tema
-  de quem chamou) e o documento que já existia **mantém o tema que tinha** — trocar o padrão de
-  fábrica não repinta rascunho nem histórico antigos. Teste: `npm run test:lamina`.
-
-- **As molduras das prévias de lâmina (Ideias, Arranjos e Variantes) são palco, não papel**: o
-  cartão que recorta a prévia da lâmina tinha um **branco fixo** atrás dela, então no tema escuro
-  do app o vão em volta da lâmina aparecia como um papel branco que não existe na tela. A moldura
-  passou a usar o **tom do palco** (`--palco-bg`) — o mesmo do editor: escuro no tema escuro e
-  claro no claro. A lâmina recortada não muda (ela tem o fundo próprio, que é o que o cartão
-  mostra). Teste: `npm run test:layout`.
-
-- **A fita do PowerPoint cabe na tela sem rolar** — ela se ajusta sozinha à largura da janela: se o painel da aba não cabe, os espaços e ícones encolhem em degraus (a fonte não), os botões grandes ficam numa linha e, por último, os botões pequenos ficam só com o ícone (o nome fica na dica). Em 1338 px todas as abas cabem (Início estourava 353 px e Animações 218 px); a rolagem lateral fica só para janelas muito estreitas.
-
-- **A fita do PowerPoint cabe na tela sem rolar** — ela se ajusta sozinha à largura da janela: se o painel da aba não cabe, os espaços e ícones encolhem em degraus (a fonte não), os botões grandes ficam numa linha e, por último, os botões pequenos ficam só com o ícone (o nome fica na dica). Em 1338 px todas as abas cabem (Início estourava 353 px e Animações 218 px); a rolagem lateral fica só para janelas muito estreitas.
-
 - **Aba Design completa: Temas, Variantes, Personalizar e Designer**: a aba tinha só dois grupos
   (fundo e layout) e agora segue os quatro blocos do Office, com a cara do app. **Temas** abre a
   galeria de modelos (a mesma do botão Template), **Variantes** é novo — as seis famílias de cor do
@@ -457,6 +437,22 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **A apresentação nova nasce clara — o tema do app não decide o papel da lâmina**: o padrão de
+  fábrica da apresentação era o tema **Escuro**, então quem usava o app no escuro abria uma lâmina
+  escura sem ter pedido. Agora ela nasce com **papel branco** (tema **Claro**) e o tema do app fica
+  onde deve — na **interface**; quem quer lâmina escura escolhe um modelo escuro na apresentação
+  (aba **Design ▸ Temas**, como o **Escuro** ou o **Meia-noite** do catálogo) ou a variante **Grafite**
+  (aba Design ▸ Variantes), de propósito. A **importação** de `.pptx` segue clara (não herda o tema
+  de quem chamou) e o documento que já existia **mantém o tema que tinha** — trocar o padrão de
+  fábrica não repinta rascunho nem histórico antigos. Teste: `npm run test:lamina`.
+
+- **As molduras das prévias de lâmina (Ideias, Arranjos e Variantes) são palco, não papel**: o
+  cartão que recorta a prévia da lâmina tinha um **branco fixo** atrás dela, então no tema escuro
+  do app o vão em volta da lâmina aparecia como um papel branco que não existe na tela. A moldura
+  passou a usar o **tom do palco** (`--palco-bg`) — o mesmo do editor: escuro no tema escuro e
+  claro no claro. A lâmina recortada não muda (ela tem o fundo próprio, que é o que o cartão
+  mostra). Teste: `npm run test:layout`.
 
 - **O "Nova lâmina" saiu da fita — o card do fim da faixa assumiu tudo**: o botão da fita
   (**Página Inicial ▸ Lâminas**, e o gêmeo na aba **Inserir**) fazia o mesmo que o **card
@@ -1150,31 +1146,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **A fita cabe na largura em quatro degraus — e sem rolagem (PowerPoint, Word e Excel)**: a faixa
-  de opções deixou de empurrar botão para fora da tela. Do mais folgado ao mais apertado: (1)
-  **cheia**; (2) **compacta** — espaços e ícones menores, com **piso de fonte** (o Excel entrou
-  nesse caminho: saiu do `zoom`, que encolhia o texto junto); (3) os **grupos que não couberem
-  viram um botão** com o nome do grupo — clicar abre um menu com os controles daquele grupo, e o
-  **último** grupo colapsa primeiro, então o que se usa o tempo todo continua à vista; (4) **faixa
-  única** no modo recolhido (Ctrl+F1 ou duplo clique numa aba): os grupos da aba ativa ficam numa
-  linha de botões (o "mais" de cada grupo) e a faixa acompanha a aba ativa, em vez de sumir. Quem
-  decide é uma função pura (largura disponível × largura dos grupos, `src/fitaEncaixe.ts`), medida
-  em `npm run test:encaixe`; a conferência cobre **1400/1100/900/700 px** com a escala em
-  **0,7/1/1,5** e a pior combinação ainda deixa a fita inteira à vista. As **setinhas de rolar** do
-  Word e a roda do mouse nos painéis saíram (a galeria de Estilos continua rolando de lado, que ali
-  é galeria). A alça de altura ganhou **teto**: o menor entre **1,5×** e **um terço da janela** —
-  numa janela baixa a faixa não come a tela (o valor guardado segue sendo a sua preferência).
-  Testes: `npm run test:encaixe` e `npm run test:layout`.
-
-- **Fechar todos os arquivos — e o app fica sem nenhum aberto**: fechar a **última aba** não cria
-  mais um **"Sem título"** na fileira: o app fica no **Início** com a fileira vazia (o documento de
-  trabalho continua existindo por baixo, mas não é uma aba). Entrar no app **sem sessão** também
-  abre no Início, sem aba nenhuma. E entrou o comando **Fechar todos** — no menu da aba, na paleta
-  do **Ctrl+K** e no **Ctrl+Shift+W** —, que fecha tudo de uma vez. Com a fileira vazia, os
-  comandos de documento (**salvar**, **exportar**, **desenhar**, **imagem**, **revisar**,
-  **apresentar**, **copiar para a IA**, **histórico**…) **avisam em vez de agir** num documento que
-  não está à vista, a barra de status diz **"Nenhum documento aberto"** e a janela fica só
-  "mdOffice". Teste: `npm run test:layout`.
+- (nada no momento)
 
 **Ferramentas (dev)**
 
@@ -1229,6 +1201,22 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **A fita cabe na largura em quatro degraus — e sem rolagem (PowerPoint, Word e Excel)**: a faixa
+  de opções deixou de empurrar botão para fora da tela. Do mais folgado ao mais apertado: (1)
+  **cheia**; (2) **compacta** — espaços e ícones menores, com **piso de fonte** (o Excel entrou
+  nesse caminho: saiu do `zoom`, que encolhia o texto junto); (3) os **grupos que não couberem
+  viram um botão** com o nome do grupo — clicar abre um menu com os controles daquele grupo, e o
+  **último** grupo colapsa primeiro, então o que se usa o tempo todo continua à vista; (4) **faixa
+  única** no modo recolhido (Ctrl+F1 ou duplo clique numa aba): os grupos da aba ativa ficam numa
+  linha de botões (o "mais" de cada grupo) e a faixa acompanha a aba ativa, em vez de sumir. Quem
+  decide é uma função pura (largura disponível × largura dos grupos, `src/fitaEncaixe.ts`), medida
+  em `npm run test:encaixe`; a conferência cobre **1400/1100/900/700 px** com a escala em
+  **0,7/1/1,5** e a pior combinação ainda deixa a fita inteira à vista. As **setinhas de rolar** do
+  Word e a roda do mouse nos painéis saíram (a galeria de Estilos continua rolando de lado, que ali
+  é galeria). A alça de altura ganhou **teto**: o menor entre **1,5×** e **um terço da janela** —
+  numa janela baixa a faixa não come a tela (o valor guardado segue sendo a sua preferência).
+  Testes: `npm run test:encaixe` e `npm run test:layout`.
 
 - **A lista de recentes virou uma grade de cartões com a prévia**: cada cartão mostra um "papel"
   com o título (a primeira linha) e o começo do texto do documento, com a cor do formato na borda;

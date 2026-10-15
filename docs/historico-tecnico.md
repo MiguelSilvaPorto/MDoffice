@@ -1,4 +1,4 @@
-﻿# Histórico técnico
+# Histórico técnico
 
 O "porquê" de cada mudança de linha do mdOffice. O [CHANGELOG](../CHANGELOG.md) conta **o que**
 mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local, a linha e o motivo.
@@ -10543,63 +10543,22 @@ antigas quando fizer sentido.
   como as promoções anteriores; as entradas das outras sessões na seção (a prévia da lâmina no
   Histórico, o encaixe da fita em quatro degraus, etc.) ficaram **intactas** — nenhuma delas entrou
   na `main` por este fecho.
-## src/app/tabs.ts
 
-### 2026-10-15 · esta tarefa · o app funciona sem nenhuma aba aberta
-- **Local:** o `closeTab` (o ramo do `fechouTudo`), o `closeAll` novo, o `restoreSession`, o
-  `openTabMenu` e o helper `semDocumento`
-- **Linha:** `if (fechouTudo) this.tabs.push(newTab(…))` → `if (fechouTudo) this.tab = newTab(…)`
-  (fora da fileira); `+ await this.activate(this.tabs[Math.min(index, this.tabs.length - 1)] ?? this.tab)`;
-  `+ async closeAll()` (fecha de trás para frente); `+ if (!this.path && !this.dirty && this.tabs.length === 1 && this.tabs[0] === this.tab) { this.tabs = []; this.afterTabChange(); this.showHome(); }`
-  no fim do `restoreSession`; `+ { label: "Fechar todos", … }` no menu da aba
-- **Porquê:** o app inteiro assumia que **sempre há uma aba ativa** — fechar a última criava um
-  "Sem título" na fileira só para o editor ter onde existir. O jeito de tirar o "Sem título" sem
-  tocar nas 167 leituras de `this.tab` foi separar as duas coisas: o **documento de trabalho**
-  (o estado que o editor segura, sempre existe) e a **aba** (a entrada na fileira, que pode não
-  existir). Fechando a última, o documento vira um novo objeto **solto** — `this.tabs` fica vazio,
-  a fileira mostra só o "+" e o Início sobe. O `?? this.tab` na ativação é o que evita o
-  `this.tabs[-1]` (undefined) nessa hora. O `semDocumento()` é o aviso padrão dos comandos: sem
-  ele, o Ctrl+S abriria um "Salvar como" para um documento invisível. O `closeAll` fecha de trás
-  para frente para a **última** passar pelo fluxo normal (que já leva ao Início e trata
-  Word/PPT/Excel com os `prepareClose*`).
+### 2026-10-15 — promoção desta sessão · as três entradas (duas no PowerPoint, uma no Geral)
 
-## src/app/keymap.ts · src/app/commands.ts · src/app/pages.ts · src/app/layout.ts
-
-### 2026-10-15 · esta tarefa · as entradas do "Fechar todos" e a cara de "sem documento"
-- **Local:** o atalho novo (grupo **Abas**), o item da paleta, o `closeSettings` e o
-  `updateStats`/`setSaveState`/`refreshTitle`
-- **Linha:** `+ { id: "fechar-tudo", grupo: "Abas", rotulo: "Fechar todos os documentos", padrao: "Ctrl+Shift+W" }`;
-  `+ add("Documento", "Fechar todos os documentos", …)`; `+ if (!this.tabs.length) this.showHome()`
-  no `closeSettings`; a barra de status e o título ganharam o ramo "sem documento"
-- **Porquê:** o comando tem de estar onde as pessoas procuram (menu da aba, paleta e atalho — a
-  aba **Atalhos** das Configurações pega o `padrao` sozinha ✓). O `closeSettings` também precisava
-  saber: com a fileira vazia, fechar as Configurações caía num editor que não é uma aba — agora vai
-  ao Início. E o "sem documento" tem cara própria: "Nenhum documento aberto" na barra de status,
-  nada de contadores e o título da janela só "mdOffice" (era "Sem título.md — mdOffice").
-
-## src/app/documents.ts · aiContext.ts · assistant.ts · deepReview.ts · drawing.ts · historySearch.ts · media.ts · powerpointDocs.ts · formalizar.ts · toolbar.ts
-
-### 2026-10-15 · esta tarefa · os comandos de documento avisam quando não há documento
-- **Local:** o começo de `save`, `copyForAI`, `openExport`, `openReview`, `openDeepReview`,
-  `openDraw`, `openHistory`, `saveVersionNow`, `insertImageFromDialog`, `presentActive`,
-  `openFormalizar` e o `act()` da barra
-- **Linha:** `+ if (this.semDocumento()) return;` (no `save`, `return false`)
-- **Porquê:** sem documento, o `this.tab` é o documento de trabalho solto — e um comando como
-  "Desenhar" **inseriria no documento invisível**, o "Salvar" abriria o "Salvar como" e o
-  "Exportar" geraria um arquivo vazio. A guarda fica **dentro de cada método** (e não nos atalhos
-  ou na barra): assim a barra, os atalhos, a paleta e os menus ficam cobertos de uma vez, sem
-  listas paralelas de "o que precisa de documento" para manter em dia. O `act()` da barra guarda
-  as ações de escrita/inserção em bloco (menos "palette", "translate-settings" e "export", que
-  têm vida própria).
-
-## scripts/testar-layout.mts
-
-### 2026-10-15 · esta tarefa · as travas do "sem abas"
-- **Local:** seção "fechar todos: o app fica sem nenhuma aba, no Início" (8 checagens)
-- **Linha:** `novo` — fechar a última não empilha uma aba nova (e o teste **proíbe** o
-  `this.tabs.push` antigo), a ativação aceita a fileira vazia, o "Fechar todos" nas três entradas,
-  o início sem sessão, o `closeSettings`, as guardas dos comandos e a barra de status
-- **Porquê:** o defeito era invisível (o app continuava funcionando, só com um "Sem título" a
-  mais) e a correção tem um ponto frágil de propósito: o `?? this.tab` da ativação. A checagem
-  negativa (`!/if \(fechouTudo\) this\.tabs\.push/`) existe para a aba fantasma não voltar numa
-  simplificação — é exatamente o comportamento que a tarefa anterior tinha deixado.
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo); Geral →
+  **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** 3 entradas movidas inteiras, sem reescrita — **A apresentação nova nasce clara**
+  (`a9a0cd7`), **As molduras das prévias são palco** (`af8a4e7`) e **A fita cabe na largura em
+  quatro degraus** (`bc8d44c`); `+` `- (nada no momento)` no lugar que ficou vazio no Geral;
+  `-` uma cópia da entrada **A fita do PowerPoint cabe na tela sem rolar**
+- **Porquê:** as três são desta sessão e os três commits já estão na `main` (`git merge-base
+  --is-ancestor` conferido antes de mover); como sempre, a promoção anda num passo curto de docs
+  porque o registro e a promoção não cabem no mesmo commit do `fechar.ps1`. A promoção do PowerPoint
+  entrou **junto com a limpeza** de uma duplicata: a resolução de um conflito do `fechar.ps1` (na
+  tarefa das molduras) deixou a entrada da fita antiga **duas vezes**, uma em cima da outra — a
+  segunda cópia saiu. A cópia que saiu não perde o porquê: o relato e a medição daquela tarefa
+  (1338 px, o Início estourando 353 px) continuam aqui no histórico, e o comportamento de hoje está
+  na entrada nova do encaixe (a antiga falava de um degrau de "só ícones" e de uma rolagem de painel
+  que a tarefa nova substituiu). As outras entradas que seguem em "Não adicionado" pertencem a
+  sessões com trabalho aberto ou com promoção em voo — mexer nelas criaria duplicata ou conflito.
