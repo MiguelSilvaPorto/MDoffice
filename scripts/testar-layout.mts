@@ -490,6 +490,48 @@ console.log("\nPowerPoint: o texto da forma escolhida é do texto (e o mover fic
   );
 }
 
+// ---------------------------------------------------------------- fita métrica (medida do arrasto)
+
+console.log("\nPowerPoint: a fita métrica mostra a medida enquanto arrasta");
+{
+  const medida = ler("src/powerpoint/edicao/medida.ts");
+  const cssMedida = ler("src/styles/powerpoint-edicao.css");
+  checa(
+    "a medida é pura, em cm e com a vírgula do painel",
+    /export function textoDoTamanho\(box: ShapeBox, d: Dim\): string/.test(medida) &&
+      /export function textoDaPosicao\(box: ShapeBox, d: Dim\): string/.test(medida) &&
+      /toLocaleString\("pt-BR", \{ maximumFractionDigits: 1 \}\)/.test(medida) &&
+      / cm`;/.test(medida),
+    "sem módulo puro o teste do Node não alcança a conta; sem o cm o número não bate com o painel"
+  );
+  checa(
+    "o balão aparece nos três gestos (mover, redimensionar e desenhar)",
+    /const gesto = this\.modo\?\.t;/.test(palcoPpt) &&
+      /if \(gesto === "mover" \|\| gesto === "redim" \|\| gesto === "criar"\)/.test(palcoPpt) &&
+      /gesto === "criar" \? this\.rect : sel\.length === 1 \? sel\[0\]\.box : sel\.length > 1 \? envolventeDe\(sel, ctx\.dim\) : null/.test(palcoPpt),
+    "com várias formas escolhidas o balão mede a moldura do grupo (não uma forma só)"
+  );
+  checa(
+    "mover mostra a posição; redimensionar e desenhar, o tamanho",
+    /gesto === "mover" \? textoDaPosicao\(alvo, ctx\.dim\) : textoDoTamanho\(alvo, ctx\.dim\)/.test(palcoPpt)
+  );
+  checa(
+    "o balão fica acima do quadro e vira para baixo perto do topo da lâmina",
+    /const abaixo = alvo\.y < 8;/.test(palcoPpt) &&
+      /class="pp-medida\$\{abaixo \? " abaixo" : ""\}"/.test(palcoPpt) &&
+      /\.pp-medida\s*\{[^}]*transform:\s*translate\(-50%, -100%\)/s.test(cssMedida) &&
+      /\.pp-medida\.abaixo\s*\{[^}]*translate\(-50%, 0\)/s.test(cssMedida),
+    "sem o giro para baixo o balão sairia da lâmina em quem está no topo"
+  );
+  checa(
+    "o balão não rouba o arrasto nem some no tema escuro",
+    /\.pp-medida\s*\{[^}]*pointer-events:\s*none/s.test(cssMedida) &&
+      /\.pp-medida\s*\{[^}]*background:\s*var\(--panel\)/s.test(cssMedida) &&
+      /\.pp-medida\s*\{[^}]*color:\s*var\(--fg\)/s.test(cssMedida),
+    "com pointer-events o balão bloquearia o gesto; com cor fixa ficaria ilegível no escuro"
+  );
+}
+
 // 6. Boas-vindas: o logo é o ÍCONE DO APP (o mesmo da janela), não o "M↓" num quadradinho.
 console.log("\npasta padrão dos documentos (Documentos/mdOffice com as quatro subpastas)");
 {

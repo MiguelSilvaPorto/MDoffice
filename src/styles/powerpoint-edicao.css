@@ -1886,6 +1886,29 @@ button.ppr.big .ppr-gal-ic svg {
   z-index: 52;
 }
 
+/* Fita métrica: o balão com a medida acompanha o que está sendo arrastado (mover, redimensionar
+   ou desenhar). Fica logo acima do quadro e, perto do topo da lâmina, vira para baixo (`.abaixo`). */
+.pp-medida {
+  position: absolute;
+  z-index: 52;
+  padding: 1px 7px;
+  transform: translate(-50%, -100%) translateY(-9px);
+  color: var(--fg);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  font-size: 11px;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.pp-medida.abaixo {
+  transform: translate(-50%, 0) translateY(9px);
+}
+
 /* dica da alça de canto: caixa do app no lugar do balão nativo do sistema */
 .pp-canto-dica {
   position: absolute;

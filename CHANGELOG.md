@@ -445,6 +445,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Fita métrica do arrasto**: enquanto se arrasta algo na lâmina, um **balão com a medida** acompanha o gesto — **x · y** (posição) ao **mover** e **largura × altura** ao **redimensionar** uma forma ou **desenhar** uma nova. A unidade é o **cm**, a mesma dos campos de **Tamanho** do painel (o número do gesto bate com o que a pessoa lê depois), com uma casa e vírgula decimal; o balão fica **acima do quadro** (e vira para baixo quando não há espaço no topo), não rouba o ponteiro e **some ao soltar**. Com **várias formas escolhidas**, a medida é a da **moldura do grupo**.
+
 - **O "+" do card "Nova lâmina" abre as variações (e o chevron de recolher a fita saiu)**: o card
   do fim da faixa ficou com **dois alvos de clique**: o **corpo** (a prévia + o rótulo "+ Nova
   lâmina") cria a lâmina com o **último layout escolhido** e o **"+"** no canto da prévia abre a

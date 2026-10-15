@@ -24,6 +24,7 @@ const G = await empacotar("src/powerpoint/edicao/geometria.ts", "geometria.mjs")
 const O = await empacotar("src/powerpoint/edicao/operacoes.ts", "operacoes.mjs");
 const T = await empacotar("src/powerpoint/edicao/texto.ts", "texto.mjs");
 const F = await empacotar("src/powerpoint/edicao/formato.ts", "formato.mjs");
+const MED = await empacotar("src/powerpoint/edicao/medida.ts", "medida.mjs");
 
 // ---------------------------------------------------------------- geometria
 const dim = { w: 960, h: 540 };
@@ -71,6 +72,16 @@ const dim = { w: 960, h: 540 };
   ok("forma vazia não tem texto", !t(undefined) && !t([]) && !t([{ runs: [], align: "esquerda", lvl: 0, marL: 0, indent: 0, spcBef: 0, spcAft: 0, endSize: 18 }]));
   ok("o \\u200b do parágrafo vazio não conta como texto", !t([{ runs: [{ text: "\u200b" }], align: "esquerda", lvl: 0, marL: 0, indent: 0, spcBef: 0, spcAft: 0, endSize: 18 }]));
   ok("com texto de verdade conta", t([{ runs: [{ text: "A no trabalho" }], align: "esquerda", lvl: 0, marL: 0, indent: 0, spcBef: 0, spcAft: 0, endSize: 18 }]));
+}
+
+// ---------------------------------------------------------------- fita métrica (a medida do gesto)
+{
+  const d = { w: 960, h: 540 };
+  ok("tamanho em cm (50% × 40% da lâmina)", MED.textoDoTamanho({ x: 0, y: 0, w: 50, h: 40 }, d) === "16,9 × 7,6 cm", MED.textoDoTamanho({ x: 0, y: 0, w: 50, h: 40 }, d));
+  ok("posição em cm (x e y do canto)", MED.textoDaPosicao({ x: 10, y: 25, w: 20, h: 10 }, d) === "x 3,4 · y 4,8 cm", MED.textoDaPosicao({ x: 10, y: 25, w: 20, h: 10 }, d));
+  ok("caixa zerada sai 0 × 0", MED.textoDoTamanho({ x: 0, y: 0, w: 0, h: 0 }, d) === "0 × 0 cm", MED.textoDoTamanho({ x: 0, y: 0, w: 0, h: 0 }, d));
+  ok("vírgula decimal, como o painel", /^\d+,\d × \d+,\d cm$/.test(MED.textoDoTamanho({ x: 0, y: 0, w: 30, h: 30 }, d)), MED.textoDoTamanho({ x: 0, y: 0, w: 30, h: 30 }, d));
+  ok("uma casa no máximo (nada de 16,933333)", !/\d,\d\d/.test(MED.textoDoTamanho({ x: 0, y: 0, w: 13, h: 17 }, d)), MED.textoDoTamanho({ x: 0, y: 0, w: 13, h: 17 }, d));
 }
 
 // ---------------------------------------------------------------- operações em várias formas

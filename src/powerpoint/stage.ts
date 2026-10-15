@@ -21,6 +21,7 @@ import {
 import type { Animacao, Lado, Shape, ShapeBox } from "./schema";
 import { CANTO_ROTULO, CANTOS, cantosDe, valoresComSelecao, type Canto } from "./edicao/formato";
 import { alvoDaConexao, bolinhaDaConexao } from "./edicao/ligacoes";
+import { textoDaPosicao, textoDoTamanho } from "./edicao/medida";
 import { temTexto } from "./edicao/texto";
 import { svgPathDePontosPct, type PontoTraco } from "./edicao/desenho";
 
@@ -418,6 +419,21 @@ export class Stage {
             `<button type="button" class="pp-lig-ponto${on ? " on" : ""}" data-lig-lado="${lado}" data-lig-id="${alvo.id}" style="left:${r2(x)}%;top:${r2(y)}%" title="Ligar aqui" aria-label="Ligar aqui"></button>`
           );
         }
+      }
+    }
+    // Fita métrica: o balão com a medida do que está sendo arrastado (ver `medida.ts`). A caixa sai
+    // do estado ATUAL — o host já aplicou o quadro do arrasto —, então vale para os três gestos, e
+    // some sozinha ao soltar (o modo deixa de ser um deles).
+    const gesto = this.modo?.t;
+    if (gesto === "mover" || gesto === "redim" || gesto === "criar") {
+      const alvo = gesto === "criar" ? this.rect : sel.length === 1 ? sel[0].box : sel.length > 1 ? envolventeDe(sel, ctx.dim) : null;
+      if (alvo) {
+        const medida = gesto === "mover" ? textoDaPosicao(alvo, ctx.dim) : textoDoTamanho(alvo, ctx.dim);
+        // sem espaço acima do quadro, o balão vira para baixo (CSS `.abaixo`)
+        const abaixo = alvo.y < 8;
+        html.push(
+          `<span class="pp-medida${abaixo ? " abaixo" : ""}" style="left:${r2(alvo.x + alvo.w / 2)}%;top:${r2(abaixo ? alvo.y + alvo.h : alvo.y)}%">${medida}</span>`
+        );
       }
     }
     el.insertAdjacentHTML("beforeend", html.join(""));

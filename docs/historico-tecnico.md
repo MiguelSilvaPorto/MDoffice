@@ -5614,6 +5614,46 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** as duas antigas prendiam o estado anterior de propósito — a tarefa muda exatamente
   esses dois pontos, então elas foram reescritas para prender o novo contrato, não removidas.
 
+## src/powerpoint/edicao/medida.ts (novo) · src/powerpoint/stage.ts · src/styles/powerpoint-edicao.css
+
+### 2026-10-14 · fita métrica · a medida acompanha o arrasto
+- **Local:** `medida.ts` — `ptParaCm`, `textoDoTamanho` e `textoDaPosicao` (novos); `stage.ts` —
+  `desenharSelecao` (o bloco do balão, logo antes do `insertAdjacentHTML`); `powerpoint-edicao.css`
+  — `.pp-medida` e `.pp-medida.abaixo`
+- **Linha:** `+ const gesto = this.modo?.t; if (gesto === "mover" || gesto === "redim" ||
+  gesto === "criar") { … }` com a caixa do gesto (`"criar" ? this.rect : sel.length === 1 ?
+  sel[0].box : envolventeDe(sel, ctx.dim)`) · `+ gesto === "mover" ? textoDaPosicao(alvo, ctx.dim) :
+  textoDoTamanho(alvo, ctx.dim)` · `+ const abaixo = alvo.y < 8;` e a classe `abaixo` ·
+  `+ .pp-medida` (painel/borda do tema, `pointer-events: none`, `translate(-50%, -100%)`) e
+  `+ .pp-medida.abaixo` (`translate(-50%, 0)`)
+- **Porquê:** o pedido veio com print ("quero que quando eu tiver arrastando o algo nessa tela ele
+  simplesmente mostre os pixels como fita métrica") — no palco só as **guias de encaixe** apareciam:
+  não havia leitura nem de tamanho nem de posição durante o gesto. Decisões que valem a leitura:
+  (1) a **caixa sai do estado atual** (`this.modo` + `ctx.shapes`, que o host já atualizou no quadro
+  do arrasto) em vez de um texto guardado a cada `aoMover` — o balão **não tem estado próprio** e
+  **some sozinho** quando o modo deixa de ser um dos três (nada para limpar no `aoSoltar`);
+  (2) a unidade é o **cm**, a mesma do painel Tamanho (`ptParaCm` do `ui/estado.ts`) — o número da
+  fita bate com o que a pessoa lê depois nos campos; a conversão foi repetida aqui (uma linha) para
+  o módulo **seguir puro** e não inverter a dependência `edicao → ui`;
+  (3) `mover` mostra **posição** e `redim`/`criar` mostram **tamanho** — o desenho que sempre
+  *muda* durante o gesto (uma medida parada não é fita métrica);
+  (4) com **várias** formas escolhidas o alvo é a **moldura do grupo** (`envolventeDe`), que é o que
+  se está arrastando de fato; e
+  (5) `alvo.y < 8` vira o balão para **baixo** do quadro — em quem está colado no topo da lâmina,
+  acima não há espaço.
+
+## scripts/testar-edicao-pptx.mjs · scripts/testar-layout.mts
+
+### 2026-10-14 · fita métrica · 5 verificações puras + 5 de contrato
+- **Local:** o bloco "fita métrica (a medida do gesto)" e a seção "PowerPoint: a fita métrica mostra
+  a medida enquanto arrasta"
+- **Linha:** `+ as contas em cm` (16,9 × 7,6 numa caixa de 50% × 40%, `x 3,4 · y 4,8`, zerada, a
+  vírgula e o teto de uma casa) · `+ o módulo puro, os três gestos, o alvo por forma/grupo, o
+  mover × redimensionar e o par de posições do balão com o CSS`
+- **Porquê:** a conta é pura e cabe no teste do Node (o valor exato em cm é o contrato com o painel);
+  o resto é contrato de palco e de CSS — a classe `abaixo`, o `pointer-events: none` e as cores do
+  tema não aparecem em teste de unidade, mas são o que faz o balão funcionar sobre qualquer lâmina.
+
 ---
 
 ## Próximos registros
