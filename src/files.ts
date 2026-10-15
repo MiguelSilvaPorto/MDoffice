@@ -108,6 +108,27 @@ export async function existsText(path: string): Promise<boolean> {
   }
 }
 
+/** A prévia de um documento para a tela Início (o começo do texto; o Rust lê o arquivo). */
+export interface PreviaDoc {
+  /** "md", "docx", "pptx", "xlsx" ou "outro" */
+  tipo: string;
+  /** as primeiras linhas do documento (vazio quando não dá para ler) */
+  texto: string;
+}
+
+/**
+ * Prévia do cartão da tela Início. O arquivo é lido no lado Rust (o zip dos formatos do Office
+ * abre só o XML principal); qualquer falha cai numa prévia vazia — a tela nunca quebra por causa
+ * de um arquivo que sumiu ou está sem permissão.
+ */
+export async function previewDoc(path: string): Promise<PreviaDoc> {
+  try {
+    return await invoke<PreviaDoc>("preview_file", { path });
+  } catch {
+    return { tipo: "outro", texto: "" };
+  }
+}
+
 export async function saveDoc(path: string, content: string): Promise<void> {
   await invoke("save_text", { path, content });
 }

@@ -16,6 +16,12 @@ Além dos módulos, o app tem recursos que valem para todos eles (abas, tela de 
 histórico de versões, backup em disco, lixeira de documentos, configurações, busca de
 comandos e modo foco) — esses ficam na categoria **Geral** do [changelog](../CHANGELOG.md).
 
+A **tela de Início** mostra os arquivos recentes numa **grade de cartões**, cada um com a
+**prévia do documento** (um papel com o título e o começo do texto, na cor do formato): o
+`.md` lê o próprio texto e os formatos do Office (.docx/.pptx/.xlsx) abrem o zip e tiram o
+texto do XML principal, no lado Rust (comando `preview_file`) — o documento **não** é
+carregado no app só para a prévia.
+
 ## Documentos relacionados
 
 - [Estrutura do projeto](estrutura-do-projeto.md) — como o código está organizado.

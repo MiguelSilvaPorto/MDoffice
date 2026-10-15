@@ -2,7 +2,7 @@
 
 use super::assets::copy_assets;
 use super::bundle::export_portable_bundle;
-use super::files::{gravar_bytes, rename_file, unique_md_path};
+use super::files::{gravar_bytes, preview_file, rename_file, unique_md_path};
 use super::projects::list_markdown;
 use super::storage::{argumentos_do_webview, config_de_json, soma_cache, soma_pasta, validar_limite, LIMITES_MB};
 use super::trash::{limpar, mover, read_index};
@@ -376,6 +376,67 @@ fn soma_cache_acha_o_cache_do_perfil_e_nao_conta_duas_vezes() {
         6230,
         "a pasta inteira continua contando tudo (preferências inclusive)"
     );
+
+    fs::remove_dir_all(&dir).expect("limpa arquivos de teste");
+}
+
+#[test]
+fn previa_le_o_comeco_do_texto_do_md_e_dos_pacotes() {
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("relógio válido")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("mdoffice-previa-{nonce}"));
+    fs::create_dir_all(&dir).expect("cria pasta");
+
+    // .md: o começo do texto, como está no arquivo
+    let md = dir.join("documento.md");
+    fs::write(&md, "# Título do documento\n\nPrimeiro parágrafo do texto.").expect("grava md");
+    let p = preview_file(md.to_string_lossy().to_string()).expect("prévia do md");
+    assert_eq!(p.tipo, "md");
+    assert!(p.texto.starts_with("# Título do documento"), "veio: {}", p.texto);
+
+    // .docx: o zip com o XML principal — o texto sai das tags e os parágrafos viram espaço
+    let docx = dir.join("documento.docx");
+    {
+        use std::io::Write;
+        let mut z = zip::ZipWriter::new(fs::File::create(&docx).expect("cria zip"));
+        z.start_file("word/document.xml", zip::write::FileOptions::default()).expect("entrada");
+        z.write_all(
+            "<w:document><w:body><w:p><w:r><w:t>Relatório</w:t></w:r></w:p><w:p><w:r><w:t>de março</w:t></w:r></w:p></w:body></w:document>".as_bytes(),
+        )
+        .expect("escreve xml");
+        z.finish().expect("fecha zip");
+    }
+    let p = preview_file(docx.to_string_lossy().to_string()).expect("prévia do docx");
+    assert_eq!(p.tipo, "docx");
+    assert_eq!(p.texto, "Relatório\nde março", "os parágrafos precisam virar linha");
+
+    // .pptx: o mesmo caminho, com o XML da primeira lâmina
+    let pptx = dir.join("documento.pptx");
+    {
+        use std::io::Write;
+        let mut z = zip::ZipWriter::new(fs::File::create(&pptx).expect("cria zip"));
+        z.start_file("ppt/slides/slide1.xml", zip::write::FileOptions::default()).expect("entrada");
+        z.write_all("<p:sld><p:cSld><a:t>Reunião de quinta</a:t><a:t>Pauta</a:t></p:cSld></p:sld>".as_bytes()).expect("escreve xml");
+        z.finish().expect("fecha zip");
+    }
+    let p = preview_file(pptx.to_string_lossy().to_string()).expect("prévia do pptx");
+    assert_eq!(p.tipo, "pptx");
+    assert_eq!(p.texto, "Reunião de quinta Pauta");
+
+    // arquivo que não é documento: sem texto, mas sem erro (o cartão mostra só o ícone)
+    let outro = dir.join("qualquer.bin");
+    fs::write(&outro, b"nao e documento").expect("grava binário");
+    let p = preview_file(outro.to_string_lossy().to_string()).expect("prévia do outro");
+    assert_eq!(p.tipo, "outro");
+    assert!(p.texto.is_empty());
+
+    // arquivo que não existe: sem texto (o front cai no cartão sem prévia) — nunca um erro que
+    // derrube a tela Início
+    let p = preview_file(dir.join("fantasma.docx").to_string_lossy().to_string()).expect("prévia do ausente");
+    assert_eq!(p.tipo, "docx");
+    assert!(p.texto.is_empty());
 
     fs::remove_dir_all(&dir).expect("limpa arquivos de teste");
 }

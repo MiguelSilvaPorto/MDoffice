@@ -160,3 +160,131 @@ pub fn save_binary(app: tauri::AppHandle, path: String, data: String) -> Result<
     backup::protect_before_write(&app, &path, &bytes);
     gravar_bytes(Path::new(&path), &bytes)
 }
+
+/// Quantos caracteres a prévia devolve (o cartão mostra bem menos; a folga cobre a quebra).
+const PREVIA_CHARS: usize = 320;
+
+/// Prévia de um documento para a tela Início: o começo do texto (o título e as primeiras linhas).
+///
+/// Os formatos de pacote (.docx/.pptx/.xlsx) abrem o zip e tiram o texto do XML principal — o
+/// suficiente para o cartão mostrar um "papel" com a cara do documento. O arquivo **não** é
+/// carregado no app: só o começo do texto sai daqui, e o zip é lido do próprio arquivo (sem
+/// trazer os bytes para a memória do lado TS).
+#[derive(serde::Serialize)]
+pub struct Previa {
+    /// o formato reconhecido: "md", "docx", "pptx", "xlsx" ou "outro"
+    pub tipo: String,
+    /// as primeiras linhas do documento (vazio quando não dá para ler)
+    pub texto: String,
+}
+
+/// Tira o texto de um XML do OOXML: o conteúdo fica em `<w:t>`/`<a:t>`/`<t>`, e o fim de cada
+/// trecho/parágrafo vira um espaço — sem isso as palavras de parágrafos vizinhos grudariam.
+fn texto_de_xml(bruto: &str) -> String {
+    let mut out = String::new();
+    let mut tag = String::new();
+    let mut dentro = false;
+    for c in bruto.chars() {
+        match c {
+            '<' => {
+                dentro = true;
+                tag.clear();
+            }
+            '>' => {
+                dentro = false;
+                if tag.starts_with('/') {
+                    let nome = tag.trim_start_matches('/');
+                    if nome == "w:p" || nome == "a:p" {
+                        out.push('\n'); // fim de parágrafo: o cartão usa a quebra
+                    } else if nome == "w:t" || nome == "a:t" || nome == "t" {
+                        out.push(' '); // fim de trecho: as palavras não podem grudar
+                    }
+                }
+            }
+            _ if dentro => tag.push(c),
+            _ => out.push(c),
+        }
+    }
+    out
+}
+
+/// Arruma as linhas (o XML vem indentado) e corta no tamanho da prévia: os espaços viram um só,
+/// as linhas em branco somem e o corte respeita o limite de caracteres.
+fn limpar_previa(bruto: &str) -> String {
+    let mut linhas: Vec<String> = Vec::new();
+    let mut total = 0usize;
+    for linha in bruto.lines() {
+        let mut out = String::new();
+        let mut espaco = false;
+        for c in linha.chars() {
+            if c.is_whitespace() {
+                espaco = !out.is_empty();
+                continue;
+            }
+            if espaco {
+                out.push(' ');
+                espaco = false;
+            }
+            out.push(c);
+        }
+        let limpa = out.trim().to_string();
+        if limpa.is_empty() {
+            continue; // linha em branco: a prévia é apertada
+        }
+        total += limpa.chars().count() + 1;
+        linhas.push(limpa);
+        if total >= PREVIA_CHARS {
+            break;
+        }
+    }
+    linhas.join("\n").chars().take(PREVIA_CHARS).collect()
+}
+
+/// O texto principal de um pacote OOXML (o conteúdo mora num XML dentro do zip).
+fn texto_do_pacote(p: &Path, entrada: &str) -> String {
+    use std::io::Read;
+    let Ok(arquivo) = fs::File::open(p) else {
+        return String::new();
+    };
+    let Ok(mut zip) = zip::ZipArchive::new(arquivo) else {
+        return String::new();
+    };
+    let Ok(mut item) = zip.by_name(entrada) else {
+        return String::new();
+    };
+    let mut bruto = String::new();
+    if item.read_to_string(&mut bruto).is_err() {
+        return String::new();
+    }
+    texto_de_xml(&bruto)
+}
+
+/// Prévia de um documento para a tela Início (o cartão mostra um papel com o começo do texto).
+#[tauri::command(async)]
+pub fn preview_file(path: String) -> Result<Previa, String> {
+    let p = Path::new(&path);
+    let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+    let tipo = match ext.as_str() {
+        "md" | "markdown" | "txt" => "md",
+        "docx" => "docx",
+        "pptx" => "pptx",
+        "xlsx" => "xlsx",
+        _ => "outro",
+    };
+    let texto = match tipo {
+        "md" => {
+            use std::io::Read;
+            let Ok(arquivo) = fs::File::open(p) else {
+                return Ok(Previa { tipo: tipo.into(), texto: String::new() });
+            };
+            let mut bytes = Vec::new();
+            let _ = arquivo.take((PREVIA_CHARS * 4) as u64).read_to_end(&mut bytes);
+            String::from_utf8_lossy(&bytes).into_owned()
+        }
+        "docx" => texto_do_pacote(p, "word/document.xml"),
+        "pptx" => texto_do_pacote(p, "ppt/slides/slide1.xml"),
+        "xlsx" => texto_do_pacote(p, "xl/sharedStrings.xml"),
+        _ => String::new(),
+    };
+    Ok(Previa { tipo: tipo.into(), texto: limpar_previa(&texto) })
+}

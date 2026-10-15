@@ -86,6 +86,7 @@ pub fn run() {
             commands::projects::list_markdown,
             commands::files::create_folder,
             commands::files::save_binary,
+   commands::files::preview_file,
             commands::search::search_markdown,
             commands::trash::trash_move,
             commands::trash::trash_purge,

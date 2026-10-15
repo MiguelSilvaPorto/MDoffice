@@ -5790,6 +5790,57 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   voltaria fácil num ajuste de start — as duas leem o TS e travam as pontas: o Início no fim da
   sessão vazia e a recuperação legada longe daqui (com a reachability dos rascunhos garantida).
 
+## src-tauri/src/commands/files.rs
+
+### 2026-10-15 · prévia na Início · o comando `preview_file`
+- **Local:** `Previa` (struct), `texto_de_xml`, `limpar_previa`, `texto_do_pacote` e o comando
+- **Linha:** `novo` — o comando devolve `{ tipo, texto }`: o `.md` lê os primeiros ~1,3 KB do
+  arquivo, os pacotes do Office abrem o **zip do próprio arquivo** (o crate `zip` já era
+  dependência) e tiram o texto do XML principal (`word/document.xml`, `ppt/slides/slide1.xml`,
+  `xl/sharedStrings.xml`); o `texto_de_xml` é uma máquina de estados que ignora as tags e vira
+  espaço no fim de cada trecho (`</w:t>`) e linha no fim de cada parágrafo (`</w:p>`)
+- **Porquê:** o cartão da tela Início precisava da cara do documento, e o arquivo é local: ler o
+  começo do texto sai barato e não carrega o documento no app. O zip **não** traz os bytes para o
+  lado TS (abre do arquivo); qualquer falha (arquivo que sumiu, zip estranho) devolve prévia vazia
+  — a tela nunca quebra. O `limpar_previa` colapsa a indentação do XML e guarda as quebras, que é
+  o que o cartão usa para separar o título do corpo.
+
+## src/files.ts · src/app/homeContext.ts
+
+### 2026-10-15 · prévia na Início · `previewDoc` e a ligação no contexto
+- **Local:** `PreviaDoc`/`previewDoc` (novos) e o `preview` do contexto da Início
+- **Linha:** `novo` — o `previewDoc` chama `invoke("preview_file")` e **engole qualquer erro**
+  devolvendo `{ tipo: "outro", texto: "" }`; o contexto expõe `preview(path)`
+- **Porquê:** a tela Início não pode depender do disco responder: um arquivo que sumiu vira um
+  cartão sem prévia, não um erro na tela. O `previewDoc` no `files.ts` mantém a convenção (todo
+  acesso a arquivo passa por lá).
+
+## src/homePage.ts · src/styles/home.css
+
+### 2026-10-15 · prévia na Início · a lista virou grade de cartões
+- **Local:** o ramo dos recentes no `renderList` (o `HomeCtx` ganhou `preview`) e o bloco novo de
+  `.home-file-grid`/`.home-file-card`/`.home-file-papel` no CSS
+- **Linha:** as linhas (`home-file-row`) viraram cartões (`home-file-card`) numa grade
+  `auto-fill/minmax(198px)`; o cartão nasce com o ícone do formato e troca pelo "papel" quando a
+  leitura responde (`Promise.all` sobre os cartões, em paralelo); o papel mostra a primeira linha
+  como título e o resto como corpo, com a cor do formato na borda
+- **Porquê:** o pedido veio com print ("quero que o app mostre preview dos documentos e quero que
+  substitua o detalhe para grade"). A leitura é por arquivo e **depois** do cartão nascer: a grade
+  aparece na hora e cada prévia entra quando fica pronta. O texto do arquivo entra **escapado**
+  (`escapeHtml`): é conteúdo de fora e não pode virar marcação — as linhas antigas interpolavam
+  `item.name`/`item.path` direto, o que já era um risco; no cartão novo tudo passa pelo escape.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · prévia na Início · 3 verificações
+- **Local:** logo depois das checagens da fita do PowerPoint
+- **Linha:** `novo` — a grade existe no CSS e no TS (cartões + papel), o texto da prévia entra
+  escapado e a prévia vem do `preview_file` (com o comando registrado no `lib.rs` e definido no
+  `files.rs`)
+- **Porquê:** a checagem do escape é a que mais importa (um `innerHTML` com o texto do arquivo
+  seria uma porta aberta); a do comando prende a ligação Rust↔TS, que é fácil de esquecer no
+  `generate_handler!`.
+
 ---
 
 ## Próximos registros

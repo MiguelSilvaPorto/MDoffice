@@ -685,3 +685,144 @@ body.home-open .sb-tab[data-side="home"] {
   color: var(--muted);
   max-width: 360px;
 }
+
+/* ---------- grade de recentes: cartões com a prévia do documento ---------- */
+/* A lista por linhas virou grade (pedido do usuário): cada cartão mostra o começo do texto do
+   arquivo num "papel" — a leitura sai do lado Rust (preview_file), o ícone do formato fica no
+   lugar enquanto a prévia não chega (ou quando o arquivo não tem texto). */
+
+.home-file-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(198px, 1fr));
+  gap: 12px;
+}
+
+.home-file-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  text-align: left;
+  color: var(--fg);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease, transform 0.12s ease;
+}
+
+.home-file-card:hover {
+  background: var(--panel-2);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  transform: translateY(-1px);
+}
+
+.home-file-preview {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 110px;
+  overflow: hidden;
+  background: var(--panel-2);
+  border-radius: 8px;
+}
+
+.home-file-preview-ic {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  color: var(--muted);
+}
+
+.home-file-preview-ic .ic {
+  width: 22px;
+  height: 22px;
+}
+
+/* com a prévia, o ícone sai e entra o papel */
+.home-file-preview.com-texto .home-file-preview-ic {
+  display: none;
+}
+
+.home-file-papel {
+  position: absolute;
+  inset: 12px 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 9px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.16);
+  font-size: 7.5px;
+  line-height: 1.45;
+  color: #1f2937;
+}
+
+.home-file-papel-titulo {
+  font-size: 9px;
+  font-weight: 700;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-file-papel-corpo {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #4b5563;
+}
+
+.home-file-nome {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-file-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.home-file-tipo {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  font-weight: 600;
+}
+
+.home-file-dir {
+  font-size: 10.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* cada formato pinta o cartão (as mesmas cores da lista antiga) */
+.home-file-card.card-word .home-file-tipo { background: rgba(24, 90, 189, 0.14); color: #185abd; }
+.home-file-card.card-excel .home-file-tipo { background: rgba(16, 124, 65, 0.14); color: #107c41; }
+.home-file-card.card-md .home-file-tipo { background: rgba(2, 132, 199, 0.14); color: #0284c7; }
+.home-file-card.card-ppt .home-file-tipo { background: rgba(196, 62, 28, 0.14); color: #c43e1c; }
+
+.home-file-card.card-word .home-file-preview-ic { background: rgba(24, 90, 189, 0.12); color: #185abd; }
+.home-file-card.card-excel .home-file-preview-ic { background: rgba(16, 124, 65, 0.12); color: #107c41; }
+.home-file-card.card-md .home-file-preview-ic { background: rgba(2, 132, 199, 0.12); color: #0284c7; }
+.home-file-card.card-ppt .home-file-preview-ic { background: rgba(196, 62, 28, 0.12); color: #c43e1c; }
+
+.home-file-card.card-word .home-file-papel { border-top: 3px solid #185abd; }
+.home-file-card.card-excel .home-file-papel { border-top: 3px solid #107c41; }
+.home-file-card.card-md .home-file-papel { border-top: 3px solid #0284c7; }
+.home-file-card.card-ppt .home-file-papel { border-top: 3px solid #c43e1c; }

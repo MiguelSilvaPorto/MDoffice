@@ -149,6 +149,9 @@ export const homeContextMethods = {
         }));
       },
 
+      /** Prévia do documento para o cartão da lista (o Rust lê o começo do texto). */
+      preview: (path) => files.previewDoc(path),
+
       drafts: () => files.listDrafts(),
 
       openDraft: (draft) => {

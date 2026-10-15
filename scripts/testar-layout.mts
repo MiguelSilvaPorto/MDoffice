@@ -663,6 +663,27 @@ checa("a miniatura sai dos MESMOS espaços do layout", /caixasDoLayout\(/.test(m
 checa("a miniatura acompanha a proporção do deck", /stageRatio\(setup\)/.test(miniLayout));
 
 const fitaPpt = ler("src/powerpoint/ui/fita.ts");
+// A tela Início virou grade de cartões com a PRÉVIA do documento: o texto sai do comando
+// preview_file (o Rust lê o começo do arquivo; o zip dos formatos do Office abre só o XML).
+const homeCss = ler("src/styles/home.css");
+const homePageTs = ler("src/homePage.ts");
+const filesTs = ler("src/files.ts");
+const libRs = ler("src-tauri/src/lib.rs");
+checa(
+  "Início: os recentes são uma grade de cartões com prévia",
+  /\.home-file-grid\s*\{[\s\S]{0,160}display:\s*grid/.test(homeCss) && /class: `home-file-card card-\$\{fmt\}`/.test(homePageTs) && /home-file-papel-titulo/.test(homePageTs),
+  "a lista por linhas não virou grade de cartões"
+);
+checa(
+  "Início: o texto da prévia entra escapado (é conteúdo de fora)",
+  /escapeHtml\(titulo/.test(homePageTs) && /escapeHtml\(resto\.join/.test(homePageTs) && /escapeHtml\(item\.name\)/.test(homePageTs),
+  "o texto do arquivo poderia virar marcação"
+);
+checa(
+  "Início: a prévia vem do comando preview_file (e o comando está registrado no Rust)",
+  /invoke<PreviaDoc>\("preview_file"/.test(filesTs) && /commands::files::preview_file/.test(libRs) && /pub fn preview_file/.test(ler("src-tauri/src/commands/files.rs")),
+  "o comando da prévia não está ligado"
+);
 checa(
   "o card da faixa abre a galeria de layouts (e a fita não tem mais o 'Nova lâmina')",
   /abrirGaleriaDeLayouts\(e\.currentTarget as HTMLElement, this\.setup, \(l\) => this\.run\("slide-new", l\)\)/.test(ppt) && !/slide-novo/.test(fitaPpt),

@@ -1,6 +1,6 @@
 import * as files from "./files";
 import { fileIcon, kindOfPath } from "./fileIcons";
-import { $, h, fmtTime, baseName, stripExt, docDirOf } from "./util";
+import { $, h, fmtTime, baseName, stripExt, docDirOf, escapeHtml } from "./util";
 
 export interface HomeCtx {
   createDoc: (tipo: "word" | "excel" | "md" | "ppt") => void;
@@ -10,6 +10,8 @@ export interface HomeCtx {
   importOffice: () => void;
   openPath: (path: string) => void;
   recents: () => { path: string; name: string; at: number }[];
+  /** Prévia de um documento para o cartão (o começo do texto; o Rust lê o arquivo). */
+  preview: (path: string) => Promise<files.PreviaDoc>;
   drafts: () => Promise<files.DraftInfo[]>;
   openDraft: (draft: files.DraftInfo) => void;
   deleteDraft: (path: string) => Promise<void>;
@@ -342,32 +344,47 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
         return;
       }
 
-      const list = h("div", { class: "home-file-list" });
+      const grid = h("div", { class: "home-file-grid" });
+      const cartoes: { item: { path: string }; papel: HTMLElement }[] = [];
       filtered.forEach((item) => {
-        const row = h("div", { class: "home-file-row" });
         const fmt = detectFormat(item.path);
-        const iconClass = `file-icon-${fmt}`;
-
-        row.innerHTML = `
-          <div class="home-file-col-main">
-            <div class="home-file-icon ${iconClass}">
-              ${fileIcon(kindOfPath(item.path))}
-            </div>
-            <div class="home-file-info">
-              <span class="home-file-name" title="${item.name}">${item.name}</span>
-              <span class="home-file-path" title="${item.path}">${item.path}</span>
-            </div>
-          </div>
-          <div class="home-file-col-meta">
+        const meta = FORMAT_META[fmt];
+        const card = h("button", { class: `home-file-card card-${fmt}`, type: "button" });
+        card.title = item.path;
+        card.innerHTML = `
+          <span class="home-file-preview">
+            <span class="home-file-preview-ic">${fileIcon(kindOfPath(item.path))}</span>
+          </span>
+          <span class="home-file-nome">${escapeHtml(item.name)}</span>
+          <span class="home-file-meta">
+            <span class="home-file-tipo">${meta.label}</span>
             <span class="home-file-time">${fmtTime(new Date(item.at))}</span>
-            <button class="btn small primary-soft home-file-open" type="button">Abrir</button>
-          </div>
+          </span>
+          <span class="home-file-dir">${escapeHtml(docDirOf(item.path))}</span>
         `;
-
-        row.addEventListener("click", () => ctx.openPath(item.path));
-        list.append(row);
+        card.addEventListener("click", () => ctx.openPath(item.path));
+        grid.append(card);
+        cartoes.push({ item, papel: card.querySelector(".home-file-preview") as HTMLElement });
       });
-      listContainer.append(list);
+      listContainer.append(grid);
+
+      // As prévias chegam DEPOIS (uma leitura por arquivo, no lado Rust): o cartão nasce com o
+      // ícone do formato e troca pelo "papel" com o começo do texto quando a leitura responde.
+      // O texto do arquivo entra escapado — é conteúdo de fora, não pode virar marcação.
+      void Promise.all(
+        cartoes.map(async ({ item, papel }) => {
+          const p = await ctx.preview(item.path);
+          if (!p.texto) return;
+          const [titulo, ...resto] = p.texto.split("\n");
+          papel.classList.add("com-texto");
+          papel.innerHTML = `
+            <span class="home-file-papel">
+              <span class="home-file-papel-titulo">${escapeHtml(titulo ?? "")}</span>
+              <span class="home-file-papel-corpo">${escapeHtml(resto.join("\n"))}</span>
+            </span>
+          `;
+        })
+      );
     } else {
       // Rascunhos
       let drafts: files.DraftInfo[] = [];
