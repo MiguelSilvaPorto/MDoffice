@@ -59,7 +59,7 @@ ok("a tabela de grupos fecha com a medida registrada (1647 px)", soma === 1647, 
   );
   ok("e a fita passa a caber (sobra ≥ 0)", compacto.sobra >= -0.001, `${compacto.sobra.toFixed(1)} px`);
 
-  const menu = encaixarFita(1100, INICIO.grupos);
+  const menu = encaixarFita(900, INICIO.grupos);
   ok(
     "3º degrau — grupos em menu: as métricas param no piso",
     menu.degrau === "menu" && menu.ajuste === AJUSTE_MIN,
@@ -67,7 +67,7 @@ ok("a tabela de grupos fecha com a medida registrada (1647 px)", soma === 1647, 
   );
   ok(
     "e colapsa do ÚLTIMO para o primeiro (os abertos são sempre o começo da fita)",
-    menu.noMenu.join(",") === "4" && menu.abertos.join(",") === "0,1,2,3",
+    menu.noMenu.join(",") === "3,4" && menu.abertos.join(",") === "0,1,2",
     `abertos [${menu.abertos}] · menu [${menu.noMenu}]`
   );
   ok("e o último grupo virou botão (a sobra conta a largura do botão)", menu.sobra >= -0.001, `${menu.sobra.toFixed(1)} px`);

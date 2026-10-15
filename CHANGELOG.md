@@ -413,6 +413,18 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A fita não parece mais quebrada quando um grupo vira menu (e ela prefere encolher a esconder)** —
+  dois defeitos que apareceram juntos na aba **Desenhar** (que ganhou Estúdio, Pintura e Modelo): o
+  **grupo colapsado** era desenhado como um botão **solto no topo** do painel, com o vão do rótulo
+  vazio embaixo (o "justificar/espacar" do grupo, sem corpo nem rótulo, joga o primeiro filho para
+  cima) — a faixa parecia quebrada e os controles do grupo (inclusive os novos do **Modelo**) sumiam
+  da vista; agora o grupo colapsado fica **centrado**, com a **borda tracejada** do app e a altura
+  de um grupo (a cara de "aqui mora o grupo inteiro"), e o clique abre os controles dele. E o
+  **piso do encolhimento das métricas** desceu de **0,70 para 0,62**: com ele, a aba prefere
+  **encolher** (alturas, ícones e espaços; a fonte tem piso próprio no CSS e continua legível) a
+  **esconder** um grupo — antes a aba colapsava grupos com a janela ainda larga. Teste:
+  `npm run test:encaixe`.
+
 - **Estúdio · Modelo e cópias vinculadas: replicar a box sem copiar tudo** (fase 5) — a aba
   Desenhar ganhou o grupo **Modelo**: **Modelo** (a box escolhida vira a mestra), **Cópia** (cria uma
   cópia vinculada dela: o cartão e o conteúdo, deslocados), **Desvincular** e **Re-vincular** (por

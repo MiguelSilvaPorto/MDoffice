@@ -63,13 +63,23 @@
   background: var(--accent-soft, color-mix(in srgb, var(--accent) 12%, transparent));
 }
 
-/* o grupo colapsado: só o botão aparece (corpo e rótulo saem; o nome do grupo está no botão) */
+/* o grupo colapsado: só o botão aparece (corpo e rótulo saem; o nome do grupo está no botão).
+   O CENTRO importa: sem corpo nem rótulo, o `space-between` do grupo jogava o botão para o topo e
+   sobrava um vão vazio embaixo — na aba (que tem muitos grupos) a faixa parecia quebrada, com
+   botões soltos. O botão é a cara do grupo inteiro: centrado, com a borda tracejada do app e a
+   setinha, no mesmo peso dos outros grupos. */
 .fita-grupo-recolhido {
   padding: 0 3px;
+  justify-content: center;
+  align-items: center;
 }
 
 .fita-grupo-recolhido > .fita-grupo-btn {
   display: inline-flex;
+  border-style: dashed;
+  /* o botão tem o peso de um grupo: a altura do corpo dos vizinhos, com teto */
+  min-height: 30px;
+  padding: 0 10px;
 }
 
 .fita-grupo-recolhido > .ppr-corpo,

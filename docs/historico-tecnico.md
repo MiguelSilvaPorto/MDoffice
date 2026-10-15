@@ -12309,3 +12309,28 @@ antigas quando fizer sentido.
   modelo. Os testes prendem os DOIS lados (segue × próprio) e o caso que o usuário descreveu (o
   nome por cópia); a checagem do "mesmo slide" prende o custo — ela falha se a sincronização
   reescrever a lâmina sem necessidade (e o host redesenha em cima).
+
+
+## src/fitaEncaixe.ts · src/styles/fita.css
+
+### 2026-10-15 · a fita que parecia quebrada · o grupo colapsado centrado e o piso do encaixe
+
+- **Local:** `AJUSTE_MIN` (`fitaEncaixe.ts`) e o bloco do grupo colapsado (`fita.css`)
+- **Linha:** `AJUSTE_MIN = 0.7` → `0.62`; `+ justify-content: center` e `+ align-items: center` no
+  `.fita-grupo-recolhido`, com `+ border-style: dashed`, `+ min-height: 30px` e `+ padding: 0 10px`
+  no `.fita-grupo-btn`
+- **Porquê:** o relato veio com captura: na aba **Desenhar** (que ganhou Estúdio, Pintura e Modelo) os
+  três últimos grupos apareciam como **botões soltos no topo** do painel, com um vão vazio embaixo —
+  "uma interface quebrada", e os controles do **Modelo** invisíveis. A causa é o layout do grupo:
+  `.ppr-grupo { flex-direction: column; justify-content: space-between }` existe para deixar o corpo
+  em cima e o RÓTULO embaixo; colapsado, o corpo e o rótulo saem de cena (`display: none`) e o único
+  filho visível (o botão) era empurrado para o começo da coluna — sem nada embaixo, ele parece
+  desalinhado. Centrar e dar a ele o peso de um grupo (tracejado, altura mínima) resolve a leitura:
+  quem abre a aba vê que ali mora o grupo inteiro, e a setinha diz que abre.
+- **Porquê (o piso):** o piso era 0,70 e a aba — que cresceu em grupos — passou a colapsar com a
+  janela ainda larga. Como as métricas não encolhem a FONTE (cada módulo tem piso de 10,5–11,5px no
+  CSS), descer o piso para 0,62 deixa a faixa **preferir encolher a esconder**: alturas, ícones e
+  espaços diminuem, o texto continua legível e os grupos continuam à vista. O teste do encaixe foi
+  ajustado no ponto que mudou de propósito (a 1100 px o plano agora é **compacto**, não **menu**) e
+  ganhou a checagem do grupo colapsado **centrado** — as duas coisas ficam presas no
+  `test:encaixe`.
