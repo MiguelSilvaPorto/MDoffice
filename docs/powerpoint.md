@@ -129,6 +129,11 @@ avisado ao abrir (nunca some em silêncio).
   a **prévia** cria com o último layout e o **rótulo** abre a galeria — o "+" redondo que pendia do
   canto da prévia saiu (o rótulo assumiu a função dele). A **lâmina nova entra no fim** da
   apresentação e já fica selecionada.
+- **Histórico: a lâmina em foco nas duas versões**: no **Histórico** (rodapé do documento), as abas
+  **Alterações** e **Versões** de uma apresentação mostram a **lâmina em foco no editor** como
+  **duas mini lâminas lado a lado** — **esquerda: como estava; direita: como ficou** — em vez do
+  texto serializado do deck inteiro, que não dizia nada sobre o que está na tela. Quando a versão é
+  de antes de a lâmina existir, o lado avisa em vez de sair em branco.
 - **A fita cabe na largura da janela**: a faixa de opções **se ajusta sozinha** ao espaço — se o
   painel da aba ativa não cabe, os espaços e os ícones encolhem em degraus (a **fonte não
   encolhe**), depois os botões grandes ficam **numa linha** (fita compacta) e, por fim, os botões

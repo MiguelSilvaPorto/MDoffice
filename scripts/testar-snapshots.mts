@@ -1,7 +1,13 @@
 // Teste rápido da lógica de patch: aplica, desfaz e reconstrói versões.
 // Roda com: npx tsx scripts/testar-snapshots.mts
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { linhasLadoALado } from "../src/history.ts";
 import { applyOps, diffText, revertOps } from "../src/snapshots.ts";
+
+const raiz = dirname(dirname(fileURLToPath(import.meta.url)));
+const ler = (rel: string) => readFileSync(join(raiz, rel), "utf8");
 
 let falhas = 0;
 function checa(nome: string, ok: boolean, detalhe = "") {
@@ -136,6 +142,41 @@ checa("diffText de textos iguais devolve vazio", diffText("igual", "igual").leng
     "bloco pareia até o fim e sobra o excedente do lado maior",
     bloco.length === 3 && bloco[0].esq?.text === "x1" && bloco[1].dir?.text === "y2" && bloco[2].esq?.text === "x3" && bloco[2].dir === null,
     JSON.stringify(bloco)
+  );
+}
+
+// 11. histórico do PowerPoint: a prévia das duas lâminas (a lâmina em foco)
+{
+  const ui = ler("src/historyUi.ts");
+  const host = ler("src/powerpoint/powerpoint.ts");
+  const app = ler("src/app/historySearch.ts");
+  const css = ler("src/styles/history.css");
+  checa(
+    "só o PowerPoint passa a prévia — e ela é a lâmina em foco do editor",
+    /kind === "ppt"\s*\?\s*\{ foco: this\.pptHost\.laminaEmFoco\(\), render: \(estado: string, i: number\) => this\.pptHost\.previaDaLamina\(estado, i\) \}/.test(app),
+    "com a prévia nos outros módulos, o diff de texto (que funciona neles) sumiria"
+  );
+  checa(
+    "o painel troca o diff de texto pela dupla de lâminas quando há prévia",
+    /if \(hooks\.laminas\) pintarLaminas\(diffEl, hooks\.laminas/.test(ui) &&
+      /Antes · Lâmina \$\{n\}/.test(ui) &&
+      /Depois · Lâmina \$\{n\}/.test(ui) &&
+      /Esta versão não tem esta lâmina\./.test(ui),
+    "sem a troca, o PowerPoint voltaria a mostrar o texto serializado inteiro"
+  );
+  checa(
+    "o host desenha uma lâmina de um estado serializado (o mesmo desenho da faixa)",
+    /previaDaLamina\(estado: string, indice: number\): HTMLElement \| null/.test(host) &&
+      /const snap = deserialize\(estado\)/.test(host) &&
+      /stageVars\(setup\)/.test(host) &&
+      /htmlFormaRica\(f, ctx\)/.test(host) &&
+      /laminaEmFoco\(\): number \{/.test(host),
+    "sem o host não dá para desenhar uma lâmina que não está na tela"
+  );
+  checa(
+    "css: a lâmina da prévia é um container (os cqw escalam sozinhos) e o vazio tem aviso",
+    /\.hi-lamina\s*\{[^}]*container-type:\s*inline-size/s.test(css) && /\.hi-lamina-vazia\s*\{/.test(css),
+    "sem container-type as formas não escalariam e a prévia sairia quebrada"
   );
 }
 

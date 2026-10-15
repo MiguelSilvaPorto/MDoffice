@@ -3977,6 +3977,47 @@ export class PowerPointHost {
       .join("\n\n");
   }
 
+  /** A lâmina em foco no editor (0-based) — é a que o Histórico mostra na prévia. */
+  laminaEmFoco(): number {
+    return this.indice;
+  }
+
+  /**
+   * Prévia de UMA lâmina de um estado serializado (o Histórico usa): o MESMO desenho da miniatura
+   * da faixa, encaixado em qualquer largura (o CSS do container cuida do tamanho). `null` quando o
+   * estado não tem essa lâmina — a versão é de antes de ela existir.
+   */
+  previaDaLamina(estado: string, indice: number): HTMLElement | null {
+    const snap = deserialize(estado);
+    const slide = snap?.slides[indice];
+    if (!snap || !slide) return null;
+    const setup = { ...DEFAULT_SETUP, ...snap.setup };
+    const { w, h } = aspectSize(setup);
+    const ctx: CtxRender = {
+      larguraPt: w * 72,
+      alturaPt: h * 72,
+      media: setup.media ?? {},
+      selecionada: null,
+      editavel: false,
+      editando: null,
+      celulaEdit: null,
+    };
+    const box = document.createElement("div");
+    box.className = "hi-lamina";
+    for (const [k, v] of Object.entries(stageVars(setup))) box.style.setProperty(k, v);
+    box.style.setProperty("--slide-ratio", String(stageRatio(setup)));
+    box.style.background = fundoValor(slide.bg, setup.media ?? {}) || "var(--slide-bg, #fff)";
+    if (slide.shapes.length) {
+      box.innerHTML = slide.shapes.map((f) => htmlFormaRica(f, ctx)).join("");
+    } else {
+      const md = document.createElement("div");
+      md.className = "hi-lamina-md";
+      md.innerHTML = sanitize(marked.parse(slide.md, { gfm: true, async: false }) as string);
+      box.append(md);
+    }
+    return box;
+  }
+
   /** Markdown da lâmina atual (o App usa para a IA e para o corretor). */
   text(): string {
     const s = this.atual();

@@ -22,6 +22,12 @@ export interface HistoryHooks {
    * Recarrega o documento aberto, senão o salvamento automático sobrescreveria a cópia.
    */
   reloadFromDisk?: () => Promise<void>;
+  /**
+   * Prévia de lâminas (PowerPoint): no lugar do diff de texto, as duas versões da lâmina em foco —
+   * `foco` é o índice dela no editor e `render(estado, indice)` devolve a lâmina desenhada (ou null
+   * quando o estado não tem essa lâmina). Sem isto, o painel mostra o diff de texto de sempre.
+   */
+  laminas?: { foco: number; render: (estado: string, indice: number) => HTMLElement | null };
   /** Aba que abre à frente (as Configurações levam direto para a aba certa). */
   abaInicial?: AbaHistorico;
 }
@@ -77,6 +83,35 @@ function pintarDiff(el: HTMLElement, antigo: string, novo: string, vazio: string
     }
     el.append(h("div", { class: "df-linha" }, [lado(l.esq, "esq"), lado(l.dir, "dir")]));
   }
+}
+
+/**
+ * Prévia das lâminas (PowerPoint): a lâmina em foco nas DUAS versões, lado a lado — no lugar do
+ * diff de texto, que para uma apresentação é o despejo serializado do documento inteiro.
+ */
+function pintarLaminas(
+  el: HTMLElement,
+  laminas: NonNullable<HistoryHooks["laminas"]>,
+  antigo: string,
+  novo: string
+): void {
+  const n = laminas.foco + 1;
+  el.textContent = "";
+  el.append(
+    h("div", { class: "df-linha df-cab" }, [
+      h("div", { class: "df-lado esq", text: `Antes · Lâmina ${n}` }),
+      h("div", { class: "df-lado dir", text: `Depois · Lâmina ${n}` }),
+    ])
+  );
+  const linha = h("div", { class: "df-linha hi-laminas" });
+  for (const [papel, estado] of [["esq", antigo], ["dir", novo]] as const) {
+    const lado = h("div", { class: `df-lado ${papel}` });
+    const previa = laminas.render(estado, laminas.foco);
+    if (previa) lado.append(previa);
+    else lado.append(h("div", { class: "hi-lamina-vazia", text: "Esta versão não tem esta lâmina." }));
+    linha.append(lado);
+  }
+  el.append(linha);
 }
 
 export function openHistoryDialog(hooks: HistoryHooks): void {
@@ -185,14 +220,16 @@ export function openHistoryDialog(hooks: HistoryHooks): void {
 
   const mostrarVersao = (v: Version) => {
     selecionadoId = v.id ?? null;
-    const atualTexto = view(hooks.getText());
-    pintarDiff(diffEl, view(v.text), atualTexto, "Esta versão é igual ao texto atual.");
+    if (hooks.laminas) pintarLaminas(diffEl, hooks.laminas, v.text, hooks.getText());
+    else pintarDiff(diffEl, view(v.text), view(hooks.getText()), "Esta versão é igual ao texto atual.");
     head.textContent = "";
     head.append(
       h("b", { text: v.label || (v.manual ? "Versão marcada" : "Versão automática") }),
       h("span", { class: "muted", text: ` · ${when(v.at)} (${ago(v.at)}) · ${view(v.text).length} caracteres` })
     );
-    legend.textContent = "Esquerda: esta versão · direita: o texto de agora — vermelho saiu, verde entrou";
+    legend.textContent = hooks.laminas
+      ? `Esquerda: a lâmina ${hooks.laminas.foco + 1} nesta versão · direita: como está agora`
+      : "Esquerda: esta versão · direita: o texto de agora — vermelho saiu, verde entrou";
     btn.copy.disabled = btn.del.disabled = btn.restore.disabled = false;
     items.querySelectorAll<HTMLElement>(".hi-item").forEach((e) => e.classList.toggle("active", e.dataset.id === String(v.id)));
   };
@@ -255,13 +292,16 @@ export function openHistoryDialog(hooks: HistoryHooks): void {
     // mostra o diff entre o commit anterior e este
     const anterior = i > 0 ? textoDoCommit(i - 1) : "";
     const este = textoDoCommit(i);
-    pintarDiff(diffEl, view(anterior), view(este), "Este marco guarda o documento inteiro.");
+    if (hooks.laminas) pintarLaminas(diffEl, hooks.laminas, anterior, este);
+    else pintarDiff(diffEl, view(anterior), view(este), "Este marco guarda o documento inteiro.");
     head.textContent = "";
     head.append(
       h("b", { text: c.text !== undefined ? "📌 Marco do documento" : "Alteração" }),
       h("span", { class: "muted", text: ` · ${when(c.at)} (${ago(c.at)}) · ${c.text !== undefined ? "texto completo" : c.summary}` })
     );
-    legend.textContent = "Esquerda: como estava · direita: como ficou — vermelho saiu, verde entrou";
+    legend.textContent = hooks.laminas
+      ? `Esquerda: a lâmina ${hooks.laminas.foco + 1} como estava · direita: como ficou`
+      : "Esquerda: como estava · direita: como ficou — vermelho saiu, verde entrou";
     btn.copy.disabled = false;
     btn.del.disabled = c.id === undefined;
     btn.restore.disabled = false;

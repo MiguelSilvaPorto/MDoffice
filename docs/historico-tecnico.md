@@ -10081,3 +10081,64 @@ antigas quando fizer sentido.
   promoção é uma tarefa de follow-up, depois que o commit chegou (493f43b). Promovi só a entrada
   DESTA tarefa: as que seguem em "Não adicionado" pertencem a sessões com trabalho aberto ou com
   promoção em voo — mexer nelas criaria duplicata ou conflito.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-15 · a prévia da lâmina no histórico · o host desenha um estado que não está na tela
+- **Local:** `laminaEmFoco()` e `previaDaLamina()` (novos, depois de `projection`)
+- **Linha:** `+ laminaEmFoco(): number { return this.indice; }` · `+ previaDaLamina(estado, indice)`
+  — `deserialize(estado)`, `DEFAULT_SETUP` + `snap.setup` (o tema e a proporção DAQUELE estado),
+  `stageVars(setup)` e `--slide-ratio` inline, fundo por `fundoValor`, formas por `htmlFormaRica`
+  com o `CtxRender` de `aspectSize(setup)` (o mesmo caminho da miniatura da faixa) e, na lâmina
+  sem formas, o `marked` + `sanitize` num `.hi-lamina-md`; `null` quando o estado não tem a lâmina
+- **Porquê:** o histórico precisava desenhar uma lâmina que **não está na tela** (a de uma versão
+  antiga). O caminho barato seria restaurar o estado no host — proibido: o histórico é uma janela
+  aberta e o documento não pode mudar de lugar enquanto se navega. `previaDaLamina` é só leitura
+  do serializado e monta o mesmo HTML da faixa; o `stageVars`/`--slide-ratio` inline fazem o CSS
+  do container escalar os `cqw` sem depender do palco.
+
+## src/historyUi.ts
+
+### 2026-10-15 · a prévia da lâmina no histórico · a troca do diff pela dupla
+- **Local:** `HistoryHooks.laminas` (novo) + `pintarLaminas` (nova) + os dois pontos de desenho
+  (`mostrarVersao`, `mostrarCommit`) e as legendas
+- **Linha:** `+ laminas?: { foco: number; render(estado, indice): HTMLElement | null }` ·
+  `+ if (hooks.laminas) pintarLaminas(diffEl, hooks.laminas, ...)` no lugar do `pintarDiff` · a
+  barra `.df-cab` reaproveitada ("Antes · Lâmina N" × "Depois · Lâmina N") e o aviso
+  `.hi-lamina-vazia` quando um lado não tem a lâmina
+- **Porquê:** o idioma "só um módulo tem prévia visual" vem do próprio `project` (Word/Excel/PPT já
+  projetam o texto por módulo); aqui o painel pergunta se há `laminas` antes de desenhar. O aviso
+  do lado vazio é o caso real da lâmina que **nasceu depois** daquela versão — sem ele o painel
+  mostraria um buraco mudo.
+
+## src/app/historySearch.ts
+
+### 2026-10-15 · a prévia da lâmina no histórico · só o PowerPoint passa o hook
+- **Local:** o `openHistoryDialog` do `openHistory`
+- **Linha:** `+ laminas: kind === "ppt" ? { foco: this.pptHost.laminaEmFoco(), render: (estado, i) => this.pptHost.previaDaLamina(estado, i) } : undefined`
+- **Porquê:** no `.pptx` o texto guardado é o **serializado do deck** — o diff de linhas vira
+  "+4843 −7259", ilegível (print do usuário). Markdown, Word e Excel continuam no diff de texto
+  (é legível neles e o teste `test:log` prende a exclusividade do hook).
+
+## src/styles/history.css
+
+### 2026-10-15 · a prévia da lâmina no histórico · a moldura que escala
+- **Local:** o fim do bloco do diff
+- **Linha:** `+ .hi-laminas .df-lado` (respiro das colunas)` · `+ .hi-lamina` (aspect-ratio pelo
+  `--slide-ratio`, `container-type: inline-size`, `pointer-events: none`)` · `+ .hi-lamina-md`
+  (as medidas da lâmina de texto em `cqw`)` · `+ .hi-lamina-vazia` (aviso tracejado, na mesma
+  proporção)
+- **Porquê:** o `container-type: inline-size` é o que faz os `cqw` das formas acompanharem a
+  largura da coluna (o mesmo truque da miniatura da faixa); sem ele o desenho sairia em tamanho
+  de palco. O `pointer-events: none` evita que a prévia roube o clique do painel.
+
+## scripts/testar-snapshots.mts
+
+### 2026-10-15 · a prévia da lâmina no histórico · 4 checagens da troca
+- **Local:** a seção 11 (fim), com o `ler`/`raiz` novos no topo
+- **Linha:** `novo` — só o PPT passa o hook (com a lâmina em foco) · o painel troca o diff pela
+  dupla (a barra "Antes · Lâmina N" e o aviso do lado vazio) · o host desenha de um serializado
+  (e expõe a lâmina em foco) · o CSS tem o container e o aviso
+- **Porquê:** a troca é o pedido do usuário e pode regredir em silêncio (o painel voltaria ao
+  texto serializado sem nenhum erro visível). As checagens são de contrato (leem os arquivos,
+  como as do `testar-layout`), porque o desenho em si só existe no DOM do app.

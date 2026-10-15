@@ -1139,7 +1139,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **Histórico da apresentação: a lâmina em foco antes × depois (em vez do texto do deck)**: a aba
+  **Alterações** (e a **Versões**) de um `.pptx` despejava o **texto serializado do documento
+  inteiro** — os resumos viravam "+4843 −7259" e o diff não dizia nada sobre o que estava na tela
+  (print do usuário). Agora o painel mostra as **duas versões da lâmina em foco** (a selecionada
+  no editor) como **mini lâminas lado a lado** — esquerda: como estava; direita: como ficou —,
+  desenhadas com o mesmo motor da miniatura da faixa; quando a versão é de antes de a lâmina
+  existir, o lado avisa. Os outros módulos (Markdown, Word e Excel) seguem no diff de texto de
+  sempre. Teste: `npm run test:log`.
 
 **Ferramentas (dev)**
 

@@ -227,6 +227,12 @@ export const historySearchMethods = {
       max: this.settings.historyMax,
       getText: current,
       project,
+      // no PowerPoint o painel mostra a LÂMINA EM FOCO nas duas versões; o texto serializado do
+      // deck inteiro (o diff de antes) não dizia nada sobre o que estava na tela
+      laminas:
+        kind === "ppt"
+          ? { foco: this.pptHost.laminaEmFoco(), render: (estado: string, i: number) => this.pptHost.previaDaLamina(estado, i) }
+          : undefined,
       restore: (text) => {
         if (kind === "word") this.wordHost.restore(text);
         else if (kind === "ppt") this.pptHost.restoreSerialized(text);
