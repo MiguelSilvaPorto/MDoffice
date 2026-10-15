@@ -427,18 +427,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   o resto cai no retângulo da caixa) — é ele que as próximas fases (pintura recortada, camadas e as
   **cópias vinculadas**) vão usar como fronteira. Teste: `npm run test:estudio`.
 
-- **A animação vale para TODA a seleção (os ajustes e o Remover também)**: aplicar o efeito já era
-  por forma escolhida, mas os controles de ajuste (**Início**, **Duração**, **Atraso**, **Direção**
-  e **Por parágrafo**) e o **Remover** olhavam só a última forma escolhida — com duas caixas
-  selecionadas, a segunda ficava com o efeito original ("seria possivel aplicar animação somente na
-  seleção das box não no slide inteiro"). Agora os controles valem para a seleção inteira, como no
-  PowerPoint, e o **Remover** que esvazia a lista limpa o campo de verdade. A aba **Transições**
-  ganhou a nota de que a transição é da lâmina — para animar uma forma escolhida, a aba é a
-  **Animações** — e a aba **Animações** a nota espelhada. A exportação já levava a animação (o
-  `p:timing` que o PowerPoint toca) e ganhou verificação própria: estrutura do PowerPoint, presets
-  (`surgir=10`, `aparecer=1`, `voar=2`), duração em milissegundos e o modelo de volta inteiro.
-  Testes: `npm run test:pptx-edicao` e `npm run test:layout`.
-
 - **As juntas entre a reta encaixada e a curva saíram suaves (sem quebras)**: o encaixe nos eixos
   deixa os trechos quase retos como retas, mas a cúbica que continuava da reta saía na tangente do
   vizinho de trás do traço — a reta encostava na curva de esguelha e ficava uma **quina** visível
@@ -469,6 +457,18 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **A animação vale para TODA a seleção (os ajustes e o Remover também)**: aplicar o efeito já era
+  por forma escolhida, mas os controles de ajuste (**Início**, **Duração**, **Atraso**, **Direção**
+  e **Por parágrafo**) e o **Remover** olhavam só a última forma escolhida — com duas caixas
+  selecionadas, a segunda ficava com o efeito original ("seria possivel aplicar animação somente na
+  seleção das box não no slide inteiro"). Agora os controles valem para a seleção inteira, como no
+  PowerPoint, e o **Remover** que esvazia a lista limpa o campo de verdade. A aba **Transições**
+  ganhou a nota de que a transição é da lâmina — para animar uma forma escolhida, a aba é a
+  **Animações** — e a aba **Animações** a nota espelhada. A exportação já levava a animação (o
+  `p:timing` que o PowerPoint toca) e ganhou verificação própria: estrutura do PowerPoint, presets
+  (`surgir=10`, `aparecer=1`, `voar=2`), duração em milissegundos e o modelo de volta inteiro.
+  Testes: `npm run test:pptx-edicao` e `npm run test:layout`.
 
 - **O degrau no meio da reta encaixada saiu (a curva "quase perfeita" agora fecha)**: quando a mão
   derrapa no meio de um trecho, o alinhamento nos eixos formava **duas retas com médias

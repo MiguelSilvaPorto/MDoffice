@@ -11700,3 +11700,14 @@ antigas quando fizer sentido.
 - **Porquê:** a bala dizia "por forma", mas não dizia que os controles acompanham a seleção
   inteira; e o relato nasceu da confusão entre a transição (lâmina) e a animação (forma), que
   agora fica escrita no documento.
+
+## CHANGELOG.md
+
+### 2026-10-15 · a animação na seleção · a promoção da entrada (não adicionado → adicionado)
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não promove (no instante do commit a entrada ainda não está na main), então a
+  promoção anda depois: a animação na seleção (f92dbcc). Promovi só a entrada DESTA tarefa — as que
+  seguem em "Não adicionado" (a aba Animações, o Estúdio do Desenhar, a aba Design completa e o
+  Template com desenho) são de sessões com trabalho aberto, mexer nelas criaria duplicata ou
+  conflito.
