@@ -671,18 +671,22 @@ function suavizarPontos(pontos: PontoTraco[]): PontoTraco[] {
   return out;
 }
 
+/** A simplificação do desenho livre (passo fino + teto de pontos do caminho). */
+function simplificarLivre(pontos: PontoTraco[], bb: Ret): PontoTraco[] {
+  // passo de simplificação mais fino: a curva acompanha o traço em vez de cortar os cantos
+  let eps = Math.max(0.8, Math.hypot(bb.w, bb.h) * 0.005);
+  let pts = simplificar(pontos, eps);
+  while (pts.length > 120 && eps < 40) {
+    eps *= 1.6;
+    pts = simplificar(pontos, eps);
+  }
+  return pts;
+}
+
 /** Pontos do desenho livre já suavizados e simplificados (é o que o caminho usa). */
 function pontosDoLivre(pontos: PontoTraco[], bb: Ret): PontoTraco[] {
   // duas passadas: o tremor da mão sai de verdade (uma passada deixava o "serrilhado")
-  const suave = suavizarPontos(suavizarPontos(pontos));
-  // passo de simplificação mais fino: a curva acompanha o traço em vez de cortar os cantos
-  let eps = Math.max(0.8, Math.hypot(bb.w, bb.h) * 0.005);
-  let pts = simplificar(suave, eps);
-  while (pts.length > 120 && eps < 40) {
-    eps *= 1.6;
-    pts = simplificar(suave, eps);
-  }
-  return pts;
+  return simplificarLivre(suavizarPontos(suavizarPontos(pontos)), bb);
 }
 
 /**
@@ -737,13 +741,18 @@ function alinharPontos(pontos: PontoTraco[], tolGraus = 9): PontoTraco[] {
  * O que é diagonal de propósito (fora da tolerância) fica como o traço desenhou.
  */
 export function alinharNosEixos(pontos: PontoTraco[], tolGraus = 9): PontoTraco[] {
-  return alinharPontos(pontosDoLivre(pontos, bboxDe(pontos)), tolGraus);
+  // o encaixe roda no traço suavizado — ANTES de simplificar (o porquê está em `pontosDoDesenhoLivre`)
+  return simplificarLivre(alinharPontos(suavizarPontos(suavizarPontos(pontos)), tolGraus), bboxDe(pontos));
 }
 
-/** Pontos finais do desenho livre: suavizados, simplificados e — no assistente — encaixados nos eixos. */
+/** Pontos finais do desenho livre: suavizados, encaixados nos eixos (no assistente) e simplificados. */
 export function pontosDoDesenhoLivre(pontos: PontoTraco[], encaixar: boolean): PontoTraco[] {
-  const pts = pontosDoLivre(pontos, bboxDe(pontos));
-  return encaixar ? alinharPontos(pts) : pts;
+  const bb = bboxDe(pontos);
+  const suave = suavizarPontos(suavizarPontos(pontos));
+  // O encaixe roda ANTES do RDP: simplificado, um trecho quase reto vira 2–3 pontos e as corridas
+  // de 3+ segmentos que o `alinharPontos` exige deixam de existir — era por isso que o "L"
+  // desenhado quase reto saía TORTO (o tremor pequeno da mão morre no RDP antes do encaixe vê-lo).
+  return simplificarLivre(encaixar ? alinharPontos(suave) : suave, bb);
 }
 
 /**

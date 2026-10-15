@@ -300,11 +300,13 @@ avisado ao abrir (nunca some em silêncio).
   retas de verdade — o "L" desenhado alguns graus torto sai **reto, com o canto em 90°** — e o que
   é diagonal de propósito (fora da tolerância de ~9°) fica como foi desenhado. Os trechos
   encaixados saem como **segmento reto** no caminho (não como curva): é o que impede a "barriga"
-  que a cúbica fazia no meio do topo de um cartão mesmo com os pontos já alinhados.
+  que a cúbica fazia no meio do topo de um cartão mesmo com os pontos já alinhados. O encaixe roda
+  **antes** da simplificação — simplificado primeiro, um trecho quase reto vira 2–3 pontos e não
+  sobraria "corrida" para alinhar (era por aí que o "L" desenhado quase reto escapava torto).
 - **Modos Livre vs Pontos na aba Desenhar e na barra do Pincel**: enquanto o lápis está ligado, a **barrinha do pincel** define
   **cor**, **espessura** (1, 2, 4 ou 8 pt), assistente, e agora permite alternar entre **[Livre]** (arraste para
-  rabiscar) e **[Pontos]** (clique para posicionar nós de parada). No modo Livre, dar um clique pontual sem arrastar
-  também inicia a inserção de nós de parada automaticamente. A aba **Desenhar** tem os mesmos controles
+  rabiscar) e **[Pontos]** (clique para posicionar nós de parada). No modo Livre, um clique pontual **não faz
+  nada** — é o **[Pontos]** que marca nós (o clique não liga o modo por conta própria). A aba **Desenhar** tem os mesmos controles
   (cor, espessuras, **Livre/Pontos** e **Assistente**) antes de começar o traço — é o **mesmo pincel**: o que
   se escolhe na aba aparece aceso na barrinha (e o contrário também). A barrinha tem **[Caneta] [Marca]** para
   trocar entre a caneta e o marca-texto sem sair do traço.
@@ -328,6 +330,7 @@ avisado ao abrir (nunca some em silêncio).
 - **Onde encontrar**: na aba **Desenhar ▸ Curva** ou ativando **[Pontos]** na aba/barrinha flutuante do Draw.
 - **Como funciona**: cada clique na lâmina adiciona um nó de controle de passagem. O caminho é interpolado
   em tempo real com spline suave $C^1$ (Catmull-Rom), garantindo contornos limpos e sem oscilações indesejadas.
+  A prévia mostra **só os nós já marcados**: não há um trecho "elástico" seguindo o mouse entre os cliques.
 - **Fechamento suave**: ao aproximar o mouse do ponto inicial (marcado com halo verde pulsante), um clique fecha o
   contorno criando uma forma geométrica completa (`custom`, com preenchimento).
 - **Quinas e cantos retos**: segure `Alt` ao clicar para transformar o nó num canto reto (marcador quadrado).
@@ -336,7 +339,8 @@ avisado ao abrir (nunca some em silêncio).
 - **Encaixe magnético (snap)**: aproximações próximas a bordas ou centros de outras formas da lâmina alinham o
   ponto automaticamente.
 - **Conclusão e atalhos**:
-  - `Enter` ou botão **Concluir** ou **duplo clique**: finaliza a curva aberta.
+  - `Enter`, botão **Concluir** ou **duplo clique**: finaliza a curva aberta (o duplo clique **não**
+    marca um ponto repetido: o clique do par termina).
   - `Backspace` ou `Delete`: desfaz o último ponto adicionado.
   - `Esc` ou botão **✕**: descarta e cancela o traçado em andamento.
 

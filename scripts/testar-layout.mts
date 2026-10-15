@@ -2281,6 +2281,27 @@ console.log("\naba Desenhar: as ferramentas de traço num lugar só");
       !/vector-effect="non-scaling-stroke"/.test(palcoPpt),
     "no zoom alto a prévia saía fina e serrilhada enquanto o traço final era grosso e curvo"
   );
+  const desenhoPpt = ler("src/powerpoint/edicao/desenho.ts");
+  checa(
+    "o encaixe nos eixos roda ANTES do RDP (senão o trecho quase reto não tem corrida para alinhar)",
+    /function simplificarLivre\(/.test(desenhoPpt) &&
+      /return simplificarLivre\(encaixar \? alinharPontos\(suave\) : suave, bb\)/.test(desenhoPpt),
+    "o \"L\" desenhado quase reto volta a sair torto"
+  );
+  checa(
+    "o duplo clique termina a curva aberta (e o clique do Livre não marca nó)",
+    !/this\.pontosCurva = \[pSnap\]/.test(palcoPpt) &&
+      !/cursorCurva/.test(palcoPpt) &&
+      /ultimoToqueCurva[\s\S]{0,320}finalizarCurva\(\)/.test(palcoPpt),
+    "sem isso só fechando o círculo dava para terminar (e o clique virava nó)"
+  );
+  checa(
+    "o clique com a caneta em Livre não cai no modo Pontos (nem herda a curva em andamento)",
+    /tipo === "desenho" && this\.modoDesenho === "pontos"\)\)/.test(palcoPpt) &&
+      !/modoDesenho === "pontos" \|\| this\.pontosCurva\.length > 0/.test(palcoPpt) &&
+      /if \(modo !== this\.modoDesenho\) this\.limparCurva\(\);/.test(palcoPpt),
+    "os pontos pendentes pegariam o próximo clique no modo Livre"
+  );
 }
 
 console.log("\ntinta: marca-texto, borracha e converter em forma");

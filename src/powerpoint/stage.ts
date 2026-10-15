@@ -150,8 +150,8 @@ export class Stage {
   private traco: { x: number; y: number }[] | null = null;
   /** pontos fixos de parada da curva em andamento (em % da lâmina) */
   private pontosCurva: { x: number; y: number; reto?: boolean }[] = [];
-  /** posição do cursor elástico durante o desenho da curva */
-  private cursorCurva: { x: number; y: number } | null = null;
+  /** último clique do modo Pontos: o par próximo (<350 ms e <6 px) TERMINA a curva aberta */
+  private ultimoToqueCurva = { t: 0, x: 0, y: 0 };
   /** o cursor está perto do ponto inicial (clique fecha a forma)? */
   private pertoDoInicio = false;
   /** modo do desenho no Draw: "livre" (arrasto) ou "pontos" (cliques de parada) */
@@ -383,10 +383,10 @@ export class Stage {
       );
     }
     if (this.pontosCurva.length > 0) {
+      // a prévia mostra SÓ os pontos marcados: o trecho até o cursor (elástico) seguia o mouse sem
+      // parar entre os cliques e atrapalhava (relato do usuário) — o halo do ponto inicial continua,
+      // que é o que avisa que o clique fecha a forma
       const pts = [...this.pontosCurva];
-      if (this.cursorCurva && !this.pertoDoInicio) {
-        pts.push(this.cursorCurva);
-      }
       const cor = ctx.pincel?.cor ?? "888888";
       const w = ctx.pincel?.w ?? 2;
       const fechando = this.pertoDoInicio && this.pontosCurva.length >= 3;
@@ -410,9 +410,11 @@ export class Stage {
       const b = this.rect;
       html.push(`<div class="pp-marquee" style="left:${b.x}%;top:${b.y}%;width:${b.w}%;height:${b.h}%"></div>`);
     }
-    if (ctx.ferramenta?.tipo !== "curva" && ctx.ferramenta?.tipo !== "desenho") {
+    if (
+      ctx.ferramenta?.tipo !== "curva" &&
+      !(ctx.ferramenta?.tipo === "desenho" && this.modoDesenho === "pontos")
+    ) {
       this.pontosCurva = [];
-      this.cursorCurva = null;
     }
     // modo conectar: as bolinhas nas bordas da forma sob o mouse (a de origem fica acesa)
     if (ctx.ferramenta?.tipo !== "conectar") {
@@ -578,7 +580,7 @@ export class Stage {
         e.preventDefault();
         return;
       }
-      if (ctx.ferramenta.tipo === "curva" || (ctx.ferramenta.tipo === "desenho" && (this.modoDesenho === "pontos" || this.pontosCurva.length > 0))) {
+      if (ctx.ferramenta.tipo === "curva" || (ctx.ferramenta.tipo === "desenho" && this.modoDesenho === "pontos")) {
         const pSnap = this.pontoComSnap(e, ctx);
         if (this.pertoDoInicio && this.pontosCurva.length >= 3) {
           this.hooks.aoCurva?.({ pontos: [...this.pontosCurva], fechado: true });
@@ -586,8 +588,20 @@ export class Stage {
           e.preventDefault();
           return;
         }
+        // duplo clique TERMINA a curva aberta: o `preventDefault` do pointerdown corta o `dblclick`
+        // de compatibilidade (o mesmo caso do duplo clique da alça de canto), então o par é contado
+        // aqui — o primeiro clique marcou o ponto, o segundo fecha a curva (sem ponto repetido).
+        const agora = Date.now();
+        const duplo =
+          agora - this.ultimoToqueCurva.t < 350 &&
+          Math.hypot(pSnap.x - this.ultimoToqueCurva.x, pSnap.y - this.ultimoToqueCurva.y) < 6;
+        if (duplo && this.pontosCurva.length >= 2) {
+          this.finalizarCurva();
+          e.preventDefault();
+          return;
+        }
+        this.ultimoToqueCurva = { t: agora, x: pSnap.x, y: pSnap.y };
         this.pontosCurva.push(pSnap);
-        this.cursorCurva = pSnap;
         this.desenharSelecao();
         e.preventDefault();
         return;
@@ -837,7 +851,8 @@ export class Stage {
     if (!this.modo) {
       const ctx = this.hooks.contexto();
       if (ctx.ferramenta?.tipo === "curva" || this.pontosCurva.length > 0) {
-        this.cursorCurva = this.pontoComSnap(e, ctx);
+        // só para o halo do ponto inicial (`pertoDoInicio`), que avisa que o clique fecha a forma
+        this.pontoComSnap(e, ctx);
         this.desenharSelecao();
         return;
       }
@@ -1110,13 +1125,9 @@ export class Stage {
         const pontos = this.pontosEmPt(modo.pontos, ctx.dim);
         this.desenharSelecao();
         if (pontos.length > 1) this.hooks.aoTraco({ pontos });
-      } else {
-        // Clique sem arrastar no modo desenho: inicia ou acrescenta ponto de parada
-        const pSnap = this.pontoComSnap(e, ctx);
-        this.pontosCurva = [pSnap];
-        this.cursorCurva = pSnap;
-        this.desenharSelecao();
       }
+      // clique sem arrastar no modo Livre não faz NADA: era ele que ligava o modo Pontos sem
+      // querer (um clique qualquer virava o "primeiro ponto de parada" — relato do usuário)
       return;
     }
     if (modo.t === "criar") {
@@ -1157,6 +1168,9 @@ export class Stage {
   }
 
   definirModoDesenho(modo: "livre" | "pontos"): void {
+    // trocar de modo abandona a curva em andamento: os pontos pendentes do modo Pontos não podem
+    // "pegar" o próximo clique no modo Livre (o clique virava um ponto de parada sem querer).
+    if (modo !== this.modoDesenho) this.limparCurva();
     this.modoDesenho = modo;
     this.desenharSelecao();
   }
@@ -1185,8 +1199,8 @@ export class Stage {
 
   limparCurva(): void {
     this.pontosCurva = [];
-    this.cursorCurva = null;
     this.pertoDoInicio = false;
+    this.ultimoToqueCurva = { t: 0, x: 0, y: 0 };
     this.desenharSelecao();
   }
 

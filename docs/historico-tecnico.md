@@ -11240,5 +11240,71 @@ antigas quando fizer sentido.
 - **Porquê:** o fecho não pode promover (a entrada ainda não está na main no instante do commit),
   então a promoção anda depois, quando o commit chega (aqui o `fechar.ps1` já integrara e
   enviara). Promovi só a entrada DESTA tarefa: as que seguem em "Não adicionado" (a aba Animações
-  e a aba Design completa) são de sessões com trabalho aberto — mexer nelas criaria duplicata ou
+  e a aba Design completa) são de sessões com trabalho aberto - mexer nelas criaria duplicata ou
   conflito.
+
+## src/powerpoint/edicao/desenho.ts
+
+### 2026-10-15 · o desenho à mão · o encaixe nos eixos roda ANTES do RDP
+- **Local:** `simplificarLivre` (novo, extraído do `pontosDoLivre`), `pontosDoLivre`,
+  `alinharNosEixos` e `pontosDoDesenhoLivre`
+- **Linha:** `+ function simplificarLivre(pontos, bb)` (o passo fino + o teto de pontos) ·
+  `pontosDoLivre` = `simplificarLivre(suavizarPontos(suavizarPontos(pontos)), bb)` ·
+  `~ alinharNosEixos` e `pontosDoDesenhoLivre` passam a `simplificarLivre(alinharPontos(suave)…)`
+  (o encaixe ANTES da simplificação)
+- **Porquê:** o RDP reduz um trecho quase reto a 2–3 pontos (passo ~2 pt num traço grande) e o
+  `alinharPontos` exige **corridas de 3+ segmentos** para reconhecer o eixo — com o encaixe depois
+  dele, o "L" desenhado quase reto saía TORTO (print do usuário) e só o tremor grande dos testes
+  sintéticos fazia o encaixe disparar. Antes de simplificar, o suavizado tem centenas de pontos e
+  o encaixe vê a corrida inteira; o RDP roda depois e deixa o trecho reto como UM segmento.
+
+## src/powerpoint/stage.ts
+
+### 2026-10-15 · o desenho à mão · o clique do Livre não liga o Pontos (e o duplo clique termina)
+- **Local:** o `aoSoltar` do traço (`modo.t === "traco"`), o `aoPressionar` do ramo da curva, o
+  `aoMover`, o render da prévia e o `definirModoDesenho`/`limparCurva`; o campo `cursorCurva` sai e
+  entra o `ultimoToqueCurva`
+- **Linha:** `- o else do clique sem arrastar` (`this.pontosCurva = [pSnap]` + `cursorCurva`) ·
+  `+ o par de cliques <350 ms/<6 px chama finalizarCurva()` no ramo da curva ·
+  `- o trecho até o cursor no render` (e o `cursorCurva` inteiro) · `+ if (modo !== this.modoDesenho) this.limparCurva()`
+  · o render limpa os pontos também quando o lápis está em Livre
+- **Porquê:** (1) um clique com o Draw em **Livre** caía no else do traço e **iniciava o modo
+  Pontos** — daí em diante a linha seguia o mouse sem parar (print do usuário); (2) o **duplo
+  clique** prometido pela dica nunca disparava: o `preventDefault` do `pointerdown` corta os
+  eventos de mouse de compatibilidade (o mesmo caso já documentado no duplo clique da alça de canto
+  e na alça da fita), então o par passou a ser contado no próprio palco; (3) o trecho elástico até o
+  cursor foi o que o usuário descreveu como "não para de seguir o mouse entre pontos" — a prévia
+  agora mostra só os nós marcados (o halo do ponto inicial, que avisa que o clique fecha a forma,
+  fica).
+
+## scripts/testar-desenho-assistido.mjs
+
+### 2026-10-15 · o desenho à mão · o L sem gancho e a média do trecho
+- **Local:** o bloco do encaixe (as checagens do L)
+- **Linha:** `~` as arestas do L são medidas num traço SEM gancho (as pontas com gancho ficam como
+  a mão fez) com o spread ≤ 0,6 pt · `~` o "L fica onde a mão passou" vira a média do trecho
+  (y 286 e x 440)
+- **Porquê:** com o encaixe antes do RDP o trecho reto vira UM segmento (2 pontos): as checagens
+  antigas exigiam 3+ pontos alinhados (sintoma do defeito) e mediam pelas pontas com gancho —
+  mediam a coisa errada. As novas medem o que interessa: a aresta reta (spread sub-pixel) e a reta
+  assumindo a média do traço.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · o desenho à mão · 2 checagens novas
+- **Local:** o fim do bloco "aba Desenhar"
+- **Linha:** `novo` — o encaixe antes do RDP (`simplificarLivre(encaixar ? alinharPontos(suave)…)`) ·
+  o duplo clique que termina e o clique do Livre que não marca nó (com as negativas do
+  `pontosCurva = [pSnap]` e do `cursorCurva`)
+- **Porquê:** são os dois defeitos do relato e os dois podem voltar em silêncio (o encaixe
+  "funciona" mesmo tarde; o clique "funciona" mesmo ligando o Pontos).
+
+## docs/powerpoint.md
+
+### 2026-10-15 · o desenho à mão · as balas do Livre/Pontos e da Curva
+- **Local:** "Desenho à mão (Draw)" (a bala do desenho livre) e "Curva por pontos de parada"
+- **Linha:** `+` o encaixe antes da simplificação · `~` o clique do Livre "não faz nada" (era
+  "inicia a inserção de nós automaticamente") · `+` a prévia sem elástico e o duplo clique que não
+  marca ponto repetido
+- **Porquê:** o documento do módulo descrevia o clique do Livre como recurso e a dica do duplo
+  clique como se funcionasse; agora os três batem com o app.
