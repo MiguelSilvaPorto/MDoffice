@@ -15,7 +15,7 @@ import { rerankSuggestions } from "./personal/rerank";
 import { personalIndex } from "./ghost/memory";
 import { DocumentIndex } from "./ghost/documentIndex";
 
-export async function checkText(bruto: string, ignore: Set<string>): Promise<WritingIssue[]> {
+export async function checkText(bruto: string, ignore: Set<string>, opcoes?: { titulos?: readonly number[] }): Promise<WritingIssue[]> {
   // A frequência é a mesma tabela que o corretor usa. Espera curta: se não
   // chegar, as regras que dependem dela ficam quietas e nada quebra.
   await Promise.race([carregarFrequencia(), new Promise((r) => setTimeout(r, 1500))]);
@@ -28,7 +28,7 @@ export async function checkText(bruto: string, ignore: Set<string>): Promise<Wri
   const norm = normalizarTexto(bruto);
   const text = norm.texto;
 
-  const issues = checkStyle(text);
+  const issues = checkStyle(text, opcoes);
   const mask = maskNonProse(text);
   const rx = /[\p{L}][\p{L}'-]{2,}/gu;
   const tokens: { word: string; from: number; to: number }[] = [];

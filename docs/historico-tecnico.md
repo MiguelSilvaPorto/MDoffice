@@ -9262,3 +9262,67 @@ antigas quando fizer sentido.
   parágrafo dos modos Livre/Pontos passou a dizer que a aba tem os mesmos controles (mesmo pincel)
 - **Porquê:** a tarefa muda o caminho para a ferramenta (o Inserir não tem mais o Draw) — quem lê o
   doc precisa achar a aba; e a lista de abas é a referência rápida da fita do módulo.
+
+## src/word/project.ts
+
+### 2026-10-15 · título do Word não pede ponto · a projeção marca as linhas de título
+- **Local:** `Projecao` (campo novo `titulos`) e `projectRange` (o laço dos blocos)
+- **Linha:** `+ titulos: number[]` na interface e `+ if (node.type.name === "heading") titulos.push(partes.length)`
+  antes do push do bloco; o retorno passa a ser `{ texto, blocos, titulos }`
+- **Porquê:** o corretor do Word roda sobre a projeção (texto puro, um parágrafo por linha) e ela
+  não distinguia **título** de parágrafo: a regra do ponto final só reconhece o título do Markdown
+  (linha começando com `#`) e pedia "TESTE DE ESCRITA." num bloco de Título (o relato veio com a
+  captura). O índice da linha é `partes.length` no momento do push (cada bloco vira uma linha).
+  O campo é aditivo — quem já usava `texto`/`blocos` (formalizador, histórico) não muda.
+
+## src/broker/style/types.ts · src/broker/style/index.ts
+
+### 2026-10-15 · título do Word não pede ponto · o contexto e a chave do cache
+- **Local:** `RuleCtx` (campo opcional `titulos`) e `checkStyle` (`opcoes` + a chave do cache + o ctx)
+- **Linha:** `+ titulos?: ReadonlySet<number>` · `checkStyle(text, opcoes?: { titulos?: readonly number[] })`
+  · `chave = tone \u0000 titulos.join(",") \u0000 text` · `ctx = { text, mask, push, titulos: new Set(titulos) }`
+- **Porquê:** o mesmo TEXTO pode passar pelo corretor do Markdown (sem lista) e pelo do Word (com a
+  lista) — sem os títulos na chave, o cache devolveria o resultado do outro caminho (o defeito
+  voltaria de forma intermitente). O campo é opcional: nenhuma regra existente muda.
+
+## src/broker/style/punctuation.ts
+
+### 2026-10-15 · título do Word não pede ponto · a regra pula as linhas de título
+- **Local:** `missingFinalPeriod`
+- **Linha:** `+ const ehTitulo = titulos?.has(i) ?? false;` e `!ehTitulo` na condição do push; o
+  comentário diz por que (no Markdown o `#` já cai no `skip`)
+- **Porquê:** o título não fecha com ponto; a informação vem da projeção (Word) ou do `#` (MD).
+
+## src/broker/check.ts · src/word/spell.ts
+
+### 2026-10-15 · título do Word não pede ponto · a lista atravessa o caminho
+- **Local:** `checkText` (assinatura) e o plugin do Word (`spell.ts`, o `project(doc)`)
+- **Linha:** `checkText(bruto, ignore, opcoes?: { titulos?: readonly number[] })` e
+  `checkStyle(text, opcoes)`; no plugin, `const { texto: text, blocos: blocks, titulos } = project(doc)`
+  e `checkText(text, hooks.getIgnore(), { titulos })`
+- **Porquê:** a lista nasce na projeção e precisa chegar à regra; o caminho MD segue chamando
+  `checkText` sem o terceiro argumento (nada muda nele).
+
+## scripts/testar-correcao.mjs
+
+### 2026-10-15 · título do Word não pede ponto · 2 verificações
+- **Local:** o bloco do "ponto final" (logo depois da checagem do título do Markdown)
+- **Linha:** `novo` — o mesmo texto com `titulos: [0]` (0 avisos) e sem a lista (1 aviso), e o
+  corpo numa lista de títulos (a linha 2 continua marcada)
+- **Porquê:** prende o caso do usuário E que a lista não silencia o corpo do texto. A conferência
+  no navegador confirmou os dois lados no Word de verdade: "TESTE DE ESCRITA" como **Título 1**
+  fica com 0 avisos e o MESMO texto como parágrafo continua marcado.
+
+## docs/word.md
+
+### 2026-10-15 · título do Word não pede ponto · a bala da revisão
+- **Local:** "Revisão de texto"
+- **Linha:** `+ "— em título ele não pede ponto final (o corpo do texto continua pedindo normalmente)"`
+- **Porquê:** o documento do módulo descreve o que o corretor faz; o comportamento mudou.
+
+## CHANGELOG.md
+
+### 2026-10-15 · título do Word não pede ponto · a entrada no Word
+- **Local:** Word → Adicionado → Frontend
+- **Linha:** `novo`
+- **Porquê:** mudança do módulo Word; a entrada entra já promovida, como o fechamento exige.

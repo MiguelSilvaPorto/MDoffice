@@ -307,7 +307,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-
 ### Adicionado (na main)
 
 **Backend**
@@ -356,6 +355,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   documento tem — um `.docx` com 13/13,5 pt ou com fonte fora da lista não fica mais em branco — e
   aceitam **digitação** (qualquer tamanho ou nome de fonte, como no Word), com a lista do app no
   botão ao lado; a lista de fontes ganhou as clássicas do Windows/Office.
+- **Título do Word não pede mais ponto final**: um bloco de **Título** ("TESTE DE ESCRITA") recebia
+  a sugestão **"Falta o ponto final no fim do parágrafo"** — no Markdown a linha do título começa
+  com `#` e a regra já a pulava, mas o corretor do Word roda sobre a **projeção** do documento
+  (texto puro, um parágrafo por linha) e ali o título não tinha marcador. A projeção passou a
+  listar as linhas de **título** (`heading`) e a regra do ponto final as ignora; o corpo do texto
+  continua pedindo o ponto (verificado: o MESMO texto como parágrafo segue marcado). 2 verificações
+  novas em `npm run test:correcao`.
 
 ---
 

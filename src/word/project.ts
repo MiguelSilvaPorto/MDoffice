@@ -23,6 +23,14 @@ export interface Projecao {
   /** texto do documento (um parágrafo por linha) */
   texto: string;
   blocos: BlockMap[];
+  /**
+   * Linhas (índice em `blocos`/nas linhas do texto) que são **títulos** (`heading`).
+   *
+   * No Markdown o título começa com `#` e o corretor já o reconhece; no Word o bloco é um
+   * `heading` e o texto projetado não tem marcador — sem esta lista, a regra do ponto final
+   * pedia ponto num título ("TESTE DE ESCRITA.").
+   */
+  titulos: number[];
 }
 
 const limita = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
@@ -34,6 +42,7 @@ const limita = (n: number, min: number, max: number) => Math.max(min, Math.min(m
 export function projectRange(doc: PMNode, de = 0, ate = doc.content.size): Projecao {
   const partes: string[] = [];
   const blocos: BlockMap[] = [];
+  const titulos: number[] = [];
   let proj = 0;
   doc.descendants((node, pos) => {
     if (node.type.name === "code_block") return false;
@@ -50,13 +59,15 @@ export function projectRange(doc: PMNode, de = 0, ate = doc.content.size): Proje
     // corretor vê em relação ao que sempre viu.
     const entra = ateLocal > deLocal || (t.length === 0 && de <= inicio && ate >= inicio);
     if (entra) {
+      // título: a linha entra na lista antes do push (o índice é o da linha no texto)
+      if (node.type.name === "heading") titulos.push(partes.length);
       blocos.push({ proj, pm: inicio + deLocal, len: ateLocal - deLocal });
       partes.push(t.slice(deLocal, ateLocal));
       proj += ateLocal - deLocal + 1; // +1 do "\n" que separa este bloco do próximo
     }
     return false;
   });
-  return { texto: partes.join("\n"), blocos };
+  return { texto: partes.join("\n"), blocos, titulos };
 }
 
 /** O documento inteiro (o caminho que o corretor usa). */

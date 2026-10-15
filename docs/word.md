@@ -39,7 +39,8 @@ arquivos `.docx` de verdade.
 - **Páginas**: quebra de página, cabeçalho e rodapé, números de página.
 - **Ilustrações**: imagens (inserir, colar ou arrastar), links, **tabelas** (inserir,
   linhas/colunas, mesclar, dividir, sombrear, bordas) e marcas de parágrafo.
-- **Revisão de texto**: corretor de português (sublinhados e sugestões) e voz/suplementos.
+- **Revisão de texto**: corretor de português (sublinhados e sugestões) e voz/suplementos — em
+  **título** ele não pede ponto final (o corpo do texto continua pedindo normalmente).
 
 ## Escrita assistida (também no Word)
 

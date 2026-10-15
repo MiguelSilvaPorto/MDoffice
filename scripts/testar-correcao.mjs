@@ -89,6 +89,18 @@ const igual = (nome, texto, esperado) => {
 igual("ponto final no fim do parágrafo", "O relatorio ficou pronto", "O relatorio ficou pronto.");
 igual("não fecha frase terminando em conector", "O relatorio ficou pronto para", "O relatorio ficou pronto para");
 igual("título não recebe ponto", "## titulo sem ponto", "## titulo sem ponto");
+// título do WORD: o texto projetado não tem `#` — a linha chega marcada pela projeção (`titulos`)
+{
+  const semLista = F.checkStyle("TESTE DE ESCRITA").filter((i) => i.classe === "ponto-final");
+  const comLista = F.checkStyle("TESTE DE ESCRITA", { titulos: [0] }).filter((i) => i.classe === "ponto-final");
+  ok(
+    "título do Word não pede ponto (a projeção marca a linha)",
+    semLista.length === 1 && comLista.length === 0,
+    `sem lista: ${semLista.length}, com lista: ${comLista.length}`
+  );
+  const corpo = F.checkStyle("Titulo\n\nO relatorio ficou pronto", { titulos: [0] }).filter((i) => i.classe === "ponto-final");
+  ok("a lista de títulos não silencia o corpo do texto", corpo.length === 1 && corpo[0].word === "pronto", `achou ${corpo.length}`);
+}
 igual("item de lista não recebe ponto", "- item sem ponto", "- item sem ponto");
 igual("reticências ficam intactas", "Esperando...", "Esperando...");
 igual("quatro pontos viram três (reticências)", "Esperando....", "Esperando...");

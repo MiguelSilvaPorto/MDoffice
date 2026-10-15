@@ -144,10 +144,10 @@ export function spellPlugin(hooks: WordSpellHooks): Plugin<SState> & { recheck: 
         if (!hooks.enabled()) return;
         const doc = view.state.doc;
         const my = ++token;
-        const { texto: text, blocos: blocks } = project(doc);
+        const { texto: text, blocos: blocks, titulos } = project(doc);
         let issues: WritingIssue[] = [];
         try {
-          issues = text.trim() ? await checkText(text, hooks.getIgnore()) : [];
+          issues = text.trim() ? await checkText(text, hooks.getIgnore(), { titulos }) : [];
         } catch {
           issues = [];
         }

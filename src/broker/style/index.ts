@@ -125,8 +125,11 @@ function enriquecerTrechosLongos(issues: WritingIssue[], text: string, mask: str
   return finais;
 }
 
-export function checkStyle(text: string): WritingIssue[] {
-  const chave = `${getTone()}\u0000${text}`;
+export function checkStyle(text: string, opcoes?: { titulos?: readonly number[] }): WritingIssue[] {
+  // a lista de títulos entra na chave do cache: o MESMO texto pode passar pelo corretor do
+  // Markdown (sem lista) e pelo do Word (com a lista) — sem isso um colheria o resultado do outro
+  const titulos = opcoes?.titulos ?? [];
+  const chave = `${getTone()}\u0000${titulos.join(",")}\u0000${text}`;
   if (cache && cache.chave === chave) return copia(cache.issues);
 
   const issues: WritingIssue[] = [];
@@ -138,7 +141,7 @@ export function checkStyle(text: string): WritingIssue[] {
     issues.push({ from, to, word, kind: "style", message, suggestions, fix, safe, classe });
   };
 
-  const ctx = { text, mask, push };
+  const ctx = { text, mask, push, titulos: new Set(titulos) };
   for (const rule of RULES) rule(ctx);
 
   const seen = new Set<string>();

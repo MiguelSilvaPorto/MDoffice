@@ -220,7 +220,7 @@ export const NAO_TERMINAM_FRASE = new Set([
 ]);
 
 /** Ponto final faltando no fim do parágrafo. */
-export function missingFinalPeriod({ text, mask, push }: RuleCtx): void {
+export function missingFinalPeriod({ text, mask, push, titulos }: RuleCtx): void {
   // ponto final faltando em parágrafos
   {
     const lines = text.split("\n");
@@ -242,8 +242,11 @@ export function missingFinalPeriod({ text, mask, push }: RuleCtx): void {
         proximaCrua === "" ||
         /^([#>|`]|!\[|[-*+]\s|\d+\.\s|```)/.test(proximaCrua);
       const ultima = (/([\p{L}]+)$/u.exec(trimmed)?.[1] ?? "").toLowerCase();
+      // título não fecha com ponto: no Markdown o `#` já cai no `skip`; no Word a linha vem
+      // na lista `titulos` (o texto projetado não tem marcador de título)
+      const ehTitulo = titulos?.has(i) ?? false;
       // frase incompleta (termina em "de", "para", "e", "que"…): ainda está sendo escrita, não fecha com ponto
-      if (!skip && fimDeParagrafo && words >= 3 && !endsOk && /[\p{L}\d]$/u.test(trimmed) && !NAO_TERMINAM_FRASE.has(ultima)) {
+      if (!skip && !ehTitulo && fimDeParagrafo && words >= 3 && !endsOk && /[\p{L}\d]$/u.test(trimmed) && !NAO_TERMINAM_FRASE.has(ultima)) {
         const lineEnd = offset + raw.trimEnd().length;
         const wm = /[\p{L}\d]+$/u.exec(text.slice(offset, lineEnd));
         const start = lineEnd - (wm ? wm[0].length : 1);
