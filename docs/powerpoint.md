@@ -35,7 +35,11 @@ avisado ao abrir (nunca some em silêncio).
   arrastar uma delas redimensiona **só aquela forma**, sem desfazer a seleção; o quadro do grupo
   segue com as 8 para redimensionar todas de uma vez, e no canto em que as duas caem no mesmo
   ponto quem atende é a alça da forma), **agrupar/desagrupar**, ordem (frente/trás), alinhar,
-  distribuir, copiar/colar, duplicar e desfazer/refazer. Arrastar: a forma **escolhida** pega o
+  distribuir, copiar/colar, duplicar e desfazer/refazer. Com as formas **empilhadas** (um avatar em
+  cima do cartão, os textos por cima do fundo…), o clique pega a de cima: o **clique direito na
+  forma** traz **"Selecionar tudo neste ponto"** (com a contagem — "Selecionar tudo neste ponto
+  (3)"), que pega a pilha inteira de uma vez, cada forma com o grupo dela; dali para trás é só
+  tirar o que não serve com `Shift`+clique. Arrastar: a forma **escolhida** pega o
   ponteiro em **qualquer ponto do miolo** (cursor de mover) — inclusive as caixas de texto **sem
   preenchimento**, que fora da seleção continuam clique-através para não esconder o que está
   embaixo. E o **Copiar formatação** (o Pincel de

@@ -1179,6 +1179,27 @@ export class Stage {
     return this.modoDesenho;
   }
 
+  /**
+   * As formas sob um ponto da tela, de CIMA para baixo — a "pilha" que o clique de uma forma só
+   * entrega pela de cima. Usa o mesmo critério do clique (o que o ponteiro alcança: o DOM, e não a
+   * caixa do modelo), então uma forma coberta por outra só entra se o ponto estiver na parte dela
+   * que está à vista; as **decorações do layout** (fixas) entram só com o "Editar elementos do
+   * layout" ligado, como no clique. É o que serve o "Selecionar tudo neste ponto" do menu.
+   */
+  formasNoPonto(clientX: number, clientY: number): string[] {
+    const ctx = this.hooks.contexto();
+    const ids = document
+      .elementsFromPoint(clientX, clientY)
+      .map((el) => (el as HTMLElement).closest?.(".pp-shape[data-shape]") as HTMLElement | null)
+      .map((el) => el?.dataset.shape)
+      .filter((id): id is string => !!id);
+    const vistos = [...new Set(ids)];
+    return vistos.filter((id) => {
+      const s = ctx.shapes.find((f) => f.id === id);
+      return !!s && (!s.fixa || ctx.fixasSelecionaveis);
+    });
+  }
+
   finalizarCurva(): void {
     if (this.pontosCurva.length >= 2) {
       this.hooks.aoCurva?.({ pontos: [...this.pontosCurva], fechado: false });

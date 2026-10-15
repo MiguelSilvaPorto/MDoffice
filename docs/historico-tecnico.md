@@ -12332,7 +12332,7 @@ antigas quando fizer sentido.
   CSS), descer o piso para 0,62 deixa a faixa **preferir encolher a esconder**: alturas, ícones e
   espaços diminuem, o texto continua legível e os grupos continuam à vista. O teste do encaixe foi
   ajustado no ponto que mudou de propósito (a 1100 px o plano agora é **compacto**, não **menu**) e
-  ganhou a checagem do grupo colapsado **centrado** — as duas coisas ficam presas no
+  ganhou a checagem do grupo colapsado **centrado** - as duas coisas ficam presas no
   `test:encaixe`.
 
 ## src/powerpoint/ui/fita.ts
@@ -12508,3 +12508,63 @@ antigas quando fizer sentido.
 - **Porquê:** o controle é **do app todo** (fitas do PowerPoint e do Word, Excel, Configurações e
   diálogos) — não é mudança de módulo, então a categoria é **Geral**, como o histórico do seletor
   já registra.
+## src/powerpoint/stage.ts
+
+### 2026-10-15 · esta tarefa · as formas sob um ponto (a pilha do menu)
+- **Local:** `formasNoPonto(clientX, clientY)` — novo método público, depois do `obterModoDesenho`
+- **Linha:** `novo` — `document.elementsFromPoint(clientX, clientY)` → `closest(".pp-shape[data-shape]")`
+  → os ids (sem repetição) → filtro `(!s.fixa || ctx.fixasSelecionaveis)`
+- **Porquê:** o relato ("se você tem muitas box agrupadas fica difícil selecionar várias em um ponto
+  concentrado, aí teria que ser 1 a um"): com as formas **empilhadas** (um avatar em cima do cartão,
+  os textos por cima do fundo), o clique entrega **só a de cima** — as de baixo ficam por conta do
+  pedaço que estiver à vista. A "pilha" tinha de sair do **palco**, que é quem conhece o critério do
+  clique (o `elementsFromPoint` respeita `pointer-events` — as sobreposições do app que não pegam o
+  ponteiro não entram — e o resultado são as MESMAS formas que um clique poderia alcançar ali). O
+  filtro das **fixas** repete a regra do clique: decoração do layout só é escolhível com o "Editar
+  elementos do layout" ligado. O `formasNoPonto` é o que o menu usa; o palco não guarda estado novo.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-15 · esta tarefa · "Selecionar tudo neste ponto" no menu da forma
+- **Local:** `menuDeContexto` — a pilha antes da lista de itens e o item `"sel-ponto"` logo depois do
+  "Editar texto", com o desfecho no ouvinte do popup
+- **Linha:** `+ const pilha = comGrupos(this.atual(), this.stage.formasNoPonto(e.clientX, e.clientY));`
+  · `+ ["sel-ponto", pilha.length > 1 ? \`Selecionar tudo neste ponto (${pilha.length})\` : "Selecionar
+  tudo neste ponto", pilha.length > 1]` · `+ else if (c === "sel-ponto") this.selecionar(pilha);`
+- **Porquê:** o menu de contexto da forma é onde este tipo de ação já mora (editar texto, recortar,
+  ordem, agrupar…) e o item responde **literalmente** ao pedido: "selecionar **várias** em um ponto
+  concentrado" de uma vez, em vez de 1 a um. Ele **expande os grupos** de cada forma da pilha
+  (`comGrupos`, a mesma regra do clique: escolher um membro escolhe o grupo) — dali para trás o
+  usuário tira o que não serve com `Shift`+clique, que já existia. A **contagem no rótulo**
+  ("Selecionar tudo neste ponto (3)") diz quantas vêm antes de clicar (e o item fica desabilitado
+  com menos de duas: aí o clique normal
+  já bastava). O desfecho é `this.selecionar(pilha)` direto — não é um `run(cmd)` porque o comando
+  depende do PONTO clicado, que só o menu conhece.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · esta tarefa · 2 verificações (a pilha do ponto)
+- **Local:** o bloco "PowerPoint: cada forma da múltipla seleção tem as próprias 4 alças" (o
+  vizinho certo: é a seleção múltipla)
+- **Linha:** `+ o palco expõe a pilha (o `formasNoPonto` com o `elementsFromPoint` e o filtro das
+  fixas)` e `+ o item do menu (o rótulo, a contagem, o item desabilitado com menos de duas e o
+  desfecho no `selecionar(pilha)`)`
+- **Porquê:** são as duas pontas de um contrato que passa por um PONTO da tela (o palco devolve a
+  pilha; o host monta o item e seleciona) — nenhuma das duas aparece num teste de unidade (o
+  `elementsFromPoint` só existe no DOM) e o caminho foi conferido **no navegador** (Chrome headless +
+  CDP: um retângulo duplicado duas vezes, o clique direito no ponto de interseção mostrou
+  "Selecionar tudo neste ponto (3)" e o item deixou as três escolhidas — 3 alças com dono). As
+  checagens ficam no `test:layout` porque é ele que lê o TS do host e do palco.
+
+## docs/powerpoint.md · CHANGELOG.md
+
+### 2026-10-15 · esta tarefa · a bala das Formas e a entrada
+- **Local:** a bala "Formas" da seção "Editar as lâminas" (depois de "duplicar e desfazer/refazer") e
+  o CHANGELOG → **PowerPoint → Não adicionado → Frontend**
+- **Linha:** `+ "Com as formas empilhadas (um avatar em cima do cartão…) o clique pega a de cima: o
+  clique direito na forma traz 'Selecionar tudo neste ponto' (com a contagem…), que pega a pilha
+  inteira de uma vez, cada forma com o grupo dela; dali para trás é só tirar o que não serve com
+  Shift+clique."` · `+ 1 entrada no changelog`
+- **Porquê:** é o doc do módulo em que a seleção múltipla é descrita (e onde o "clique-através" das
+  caixas sem preenchimento já estava explicado — o item é o par dele para as formas empilhadas). A
+  entrada do changelog fica em "Não adicionado" até o `fechar.ps1` entregar.

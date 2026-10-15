@@ -421,7 +421,18 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **Traço**, **Pintura**, **Modelo** e **Formas** — e, com um grupo a menos, ela cabe mais larga
   antes de o encaixe esconder algum outro.
 
-- **A fita não parece mais quebrada quando um grupo vira menu (e ela prefere encolher a esconder)** —
+- **"Selecionar tudo neste ponto" (as formas empilhadas de uma vez)**: com um avatar em cima do
+  cartão, os textos por cima do fundo e as decorações no meio, o clique pega **só a forma de cima** —
+  e chegar nas de baixo virava caça ao pedaço à vista, uma a uma ("fica difícil selecionar várias em
+  um ponto concentrado", o relato). O **clique direito na forma** agora traz **"Selecionar tudo neste
+  ponto"** (com a contagem: "Selecionar tudo neste ponto (3)"): pega a **pilha inteira** de uma vez,
+  de cima para baixo, **cada forma com o grupo dela** (como no clique) — dali para trás é só tirar o
+  que não serve com `Shift`+clique. A pilha sai do **mesmo critério do clique** (o que o ponteiro
+  alcança, por `elementsFromPoint`: uma forma coberta só entra com o ponto na parte que está à
+  vista), e as **decorações do layout** (fixas) entram só com o "Editar elementos do layout" ligado,
+  como no clique. O item fica desabilitado com menos de duas formas no ponto.
+
+- **A fita não parece mais quebrada quando um grupo vira menu (e ela prefere encolher a esconder)** -
   dois defeitos que apareceram juntos na aba **Desenhar** (que ganhou Estúdio, Pintura e Modelo): o
   **grupo colapsado** era desenhado como um botão **solto no topo** do painel, com o vão do rótulo
   vazio embaixo (o "justificar/espacar" do grupo, sem corpo nem rótulo, joga o primeiro filho para

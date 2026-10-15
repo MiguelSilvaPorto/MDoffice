@@ -449,6 +449,25 @@ checa(
   /const gira = alcas && !dono \?/.test(palcoPpt),
   "cada forma ganharia haste de girar e a tela ficaria poluída"
 );
+// "Selecionar tudo neste ponto": com as formas empilhadas, o clique só pega a de cima; o item do
+// menu de contexto pega a pilha inteira (e cada forma vem com o grupo dela).
+const hostPptSel = ler("src/powerpoint/powerpoint.ts");
+checa(
+  "o palco expõe a pilha de um ponto (o mesmo critério do clique, sem as decorações fixas)",
+  /formasNoPonto\(clientX: number, clientY: number\): string\[\]/.test(palcoPpt) &&
+    /document\s*\.elementsFromPoint\(clientX, clientY\)/.test(palcoPpt) &&
+    /!s\.fixa \|\| ctx\.fixasSelecionaveis/.test(palcoPpt),
+  "o menu ficaria sem a pilha (ou pegaria as decorações do layout sem o modo próprio)"
+);
+checa(
+  "o menu da forma tem 'Selecionar tudo neste ponto' e ele seleciona a pilha com os grupos",
+  /\["sel-ponto",/.test(hostPptSel) &&
+    /Selecionar tudo neste ponto/.test(hostPptSel) &&
+    /pilha\.length > 1/.test(hostPptSel) &&
+    /const pilha = comGrupos\(this\.atual\(\), this\.stage\.formasNoPonto\(e\.clientX, e\.clientY\)\)/.test(hostPptSel) &&
+    /c === "sel-ponto"\) this\.selecionar\(pilha\)/.test(hostPptSel),
+  "o item não chegaria ao comando (ou não traria o grupo de cada forma da pilha)"
+);
 
 // ---------------------------------------------------------------- PowerPoint: a barrinha do pincel por cima
 

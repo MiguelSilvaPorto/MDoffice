@@ -4151,9 +4151,14 @@ export class PowerPointHost {
     const id = formaEl?.dataset.shape;
     if (id && !this.selecao.includes(id)) this.selecionar(comGrupos(this.atual(), [id]));
     const tem = this.selecao.length > 0;
+    // A PILHA do ponto clicado: com várias formas empilhadas (um avatar sobre o cartão, os textos
+    // por cima…), o clique só pega a de cima — este item pega todas de uma vez (cada uma com o grupo
+    // dela), e quem quiser só algumas tira o resto com Shift/clique depois.
+    const pilha = comGrupos(this.atual(), this.stage.formasNoPonto(e.clientX, e.clientY));
     const itens: [string, string, boolean][] = tem
       ? [
           ["editar-texto", "Editar texto", this.selecao.length === 1 && !!this.principal()?.paras],
+          ["sel-ponto", pilha.length > 1 ? `Selecionar tudo neste ponto (${pilha.length})` : "Selecionar tudo neste ponto", pilha.length > 1],
           ["recortar", "Recortar", true],
           ["copiar", "Copiar", true],
           ["colar", "Colar", areaDeTransferencia.length > 0],
@@ -4178,6 +4183,7 @@ export class PowerPointHost {
       fecharPopup();
       const c = b.dataset.c!;
       if (c === "editar-texto") this.entrarEdicao(this.selecao[0]);
+      else if (c === "sel-ponto") this.selecionar(pilha);
       else this.run(c);
     });
   }
