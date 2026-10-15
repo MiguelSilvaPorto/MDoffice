@@ -1157,19 +1157,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Os cartões dos Recentes mostram o DOCUMENTO — cada tipo com a sua cara**: o cartão tinha
-  sempre o mesmo papel branco com o texto cru (o Word "parecia slide", o Markdown mostrava a
-  sintaxe `[Desenho](assets/…)` e o que não dava para ler virava só o ícone). Agora o preview é
-  uma **versão do documento pré-carregada**: **Word** e **Markdown** viram uma **página A4 em pé**
-  com o **papel do tema** (a folha escurece no tema escuro, o mesmo tom da folha do editor), o
-  **PowerPoint** uma **lâmina 16:9** (sempre clara — a apresentação nasce no tema claro) e o
-  **Excel** uma **grade** com o cabeçalho das colunas (A, B…) e o número das linhas. O conteúdo é
-  o do arquivo: o **markdown chega renderizado** (títulos, listas, negrito, código — e cada imagem
-  vira um bloco de figura, porque o cartão não carrega os assets do documento), e o primeiro
-  parágrafo vira o **título** da página/lâmina. No **Excel** o `preview_file` (Rust) passou a ler
-  `xl/worksheets/sheet1.xml` e devolver as primeiras linhas com as células separadas por TAB —
-  antes só saía a lista de textos, sem linha nem coluna, e a grade não existia. Sem texto (ou num
-  formato sem prévia), o cartão continua com o ícone do formato; o texto entra escapado e o
   markdown passa pelo saneamento, como todo HTML de fora no app.
 
 - (nada no momento)
@@ -1247,6 +1234,20 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **Os cartões dos Recentes mostram o DOCUMENTO — cada tipo com a sua cara**: o cartão tinha
+  sempre o mesmo papel branco com o texto cru (o Word "parecia slide", o Markdown mostrava a
+  sintaxe `[Desenho](assets/…)` e o que não dava para ler virava só o ícone). Agora o preview é
+  uma **versão do documento pré-carregada**: **Word** e **Markdown** viram uma **página A4 em pé**
+  com o **papel do tema** (a folha escurece no tema escuro, o mesmo tom da folha do editor), o
+  **PowerPoint** uma **lâmina 16:9** (sempre clara — a apresentação nasce no tema claro) e o
+  **Excel** uma **grade** com o cabeçalho das colunas (A, B…) e o número das linhas. O conteúdo é
+  o do arquivo: o **markdown chega renderizado** (títulos, listas, negrito, código — e cada imagem
+  vira um bloco de figura, porque o cartão não carrega os assets do documento), e o primeiro
+  parágrafo vira o **título** da página/lâmina. No **Excel** o `preview_file` (Rust) passou a ler
+  `xl/worksheets/sheet1.xml` e devolver as primeiras linhas com as células separadas por TAB —
+  antes só saía a lista de textos, sem linha nem coluna, e a grade não existia. Sem texto (ou num
+  formato sem prévia), o cartão continua com o ícone do formato; o texto entra escapado e o
 
 - **As Alterações têm nome (o "+6983 −6984" saiu da lista)**: a lista de commits de um documento
   mostrava só números — o tamanho do texto que entrou e saiu —, e numa apresentação não dava para

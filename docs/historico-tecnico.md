@@ -11158,3 +11158,15 @@ antigas quando fizer sentido.
   ele recolhia sem querer) e quem mender o CHANGELOG não pode deixar a frase voltar. Anotado aqui em
   vez de mexer na entrada que a outra sessão acabou de promover (ela está no meio das próprias
   resoluções de conflito).
+
+
+## CHANGELOG.md
+
+### 2026-10-15 — promoção — a entrada dos cartões com a versão do documento entra no "Adicionado" (Geral)
+- **Local:** Geral → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** 1 entrada movida — **Os cartões dos Recentes mostram o DOCUMENTO — cada tipo com a sua
+  cara** (`d9551dc`, worktree `feat/previa-documento`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não cabe
+  no mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que ainda
+  não entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** da lista do Frontend,
+  como as promoções anteriores; as entradas das outras sessões na seção ficaram **intactas**.
