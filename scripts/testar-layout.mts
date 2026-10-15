@@ -63,6 +63,15 @@ checa("o painel inativo fica invisível (clique/foco/leitura)", /\.ppr-painel\[h
 checa("o rótulo da aba reserva a largura do negrito", /\.ppr-aba-rot::after\s*\{[^}]*font-weight:\s*600/.test(pp) && /\.ppr-aba-rot::after\s*\{[^}]*visibility:\s*hidden/.test(pp), "regra .ppr-aba-rot::after ausente");
 checa("o preview da Formas segue o tamanho do ícone grande", /button\.ppr\.big \.ppr-gal-ic svg\s*\{[^}]*width:\s*var\(--pe-icone-g\)/.test(pp), "regra button.ppr.big .ppr-gal-ic svg ausente");
 checa("na fita compacta o preview usa o ícone normal", /fita-compacta button\.ppr\.big \.ppr-gal-ic svg\s*\{[^}]*width:\s*var\(--pe-icone\)/.test(pp), "regra .fita-compacta .ppr-gal-ic svg ausente");
+// Os botões grandes da fita baixa ficam AGRUPADOS: com o padding de --pe-6 e o vão de --pe-4
+// sobrava ~10 px de ar entre um e outro (o "muito espalhado" do grupo Canetas). Aqui a fita baixa
+// é a fita de trabalho — o par de valores (--pe-3/--pe-2) é o que mantém os itens juntos.
+checa(
+  "os botões grandes da fita baixa ficam agrupados (sem o ar de ~10 px)",
+  /fita-compacta button\.ppr\.big\s*\{[^}]*padding:\s*0 var\(--pe-3\)/.test(pp) &&
+    /fita-compacta \.ppr-corpo\s*\{[^}]*gap:\s*var\(--pe-2\)/.test(pp),
+  "botões espalhados no grupo Canetas (padding/vão da fita compacta)"
+);
 checa("o preview da forma fica centrado no próprio ícone", /viewBox="-2 -2 26 26"/.test(ler("src/powerpoint/ui/galeria.ts")), "viewBox assimétrico no iconeDeForma");
 const sl = ler("src/styles/slides.css");
 checa("a apresentação não deixa o contorno de edição aparecer", /\.slides-overlay \.pp-shape[\s\S]{0,140}pointer-events:\s*none\s*!important/.test(sl) && /\.slides-overlay \.pp-shape\.pp-rica:hover[\s\S]{0,140}outline:\s*none/.test(sl), "regras de isolamento do deck ausentes");

@@ -12385,3 +12385,38 @@ antigas quando fizer sentido.
   tarefa — as que seguem em "Não adicionado" (o grupo Diagrama fora do Desenhar, o Estúdio —
   Regiões, a aba Animações e as demais) são de sessões com trabalho aberto, mexer nelas criaria
   duplicata ou conflito.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-15 · o grupo Canetas agrupado · o ar entre os botões grandes na fita baixa
+- **Local:** o bloco "Fita baixa" — `.fita-compacta button.ppr.big` e `.fita-compacta .ppr-corpo`
+- **Linha:** `padding: 0 var(--pe-6)` → `0 var(--pe-3)` · o `.ppr-corpo` da compacta ganhou
+  `gap: var(--pe-2)` (o vão do modo cheio continua `--pe-4`)
+- **Porquê:** o usuário mostrou o grupo **Canetas** (Draw/Curva/Marca-texto/Borracha) "muito
+  espalhado": o ar entre um botão e outro era `--pe-6`(3,7)×2 + `--pe-4`(2,5) ≈ **10 px** — o dobro
+  do vão ícone→rótulo de dentro do próprio botão. Medido no navegador (1400 px, fita compacta,
+  e = 0,62): os vãos caíram para ≈5 px entre botões (1,2 do gap + 1,9 de padding de cada lado) e o
+  grupo encolheu 296 → 278 px — de graça para o encaixe. Vale para toda a fita baixa (Traço, Estúdio,
+  Pintura, que é o modo de trabalho); o modo cheio (ícone em cima, bloco de 58 px) não muda.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · o grupo Canetas agrupado · a checagem dos valores
+- **Local:** bloco "fita do PowerPoint: tamanho estável entre abas", depois da checagem do preview na
+  compacta
+- **Linha:** `+` "os botões grandes da fita baixa ficam agrupados (sem o ar de ~10 px)" — prende
+  `padding: 0 var(--pe-3)` no `.fita-compacta button.ppr.big` e `gap: var(--pe-2)` no
+  `.fita-compacta .ppr-corpo`
+- **Porquê:** o ar de ~10 px era a soma de dois valores espalhados (um no botão, outro no corpo do
+  grupo); sozinha, a regressão de um dos dois volta a espalhar os 4 botões — a checagem prende os
+  dois juntos, e o valor medido (296 → 278 px) está no CHANGELOG.
+
+## docs/powerpoint.md
+
+### 2026-10-15 · o grupo Canetas agrupado · a bala da fita
+- **Local:** a bala "A fita cabe na largura da janela, em quatro degraus", degrau (2) **compacta**
+- **Linha:** `+` "os botões grandes numa linha, **agrupados** (o ar entre um botão e outro fica ~a
+  metade do vão de dentro dele — o grupo Canetas … era o caso espalhado que pediu isso)"
+- **Porquê:** o documento descrevia a compacta só como "espaços menores"; o que o pedido trouxe (e o
+  que passa a valer) é o **agrupamento** dos botões grandes — com o caso do Canetas nomeado, para
+  quem mexer no CSS não desfazer sem saber por quê.
