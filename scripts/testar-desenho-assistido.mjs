@@ -509,6 +509,55 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
   );
 }
 
+// ---------------------------------------------------------------- junta reta↔curva (suave)
+{
+  // O encaixe deixa os trechos como RETA; a cúbica que continua da reta tem de SAIR na direção
+  // dela. Com o Catmull-Rom puro, a tangente na junta vinha do ponto de trás do traço e mudava de
+  // repente — ficava uma QUEBRA visível (relato do usuário: "ficou com umas quebras, não ficou
+  // suave", no topo do cartão).
+  const pts = [
+    { x: 0, y: 100 },
+    { x: 40, y: 100 },
+    { x: 80, y: 100 }, // fim da reta encaixada
+    { x: 110, y: 112 }, // a curva do canto
+    { x: 128, y: 138 },
+    { x: 136, y: 170 },
+  ];
+  const cam = D.caminhoDePontos(pts, D.bboxDe(pts));
+  const iC = cam.cmds.indexOf("C");
+  ok(
+    "junta reta→curva: o braço da cúbica sai NA LINHA da reta encaixada (sem quebra)",
+    iC > 0 && cam.cmds[iC + 2] === 0 && Number(cam.cmds[iC + 1]) > 80,
+    JSON.stringify(cam.cmds.slice(iC, iC + 7))
+  );
+
+  // do outro lado: a curva CHEGA na reta vertical pela direção dela (o braço fica sobre a reta)
+  const pts2 = [
+    { x: 0, y: 0 },
+    { x: 20, y: 60 },
+    { x: 24, y: 100 }, // fim da curva
+    { x: 24, y: 140 }, // reta encaixada (vertical)
+    { x: 24, y: 180 },
+  ];
+  const cam2 = D.caminhoDePontos(pts2, D.bboxDe(pts2));
+  const idxC = cam2.cmds.reduce((a, v, i) => (v === "C" ? a.concat(i) : a), []);
+  const ult = idxC[idxC.length - 1];
+  const c2x = Number(cam2.cmds[ult + 3]);
+  const c2y = Number(cam2.cmds[ult + 4]);
+  ok("junta curva→reta: o braço chega NA LINHA da reta encaixada (sem quebra)", idxC.length >= 2 && c2x === 24 && c2y < 100, JSON.stringify({ c2x, c2y }));
+
+  // a prévia (svgPathDePontos) e o caminho final (caminhoDePontos) usam a MESMA junta: prévia
+  // suave e resultado com quebra (ou o contrário) seria mentira na tela
+  const svg = D.svgPathDePontos(pts2, false);
+  const cCs = [...svg.matchAll(/C([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+)/g)];
+  const cUlt = cCs[cCs.length - 1];
+  ok(
+    "junta curva→reta: a prévia (svg) concorda com o caminho final",
+    !!cUlt && Number(cUlt[3]) === c2x && Number(cUlt[4]) === c2y,
+    JSON.stringify(cUlt?.slice(1))
+  );
+}
+
 // ---------------------------------------------------------------- curva por pontos de parada
 {
   // 1) svgPathDePontos: aberta e fechada

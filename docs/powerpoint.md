@@ -306,7 +306,9 @@ avisado ao abrir (nunca some em silêncio).
   traço que **só parece** um círculo também não é mais fechado: "fechado" só quando as pontas quase
   se encontram (7% da diagonal — era 22%) e o **arco** tem de passar pelo traço (desvio médio de
   0,8% e máximo de 0,35% da diagonal — eram 1,8% e 0,6%); o que não corresponde fica em **desenho
-  livre** em vez de virar uma elipse fechada ou um arco bojudo.
+  livre** em vez de virar uma elipse fechada ou um arco bojudo. As **juntas** entre a reta encaixada
+  e a curva também saem suaves: o braço da cúbica continua a direção da reta (a reta encostando na
+  curva de esguelha deixava uma quebra visível), e o `reto` do Alt continua fazendo quina.
 - **Modos Livre vs Pontos na aba Desenhar e na barra do Pincel**: enquanto o lápis está ligado, a **barrinha do pincel** define
   **cor**, **espessura** (1, 2, 4 ou 8 pt), assistente, e agora permite alternar entre **[Livre]** (arraste para
   rabiscar) e **[Pontos]** (clique para posicionar nós de parada). No modo Livre, um clique pontual **não faz

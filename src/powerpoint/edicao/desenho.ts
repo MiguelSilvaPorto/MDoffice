@@ -761,6 +761,44 @@ export function pontosDoDesenhoLivre(pontos: PontoTraco[], encaixar: boolean): P
 }
 
 /**
+ * Os dois controles da cúbica de p1→p2 (Catmull-Rom), com as JUNTAS de reta respeitadas: quando o
+ * trecho vizinho saiu do encaixe (uma RETA no eixo), a curva continua na direção dela — a reta
+ * encostando na curva de esguelha deixava uma QUEBRA visível na junta (relato do usuário). O
+ * `reto` do Alt continua fazendo quina: nesses pontos a junta não é amaciada.
+ */
+function controlesDaCubica(p1: PontoTraco, p2: PontoTraco, p0: PontoTraco, p3: PontoTraco) {
+  // reta de verdade: no eixo E com comprimento (segmento nulo é o fantasma das pontas, não conta)
+  const naReta = (a: PontoTraco, b: PontoTraco) => {
+    if (a.reto || b.reto) return false;
+    const dx = Math.abs(b.x - a.x);
+    const dy = Math.abs(b.y - a.y);
+    return (dy < 0.05 && dx > 0.05) || (dx < 0.05 && dy > 0.05);
+  };
+  const direcao = (de: PontoTraco, para: PontoTraco) => {
+    const d = Math.hypot(para.x - de.x, para.y - de.y) || 1;
+    return { x: (para.x - de.x) / d, y: (para.y - de.y) / d };
+  };
+  // o comprimento do braço é um terço do trecho da curva: na quina de raio r dá ~0,47·r, perto
+  // do 0,55·r do arco de círculo que a mão desenha
+  const comp = Math.hypot(p2.x - p1.x, p2.y - p1.y) / 3;
+  let c1x = p1.x + (p2.x - p0.x) / 6;
+  let c1y = p1.y + (p2.y - p0.y) / 6;
+  if (naReta(p0, p1)) {
+    const dir = direcao(p0, p1);
+    c1x = p1.x + dir.x * comp;
+    c1y = p1.y + dir.y * comp;
+  }
+  let c2x = p2.x - (p3.x - p1.x) / 6;
+  let c2y = p2.y - (p3.y - p1.y) / 6;
+  if (naReta(p2, p3)) {
+    const dir = direcao(p2, p3);
+    c2x = p2.x - dir.x * comp;
+    c2y = p2.y - dir.y * comp;
+  }
+  return { c1x, c1y, c2x, c2y };
+}
+
+/**
  * Caminho do custGeom (M + retas + cúbicas + Z, em pt, relativos à caixa).
  * Os trechos EXATAMENTE no eixo (os que o encaixe do assistente alinhou) saem como RETA: a
  * cúbica do Catmull-Rom boja entre os pontos quando os vizinhos são os cantos — era a "barriga"
@@ -788,12 +826,13 @@ export function caminhoDePontos(pts: PontoTraco[], bb: Ret = bboxDe(pts), fechad
     }
     const p0 = get(i - 1);
     const p3 = get(i + 2);
+    const c = controlesDaCubica(p1, p2, p0, p3);
     cmds.push(
       "C",
-      n10(p1.x + (p2.x - p0.x) / 6 - bb.x),
-      n10(p1.y + (p2.y - p0.y) / 6 - bb.y),
-      n10(p2.x - (p3.x - p1.x) / 6 - bb.x),
-      n10(p2.y - (p3.y - p1.y) / 6 - bb.y),
+      n10(c.c1x - bb.x),
+      n10(c.c1y - bb.y),
+      n10(c.c2x - bb.x),
+      n10(c.c2y - bb.y),
       n10(p2.x - bb.x),
       n10(p2.y - bb.y)
     );
@@ -948,11 +987,8 @@ export function svgPathDePontos(pts: PontoTraco[], fechado = false): string {
     }
     const p0 = get(i - 1);
     const p3 = get(i + 2);
-    const c1x = p1.x + (p2.x - p0.x) / 6;
-    const c1y = p1.y + (p2.y - p0.y) / 6;
-    const c2x = p2.x - (p3.x - p1.x) / 6;
-    const c2y = p2.y - (p3.y - p1.y) / 6;
-    d += `C${f(c1x)} ${f(c1y)} ${f(c2x)} ${f(c2y)} ${f(p2.x)} ${f(p2.y)}`;
+    const c = controlesDaCubica(p1, p2, p0, p3);
+    d += `C${f(c.c1x)} ${f(c.c1y)} ${f(c.c2x)} ${f(c.c2y)} ${f(p2.x)} ${f(p2.y)}`;
   }
   if (fechado) d += "Z";
   return d;

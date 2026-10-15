@@ -11362,3 +11362,35 @@ antigas quando fizer sentido.
   então a promoção anda depois, quando o commit chega (759b37f). Promovi só a entrada DESTA tarefa:
   as que seguem em "Não adicionado" são de sessões com trabalho aberto — mexer nelas criaria
   duplicata ou conflito.
+
+## src/powerpoint/edicao/desenho.ts
+
+### 2026-10-15 · as quebras do encaixe · a junta reta↔curva
+- **Local:** `caminhoDePontos` e `svgPathDePontos` — os dois controles da cúbica saíram para o
+  helper `controlesDaCubica` (novo, logo acima de `caminhoDePontos`)
+- **Linha:** `c1 = p1 + (p2 - p0)/6` (Catmull-Rom) → quando o trecho vizinho é uma RETA no eixo,
+  `c1 = p1 + direção(p0→p1) · |p2-p1|/3` · simétrico em `c2`, com `direção(p2→p3)`
+- **Porquê:** o encaixe deixa o trecho como RETA (segmento L no caminho), mas a reta encostava na
+  cúbica com a tangente do ponto de trás do traço — a junta ficava com uma **quina** visível (print
+  do usuário: "o desenho ficou com umas quebras, não ficou suave", no topo do cartão). Um terço do
+  trecho da curva dá ~0,47·r numa quina de raio r (o arco de círculo clássico usa 0,55·r). O `reto`
+  do Alt desliga o amaciamento: quina forçada continua quina. Segmento nulo (o fantasma das pontas)
+  não conta como reta.
+
+## scripts/testar-desenho-assistido.mjs
+
+### 2026-10-15 · as quebras do encaixe · o bloco da junta
+- **Local:** bloco novo "junta reta↔curva (suave)", depois do encaixe nos eixos
+- **Linha:** `+` três checagens — reta→curva (o braço sai na linha), curva→reta (o braço chega na
+  linha) e prévia × caminho final concordando na junta
+- **Porquê:** a quebra era invisível nos testes (o caminho tinha os L certos e as cúbicas certas,
+  só a junta ficava torta) — as checagens prendem o braço **sobre a linha** e o acordo entre os dois
+  geradores (a prévia usa `svgPathDePontos`, o final usa `caminhoDePontos`).
+
+## docs/powerpoint.md
+
+### 2026-10-15 · as quebras do encaixe · a bala do desenho livre
+- **Local:** "Desenho à mão (Draw) e Curva por pontos" (a bala do desenho livre)
+- **Linha:** `+` a frase das juntas (o braço continua a direção da reta; `reto` faz quina)
+- **Porquê:** a bala dizia que os trechos encaixados saem como reta — faltava dizer que a curva
+  continua por ela (era o relato).
