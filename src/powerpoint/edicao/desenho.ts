@@ -852,15 +852,21 @@ export function caminhoLivre(pontos: PontoTraco[], bb: Ret = bboxDe(pontos)): Cu
 /**
  * Encaixa a caixa nas bordas e nos centros das formas de baixo quando está perto — é o
  * "enxergar a imagem de fundo": desenhar por cima de uma forma (mesmo apagada) sai alinhado a ela.
+ * `centros: false` (os TRAÇOS) alinha só nas BORDAS: o meio de um traço não é referência de
+ * desenho, e o ímã do centro deslocava o traço inteiro para o meio da forma de baixo.
  */
-export function encaixarNoPalco(box: Ret, formas: Shape[], d: Dim, limiar: number): Ret {
+export function encaixarNoPalco(box: Ret, formas: Shape[], d: Dim, limiar: number, centros = true): Ret {
   const xs: number[] = [];
   const ys: number[] = [];
   for (const f of formas) {
     if (f.rot && Math.abs(f.rot % 360) > 0.5) continue;
     const b = paraPt(f.box, d);
-    xs.push(b.x, b.x + b.w, b.x + b.w / 2);
-    ys.push(b.y, b.y + b.h, b.y + b.h / 2);
+    xs.push(b.x, b.x + b.w);
+    ys.push(b.y, b.y + b.h);
+    if (centros) {
+      xs.push(b.x + b.w / 2);
+      ys.push(b.y + b.h / 2);
+    }
   }
   if (!xs.length) return box;
   const perto = (v: number, alvos: number[]) => {
@@ -880,17 +886,26 @@ export function encaixarNoPalco(box: Ret, formas: Shape[], d: Dim, limiar: numbe
   let y = perto(box.y, ys);
   let y2 = perto(box.y + box.h, ys);
   // nenhuma borda encostou? tenta o centro (desloca a caixa inteira)
-  if (x === box.x && x2 === box.x + box.w) {
+  if (centros && x === box.x && x2 === box.x + box.w) {
     const dx = perto(box.x + box.w / 2, xs) - (box.x + box.w / 2);
     x += dx;
     x2 += dx;
   }
-  if (y === box.y && y2 === box.y + box.h) {
+  if (centros && y === box.y && y2 === box.y + box.h) {
     const dy = perto(box.y + box.h / 2, ys) - (box.y + box.h / 2);
     y += dy;
     y2 += dy;
   }
   return { x, y, w: Math.max(1, x2 - x), h: Math.max(1, y2 - y) };
+}
+
+/**
+ * O limiar do "enxergar a imagem de fundo" ao desenhar: 2,5% da largura da lâmina (~24pt no 16:9).
+ * Era 1% (~10pt) e a mão que segue a borda de um cartão erra mais do que isso — o traço ficava
+ * dentro do cartão e o desenho não grudava nele (relato do usuário, com print).
+ */
+function limiarDoPalco(d: Dim): number {
+  return Math.max(14, d.w * 0.025);
 }
 
 function baseDaForma(est: EstiloDeck, d: Dim, boxPt: Ret): Shape {
@@ -938,7 +953,7 @@ export function formaDoTraco(pontos: PontoTraco[], pincel: Pincel, est: EstiloDe
   if (rec) {
     // encaixa nas formas de baixo (bordas e centros) antes de montar: desenhar por cima de uma
     // forma existente sai alinhado a ela
-    const box = encaixarNoPalco(rec.box, formas, d, Math.max(6, d.w * 0.01));
+    const box = encaixarNoPalco(rec.box, formas, d, limiarDoPalco(d));
     const s = baseDaForma(est, d, box);
     s.geom = rec.geom;
     s.name = rec.rotulo;
@@ -949,9 +964,11 @@ export function formaDoTraco(pontos: PontoTraco[], pincel: Pincel, est: EstiloDe
     return comPincel(s, pincel, { head: rec.head, tail: rec.tail });
   }
   // modo assistente: o desenho livre encaixa nos eixos (as retas quase retas ficam retas e o
-  // canto em 90°) — e os trechos encaixados saem como RETA no caminho (a cúbica fazia barriga)
+  // canto em 90°) — e os trechos encaixados saem como RETA no caminho (a cúbica fazia barriga).
+  // O traço gruda nas BORDAS das formas de baixo (sem o ímã do centro): desenhar o canto por cima
+  // do cartão sai com a caixa sentada nas bordas dele (o pedido do usuário, com print)
   const pontosLivre = pontosDoDesenhoLivre(pontos, pincel.assistente && !marca);
-  const s = baseDaForma(est, d, encaixarNoPalco(bboxDe(pontosLivre), formas, d, Math.max(6, d.w * 0.01)));
+  const s = baseDaForma(est, d, encaixarNoPalco(bboxDe(pontosLivre), formas, d, limiarDoPalco(d), false));
   s.geom = "custom";
   s.name = marca ? "Marca-texto" : "Desenho livre";
   s.paths = [caminhoDePontos(pontosLivre)];
@@ -1009,7 +1026,7 @@ export function formaDeCurva(
   if (pontos.length < 2) return null;
   const bb = bboxDe(pontos);
   if (bb.w < 2 && bb.h < 2) return null;
-  const box = encaixarNoPalco(bb, formas, d, Math.max(6, d.w * 0.01));
+  const box = encaixarNoPalco(bb, formas, d, limiarDoPalco(d), false);
   const s = baseDaForma(est, d, box);
   s.geom = "custom";
   s.name = fechado ? "Forma livre" : "Curva";

@@ -11394,3 +11394,38 @@ antigas quando fizer sentido.
 - **Linha:** `+` a frase das juntas (o braço continua a direção da reta; `reto` faz quina)
 - **Porquê:** a bala dizia que os trechos encaixados saem como reta — faltava dizer que a curva
   continua por ela (era o relato).
+
+## src/powerpoint/edicao/desenho.ts
+
+### 2026-10-15 · o desenho gruda no cartão · o limiar e o ímã do centro
+- **Local:** `encaixarNoPalco` (o parâmetro novo `centros`), `limiarDoPalco` (nova, logo abaixo) e
+  as três chamadas (a forma reconhecida, o desenho livre e a curva)
+- **Linha:** `Math.max(6, d.w * 0.01)` → `limiarDoPalco(d)` = `Math.max(14, d.w * 0.025)` ·
+  `encaixarNoPalco(..., limiar)` → `encaixarNoPalco(..., limiar, false)` no desenho livre e na
+  curva · `xs.push(b.x, b.x + b.w, b.x + b.w / 2)` → o centro só entra com `centros`
+- **Porquê:** o usuário desenhou o canto por cima do cartão e a caixa ficou no retângulo do traço
+  (print) — ele escolheu "a caixa deve grudar nas bordas do cartão". A mão que segue a borda de um
+  cartão erra ~10–30 pt para dentro e o limiar de ~10 pt não pegava; 2,5% da largura (~24 pt) pega
+  o traço de verdade. O ímã do **centro** só faz sentido em FORMA (uma forma desenhada no meio da
+  outra sai centrada ✓); num TRAÇO o centro não é referência nenhuma e o ímã deslocava o traço
+  inteiro até o meio da forma de baixo — por isso `centros: false` no desenho livre e na curva.
+  O encaixe continua esticando o desenho para a caixa nova (`tracadoLivre`), que é o que faz o
+  canto sair **em cima** das bordas do cartão.
+
+## scripts/testar-desenho-assistido.mjs
+
+### 2026-10-15 · o desenho gruda no cartão · o canto por dentro
+- **Local:** o bloco "encaixe nas formas de baixo"
+- **Linha:** `+` três checagens — o canto desenhado ~18 pt por dentro do cartão gruda nas bordas
+  (x/y = 20%/10%), o fim do traço (direita/baixo) fica onde a mão fez, e o ímã do centro não
+  desloca um traço cujo meio cai perto do meio do cartão
+- **Porquê:** as checagens antigas usavam desvios de 4–6 pt (dentro do limiar velho) e por isso não
+  pegavam o caso do print; as novas prendem o desvio maior e o "não desloca" do centro.
+
+## docs/powerpoint.md
+
+### 2026-10-15 · o desenho gruda no cartão · a bala do "desenhar por cima"
+- **Local:** "Desenho à mão (Draw) e Curva por pontos" (a bala do "Desenhar por cima de uma forma")
+- **Linha:** `+` o limiar (2,5% da largura) e "nos traços, só as bordas"
+- **Porquê:** a bala dizia "encaixa nas bordas e nos centros" sem dizer com que força nem que o
+  centro não vale para traço — era o que o relato expôs.

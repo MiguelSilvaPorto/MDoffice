@@ -428,6 +428,31 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
   ok("encaixe: longe não mexe", perto(solto.x, 400) && perto(solto.y, 300) && perto(solto.w, 100));
   const f = D.formaDoTraco(percorrer([{ x: 196, y: 56 }, { x: 670, y: 56 }, { x: 670, y: 210 }, { x: 196, y: 210 }]), pincel, est, dim, [existente]);
   ok("desenhar por cima da caixa sai alinhado a ela", f && perto(f.box.x, 20, 0.6) && perto(f.box.y, 10, 0.6) && perto(f.box.w, 50, 0.6) && perto(f.box.h, 30, 0.6), JSON.stringify(f?.box));
+
+  // o gesto do usuário (print): o canto desenhado POR DENTRO do cartão, ~18pt — a mão erra mais
+  // que o limiar antigo (~10pt) e o desenho não grudava no cartão; agora gruda nas BORDAS dele
+  const dentro = [];
+  for (let i = 0; i <= 20; i++) dentro.push({ x: 210, y: 150 - (i * 50) / 20 });
+  for (let i = 1; i <= 12; i++) {
+    const a = ((180 + (i / 12) * 90) * Math.PI) / 180;
+    dentro.push({ x: 240 + 30 * Math.cos(a), y: 100 + 30 * Math.sin(a) });
+  }
+  for (let i = 1; i <= 30; i++) dentro.push({ x: 240 + (i * 260) / 30, y: 70 });
+  const grudado = D.formaDoTraco(dentro, pincel, est, dim, [existente]);
+  ok("traço por dentro do cartão: o desenho gruda nas bordas dele", grudado && perto(grudado.box.x, 20, 0.35) && perto(grudado.box.y, 10, 0.35), JSON.stringify(grudado?.box));
+  ok(
+    "traço por dentro do cartão: o fim do traço (direita/baixo) fica onde a mão fez",
+    grudado && perto(((grudado.box.x + grudado.box.w) / 100) * dim.w, 500, 5) && perto(((grudado.box.y + grudado.box.h) / 100) * dim.h, 150, 5),
+    JSON.stringify(grudado?.box)
+  );
+
+  // o ímã do CENTRO não pode deslocar o traço inteiro: o meio do traço cai perto do meio do
+  // cartão (18pt) e as bordas longe — nos TRAÇOS o encaixe é só nas bordas
+  const meioTraco = [];
+  for (let i = 0; i <= 20; i++) meioTraco.push({ x: 400 + (i * 100) / 20, y: 300 });
+  for (let i = 1; i <= 10; i++) meioTraco.push({ x: 500, y: 300 + i * 2 });
+  const semCentro = D.formaDoTraco(meioTraco, pincel, est, dim, [existente]);
+  ok("ímã do centro não desloca o traço (nos traços, só as bordas)", semCentro && perto((semCentro.box.x / 100) * dim.w, 400, 2), JSON.stringify(semCentro?.box));
 }
 
 // ---------------------------------------------------------------- a dica na tela

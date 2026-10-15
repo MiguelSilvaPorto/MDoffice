@@ -413,6 +413,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O desenho gruda nas formas de baixo (as bordas do cartão)**: ao desenhar o canto por cima do
+  cartão, o traço sai **por dentro** das bordas dele (a mão erra ~10–30 pt) — mais que o limiar do
+  encaixe (~10 pt) — então o desenho ficava no retângulo do próprio traço e não grudava no cartão
+  (print do usuário). Agora o limiar é **2,5% da largura da lâmina** (~24 pt) e, nos **traços**
+  (desenho livre e curva), o encaixe é só nas **bordas**: o ímã do centro deslocava o traço inteiro
+  para o meio da forma de baixo. Teste: `npm run test:desenho`.
+
 - **As juntas entre a reta encaixada e a curva saíram suaves (sem quebras)**: o encaixe nos eixos
   deixa os trechos quase retos como retas, mas a cúbica que continuava da reta saía na tangente do
   vizinho de trás do traço — a reta encostava na curva de esguelha e ficava uma **quina** visível
