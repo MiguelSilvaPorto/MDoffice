@@ -2262,5 +2262,38 @@ console.log("\ntinta: marca-texto, borracha e converter em forma");
   );
 }
 
+// ---------------------------------------------------------------- histórico: o documento, não o JSON
+
+console.log("\nhistórico: a alteração mostra o documento (não a serialização)");
+
+{
+  const hist = ler("src/app/historySearch.ts");
+  const snaps = ler("src/snapshots.ts");
+  checa(
+    "o tipo do histórico vem do arquivo (extensão), não da aba ativa",
+    /\/\\\.pptx\?\$\/i\.test\(path\)/.test(hist) && /\/\\\.docx\$\/i\.test\(path\)/.test(hist),
+    "pela aba, a projeção legível podia não entrar e o diff mostrava o JSON"
+  );
+  checa(
+    "o texto legível tenta o projetor do tipo e os outros, e barra o JSON cru",
+    /function textoLegivel\(app: App, texto: string, tipo: string\)/.test(hist) &&
+      /projetores\.push\(\(t\) => app\.pptHost\.projection\(t\), \(t\) => app\.excelHost\.projection\(t\), \(t\) => app\.wordProjection\(t\)\)/.test(hist) &&
+      /return \/\^\\s\*\\\{\\s\*"v"\\s\*:\/\.test\(texto\) \? "" : texto/.test(hist),
+    "sem o guarda, o JSON cru volta para a tela"
+  );
+  checa(
+    "a aba Alterações usa o texto legível no diff",
+    /const project = \(text: string\) => textoLegivel\(this, text, tipo\)/.test(hist),
+    "o diff voltaria a mostrar a serialização"
+  );
+  checa(
+    "o resumo da alteração sai do documento (no fecho da pausa)",
+    /resumo = summarize\(diffText\(projetar\(anterior\), projetar\(texto\)\)\)/.test(hist) &&
+      /pendente = \{ path, texto, projetar \}/.test(hist) &&
+      /summary: ehAncora \? "marco do documento" : opts\.resumo \|\| summarize\(ops\)/.test(snaps),
+    'a lista voltaria a mostrar "+4843 −7259" (tamanho do JSON)'
+  );
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

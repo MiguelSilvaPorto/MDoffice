@@ -1550,6 +1550,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   "Recolher a faixa de opções" e fazia o contrário (fixava aberta, e a faixa não fechava mais).
   Agora o clique decide pelo que está à vista: aberta (mesmo que só por enquanto) → **recolhe**;
   recolhida → fixa aberta. Vale para as três fitas (Word, PowerPoint e Excel).
+- **A aba Alterações do histórico mostra o documento, não o "commit do app"**: no Word, PowerPoint e
+  Excel os estados são guardados como **texto serializado** (um JSON interno) e o diff aparecia com
+  esse blob — com o `\n` escapado e tudo — no lugar do que a pessoa escreveu (o relato veio com a
+  captura de uma apresentação). O tipo do documento agora vem do **arquivo** (extensão), não da aba
+  ativa, e um **texto legível** tenta o projetor do tipo e, se ele não reconhecer o estado (formato
+  antigo), os dos outros motores; nada reconhecendo, o JSON cru **não** vai para a tela. O
+  **resumo** de cada alteração também sai do documento: a lista mostra "+2" (o tamanho da mudança de
+  verdade) em vez de "+4843 −7259" (o tamanho da serialização). 4 verificações novas em
+  `npm run test:layout`.
 
 **Ferramentas (dev)**
 

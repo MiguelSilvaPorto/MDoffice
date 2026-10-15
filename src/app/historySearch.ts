@@ -6,7 +6,7 @@ import * as backup from "../backup";
 import { setTone, type Tone } from "../broker/writing";
 import { tabLabel } from "../tabs";
 import { snapshot } from "../history";
-import { recordCommit, countCommits, ANCHOR_EVERY } from "../snapshots";
+import { recordCommit, countCommits, ANCHOR_EVERY, diffText, summarize } from "../snapshots";
 import { openHistoryDialog, type AbaHistorico } from "../historyUi";
 import { openMissingDialog } from "../backupUi";
 import { $, h, toast, baseName, saveJSON, loadJSON } from "../util";
@@ -23,6 +23,33 @@ const CHAVE_DIA = "mdc.backup.dia";
 const logExportado = new Map<string, number>();
 
 /**
+ * O texto legível de um estado guardado (serializado) do histórico.
+ *
+ * A serialização do Word/PowerPoint/Excel é um JSON interno. O projetor do documento o
+ * transforma no texto que a pessoa conhece; se ele não reconhecer o texto (estado de uma
+ * versão antiga), os outros projetores tentam em seguida. Nada reconhecendo, devolve `""` —
+ * o JSON cru **não** vai para a tela (era ele que aparecia no diff de uma apresentação, o
+ * "commit do app" no lugar do documento).
+ */
+function textoLegivel(app: App, texto: string, tipo: string): string {
+  if (!texto) return "";
+  const projetores: Array<(t: string) => string> = [];
+  if (tipo === "ppt") projetores.push((t) => app.pptHost.projection(t));
+  else if (tipo === "xlsx") projetores.push((t) => app.excelHost.projection(t));
+  else if (tipo === "word") projetores.push((t) => app.wordProjection(t));
+  projetores.push((t) => app.pptHost.projection(t), (t) => app.excelHost.projection(t), (t) => app.wordProjection(t));
+  for (const projetar of projetores) {
+    try {
+      const legivel = projetar(texto);
+      if (legivel && legivel !== texto) return legivel;
+    } catch {
+      /* este projetor não reconheceu o texto: tenta o próximo */
+    }
+  }
+  return /^\s*\{\s*"v"\s*:/.test(texto) ? "" : texto;
+}
+
+/**
  * Compara o texto de agora com o último registrado e guarda o patch, quando faz sentido.
  *
  * A gravação é agrupada: uma pausa na digitação vira um commit (como um commit do Git),
@@ -30,7 +57,7 @@ const logExportado = new Map<string, number>();
  * escrevendo e ainda dá para voltar a qualquer pausa.
  */
 let flushTimer: number | undefined;
-let pendente: { path: string; texto: string } | null = null;
+let pendente: { path: string; texto: string; projetar?: (t: string) => string } | null = null;
 
 /** Grava o commit que estiver pendente agora (ao salvar, trocar de aba ou fechar). */
 function gravarCommitPendente(): void {
@@ -39,25 +66,36 @@ function gravarCommitPendente(): void {
     flushTimer = undefined;
   }
   if (!pendente) return;
-  const { path, texto } = pendente;
+  const { path, texto, projetar } = pendente;
   pendente = null;
   const anterior = ultimo.texto;
   const mesmoDoc = ultimo.path === path;
   ultimo.path = path;
   ultimo.texto = texto;
   if (!mesmoDoc || anterior === texto) return;
-  void recordCommit(path, anterior, texto);
+  // o resumo da alteração é do DOCUMENTO (texto legível), não da serialização: sem isso a lista
+  // mostrava "+4843 −7259" (o tamanho do JSON) no lugar do tamanho da mudança de verdade.
+  // Fica aqui (no fecho da pausa) — não a cada tecla, que projetar um deck inteiro custa caro.
+  let resumo: string | undefined;
+  if (projetar && anterior) {
+    try {
+      resumo = summarize(diffText(projetar(anterior), projetar(texto)));
+    } catch {
+      resumo = undefined;
+    }
+  }
+  void recordCommit(path, anterior, texto, resumo ? { resumo } : {});
 }
 
 /** Agenda a gravação do commit: uma pausa na digitação vira um commit. */
-function agendarCommit(path: string, texto: string): void {
-  pendente = { path, texto };
+function agendarCommit(path: string, texto: string, projetar?: (t: string) => string): void {
+  pendente = { path, texto, projetar };
   if (flushTimer !== undefined) window.clearTimeout(flushTimer);
   flushTimer = window.setTimeout(() => gravarCommitPendente(), 1200);
 }
 
 /** Compara o texto de agora com o último registrado e agenda o patch, quando faz sentido. */
-function registrarMudanca(path: string | null, texto: string): boolean {
+function registrarMudanca(path: string | null, texto: string, projetar?: (t: string) => string): boolean {
   if (path !== ultimo.path) {
     // documento novo: o log começa daqui (senão o primeiro patch compararia dois textos
     // de documentos diferentes)
@@ -66,7 +104,7 @@ function registrarMudanca(path: string | null, texto: string): boolean {
     ultimo.texto = texto;
     return false;
   }
-  if (path && texto !== ultimo.texto) agendarCommit(path, texto);
+  if (path && texto !== ultimo.texto) agendarCommit(path, texto, projetar);
   return true;
 }
 
@@ -166,7 +204,9 @@ export const historySearchMethods = {
    */
   recordSerializedChange(this: App, texto: string): void {
     if (!this.settings.commitsOn) return;
-    registrarMudanca(this.path, texto);
+    // o tipo é capturado agora (o resumo é calculado no fecho da pausa, quando a aba pode já ser outra)
+    const tipo = this.tab.kind ?? "doc";
+    registrarMudanca(this.path, texto, (t) => textoLegivel(this, t, tipo));
   },
 
   /** Abre a lista de arquivos que só existem no backup (indicador vermelho). */
@@ -202,22 +242,26 @@ export const historySearchMethods = {
     if ((!kind || kind === "doc") && !this.path && !(await this.ensureSaved())) return;
     const path = this.path;
     if (!path) return;
+    // O TIPO vem do ARQUIVO (extensão), não da aba ativa: o histórico é do documento, e pela
+    // aba a projeção legível podia não entrar — o diff mostrava o texto serializado cru (o
+    // "JSON" do .pptx/.docx/.xlsx no lugar do documento).
+    const tipo =
+      /\.pptx?$/i.test(path) ? "ppt"
+      : /\.(xlsx?|xlsm)$/i.test(path) ? "xlsx"
+      : /\.docx$/i.test(path) ? "word"
+      : kind === "word" || kind === "ppt" || kind === "xlsx" ? kind
+      : "doc";
 
     // o texto do estado atual, no formato de cada motor (é o que vai para o histórico)
     const current = () =>
-      kind === "word"
+      tipo === "word"
         ? this.wordHost.serialized()
-        : kind === "ppt"
+        : tipo === "ppt"
           ? this.pptHost.serialized()
-          : kind === "xlsx"
+          : tipo === "xlsx"
             ? this.excelHost.serialized()
             : this.editor.getText();
-    const project = (text: string) => {
-      if (kind === "word") return this.wordProjection(text);
-      if (kind === "ppt") return this.pptHost.projection(text);
-      if (kind === "xlsx") return this.excelHost.projection(text);
-      return text;
-    };
+    const project = (text: string) => textoLegivel(this, text, tipo);
 
     // garante que o estado de agora já esteja no histórico
     await snapshot(path, current(), { max: this.settings.historyMax });
@@ -234,9 +278,9 @@ export const historySearchMethods = {
           ? { foco: this.pptHost.laminaEmFoco(), render: (estado: string, i: number) => this.pptHost.previaDaLamina(estado, i) }
           : undefined,
       restore: (text) => {
-        if (kind === "word") this.wordHost.restore(text);
-        else if (kind === "ppt") this.pptHost.restoreSerialized(text);
-        else if (kind === "xlsx") this.excelHost.restore(text);
+        if (tipo === "word") this.wordHost.restore(text);
+        else if (tipo === "ppt") this.pptHost.restoreSerialized(text);
+        else if (tipo === "xlsx") this.excelHost.restore(text);
         else this.editor.replaceRange(0, this.editor.getText().length, text);
       },
       // cópia restaurada em disco: lê o arquivo de volta para o editor

@@ -10386,7 +10386,6 @@ antigas quando fizer sentido.
   velho. A categoria é **Geral** porque o encaixe vale para as três fitas — repetir a mesma
   entrada em PowerPoint, Word e Excel seria duplicata.
 
-
 ## src/powerpoint/ui/fita.ts
 
 ### 2026-10-15 — o "Nova lâmina" saiu da fita (o card da faixa assume)
@@ -10467,3 +10466,55 @@ antigas quando fizer sentido.
   escuro" e mantido) — `fonteDominante()` e a troca explícita do fundo corrigem; (4) `cantos`/`contorno` arredondavam as barras
   decorativas do modelo (`tpl:`), por não distinguir decoração de conteúdo.
 - **Fica de fora de propósito:** o botão Template (fita) continua no deck inteiro, como um tema do Office; só a Composição mudou.
+
+## src/app/historySearch.ts
+
+### 2026-10-15 · histórico legível · o tipo vem do arquivo e o texto legível é robusto
+- **Local:** a nova `textoLegivel(app, texto, tipo)` (módulo), `openHistory` (`tipo`/`current`/`project`/`restore`) e `recordSerializedChange`
+- **Linha:** `const kind = this.tab.kind` → `const tipo = <extensão do path ▸ kind ▸ "doc">`;
+  `project` deixou de repetir `if (kind === …)` e passou a `textoLegivel(this, text, tipo)`;
+  `recordSerializedChange` passa um `projetar` (o texto legível do tipo capturado agora)
+- **Porquê:** o diff da aba **Alterações** aparecia com o **JSON interno** do documento (o `{"v":1,
+  "setup":…` com `\n` escapado — a captura do usuário) no lugar do texto que ele escreveu. Duas
+  defesas: (1) o tipo sai do **arquivo** (extensão), não da aba ativa, que podia não ser a do
+  documento na hora de abrir; (2) `textoLegivel` tenta o projetor do tipo e, se ele não reconhecer
+  o estado (formato antigo), os dos outros motores — e, se nenhum reconhecer, devolve `""` para o
+  JSON cru não ir para a tela (em vez de mostrar a serialização como se fosse o documento).
+
+### 2026-10-15 · histórico legível · o resumo da alteração sai do documento
+- **Local:** `pendente`/`gravarCommitPendente`/`agendarCommit`/`registrarMudanca` (o parâmetro novo `projetar`)
+- **Linha:** `pendente: { path, texto }` → `{ path, texto, projetar? }`; no fecho da pausa,
+  `+ resumo = summarize(diffText(projetar(anterior), projetar(texto)))` e
+  `recordCommit(path, anterior, texto, resumo ? { resumo } : {})`
+- **Porquê:** a lista mostrava "+4843 −7259" — o tamanho do diff da **serialização** — em vez do
+  tamanho da mudança de verdade; o resumo agora sai da projeção legível. Fica no **fecho da pausa**
+  (1200 ms), não a cada tecla: projetar um deck inteiro custa caro e a lista só precisa do número
+  quando o commit nasce.
+
+## src/snapshots.ts
+
+### 2026-10-15 · histórico legível · o resumo pronto entra no commit
+- **Local:** `RecordOpts` e `recordCommit`
+- **Linha:** `+ resumo?: string` em `RecordOpts` e `summary: ehAncora ? "marco do documento" : opts.resumo || summarize(ops)`
+- **Porquê:** quem grava (o log do app) conhece o documento legível; a serialização não. O
+  `opts.resumo` deixa o resumo vir de fora sem mudar o comportamento dos outros chamadores (sem o
+  campo, segue o `summarize(ops)` de sempre).
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · histórico legível · 4 verificações
+- **Local:** o bloco "histórico: a alteração mostra o documento (não a serialização)"
+- **Linha:** `novo`
+- **Porquê:** prende o tipo pela extensão, a cadeia de projetores com o guarda do JSON cru, o
+  `project` da aba Alterações e o caminho do resumo (pendente ▸ summarize das projeções ▸
+  `opts.resumo`). A conferência no navegador percorreu 22 alterações num .pptx: o diff passou a
+  mostrar "Nome do apresentador · data" e as notas, sem JSON, e a lista mostrou **+2** no lugar dos
+  milhares do tamanho da serialização.
+
+## CHANGELOG.md
+
+### 2026-10-15 · histórico legível · a entrada no Geral
+- **Local:** Geral → Adicionado → Frontend
+- **Linha:** `novo`
+- **Porquê:** a mudança é do histórico (vale para Word, PowerPoint e Excel), então a categoria é
+  **Geral**; a entrada entra já promovida, como o fechamento exige.

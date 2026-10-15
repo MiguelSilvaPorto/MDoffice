@@ -247,6 +247,8 @@ export function summarize(ops: PatchOp[]): string {
 export interface RecordOpts {
   manual?: boolean;
   label?: string;
+  /** Resumo pronto (texto legível); sem ele, o resumo sai dos patches da serialização. */
+  resumo?: string;
 }
 
 /**
@@ -278,7 +280,7 @@ export async function recordCommit(
       at: Date.now(),
       ops,
       text: ehAncora ? newText : undefined,
-      summary: ehAncora ? "marco do documento" : summarize(ops),
+      summary: ehAncora ? "marco do documento" : opts.resumo || summarize(ops),
       manual: !!opts.manual,
       label: opts.label,
     };
