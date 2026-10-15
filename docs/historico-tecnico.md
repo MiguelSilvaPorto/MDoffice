@@ -10334,3 +10334,70 @@ antigas quando fizer sentido.
   nem rolagem de painel), e um documento que descreve o que o app não faz é pior que um documento
   velho. A categoria é **Geral** porque o encaixe vale para as três fitas — repetir a mesma
   entrada em PowerPoint, Word e Excel seria duplicata.
+
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-15 — o "Nova lâmina" saiu da fita (o card da faixa assume)
+- **Local:** o helper `grandeDividido` (topo do arquivo), o grupo "Lâminas" do `inicio()` e do
+  `inserir()`, o `case "slide-novo"` do `abrirMenu` e o laço do título no `atualizar()`
+- **Linha:** `- const grandeDividido = …` e `- ${grandeDividido("slide-new", "slide-novo", …)}`
+  (duas vezes) e `- case "slide-novo": abrirGaleriaDeLayouts(…)` e `- const rotuloUltimo =
+  ROTULOS_LAYOUT[st.ultimoLayout ?? "titulo"]` + o laço `[data-cmd="slide-new"]`; `+ import
+  { ROTULOS_LAYOUT }` saiu do import
+- **Porquê:** o botão da fita e o **card do fim da faixa** faziam o mesmo duas vezes (criar com o
+  último layout e abrir a galeria) — o usuário pediu para ficar só o card (pedido com print). O
+  card já tinha os dois alvos (a prévia cria; o rótulo abre a galeria e ainda **fecha** no segundo
+  clique), então a fita perdeu o botão inteiro. O que ficou **órfão** saiu junto: o helper
+  `grandeDividido` (o botão da Composição/Design não é dividido), o `case "slide-novo"` (ninguém
+  mais emite esse comando — o card chama `abrirGaleriaDeLayouts` direto) e o laço do `atualizar()`
+  que atualizava o título da frente (o título do card já sai certo no `pintarStrip`, a cada
+  desenho). Os grupos "Lâminas" ficam com as ações que não se repetem: **Layout/Duplicar/Excluir/
+  Renomear/Ocultar/Redefinir** na Página Inicial e **Duplicar** no Inserir.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-15 — o comando da lâmina nova fica com um nome só
+- **Local:** o `run()`, no caso da lâmina (logo depois do `switch (cmd)`)
+- **Linha:** `- case "slide-novo":` `- case "slide-new": {` → `+ case "slide-new": {` (e o
+  comentário do bloco)
+- **Porquê:** os dois nomes existiam porque a fita emitia `slide-novo` (o menu da setinha) e o card
+  emitia `slide-new`; com o botão da fita fora, o `slide-novo` não tem mais quem o emita. Manter o
+  nome morto seria a próxima armadilha (um comando tratado que ninguém chama); o card (prévia e
+  galeria) e o menu de contexto usam `slide-new` — a criação continua **no fim** e selecionada.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-15 — o CSS do botão dividido saiu
+- **Local:** o bloco `.ppr-dividido` (frente + setinha + o hover das duas metades)
+- **Linha:** `- .ppr-dividido { … } ` e as regras `.ppr-dividido …` (sete regras)
+- **Porquê:** nenhum botão dividido sobrou na fita — o CSS ficaria morto (e um ajuste futuro nele
+  não teria efeito nenhum, o que confunde quem lê). O estilo da prévia do card
+  (`.pp-thumb-add-corpo`) fica, que é o que o card usa.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 — os pinos do "Nova lâmina" apontam para o card
+- **Local:** a seção da galeria de layouts (o pino do menu), o bloco do botão dividido e o da
+  duplicação na aba Inserir
+- **Linha:** `- "Nova lâmina abre a galeria (não a lista de texto)"` → `+ "o card da faixa abre a
+  galeria de layouts (e a fita não tem mais o 'Nova lâmina')"`; `- "Nova lâmina é um botão
+  dividido…"` → `+ "a fita não tem mais o 'Nova lâmina' (nem o botão dividido)"`; `- "o título da
+  frente diz qual layout…"` → `+ "o título do card diz qual layout o clique vai criar"`; o pino do
+  Inserir passou a prender o `slide-dup` sem o `slide-new`; e o do CSS trocou as regras do
+  `.ppr-dividido` pela ausência delas
+- **Porquê:** os quatro pinos prendiam o desenho que saiu; sem a troca, o teste ficaria vermelho por
+  um motivo já decidido (ou pior: alguém "consertaria" trazendo o botão de volta). O pino novo
+  prende o que importa agora: **o card é o dono das duas ações** e a fita não tem mais o comando.
+
+## docs/powerpoint.md e docs/ui-deckcraft-abas.md
+
+### 2026-10-15 — as docs contam a criação pelo card
+- **Local:** `docs/powerpoint.md` (o item "Lâminas" e a lista dos popups da fita) e as duas notas
+  de recriação do `docs/ui-deckcraft-abas.md`
+- **Linha:** `- "**Nova lâmina** é um **botão dividido**…"` → `+ "Quem cria é o card…"`; `-
+  Popups da fita (…, Nova lâmina, …)` → sem ele; as notas passaram a dizer que o botão saiu da fita
+  e o card faz as duas coisas
+- **Porquê:** as quatro frases descreviam a fita com o botão — e a nota do DeckCraft dizia
+  explicitamente que o mdOffice tinha "Nova lâmina com menu de layouts no grupo Lâminas do Inserir".
+  Com o botão fora, a doc mentiria.

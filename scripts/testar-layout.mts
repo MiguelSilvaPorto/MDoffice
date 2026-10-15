@@ -664,9 +664,9 @@ checa("a miniatura acompanha a proporção do deck", /stageRatio\(setup\)/.test(
 
 const fitaPpt = ler("src/powerpoint/ui/fita.ts");
 checa(
-  "Nova lâmina abre a galeria (não a lista de texto)",
-  /case "slide-novo":\s*abrirGaleriaDeLayouts\(ancora, est\.setup/.test(fitaPpt),
-  "o menu ainda é a lista de texto"
+  "o card da faixa abre a galeria de layouts (e a fita não tem mais o 'Nova lâmina')",
+  /abrirGaleriaDeLayouts\(e\.currentTarget as HTMLElement, this\.setup, \(l\) => this\.run\("slide-new", l\)\)/.test(ppt) && !/slide-novo/.test(fitaPpt),
+  "o card ficaria sem a galeria (ou o botão da fita voltaria)"
 );
 checa(
   "Layout abre a mesma galeria com o atual destacado",
@@ -707,18 +707,17 @@ checa(
   (fitaPpt.match(/grupo\("Composição"/g) ?? []).length === 1 && !/grupo\("Composição"/.test(fitaPpt.slice(0, fitaPpt.indexOf("private design(): string {"))),
   "o grupo aparece mais de uma vez (ou fora da aba Design)"
 );
-// "Nova lâmina" vira botão dividido: a frente cria com o ÚLTIMO layout e a setinha abre a galeria
+// "Nova lâmina" saiu da fita a pedido: quem cria é o card do fim da faixa, com os DOIS alvos —
+// a prévia cria com o último layout e o rótulo "+ Nova lâmina" abre a galeria. O botão dividido
+// (e o helper) não existem mais.
 checa(
-  "Nova lâmina é um botão dividido (frente cria; setinha abre a galeria)",
-  /const grandeDividido = \(acao: string, menu: string/.test(fitaPpt) &&
-    /data-cmd="\$\{acao\}"/.test(fitaPpt) &&
-    /data-cmd="\$\{menu\}" data-menu="1"/.test(fitaPpt) &&
-    /grandeDividido\("slide-new", "slide-novo"/.test(fitaPpt),
-  "a frente e a setinha não são alvos separados"
+  "a fita não tem mais o 'Nova lâmina' (nem o botão dividido)",
+  !/grandeDividido/.test(fitaPpt) && !/data-cmd="slide-new"|slide-new/.test(fitaPpt) && !/grupo\("Lâminas"[\s\S]{0,120}i-plus/.test(fitaPpt),
+  "o botão dividido (ou o helper morto) voltaria"
 );
 checa(
-  "o título da frente diz qual layout o clique vai criar",
-  /rotuloUltimo = ROTULOS_LAYOUT\[st\.ultimoLayout \?\? "titulo"\]/.test(fitaPpt) && /Nova lâmina no fim \(\$\{rotuloUltimo\}\)/.test(fitaPpt),
+  "o título do card diz qual layout o clique vai criar",
+  /const rotuloUltimo = ROTULOS_LAYOUT\[this\.ultimoLayout\]/.test(ppt) && /const titulo = `Nova lâmina no fim \(\$\{rotuloUltimo\}\)`/.test(ppt),
   "o tooltip não acompanharia o último layout"
 );
 checa(
@@ -747,12 +746,11 @@ checa(
   "o card perderia a prévia, o rótulo deixaria de abrir a galeria (ou o \"+\" voltaria ao canto)"
 );
 checa(
-  "css: as duas metades do botão dividido e a prévia do card têm estilo próprio",
-  /\.ppr-dividido\s*\{[^}]*display:\s*inline-flex/s.test(ler("src/styles/powerpoint-edicao.css")) &&
-    /\.ppr-dividido \.ppr-dividido-seta\s*\{[^}]*min-width:\s*0/s.test(ler("src/styles/powerpoint-edicao.css")) &&
-    /\.pp-thumb-add \.pp-thumb-add-corpo\s*\{[^}]*width:\s*calc\(100% - 14px\)/s.test(ler("src/styles/powerpoint.css")) &&
-    !/pp-thumb-add-(previa|mais)/.test(ler("src/styles/powerpoint.css")),
-  "o botão dividido ficaria com duas bordas (ou a prévia sem estilo)"
+  "css: a prévia do card tem estilo próprio (e o botão dividido saiu do CSS)",
+  /\.pp-thumb-add \.pp-thumb-add-corpo\s*\{[^}]*width:\s*calc\(100% - 14px\)/s.test(ler("src/styles/powerpoint.css")) &&
+    !/pp-thumb-add-(previa|mais)/.test(ler("src/styles/powerpoint.css")) &&
+    !/ppr-dividido/.test(ler("src/styles/powerpoint-edicao.css")),
+  "a prévia ficaria sem estilo (ou o CSS do botão dividido ficaria morto)"
 );
 checa(
   "a lâmina nova entra no FIM (e não depois da atual)",
@@ -763,7 +761,7 @@ checa(
 );
 checa(
   "as dicas dizem que a lâmina nova vai para o fim",
-  /Nova lâmina no fim/.test(fitaPpt) && /Nova lâmina no fim/.test(ppt) && !/depois da atual/.test(fitaPpt + ppt)
+  /Nova lâmina no fim/.test(ppt) && !/depois da atual/.test(fitaPpt + ppt)
 );
 
 const cssPpt = ler("src/styles/powerpoint-edicao.css");
@@ -1774,9 +1772,9 @@ console.log("\nPowerPoint: duplicar lâmina na fita e no clique direito da minia
   const fita = ler("src/powerpoint/ui/fita.ts");
   const ppt = ler("src/powerpoint/powerpoint.ts");
   checa(
-    "a aba Inserir também tem o Duplicar lâmina",
-    /grandeDividido\("slide-new", "slide-novo", ic\("i-plus"\), "Nova lâmina"[\s\S]{0,240}\$\{grande\("slide-dup"/.test(fita),
-    "o botão só existe na Página Inicial"
+    "a aba Inserir também tem o Duplicar lâmina (e o Nova lâmina saiu das duas abas)",
+    /grupo\(\r?\n\s*"Lâminas",\r?\n\s*`\$\{grande\("slide-dup"/.test(fita) && !/slide-new/.test(fita),
+    "o Duplicar só existiria na Página Inicial (ou o Nova lâmina voltaria)"
   );
   checa(
     "a miniatura abre menu próprio no clique direito",

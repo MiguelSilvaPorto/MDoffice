@@ -153,7 +153,7 @@ Não é uma fita: é uma tela cheia que substitui fita, lâminas e barra de stat
 | Reset | Devolve a lâmina ao layout (tira o que foi acrescentado) | Com lâmina aberta | Lâmina com seta circular | — |
 | Section | Menu "Add Section" / "Remove All Sections" | Com lâmina aberta | Aba de pasta | — |
 
-**Notas para recriar no mdOffice:** o mdOffice cobre Nova lâmina (com menu de layouts), Layout, Duplicar, Excluir, Renomear, Ocultar e Redefinir. Faltam Seções (adicionar/remover todas) e "Slides from Outline…". O DeckCraft não tem Renomear/Ocultar aqui — o mdOffice tem a mais.
+**Notas para recriar no mdOffice:** o mdOffice cobre Nova lâmina (no card do fim da faixa: a prévia cria e o rótulo abre a galeria de layouts), Layout, Duplicar, Excluir, Renomear, Ocultar e Redefinir. Faltam Seções (adicionar/remover todas) e "Slides from Outline…". O DeckCraft não tem Renomear/Ocultar aqui — o mdOffice tem a mais.
 
 ### Grupo "Fonte"
 
@@ -240,7 +240,7 @@ amarela da referência.
 |---|---|---|---|---|
 | New Slide (dividido) | Cria lâmina; a seta abre só a grade de layouts | Com lâmina aberta | Lâmina com "+" | Ctrl+Shift+N |
 
-**Notas para recriar no mdOffice:** a fita do mdOffice já tem "Nova lâmina" com menu de layouts no grupo Lâminas do Inserir; equivalente coberto.
+**Notas para recriar no mdOffice:** o mdOffice atende este botão no **card "+ Nova lâmina" do fim da faixa** (a prévia cria com o último layout; o rótulo abre a galeria). Na **fita** ele **não existe mais** — saiu a pedido, porque o card fazia o mesmo duas vezes; a aba Inserir ficou com o **Duplicar** no grupo Lâminas.
 
 ### Grupo "Tabelas"
 

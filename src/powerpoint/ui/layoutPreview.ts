@@ -67,7 +67,8 @@ export function galeriaDeLayouts(setup: DeckSetup, atual?: SlideLayout): string 
 
 /**
  * Abre a galeria de layouts ancorada num elemento; `aoEscolher` recebe o layout clicado. É o mesmo
- * popup na fita (Nova lâmina/Layout) e no "+" do card da faixa — uma implementação só.
+ * popup no **card do fim da faixa** ("+ Nova lâmina") e no botão **Layout** da fita — uma
+ * implementação só.
  */
 export function abrirGaleriaDeLayouts(ancora: HTMLElement, setup: DeckSetup, aoEscolher: (l: SlideLayout) => void, atual?: SlideLayout): void {
   const el = abrirPopup(ancora, galeriaDeLayouts(setup, atual), { classe: "pp-pop-galeria pp-pop-layouts" });

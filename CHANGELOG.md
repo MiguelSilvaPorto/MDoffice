@@ -415,6 +415,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O "Nova lâmina" saiu da fita — o card do fim da faixa assumiu tudo**: o botão da fita
+  (**Página Inicial ▸ Lâminas**, e o gêmeo na aba **Inserir**) fazia o mesmo que o **card
+  "+ Nova lâmina"** do fim da faixa: os dois criavam com o último layout e os dois abriam a
+  galeria. Agora quem manda é o **card**: a **prévia** cria a lâmina na hora (com o último
+  layout — a primeira nasce Capa) e o **rótulo "+ Nova lâmina"** abre a **galeria em grade**
+  com a miniatura de cada layout. O título do card diz qual layout o clique vai usar. Os grupos
+  **Lâminas** das duas abas ficam com o resto (Layout, Duplicar, Excluir, Renomear, Ocultar e
+  Redefinir na Página Inicial; Duplicar no Inserir). O botão dividido saiu com o helper e o CSS
+  dele, e o comando `slide-novo` (o menu da setinha) ficou sem dono e saiu junto — o card chama
+  a galeria direto. A lâmina nova continua entrando **no fim** e já selecionada.
+
 - **A apresentação nova nasce clara — o tema do app não decide o papel da lâmina**: o padrão de
   fábrica da apresentação era o tema **Escuro**, então quem usava o app no escuro abria uma lâmina
   escura sem ter pedido. Agora ela nasce com **papel branco** (tema **Claro**) e o tema do app fica

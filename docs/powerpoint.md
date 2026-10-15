@@ -120,15 +120,15 @@ avisado ao abrir (nunca some em silêncio).
   **Duplicar** está na Página Inicial e na aba **Inserir**). O **clique direito na miniatura**
   abre um menu do app — **Duplicar lâmina**, **Nova lâmina no fim**, **Renomear…**, **Ocultar/
   Mostrar na apresentação** e **Excluir lâmina** — agindo na lâmina clicada (antes caía no menu do
-  navegador: Voltar/Atualizar/Salvar como/Imprimir/Inspecionar). **Nova lâmina** é um **botão
-  dividido**: o **clique na frente** cria a lâmina **na hora**, com o **último layout escolhido** — a
-  primeira nasce **Capa**, e a preferência sobrevive ao recarregar; a **setinha ▾** (e o **Layout**)
-  abre a **galeria em grade** com a **miniatura de cada layout** (os espaços como silhuetas cinzas,
-  na proporção do deck), onde o atual vem destacado — clicar cria a lâmina com aquele layout (ou
-  aplica na atual) e passa a ser o "último". No **card "+ Nova lâmina" do fim da faixa** o mesmo par:
-  a **prévia** cria com o último layout e o **rótulo** abre a galeria — o "+" redondo que pendia do
-  canto da prévia saiu (o rótulo assumiu a função dele). A **lâmina nova entra no fim** da
-  apresentação e já fica selecionada.
+  navegador: Voltar/Atualizar/Salvar como/Imprimir/Inspecionar). Quem **cria lâmina** é o **card
+  "+ Nova lâmina" do fim da faixa** (o botão da fita saiu a pedido — ele fazia o mesmo duas vezes):
+  a **prévia** cria a lâmina **na hora**, com o **último layout escolhido** — a primeira nasce
+  **Capa**, e a preferência sobrevive ao recarregar — e o **rótulo "+ Nova lâmina"** abre a
+  **galeria em grade** com a **miniatura de cada layout** (os espaços como silhuetas cinzas, na
+  proporção do deck), onde o atual vem destacado; clicar lá cria a lâmina com aquele layout e passa
+  a ser o "último". O **Layout** da fita abre a mesma galeria para trocar o layout da lâmina atual.
+  O "+" redondo que pendia do canto da prévia saiu (o rótulo assumiu a função dele). A **lâmina nova
+  entra no fim** da apresentação e já fica selecionada.
 - **Histórico: a lâmina em foco nas duas versões**: no **Histórico** (rodapé do documento), as abas
   **Alterações** e **Versões** de uma apresentação mostram a **lâmina em foco no editor** como
   **duas mini lâminas lado a lado** — **esquerda: como estava; direita: como ficou** — em vez do
@@ -146,7 +146,7 @@ avisado ao abrir (nunca some em silêncio).
   grupos colapsam sem sobrar nada. O tamanho que você escolhe arrastando a borda de baixo continua
   valendo (o ajuste **soma-se** a ele) e agora tem **teto**: o menor entre **1,5×** e **um terço da
   janela** — numa janela baixa a faixa não come a tela.
-- **Popups da fita (Formas, Template, Layout, Nova lâmina, cores, bordas…)**: abrir e **fechar
+- **Popups da fita (Formas, Template, Layout, cores, bordas…)**: abrir e **fechar
   pelo mesmo botão** — clicar de novo nele **recolhe** o que estava aberto (antes o clique no
   próprio botão era ignorado pelo "fecha ao clicar fora" e o comando rodava outra vez, reabrindo).
   Clicar fora ou `Esc` continua fechando, e clicar em **outro** botão troca o popup de lugar.

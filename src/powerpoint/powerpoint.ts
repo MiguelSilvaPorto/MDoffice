@@ -1980,10 +1980,8 @@ export class PowerPointHost {
 
     switch (cmd) {
       // ---- lâmina ----
-      // a fita emite "slide-novo" e o botão "+" da faixa emite "slide-new":
-      // os dois nomes fazem a mesma coisa (antes só um deles era tratado e o
-      // botão "Nova lâmina" da fita ficava sem efeito)
-      case "slide-novo":
+      // "slide-new" é o comando do card do fim da faixa: a prévia cria com o último layout e o
+      // rótulo "+ Nova lâmina" abre a galeria (que chama este mesmo comando com o layout escolhido)
       case "slide-new": {
         this.registrar();
         // a lâmina nova herda o fundo e as decorações fixas da atual e já vem com as caixas do
