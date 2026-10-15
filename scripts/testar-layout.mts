@@ -2274,6 +2274,13 @@ console.log("\naba Desenhar: as ferramentas de traço num lugar só");
     /grupo\(\r?\n\s*"Formas",[\s\S]{0,900}forma-rapida:5[\s\S]{0,900}forma-rapida:13/.test(fita),
     "sem as formas rápidas a aba só teria caneta"
   );
+  checa(
+    "a prévia do traço é o mesmo desenho do final (pt e suave, com o encaixe do assistente)",
+    /svgPathDePontos\(pontosDoDesenhoLivre\(paraPt\(this\.traco\), !!ctx\.pincel\?\.assistente\)\)/.test(palcoPpt) &&
+      /viewBox="0 0 \$\{ctx\.dim\.w\} \$\{ctx\.dim\.h\}"/.test(palcoPpt) &&
+      !/vector-effect="non-scaling-stroke"/.test(palcoPpt),
+    "no zoom alto a prévia saía fina e serrilhada enquanto o traço final era grosso e curvo"
+  );
 }
 
 console.log("\ntinta: marca-texto, borracha e converter em forma");

@@ -23,7 +23,7 @@ import { CANTO_ROTULO, CANTOS, cantosDe, valoresComSelecao, type Canto } from ".
 import { alvoDaConexao, bolinhaDaConexao } from "./edicao/ligacoes";
 import { textoAltura, textoLargura, textoX, textoY } from "./edicao/medida";
 import { temTexto } from "./edicao/texto";
-import { svgPathDePontosPct, type PontoTraco } from "./edicao/desenho";
+import { pontosDoDesenhoLivre, svgPathDePontos, type PontoTraco } from "./edicao/desenho";
 
 const ZOOM_MIN = 40;
 /** Até 800%: a lâmina é HTML (vetorial), então ampliar não perde nitidez. */
@@ -74,7 +74,7 @@ export interface ContextoPalco {
   /** animações da lâmina, na ordem — viram selos numerados sobre as formas (aba Animações) */
   animacoes: Animacao[];
   /** estilo do lápis (só no modo desenho): cor e espessura do traço ao vivo */
-  pincel: { cor: string; w: number } | null;
+  pincel: { cor: string; w: number; assistente?: boolean } | null;
 }
 
 export interface CelulasSel {
@@ -368,11 +368,18 @@ export class Stage {
     for (const g of this.guias) {
       html.push(g.eixo === "v" ? `<div class="pp-guia v" style="left:${g.pos}%"></div>` : `<div class="pp-guia h" style="top:${g.pos}%"></div>`);
     }
+    // A prévia do traço e da curva é o MESMO desenho do que vai ficar: os pontos viram o caminho
+    // suave no espaço em pt da lâmina (antes eram uma polilinha em % com `non-scaling-stroke`, que
+    // no zoom alto saía fina e serrilhada enquanto o traço final era grosso e curvo). Com o
+    // assistente ligado, a prévia do traço já mostra o encaixe nos eixos — o mesmo
+    // `pontosDoDesenhoLivre` do final.
+    const paraPt = (pts: PontoTraco[]) =>
+      pts.map((p) => ({ x: (p.x / 100) * ctx.dim.w, y: (p.y / 100) * ctx.dim.h, ...(p.reto ? { reto: true } : {}) }));
     if (this.traco && this.traco.length > 1) {
-      const d = this.traco.map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join("");
+      const d = svgPathDePontos(pontosDoDesenhoLivre(paraPt(this.traco), !!ctx.pincel?.assistente));
       html.push(
-        `<svg class="pp-traco" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">` +
-          `<path d="${d}" fill="none" stroke="#${ctx.pincel?.cor ?? "888888"}" stroke-width="${ctx.pincel?.w ?? 2}" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`
+        `<svg class="pp-traco" viewBox="0 0 ${ctx.dim.w} ${ctx.dim.h}" aria-hidden="true">` +
+          `<path d="${d}" fill="none" stroke="#${ctx.pincel?.cor ?? "888888"}" stroke-width="${ctx.pincel?.w ?? 2}" stroke-linecap="round" stroke-linejoin="round"/></svg>`
       );
     }
     if (this.pontosCurva.length > 0) {
@@ -383,10 +390,10 @@ export class Stage {
       const cor = ctx.pincel?.cor ?? "888888";
       const w = ctx.pincel?.w ?? 2;
       const fechando = this.pertoDoInicio && this.pontosCurva.length >= 3;
-      const d = svgPathDePontosPct(pts, fechando);
+      const d = svgPathDePontos(paraPt(pts), fechando);
       html.push(
-        `<svg class="pp-traco pp-curva-preview" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">` +
-          `<path d="${d}" fill="${fechando ? "#" + cor : "none"}" fill-opacity="${fechando ? "0.15" : "0"}" stroke="#${cor}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>` +
+        `<svg class="pp-traco pp-curva-preview" viewBox="0 0 ${ctx.dim.w} ${ctx.dim.h}" aria-hidden="true">` +
+          `<path d="${d}" fill="${fechando ? "#" + cor : "none"}" fill-opacity="${fechando ? "0.15" : "0"}" stroke="#${cor}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>` +
         `</svg>`
       );
       for (let i = 0; i < this.pontosCurva.length; i++) {

@@ -256,7 +256,7 @@ export class PowerPointHost {
         celulas: this.celulasDaSelecao(),
         cantosSel: this.cantosSel,
         animacoes: normalizarAnimacoes(this.atual().animacoes) ?? [],
-        pincel: this.ferramenta?.tipo === "desenho" || this.ferramenta?.tipo === "curva" ? { cor: this.pincelUsado().cor, w: this.pincel.w } : null,
+        pincel: this.ferramenta?.tipo === "desenho" || this.ferramenta?.tipo === "curva" ? { cor: this.pincelUsado().cor, w: this.pincel.w, assistente: this.pincel.assistente && this.pincel.tipo !== "marca" } : null,
       }),
       aoSelecionar: (ids) => this.selecionar(ids),
       aoSelecionarCantos: (c) => this.selecionarCantos(c),

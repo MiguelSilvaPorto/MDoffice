@@ -483,16 +483,16 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
 
 // ---------------------------------------------------------------- curva por pontos de parada
 {
-  // 1) svgPathDePontosPct: aberta e fechada
+  // 1) svgPathDePontos: aberta e fechada
   const pts = [
     { x: 10, y: 10 },
     { x: 50, y: 30 },
     { x: 80, y: 10 },
   ];
-  const dAberta = D.svgPathDePontosPct(pts, false);
+  const dAberta = D.svgPathDePontos(pts, false);
   ok("curva por pontos: svg aberto contém M e C e não tem Z", dAberta.startsWith("M") && dAberta.includes("C") && !dAberta.endsWith("Z"));
 
-  const dFechada = D.svgPathDePontosPct(pts, true);
+  const dFechada = D.svgPathDePontos(pts, true);
   ok("curva por pontos: svg fechado termina com Z e liga de volta", dFechada.startsWith("M") && dFechada.endsWith("Z"));
 
   // 2) ponto com canto reto (reto: true) gera comando L
@@ -501,7 +501,7 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
     { x: 50, y: 10, reto: true },
     { x: 80, y: 40 },
   ];
-  const dCanto = D.svgPathDePontosPct(ptsComCanto, false);
+  const dCanto = D.svgPathDePontos(ptsComCanto, false);
   ok("curva por pontos: ponto reto gera segmento L", dCanto.includes("L50.00 10.00"));
 
   // 3) formaDeCurva: aberta e fechada

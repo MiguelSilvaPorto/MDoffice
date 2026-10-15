@@ -11170,3 +11170,64 @@ antigas quando fizer sentido.
   no mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que ainda
   não entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** da lista do Frontend,
   como as promoções anteriores; as entradas das outras sessões na seção ficaram **intactas**.
+
+## src/powerpoint/edicao/desenho.ts
+
+### 2026-10-15 · a prévia do traço · `svgPathDePontos` (o nome sem o "Pct")
+- **Local:** o gerador da string SVG dos pontos (era `svgPathDePontosPct`)
+- **Linha:** `- svgPathDePontosPct` · `+ svgPathDePontos` (o corpo é o mesmo); a doc passa a dizer
+  que a unidade é a dos pontos recebidos
+- **Porquê:** a prévia do traço passou a receber pontos em **pt** (não em %) e o nome viraria
+  mentira. A função sempre foi só "pontos → path SVG" — ela nunca converteu unidade nenhuma.
+
+## src/powerpoint/stage.ts
+
+### 2026-10-15 · a prévia do traço · o mesmo caminho do final (e no espaço em pt)
+- **Local:** o desenho do overlay — o traço ao vivo e a prévia da Curva; o `ContextoPalco.pincel`
+  ganha `assistente?: boolean`
+- **Linha:** `- a polilinha M/L em % com viewBox 0 0 100 100 + preserveAspectRatio="none" +
+  vector-effect="non-scaling-stroke"` · `+ paraPt(pontos)` (as coordenadas da lâmina em pt) ·
+  `+ svgPathDePontos(pontosDoDesenhoLivre(paraPt(this.traco), !!ctx.pincel?.assistente))` ·
+  `+ viewBox="0 0 ${ctx.dim.w} ${ctx.dim.h}"` nas duas prévias (traço e Curva) · os `reto` do
+  ponto de parada viajam junto no `paraPt`
+- **Porquê:** o traço final é grosso, curvo e suave (cúbicas, `suavizarPontos` ×2 + RDP + o encaixe
+  do assistente); a prévia era uma **polilinha fina** porque o `non-scaling-stroke` mantém a
+  espessura em px de tela e o viewBox 100×100 esticado distorce a geometria — no zoom alto as duas
+  ficam visivelmente diferentes ✗ (print do usuário). Agora as duas passam pelo MESMO caminho:
+  `pontosDoDesenhoLivre` (a função do final) dentro do viewBox em pt da lâmina — a espessura, o
+  arredondamento e o encaixe do assistente aparecem **enquanto se desenha**.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-15 · a prévia do traço · o assistente chega ao palco
+- **Local:** o contexto do render (`pincel`, nos `contexto: () => ({…})` do palco)
+- **Linha:** `+ assistente: this.pincel.assistente && this.pincel.tipo !== "marca"`
+- **Porquê:** a prévia precisa saber se o traço vai ser encaixado nos eixos — o marca-texto nunca é
+  (ele sai fiel à mão, por definição ✓), então o flag já sai filtrado do host.
+
+## scripts/testar-desenho-assistido.mjs
+
+### 2026-10-15 · a prévia do traço · o nome novo nos 4 usos
+- **Local:** o bloco "curva por pontos de parada"
+- **Linha:** `~` as 4 chamadas de `D.svgPathDePontosPct` viram `D.svgPathDePontos` (e o comentário)
+- **Porquê:** as checagens são as mesmas (aberta/fechada, o `reto` vira `L`) — só o nome mudou; o
+  caso do `reto` é o que garante que os pontos da Curva continuam saindo com as quinas.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · a prévia do traço · a checagem do caminho fiel
+- **Local:** o fim do bloco "aba Desenhar" (o traço num lugar só)
+- **Linha:** `novo` — a prévia usa `svgPathDePontos(pontosDoDesenhoLivre(paraPt(this.traco), …))`,
+  o viewBox é o pt da lâmina nas duas prévias e **não** há `vector-effect="non-scaling-stroke"`
+- **Porquê:** a fidelidade da prévia é o pedido do usuário e pode regredir em silêncio (a prévia
+  continua "funcionando" — só volta a ser fina e serrilhada no zoom). A negativa do
+  `non-scaling-stroke` prende o sintoma exato do print.
+
+## docs/powerpoint.md
+
+### 2026-10-15 · a prévia do traço · a bala do desenho à mão
+- **Local:** "Desenho à mão (Draw) e Curva por pontos" (depois da primeira bala)
+- **Linha:** `+` a bala da prévia ao vivo (o caminho suave em pt + o encaixe do assistente na
+  prévia; a Curva no mesmo espaço)
+- **Porquê:** o documento do módulo descreve o que o app faz; a prévia deixou de ser um desenho
+  diferente do que fica.

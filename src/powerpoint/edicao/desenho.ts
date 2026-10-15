@@ -907,8 +907,12 @@ export function formaDoTraco(pontos: PontoTraco[], pincel: Pincel, est: EstiloDe
   return comPincel(s, pincel);
 }
 
-/** Gera a string SVG path d em % (para pré-visualização ao vivo da curva). */
-export function svgPathDePontosPct(pts: PontoTraco[], fechado = false): string {
+/**
+ * A string SVG `d` dos pontos — a MESMA cubic do caminho final — nas unidades recebidas (a prévia
+ * viva passa os pontos em pt da lâmina; quem tiver pontos em % passa %). Reta onde o trecho está
+ * exatamente no eixo ou marcado `reto`, como no `caminhoDePontos`.
+ */
+export function svgPathDePontos(pts: PontoTraco[], fechado = false): string {
   if (pts.length < 2) return "";
   const n = pts.length;
   const f = (v: number) => v.toFixed(2);
