@@ -11942,3 +11942,14 @@ antigas quando fizer sentido.
 - **Linha:** `+` a frase do caminho com a caixa no pedaço visível (o preset tem a elipse inteira)
 - **Porquê:** a bala dizia do arco e da cauda reta, mas não de onde fica a caixa depois do
   reconhecimento — que era o que o print expôs.
+
+## CHANGELOG.md
+
+### 2026-10-15 · o arco com a caixa no pedaço visível · a promoção da entrada
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não promove (no instante do commit a entrada ainda não está na main), então a
+  promoção anda depois: a caixa do arco no pedaço visível (e73da06). Promovi só a entrada DESTA
+  tarefa — as que seguem em "Não adicionado" (o Estúdio — Regiões, a aba Animações, o Estúdio do
+  Desenhar, a aba Design completa e o Template com desenho) são de sessões com trabalho aberto,
+  mexer nelas criaria duplicata ou conflito.

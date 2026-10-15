@@ -413,14 +413,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **O arco no desenho fica com a caixa no pedaço visível (não na elipse inteira)**: o arco
-  reconhecido guardava a caixa da **elipse inteira e girada** — a seleção pegava um retângulo
-  enorme, "jogava para fora" do traço e o encaixe mexia na elipse, não no desenho (print do
-  usuário). Agora o arco vira um **caminho** com a mesma curva (a elipse amostrada) e a caixa
-  colada no pedaço desenhado: medido num quarto de círculo de raio 120, a caixa passou de 240×240
-  para **121×119**; o "Converter em forma" segue o mesmo caminho, e o `.pptx` sai como custGeom com
-  curvas (o mesmo desenho no Office). Testes: `npm run test:desenho` e `npm run test:pptx`.
-
 - **Estúdio · Regiões: o mapa dos contornos** (fase 2 do Estúdio) — dentro do Estúdio, o botão
   **Regiões** liga o mapa: **passar o ponteiro acende a face sob ele** (véu do acento com contorno
   tracejado) e **clicar isola aquela região** — a fronteira deixa de ser a box inteira e passa a ser
@@ -479,6 +471,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **O arco no desenho fica com a caixa no pedaço visível (não na elipse inteira)**: o arco
+  reconhecido guardava a caixa da **elipse inteira e girada** — a seleção pegava um retângulo
+  enorme, "jogava para fora" do traço e o encaixe mexia na elipse, não no desenho (print do
+  usuário). Agora o arco vira um **caminho** com a mesma curva (a elipse amostrada) e a caixa
+  colada no pedaço desenhado: medido num quarto de círculo de raio 120, a caixa passou de 240×240
+  para **121×119**; o "Converter em forma" segue o mesmo caminho, e o `.pptx` sai como custGeom com
+  curvas (o mesmo desenho no Office). Testes: `npm run test:desenho` e `npm run test:pptx`.
 
 - **A forma criada cobre o traçado todo (o canto com retas não vira um arco solto)**: o canto do
   cartão desenhado com retas curtas + curva era reconhecido como um **arco de uma elipse enorme e
