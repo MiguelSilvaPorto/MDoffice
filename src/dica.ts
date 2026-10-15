@@ -14,6 +14,7 @@
 // - sai no clique, no Esc, na rolagem, ao redimensionar a janela e quando o dono some.
 
 const ESPERA_MS = 380;
+const SAIDA_MS = 130; // a saída suave dura isto (bate com a transição do CSS)
 const MARGEM = 8;
 
 /** Caixa do controle (o que `getBoundingClientRect()` devolve). */
@@ -51,17 +52,28 @@ export function ligarDicas(doc: Document = document): () => void {
   let dono: HTMLElement | null = null;
   let guardado: string | null = null;
   let relogio = 0;
+  let relogioSair = 0;
 
   const esconder = (): void => {
     janela.clearTimeout(relogio);
     relogio = 0;
+    janela.clearTimeout(relogioSair);
+    relogioSair = 0;
     // devolve o title — a não ser que o dono o tenha trocado no meio do hover
     if (dono && guardado !== null && !dono.hasAttribute("title")) dono.setAttribute("title", guardado);
     dono = null;
     guardado = null;
     if (balao && !balao.hidden) {
-      balao.hidden = true;
-      balao.textContent = "";
+      // saída suave: o balão esvanece e só então sai do fluxo (sem isso ele "piscava" ao sumir)
+      balao.classList.add("saindo");
+      relogioSair = janela.setTimeout(() => {
+        relogioSair = 0;
+        if (balao) {
+          balao.hidden = true;
+          balao.classList.remove("saindo");
+          balao.textContent = "";
+        }
+      }, SAIDA_MS);
     }
   };
 
@@ -78,6 +90,9 @@ export function ligarDicas(doc: Document = document): () => void {
       doc.documentElement.append(balao);
     }
     balao.textContent = guardado ?? "";
+    balao.classList.remove("saindo");
+    janela.clearTimeout(relogioSair);
+    relogioSair = 0;
     balao.hidden = false;
     const caixa = dono.getBoundingClientRect();
     const pos = posicaoDaDica(
@@ -108,7 +123,12 @@ export function ligarDicas(doc: Document = document): () => void {
     if ((e as PointerEvent).pointerType === "touch") return; // dedo/caneta: sem dica
     if (dono && !dono.isConnected) esconder(); // o dono sumiu (a fita se redesenhou)
     const alvo = donoDe(e.target);
-    if (alvo) trocar(alvo);
+    if (!alvo) return;
+    // Títulos aninhados (a linha da pasta tem o caminho e o selo interno o seu texto próprio):
+    // mexer DENTRO do dono atual não troca a dica — era isso que a fazia piscar: cada passada
+    // sobre o filho escondia e reabria o balão, alternando os textos.
+    if (dono && dono !== alvo && dono.contains(alvo)) return;
+    trocar(alvo);
   };
 
   const aoSair = (e: Event): void => {

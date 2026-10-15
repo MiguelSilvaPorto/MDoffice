@@ -285,6 +285,18 @@ button {
   display: none;
 }
 
+/* saída suave: o balão esvanece antes de sair do fluxo (antes ele piscava ao sumir) */
+.dica.saindo {
+  opacity: 0;
+  transition: opacity 120ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dica.saindo {
+    transition: none;
+  }
+}
+
 @keyframes dica-entra {
   from {
     opacity: 0;

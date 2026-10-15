@@ -2422,5 +2422,32 @@ console.log("\nfechar todos: o app fica sem nenhuma aba, no Início");
   );
 }
 
+// ---------------------------------------------------------------- dica: aninhada e saída suave
+
+console.log("\ndica: títulos aninhados não piscam e a saída é suave");
+
+{
+  const dica = ler("src/dica.ts");
+  const css = ler("src/styles/base.css");
+  checa(
+    "mexer dentro do dono atual não troca a dica (títulos aninhados)",
+    /if \(dono && dono !== alvo && dono\.contains\(alvo\)\) return;/.test(dica),
+    "cada passada sobre o filho escondia e reabria o balão (o piscar do relato)"
+  );
+  checa(
+    "a saída esvanece antes de sair do fluxo",
+    /const SAIDA_MS = \d+/.test(dica) &&
+      /balao\.classList\.add\("saindo"\)/.test(dica) &&
+      /relogioSair = janela\.setTimeout\([\s\S]{0,200}balao\.hidden = true;[\s\S]{0,120}classList\.remove\("saindo"\)/.test(dica),
+    "o balão sumia de uma vez (sem esvanezer)"
+  );
+  checa(
+    "reabrir cancela a saída pendente",
+    /janela\.clearTimeout\(relogioSair\);[\s\S]{0,120}balao\.hidden = false/.test(dica),
+    "um mostrar logo depois do esconder sumiria pelo timer antigo"
+  );
+  checa("a folha tem a transição da saída (e respeita reduced-motion)", /\.dica\.saindo \{[\s\S]{0,120}opacity: 0/.test(css), "sem a regra, a classe não faz nada");
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

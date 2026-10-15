@@ -1681,6 +1681,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 ### Adicionado (na main)
 
+### Adicionado (na main)
+
 **Backend**
 
 - **A tela Início ganhou a prévia dos documentos** (`preview_file`): um comando novo que devolve o
@@ -2096,6 +2098,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **resumo** de cada alteração também sai do documento: a lista mostra "+2" (o tamanho da mudança de
   verdade) em vez de "+4843 −7259" (o tamanho da serialização). 4 verificações novas em
   `npm run test:layout`.
+- **A dica não pisca mais ao mexer o mouse (e sai suave)**: com **títulos aninhados** — a linha da
+  pasta tem o caminho e o selo interno o texto dele (a lista de arquivos da barra lateral) — cada
+  passada do mouse sobre o filho escondia o balão e o reabria, alternando os textos: o "piscar" do
+  relato. Agora mexer **dentro** do dono atual não troca a dica, e a saída **esvanece** (classe
+  `saindo`, ~130 ms) antes de sair do fluxo, em vez de sumir de uma vez. 4 verificações novas em
+  `npm run test:layout`.
 
 **Ferramentas (dev)**
 
@@ -2184,3 +2192,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   usavam janelas curtas de regex (600 e 320 caracteres) entre um marco e a guarda, e o código
   cresceu em volta (876 e 495) — a `main` ficou com `test:layout` vermelho sem o pincel ter
   quebrado nada. As janelas foram para 1200 e 700 (as guardas testadas são as mesmas).
+- **`testar-layout.mts` estava quebrado na main (sintaxe)**: uma resolução de conflito de outra
+  sessão comeu o `);` e o `}` de uma checagem do histórico — o arquivo nem carregava
+  (`ERR_INVALID_TYPESCRIPT_SYNTAX`) e ninguém via. Consertado no caminho desta tarefa.

@@ -10903,3 +10903,47 @@ antigas quando fizer sentido.
   antes de mover), então a promoção não afirma nada falso. Como nas rodadas anteriores, ela anda num
   passo curto de docs porque o commit do `fechar.ps1` já foi usado para entregar o código —
   promover junto seria afirmar "está na main" antes de estar.
+
+## src/dica.ts
+
+### 2026-10-15 · dica sem piscar · títulos aninhados e saída suave
+- **Local:** `aoEntrar` (o guarda novo) e `esconder`/`mostrar` (a saída com `SAIDA_MS` + `relogioSair`)
+- **Linha:** `+ if (dono && dono !== alvo && dono.contains(alvo)) return;` no `aoEntrar`;
+  `esconder` passou a `+ balao.classList.add("saindo")` e a esconder só **depois** de `SAIDA_MS`
+  (130 ms, com `relogioSair`), e `mostrar` cancela esse timer antes de reabrir
+- **Porquê:** o relato ("fico com o mouse parado, mostra o caminho; qualquer movimento pisca") foi
+  reproduzido com um alvo de **títulos aninhados** — a linha da pasta tem o caminho no `title` e o
+  selo interno ("Aberto numa aba"/"Aberto, com alterações") tem o seu: cada passada sobre o filho
+  trocava o dono, escondia o balão (380 ms depois reabria com o texto do selo) e voltava — o ciclo
+  é o piscar. Mexer DENTRO do dono atual agora não troca a dica (o balão fica com o texto da linha;
+  entrar direto no filho, vindo de fora, ainda mostra o dele). A saída ganhou o esvanece de ~130 ms
+  (classe `saindo` no CSS) antes de sair do fluxo — "sumir de forma suave", como o pedido.
+
+## src/styles/base.css
+
+### 2026-10-15 · dica sem piscar · a transição da saída
+- **Local:** `.dica.saindo` (novo)
+- **Linha:** `novo` — `opacity: 0` com `transition: opacity 120ms` (e `transition: none` sob
+  `prefers-reduced-motion`)
+- **Porquê:** a classe é o que dá o esvanece; sem ela o `hidden` do módulo cortaria o balão de uma
+  vez (era o outro lado do "piscar" relatado).
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · dica sem piscar · 4 verificações (e o arquivo que estava quebrado)
+- **Local:** o bloco novo "dica: títulos aninhados não piscam e a saída é suave"; a checagem do
+  histórico da tarefa anterior (o fecho que faltava)
+- **Linha:** `novo` bloco de 4 checagens; `+ );` e `+ }` fechando o bloco "histórico: a alteração
+  mostra o documento" — o arquivo estava sem eles na `main` (resolução de conflito de outra
+  sessão) e nem carregava (`ERR_INVALID_TYPESCRIPT_SYNTAX`)
+- **Porquê:** as checagens prendem o guarda dos títulos aninhados (o piscar do relato), o esvanece
+  com o timer, o cancelamento ao reabrir e a regra da folha. O conserto do fecho é carona: um teste
+  que não carrega não protege nada — e ninguém tinha visto porque o `fechar.ps1` não roda os testes.
+
+## CHANGELOG.md
+
+### 2026-10-15 · dica sem piscar · as entradas no Geral
+- **Local:** Geral → Adicionado → Frontend (a dica) e → Ferramentas (dev) (o teste quebrado)
+- **Linha:** `novo`
+- **Porquê:** a dica vale para o app todo e o conserto do teste é ferramenta de desenvolvimento; as
+  duas entradas entram já promovidas, como o fechamento exige.
