@@ -678,14 +678,16 @@ checa(
   /export function abrirGaleriaDeLayouts\(ancora: HTMLElement, setup: DeckSetup, aoEscolher/.test(ler("src/powerpoint/ui/layoutPreview.ts")),
   "a fita e o card teriam duas implementações do mesmo popup"
 );
-// o chevron de recolher saiu a pedido: o gesto vive no Ctrl+F1 e no duplo clique numa aba
+// O chevron de recolher saiu a pedido e o duplo clique numa aba TAMBÉM saiu (recolhia a faixa
+// sem querer ao trocar de aba ou ao abrir e fechar um popup pelo botão): o recolher vive no Ctrl+F1.
 checa(
-  "o chevron de recolher saiu (e o gesto do Ctrl+F1/duplo clique ficou)",
+  "recolher a faixa: só o Ctrl+F1 (nem botão, nem duplo clique)",
   !/fita-recolher/.test(ler("src/fita.ts")) &&
     !/\.fita-recolher/.test(ler("src/styles/fita.css")) &&
-    /addEventListener\("dblclick"[\s\S]{0,200}alternarPeloVisivel\(\)/.test(ler("src/fita.ts")) &&
-    /combina\("fita", e\)[\s\S]{0,300}alternarPeloVisivel\(\)/.test(ler("src/fita.ts")),
-  "o botão voltaria (ou o gesto sumiria)"
+    !/addEventListener\("dblclick"[\s\S]{0,200}alternarPeloVisivel\(\)/.test(ler("src/fita.ts")) &&
+    /combina\("fita", e\)[\s\S]{0,300}alternarPeloVisivel\(\)/.test(ler("src/fita.ts")) &&
+    /const repetido = [\s\S]{0,140}< 450;/.test(ler("src/fita.ts")),
+  "o duplo clique (na aba ou num botão) voltaria a recolher a faixa sem querer"
 );
 // A aba Design segue os quatro blocos do Office (Temas · Variantes · Personalizar · Designer) e o
 // "Tamanho" (16:9/4:3) voltou a ter UI — ele ficou sem lugar quando o Configurar apresentação saiu.

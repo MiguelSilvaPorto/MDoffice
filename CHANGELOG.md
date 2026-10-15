@@ -1189,6 +1189,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A faixa não recolhe mais com dois cliques**: o **duplo clique numa aba** (Página Inicial, Inserir…) alternava o recolher da faixa — e quem troca de aba apertado, ou abre e fecha um popup pelo próprio botão (o **Template**, por exemplo), recolhia a faixa **sem querer** ✗ (relato do usuário). O gesto saiu: **recolher/abrir a faixa agora é só o `Ctrl+F1`** (a dica continua no `title` da barra das abas), e **dois cliques no mesmo botão** — inclusive o que abre e fecha um popup — também não recolhem nada. Um clique simples num comando continua devolvendo o espaço, como sempre.
+
 - **A fita não recolhe enquanto se escolhe num popup**: com a faixa recolhida e aberta "por enquanto" (um clique numa aba), **escolher um modelo no Template** — ou qualquer item de um popup do app — **recolhia a faixa do nada** ✗ (print do usuário): o popup vive no `document.body`, então o clique nele contava como "clique fora", e o próprio clique no botão que **abre** o popup já mandava fechar. Agora os popups do app marcam **`app-popup`** (os do PowerPoint, os do Word, o menu do **seletor** de campos e o menu do **Excel**), o clique dentro deles (e dentro de qualquer **diálogo** do app) **não é "fora"** e o comando que abre um popup adia a decisão **um tique** — se o popup já fechou, a faixa volta a fechar como sempre.
 
 - **A lista dos seletores ficou do tamanho do campo (mudar o tamanho da fonte não abre mais uma

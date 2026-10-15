@@ -5728,6 +5728,39 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   de unidade; as três leem o TS e travam as pontas. A marca no `seletor.ts` cobre também o gesto
   de escolher uma fonte/tamanho na fita, que sofria do mesmo recolhimento por baixo do menu.
 
+## src/fita.ts
+
+### 2026-10-14 · recolher · o duplo clique sai (nem na aba, nem no botão)
+- **Local:** `ligarRecolherFita` — o ouvinte de `dblclick` das abas (removido) e o `click` da faixa
+  (a guarda nova do clique repetido); o cabeçalho do arquivo
+- **Linha:** `- o.abas.addEventListener("dblclick", … alternarPeloVisivel())` · `+ let ultimoClique:
+  { alvo: EventTarget | null; t: number } | null = null;` e, no `click`, `+ const repetido =
+  ultimoClique !== null && ultimoClique.alvo === e.target && agora - ultimoClique.t < 450;` com
+  `if (repetido) return;` antes da espera do tique · o cabeçalho passa a dizer que o gesto vive
+  no **Ctrl+F1**
+- **Porquê:** o relato ("se vc dar dois cliques em qualquer aba ele recolhe automaticamente" e
+  "estou falando dos botão página inicial e inserir") — o duplo clique era deliberado ("como no
+  Office"), mas na prática recolhia a faixa **sem querer**, por dois caminhos: (1) trocar de aba
+  com dois cliques rápidos na mesma aba (a barra inteira ouvia o `dblclick`, inclusive o vazio ao
+  lado das abas) e (2) **abrir e fechar um popup pelo próprio botão** — o segundo clique fecha o
+  popup e, sem popup aberto, a decisão do tique recolhia a faixa atrás do gesto ✗. Dois cliques
+  num botão são gesto de "clicar de novo", não de recolher a faixa: o recolher fica no **Ctrl+F1**
+  (com a dica no `title` da barra das abas, que era de onde o gesto vinha sendo anunciado). A
+  guarda do clique repetido é por **alvo + 450 ms** (a janela do duplo clique do sistema) e vale
+  para qualquer botão da faixa — um clique simples continua devolvendo o espaço.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · recolher · a checagem do gesto muda de lado
+- **Local:** a checagem "recolher a faixa: só o Ctrl+F1"
+- **Linha:** o nome e a asserção mudam: saiu a exigência do `dblclick` +
+  `alternarPeloVisivel()` (o gesto que a pessoa não queria) e entrou `!` para ele **não** voltar,
+  mais a guarda do clique repetido (`/const repetido = [\s\S]{0,140}< 450;/`)
+- **Porquê:** a checagem antiga prendia o duplo clique como **requisito** — ela teria de ser
+  mudada junto de qualquer forma; transformá-la na negativa mantém o valor (a regressão de
+  reintroduzir o gesto sem querer é silenciosa: alguém "restaura o Office" e a faixa volta a
+  recolher por acidente).
+
 ---
 
 ## Próximos registros

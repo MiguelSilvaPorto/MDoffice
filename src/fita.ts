@@ -1,6 +1,8 @@
 // Controles compartilhados da faixa de opções (o "topo" do editor):
 //
-// - Recolher/expandir: botão no canto das abas, duplo clique numa aba ou Ctrl+F1.
+// - Recolher/expandir: **Ctrl+F1** (a dica vive no `title` da barra das abas). Sem duplo clique:
+//   dois cliques numa aba — ou num botão, como o Template — recolhiam a faixa sem querer (a
+//   pedido; ver o `click` daqui de baixo, que também ignora o clique repetido).
 //   Recolhida, a faixa se abre só na hora de usar: escolher um comando, mudar um
 //   campo ou clicar fora devolve o espaço automaticamente (como no Office) — menos
 //   enquanto a pessoa escolhe num **popup do app**: eles marcam a classe `app-popup`
@@ -99,11 +101,9 @@ export function ligarRecolherFita(o: OpcoesRecolherFita): { alternar: () => void
     fixar(visivel);
   };
 
-  // duplo clique numa aba fixa ou solta a faixa (como no Office)
-  o.abas.addEventListener("dblclick", (e) => {
-    e.preventDefault();
-    alternarPeloVisivel();
-  });
+  // O duplo clique numa aba NÃO recolhe mais a faixa (a pedido): trocar de aba com dois cliques
+  // — ou abrir e fechar um popup pelo próprio botão — recolhia a faixa do nada. O recolher vive
+  // no Ctrl+F1, com a dica no `title` da barra das abas.
 
   // recolhida: clicar numa aba mostra a faixa por enquanto
   o.abas.addEventListener("click", (e) => {
@@ -116,10 +116,17 @@ export function ligarRecolherFita(o: OpcoesRecolherFita): { alternar: () => void
   // abre um popup (Template, cores, Formas…): aí a faixa fica à vista enquanto a pessoa escolhe
   // (o popup vive no `body` e o clique nele seria "fora"). A decisão espera um tique porque o
   // popup nasce no mesmo clique — e, se ele fechou, a faixa volta a fechar como sempre.
+  // Dois cliques no MESMO botão também não recolhem: quem clica rápido (inclusive no botão que
+  // abre e fecha um popup) não pode ver a faixa sumir no meio do gesto.
+  let ultimoClique: { alvo: EventTarget | null; t: number } | null = null;
   o.el.addEventListener("click", (e) => {
     if (!recolhida || !temporaria) return;
     const t = e.target as HTMLElement;
     if (o.abas.contains(t) || t.closest("select, input, textarea, .wd-ribbon-nav")) return;
+    const agora = performance.now();
+    const repetido = ultimoClique !== null && ultimoClique.alvo === e.target && agora - ultimoClique.t < 450;
+    ultimoClique = { alvo: e.target, t: agora };
+    if (repetido) return;
     setTimeout(() => {
       if (recolhida && temporaria && !document.querySelector(".app-popup")) {
         temporaria = false;
