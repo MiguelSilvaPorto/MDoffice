@@ -11318,3 +11318,37 @@ antigas quando fizer sentido.
   então a promoção anda depois, quando o commit chega (4bf66e8). Promovi só as entradas DESTA
   tarefa: as que seguem em "Não adicionado" (a aba Animações, a aba Design completa e o Template
   com desenho) são de sessões com trabalho aberto — mexer nelas criaria duplicata ou conflito.
+
+## src/powerpoint/edicao/desenho.ts
+
+### 2026-10-15 · o traço que parece círculo · o "fechado" e o arco ficam fiéis
+- **Local:** `reconhecerTraco` — o limite de "fechado" (o `gap`) e os dois limites de desvio do
+  ajuste elíptico (o ramo do arco)
+- **Linha:** `gap <= Math.max(22, diag * 0.22)` → `Math.max(14, diag * 0.07)` ·
+  `absoluto <= Math.max(2.5, diag * 0.018)` → `Math.max(2, diag * 0.008)` ·
+  `absolutoMax <= Math.max(3.5, diag * 0.006)` → `Math.max(2.5, diag * 0.0035)`
+- **Porquê:** o usuário desenhou o topo de um cartão (um "C" com abertura grande) e o assistente
+  **fechou** o traço numa elipse ("sempre tenta fechar um círculo quando parece ser um círculo") —
+  o limite de fechado aceitava um vão de 22% da diagonal (18% passava ✗). Os desvios do arco também
+  eram proporcionais demais para traços grandes: média de 1,8% e máximo de 0,6% da diagonal
+  deixavam um ajuste "quase reto no meio" virar um arco bojudo sem correspondência. Os números
+  novos saem do que a MÃO erra de verdade (a mão fecha um círculo dentro de ~5-6% e uma curva de
+  verdade erra ~0,3-0,8% da diagonal) — o teste sintético do C cobre os dois lados.
+
+## scripts/testar-desenho-assistido.mjs
+
+### 2026-10-15 · o traço que parece círculo · o C com abertura grande
+- **Local:** o bloco do arco, logo depois do topo de cartão com cantos
+- **Linha:** `novo` — um "C" de 330° (abertura de ~18% da diagonal) tem de sair **aberto**
+  (`geom !== "ellipse"`), como desenho livre ou arco
+- **Porquê:** era o caso do relato e ele passava em silêncio (o resultado era uma elipse fechada) —
+  a checagem prende o lado do "fechado"; o "topo de cartão com cantos grandes" (que já existia)
+  prende o lado do arco bojudo.
+
+## docs/powerpoint.md
+
+### 2026-10-15 · o traço que parece círculo · a bala do desenho livre
+- **Local:** "Desenho à mão (Draw) e Curva por pontos" (a bala do desenho livre)
+- **Linha:** `+` as frases do "fechado" (7% da diagonal) e dos desvios do arco (0,8%/0,35%)
+- **Porquê:** o documento dizia que o ajuste "tem que passar pelo traço" — agora diz com que
+  números, que é o que qualquer ajuste futuro precisa respeitar.

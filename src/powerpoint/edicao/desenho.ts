@@ -468,7 +468,10 @@ export function reconhecerTraco(pontos: PontoTraco[]): TracoReconhecido | null {
   const primeiro = pontos[0];
   const ultimo = pontos[pontos.length - 1];
   const gap = Math.hypot(primeiro.x - ultimo.x, primeiro.y - ultimo.y);
-  const fechado = gap <= Math.max(22, diag * 0.22);
+  // "Fechado" é só quando as pontas QUASE se encontram: o limite antigo (22% da diagonal) aceitava
+  // um "C" com uma abertura enorme e o fechava como elipse — o traço que só PARECIA um círculo
+  // virava um círculo fechado (relato do usuário). A mão fecha um círculo dentro de ~5-6%.
+  const fechado = gap <= Math.max(14, diag * 0.07);
   const eps = Math.max(3, diag * 0.045);
   const simplificado = simplificar(pontos, eps);
   const cantos = fechado && simplificado.length > 2 ? simplificado.slice(0, -1) : simplificado;
@@ -551,10 +554,12 @@ export function reconhecerTraco(pontos: PontoTraco[]): TracoReconhecido | null {
     ajuste &&
     Math.min(ajuste.rx, ajuste.ry) > 14 &&
     Math.min(ajuste.rx, ajuste.ry) >= 0.22 * Math.max(ajuste.rx, ajuste.ry) &&
-    ajuste.absoluto <= Math.max(2.5, diag * 0.018) &&
-    // a curva tem que PASSAR pelo traço: a média sozinha aceitava o topo de um cartão (retas com
-    // cantos) como arco largo, e o arco saía bojando por baixo do desenho — o desvio MÁXIMO pega
-    ajuste.absolutoMax <= Math.max(3.5, diag * 0.006) &&
+    // O arco tem de PASSAR pelo traço: os limites antigos (1,8% da diagonal na média e 0,6% no
+    // máximo) deixavam passar um traço quase reto com cantos — o ajuste achava uma elipse enorme
+    // (quase reta no meio) e o arco saía bojudo, sem correspondência com o desenho. Apertados para
+    // a média (0,8%) e o máximo (0,35%), que é o que uma curva de verdade erra na mão.
+    ajuste.absoluto <= Math.max(2, diag * 0.008) &&
+    ajuste.absolutoMax <= Math.max(2.5, diag * 0.0035) &&
     Math.max(ajuste.rx, ajuste.ry) <= diag * 4
   ) {
     const { cx, cy, rx, ry, rot } = ajuste;

@@ -291,6 +291,11 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
   // relato): a média do ajuste era pequena, mas o desvio máximo não — é ele que manda agora
   const comCantos = D.reconhecerTraco(topoDeCaixa(100, 100, 700, 110, 2, 29, 10, 40));
   ok("topo de cartão com cantos grandes: fica livre (não vira arco bojudo)", comCantos === null, JSON.stringify(comCantos));
+  // o traço que só PARECE um círculo (um "C" com abertura grande) não pode ser FECHADO numa
+  // elipse: o limite de "fechado" era 22% da diagonal e fechava um C de ~18% (relato do usuário:
+  // "sempre tenta fechar um círculo quando parece ser um círculo") — o C fica ABERTO (arco)
+  const cAberto = D.reconhecerTraco(arcoElipse(340, 640, 300, 300, 15, 345, 1.6, 11));
+  ok("um C com abertura grande não vira elipse fechada (fica aberto)", cAberto?.geom !== "ellipse", JSON.stringify(cAberto?.geom ?? "livre"));
   const ajusteTopo = D.ajustarElipseOrientada(topoDeCaixa(100, 100, 700, 110, 2, 29, 10, 40));
   ok(
     "ajuste do topo do cartão: o desvio máximo denuncia (média pequena, máximo grande)",
