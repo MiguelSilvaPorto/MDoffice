@@ -454,17 +454,20 @@ Teste: `npm run test:pintura`.
 - O traço sai com **cantos suaves de 90°** (a mesma ideia do Fluxo do Mermaid): alinhado quando as
   bordas se encontram, um "Z" quando as laterais pedem desvio e um "L" quando uma ponta é vertical
   e a outra horizontal.
-- **A cor acompanha as caixas**: a **espinha** (o trecho que sai da origem) sai com a **cor da
-  forma de origem** e a **descida final** (do último canto até o destino) com a **cor da forma de
-  destino** — as duas partes se encontram no mesmo ponto, sem fresta; quando o destino é
-  branco/sem cor, a descida segue a cor da origem. O fim leva **seta**. Se a caixa tem **Estilo de
-  cor**, a ligação usa a **cor-base da rampa** (a do meio), não o tom claro da ponta.
+- **A cor acompanha as caixas, em transição**: o traço é **uma forma só**, com um **gradiente**
+  que sai da **cor da forma de origem** e chega na **cor da forma de destino** — o ângulo é a
+  **reta entre as duas bordas escolhidas**, então num "L" a passagem é diagonal e o canto já é
+  mistura (era o corte seco de antes, uma metade de cada cor). Quando o destino é branco/sem cor, o
+  fim segue a cor da origem; **cores iguais** saem em traço sólido (sem gradiente à toa). O fim
+  leva **seta**, na cor do destino. Se a caixa tem **Estilo de cor**, a ligação usa a **cor-base da
+  rampa** (a do meio), não o tom claro da ponta.
 - A ligação fica **presa às duas formas**: mover, redimensionar, **trocar a cor** ou **apagar**
-  qualquer lado **redesenha** (ou remove) o conector na hora — as duas partes andam juntas (mesma
-  seleção) e valem como formas comuns (colorir, ordem, copiar/colar, desfazer), inclusive na
-  exportação do `.pptx`, onde viram formas livres (como o fluxo do Mermaid). Como o traço é
-  derivado das caixas, **arrastar a própria ligação não muda a rota** — para ajustar, mova as
-  formas ligadas (ou apague a ligação e refaça).
+  qualquer lado **redesenha** (ou remove) o conector na hora — vale como forma comum (colorir,
+  ordem, copiar/colar, desfazer), inclusive na exportação do `.pptx`, onde vira uma **forma livre
+  com o traço em gradiente** (`a:ln` com `a:gradFill`, no mesmo eixo da tela) — como o fluxo do
+  Mermaid. Como o traço é derivado das caixas, **arrastar a própria ligação não muda a rota** —
+  para ajustar, mova as formas ligadas (ou apague a ligação e refaça). Documento salvo antes do
+  gradiente (a ligação em duas metades) se junta numa forma só na primeira mexida na lâmina.
 
 ## Estilos de cor
 

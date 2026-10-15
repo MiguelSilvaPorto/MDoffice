@@ -1841,6 +1841,70 @@ checa("o clique da bolinha também é geométrico (com folga)", /bolinhaDaConexa
 checa("os conectores ficam fora do alvo", (palcoConectar.match(/!s\.liga/g) ?? []).length >= 2, "a linha da ligação atravessa a lâmina e roubaria o ponteiro");
 checa("a histerese existe (a borda não fica piscando)", /margemX/.test(ligPpt) && /margemY/.test(ligPpt), "sem folga o alvo alterna entre a caixa e a de baixo");
 
+// ---------------------------------------------------------------- o traço em gradiente (Conectar)
+
+console.log("\nConectar: o traço em gradiente da origem ao destino (uma forma só)");
+
+{
+  const lig = ler("src/powerpoint/edicao/ligacoes.ts");
+  const desenho = ler("src/powerpoint/render/forma.ts");
+  const exp = ler("src/powerpoint/pptxexport/rica.ts");
+  const imp = ler("src/powerpoint/pptximport/formas.ts");
+  const esquema = ler("src/powerpoint/schema.ts");
+  checa(
+    "a ligação é UMA forma, com o gradiente da origem ao destino",
+    /export function gradienteDaLigacao\(corDe: string, corPara: string, a: Pto, b: Pto\): LineGrad \| undefined/.test(lig) &&
+      /stops: \[\r?\n\s*\{ pos: 0, color: corDe, alpha: 1 \},\r?\n\s*\{ pos: 100, color: corPara, alpha: 1 \},/.test(lig) &&
+      /return \[formaDa\(cmds, corPara, gradienteDaLigacao\(corDe, corPara, a, b\), ligaDe\(/.test(lig),
+    "a ligação voltaria a sair em duas metades de cor (o corte seco)"
+  );
+  checa(
+    "o ângulo do gradiente é a reta entre as bordas (normalizado em 0..360)",
+    /Math\.atan2\(b\.y - a\.y, b\.x - a\.x\)/.test(lig) && /\(g \+ 360\) % 360/.test(lig),
+    "ângulo negativo não existe no `a:lin` do .pptx"
+  );
+  checa(
+    "cores iguais (ou uma sem cor) = traço sólido, sem gradiente",
+    /if \(!corDe \|\| !corPara \|\| corDe\.toUpperCase\(\) === corPara\.toUpperCase\(\)\) return undefined;/.test(lig),
+    "o arquivo carregaria um gradiente à toa"
+  );
+  checa(
+    "a seta fica na cor do destino (o `ln.color` é a cor final)",
+    /function formaDa\(cmds: \(string \| number\)\[\], cor: string, grad: LineGrad \| undefined/.test(lig) &&
+      /color: cor,\r?\n\s*alpha: 1,\r?\n\s*w: TRACO,/.test(lig),
+    "um marcador não pinta com o gradiente: a seta precisa de cor própria"
+  );
+  checa(
+    "o modelo ganhou o traço em gradiente (mesma convenção do preenchimento)",
+    /export interface LineGrad/.test(esquema) && /grad\?: LineGrad;/.test(esquema) && /parte\?: "a" \| "b";/.test(esquema),
+    "sem `Line.grad` a ligação ficaria em cor sólida"
+  );
+  checa(
+    "a tela desenha o gradiente no eixo do `a:lin` (projeção da caixa)",
+    /function defsDeTraco\(id: string, ln: Line \| undefined, w: number, h: number\)/.test(desenho) &&
+      /gradientUnits="userSpaceOnUse"/.test(desenho) &&
+      /const eixo = Math\.abs\(w \* dx\) \+ Math\.abs\(h \* dy\);/.test(desenho) &&
+      /atributosDeTraco\(s\.ln, refTraco\)/.test(desenho),
+    "no objectBoundingBox o ângulo entorta numa faixa fina e a tela deixa de bater com o .pptx"
+  );
+  checa(
+    "o .pptx exporta o traço em `a:gradFill` dentro do `a:ln`",
+    /ln\.grad\?\.stops\?\.length\r?\n\s*\? gradXml\(ln\.grad\.stops, linXml\(ln\.grad\.angle\), ln\.alpha\)/.test(exp) &&
+      /function gradXml\(stops: GradStop\[\], dir: string, alfa = 1\)/.test(exp),
+    "o traço sairia sólido no arquivo"
+  );
+  checa(
+    "a importação preserva o contorno em gradiente",
+    /if \(!g\.radial\) out\.grad = \{ stops: g\.stops, angle: g\.angle \};/.test(imp),
+    "o gradiente voltaria achatado na primeira parada"
+  );
+  checa(
+    "as metades antigas se juntam no recálculo (uma forma por `grupo`)",
+    /if \(vistas\.has\(s\.liga\.grupo\)\) continue;/.test(lig) && /const vistas = new Set<string>\(\);/.test(lig),
+    "documento antigo ficaria com duas formas sobrepostas por ligação"
+  );
+}
+
 // ---------------------------------------------------------------- duplicar lâmina (fita e miniatura)
 
 console.log("\nPowerPoint: duplicar lâmina na fita e no clique direito da miniatura");

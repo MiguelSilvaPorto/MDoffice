@@ -12057,3 +12057,63 @@ antigas quando fizer sentido.
   é a mesma nas três fitas. A entrada fica **antes** da "A faixa de opções não se recolhe mais
   sozinha" (a mais nova primeiro, como o arquivo vinha fazendo) — as duas são deste mesmo dia e
   tocam o mesmo `src/fita.ts`.
+## src/powerpoint/edicao/ligacoes.ts · src/powerpoint/schema.ts
+
+### 2026-10-15 · esta tarefa · a ligação vira uma transição (gradiente da origem ao destino)
+- **Local:** `gradienteDaLigacao`/`anguloDaLigacao` (novos), `formaDa` (era `parteDe`),
+  `caminhoDaLigacao`, `ligacaoParaFormas`, `recomputar` (era `recomputarParte`) e
+  `atualizarLigacoes`; no schema, `LineGrad` e `Line.grad`
+- **Linha:** `if (cmdDe) formas.push(parteDe(cmdDe, corDe, false, …))` + `formas.push(parteDe(cmdPara,
+  corPara, true, …))` → `return [formaDa(cmds, corPara, gradienteDaLigacao(corDe, corPara, a, b),
+  ligaDe(de.id, ladoDe, para.id, ladoPara, uid()), d, est)]`; `caminhoDaLigacao` deixou de devolver
+  `{ de, para }` (o corte existia só para separar as cores) e devolve o caminho inteiro;
+  `+ if (vistas.has(s.liga.grupo)) continue;` no `atualizarLigacoes`
+- **Porquê:** o corte seco era o encontro das duas metades — a cor trocava no ponto e o usuário via
+  verde → azul sem transição. Com o traço em gradiente, a cor passa a ser **uma função do caminho**
+  e as metades deixam de existir: menos uma forma por ligação (a seleção, a cópia e o `.pptx` ficam
+  com um item só), o `Liga.parte` sobrevive apenas para o documento antigo abrir e as metades se
+  juntam no primeiro recálculo — fica a **primeira** do `grupo` (a espinha, que já estava por
+  baixo). O ângulo sai da reta entre as duas bordas (a mesma ideia de "da origem para o destino",
+  agora suave) e é **normalizado em 0..360** porque o `a:lin` do `.pptx` não aceita negativo. Cores
+  iguais (ou uma sem cor) devolvem `undefined` — traço sólido, sem gradiente à toa. A `cor` do `ln`
+  continua sendo a do **destino**: é ela que pinta a seta, e um marcador SVG não usa o gradiente.
+
+## src/powerpoint/render/forma.ts
+
+### 2026-10-15 · esta tarefa · o traço em gradiente no eixo do PowerPoint
+- **Local:** `defsDeTraco` (novo), `atributosDeTraco` (ganhou o `gradRef`) e o `svgDaForma`
+- **Linha:** `stroke="#${ln.color}"` → `stroke="${gradRef || \`#${ln.color}\`}"`; `+ <linearGradient
+  gradientUnits="userSpaceOnUse" x1… y2>` com o eixo = a **projeção da caixa** no ângulo
+- **Porquê:** o preenchimento usa `objectBoundingBox` — e numa faixa fina (o conector é uma) o
+  `objectBoundingBox` **entorta o ângulo**: um gradiente a 45° num retângulo de 200×4 pt sairia
+  quase horizontal. O `a:lin` do PowerPoint é a reta pelo centro no ângulo **de verdade**, com o
+  0%/100% nas pontas da projeção da caixa — então o traço usa `userSpaceOnUse` com essa mesma
+  conta, e a tela e o arquivo desenham **igual** (o preenchimento ficou como estava, para não mexer
+  no que já existe).
+
+## src/powerpoint/pptxexport/rica.ts · pptximport/formas.ts · edicao/formato.ts
+
+### 2026-10-15 · esta tarefa · o gradiente do traço no arquivo (ida e volta)
+- **Local:** `gradXml`/`linXml` (novos, extraídos do `fillXml`), o `lnXml`, o `lerContorno` e o
+  `comLinha`
+- **Linha:** `lnXml`: `+ ln.grad?.stops?.length ? gradXml(ln.grad.stops, linXml(ln.grad.angle),
+  ln.alpha) : <a:solidFill…>`; `lerContorno`: `+ if (!g.radial) out.grad = { stops: g.stops,
+  angle: g.angle };`; `comLinha`: `+ if (patch.color !== undefined) delete n.ln.grad;`
+- **Porquê:** o `a:ln` aceita `a:gradFill` no lugar do `a:solidFill` — é a linha em gradiente do
+  PowerPoint, desenhada no mesmo eixo (o `a:lin`), então o arquivo sai igual à tela. Na volta, o
+  importador **guardava só a primeira parada** e achatava o gradiente (o nosso próprio conector
+  exportado voltaria sólido): agora ele preserva o `grad`. E o `comLinha` limpa o `grad` quando se
+  escolhe uma cor de contorno — sem isso a cor escolhida não apareceria (o traço continuaria no
+  gradiente) até o próximo recálculo.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · esta tarefa · 9 travas do traço em gradiente
+- **Local:** o bloco "Conectar: o traço em gradiente da origem ao destino (uma forma só)"
+- **Linha:** `novo` — uma forma por ligação (e o `return [formaDa(…)]`), o ângulo normalizado,
+  cores iguais = sólido, a seta na cor do destino, o `Line.grad` no modelo, o eixo do `a:lin` na
+  tela, o `a:gradFill` no `.pptx`, o `grad` preservado na importação e as metades antigas se
+  juntando no recálculo
+- **Porquê:** o defeito era visual (o corte de cor) e voltaria sem erro nenhum se alguém separasse
+  as metades de novo; as travas prendem o contrato inteiro — **uma forma**, o gradiente
+  **origem→destino**, o eixo igual ao do arquivo e a migração do documento antigo.

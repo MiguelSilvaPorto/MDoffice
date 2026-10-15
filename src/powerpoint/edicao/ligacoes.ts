@@ -1,10 +1,11 @@
 // Ligações entre formas (PowerPoint): a ferramenta "Conectar" prende uma forma na outra por
 // pontos das bordas e o conector é DERIVADO — ao mover ou redimensionar qualquer lado ele se
-// redesenha. A cor acompanha as caixas: o traço sai com a cor da ORIGEM e o trecho final (depois
-// do último canto) fica com a cor do DESTINO, como num organograma desenhado à mão. A geometria
-// reaproveita a ideia do Fluxo do Mermaid: cantos de 90° com curva.
+// redesenha. A cor acompanha as caixas em TRANSIÇÃO: o traço é UMA forma só, com o gradiente que
+// sai da cor da ORIGEM e chega na cor do DESTINO (o ângulo é a reta entre as duas bordas) — o
+// corte seco de antes (uma metade de cada cor) virou a passagem suave. A geometria reaproveita a
+// ideia do Fluxo do Mermaid: cantos de 90° com curva.
 import { uid } from "../../util";
-import type { GradStop, Lado, Liga, Shape, ShapeBox, Slide } from "../schema";
+import type { GradStop, Lado, Liga, LineGrad, Shape, ShapeBox, Slide } from "../schema";
 import type { EstiloDeck } from "./criar";
 import { ajustarCor } from "./formato";
 import { paraPt, type Dim, type Ret } from "./geometria";
@@ -127,14 +128,11 @@ export function rotaDaLigacao(a: Pto, ladoDe: Lado, b: Pto, ladoPara: Lado): Pto
 }
 
 /**
- * O caminho em comandos, partido em duas partes: a espinha (origem até o corte antes do último
- * canto, já com os cantos anteriores arredondados) e a descida (do corte até o destino, com a
- * curva do último canto). Sem cantos só existe a descida — a rota é uma reta.
- * Os dois trechos compartilham o ponto de corte, então o traço sai contínuo.
+ * O caminho em comandos (M/L/Q) com os cantos de 90° arredondados. A ligação é UMA forma, então
+ * o caminho sai inteiro: o corte que existia aqui servia só para dar uma cor a cada metade.
  */
-export function caminhoDaLigacao(pts: Pto[]): { de: (string | number)[] | null; para: (string | number)[] } {
+export function caminhoDaLigacao(pts: Pto[]): (string | number)[] {
   const cmds: (string | number)[] = ["M", r2(pts[0].x), r2(pts[0].y)];
-  let corte = -1; // índice (no cmds) do "L" que entra no último canto
   for (let i = 1; i < pts.length - 1; i++) {
     const p0 = pts[i - 1];
     const p1 = pts[i];
@@ -143,13 +141,10 @@ export function caminhoDaLigacao(pts: Pto[]): { de: (string | number)[] | null; 
     const d1 = uni(p0, p1);
     const d2 = uni(p1, p2);
     cmds.push("L", r2(p1.x - d1.x * r), r2(p1.y - d1.y * r));
-    if (i === pts.length - 2) corte = cmds.length - 3;
     cmds.push("Q", r2(p1.x), r2(p1.y), r2(p1.x + d2.x * r), r2(p1.y + d2.y * r));
   }
   cmds.push("L", r2(pts[pts.length - 1].x), r2(pts[pts.length - 1].y));
-  const para = corte < 0 ? cmds : (["M", cmds[corte + 1], cmds[corte + 2], ...cmds.slice(corte + 3)] as (string | number)[]);
-  const de = corte < 0 ? null : cmds.slice(0, corte + 3);
-  return { de, para };
+  return cmds;
 }
 
 const quaseBranco = (hex: string): boolean => {
@@ -172,8 +167,30 @@ export function corDaForma(s: Shape): string {
   return "";
 }
 
-/** Comandos -> forma do conector (geometria livre; caixa = caminho + folga). */
-function parteDe(cmds: (string | number)[], cor: string, comSeta: boolean, refs: Liga, d: Dim, est: EstiloDeck): Shape {
+/** Ângulo do gradiente da ligação: da borda de origem para a de destino, na convenção do
+ *  preenchimento (0 = esquerda→direita; 90 = cima→baixo). Normalizado em 0..360 porque o
+ *  `a:lin` do `.pptx` não aceita ângulo negativo. */
+export function anguloDaLigacao(a: Pto, b: Pto): number {
+  const g = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
+  return (g + 360) % 360;
+}
+
+/** O gradiente da ligação: cor da origem (0%) → cor do destino (100%). Cores iguais (ou uma sem
+ *  cor) devolvem `undefined`: o traço sai sólido e o arquivo não carrega um gradiente à toa. */
+export function gradienteDaLigacao(corDe: string, corPara: string, a: Pto, b: Pto): LineGrad | undefined {
+  if (!corDe || !corPara || corDe.toUpperCase() === corPara.toUpperCase()) return undefined;
+  return {
+    stops: [
+      { pos: 0, color: corDe, alpha: 1 },
+      { pos: 100, color: corPara, alpha: 1 },
+    ],
+    angle: anguloDaLigacao(a, b),
+  };
+}
+
+/** Comandos -> forma do conector (geometria livre; caixa = caminho + folga). O traço é o gradiente
+ *  da ligação; `cor` é a do DESTINO — é ela que pinta a seta (um marcador não usa o gradiente). */
+function formaDa(cmds: (string | number)[], cor: string, grad: LineGrad | undefined, liga: Liga, d: Dim, est: EstiloDeck): Shape {
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
@@ -221,50 +238,52 @@ function parteDe(cmds: (string | number)[], cor: string, comSeta: boolean, refs:
     name: "Ligação",
     geom: "custom",
     paths: [{ w: r2(w), h: r2(h), cmds: locais }],
-    ln: { color: cor, alpha: 1, w: TRACO, dash: "solid", join: "round", cap: "round", ...(comSeta ? { tail: "triangle" as const } : {}) },
+    ln: {
+      color: cor,
+      alpha: 1,
+      w: TRACO,
+      dash: "solid",
+      join: "round",
+      cap: "round",
+      tail: "triangle" as const,
+      ...(grad ? { grad } : {}),
+    },
     fillX: { kind: "none" },
-    grupo: refs.grupo,
-    liga: refs,
+    grupo: liga.grupo,
+    liga,
   };
 }
 
-const refs = (de: string, ladoDe: Lado, para: string, ladoPara: Lado, parte: "a" | "b", grupo: string): Liga => ({
+const ligaDe = (de: string, ladoDe: Lado, para: string, ladoPara: Lado, grupo: string): Liga => ({
   de,
   ladoDe,
   para,
   ladoPara,
-  parte,
   grupo,
 });
 
-/** Cria as formas da ligação entre duas formas: a espinha (cor da origem) e a descida (cor do destino). */
+/** Cria a forma da ligação entre duas formas: um traço só, com o gradiente da origem ao destino. */
 export function ligacaoParaFormas(de: Shape, ladoDe: Lado, para: Shape, ladoPara: Lado, d: Dim, est: EstiloDeck): Shape[] {
   const a = pontoDaBorda(paraPt(de.box, d), ladoDe);
   const b = pontoDaBorda(paraPt(para.box, d), ladoPara);
-  const { de: cmdDe, para: cmdPara } = caminhoDaLigacao(rotaDaLigacao(a, ladoDe, b, ladoPara));
+  const cmds = caminhoDaLigacao(rotaDaLigacao(a, ladoDe, b, ladoPara));
   const corPadrao = ajustarCor(est.acento, 0.9);
   const corDe = corDaForma(de) || corPadrao;
   const corPara = corDaForma(para) || corDe;
-  const g = uid();
-  const formas: Shape[] = [];
-  if (cmdDe) formas.push(parteDe(cmdDe, corDe, false, refs(de.id, ladoDe, para.id, ladoPara, "a", g), d, est));
-  formas.push(parteDe(cmdPara, corPara, true, refs(de.id, ladoDe, para.id, ladoPara, "b", g), d, est));
-  return formas;
+  return [formaDa(cmds, corPara, gradienteDaLigacao(corDe, corPara, a, b), ligaDe(de.id, ladoDe, para.id, ladoPara, uid()), d, est)];
 }
 
-/** Recalcula UMA parte da ligação a partir das caixas atuais (mantendo id e nome da forma). */
-function recomputarParte(s: Shape, de: Shape, para: Shape, d: Dim, destaque: string): Shape | null {
+/** Recalcula a ligação a partir das caixas atuais (mantendo id e nome da forma). */
+function recomputar(s: Shape, de: Shape, para: Shape, d: Dim, destaque: string): Shape {
   const l = s.liga!;
   const a = pontoDaBorda(paraPt(de.box, d), l.ladoDe);
   const b = pontoDaBorda(paraPt(para.box, d), l.ladoPara);
-  const { de: cmdDe, para: cmdPara } = caminhoDaLigacao(rotaDaLigacao(a, l.ladoDe, b, l.ladoPara));
-  const cmds = l.parte === "a" ? cmdDe : cmdPara;
-  if (!cmds) return null; // a rota ficou reta: a espinha deixa de existir
+  const cmds = caminhoDaLigacao(rotaDaLigacao(a, l.ladoDe, b, l.ladoPara));
   const corPadrao = ajustarCor(destaque, 0.9);
   const corDe = corDaForma(de) || corPadrao;
-  const cor = l.parte === "a" ? corDe : corDaForma(para) || corDe;
+  const corPara = corDaForma(para) || corDe;
   const est: EstiloDeck = { fonte: s.fontFamily, tamanho: s.fontSize, corTexto: s.color, acento: destaque, paleta: [] };
-  const nova = parteDe(cmds, cor, l.parte === "b", l, d, est);
+  const nova = formaDa(cmds, corPara, gradienteDaLigacao(corDe, corPara, a, b), l, d, est);
   nova.id = s.id;
   nova.name = s.name;
   return nova;
@@ -273,21 +292,28 @@ function recomputarParte(s: Shape, de: Shape, para: Shape, d: Dim, destaque: str
 /**
  * Recalcula todas as ligações da lâmina: mover/redimensionar qualquer lado redesenha o traço, e
  * a caixa apagada leva a ligação junto. É chamada a cada mudança da lâmina (no `substituirSlide`).
+ *
+ * Uma ligação = UMA forma: as metades antigas (documento salvo antes do gradiente) se juntam aqui
+ * — fica a **primeira** do `grupo` (a espinha, que já estava por baixo) e a outra sai. É também o
+ * que mantém o desenho coerente quando a rota fica reta (antes a espinha desaparecia e sobrava só
+ * a descida).
  */
 export function atualizarLigacoes(slide: Slide, d: Dim, destaque: string): Slide {
   if (!slide.shapes.some((s) => s.liga)) return slide;
   const porId = new Map(slide.shapes.map((s) => [s.id, s]));
   const saida: Shape[] = [];
+  const vistas = new Set<string>();
   for (const s of slide.shapes) {
     if (!s.liga) {
       saida.push(s);
       continue;
     }
+    if (vistas.has(s.liga.grupo)) continue;
+    vistas.add(s.liga.grupo);
     const de = porId.get(s.liga.de);
     const para = porId.get(s.liga.para);
     if (!de || !para) continue;
-    const nova = recomputarParte(s, de, para, d, destaque);
-    if (nova) saida.push(nova);
+    saida.push(recomputar(s, de, para, d, destaque));
   }
   return { ...slide, shapes: saida };
 }

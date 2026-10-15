@@ -273,16 +273,20 @@ export type Lado = "topo" | "base" | "esq" | "dir";
 
 /**
  * Ligação presa entre duas formas: o conector guarda de onde sai e onde chega e a geometria é
- * recalculada das caixas (mover qualquer lado reposiciona o traço). Cada ligação tem até duas
- * partes: a = a espinha (cor da origem) e b = a descida final (cor do destino).
+ * recalculada das caixas (mover qualquer lado reposiciona o traço). A ligação é UMA forma, com o
+ * traço em gradiente da cor da origem até a do destino.
  */
 export interface Liga {
   de: string;
   ladoDe: Lado;
   para: string;
   ladoPara: Lado;
-  parte: "a" | "b";
-  /** as duas partes andam juntas (e ficam juntas na seleção) */
+  /** (documento antigo) a ligação era desenhada em duas metades — a "a" (espinha, cor da origem)
+   *  e a "b" (descida com a seta, cor do destino). Hoje é uma forma só: o campo fica apenas para
+   *  os arquivos antigos abrirem, e as metades se juntam na primeira mexida na lâmina. */
+  parte?: "a" | "b";
+  /** id comum das formas da mesma ligação (as metades antigas andavam juntas na seleção; hoje é a
+   *  chave que identifica a ligação no recálculo) */
   grupo: string;
 }
 
@@ -418,11 +422,23 @@ export interface Fill {
   crop?: [number, number, number, number];
 }
 
+/** Traço em gradiente (a ligação do Conectar): as paradas e o ângulo seguem a MESMA convenção do
+ *  preenchimento (0 = da esquerda para a direita; 90 = de cima para baixo), então a tela e o
+ *  `.pptx` desenham igual. O `color`/`alpha` do `Line` continuam valendo de reserva — e são eles
+ *  que pintam as pontas de seta. */
+export interface LineGrad {
+  stops: GradStop[];
+  /** ângulo do gradiente linear, em graus (0 = da esquerda para a direita; 90 = de cima para baixo) */
+  angle?: number;
+}
+
 export interface Line {
   color: string;
   alpha: number;
   /** espessura em pt */
   w: number;
+  /** gradiente do traço; sem ele (ou com as duas cores iguais) o traço é sólido no `color` */
+  grad?: LineGrad;
   dash?: "solid" | "dash" | "dot" | "dashDot" | "lgDash" | "sysDash" | "sysDot";
   cap?: "flat" | "round" | "square";
   join?: "round" | "bevel" | "miter";

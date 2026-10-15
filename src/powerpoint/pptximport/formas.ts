@@ -263,7 +263,10 @@ function lerContorno(ln: No | undefined, cc: ContextoCor, base?: Line): Line | n
   } else {
     const gf = filho(ln, "gradFill");
     const g = gf ? lerGradiente(gf, cc) : undefined;
-    if (g?.stops?.[0]) {
+    if (g?.stops?.length) {
+      // contorno em GRADIENTE: fica guardado (é assim que a ligação do Conectar sai daqui e
+      // volta); o `color` continua sendo a primeira parada — é ele que pinta a seta
+      if (!g.radial) out.grad = { stops: g.stops, angle: g.angle };
       out.color = g.stops[0].color;
       out.alpha = g.stops[0].alpha;
     } else if (!base) {

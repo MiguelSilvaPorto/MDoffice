@@ -461,6 +461,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   continua a **direção da reta** (um terço do trecho da curva, ~o arco de círculo que a mão faz) e o
   `reto` do Alt continua fazendo quina. O ajuste vale para o caminho final **e** para a prévia
   (mesma função nos dois). Teste: `npm run test:desenho`.
+- **A ligação do Conectar vira uma transição (da cor da origem para a do destino)**: o conector era
+  **duas formas** — a espinha na cor da forma de origem e a descida na cor da de destino — e a cor
+  trocava de uma vez no ponto de encontro: um **corte seco** (o verde → azul do relato). Agora é
+  **uma forma só**, com o traço em **gradiente**: 0% = cor da origem, 100% = cor do destino, e o
+  **ângulo é a reta entre as duas bordas escolhidas** — num "L", o trecho reto sai esverdeado, o
+  canto já é mistura e a descida chega azul. A **seta** fica na cor do destino (marcador não pinta
+  com gradiente) e **cores iguais** seguem em traço sólido. O `.pptx` sai com **linha em gradiente**
+  (`a:ln` com `a:gradFill`, no mesmo eixo da tela) e a **importação passou a preservar** contorno em
+  gradiente (antes achatava na primeira parada). Documento salvo antes disso se junta numa forma só
+  na primeira mexida na lâmina. Teste: `npm run test:layout`.
+
 
 - **Aba Design completa: Temas, Variantes, Personalizar e Designer**: a aba tinha só dois grupos
   (fundo e layout) e agora segue os quatro blocos do Office, com a cara do app. **Temas** abre a

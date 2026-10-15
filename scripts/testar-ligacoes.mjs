@@ -1,6 +1,6 @@
-// Testa as ligações entre formas (ferramenta Conectar): a rota ortogonal com cantos suaves, a
-// divisão em duas partes (espinha com a cor da origem / descida com a cor do destino), o
-// redesenho automático quando as caixas se movem e o que acontece ao apagar uma das pontas.
+// Testa as ligações entre formas (ferramenta Conectar): a rota ortogonal com cantos suaves, o
+// traço em GRADIENTE da cor da origem até a do destino (uma forma só), o redesenho automático
+// quando as caixas se movem, a junção das metades antigas e o que acontece ao apagar uma das pontas.
 // Uso: node scripts/testar-ligacoes.mjs
 import { build } from "esbuild";
 import { mkdtempSync } from "node:fs";
@@ -12,8 +12,10 @@ const raiz = new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "
 const tmp = mkdtempSync(join(tmpdir(), "pp-ligacoes-"));
 await build({ entryPoints: [join(raiz, "src/powerpoint/edicao/ligacoes.ts")], bundle: true, platform: "node", format: "esm", outfile: join(tmp, "ligacoes.mjs"), logLevel: "error" });
 await build({ entryPoints: [join(raiz, "src/powerpoint/edicao/operacoes.ts")], bundle: true, platform: "node", format: "esm", outfile: join(tmp, "operacoes.mjs"), logLevel: "error" });
+await build({ entryPoints: [join(raiz, "src/powerpoint/pptxexport/rica.ts")], bundle: true, platform: "node", format: "esm", outfile: join(tmp, "rica.mjs"), logLevel: "error" });
 const L = await import(pathToFileURL(join(tmp, "ligacoes.mjs")).href);
 const O = await import(pathToFileURL(join(tmp, "operacoes.mjs")).href);
+const R = await import(pathToFileURL(join(tmp, "rica.mjs")).href);
 
 let falhas = 0;
 const ok = (nome, cond, detalhe = "") => {
@@ -84,24 +86,18 @@ const emPt = (s, i) => {
   ok("rota mista: \"L\" com canto na coluna do destino", misto2.length === 3 && perto(misto2[1].x, 500) && perto(misto2[1].y, 250), JSON.stringify(misto2));
 }
 
-// ---------------------------------------------------------------- caminho dividido
+// ---------------------------------------------------------------- o caminho inteiro
 {
   const pts = L.rotaDaLigacao({ x: 250, y: 300 }, "base", { x: 500, y: 400 }, "topo");
-  const { de: cmdDe, para: cmdPara } = L.caminhoDaLigacao(pts);
-  ok("caminho: a espinha existe quando há canto", !!cmdDe && cmdDe[0] === "M");
-  ok("caminho: a descida sempre existe", !!cmdPara && cmdPara[0] === "M");
-  // continuidade: o fim da espinha é exatamente o começo da descida
-  const fimDe = { x: cmdDe[cmdDe.length - 2], y: cmdDe[cmdDe.length - 1] };
-  const inicioPara = { x: cmdPara[1], y: cmdPara[2] };
-  ok("caminho: as duas partes se encontram no corte (sem fresta)", perto(fimDe.x, inicioPara.x, 0.01) && perto(fimDe.y, inicioPara.y, 0.01), `${JSON.stringify(fimDe)} vs ${JSON.stringify(inicioPara)}`);
-  // a curva do ÚLTIMO canto pertence à descida (a cor troca ali)
-  ok("caminho: a curva do canto final fica na descida", cmdPara.includes("Q") && !String(fimDe.y).includes("Q"));
-  ok("caminho: a espinha leva a curva dos cantos anteriores", cmdDe.includes("Q"));
-  // a descida termina no ponto de chegada
-  ok("caminho: a descida termina no destino", perto(cmdPara[cmdPara.length - 2], 500, 0.01) && perto(cmdPara[cmdPara.length - 1], 400, 0.01));
+  const cmds = L.caminhoDaLigacao(pts);
+  ok("caminho: começa na origem", cmds[0] === "M" && perto(cmds[1], 250, 0.01) && perto(cmds[2], 300, 0.01), JSON.stringify(cmds));
+  ok("caminho: termina no destino", perto(cmds[cmds.length - 2], 500, 0.01) && perto(cmds[cmds.length - 1], 400, 0.01));
+  ok("caminho: uma curva por canto (Q)", cmds.filter((c) => c === "Q").length === 2, JSON.stringify(cmds));
+  // não há mais corte de cor: o caminho é UM só, com a curva do último canto incluída
+  ok("caminho: a curva do canto final entra no mesmo traço", cmds[cmds.length - 8] === "Q", JSON.stringify(cmds.slice(-8)));
 
   const reto = L.caminhoDaLigacao([{ x: 250, y: 300 }, { x: 250, y: 400 }]);
-  ok("caminho reto: só existe a descida", reto.de === null && reto.para[0] === "M" && reto.para.length === 6, JSON.stringify(reto));
+  ok("caminho reto: um M e um L (sem curva)", reto.length === 6 && reto[0] === "M" && reto[3] === "L", JSON.stringify(reto));
 }
 
 // ---------------------------------------------------------------- cor da caixa
@@ -122,35 +118,52 @@ const emPt = (s, i) => {
   const origem = forma("a", 10, 10, 30, 10, { fillX: { kind: "solid", color: "2F6F4E" } });
   const destino = forma("b", 50, 40, 20, 10, { fillX: { kind: "solid", color: "1F5FA8" } });
   const formas = L.ligacaoParaFormas(origem, "base", destino, "topo", dim, est);
+  const f = formas[0];
 
-  ok("ligação: duas partes (espinha + descida)", formas.length === 2);
-  ok("ligação: a espinha sai com a cor da origem", formas[0].liga.parte === "a" && formas[0].ln.color === "2F6F4E");
-  ok("ligação: a descida sai com a cor do destino e com a seta", formas[1].liga.parte === "b" && formas[1].ln.color === "1F5FA8" && formas[1].ln.tail === "triangle");
-  ok("ligação: a espinha não leva seta", !formas[0].ln.tail);
-  ok("ligação: as partes ficam presas às duas formas", formas[0].liga.de === "a" && formas[0].liga.ladoDe === "base" && formas[0].liga.para === "b" && formas[0].liga.ladoPara === "topo");
-  ok("ligação: as partes andam juntas (mesmo grupo)", !!formas[0].grupo && formas[0].grupo === formas[1].grupo && formas[0].liga.grupo === formas[0].grupo);
-  ok("ligação: o traço tem cantos e pontas arredondados", formas[0].ln.join === "round" && formas[0].ln.cap === "round");
-  ok("ligação: sem preenchimento (só o traço)", formas[0].fillX.kind === "none");
+  ok("ligação: uma forma só (o traço inteiro)", formas.length === 1);
+  ok(
+    "ligação: o traço é o gradiente da origem ao destino",
+    !!f.ln.grad && f.ln.grad.stops[0].color === "2F6F4E" && f.ln.grad.stops[1].color === "1F5FA8",
+    JSON.stringify(f.ln.grad)
+  );
+  ok("ligação: as paradas vão de 0% a 100%", f.ln.grad.stops[0].pos === 0 && f.ln.grad.stops[1].pos === 100);
+  ok("ligação: a seta fica na cor do destino", f.ln.tail === "triangle" && f.ln.color === "1F5FA8");
+  ok("ligação: fica presa às duas formas", f.liga.de === "a" && f.liga.ladoDe === "base" && f.liga.para === "b" && f.liga.ladoPara === "topo");
+  ok("ligação: o grupo identifica a ligação", !!f.grupo && f.liga.grupo === f.grupo);
+  ok("ligação: o traço tem cantos e pontas arredondados", f.ln.join === "round" && f.ln.cap === "round");
+  ok("ligação: sem preenchimento (só o traço)", f.fillX.kind === "none");
 
-  // a descida termina exatamente no ponto de chegada (topo do destino = 60% da lâmina, x 600pt)
-  const fim = emPt(formas[1], formas[1].paths[0].cmds.length - 2);
+  // a seta chega exatamente no ponto escolhido do destino (topo = 40% da lâmina, x 60% = 576pt)
+  const fim = emPt(f, f.paths[0].cmds.length - 2);
   ok("ligação: a seta chega no ponto escolhido do destino", perto(fim.x, 60 / 100 * dim.w, 0.6) && perto(fim.y, 40 / 100 * dim.h, 0.6), `${JSON.stringify(fim)}`);
 
-  // caixa branca no destino: a descida segue a cor da origem
+  // o ângulo é a reta entre as duas bordas escolhidas (a mesma ideia de "da origem para o destino")
+  const pDe = L.pontoDaBorda({ x: 0.1 * dim.w, y: 0.1 * dim.h, w: 0.3 * dim.w, h: 0.1 * dim.h }, "base");
+  const pPara = L.pontoDaBorda({ x: 0.5 * dim.w, y: 0.4 * dim.h, w: 0.2 * dim.w, h: 0.1 * dim.h }, "topo");
+  const esperado = ((Math.atan2(pPara.y - pDe.y, pPara.x - pDe.x) * 180) / Math.PI + 360) % 360;
+  ok("ligação: o ângulo é a reta origem→destino", perto(f.ln.grad.angle, esperado, 0.01), `${f.ln.grad.angle} vs ${esperado}`);
+  ok("ligação: o ângulo nunca é negativo (o `a:lin` do .pptx não aceita)", f.ln.grad.angle >= 0 && f.ln.grad.angle < 360);
+
+  // caixa branca no destino: sem gradiente, o traço fica na cor da origem
   const branca = forma("c", 50, 40, 20, 10, { fillX: { kind: "solid", color: "FFFFFF" }, ln: { color: "EDEDED" } });
-  const formas2 = L.ligacaoParaFormas(origem, "base", branca, "topo", dim, est);
-  ok("ligação para caixa sem cor: a descida segue a cor da origem", formas2[1].ln.color === "2F6F4E");
+  const f2 = L.ligacaoParaFormas(origem, "base", branca, "topo", dim, est)[0];
+  ok("ligação para caixa sem cor: traço sólido na cor da origem", !f2.ln.grad && f2.ln.color === "2F6F4E");
+
+  // cores iguais: sólido (sem gradiente à toa)
+  const igual = forma("d", 50, 40, 20, 10, { fillX: { kind: "solid", color: "2F6F4E" } });
+  const f3 = L.ligacaoParaFormas(origem, "base", igual, "topo", dim, est)[0];
+  ok("cores iguais: traço sólido, sem gradiente", !f3.ln.grad && f3.ln.color === "2F6F4E");
 
   // a ligação de uma caixa estilizada sai na cor-base — e não no tom claro da ponta da rampa
   const estilizada = forma("a", 10, 10, 30, 10, { fillX: { kind: "gradient", stops: [{ pos: 0, color: "32CC67" }, { pos: 45, color: "1F9D55" }, { pos: 100, color: "0E5746" }] } });
   const alvo = forma("b", 50, 40, 20, 10, { fillX: { kind: "solid", color: "1F5FA8" } });
-  const lig = L.ligacaoParaFormas(estilizada, "base", alvo, "topo", dim, est);
-  ok("ligação de caixa estilizada: a espinha usa a cor-base da rampa", lig[0].ln.color === "1F9D55", lig[0].ln.color);
+  const lig = L.ligacaoParaFormas(estilizada, "base", alvo, "topo", dim, est)[0];
+  ok("ligação de caixa estilizada: o gradiente sai da cor-base da rampa", lig.ln.grad.stops[0].color === "1F9D55", lig.ln.grad.stops[0].color);
 
-  // ligação reta: só uma parte (a descida), sem espinha
-  const alinhada = forma("d", 20, 40, 10, 10, { fillX: { kind: "solid", color: "1F5FA8" } });
+  // ligação reta: continua uma forma só (o caminho inteiro, sem curva)
+  const alinhada = forma("e", 20, 40, 10, 10, { fillX: { kind: "solid", color: "1F5FA8" } });
   const reta = L.ligacaoParaFormas(origem, "base", alinhada, "topo", dim, est);
-  ok("ligação reta: uma parte só (a descida)", reta.length === 1 && reta[0].liga.parte === "b" && reta[0].ln.tail === "triangle");
+  ok("ligação reta: uma forma só", reta.length === 1 && reta[0].paths[0].cmds.length === 6);
 }
 
 // ---------------------------------------------------------------- o conector segue as caixas
@@ -163,29 +176,34 @@ const emPt = (s, i) => {
   const sem = lâmina([origem, destino]);
   ok("sem ligações: nada é recalculado", L.atualizarLigacoes(sem, dim, est.acento) === sem);
 
-  // mover a origem: a descida se redesenha (e continua sendo a mesma forma, mesmo id)
+  // mover a origem: o conector se redesenha (e continua sendo a mesma forma, mesmo id)
   const movida = { ...origem, box: { ...origem.box, x: origem.box.x + 12, y: origem.box.y + 4 } };
   const s2 = L.atualizarLigacoes(lâmina([movida, destino, ...partes]), dim, est.acento);
-  const b2 = s2.shapes.find((s) => s.liga?.parte === "b");
-  const b1 = partes[1];
-  ok("mover a caixa: o conector se redesenha", !!b2 && b2.id === b1.id && (b2.box.x !== b1.box.x || b2.box.y !== b1.box.y));
+  const c1 = partes[0];
+  const c2 = s2.shapes.find((s) => s.liga);
+  ok("mover a caixa: o conector se redesenha", !!c2 && c2.id === c1.id && (c2.box.x !== c1.box.x || c2.box.y !== c1.box.y));
   ok("mover a caixa: as outras formas ficam intactas", s2.shapes.find((s) => s.id === "b") === destino);
-  ok("mover a caixa: a cor do trecho continua a da caixa", b2.ln.color === "1F5FA8");
+  ok("mover a caixa: o gradiente continua derivado das caixas", c2.ln.grad.stops[0].color === "2F6F4E" && c2.ln.grad.stops[1].color === "1F5FA8");
+  ok("mover a caixa: o conector não se multiplica", s2.shapes.filter((s) => s.liga).length === 1);
 
   // redimensionar o destino: a chegada acompanha a nova borda
   const esticado = { ...destino, box: { ...destino.box, w: 30, h: 16 } };
   const s3 = L.atualizarLigacoes(lâmina([origem, esticado, ...partes]), dim, est.acento);
-  const b3 = s3.shapes.find((s) => s.liga?.parte === "b");
-  const fim3 = emPt(b3, b3.paths[0].cmds.length - 2);
+  const c3 = s3.shapes.find((s) => s.liga);
+  const fim3 = emPt(c3, c3.paths[0].cmds.length - 2);
   ok("redimensionar: a ligação segue a nova borda", perto(fim3.y, 40 / 100 * dim.h, 0.6), `${JSON.stringify(fim3)}`);
 
   // apagar o destino leva a ligação inteira junto
   const s4 = L.atualizarLigacoes(lâmina([origem, ...partes]), dim, est.acento);
   ok("apagar a caixa: a ligação vai junto", !s4.shapes.some((s) => s.liga) && s4.shapes.length === 1);
 
-  // apagar uma parte da ligação não derruba a outra (a outra continua presa)
-  const s5 = L.atualizarLigacoes(lâmina([origem, destino, partes[1]]), dim, est.acento);
-  ok("meia ligação: a parte que sobrou continua seguindo a caixa", s5.shapes.length === 3 && s5.shapes[2].liga.parte === "b");
+  // documento ANTIGO (a ligação salva em duas metades): o recálculo junta numa forma só
+  const metadeA = { ...c1, liga: { ...c1.liga, parte: "a" } };
+  const metadeB = { ...c1, id: "ligacao-b", liga: { ...c1.liga, parte: "b" } };
+  const s5 = L.atualizarLigacoes(lâmina([origem, destino, metadeA, metadeB]), dim, est.acento);
+  const ligas = s5.shapes.filter((s) => s.liga);
+  ok("documento antigo: as duas metades viram uma forma só", ligas.length === 1, `${ligas.length}`);
+  ok("documento antigo: fica a de baixo (a espinha) com o gradiente refeito", ligas[0]?.id === c1.id && ligas[0]?.ln.grad?.stops?.[0]?.color === "2F6F4E");
 }
 
 // ---------------------------------------------------------------- copiar e colar
@@ -203,7 +221,7 @@ const emPt = (s, i) => {
   ok("duplicar tudo: o grupo da cópia é novo", ligaCopia.grupo !== partes[0].grupo && ligaCopia.liga.grupo === ligaCopia.grupo);
 
   // copiar só o conector: ele perde o grude (vira um traço solto, com o desenho que tinha)
-  const solto = O.clonarFormas([partes[1]])[0];
+  const solto = O.clonarFormas([partes[0]])[0];
   ok("duplicar só o conector: ele deixa de ficar preso", !solto.liga && !!solto.paths?.length);
 }
 
@@ -236,6 +254,36 @@ console.log("\nalvo do modo Conectar (a bolinha manda; a caixa de cima vence; se
   const bol = L.bolinhaDaConexao(formas, { x: 30, y: 41.2 }, rx, ry);
   ok("a bolinha do clique devolve a caixa e o lado", bol?.id === "a" && bol?.lado === "base", JSON.stringify(bol));
   ok("fora das bolinhas, o clique não pega nada", L.bolinhaDaConexao(formas, { x: 30, y: 30 }, rx, ry) === null);
+}
+
+// ---------------------------------------------------------------- o XML do .pptx (linha em gradiente)
+{
+  const origem = forma("a", 10, 10, 30, 10, { fillX: { kind: "solid", color: "2F6F4E" } });
+  const destino = forma("b", 50, 40, 20, 10, { fillX: { kind: "solid", color: "1F5FA8" } });
+  const lig = L.ligacaoParaFormas(origem, "base", destino, "topo", dim, est)[0];
+  const setup = { aspect: "16:9", theme: "claro", showNumber: false, footer: "", fontFamily: "Segoe UI", fontSize: 18, bg: "" };
+  const xml = new R.Escritor(setup).lamina(lâmina([origem, destino, lig])).xml;
+  // o `<a:ln>` da ligação é o que tem o gradiente (as caixas sem contorno saem com `<a:noFill/>`;
+  // o `(?:\s[^>]*)?` é para não casar com `<a:lnTo>` da geometria)
+  const lns = [...xml.matchAll(/<a:ln(?:\s[^>]*)?>([\s\S]*?)<\/a:ln>/g)].map((m) => m[1]);
+  const linha = lns.find((l) => l.includes("a:gradFill")) ?? "";
+  ok("pptx: o `a:ln` da ligação leva `a:gradFill`", !!linha, `${lns.length} contornos na lâmina`);
+  ok(
+    "pptx: as paradas vão da cor da origem (0%) à do destino (100%)",
+    /<a:gs pos="0"><a:srgbClr val="2F6F4E"\/><\/a:gs>/.test(linha) && /<a:gs pos="100000"><a:srgbClr val="1F5FA8"\/><\/a:gs>/.test(linha),
+    linha.slice(0, 160)
+  );
+  ok("pptx: o eixo é o mesmo ângulo do modelo (`a:lin`)", /<a:lin ang="\d+" scaled="0"\/>/.test(linha));
+  ok("pptx: a seta continua no fim (`a:tailEnd`)", /<a:tailEnd type="triangle"\/>/.test(linha));
+
+  // cores iguais: o MESMO conector sai sólido (sem `a:gradFill`)
+  const igual = forma("d", 50, 40, 20, 10, { fillX: { kind: "solid", color: "2F6F4E" } });
+  const ligIgual = L.ligacaoParaFormas(origem, "base", igual, "topo", dim, est)[0];
+  const xml2 = new R.Escritor(setup).lamina(lâmina([origem, igual, ligIgual])).xml;
+  ok(
+    "pptx: ligação de cores iguais sai sólida (`a:solidFill`, sem `a:gradFill`)",
+    /<a:ln[^>]*><a:solidFill><a:srgbClr val="2F6F4E"\/><\/a:solidFill>/.test(xml2) && !/a:gradFill/.test(xml2)
+  );
 }
 
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");

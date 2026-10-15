@@ -2,7 +2,7 @@
 // modelo — geometria, preenchimento, contorno, sombra, imagem recortada, texto por trecho — sem passar pelo
 // PptxGenJS (que não sabe de gradiente, formas livres nem formatação por trecho).
 // O PptxGenJS continua montando o pacote (mestre, layout, tema, notas); este módulo só troca o conteúdo das lâminas.
-import { aspectSize, type CustPath, type DeckSetup, type Fill, type Line, type Para, type Run, type Shape, type Slide } from "../schema";
+import { aspectSize, type CustPath, type DeckSetup, type Fill, type GradStop, type Line, type Para, type Run, type Shape, type Slide } from "../schema";
 import { envolventeDe } from "../edicao/geometria";
 import { adjDeCanto, cantosDe, representacaoDeCantos } from "../edicao/formato";
 import { extDeMime } from "../edicao/midia";
@@ -141,15 +141,23 @@ function corXml(cor: string, alpha = 1): string {
   return alpha < 1 ? `<a:srgbClr val="${hex(cor)}"><a:alpha val="${Math.round(alpha * 100000)}"/></a:srgbClr>` : `<a:srgbClr val="${hex(cor)}"/>`;
 }
 
+/** Gradiente no XML — vale para o preenchimento e para o TRAÇO (a ligação do Conectar). O `alfa`
+ *  multiplica a opacidade das paradas: é assim que a opacidade do traço chega no `.pptx` (o
+ *  `a:gradFill` não tem um `alpha` próprio). */
+function gradXml(stops: GradStop[], dir: string, alfa = 1): string {
+  const gs = stops.map((p) => `<a:gs pos="${Math.round(p.pos * 1000)}">${corXml(p.color, p.alpha * alfa)}</a:gs>`).join("");
+  return `<a:gradFill rotWithShape="1"><a:gsLst>${gs}</a:gsLst>${dir}</a:gradFill>`;
+}
+
+/** Eixo de um gradiente linear: o mesmo ângulo do modelo (0 = esquerda→direita; 90 = cima→baixo). */
+const linXml = (angle: number | undefined) => `<a:lin ang="${Math.round((angle ?? 0) * 60000)}" scaled="0"/>`;
+
 function fillXml(f: Fill | undefined, ctx: Ctx): string {
   if (!f || f.kind === "none") return "<a:noFill/>";
   if (f.kind === "solid") return `<a:solidFill>${corXml(f.color ?? "000000", f.alpha ?? 1)}</a:solidFill>`;
   if (f.kind === "gradient" && f.stops?.length) {
-    const gs = f.stops.map((p) => `<a:gs pos="${Math.round(p.pos * 1000)}">${corXml(p.color, p.alpha)}</a:gs>`).join("");
-    const dir = f.radial
-      ? `<a:path path="circle"><a:fillToRect l="50000" t="50000" r="50000" b="50000"/></a:path>`
-      : `<a:lin ang="${Math.round((f.angle ?? 0) * 60000)}" scaled="0"/>`;
-    return `<a:gradFill rotWithShape="1"><a:gsLst>${gs}</a:gsLst>${dir}</a:gradFill>`;
+    const dir = f.radial ? `<a:path path="circle"><a:fillToRect l="50000" t="50000" r="50000" b="50000"/></a:path>` : linXml(f.angle);
+    return gradXml(f.stops, dir);
   }
   if (f.kind === "image" && f.src) {
     const id = ctx.idImagem(f.src);
@@ -169,7 +177,11 @@ function lnXml(ln: Line | undefined): string {
   if (!ln || ln.w <= 0) return `<a:ln><a:noFill/></a:ln>`;
   const attrs = [`w="${Math.round(ln.w * EMU_PT)}"`];
   if (ln.cap) attrs.push(`cap="${ln.cap === "round" ? "rnd" : ln.cap === "square" ? "sq" : "flat"}"`);
-  let dentro = `<a:solidFill>${corXml(ln.color, ln.alpha)}</a:solidFill>`;
+  // o traço pode ser um GRADIENTE (a ligação do Conectar): o `a:ln` aceita `a:gradFill` no lugar
+  // do `a:solidFill`, e o PowerPoint desenha o eixo igual ao da tela (o mesmo `a:lin`)
+  let dentro = ln.grad?.stops?.length
+    ? gradXml(ln.grad.stops, linXml(ln.grad.angle), ln.alpha)
+    : `<a:solidFill>${corXml(ln.color, ln.alpha)}</a:solidFill>`;
   if (ln.dash && ln.dash !== "solid") dentro += `<a:prstDash val="${ln.dash}"/>`;
   dentro += ln.join === "round" ? "<a:round/>" : ln.join === "bevel" ? "<a:bevel/>" : ln.join === "miter" ? `<a:miter lim="800000"/>` : "";
   if (ln.head) dentro += `<a:headEnd type="${ln.head}"/>`;

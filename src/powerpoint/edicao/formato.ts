@@ -62,6 +62,9 @@ export function comLinha(s: Shape, patch: Partial<Line> | null): Shape {
     return n;
   }
   n.ln = { ...LINHA_PADRAO, ...(s.ln ?? {}), ...patch };
+  // escolher uma cor sólida desliga o gradiente do traço: sem isso a cor escolhida não apareceria
+  // (a ligação do Conectar é gradiente; o próximo recálculo volta a derivá-lo das caixas)
+  if (patch.color !== undefined) delete n.ln.grad;
   for (const k of ["head", "tail"] as const) if (n.ln[k] === undefined) delete n.ln[k];
   return n;
 }

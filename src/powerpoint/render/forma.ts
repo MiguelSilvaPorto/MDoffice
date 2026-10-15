@@ -226,14 +226,42 @@ const DASH_REL: Record<string, number[]> = {
   dashDot: [4, 3, 1, 3],
 };
 
-function atributosDeTraco(ln: Line | undefined): string {
+function atributosDeTraco(ln: Line | undefined, gradRef = ""): string {
   if (!ln || ln.w <= 0) return `stroke="none"`;
-  const partes = [`stroke="#${ln.color}"`, `stroke-width="${n3(Math.max(ln.w, 0.1))}"`];
+  const partes = [`stroke="${gradRef || `#${ln.color}`}"`, `stroke-width="${n3(Math.max(ln.w, 0.1))}"`];
   if (ln.alpha < 1) partes.push(`stroke-opacity="${n3(ln.alpha)}"`);
   partes.push(`stroke-linecap="${ln.cap ?? "butt"}"`, `stroke-linejoin="${ln.join ?? "miter"}"`);
   const d = ln.dash && DASH_REL[ln.dash];
   if (d) partes.push(`stroke-dasharray="${d.map((x) => n3(x * Math.max(ln.w, 1))).join(" ")}"`);
   return partes.join(" ");
+}
+
+/**
+ * Gradiente do TRAÇO (a ligação do Conectar). O eixo é o do `a:lin` do PowerPoint — a reta pelo
+ * centro da caixa no ângulo dado, com o 0%/100% nas pontas da **projeção da caixa** nesse eixo —
+ * e não o `objectBoundingBox` do preenchimento: numa faixa fina (o conector é uma), o
+ * `objectBoundingBox` entortaria o ângulo e a tela deixaria de bater com o `.pptx`.
+ * A opacidade do traço (`ln.alpha`) entra pelo `stroke-opacity` do `atributosDeTraco` — o mesmo
+ * produto que o `alfa` das paradas faz no `.pptx`.
+ */
+function defsDeTraco(id: string, ln: Line | undefined, w: number, h: number): { defs: string; ref: string } {
+  const g = ln?.grad;
+  if (!ln || !g?.stops?.length) return { defs: "", ref: "" };
+  const stops = g.stops
+    .map((p) => `<stop offset="${n3(p.pos)}%" stop-color="#${p.color}" stop-opacity="${n3(p.alpha)}"/>`)
+    .join("");
+  const rad = (((g.angle ?? 0) % 360) * Math.PI) / 180;
+  const dx = Math.cos(rad);
+  const dy = Math.sin(rad);
+  const eixo = Math.abs(w * dx) + Math.abs(h * dy);
+  const cx = w / 2;
+  const cy = h / 2;
+  return {
+    defs:
+      `<linearGradient id="t${id}" gradientUnits="userSpaceOnUse" x1="${n3(cx - (dx * eixo) / 2)}" y1="${n3(cy - (dy * eixo) / 2)}"` +
+      ` x2="${n3(cx + (dx * eixo) / 2)}" y2="${n3(cy + (dy * eixo) / 2)}">${stops}</linearGradient>`,
+    ref: `url(#t${id})`,
+  };
 }
 
 function defsDeFill(id: string, fill: Fill | undefined, w: number, h: number, ctx: CtxRender): { defs: string; ref: string; alpha: number } {
@@ -327,7 +355,10 @@ function svgDaForma(s: Shape, ctx: CtxRender, soContorno = false): string {
   const tr = tracadosDa(s, ww, hh);
   const fill = soContorno ? undefined : s.fillX;
   const { defs, ref, alpha } = defsDeFill(s.id, fill, Math.max(ww, 0.01), Math.max(hh, 0.01), ctx);
-  let marcas = "";
+  // o gradiente do TRAÇO entra nos `defs` junto com as setas: a seta sai na cor do destino (o
+  // `ln.color`), porque um marcador não pinta com o gradiente da forma
+  const { defs: defsTraco, ref: refTraco } = defsDeTraco(s.id, s.ln, Math.max(ww, 0.01), Math.max(hh, 0.01));
+  let marcas = defsTraco;
   let mi = "";
   let mf = "";
   if (s.ln?.head) {
@@ -338,7 +369,7 @@ function svgDaForma(s: Shape, ctx: CtxRender, soContorno = false): string {
     marcas += marcadorDeSeta(`mt${s.id}`, s.ln.tail, s.ln.color, true);
     mf = ` marker-end="url(#mt${s.id})"`;
   }
-  const traco = atributosDeTraco(s.ln);
+  const traco = atributosDeTraco(s.ln, refTraco);
   const caminhos = tr
     .map((t) => {
       const preenche = t.preenche && ref !== "none";
