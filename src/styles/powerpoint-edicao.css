@@ -1663,6 +1663,10 @@ button.ppr.big .ppr-gal-ic svg {
   position: absolute;
   top: 10px;
   left: 12px;
+  /* por cima da faixa de lâminas e do palco: miniaturas e lâmina são posicionadas e vêm DEPOIS
+     no DOM — sem o z-index elas pintam por cima da barrinha (o usuário via só o "8" aparecendo
+     por trás das miniaturas). Fica abaixo do Estúdio (61) e dos popups (300). */
+  z-index: 60;
   display: flex;
   align-items: center;
   gap: 3px;

@@ -11711,3 +11711,17 @@ antigas quando fizer sentido.
   seguem em "Não adicionado" (a aba Animações, o Estúdio do Desenhar, a aba Design completa e o
   Template com desenho) são de sessões com trabalho aberto, mexer nelas criaria duplicata ou
   conflito.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-15 · barrinha do pincel · o z-index que o Estúdio levou junto
+- **Local:** `.pp-pincel` (o bloco da barrinha)
+- **Linha:** `+ z-index: 60;` (o valor original, devolvido)
+- **Porquê:** a barrinha nasceu com `z-index: 60` (bcad3eb) e o commit do Estúdio (07f1505) tirou a
+  linha ao acrescentar a trilha do Estúdio com `z-index: 61` — sem o dela, a barrinha cai para o
+  empilhamento padrão e as miniaturas (`.pp-thumb`, `position: relative`) e a lâmina (`.pp-slide`,
+  `position: relative`) — posicionadas e **depois** dela no DOM — pintam por cima. O usuário via só
+  o "8" (a espessura acesa, azul) aparecendo no vão entre as miniaturas (print). O valor 60 mantém
+  a escada do arquivo: por cima de tudo do palco (40–56), abaixo do Estúdio (61) e dos popups (300).
+  A verificação no `test:layout` prende as duas pontas (a barrinha com 60, o Estúdio com 61 e os
+  popups com 300) para a linha não sumir de novo num ajuste de camadas.

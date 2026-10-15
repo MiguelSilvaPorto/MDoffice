@@ -283,6 +283,8 @@ avisado ao abrir (nunca some em silêncio).
   arredondado, elipse, triângulo, linha, seta e arco** — no mesmo lugar e tamanho, já como forma
   normal (editável, com medidas em cm e ida e volta no `.pptx`). O traço torto é **endireitado
   antes de medir** (a mão nunca acerta o ângulo), então a forma acompanha o que foi desenhado.
+  Com o lápis ligado, a **barrinha do pincel** flutua **por cima da faixa de lâminas e do palco**
+  (ela não some atrás das miniaturas nem da lâmina).
 - A **prévia ao vivo é o próprio traço final**: os pontos viram o caminho **suave** no espaço em
   **pt da lâmina** (a espessura acompanha o zoom) e, com o **Assistente** ligado, o **encaixe nos
   eixos aparece enquanto se desenha** — antes a prévia era uma polilinha em % que no zoom alto saía

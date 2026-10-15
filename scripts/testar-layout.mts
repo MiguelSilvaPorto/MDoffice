@@ -441,6 +441,21 @@ checa(
   "cada forma ganharia haste de girar e a tela ficaria poluída"
 );
 
+// ---------------------------------------------------------------- PowerPoint: a barrinha do pincel por cima
+
+console.log("\nPowerPoint: a barrinha do pincel fica por cima da faixa e do palco");
+
+checa(
+  "a barrinha do pincel tem z-index (sem ele, miniaturas e lâmina pintam por cima)",
+  /\.pp-pincel\s*\{[^}]*z-index:\s*60/.test(cssPptSel),
+  "a barrinha voltaria a ficar atrás das miniaturas — só o '8' aparecendo por trás"
+);
+checa(
+  "a barrinha fica abaixo do Estúdio (61) e dos popups (300)",
+  /\.pp-estudio\s*\{[^}]*z-index:\s*61/.test(cssPptSel) && /\.pp-popup\s*\{[^}]*z-index:\s*300/.test(cssPptSel),
+  "a barrinha taparia o Estúdio ou um popup aberto"
+);
+
 // ---------------------------------------------------------------- PowerPoint: texto x mover
 
 console.log("\nPowerPoint: o texto da forma escolhida é do texto (e o mover fica na beirada)");
