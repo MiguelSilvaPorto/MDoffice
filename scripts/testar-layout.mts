@@ -497,38 +497,55 @@ console.log("\nPowerPoint: a fita métrica mostra a medida enquanto arrasta");
   const medida = ler("src/powerpoint/edicao/medida.ts");
   const cssMedida = ler("src/styles/powerpoint-edicao.css");
   checa(
-    "a medida é pura, em cm e com a vírgula do painel",
-    /export function textoDoTamanho\(box: ShapeBox, d: Dim\): string/.test(medida) &&
-      /export function textoDaPosicao\(box: ShapeBox, d: Dim\): string/.test(medida) &&
+    "a medida é pura, em cm, com a vírgula do painel — um texto por linha",
+    /export function textoX\(box: ShapeBox, d: Dim\): string/.test(medida) &&
+      /export function textoY\(box: ShapeBox, d: Dim\): string/.test(medida) &&
+      /export function textoLargura\(box: ShapeBox, d: Dim\): string/.test(medida) &&
+      /export function textoAltura\(box: ShapeBox, d: Dim\): string/.test(medida) &&
       /toLocaleString\("pt-BR", \{ maximumFractionDigits: 1 \}\)/.test(medida) &&
       / cm`;/.test(medida),
     "sem módulo puro o teste do Node não alcança a conta; sem o cm o número não bate com o painel"
   );
   checa(
-    "o balão aparece nos três gestos (mover, redimensionar e desenhar)",
+    "a medida aparece nos três gestos (mover, redimensionar e desenhar)",
     /const gesto = this\.modo\?\.t;/.test(palcoPpt) &&
       /if \(gesto === "mover" \|\| gesto === "redim" \|\| gesto === "criar"\)/.test(palcoPpt) &&
       /gesto === "criar" \? this\.rect : sel\.length === 1 \? sel\[0\]\.box : sel\.length > 1 \? envolventeDe\(sel, ctx\.dim\) : null/.test(palcoPpt),
-    "com várias formas escolhidas o balão mede a moldura do grupo (não uma forma só)"
+    "com várias formas escolhidas a medida é a da moldura do grupo (não uma forma só)"
   );
   checa(
-    "mover mostra a posição; redimensionar e desenhar, o tamanho",
-    /gesto === "mover" \? textoDaPosicao\(alvo, ctx\.dim\) : textoDoTamanho\(alvo, ctx\.dim\)/.test(palcoPpt)
+    "mover mostra o x na linha em pé e o y na deitada; redimensionar/desenhar, a largura na de baixo e a altura na da direita",
+    /textoX\(alvo, ctx\.dim\)/.test(palcoPpt) &&
+      /textoY\(alvo, ctx\.dim\)/.test(palcoPpt) &&
+      /textoLargura\(alvo, ctx\.dim\)/.test(palcoPpt) &&
+      /textoAltura\(alvo, ctx\.dim\)/.test(palcoPpt)
   );
   checa(
-    "o balão fica acima do quadro e vira para baixo perto do topo da lâmina",
-    /const abaixo = alvo\.y < 8;/.test(palcoPpt) &&
-      /class="pp-medida\$\{abaixo \? " abaixo" : ""\}"/.test(palcoPpt) &&
-      /\.pp-medida\s*\{[^}]*transform:\s*translate\(-50%, -100%\)/s.test(cssMedida) &&
-      /\.pp-medida\.abaixo\s*\{[^}]*translate\(-50%, 0\)/s.test(cssMedida),
-    "sem o giro para baixo o balão sairia da lâmina em quem está no topo"
+    "as linhas do gesto são desenhadas (o rótulo mora nelas)",
+    /class="pp-guia v" style="left:\$\{r2\(alvo\.x\)\}%"/.test(palcoPpt) &&
+      /class="pp-guia h" style="top:\$\{r2\(alvo\.y\)\}%"/.test(palcoPpt) &&
+      /class="pp-guia v" style="left:\$\{r2\(xDir\)\}%"/.test(palcoPpt) &&
+      /class="pp-guia h" style="top:\$\{r2\(yBaixo\)\}%"/.test(palcoPpt),
+    "sem a linha o rótulo voltaria a flutuar acima da forma"
   );
   checa(
-    "o balão não rouba o arrasto nem some no tema escuro",
+    "o rótulo vira para o outro lado perto das bordas da lâmina (acima/abaixo, esquerda/direita)",
+    /alvo\.y < 8 \? "abaixo" : "acima"/.test(palcoPpt) &&
+      /alvo\.x < 12 \? "direita" : "esquerda"/.test(palcoPpt) &&
+      /yBaixo > 92 \? "acima" : "abaixo"/.test(palcoPpt) &&
+      /xDir > 88 \? "esquerda" : "direita"/.test(palcoPpt) &&
+      /\.pp-medida\.acima\s*\{[^}]*translate\(-50%, -100%\)/s.test(cssMedida) &&
+      /\.pp-medida\.abaixo\s*\{[^}]*translate\(-50%, 0\)/s.test(cssMedida) &&
+      /\.pp-medida\.esquerda\s*\{[^}]*translate\(-100%, -50%\)/s.test(cssMedida) &&
+      /\.pp-medida\.direita\s*\{[^}]*translate\(0, -50%\)/s.test(cssMedida),
+    "sem a virada o rótulo sairia da lâmina em quem está na borda"
+  );
+  checa(
+    "o rótulo não rouba o arrasto nem some no tema escuro",
     /\.pp-medida\s*\{[^}]*pointer-events:\s*none/s.test(cssMedida) &&
       /\.pp-medida\s*\{[^}]*background:\s*var\(--panel\)/s.test(cssMedida) &&
       /\.pp-medida\s*\{[^}]*color:\s*var\(--fg\)/s.test(cssMedida),
-    "com pointer-events o balão bloquearia o gesto; com cor fixa ficaria ilegível no escuro"
+    "com pointer-events o rótulo bloquearia o gesto; com cor fixa ficaria ilegível no escuro"
   );
   checa(
     "todo elemento do overlay entra na limpeza (senão empilha a cada quadro)",

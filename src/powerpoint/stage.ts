@@ -21,7 +21,7 @@ import {
 import type { Animacao, Lado, Shape, ShapeBox } from "./schema";
 import { CANTO_ROTULO, CANTOS, cantosDe, valoresComSelecao, type Canto } from "./edicao/formato";
 import { alvoDaConexao, bolinhaDaConexao } from "./edicao/ligacoes";
-import { textoDaPosicao, textoDoTamanho } from "./edicao/medida";
+import { textoAltura, textoLargura, textoX, textoY } from "./edicao/medida";
 import { temTexto } from "./edicao/texto";
 import { svgPathDePontosPct, type PontoTraco } from "./edicao/desenho";
 
@@ -430,19 +430,38 @@ export class Stage {
         }
       }
     }
-    // Fita métrica: o balão com a medida do que está sendo arrastado (ver `medida.ts`). A caixa sai
-    // do estado ATUAL — o host já aplicou o quadro do arrasto —, então vale para os três gestos, e
-    // some sozinha ao soltar (o modo deixa de ser um deles).
+    // Fita métrica: a medida MORA NAS LINHAS do gesto (ver `medida.ts`). Ao mover, a linha em pé
+    // marca o x e a deitada o y — o rótulo viaja na própria linha, junto do canto; ao
+    // redimensionar/desenhar, a linha de baixo mostra a largura e a da direita a altura. A caixa
+    // sai do estado ATUAL — o host já aplicou o quadro do arrasto —, então vale para os três
+    // gestos, e some ao soltar (o modo deixa de ser um deles).
     const gesto = this.modo?.t;
     if (gesto === "mover" || gesto === "redim" || gesto === "criar") {
       const alvo = gesto === "criar" ? this.rect : sel.length === 1 ? sel[0].box : sel.length > 1 ? envolventeDe(sel, ctx.dim) : null;
       if (alvo) {
-        const medida = gesto === "mover" ? textoDaPosicao(alvo, ctx.dim) : textoDoTamanho(alvo, ctx.dim);
-        // sem espaço acima do quadro, o balão vira para baixo (CSS `.abaixo`)
-        const abaixo = alvo.y < 8;
-        html.push(
-          `<span class="pp-medida${abaixo ? " abaixo" : ""}" style="left:${r2(alvo.x + alvo.w / 2)}%;top:${r2(abaixo ? alvo.y + alvo.h : alvo.y)}%">${medida}</span>`
-        );
+        if (gesto === "mover") {
+          html.push(`<div class="pp-guia v" style="left:${r2(alvo.x)}%"></div>`);
+          html.push(`<div class="pp-guia h" style="top:${r2(alvo.y)}%"></div>`);
+          // sem espaço acima/à esquerda do canto, o rótulo vira para o outro lado do ponto
+          html.push(
+            `<span class="pp-medida ${alvo.y < 8 ? "abaixo" : "acima"}" style="left:${r2(alvo.x)}%;top:${r2(alvo.y)}%">${textoX(alvo, ctx.dim)}</span>`
+          );
+          html.push(
+            `<span class="pp-medida ${alvo.x < 12 ? "direita" : "esquerda"}" style="left:${r2(alvo.x)}%;top:${r2(alvo.y)}%">${textoY(alvo, ctx.dim)}</span>`
+          );
+        } else {
+          // a largura vai na linha de baixo (no meio do quadro) e a altura na da direita (no meio da altura)
+          const xDir = alvo.x + alvo.w;
+          const yBaixo = alvo.y + alvo.h;
+          html.push(`<div class="pp-guia v" style="left:${r2(xDir)}%"></div>`);
+          html.push(`<div class="pp-guia h" style="top:${r2(yBaixo)}%"></div>`);
+          html.push(
+            `<span class="pp-medida ${yBaixo > 92 ? "acima" : "abaixo"}" style="left:${r2(alvo.x + alvo.w / 2)}%;top:${r2(yBaixo)}%">${textoLargura(alvo, ctx.dim)}</span>`
+          );
+          html.push(
+            `<span class="pp-medida ${xDir > 88 ? "esquerda" : "direita"}" style="left:${r2(xDir)}%;top:${r2(alvo.y + alvo.h / 2)}%">${textoAltura(alvo, ctx.dim)}</span>`
+          );
+        }
       }
     }
     el.insertAdjacentHTML("beforeend", html.join(""));

@@ -43,10 +43,12 @@ avisado ao abrir (nunca some em silêncio).
   e o **ponteiro vira “copiar”** — cada clique numa forma veste o formato guardado, sem mexer na
   caixa, no giro nem no texto do alvo; **duplo clique** deixa o pincel **ligado** (pinta várias) e o
   `Esc` sai. A pintura viva (**Estilo de Cor**) vai junto: o alvo passa a usar a mesma receita.
-- **Fita métrica do arrasto**: enquanto **arrasta**, um **balão com a medida** acompanha o gesto —
-  **x · y** (posição, em cm) ao **mover**; **largura × altura** ao **redimensionar** e ao **desenhar**
-  uma forma. A unidade é o **cm**, a mesma dos campos de **Tamanho** do painel, e o balão fica acima
-  do quadro (virando para baixo quando não há espaço no topo) e **some ao soltar**.
+- **Fita métrica do arrasto**: enquanto **arrasta**, a **medida mora nas linhas do gesto** — ao
+  **mover**, a **linha em pé** marca o **x** e a **deitada** o **y** (o rótulo viaja colado nelas,
+  junto do canto); ao **redimensionar** ou **desenhar** uma forma, a **linha de baixo** mostra a
+  **largura** e a **da direita** a **altura**. A unidade é o **cm**, a mesma dos campos de
+  **Tamanho** do painel; perto das bordas o rótulo **vira para o outro lado** e tudo **some ao
+  soltar**.
 - **Cantos assistidos**: **clique numa alça de canto** para editar só aquele canto (`Shift+clique`
   soma/remove sem arrastar; clique parado num canto já escolhido deixa só ele) e arraste para
   arredondar **apenas os escolhidos** — cada canto guarda o próprio valor (dá para ter o sup. esq.

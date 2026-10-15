@@ -1913,13 +1913,13 @@ button.ppr.big .ppr-gal-ic svg {
   z-index: 52;
 }
 
-/* Fita métrica: o balão com a medida acompanha o que está sendo arrastado (mover, redimensionar
-   ou desenhar). Fica logo acima do quadro e, perto do topo da lâmina, vira para baixo (`.abaixo`). */
+/* Fita métrica: a medida mora NAS LINHAS do gesto — o rótulo encosta na própria linha e a classe
+   diz de que lado do ponto ele cai (acima/abaixo numa linha em pé; esquerda/direita numa deitada).
+   Perto das bordas da lâmina o lado vira, para o rótulo não sair. */
 .pp-medida {
   position: absolute;
   z-index: 52;
   padding: 1px 7px;
-  transform: translate(-50%, -100%) translateY(-9px);
   color: var(--fg);
   background: var(--panel);
   border: 1px solid var(--border);
@@ -1932,8 +1932,20 @@ button.ppr.big .ppr-gal-ic svg {
   pointer-events: none;
 }
 
+.pp-medida.acima {
+  transform: translate(-50%, -100%) translateY(-5px);
+}
+
 .pp-medida.abaixo {
-  transform: translate(-50%, 0) translateY(9px);
+  transform: translate(-50%, 0) translateY(5px);
+}
+
+.pp-medida.esquerda {
+  transform: translate(-100%, -50%) translateX(-7px);
+}
+
+.pp-medida.direita {
+  transform: translate(0, -50%) translateX(7px);
 }
 
 /* dica da alça de canto: caixa do app no lugar do balão nativo do sistema */

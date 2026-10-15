@@ -77,11 +77,13 @@ const dim = { w: 960, h: 540 };
 // ---------------------------------------------------------------- fita métrica (a medida do gesto)
 {
   const d = { w: 960, h: 540 };
-  ok("tamanho em cm (50% × 40% da lâmina)", MED.textoDoTamanho({ x: 0, y: 0, w: 50, h: 40 }, d) === "16,9 × 7,6 cm", MED.textoDoTamanho({ x: 0, y: 0, w: 50, h: 40 }, d));
-  ok("posição em cm (x e y do canto)", MED.textoDaPosicao({ x: 10, y: 25, w: 20, h: 10 }, d) === "x 3,4 · y 4,8 cm", MED.textoDaPosicao({ x: 10, y: 25, w: 20, h: 10 }, d));
-  ok("caixa zerada sai 0 × 0", MED.textoDoTamanho({ x: 0, y: 0, w: 0, h: 0 }, d) === "0 × 0 cm", MED.textoDoTamanho({ x: 0, y: 0, w: 0, h: 0 }, d));
-  ok("vírgula decimal, como o painel", /^\d+,\d × \d+,\d cm$/.test(MED.textoDoTamanho({ x: 0, y: 0, w: 30, h: 30 }, d)), MED.textoDoTamanho({ x: 0, y: 0, w: 30, h: 30 }, d));
-  ok("uma casa no máximo (nada de 16,933333)", !/\d,\d\d/.test(MED.textoDoTamanho({ x: 0, y: 0, w: 13, h: 17 }, d)), MED.textoDoTamanho({ x: 0, y: 0, w: 13, h: 17 }, d));
+  ok("o x mora na linha em pé", MED.textoX({ x: 10, y: 25, w: 20, h: 10 }, d) === "x 3,4 cm", MED.textoX({ x: 10, y: 25, w: 20, h: 10 }, d));
+  ok("o y mora na linha deitada", MED.textoY({ x: 10, y: 25, w: 20, h: 10 }, d) === "y 4,8 cm", MED.textoY({ x: 10, y: 25, w: 20, h: 10 }, d));
+  ok("a largura sai na linha de baixo", MED.textoLargura({ x: 0, y: 0, w: 50, h: 40 }, d) === "16,9 cm", MED.textoLargura({ x: 0, y: 0, w: 50, h: 40 }, d));
+  ok("a altura sai na linha da direita", MED.textoAltura({ x: 0, y: 0, w: 50, h: 40 }, d) === "7,6 cm", MED.textoAltura({ x: 0, y: 0, w: 50, h: 40 }, d));
+  ok("caixa zerada sai 0 cm", MED.textoLargura({ x: 0, y: 0, w: 0, h: 0 }, d) === "0 cm" && MED.textoAltura({ x: 0, y: 0, w: 0, h: 0 }, d) === "0 cm");
+  ok("vírgula decimal, como o painel", /^x \d+,\d cm$/.test(MED.textoX({ x: 15, y: 15, w: 30, h: 30 }, d)), MED.textoX({ x: 15, y: 15, w: 30, h: 30 }, d));
+  ok("uma casa no máximo (nada de 16,933333)", !/\d,\d\d/.test(MED.textoLargura({ x: 0, y: 0, w: 13, h: 17 }, d)), MED.textoLargura({ x: 0, y: 0, w: 13, h: 17 }, d));
 }
 
 // ---------------------------------------------------------------- operações em várias formas

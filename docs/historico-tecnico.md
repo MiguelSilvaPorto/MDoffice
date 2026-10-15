@@ -9895,3 +9895,77 @@ antigas quando fizer sentido.
   como as promoções anteriores; as entradas das outras sessões que estavam na seção (a lâmina que
   nasce clara, a fita que cabe na tela, a aba Desenhar e a aba Design completa) ficaram **intactas**
   — nenhuma delas entrou na `main` por este fecho.
+
+## src/powerpoint/edicao/medida.ts
+
+### 2026-10-15 · a medida nas linhas · um texto por linha
+- **Local:** `medida.ts` — `textoDoTamanho`/`textoDaPosicao` saem; entram `textoX`, `textoY`,
+  `textoLargura` e `textoAltura`
+- **Linha:** `- textoDoTamanho`/`- textoDaPosicao` (o "16,9 × 7,6 cm" e o "x 3,4 · y 4,8 cm") ·
+  `+ textoX` ("x 3,4 cm") · `+ textoY` ("y 4,8 cm") · `+ textoLargura` ("16,9 cm") ·
+  `+ textoAltura` ("7,6 cm"); a conta e o `n()` são os mesmos
+- **Porquê:** pedido do usuário com print ("a fita métrica quero que fique nas linhas"): a medida
+  saiu do balão e passou a morar nas linhas do gesto — cada linha carrega UM valor, então o texto
+  precisa vir partido por linha (o x na em pé, o y na deitada; a largura na de baixo, a altura na
+  da direita). Manter uma função só obrigaria o palco a fatiar a string e as contas puras a
+  mentirem sobre o que desenham.
+
+## src/powerpoint/stage.ts
+
+### 2026-10-15 · a medida nas linhas · as linhas do gesto e o rótulo colado
+- **Local:** o desenho do overlay (`desenharSelecao`), no bloco do "Fita métrica"; o import das
+  quatro funções
+- **Linha:** `- o balão único` (`textoDaPosicao`/`textoDoTamanho` + `left: alvo.x + alvo.w / 2`) ·
+  `+ no "mover": duas .pp-guia (v em alvo.x, h em alvo.y) e dois rótulos .pp-medida colados nelas`
+  (`textoX` com `alvo.y < 8 ? "abaixo" : "acima"`; `textoY` com `alvo.x < 12 ? "direita" :
+  "esquerda"`) · `+ no "redim"/"criar": as linhas da borda direita e de baixo (xDir/yBaixo) com
+  `textoLargura` (centro do quadro) e `textoAltura` (meio da altura), virando com `yBaixo > 92` e
+  `xDir > 88`
+- **Porquê:** o pedido é "a medida NAS linhas": as linhas entram como parte da fita métrica (as
+  mesmas guias rosa, que o usuário já via no encaixe) e o rótulo fica COLADO nelas junto do canto
+  medido — o valor não flutua mais acima da forma. As viradas usam limiares por borda (8% no topo;
+  12%/88%/92% onde o rótulo não cabe), senão o número sairia da lâmina em quem encosta na borda.
+  Reaproveitar `.pp-guia` mantém a limpeza do overlay e o teste do "todo elemento entra na
+  limpeza" sem elemento novo.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-15 · a medida nas linhas · o rótulo por lado (acima/abaixo, esquerda/direita)
+- **Local:** o bloco `.pp-medida`
+- **Linha:** `- transform: translate(-50%, -100%) translateY(-9px)` do base · `+ .pp-medida.acima`,
+  `+ .pp-medida.abaixo`, `+ .pp-medida.esquerda`, `+ .pp-medida.direita` (uma transform por lado do
+  ponto)
+- **Porquê:** antes o balão tinha UM lado (acima do quadro, com a virada "abaixo"); colado numa
+  linha, o rótulo precisa saber cair de qualquer um dos quatro lados (em cima de uma linha em pé,
+  à esquerda de uma deitada, e os contrários quando vira). O base fica sem `transform` para o lado
+  ser uma decisão do palco, não um padrão escondido no CSS.
+
+## scripts/testar-edicao-pptx.mjs
+
+### 2026-10-15 · a medida nas linhas · 7 verificações puras
+- **Local:** o bloco "fita métrica (a medida do gesto)"
+- **Linha:** `~` as verificações das duas funções antigas viram as quatro novas (x, y, largura,
+  altura) + o zero ("0 cm") e a vírgula com o prefixo da linha (`x 5,1 cm`)
+- **Porquê:** o módulo puro é o que dá para medir no Node; com o texto partido por linha, as
+  verificações passam a prender cada pedaço — e o zero ganhou caso próprio porque o número sozinho
+  ("0 cm") é o que o palco mostra agora.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · a medida nas linhas · as checagens do desenho novo
+- **Local:** o bloco "a fita métrica mostra a medida enquanto arrasta"
+- **Linha:** `~ a checagem da pureza` (os quatro exports) · `~ a das fontes` (textoX/textoY/
+  textoLargura/textoAltura) · `+ a das linhas do gesto (as duas .pp-guia de cada gesto)` ·
+  `~ a da virada` (os quatro ternários + as quatro transforms) · a de "não rouba o arrasto" segue
+  igual
+- **Porquê:** as checagens antigas prendiam o balão acima do quadro — exatamente o desenho que o
+  usuário pediu para sair. As novas prendem o contrato do pedido: a medida mora nas linhas, com o
+  valor certo em cada uma e a virada nas bordas.
+
+## docs/powerpoint.md
+
+### 2026-10-15 · a medida nas linhas · a bala da fita métrica
+- **Local:** "Fita métrica do arrasto"
+- **Linha:** a bala passa a descrever a medida nas linhas (x na em pé, y na deitada; largura na de
+  baixo, altura na da direita) e a virada nas bordas
+- **Porquê:** o documento do módulo descreve o que o app faz; a fita métrica mudou de lugar.
