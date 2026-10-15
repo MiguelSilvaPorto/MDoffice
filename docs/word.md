@@ -30,6 +30,9 @@ arquivos `.docx` de verdade.
   a lista do app no botão ao lado.
 - **Parágrafo**: marcadores e numeração com níveis, recuo, entrelinha, alinhamento
   (esquerda, centro, direita e **justificado**).
+- **Popups da fita (cor da letra, destaque, grade da tabela)**: abrir e **fechar pelo mesmo
+  botão** — clicar de novo nele **recolhe** o que estava aberto (clicar fora ou `Esc` também
+  fecha, e outro botão troca o popup de lugar).
 - **Estilos**: Texto normal, Título 1–4, Citação e Código (caixas de estilo com prévia).
 - **Área de transferência**: colar, recortar, copiar e **pincel de formatação**
   (uma vez ou fixo), desfazer/refazer.

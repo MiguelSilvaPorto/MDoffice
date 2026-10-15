@@ -119,6 +119,10 @@ avisado ao abrir (nunca some em silêncio).
   proporção do deck), onde o atual vem destacado — clicar cria a lâmina com aquele layout (ou
   aplica na atual) e passa a ser o "último". A **lâmina nova entra no fim** da apresentação e já
   fica selecionada.
+- **Popups da fita (Formas, Template, Layout, Nova lâmina, cores, bordas…)**: abrir e **fechar
+  pelo mesmo botão** — clicar de novo nele **recolhe** o que estava aberto (antes o clique no
+  próprio botão era ignorado pelo "fecha ao clicar fora" e o comando rodava outra vez, reabrindo).
+  Clicar fora ou `Esc` continua fechando, e clicar em **outro** botão troca o popup de lugar.
 - **Navegar com a roda do mouse**: com o ponteiro sobre a lâmina, girar a roda **sobe/desce uma
   lâmina por gesto** (como no PowerPoint; um "tapa" não passa várias). Com a lâmina **ampliada**,
   a roda rola o quadro primeiro e só troca ao chegar ao fim; `Ctrl` + roda é o **zoom** (mirando o

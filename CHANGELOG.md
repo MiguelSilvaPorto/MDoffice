@@ -315,6 +315,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O mesmo botão recolhe o popup**: clicar de novo no botão da **cor da letra**, do **destaque** ou da grade da **tabela** **reabria** o popup — o clique no próprio botão era ignorado pelo "fecha ao clicar fora". Agora o popup guarda o **botão que o abriu** e o clique nele **recolhe** (clicar fora ou `Esc` continua fechando, e outro botão troca o popup de lugar).
+
 - **No tema escuro o papel escurece**: a folha do Word era **branca fixa** — com o app no tema escuro (e a prévia do Markdown já escura), a coluna de escrita continuava um clarão. Agora o **papel e a tinta da folha saem de variáveis**: no tema escuro a folha escurece (mesmos tons da prévia do Markdown) e a tinta clareia, e tudo o que a folha pinta sozinha acompanha — **texto padrão, títulos, citação, bloco e código em linha, `<hr>` e bordas de tabela, cabeçalho/rodapé, rótulo da quebra de página, link e a sombra da folha**. Dois cuidados: o **marca-texto** (a paleta é toda clara) mantém o **texto escuro por cima**, e o **“Preto” do documento entra como tinta automática** — é o que o Word grava em “Automático” (`w:color` 000000), então documento importado não some na folha escura (cor explícita que não seja preto continua como o autor escolheu). **Imprimir e Exportar PDF saem sempre em papel branco**, com a tinta escura — o que vai para o papel não segue o tema da tela.
 
 - **O ajuste da fita do Word agora encolhe de verdade (e do jeito certo)**: arrastar a borda de baixo da fita aplicava **zoom** na faixa inteira — a fonte encolhia junto, ficava ilegível abaixo de ~90% e, na prática, o ajuste “só aumentava” ✗. Agora a fita do Word usa o **mesmo modo das Apresentações**: a escala (`--fita-escala`) move as **métricas** (alturas, ícones, espaçamentos e os cartões de estilo) com **piso de fonte** (11,5 px nos botões, 10 px no rótulo do grupo) — e abaixo de ~88% entra o modo **compacto**, em que os botões grandes deixam de empilhar ícone + nome e viram **uma linha só**, devolvendo a altura que se foi buscar no arrasto. Duplo clique na borda (ou as setas, com a borda em foco) volta ao normal, como antes.
@@ -423,6 +425,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **O mesmo botão recolhe o popup**: clicar de novo em **Formas**, **Template**, **Layout**, **Nova lâmina**, nas cores ou nas bordas **reabria** o popup em vez de fechá-lo — o clique no próprio botão era ignorado pelo "fecha ao clicar fora" e o comando rodava outra vez. Agora o popup guarda a **âncora** que o abriu e o clique nela **recolhe** (clicar fora ou `Esc` continua fechando, e outro botão troca o popup de lugar).
 
 - **Curva por pontos de parada e modo Pontos no Draw**: desenhar contornos e curvas suaves à mão livre
   costumava deixar pontos tortos ou traços ondulados. Agora o PowerPoint oferece duas soluções integradas:

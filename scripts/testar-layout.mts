@@ -797,7 +797,39 @@ const fitaWordLivre = ler("src/word/ribbon.ts");
 checa("fita do Word: fonte e tamanho editáveis", /data-sel="font" data-editavel/.test(fitaWordLivre) && /data-sel="size" data-editavel data-num/.test(fitaWordLivre), "data-editavel ausente nos seletores");
 checa("o Word acrescenta o valor que a lista não tem", /valor que a lista não conhece/.test(fitaWordLivre), "sel() não cria opção para o valor do documento");
 
+// ---------------------------------------------------------------- fita: o mesmo botão recolhe o popup
+
+console.log("\nfita: o mesmo botão recolhe o que ele abriu");
+{
+  const popupPpt = ler("src/powerpoint/ui/popup.ts");
+  checa(
+    "PowerPoint: o popup guarda a âncora que o abriu",
+    /let aberto: \{ el: HTMLElement; ancora: HTMLElement; fechar: \(\) => void \} \| null = null;/.test(popupPpt) &&
+      /return aberto\?\.ancora \?\? null;/.test(popupPpt) &&
+      /aberto = \{\s*el,\s*ancora,\s*fechar:/.test(popupPpt),
+    "sem a âncora não dá para saber qual botão abriu o popup"
+  );
+  checa(
+    "PowerPoint: clicar de novo no mesmo botão recolhe em vez de reabrir",
+    /if \(ancoraDoPopup\(\) === b\) \{\s*fecharPopup\(\);\s*return;\s*\}/.test(fitaPptLivre),
+    "o clique no próprio botão é ignorado pelo 'fecha ao clicar fora' e o comando roda de novo"
+  );
+  checa(
+    "Word: o popup guarda a âncora ao abrir e esquece ao fechar",
+    /private ancoraDoPop: HTMLElement \| null = null;/.test(fitaWordLivre) &&
+      /this\.ancoraDoPop = anchor;/.test(fitaWordLivre) &&
+      /this\.ancoraDoPop = null;/.test(fitaWordLivre),
+    "sem isso o Word não sabe que foi o mesmo botão"
+  );
+  checa(
+    "Word: clicar de novo no mesmo botão recolhe em vez de reabrir",
+    /if \(this\.pop && this\.ancoraDoPop === anchor\) \{\s*this\.closePop\(\);\s*return;\s*\}/.test(fitaWordLivre),
+    "o comando rodaria de novo e o popup reabriria"
+  );
+}
+
 const listaFontes = ler("src/fontes.ts");
+
 checa(
   "a lista de fontes do app é compartilhada (PowerPoint e Word)",
   /export const FONTES_COMUNS/.test(listaFontes) && /FONTES_COMUNS/.test(ler("src/powerpoint/ui/estado.ts")) && /FONTES_COMUNS/.test(ler("src/word/schema.ts")),

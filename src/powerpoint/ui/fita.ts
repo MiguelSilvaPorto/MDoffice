@@ -12,7 +12,7 @@ import { abrirCores } from "./cores";
 import { FONTES_COMUNS, TAMANHOS, cmParaPt, ptParaCm, type EstadoUI } from "./estado";
 import { abrirGaleria, iconeDeForma } from "./galeria";
 import { abrirModelos } from "./modelos";
-import { abrirPopup, fecharPopup } from "./popup";
+import { abrirPopup, ancoraDoPopup, fecharPopup } from "./popup";
 import { galeriaDeLayouts } from "./layoutPreview";
 import { melhorarSelects, fecharSeletor } from "../../seletor";
 import { GALERIA } from "../edicao/criar";
@@ -711,6 +711,13 @@ export class Fita {
     const b = t.closest<HTMLElement>("[data-cmd]");
     if (!b || (b as HTMLButtonElement).disabled) return;
     const cmd = b.dataset.cmd!;
+    // O MESMO botão de novo recolhe o que ele abriu: a galeria de Formas, o Template, a paleta de
+    // cores, as bordas… (quem abriu foi ele — o popup guarda a âncora). Sem isto o clique no
+    // próprio botão é ignorado pelo "fecha ao clicar fora" e o comando roda de novo, reabrindo.
+    if (ancoraDoPopup() === b) {
+      fecharPopup();
+      return;
+    }
     if (b.dataset.menu) {
       this.abrirMenu(cmd, b);
       return;

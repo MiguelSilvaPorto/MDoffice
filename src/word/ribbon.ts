@@ -52,6 +52,8 @@ export class Ribbon {
   readonly el: HTMLElement;
   private hooks: RibbonHooks;
   private pop: HTMLElement | null = null;
+  /** o botão que abriu o popup aberto (para o mesmo botão recolhê-lo — ver `run`/`place`) */
+  private ancoraDoPop: HTMLElement | null = null;
   /** Pincel de formatação: desligado, para uma seleção ("once") ou fixo ("sticky"). */
   private painter: "off" | "once" | "sticky" = "off";
   private showParaMarks = false;
@@ -403,6 +405,13 @@ export class Ribbon {
 
   private async run(cmd: string, anchor: HTMLElement): Promise<void> {
     const ed = this.hooks.editor;
+    // O MESMO botão de novo recolhe o que ele abriu (a paleta de cor, a grade da tabela): quem
+    // abriu foi ele — o popup guarda a âncora. Sem isto, o clique no próprio botão é ignorado
+    // pelo "fecha ao clicar fora" e o comando roda de novo, reabrindo o popup.
+    if (this.pop && this.ancoraDoPop === anchor) {
+      this.closePop();
+      return;
+    }
     this.closePop();
     if (cmd.startsWith("style:")) return ed.setBlock(cmd.slice(6));
     switch (cmd) {
@@ -619,6 +628,7 @@ export class Ribbon {
   private closePop(): void {
     this.pop?.remove();
     this.pop = null;
+    this.ancoraDoPop = null;
   }
 
   private place(pop: HTMLElement, anchor: HTMLElement): void {
@@ -627,6 +637,8 @@ export class Ribbon {
     pop.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - pop.offsetWidth - 8))}px`;
     pop.style.top = `${r.bottom + 4}px`;
     this.pop = pop;
+    // Guarda quem abriu: é o que deixa o MESMO botão recolher o que abriu (ver `run`).
+    this.ancoraDoPop = anchor;
     const off = (e: MouseEvent) => {
       if (!pop.contains(e.target as Node) && !anchor.contains(e.target as Node)) {
         this.closePop();

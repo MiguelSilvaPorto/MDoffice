@@ -1,9 +1,18 @@
 // Popups flutuantes da fita e do painel (cores, galeria de formas, menus). Um de cada vez, fecham ao clicar fora ou com Esc.
-let aberto: { el: HTMLElement; fechar: () => void } | null = null;
+// A âncora fica guardada: é o que deixa o MESMO botão recolher o que abriu (ver `ancoraDoPopup`).
+let aberto: { el: HTMLElement; ancora: HTMLElement; fechar: () => void } | null = null;
 
 export function fecharPopup(): void {
   aberto?.fechar();
   aberto = null;
+}
+
+/**
+ * A âncora (o botão) que abriu o popup que está aberto — `null` se não há popup. Quem despacha
+ * o clique do botão compara com isto: clicar de novo no MESMO botão recolhe o que ele abriu.
+ */
+export function ancoraDoPopup(): HTMLElement | null {
+  return aberto?.ancora ?? null;
 }
 
 export interface OpcoesPopup {
@@ -82,6 +91,7 @@ export function abrirPopup(ancora: HTMLElement, html: string, op: OpcoesPopup = 
   document.addEventListener("keydown", tecla, true);
   aberto = {
     el,
+    ancora,
     fechar: () => {
       document.removeEventListener("mousedown", fora, true);
       document.removeEventListener("keydown", tecla, true);

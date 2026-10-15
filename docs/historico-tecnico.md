@@ -5482,6 +5482,50 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   ferramenta de ajuste e sai com código 0. Agora o número vira portão: baixar de novo os limiares
   (ou estragar a mistura com o documento) falha o teste. Roda em ~3 s com o modelo embutido.
 
+## src/powerpoint/ui/popup.ts · src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · popups · o mesmo botão recolhe o que ele abriu
+- **Local:** `popup.ts` — o estado `aberto` e a função nova `ancoraDoPopup`; `fita.ts` — `aoClicar`
+  (antes do `data-menu`)
+- **Linha:** `let aberto: { el: HTMLElement; fechar: () => void } | null` →
+  `{ el: HTMLElement; ancora: HTMLElement; fechar: () => void }` · `aberto = { el, ancora, fechar }`
+  · `+ export function ancoraDoPopup(): HTMLElement | null { return aberto?.ancora ?? null; }` ·
+  no clique da fita, `+ if (ancoraDoPopup() === b) { fecharPopup(); return; }`
+- **Porquê:** o relato ("quero que quando clicado novamente no mesmo botão ele recolhe o que
+  expandiu") — a galeria de **Formas** (o print), o **Template**, o **Layout** e as paletas
+  reabriam. A causa: o popup fecha **ao clicar fora** e a âncora é excluída dessa conta
+  (`ancora.contains(t)` no listener de mousedown) — de propósito, para o clique no botão não
+  fechar-e-reabrir no mesmo gesto; mas quem despacha o clique é a fita, que não sabia que o popup
+  era daquele botão: o comando rodava de novo e **reabria**. Guardar a **âncora** no próprio popup
+  dá o que faltava — a fita compara (`ancoraDoPopup() === b`) e recolhe. Um ponto só no
+  `aoClicar` cobre os **dois** caminhos (os `data-menu`, que passam pelo `abrirMenu`, e os comandos
+  que abrem popup por dentro, como as cores): qualquer popup aberto tem âncora, e o clique nela
+  fecha antes de o comando rodar. Clicar em **outro** botão segue igual (o `fecharPopup()` da
+  fita limpa o anterior) e a âncora se perde no fechamento (o estado é do popup, não da fita).
+
+## src/word/ribbon.ts
+
+### 2026-10-14 · popups · o mesmo botão recolhe (Word)
+- **Local:** o campo `ancoraDoPop`, `place` (onde o popup nasce) e `closePop`; o começo do `run`
+- **Linha:** `+ private ancoraDoPop: HTMLElement | null = null;` · `place`: `+ this.ancoraDoPop = anchor;`
+  · `closePop`: `+ this.ancoraDoPop = null;` · `run`: `+ if (this.pop && this.ancoraDoPop === anchor)
+  { this.closePop(); return; }` **antes** do `this.closePop()` de sempre
+- **Porquê:** o mesmo pedido no Word (a **cor da letra**, o **destaque**, a grade da **tabela**): o
+  `place` é o **ponto único** por onde todo popup do Word nasce, então guardar a âncora ali cobre
+  todos os casos sem tocar em cada comando — e o `run` recebe a âncora (`run(cmd, anchor)`, do
+  clique na fita), o que faz a comparação custar uma linha. A guarda vem **antes** do
+  `closePop()` que já existia, senão o popup seria fechado e o comando rodaria (reabrindo).
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · popups · 4 verificações
+- **Local:** a seção “fita: o mesmo botão recolhe o que ele abriu”
+- **Linha:** `+ a âncora no estado do popup e o ancoraDoPopup` · `+ o if (ancoraDoPopup() === b) na
+  fita do PowerPoint` · `+ a âncora do Word (campo, place e closePop)` · `+ o if no começo do run`
+- **Porquê:** é um contrato entre dois arquivos (o popup guarda, a fita compara) — se alguém
+  tirar a âncora do estado ou a comparação do clique, o defeito volta sem nenhum teste quebrar;
+  as quatro leem o TS e prendem as duas pontas (nos dois módulos).
+
 ---
 
 ## Próximos registros
