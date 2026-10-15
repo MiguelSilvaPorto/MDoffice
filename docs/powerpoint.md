@@ -184,13 +184,18 @@ avisado ao abrir (nunca some em silêncio).
   sistema em duas abas e viraram **um só**, com nome próprio (o papel do "Designer" do PowerPoint,
   sem copiar o nome). Cada cartão mostra **esta lâmina** já com a sugestão aplicada e o **filtro**
   escolhe o que as sugestões mexem:
-  - **Tudo** (o padrão): cada cartão junta as duas metades — a **arrumação** desta lâmina e o
-    **visual** do deck — e o clique aplica as duas num **passo de desfazer só**. O nome do cartão
-    diz as duas ("Grade 2×2 · Clássico"); numa lâmina que não tem o que arrumar (uma lâmina de
-    título, por exemplo) os cartões saem **só de visual**, sem prometer uma fórmula que não muda
-    nada;
-  - **Arrumação**: só as fórmulas da lâmina atual — o visual continua o mesmo, como antes;
-  - **Visual**: só os designs, aplicados à apresentação inteira, como antes.
+  - **Visual** (o padrão): muda **cores, fonte, desenho e o formato das caixas** — e **nenhuma
+    caixa muda de posição nem de tamanho**, como o Designer do Office. O clique vale **só para a
+    lâmina aberta** (o fundo do design vira o fundo dela; o tema do deck não muda). A opção
+    **Aplicar o visual a todas as lâminas** (abaixo do filtro) leva o design ao deck inteiro;
+  - **Arrumação**: só as fórmulas da lâmina atual (grade, lista, destaque, faixa) — **esta**
+    é a que reposiciona o conteúdo, e só quando você a escolhe;
+  - **Tudo**: cada cartão junta as duas metades — a arrumação **e** o visual desta lâmina — num
+    **passo de desfazer só**. O nome do cartão diz as duas ("Grade 2×2 · Clássico"); numa lâmina
+    que não tem o que arrumar (uma lâmina de título) os cartões saem só de visual.
+
+  A prévia de cada cartão sai do **mesmo caminho do clique** (`aplicarModeloALamina`), então mostra
+  exatamente o que vai acontecer com a lâmina.
 
   O **visual** é um **design** (as cores e a fonte) com um **acabamento**:
   - *cores novas*: troca a paleta e, o mais importante, **remapeia as cores próprias das formas**
@@ -203,8 +208,14 @@ avisado ao abrir (nunca some em silêncio).
     e, quando a cor nova não alcança **4,5:1** de contraste (WCAG) com essa superfície, o texto
     vira para o extremo do design que contrasta. Sobre um cartão que é **imagem** (a cor de trás
     é desconhecida) o texto não troca de lado — é o que o mantém legível num deck importado;
+  - *cartão com sombra*: os quadros pintados ganham **cantos arredondados e sombra suave** — o
+    formato de cartão, que dá profundidade sem mudar o tamanho nem a posição;
+  - *sombra suave*: só a sombra, sem arredondar;
   - *cantos arredondados*: os quadros pintados ganham cantos arredondados (raio de 12%);
   - *contorno de acento*: os quadros pintados ganham contorno na cor de acento do design.
+
+  Os acabamentos formatam só **caixas pintadas** de conteúdo: o texto solto, as tabelas e as
+  **decorações fixas** (do modelo e do layout) ficam como estão.
 
   O botão **Gerar mais** percorre as combinações (designs × acabamentos no modo Visual; arrumações
   × designs no modo Tudo) e o contador ao lado do título mostra quantas estão à mostra. Tudo é

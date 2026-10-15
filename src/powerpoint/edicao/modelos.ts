@@ -79,14 +79,19 @@ export interface EstiloAtual {
 }
 
 /** O que uma ideia propõe além das cores e da fonte: o acabamento das formas. */
-export type TratamentoIdeia = "recolorir" | "cantos" | "contorno";
+export type TratamentoIdeia = "recolorir" | "cantos" | "contorno" | "sombra" | "cartao";
 
 /** Como cada tratamento aparece no cartão da ideia. */
 export const ROTULO_TRATAMENTO: Record<TratamentoIdeia, string> = {
   recolorir: "cores novas",
   cantos: "cantos arredondados",
   contorno: "contorno de acento",
+  sombra: "sombra suave",
+  cartao: "cartão com sombra",
 };
+
+/** A sombra suave dos quadros pintados (a mesma do acabamento "sombra" e do "cartão"). */
+const SOMBRA_SUAVE = { color: "000000", alpha: 0.22, blur: 12, dist: 4, dir: 90 };
 
 /** Mistura duas cores (hex sem #): `peso` é quanto da segunda entra no resultado. */
 function misturar(a: string, b: string, peso: number): string {
@@ -189,6 +194,14 @@ export function contrasteCom(texto: string, superficie: string | undefined, dest
   return [doDesign, "FFFFFF", "000000"].reduce(melhor);
 }
 
+/**
+ * A forma é uma CAIXA que o acabamento pode formatar: pintada (sólido ou cor), que não é tabela e
+ * que não é uma decoração fixa (do modelo ou do layout) — essas não são conteúdo da lâmina.
+ */
+function formatavel(f: Shape): boolean {
+  return !f.fixa && !f.tabela && (f.fillX?.kind === "solid" || !!f.fill);
+}
+
 /** Aplica o modelo às lâminas: troca as cores do tema antigo pelas do novo e ajusta a fonte. */
 export function aplicarModelo(slides: Slide[], de: EstiloAtual, modelo: ModeloPPT, tratamento?: TratamentoIdeia, ratio = 16 / 9): Slide[] {
   const ta = themeOf(de.theme);
@@ -289,14 +302,25 @@ export function aplicarModelo(slides: Slide[], de: EstiloAtual, modelo: ModeloPP
     };
     // Acabamento das ideias: cantos arredondados nos quadros pintados (o raio vira o "adj" do
     // preset, na mesma unidade do resto do app: 100000 × raio ÷ lado menor)…
-    if (tratamento === "cantos" && !f.tabela && (f.fillX?.kind === "solid" || f.fill) && (!f.geom || f.geom === "rect")) {
+    if (tratamento === "cantos" && formatavel(f) && (!f.geom || f.geom === "rect")) {
       f.geom = "roundRect";
       f.adj = f.adj ?? { adj: 12000 };
     }
     // …e contorno na cor de acento nas formas pintadas: o desenho fica marcado, como um
     // diagrama, em vez de um bloco de cor
-    if (tratamento === "contorno" && !f.tabela && (f.fillX?.kind === "solid" || f.fill)) {
+    if (tratamento === "contorno" && formatavel(f)) {
       f.ln = { alpha: 1, cap: "flat", join: "miter", ...f.ln, color: tb.accent, w: Math.max(f.ln?.w ?? 0, 1.25) };
+    }
+    // sombra suave: as caixas ganham profundidade, sem mudar o tamanho nem a posição delas
+    if ((tratamento === "sombra" || tratamento === "cartao") && formatavel(f) && !f.shadow) {
+      f.shadow = { ...SOMBRA_SUAVE };
+    }
+    // cartão: cantos arredondados + sombra (e o contorno duro, quando há, sai) — é o "formato de cartão"
+    if (tratamento === "cartao" && formatavel(f)) {
+      if (!f.geom || f.geom === "rect") {
+        f.geom = "roundRect";
+        f.adj = f.adj ?? { adj: 12000 };
+      }
     }
     return f;
   };
@@ -387,4 +411,29 @@ export function modeloDoDeck(slides: Slide[], setup: DeckSetup, nome: string, id
     ...(desenho ? { desenho } : {}),
     usuario: true,
   };
+}
+
+/** A fonte que mais aparece nas formas da lâmina (é a que um modelo novo deve trocar). */
+function fonteDominante(slide: Slide, padrao: string): string {
+  const contagem = new Map<string, number>();
+  for (const f of slide.shapes) if (f.fontFamily && !f.fixa) contagem.set(f.fontFamily, (contagem.get(f.fontFamily) ?? 0) + 1);
+  return [...contagem.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? padrao;
+}
+
+/**
+ * O modelo aplicado SÓ a esta lâmina — o caminho da Composição, tanto no clique quanto na prévia
+ * (o cartão mostra exatamente o que o clique faz). Cores, fonte, desenho e acabamento das formas
+ * mudam; a posição e o tamanho das caixas NÃO (arrumar é outro passo). O tema, o fundo e a fonte do
+ * DECK não mudam: só esta lâmina ganha o fundo do modelo (uma lâmina sem fundo próprio herdava o do
+ * deck, então o modelo o dá explicitamente). A fonte trocada é a que a lâmina usa agora, para um
+ * segundo modelo conseguir trocar a do primeiro.
+ */
+export function aplicarModeloALamina(slide: Slide, de: EstiloAtual, modelo: ModeloPPT, tratamento: TratamentoIdeia | undefined, ratio = 16 / 9): Slide {
+  const [novo] = aplicarModelo([slide], { ...de, fontFamily: fonteDominante(slide, de.fontFamily) }, modelo, tratamento, ratio);
+  // o modelo com Estilo de Cor desenha o fundo pela receita; uma imagem de fundo é conteúdo da
+  // lâmina e fica. Nos demais casos o fundo é parte do design: o do modelo substitui o de antes
+  // (senão um segundo modelo trataria o fundo do primeiro como um "painel escuro" e o manteria).
+  if (modelo.estilo || slide.bg?.kind === "image") return novo;
+  const fundo = modelo.cores?.bg || modelo.bg || themeOf(modelo.tema).bg;
+  return { ...novo, bg: { kind: "solid", color: fundo, alpha: 1 } };
 }

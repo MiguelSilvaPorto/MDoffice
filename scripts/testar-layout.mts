@@ -808,7 +808,7 @@ console.log("\nídeias de design (a lâmina atual em cada modelo)");
   );
   checa(
     "cada cartão desenha A LÂMINA ATUAL com o design e o acabamento aplicados (não um desenho à parte)",
-    /aplicarModelo\(this\.slides, de, m, t, ratio\)\[this\.indice\]/.test(ppt) && /htmlFormaRica\(f, ctx\)/.test(ppt) && /pp-ideia-slide/.test(ppt)
+    /aplicarModeloALamina\(atual, de, m, t, ratio\)/.test(ppt) && /htmlFormaRica\(f, ctx\)/.test(ppt) && /pp-ideia-slide/.test(ppt)
   );
   checa(
     "a prévia é a lâmina de verdade reduzida por transform (com a largura do painel)",
@@ -816,7 +816,7 @@ console.log("\nídeias de design (a lâmina atual em cada modelo)");
   );
   checa(
     "clicar aplica o design com o acabamento do cartão (comando ideia com id|tratamento)",
-    /this\.run\("ideia", `\$\{m\.id\}\|\$\{t\}`\)/.test(ppt) && /case "ideia":[\s\S]{0,560}this\.usarModelo\(m, t as TratamentoIdeia\)/.test(ppt)
+    /this\.run\("ideia", `\$\{m\.id\}\|\$\{t\}`\)/.test(ppt) && /case "ideia":[\s\S]{0,560}this\.aplicarVisualDaComposicao\(m, t as TratamentoIdeia\)/.test(ppt)
   );
   checa(
     "o botão Gerar mais avança o lote (fornadas de combinações novas)",
@@ -899,8 +899,8 @@ console.log("\narranjos (a lâmina reorganizada em fórmulas padrão)");
       /case "arranjo":[\s\S]{0,420}substituirSlide\(aplicarArranjo\(sl, arranjo\.id, Number\(v\) \|\| 0, ratio\)\)/.test(ppt)
   );
   checa(
-    "a dica do painel explica as duas metades (arrumação nesta lâmina, visual na apresentação)",
-    /a <b>arrumação<\/b> mexe só nela e o <b>visual<\/b> vale para a apresentação inteira/.test(ppt)
+    "a dica do painel explica as duas metades (o Visual não move caixas; a Arrumação reposiciona; tudo só nesta lâmina)",
+    /o <b>Visual<\/b> muda cores, fonte e o formato das caixas <b>sem mover nenhuma<\/b>/.test(ppt) && /Clicar aplica só nesta lâmina/.test(ppt)
   );
   checa(
     "o modo Arrumação também acompanha a lâmina atual (pelo mesmo gancho)",
@@ -933,20 +933,20 @@ console.log("\ncomposição (a arrumação e o visual na mesma sugestão)");
     /gerarDesign\(semente\)/.test(sug) && /lote \* Math\.max\(1, criadas\) \+ \(k - doCatalogo\)/.test(sug)
   );
   checa(
-    "os acabamentos são os mesmos das Ideias (recolorir, cantos, contorno)",
-    /export const ACABAMENTOS: TratamentoIdeia\[\] = \["recolorir", "cantos", "contorno"\]/.test(sug) && /acabamentos/.test(sug + ppt)
+    "os acabamentos são os da Composição (cores novas, cartão, sombra, cantos, contorno)",
+    /export const ACABAMENTOS: TratamentoIdeia\[\] = \["recolorir", "cartao", "sombra", "cantos", "contorno"\]/.test(sug) && /acabamentos/.test(sug + ppt)
   );
   checa(
-    "o filtro tem os três modos e começa no Tudo",
+    "o filtro tem os três modos e começa no Visual (que não move caixas)",
     /data-composicao-filtro/.test(ppt) &&
-      /class="on" data-filtro="tudo">Tudo</.test(ppt) &&
+      /class="on" data-filtro="visual">Visual</.test(ppt) &&
       /data-filtro="arrumacao">Arrumação</.test(ppt) &&
-      /data-filtro="visual">Visual</.test(ppt) &&
-      /private filtroComposicao: "tudo" \| "arrumacao" \| "visual" = "tudo"/.test(ppt)
+      /data-filtro="tudo">Tudo</.test(ppt) &&
+      /private filtroComposicao: "tudo" \| "arrumacao" \| "visual" = "visual"/.test(ppt)
   );
   checa(
     "o filtro troca o pintor (misto, Arranjos, Visuais) e invalida a prévia guardada",
-    /this\.filtroComposicao = \(b\.dataset\.filtro as "tudo" \| "arrumacao" \| "visual"\) \?\? "tudo"/.test(ppt) &&
+    /this\.filtroComposicao = \(b\.dataset\.filtro as "tudo" \| "arrumacao" \| "visual"\) \?\? "visual"/.test(ppt) &&
       /this\.previasVista = null;/.test(ppt) &&
       /if \(this\.filtroComposicao === "arrumacao"\) return this\.pintarArranjos\(host\)/.test(ppt) &&
       /if \(this\.filtroComposicao === "visual"\) return this\.pintarVisuais\(host\)/.test(ppt) &&
@@ -959,13 +959,13 @@ console.log("\ncomposição (a arrumação e o visual na mesma sugestão)");
   );
   checa(
     "a prévia do cartão misto é a lâmina de verdade: modelo + fórmula, com o ratio do deck",
-    /aplicarModelo\(this\.slides, de, s\.modelo, s\.tratamento, ratio\)\[this\.indice\] \?\? atual/.test(ppt) &&
+    /aplicarModeloALamina\(atual, de, s\.modelo, s\.tratamento, ratio\)/.test(ppt) &&
       /const comTudo = s\.arranjo \? aplicarArranjo\(comModelo, s\.arranjo, s\.variante, ratio\) : comModelo/.test(ppt) &&
       /if \(!arranjoLegivel\(comModelo, comTudo\)\)/.test(ppt)
   );
   checa(
     "a prévia do modo Visual também usa o ratio do deck (antes era 16/9 fixo)",
-    /aplicarModelo\(this\.slides, de, m, t, ratio\)\[this\.indice\]/.test(ppt),
+    /aplicarModeloALamina\(atual, de, m, t, ratio\)/.test(ppt),
     "num deck 4:3 a prévia diria uma coisa e o clique faria outra"
   );
   checa(
@@ -975,14 +975,15 @@ console.log("\ncomposição (a arrumação e o visual na mesma sugestão)");
   );
   checa(
     "as duas metades cabem num passo de desfazer só (um registrar; o miolo sem histórico)",
-    /case "composicao-aplicar": \{[\s\S]{0,900}this\.registrar\(\);[\s\S]{0,160}this\.aplicarModeloDeck\(m, t as TratamentoIdeia\);/.test(ppt) &&
+    /case "composicao-aplicar": \{[\s\S]{0,900}this\.registrar\(\);[\s\S]{0,160}this\.aplicarVisualDaComposicao\(m, t as TratamentoIdeia\);/.test(ppt) &&
+      /private aplicarVisualDaComposicao\(modelo: ModeloPPT, tratamento\?: TratamentoIdeia\): void \{\s*\r?\n\s*if \(this\.composicaoTodas\) return this\.aplicarModeloDeck/.test(ppt) &&
       /private aplicarModeloDeck\(modelo: ModeloPPT, tratamento\?: TratamentoIdeia\): void \{/.test(ppt) &&
       /private usarModelo\(modelo: ModeloPPT, tratamento\?: TratamentoIdeia\): void \{\s*\r?\n\s*this\.registrar\(\);/.test(ppt),
     "com dois registros, um Ctrl+Z desfaria só metade da sugestão"
   );
   checa(
     "a arrumação lê a lâmina JÁ com o modelo novo (o deck troca de referência no meio)",
-    /this\.aplicarModeloDeck\(m, t as TratamentoIdeia\);[\s\S]{0,220}if \(arranjo\) this\.substituirSlide\(aplicarArranjo\(this\.atual\(\)/.test(ppt)
+    /this\.aplicarVisualDaComposicao\(m, t as TratamentoIdeia\);[\s\S]{0,220}if \(arranjo\) this\.substituirSlide\(aplicarArranjo\(this\.atual\(\)/.test(ppt)
   );
   checa(
     "a lâmina que não é arrumável sai só de visual (o cartão não promete fórmula à toa)",

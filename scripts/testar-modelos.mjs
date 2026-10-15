@@ -90,6 +90,37 @@ ok("modelo sem desenho (as Ideias) deixa as decorações como estão", semDesenh
 const meu = M.modeloDoDeck(a, { theme: "claro", bg: "FFFFFF", fontFamily: "Inter" }, "Meu", "u1");
 ok("o modelo guardado pelo usuário leva o desenho do deck", meu.desenho === "barra", String(meu.desenho));
 
+// --- a Composição: o modelo só nesta lâmina, sem mover nenhuma caixa
+{
+  const forma = (id, box, extra = {}) => ({ id, kind: "forma", box, text: "", fontFamily: "Segoe UI", fontSize: 18, color: "1C212B", bold: false, italic: false, align: "esquerda", fill: "4F46E5", src: "", rot: 0, fillX: { kind: "solid", color: "4F46E5", alpha: 1 }, ...extra });
+  const texto = (id, box) => ({ ...forma(id, box, { kind: "texto", fill: "", fillX: undefined }) });
+  const original = { md: "", layout: "conteudo", notes: "", shapes: [forma("deco", { x: 0, y: 0, w: 3, h: 100 }, { fixa: true, geom: "rect" }), texto("t", { x: 6, y: 6, w: 88, h: 14 }), forma("c1", { x: 6, y: 30, w: 40, h: 30 }, { geom: "rect" }), forma("c2", { x: 54, y: 30, w: 40, h: 30 })] };
+  const antes = JSON.stringify(original);
+  const aplicarL = M.aplicarModeloALamina;
+  const caixas = (sl) => sl.shapes.filter((f) => !f.name?.startsWith("tpl:")).map((f) => `${f.id}:${JSON.stringify(f.box)}`).join("|");
+
+  for (const t of ["recolorir", "cartao", "sombra", "cantos", "contorno"]) {
+    const r = aplicarL(original, de, M.MODELOS.find((m) => m.id === "executivo"), t);
+    ok(`"${t}": nenhuma caixa muda de posição nem de tamanho`, caixas(r) === caixas(original));
+  }
+  ok("a lâmina original não é alterada (função pura)", JSON.stringify(original) === antes);
+  const exec2 = aplicarL(original, de, M.MODELOS.find((m) => m.id === "executivo"), "recolorir");
+  ok("a lâmina sem fundo próprio ganha o fundo do modelo (só ela)", exec2.bg?.kind === "solid" && exec2.bg.color === "0A1930");
+  const outra = aplicarL(exec2, de, M.MODELOS.find((m) => m.id === "terracota"), "recolorir");
+  ok("um segundo modelo troca a fonte e o fundo do primeiro", outra.shapes.find((f) => f.id === "t").fontFamily === "Lato" && outra.bg.color === "F8EFE7", `${outra.shapes.find((f) => f.id === "t").fontFamily} ${outra.bg?.color}`);
+
+  const cartao = aplicarL(original, de, corp, "cartao");
+  const c1 = cartao.shapes.find((f) => f.id === "c1");
+  ok("cartão: a caixa pintada ganha cantos arredondados e sombra", c1.geom === "roundRect" && !!c1.shadow && c1.shadow.alpha > 0 && c1.shadow.blur > 0);
+  ok("cartão: o texto solto não ganha sombra", !cartao.shapes.find((f) => f.id === "t").shadow);
+  const deco = cartao.shapes.find((f) => f.id === "deco");
+  ok("cartão: a decoração fixa não é formatada (fica como está)", !deco.shadow && deco.geom === "rect");
+  const sombra = aplicarL(original, de, corp, "sombra");
+  ok("sombra: dá sombra sem arredondar", !!sombra.shapes.find((f) => f.id === "c1").shadow && sombra.shapes.find((f) => f.id === "c1").geom === "rect");
+  const cantos = aplicarL(M.aplicarModelo([original], de, corp)[0], de, corp, "cantos");
+  ok("cantos: as decorações do modelo (tpl:) não são arredondadas", cantos.shapes.filter((f) => f.name?.startsWith("tpl:")).every((f) => f.geom !== "roundRect"));
+}
+
 if (falhas) {
   console.log(`\n${falhas} falha(s)`);
   process.exit(1);

@@ -17,7 +17,7 @@ import { gerarDesign } from "./gerador";
 import type { ModeloPPT, TratamentoIdeia } from "./modelos";
 
 /** Os acabamentos que a fornada gira (os mesmos das Ideias de design). */
-export const ACABAMENTOS: TratamentoIdeia[] = ["recolorir", "cantos", "contorno"];
+export const ACABAMENTOS: TratamentoIdeia[] = ["recolorir", "cartao", "sombra", "cantos", "contorno"];
 
 /** Um cartão da Composição: a arrumação da lâmina + o visual do deck. */
 export interface SugestaoPPT {

@@ -426,6 +426,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   dele, e o comando `slide-novo` (o menu da setinha) ficou sem dono e saiu junto — o card chama
   a galeria direto. A lâmina nova continua entrando **no fim** e já selecionada.
 
+- **Composição: aplica só na lâmina aberta, sem mover as caixas, e com formatos melhores** — o clique (visual e arrumação) valia o deck inteiro; agora vale só a lâmina atual (a opção "Aplicar o visual a todas as lâminas" leva ao deck). O modo padrão passou a ser **Visual**, que muda cores, fonte, desenho e formato das caixas **sem reposicionar nenhuma** (como o Designer do Office); a **Arrumação**, que reposiciona, só entra quando escolhida. Acabamentos novos: **cartão com sombra** e **sombra suave**; os acabamentos não formatam mais decorações fixas, texto solto nem tabelas. O fundo do design substitui o da lâmina (e um segundo design troca a fonte e o fundo do primeiro). A prévia sai do mesmo caminho do clique.
+
 - **A apresentação nova nasce clara — o tema do app não decide o papel da lâmina**: o padrão de
   fábrica da apresentação era o tema **Escuro**, então quem usava o app no escuro abria uma lâmina
   escura sem ter pedido. Agora ela nasce com **papel branco** (tema **Claro**) e o tema do app fica

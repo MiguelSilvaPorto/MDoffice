@@ -2818,3 +2818,14 @@ button.ppr.trans-dir {
   font-size: 12px;
   color: var(--fg);
 }
+
+/* Composição: a opção de levar o visual ao deck inteiro (desligada = só a lâmina aberta) */
+.pp-ideias-todas {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 2px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+}

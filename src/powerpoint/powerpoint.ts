@@ -17,7 +17,7 @@ import type { Dim } from "./edicao/geometria";
 import { Historico } from "./edicao/historico";
 import { formasDoLayout, novaLamina, ORDEM_LAYOUTS, ROTULOS_LAYOUT } from "./edicao/layouts";
 import { migrarSlides, registrarMidia } from "./edicao/migrar";
-import { MODELOS, ROTULO_TRATAMENTO, aplicarModelo, type EstiloAtual, type ModeloPPT, type TratamentoIdeia } from "./edicao/modelos";
+import { MODELOS, ROTULO_TRATAMENTO, aplicarModelo, aplicarModeloALamina, type EstiloAtual, type ModeloPPT, type TratamentoIdeia } from "./edicao/modelos";
 import { modelosDasVariantes } from "./edicao/variantes";
 import { refazerDesenho } from "./edicao/desenhos";
 import { ARRANJOS, aplicarArranjo, arranjoLegivel, arrumavel, rotuloDoArranjo, unidadesDa, variantesDe, type Arranjo } from "./edicao/arranjos";
@@ -205,8 +205,10 @@ export class PowerPointHost {
   private lateral: "formatar" | "notas" | "animacao" | "composicao" = "formatar";
   /** qual lote da Composição está à mostra (o botão "Gerar mais" avança) */
   private loteComposicao = 0;
-  /** o filtro da Composição: as duas metades juntas (Tudo), só a arrumação ou só o visual */
-  private filtroComposicao: "tudo" | "arrumacao" | "visual" = "tudo";
+  /** o filtro da Composição: o visual (padrão: formata as caixas sem movê-las), só a arrumação ou as duas metades juntas (Tudo) */
+  private filtroComposicao: "tudo" | "arrumacao" | "visual" = "visual";
+  /** o visual da Composição vale para a apresentação inteira (desligado: só para a lâmina aberta) */
+  private composicaoTodas = false;
   /** a lâmina e a proporção de que as prévias foram desenhadas (evita refazê-las à toa) */
   private previasVista: { slide: Slide; ratio: number } | null = null;
   /** identifica o desenho em andamento das prévias (um novo cancela o anterior) */
@@ -326,12 +328,13 @@ export class PowerPointHost {
           </div>
           <div class="pp-side-corpo" data-composicao-corpo hidden>
             <div class="pp-side-head"><span>Composição</span><span class="pp-side-hint" data-composicao-hint>geradas no seu computador</span></div>
-            <p class="pp-ideias-dica">Sugestões para <b>esta lâmina</b>: a <b>arrumação</b> mexe só nela e o <b>visual</b> vale para a apresentação inteira — cada cartão mostra os dois. Clicar aplica (e dá para desfazer).</p>
+            <p class="pp-ideias-dica">Sugestões para <b>esta lâmina</b>: o <b>Visual</b> muda cores, fonte e o formato das caixas <b>sem mover nenhuma</b>; a <b>Arrumação</b> reposiciona o conteúdo. Clicar aplica só nesta lâmina (e dá para desfazer).</p>
             <div class="pp-seg" data-composicao-filtro role="group" aria-label="O que as sugestões mudam">
-              <button type="button" class="on" data-filtro="tudo">Tudo</button>
+              <button type="button" class="on" data-filtro="visual">Visual</button>
               <button type="button" data-filtro="arrumacao">Arrumação</button>
-              <button type="button" data-filtro="visual">Visual</button>
+              <button type="button" data-filtro="tudo">Tudo</button>
             </div>
+            <label class="pp-ideias-todas" title="Aplica o visual escolhido a todas as lâminas da apresentação, e não só a esta"><input type="checkbox" data-composicao-todas /> Aplicar o visual a todas as lâminas</label>
             <button type="button" class="btn small pp-ideias-mais" data-composicao-mais title="Outras combinações de arrumação e visual">Gerar mais</button>
             <div class="pp-ideias" data-composicao></div>
           </div>
@@ -379,12 +382,16 @@ export class PowerPointHost {
     for (const b of this.pane.querySelectorAll<HTMLElement>("[data-lateral]")) {
       b.addEventListener("click", () => this.mostrarLateral(b.dataset.lateral as "formatar" | "notas" | "animacao" | "composicao"));
     }
-    // o filtro da Composição: as duas metades juntas (Tudo), só a arrumação ou só o visual
+    // o visual vale só para a lâmina aberta, a menos que a opção "todas as lâminas" esteja ligada
+    this.pane.querySelector<HTMLInputElement>("[data-composicao-todas]")?.addEventListener("change", (ev) => {
+      this.composicaoTodas = (ev.target as HTMLInputElement).checked;
+    });
+    // o filtro da Composição: o visual (padrão), só a arrumação ou as duas metades juntas (Tudo)
     const filtro = this.pane.querySelector<HTMLElement>("[data-composicao-filtro]");
     filtro?.addEventListener("click", (ev) => {
       const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-filtro]");
       if (!b) return;
-      this.filtroComposicao = (b.dataset.filtro as "tudo" | "arrumacao" | "visual") ?? "tudo";
+      this.filtroComposicao = (b.dataset.filtro as "tudo" | "arrumacao" | "visual") ?? "visual";
       for (const x of filtro.querySelectorAll<HTMLElement>("[data-filtro]")) x.classList.toggle("on", x === b);
       this.previasVista = null; // o host troca de conteúdo: a prévia guardada não vale mais
       this.pintarComposicao();
@@ -592,7 +599,7 @@ export class PowerPointHost {
       previa.style.width = `${largura}px`;
       previa.style.height = `${altura}px`;
       pendentes.push(() => {
-        const comModelo = aplicarModelo(this.slides, de, s.modelo, s.tratamento, ratio)[this.indice] ?? atual;
+        const comModelo = aplicarModeloALamina(atual, de, s.modelo, s.tratamento, ratio);
         const comTudo = s.arranjo ? aplicarArranjo(comModelo, s.arranjo, s.variante, ratio) : comModelo;
         // a fórmula que reduz os cartões a tiras ilegíveis não é oferecida
         if (!arranjoLegivel(comModelo, comTudo)) {
@@ -669,9 +676,9 @@ export class PowerPointHost {
     this.atualizarDica(`${ideias.length} visuais por vez — ${criadasPorLote} criados na hora`);
     host.textContent = "";
     for (const { m, t } of ideias) {
-      // a prévia sai do DECK INTEIRO (e não só da lâmina atual): é o mapa de cores do deck todo
-      // que o clique aplica, então o cartão mostra exatamente o que vai acontecer
-      const comModelo = aplicarModelo(this.slides, de, m, t, ratio)[this.indice] ?? atual;
+      // a prévia sai do MESMO caminho do clique (`aplicarModeloALamina`): o cartão mostra
+      // exatamente o que vai acontecer com esta lâmina
+      const comModelo = aplicarModeloALamina(atual, de, m, t, ratio);
       const cartao = document.createElement("button");
       cartao.type = "button";
       cartao.className = "pp-ideia";
@@ -2114,15 +2121,15 @@ export class PowerPointHost {
         this.mostrarLateral("composicao");
         return;
       case "composicao-aplicar": {
-        // cartão misto ("arranjo|variante|modelo|tratamento"): o VISUAL vale para a apresentação
-        // e a ARRUMAÇÃO só para esta lâmina — as duas metades num passo de desfazer só
+        // cartão misto ("arranjo|variante|modelo|tratamento"): o visual e a arrumação valem para
+        // esta lâmina — as duas metades num passo de desfazer só
         const [id, v, idModelo, t] = String(value ?? "").split("|");
         // "-" = a lâmina não é arrumável (lâmina de título): o cartão só troca o visual
         const arranjo = id === "-" ? null : ARRANJOS.find((a) => a.id === id);
         const m = [...MODELOS, ...lerModelosUsuario()].find((x) => x.id === idModelo) ?? (idModelo.startsWith("gerado-") ? gerarDesign(Number(idModelo.slice("gerado-".length))) : undefined);
         if ((id !== "-" && !arranjo) || !m) return;
         this.registrar();
-        this.aplicarModeloDeck(m, t as TratamentoIdeia);
+        this.aplicarVisualDaComposicao(m, t as TratamentoIdeia);
         // a arrumação lê a lâmina JÁ com o modelo novo (o deck mudou de referência no meio)
         if (arranjo) this.substituirSlide(aplicarArranjo(this.atual(), arranjo.id, Number(v) || 0, stageRatio(this.setup)));
         this.pintar();
@@ -2132,7 +2139,11 @@ export class PowerPointHost {
         // cartão do modo Visual: aplica o design com o acabamento proposto ("id|tratamento")
         const [id, t] = String(value ?? "").split("|");
         const m = [...MODELOS, ...lerModelosUsuario()].find((x) => x.id === id) ?? (id.startsWith("gerado-") ? gerarDesign(Number(id.slice("gerado-".length))) : undefined);
-        if (m) this.usarModelo(m, t as TratamentoIdeia);
+        if (m) {
+          this.registrar();
+          this.aplicarVisualDaComposicao(m, t as TratamentoIdeia);
+          this.pintar();
+        }
         return;
       }
       case "arranjo": {
@@ -4065,6 +4076,17 @@ export class PowerPointHost {
   }
 
   /** Aplica um modelo (tema + fundo + fonte) ao deck inteiro, trocando as cores do tema antigo. */
+  /**
+   * O visual de uma sugestão da Composição: só a lâmina aberta (cores, fonte, desenho e formato das
+   * caixas — nenhuma caixa muda de posição), ou o deck inteiro quando a opção "todas as lâminas"
+   * está ligada. Sem histórico e sem pintar: o chamador cuida dos dois.
+   */
+  private aplicarVisualDaComposicao(modelo: ModeloPPT, tratamento?: TratamentoIdeia): void {
+    if (this.composicaoTodas) return this.aplicarModeloDeck(modelo, tratamento);
+    const de: EstiloAtual = { theme: this.setup.theme, bg: this.setup.bg, fontFamily: this.setup.fontFamily };
+    this.substituirSlide(aplicarModeloALamina(this.atual(), de, modelo, tratamento, stageRatio(this.setup)));
+  }
+
   private usarModelo(modelo: ModeloPPT, tratamento?: TratamentoIdeia): void {
     this.registrar();
     this.aplicarModeloDeck(modelo, tratamento);

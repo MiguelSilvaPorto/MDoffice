@@ -10452,3 +10452,18 @@ antigas quando fizer sentido.
 - **Porquê:** as quatro frases descreviam a fita com o botão — e a nota do DeckCraft dizia
   explicitamente que o mdOffice tinha "Nova lâmina com menu de layouts no grupo Lâminas do Inserir".
   Com o botão fora, a doc mentiria.
+
+### 2026-10-15 · fix/composicao-so-na-lamina · Composição só na lâmina aberta, sem mover caixas
+- **Arquivo/local:** `src/powerpoint/edicao/modelos.ts` — `TratamentoIdeia` (+`sombra`, `cartao`), `ROTULO_TRATAMENTO`, `formatavel()`,
+  `aplicarModelo` (acabamentos), novos `aplicarModeloALamina()`/`fonteDominante()`; `src/powerpoint/edicao/sugestoes.ts` — `ACABAMENTOS`;
+  `src/powerpoint/powerpoint.ts` — `pintarMistas`/`pintarVisuais`, casos `"ideia"` e `"composicao-aplicar"`, novo
+  `aplicarVisualDaComposicao()`, `filtroComposicao`, `composicaoTodas`; testes `testar-modelos`, `testar-layout`, `testar-composicao`.
+- **Linha:** `aplicarModelo(this.slides, …)[this.indice]` + `aplicarModeloDeck` → `aplicarModeloALamina(atual, …)` na prévia e no clique;
+  `filtroComposicao` `"tudo"` → `"visual"`; acabamentos `[recolorir, cantos, contorno]` → `[recolorir, cartao, sombra, cantos, contorno]`;
+  os acabamentos passam por `formatavel()` (pintada, sem tabela, sem `fixa`) em vez de qualquer forma pintada.
+- **Porquê:** (1) o visual da Composição valia o deck inteiro — o usuário quer só a lâmina aberta; (2) o modo padrão misturava a
+  arrumação, que MOVE as caixas — o Designer do Office não move caixas, ele formata as existentes; (3) um segundo design não trocava a
+  fonte (a regra comparava com a fonte do deck, que não mudou) nem o fundo (o fundo do primeiro design era tratado como "painel
+  escuro" e mantido) — `fonteDominante()` e a troca explícita do fundo corrigem; (4) `cantos`/`contorno` arredondavam as barras
+  decorativas do modelo (`tpl:`), por não distinguir decoração de conteúdo.
+- **Fica de fora de propósito:** o botão Template (fita) continua no deck inteiro, como um tema do Office; só a Composição mudou.

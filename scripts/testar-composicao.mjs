@@ -96,9 +96,9 @@ const visual = (s) => `${s.modelo.id}|${s.tratamento}`;
   ok("com 3 modelos, os visuais do catálogo não repetem na fornada", new Set(lista.map(visual)).size === lista.length, ids.join(" "));
 }
 
-// 9) os acabamentos são os das Ideias
+// 9) os acabamentos da Composição
 {
-  ok("os acabamentos são recolorir, cantos e contorno", JSON.stringify(S.ACABAMENTOS) === '["recolorir","cantos","contorno"]', JSON.stringify(S.ACABAMENTOS));
+  ok("os acabamentos são cores novas, cartão, sombra, cantos e contorno", JSON.stringify(S.ACABAMENTOS) === '["recolorir","cartao","sombra","cantos","contorno"]', JSON.stringify(S.ACABAMENTOS));
 }
 
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
