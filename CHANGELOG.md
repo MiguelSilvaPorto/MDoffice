@@ -1295,6 +1295,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - (nada no momento)
 
+- **O menu dos grupos da fita abre e fica (o controle de dentro volta a ser clicável)**: com a faixa
+  apertada, o grupo que não cabe vira um **botão com menu** — mas o menu **abria e sumia no mesmo
+  tique**: o `hidden` que o próprio menu liga/desliga re-disparava o re-planejo do encaixe, e o
+  `aplicar()` **fecha o menu** antes de medir. Com a faixa estreita, **todo controle de um grupo
+  recolhido ficava inalcançável** — o relato veio pelo **Assistente** do Draw ("não tem como clicar
+  no assistente para desativar ele"), que mora no grupo **Traço**. Agora o observador do encaixe
+  **ignora as mudanças de `hidden` dentro do menu** (elas não são "a aba trocou"): o menu abre,
+  fica, e o comando de dentro roda — o clique desliga o Assistente e a escolha fica guardada. Vale
+  para as três fitas (Word, Excel e Apresentações).
+
 - **A faixa de opções não se recolhe mais sozinha**: o modo recolhido tinha o "por enquanto" — no
   modo recolhido (a **faixa única**) a faixa abria completa com um clique numa aba e **voltava ao
   recolhido ao primeiro clique fora dela** (na lâmina, num comando, depois de um popup). Cada

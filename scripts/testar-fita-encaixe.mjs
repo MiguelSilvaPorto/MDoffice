@@ -223,6 +223,11 @@ console.log("\na fiação nas três fitas");
     !/temporaria/.test(fita) && !/t\.closest\("\.fita-resize/.test(fita),
     "sobrou um caminho que recolhe a faixa sem o usuário mandar (a exceção do grupo virava remendo)"
   );
+  ok(
+    "o menu do grupo não é fechado pelo próprio encaixe (o observador ignora o pop)",
+    /if \(registros\.every\(\(r\) => pop\.contains\(r\.target\)\)\) return;/.test(fita),
+    "o `hidden` do menu re-dispara o re-planejo e o `fecharMenu` do `aplicar` o fecha no mesmo tique: o menu abre e sumia, e todo controle de um grupo recolhido (o Assistente) ficava inalcançável"
+  );
 
   // as três fitas
   const ppt = ler("src/powerpoint/powerpoint.ts");

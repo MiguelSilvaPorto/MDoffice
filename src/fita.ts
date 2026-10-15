@@ -484,7 +484,13 @@ export function ligarEncaixeFita(o: OpcoesEncaixeFita): void {
   }).observe(o.el);
   // Só o `hidden` (a troca de aba). O `class` NÃO entra aqui de propósito: o próprio encaixe mexe
   // nas classes dos grupos, e observar isso o faria reencaixar a cada passagem (um laço).
-  new MutationObserver(agendar).observe(o.el, { subtree: true, attributes: true, attributeFilter: ["hidden"] });
+  // O MENU dos grupos também liga/desliga o próprio `hidden` ao abrir e ao fechar — isso não é "a
+  // aba trocou": re-planejar aqui fechava o menu no tique seguinte (ele abria e sumia, e todo
+  // controle de um grupo recolhido — o Assistente do Draw, por exemplo — ficava inalcançável).
+  new MutationObserver((registros) => {
+    if (registros.every((r) => pop.contains(r.target))) return;
+    agendar();
+  }).observe(o.el, { subtree: true, attributes: true, attributeFilter: ["hidden"] });
   // outra faixa mudou a altura (e com ela as métricas): reencaixa
   document.addEventListener(EVENTO_ESCALA, agendar);
   // recolher/expandir muda o modo (a faixa única do quarto degrau)

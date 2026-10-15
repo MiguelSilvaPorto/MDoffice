@@ -11953,3 +11953,50 @@ antigas quando fizer sentido.
   tarefa — as que seguem em "Não adicionado" (o Estúdio — Regiões, a aba Animações, o Estúdio do
   Desenhar, a aba Design completa e o Template com desenho) são de sessões com trabalho aberto,
   mexer nelas criaria duplicata ou conflito.
+
+## src/fita.ts
+
+### 2026-10-15 · esta tarefa · o menu dos grupos não é fechado pelo próprio encaixe
+- **Local:** `ligarEncaixeFita` — o `MutationObserver` que observa o `hidden` da faixa (o "a aba
+  trocou")
+- **Linha:** `new MutationObserver(agendar).observe(o.el, { subtree: true, attributes: true,
+  attributeFilter: ["hidden"] });` → `new MutationObserver((registros) => { if (registros.every((r)
+  => pop.contains(r.target))) return; agendar(); }).observe(…)`
+- **Porquê:** o relato ("não tem como clicar no assistente para desativar ele", com print do botão
+  aceso) — com a faixa apertada, o grupo que não cabe vira um **botão com menu**, e o **Assistente**
+  do Draw mora no grupo **Traço**: era por ali que ele tinha de ser clicado. O menu, porém, **abria e
+  sumia no mesmo tique**: `abrirMenu` liga o `hidden` do pop → o observador (que existe para
+  re-planejar quando a **aba** troca) disparava `agendar()` → o `aplicar()` **começa fechando o
+  menu** (`fecharMenu`) e o menu nunca ficava de pé. Com a faixa estreita (a barra lateral e a prévia
+  abertas, a janela normal), **todo controle de um grupo recolhido ficava inalcançável** — não só o
+  Assistente. O conserto é o observador **ignorar o que é do menu**: as mudanças de `hidden` dentro
+  do `pop` não são "a aba trocou" (e o `fecharMenu`, que mexe no `hidden` do pop, também não pode
+  re-disparar o re-planejo). A verificação foi feita no navegador (Chrome headless + CDP, com o app
+  montado): na `main`, o `hidden` do pop voltava a `true` na microtarefa seguinte; com o filtro, o
+  menu fica aberto, o clique de verdade chega no botão e o estado é gravado
+  (`mdc.pp.pincel` = `assistente:false`).
+- **Local:** a mesma correção vale para as três fitas
+- **Porquê:** o `ligarEncaixeFita` é compartilhado (Word, Excel e Apresentações) e o defeito é do
+  mecanismo (o observador), não do módulo — a entrada fica no **Geral** do changelog.
+
+## scripts/testar-fita-encaixe.mjs
+
+### 2026-10-15 · esta tarefa · 1 verificação (o menu não se fecha sozinho)
+- **Local:** a seção "o encaixe aplica o plano no DOM" (logo depois da checagem do corpo movido)
+- **Linha:** `+ "o menu do grupo não é fechado pelo próprio encaixe (o observador ignora o pop)"` —
+  assere o filtro (`registros.every((r) => pop.contains(r.target))`) na leitura do `src/fita.ts`
+- **Porquê:** é um laço **invisível no código** (duas pontas distantes: o `hidden` do pop e o
+  `fecharMenu` do `aplicar`) e o sintoma aparece só no DOM ("o menu abre e some"); a checagem prende
+  o filtro para o observador não voltar a reagir ao próprio menu. O defeito não tinha teste porque as
+  suítes do projeto não montam DOM — o caminho foi a verificação no navegador (CDP), registrada na
+  entrada acima.
+
+## CHANGELOG.md
+
+### 2026-10-15 · esta tarefa · a entrada no "Não adicionado" (Geral)
+- **Local:** Geral → **Não adicionado** → Frontend (topo, antes da entrada da faixa)
+- **Linha:** `+ 1 entrada` — **O menu dos grupos da fita abre e fica…**
+- **Porquê:** a tarefa ainda não está na `main`; a categoria é **Geral** porque a faixa (e o encaixe)
+  é a mesma nas três fitas. A entrada fica **antes** da "A faixa de opções não se recolhe mais
+  sozinha" (a mais nova primeiro, como o arquivo vinha fazendo) — as duas são deste mesmo dia e
+  tocam o mesmo `src/fita.ts`.
