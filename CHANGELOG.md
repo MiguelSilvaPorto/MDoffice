@@ -1211,6 +1211,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Fechar todos os arquivos — e o app fica sem nenhum aberto**: fechar a **última aba** não cria
+  mais um **"Sem título"** na fileira: o app fica no **Início** com a fileira vazia (o documento de
+  trabalho continua existindo por baixo, mas não é uma aba). Entrar no app **sem sessão** também
+  abre no Início, sem aba nenhuma. E entrou o comando **Fechar todos** — no menu da aba, na paleta
+  do **Ctrl+K** e no **Ctrl+Shift+W** —, que fecha tudo de uma vez. Com a fileira vazia, os
+  comandos de documento (**salvar**, **exportar**, **desenhar**, **imagem**, **revisar**,
+  **apresentar**, **copiar para a IA**, **histórico**…) **avisam em vez de agir** num documento que
+  não está à vista, a barra de status diz **"Nenhum documento aberto"** e a janela fica só
+  "mdOffice". Teste: `npm run test:layout`.
 - **A fita cabe na largura em quatro degraus — e sem rolagem (PowerPoint, Word e Excel)**: a faixa
   de opções deixou de empurrar botão para fora da tela. Do mais folgado ao mais apertado: (1)
   **cheia**; (2) **compacta** — espaços e ícones menores, com **piso de fonte** (o Excel entrou

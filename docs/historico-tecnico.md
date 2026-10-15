@@ -10653,3 +10653,18 @@ antigas quando fizer sentido.
   "consolidar". É o segundo estrago da mesma entrega (o primeiro foi o `testar-layout.mts` acima):
   os dois vieram de resoluções de conflito que trataram o arquivo inteiro em vez do trecho — vale a
   regra de sempre: **resolver o conflito é reescrever só o trecho, nunca escolher um lado inteiro**.
+## CHANGELOG.md
+
+### 2026-10-15 · promoção · a entrada do "Fechar todos" entra no "Adicionado" (Geral)
+- **Local:** Geral ▸ **Adicionado** ▸ Frontend (topo) — a cópia de "Não adicionado" já não existia
+- **Linha:** `+` a entrada **Fechar todos os arquivos — e o app fica sem nenhum aberto**
+  (`5784eda`, worktree `feat/fechar-todos`), no topo do Frontend
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), então a promoção é
+  legítima — e ela veio **junto com uma restauração**: a entrada tinha sido **apagada** da `main`
+  pelo commit `80744cf` (a promoção de outra sessão, que na resolução do conflito levou o bloco
+  inteiro do "Não adicionado" e a minha entrada foi no pacote; conferido: "Fechar todos os
+  arquivos" não aparecia mais no arquivo). Como a tarefa já está na `main`, a entrada voltou
+  **direto no "Adicionado"** — não faz sentido reabrir um "Não adicionado" para algo que já entrou —
+  e **sem reescrita**: o texto é o mesmo que nasceu na tarefa. A entrada da **fita em quatro
+  degraus** (de outra sessão, promovida por ela no `80744cf`) ficou intacta no "Adicionado" dela; o
+  resto de "Não adicionado" não foi tocado.
