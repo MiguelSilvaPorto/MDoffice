@@ -423,6 +423,18 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   pincel** (botão aceso na cor/espessura/modo escolhidos) e mexe no **mesmo pincel** da barrinha
   flutuante — o que se escolhe num lugar aparece no outro. Teste: `npm run test:layout`.
 
+- **Aba Design completa: Temas, Variantes, Personalizar e Designer**: a aba tinha só dois grupos
+  (fundo e layout) e agora segue os quatro blocos do Office, com a cara do app. **Temas** abre a
+  galeria de modelos (a mesma do botão Template), **Variantes** é novo — as seis famílias de cor do
+  Estilo de cor (Esmeralda, Oceano, Ameixa, Âmbar, Rubi e a **Grafite** escura) aplicadas à
+  apresentação inteira, com **esta lâmina** desenhada em cada cartão (a mesma máquina das Ideias: o
+  cartão mostra exatamente o que o clique aplica; a variante troca a cor, não a tipografia) —,
+  **Personalizar** reúne fundo, layout e o **Tamanho** da lâmina (**16:9/4:3**, que tinha ficado sem
+  UI quando o "Configurar apresentação" saiu) e **Designer** leva as Ideias de design e os Arranjos
+  para o lugar do Designer do Office (saem da Página Inicial). Os ícones da paleta das Variantes
+  (com as seis cores) e do Tamanho são desenhados no CSS do app — nada de arte do Office. Testes:
+  `npm run test:estilos` e `npm run test:layout`.
+
 ### Adicionado (na main)
 
 **Backend**

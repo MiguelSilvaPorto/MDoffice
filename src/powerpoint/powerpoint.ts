@@ -18,6 +18,7 @@ import { Historico } from "./edicao/historico";
 import { formasDoLayout, novaLamina, ORDEM_LAYOUTS, ROTULOS_LAYOUT } from "./edicao/layouts";
 import { migrarSlides, registrarMidia } from "./edicao/migrar";
 import { MODELOS, ROTULO_TRATAMENTO, aplicarModelo, type EstiloAtual, type ModeloPPT, type TratamentoIdeia } from "./edicao/modelos";
+import { modelosDasVariantes } from "./edicao/variantes";
 import { refazerDesenho } from "./edicao/desenhos";
 import { ARRANJOS, aplicarArranjo, arranjoLegivel, rotuloDoArranjo, unidadesDa, variantesDe, type Arranjo } from "./edicao/arranjos";
 import { gerarDesign } from "./edicao/gerador";
@@ -585,6 +586,51 @@ export class PowerPointHost {
       const w = moldura.clientWidth;
       if (previa && w > 0) previa.style.transform = `scale(${w / largura})`;
     }
+  }
+
+  /**
+   * Galeria de VARIANTES (aba Design): a lâmina atual desenhada em cada família de cor. É a
+   * mesma máquina das Ideias — `aplicarModelo` na lâmina atual + a prévia reduzida por
+   * `transform` —, então o cartão mostra exatamente o que o clique aplica.
+   */
+  private abrirVariantes(): void {
+    const ancora = this.fita.el.querySelector<HTMLElement>('[data-cmd="variantes"]');
+    if (!ancora) return;
+    const atual = this.atual();
+    const de: EstiloAtual = { theme: this.setup.theme, bg: this.setup.bg, fontFamily: this.setup.fontFamily };
+    const ctx = this.ctxRender(false);
+    const largura = 960; // referência da prévia (o cqw do texto sai daqui)
+    const altura = Math.round(largura / stageRatio(this.setup));
+    const modelos = modelosDasVariantes(de.fontFamily);
+    const el = abrirPopup(ancora, "", { classe: "pp-pop-modelos pp-pop-variantes" });
+    el.innerHTML =
+      `<div class="pp-pop-t">Variantes do design</div><div class="pp-vars">` +
+      modelos
+        .map((m) => {
+          // a prévia sai do deck inteiro (o mapa de cores é o do deck todo): é o que o clique aplica
+          const comModelo = aplicarModelo(this.slides, de, m)[this.indice] ?? atual;
+          const fundo = fundoValor(comModelo.bg, this.setup.media ?? {}) || `#${m.cores?.bg || m.bg}`;
+          return `<button type="button" class="pp-var" data-var="${m.id}" title="${m.nome} — ${m.descricao}">
+              <span class="pp-var-moldura" style="aspect-ratio:${largura}/${altura}"><span class="pp-slide pp-var-slide" style="width:${largura}px;height:${altura}px;background:${fundo}">${
+                comModelo.shapes.length ? comModelo.shapes.map((f) => htmlFormaRica(f, ctx)).join("") : ""
+              }</span></span>
+              <span class="pp-var-nome">${m.nome}</span>
+            </button>`;
+        })
+        .join("") +
+      `</div>`;
+    // a escala das prévias sai depois do layout (o mesmo passo das Ideias): cada uma cabe na largura
+    for (const moldura of el.querySelectorAll<HTMLElement>(".pp-var-moldura")) {
+      const previa = moldura.firstElementChild as HTMLElement | null;
+      const w = moldura.clientWidth;
+      if (previa && w > 0) previa.style.transform = `scale(${w / largura})`;
+    }
+    el.addEventListener("click", (ev) => {
+      const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-var]");
+      if (!b) return;
+      fecharPopup();
+      this.run("variante", b.dataset.var!);
+    });
   }
 
   /** Redesenha o painel dos Arranjos: a lâmina atual em cada fórmula (a grade abre em variantes). */
@@ -1926,6 +1972,24 @@ export class PowerPointHost {
           const ratio = stageRatio(this.setup);
           this.substituirSlide(aplicarArranjo(sl, arranjo.id, Number(v) || 0, ratio));
         }
+        return;
+      }
+      case "variantes":
+        // o botão da aba Design abre a galeria com a lâmina atual desenhada em cada família de cor
+        this.abrirVariantes();
+        return;
+      case "variante": {
+        // cartão das Variantes: aplica a família à apresentação inteira (a prévia é a mesma função)
+        const m = modelosDasVariantes(this.setup.fontFamily).find((x) => x.id === value);
+        if (m) this.usarModelo(m);
+        return;
+      }
+      case "tamanho-lamina": {
+        // proporção da lâmina (o "Tamanho do Slide" da aba Design): 16:9 ou 4:3
+        const aspecto = value === "4:3" ? "4:3" : "16:9";
+        if (aspecto === this.setup.aspect) return;
+        this.registrar("tamanho-lamina");
+        this.setSetup({ aspect: aspecto });
         return;
       }
 

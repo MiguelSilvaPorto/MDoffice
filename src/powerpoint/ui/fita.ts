@@ -435,10 +435,9 @@ export class Fita {
            ${pequeno("ordem", `<span class="ppr-seta">⧉</span>`, "Organizar", "Ordem, alinhamento, grupo e giro", true)}
          </div>`
       ),
-      // Ideias de design: no DeckCraft o atalho mora na Página Inicial (grupo próprio no fim da aba) e
-      // abre o painel com a lâmina atual desenhada em cada modelo. Os Arranjos são o irmão dele: a
-      // mesma lâmina reorganizada em fórmulas padrão, então moram no mesmo grupo.
-      grupo("Designer", `${grande("ideias", ic("i-spark"), "Ideias de design", "Sugestões de visual para a apresentação — a lâmina atual em cada modelo, geradas no seu computador")}${grande("arranjos", ic("i-columns"), "Arranjos", "Reorganiza a lâmina numa fórmula padrão (grade, lista, destaque, faixa)")}`),
+      // Ideias de design: no DeckCraft o atalho mora na Página Inicial, mas o Office o tem na aba
+      // Design (grupo Designer) — que é onde ele passou a viver; os Arranjos são o irmão dele (a
+      // mesma lâmina reorganizada em fórmulas padrão) e moram no mesmo grupo.
     ].join("");
   }
 
@@ -704,9 +703,17 @@ export class Fita {
   }
 
   private design(): string {
+    // A aba segue os quatro blocos do Office (Temas · Variantes · Personalizar · Designer), mas
+    // com a cara do app: os cartões, os ícones e os textos são os daqui — a paleta das Variantes,
+    // por exemplo, é um ícone próprio com as seis cores das famílias, não a arte do Office.
     return [
-      grupo("Personalizar", `${grande("fundo", ic("i-bucket"), "Formatar fundo", "Cor, gradiente ou imagem de fundo da lâmina", true)}`),
-      grupo("Layout", `${grande("layout", ic("i-columns"), "Layout", "Layout da lâmina", true)}`),
+      grupo("Temas", `${grande("modelo", ic("i-addons"), "Temas", "Temas e modelos de apresentação (fundo, cores e fonte) — aplicam na apresentação inteira", true)}`),
+      grupo("Variantes", `${grande("variantes", `<span class="ppr-variantes-ic"></span>`, "Variantes", "Outras famílias de cor para a apresentação — cada cartão mostra esta lâmina")}`),
+      grupo(
+        "Personalizar",
+        `${grande("fundo", ic("i-bucket"), "Formatar fundo", "Cor, gradiente ou imagem de fundo da lâmina", true)}${grande("layout", ic("i-columns"), "Layout", "Layout da lâmina", true)}${grande("tamanho-lamina", `<span class="ppr-tamanho-ic"></span>`, "Tamanho", "Proporção da lâmina: 16:9 ou 4:3", true)}`
+      ),
+      grupo("Designer", `${grande("ideias", ic("i-spark"), "Ideias de design", "Sugestões de visual para a apresentação — a lâmina atual em cada modelo, geradas no seu computador")}${grande("arranjos", ic("i-columns"), "Arranjos", "Reorganiza a lâmina numa fórmula padrão (grade, lista, destaque, faixa)")}`),
     ].join("");
   }
 
@@ -976,6 +983,27 @@ export class Fita {
         // a mesma galeria do "Nova lâmina", com o layout atual em destaque
         abrirGaleriaDeLayouts(ancora, est.setup, (l) => run("layout", l), est.layout);
         return;
+      case "tamanho-lamina": {
+        // proporção da lâmina (o "Tamanho do Slide" da aba Design), com a atual em destaque
+        const atual = est.setup.aspect;
+        const el = abrirPopup(
+          ancora,
+          [
+            ["16:9", "Widescreen (16:9)"],
+            ["4:3", "Padrão (4:3)"],
+          ]
+            .map(([v, n]) => `<button type="button" class="pp-pop-item" data-aspecto="${v}">${n}${v === atual ? " ✓" : ""}</button>`)
+            .join(""),
+          { classe: "pp-pop-menu" }
+        );
+        el.addEventListener("click", (ev) => {
+          const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-aspecto]");
+          if (!b) return;
+          fecharPopup();
+          run("tamanho-lamina", b.dataset.aspecto);
+        });
+        return;
+      }
       case "espaco": {
         const opcoes = [1, 1.15, 1.5, 2, 2.5, 3];
         const el = abrirPopup(ancora, opcoes.map((o) => `<button type="button" class="pp-pop-item" data-esp="${o}">${String(o).replace(".", ",")}</button>`).join(""), { classe: "pp-pop-menu" });

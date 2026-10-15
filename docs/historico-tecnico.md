@@ -5548,6 +5548,72 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** é uma decisão de produto (o que fica à frente na fita) que um refactor de template
   desfaz sem ninguém notar — o teste prende a ordem pedida.
 
+## src/powerpoint/edicao/variantes.ts (novo)
+
+### 2026-10-15 · aba Design · as variantes são MODELOS (a prévia é o próprio aplicar)
+- **Local:** arquivo novo — `FAMILIAS_VARIANTE`, `modeloDaVariante`, `modelosDasVariantes`
+- **Linha:** `novo` — cada variante monta um `ModeloPPT` com a rampa da família (fundo pastel do
+  matiz, acento na cor da família e tinta escura do mesmo matiz; a **Grafite** inverte: fundo
+  profundo e tinta clara) e o Estilo de Cor seguindo a família
+- **Porquê:** a galeria precisava da lâmina de verdade em cada cartão e o app já tinha essa máquina
+  pronta nas Ideias (a prévia é `aplicarModelo` + a lâmina reduzida por `transform`). Fazer a
+  variante ser um modelo reusa o caminho inteiro — prévia, aplicação, histórico — sem código novo
+  de desenho. O fundo **não** usa o tom `claro` da rampa: ele fica no meio da escala (o branco não
+  contrastaria) — a variante usa um pastel de luz alta, como o Office faz nas variantes claras.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-15 · aba Design · a galeria de Variantes e o Tamanho da lâmina
+- **Local:** `abrirVariantes` (novo, logo depois de `pintarIdeias`) e os `case` de `run`:
+  `variantes`, `variante` e `tamanho-lamina`
+- **Linha:** `novo` — a galeria abre no **botão da fita** (o host acha a âncora em `this.fita.el`,
+  como os popups das tabelas), desenha os cartões com `aplicarModelo` + `htmlFormaRica` e escala as
+  prévias depois do layout (o mesmo passo das Ideias); o clique fecha o popup e cai no
+  `usarModelo` (histórico + setup + estilos vivos); o `tamanho-lamina` registra o desfazer e chama
+  o `setSetup({ aspect })`
+- **Porquê:** os popups da fita não têm acesso ao deck (só o host tem), então a galeria com prévia
+  viva nasce no host — a fita só manda o comando. O `usarModelo` já era o caminho dos modelos e das
+  Ideias: a variante entra por ele e herda o desfazer e o recálculo dos estilos sem nada novo.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-15 · aba Design · os quatro grupos (e o Designer sai da Página Inicial)
+- **Local:** `design()` e o fim do `inicio()`
+- **Linha:** `Temas · Variantes · Personalizar · Designer` (o grupo "Layout" separado virou o
+  terceiro botão do Personalizar, com o **Tamanho** novo ao lado) + o `case "tamanho-lamina"` no
+  menu (16:9/4:3 com o atual marcado); o grupo Designer saiu do `inicio()`
+- **Porquê:** a aba tinha dois grupos contra os quatro blocos do Office e as peças estavam
+  espalhadas (os temas no botão Template, as Ideias na Página Inicial). A organização segue o
+  Office — que é o mapa que qualquer pessoa conhece —, mas os cartões, os ícones e os textos são os
+  do app: o botão Variantes usa um ícone CSS próprio com as seis cores das famílias e o Tamanho
+  outro com a lâmina, em vez da arte do Office.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-15 · aba Design · o CSS da galeria de Variantes e dos dois ícones
+- **Local:** depois do bloco `.pp-ideia-slide` (a maquinaria da prévia)
+- **Linha:** `novo` — `.pp-pop-variantes`, `.pp-vars` (grade de 3), `.pp-var`, `.pp-var-moldura`
+  (recorta a prévia em tamanho cheio; a proporção vem **inline**, porque a lâmina pode ser 4:3),
+  `.pp-var-slide` e `.pp-var-nome`; e os ícones `.ppr-variantes-ic` (seis bolinhas com as cores das
+  famílias) e `.ppr-tamanho-ic` (a lâmina)
+- **Porquê:** a moldura precisa do mesmo recorte das Ideias (a lâmina entra em 960px e o JS reduz
+  por `transform`); a proporção inline evita o `--slide-ratio` do painel não existir no popup (que
+  é anexado fora dele).
+
+## scripts/testar-estilos.mjs · scripts/testar-layout.mts
+
+### 2026-10-15 · aba Design · as verificações (7 das variantes + 3 da aba, e 2 atualizadas)
+- **Local:** o fim do `testar-estilos` (o bloco novo das variantes) e as checagens da fita no
+  `testar-layout`
+- **Linha:** `novo` — uma variante por família (6), ids únicos, a Grafite como única escura, o
+  acento = a cor da família, o estilo seguindo a família, a fonte preservada e o contraste
+  fundo/texto; na fita: os quatro grupos na ordem, o botão+menu do Tamanho e o Designer só na aba
+  Design. **Atualizadas:** a checagem do Designer (era "Página Inicial" — mudou de lugar) e a do
+  "Personalizar ficou só com o fundo" (era o estado da remoção do Configurar; agora exige o Tamanho
+  de volta)
+- **Porquê:** as duas antigas prendiam o estado anterior de propósito — a tarefa muda exatamente
+  esses dois pontos, então elas foram reescritas para prender o novo contrato, não removidas.
+
 ---
 
 ## Próximos registros

@@ -2663,6 +2663,87 @@ button.ppr.trans-dir {
   pointer-events: none;
 }
 
+/* ---------- galeria de Variantes (aba Design) ---------- */
+/* Cartões com a lâmina de verdade (a mesma máquina das Ideias): a moldura recorta a prévia em
+   tamanho cheio reduzida por transform; a proporção vem inline (a lâmina pode ser 4:3). */
+.pp-pop-variantes {
+  max-width: 560px;
+}
+
+.pp-vars {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.pp-var {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pp-var:hover,
+.pp-var:focus-visible {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.pp-var-moldura {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #fff;
+}
+
+.pp-var-slide {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  box-shadow: none;
+  border-radius: 0;
+  pointer-events: none;
+}
+
+.pp-var-nome {
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+/* o ícone da aba Design: as seis cores das famílias das Variantes (ícone próprio, não o do Office) */
+.ppr-variantes-ic {
+  width: 15px;
+  height: 12px;
+  border: 1px solid var(--fg);
+  border-radius: 2px;
+  background:
+    radial-gradient(circle at 3.5px 3.5px, #1f9d55 1.9px, transparent 2.4px),
+    radial-gradient(circle at 7.5px 3.5px, #1d6fb8 1.9px, transparent 2.4px),
+    radial-gradient(circle at 11.5px 3.5px, #7a3e9d 1.9px, transparent 2.4px),
+    radial-gradient(circle at 3.5px 8.5px, #e08a1e 1.9px, transparent 2.4px),
+    radial-gradient(circle at 7.5px 8.5px, #c6363c 1.9px, transparent 2.4px),
+    radial-gradient(circle at 11.5px 8.5px, #4a5568 1.9px, transparent 2.4px);
+}
+
+/* o ícone do Tamanho: a lâmina (um retângulo largo) */
+.ppr-tamanho-ic {
+  width: 16px;
+  height: 10px;
+  border: 1px solid var(--fg);
+  border-radius: 2px;
+}
+
 .pp-ideia-nome {
   display: block;
   margin-top: 4px;

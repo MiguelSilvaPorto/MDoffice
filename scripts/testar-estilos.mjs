@@ -14,8 +14,10 @@ const raiz = new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "
 const tmp = mkdtempSync(join(tmpdir(), "pp-estilos-"));
 await build({ entryPoints: [join(raiz, "src/powerpoint/edicao/estilos.ts")], bundle: true, platform: "node", format: "esm", outfile: join(tmp, "estilos.mjs"), logLevel: "error" });
 await build({ entryPoints: [join(raiz, "src/powerpoint/edicao/operacoes.ts")], bundle: true, platform: "node", format: "esm", outfile: join(tmp, "operacoes.mjs"), logLevel: "error" });
+await build({ entryPoints: [join(raiz, "src/powerpoint/edicao/variantes.ts")], bundle: true, platform: "node", format: "esm", outfile: join(tmp, "variantes.mjs"), logLevel: "error" });
 const E = await import(pathToFileURL(join(tmp, "estilos.mjs")).href);
 const O = await import(pathToFileURL(join(tmp, "operacoes.mjs")).href);
+const V = await import(pathToFileURL(join(tmp, "variantes.mjs")).href);
 
 let falhas = 0;
 const ok = (nome, cond, detalhe = "") => {
@@ -274,6 +276,22 @@ const parada = (fill, pos) => fill.stops.find((p) => Math.abs(p.pos - pos) < 0.0
   const comDobra = E.ligarEstiloFundo(semFundo, { brilho: "dobra" }, E.estiloDaFamilia("esmeralda"));
   const d2 = E.atualizarEstilos(comDobra, dim, tema);
   ok("fundo: a dobra vira lustro (e não cria forma)", d2.bg.stops.some((p) => p.color === "FFFFFF" && p.alpha < 1) && d2.shapes.length === 0);
+}
+
+// ---------------------------------------------------------------- as variantes da aba Design
+// Cada variante é um MODELO (a mesma estrutura do Template e das Ideias): a família dá a rampa, o
+// acento e o fundo, e o Estilo de Cor segue a família — a prévia do cartão é o próprio
+// `aplicarModelo` na lâmina atual, então o cartão mostra o que o clique aplica.
+{
+  const lista = V.modelosDasVariantes("Inter");
+  ok("variantes: uma por família (6)", lista.length === 6 && V.FAMILIAS_VARIANTE.length === 6, JSON.stringify(lista.map((m) => m.nome)));
+  ok("variantes: ids únicos e estáveis", new Set(lista.map((m) => m.id)).size === 6 && lista.every((m) => m.id.startsWith("variante-")), JSON.stringify(lista.map((m) => m.id)));
+  ok("variantes: a Grafite é a única escura", lista.find((m) => m.id === "variante-grafite")?.tema === "escuro" && lista.filter((m) => m.tema === "escuro").length === 1);
+  const esmeralda = lista[0];
+  ok("variantes: o acento é a cor da família", esmeralda.cores.accent === E.FAMILIAS.esmeralda.base, JSON.stringify(esmeralda.cores));
+  ok("variantes: o estilo segue a família (o fundo nasce com a rampa)", esmeralda.estilo?.familia === "esmeralda" && esmeralda.estilo?.intensidade === "media" && esmeralda.estilo?.brilho === "nada");
+  ok("variantes: a fonte é a do deck (a variante troca a cor, não a tipografia)", lista.every((m) => m.fonte === "Inter"));
+  ok("variantes: o fundo e o texto contrastam", lista.every((m) => E.luminancia(m.cores.bg) > 128 ? E.luminancia(m.cores.fg) < 128 : E.luminancia(m.cores.fg) > 128), JSON.stringify(lista.map((m) => [m.cores.bg, m.cores.fg])));
 }
 
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");

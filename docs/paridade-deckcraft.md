@@ -129,22 +129,22 @@ correções simples de imagem e réguas.
 - [ ] **Grayscale / black and white view** — P2 · falta
 - [ ] **New window / arrange windows** — P2 · falta
 
-## Masters & themes (6/14)
+## Masters & themes (8/14)
 
 - [ ] **Slide Master view (edit master and layouts)** — P0 · falta (o app **lê** mestre/layout do .pptx e mantém as decorações; dá para mexer nelas na própria lâmina com **Editar elementos do layout**, mas não há vista de mestre)
 - [ ] **Insert/rename/delete layouts, insert placeholders** — P1 · falta
 - [ ] **Handout and Notes masters** — P2 · falta
-- [x] **Built-in themes (original designs)** — P0 · tem: 3 temas (claro/escuro/contraste) + 6 modelos de deck
-- [ ] **Theme variants** — P1 · falta
+- [x] **Built-in themes (original designs)** — P0 · tem: 3 temas (claro/escuro/contraste) + **22 modelos** de deck (os presets do app + os 13 designs do catálogo do DeckCraft)
+- [x] **Theme variants** — P1 · tem: a aba **Design ▸ Variantes** aplica as **seis famílias de cor** do Estilo de cor (Esmeralda, Oceano, Ameixa, Âmbar, Rubi e a Grafite escura) à apresentação inteira, com a lâmina atual desenhada em cada cartão; a variante troca a cor, não a tipografia
 - [x] **Colour schemes (built-in and custom)** — P0 · parcial: paleta do deck e cores do documento (importadas); sem editor de esquema de cores
 - [x] **Font schemes (built-in and custom)** — P0 · parcial: fonte do deck nos modelos/Configurar; sem esquemas de fonte nomeados
 - [ ] **Effect schemes / background styles** — P2 · falta
 - [x] **Format background (solid, gradient, picture, pattern)** — P0 · parcial: cor, gradiente e imagem (padrão/textura não); aplicar a todas as lâminas
 - [ ] **Hide background graphics** — P1 · falta
-- [x] **Slide size (16:9, 4:3, presets, custom)** — P0 · parcial: 16:9 e 4:3 na UI; tamanhos custom (`widthIn`/`heightIn`) são preservados do .pptx
+- [x] **Slide size (16:9, 4:3, presets, custom)** — P0 · parcial: **aba Design ▸ Personalizar ▸ Tamanho** (16:9 e 4:3); tamanhos custom (`widthIn`/`heightIn`) são preservados do .pptx
 - [x] **Header & footer (date, slide number, footer)** — P1 · parcial: rodapé e número da lâmina; sem campo de data
 - [ ] **Browse themes from .pptx/.thmx** — P2 · falta
-- [ ] **Designer layout suggestions (offline)** — P2 · falta
+- [x] **Designer layout suggestions (offline)** — P2 · tem: as **Ideias de design** (aba **Design ▸ Designer**) mostram a lâmina atual desenhada em cada design (catálogo + criados na hora), geradas no computador — o mesmo espírito do Design Ideas do DeckCraft; os **Arranjos** reorganizam a lâmina em fórmulas padrão
 
 ## Shapes (6/14)
 

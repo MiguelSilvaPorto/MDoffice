@@ -602,6 +602,23 @@ checa(
     /combina\("fita", e\)[\s\S]{0,300}alternarPeloVisivel\(\)/.test(ler("src/fita.ts")),
   "o botão voltaria (ou o gesto sumiria)"
 );
+// A aba Design segue os quatro blocos do Office (Temas · Variantes · Personalizar · Designer) e o
+// "Tamanho" (16:9/4:3) voltou a ter UI — ele ficou sem lugar quando o Configurar apresentação saiu.
+checa(
+  "aba Design: Temas, Variantes, Personalizar e Designer",
+  /private design\(\)[\s\S]*?grupo\("Temas"[\s\S]*?grupo\("Variantes"[\s\S]*?grupo\(\s*"Personalizar"[\s\S]*?grupo\("Designer"[\s\S]*?private exibir/.test(fitaPpt),
+  "os grupos da aba Design mudaram de ordem ou sumiram"
+);
+checa(
+  "aba Design: o Tamanho da lâmina tem botão e menu (16:9/4:3)",
+  /grande\("tamanho-lamina"[\s\S]{0,200}true\)/.test(fitaPpt) && /case "tamanho-lamina"[\s\S]{0,700}data-aspecto[\s\S]{0,400}run\("tamanho-lamina", b\.dataset\.aspecto\)/.test(fitaPpt),
+  "o menu de Tamanho não chega ao comando"
+);
+checa(
+  "aba Design: o Designer mora só nela (saiu da Página Inicial)",
+  (fitaPpt.match(/grupo\("Designer"/g) ?? []).length === 1,
+  "o grupo Designer aparece mais de uma vez"
+);
 // "Nova lâmina" vira botão dividido: a frente cria com o ÚLTIMO layout e a setinha abre a galeria
 checa(
   "Nova lâmina é um botão dividido (frente cria; setinha abre a galeria)",
@@ -715,9 +732,9 @@ console.log("\nídeias de design (a lâmina atual em cada modelo)");
   const inicioFita = fitaPpt.slice(fitaPpt.indexOf("private inicio(): string {"), fitaPpt.indexOf("private inserir(): string {"));
   const designFita = fitaPpt.slice(fitaPpt.indexOf("private design(): string {"), fitaPpt.indexOf("private exibir(): string {"));
   checa(
-    "o botão da fita abre o painel na aba das Ideias (aba Página Inicial ▸ grupo Designer)",
-    /grupo\("Designer", `\$\{grande\("ideias", ic\("i-spark"\)/.test(inicioFita) &&
-      !/grupo\("Designer"/.test(designFita) &&
+    "o botão da fita abre o painel na aba das Ideias (aba Design ▸ grupo Designer)",
+    /grupo\("Designer", `\$\{grande\("ideias", ic\("i-spark"\)/.test(designFita) &&
+      !/grupo\("Designer"/.test(inicioFita) &&
       /case "ideias":[\s\S]{0,200}mostrarLateral\("ideias"\)/.test(ppt),
     "o botão da fita ficaria sem efeito (ou o painel não trocaria de aba)"
   );
@@ -1405,9 +1422,9 @@ console.log("\nPowerPoint: o 'Configurar' saiu (a aba Design cobre)");
     "o botão ficou para trás"
   );
   checa(
-    "Design ▸ Personalizar ficou só com o fundo (sem o 'Tamanho')",
-    /grupo\("Personalizar", `\$\{grande\("fundo"/.test(fita) && !/grande\("configure"/.test(fita),
-    "o botão Tamanho abria o diálogo removido"
+    "Design ▸ Personalizar tem o fundo, o layout e o Tamanho (16:9/4:3)",
+    /grupo\(\s*"Personalizar",[\s\S]{0,200}grande\("fundo"[\s\S]{0,400}grande\("tamanho-lamina"/.test(fita) && !/grande\("configure"/.test(fita),
+    "o Tamanho voltou a ter lugar; o diálogo removido não pode voltar"
   );
   const docs = ler("src/app/powerpointDocs.ts");
   checa("o diálogo e o pedido do host saíram do app", !/askPptSetup/.test(docs) && !/configurePpt/.test(docs), "sobrou código do diálogo");
