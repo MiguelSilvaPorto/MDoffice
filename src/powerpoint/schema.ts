@@ -227,6 +227,13 @@ export interface Shape {
   sizePt?: [number, number];
   /** formas com o mesmo id de grupo se selecionam e se movem juntas */
   grupo?: string;
+  /**
+   * camada do Estúdio a que a forma pertence (nome mostrado no painel) — **só do app**: o `.pptx`
+   * não tem camadas, e o nome fica no rascunho/histórico para voltar a mexer nelas depois.
+   */
+  camada?: string;
+  /** forma escondida no app (o olho do painel de camadas): não é desenhada e NÃO vai ao `.pptx` */
+  oculta?: boolean;
   /** ligação presa (ferramenta Conectar): a geometria do conector é DERIVADA das formas ligadas */
   liga?: Liga;
   /** estilo de cor VIVO (ferramenta Estilos de Cor): a aparência é derivada da receita */

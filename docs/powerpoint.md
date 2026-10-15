@@ -443,6 +443,23 @@ pinta, em vez de entregar um recorte torto. O `Esc` sai da ferramenta (e depois 
 
 Teste: `npm run test:pintura`.
 
+## Estúdio · Camadas: a pintura numa lista
+
+O painel lateral tem a aba **Camadas**: cada **grupo de pintura** (e cada **forma solta**) aparece
+como uma **camada**, de cima para baixo = da frente para trás. Em cada uma:
+
+- **olho**: esconde/mostra a camada inteira. Escondida, ela **não é desenhada** (lâmina e miniatura)
+  e **não vai ao `.pptx`** — o arquivo é o que se vê;
+- **nome** editável (é do app: o `.pptx` não tem camadas — o que vai ao arquivo são as formas);
+- **opacidade** da camada (5% a 100%);
+- **▲/▼**: a camada sobe/desce **inteira** (as formas andam juntas na ordem z);
+- **⤓ fundir**: junta a camada na de baixo (o nome e o estado da de baixo mandam);
+- **✕ apagar** a camada inteira;
+- e o botão **Agrupar a pintura**, que junta as pinceladas da lâmina numa camada nova (com as formas
+  que estiverem escolhidas, quando houver duas ou mais).
+
+Teste: `npm run test:camadas`.
+
 ## Conectar formas
 
 - Na aba **Inserir**, o botão **Conectar** (grupo **Diagrama**, ao lado do Fluxo do Mermaid) liga

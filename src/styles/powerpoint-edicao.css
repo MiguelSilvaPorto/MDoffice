@@ -1663,8 +1663,118 @@ button.ppr.big .ppr-gal-ic svg {
   display: none;
 }
 
-/* ---------- Pintura: o pincel, o balde e o vidro (fase 3) ---------- */
+/* ---------- Camadas (fase 4): a lista com olho, nome, opacidade e ações ---------- */
 
+.pp-camadas-nova {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.pp-camadas-vazio {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.pp-camadas {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 8px;
+}
+
+.pp-camada {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel-2);
+}
+
+.pp-camada.oculta {
+  opacity: 0.55;
+}
+
+.pp-camada-corpo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pp-camada-nome {
+  width: 100%;
+  padding: 1px 4px;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.pp-camada-nome:hover,
+.pp-camada-nome:focus {
+  border-color: var(--border);
+  background: var(--panel);
+}
+
+.pp-camada-linha {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pp-camada-cont {
+  flex: none;
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.pp-camada-op {
+  flex: 1;
+  min-width: 0;
+}
+
+.pp-camada-olho,
+.pp-camada-acoes button {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pp-camada-olho:hover,
+.pp-camada-acoes button:hover:not(:disabled) {
+  color: var(--fg);
+  border-color: var(--border);
+}
+
+.pp-camada-acoes button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.pp-camada-olho[aria-pressed="true"] {
+  color: var(--accent);
+}
+
+.pp-camada-acoes {
+  display: flex;
+  gap: 1px;
+}
+
+/* ---------- Pintura: o pincel, o balde e o vidro (fase 3) ---------- */
 /* com a ferramenta de pintura na mão, as formas não pegam o ponteiro (quem desenha é o palco) */
 .pp-pintura-on .pp-slide [data-shape] {
   pointer-events: none;

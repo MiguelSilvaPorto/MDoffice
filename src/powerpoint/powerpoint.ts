@@ -8,6 +8,7 @@ import { pedirTexto } from "../dialogoTexto";
 import { fluxoParaFormas, lerFluxoMermaid } from "./edicao/mermaid";
 import { ligarAjusteAlturaFita, ligarEncaixeFita, ligarRecolherFita, ligarRodaHorizontal } from "../fita";
 import { podeIsolar, caminhoDaBox, mascaraDaBox, nomeDaBox } from "./edicao/estudio";
+import { camadasDe, criarCamada, renomearCamada, esconderCamada, opacidadeDaCamada, moverCamada, apagarCamada, fundirParaBaixo, PREFIXO_PINTURA } from "./edicao/camadas";
 import { regioesDa, regiaoEm, caminhoDaRegiao, mascaraDaRegiao, poligonoDaForma, type Ponto, type Regiao } from "./edicao/regioes";
 import { recortar, fitaDoTraco, ehConvexo, formaDaPintura } from "./edicao/pintura";
 import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, novaImagem, type EstiloDeck, type ItemGaleria } from "./edicao/criar";
@@ -205,7 +206,7 @@ export class PowerPointHost {
   private animPreview: ControleAnimacoes | null = null;
   private destinoImagem = "inserir";
   private destinoMidia: string | null = null;
-  private lateral: "formatar" | "notas" | "animacao" | "composicao" = "formatar";
+  private lateral: "formatar" | "notas" | "animacao" | "composicao" | "camadas" = "formatar";
   /** qual lote da Composição está à mostra (o botão "Gerar mais" avança) */
   private loteComposicao = 0;
   /** o filtro da Composição: o visual (padrão: formata as caixas sem movê-las), só a arrumação ou as duas metades juntas (Tudo) */
@@ -356,6 +357,7 @@ export class PowerPointHost {
             <button type="button" data-lateral="animacao">Animação</button>
             <button type="button" data-lateral="notas">Notas</button>
             <button type="button" data-lateral="composicao">Composição</button>
+            <button type="button" data-lateral="camadas">Camadas</button>
             <button type="button" class="pp-side-fechar" data-side-toggle title="Esconder o painel" aria-label="Esconder o painel">»</button>
           </div>
           <div class="pp-side-corpo pp-painel" data-formatar></div>
@@ -378,6 +380,12 @@ export class PowerPointHost {
             <label class="pp-ideias-todas" title="Aplica o visual escolhido a todas as lâminas da apresentação, e não só a esta"><input type="checkbox" data-composicao-todas /> Aplicar o visual a todas as lâminas</label>
             <button type="button" class="btn small pp-ideias-mais" data-composicao-mais title="Outras combinações de arrumação e visual">Gerar mais</button>
             <div class="pp-ideias" data-composicao></div>
+          </div>
+          <div class="pp-side-corpo" data-camadas-corpo hidden>
+            <div class="pp-side-head"><span>Camadas</span><span class="pp-side-hint">de baixo para cima</span></div>
+            <p class="pp-ideias-dica">Cada camada agrupa a pintura (e as formas) para <b>esconder</b>, reordenar, apagar ou mudar a <b>opacidade</b> de uma vez. O olho vale no app <b>e no .pptx</b>: o que está escondido não vai ao arquivo.</p>
+            <button type="button" class="btn small pp-camadas-nova" data-camada-nova title="Agrupa a pintura da lâmina numa camada só">Agrupar a pintura</button>
+            <div class="pp-camadas" data-camadas></div>
           </div>
         </aside>
         <button type="button" class="pp-side-aba" data-side-toggle title="Mostrar o painel" aria-label="Mostrar o painel">« Formatar</button>
@@ -435,8 +443,26 @@ export class PowerPointHost {
     this.ligarPainelLateral();
     // abas do painel lateral
     for (const b of this.pane.querySelectorAll<HTMLElement>("[data-lateral]")) {
-      b.addEventListener("click", () => this.mostrarLateral(b.dataset.lateral as "formatar" | "notas" | "animacao" | "composicao"));
+      b.addEventListener("click", () => this.mostrarLateral(b.dataset.lateral as "formatar" | "notas" | "animacao" | "composicao" | "camadas"));
     }
+    // o painel de Camadas: os botões de cada camada (o olho, a ordem, fundir, apagar) e o slider
+    const listaCamadas = $("[data-camadas]", this.pane);
+    listaCamadas.addEventListener("click", (ev) => {
+      const alvo = (ev.target as HTMLElement).closest<HTMLElement>("[data-camada-acao]");
+      if (!alvo) return;
+      const acao = alvo.dataset.camadaAcao!;
+      const camada = alvo.dataset.camada ?? "";
+      if (acao === "nova") this.run("camada-nova");
+      else this.run(`camada:${acao}`, camada);
+    });
+    listaCamadas.addEventListener("change", (ev) => {
+      const alvo = ev.target as HTMLElement;
+      const camada = alvo.dataset.camada;
+      if (!camada) return;
+      if (alvo.matches("[data-camada-op]")) this.run(`camada:op:${camada}`, (alvo as HTMLInputElement).value);
+      else if (alvo.matches("[data-camada-nome]")) this.run(`camada:nome:${camada}`, (alvo as HTMLInputElement).value);
+    });
+    $("[data-camada-nova]", this.pane).addEventListener("click", () => this.run("camada-nova"));
     // o visual vale só para a lâmina aberta, a menos que a opção "todas as lâminas" esteja ligada
     this.pane.querySelector<HTMLInputElement>("[data-composicao-todas]")?.addEventListener("change", (ev) => {
       this.composicaoTodas = (ev.target as HTMLInputElement).checked;
@@ -574,16 +600,18 @@ export class PowerPointHost {
     if (this.pane.classList.contains("pp-side-oculto")) this.pane.querySelector<HTMLElement>("[data-side-toggle]")?.click();
   }
 
-  private mostrarLateral(qual: "formatar" | "notas" | "animacao" | "composicao"): void {
+  private mostrarLateral(qual: "formatar" | "notas" | "animacao" | "composicao" | "camadas"): void {
     this.lateral = qual;
     for (const b of this.pane.querySelectorAll<HTMLElement>("[data-lateral]")) b.classList.toggle("on", b.dataset.lateral === qual);
     this.pane.querySelector<HTMLElement>("[data-formatar]")!.hidden = qual !== "formatar";
     this.pane.querySelector<HTMLElement>("[data-animacao-corpo]")!.hidden = qual !== "animacao";
     this.pane.querySelector<HTMLElement>("[data-notas-corpo]")!.hidden = qual !== "notas";
     this.pane.querySelector<HTMLElement>("[data-composicao-corpo]")!.hidden = qual !== "composicao";
+    this.pane.querySelector<HTMLElement>("[data-camadas-corpo]")!.hidden = qual !== "camadas";
     if (qual === "notas") this.notes.focus();
     else if (qual === "animacao") this.renderAnimacoes();
     else if (qual === "composicao") this.pintarComposicao();
+    else if (qual === "camadas") this.pintarCamadas();
     else this.painel.atualizar();
     // o botão "Painel" da aba Animações acompanha a aba aberta (fica aceso enquanto ela é a da vez)
     this.fita?.atualizar();
@@ -1125,6 +1153,45 @@ export class PowerPointHost {
     this.atualizarUI();
     // com a Composição aberta, ela acompanha a lâmina atual (e o modelo aplicado)
     if (this.lateral === "composicao") this.pintarComposicao();
+    // o painel de Camadas também (mexer na lâmina muda a lista)
+    if (this.lateral === "camadas") this.pintarCamadas();
+  }
+
+  /** O painel de Camadas: a lista de cima para baixo é a da FRENTE para trás (como nos editores). */
+  private pintarCamadas(): void {
+    const host = $("[data-camadas]", this.pane);
+    const camadas = camadasDe(this.atual());
+    const nova = this.pane.querySelector<HTMLButtonElement>("[data-camada-nova]");
+    const temPintura = this.atual().shapes.filter((s) => (s.name ?? "").startsWith(PREFIXO_PINTURA)).length > 1;
+    if (nova) nova.disabled = !(this.selecao.length > 1 || temPintura);
+    if (!camadas.length) {
+      host.innerHTML = `<p class="pp-camadas-vazio">Nenhuma forma nesta lâmina ainda.</p>`;
+      return;
+    }
+    host.innerHTML = [...camadas]
+      .reverse()
+      .map((c, i, todas) => {
+        const frente = i === 0;
+        const fundo = i === todas.length - 1;
+        const membros = c.membros.length === 1 ? "1 forma" : `${c.membros.length} formas`;
+        return `<div class="pp-camada${c.oculta ? " oculta" : ""}">
+          <button type="button" class="pp-camada-olho" data-camada-acao="olho" data-camada="${c.id}" title="${c.oculta ? "Mostrar esta camada" : "Esconder esta camada (não vai ao .pptx)"}" aria-pressed="${!c.oculta}">${c.oculta ? "○" : "◉"}</button>
+          <div class="pp-camada-corpo">
+            <input class="pp-camada-nome" data-camada-nome data-camada="${c.id}" value="${escapeHtml(c.nome)}" title="Nome da camada" aria-label="Nome da camada">
+            <div class="pp-camada-linha">
+              <span class="pp-camada-cont">${membros}</span>
+              <input type="range" class="pp-camada-op" data-camada-op data-camada="${c.id}" min="5" max="100" step="5" value="${Math.round(c.opacidade * 100)}" title="Opacidade da camada" aria-label="Opacidade da camada">
+            </div>
+          </div>
+          <div class="pp-camada-acoes">
+            <button type="button" data-camada-acao="sobe" data-camada="${c.id}" title="Subir a camada" ${frente ? "disabled" : ""}>▲</button>
+            <button type="button" data-camada-acao="desce" data-camada="${c.id}" title="Descer a camada" ${fundo ? "disabled" : ""}>▼</button>
+            <button type="button" data-camada-acao="fundir" data-camada="${c.id}" title="Fundir com a camada de baixo" ${fundo ? "disabled" : ""}>⤓</button>
+            <button type="button" data-camada-acao="apagar" data-camada="${c.id}" title="Apagar a camada">✕</button>
+          </div>
+        </div>`;
+      })
+      .join("");
   }
 
   /** só a lâmina e a seleção (usado enquanto se arrasta, para não refazer as miniaturas a cada quadro) */
@@ -1455,7 +1522,8 @@ export class PowerPointHost {
       return;
     }
     const ctx = this.ctxRender(true, this.selecao);
-    this.slideEl.innerHTML = slide.shapes.map((s) => htmlFormaRica(s, ctx)).join("") + (this.grade ? `<div class="pp-grade"></div>` : "");
+    // as formas escondidas (o olho do painel de camadas) não são desenhadas — e não pegam o ponteiro
+    this.slideEl.innerHTML = slide.shapes.filter((s) => !s.oculta).map((s) => htmlFormaRica(s, ctx)).join("") + (this.grade ? `<div class="pp-grade"></div>` : "");
     if (this.editando) this.ligarEdicao(this.editando);
   }
 
@@ -1475,7 +1543,7 @@ export class PowerPointHost {
       if (s.shapes.length) {
         inner.classList.add("pp-thumb-rica");
         inner.style.background = fundoValor(s.bg, this.setup.media ?? {}) || "var(--slide-bg, #fff)";
-        inner.innerHTML = s.shapes.map((f) => htmlFormaRica(f, ctx)).join("");
+        inner.innerHTML = s.shapes.filter((f) => !f.oculta).map((f) => htmlFormaRica(f, ctx)).join("");
       } else {
         const html = marked.parse(s.md, { gfm: true, async: false }) as string;
         inner.innerHTML = sanitize(html).slice(0, 400);
@@ -2431,6 +2499,15 @@ export class PowerPointHost {
     if (principal?.midia && this.comandoDeMidia(cmd, value)) return;
 
     // ---- comandos com valor no nome ----
+    // Camadas: a opacidade e o nome vêm no comando (os campos do painel)
+    if (cmd.startsWith("camada:op:")) {
+      this.editar((s) => opacidadeDaCamada(s, cmd.slice(10), Number(value) / 100), "camada-op");
+      return;
+    }
+    if (cmd.startsWith("camada:nome:")) {
+      this.editar((s) => renomearCamada(s, cmd.slice(12), String(value ?? "")), "camada-nome");
+      return;
+    }
     if (cmd.startsWith("pintura:transp:")) {
       this.pinturaTransp = Math.max(0.05, Math.min(1, Number(cmd.slice(15)) || 0.35));
       this.atualizarUI();
@@ -2877,6 +2954,28 @@ export class PowerPointHost {
         this.alternarModoRegioes();
         return;
       }
+      // ---- Camadas: a pintura (e as formas) agrupada numa lista que se esconde e ordena ----
+      case "camada-nova": {
+        this.editar((s) => criarCamada(s, this.selecao), "camada-nova");
+        return;
+      }
+      case "camada:olho": {
+        const c = camadasDe(sl).find((x) => x.id === value);
+        if (c) this.editar((s) => esconderCamada(s, value!, !c.oculta), "camada-olho");
+        return;
+      }
+      case "camada:sobe":
+        this.editar((s) => moverCamada(s, value!, 1), "camada-ordem");
+        return;
+      case "camada:desce":
+        this.editar((s) => moverCamada(s, value!, -1), "camada-ordem");
+        return;
+      case "camada:fundir":
+        this.editar((s) => fundirParaBaixo(s, value!), "camada-fundir");
+        return;
+      case "camada:apagar":
+        this.editar((s) => apagarCamada(s, value!), "camada-apagar");
+        return;
       // ---- Pintura: o pincel, o balde e o vidro (só dentro do Estúdio) ----
       case "pintura:pincel":
       case "pintura:balde":

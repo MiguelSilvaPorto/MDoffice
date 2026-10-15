@@ -48,7 +48,8 @@ export async function deckToPptx(deck: Deck, setup: DeckSetup, titulo = "Apresen
       ricas.push(i);
     } else {
       // fonte padrão do deck nas formas que não definiram a sua
-      const comFonte = { ...s, shapes: s.shapes.map((f) => ({ ...f, fontFamily: f.fontFamily || fonteTema(setup) })) };
+      // as formas ESCONDIDAS (o olho do painel de camadas) não vão ao arquivo: o `.pptx` é o que se vê
+      const comFonte = { ...s, shapes: s.shapes.filter((f) => !f.oculta).map((f) => ({ ...f, fontFamily: f.fontFamily || fonteTema(setup) })) };
       escreverLamina(slide, comFonte, setup);
     }
     escreverNotas(slide, s.notes);

@@ -56,7 +56,7 @@ export interface EstadoUI {
   /** parágrafos não vazios da forma principal (habilita o "por parágrafo") */
   animacaoParas?: number;
   /** aba aberta no painel lateral (aba Animações → grupo Animar → "Painel") */
-  lateral?: "formatar" | "notas" | "animacao" | "composicao";
+  lateral?: "formatar" | "notas" | "animacao" | "composicao" | "camadas";
   /** o painel lateral está à mostra (a aba acima pode estar aberta com o painel escondido) */
   lateralAberta?: boolean;
   /** a seleção tem formas agrupadas */

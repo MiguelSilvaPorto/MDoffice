@@ -413,6 +413,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Estúdio · Camadas: a pintura numa lista que se esconde, ordena e apaga de uma vez** (fase 4) — o
+  painel lateral ganhou a aba **Camadas**: cada **grupo de pintura** (e cada forma solta) aparece
+  como uma camada, com **olho**, **nome** editável, **opacidade**, e as ações **subir/descer** (a
+  camada inteira anda junta), **fundir com a de baixo**, **apagar** e **Agrupar a pintura** (junta
+  as pinceladas da lâmina numa camada nova). O **olho vale no app e no `.pptx`**: a forma escondida
+  não é desenhada na lâmina nem na miniatura e **não vai ao arquivo** — o `.pptx` é o que se vê.
+  Uma camada é um **grupo** (o mesmo `grupo` do "Agrupar") com nome (`camada`, do app: o `.pptx`
+  não tem camadas, e o nome fica no rascunho para voltar a mexer nelas). Teste:
+  `npm run test:camadas`.
+
 - **Estúdio · Pintura: desenhar dentro da fronteira, com translucidez** (fase 3) — o grupo **Pintura**
   (aba Desenhar) traz **Pincel**, **Balde** e **Vidro** + a **transparência** (Opaco/75/50/35/20%),
   e todos só valem **dentro do Estúdio** (a fronteira é de lá): o **Pincel** rabisca e o traço é

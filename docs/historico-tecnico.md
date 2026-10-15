@@ -12219,3 +12219,44 @@ antigas quando fizer sentido.
   promoções anteriores. As demais entradas de "Não adicionado" (o Estúdio Pintura, o Estúdio Regiões,
   a aba Animações que cabe na tela, o Estúdio fase 1 e as juntas do desenho) ficaram **intactas** —
   são de sessões com trabalho aberto.
+
+
+## src/powerpoint/edicao/camadas.ts (arquivo novo) · schema.ts · powerpoint.ts · pptxexport
+
+### 2026-10-15 · Estúdio (fase 4) · as camadas da pintura
+
+- **Local:** `camadasDe`, `criarCamada`, `renomearCamada`, `esconderCamada`, `opacidadeDaCamada`,
+  `moverCamada`, `fundirParaBaixo`, `apagarCamada`, `isolarCamada`, `mostrarTodas`; `Shape.camada` e
+  `Shape.oculta` (schema); a aba **Camadas** do painel (`pintarCamadas()` + os comandos
+  `camada-nova`/`camada:*`) e o filtro das escondidas (`pintarSlide`, `pintarStrip` e o exportador)
+- **Linha:** `+ camada?: string` (nome da camada, só do app) e `+ oculta?: boolean` (o olho);
+  `+` a lista do painel (olho, nome, opacidade, ▲▼, fundir, apagar) e os comandos
+  `camada:olho|sobe|desce|fundir|apagar`, `camada:op:<id>`, `camada:nome:<id>`; nos três desenhos,
+  `+ .filter((f) => !f.oculta)`
+- **Porquê:** a camada **não inventou um modelo paralelo**: ela é o `grupo` que o "Agrupar" já usa
+  (com os membros vizinhos na ordem, o que faz mover/ordenar/fundir serem só reordenação do array —
+  nada de árvore nova, e o desfazer, o rascunho e a exportação continuam valendo). O **olho** foi a
+  decisão mais delicada: esconder poderia ser só visual (o arquivo mostraria o que você não quer
+  ver) ou valer no arquivo — escolhemos o arquivo, porque é o que "escondi" significa na hora de
+  entregar; está dito na dica do painel e no doc do módulo. As **escondidas somem dos três
+  desenhos** (lâmina, miniatura e `.pptx`) porque deixá-las na miniatura e não na lâmina daria duas
+  verdades na mesma tela. O nome da camada vive em `Shape.camada` (app) porque o OOXML não tem
+  camadas: o que o arquivo guarda são as formas (com a opacidade), e o nome fica no
+  rascunho/histórico para a pessoa reconhecer a camada ao reabrir. `fundirParaBaixo` leva a camada
+  de baixo por inteiro (o nome e o estado dela mandam em quem recebe) — misturar os dois nomes seria
+  pior que escolher um.
+
+## scripts/testar-camadas.mjs · package.json
+
+### 2026-10-15 · Estúdio (fase 4) · o teste do modelo de camadas (24 checagens)
+
+- **Local:** script novo; `package.json` ganhou `"test:camadas"`
+- **Linha:** `novo` — a leitura das camadas (grupo × forma solta, nome, olho, pintura), agrupar a
+  pintura ou uma seleção, o olho (e o `oculta` removido ao mostrar), a opacidade da camada com piso,
+  subir/descer a camada INTEIRA, fundir (e o limite da de baixo), apagar, isolar/mostrar tudo; e a
+  fiação (schema, aba, render, comandos, os três desenhos filtrando e o CSS)
+- **Porquê:** as operações são invisíveis quando erram de meia — uma camada que sobe "meio" (um
+  membro fora do grupo) desmancha o desenho e o desfazer não conta a história; por isso os testes
+  olham a ORDEM das formas depois de cada ação, e não só o `grupo`. O caso do `oculta` removido (e
+  não deixado como `false`) prende o JSON do rascunho: uma chave `false` viajaria para o `.pptx`
+  como uma forma "não escondida" que o importador teria de entender à toa.
