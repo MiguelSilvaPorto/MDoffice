@@ -1428,5 +1428,36 @@ const DES = await empacotar("src/powerpoint/edicao/desenho.ts", "desenho2.mjs");
   ok("desenho: o arco girado vai no .pptx com rotação e ângulos", /prst="arc"/.test(xml) && /rot="\d+"/.test(xml) && /adj1/.test(xml) && /adj2/.test(xml));
 }
 
+// ---------------------------------------------------------------- animação: ida e volta no .pptx (p:timing)
+
+const TIM = await empacotar("src/powerpoint/pptxexport/timing.ts", "timing-exp.mjs");
+const TIMI = await empacotar("src/powerpoint/pptximport/timing.ts", "timing-imp.mjs");
+{
+  const animacoes = [
+    { forma: "s1", tipo: "surgir", duracao: 1, inicio: "clicar" },
+    { forma: "s2", tipo: "aparecer" },
+    { forma: "s3", tipo: "voar", direcao: "esquerda", inicio: "depois" },
+  ];
+  const xml = TIM.xmlTiming(animacoes, { s1: 2, s2: 3, s3: 4 }, []);
+  ok(
+    "timing: o XML sai na estrutura que o PowerPoint entende (timing + seq + par)",
+    /<p:timing>/.test(xml) && /<p:seq/.test(xml) && /<p:par>/.test(xml) && /<p:childTnLst>/.test(xml)
+  );
+  ok(
+    "timing: cada efeito leva o preset e a forma (surgir=10, aparecer=1, voar=2)",
+    /presetID="10"/.test(xml) && /presetID="1"/.test(xml) && /presetID="2"/.test(xml) && /spid="2"/.test(xml) && /spid="4"/.test(xml)
+  );
+  ok("timing: a duração vai no comportamento (1 s = 1000)", /dur="1000"/.test(xml));
+  const lido = TIMI.lerTiming(`<p:sld>${xml}</p:sld>`, new Map([["2", "s1"], ["3", "s2"], ["4", "s3"]]));
+  const tipos = (lido.animacoes ?? []).map((a) => `${a.forma}:${a.tipo}`).join(",");
+  ok("timing: a ida e volta devolve os três efeitos nas formas certas", lido.animacoes?.length === 3 && tipos === "s1:surgir,s2:aparecer,s3:voar", tipos);
+  ok(
+    "timing: a ida e volta preserva duração e início",
+    lido.animacoes?.[0]?.duracao === 1 && lido.animacoes?.[2]?.inicio === "depois",
+    JSON.stringify(lido.animacoes)
+  );
+  ok("timing: sem animações não escreve nada", TIM.xmlTiming([], { s1: 2 }, []) === "");
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);

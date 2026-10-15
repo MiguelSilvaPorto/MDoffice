@@ -427,6 +427,26 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   o resto cai no retângulo da caixa) — é ele que as próximas fases (pintura recortada, camadas e as
   **cópias vinculadas**) vão usar como fronteira. Teste: `npm run test:estudio`.
 
+- **A animação vale para TODA a seleção (os ajustes e o Remover também)**: aplicar o efeito já era
+  por forma escolhida, mas os controles de ajuste (**Início**, **Duração**, **Atraso**, **Direção**
+  e **Por parágrafo**) e o **Remover** olhavam só a última forma escolhida — com duas caixas
+  selecionadas, a segunda ficava com o efeito original ("seria possivel aplicar animação somente na
+  seleção das box não no slide inteiro"). Agora os controles valem para a seleção inteira, como no
+  PowerPoint, e o **Remover** que esvazia a lista limpa o campo de verdade. A aba **Transições**
+  ganhou a nota de que a transição é da lâmina — para animar uma forma escolhida, a aba é a
+  **Animações** — e a aba **Animações** a nota espelhada. A exportação já levava a animação (o
+  `p:timing` que o PowerPoint toca) e ganhou verificação própria: estrutura do PowerPoint, presets
+  (`surgir=10`, `aparecer=1`, `voar=2`), duração em milissegundos e o modelo de volta inteiro.
+  Testes: `npm run test:pptx-edicao` e `npm run test:layout`.
+
+- **As juntas entre a reta encaixada e a curva saíram suaves (sem quebras)**: o encaixe nos eixos
+  deixa os trechos quase retos como retas, mas a cúbica que continuava da reta saía na tangente do
+  vizinho de trás do traço — a reta encostava na curva de esguelha e ficava uma **quina** visível
+  (print do usuário: "ficou com umas quebras, não ficou suave"). Agora o braço da cúbica nas juntas
+  continua a **direção da reta** (um terço do trecho da curva, ~o arco de círculo que a mão faz) e o
+  `reto` do Alt continua fazendo quina. O ajuste vale para o caminho final **e** para a prévia
+  (mesma função nos dois). Teste: `npm run test:desenho`.
+
 - **Aba Design completa: Temas, Variantes, Personalizar e Designer**: a aba tinha só dois grupos
   (fundo e layout) e agora segue os quatro blocos do Office, com a cara do app. **Temas** abre a
   galeria de modelos (a mesma do botão Template), **Variantes** é novo — as seis famílias de cor do

@@ -3929,46 +3929,66 @@ export class PowerPointHost {
     this.preverAnimacoes();
   }
 
-  /** Muda o início do efeito da forma principal (ao clicar / com / depois do anterior). */
+  /**
+   * Ajusta os efeitos de **todas as formas escolhidas** — como no PowerPoint, os controles
+   * (início, duração, atraso, direção, por parágrafo, remover) valem para a seleção; com uma
+   * forma só, é o efeito dela. Antes os controles usavam `principal()` e mexiam apenas na
+   * última forma escolhida: com duas caixas selecionadas, a segunda ficava com a animação
+   * original.
+   */
+  private editarAnimacoesDaSelecao(fn: (lista: Animacao[] | undefined, id: string) => Animacao[] | undefined, rotulo: string): void {
+    if (!this.selecao.length) return;
+    const ids = comGrupos(this.atual(), this.selecao);
+    this.editarAnimacoes((lista) => {
+      let nova = lista;
+      // a forma sem efeito deixa o helper devolver undefined: fica o que já estava
+      for (const id of ids) nova = fn(nova, id) ?? nova;
+      return nova;
+    }, rotulo);
+  }
+
+  /** Muda o início do efeito das formas escolhidas (ao clicar / com / depois do anterior). */
   private mudarInicioAnimacao(inicio: AnimacaoInicio): void {
-    const f = this.principal();
-    if (!f) return;
-    this.editarAnimacoes((lista) => comInicio(lista, f.id, inicio), "animacao");
+    this.editarAnimacoesDaSelecao((lista, id) => comInicio(lista, id, inicio), "animacao");
   }
 
-  /** Muda a duração do efeito da forma principal (só nos efeitos com transição). */
+  /** Muda a duração do efeito das formas escolhidas (só nos efeitos com transição). */
   private mudarDuracaoAnimacao(segundos: number): void {
-    const f = this.principal();
-    if (!f || !Number.isFinite(segundos)) return;
-    this.editarAnimacoes((lista) => comDuracao(lista, f.id, segundos), "animacao");
+    if (!Number.isFinite(segundos)) return;
+    this.editarAnimacoesDaSelecao((lista, id) => comDuracao(lista, id, segundos), "animacao");
   }
 
-  /** Muda o atraso do efeito da forma principal (0 = sem atraso). */
+  /** Muda o atraso do efeito das formas escolhidas (0 = sem atraso). */
   private mudarAtrasoAnimacao(segundos: number): void {
-    const f = this.principal();
-    if (!f || !Number.isFinite(segundos)) return;
-    this.editarAnimacoes((lista) => comAtraso(lista, f.id, segundos), "animacao");
+    if (!Number.isFinite(segundos)) return;
+    this.editarAnimacoesDaSelecao((lista, id) => comAtraso(lista, id, segundos), "animacao");
   }
 
-  /** Muda a direção da trajetória da forma principal. */
+  /** Muda a direção da trajetória das formas escolhidas. */
   private mudarDirecaoAnimacao(direcao: AnimacaoDirecao): void {
-    const f = this.principal();
-    if (!f) return;
-    this.editarAnimacoes((lista) => comDirecao(lista, f.id, direcao), "animacao");
+    this.editarAnimacoesDaSelecao((lista, id) => comDirecao(lista, id, direcao), "animacao");
   }
 
-  /** Liga/desliga o "por parágrafo" do efeito da forma principal. */
+  /** Liga/desliga o "por parágrafo" do efeito das formas escolhidas. */
   private mudarPorParagrafoAnimacao(ativo: boolean): void {
-    const f = this.principal();
-    if (!f) return;
-    this.editarAnimacoes((lista) => comPorParagrafo(lista, f.id, ativo), "animacao");
+    this.editarAnimacoesDaSelecao((lista, id) => comPorParagrafo(lista, id, ativo), "animacao");
   }
 
-  /** Tira o efeito da forma (a principal ou a indicada pelo painel de animação). */
+  /** Tira o efeito das formas escolhidas (ou só da indicada pelo painel de animação). */
   private removerAnimacao(forma?: string): void {
-    const id = forma ?? this.principal()?.id;
-    if (!id) return;
-    this.editarAnimacoes((lista) => semAnimacao(lista, id), "animacao-remover");
+    // o `semAnimacao` devolve `undefined` também quando a lista FICA VAZIA (resultado válido:
+    // o campo é limpo) — por isso aqui o undefined passa, em vez de manter a lista anterior
+    if (forma) {
+      this.editarAnimacoes((lista) => semAnimacao(lista, forma), "animacao-remover");
+      return;
+    }
+    if (!this.selecao.length) return;
+    const ids = comGrupos(this.atual(), this.selecao);
+    this.editarAnimacoes((lista) => {
+      let nova: Animacao[] | undefined = lista;
+      for (const id of ids) nova = semAnimacao(nova, id);
+      return nova;
+    }, "animacao-remover");
   }
 
   /** Move o efeito da forma na ordem (passo -1 sobe, +1 desce). */

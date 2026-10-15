@@ -2493,5 +2493,31 @@ console.log("\ndica: títulos aninhados não piscam e a saída é suave");
   checa("a folha tem a transição da saída (e respeita reduced-motion)", /\.dica\.saindo \{[\s\S]{0,120}opacity: 0/.test(css), "sem a regra, a classe não faz nada");
 }
 
+// ---------------------------------------------------------------- animação por forma (seleção)
+
+console.log("\nPowerPoint: animação vai para toda a seleção (e a exportação leva)");
+
+{
+  const ppt = ler("src/powerpoint/powerpoint.ts");
+  const fita = ler("src/powerpoint/ui/fita.ts");
+  checa(
+    "os ajustes de animação valem para TODA a seleção (não só a forma principal)",
+    /private editarAnimacoesDaSelecao\(/.test(ppt) &&
+      /const ids = comGrupos\(this\.atual\(\), this\.selecao\);/.test(ppt) &&
+      !/mudarInicioAnimacao\(inicio: AnimacaoInicio\): void \{\r?\n\s+const f = this\.principal\(\)/.test(ppt),
+    "com duas formas escolhidas, a segunda ficava com o efeito original"
+  );
+  checa(
+    "o Remover leva a lista vazia a sério (undefined = limpou o campo)",
+    /private removerAnimacao\([\s\S]{0,700}let nova: Animacao\[\] \| undefined = lista;[\s\S]{0,140}for \(const id of ids\) nova = semAnimacao\(nova, id\);/.test(ppt),
+    "a última forma da seleção ficava com a animação"
+  );
+  checa(
+    "a aba Transições aponta a aba Animações para animar uma forma",
+    /Transição é da lâmina — para animar uma forma escolhida, use a aba Animações\./.test(fita),
+    "o usuário procurou animar a forma na aba da lâmina"
+  );
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

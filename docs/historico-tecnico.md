@@ -11636,3 +11636,67 @@ antigas quando fizer sentido.
   que seguem em "Não adicionado" (a aba Animações, o Estúdio do Desenhar, a aba Design completa e o
   Template com desenho) são de sessões com trabalho aberto, mexer nelas criaria duplicata ou
   conflito.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-15 · a animação na seleção · os ajustes valem para toda a seleção
+- **Local:** os setters `mudarInicioAnimacao`, `mudarDuracaoAnimacao`, `mudarAtrasoAnimacao`,
+  `mudarDirecaoAnimacao`, `mudarPorParagrafoAnimacao` e `removerAnimacao`, com o helper novo
+  `editarAnimacoesDaSelecao` logo acima
+- **Linha:** `const f = this.principal()` → `const ids = comGrupos(this.atual(), this.selecao)`
+  num laço (o helper); no Remover, `semAnimacao` por forma da seleção — antes o id era
+  `forma ?? this.principal()?.id`
+- **Porquê:** o usuário pediu "aplicar animação somente na seleção das box não no slide inteiro" —
+  a aplicação já era por forma escolhida, mas os ajustes e o Remover olhavam só a **forma
+  principal** (a última escolhida): com duas caixas selecionadas, a segunda ficava com o efeito
+  original (a duração não pegava; o Remover deixava uma para trás). O `editarAnimacoesDaSelecao`
+  mantém a lista quando o helper devolve `undefined` por "essa forma não tem efeito"
+  (`comInicio` & cia), mas o `removerAnimacao` **recebe** o `undefined` de "a lista ficou vazia"
+  para limpar o campo de verdade (`normalizarAnimacoes` devolve `undefined` na lista vazia;
+  engolir esse caso deixava a última forma da seleção com animação — pego na verificação no
+  navegador, "depoisDeRemover: 1").
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-15 · a animação na seleção · as notas das abas
+- **Local:** `transicoes()` (grupo "Aplicar") e `animacoes()` (grupo "Animação"), reusando a
+  classe `.ppr-trans-nota` que já existia para o "Original preservada"
+- **Linha:** `+` a nota "Transição é da lâmina — para animar uma forma escolhida, use a aba
+  Animações." e a espelhada "A animação vale para as formas escolhidas; a lâmina é a aba
+  Transições."
+- **Porquê:** o relato veio com o print da aba **Transições** — o usuário procurou animar a forma
+  no lugar da lâmina. A nota responde onde a dúvida acontece, e a espelhada fecha o caminho de
+  volta (as duas caberam no grupo sem rolagem, é só um span).
+
+## scripts/testar-edicao-pptx.mjs
+
+### 2026-10-15 · a animação na seleção · a ida e volta do p:timing em três formas
+- **Local:** bloco novo "animação: ida e volta no .pptx (p:timing)", no fim do arquivo
+- **Linha:** `+` seis checagens — estrutura (`p:timing`/`p:seq`/`p:par`/`p:childTnLst`), presets
+  (`surgir=10`, `aparecer=1`, `voar=2`) nos spids certos, duração em ms (`dur="1000"`) e o
+  round-trip (`xmlTiming` → `lerTiming`) devolvendo os três efeitos com forma/tipo/duração/início
+- **Porquê:** o usuário perguntou se a exportação leva a animação para o PowerPoint — o
+  `lerTiming` é o mesmo leitor que reabre o arquivo, então a ida e volta prova que o que
+  escrevemos é o que o app entende (o PowerPoint lê a mesma estrutura, validada contra arquivos
+  reais no módulo); os três efeitos em três formas prendem o caso "por forma", não "na lâmina".
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · a animação na seleção · as três checagens de fonte
+- **Local:** bloco novo "PowerPoint: animação vai para toda a seleção", antes do fecho do script
+- **Linha:** `+` as checagens: o helper `editarAnimacoesDaSelecao` com
+  `comGrupos(this.atual(), this.selecao)` (e sem o antigo `principal()` no início do setter), o
+  laço do Remover levando o `undefined` da lista vazia, e a nota da aba Transições
+- **Porquê:** a superfície é a fonte (o comportamento já está nas outras suítes) — as checagens
+  prendem a regressão de voltar a mexer só na forma principal e a nota que responde ao relato.
+
+## docs/powerpoint.md
+
+### 2026-10-15 · a animação na seleção · as balas das animações e da transição
+- **Local:** as balas "Animações de forma" e "Transições de lâmina"
+- **Linha:** `+` "o arquivo exportado toca as animações no PowerPoint" e "os controles valem para
+  toda a seleção"; `+` na transição, "a aba lembra que a transição é da lâmina — para animar uma
+  forma, a aba é a Animações"
+- **Porquê:** a bala dizia "por forma", mas não dizia que os controles acompanham a seleção
+  inteira; e o relato nasceu da confusão entre a transição (lâmina) e a animação (forma), que
+  agora fica escrita no documento.

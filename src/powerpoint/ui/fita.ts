@@ -642,7 +642,8 @@ export class Fita {
       grupo("Duração", `<div class="ppr-linha">${duracoes}<span class="ppr-trans-dur" data-trans-dur></span></div>`),
       grupo(
         "Aplicar",
-        `${grande("transicao-todas", ic("i-addons"), "Aplicar a todas", "Aplicar esta transição a todas as lâminas")}${grande("transicao-previa", ic("i-eye"), "Prévia", "Reproduzir a transição nesta lâmina, sem entrar no F5")}`
+        `${grande("transicao-todas", ic("i-addons"), "Aplicar a todas", "Aplicar esta transição a todas as lâminas")}${grande("transicao-previa", ic("i-eye"), "Prévia", "Reproduzir a transição nesta lâmina, sem entrar no F5")}
+         <span class="ppr-trans-nota">Transição é da lâmina — para animar uma forma escolhida, use a aba Animações.</span>`
       ),
     ].join("");
   }
@@ -670,6 +671,7 @@ export class Fita {
       grupo(
         "Animação",
         `<div class="ppr-anim-wrap"><div class="ppr-trans ppr-anim">${galeria}</div>
+         <span class="ppr-trans-nota">A animação vale para as formas escolhidas; a lâmina é a aba Transições.</span>
          <span class="ppr-trans-nota" data-anim-nota hidden title="As animações deste arquivo não são representadas pelo app: voltam como vieram na exportação">Original preservada</span></div>`
       ),
       grupo("Início", `<div class="ppr-linha">${inicios}</div>`),
