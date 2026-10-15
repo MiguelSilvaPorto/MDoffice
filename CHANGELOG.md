@@ -1157,22 +1157,9 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **As Alterações têm nome (o "+6983 −6984" saiu da lista)**: a lista de commits de um documento
-  mostrava só números — o tamanho do texto que entrou e saiu —, e numa apresentação não dava para
-  saber o que tinha mudado. Agora cada alteração tem um **nome**: numa apresentação, **qual lâmina**
-  mudou ("**Lâmina 3 alterada**", "**Lâminas 2 e 4 alteradas**", "**Nova lâmina**", "**Lâmina
-  excluída**") e, quando o texto não mudou (cor, forma ou posição — o caso de aplicar um modelo ou
-  uma variante), "**Alteração visual (sem mudança de texto)**"; nos documentos de texto, quantas
-  **linhas** mudaram ("**1 linha alterada**", "**12 linhas alteradas**"). O nome é calculado no
-  fecho da pausa, a partir do texto legível de cada motor (nunca da serialização). Teste:
-  `npm run test:log`.
+- (nada no momento)
 
 **Ferramentas (dev)**
-
-- **`test:layout` voltou a rodar (faltava um `);` e um `}`)**: a fusão de duas sessões na `main`
-  deixou o `scripts/testar-layout.mts` sem fechar a checagem do resumo do histórico e o bloco dela
-  — o arquivo **não parseava** e nenhuma verificação do `test:layout` rodava. As duas chaves
-  entraram junto com a atualização da checagem (o resumo virou o **nome** da alteração).
 
 ### Adicionado (na main)
 
@@ -1225,6 +1212,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **As Alterações têm nome (o "+6983 −6984" saiu da lista)**: a lista de commits de um documento
+  mostrava só números — o tamanho do texto que entrou e saiu —, e numa apresentação não dava para
+  saber o que tinha mudado. Agora cada alteração tem um **nome**: numa apresentação, **qual lâmina**
+  mudou ("**Lâmina 3 alterada**", "**Lâminas 2 e 4 alteradas**", "**Nova lâmina**", "**Lâmina
+  excluída**") e, quando o texto não mudou (cor, forma ou posição — o caso de aplicar um modelo ou
+  uma variante), "**Alteração visual (sem mudança de texto)**"; nos documentos de texto, quantas
+  **linhas** mudaram ("**1 linha alterada**", "**12 linhas alteradas**"). O nome é calculado no
+  fecho da pausa, a partir do texto legível de cada motor (nunca da serialização). Teste:
+  `npm run test:log`.
 
 - **A fita cabe na largura em quatro degraus — e sem rolagem (PowerPoint, Word e Excel)**: a faixa
   de opções deixou de empurrar botão para fora da tela. Do mais folgado ao mais apertado: (1)

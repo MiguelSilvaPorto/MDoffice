@@ -10877,3 +10877,19 @@ antigas quando fizer sentido.
   conta própria (a sessão do "fechar todos" consertou os dois estragos: o `);`/`}` do teste e o
   bloco do histórico). Manter as duas cópias deixaria o registro **duplicado** — a resolução ficou
   com a versão da `main` e só as entradas desta tarefa entraram depois dela.
+
+## CHANGELOG.md
+
+### 2026-10-15 · o nome das alterações · a promoção das entradas
+- **Local:** Geral → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo); e a entrada
+  de **Ferramentas (dev)** que saiu
+- **Linha:** 1 entrada movida inteira (os nomes das alterações, `0f00165`); `-` a entrada do
+  `test:layout` (o `);`/`}` faltando)
+- **Porquê:** o fecho não pode promover (a entrada ainda não está na main no instante do commit),
+  então a promoção anda depois, quando o commit chega (aqui o `fechar.ps1` já integrara e
+  enviara). A entrada de **Ferramentas** saiu em vez de migrar: a promoção da sessão das
+  resoluções de conflito (`80744cf`) já registrou o MESMO conserto do `test:layout` em Adicionado
+  — manter a minha criaria duas entradas para o mesmo fato. O que é desta tarefa naquele arquivo
+  (as checagens do resumo e do cartão da Animações atualizadas) segue no histórico técnico, que é
+  onde o porquê mora. As outras entradas que continuam em "Não adicionado" são de sessões com
+  trabalho aberto — mexer nelas criaria duplicata ou conflito.
