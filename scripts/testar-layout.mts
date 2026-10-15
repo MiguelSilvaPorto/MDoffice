@@ -717,14 +717,25 @@ checa(
 );
 // O chevron de recolher saiu a pedido e o duplo clique numa aba TAMBÉM saiu (recolhia a faixa
 // sem querer ao trocar de aba ou ao abrir e fechar um popup pelo botão): o recolher vive no Ctrl+F1.
+// E a faixa não se recolhe sozinha: abrir (clicar numa aba) é um pedido e a escolha fica — o
+// "por enquanto" (fechar ao clicar na lâmina, num comando ou depois de um popup) saiu.
+const fitaTs = ler("src/fita.ts");
 checa(
   "recolher a faixa: só o Ctrl+F1 (nem botão, nem duplo clique)",
-  !/fita-recolher/.test(ler("src/fita.ts")) &&
+  !/fita-recolher/.test(fitaTs) &&
     !/\.fita-recolher/.test(ler("src/styles/fita.css")) &&
-    !/addEventListener\("dblclick"[\s\S]{0,200}alternarPeloVisivel\(\)/.test(ler("src/fita.ts")) &&
-    /combina\("fita", e\)[\s\S]{0,300}alternarPeloVisivel\(\)/.test(ler("src/fita.ts")) &&
-    /const repetido = [\s\S]{0,140}< 450;/.test(ler("src/fita.ts")),
+    !/addEventListener\("dblclick"/.test(fitaTs) &&
+    /combina\("fita", e\)[\s\S]{0,300}fixar\(!recolhida\)/.test(fitaTs),
   "o duplo clique (na aba ou num botão) voltaria a recolher a faixa sem querer"
+);
+checa(
+  "a faixa não se esconde sozinha (o 'por enquanto' saiu)",
+  /o\.abas\.addEventListener\("click", \(\) => \{\s*if \(recolhida\) fixar\(false\);/.test(fitaTs) &&
+    !/temporaria/.test(fitaTs) &&
+    !/t\.closest\("\.fita-resize/.test(fitaTs) &&
+    !/addEventListener\("change"/.test(fitaTs) &&
+    !/setTimeout/.test(fitaTs),
+  "sobrou um caminho que recolhe a faixa sem o usuário mandar"
 );
 // A aba Design segue os quatro blocos do Office (Temas · Variantes · Personalizar · Designer) e o
 // "Tamanho" (16:9/4:3) voltou a ter UI — ele ficou sem lugar quando o Configurar apresentação saiu.
@@ -1102,26 +1113,20 @@ console.log("\nfita: o mesmo botão recolhe o que ele abriu");
 
 // ---------------------------------------------------------------- fita x popups
 
-console.log("\nfita: não recolhe enquanto se escolhe num popup");
+console.log("\nfita: escolher num popup não mexe na faixa");
 {
+  // A regra do "clicou fora" saiu com o "por enquanto": a faixa não se recolhe sozinha, então não
+  // há mais o que blindar contra o clique no popup — a marca `app-popup` (e a decisão por tique)
+  // saíram junto. O que fica preso é isso: a marca não volta sem a regra (nem a regra sem a marca).
   const fitaTs = ler("src/fita.ts");
   checa(
-    "o clique dentro de um popup (ou diálogo) do app não conta como 'fora'",
-    /t\.closest\("\.fita-resize, \.app-popup, \.modal-backdrop, \.modal"\)/.test(fitaTs),
-    "o popup vive no body: sem isso, escolher um modelo recolhe a fita por baixo do menu"
-  );
-  checa(
-    "o comando que abre um popup não recolhe a fita (a decisão espera um tique)",
-    /setTimeout\(\(\) => \{\s*if \(recolhida && temporaria && !document\.querySelector\("\.app-popup"\)\) \{/.test(fitaTs),
-    "sem a espera, clicar no Template recolheria a fita antes de o popup abrir"
-  );
-  checa(
-    "os popups do app marcam `app-popup` (PowerPoint, Word, seletor e menu do Excel)",
-    /pp-popup app-popup/.test(ler("src/powerpoint/ui/popup.ts")) &&
-      /pop\.classList\.add\("app-popup"\)/.test(ler("src/word/ribbon.ts")) &&
-      /class: "dropdown sel-menu app-popup"/.test(ler("src/seletor.ts")) &&
-      /class: "dropdown xl-menu app-popup"/.test(ler("src/excel/host.ts")),
-    "um popup sem a marca volta a recolher a fita ao ser clicado"
+    "os popups do app não carregam mais a marca `app-popup` (nem a faixa a lê)",
+    !/app-popup/.test(fitaTs) &&
+      !/app-popup/.test(ler("src/powerpoint/ui/popup.ts")) &&
+      !/app-popup/.test(ler("src/word/ribbon.ts")) &&
+      !/app-popup/.test(ler("src/seletor.ts")) &&
+      !/app-popup/.test(ler("src/excel/host.ts")),
+    "a marca ficaria sem quem a leia (ou a regra antiga voltaria pela metade)"
   );
 }
 
@@ -2092,21 +2097,16 @@ console.log("\nPowerPoint: aba Animações (o desenho da fita)");
   );
 }
 
-// ---------------------------------------------------------------- recolher a faixa (chevron)
+// ---------------------------------------------------------------- recolher a faixa
 
-console.log("\nfita: o botão de recolher decide pelo que está à vista");
+console.log("\nfita: a faixa fica como o usuário a deixou");
 
 {
   const fita = ler("src/fita.ts");
   checa(
-    "o chevron recolhe o que está à vista (não o estado fixo)",
-    /const visivel = !\(recolhida && !temporaria\);[\s\S]{0,80}fixar\(visivel\)/.test(fita),
-    "com a faixa à mostra no modo recolhido (Template), o clique fixava aberta em vez de recolher"
-  );
-  checa(
-    "o botão continua anunciando o que vai fazer",
-    /const titulo = escondida[\s\S]{0,400}Recolher a faixa de opções/.test(fita),
-    "o título precisa acompanhar o estado visível"
+    "a dica da barra das abas diz o que o gesto faz (e não promete o duplo clique que saiu)",
+    /const titulo = escondida[\s\S]{0,400}Mostrar a faixa de opções completa[\s\S]{0,240}Recolher a faixa de opções, deixando a faixa única/.test(fita) && !/duplo clique numa aba/.test(fita),
+    "a dica precisa acompanhar o estado (e o gesto em vigor)"
   );
 }
 

@@ -1,13 +1,13 @@
 // Controles compartilhados da faixa de opções (o "topo" do editor):
 //
-// - Recolher/expandir: **Ctrl+F1** (a dica vive no `title` da barra das abas). Sem duplo clique:
-//   dois cliques numa aba — ou num botão, como o Template — recolhiam a faixa sem querer (a
-//   pedido; ver o `click` daqui de baixo, que também ignora o clique repetido).
-//   Recolhida, a faixa se abre só na hora de usar: escolher um comando, mudar um
-//   campo ou clicar fora devolve o espaço automaticamente (como no Office) — menos
-//   enquanto a pessoa escolhe num **popup do app**: eles marcam a classe `app-popup`
-//   (os do PowerPoint, os do Word, o menu do `seletor`, o menu do Excel) e o clique
-//   dentro deles não conta como "fora" — nem o comando que os abre recolhe a faixa.
+// - Recolher/expandir: **Ctrl+F1** (a dica vive no `title` da barra das abas) e o **clique numa
+//   aba**, no modo recolhido, que mostra a faixa completa — e a escolha fica. Recolhida, a faixa é
+//   a **faixa única**: os grupos viram botões com menu (ver o `fitaEncaixe.ts`).
+// - A faixa **não se recolhe sozinha**. O modo recolhido já teve o "por enquanto": a faixa abria
+//   com um clique e voltava ao recolhido ao primeiro clique fora dela (na lâmina, num comando,
+//   depois de um popup). Cada caminho desses virou um relato de "a faixa recolheu do nada" — e o
+//   pior era trabalhar na lâmina no meio do uso. Agora **abrir é um pedido**: ela só volta ao
+//   recolhido no Ctrl+F1 (e é o Ctrl+F1 que a mostra de novo, quando está recolhida).
 // - Ajustar o tamanho: arrastar a borda de baixo da faixa (cursor de redimensionar)
 //   deixa tudo maior ou menor — sem cortar botão — e o duplo clique volta ao normal.
 //
@@ -19,7 +19,7 @@ import { AJUSTE_MIN, encaixarFita } from "./fitaEncaixe";
 export interface OpcoesRecolherFita {
   /** raiz da faixa: recebe a classe `fita-recolhida` */
   el: HTMLElement;
-  /** onde ficam as abas: recebe o botão de recolher */
+  /** onde ficam as abas: recebe a dica (title/aria-label) do gesto */
   abas: HTMLElement;
   /** raiz dos painéis que somem quando a faixa está recolhida */
   paineis: HTMLElement;
@@ -72,25 +72,25 @@ const gravarEscala = (v: number): void => {
   }
 };
 
-/** Liga o recolher/expandir (Ctrl+F1 ou duplo clique numa aba); devolve um atalho por código. */
+/** Liga o recolher/expandir (Ctrl+F1 ou o clique numa aba); devolve um atalho por código. */
 export function ligarRecolherFita(o: OpcoesRecolherFita): { alternar: () => void } {
   let recolhida = ler();
-  let temporaria = false; // painel à mostra só enquanto o usuário mexe na faixa
 
   const aplicar = (): void => {
-    const escondida = recolhida && !temporaria;
+    // Sem a janela "por enquanto", o que a faixa mostra é SEMPRE a escolha guardada — o nome
+    // `escondida` ficou do tempo em que o recolhido escondia a faixa de vez; hoje ele é o modo da
+    // **faixa única** (os grupos viram botões com menu).
+    const escondida = recolhida;
     const antes = o.el.classList.contains("fita-recolhida");
     o.el.classList.toggle("fita-recolhida", escondida);
     // O encaixe decide o plano pela classe (`fita-recolhida` = todos os grupos em botão, a "faixa
-    // única"): quando o modo muda DE VERDADE, ele precisa re-planejar. Sem este aviso, clicar numa
-    // aba com a faixa recolhida (o modo "por enquanto") tirava a classe e o plano continuava o de
-    // recolhida — a fita voltava com todos os grupos em botão (o relato: "clico em outra aba e
-    // volto e a renderização fica bugada").
+    // única"): quando o modo muda DE VERDADE, ele precisa re-planejar. (O evento é próprio para não
+    // fazer laço com o da preferência — ver a constante.)
     if (antes !== escondida) document.dispatchEvent(new CustomEvent(EVENTO_MODO));
     // sem botão (o chevron saiu a pedido): a dica vive na barra das abas, que é onde o gesto mora
     const titulo = escondida
-      ? `Fixar a faixa de opções (${teclaVisivel("fita")}) ou duplo clique numa aba`
-      : `Recolher a faixa de opções (${teclaVisivel("fita")}) ou duplo clique numa aba`;
+      ? `Mostrar a faixa de opções completa (${teclaVisivel("fita")}) ou clique numa aba`
+      : `Recolher a faixa de opções, deixando a faixa única (${teclaVisivel("fita")})`;
     o.abas.title = titulo;
     o.abas.setAttribute("aria-label", `Abas da faixa de opções — ${titulo}`);
   };
@@ -98,71 +98,16 @@ export function ligarRecolherFita(o: OpcoesRecolherFita): { alternar: () => void
   /** Fixa a escolha (recolhida ou não) e guarda; avisa as outras fitas abertas. */
   const fixar = (v: boolean, avisar = true): void => {
     recolhida = v;
-    temporaria = false;
     gravar(v);
     if (avisar) document.dispatchEvent(new CustomEvent(EVENTO, { detail: v }));
     aplicar();
   };
 
-  /**
-   * Alterna decidindo pelo que está À VISTA: com a faixa aberta (mesmo que só "por enquanto", no
-   * modo recolhido — o caso de clicar no Template) RECOLHE; recolhida, fixa aberta. O clique do
-   * chevron usava o estado fixo e, com a faixa à mostra e a preferência "recolhida", fazia o
-   * contrário — fixava aberta e a faixa não fechava mais. (O chevron saiu; o gesto ficou.)
-   */
-  const alternarPeloVisivel = (): void => {
-    const visivel = !(recolhida && !temporaria);
-    fixar(visivel);
-  };
-
-  // O duplo clique numa aba NÃO recolhe mais a faixa (a pedido): trocar de aba com dois cliques
-  // — ou abrir e fechar um popup pelo próprio botão — recolhia a faixa do nada. O recolher vive
-  // no Ctrl+F1, com a dica no `title` da barra das abas.
-
-  // recolhida: clicar numa aba mostra a faixa por enquanto
-  o.abas.addEventListener("click", (e) => {
-    if (!recolhida || temporaria) return;
-    temporaria = true;
-    aplicar();
-  });
-
-  // escolheu um comando (ou mexeu num campo): a faixa volta a fechar — MENOS quando o comando
-  // abre um popup (Template, cores, Formas…): aí a faixa fica à vista enquanto a pessoa escolhe
-  // (o popup vive no `body` e o clique nele seria "fora"). A decisão espera um tique porque o
-  // popup nasce no mesmo clique — e, se ele fechou, a faixa volta a fechar como sempre.
-  // Dois cliques no MESMO botão também não recolhem: quem clica rápido (inclusive no botão que
-  // abre e fecha um popup) não pode ver a faixa sumir no meio do gesto.
-  let ultimoClique: { alvo: EventTarget | null; t: number } | null = null;
-  o.el.addEventListener("click", (e) => {
-    if (!recolhida || !temporaria) return;
-    const t = e.target as HTMLElement;
-    // O botão do grupo colapsado e o menu dele não fecham a faixa (é mexer na faixa, não sair
-    // dela); o `<select>`/`<input>` também não (o campo precisa continuar aberto para a escolha).
-    if (o.abas.contains(t) || t.closest("select, input, textarea, .wd-ribbon-nav, .fita-grupo-btn, .fita-grupo-pop")) return;
-    const agora = performance.now();
-    const repetido = ultimoClique !== null && ultimoClique.alvo === e.target && agora - ultimoClique.t < 450;
-    ultimoClique = { alvo: e.target, t: agora };
-    if (repetido) return;
-    setTimeout(() => {
-      if (recolhida && temporaria && !document.querySelector(".app-popup")) {
-        temporaria = false;
-        aplicar();
-      }
-    }, 0);
-  });
-  o.el.addEventListener("change", (e) => {
-    if (!recolhida || !temporaria) return;
-    if ((e.target as HTMLElement).closest("select, input")) fixar(true, false);
-  });
-
-  // clicou fora: fecha a faixa que estava aberta só para uso — mas clique dentro de um popup (que
-  // mora no `body`) ou de um diálogo do app NÃO é "fora": a pessoa ainda está usando a faixa.
-  document.addEventListener("pointerdown", (e) => {
-    if (!recolhida || !temporaria) return;
-    const t = e.target as HTMLElement;
-    if (o.el.contains(t) || t.closest(".fita-resize, .app-popup, .modal-backdrop, .modal")) return;
-    temporaria = false;
-    aplicar();
+  // recolhida: clicar numa aba (ou no Template, que vive na mesma barra) mostra a faixa completa
+  // — e ela fica: abrir é um pedido, e a escolha é guardada como a do Ctrl+F1 (nada a esconde
+  // por baixo: nem a lâmina, nem um comando, nem um popup; ver o comentário do topo)
+  o.abas.addEventListener("click", () => {
+    if (recolhida) fixar(false);
   });
 
   // Ctrl+F1 alterna (só quando a fita está à vista). A tecla vem do `keymap.ts`,
@@ -173,13 +118,12 @@ export function ligarRecolherFita(o: OpcoesRecolherFita): { alternar: () => void
     if (!o.el.isConnected || o.el.offsetParent === null) return;
     e.preventDefault();
     e.stopPropagation();
-    alternarPeloVisivel();
+    fixar(!recolhida);
   });
 
   // outra fita mudou a preferência: acompanha
   document.addEventListener(EVENTO, (e) => {
     recolhida = !!(e as CustomEvent).detail;
-    temporaria = false;
     aplicar();
   });
 
@@ -545,8 +489,8 @@ export function ligarEncaixeFita(o: OpcoesEncaixeFita): void {
   document.addEventListener(EVENTO_ESCALA, agendar);
   // recolher/expandir muda o modo (a faixa única do quarto degrau)
   document.addEventListener(EVENTO, agendar);
-  // o modo mudou DE VERDADE (inclusive a janela "por enquanto" de clicar numa aba): o plano é
-  // outro — recolhida, a fita é uma faixa só, com todos os grupos em botão
+  // o modo mudou DE VERDADE (a classe `fita-recolhida` entrou ou saiu): o plano é outro — recolhida,
+  // a fita é uma faixa só, com todos os grupos em botão
   document.addEventListener(EVENTO_MODO, agendar);
   window.addEventListener("resize", agendar);
 

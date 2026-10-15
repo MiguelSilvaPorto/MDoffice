@@ -731,7 +731,7 @@ export class ExcelHost {
   /** Menu do botão direito na aba (renomear, duplicar, excluir, mover). */
   private menuAba(i: number, x: number, y: number): void {
     document.querySelectorAll(".xl-menu").forEach((m) => m.remove());
-    const menu = h("div", { class: "dropdown xl-menu app-popup" });
+    const menu = h("div", { class: "dropdown xl-menu" });
     const item = (rotulo: string, acao: () => void, desabilitado = false) => {
       const b = h("button", { class: "dd-item", type: "button", text: rotulo });
       if (desabilitado) b.disabled = true;

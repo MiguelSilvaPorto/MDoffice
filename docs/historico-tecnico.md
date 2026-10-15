@@ -10948,7 +10948,6 @@ antigas quando fizer sentido.
 - **Porquê:** a dica vale para o app todo e o conserto do teste é ferramenta de desenvolvimento; as
   duas entradas entram já promovidas, como o fechamento exige.
 
-
 ## src/homePrevia.ts (novo)
 
 ### 2026-10-15 — a prévia do cartão vira uma ESTRUTURA por tipo
@@ -11012,3 +11011,150 @@ antigas quando fizer sentido.
 - **Local:** o parágrafo da **tela de Início** (antes de "Documentos relacionados")
 - **Linha:** `- "…cada um com a **prévia do documento** (um papel com o título e o começo do texto, na cor do formato)…"` → `+ "…cada um com uma **versão do documento** pré-carregada — o tipo dá a forma e o arquivo dá o conteúdo…"` (com o `.xlsx` lendo a planilha e o `homePrevia.ts` como a decisão da estrutura)
 - **Porquê:** era a única doc de módulo que descrevia o cartão; sem isso ela continuaria prometendo "um papel" — o desenho que o usuário pediu para trocar.
+
+## src/fita.ts
+
+### 2026-10-15 · esta tarefa · a faixa não se recolhe sozinha (o "por enquanto" sai)
+- **Local:** `ligarRecolherFita` — a variável `temporaria`, o `click`/`change` da faixa e o
+  `pointerdown` do documento (removidos), o `alternarPeloVisivel`, o clique da barra das abas e a
+  dica (`title`/`aria-label`)
+- **Linha:** `- let temporaria = false;` (e todo uso) · `- o.el.addEventListener("click", …)` (a
+  decisão por tique; ia junto a exceção nova do `.fita-grupo-btn, .fita-grupo-pop` do encaixe) ·
+  `- o.el.addEventListener("change", …)` · `- document.addEventListener("pointerdown", …)` (o
+  "clicou fora") · `- const visivel = !(recolhida && !temporaria); fixar(visivel)` →
+  `fixar(!recolhida)` no Ctrl+F1 · `o.abas` click: `temporaria = true; aplicar();` →
+  `if (recolhida) fixar(false);` · a dica: "Fixar a faixa… ou duplo clique numa aba" → "Mostrar a
+  faixa de opções **completa** (Ctrl+F1) ou clique numa aba" / "Recolher a faixa de opções, deixando
+  a **faixa única** (Ctrl+F1)"
+- **Porquê:** o terceiro relato do dia sobre a faixa recolhendo sozinha — "recolhendo sempre o
+  painel quando entro em foco no slide". O modo recolhido abria completa "por enquanto"
+  (`temporaria`) e voltava ao recolhido ao primeiro clique **fora** dela; o clique na lâmina é
+  exatamente o gesto de quem vai trabalhar (escolher a forma que se vai formatar), então a faixa
+  mudava de forma no meio do uso. Os consertos anteriores tiraram as portas uma a uma (o clique no
+  popup, o duplo clique) e essa era a última — o desenho do "por enquanto" é que não se sustentava.
+  Agora **abrir é um pedido**, e é um pedido que fica: o clique numa aba mostra a faixa completa e
+  **grava a escolha** (como o Ctrl+F1), que passa a ser o único gesto que recolhe. A dica dizia
+  "duplo clique numa aba" desde que o duplo clique saiu (127bd68) — mentia; o texto novo descreve o
+  gesto em vigor **e o modo** (o recolhido é a faixa única, que o encaixe desenha; falar só em
+  "mostrar a faixa" sugeriria que nada está à vista). A exceção do `.fita-grupo-btn/.fita-grupo-pop`
+  que o encaixe tinha acabado de acrescentar sai junto: ela protegia o menu do grupo colapsado de
+  um recolhimento que já não existe — sem a regra, não há o que blindar.
+
+### 2026-10-15 · esta tarefa · o clique na aba fixa (e por que não é "por enquanto")
+- **Local:** o `click` de `o.abas` (a mostra da faixa completa) e o `fixar`
+- **Linha:** `+ if (recolhida) fixar(false);` (persiste a preferência) — nada além disso
+- **Porquê:** a alternativa (mostrar só nesta sessão) deixaria a faixa no modo recolhido de novo no
+  próximo abrir do app sem o usuário ter pedido nada — e o estado "recolhida" que ele tem hoje veio
+  de gestos que já não existem (o duplo clique e o clique que recolhiam sem querer), não de uma
+  escolha dele. Gravar a escolha no clique da aba é o que faz "a faixa ficar onde eu deixei" valer
+  de verdade: quem **quer** o espaço de volta recolhe no Ctrl+F1 (e essa escolha também fica). O
+  custo aceito: no modo recolhido, clicar numa aba mostra a faixa completa e sai do modo — que é o
+  que o gesto quer dizer, e o modo continua a um Ctrl+F1 (e no recolhido tudo é alcançável pelos
+  menus dos grupos, que o encaixe desenha).
+
+### 2026-10-15 · esta tarefa · o rebase com o encaixe em quatro degraus (bc8d44c) e o aviso do modo (169a7cf)
+- **Local:** o mesmo `ligarRecolherFita` (o rebase trouxe, no dia, a feature do encaixe, a "faixa
+  única" no modo recolhido e o `EVENTO_MODO` que avisa o encaixe quando o modo muda)
+- **Linha:** os dois lados ficam: do lado da main vêm o `encaixarFita`/`ligarEncaixeFita`, o desenho
+  da faixa única (a classe `fita-recolhida`, que o encaixe lê) e o `EVENTO_MODO`
+  (`const escondida = recolhida;` + `if (antes !== escondida) dispatch(EVENTO_MODO)` no `aplicar()`,
+  e o `addEventListener(EVENTO_MODO, agendar)` do encaixe); do meu, saem `temporaria` e os três
+  ouvintes — nada do encaixe foi tocado
+- **Porquê:** o conflito era real, não textual: o encaixe fez do modo recolhido uma faixa **visível**
+  (os grupos em botão) e acrescentou uma exceção na regra que eu estava removendo; horas depois, a
+  mesma sessão consertou o re-planejamento do encaixe (169a7cf) — cujo gatilho era a **janela
+  temporária** que eu removi. Ler os dois lados antes de resolver foi o que evitou perder as duas
+  coisas: o `faixaUnica` do encaixe lê a **classe** `fita-recolhida` (que continua sendo aplicada por
+  `aplicar()`) e o `fixar()` despacha o `EVENTO` — os contratos seguem valendo. O `EVENTO_MODO` fica
+  com o papel de **gatilho exato** (a classe mudou de verdade), que é mais forte do que "a
+  preferência mudou": com ele, o encaixe re-planeja mesmo que um caminho futuro mexa na classe sem
+  mexer na preferência. O `const escondida = recolhida;` é um apelido com nome herdado (o recolhido
+  não esconde mais a faixa — vira a faixa única); ficou para não reescrever o conserto da outra
+  sessão nem as checagens que prendem essa linha, e o comentário acima dele conta isso. A exceção do
+  `.fita-grupo-btn/.fita-grupo-pop` foi a única coisa que saiu do lado da main, e de propósito (com
+  a regra fora, ela ficaria sem leitor).
+- **Nota desta tarefa (2026-10-15):** a entrada da outra sessão sobre o `EVENTO_MODO` (o "modo da
+  faixa avisa quando muda") fica **inteira** e o conserto com ela — o que saiu foi só a **janela
+  "por enquanto"** que o motivava. Com isso o `EVENTO_MODO` passa a ser o gatilho **exato** do
+  encaixe: a classe só muda quando a escolha muda, e o aviso sai da mudança da classe (e não da
+  preferência) — mais forte do que era. (A resolução do rebase tinha apagado, no meu lado, a cópia
+  dessa entrada e o bloco de teste dela; o texto de ambos é o da outra sessão e ficou no lugar.)
+
+## src/powerpoint/ui/popup.ts · src/word/ribbon.ts · src/seletor.ts · src/excel/host.ts
+
+### 2026-10-15 · esta tarefa · a marca `app-popup` sai dos popups do app
+- **Local:** `abrirPopup` (PPT), `place` (Word), o menu do `seletor` e o menu da aba do Excel
+- **Linha:** `el.className = \`pp-popup app-popup …\`` → `pp-popup …` · `- pop.classList.add(
+  "app-popup");` (e o comentário acima) · `class: "dropdown sel-menu app-popup"` →
+  `"dropdown sel-menu"` · `class: "dropdown xl-menu app-popup"` → `"dropdown xl-menu"`
+- **Porquê:** a marca nasceu para uma regra só — o "clicou fora" da faixa recolhida perguntava por
+  ela para não se fechar por baixo do popup (487ec68). Com a regra fora, a marca não tem mais
+  leitor: fica como código morto em quatro arquivos. A convenção (quem criar um popup novo precisa
+  vesti-la) sai junto — e é isso que o teste agora prende, para ninguém "restaurar" a marca sem a
+  regra (ou a regra sem a marca).
+
+## scripts/testar-layout.mts · scripts/testar-fita-encaixe.mjs
+
+### 2026-10-15 · esta tarefa · as checagens mudam de lado (a faixa não se esconde)
+- **Local:** no `testar-layout`, o bloco "fita: escolher num popup não mexe na faixa" (reescrito), o
+  bloco "fita: a faixa fica como o usuário a deixou" (era "o botão de recolher decide pelo que está
+  à vista") e a checagem "recolher a faixa: só o Ctrl+F1"; no `testar-fita-encaixe` (do encaixe), a
+  checagem "fechar o menu não fecha a faixa recolhida"
+- **Linha:** saem as três checagens da regra antiga (o `closest(".app-popup…")`, a espera do tique
+  e as marcas nos quatro criadores) e a checagem do `alternarPeloVisivel`/`repetido`; entram
+  `+ 4 checagens` no layout: o clique numa aba que fixa, a **ausência** de todo caminho de recolher
+  (`temporaria`, `t.closest(".fita-resize…")`, `change`, `setTimeout`), a marca `app-popup` fora dos
+  quatro criadores e a dica que diz o gesto em vigor; no encaixe, a checagem da exceção
+  `.fita-grupo-btn, .fita-grupo-pop` vira "mexer no grupo não fecha a faixa — **nada** fecha"
+  (`!/temporaria/` + `!/t\.closest\("\.fita-resize/`)
+- **Porquê:** as checagens antigas prendiam a regra que saiu (ficariam exigindo o ofensor) e o valor
+  delas é justamente o contrário hoje: **impedir** que um "por enquanto" volte sem querer — foi
+  assim que a faixa se recolheu três vezes no mesmo dia. A da dica é a que prende o texto ao gesto:
+  ele já mentiu uma vez (prometia o duplo clique muito depois de o gesto sair). O encaixe entrou no
+  mesmo dia e tinha acabado de blindar o menu do grupo contra o recolhimento — a checagem dele
+  passa a prender o fato novo (nada recolhe), que é mais forte e não depende de exceção nenhuma.
+  Dois detalhes que a resolução do rebase ensinou: o auto-merge do `testar-layout.mts` deixou um
+  `checa(` sem fechar (o arquivo não rodava — o erro só aparece executando) e o `fita.ts` tem um
+  `pointerdown` legítimo no menu dos grupos: as checagens vagas (`!/pointerdown/`) acusariam o
+  inocente, então elas olham a **assinatura da regra** que saiu.
+- **Nota desta tarefa (2026-10-15):** a entrada e o bloco de teste da outra sessão sobre o
+  `EVENTO_MODO` (o "2 verificações" acima, de 2026-10-14) ficam **inteiros**, e as duas checagens
+  convivem com as novas — elas prendem o **gatilho** do encaixe, que continua valendo.
+
+## docs/powerpoint.md · docs/word.md · docs/excel.md
+
+### 2026-10-15 · esta tarefa · a fita nos docs dos módulos
+- **Local:** no PowerPoint, a seção "Interface do módulo" (a bala da Fita) e o degrau (4) da bala dos
+  quatro degraus; no Word e no Excel, a bala nova dos quatro degraus (que o encaixe acabou de
+  acrescentar)
+- **Linha:** `- "com rolagem horizontal quando não cabe"` · `+ "recolhível e ajustável — e ela cabe
+  na largura da janela (sem rolagem lateral). Recolhida (Ctrl+F1), a faixa é a faixa única (os grupos
+  viram botões com menu); a faixa não se recolhe sozinha: clicar numa aba mostra a faixa completa e a
+  escolha fica (trabalhar na lâmina não a recolhe mais), e o Ctrl+F1 alterna — é o único gesto que
+  recolhe."` · e, no degrau (4): `(Ctrl+F1 ou duplo clique numa aba)` → `(Ctrl+F1)` · no Word e no
+  Excel: `+ "— que não acontece sozinho(a): recolher é o Ctrl+F1, e clicar numa aba mostra a faixa
+  completa (a escolha fica)"`
+- **Porquê:** a bala do PowerPoint dizia "recolhível e ajustável, com rolagem horizontal" — quem
+  lesse o doc acharia que o fechamento automático ao clicar na lâmina **e** a barra de rolagem eram o
+  desenho, e nenhum dos dois vale depois do encaixe (bc8d44c tirou a rolagem) e desta correção (o
+  recolhimento automático saiu). As balas do Word e do Excel falam das mesmas quatro etapas e não
+  diziam como se entra e sai do modo — a frase fecha o ciclo nas três fitas, que compartilham o
+  módulo. O ajuste do "ou duplo clique numa aba" é o mesmo cuidado da entrada vizinha do CHANGELOG: o
+  gesto saiu no 127bd68.
+
+## CHANGELOG.md
+
+### 2026-10-15 · esta tarefa · a entrada no "Não adicionado" (Geral)
+- **Local:** Geral → **Não adicionado** → Frontend
+- **Linha:** `+ 1 entrada` — **A faixa de opções não se recolhe mais sozinha**; e, na entrada
+  vizinha (**A fita cabe na largura em quatro degraus**), `(Ctrl+F1 ou duplo clique numa aba)` →
+  `(Ctrl+F1)`
+- **Porquê:** a tarefa ainda não está na `main` (a categoria é **Geral** porque a faixa é a mesma
+  nas três fitas: Word, Excel e Apresentações); a entrada só é promovida quando o `fechar.ps1`
+  entregar. A entrada vizinha (**A fita cabe na largura em quatro degraus**) foi **promovida** pela
+  outra sessão entre o meu commit e este rebase: o ajuste do `(Ctrl+F1 ou duplo clique numa aba)`
+  → `(Ctrl+F1)` que eu tinha feito na cópia de "Não adicionado" ficou na cópia antiga, e o texto
+  promovido ainda anuncia os **dois** gestos — o duplo clique saiu no 127bd68 (o usuário relatou que
+  ele recolhia sem querer) e quem mender o CHANGELOG não pode deixar a frase voltar. Anotado aqui em
+  vez de mexer na entrada que a outra sessão acabou de promover (ela está no meio das próprias
+  resoluções de conflito).

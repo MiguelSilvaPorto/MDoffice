@@ -87,7 +87,7 @@ function abrirMenu(select: HTMLSelectElement, face: HTMLElement, ancora: HTMLEle
   }
   fecharMenu(false);
   const atual = select.value;
-  const menu = h("div", { class: "dropdown sel-menu app-popup" }) as HTMLElement;
+  const menu = h("div", { class: "dropdown sel-menu" }) as HTMLElement;
   for (const op of Array.from(select.options)) {
     if (op.disabled) continue;
     const item = h("button", { class: "dd-item", type: "button" });

@@ -1174,6 +1174,26 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - (nada no momento)
 
+- **A faixa de opções não se recolhe mais sozinha**: o modo recolhido tinha o "por enquanto" — no
+  modo recolhido (a **faixa única**) a faixa abria completa com um clique numa aba e **voltava ao
+  recolhido ao primeiro clique fora dela** (na lâmina, num comando, depois de um popup). Cada
+  caminho desses virou um relato de "a faixa recolheu do nada", e o último é o pior: **trabalhar na
+  lâmina** (escolher a forma que se vai formatar) recolhia a faixa no meio do uso. Agora **abrir é
+  um pedido**: clicar numa aba (ou no Template) mostra a faixa **e a escolha fica** — a preferência
+  é guardada, como a do **Ctrl+F1**, que continua alternando e passa a ser o único gesto que
+  recolhe. A marca `app-popup`, que existia só para a regra antiga reconhecer os popups do app,
+  saiu dos quatro criadores.
+
+- **A faixa de opções não se recolhe mais sozinha**: o modo recolhido tinha o "por enquanto" — no
+  modo recolhido (a **faixa única**) a faixa abria completa com um clique numa aba e **voltava ao
+  recolhido ao primeiro clique fora dela** (na lâmina, num comando, depois de um popup). Cada
+  caminho desses virou um relato de "a faixa recolheu do nada", e o último é o pior: **trabalhar na
+  lâmina** (escolher a forma que se vai formatar) recolhia a faixa no meio do uso. Agora **abrir é
+  um pedido**: clicar numa aba (ou no Template) mostra a faixa **e a escolha fica** — a preferência
+  é guardada, como a do **Ctrl+F1**, que continua alternando e passa a ser o único gesto que
+  recolhe. A marca `app-popup`, que existia só para a regra antiga reconhecer os popups do app,
+  saiu dos quatro criadores.
+
 **Ferramentas (dev)**
 
 ### Adicionado (na main)

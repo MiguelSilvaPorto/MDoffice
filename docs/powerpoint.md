@@ -143,7 +143,7 @@ avisado ao abrir (nunca some em silêncio).
   menores (a **fonte não encolhe**: o piso está no CSS) e os botões grandes numa linha; (3) os
   **grupos que não couberem viram um botão** com o nome do grupo, e clicar nele abre um menu com os
   controles daquele grupo — o **último** grupo colapsa primeiro, então o que se usa o tempo todo fica
-  à vista; (4) **faixa única** com a faixa **recolhida** (Ctrl+F1 ou duplo clique numa aba): os
+  à vista; (4) **faixa única** com a faixa **recolhida** (**Ctrl+F1**): os
   grupos da aba ativa ficam numa linha de botões — é o "mais" de cada grupo — e a faixa acompanha a
   aba ativa. Quem decide é o **encaixe** (`src/fitaEncaixe.ts`), medido em `npm run test:encaixe`:
   em 1338 px o Início abre inteiro (antes estourava 353 px) e a 700 px, com a escala em 1,5×, os
@@ -433,8 +433,11 @@ avisado ao abrir (nunca some em silêncio).
 ## Interface do módulo
 
 - **Fita** com abas (Página Inicial, Inserir, **Desenhar**, **Transições**, **Animações**, Design e Exibir;
-  **Formato da Forma** e **Layout da Tabela** aparecem quando a seleção pede), recolhível e
-  ajustável, com rolagem horizontal quando não cabe.
+  **Formato da Forma** e **Layout da Tabela** aparecem quando a seleção pede), **recolhível** e
+  **ajustável** — e ela **cabe na largura da janela** (sem rolagem lateral). Recolhida (**Ctrl+F1**),
+  a faixa é a **faixa única** (os grupos viram botões com menu); a faixa **não se recolhe sozinha**:
+  clicar numa aba mostra a faixa **completa** e **a escolha fica** (trabalhar na lâmina não a recolhe
+  mais), e o **Ctrl+F1** alterna — é o único gesto que recolhe.
 - **Painel Formatar/Animação/Notas/Composição** à direita: pode ser escondido, redimensionado
   e reaberto pela aba **« Formatar**; o painel de animação lista os efeitos da lâmina na ordem
   (selecionar, mover e remover), as notas ficam na aba **Notas** e a **Composição** mostra os

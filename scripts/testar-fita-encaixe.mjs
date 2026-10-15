@@ -219,8 +219,9 @@ console.log("\na fiação nas três fitas");
     /pop\.append\(corpo\)/.test(fita) && /grupo\.insertBefore\(corpo, rotulo \?\? null\)/.test(fita)
   );
   ok(
-    "fechar o menu não fecha a faixa recolhida (mexer no grupo é mexer na faixa)",
-    /\.fita-grupo-btn, \.fita-grupo-pop/.test(fita)
+    "mexer no grupo não fecha a faixa recolhida — nada fecha (o 'clicou fora' saiu)",
+    !/temporaria/.test(fita) && !/t\.closest\("\.fita-resize/.test(fita),
+    "sobrou um caminho que recolhe a faixa sem o usuário mandar (a exceção do grupo virava remendo)"
   );
 
   // as três fitas

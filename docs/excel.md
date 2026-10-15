@@ -35,8 +35,9 @@ Planilha com grade que cresce sob demanda, fórmulas em português e abertura de
 - **A fita cabe na largura (sem rolagem)**: os mesmos quatro degraus das outras fitas — **cheia**,
   **compacta** (as métricas da fita do Excel passaram a acompanhar a escala e o aperto, com piso de
   fonte, em vez do `zoom` que encolhia o texto junto), **grupos em botão com menu** (o último
-  colapsa primeiro) e a **faixa única** no modo recolhido. A alça da borda de baixo ajusta a altura
-  **com teto** (o menor entre 1,5× e um terço da janela).
+  colapsa primeiro) e a **faixa única** no modo recolhido — que **não acontece sozinho**: recolher é
+  o **Ctrl+F1**, e clicar numa aba mostra a faixa completa (a escolha fica). A alça da borda de baixo
+  ajusta a altura **com teto** (o menor entre 1,5× e um terço da janela).
 
 ## Fórmulas
 
