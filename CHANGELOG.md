@@ -426,16 +426,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   elipse, triângulo) — uma fronteira não convexa é **recusada com aviso**, em vez de pintar torto.
   Teste: `npm run test:pintura`.
 
-- **A lâmina inteira animando? É a TRANSIÇÃO — e agora ela aparece onde você trabalha**: aplicar uma
-  animação numa forma grava **só na forma** (a exportação leva a animação por forma), mas quem já
-  tinha aplicado uma **transição** na lâmina continuava vendo a **lâmina inteira** animar na
-  apresentação — e a aba Animações não dizia isso ("eu tentei aplicar animação só nessa box[, mas]
-  aplica em todo o slide"). Agora, quando a lâmina tem transição, a aba **Animações** mostra uma nota
-  com o **nome dela** ("A transição (Push) anima a lâmina inteira — o efeito é só da forma
-  escolhida") e o botão **Tirar transição**, que resolve em um clique; sem transição, fica a
-  nota-base que aponta a aba Transições. A nota da aba **Transições** ganhou o botão **Animações**,
-  que leva direto à aba onde o efeito vai para a forma escolhida. Teste: `npm run test:layout`.
-
 - **Estúdio · Regiões: o mapa dos contornos** (fase 2 do Estúdio) — dentro do Estúdio, o botão
   **Regiões** liga o mapa: **passar o ponteiro acende a face sob ele** (véu do acento com contorno
   tracejado) e **clicar isola aquela região** — a fronteira deixa de ser a box inteira e passa a ser
@@ -494,6 +484,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **A lâmina inteira animando? É a TRANSIÇÃO — e agora ela aparece onde você trabalha**: aplicar uma
+  animação numa forma grava **só na forma** (a exportação leva a animação por forma), mas quem já
+  tinha aplicado uma **transição** na lâmina continuava vendo a **lâmina inteira** animar na
+  apresentação — e a aba Animações não dizia isso ("eu tentei aplicar animação só nessa box[, mas]
+  aplica em todo o slide"). Agora, quando a lâmina tem transição, a aba **Animações** mostra uma nota
+  com o **nome dela** ("A transição (Push) anima a lâmina inteira — o efeito é só da forma
+  escolhida") e o botão **Tirar transição**, que resolve em um clique; sem transição, fica a
+  nota-base que aponta a aba Transições. A nota da aba **Transições** ganhou o botão **Animações**,
+  que leva direto à aba onde o efeito vai para a forma escolhida. Teste: `npm run test:layout`.
 
 - **A ligação do Conectar vira uma transição (da cor da origem para a do destino)**: o conector era
   **duas formas** — a espinha na cor da forma de origem e a descida na cor da de destino — e a cor

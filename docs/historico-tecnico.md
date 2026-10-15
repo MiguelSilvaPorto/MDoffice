@@ -12206,3 +12206,16 @@ antigas quando fizer sentido.
   oferece Tirar transição"; `+` na transição, "a nota traz o botão que leva direto" para as Animações
 - **Porquê:** o documento dizia onde cada coisa mora, mas não que as duas **podem estar ligadas ao
   mesmo tempo** — e é exatamente aí que nasce a confusão de "a animação pegou no slide todo".
+
+## CHANGELOG.md
+
+### 2026-10-15 · promoção · a entrada da transição na aba Animações entra no "Adicionado" (PowerPoint)
+- **Local:** PowerPoint ▸ **Não adicionado** ▸ Frontend ▸ **Adicionado** ▸ Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **A lâmina inteira animando? É a TRANSIÇÃO — e agora ela
+  aparece onde você trabalha** (`828effa`, worktree `feat/clareza-transicao-e-animacao`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não sai no
+  mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
+  entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
+  promoções anteriores. As demais entradas de "Não adicionado" (o Estúdio Pintura, o Estúdio Regiões,
+  a aba Animações que cabe na tela, o Estúdio fase 1 e as juntas do desenho) ficaram **intactas** —
+  são de sessões com trabalho aberto.
