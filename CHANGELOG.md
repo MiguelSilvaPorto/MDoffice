@@ -1732,6 +1732,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **apresentar**, **copiar para a IA**, **histórico**…) **avisam em vez de agir** num documento que
   não está à vista, a barra de status diz **"Nenhum documento aberto"** e a janela fica só
   "mdOffice". Teste: `npm run test:layout`.
+- **A fita volta da aba com o encaixe certo (não "bugada")**: com a faixa **recolhida**, clicar numa aba abre a faixa "por enquanto" — e isso tira a classe `fita-recolhida` ✗ **sem avisar o encaixe**, que decide o plano justamente por ela: o plano continuava o da **faixa única** (todos os grupos viram botão/menu) e, ao voltar para a aba, a fita aparecia assim (o print). Agora quem mexe na classe **avisa num evento próprio** quando o modo muda **de verdade** (`EVENTO_MODO`, separado do evento da preferência, para as duas pontas não se chamarem em laço) e o encaixe **re-planeja** — a fita volta certa, com só os grupos que não couberem em menu.
 - **A fita cabe na largura em quatro degraus — e sem rolagem (PowerPoint, Word e Excel)**: a faixa
   de opções deixou de empurrar botão para fora da tela. Do mais folgado ao mais apertado: (1)
   **cheia**; (2) **compacta** — espaços e ícones menores, com **piso de fonte** (o Excel entrou

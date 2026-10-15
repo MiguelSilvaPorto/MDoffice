@@ -27,6 +27,12 @@ export interface OpcoesRecolherFita {
 
 const CHAVE = "mdc.fita.recolhida";
 const EVENTO = "mdc:fita-recolhida";
+/**
+ * A faixa MUDOU DE MODO (recolhida ↔ à vista). É um evento separado do `EVENTO` de propósito: quem
+ * escuta o `EVENTO` sincroniza a **preferência** e reage mexendo na classe outra vez — se o encaixe
+ * escutasse o mesmo evento, os dois se chamariam em laço. Aqui só avisa quem precisa re-planejar.
+ */
+const EVENTO_MODO = "mdc:fita-modo";
 const CHAVE_ESCALA = "mdc.fita.escala";
 const EVENTO_ESCALA = "mdc:fita-escala";
 const ESCALA_MIN = 0.7;
@@ -73,7 +79,14 @@ export function ligarRecolherFita(o: OpcoesRecolherFita): { alternar: () => void
 
   const aplicar = (): void => {
     const escondida = recolhida && !temporaria;
+    const antes = o.el.classList.contains("fita-recolhida");
     o.el.classList.toggle("fita-recolhida", escondida);
+    // O encaixe decide o plano pela classe (`fita-recolhida` = todos os grupos em botão, a "faixa
+    // única"): quando o modo muda DE VERDADE, ele precisa re-planejar. Sem este aviso, clicar numa
+    // aba com a faixa recolhida (o modo "por enquanto") tirava a classe e o plano continuava o de
+    // recolhida — a fita voltava com todos os grupos em botão (o relato: "clico em outra aba e
+    // volto e a renderização fica bugada").
+    if (antes !== escondida) document.dispatchEvent(new CustomEvent(EVENTO_MODO));
     // sem botão (o chevron saiu a pedido): a dica vive na barra das abas, que é onde o gesto mora
     const titulo = escondida
       ? `Fixar a faixa de opções (${teclaVisivel("fita")}) ou duplo clique numa aba`
@@ -532,6 +545,9 @@ export function ligarEncaixeFita(o: OpcoesEncaixeFita): void {
   document.addEventListener(EVENTO_ESCALA, agendar);
   // recolher/expandir muda o modo (a faixa única do quarto degrau)
   document.addEventListener(EVENTO, agendar);
+  // o modo mudou DE VERDADE (inclusive a janela "por enquanto" de clicar numa aba): o plano é
+  // outro — recolhida, a fita é uma faixa só, com todos os grupos em botão
+  document.addEventListener(EVENTO_MODO, agendar);
   window.addEventListener("resize", agendar);
 
   aplicar();

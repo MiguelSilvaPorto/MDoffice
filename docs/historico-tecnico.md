@@ -5841,6 +5841,38 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   seria uma porta aberta); a do comando prende a ligação Rust↔TS, que é fácil de esquecer no
   `generate_handler!`.
 
+## src/fita.ts
+
+### 2026-10-14 · encaixe · o modo da faixa avisa quando muda (o plano é refeito)
+- **Local:** `ligarRecolherFita` — o `aplicar` (que liga/desliga a classe `fita-recolhida`); a
+  constante nova `EVENTO_MODO`; `ligarEncaixeFita` — os ouvintes do fim
+- **Linha:** `+ const antes = o.el.classList.contains("fita-recolhida");` e, depois do `toggle`,
+  `+ if (antes !== escondida) document.dispatchEvent(new CustomEvent(EVENTO_MODO));` ·
+  `+ const EVENTO_MODO = "mdc:fita-modo";` (com o comentário do porquê de ser separado do
+  `EVENTO`) · `+ document.addEventListener(EVENTO_MODO, agendar);` no encaixe
+- **Porquê:** o relato ("quando eu clico em outra aba e volto a renderização fica bugada", com
+  print da fita com **todos os grupos em botão**) — o plano dos quatro degraus lê a **classe**
+  `fita-recolhida` (`faixaUnica`), e a classe muda por **quatro** caminhos no
+  `ligarRecolherFita`: os dois "de verdade" (Ctrl+F1, duplo clique/ aba fixada) chamam `fixar`, que
+  **avisa** (dispatch do `EVENTO`) — e os dois da **janela "por enquanto"** (clicar numa aba
+  recolhida; sair dela) mexiam na classe **sem avisar ninguém** ✗. Resultado: clicar numa aba com
+  a faixa recolhida tirava a classe (a faixa voltava à vista) mas o encaixe continuava com o plano
+  de **faixa única** — todos os grupos em botão, que é o print. O aviso precisava de um **evento
+  próprio**: o `EVENTO` da preferência é ouvido pelas **outras** fitas, que reagem mexendo na classe
+  outra vez (chamar o encaixe pelo mesmo evento faria as duas pontas se chamarem em laço). A guarda
+  `antes !== escondida` evita avisar quando nada mudou (o `aplicar` roda em vários gestos).
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · encaixe · 2 verificações
+- **Local:** a seção "fita: o encaixe re-planeja quando o modo da faixa muda"
+- **Linha:** `+ o aviso na mudança real (o `antes !== escondida` com o `EVENTO_MODO`)` e `+ o
+  encaixe escutando o evento`
+- **Porquê:** o defeito era de **avisar quem depende** (o encaixe) quando o **modo** muda — o
+  vínculo é invisível no código (a classe é o contrato) e um ajuste no `aplicar` o desfaz sem
+  barulho; as duas checagens travam as pontas. (Sobre o reparo do `);`/`}` que esta tarefa também
+  fez no arquivo: a `main` recebeu o mesmo conserto por outra sessão — ficou a entrada dela.)
+
 ---
 
 ## Próximos registros

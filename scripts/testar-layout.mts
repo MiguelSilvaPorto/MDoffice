@@ -1126,6 +1126,25 @@ console.log("\nstart: sem sessão o app fica no Início (o Hub)");
   );
 }
 
+// ---------------------------------------------------------------- fita: o encaixe e o modo
+
+console.log("\nfita: o encaixe re-planeja quando o modo da faixa muda");
+{
+  const fitaModo = ler("src/fita.ts");
+  checa(
+    "avisa quando o modo muda DE VERDADE (evento próprio, sem laço com o da preferência)",
+    /const EVENTO_MODO = "mdc:fita-modo";/.test(fitaModo) &&
+      /const antes = o\.el\.classList\.contains\("fita-recolhida"\);/.test(fitaModo) &&
+      /if \(antes !== escondida\) document\.dispatchEvent\(new CustomEvent\(EVENTO_MODO\)\);/.test(fitaModo),
+    "sem o aviso, clicar numa aba com a faixa recolhida deixa o plano da faixa única preso (o relato)"
+  );
+  checa(
+    "o encaixe dos quatro degraus escuta o aviso (e re-planeja)",
+    /document\.addEventListener\(EVENTO_MODO, agendar\);/.test(fitaModo),
+    "o plano não seria refeito ao voltar para a aba"
+  );
+}
+
 const listaFontes = ler("src/fontes.ts");
 
 checa(
