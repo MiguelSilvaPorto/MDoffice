@@ -5,8 +5,8 @@ import * as files from "../files";
 import * as backup from "../backup";
 import { setTone, type Tone } from "../broker/writing";
 import { tabLabel } from "../tabs";
-import { snapshot } from "../history";
-import { recordCommit, countCommits, ANCHOR_EVERY, diffText, summarize } from "../snapshots";
+import { snapshot, nomeDaAlteracao } from "../history";
+import { recordCommit, countCommits, ANCHOR_EVERY } from "../snapshots";
 import { openHistoryDialog, type AbaHistorico } from "../historyUi";
 import { openMissingDialog } from "../backupUi";
 import { $, h, toast, baseName, saveJSON, loadJSON } from "../util";
@@ -57,7 +57,7 @@ function textoLegivel(app: App, texto: string, tipo: string): string {
  * escrevendo e ainda dá para voltar a qualquer pausa.
  */
 let flushTimer: number | undefined;
-let pendente: { path: string; texto: string; projetar?: (t: string) => string } | null = null;
+let pendente: { path: string; texto: string; projetar?: (t: string) => string; tipo?: string } | null = null;
 
 /** Grava o commit que estiver pendente agora (ao salvar, trocar de aba ou fechar). */
 function gravarCommitPendente(): void {
@@ -66,20 +66,24 @@ function gravarCommitPendente(): void {
     flushTimer = undefined;
   }
   if (!pendente) return;
-  const { path, texto, projetar } = pendente;
+  const { path, texto, projetar, tipo } = pendente;
   pendente = null;
   const anterior = ultimo.texto;
   const mesmoDoc = ultimo.path === path;
   ultimo.path = path;
   ultimo.texto = texto;
   if (!mesmoDoc || anterior === texto) return;
-  // o resumo da alteração é do DOCUMENTO (texto legível), não da serialização: sem isso a lista
-  // mostrava "+4843 −7259" (o tamanho do JSON) no lugar do tamanho da mudança de verdade.
-  // Fica aqui (no fecho da pausa) — não a cada tecla, que projetar um deck inteiro custa caro.
+  // o NOME da alteração é do DOCUMENTO (texto legível), não da serialização: sem isso a lista
+  // mostrava "+4843 −7259" (o tamanho do JSON) no lugar do que mudou de verdade. Fica aqui (no
+  // fecho da pausa) — não a cada tecla, que projetar um deck inteiro custa caro.
   let resumo: string | undefined;
-  if (projetar && anterior) {
+  if (anterior) {
     try {
-      resumo = summarize(diffText(projetar(anterior), projetar(texto)));
+      resumo = nomeDaAlteracao(
+        tipo ?? "doc",
+        projetar ? projetar(anterior) : anterior,
+        projetar ? projetar(texto) : texto
+      );
     } catch {
       resumo = undefined;
     }
@@ -88,14 +92,14 @@ function gravarCommitPendente(): void {
 }
 
 /** Agenda a gravação do commit: uma pausa na digitação vira um commit. */
-function agendarCommit(path: string, texto: string, projetar?: (t: string) => string): void {
-  pendente = { path, texto, projetar };
+function agendarCommit(path: string, texto: string, projetar?: (t: string) => string, tipo?: string): void {
+  pendente = { path, texto, projetar, tipo };
   if (flushTimer !== undefined) window.clearTimeout(flushTimer);
   flushTimer = window.setTimeout(() => gravarCommitPendente(), 1200);
 }
 
 /** Compara o texto de agora com o último registrado e agenda o patch, quando faz sentido. */
-function registrarMudanca(path: string | null, texto: string, projetar?: (t: string) => string): boolean {
+function registrarMudanca(path: string | null, texto: string, projetar?: (t: string) => string, tipo?: string): boolean {
   if (path !== ultimo.path) {
     // documento novo: o log começa daqui (senão o primeiro patch compararia dois textos
     // de documentos diferentes)
@@ -104,7 +108,7 @@ function registrarMudanca(path: string | null, texto: string, projetar?: (t: str
     ultimo.texto = texto;
     return false;
   }
-  if (path && texto !== ultimo.texto) agendarCommit(path, texto, projetar);
+  if (path && texto !== ultimo.texto) agendarCommit(path, texto, projetar, tipo);
   return true;
 }
 
@@ -123,7 +127,7 @@ export const historySearchMethods = {
    */
   recordChange(this: App): void {
     if (!this.settings.commitsOn) return;
-    registrarMudanca(this.path, this.editor.getText());
+    registrarMudanca(this.path, this.editor.getText(), undefined, "doc");
   },
 
   /** Marca o texto atual como "último registrado" (usado ao abrir/trocar de documento). */
@@ -204,9 +208,9 @@ export const historySearchMethods = {
    */
   recordSerializedChange(this: App, texto: string): void {
     if (!this.settings.commitsOn) return;
-    // o tipo é capturado agora (o resumo é calculado no fecho da pausa, quando a aba pode já ser outra)
+    // o tipo é capturado agora (o nome é calculado no fecho da pausa, quando a aba pode já ser outra)
     const tipo = this.tab.kind ?? "doc";
-    registrarMudanca(this.path, texto, (t) => textoLegivel(this, t, tipo));
+    registrarMudanca(this.path, texto, (t) => textoLegivel(this, t, tipo), tipo);
   },
 
   /** Abre a lista de arquivos que só existem no backup (indicador vermelho). */

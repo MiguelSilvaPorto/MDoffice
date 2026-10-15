@@ -10562,6 +10562,7 @@ antigas quando fizer sentido.
   na entrada nova do encaixe (a antiga falava de um degrau de "só ícones" e de uma rolagem de painel
   que a tarefa nova substituiu). As outras entradas que seguem em "Não adicionado" pertencem a
   sessões com trabalho aberto ou com promoção em voo — mexer nelas criaria duplicata ou conflito.
+
 ## src/app/tabs.ts
 
 ### 2026-10-15 · esta tarefa · o app funciona sem nenhuma aba aberta
@@ -10682,3 +10683,75 @@ antigas quando fizer sentido.
   com piso de fonte não encolhem junto. Corrigir só o CSS não bastaria para o próximo grupo de largura fixa — a conferência no DOM é a garantia.
   Depois: 1500→900 px sem rolagem em nenhuma aba; a 1338 px Animações cabe inteira (compacta, sem menu).
 - **Observação:** o Vite deste ambiente serve arquivos velhos depois de editar (reiniciar para medir).
+
+## src/history.ts
+
+### 2026-10-15 · o nome das alterações · nomeDaAlteracao (puro)
+- **Local:** `secoesDeApresentacao`, `nomeDeLinhas` e `nomeDaAlteracao` (novos, depois de `linhasLadoALado`)
+- **Linha:** `novo` — o texto legível da apresentação é partido nas seções "## Lâmina N"
+  (`split(/(?=^## Lâmina \d+)/m)`); contagens diferentes nomeiam lâmina nova/excluída; com as
+  mesmas, compara seção a seção e nomeia as alteradas (1 por extenso, até 3 por extenso, senão a
+  conta) ou "Alteração visual (sem mudança de texto)" quando nada mudou; nos documentos de texto,
+  `linhasLadoALado(...)` conta os pares de linha alterados
+- **Porquê:** a lista de Alterações mostrava "+6983 −6984" (o tamanho do texto legível — a correção
+  anterior já tinha tirado o tamanho do JSON, mas o número continuou sendo o nome). Nas
+  apresentações o número não dizia nada: 7000 caracteres podiam ser um modelo aplicado (visual) ou
+  as lâminas reordenadas. O nome vive no `history.ts` porque é puro e testável no Node — e reusa o
+  `linhasLadoALado` que o diff lado a lado já usa (uma conta só).
+
+## src/app/historySearch.ts
+
+### 2026-10-15 · o nome das alterações · o tipo viaja com o commit pendente
+- **Local:** `pendente`/`agendarCommit`/`registrarMudanca` (ganham `tipo`), `gravarCommitPendente`
+  (o resumo vira `nomeDaAlteracao`) e os dois chamadores (`recordChange` → "doc";
+  `recordSerializedChange` → o `tipo` da aba)
+- **Linha:** `+ tipo?: string` na assinatura · `~ resumo = nomeDaAlteracao(tipo ?? "doc", projetar ? projetar(anterior) : anterior, projetar ? projetar(texto) : texto)`
+  no lugar do `summarize(diffText(...))`; `diffText`/`summarize` saem do import
+- **Porquê:** o nome precisa do TIPO (a apresentação tem seções de lâmina; o documento de texto,
+  linhas) e ele é capturado no registro — o nome é calculado no fecho da pausa, quando a aba pode
+  já ser outra (o mesmo motivo que fez o `tipo` ser capturado antes). A projeção continua sendo a
+  fonte do nome: o JSON cru nunca aparece.
+
+## scripts/testar-snapshots.mts
+
+### 2026-10-15 · o nome das alterações · 8 verificações
+- **Local:** a seção 12 (fim) e o import do `nomeDaAlteracao`
+- **Linha:** `novo` — lâmina alterada nomeada · lâmina nova · várias novas · lâmina excluída ·
+  alteração visual · duas lâminas por extenso · quatro viram a conta · documento de texto conta as
+  linhas
+- **Porquê:** era o pedido do usuário (os números na lista) e o nome é uma conta com muitos casos
+  de borda silenciosos (contagem diferente = lâmina nova; texto igual = mudança visual). O caso do
+  documento de texto garante que o `nomeDeLinhas` não perdeu o lugar.
+
+## docs/powerpoint.md
+
+### 2026-10-15 · o nome das alterações · a bala do histórico
+- **Local:** "Editar as lâminas" (a bala do Histórico)
+- **Linha:** `+` a frase da lista de Alterações nomeando o que mudou (Lâmina 3, nova lâmina,
+  alteração visual)
+- **Porquê:** o documento do módulo descreve o Histórico da apresentação desde a prévia da lâmina;
+  o nome dos commits completa a mesma tela.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · o nome das alterações · a checagem do resumo (e o `);`/`}` que faltavam)
+- **Local:** o bloco "o resumo da alteração sai do documento" (vira "o nome da alteração sai do
+  documento")
+- **Linha:** `~` a checagem passa a exigir o `resumo = nomeDaAlteracao(tipo ?? "doc", projetar ?
+  projetar(anterior) : anterior, projetar ? projetar(texto) : texto)` e o
+  `pendente = { path, texto, projetar, tipo }` · `+` o `);` e o `}` que a fusão de outra sessão
+  deixou fora (o arquivo não parseava — o `testar-layout` estava quebrado na `main`)
+- **Porquê:** a checagem prendia o `summarize(diffText(...))` que esta tarefa substituiu — ela
+  falharia (ou melhor: o arquivo nem rodava). O `);`/`}` é dívida de um conflito do `fechar.ps1` de
+  outra tarefa: sem eles nenhum teste do `test:layout` roda, então a correção entrou junto.
+
+### 2026-10-15 · o nome das alterações · a checagem do cartão da Animações (calc)
+- **Local:** o bloco "o cartão cabe o nome inteiro e o popup usa a célula de 84px"
+- **Linha:** `~` os dois padrões passam a exigir `calc(72px * var(--fita-e))` no lugar do `72px`
+  literal (o `gap`/`relative` e o `width: 100%` do popup ficam; o comentário entre a abertura e o
+  `grid-template-columns` entra no padrão)
+- **Porquê:** a checagem é da tarefa das Animações e prende o número fixo; a tarefa do **encaixe
+  da fita em quatro degraus** trocou os dois por `calc(72px * var(--fita-e))` (a galeria precisa
+  encolher no degrau compacto, senão a aba Animações estoura). Com o arquivo voltando a rodar
+  (entrada acima), a checagem antiga era a única falha do `test:layout` — a atualização é o
+  combinado que faltou entre as duas tarefas, não uma mudança de comportamento.

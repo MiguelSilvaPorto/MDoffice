@@ -1964,7 +1964,9 @@ console.log("\nPowerPoint: aba Animações (o desenho da fita)");
   );
   checa(
     "o cartão cabe o nome inteiro e o popup usa a célula de 84px",
-    /\.ppr-anim \{\s*grid-template-columns:\s*repeat\(7, 72px\)/.test(css) && /\.ppr-anim-item \{\s*position:\s*relative;\s*gap:\s*2px;\s*width:\s*72px/.test(css) && /\.ppr-anim-gal \.ppr-anim-item \{\s*width:\s*100%/.test(css),
+    /\.ppr-anim \{\s*\/\*[\s\S]*?\*\/\s*grid-template-columns:\s*repeat\(7, calc\(72px \* var\(--fita-e\)\)\)/.test(css) &&
+      /\.ppr-anim-item \{\s*position:\s*relative;\s*gap:\s*2px;\s*width:\s*calc\(72px \* var\(--fita-e\)\)/.test(css) &&
+      /\.ppr-anim-gal \.ppr-anim-item \{\s*width:\s*100%/.test(css),
     "em 54px o 'Desaparecer' saía cortado (61px de texto, medido no harness)"
   );
   checa(
@@ -2287,11 +2289,11 @@ console.log("\nhistórico: a alteração mostra o documento (não a serializaç�
     "o diff voltaria a mostrar a serialização"
   );
   checa(
-    "o resumo da alteração sai do documento (no fecho da pausa)",
-    /resumo = summarize\(diffText\(projetar\(anterior\), projetar\(texto\)\)\)/.test(hist) &&
-      /pendente = \{ path, texto, projetar \}/.test(hist) &&
+    "o nome da alteração sai do documento (no fecho da pausa)",
+    /resumo = nomeDaAlteracao\(\s*tipo \?\? "doc",\s*projetar \? projetar\(anterior\) : anterior,\s*projetar \? projetar\(texto\) : texto\s*\)/.test(hist) &&
+      /pendente = \{ path, texto, projetar, tipo \}/.test(hist) &&
       /summary: ehAncora \? "marco do documento" : opts\.resumo \|\| summarize\(ops\)/.test(snaps),
-    'a lista voltaria a mostrar "+4843 −7259" (tamanho do JSON)'
+    "a lista voltaria a mostrar os números no lugar do nome"
   );
 }
 

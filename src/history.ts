@@ -267,3 +267,48 @@ export function linhasLadoALado(oldText: string, newText: string, contexto = 2):
   }
   return out;
 }
+
+// ---------- o nome de uma alteração ----------
+
+/** As seções "## Lâmina N" de uma apresentação projetada (vazio quando o texto não é uma). */
+function secoesDeApresentacao(proj: string): string[] {
+  return proj.split(/(?=^## Lâmina \d+)/m).filter((s) => /^## Lâmina \d+/.test(s));
+}
+
+/** "1 linha alterada" / "N linhas alteradas" — o nome nos documentos de texto. */
+function nomeDeLinhas(antes: string, depois: string): string {
+  const n = linhasLadoALado(antes, depois).filter((r) => r.kind === "mudanca").length;
+  if (n === 0) return "Alteração sem mudança de texto";
+  return n === 1 ? "1 linha alterada" : `${n} linhas alteradas`;
+}
+
+/**
+ * O nome de uma alteração, em palavras (a lista de Alterações não mostra mais "+X −Y").
+ *
+ * Nas apresentações diz **qual lâmina** mudou — ou que a mudança foi **visual** (sem mexer no
+ * texto: cores, formas, posição), o que é o caso de aplicar um modelo ou uma variante. Nos
+ * documentos de texto, quantas linhas mudaram. `antes`/`depois` são os textos LEGÍVEIS (a
+ * projeção de cada motor), nunca a serialização.
+ */
+export function nomeDaAlteracao(tipo: string, antes: string, depois: string): string {
+  if (tipo === "ppt") {
+    const a = secoesDeApresentacao(antes);
+    const b = secoesDeApresentacao(depois);
+    if (a.length || b.length) {
+      if (b.length > a.length) {
+        const n = b.length - a.length;
+        return n === 1 ? "Nova lâmina" : `${n} lâminas novas`;
+      }
+      if (b.length < a.length) {
+        const n = a.length - b.length;
+        return n === 1 ? "Lâmina excluída" : `${n} lâminas excluídas`;
+      }
+      const mudadas = a.map((s, i) => (s === b[i] ? 0 : i + 1)).filter((i) => i > 0);
+      if (!mudadas.length) return "Alteração visual (sem mudança de texto)";
+      if (mudadas.length === 1) return `Lâmina ${mudadas[0]} alterada`;
+      if (mudadas.length <= 3) return `Lâminas ${mudadas.slice(0, -1).join(", ")} e ${mudadas[mudadas.length - 1]} alteradas`;
+      return `${mudadas.length} lâminas alteradas`;
+    }
+  }
+  return nomeDeLinhas(antes, depois);
+}

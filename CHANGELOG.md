@@ -1146,7 +1146,519 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **As Alterações têm nome (o "+6983 −6984" saiu da lista)**: a lista de commits de um documento
+  mostrava só números — o tamanho do texto que entrou e saiu —, e numa apresentação não dava para
+  saber o que tinha mudado. Agora cada alteração tem um **nome**: numa apresentação, **qual lâmina**
+  mudou ("**Lâmina 3 alterada**", "**Lâminas 2 e 4 alteradas**", "**Nova lâmina**", "**Lâmina
+  excluída**") e, quando o texto não mudou (cor, forma ou posição — o caso de aplicar um modelo ou
+  uma variante), "**Alteração visual (sem mudança de texto)**"; nos documentos de texto, quantas
+  **linhas** mudaram ("**1 linha alterada**", "**12 linhas alteradas**"). O nome é calculado no
+  fecho da pausa, a partir do texto legível de cada motor (nunca da serialização). Teste:
+  `npm run test:log`.
+
+**Ferramentas (dev)**
+
+- **`test:layout` voltou a rodar (faltava um `);` e um `}`)**: a fusão de duas sessões na `main`
+  deixou o `scripts/testar-layout.mts` sem fechar a checagem do resumo do histórico e o bloco dela
+  — o arquivo **não parseava** e nenhuma verificação do `test:layout` rodava. As duas chaves
+  entraram junto com a atualização da checagem (o resumo virou o **nome** da alteração).
+
+### Adicionado (na main)
+
+**Backend**
+
+- **A tela Início ganhou a prévia dos documentos** (`preview_file`): um comando novo que devolve o
+  começo do texto de um arquivo — o `.md` lê o próprio texto, os formatos do Office (.docx/.pptx/
+  .xlsx) abrem o zip e tiram o texto do XML principal (documento, primeira lâmina, textos
+  compartilhados). O zip é lido direto do arquivo (sem trazer os bytes para o lado TS) e qualquer
+  falha devolve prévia vazia — a tela nunca quebra por um arquivo que sumiu. Teste no `cargo test`.
+
+- **Limite do cache do WebView (lado nativo)**: a janela do app passou a ser montada pelo
+  `lib.rs` (o `tauri.conf.json` ficou com `windows: []`) porque o `--disk-cache-size` precisa
+  chegar **junto com o WebView** — o arquivo de configuração é compilado no app e não dá para
+  mudá-lo em tempo de execução. A escolha fica em `cache.json` na pasta de dados (MB; 0 =
+  automático), o `preparar_webview()` marca o que ficou valendo na sessão e os padrões do wry
+  (`msWebOOUI`, `msPdfOOUI`, `msSmartScreenProtection`) continuam nos argumentos. Os comandos
+  novos (`storage_cache_config`/`storage_set_cache_limit`) validam o teto contra a lista da tela,
+  e o `storage_report` passou a devolver `cache_bytes` — a soma só das pastas de cache do perfil
+  (dentro de `EBWebView\Default`), sem preferências e sem contar duas vezes o
+  `Service Worker\CacheStorage`.
+
+- **Salvamento automático em pasta de rede (UNC/SMB) não trava mais a interface**: os comandos
+  de arquivo e de backup passaram a rodar no pool de tarefas do Tauri (`#[tauri::command(async)]`).
+  No Tauri 2 um comando síncrono roda na **thread principal** — e ler/gravar num share de rede
+  (centenas de ms a segundos por operação) travava a janela e filava o IPC a cada salvamento. Cada
+  salvamento também gasta **uma ida ao disco a menos** (não checa mais `exists()` da pasta antes de
+  gravar: a pasta é criada só quando a gravação responde "não encontrei" e tenta de novo) e a cópia
+  de backup lê o documento **uma única vez** (antes o `same_bytes` + `fs::copy` reliam o original
+  por raiz, em série — 4 leituras de rede por cópia com duas pastas).
+
+- Comandos Rust/Tauri: **arquivos** (abrir/salvar), **assets** (copiar imagens com nome limpo),
+  **rascunhos**, **projetos** (árvore), **busca** no conteúdo, **pacote IA** (.zip) e **backup**.
+- **App renomeado no lado nativo**: crate `mdoffice`, lib `mdoffice_lib`, identificador
+  `com.mdoffice.desktop` e binário/processo `mdoffice`. Na primeira execução com o nome novo,
+  uma **migração** copia a pasta de dados antiga (`%LOCALAPPDATA%\com.mdcreator.desktop` →
+  `com.mdoffice.desktop`) — rascunhos, backups e preferências não se perdem.
+- Testes dos comandos (`commands/tests.rs`).
+- Tauri com o recurso **`image-png`** e a permissão **`core:window:allow-set-icon`**, para o app
+  trocar o ícone da janela em tempo de execução.
+- `Cargo.lock` sincronizado com a feature **`image-png`** (crates `image`, `png`, `byteorder-lite`,
+  `moxcms`), validado com `cargo check --locked`.
+- **Lixeira de documentos** (`trash_move`/`trash_purge`): o arquivo sai da pasta do projeto e
+  fica em `lixeira/` na pasta de dados do app, com um índice do caminho original; a limpeza
+  apaga de vez só o que passou de **30 dias** (roda na abertura e a cada arquivo movido). O
+  aviso de backup sabe que o arquivo está na lixeira e não trata como "sumido".
+- Comandos do painel de **Armazenamento**: `storage_report` (tamanho da pasta de dados e da
+  pasta da versão anterior) e `storage_remove_legacy` (remove a pasta `com.mdcreator.desktop`
+  depois da migração); `drafts_folder_path` e o tamanho de cada rascunho (`bytes`). Com teste
+  Rust do `soma_pasta` (28 testes no total).
+
+**Frontend**
+
+- **A fita cabe na largura em quatro degraus — e sem rolagem (PowerPoint, Word e Excel)**: a faixa
+  de opções deixou de empurrar botão para fora da tela. Do mais folgado ao mais apertado: (1)
+  **cheia**; (2) **compacta** — espaços e ícones menores, com **piso de fonte** (o Excel entrou
+  nesse caminho: saiu do `zoom`, que encolhia o texto junto); (3) os **grupos que não couberem
+  viram um botão** com o nome do grupo — clicar abre um menu com os controles daquele grupo, e o
+  **último** grupo colapsa primeiro, então o que se usa o tempo todo continua à vista; (4) **faixa
+  única** no modo recolhido (Ctrl+F1 ou duplo clique numa aba): os grupos da aba ativa ficam numa
+  linha de botões (o "mais" de cada grupo) e a faixa acompanha a aba ativa, em vez de sumir. Quem
+  decide é uma função pura (largura disponível × largura dos grupos, `src/fitaEncaixe.ts`), medida
+  em `npm run test:encaixe`; a conferência cobre **1400/1100/900/700 px** com a escala em
+  **0,7/1/1,5** e a pior combinação ainda deixa a fita inteira à vista. As **setinhas de rolar** do
+  Word e a roda do mouse nos painéis saíram (a galeria de Estilos continua rolando de lado, que ali
+  é galeria). A alça de altura ganhou **teto**: o menor entre **1,5×** e **um terço da janela** —
+  numa janela baixa a faixa não come a tela (o valor guardado segue sendo a sua preferência).
+  Testes: `npm run test:encaixe` e `npm run test:layout`.
+
+- **A lista de recentes virou uma grade de cartões com a prévia**: cada cartão mostra um "papel"
+  com o título (a primeira linha) e o começo do texto do documento, com a cor do formato na borda;
+  o ícone do formato fica no lugar enquanto a prévia não chega (ou quando o arquivo não tem texto).
+  A prévia é lida por arquivo, em paralelo, depois do cartão nascer — e o texto do arquivo entra
+  **escapado** (é conteúdo de fora). Teste: `npm run test:layout`.
+
+- **Histórico da apresentação: a lâmina em foco antes × depois (em vez do texto do deck)**: a aba
+  **Alterações** (e a **Versões**) de um `.pptx` despejava o **texto serializado do documento
+  inteiro** — os resumos viravam "+4843 −7259" e o diff não dizia nada sobre o que estava na tela
+  (print do usuário). Agora o painel mostra as **duas versões da lâmina em foco** (a selecionada
+  no editor) como **mini lâminas lado a lado** — esquerda: como estava; direita: como ficou —,
+  desenhadas com o mesmo motor da miniatura da faixa; quando a versão é de antes de a lâmina
+  existir, o lado avisa. Os outros módulos (Markdown, Word e Excel) seguem no diff de texto de
+  sempre. Teste: `npm run test:log`.
+
+- **Sem sessão, o app fica no Início (não abre rascunho sozinho)**: ao recarregar com **nada aberto**, o app abria **sozinho** o último rascunho — e, no navegador, o `temp/rascunho.md` velho do projeto — sem se saber o que viria (relato: "não tem nada aberto e ele abre o primeiro documento ou último que foi aberto"). A sessão vazia caía na recuperação **legada** (de antes das abas): agora, sem sessão para reabrir, o app **fica no Início (o Hub)** — exatamente como quando se fecha a última aba — e a recuperação legada sai do start. **Nada se perde**: os rascunhos continuam guardados e à mão em **Recentes ▸ "Rascunhos guardados no app"**, e o texto do `temp/rascunho.md` (dev) segue no arquivo, para abrir quando quiser.
+
+- **Histórico: o diff agora é lado a lado**: o painel abria a mudança numa coluna única (a linha
+  vermelha "saiu" em cima, a verde "entrou" embaixo) — agora o **antes fica à esquerda** e o
+  **depois à direita**, **pareados linha a linha**, com uma barra **Antes · Depois** grudada no
+  topo enquanto o diff rola; o que não mudou sai igual dos dois lados, o lado sem linha fica
+  apagado e o trecho omitido vira um **⋯** atravessando as duas colunas. A legenda passou a
+  explicar esquerda/direita. Vale para **Versões** e para **Alterações** (o `test:log` prende o
+  pareamento: troca, inserção, remoção e bloco com excedente).
+
+- **A faixa não recolhe mais com dois cliques**: o **duplo clique numa aba** (Página Inicial, Inserir…) alternava o recolher da faixa — e quem troca de aba apertado, ou abre e fecha um popup pelo próprio botão (o **Template**, por exemplo), recolhia a faixa **sem querer** ✗ (relato do usuário). O gesto saiu: **recolher/abrir a faixa agora é só o `Ctrl+F1`** (a dica continua no `title` da barra das abas), e **dois cliques no mesmo botão** — inclusive o que abre e fecha um popup — também não recolhem nada. Um clique simples num comando continua devolvendo o espaço, como sempre.
+
+- **A fita não recolhe enquanto se escolhe num popup**: com a faixa recolhida e aberta "por enquanto" (um clique numa aba), **escolher um modelo no Template** — ou qualquer item de um popup do app — **recolhia a faixa do nada** ✗ (print do usuário): o popup vive no `document.body`, então o clique nele contava como "clique fora", e o próprio clique no botão que **abre** o popup já mandava fechar. Agora os popups do app marcam **`app-popup`** (os do PowerPoint, os do Word, o menu do **seletor** de campos e o menu do **Excel**), o clique dentro deles (e dentro de qualquer **diálogo** do app) **não é "fora"** e o comando que abre um popup adia a decisão **um tique** — se o popup já fechou, a faixa volta a fechar como sempre.
+
+- **A lista dos seletores ficou do tamanho do campo (mudar o tamanho da fonte não abre mais uma
+  janela)**: o menu dos seletores (tamanho da fonte, fonte, e todos os `<select>` do app) usava a
+  largura e as linhas dos menus **“⋯”** — **250px de largura mínima** e **~36px por item** —, então
+  escolher “36” abria um painel gigante com barra de rolagem, fora do tamanho do campo (print do
+  usuário). Agora a lista **abraça o conteúdo** (com a **largura do campo como mínimo**, como a
+  lista nativa), as linhas são **compactas** (22px) e a altura fica presa em **60vh/330px** com a
+  rolagem dentro. Vale para a fita (PowerPoint, Word, Excel), os painéis e o editor.
+
+- **Cache do WebView com teto escolhido**: a linha nova **Cache do WebView** em
+  **Configurações ▸ Armazenamento** mostra o que está em disco agora (ex.: "55.1 MB agora") e
+  deixa escolher o teto — **Automático** (o WebView decide, como sempre foi), **512 MB**, **1 GB**,
+  **2 GB** ou **4 GB** — no mesmo controle dos outros ajustes. A escolha vale na **próxima
+  abertura** do app (o WebView só lê o argumento quando a janela nasce): até lá a linha avisa
+  "vale na próxima abertura do app" e, depois de reabrir, mostra só o limite em uso. A conta do
+  "Outros dados do app" continua a mesma; a linha nova é que separa o cache das preferências.
+- **Marcador de conflito no histórico (limpeza)**: o fechamento da tarefa das Ideias deixou um
+  bloco de conflito (`<<<<<<<` / `=======` / `>>>>>>>`) **commitado** no
+  `docs/historico-tecnico.md` — a resolução tinha sido feita e conferida, mas o `fechar.ps1`
+  desfez o arquivo ao continuar o rebase, e o `git add` seguinte estagiou a versão com os
+  marcadores. Os três marcadores saíram (os dois lados ficaram: a entrada do botão de perigo e a
+  das Ideias) e o `testar-layout` agora **falha** se um marcador voltar em `CHANGELOG.md`,
+  `README.md` ou nos docs dos módulos — o defeito não passa mais despercebido.
+
+- **Documento novo já salvo na pasta padrão do app (`Documentos\mdOffice`)**: criar um documento não pergunta mais nada — ele **nasce salvo** na subpasta do próprio tipo, uma para cada: **`Markdown`**, **`Word`**, **`Excel`** e **`PowerPoint`** (`Documento.md`, `Documento.docx`, `Documento.xlsx`, `Documento.pptx`; o nome livre vira `Documento-2`, `Documento-3`… e a checagem é no disco, então dois seguidos nunca colidem). Vale para o `Ctrl+N`, para os cards do Início e para os **+** das abas de cada motor ✓. A raiz entra sozinha na lista de **Projetos** da barra lateral, então as subpastas aparecem na árvore como pastas normais ✓ — e **"Salvar como…" continua perguntando**, já sugerindo a subpasta do tipo (mudou de pasta? as imagens de `assets/` seguem o documento, como sempre ✓). Quem quiser outro lugar salva onde quiser e nada é imposto.
+- **A árvore de projetos lista `.xlsx`/`.xlsm`/`.pptx`**: antes só `.md`/`.docx` apareciam — planilha e apresentação ficavam **invisíveis no painel** mesmo estando na pasta do projeto ✗. O teste do Rust cobre as quatro pastas padrão (ordem alfabética, `txt`/imagem fora, pasta vazia fora).
+- **Medição não vai para o commit — e a entrada do CHANGELOG promove no fecho**: dois deslizes no fechamento da concordância de número. O **JSON da medição** (`medida-concord.json`, 133 KB) ficou na raiz e entrou no commit com o `git add -A`: medição é **arquivo de trabalho** (o número mora em `docs/medicao-corretor.md`), e na dúvida `git status` antes do `fechar.ps1` mostra o que vai junto. E a **entrada do CHANGELOG** ficou em “Não adicionado” mesmo com o código já na `main`: quando o commit do `fechar.ps1` entra na `main`, a entrada precisa **já estar** em “Adicionado” — quem fecha promove, no mesmo commit.
+
+- **Troca de abas animada**: trocar de documento tinha ficado "seco" — só a barra lateral e os
+  painéis animavam. Agora a **nova aba ativa entra com um "pop"** e o **documento desliza do lado
+  de onde a aba veio** (aba à esquerda entra da esquerda, à direita da direita) — vale para
+  Markdown, Word, Excel e PowerPoint, inclusive entre duas abas do mesmo tipo. O movimento segue
+  os níveis das Configurações: **Discreta** desliga e **Completa** usa a curva de mola.
+- **Concordância de número no corretor (a regra estrutural que o corpus mediu faltar)**: quando o erro dá uma forma que existe, quem decide entre singular e plural passa a ser a **concordância com a frase** — não a frequência. Se o determinante **imediato** pede plural (“as”, “os”, “vários”, “duas”…; antes ou depois da palavra) e o 1º do dicionário não concorda, a forma que concorda **passa na frente** — “tods os arquivos” → **todos**, “as citacõs” → **citações**, “As segurass notas” → **seguras**. A troca é **dentro da mesma palavra** (nunca uma palavra por outra: o `parDeNumero` cobre o “s” do plural, “m”↔“ns”, “ão”↔“ões/ãos/ães”, “l”↔“is/eis” e o a↔o do gênero) e a concordância ainda **veta** a promoção do contexto que contrarie a frase. Só reordena sugestão — nunca vira correção automática. **Medição:** no conjunto rotulado dá **250/295 = o mesmo do baseline** (os casos injetados não têm a forma “determinante + palavra”), com **falsos positivos 0,00**; o ganho é estrutural e está preso em 8 verificações novas (incluindo os três casos acima). A medição está em `docs/medicao-corretor.md` (oitava medição).
+- **Corpus dos n-gramas: cadeia reproduzível — e o resultado medido**: o modelo de sugestões vinha de um corpus que **ninguém conseguia refazer** (nem se sabia o tamanho), e ele tem buracos: **“severidade” não existe** no vocabulário e **“mesh” existe**. Entraram `scripts/baixar-corpus.mjs` (artigos **destacados e bons** da Wikipédia PT, CC BY-SA 4.0 — só **contagens** vão para o app — com **retomada**, **paralelismo** e **manifesto de títulos versionado** para o redo), `scripts/corpus-texto.mjs` (o limpador de HTML: prosa fica; tabela — infobox **aninhado** também —, figura, referência e nota de edição saem), `scripts/regerar-ngrams.mjs` (`npm run corpus`, a cadeia num comando) e `npm run test:corpus` (14 verificações). O `build-ngrams.mjs` passou a aceitar uma **pasta** de corpus (com 718 arquivos a linha de comando estourava). **O achado:** `prop=extracts` só devolve **um** extrato completo por pedido (`exlimit` só vale junto com `exintro`) — era por isso que o download rendia quase nada (0,17 MB/min); a REST (`/page/html/…`) rende o artigo inteiro e, com 4 pedidos em paralelo, o corpus anda a ~0,6 MB/min. **O resultado medido:** com 30 MB de Wikipédia o modelo fica **menor** (4,8 MB) e conhece “severidade” (e não conhece mais “mesh”) — mas **no harness ele é pior**: r@1 **85% → 80%**, r@3 88% → 84%, precisão 91% → 88%, **falsos positivos 0,00 → 1,64/1000**, 19 casos perdidos contra 6 ganhos (ganha em plural com “ss”/“j”, perde em palavras do dia a dia do app: “clicar”, “seguras”, “porcentagens”…). Conclusão honesta: o problema não é só o **tamanho** do corpus, é o **registro** — o antigo estava mais perto dos textos do app (técnico) do que a enciclopédia. O modelo antigo **ficou** (a cadeia está pronta para um corpus do registro certo, ou misto).
+
+- **Diálogo de texto com várias linhas (modo código)**: o diálogo de uma linha do app
+  (`pedirTexto`, usado em "Novo modelo", renomear lâmina etc.) ganhou a opção de virar uma
+  **área de várias linhas** — Enter quebra a linha e **Ctrl+Enter** (ou o botão) confirma —,
+  com fonte monoespaçada e a janela um pouco mais larga. É o campo que o Fluxo do Mermaid do
+  PowerPoint usa para colar o `flowchart`; a validação e o "clicar fora cancela" continuam
+  iguais.
+- **O nível “Completa” ganhou cara própria — e o “Padrão” deixou de ser igual a ele**: os dois níveis eram praticamente indistinguíveis (o “Completa” só mexia **30–100 ms** nas durações e **1 px** no hover). Agora o “Completa” **entra com mola** (a curva passa do ponto e assenta, `cubic-bezier(0.34,1.56,0.64,1)`), viaja **o dobro** (modais e painéis 26 px, menus 14 px, abas 16 px), a **cascata do Início** abre mais espaçada (70/140/210/280 ms), a **paleta (Ctrl+K) entra em escadinha** (26 ms por item), os itens da paleta deslizam de lado, o toast e a barra lateral usam a mola, e o hover sobe **3 px** (com sombra maior nos cartões) — o “Padrão” continua curto e direto, como sempre foi, e o “Discreta” segue sem entrada e sem elevação. A **prévia de cada cartão** mostra o ritmo (a do “Completa” dá dois tempos com um estufo no fim) e a descrição diz o que muda. A rede de segurança do movimento de saída subiu de **420 para 640 ms** (senão o modal saía antes de a animação do completo acabar).
+- **Sem o painel "Contexto para IA"**: a aba de pastas vinculadas saiu da barra lateral (não fazia
+  mais sentido), junto com o modal "Pastas de contexto para IA", o item do menu **⋯**, o atalho do
+  menu do botão direito do editor, o tipo `LinkedFolder` e o comando `inspect_folders` (Rust, que
+  só servia a ele). O **Copiar para IA**, o **Pacote para IA** e o painel de **Projetos** ficam
+  como estavam, e o menu do editor agora só tem o **Copiar** — sem abrir quando não há seleção.
+- **Ícones de tipo no estilo adotado (contorno)**: os ícones das **abas**, das **listas**
+  (Recentes/Projetos) e dos **menus** deixaram a folha preenchida e passaram ao **contorno** —
+  folha com o canto dobrado, interior vazio e a marca do formato no traço: **#** (Markdown),
+  linhas de texto (Word), planilha com faixa de cabeçalho (Excel) e gráfico com seta
+  (PowerPoint). A paleta é a do conjunto adotado (**md roxo `#7C3AED`, Word azul `#2B6CE4`,
+  Excel verde `#16A34A`, PowerPoint laranja `#EA580C`), a mesma nos dois temas — a identidade
+  do formato não muda com o tema. O traço foi calibrado para 16 px (o tamanho das abas) e
+  conferido rasterizado em 16, 17 e 22 px, claro e escuro.
+
+- **A lista dos seletores não cobre mais a tela**: a lista aberta de um seletor (tamanho da
+  fonte, fonte…) montava os 20+ itens na altura natural e, em tela menor, cobria tudo — não
+  dava para ver o documento atrás. Agora a **altura fica presa à janela** (no máximo ~72%
+  dela) e a lista **rola dentro** dela; ao abrir, ela já vem **posicionada no item marcado**,
+  centrado na área visível, em vez de sempre do começo. Vale para todos os seletores do app
+  (Word, Excel, PowerPoint e Configurações).
+
+- **Boas-vindas com o ícone atual do app**: o cartão “Bem-vindo ao mdOffice” (na pré-visualização e no `F1`) ainda mostrava o **quadradinho roxo com “M↓”** — o logo abandonado — e agora mostra o **ícone do app** (as folhas azul/laranja com a folha branca), na versão **clara ou escura** conforme o tema e a escolha das Configurações (a mesma chave que troca o ícone da janela). O CSS do antigo gradiente saiu, e o `test:layout` passa a prender as três coisas: a imagem do ícone, a escolha claro/escuro e a ausência do quadradinho antigo.
+- **Formalidade base (Onda 3)**: o catálogo informal → formal cresceu de **18 para 75 padrões**, agora classificados por **classe** (internetês, contração, muleta, gíria, oralidade, atenuação, redundância e vagueza), com política explícita de **seguro** (o app pode corrigir sozinho — 45 padrões) × **sugestão** (30 padrões, quando a troca depende do sentido) e tom mínimo (neutro × formal). Entraram as **regras de frase por janelas** — “a gente vê que” → “nós vemos”/“vê-se que”, “Aí eu fui” → “Então, eu”/“Em seguida, eu”, “então” repetido, “você vê que” → “observa-se que” e “há três anos atrás” → “há três anos” —, com exclusão de citação (`>`), código, URL, sigla e e-mail. O painel de revisão (F7) passa a mostrar o **MIP** (marcadores informais por 1.000 palavras) antes e depois das correções seguras, a contagem por classe e o trecho/risco de cada marcador.
+
+- **Teste do “entretanto” alinhado ao comportamento decidido**: a adversativa leva só a vírgula de antes (“…, entretanto faltou teste.”), como o corpus já exigia (caso 16, “porém”); a expectativa antiga do teste pedia as duas vírgulas.
+
+- **Corretor aprende com as recusas e por classe de erro**: desfazer um ajuste automático (ou digitar por cima) desconta o par aprendido, e o app passa a reconhecer classes (transposição, tecla vizinha, acento, dígrafo) para acertar antes de conhecer o par exato.
+
+- **Salvamento automático com feedback imediato e caminho do arquivo**: enquanto o documento é editado ou gravado, o badge exibe "Salvando…" com ícone de nuvem pulsando; assim que o salvamento é concluído, o badge volta para "Salvo" e exibe logo à sua direita o caminho da pasta/arquivo salvo com botão de atalho para abrir/revelar no explorador de arquivos.
+
+- **Ícones de tipo redesenhados**: cada tipo passou a ser uma **folha de documento** na cor do
+  formato (com o canto dobrado) e a marca dentro — M↓ no Markdown, W no Word, a planilha no Excel
+  e o gráfico de pizza no PowerPoint —, no lugar do quadradinho com a letra solta; vale nas abas,
+  nas listas, nos menus, na busca e no Início.
+
+- **Citação ABNT atualizada para a NBR 10520:2023**: o corretor aceita Caixa Mista `(Silva, 2020)` e passa a sugestão (não erro) para quem escreve em CAIXA ALTA; "et al." opcional.
+
+- **Corretor com contexto e decisão por confiança**: as sugestões passam a usar os **bigramas** do
+  modelo de n-gramas (`public/ngrams/ctx-pt.json`) — "vou para a caza" vira "casa" com muito mais
+  chance — e o auto-aplicar deixa de ser regra fixa: decide por **probabilidade com margem**
+  (vencedor × segundo colocado), empate vira sugestão e o limiar se calibra com o histórico de
+  desfazer.
+
+- **O limiar do corretor se calibra com o uso**: desfazer uma correção que o app aplicou sozinho
+  sobe o limiar (o corretor fica mais exigente); as que ficam de pé o descem. O limiar em vigor vai
+  para o worker a cada veredito, e a calibragem funciona até sem armazenamento local.
+
+- **Correção automática de novo nos casos claros**: a decisão por probabilidade tinha deixado
+  passar para "só sugestão" erros óbvios como **"atensao" → "atenção"**; a dominância de uso (5×)
+  voltou a aplicá-los sozinha — medido no corpus: **32/32 casos corrigidos e 32/32 textos
+  corretos preservados**.
+
+- **O corretor conhece as confusões do português e o teclado ABNT2**: a nota dos candidatos passa a
+  ser **ponderada por classe** (c↔ç, s↔z, g↔j, e↔i, o↔u, m↔n, "h" mudo, letra dobrada, inversão de
+  vizinhas) e pela **vizinhança de teclas**; as **grafias prováveis** (ss↔ç, ch↔x, dobradas) são
+  procuradas direto no vocabulário. "excessao" → **exceção**, "analize" → **análise**, "pesquiza" →
+  **pesquisa** e "obrigdao" → **obrigado** agora saem certos - e sozinhos. Corpus: **34/34**.
+
+- **"Você quis dizer" sem falsos positivos**: o aviso só aparece quando a diferença é **erro de
+  digitação típico** (inversão de letras, tecla vizinha do ABNT2, confusão c↔ç/s↔z/g↔j/m↔n, "h"
+  mudo ou letra dobrada). Antes qualquer troca de letra valia e palavras reais eram questionadas
+  ("paridade" → "caridade", "parse" → "passe"); medido com o harness: **3,25 → 0,00 falsos
+  positivos por 1000 palavras**, com o acerto da auto-correção em 92%.
+
+- **Ranking das letras faltando/sobrando**: a frequência ganhou **teto** (palavra comum não passa
+  mais por cima de um candidato melhor por edição) e o candidato que **preserva o começo da
+  palavra** ganha um bônus pequeno. "aparee" → **aparece** (era "para"), "fecar" → **fechar** (era
+  "ficar") e "mdia" subiu para o topo da lista (era "dia"). Medido: recall@1 **78% → 82%**,
+  precisão do 1º **83% → 87%**, acerto da auto-correção **92% → 95%** e auto-aplicações erradas
+  **19 → 13**.
+
+- **O contexto decide a palavra que existe**: quando a forma escrita é palavra de verdade mas não
+  combina com a frase ("o maior ganho **resta** aba"), o app pergunta — comparando, no modelo de
+  n-gramas, a leitura escrita com as trocas de classe (acento nos dois sentidos, x↔ch, g↔j, c↔ç,
+  tecla vizinha, "h" mudo, dobra). É **sugestão** ("o contexto pede «desta»?"), nunca correção
+  automática. Recall@1 **82% → 83%**, recall@3 **86% → 87%**, falsos positivos seguem **0,00**.
+
+- **Harness de medição do corretor (F0) com linha de base registrada**: `scripts/avaliar-correcao.mts`
+  mede o corretor real (`checkText`) contra um conjunto rotulado — os 25 pares de palavra de
+  `test/docs/gramatical.md` e 270 erros sintéticos por classe (acento, c↔ç, s↔ss, x↔ch, g↔j,
+  transposição, letra a mais/menos, tecla vizinha) gerados de parágrafos limpos de `docs/*.md` —,
+  com recall@1/@3, precisão do 1º lugar, falsos positivos por 1000 palavras, taxa e acerto da
+  auto-aplicação, ms/palavra (p50/p95) e o payload que o worker carrega; saída legível, `--json`
+  e `--classe=`. Aplicar: `node scripts/avaliar-correcao.mts`. Baseline do commit `120cc9e` em
+  `docs/medicao-corretor.md`: detecção 97%, r@1 76%, r@3 85%, FP 3,25/1000, auto-aplicação 76%
+  com 10,7% delas erradas, p95 0,152 ms/palavra e 7,5 MB de payload no worker. No fechamento um
+  rebase trouxe o corretor com confusões/teclado (`760095e`); a mesma medição rodou no commit novo
+  (`cdd1c84`): r@1 80%, r@3 89%, x↔ch 33%→67%, FP igual e p95 0,998 ms/palavra — a comparação está
+  no documento. Nada muda no comportamento do corretor.
+
+- **F4 do corretor — a promoção por contexto para de errar**: o `rerankSuggestions` (a camada que reordena as sugestões pelo trigrama/bigrama e pelo lado direito da frase) promovia com evidência **fraca**, e o bônus de classe/uso podiam promovê-la sozinhos — na medição isso custava acerto (“messmo” → “**mesh**” ✗, “revissão” → “**previsão**” ✗). Agora **a promoção é do contexto**: piso próprio (0,06), no mínimo **3×** o contexto do 1º do dicionário + margem, e o bônus de classe/uso só escolhem entre candidatas que o contexto já sustenta. Com o modelo ligado, o r@1 voltou de **84% para 85%** (empata com a rodada sem modelo em vez de perder 1 p.p.), a precisão do 1º segue **91%** e os falsos positivos **0,00**. A varredura de limiares (8 pisos × 5 fatores × 4 margens sobre as evidências reais de 54 casos do conjunto) mostrou que **nenhuma** configuração faz a promoção ganhar nesse corpus — a régua ficou conservadora de propósito: promove quando o contexto é de fato decisivo, fora disso não chuta.
+- **Harness: medição caso a caso**: o `--json` do `scripts/avaliar-correcao.mts` agora leva a lista `medidas` (cada erro com conjunto, classe, sugestões, auto e trecho) — é o que permite comparar duas rodadas (com/sem modelo, antes/depois) **por índice** e ver exatamente quais casos mudaram, em vez de só o total.
+- **Fila do salvamento automático (nada de pedido descartado)**: um salvamento por vez e o pedido
+  que chega durante uma gravação **deixa de ser ignorado** — ao terminar, a fila grava de novo com
+  o texto mais recente. Antes (`if (this.saving) return`), em pasta de rede o autosave disparado
+  durante uma gravação lenta era simplesmente descartado e a última parte do que foi digitado
+  ficava sem salvar até a próxima tecla/blur/fechar. Rajadas de pedidos durante a gravação viram
+  **uma** gravação (coalescência), a digitação nunca espera o disco e o indicador "Salvando…"
+  continua refletindo o estado real. Teste novo: `npm run test:salvamento` (fila exercitada com um
+  "disco lento" de mentira + contratos do Rust).
+
+- **Frases formais, degrau 2 — clichês, perífrase e plano em 1ª pessoa**: entrou a classe **clichê** (peso 1 no MIP, como a pesquisa pede) com 10 padrões — **com correção**: “nos dias de hoje” → **atualmente**, “vem crescendo” → **tem crescido**, “de suma importância” → **essencial**, “desde os primórdios” → **desde o início**; **só sugestão**: “é sabido que”/“todos sabem que” (afirme direto), “cada vez mais”, “faz-se necessário”, “no mundo atual”, “abrir um leque de possibilidades” e “um passo importante”. Duas **janelas de frase** novas: **“vou estar enviando” → “enviarei”** (a pessoa vem do auxiliar e o verbo sai do gerúndio pelo infinitivo, com fazer/dizer/trazer e os compostos na tabela dos irregulares — “vamos estar fazendo” → **faremos**, “vão estar trazendo” → **trarão**) e **“vou fazer”/“vamos enviar”** em 1ª pessoa, que avisa e mostra a passiva certa (“será feito”, “serão enviados”) **sem troca pronta** (o gênero e o número do complemento mandam). Completam o catálogo “dá pra ver que” → **observa-se que**, “de certa forma” (vagueza; “meio que” deixou de sugerir justamente “de certa forma”) e “criar novo”/“inovar do zero” (redundância). São **94 padrões** em 9 classes, e as regras novas marcaram **zero** falsos positivos nos 98 mil palavras dos documentos do próprio projeto (a única marcação foi o “de certa forma” citado na pesquisa, que fala da regra).
+- **Formalizar texto com prévia antes/depois**: o comando novo (**Ctrl+Alt+F**, no menu “Escrever” e no painel de revisão) pega a **seleção** — ou o documento inteiro quando não há seleção — e mostra **antes × depois** lado a lado, com o **MIP ao vivo** e os trechos trocados pintados (vermelho no antes, verde no depois). As **trocas seguras** (com correção pronta — a mesma régua do MIP) já entram marcadas; as que **dependem do sentido** esperam a decisão, com o risco explicado no tooltip e as alternativas em chips (“a gente analisou” → “Nós analisamos” **ou** “analisou-se”); os avisos sem troca pronta (“sei lá…”) só informam, sem caixa. Nada dentro de citação (`>`), código, URL, sigla ou e-mail, e aplicar é **uma transação**: Ctrl+Z desfaz tudo de uma vez.
+- **Dois consertos no catálogo que a prévia revelou**: “dar uma olhada **no** relatório” virava “examinar **no** relatório” — a troca agora leva a preposição junto (“examinar o relatório”, “examinar a planilha”, “examinar as contas”…) e a forma solta, sem objeto, virou **sugestão** (“examinar”, “revisar”, “conferir”); e “um monte de **gente**” virava “muitos gente” — agora é **sugestão** com as quatro formas (muitos/muitas/vários/várias). As duas eram marcadas como **troca segura**, e a formatação em massa as aplicava assim mesmo.
+- **Abas estilo Chrome**: `Ctrl+T`/`Ctrl+W`/`Ctrl+Tab`/`Ctrl+1…9`, reabrir a última fechada,
+  arrastar para reordenar, menu de contexto; fechar nunca pergunta (vira rascunho em Recentes);
+  fechar o **último documento** volta para a tela de Início.
+- **Atalhos configuráveis** (Configurações ▸ Atalhos): antes a aba só mostrava a lista — não havia
+  como escolher outra tecla. Agora cada atalho é um item de verdade: clique na tecla e pressione a
+  nova. Tem aviso de conflito (diz qual atalho já usa aquela tecla), recusa tecla solta (letra sem
+  Ctrl/Alt atrapalharia a digitação; F1–F12 valem sozinhas), voltar ao padrão por linha ou de uma
+  vez, e Esc para desistir. A lista passou a trazer **todos** os atalhos do app — entraram negrito,
+  itálico, apresentar, copiar para a IA e ir para a aba N — e as dicas de tecla espalhadas pelo app
+  (menus de contexto, botões, busca de comandos) acompanham a troca.
+- **Documentação do projeto renovada**: README com a história (mdEditor → mdOffice) e o crédito
+  à ArtCraft, licença **MIT**, docs de [estrutura](docs/estrutura-do-projeto.md) e
+  [funcionalidades por módulo](docs/funcionalidades.md), e este **changelog + o
+  [histórico técnico](docs/historico-tecnico.md)** (entregues neste mesmo commit).
+- **Nome unificado em mdOffice**: textos e títulos de janela, metadados gravados em
+  `.docx`/`.xlsx`/`.pptx`, nome do pacote (`mdoffice`) e as centenas de referências ao antigo
+  "mdCreator" na documentação.
+- **Configurações**: os seis `<select>` (intensidade das sugestões, versões por documento,
+  política de backup, cópias, prazo e estilo do desenho) viraram **dropdowns do app** — a lista
+  nativa do sistema (cinza claro) não seguia o tema.
+- **Tela de Início** com os quatro formatos (Word, Excel, MD, PowerPoint) e botão lateral fixo.
+- **Painel de projetos**: árvore de pastas com `.md` em cartões (contagem de documentos/pastas,
+  esqueleto ao carregar, busca com o termo destacado), animações de abrir/fechar e indicador de
+  aberto/alterado por documento.
+- **Estrutura do texto**: árvore de títulos com seções que recolhem, destaque da seção atual,
+  contagem de palavras/tarefas e ações (mover, promover, copiar, excluir).
+- **Histórico de versões** + **log de alterações** (diff leve, marcos) + aba **Backup**, com
+  restauração em um passo.
+- **Backup em disco** em duas pastas, com política de limpeza (perfis), aviso de arquivo
+  sumido e tela de restauração.
+- **Configurações numa aba** (Escrita, Tradução, Histórico, Aparência, Atalhos), com ajustes
+  valendo na hora; redesign com trilha lateral e cartões.
+- **Configurações**: ícones menores na trilha lateral (chips de 32 → 26 px e glifos de 16 → 14;
+  marca de 40 → 34), deixando a trilha mais leve sem mudar a estrutura.
+- **Configurações em abas**: cada seção aparece sozinha, em vez da página única que rolava pelas
+  cinco. Trocar de seção abre sempre do topo e rolar não troca mais de aba; o nome da seção ficou
+  só no cabeçalho dela (a barra fixa do topo repetia o mesmo nome). A confirmação **"Salvo"** virou
+  uma pílula no pé da página, fora do canto reservado aos avisos do app.
+- **Busca de comandos** (`Ctrl+K`), **modo foco** (`Ctrl+Shift+F`) e atalhos documentados.
+- **Importar do Office** (`.docx`, `.xlsx`, `.xlsm`, `.pptx`) com explicação dos formatos antigos.
+- **Ícone por tipo de arquivo** (M↓, W, tabela, gráfico de pizza) nas abas, listas e busca.
+- Tema claro/escuro, animações consistentes da interface e painel lateral redimensionável.
+- **Tela de carregamento** na abertura: cobre a janela enquanto o pacote do app não chega, no
+  lugar do HTML cru (ícones gigantes) que aparecia nesse intervalo. O tema guardado passa a
+  valer **antes** da primeira pintura, então quem usa o escuro não vê mais o clarão branco.
+- **Skills e regras** para IA e o menu **+** separando Markdown, Word, Planilha e Apresentação.
+- **Ícone do app escolhível** (Configurações ▸ Aparência): claro ou escuro, trocando na hora o
+  ícone da janela e da barra de tarefas; sem escolha ainda, segue o tema.
+- **Seção Armazenamento** nas Configurações: resumo com barra proporcional (versões, log,
+  backup, rascunhos, outros), cartões com o tamanho de cada parte e limpeza — versões, log,
+  rascunhos, cópias antigas e a pasta da versão anterior (mdCreator); atalhos para as pastas.
+- **Copiar no menu do botão direito** do editor: com texto selecionado, o menu ganha o item
+  **Copiar** (Ctrl+C) antes de "Pasta (contexto)", copiando exatamente o trecho escolhido.
+- **Barra lateral com movimento de verdade**: a pílula do seletor de painéis **desliza** entre
+  Início/Projetos/Estrutura/Contexto; mostrar/esconder a barra **recolhe a largura** em vez de
+  sumir de uma vez; a troca de painel entra com um passo curto (sem o "pop" com escala) e abrir
+  uma pasta na árvore **cresce** a altura (fechar já animava).
+- **Escolha do tema em dois cartões** (Configurações ▸ Aparência): **Claro** e **Escuro** lado a
+  lado, cada um com uma prévia do tema, clicáveis — o interruptor "Tema escuro" saiu.
+- **Aparência com nível de animação e cantos** (Configurações ▸ Aparência): **Animação** em três
+  cartões — Discreta, Padrão e Completa, cada um com a prévia do ritmo — e **Cantos** em dois
+  (Quadrado e Redondo). Valem para o app inteiro e ficam guardados.
+- **Cantos: correção do Redondo e do Quadrado**: o Redondo arredondava além do desenho original
+  (o botão Desenhar virava pílula) e agora **não mexe em nada** — é o app como ele já era; o
+  Quadrado passou a apertar de verdade (2 px nos controles, 3 px nas caixas).
+- **Interruptor das Configurações alinhado**: bolinha com folga igual nos quatro lados e igual
+  entre ligado/desligado (geometria inteira: 40×24 px, bolinha de 18 px e folga de 3 px), sem o
+  desalinhamento de meio pixel que aparecia em 100%, 125% e 150% de escala do Windows.
+- **Mover para a lixeira**: último item do menu do arquivo (botão "⋯" e clique direito, agora o
+  **mesmo menu** nos dois), com diálogo de confirmação. Antes de mover, salva o que estiver
+  aberto nas abas do documento, fecha-as e limpa a lista de Recentes — nada é apagado na hora:
+  o arquivo fica **30 dias** na lixeira do app (dá para recuperar pela pasta) e depois some de vez.
+- **Menu de Recentes redesenhado**: cada linha tem o **ícone do tipo** do arquivo, o nome com o
+  **"há quanto tempo"** ao lado e a pasta na segunda linha (os rascunhos aparecem como
+  "Rascunho do app"); as ações ("Abrir arquivo…", "Reabrir aba fechada") ficam **fixas no rodapé**
+  enquanto só a lista rola, e o × de tirar da lista aparece no hover, no lugar do tempo.
+- **Histórico e salvamento (aba das Configurações)**: mostra **o que cada camada guardou** —
+  versões (quantas, quantas marcadas, a última e o nome dela), alterações (quantas e o último
+  resumo) e cópias em disco (quantas, tamanho e a última) — e as **cópias viram lista dentro do
+  app**, com **Restaurar** e **Apagar** por cópia, para o documento atual **e** para os outros
+  documentos com backup. Ganhou "onde ficam os arquivos" (as duas pastas com Abrir e o log
+  exportado em `.historico/historico.json`), o atalho para os **originais sumidos** e o
+  **Apagar completo** (versões + alterações + log exportado - as cópias em disco ficam; antes
+  o botão apagava só as versões). O "Abrir histórico" abre direto na aba certa.
+- **Diálogo de texto do app** (`src/dialogoTexto.ts`): componente único para pedir um nome - campo
+  com rótulo e dica, **Enter/OK** confirmando, **Esc/Cancelar/clique fora** cancelando e `validar`
+  com mensagem de erro. Substitui os `window.prompt` nativos ("localhost:1420 diz."), que não
+  seguem o tema.
+- **Seleção do app no lugar da lista cinza do sistema**: todo `<select>` restante (Word, Excel,
+  PowerPoint, diagramas e desenho de letras) passa a abrir o **mesmo menu suspenso do ⋯**, que
+  segue o tema claro/escuro (`src/seletor.ts` + estilos do controle). O `<select>` continua no
+  DOM — valor, opções e o evento `change` seguem valendo para todo o código existente — e a tela
+  mostra uma “cara” com o rótulo atual e o chevron. **Esc fecha só a lista** (o diálogo por baixo
+  continua), clicar fora fecha e opção desabilitada não abre.
+- **Configurações com o seletor unificado**: os seis campos que usavam um botão próprio de menu
+  (intensidade das sugestões, versões guardadas, política/cópias/prazo do backup e estilo do
+  desenho) agora são `<select>` melhorados pelo **mesmo controle do resto do app**
+  (`src/seletor.ts`): a lista aberta é o menu suspenso do app, no tema. O componente antigo
+  (`dd`/`ctx.menu`) sai — uma implementação só.
+- **Seletor do app acertado**: o controle que substitui o `<select>` nativo ficou **em branco** no
+  valor vazio (mostrava um “—” que parecia erro) e a **setinha acompanha o tamanho do contexto**
+  (1em — na fita do PowerPoint ela cresce junto quando a faixa é aumentada). A lista aberta
+  **fecha antes** de um painel se redesenhar (`fecharSeletor`), em vez de ficar presa a um
+  controle que sumiu.
+- **Seletor do app com campo editável**: o controle ganhou o modo `data-editavel` — o valor vira
+  um **campo que aceita digitação** (com a setinha abrindo a mesma lista), o que a pessoa digita
+  entra como opção do próprio select e o `change` continua valendo para todo o código existente;
+  `data-num` normaliza números (vírgula ou ponto, com mínimo e máximo declarados no próprio
+  select). É o que as fitas do **Word** e do **PowerPoint** usam para não ficar presas a listas
+  fixas de fonte e tamanho. A lista de fontes comuns virou **uma só** (`src/fontes.ts`),
+  compartilhada pelos dois motores, com as clássicas do Windows/Office.
+- **A tela de carregamento não se mexe mais**: no intervalo entre o HTML e o pacote do app
+  (CSS + JS), a página ficava sem estilo e mais alta que a janela — dava para rolar com a roda do
+  mouse ou arrastar a barra de rolagem por baixo da tela de carregamento. Agora o `html`/`body` já
+  nascem travados no próprio `index.html`, com os MESMOS valores do `base.css` (nada muda quando o
+  app assume).
+- **Selo do salvamento honesto com arquivo SEU do Office**: ao editar um `.pptx`/`.docx`/`.xlsx`
+  que é seu, o autosave **não** reescreve o arquivo (o motor pode simplificar animações, gráficos,
+  comentários e revisões) — mas o selo da barra dizia **"Salvando…" para sempre**, como se houvesse
+  uma gravação que nunca termina, e o chip do caminho sumia junto. Agora ele mostra **"Não salvo"**
+  (âmbar, sem pulsar), o caminho continua à vista e, na primeira alteração de cada arquivo, um aviso
+  explica que só o **Ctrl+S** grava o arquivo (as alterações ficam no histórico do app). O MD\* segue
+  igual ("Salvando…" → "Salvo") e a descrição do toggle nas Configurações passou a dizer o que o
+  salvamento automático cobre. Verificações novas em `npm run test:salvamento`.
+- **Dica (tooltip) no padrão do app**: os controles sempre tiveram a dica no `title` — e é bom
+  (um lugar só, com a tecla do atalho junto, atualizada pela aba Atalhos) —, mas quem desenhava o
+  balão era o **navegador**, com a fonte, a borda e a sombra do sistema, destoando da fita, dos
+  menus e do resto do app (o "Pincel de Formatação" do Word era o exemplo à vista). Agora um balão
+  próprio (`src/dica.ts` + a regra `.dica`) mostra esse mesmo texto: superfície dos menus (painel,
+  borda, sombra), tema claro/escuro, a preferência de cantos respeitada e **acima dos popups**. Ele
+  espera **380 ms** parado sobre o controle, não abre no toque, não recebe o ponteiro, sai no
+  clique/Esc/rolagem, nunca sai na impressão — e o `title` **volta** ao elemento assim que o balão
+  fecha (o nativo nunca chega a aparecer). Vale para a fita, a barra, a régua, os painéis e o modo
+  apresentação; verificações novas em `npm run test:layout`.
+- **Botão de perigo das Configurações legível**: o **"Remover…"/"Apagar…"** das Configurações saía
+  **vermelho com o rótulo vermelho** (invisível): o botão tem as classes `btn` e `st-btn`, e o
+  `.btn.danger` do base pintava o **fundo** enquanto o `.st-btn.danger` pintava o **texto**. Agora
+  ele é o botão do lugar — fundo normal, texto vermelho e borda no tom — e o **vermelho sólido com
+  texto branco fica só no hover e na confirmação** (o apagar pede dois cliques).
+- **A roda do mouse anda de lado nas fitas e na galeria de Estilos**: as partes que passam da
+  largura (a **galeria de Estilos** do Word, os **painéis** das três fitas e as **abas** das
+  Apresentações) rolam na horizontal com a barra escondida — e sem botão próprio na galeria não
+  havia como alcançar o que ficava cortado: quem via o "Título 3" não chegava à "Citação". Agora a
+  roda vertical vira **rolagem lateral** (como nas galerias do Office), com três cuidados: o trecho
+  de dentro pega o gesto para si (a galeria rolando **não** arrasta a fita inteira, nem no fim),
+  `Ctrl`/`Shift`/roda lateral seguem o caminho normal (o zoom continua do `Ctrl` + roda) e um trecho
+  sem o que rolar deixa o evento passar. O handler virou **uma função só**
+  (`ligarRodaHorizontal`, em `src/fita.ts`): o Excel e o PowerPoint tinham cópias inline — o Word,
+  nenhuma. 4 verificações novas em `npm run test:layout`.
+- **O botão de recolher a faixa faz o que anuncia (o caso do Template)**: com a faixa mostrada
+  "por enquanto" no modo recolhido — o que acontece ao clicar num botão da barra das abas, como o
+  **Template** —, o chevron usava o estado **fixo** em vez do que está à vista: ele anunciava
+  "Recolher a faixa de opções" e fazia o contrário (fixava aberta, e a faixa não fechava mais).
+  Agora o clique decide pelo que está à vista: aberta (mesmo que só por enquanto) → **recolhe**;
+  recolhida → fixa aberta. Vale para as três fitas (Word, PowerPoint e Excel).
+- **A aba Alterações do histórico mostra o documento, não o "commit do app"**: no Word, PowerPoint e
+  Excel os estados são guardados como **texto serializado** (um JSON interno) e o diff aparecia com
+  esse blob — com o `\n` escapado e tudo — no lugar do que a pessoa escreveu (o relato veio com a
+  captura de uma apresentação). O tipo do documento agora vem do **arquivo** (extensão), não da aba
+  ativa, e um **texto legível** tenta o projetor do tipo e, se ele não reconhecer o estado (formato
+  antigo), os dos outros motores; nada reconhecendo, o JSON cru **não** vai para a tela. O
+  **resumo** de cada alteração também sai do documento: a lista mostra "+2" (o tamanho da mudança de
+  verdade) em vez de "+4843 −7259" (o tamanho da serialização). 4 verificações novas em
+  `npm run test:layout`.
+
+**Ferramentas (dev)**
+
+- **O modelo do corretor saiu do git (e o histórico dele foi removido)**: os quatro JSONs
+  (`pt/ctx-pt/freq-pt/syn-pt`, ~9,5 MB) eram versionados e **cada regeneração reescrevia o arquivo
+  inteiro** — 4 commits de n-gramas somavam ~14 MB no histórico. Agora eles moram **fora do git**
+  (como `public/ort` e `public/modelos` já faziam): o `.gitignore` ignora os JSONs, um `LEIA.md` na
+  pasta explica a geração, as worktrees **ligam a pasta à cópia principal** (`abrir.ps1`) e o
+  `regerar-ngrams.mjs` passou a dizer para guardar uma cópia antes de regenerar (não há mais
+  `git checkout --`). O **histórico da `main` foi reescrito** com `git filter-repo` (num clone
+  isolado; os JSONs saíram de todos os commits) e o `main` do GitHub foi atualizado com **push
+  forçado protegido por lease** — o commit da limpeza está em **Adicionado** porque a operação roda
+  direto na `main`. De quebra, o repositório ganhou o primeiro **`git gc`** em muito tempo:
+  o `.git` caiu de **111 MB (objetos soltos, sem pack) para 11,5 MB**. As branches de tarefa
+  abertas ainda seguram os blobs antigos (a `main` delas é a antiga); quando fecharem (rebase na
+  `main` limpa) eles ficam inalcançáveis e o próximo `gc` os descarta — o alvo é ~4,5 MB.
+
+- **`test:excel` está quebrado em checkout limpo (achado, não consertado)**: o segundo teste (`testar-grade-excel.mjs`) compila o motor com `tsc` sem os tipos do `?raw` (erros `TS2307` sobre `.toml?raw`/`.css?raw`) e, quando compila, o stub de DOM não cobre o seletor novo do app (`melhorarSelects` explode) ✗. Na cópia principal ele passa por acaso: o `temp/` está compilado de antes ✗. Fica registrado para quem for consertar (é teste, não app).
+- **Marcador de conflito no CHANGELOG (limpeza)**: o fechamento da tarefa do ícone das boas-vindas resolveu um conflito de rebase e deixou a **linha de fecho** (`>>>>>>> 074695b …`) no arquivo — o `git diff --check` acusa, mas nem o `fechar.ps1` nem os testes olham o CHANGELOG. A linha saiu e o `git grep` do repositório inteiro ficou **limpo** (era o único marcador). Fica a lição: ao resolver conflito, conferir os **três** marcadores (`<<<<<<<`, `=======`, `>>>>>>>`) e rodar `git diff --check` antes de `git add`.
+- **Teste da formalização** (`npm run test:formalizar`, 47 verificações): prova o plano de trocas de ponta a ponta — o que entra (catálogo + janelas de frase, com classe e risco), o que **não** entra (citação, código, texto já formal), a aplicação (ordem, sobreposição, limites para a prévia pintar), a queda do MIP e a **janela inteira** num DOM de mentira (abre, pinta, decide e aplica); prende ainda os dois consertos do catálogo e confere que toda classe que a janela usa existe no CSS.
+- Fluxo de **worktrees** obrigatório: `abrir.ps1`, `fechar.ps1`, `limpar.ps1`, `status.ps1`,
+  `limpar-agendada.ps1` e proteção opcional da `main`.
+- `fechar.ps1` integra a `main` por **rebase** (história linear, sem commit de merge) e envia
+  a `main` ao GitHub; `monitor-push.ps1` completa o envio quando todas as worktrees terminam.
+- `abrir.ps1`/`fechar.ps1` aceitam a **descrição da branch** (`-Porque`/`-Proposito`), mostrada
+  no `status.ps1` e no corpo do commit; `-Branch` confere a worktree certa.
+- `fechar.ps1` **bloqueia** o fechamento quando a tarefa não tocou no `CHANGELOG.md` ou no
+  `docs/historico-tecnico.md` (mostra o que faltou e como registrar; nada vai para a `main`).
+- **Ícones do build regerados** dos pacotes novos (`app-icon.png` do pacote claro +
+  `src-tauri/icons/*` via `npm run icon`); o script `icon` virou `tauri icon app-icon.png` e o
+  `gen-icon.mjs` (desenho antigo) foi removido.
+- **Servidor de dev sem recarga no meio do uso**: as dependências usadas **dentro dos workers**
+  (`typo-js`, do corretor, e `@huggingface/transformers`, da IA local e da tradução offline) entraram
+  em `optimizeDeps.include`. O Vite não lê arquivo de worker ao procurar dependências, então só
+  descobria esses pacotes quando o worker subia — ~20 s depois de abrir o app — e reagia
+  re-otimizando tudo e recarregando o app inteiro. O cache do otimizador passou para `.vite/`, por
+  pasta: o padrão (`node_modules/.vite`) é compartilhado entre a cópia principal e as worktrees e o
+  hash que o valida inclui a raiz do projeto, então cada troca de pasta invalidava o cache e
+  recarregava os clientes conectados.
+- **Watchdog percebe a página travada**: o processo do app continuar de pé não quer dizer app
+  funcionando — depois de muitos recarregamentos o **conteúdo da janela** morre e a janela segue
+  respondendo mensagens do sistema, então o watchdog (que só olhava se o processo existia) nunca
+  percebia. Agora a página avisa ao servidor de dev que está viva (a cada 5 s, só em
+  desenvolvimento) e o `watchdog.ps1` reinicia o app quando o aviso fica velho
+  (`-TravadoSegundos`, padrão 90) - com prazo maior para o primeiro aviso, que depende do
+  carregamento do dicionário e do modelo (`-TravadoNaSubidaSegundos`, padrão 180). O
+  `tools/watchdog.ps1` também ganhou BOM de UTF-8: sem ele o PowerShell 5.1 lê o arquivo como
+  ANSI e os acentos saíam corrompidos no log.
+- **Pesquisa (documento)**: formalidade por regras e validação ABNT — o que é verificável e como
+  (`docs/pesquisa-formalidade-abnt.md`).
+- **Pesquisa (documento)**: correção/sugestão sem IA — estado da arte, algoritmos e plano por fases
+  (`docs/pesquisa-correcao-offline.md`).
+- **Pesquisa (documento)**: síntese com a ordem de execução (dores, camadas, ondas, métricas e
+  limites) em `docs/pesquisa-sugestoes.md`.
+- **Pesquisa (documento)**: sugestões sem IA — aquecimento, velocidade e sugestões longas: gargalos
+  medidos no motor atual (modelo, índice, latência, largura média de 1,35 palavra), estado da arte
+  com fontes e plano por fases V0–V4 (`docs/pesquisa-sugestoes-velocidade-tamanho.md`).
+- **Monitor da `main` suja**: além do hook que bloqueia o commit na `main`, o mesmo instalador
+  (`instalar-monitor.ps1`) agora agenda o `monitor-main.ps1`: a cada poucos minutos ele registra
+  no log quando a **cópia principal** fica com alterações soltas (trabalho direto na `main` -
+  edição, que o hook não tem como impedir) e quando ela volta a ficar limpa.
+- **Teste de layout com a seção do seletor**: `npm run test:layout` ganhou 10 checagens das regras
+  que apareceram tortas no seletor (valor vazio sem o “—”, setinha `1em`, alto dos selects nas três
+  fitas, setinha do botão de cor dentro do botão, setas de aumentar/diminuir e a lista que fecha
+  antes de um painel se redesenhar).
+- **Teste de layout com o campo editável**: mais 10 checagens em `npm run test:layout` para o
+  modo editável (o valor digitado vira opção, vírgula e min/max, a escolha na lista não é aplicada
+  duas vezes, as duas fitas marcadas como editáveis e a lista de fontes única).
+- **Testes da roda do mouse**: a decisão da roda virou módulo próprio (`src/powerpoint/roda-laminas.ts`)
+  e ganhou 10 checagens em `npm run test:pptx-edicao` (gesto, inércia, rolagem primeiro, soma de
+  movimentos pequenos) + 6 em `npm run test:layout` (Ctrl é do zoom, roda lateral ignorada e a
+  ligação no palco).
+- **Testes do desenho assistido**: `npm run test:desenho` ganhou 4 checagens do arco (traço torto
+  sai girado no ângulo do desenho, a curva **passa pelo traço** - desvio máximo medido contra o
+  arco reconhecido - e o "canto em L" fica como desenho livre em vez de arco-faca) e o
+  `npm run test:pptx-edicao` confere que o arco girado vai ao `.pptx` com rotação e ângulos.
+- **Teste de layout com o botão de perigo**: 3 checagens prendem o fundo reafirmado no
+  `.st-btn.danger`, o texto na cor de perigo e o vermelho sólido só no hover/confirmação - o
+  defeito (rótulo vermelho sobre fundo vermelho) não volta sem alguém notar.
+- **Testes do Conectar**: 8 checagens novas em `npm run test:ligacoes` prendem o alvo geométrico
+  (a bolinha manda, a caixa de cima vence, a histerese não solta na fresta e o clique devolve a
+  caixa e o lado) e 4 em `npm run test:layout` garantem que o palco usa a função (e não o DOM) e
+  deixa os conectores fora do alvo — o defeito das bolinhas piscando e da ligação na caixa errada
+  volta só com alguém vendo.
+- **Verificações do pincel de formatação voltaram a passar**: duas checagens de `testar-layout`
+  usavam janelas curtas de regex (600 e 320 caracteres) entre um marco e a guarda, e o código
+  cresceu em volta (876 e 495) — a `main` ficou com `test:layout` vermelho sem o pincel ter
+  quebrado nada. As janelas foram para 1200 e 700 (as guardas testadas são as mesmas).
+
 
 **Ferramentas (dev)**
 

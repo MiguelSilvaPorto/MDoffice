@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { linhasLadoALado } from "../src/history.ts";
+import { linhasLadoALado, nomeDaAlteracao } from "../src/history.ts";
 import { applyOps, diffText, revertOps } from "../src/snapshots.ts";
 
 const raiz = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -177,6 +177,41 @@ checa("diffText de textos iguais devolve vazio", diffText("igual", "igual").leng
     "css: a lâmina da prévia é um container (os cqw escalam sozinhos) e o vazio tem aviso",
     /\.hi-lamina\s*\{[^}]*container-type:\s*inline-size/s.test(css) && /\.hi-lamina-vazia\s*\{/.test(css),
     "sem container-type as formas não escalariam e a prévia sairia quebrada"
+  );
+}
+
+// 12. os nomes das alterações (a lista deixa os "+X −Y")
+{
+  const l = (n: number, txt: string) => `## Lâmina ${n}\n\n${txt}`;
+  const deck = (...textos: string[]) => textos.map((t, i) => l(i + 1, t)).join("\n\n");
+  const tres = deck("A", "B", "C");
+  checa(
+    "a lâmina alterada é nomeada (não é “+3 −3”)",
+    nomeDaAlteracao("ppt", tres, deck("A", "B!", "C")) === "Lâmina 2 alterada",
+    nomeDaAlteracao("ppt", tres, deck("A", "B!", "C"))
+  );
+  checa("lâmina nova tem nome próprio", nomeDaAlteracao("ppt", tres, deck("A", "B", "C", "D")) === "Nova lâmina");
+  checa("várias lâminas novas contam", nomeDaAlteracao("ppt", tres, deck("A", "B", "C", "D", "E")) === "2 lâminas novas");
+  checa("lâmina excluída tem nome próprio", nomeDaAlteracao("ppt", tres, deck("A", "B")) === "Lâmina excluída");
+  checa(
+    "sem mudança de texto o nome diz que a alteração foi visual",
+    nomeDaAlteracao("ppt", tres, tres) === "Alteração visual (sem mudança de texto)"
+  );
+  checa(
+    "duas lâminas saem por extenso",
+    nomeDaAlteracao("ppt", tres, deck("A!", "B!", "C")) === "Lâminas 1 e 2 alteradas",
+    nomeDaAlteracao("ppt", tres, deck("A!", "B!", "C"))
+  );
+  checa(
+    "quatro lâminas viram só a conta (a lista não cresce)",
+    nomeDaAlteracao("ppt", deck("A", "B", "C", "D"), deck("A!", "B!", "C!", "D!")) === "4 lâminas alteradas",
+    nomeDaAlteracao("ppt", deck("A", "B", "C", "D"), deck("A!", "B!", "C!", "D!"))
+  );
+  checa(
+    "documento de texto conta as linhas em palavras",
+    nomeDaAlteracao("doc", "a\nb\nc", "a\nB\nc") === "1 linha alterada" &&
+      nomeDaAlteracao("doc", "a\nb\nc", "a\nB\nC") === "2 linhas alteradas",
+    nomeDaAlteracao("doc", "a\nb\nc", "a\nB\nC")
   );
 }
 

@@ -133,7 +133,9 @@ avisado ao abrir (nunca some em silêncio).
   **Alterações** e **Versões** de uma apresentação mostram a **lâmina em foco no editor** como
   **duas mini lâminas lado a lado** — **esquerda: como estava; direita: como ficou** — em vez do
   texto serializado do deck inteiro, que não dizia nada sobre o que está na tela. Quando a versão é
-  de antes de a lâmina existir, o lado avisa em vez de sair em branco.
+  de antes de a lâmina existir, o lado avisa em vez de sair em branco. E a lista de **Alterações**
+  tem **nome**: diz **qual lâmina** mudou ("Lâmina 3 alterada", "Nova lâmina", "Lâmina excluída")
+  ou avisa quando a mudança foi **visual** (cores, formas e posição, sem mexer no texto).
 - **A fita cabe na largura da janela, em quatro degraus (sem rolagem lateral)**: do mais folgado ao
   mais apertado — (1) **cheia**, com as métricas em 1; (2) **compacta**, com espaços e ícones
   menores (a **fonte não encolhe**: o piso está no CSS) e os botões grandes numa linha; (3) os
