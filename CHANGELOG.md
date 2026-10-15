@@ -32,6 +32,23 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+
+
+### Adicionado (na main)
+
+**Backend**
+
+- (nada específico do módulo — arquivos, imagens e rascunhos passam pelos comandos do **Geral**)
+
+**Frontend**
+
+- **Prancheta de letras: botão direito + arrastar move a tela**: no zoom alto, andar pelo desenho
+  dependia da barra de rolagem. Agora **segurar o botão direito e arrastar** move a tela
+  (panorama), com o cursor "agarrando" enquanto o arrasto dura — e o **clique parado continua
+  apagando** a linha/rótulo sob o cursor (o arrasto é consumido antes do menu de contexto; uma
+  zona morta de 3 px separa o clique tremido do arrasto). É o mesmo gesto do palco do PowerPoint,
+  e a dica do rodapé da prancheta passou a explicar os dois casos.
+
 - **A sugestão enquanto você digita agora aparece certa**: o texto fantasma mostrava **muita
   sugestão errada** — medido no `scripts/eval-ghost.mts` (o avaliador do próprio repositório, com
   o modelo de idioma real), a base antiga acertava **49%** do que mostrava. Os limiares de
@@ -42,21 +59,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   ficar mudo com a base mais exigente. A **correção do que foi digitado** ("noçao" → "noção")
   segue intacta — ela vem antes de qualquer previsão. Novo `test:ghost` prende a precisão e a
   economia no corpus de teste.
-
-- **Prancheta de letras: botão direito + arrastar move a tela**: no zoom alto, andar pelo desenho
-  dependia da barra de rolagem. Agora **segurar o botão direito e arrastar** move a tela
-  (panorama), com o cursor "agarrando" enquanto o arrasto dura — e o **clique parado continua
-  apagando** a linha/rótulo sob o cursor (o arrasto é consumido antes do menu de contexto; uma
-  zona morta de 3 px separa o clique tremido do arrasto). É o mesmo gesto do palco do PowerPoint,
-  e a dica do rodapé da prancheta passou a explicar os dois casos.
-
-### Adicionado (na main)
-
-**Backend**
-
-- (nada específico do módulo — arquivos, imagens e rascunhos passam pelos comandos do **Geral**)
-
-**Frontend**
 
 - **F4 — auto-cura do conhecimento do corretor**: os termos que você já disse que estão certos
   ("Ignorar neste texto") ganham **histerese** (nada de promover de primeira: com 3 sinais o app
@@ -402,6 +404,18 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- (nada no momento)
+
+### Adicionado (na main)
+
+**Backend**
+
+- **Arranjos: o conteúdo não se desloca mais do cartão** — o bloco inteiro (cartão + o que sai dele) é centrado no espaço e todas as formas andam por ele; a detecção roda uma vez e usa mapas por id, em vez de `find` por forma.
+
+- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
+
+**Frontend**
+
 - **"Nova lâmina" com o último layout escolhido (sem abrir o painel)**: o clique direto criava
   sempre "Título e conteúdo" e a fita obrigava a passar pela **galeria** (que abria um painel
   grande). Agora **Nova lâmina** é um **botão dividido**: o **clique na frente** cria a lâmina
@@ -415,16 +429,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **Arranjos: cartões com gradiente, cartões concêntricos e cartões pequenos agora são detectados, e só aparecem os arranjos legíveis** — antes, num deck importado (organograma com cartões em gradiente, 1,9% da lâmina cada), nenhum cartão era detectado e o app embaralhava as 29 caixas de texto; o cartão de fora e o branco de dentro também se descartavam um ao outro. Agora a Lista/Faixa/Destaque com muitos cartões (tiras de 2%) deixam de ser oferecidas.
 
 - **Arranjos: triângulos e painéis de fundo não viram mais "cartões"** — antes uma forma grande e decorativa (ex.: os triângulos verdes) ou um painel atrás dos cartões era tratado como cartão, engolia os de verdade e o arranjo saía desordenado; agora eles ficam parados e só os cartões com conteúdo se arrumam. Teste: `npm run test:arranjos`.
-
-### Adicionado (na main)
-
-**Backend**
-
-- **Arranjos: o conteúdo não se desloca mais do cartão** — o bloco inteiro (cartão + o que sai dele) é centrado no espaço e todas as formas andam por ele; a detecção roda uma vez e usa mapas por id, em vez de `find` por forma.
-
-- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
-
-**Frontend**
 
 - **O mesmo botão recolhe o popup**: clicar de novo em **Formas**, **Template**, **Layout**, **Nova lâmina**, nas cores ou nas bordas **reabria** o popup em vez de fechá-lo — o clique no próprio botão era ignorado pelo "fecha ao clicar fora" e o comando rodava outra vez. Agora o popup guarda a **âncora** que o abriu e o clique nela **recolhe** (clicar fora ou `Esc` continua fechando, e outro botão troca o popup de lugar).
 
@@ -469,6 +473,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **escolhida** tem o interior inteiro como área de arrasto (com o cursor de mover) e continua
   clique-através quando não está escolhida — dá para escolher o que está embaixo sem perder a
   caixa de vista. Editando o texto, quem manda continua sendo o cursor de texto.
+
 - **Aba Arranjos não trava mais ao clicar** — as prévias são desenhadas uma por quadro e reaproveitadas enquanto a lâmina não muda (antes, seis lâminas inteiras eram remontadas de forma síncrona a cada clique ou edição).
 
 - **Aba Design sem o grupo "Tema"**: os três botões (**Tema claro**, **Tema escuro** e **Alto
@@ -490,14 +495,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   visual (cores, estilos, imagens) fica como está: dá para aplicar um arranjo e depois combinar com
   qualquer ideia de design. Verificado no deck real do usuário: 3-4 unidades por lâmina, nada fora
   da lâmina e nenhum cartão sobreposto nas quatro fórmulas.
-
-### Adicionado (na main)
-
-**Backend**
-
-- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
-
-**Frontend**
 
 - **Designs criados na hora (o gerador das Ideias)**: as ideias só combinavam o catálogo (19
   designs × 3 acabamentos). Agora **três cartões de cada fornada são criados pelo app**: uma
@@ -547,6 +544,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   pintura. O **"Aplicar a todas as lâminas"** leva o estilo junto (senão as outras voltariam ao
   tema) e o painel ganhou Família, Intensidade, Brilho, Ângulo, Cor-base e o **Desligar o estilo
   do fundo**.
+
 - **Ideias de design: o texto não some mais** (e o contraste é conferido): com um design escuro, o
   texto das formas ficava **claro sobre cartão branco** e desaparecia (print do usuário). Duas
   causas: o branco puro dos cartões ficava fora do remapeamento e a cor do texto era escolhida
@@ -627,6 +625,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   tema refaz a rampa inteira). Nada muda na tela ainda: a galeria, o fundo e os modelos são as
   rodadas seguintes — o modelo ganhou os campos (`estilo`, `capa`, `bgEstilo`) e o `test:estilos`
   cobre as 55 regras (cor, rampa, esquema, aplicação, capa e recálculo).
+
 - **Desenho assistido: o traço livre encaixa nos eixos**: no modo assistente, um traço que não é
   reconhecido como forma (um "L" com canto arredondado, por exemplo) saía **torto, como foi
   desenhado**. Agora os trechos quase horizontais/verticais viram **retas de verdade** — o "L"
@@ -647,6 +646,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   o espalhamento respeita. Testes novos prendem cada um dos cinco casos.
 
 - **Popup do Template cabe na janela (e rola com o título à vista)**: com os 19 modelos — mais os que o usuário cria — o popup chegava à **borda inferior** da janela e a última linha ficava **cortada no meio**, parecendo que faltavam modelos. Agora ele tem teto próprio (`min(64vh, 560px)`, menor que os 78vh gerais dos popups da fita) e o título **“Modelos de apresentação” fica fixo** enquanto a grade rola por baixo — e o “Novo modelo” continua sendo o último, alcançável com a rolagem. Três verificações novas no `test:layout`.
+
 - **Ideias de design** (aba nova no painel lateral): mostra **esta lâmina** desenhada em cada
   modelo do catálogo, em cartões clicáveis — clicar aplica o modelo à apresentação inteira. É a
   ideia do *Design Ideas* do **DeckCraft**, offline como lá ("geradas no seu computador"): a
@@ -697,6 +697,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   acendia o **contorno de hover/seleção** do editor por cima do desenho (o editor reativa o
   ponteiro nas formas e o contorno vinha junto). Agora a apresentação é só leitura: nada de
   ponteiro nas formas e os contornos de hover/selecionado desligados no deck.
+
 - **Vídeo em lâmina importada volta a preencher o quadro**: o vídeo era desenhado dentro de um
   invólucro sem estilo (o `height:100%` caía para o tamanho natural, ~300×150), então a área do
   vídeo ficava transparente e **os cartões de trás apareciam através dela** (na lâmina 8 do deck
@@ -710,6 +711,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   aparece na barra de cima (entre o menu **⋯** e os controles da janela) e começa a apresentação
   na hora — o mesmo caminho de **Exibir ▸ Apresentar**. Ele só existe com uma apresentação ativa:
   nos outros documentos some sozinho (`body.ppt-open`).
+
 - **Fluxo do Mermaid na lâmina**: em **Inserir ▸ Fluxo do Mermaid**, colar um `flowchart`
   (TD/TB/LR/RL; nós `A[Texto]`, `A(Texto)`, `A((Texto))` e `A{Texto}`; setas `-->`, `---`,
   `-.->`, `==>`; rótulo `-->|texto|` ou `-- texto -->`) cria **cartões nativos** ligados por
@@ -721,10 +723,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   depois — nada fica por baixo. Os cartões e os conectores são formas comuns (mover, colorir,
   agrupar, editar texto) e o `.pptx` guarda igual: cartões como formas do PowerPoint e
   conectores como forma livre com a seta.
+
 - **Desenho livre suave**: o traço que o assistente não reconhece saía como uma **polilinha** (as
   quinas da simplificação ficavam visíveis). Agora ele passa por uma **média móvel** (tira o
   tremor da mão, sem mexer nas pontas) e vira **curvas cúbicas** (Catmull-Rom) — o desenho livre
   sai limpo e fiel ao traço, na tela e no `.pptx`.
+
 - **Draw enxerga as formas de baixo e o arco segue curvas largas**: traçar o contorno de uma
   forma existente (mesmo **apagada** — a cor não importa, o app lê a geometria) agora sai
   **alinhado a ela**: a forma reconhecida (ou o desenho livre) encaixa nas bordas e nos centros
@@ -732,6 +736,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **elíptico** (cônica alinhada em uma passada), então uma curva larga — o topo de uma caixa —
   sai com o raio e a proporção do traço, em vez de virar "meio círculo". O arco também passou a
   ser conferido **antes** da reta (uma curva rasa virava linha).
+
 - **Escolha do painel com a cara do app**: os grupos de escolha do painel do PowerPoint
   (preenchimento: **Do tema / Sólido / Gradiente / Imagem**, e os demais) usavam o controle
   nativo — círculo pequeno e a escolha marcada só com um anel do sistema. Agora o **círculo é
@@ -739,28 +744,33 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **a linha inteira do escolhido fica destacada** (fundo suave, borda na cor de destaque e
   texto em semibold), com hover na linha e foco visível pelo teclado. Vale para todos os
   grupos do painel (preenchimento, contorno, âncora e os demais).
+
 - **Botão direito + arrastar move a tela no PowerPoint**: com o zoom alto (até 800%), navegar
   era só pela barra de rolagem — agora **botão direito pressionado + arrastar** move a tela em
   qualquer direção, com o cursor virando "agarrando" e o arrasto acompanhando o ponteiro
   (nada de soltar e pegar de novo a cada tela). O **clique direito parado continua abrindo o
   menu de contexto**: o arrasto só conta depois de 3 px e, quando conta, o menu não abre.
+
 - **Ícone da Formas alinhado**: o preview da forma no botão **Formas** seguia um tamanho próprio
   (30 px) em vez do tamanho dos outros ícones — na **fita baixa** ele ficava maior que o botão e
   vazava para fora; e o desenho dentro do ícone saía **3 px abaixo do centro** (o `viewBox` não
   era simétrico). Agora ele acompanha o ícone grande (fita normal) e o normal (fita baixa), e o
   desenho fica centrado — vale também para as miniaturas da galeria.
+
 - **Zoom do PowerPoint até 800%**: o teto era 400%; agora o slider, o **+ / −** e o
   **Ctrl + roda** vão a **800%** (a lâmina é HTML/vetorial, então ampliar não perde nitidez, e
   a rolagem continua de verdade). Para a faixa nova não custar 70 cliques, o passo do botão e
   da roda **cresce com o nível** — 10% até 150%, 25% até 250%, 50% até 500%, 100% daí em
   diante (do 100% ao 800% em ~17 passos) —, o mesmo conceito que as pranchetas de desenho já
   usavam; o slider continua fino (10%).
+
 - **Dica das alças de canto no visual do app**: o balão nativo do sistema (`title`) saiu; passar o
   mouse numa alça de canto mostra uma caixa do próprio app com **"Canto superior direito · 40%"**
   (valor em destaque) e a dica de uso — **"Arraste arredonda os 4 cantos escolhidos · Shift+clique
   soma ou tira"** (o texto acompanha quantos cantos estão na escolha). A caixa abre para o lado de
   dentro da lâmina (direita→esquerda nas alças da direita, cima→baixo nas de cima) e **some durante
   o arrasto**, quando quem manda é o aviso com o valor ao vivo.
+
 - **Correção no Draw**: o retângulo desenhado torto (a mão nunca acerta o ângulo) virava
   **retângulo arredondado** e a forma saía maior que o traço — o arredondamento era medido na
   caixa alinhada aos eixos. Agora o traço é **endireitado antes de medir** (a inclinação sai da
@@ -769,6 +779,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   segue um círculo (o "canto arredondado") vira uma forma de **arco** de verdade, com o raio e
   o trecho desenhados. E o **Draw saiu da galeria de Formas**: agora é um botão próprio no
   grupo **Desenho** da aba **Inserir**.
+
 - **Desenho à mão assistido (Draw)**: na aba **Inserir**, o botão **Draw** (grupo Desenho) —
   liga o lápis e você **rabisca na lâmina**; ao soltar, o app **refaz o traço por cima** com a
   forma exata (**retângulo, retângulo arredondado, círculo/elipse, triângulo, linha, seta e
@@ -776,34 +787,49 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   O que não for reconhecido fica como **desenho livre** (também preservado no arquivo); a
   **barrinha do pincel** traz cor, espessura (1–8 pt) e o interruptor do assistente, com dica do
   que está sendo entendido enquanto desenha; **Esc** sai do lápis. Testes: `npm run test:desenho`.
+
 - **Fita do PowerPoint sem o botão "Selecionar tudo"**: o grupo **Edição** (que só tinha esse
   botão) saiu da aba Página Inicial — **Ctrl+A** e o clique direito no vazio seguem selecionando
   todas as formas.
+
 - **Abrir e salvar `.pptx` com fidelidade** (formas, fundos, imagens, texto por trecho,
   decorações de layout/mestre, cores do tema, notas, fontes embutidas) — ≈2% de diferença
   média para a referência; o que não reproduz é avisado.
+
 - **Editor de formas**: galeria, desenhar arrastando, 8 alças, girar, guias de encaixe,
   seleção múltipla, agrupar, ordem, alinhar, distribuir, copiar/colar e desfazer.
+
 - **Texto formatado por trecho**: marca-texto, sobrescrito, versalete, espaçamento, caixa e
   limpar formatação.
+
 - **Tabelas** (`a:tbl`) com edição de células, mesclar/dividir, linhas/colunas, estilos, bordas.
+
 - **Gráficos**: inserir, editar dados no painel, desenho em SVG e exportar como imagem.
+
 - **Mídia**: inserir áudio/vídeo, tocar no F5 (corte/volume/loop) e ida e volta no `.pptx`.
+
 - **Transições de lâmina** (galeria, direção, duração) no F5 e no arquivo.
+
 - **Lâminas**: reordenar arrastando (topo ou vertical), ocultar, renomear, resetar, duplicar.
+
 - **Modelos**: botão **Template** (tema/cores/fonte) e modelos do usuário (cartões).
+
 - **Modo apresentação completo**: navegar, tela preta/branca, fade e notas do apresentador.
+
 - **Fita** com abas (Página Inicial, Inserir, Formato da Forma, Layout da Tabela, Design,
   Exibir), recolhível/ajustável e com rolagem; **painel Formatar/Notas** redimensionável.
+
 - **Zoom até 400%** ancorado no ponteiro; faixa de lâminas no topo ou na vertical.
+
 - **Configurar apresentação**: proporção, tema, fonte padrão, tamanho, rodapé e número.
-- Testes: `test:pptx` (ida e volta de arquivos reais) e `test:pptx-edicao`.
+
 - **Checklist de paridade revisado** contra o código atual e contra o projeto **DeckCraft** real
   (232 comandos): itens que já existem passam a aparecer como feitos (Transições, ocultar/
   renomear/redefinir lâmina, marca-texto, sobrescrito/versalete, mudar caixa, ir para lâmina,
   tela preta/branca), o resumo vai a **102/191** e entra o **mapa de edição** — 14 áreas do que o
   DeckCraft edita e falta aqui, com os ganhos rápidos e os próximos passos reordenados
   (`docs/paridade-deckcraft.md`).
+
 - **Animações de forma** (aba nova): entrada e saída — **Aparecer**, **Surgir**, **Desaparecer** e
   **Sumir** — por forma, com início (**Ao clicar**, **Com anterior**, **Depois do anterior**),
   duração nos efeitos suaves (0,5/1/2 s), ordem (↑↓), **Remover** e **Prévia** no palco. As
@@ -811,12 +837,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   clique primeiro toca o efeito pendente e só depois troca de lâmina). O `.pptx` faz **round-trip
   do `p:timing`**: o que o modelo não representa (ênfase, trajetórias, por parágrafo, gatilhos…)
   volta cru, com aviso na importação.
+
 - **Animações, degrau 2**: **ênfase** — **Pulsar**, **Ampliar/Reduzir**, **Girar** e
   **Transparência** — com duração padrão por tipo, **atraso** por efeito ("Sem" a 2 s) e a
   galeria reorganizada em **Entrada/Ênfase/Saída** (as mais usadas na fita + **Mais animações**).
   Entra o **painel de animação** na aba lateral: a lista da lâmina na ordem, com selecionar,
   mover (↑↓) e remover item a item. O round-trip do `p:timing` cobre tudo isso (ênfase por
   escala/rotação/opacidade, `autoRev` do pulsar e o atraso no `p:cond`).
+
 - **Animações, degrau 3**: **trajetória em linha** nas quatro direções (a forma anda 25% da
   lâmina; a direção se escolhe no grupo **Direção**), com prévia, F5 e round-trip do
   `p:animMotion` (presetID 64 e os subtypes do PowerPoint: cima 1, direita 2, baixo 4, esquerda
@@ -824,23 +852,27 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **Correção**: o despacho da fita do degrau 2 tinha dois `slice` com um caractere a mais — os
   botões "Com anterior"/"Depois" e as durações de 1 s/2 s não chegavam ao motor (caíam no padrão
   em silêncio). Agora um **teste de contrato** confere cada prefixo do despacho contra o `slice`.
+
 - **Animações, degrau 4**: **por parágrafo** — a caixa no grupo **Texto** faz cada parágrafo do
   texto entrar num passo próprio: um clique por parágrafo no "ao clicar"; "com o anterior" e
   "depois" encadeiam sozinhos. O `.pptx` escreve um efeito por parágrafo **não vazio** (`pRg`) com
   `bldLst build="p"` e o importador colapsa o build de volta numa animação; se a cobertura dos
   parágrafos não bater com o texto da forma, o timing volta cru, com aviso.
+
 - **Animações, degrau 5**: os presets clássicos **Voar** e **Zoom** (entrada) e **Voar fora** e
   **Encolher** (saída), com o **Voar escolhendo a borda** no grupo Direção (padrão "de baixo", como
   o PowerPoint). A forma voa de fora da lâmina (medida na hora), o zoom cresce do centro com fade
   e o encolher termina invisível. Round-trip do `p:timing` com `anim` de `ppt_x`/`ppt_y` (tavLst
   de/para), escala 0–100% e fade; diagonais e as variantes do zoom (subtype 16/32) ficam crus,
   com aviso.
+
 - **Animações, degrau 6**: os presets de revelação **Limpar** e **Limpar fora** (com a **borda
   escolhida** em Direção), **Caixa**, **Círculo** e **Losango** (abre do centro na entrada, fecha
   na saída) — a galeria passa a **21 efeitos**. A prévia e o F5 usam recorte (`clip-path`): o
   limpar varre a partir da borda, as outras abrem do centro. Round-trip do `p:timing` com
   `animEffect` de `filter` (`wipe(up|down|left|right)`, `box(in|out)`, `circle(in|out)`,
   `diamond(in|out)`) e subtypes 16/32; filter ou subtype fora do padrão volta cru, com aviso.
+
 - **Animações, degrau 7**: os clássicos de textura **Dividir** (abre do centro para os lados),
   **Persianas** (faixas horizontais), **Dissolver** (pontinhos) e **Roda** (uma volta como um
   ponteiro), com as saídas "fora" — a galeria passa a **29 efeitos**. O F5 desenha as texturas
@@ -848,14 +880,18 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   recorte) e o `.pptx` faz round-trip do `p:timing` com `filter` (`barn(in|outHorizontal)`,
   `blinds(horizontal)`, `dissolve`, `wheel(1)`) e subtypes 21/42, 10, 0 e 1; as outras variantes
   do PowerPoint (verticais, dois ponteiros…) ficam cruas, com aviso.
+
 - **Diálogos do app no lugar de janelas do sistema**: **Novo modelo** (botão Template) e
   **Renomear lâmina** agora usam o diálogo de texto do app — com o tema, dica, Enter/OK,
   Esc/Cancelar e clique fora; ao criar, a galeria reabre já com o cartão novo.
+
 - **Avisos do F5**: "documento sem conteúdo" e "todas as lâminas ocultas" viraram toasts do app
   (antes eram `alert` nativos).
+
 - **Seleção do app na fita, no painel e no “Configurar apresentação”**: fonte/tamanho da fita, os
   campos do painel (transição, animação, layout…) e os três do diálogo de configuração trocam a
   lista cinza do sistema pelo menu suspenso do app.
+
 - **Cantos por canto (assistido)**: dá para escolher **quais cantos** mudar — clique na alça do
   canto no palco (`Shift` soma/remove; 1, 2, 3 ou 4) ou nos cantos do mini-diagrama do painel — e
   arrastar arredonda **só os escolhidos**, com precisão (passo de 0,5%; `Alt` = 0,1%) e o valor na
@@ -864,6 +900,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   No arquivo, o app grava a forma **nativa** mais fiel (Retângulo arredondado, um canto, par de
   cima/baixo ou diagonais) e avisa quando o arranjo só existe como **forma livre** — que desenha
   igual, como o “Combinar formas” do PowerPoint.
+
 - **Cantos: o clique escolhe só aquele canto (e o grupo iguala tudo)**: clicar numa alça de canto
   agora escolhe **só ela** no ajuste (antes, com os quatro marcados, o clique mantinha os quatro e
   o arrasto mexia em todos); clique **parado** num canto já marcado deixa só ele, `Shift+clique`
@@ -871,26 +908,31 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   escolhidos**, com cada canto guardando o valor que tinha. Com **várias formas selecionadas**, o
   quadro do grupo ganha as quatro alças: arrastar (ou usar os presets do painel) iguala os cantos
   de **todas as caixas** de uma vez, e o painel avisa quando as formas têm valores diferentes.
+
 - **Fita e painel com os campos no lugar**: o campo de **tamanho** vazio volta a ficar **em
   branco** (mostrava um “—” que parecia erro — é assim que o PowerPoint mostra tamanho misto) e
   os seletores de **fonte/tamanho** ficam na **mesma altura dos botões** (26 px). No grupo Fonte,
   o `A▼` de diminuir agora **desce** (era sobrescrito como o `A▲`) e a setinha de menu dos botões
   de cor (A/ab) mora **dentro** do botão, sem estourar a linha. E no painel a **lista aberta** de
   um seletor não morre mais quando o painel se redesenha (antes a escolha era perdida).
+
 - **"Nova lâmina" e "Layout" com galeria de miniaturas**: os dois menus eram uma lista de nomes;
   agora abrem uma **grade de 2 colunas** com a **miniatura de cada layout** — os espaços como
   silhuetas cinzas (barra do título, linhas do corpo), na proporção do deck (16:9 ou 4:3) e com o
   nome embaixo. No "Layout" o layout atual vem destacado. A miniatura sai do MESMO dado que monta a
   lâmina nova (`caixasDoLayout`): mudou um layout, ela acompanha sozinha.
+
 - **Fonte e tamanho livres na fita**: o campo mostra o tamanho/fonte que o slide **tem** (os
   **41, 27 e 17 pt** do deck de referência aparecem na lista, mesmo fora dos “redondos”) e aceita
   **digitação** — qualquer tamanho (com vírgula, de 1 a 4096) ou qualquer nome de fonte; tamanho
   misto fica em branco e digitar aplica a todos os trechos. A lista de fontes do app ganhou as
   clássicas do Windows/Office e o diálogo **Configurar apresentação** passou a usá-la.
+
 - **A roda do mouse troca de lâmina**: com o ponteiro sobre a lâmina, girar a roda **sobe/desce
   uma lâmina por gesto**, como no PowerPoint (um “tapa” não passa várias — a inércia do mesmo
   gesto é engolida). Com a lâmina **ampliada**, a roda rola o quadro primeiro e só troca quando
   chega ao fim (ou quando a lâmina inteira está à vista). `Ctrl` + roda continua sendo o **zoom**.
+
 - **Modo apresentação (F5) redesenhado**: a lâmina agora **cobre a tela do app** (full-bleed — só as
   barras laterais do formato) e a barra virou um **HUD que se esconde sozinho**: barra e cursor somem
   depois de um tempo sem mexer e voltam com qualquer movimento. Ele traz progresso, navegação `‹ ›`,
@@ -899,6 +941,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Encerrar (`Esc`). A **roda do mouse** e o **botão direito** também navegam, e o `Esc` fecha a
   grade/ajuda antes de sair. De quebra, a lâmina sem fundo próprio passa a usar o **fundo do tema**
   — antes o tema escuro ficava com texto claro sumindo no branco do palco.
+
 - **Desenho assistido acertado (curvas)**: o traço desenhado **torto** agora vira um **arco girado**
   no mesmo ângulo do desenho - o ajuste passou a procurar a elipse **com orientação** (antes só
   existia o ajuste alinhado aos eixos: a elipse saía grande e a curva ficava longe do traço, o
@@ -906,6 +949,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   (duas retas com um canto, por exemplo) **não vira arco** - vira desenho livre - e o **desenho
   livre** ganhou **duas passadas de suavização** com passo de simplificação mais fino (o "cheio de
   falhas" do serrilhado da mão).
+
 - **O "Configurar apresentação" saiu**: o diálogo não tinha mais função. O **Tema** virou a aba
   **Design** (Tema + **Template**, com os 13 designs do catálogo e as **Ideias de design**) e
   **fonte/tamanho** são da fita (Fonte) e dos modelos. Saíram o botão **Configurar** da barra da
@@ -914,6 +958,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **proporção, o rodapé e o número da lâmina** continuam valendo para os decks (importados,
   exportados e salvos) — só não têm mais esse editor. O **"Configurar planilha"** do Excel fica
   como está.
+
 - **Prévia das sombras na galeria "Efeitos" (tema escuro)**: a prévia era um retângulo com o fundo
   do próprio painel e a sombra desenhada **por fora** dele — no tema escuro a sombra preta caía
   sobre o menu escuro e a galeria ficava **sem prévia nenhuma**. Agora cada opção desenha a
@@ -921,6 +966,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   branco aparecem nos dois temas, com recorte na mesa e o deslocamento da prévia em 80% do real
   para caber. Vale para os seis presets (inclusive **Brilho suave**); 4 verificações novas em
   `npm run test:layout`.
+
 - **Conectar sem piscar e na caixa certa**: o alvo das bolinhas do modo **Conectar** passou a ser
   **geométrico** — a bolinha manda, depois a **caixa de cima** e, sem nada embaixo do ponteiro, a
   forma atual fica enquanto o ponteiro anda **perto** dela (histerese). Pelo DOM, a fresta de ~6 px
@@ -928,6 +974,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   linha da ligação roubava o ponteiro: com duas caixas sobrepostas as **bolinhas piscavam** e a
   ligação saía **na caixa errada** (relato do usuário). O clique também ficou com folga (~8 px) e
   os **conectores saem do alvo**.
+
 - **"Duplicar lâmina" no clique direito da miniatura (e na aba Inserir)**: o clique direito na
   miniatura caía no **menu do navegador** (Voltar/Atualizar/Salvar como/Imprimir/Inspecionar) —
   nada a ver com a lâmina e sem o "Duplicar lâmina" que se procura ali. Agora abre um **menu do
@@ -935,6 +982,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   apresentação** e **Excluir lâmina** (desabilitado com uma só), agindo na **lâmina clicada** —
   como o × de excluir já fazia. O botão **Duplicar** (que já existia pequeno na Página Inicial)
   também entrou na aba **Inserir**; 5 verificações novas em `npm run test:layout`.
+
 - **Redesign da aba Animações** (pedido do usuário): a aba deixou de ser uma fila de oito grupos
   soltos. São **sete**, na ordem em que se pensa a animação: **Animação** (galeria + **Mais**),
   **Início**, **Direção**, **Tempo** (**duração e atraso na mesma casa**, cada linha com o próprio
@@ -951,8 +999,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   mesmo `.pptx` de ida e volta. O desenho está preso por **10 verificações** novas em
   `npm run test:layout` — inclusive a **largura do cartão**, medida no harness: o nome
   "Desaparecer" ocupa **61 px** de texto, e em cartões de 54 px ele saía cortado.
-
----
 
 ## Geral
 

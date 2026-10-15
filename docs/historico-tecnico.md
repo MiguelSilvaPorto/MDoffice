@@ -8956,3 +8956,20 @@ antigas quando fizer sentido.
 - **Porquê:** a correção é do módulo compartilhado das fitas (não de um módulo só) e o conserto das
   checagens é de ferramenta de teste; as duas entradas entram já promovidas, como o fechamento
   exige.
+## CHANGELOG.md
+
+### 2026-10-15 · promoção · 5 entradas de duas categorias entram no "Adicionado"
+- **Local:** PowerPoint → **Não adicionado** → Frontend (3) e MD\* → **Não adicionado** → Frontend
+  (2) → os **Adicionado** das mesmas categorias (topo do Frontend)
+- **Linha:** movidas **"Nova lâmina" com o último layout escolhido** (`85c77be`), **Arranjos:
+  cartões com gradiente…** (`783b188`), **Arranjos: triângulos e painéis…** (`4cda57b`) no
+  PowerPoint e **Prancheta de letras: panorama** (`39c2519`) e **A sugestão enquanto você digita
+  aparece certa** (`25ac836`) no MD\*; as duas seções ficaram com "- (nada no momento)"
+- **Porquê:** os cinco commits já estavam na `main` (as das outras sessões incluídas — a
+  conferência olhou uma a uma pelo `git log` antes de mover). A promoção rodou por um script com
+  **asserção por marcador de título** (`promote.cjs`, descartável): cada entrada é localizada pelo
+  começo do título, movida inteira (com as linhas de continuação) e o script falha se alguma não
+  existir — mais seguro que edições manuais em blocos longos, e foi ele que ordenou as mais novas
+  primeiro. Antes de promover, a conferência procurou **promoções em voo** (`git log --all --not
+  main --grep promove`): nenhuma — as que aparecem no `--all` hoje são só as pré-reescrita do
+  histórico (a limpeza dos n-gramas), presas nas branches abertas.
