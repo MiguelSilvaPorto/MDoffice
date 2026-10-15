@@ -15,7 +15,7 @@ import { ajustarCor, CANTOS, comAjuste, comCantos, comLinha, comOpacidade, comPr
 import { aspectSize, stageRatio } from "./schema";
 import type { Dim } from "./edicao/geometria";
 import { Historico } from "./edicao/historico";
-import { formasDoLayout, novaLamina } from "./edicao/layouts";
+import { formasDoLayout, novaLamina, ORDEM_LAYOUTS, ROTULOS_LAYOUT } from "./edicao/layouts";
 import { migrarSlides, registrarMidia } from "./edicao/migrar";
 import { MODELOS, ROTULO_TRATAMENTO, aplicarModelo, type EstiloAtual, type ModeloPPT, type TratamentoIdeia } from "./edicao/modelos";
 import { ARRANJOS, aplicarArranjo, arranjoLegivel, rotuloDoArranjo, unidadesDa, variantesDe, type Arranjo } from "./edicao/arranjos";
@@ -75,6 +75,7 @@ import { Stage, passoZoom, type CelulasSel, type Ferramenta } from "./stage";
 import { stageVars, themeOf } from "./themes";
 import { abrirCores } from "./ui/cores";
 import { Fita } from "./ui/fita";
+import { miniaturaDeLayout } from "./ui/layoutPreview";
 import { Painel } from "./ui/painel";
 import { abrirPopup, fecharPopup } from "./ui/popup";
 import type { EstadoUI } from "./ui/estado";
@@ -130,6 +131,27 @@ const gravarFlag = (chave: string, v: boolean): void => {
     /* sem armazenamento */
   }
 };
+const lerTexto = (chave: string, padrao: string): string => {
+  try {
+    return localStorage.getItem(chave) ?? padrao;
+  } catch {
+    return padrao;
+  }
+};
+const gravarTexto = (chave: string, v: string): void => {
+  try {
+    localStorage.setItem(chave, v);
+  } catch {
+    /* sem armazenamento */
+  }
+};
+
+/** A preferência do "Nova lâmina": o último layout escolhido (a primeira lâmina nasce Capa). */
+const CHAVE_ULTIMO_LAYOUT = "mdc.pp.ultimo-layout";
+const layoutSalvo = (): SlideLayout => {
+  const v = lerTexto(CHAVE_ULTIMO_LAYOUT, "titulo");
+  return (ORDEM_LAYOUTS as string[]).includes(v) ? (v as SlideLayout) : "titulo";
+};
 
 const CHAVE_PINCEL = "mdc.pp.pincel";
 /** O pincel do Draw guardado entre sessões (cor, espessura e assistente). */
@@ -169,6 +191,8 @@ export class PowerPointHost {
   private encaixe = lerFlag("mdc.pp.encaixe", true);
   private grade = lerFlag("mdc.pp.grade", false);
   private faixaVertical = lerFlag("mdc.pp.faixaVertical", false);
+  /** o último layout escolhido: o clique direto do "Nova lâmina" (fita e faixa) usa ele */
+  private ultimoLayout: SlideLayout = layoutSalvo();
   private hist = new Historico<Estado>(100);
   private pendente: Estado | null = null;
   /** prévia das animações de forma em andamento no palco (aba Animações) */
@@ -732,6 +756,13 @@ export class PowerPointHost {
     else this.pintar();
   }
 
+  /** Guarda o último layout escolhido (é o que o "Nova lâmina" usa no clique direto). */
+  private definirUltimoLayout(l: SlideLayout): void {
+    if (this.ultimoLayout === l) return;
+    this.ultimoLayout = l;
+    gravarTexto(CHAVE_ULTIMO_LAYOUT, l);
+  }
+
   private registrar(chave = ""): void {
     this.hist.registrar(this.estado(), chave);
   }
@@ -978,10 +1009,15 @@ export class PowerPointHost {
 
     const add = document.createElement("button");
     add.type = "button";
-    add.className = "pp-thumb-add";
-    add.title = "Nova lâmina no fim";
-    add.setAttribute("aria-label", "Nova lâmina");
-    add.innerHTML = '<svg class="ic"><use href="#i-plus"/></svg><span>Nova lâmina</span>';
+    add.className = "pp-thumb-add pp-thumb-add-lay";
+    const rotuloUltimo = ROTULOS_LAYOUT[this.ultimoLayout];
+    add.title = `Nova lâmina no fim (${rotuloUltimo})`;
+    add.setAttribute("aria-label", `Nova lâmina no fim (${rotuloUltimo})`);
+    // o card mostra a PRÉVIA do último layout escolhido (a mesma miniatura da galeria) e o "+"
+    // no canto — o clique cria direto, sem abrir a galeria
+    add.innerHTML =
+      `<span class="pp-thumb-add-previa">${miniaturaDeLayout(this.ultimoLayout, this.setup)}<span class="pp-thumb-add-mais">+</span></span>` +
+      `<span class="pp-thumb-add-rot"><b>+</b> Nova lâmina</span>`;
     add.addEventListener("click", () => this.run("slide-new"));
     this.strip.append(add);
     // mantém a miniatura da lâmina atual à vista (na horizontal e na vertical)
@@ -1096,6 +1132,7 @@ export class PowerPointHost {
       setup: this.setup,
       bg: this.atual().bg,
       bgEstilo: this.atual().bgEstilo,
+      ultimoLayout: this.ultimoLayout,
       temGrupo: formas.some((s) => !!s.grupo),
       largura: forma ? (forma.box.w / 100) * d.w : 0,
       altura: forma ? (forma.box.h / 100) * d.h : 0,
@@ -1730,8 +1767,11 @@ export class PowerPointHost {
       case "slide-novo":
       case "slide-new": {
         this.registrar();
-        // a lâmina nova herda o fundo e as decorações fixas da atual e já vem com as caixas do layout escolhido
-        const layout = (value as SlideLayout) || (sl.shapes.length ? "conteudo" : "conteudo");
+        // a lâmina nova herda o fundo e as decorações fixas da atual e já vem com as caixas do
+        // layout escolhido — sem valor (o clique da frente da fita e o "+" da faixa), vale o
+        // ÚLTIMO layout escolhido: o clique direto cria sem abrir a galeria
+        const layout = (value as SlideLayout) || this.ultimoLayout;
+        this.definirUltimoLayout(layout);
         const nova = novaLamina(layout, this.estilo(), sl);
         // vai para o FIM da apresentação: o "+" da faixa fica no fim, e era onde o usuário
         // esperava a lâmina nova; antes ela entrava logo depois da ATUAL — onde ele estava
@@ -1814,6 +1854,8 @@ export class PowerPointHost {
       case "layout-sel": {
         this.registrar();
         const novo = (value ?? "conteudo") as SlideLayout;
+        // aplicar um layout à lâmina atual também é uma ESCOLHA de layout: vira o último
+        this.definirUltimoLayout(novo);
         this.slides = setLayout(this.deck, this.indice, novo).slides;
         // lâmina sem caixas próprias (só decoração): recebe as caixas do layout
         const atual = this.atual();

@@ -588,6 +588,51 @@ checa(
   /case "layout"[\s\S]{0,400}galeriaDeLayouts\(est\.setup, est\.layout\)/.test(fitaPpt),
   "o menu de Layout não destaca o atual"
 );
+// "Nova lâmina" vira botão dividido: a frente cria com o ÚLTIMO layout e a setinha abre a galeria
+checa(
+  "Nova lâmina é um botão dividido (frente cria; setinha abre a galeria)",
+  /const grandeDividido = \(acao: string, menu: string/.test(fitaPpt) &&
+    /data-cmd="\$\{acao\}"/.test(fitaPpt) &&
+    /data-cmd="\$\{menu\}" data-menu="1"/.test(fitaPpt) &&
+    /grandeDividido\("slide-new", "slide-novo"/.test(fitaPpt),
+  "a frente e a setinha não são alvos separados"
+);
+checa(
+  "o título da frente diz qual layout o clique vai criar",
+  /rotuloUltimo = ROTULOS_LAYOUT\[st\.ultimoLayout \?\? "titulo"\]/.test(fitaPpt) && /Nova lâmina no fim \(\$\{rotuloUltimo\}\)/.test(fitaPpt),
+  "o tooltip não acompanharia o último layout"
+);
+checa(
+  "o host cria com o último layout escolhido (e nunca mais com \"conteudo\" fixo)",
+  /const layout = \(value as SlideLayout\) \|\| this\.ultimoLayout;/.test(ppt) &&
+    /private ultimoLayout: SlideLayout = layoutSalvo\(\)/.test(ppt) &&
+    !/\(sl\.shapes\.length \? "conteudo" : "conteudo"\)/.test(ppt),
+  "o clique direto voltaria ao layout fixo"
+);
+checa(
+  "o último layout nasce Capa e é persistido (e o Layout também o atualiza)",
+  /lerTexto\(CHAVE_ULTIMO_LAYOUT, "titulo"\)/.test(ppt) &&
+    /ORDEM_LAYOUTS as string\[\]\)\.includes\(v\)/.test(ppt) &&
+    /gravarTexto\(CHAVE_ULTIMO_LAYOUT, l\)/.test(ppt) &&
+    /case "layout":[\s\S]{0,300}this\.definirUltimoLayout\(novo\)/.test(ppt),
+  "a preferência não sobreviveria ao recarregar (ou o Layout não a atualizaria)"
+);
+checa(
+  "o card da faixa mostra a prévia do último layout (o clique cria com ele)",
+  /miniaturaDeLayout\(this\.ultimoLayout, this\.setup\)/.test(ppt) &&
+    /pp-thumb-add-previa/.test(ppt) &&
+    /pp-thumb-add-mais/.test(ppt) &&
+    /add\.addEventListener\("click", \(\) => this\.run\("slide-new"\)\)/.test(ppt),
+  "o card voltaria ao “+” sem prévia"
+);
+checa(
+  "css: as duas metades do botão dividido e a prévia do card têm estilo próprio",
+  /\.ppr-dividido\s*\{[^}]*display:\s*inline-flex/s.test(ler("src/styles/powerpoint-edicao.css")) &&
+    /\.ppr-dividido \.ppr-dividido-seta\s*\{[^}]*min-width:\s*0/s.test(ler("src/styles/powerpoint-edicao.css")) &&
+    /\.pp-thumb-add \.pp-thumb-add-previa\s*\{/.test(ler("src/styles/powerpoint.css")) &&
+    /\.pp-thumb-add \.pp-thumb-add-mais\s*\{/.test(ler("src/styles/powerpoint.css")),
+  "o botão dividido ficaria com duas bordas (ou a prévia sem estilo)"
+);
 checa(
   "a lâmina nova entra no FIM (e não depois da atual)",
   /lista\.push\(nova\)/.test(ppt) &&
@@ -1421,7 +1466,7 @@ console.log("\nPowerPoint: duplicar lâmina na fita e no clique direito da minia
   const ppt = ler("src/powerpoint/powerpoint.ts");
   checa(
     "a aba Inserir também tem o Duplicar lâmina",
-    /grande\("slide-novo", ic\("i-plus"\), "Nova lâmina", "Nova lâmina no fim: escolha o layout", true\)\}\r?\n\s+\$\{grande\("slide-dup"/.test(fita),
+    /grandeDividido\("slide-new", "slide-novo", ic\("i-plus"\), "Nova lâmina"[\s\S]{0,240}\$\{grande\("slide-dup"/.test(fita),
     "o botão só existe na Página Inicial"
   );
   checa(

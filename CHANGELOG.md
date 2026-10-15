@@ -400,6 +400,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **"Nova lâmina" com o último layout escolhido (sem abrir o painel)**: o clique direto criava
+  sempre "Título e conteúdo" e a fita obrigava a passar pela **galeria** (que abria um painel
+  grande). Agora **Nova lâmina** é um **botão dividido**: o **clique na frente** cria a lâmina
+  **na hora**, no fim, com o **último layout escolhido** — e a **setinha ▾** abre a galeria, como
+  antes (escolher lá passa a ser "o último"). A preferência **nasce Capa** e **sobrevive ao
+  recarregar**; aplicar um **Layout** à lâmina atual também conta como escolha. O card do fim da
+  faixa deixou de ser o "+" genérico: ele mostra a **prévia do último layout** (a mesma miniatura
+  da galeria, com o "+" no canto) e cria com ele no clique — o **clique direito** na miniatura
+  segue com as ações da lâmina (Duplicar, Renomear…), intacto.
+
 - **Arranjos: cartões com gradiente, cartões concêntricos e cartões pequenos agora são detectados, e só aparecem os arranjos legíveis** — antes, num deck importado (organograma com cartões em gradiente, 1,9% da lâmina cada), nenhum cartão era detectado e o app embaralhava as 29 caixas de texto; o cartão de fora e o branco de dentro também se descartavam um ao outro. Agora a Lista/Faixa/Destaque com muitos cartões (tiras de 2%) deixam de ser oferecidas.
 
 - **Arranjos: triângulos e painéis de fundo não viram mais "cartões"** — antes uma forma grande e decorativa (ex.: os triângulos verdes) ou um painel atrás dos cartões era tratado como cartão, engolia os de verdade e o arranjo saía desordenado; agora eles ficam parados e só os cartões com conteúdo se arrumam. Teste: `npm run test:arranjos`.

@@ -456,6 +456,39 @@ body.home-open #powerpoint-pane {
   background: var(--accent-soft);
 }
 
+/* o card "+" mostra a PRÉVIA do último layout escolhido (o clique cria com ele, sem galeria) */
+.pp-thumb-add .pp-thumb-add-previa {
+  position: relative;
+  display: block;
+  width: calc(100% - 14px);
+}
+
+.pp-thumb-add .pp-thumb-add-previa .pp-mini {
+  width: 100%;
+}
+
+.pp-thumb-add .pp-thumb-add-mais {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: var(--accent-fg, #fff);
+  background: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.pp-thumb-add .pp-thumb-add-rot {
+  margin-top: 5px;
+  font-size: 11.5px;
+}
+
 .pp-thumb-add:active {
   transform: scale(0.98);
 }

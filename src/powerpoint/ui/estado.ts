@@ -37,6 +37,8 @@ export interface EstadoUI {
   bg?: Fill;
   /** o fundo tem estilo vivo (Estilos de Cor): os controles do fundo viram os da receita */
   bgEstilo?: EstiloForma;
+  /** o último layout escolhido (galeria do "Nova lâmina" e Layout): é o que o clique direto usa */
+  ultimoLayout: SlideLayout;
   /** transição de entrada da lâmina atual (normalizada) */
   transicao?: Transicao;
   /** a lâmina tem uma transição do .pptx que o app não representa (fica guardada crua) */

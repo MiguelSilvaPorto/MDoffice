@@ -1,6 +1,7 @@
 // A fita da apresentação, no desenho do PowerPoint: abas (Página Inicial, Inserir, Formato da Forma, Design, Exibir),
 // grupos com o nome embaixo, botões grandes e pequenos. Tudo é despachado por `run(comando, valor)` para o host.
 import { SOMBRAS_PRONTAS } from "../edicao/formato";
+import { ROTULOS_LAYOUT } from "../edicao/layouts";
 import { ANGULOS_ESTILO, FAMILIAS, FAMILIAS_ORDEM, rampaDeTons } from "../edicao/estilos";
 import { GRAFICO_TIPOS } from "../edicao/grafico";
 import { ROTULOS_PRESET, type PresetTabela } from "../edicao/tabela";
@@ -29,6 +30,16 @@ const btn = (cmd: string, conteudo: string, titulo: string, extra = "", menu = f
 
 const grande = (cmd: string, icone: string, nome: string, titulo: string, menu = false) => btn(cmd, `${icone}<span>${nome}</span>`, titulo, "big", menu);
 const pequeno = (cmd: string, icone: string, nome: string, titulo: string, menu = false) => btn(cmd, `${icone}<span>${nome}</span>`, titulo, "txt", menu);
+
+/**
+ * Botão dividido: a FRENTE faz a ação direta e a SETINHA abre o menu — dois alvos de clique que
+ * parecem um botão só (o `data-menu` fica na setinha, então o despacho da fita não muda).
+ */
+const grandeDividido = (acao: string, menu: string, icone: string, nome: string, titulo: string, dicaMenu: string) =>
+  `<span class="ppr-dividido">` +
+  `<button type="button" class="ppr big ppr-dividido-acao" data-cmd="${acao}" title="${titulo}" aria-label="${titulo}">${icone}<span>${nome}</span></button>` +
+  `<button type="button" class="ppr big ppr-dividido-seta" data-cmd="${menu}" data-menu="1" title="${dicaMenu}" aria-label="${dicaMenu}"><span class="car">▾</span></button>` +
+  `</span>`;
 const grupo = (nome: string, corpo: string) => `<div class="ppr-grupo"><div class="ppr-corpo">${corpo}</div><div class="ppr-rotulo">${nome}</div></div>`;
 
 /** Setas da direção da transição (a lâmina entra por esse lado). */
@@ -347,7 +358,7 @@ export class Fita {
       ),
       grupo(
         "Lâminas",
-        `${grande("slide-novo", ic("i-plus"), "Nova lâmina", "Nova lâmina no fim: escolha o layout", true)}
+        `${grandeDividido("slide-new", "slide-novo", ic("i-plus"), "Nova lâmina", "Nova lâmina no fim (último layout escolhido)", "Escolher o layout da nova lâmina")}
          <div class="ppr-col">
            ${pequeno("layout", ic("i-columns"), "Layout", "Layout da lâmina", true)}
            ${pequeno("slide-dup", ic("i-dup"), "Duplicar", "Duplicar lâmina")}
@@ -431,7 +442,7 @@ export class Fita {
     return [
       grupo(
         "Lâminas",
-        `${grande("slide-novo", ic("i-plus"), "Nova lâmina", "Nova lâmina no fim: escolha o layout", true)}
+        `${grandeDividido("slide-new", "slide-novo", ic("i-plus"), "Nova lâmina", "Nova lâmina no fim (último layout escolhido)", "Escolher o layout da nova lâmina")}
          ${grande("slide-dup", ic("i-dup"), "Duplicar", "Duplicar a lâmina atual (a cópia entra logo depois dela)")}`
       ),
       grupo("Tabelas", `${grande("tabela-grade", ic("i-grid"), "Tabela", "Inserir uma tabela", true)}`),
@@ -1172,6 +1183,13 @@ export class Fita {
     const dis = (cmd: string, d: boolean) => {
       for (const b of this.el.querySelectorAll<HTMLButtonElement>(`[data-cmd="${cmd}"]`)) b.disabled = d;
     };
+    // a frente do "Nova lâmina" cria com o ÚLTIMO layout escolhido: o título diz qual é
+    const rotuloUltimo = ROTULOS_LAYOUT[st.ultimoLayout ?? "titulo"];
+    for (const b of this.el.querySelectorAll<HTMLButtonElement>('[data-cmd="slide-new"]')) {
+      const txt = `Nova lâmina no fim (${rotuloUltimo})`;
+      b.title = txt;
+      b.setAttribute("aria-label", txt);
+    }
     const t = st.trecho;
     const temTexto = !!st.forma && (st.forma.paras !== undefined || !!st.forma.tabela);
     on("negrito", t?.bold === true);

@@ -8808,3 +8808,67 @@ antigas quando fizer sentido.
 - **Porquê:** medido num .pptx real (organograma de T.I.): 0 cartões detectados — gradiente não contava como pintado, os cartões têm
   1,9% (< 2%) e o cartão de fora e o branco de dentro, concêntricos, descartavam-se mutuamente. Sem cartões, o app caía no modo "cada
   texto é uma unidade" (29 caixas). Depois: 11 cartões, 0 colisões. Lista/Faixa/Destaque com 11 cartões dão tiras de ~2%: não são oferecidos.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-15 · nova lâmina com o último layout · a preferência e o clique direto
+- **Local:** `lerTexto`/`gravarTexto` (novos, ao lado dos `lerFlag`/`gravarFlag`), `CHAVE_ULTIMO_LAYOUT`/
+  `layoutSalvo`, o campo `ultimoLayout`, `definirUltimoLayout`, os casos `slide-novo`/`slide-new` e
+  `layout`, o card da faixa (`renderFaixa`) e o estado da interface
+- **Linha:** `+ private ultimoLayout: SlideLayout = layoutSalvo()` (padrão `"titulo"`, validado
+  contra `ORDEM_LAYOUTS`) · `const layout = (value as SlideLayout) || (sl.shapes.length ?
+  "conteudo" : "conteudo")` → `|| this.ultimoLayout` + `this.definirUltimoLayout(layout)` ·
+  `case "layout"`: `+ this.definirUltimoLayout(novo)` · o card `pp-thumb-add`: `+ miniaturaDeLayout(
+  this.ultimoLayout, this.setup)` + os spans `pp-thumb-add-previa`/`pp-thumb-add-mais`/`-rot`
+- **Porquê:** o `|| (… ? "conteudo" : "conteudo")` era um "layout padrão" pela metade (os dois
+  ramos devolviam o mesmo) e o clique direto ignorava o que o usuário escolhia na galeria. Com a
+  preferência persistida, as DUAS pontas (a frente do botão da fita e o card da faixa) fazem a
+  mesma coisa sem abrir painel. Decisões que valem a leitura: os `lerFlag`/`gravarFlag` são só
+  booleanos, daí os `Texto` irmãos; o valor salvo é **validado** contra `ORDEM_LAYOUTS` (uma
+  preferência velha com um layout que não existe mais cairia no padrão em vez de quebrar a
+  criação); e o card da faixa usa o **mesmo** `miniaturaDeLayout` da galeria — manter uma segunda
+  miniatura "parecida" seria a garantia de elas divergirem.
+
+## src/powerpoint/ui/estado.ts · src/powerpoint/ui/fita.ts
+
+### 2026-10-15 · nova lâmina com o último layout · o botão dividido
+- **Local:** `EstadoUI` (`ultimoLayout`); na fita, o `grandeDividido` (novo), os dois usos do
+  "Nova lâmina" (Página Inicial e Inserir) e o `atualizar()`
+- **Linha:** `+ ultimoLayout: SlideLayout` no estado · `+ const grandeDividido = (acao, menu, …)`
+  com `data-cmd="${acao}"` na frente e `data-cmd="${menu}" data-menu="1"` na setinha ·
+  `grande("slide-novo", …, true)` → `grandeDividido("slide-new", "slide-novo", …)` ·
+  `atualizar()`: `+ o título da frente vira "Nova lâmina no fim (<rótulo do último>)"`
+- **Porquê:** o botão dividido precisava de **dois alvos de clique** sem mexer no despacho da fita
+  — como o `data-menu` fica na SETINHA, o despacho que já existia (`b.dataset.menu` →
+  `abrirMenu`) continua valendo e a frente cai no despacho normal com `slide-new` (sem valor: o
+  host resolve o último). O tooltip da frente é atualizado no `atualizar()` (a fita não se
+  redesenha por inteiro a cada mudança) e é a única pista do que o clique vai criar — por isso ele
+  diz o rótulo do layout, não um texto genérico.
+
+## src/styles/powerpoint-edicao.css · src/styles/powerpoint.css
+
+### 2026-10-15 · nova lâmina com o último layout · as duas metades e a prévia do card
+- **Local:** `.ppr-dividido` (e as metades) no CSS da fita; `.pp-thumb-add .pp-thumb-add-previa`/
+  `-mais`/`-rot` no CSS do palco
+- **Linha:** `+ .ppr-dividido { display:inline-flex }` com os raios quebrados nas metades
+  (`border-radius: 0` + o par certo em cada) e o hover do grupo acendendo as DUAS · `+ a prévia com
+  a miniatura e o "+" no canto (badge no acento)`
+- **Porquê:** duas metades com borda e raio próprios pareciam dois botões — o grupo devolve o
+  desenho de um só (e o hover do grupo evita o "pisca" ao cruzar o meio, que é o defeito clássico
+  de botão dividido). No card, a `miniaturaDeLayout` já traz o fundo branco e a sombra do `.pp-mini`
+  (a mesma da galeria); o "+" ficou **dentro** do canto da miniatura, na mesma posição em que as
+  miniaturas de verdade mostram o número da lâmina.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · nova lâmina com o último layout · 6 checagens (e uma ajustada)
+- **Local:** o bloco do "Nova lâmina" (junto das checagens da galeria)
+- **Linha:** `+ as checagens do botão dividido (frente/setinha), do título dinâmico, do host com o
+  último layout, da preferência (nasce Capa, valida, persiste, o Layout atualiza), do card com a
+  prévia e do CSS`; a checagem "a aba Inserir também tem o Duplicar lâmina" passou a ancorar no
+  `grandeDividido` (ela procurava o texto antigo do botão para achar a vizinhança do Duplicar)
+- **Porquê:** a checagem do Duplicar quebrou com a mudança de texto (a âncora era o `grande(` do
+  Nova lâmina) — e isso é o teste funcionando: ele prende a ESTRUTURA da aba Inserir, não um
+  detalhe cosmético; ajustar a âncora (em vez de afrouxar a checagem) mantém o contrato. As novas
+  prendem os dois lados da preferência (o padrão e a persistência) e a regra que o usuário pediu:
+  o clique direto não pode voltar a criar sempre "Título e conteúdo".

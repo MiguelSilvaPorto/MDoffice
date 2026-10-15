@@ -240,6 +240,38 @@ button.ppr.txt {
   font-size: var(--pe-fonte-peq);
 }
 
+/* Botão dividido (frente + setinha): os dois alvos parecem um botão só; o hover de qualquer
+   metade acende as duas (senão a divisão "pisca" ao cruzar o meio). */
+.ppr-dividido {
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.ppr-dividido button.ppr {
+  border-radius: 0;
+}
+
+.ppr-dividido .ppr-dividido-acao {
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+}
+
+.ppr-dividido .ppr-dividido-seta {
+  min-width: 0;
+  padding: 0 4px;
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 3px;
+}
+
+.ppr-dividido:hover button.ppr:not(:disabled) {
+  background: color-mix(in srgb, var(--fi-ppt, #d24a17) 13%, transparent);
+  border-color: color-mix(in srgb, var(--fi-ppt, #d24a17) 35%, transparent);
+}
+
+.ppr-dividido .ppr-dividido-seta .car {
+  margin: 0;
+}
+
 button.ppr.big {
   flex-direction: column;
   justify-content: flex-start;
