@@ -9013,3 +9013,19 @@ antigas quando fizer sentido.
   na `main`** (tarefa de outra sessão em andamento) e o `testar-correcoes` **passa na `main`** e
   falha nesta worktree — o corretor não foi tocado aqui (a mudança é só CSS e documentação), então
   é ambiente/base, não efeito daqui.
+
+## CHANGELOG.md
+
+### 2026-10-15 · esta tarefa · promoção das minhas duas entradas (e um erro de script)
+
+- **Local:** as duas entradas desta tarefa — a da lâmina (PowerPoint › Adicionado › Frontend) e a
+  do relevo (Word › Adicionado › Frontend); as entradas de outras sessões ficaram onde estavam
+- **Linha:** movidas de "Não adicionado" para o "Adicionado" das suas categorias (1× cada)
+- **Porquê:** mesma razão das rodadas anteriores. Desta vez o script de promoção **errou o
+  destino**: ele calculava o índice do "Adicionado › Frontend" **depois** de já ter removido a
+  entrada do array — a remoção desloca os índices e a entrada do PowerPoint foi parar no
+  "Não adicionado" do **Geral** (L1022). O defeito só apareceu na conferência (o `listar` mostrou
+  a entrada na categoria errada), e a correção foi um script que recalcula o destino **no array
+  já sem a entrada** — o `mover-entrada.mjs`. Fica registrado porque a lição é geral: **índice
+  calculado antes de mexer no array não vale depois da mexida** — o mesmo tipo de descuido que já
+  tinha aparecido na detecção dos cartões dos Arranjos (área em %² contra limites em %).
