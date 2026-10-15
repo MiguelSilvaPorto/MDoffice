@@ -413,21 +413,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **O desenho gruda nas formas de baixo (as bordas do cartão)**: ao desenhar o canto por cima do
-  cartão, o traço sai **por dentro** das bordas dele (a mão erra ~10–30 pt) — mais que o limiar do
-  encaixe (~10 pt) — então o desenho ficava no retângulo do próprio traço e não grudava no cartão
-  (print do usuário). Agora o limiar é **2,5% da largura da lâmina** (~24 pt) e, nos **traços**
-  (desenho livre e curva), o encaixe é só nas **bordas**: o ímã do centro deslocava o traço inteiro
-  para o meio da forma de baixo. Teste: `npm run test:desenho`.
-
-- **As juntas entre a reta encaixada e a curva saíram suaves (sem quebras)**: o encaixe nos eixos
-  deixa os trechos quase retos como retas, mas a cúbica que continuava da reta saía na tangente do
-  vizinho de trás do traço — a reta encostava na curva de esguelha e ficava uma **quina** visível
-  (print do usuário: "ficou com umas quebras, não ficou suave"). Agora o braço da cúbica nas juntas
-  continua a **direção da reta** (um terço do trecho da curva, ~o arco de círculo que a mão faz) e o
-  `reto` do Alt continua fazendo quina. O ajuste vale para o caminho final **e** para a prévia
-  (mesma função nos dois). Teste: `npm run test:desenho`.
-
 - **A aba Animações cabe na tela (sem rolar nem cortar o grupo "Animar")** — o plano do encaixe supunha que todo grupo encolhe junto com as métricas, mas a galeria de animações tinha 72 px fixos por cartão e a aba passava da largura mesmo no degrau compacto. Agora a galeria acompanha as métricas e o encaixe **confere no navegador** depois de aplicar o plano: se ainda sobra rolagem, encolhe mais as métricas e, por fim, manda mais um grupo para o menu. Medido num Chrome real: de 1500 a 900 px nenhuma aba rola; em 1338 px a aba Animações cabe inteira.
 
 - **Aba Design completa: Temas, Variantes, Personalizar e Designer**: a aba tinha só dois grupos
@@ -452,6 +437,21 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **O desenho gruda nas formas de baixo (as bordas do cartão)**: ao desenhar o canto por cima do
+  cartão, o traço sai **por dentro** das bordas dele (a mão erra ~10–30 pt) — mais que o limiar do
+  encaixe (~10 pt) — então o desenho ficava no retângulo do próprio traço e não grudava no cartão
+  (print do usuário). Agora o limiar é **2,5% da largura da lâmina** (~24 pt) e, nos **traços**
+  (desenho livre e curva), o encaixe é só nas **bordas**: o ímã do centro deslocava o traço inteiro
+  para o meio da forma de baixo. Teste: `npm run test:desenho`.
+
+- **As juntas entre a reta encaixada e a curva saíram suaves (sem quebras)**: o encaixe nos eixos
+  deixa os trechos quase retos como retas, mas a cúbica que continuava da reta saía na tangente do
+  vizinho de trás do traço — a reta encostava na curva de esguelha e ficava uma **quina** visível
+  (print do usuário: "ficou com umas quebras, não ficou suave"). Agora o braço da cúbica nas juntas
+  continua a **direção da reta** (um terço do trecho da curva, ~o arco de círculo que a mão faz) e o
+  `reto` do Alt continua fazendo quina. O ajuste vale para o caminho final **e** para a prévia
+  (mesma função nos dois). Teste: `npm run test:desenho`.
 
 - **O traço que só PARECE um círculo não é mais fechado (nem vira um arco bojudo)**: ao desenhar o
   topo arredondado de um cartão (quase reto com cantos), o assistente fechava o traço numa

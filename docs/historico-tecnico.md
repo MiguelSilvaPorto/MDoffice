@@ -11429,3 +11429,13 @@ antigas quando fizer sentido.
 - **Linha:** `+` o limiar (2,5% da largura) e "nos traços, só as bordas"
 - **Porquê:** a bala dizia "encaixa nas bordas e nos centros" sem dizer com que força nem que o
   centro não vale para traço — era o que o relato expôs.
+
+## CHANGELOG.md
+
+### 2026-10-15 · as juntas e o encaixe no cartão · a promoção das entradas
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** as duas entradas migraram inteiras, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não promove (no instante do commit a entrada ainda não está na main), então a
+  promoção anda depois: as juntas (2de3c92) e o encaixe no cartão (ee5b51e). Promovi só as entradas
+  DESTA linha de trabalho — as que seguem em "Não adicionado" (a aba Animações, a aba Design
+  completa) são de sessões com trabalho aberto, mexer nelas criaria duplicata ou conflito.
