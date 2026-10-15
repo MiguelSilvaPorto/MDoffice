@@ -413,14 +413,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **O degrau no meio da reta encaixada saiu (a curva "quase perfeita" agora fecha)**: quando a mão
-  derrapa no meio de um trecho, o alinhamento nos eixos formava **duas retas com médias
-  diferentes** — o caminho fazia um degrau/barriga entre elas (print do usuário: "a curva do
-  assistente quase saiu perfeita"). Agora as corridas vizinhas quase colineares viram **uma só**
-  (a média sai do trecho inteiro): vale quando as médias estão a até 5 pt e os pontos do vão ficam
-  a até 8 pt da reta — um degrau de verdade, que a mão desenhou, tem a diferença maior e fica.
-  Teste: `npm run test:desenho`.
-
 - **A aba Animações cabe na tela (sem rolar nem cortar o grupo "Animar")** — o plano do encaixe supunha que todo grupo encolhe junto com as métricas, mas a galeria de animações tinha 72 px fixos por cartão e a aba passava da largura mesmo no degrau compacto. Agora a galeria acompanha as métricas e o encaixe **confere no navegador** depois de aplicar o plano: se ainda sobra rolagem, encolhe mais as métricas e, por fim, manda mais um grupo para o menu. Medido num Chrome real: de 1500 a 900 px nenhuma aba rola; em 1338 px a aba Animações cabe inteira.
 
 - **Estúdio: isolar uma box e trabalhar só nela** (fase 1 de um conjunto) — a aba **Desenhar** ganhou
@@ -457,6 +449,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **O degrau no meio da reta encaixada saiu (a curva "quase perfeita" agora fecha)**: quando a mão
+  derrapa no meio de um trecho, o alinhamento nos eixos formava **duas retas com médias
+  diferentes** — o caminho fazia um degrau/barriga entre elas (print do usuário: "a curva do
+  assistente quase saiu perfeita"). Agora as corridas vizinhas quase colineares viram **uma só**
+  (a média sai do trecho inteiro): vale quando as médias estão a até 5 pt e os pontos do vão ficam
+  a até 8 pt da reta — um degrau de verdade, que a mão desenhou, tem a diferença maior e fica.
+  Teste: `npm run test:desenho`.
 
 - **O encaixe do desenho usa a borda VISÍVEL do cartão, não o retângulo dele**: num cartão de canto
   arredondado o canto do retângulo é **vazio** — a linha desenhada no topo entrava nesse vão e

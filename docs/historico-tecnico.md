@@ -11625,3 +11625,14 @@ antigas quando fizer sentido.
 - **Linha:** `+` a frase das corridas vizinhas (médias a até 5 pt, vão a até 8 pt da reta)
 - **Porquê:** a bala dizia do encaixe e das juntas, mas não do degrau possível entre duas corridas
   — que era justamente o que faltava para a curva fechar.
+
+## CHANGELOG.md
+
+### 2026-10-15 · a curva quase perfeita · a promoção da entrada
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não promove (no instante do commit a entrada ainda não está na main), então a
+  promoção anda depois: o degrau no meio da reta (900ab6e). Promovi só a entrada DESTA tarefa — as
+  que seguem em "Não adicionado" (a aba Animações, o Estúdio do Desenhar, a aba Design completa e o
+  Template com desenho) são de sessões com trabalho aberto, mexer nelas criaria duplicata ou
+  conflito.
