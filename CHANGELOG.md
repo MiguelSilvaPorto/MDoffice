@@ -1148,11 +1148,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Backend**
 
-- **A tela Início ganhou a prévia dos documentos** (`preview_file`): um comando novo que devolve o
-  começo do texto de um arquivo — o `.md` lê o próprio texto, os formatos do Office (.docx/.pptx/
-  .xlsx) abrem o zip e tiram o texto do XML principal (documento, primeira lâmina, textos
-  compartilhados). O zip é lido direto do arquivo (sem trazer os bytes para o lado TS) e qualquer
-  falha devolve prévia vazia — a tela nunca quebra por um arquivo que sumiu. Teste no `cargo test`.
+- (nada no momento)
 
 **Frontend**
 
@@ -1172,17 +1168,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   numa janela baixa a faixa não come a tela (o valor guardado segue sendo a sua preferência).
   Testes: `npm run test:encaixe` e `npm run test:layout`.
 
-- **A lista de recentes virou uma grade de cartões com a prévia**: cada cartão mostra um "papel"
-  com o título (a primeira linha) e o começo do texto do documento, com a cor do formato na borda;
-  o ícone do formato fica no lugar enquanto a prévia não chega (ou quando o arquivo não tem texto).
-  A prévia é lida por arquivo, em paralelo, depois do cartão nascer — e o texto do arquivo entra
-  **escapado** (é conteúdo de fora). Teste: `npm run test:layout`.
-
 **Ferramentas (dev)**
 
 ### Adicionado (na main)
 
 **Backend**
+
+- **A tela Início ganhou a prévia dos documentos** (`preview_file`): um comando novo que devolve o
+  começo do texto de um arquivo — o `.md` lê o próprio texto, os formatos do Office (.docx/.pptx/
+  .xlsx) abrem o zip e tiram o texto do XML principal (documento, primeira lâmina, textos
+  compartilhados). O zip é lido direto do arquivo (sem trazer os bytes para o lado TS) e qualquer
+  falha devolve prévia vazia — a tela nunca quebra por um arquivo que sumiu. Teste no `cargo test`.
 
 - **Limite do cache do WebView (lado nativo)**: a janela do app passou a ser montada pelo
   `lib.rs` (o `tauri.conf.json` ficou com `windows: []`) porque o `--disk-cache-size` precisa
@@ -1225,6 +1221,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **A lista de recentes virou uma grade de cartões com a prévia**: cada cartão mostra um "papel"
+  com o título (a primeira linha) e o começo do texto do documento, com a cor do formato na borda;
+  o ícone do formato fica no lugar enquanto a prévia não chega (ou quando o arquivo não tem texto).
+  A prévia é lida por arquivo, em paralelo, depois do cartão nascer — e o texto do arquivo entra
+  **escapado** (é conteúdo de fora). Teste: `npm run test:layout`.
 
 - **Histórico da apresentação: a lâmina em foco antes × depois (em vez do texto do deck)**: a aba
   **Alterações** (e a **Versões**) de um `.pptx` despejava o **texto serializado do documento

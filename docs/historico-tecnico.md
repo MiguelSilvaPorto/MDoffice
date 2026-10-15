@@ -10518,3 +10518,14 @@ antigas quando fizer sentido.
 - **Linha:** `novo`
 - **Porquê:** a mudança é do histórico (vale para Word, PowerPoint e Excel), então a categoria é
   **Geral**; a entrada entra já promovida, como o fechamento exige.
+
+### 2026-10-15 · prévias na Início · a promoção das entradas (não adicionado → adicionado)
+- **Local:** Geral → **Não adicionado** → Backend/Frontend (as duas entradas) e Geral →
+  **Adicionado** → Backend/Frontend (topo de cada bloco)
+- **Linha:** as duas entradas migraram inteiras, sem reescrita — só a posição mudou; o "Não
+  adicionado" do Backend voltou ao "(nada no momento)"
+- **Porquê:** o fecho não pode promover: no instante do commit da tarefa as entradas ainda não
+  estão na main (a regra do repositório é "nunca promova o que ainda não entrou na main"), então a
+  promoção é uma tarefa de follow-up, depois que o commit chegou (75060e6). Promovi só as entradas
+  DESTA tarefa: as que seguem em "Não adicionado" pertencem a sessões com trabalho aberto ou com
+  promoção em voo — mexer nelas criaria duplicata ou conflito.
