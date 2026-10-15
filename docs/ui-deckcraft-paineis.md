@@ -255,11 +255,13 @@ no DeckCraft os comentários são **por lâmina** e o painel só lista a lâmina
 | texto de introdução | rótulo | "Pick a look for your slides. Ideas are generated on your device." | deixa claro que é offline |
 | amostras de tema | miniaturas clicáveis | mostra a lâmina atual em cada tema embutido | clicar aplica o tema; o ponteiro ganha realce e o nome aparece em dica |
 
-**Notas para recriar no mdOffice:** o mdOffice **não tem** Design Ideas; o mais próximo são os 6
-modelos e os 3 temas abertos por popup na fita. Se a ideia for reaproveitar, o caminho curto é
-uma lista de miniaturas da lâmina atual com cada tema/modelo — exatamente o que o DeckCraft faz —
-em vez de sugestões geradas. Cuidado com o custo de renderizar uma miniatura por tema a cada
-abertura do painel.
+**Notas para recriar no mdOffice:** o mdOffice atende este painel na aba **Composição** (as
+antigas Ideias de design e os Arranjos num sistema só): uma lista de miniaturas da lâmina atual com
+cada design **e** cada arrumação, com o filtro **Tudo/Arrumação/Visual** — os cartões do *Tudo*
+juntam as duas metades. É a mesma receita do DeckCraft (a lâmina de verdade reduzida, com o mapa de
+cores do deck inteiro), com os designs criados na hora por cima do catálogo. O custo de renderizar
+uma miniatura por cartão é real — por isso a prévia dos modos Tudo/Arrumação sai **aos poucos** (uma
+por quadro) e o painel guarda a fornada enquanto a lâmina não muda.
 
 ## Painel "Notas" (inferior)
 

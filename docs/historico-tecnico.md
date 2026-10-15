@@ -9341,7 +9341,6 @@ antigas quando fizer sentido.
   prende a ESTRUTURA (o menu abre a galeria; o card tem os dois alvos), não a implementação. As
   novas prendem o que NÃO pode voltar: o botão do chevron (pedido do usuário) e a duplicação do
   popup.
-
 ## CHANGELOG.md
 
 ### 2026-10-15 · promoção · 5 entradas do PowerPoint (2 movidas, 3 sobras apagadas)
@@ -9483,7 +9482,6 @@ antigas quando fizer sentido.
   real): 1920/1600/1440/1338 px sem rolagem em todas as abas; a 1200 px só Animações ainda rola (+127 px). No Chrome sem janela com "tempo
   virtual" a medição era instável (artefato do teste, não do código). Obs.: o Vite deste ambiente serve arquivos antigos depois de editar
   (precisa reiniciar). Só a fita do PowerPoint usa o ajuste; Word e Excel seguem como estavam.
-
 ## src/powerpoint/powerpoint.ts
 
 ### 2026-10-15 · o card da faixa · o "+" do canto sai e o rótulo abre a galeria
@@ -9735,3 +9733,112 @@ antigas quando fizer sentido.
   do palco
 - **Porquê:** o documento do módulo é onde a regra do palco está escrita; a moldura da prévia é o
   mesmo caso visto de outro lugar (a lâmina recortada dentro do painel).
+
+## src/powerpoint/edicao/sugestoes.ts (novo)
+
+### 2026-10-15 — a fornada da Composição (arrumação × visual, determinística)
+- **Local:** arquivo novo; `arrumacoesDe(unidades)`, `ACABAMENTOS` e `sugestoesDe(op)`
+- **Linha:** `+` o motor inteiro: a arrumação anda de uma em uma a partir do lote
+  (`arrumacoes[(lote + k) % arrumacoes.length]`), o visual anda por passos pelo catálogo
+  (`passo = floor(catalogo.length / doCatalogo)`, `catalogo[(lote * doCatalogo + k * passo) % …]`)
+  e os últimos cartões saem de `gerarDesign(lote * criadas + k)`
+- **Porquê:** as Ideias de design e os Arranjos eram o mesmo sistema em duas abas; o cartão misto
+  precisa das duas escolhas **ao mesmo tempo** e **determinísticas** — é o que faz a prévia do
+  cartão ser exatamente o que o clique aplica (o mesmo contrato do `gerado-N`). As regras são de
+  olho: **vizinhos nunca repetem a arrumação** (a fornada **encolhe** — `min(quantas, arrumacoes)` —
+  em vez de mostrar dois cartões iguais), o **passo** espalha os designs pelo catálogo (senão a
+  fornada mostrava três vizinhos do mesmo tema) e o **lote** desloca os dois eixos, então "Gerar
+  mais" nunca repete a fornada anterior. O `arrumavel: false` (lâmina de título) tira a arrumação
+  da fornada: os cartões saem só de visual, em vez de prometer uma fórmula que o `aplicarArranjo`
+  devolveria intacta.
+
+## src/powerpoint/edicao/arranjos.ts
+
+### 2026-10-15 — `arrumavel(slide)`: a condição do "nada a arrumar" virou pública
+- **Local:** função nova, antes de `variantesDe`
+- **Linha:** `+ export function arrumavel(slide: Slide): boolean { … return cards.length >= 2 ||
+  unidadesCom(slide, cards, paineis).length >= 3; }`
+- **Porquê:** o `aplicarArranjo` já tinha a regra ("uma lâmina de título — dois textos soltos — fica
+  como está"), mas ela vivia **dentro** dele: o painel não tinha como saber. Sem isso, o cartão
+  misto dizia "Grade 2×1" numa lâmina de título e o clique não mudava nada (e o filtro Arrumação
+  desenhava a mesma prévia seis vezes). A função é a **mesma** conta do aplicar — se um dia a regra
+  mudar, as duas têm de mudar juntas (a checagem de layout prende as duas).
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-15 — a aba única da Composição (filtro, pintores e o cartão misto)
+- **Local:** o markup do painel (as abas e os corpos), `montar()` (a fiação do filtro e do "Gerar
+  mais"), `mostrarLateral`, `pintarComposicao`/`pintarMistas`/`pintarVisuais`/`pintarArranjos`,
+  `pintar()`, `atualizarDica`, `run()` (`composicao`/`composicao-aplicar`) e
+  `usarModelo`/`aplicarModeloDeck`
+- **Linha:** `- data-lateral="ideias">Ideias</… data-lateral="arranjos">Arranjos</` →
+  `+ data-lateral="composicao">Composição</` (e um corpo só, com `.pp-seg` de filtro);
+  `- loteIdeias/arranjosVista/arranjosToken` → `+ loteComposicao/filtroComposicao/previasVista/
+  previasToken`; `+ case "composicao-aplicar"` (um `registrar()`, `aplicarModeloDeck` e a
+  `substituirSlide(aplicarArranjo(…))`); `+ private aplicarModeloDeck` (o miolo do `usarModelo`,
+  sem histórico e sem pintar)
+- **Porquê:** é a fusão em si. O `pintarComposicao` só **escolhe o pintor** (o modo Tudo é novo; o
+  Visual e o Arrumação são os pintores de antes, agora com o `host` recebido) — assim nada do que
+  existia se perdeu. O cartão misto tem de **registrar uma vez só**: com dois `registrar` (um do
+  modelo, outro da fórmula) um Ctrl+Z devolveria metade da sugestão; por isso o `usarModelo` foi
+  partido e a Composição chama o miolo direto. A **ordem** importa: o modelo primeiro e a fórmula
+  depois, **lendo a lâmina já recolorida** (`this.atual()`, não o `sl` do começo do `run` — o deck
+  troca de referência no meio). A prévia usa o **ratio do deck** nas duas metades (o Visual usava o
+  padrão 16/9: num deck 4:3 a prévia dizia uma coisa e o clique fazia outra) e o `previasVista`
+  (cache das prévias) é invalidado quando o host troca de conteúdo — sem isso, voltar ao filtro
+  Arrumação mostrava os cartões do filtro anterior. O `- |0|modelo|tratamento` marca o cartão sem
+  arrumação (lâmina de título): o `run` pula a fórmula e mantém o mesmo passo de desfazer.
+
+## src/powerpoint/ui/fita.ts e src/powerpoint/ui/estado.ts
+
+### 2026-10-15 — o grupo "Designer" virou "Composição" (e a união do painel encolheu)
+- **Local:** `inicio()` (o grupo do fim da aba) e a união do `lateral` no estado
+- **Linha:** `- grupo("Designer", … dois botões …)` → `+ grupo("Composição", … um botão
+  (grande("composicao", ic("i-spark"), "Composição", …)) …)`; `- lateral?: "formatar" | "notas" |
+  "animacao" | "ideias" | "arranjos"` → `+ … | "composicao"`
+- **Porquê:** o pedido do usuário era juntar as duas e **não copiar o nome da Microsoft** — e o grupo
+  era o único lugar da interface que ainda se chamava "Designer" (uma decisão de uma rodada
+  anterior, registrada no `ui-deckcraft-abas.md`). O botão vive na aba **Design** (a outra sessão o levou para lá, seguindo o Office: Temas → Variantes → Personalizar → Composição) e o ícone é o mesmo (`i-spark`); os dois comandos (`ideias`/`arranjos`) viraram um
+  (`composicao`), e a união do estado ficou com 4 abas em vez de 5.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-15 — o filtro segmentado do painel (e o `flex: none` que o mantém visível)
+- **Local:** a seção do painel (agora "Composição") — `.pp-seg` e `.pp-seg button`
+- **Linha:** `+` o bloco novo (borda, cantos, botões iguais, o modo aceso com o acento do PowerPoint)
+- **Porquê:** o corpo do painel é uma **coluna flex rolável** (`.pp-side-corpo`): quando a fornada
+  enche o painel, os itens encolhem — o filtro ficava com os **2px da borda** (medido no app: os
+  botões com 8px de altura, o texto escondido pelo `overflow: hidden`) e o clique caía no corpo.
+  `flex: none` no `.pp-seg` resolve (a lição vale para qualquer controle fixo do painel). O modo
+  aceso usa o acento do PowerPoint (`--fi-ppt`) para casar com a fita, e os botões ganham borda
+  interna entre si para ler como um controle segmentado (o mesmo desenho do `.ppr-seg` da fita).
+
+## scripts/testar-composicao.mjs (novo) e scripts/testar-layout.mts
+
+### 2026-10-15 — a fornada e a fusão presas por teste
+- **Local:** o teste novo (esbuild + node, o mesmo caminho de `testar-composicao`) e a seção
+  "composição" do `testar-layout`
+- **Linha:** `+` 15 checagens de comportamento (determinismo do lote, vizinhos sem repetição,
+  criados na hora que não se repetem entre lotes, a fornada que encolhe, a lâmina não arrumável só
+  de visual, a grade que acompanha as unidades, o catálogo sem repetição) e `+` 14 de layout
+  (o grupo/botão/aba única, o filtro de três modos, o cartão misto com os quatro valores, o
+  `registrar` único, o `arrumavel`, a dica, o `flex: none`); e `+ "test:composicao"` no
+  `package.json`
+- **Porquê:** a fornada é o coração da fusão e é **pura** — dá para prová-la sem navegador (o mesmo
+  caminho dos Arranjos). As checagens de layout prendem o que os testes de comportamento não veem:
+  a fiação (o filtro chega nos pintores certos), o "nada de Designer na interface" e as lições
+  (o `flex: none`, o ratio do deck na prévia). Três checagens antigas foram atualizadas para o
+  desenho novo (a aba única, o grupo renomeado, o `aplicarModelo` com ratio).
+
+## docs/powerpoint.md, docs/ui-deckcraft-abas.md e docs/ui-deckcraft-paineis.md
+
+### 2026-10-15 — as duas seções viram uma nas docs
+- **Local:** o item da fita/painel no documento do módulo e as notas de recriação das duas docs do
+  DeckCraft (o grupo "Ideias de Design" e o painel "Ideias de Design")
+- **Linha:** `- **Ideias de design** … - **Arranjos** …` → `+ **Composição** …` (com o filtro, as
+  duas metades, o determinismo e o caso da lâmina de título); a nota do grupo que dizia "o nome
+  continuou 'Designer' (o do PowerPoint)" passou a registrar a renomeação; e o painel do DeckCraft
+  deixou de dizer que o mdOffice "não tem Design Ideas"
+- **Porquê:** as três docs descreviam os dois sistemas separados — e a do `ui-deckcraft-abas` era a
+  que **explicava** o nome "Designer" (contrariando o pedido atual). A nota do painel também
+  ganhou o porquê do custo da prévia (uma por quadro), que é o que a mantém viável.

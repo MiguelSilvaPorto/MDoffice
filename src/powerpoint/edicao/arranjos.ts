@@ -178,6 +178,16 @@ function unidadesCom(slide: Slide, cards: Shape[], paineis: Set<string>): Unidad
     .map((s) => ({ ids: [s.id], box: { ...s.box } }));
 }
 
+/**
+ * A lâmina tem o que arrumar? Uma lâmina de título (dois textos soltos) fica como está — é a mesma
+ * condição do `aplicarArranjo` (nenhuma fórmula faz sentido ali), exposta para o painel poder
+ * explicar em vez de oferecer cartões que não mudam nada.
+ */
+export function arrumavel(slide: Slide): boolean {
+  const { cards, paineis } = analisar(slide);
+  return cards.length >= 2 || unidadesCom(slide, cards, paineis).length >= 3;
+}
+
 /** As variantes que fazem sentido (a grade muda de colunas). */
 export function variantesDe(id: Arranjo, quantas: number): number[] {
   if (id !== "grade") return [0];

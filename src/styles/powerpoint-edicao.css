@@ -2654,7 +2654,44 @@ button.ppr.trans-dir {
   position: relative;
 }
 
-/* ---------- Ideias de design (painel lateral) ---------- */
+/* ---------- Composição (painel lateral) ---------- */
+/* o filtro Tudo/Arrumação/Visual: um controle segmentado do painel */
+.pp-seg {
+  display: flex;
+  /* o corpo do painel é uma coluna flex rolável: sem o flex: none o filtro encolhe até sumir
+     quando a fornada enche o painel (medido: sobravam os 2px da borda) */
+  flex: none;
+  margin: 0 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.pp-seg button {
+  flex: 1 1 auto;
+  padding: 4px 6px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.pp-seg button + button {
+  border-left: 1px solid var(--border);
+}
+
+.pp-seg button:hover:not(.on) {
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+}
+
+.pp-seg button.on {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--fi-ppt, #d24a17) 16%, transparent);
+  font-weight: 600;
+}
+
 .pp-ideias-dica {
   margin: 0 0 8px;
   color: var(--muted);

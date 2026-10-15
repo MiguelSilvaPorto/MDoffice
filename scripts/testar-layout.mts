@@ -672,9 +672,10 @@ checa(
 );
 // A aba Design segue os quatro blocos do Office (Temas · Variantes · Personalizar · Designer) e o
 // "Tamanho" (16:9/4:3) voltou a ter UI — ele ficou sem lugar quando o Configurar apresentação saiu.
+// (O último bloco se chama **Composição** desde a fusão das Ideias com os Arranjos.)
 checa(
-  "aba Design: Temas, Variantes, Personalizar e Designer",
-  /private design\(\)[\s\S]*?grupo\("Temas"[\s\S]*?grupo\("Variantes"[\s\S]*?grupo\(\s*"Personalizar"[\s\S]*?grupo\("Designer"[\s\S]*?private exibir/.test(fitaPpt),
+  "aba Design: Temas, Variantes, Personalizar e Composição",
+  /private design\(\)[\s\S]*?grupo\("Temas"[\s\S]*?grupo\("Variantes"[\s\S]*?grupo\(\s*"Personalizar"[\s\S]*?grupo\("Composição"[\s\S]*?private exibir/.test(fitaPpt),
   "os grupos da aba Design mudaram de ordem ou sumiram"
 );
 checa(
@@ -683,9 +684,9 @@ checa(
   "o menu de Tamanho não chega ao comando"
 );
 checa(
-  "aba Design: o Designer mora só nela (saiu da Página Inicial)",
-  (fitaPpt.match(/grupo\("Designer"/g) ?? []).length === 1,
-  "o grupo Designer aparece mais de uma vez"
+  "aba Design: a Composição mora só nela (saiu da Página Inicial)",
+  (fitaPpt.match(/grupo\("Composição"/g) ?? []).length === 1 && !/grupo\("Composição"/.test(fitaPpt.slice(0, fitaPpt.indexOf("private design(): string {"))),
+  "o grupo aparece mais de uma vez (ou fora da aba Design)"
 );
 // "Nova lâmina" vira botão dividido: a frente cria com o ÚLTIMO layout e a setinha abre a galeria
 checa(
@@ -764,12 +765,12 @@ console.log("\nídeias de design (a lâmina atual em cada modelo)");
     /id: "harbor"[^}]*cores: \{ fg: "FFFFFF", accent: "1B7FA6", muted: "36B3A8" \}/.test(mod) && /id: "slate"[^}]*fonte: "Roboto"/.test(mod)
   );
   checa(
-    "o painel tem a aba e o corpo das Ideias",
-    /data-lateral="ideias">Ideias</.test(ppt) && /data-ideias-corpo/.test(ppt) && /data-ideias>/.test(ppt)
+    "o painel tem a aba e o corpo da Composição",
+    /data-lateral="composicao">Composição</.test(ppt) && /data-composicao-corpo/.test(ppt) && /data-composicao>/.test(ppt)
   );
   checa(
     "cada cartão desenha A LÂMINA ATUAL com o design e o acabamento aplicados (não um desenho à parte)",
-    /aplicarModelo\(this\.slides, de, m, t\)\[this\.indice\]/.test(ppt) && /htmlFormaRica\(f, ctx\)/.test(ppt) && /pp-ideia-slide/.test(ppt)
+    /aplicarModelo\(this\.slides, de, m, t, ratio\)\[this\.indice\]/.test(ppt) && /htmlFormaRica\(f, ctx\)/.test(ppt) && /pp-ideia-slide/.test(ppt)
   );
   checa(
     "a prévia é a lâmina de verdade reduzida por transform (com a largura do painel)",
@@ -780,12 +781,12 @@ console.log("\nídeias de design (a lâmina atual em cada modelo)");
     /this\.run\("ideia", `\$\{m\.id\}\|\$\{t\}`\)/.test(ppt) && /case "ideia":[\s\S]{0,560}this\.usarModelo\(m, t as TratamentoIdeia\)/.test(ppt)
   );
   checa(
-    "o botão Gerar mais ideias avança o lote (fornadas de combinações novas)",
-    /data-ideias-mais/.test(ppt) && /this\.loteIdeias\+\+/.test(ppt) && /this\.loteIdeias \* (doCatalogo|criadasPorLote)/.test(ppt)
+    "o botão Gerar mais avança o lote (fornadas de combinações novas)",
+    /data-composicao-mais/.test(ppt) && /this\.loteComposicao\+\+/.test(ppt) && /this\.loteComposicao \* (doCatalogo|criadasPorLote)/.test(ppt)
   );
   checa(
     "cada fornada mistura design e acabamento (recolorir, cantos arredondados, contorno)",
-    /tratamentos: TratamentoIdeia\[\] = \["recolorir", "cantos", "contorno"\]/.test(ppt) && /ROTULO_TRATAMENTO\[t\]/.test(ppt)
+    /tratamentos: TratamentoIdeia\[\] = \[\.\.\.ACABAMENTOS\]/.test(ppt) && /ROTULO_TRATAMENTO\[t\]/.test(ppt)
   );
   checa(
     "o tratamento alcança as cores próprias das formas (o verde do organograma vira o acento)",
@@ -793,18 +794,23 @@ console.log("\nídeias de design (a lâmina atual em cada modelo)");
   );
   checa(
     "o painel acompanha a lâmina atual (redesenha junto com o palco)",
-    /if \(this\.lateral === "ideias"\) this\.pintarIdeias\(\)/.test(ppt)
+    /if \(this\.lateral === "composicao"\) this\.pintarComposicao\(\)/.test(ppt)
   );
   checa("css: a moldura recorta a prévia e a lâmina entra em tamanho cheio", /\.pp-ideia-moldura\s*\{[^}]*overflow:\s*hidden/s.test(cssPpt) && /\.pp-ideia-slide\s*\{[^}]*transform-origin:\s*0 0/s.test(cssPpt));
   // o botão vive na Página Inicial (o atalho do dia a dia); a aba Design não o repete
   const inicioFita = fitaPpt.slice(fitaPpt.indexOf("private inicio(): string {"), fitaPpt.indexOf("private inserir(): string {"));
   const designFita = fitaPpt.slice(fitaPpt.indexOf("private design(): string {"), fitaPpt.indexOf("private exibir(): string {"));
   checa(
-    "o botão da fita abre o painel na aba das Ideias (aba Design ▸ grupo Designer)",
-    /grupo\("Designer", `\$\{grande\("ideias", ic\("i-spark"\)/.test(designFita) &&
-      !/grupo\("Designer"/.test(inicioFita) &&
-      /case "ideias":[\s\S]{0,200}mostrarLateral\("ideias"\)/.test(ppt),
+    "o botão da fita abre o painel na Composição (aba Design ▸ grupo Composição)",
+    /grupo\("Composição", `\$\{grande\("composicao", ic\("i-spark"\)/.test(designFita) &&
+      !/grupo\("Composição"/.test(inicioFita) &&
+      /case "composicao":[\s\S]{0,200}mostrarLateral\("composicao"\)/.test(ppt),
     "o botão da fita ficaria sem efeito (ou o painel não trocaria de aba)"
+  );
+  checa(
+    "o grupo Designer e as duas abas separadas saíram da interface",
+    !/grupo\("Designer"/.test(fitaPpt) && !/data-lateral="(ideias|arranjos)"/.test(ppt) && !/data-ideias>|data-arranjos>/.test(ppt),
+    "a interface ainda mostraria os dois sistemas (ou o nome da Microsoft)"
   );
   const geradorMod = ler("src/powerpoint/edicao/gerador.ts");
   checa(
@@ -813,7 +819,7 @@ console.log("\nídeias de design (a lâmina atual em cada modelo)");
   );
   checa(
     "a fornada das Ideias mistura designs criados na hora (o cartão diz Novo)",
-    /gerarDesign\(semente\)/.test(ppt) && /criadas na hora/.test(ppt) && /Novo · \$\{rotulo\}/.test(ppt)
+    /gerarDesign\(semente\)/.test(ppt) && /na hora\b/.test(ppt) && /Novo · \$\{rotulo\}/.test(ppt)
   );
   checa(
     "clicar num design criado na hora aplica o mesmo design (a semente volta do id)",
@@ -842,8 +848,8 @@ console.log("\narranjos (a lâmina reorganizada em fórmulas padrão)");
     /!s\.liga && !ehLinhaSolta/.test(mod) && /function ehLinhaSolta/.test(mod) && /s\.fixa/.test(mod)
   );
   checa(
-    "o painel tem a aba e o corpo dos Arranjos",
-    /data-lateral="arranjos">Arranjos</.test(ppt) && /data-arranjos-corpo/.test(ppt) && /data-arranjos>/.test(ppt)
+    "a arrumação é um modo da Composição (o filtro chega no pintor dos Arranjos)",
+    /this\.filtroComposicao === "arrumacao"\) return this\.pintarArranjos\(host\)/.test(ppt)
   );
   checa(
     "o cartão mostra a lâmina de verdade reorganizada (a mesma prévia das Ideias)",
@@ -855,10 +861,109 @@ console.log("\narranjos (a lâmina reorganizada em fórmulas padrão)");
       /case "arranjo":[\s\S]{0,420}substituirSlide\(aplicarArranjo\(sl, arranjo\.id, Number\(v\) \|\| 0, ratio\)\)/.test(ppt)
   );
   checa(
-    "o botão da fita abre o painel na aba dos Arranjos",
-    /grande\("arranjos", ic\("i-columns"\)/.test(fitaPpt) && /case "arranjos":[\s\S]{0,200}mostrarLateral\("arranjos"\)/.test(ppt)
+    "a dica do painel explica as duas metades (arrumação nesta lâmina, visual na apresentação)",
+    /a <b>arrumação<\/b> mexe só nela e o <b>visual<\/b> vale para a apresentação inteira/.test(ppt)
   );
-  checa("o painel acompanha a lâmina atual (redesenha junto com o palco)", /if \(this\.lateral === "arranjos"\) this\.pintarArranjos\(\)/.test(ppt));
+  checa(
+    "o modo Arrumação também acompanha a lâmina atual (pelo mesmo gancho)",
+    /if \(this\.lateral === "composicao"\) this\.pintarComposicao\(\)/.test(ppt) && /pintarArranjos\(host\)/.test(ppt)
+  );
+}
+
+// Composição: as Ideias de design e os Arranjos num sistema só (cartões mistos + filtro)
+console.log("\ncomposição (a arrumação e o visual na mesma sugestão)");
+{
+  const sug = ler("src/powerpoint/edicao/sugestoes.ts");
+  checa(
+    "o motor da fornada mista existe (arrumação × visual, determinístico pelo lote)",
+    /export function sugestoesDe\(op: OpcoesSugestoes\): SugestaoPPT\[\]/.test(sug) &&
+      /export function arrumacoesDe\(unidades: number\): Arrumacao\[\]/.test(sug) &&
+      /arrumacoes\[\(lote \+ k\) % arrumacoes\.length\]/.test(sug)
+  );
+  checa(
+    "a fornada encolhe em vez de repetir a mesma arrumação num cartão ao lado",
+    /Math\.min\(op\.quantas \?\? QUANTAS_PADRAO, arrumacoes\.length\)/.test(sug),
+    "duas arrumações iguais seguidas fariam o olho achar que os cartões são iguais"
+  );
+  checa(
+    "o visual anda por passos (a fornada espalha designs em vez de vizinhos do catálogo)",
+    /const passo = catalogo\.length \? Math\.max\(1, Math\.floor\(catalogo\.length \/ doCatalogo\)\) : 1;/.test(sug) &&
+      /catalogo\[\(lote \* doCatalogo \+ k \* passo\) % catalogo\.length\]/.test(sug)
+  );
+  checa(
+    "os últimos cartões são designs criados na hora (a semente avança a cada lote)",
+    /gerarDesign\(semente\)/.test(sug) && /lote \* Math\.max\(1, criadas\) \+ \(k - doCatalogo\)/.test(sug)
+  );
+  checa(
+    "os acabamentos são os mesmos das Ideias (recolorir, cantos, contorno)",
+    /export const ACABAMENTOS: TratamentoIdeia\[\] = \["recolorir", "cantos", "contorno"\]/.test(sug) && /acabamentos/.test(sug + ppt)
+  );
+  checa(
+    "o filtro tem os três modos e começa no Tudo",
+    /data-composicao-filtro/.test(ppt) &&
+      /class="on" data-filtro="tudo">Tudo</.test(ppt) &&
+      /data-filtro="arrumacao">Arrumação</.test(ppt) &&
+      /data-filtro="visual">Visual</.test(ppt) &&
+      /private filtroComposicao: "tudo" \| "arrumacao" \| "visual" = "tudo"/.test(ppt)
+  );
+  checa(
+    "o filtro troca o pintor (misto, Arranjos, Visuais) e invalida a prévia guardada",
+    /this\.filtroComposicao = \(b\.dataset\.filtro as "tudo" \| "arrumacao" \| "visual"\) \?\? "tudo"/.test(ppt) &&
+      /this\.previasVista = null;/.test(ppt) &&
+      /if \(this\.filtroComposicao === "arrumacao"\) return this\.pintarArranjos\(host\)/.test(ppt) &&
+      /if \(this\.filtroComposicao === "visual"\) return this\.pintarVisuais\(host\)/.test(ppt) &&
+      /return this\.pintarMistas\(host\)/.test(ppt)
+  );
+  checa(
+    "o cartão misto mostra as duas metades (arrumação · visual) e diz quando o design é Novo",
+    /nome\.textContent = \[s\.modelo\.gerado \? "Novo" : "", nomeArrumacao, nomeVisual\]\.filter\(Boolean\)\.join\(" · "\)/.test(ppt) &&
+      /const nomeArrumacao = s\.arranjo \? rotuloDoArranjo\(s\.arranjo, s\.variante, quantas\) : ""/.test(ppt)
+  );
+  checa(
+    "a prévia do cartão misto é a lâmina de verdade: modelo + fórmula, com o ratio do deck",
+    /aplicarModelo\(this\.slides, de, s\.modelo, s\.tratamento, ratio\)\[this\.indice\] \?\? atual/.test(ppt) &&
+      /const comTudo = s\.arranjo \? aplicarArranjo\(comModelo, s\.arranjo, s\.variante, ratio\) : comModelo/.test(ppt) &&
+      /if \(!arranjoLegivel\(comModelo, comTudo\)\)/.test(ppt)
+  );
+  checa(
+    "a prévia do modo Visual também usa o ratio do deck (antes era 16/9 fixo)",
+    /aplicarModelo\(this\.slides, de, m, t, ratio\)\[this\.indice\]/.test(ppt),
+    "num deck 4:3 a prévia diria uma coisa e o clique faria outra"
+  );
+  checa(
+    "clicar no cartão misto manda as duas metades (composicao-aplicar com os quatro valores)",
+    /this\.run\("composicao-aplicar", `\$\{s\.arranjo \?\? "-"\}\|\$\{s\.variante\}\|\$\{s\.modelo\.id\}\|\$\{s\.tratamento\}`\)/.test(ppt) &&
+      /case "composicao-aplicar": \{/.test(ppt)
+  );
+  checa(
+    "as duas metades cabem num passo de desfazer só (um registrar; o miolo sem histórico)",
+    /case "composicao-aplicar": \{[\s\S]{0,900}this\.registrar\(\);[\s\S]{0,160}this\.aplicarModeloDeck\(m, t as TratamentoIdeia\);/.test(ppt) &&
+      /private aplicarModeloDeck\(modelo: ModeloPPT, tratamento\?: TratamentoIdeia\): void \{/.test(ppt) &&
+      /private usarModelo\(modelo: ModeloPPT, tratamento\?: TratamentoIdeia\): void \{\s*\r?\n\s*this\.registrar\(\);/.test(ppt),
+    "com dois registros, um Ctrl+Z desfaria só metade da sugestão"
+  );
+  checa(
+    "a arrumação lê a lâmina JÁ com o modelo novo (o deck troca de referência no meio)",
+    /this\.aplicarModeloDeck\(m, t as TratamentoIdeia\);[\s\S]{0,220}if \(arranjo\) this\.substituirSlide\(aplicarArranjo\(this\.atual\(\)/.test(ppt)
+  );
+  checa(
+    "a lâmina que não é arrumável sai só de visual (o cartão não promete fórmula à toa)",
+    /const podeArrumar = arrumavel\(atual\)/.test(ppt) &&
+      /sugestoesDe\(\{ unidades: quantas, arrumavel: podeArrumar/.test(ppt) &&
+      /const arranjo = id === "-" \? null : ARRANJOS\.find\(\(a\) => a\.id === id\)/.test(ppt) &&
+      /export function arrumavel\(slide: Slide\): boolean \{/.test(ler("src/powerpoint/edicao/arranjos.ts")) &&
+      /return cards\.length >= 2 \|\| unidadesCom\(slide, cards, paineis\)\.length >= 3;/.test(ler("src/powerpoint/edicao/arranjos.ts"))
+  );
+  checa(
+    "quando nada cabe, o painel explica em vez de ficar vazio",
+    /Nenhuma composição cabe nesta lâmina sem deixar o conteúdo ilegível/.test(ppt) &&
+      /Esta lâmina não tem conteúdo para arrumar/.test(ppt)
+  );
+  checa(
+    "css: o filtro segmentado existe e o modo aceso é o do painel",
+    /\.pp-seg\s*\{[^}]*display:\s*flex[^}]*flex:\s*none/s.test(cssPpt) && /\.pp-seg button\.on\s*\{/.test(cssPpt),
+    "o corpo do painel é uma coluna flex: sem o flex: none o filtro encolhe até sumir"
+  );
 }
 
 // ---------------------------------------------------------------- fonte e tamanho livres
@@ -1368,7 +1473,7 @@ console.log("\nestilos de cor (galeria, painel e o vivo)");
   );
   checa(
     "o estilo vivo re-deriva ao aplicar o modelo (o acento novo chega às formas)",
-    /private usarModelo\(modelo: ModeloPPT[\s\S]{0,700}atualizarEstilos\(s, d, tema\)/.test(pptEst),
+    /private aplicarModeloDeck\(modelo: ModeloPPT[\s\S]{0,700}atualizarEstilos\(s, d, tema\)/.test(pptEst),
     "as formas de cor do tema ficariam com a rampa antiga até a próxima edição"
   );
   checa(
@@ -1802,7 +1907,7 @@ console.log("\nPowerPoint: aba Animações (o desenho da fita)");
   checa(
     "o botão Painel abre o painel de animação e segue o estado dele",
     /case "animacao-painel":\s*\r?\n\s*this\.mostrarPainelLateral\(\);\s*\r?\n\s*this\.mostrarLateral\("animacao"\)/.test(ppt) &&
-      /lateral\?: "formatar" \| "notas" \| "animacao" \| "ideias"/.test(estado) &&
+      /lateral\?: "formatar" \| "notas" \| "animacao" \| "composicao"/.test(estado) &&
       /on\("animacao-painel", st\.lateral === "animacao" && st\.lateralAberta === true\)/.test(fita) &&
       (ppt.match(/this\.fita\?\.atualizar\(\)/g) ?? []).length >= 2,
     "trocar a aba pelo painel ou esconder o painel tem de apagar/acender o botão"

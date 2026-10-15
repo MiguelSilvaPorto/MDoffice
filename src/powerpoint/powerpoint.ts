@@ -20,8 +20,9 @@ import { migrarSlides, registrarMidia } from "./edicao/migrar";
 import { MODELOS, ROTULO_TRATAMENTO, aplicarModelo, type EstiloAtual, type ModeloPPT, type TratamentoIdeia } from "./edicao/modelos";
 import { modelosDasVariantes } from "./edicao/variantes";
 import { refazerDesenho } from "./edicao/desenhos";
-import { ARRANJOS, aplicarArranjo, arranjoLegivel, rotuloDoArranjo, unidadesDa, variantesDe, type Arranjo } from "./edicao/arranjos";
+import { ARRANJOS, aplicarArranjo, arranjoLegivel, arrumavel, rotuloDoArranjo, unidadesDa, variantesDe, type Arranjo } from "./edicao/arranjos";
 import { gerarDesign } from "./edicao/gerador";
+import { ACABAMENTOS, sugestoesDe } from "./edicao/sugestoes";
 import { criarModeloUsuario, lerModelosUsuario, removerModeloUsuario } from "./modelosUsuario";
 import { aplicarFormato, copiarFormato, type FormatoPincel } from "./edicao/pincel";
 import {
@@ -201,13 +202,15 @@ export class PowerPointHost {
   private animPreview: ControleAnimacoes | null = null;
   private destinoImagem = "inserir";
   private destinoMidia: string | null = null;
-  private lateral: "formatar" | "notas" | "animacao" | "ideias" | "arranjos" = "formatar";
-  /** qual lote de ideias está à mostra (o botão "Gerar mais ideias" avança) */
-  private loteIdeias = 0;
-  /** a lâmina e a proporção de que as prévias dos Arranjos foram desenhadas (evita refazê-las à toa) */
-  private arranjosVista: { slide: Slide; ratio: number } | null = null;
-  /** identifica o desenho em andamento das prévias dos Arranjos (um novo cancela o anterior) */
-  private arranjosToken = 0;
+  private lateral: "formatar" | "notas" | "animacao" | "composicao" = "formatar";
+  /** qual lote da Composição está à mostra (o botão "Gerar mais" avança) */
+  private loteComposicao = 0;
+  /** o filtro da Composição: as duas metades juntas (Tudo), só a arrumação ou só o visual */
+  private filtroComposicao: "tudo" | "arrumacao" | "visual" = "tudo";
+  /** a lâmina e a proporção de que as prévias foram desenhadas (evita refazê-las à toa) */
+  private previasVista: { slide: Slide; ratio: number } | null = null;
+  /** identifica o desenho em andamento das prévias (um novo cancela o anterior) */
+  private previasToken = 0;
   /** célula em edição (quando a forma em edição é uma tabela) e células selecionadas */
   private celulaEdit: [number, number] | null = null;
   private celulas: CelulasSel | null = null;
@@ -309,8 +312,7 @@ export class PowerPointHost {
             <button type="button" class="on" data-lateral="formatar">Formatar</button>
             <button type="button" data-lateral="animacao">Animação</button>
             <button type="button" data-lateral="notas">Notas</button>
-            <button type="button" data-lateral="ideias">Ideias</button>
-            <button type="button" data-lateral="arranjos">Arranjos</button>
+            <button type="button" data-lateral="composicao">Composição</button>
             <button type="button" class="pp-side-fechar" data-side-toggle title="Esconder o painel" aria-label="Esconder o painel">»</button>
           </div>
           <div class="pp-side-corpo pp-painel" data-formatar></div>
@@ -322,16 +324,16 @@ export class PowerPointHost {
             <div class="pp-side-head"><span>Notas do apresentador</span><span class="pp-side-hint">não aparecem na lâmina</span></div>
             <textarea class="pp-notes" data-notes placeholder="O que falar nesta lâmina..."></textarea>
           </div>
-          <div class="pp-side-corpo" data-ideias-corpo hidden>
-            <div class="pp-side-head"><span>Ideias de design</span><span class="pp-side-hint" data-ideias-hint>geradas no seu computador</span></div>
-            <p class="pp-ideias-dica">Escolha um visual para a apresentação: cada cartão mostra <b>esta lâmina</b> no design — cores, fonte e acabamento. Clicar aplica na apresentação inteira.</p>
-            <button type="button" class="btn small pp-ideias-mais" data-ideias-mais title="Outras combinações de design e acabamento">Gerar mais ideias</button>
-            <div class="pp-ideias" data-ideias></div>
-          </div>
-          <div class="pp-side-corpo" data-arranjos-corpo hidden>
-            <div class="pp-side-head"><span>Arranjos da lâmina</span><span class="pp-side-hint">gerados no seu computador</span></div>
-            <p class="pp-ideias-dica">Reorganiza o que <b>já está</b> nesta lâmina numa fórmula padrão — o visual (cores, estilos, imagens) continua o mesmo. As linhas de ligação saem nas fórmulas que achatam a hierarquia; dá para desfazer.</p>
-            <div class="pp-ideias" data-arranjos></div>
+          <div class="pp-side-corpo" data-composicao-corpo hidden>
+            <div class="pp-side-head"><span>Composição</span><span class="pp-side-hint" data-composicao-hint>geradas no seu computador</span></div>
+            <p class="pp-ideias-dica">Sugestões para <b>esta lâmina</b>: a <b>arrumação</b> mexe só nela e o <b>visual</b> vale para a apresentação inteira — cada cartão mostra os dois. Clicar aplica (e dá para desfazer).</p>
+            <div class="pp-seg" data-composicao-filtro role="group" aria-label="O que as sugestões mudam">
+              <button type="button" class="on" data-filtro="tudo">Tudo</button>
+              <button type="button" data-filtro="arrumacao">Arrumação</button>
+              <button type="button" data-filtro="visual">Visual</button>
+            </div>
+            <button type="button" class="btn small pp-ideias-mais" data-composicao-mais title="Outras combinações de arrumação e visual">Gerar mais</button>
+            <div class="pp-ideias" data-composicao></div>
           </div>
         </aside>
         <button type="button" class="pp-side-aba" data-side-toggle title="Mostrar o painel" aria-label="Mostrar o painel">« Formatar</button>
@@ -375,8 +377,18 @@ export class PowerPointHost {
     this.ligarPainelLateral();
     // abas do painel lateral
     for (const b of this.pane.querySelectorAll<HTMLElement>("[data-lateral]")) {
-      b.addEventListener("click", () => this.mostrarLateral(b.dataset.lateral as "formatar" | "notas" | "animacao"));
+      b.addEventListener("click", () => this.mostrarLateral(b.dataset.lateral as "formatar" | "notas" | "animacao" | "composicao"));
     }
+    // o filtro da Composição: as duas metades juntas (Tudo), só a arrumação ou só o visual
+    const filtro = this.pane.querySelector<HTMLElement>("[data-composicao-filtro]");
+    filtro?.addEventListener("click", (ev) => {
+      const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-filtro]");
+      if (!b) return;
+      this.filtroComposicao = (b.dataset.filtro as "tudo" | "arrumacao" | "visual") ?? "tudo";
+      for (const x of filtro.querySelectorAll<HTMLElement>("[data-filtro]")) x.classList.toggle("on", x === b);
+      this.previasVista = null; // o host troca de conteúdo: a prévia guardada não vale mais
+      this.pintarComposicao();
+    });
     // painel de animação: clicar na linha seleciona a forma; os botões mexem no efeito
     this.pane.querySelector<HTMLElement>("[data-anim-lista]")?.addEventListener("click", (ev) => {
       const t = ev.target as HTMLElement;
@@ -471,10 +483,10 @@ export class PowerPointHost {
     aplicar(guardado("pp-side-oculto") === "1");
     this.pane.classList.remove("pp-side-anima");
     for (const b of this.pane.querySelectorAll<HTMLElement>("[data-side-toggle]")) b.addEventListener("click", () => aplicar(!this.pane.classList.contains("pp-side-oculto")));
-    // "Gerar mais ideias": avança o lote — cada lote percorre combinações novas de design e acabamento
-    this.pane.querySelector<HTMLElement>("[data-ideias-mais]")?.addEventListener("click", () => {
-      this.loteIdeias++;
-      this.pintarIdeias();
+    // "Gerar mais": avança o lote — cada lote percorre combinações novas (a fornada é determinística)
+    this.pane.querySelector<HTMLElement>("[data-composicao-mais]")?.addEventListener("click", () => {
+      this.loteComposicao++;
+      this.pintarComposicao();
     });
     const alca = this.pane.querySelector<HTMLElement>("[data-side-resize]")!;
     alca.addEventListener("pointerdown", (e) => {
@@ -500,68 +512,166 @@ export class PowerPointHost {
     if (this.pane.classList.contains("pp-side-oculto")) this.pane.querySelector<HTMLElement>("[data-side-toggle]")?.click();
   }
 
-  private mostrarLateral(qual: "formatar" | "notas" | "animacao" | "ideias" | "arranjos"): void {
+  private mostrarLateral(qual: "formatar" | "notas" | "animacao" | "composicao"): void {
     this.lateral = qual;
     for (const b of this.pane.querySelectorAll<HTMLElement>("[data-lateral]")) b.classList.toggle("on", b.dataset.lateral === qual);
     this.pane.querySelector<HTMLElement>("[data-formatar]")!.hidden = qual !== "formatar";
     this.pane.querySelector<HTMLElement>("[data-animacao-corpo]")!.hidden = qual !== "animacao";
     this.pane.querySelector<HTMLElement>("[data-notas-corpo]")!.hidden = qual !== "notas";
-    this.pane.querySelector<HTMLElement>("[data-ideias-corpo]")!.hidden = qual !== "ideias";
-    this.pane.querySelector<HTMLElement>("[data-arranjos-corpo]")!.hidden = qual !== "arranjos";
+    this.pane.querySelector<HTMLElement>("[data-composicao-corpo]")!.hidden = qual !== "composicao";
     if (qual === "notas") this.notes.focus();
     else if (qual === "animacao") this.renderAnimacoes();
-    else if (qual === "ideias") this.pintarIdeias();
+    else if (qual === "composicao") this.pintarComposicao();
     else this.painel.atualizar();
     // o botão "Painel" da aba Animações acompanha a aba aberta (fica aceso enquanto ela é a da vez)
     this.fita?.atualizar();
   }
 
   /**
-   * Ideias de design: a LÂMINA ATUAL desenhada em cada modelo (presets + modelos do usuário),
-   * offline — a mesma ideia do "Design Ideas" do DeckCraft (A:\Projetos\deckcraft), onde cada
-   * cartão é a lâmina de verdade renderizada no tema e o clique aplica.
-   *
-   * Aqui a prévia é a lâmina real reduzida por `transform`: o `.pp-slide` é um container de
-   * `cqw`, então o texto das formas escala junto e o cartão mostra exatamente o que o clique
-   * vai aplicar — sem desenho à parte para manter em dia.
+   * Composição: a LÂMINA ATUAL desenhada em cada sugestão, offline — as antigas Ideias de design e
+   * os Arranjos agora são um sistema só, com o filtro Tudo/Arrumação/Visual. No modo Tudo (o
+   * padrão) cada cartão junta as duas metades: a ARRUMAÇÃO (a lâmina reorganizada) e o VISUAL (o
+   * design do deck). A prévia é a lâmina real reduzida por `transform`: o `.pp-slide` é um
+   * container de `cqw`, então o texto das formas escala junto e o cartão mostra exatamente o que o
+   * clique vai aplicar — sem desenho à parte para manter em dia.
    */
-  /**
-   * Redesenha o painel das Ideias: uma fornada de combinações de design × acabamento, com a
-   * lâmina atual desenhada em cada uma. "Gerar mais ideias" avança para a fornada seguinte —
-   * são `modelos × tratamentos` combinações, então dá para passar por todas sem repetir.
-   */
-  private pintarIdeias(): void {
-    const host = this.pane.querySelector<HTMLElement>("[data-ideias]");
+  private pintarComposicao(): void {
+    const host = this.pane.querySelector<HTMLElement>("[data-composicao]");
     if (!host) return;
+    if (this.filtroComposicao === "arrumacao") return this.pintarArranjos(host);
+    if (this.filtroComposicao === "visual") return this.pintarVisuais(host);
+    return this.pintarMistas(host);
+  }
+
+  /**
+   * Modo Tudo: a fornada mista (arrumação × visual) do lote, com a lâmina atual desenhada em cada
+   * sugestão. Como nos Arranjos, os cartões saem vazios na hora e cada prévia é desenhada num
+   * quadro próprio — a mistura aplica o modelo no deck inteiro, então é a prévia mais cara das
+   * três. O clique vai por `composicao-aplicar` ("arranjo|variante|modelo|tratamento"): as duas
+   * metades num passo de desfazer só.
+   */
+  private pintarMistas(host: HTMLElement): void {
     const atual = this.atual();
     const de: EstiloAtual = { theme: this.setup.theme, bg: this.setup.bg, fontFamily: this.setup.fontFamily };
     const ctx = this.ctxRender(false);
     const largura = 960; // referência da prévia (o cqw do texto sai daqui)
-    const altura = Math.round(largura / stageRatio(this.setup));
+    const ratio = stageRatio(this.setup);
+    const altura = Math.round(largura / ratio);
+    const quantas = unidadesDa(atual).length;
+    const podeArrumar = arrumavel(atual);
+    const sugestoes = sugestoesDe({ unidades: quantas, arrumavel: podeArrumar, modelos: [...MODELOS, ...lerModelosUsuario()], lote: this.loteComposicao });
+    this.previasVista = null; // o host troca de conteúdo: a prévia dos Arranjos não vale mais
+    const criadas = sugestoes.filter((s) => s.modelo.gerado).length;
+    this.atualizarDica(
+      sugestoes.length
+        ? `${sugestoes.length} ${podeArrumar ? "sugestões" : "visuais"} por vez${criadas ? ` — ${criadas} criada${criadas > 1 ? "s" : ""} na hora` : ""}`
+        : ""
+    );
+    host.textContent = "";
+    if (!sugestoes.length) {
+      const aviso = document.createElement("p");
+      aviso.className = "pp-ideias-vazio";
+      aviso.textContent = "Esta lâmina não tem conteúdo para arrumar — a Composição trabalha com o que já está nela.";
+      host.append(aviso);
+      return;
+    }
+    const token = ++this.previasToken;
+    const pendentes: (() => void)[] = [];
+    for (const s of sugestoes) {
+      const cartao = document.createElement("button");
+      cartao.type = "button";
+      cartao.className = "pp-ideia";
+      // a lâmina que não é arrumável sai só de visual: o cartão não promete uma fórmula que não muda nada
+      const nomeArrumacao = s.arranjo ? rotuloDoArranjo(s.arranjo, s.variante, quantas) : "";
+      const nomeVisual = s.tratamento === "recolorir" ? s.modelo.nome : `${s.modelo.nome} · ${ROTULO_TRATAMENTO[s.tratamento]}`;
+      cartao.title = `${nomeArrumacao ? `${nomeArrumacao} · ` : ""}${nomeVisual} — ${s.modelo.descricao}`;
+      const moldura = document.createElement("span");
+      moldura.className = "pp-ideia-moldura";
+      const previa = document.createElement("span");
+      previa.className = "pp-slide pp-ideia-slide";
+      previa.style.width = `${largura}px`;
+      previa.style.height = `${altura}px`;
+      pendentes.push(() => {
+        const comModelo = aplicarModelo(this.slides, de, s.modelo, s.tratamento, ratio)[this.indice] ?? atual;
+        const comTudo = s.arranjo ? aplicarArranjo(comModelo, s.arranjo, s.variante, ratio) : comModelo;
+        // a fórmula que reduz os cartões a tiras ilegíveis não é oferecida
+        if (!arranjoLegivel(comModelo, comTudo)) {
+          cartao.remove();
+          return;
+        }
+        previa.style.background = fundoValor(comTudo.bg, this.setup.media ?? {}) || `#${s.modelo.cores?.bg || s.modelo.bg || themeOf(s.modelo.tema).bg}`;
+        previa.innerHTML = comTudo.shapes.length
+          ? comTudo.shapes.map((f) => htmlFormaRica(f, ctx)).join("")
+          : sanitize(String(marked.parse(comTudo.md, { gfm: true, async: false }))).slice(0, 600);
+        const w = moldura.clientWidth;
+        if (w > 0) previa.style.transform = `scale(${w / largura})`;
+      });
+      moldura.append(previa);
+      const nome = document.createElement("span");
+      nome.className = "pp-ideia-nome";
+      // o cartão diz as duas metades: a arrumação primeiro (é o que muda a lâmina que a prévia mostra)
+      nome.textContent = [s.modelo.gerado ? "Novo" : "", nomeArrumacao, nomeVisual].filter(Boolean).join(" · ");
+      cartao.append(moldura, nome);
+      cartao.addEventListener("click", () => this.run("composicao-aplicar", `${s.arranjo ?? "-"}|${s.variante}|${s.modelo.id}|${s.tratamento}`));
+      host.append(cartao);
+    }
+    // uma prévia por quadro; se a lâmina mudar no meio, o desenho antigo para
+    const proxima = (): void => {
+      if (token !== this.previasToken) return;
+      pendentes.shift()?.();
+      if (pendentes.length) requestAnimationFrame(proxima);
+      else if (!host.querySelector(".pp-ideia")) {
+        const aviso = document.createElement("p");
+        aviso.className = "pp-ideias-vazio";
+        aviso.textContent = "Nenhuma composição cabe nesta lâmina sem deixar o conteúdo ilegível.";
+        host.append(aviso);
+      }
+    };
+    requestAnimationFrame(proxima);
+  }
+
+  /** O texto ao lado do título da aba (o "N por vez…"). */
+  private atualizarDica(texto: string): void {
+    const dica = this.pane.querySelector<HTMLElement>("[data-composicao-hint]");
+    if (dica) dica.textContent = texto || "geradas no seu computador";
+  }
+
+  /**
+   * Modo Visual: a fornada das Ideias de design — uma combinação de design × acabamento por
+   * cartão, com a lâmina atual desenhada em cada uma. "Gerar mais" avança para a fornada seguinte:
+   * são `modelos × tratamentos` combinações, então dá para passar por todas sem repetir.
+   */
+  private pintarVisuais(host: HTMLElement): void {
+    const atual = this.atual();
+    const de: EstiloAtual = { theme: this.setup.theme, bg: this.setup.bg, fontFamily: this.setup.fontFamily };
+    const ctx = this.ctxRender(false);
+    const largura = 960; // referência da prévia (o cqw do texto sai daqui)
+    const ratio = stageRatio(this.setup);
+    const altura = Math.round(largura / ratio);
     const modelos = [...MODELOS, ...lerModelosUsuario()];
-    const tratamentos: TratamentoIdeia[] = ["recolorir", "cantos", "contorno"];
+    const tratamentos: TratamentoIdeia[] = [...ACABAMENTOS];
     const porLote = 8;
     const criadasPorLote = 3; // designs que o app CRIA na hora; o resto vem do catálogo
     const doCatalogo = porLote - criadasPorLote;
     const total = modelos.length * tratamentos.length;
+    this.previasVista = null; // o host troca de conteúdo: a prévia dos Arranjos não vale mais
     // o tratamento gira a cada ideia e o modelo a cada três: a fornada já mistura os acabamentos;
     // no fim entram os designs criados na hora (a semente avança a cada fornada, então não repetem)
     const ideias: { m: ModeloPPT; t: TratamentoIdeia }[] = [];
     for (let k = 0; k < Math.min(doCatalogo, total); k++) {
-      const g = this.loteIdeias * doCatalogo + k;
+      const g = this.loteComposicao * doCatalogo + k;
       ideias.push({ m: modelos[Math.floor(g / tratamentos.length) % modelos.length], t: tratamentos[g % tratamentos.length] });
     }
     for (let k = 0; k < criadasPorLote; k++) {
-      const semente = this.loteIdeias * criadasPorLote + k;
+      const semente = this.loteComposicao * criadasPorLote + k;
       ideias.push({ m: gerarDesign(semente), t: tratamentos[semente % tratamentos.length] });
     }
-    const dica = this.pane.querySelector<HTMLElement>("[data-ideias-hint]");
-    if (dica) dica.textContent = `${ideias.length} ideias por vez — ${criadasPorLote} criadas na hora`;
+    this.atualizarDica(`${ideias.length} visuais por vez — ${criadasPorLote} criados na hora`);
     host.textContent = "";
     for (const { m, t } of ideias) {
       // a prévia sai do DECK INTEIRO (e não só da lâmina atual): é o mapa de cores do deck todo
       // que o clique aplica, então o cartão mostra exatamente o que vai acontecer
-      const comModelo = aplicarModelo(this.slides, de, m, t)[this.indice] ?? atual;
+      const comModelo = aplicarModelo(this.slides, de, m, t, ratio)[this.indice] ?? atual;
       const cartao = document.createElement("button");
       cartao.type = "button";
       cartao.className = "pp-ideia";
@@ -592,6 +702,7 @@ export class PowerPointHost {
       if (previa && w > 0) previa.style.transform = `scale(${w / largura})`;
     }
   }
+
 
   /**
    * Galeria de VARIANTES (aba Design): a lâmina atual desenhada em cada família de cor. É a
@@ -638,29 +749,40 @@ export class PowerPointHost {
     });
   }
 
-  /** Redesenha o painel dos Arranjos: a lâmina atual em cada fórmula (a grade abre em variantes). */
-  private pintarArranjos(): void {
-    const host = this.pane.querySelector<HTMLElement>("[data-arranjos]");
-    if (!host) return;
+  /** Modo Arrumação: a lâmina atual em cada fórmula (a grade abre em variantes). */
+  private pintarArranjos(host: HTMLElement): void {
     const atual = this.atual();
+    // lâmina sem o que arrumar (título e subtítulo soltos): explica em vez de repetir a mesma
+    // prévia seis vezes — é a condição do `aplicarArranjo`, que devolveria a lâmina intacta
+    if (!arrumavel(atual)) {
+      this.previasVista = null;
+      host.textContent = "";
+      const aviso = document.createElement("p");
+      aviso.className = "pp-ideias-vazio";
+      aviso.textContent = "Esta lâmina não tem conteúdo para arrumar — a Composição trabalha com o que já está nela.";
+      host.append(aviso);
+      this.atualizarDica("nada a arrumar nesta lâmina");
+      return;
+    }
     const ctx = this.ctxRender(false);
     const largura = 960; // referência da prévia (o cqw do texto sai daqui)
     const ratio = stageRatio(this.setup);
     const altura = Math.round(largura / ratio);
     // a lâmina não mudou (só a seleção, o zoom…): as prévias que já estão no painel valem
-    const vista = this.arranjosVista;
+    const vista = this.previasVista;
     if (vista && vista.slide === atual && vista.ratio === ratio && host.childElementCount > 0) {
       this.escalarPrevias(host, largura);
       return;
     }
-    this.arranjosVista = { slide: atual, ratio };
-    const token = ++this.arranjosToken;
+    this.previasVista = { slide: atual, ratio };
+    const token = ++this.previasToken;
     const quantas = unidadesDa(atual).length;
     const ideias: { id: Arranjo; variante: number }[] = [];
     for (const a of ARRANJOS) for (const v of variantesDe(a.id, quantas)) ideias.push({ id: a.id, variante: v });
     host.textContent = "";
     // os cartões (vazios) aparecem na hora; a prévia de cada um é desenhada num quadro próprio,
     // para o clique e a edição não esperarem seis lâminas inteiras serem montadas
+    this.atualizarDica(`${ideias.length} arrumações — o visual continua o mesmo`);
     const pendentes: (() => void)[] = [];
     for (const { id, variante } of ideias) {
       const cartao = document.createElement("button");
@@ -697,7 +819,7 @@ export class PowerPointHost {
     }
     // uma prévia por quadro; se a lâmina mudar no meio, o desenho antigo para
     const proxima = (): void => {
-      if (token !== this.arranjosToken) return;
+      if (token !== this.previasToken) return;
       pendentes.shift()?.();
       if (pendentes.length) requestAnimationFrame(proxima);
       else if (!host.querySelector(".pp-ideia")) {
@@ -938,9 +1060,8 @@ export class PowerPointHost {
     this.atualizarStatus();
     this.sincronizarTabelas();
     this.atualizarUI();
-    // com o painel de Ideias aberto, ele acompanha a lâmina atual (e o modelo aplicado)
-    if (this.lateral === "ideias") this.pintarIdeias();
-    if (this.lateral === "arranjos") this.pintarArranjos();
+    // com a Composição aberta, ela acompanha a lâmina atual (e o modelo aplicado)
+    if (this.lateral === "composicao") this.pintarComposicao();
   }
 
   /** só a lâmina e a seleção (usado enquanto se arrasta, para não refazer as miniaturas a cada quadro) */
@@ -1989,25 +2110,35 @@ export class PowerPointHost {
         toast(nome ? `Modelo "${nome}" removido.` : "Modelo removido.", "ok", 3000);
         return;
       }
-      case "ideias":
-        // o botão da fita (aba Design ▸ grupo Designer) abre o painel já na aba das Ideias
+      case "composicao":
+        // o botão da fita (Página Inicial ▸ grupo Composição) abre o painel já na Composição
         this.mostrarPainelLateral();
-        this.mostrarLateral("ideias");
+        this.mostrarLateral("composicao");
         return;
+      case "composicao-aplicar": {
+        // cartão misto ("arranjo|variante|modelo|tratamento"): o VISUAL vale para a apresentação
+        // e a ARRUMAÇÃO só para esta lâmina — as duas metades num passo de desfazer só
+        const [id, v, idModelo, t] = String(value ?? "").split("|");
+        // "-" = a lâmina não é arrumável (lâmina de título): o cartão só troca o visual
+        const arranjo = id === "-" ? null : ARRANJOS.find((a) => a.id === id);
+        const m = [...MODELOS, ...lerModelosUsuario()].find((x) => x.id === idModelo) ?? (idModelo.startsWith("gerado-") ? gerarDesign(Number(idModelo.slice("gerado-".length))) : undefined);
+        if ((id !== "-" && !arranjo) || !m) return;
+        this.registrar();
+        this.aplicarModeloDeck(m, t as TratamentoIdeia);
+        // a arrumação lê a lâmina JÁ com o modelo novo (o deck mudou de referência no meio)
+        if (arranjo) this.substituirSlide(aplicarArranjo(this.atual(), arranjo.id, Number(v) || 0, stageRatio(this.setup)));
+        this.pintar();
+        return;
+      }
       case "ideia": {
-        // cartão das Ideias: aplica o design com o acabamento proposto ("id|tratamento")
+        // cartão do modo Visual: aplica o design com o acabamento proposto ("id|tratamento")
         const [id, t] = String(value ?? "").split("|");
         const m = [...MODELOS, ...lerModelosUsuario()].find((x) => x.id === id) ?? (id.startsWith("gerado-") ? gerarDesign(Number(id.slice("gerado-".length))) : undefined);
         if (m) this.usarModelo(m, t as TratamentoIdeia);
         return;
       }
-      case "arranjos":
-        // o botão da fita (aba Design ▸ grupo Designer) abre o painel já na aba dos Arranjos
-        this.mostrarPainelLateral();
-        this.mostrarLateral("arranjos");
-        return;
       case "arranjo": {
-        // cartão dos Arranjos: aplica a fórmula ("id|variante") só na lâmina atual (a que a prévia mostra)
+        // cartão do modo Arrumação: aplica a fórmula ("id|variante") só na lâmina atual (a que a prévia mostra)
         const [id, v] = String(value ?? "").split("|");
         const arranjo = ARRANJOS.find((a) => a.id === id);
         if (arranjo) {
@@ -3897,15 +4028,26 @@ export class PowerPointHost {
   /** Aplica um modelo (tema + fundo + fonte) ao deck inteiro, trocando as cores do tema antigo. */
   private usarModelo(modelo: ModeloPPT, tratamento?: TratamentoIdeia): void {
     this.registrar();
+    this.aplicarModeloDeck(modelo, tratamento);
+    this.pintar();
+  }
+
+  /**
+   * O miolo do `usarModelo`, sem histórico e sem pintar: é o que a Composição usa para juntar o
+   * visual e a arrumação num passo de desfazer só (o `registrar` e o `pintar` ficam com o
+   * chamador). Sem o `pintar` do `setSetup`, o tema/fundo/fonte entram no `setup` direto — o
+   * caminho do modelo não mexe no `aspect`, que é o que o `setSetup` trataria à parte.
+   */
+  private aplicarModeloDeck(modelo: ModeloPPT, tratamento?: TratamentoIdeia): void {
     this.slides = aplicarModelo(this.slides, { theme: this.setup.theme, bg: this.setup.bg, fontFamily: this.setup.fontFamily }, modelo, tratamento, stageRatio(this.setup));
-    this.setSetup({ theme: modelo.tema, bg: modelo.bg, fontFamily: modelo.fonte });
+    this.setup = { ...this.setup, theme: modelo.tema, bg: modelo.bg, fontFamily: modelo.fonte };
+    this.markDirty();
     // o estilo vivo acompanha o modelo: re-deriva as formas e os fundos com o acento NOVO (a
     // base vazia passou a apontar para ele) — sem isso a pintura ficaria com a rampa antiga até
     // a próxima edição da lâmina
     const d = this.dim();
     const tema = this.estilo();
     this.slides = this.slides.map((s) => atualizarEstilos(s, d, tema));
-    this.pintar();
   }
 
   /** Estatísticas para o rodapé do app. */

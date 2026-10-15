@@ -436,8 +436,8 @@ export class Fita {
          </div>`
       ),
       // Ideias de design: no DeckCraft o atalho mora na Página Inicial, mas o Office o tem na aba
-      // Design (grupo Designer) — que é onde ele passou a viver; os Arranjos são o irmão dele (a
-      // mesma lâmina reorganizada em fórmulas padrão) e moram no mesmo grupo.
+      // Design (grupo Designer) — que é onde ele passou a viver. Desde a fusão os dois são um só
+      // (**Composição**, um botão só), no lugar do grupo do Office — ver `design()`.
     ].join("");
   }
 
@@ -719,7 +719,7 @@ export class Fita {
         "Personalizar",
         `${grande("fundo", ic("i-bucket"), "Formatar fundo", "Cor, gradiente ou imagem de fundo da lâmina", true)}${grande("layout", ic("i-columns"), "Layout", "Layout da lâmina", true)}${grande("tamanho-lamina", `<span class="ppr-tamanho-ic"></span>`, "Tamanho", "Proporção da lâmina: 16:9 ou 4:3", true)}`
       ),
-      grupo("Designer", `${grande("ideias", ic("i-spark"), "Ideias de design", "Sugestões de visual para a apresentação — a lâmina atual em cada modelo, geradas no seu computador")}${grande("arranjos", ic("i-columns"), "Arranjos", "Reorganiza a lâmina numa fórmula padrão (grade, lista, destaque, faixa)")}`),
+      grupo("Composição", `${grande("composicao", ic("i-spark"), "Composição", "Sugestões para a apresentação — a arrumação desta lâmina e o visual do deck na mesma prévia, geradas no seu computador")}`),
     ].join("");
   }
 

@@ -414,7 +414,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada no momento)
 
 **Frontend**
-
 - **A apresentação nova nasce clara — o tema do app não decide o papel da lâmina**: o padrão de
   fábrica da apresentação era o tema **Escuro**, então quem usava o app no escuro abria uma lâmina
   escura sem ter pedido. Agora ela nasce com **papel branco** (tema **Claro**) e o tema do app fica
@@ -442,10 +441,30 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   apresentação inteira, com **esta lâmina** desenhada em cada cartão (a mesma máquina das Ideias: o
   cartão mostra exatamente o que o clique aplica; a variante troca a cor, não a tipografia) —,
   **Personalizar** reúne fundo, layout e o **Tamanho** da lâmina (**16:9/4:3**, que tinha ficado sem
-  UI quando o "Configurar apresentação" saiu) e **Designer** leva as Ideias de design e os Arranjos
-  para o lugar do Designer do Office (saem da Página Inicial). Os ícones da paleta das Variantes
+  UI quando o "Configurar apresentação" saiu) e **Composição** leva as Ideias de design e os Arranjos (já fundidos num sistema só, com nome próprio) para o lugar do Designer do Office (saem da Página Inicial). Os ícones da paleta das Variantes
   (com as seis cores) e do Tamanho são desenhados no CSS do app — nada de arte do Office. Testes:
   `npm run test:estilos` e `npm run test:layout`.
+
+- **"Composição": as Ideias de design e os Arranjos viraram um sistema só**: os dois nasceram da
+  mesma ideia e estavam se separando — duas abas no painel, dois botões na fita e um grupo com o
+  nome do PowerPoint (**"Designer"**). Agora é **uma aba** (Composição), **um botão** na fita
+  (grupo **Composição**, na aba **Design**) e um **filtro** que escolhe o que as sugestões mexem: **Tudo** (o padrão —
+  cada cartão junta a **arrumação** desta lâmina e o **visual** do deck, com o nome dizendo as
+  duas: "Grade 2×2 · Clássico"), **Arrumação** (só as fórmulas, o visual continua o mesmo) e
+  **Visual** (só os designs, na apresentação inteira, como as Ideias eram).
+
+  A fornada do *Tudo* é **determinística** (o lote devolve sempre as mesmas sugestões — é o que faz
+  a prévia do cartão ser o que o clique aplica): a arrumação anda de uma em uma (dois cartões
+  vizinhos nunca repetem a mesma fórmula), o visual anda por saltos pelo catálogo (a fornada
+  espalha designs em vez de mostrar vizinhos) e os últimos cartões são **criados na hora** (o
+  cartão diz **Novo**, com a paleta pelo ângulo de ouro, como nas Ideias). O clique aplica as duas
+  metades **num passo de desfazer só**. Numa lâmina que não tem o que arrumar (uma lâmina de
+  título, por exemplo) os cartões saem **só de visual** — sem prometer uma fórmula que não muda
+  nada — e o filtro Arrumação explica em vez de repetir a mesma prévia. A prévia passou a usar o
+  **ratio do deck** (num 4:3 ela dizia uma coisa e o clique fazia outra) e o nome da Microsoft saiu
+  da interface (o grupo "Designer" deixou de existir).
+
+- **Template: os modelos agora têm DESENHO, não só cores** — barra lateral, faixas, cantos, círculos, moldura ou blocos, diferentes na capa/seção e no miolo; as decorações ficam nas bordas (nunca cobrem o texto), trocam ao mudar de modelo e de layout, aparecem em miniatura no cartão e vão no "Salvar como modelo". Saem os modelos Esmeralda, Oceano e Ameixa (fundo em gradiente ilegível) e entram Corporativo, Executivo e Terracota. Teste: `npm run test:modelos`.
 
 ### Adicionado (na main)
 
@@ -484,7 +503,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - **O traço e a curva por pontos não deixam mais rastro (o "leque")**: desenhando à mão ou marcando pontos da **Curva**, cada quadro do arrasto **empilhava uma prévia nova** por cima das anteriores — o resultado era um leque de linhas que só crescia conforme o mouse andava (o print do usuário). A limpeza do que o palco desenha por cima da lâmina não conhecia o traço (`pp-traco`), a prévia da curva (`pp-curva-preview`) nem os pontos (`pp-no-curva`) — e, pela mesma porta, o **balão da medida** (`pp-medida`) ficava preso na tela depois de soltar. Agora a lista é uma só (`SELETOR_DO_OVERLAY`) e **o teste trava**: toda classe que o palco empilha tem de estar nela (ou dentro de uma que está).
 
 - **Fita métrica do arrasto**: enquanto se arrasta algo na lâmina, um **balão com a medida** acompanha o gesto — **x · y** (posição) ao **mover** e **largura × altura** ao **redimensionar** uma forma ou **desenhar** uma nova. A unidade é o **cm**, a mesma dos campos de **Tamanho** do painel (o número do gesto bate com o que a pessoa lê depois), com uma casa e vírgula decimal; o balão fica **acima do quadro** (e vira para baixo quando não há espaço no topo), não rouba o ponteiro e **some ao soltar**. Com **várias formas escolhidas**, a medida é a da **moldura do grupo**.
-
 - **O "+" do card "Nova lâmina" abre as variações (e o chevron de recolher a fita saiu)**: o card
   do fim da faixa ficou com **dois alvos de clique**: o **corpo** (a prévia + o rótulo "+ Nova
   lâmina") cria a lâmina com o **último layout escolhido** e o **"+"** no canto da prévia abre a

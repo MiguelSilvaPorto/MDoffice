@@ -158,21 +158,31 @@ avisado ao abrir (nunca some em silêncio).
   **× no canto** para apagar; e os **modelos do app**, abaixo do título *Modelos do app*. O cartão
   recém-criado entra em destaque e à vista, e o × só existe nos modelos do usuário. O catálogo traz
   os presets do app **mais os 13 designs no formato do DeckCraft** (8 temas originais + 5 esquemas
-  de cor, cada um com as próprias cores e fonte).
-- **Aba Design** (fita): quatro grupos, na ordem do Office — **Temas** (a galeria de modelos do
+  de cor, cada um com as próprias cores e fonte).- **Aba Design** (fita): quatro grupos, na ordem do Office — **Temas** (a galeria de modelos do
   Template), **Variantes**, **Personalizar** (**Formatar fundo**, **Layout** e **Tamanho** da
-  lâmina: 16:9 ou 4:3) e **Designer** (**Ideias de design** e **Arranjos**, que abrem o painel
-  lateral na aba certa). A organização lembra a do Office; os cartões, os ícones e os textos são
+  lâmina: 16:9 ou 4:3) e **Composição** (a fusão das Ideias de design com os Arranjos, que abre o painel lateral na aba certa). A organização lembra a do Office; os cartões, os ícones e os textos são
   os do app (a paleta das Variantes é um ícone próprio com as seis cores das famílias).
 - **Variantes** (aba Design): as **seis famílias de cor** do Estilo de cor — **Esmeralda**,
   **Oceano**, **Ameixa**, **Âmbar**, **Rubi** e a **Grafite** (a escura) — aplicadas à
-  apresentação inteira. Cada cartão mostra **esta lâmina** naquela família (a mesma máquina das
-  Ideias: a prévia é a lâmina de verdade reduzida), então o cartão mostra exatamente o que o
+  apresentação inteira. Cada cartão mostra **esta lâmina** naquela família (a mesma máquina da
+  Composição: a prévia é a lâmina de verdade reduzida), então o cartão mostra exatamente o que o
   clique faz. A variante troca a **cor** (fundo pastel da família, acento e tinta do mesmo
   matiz), não a tipografia — para trocar a fonte há os **Temas** e as **Ideias de design**.
-- **Ideias de design** (aba do painel lateral, ou **Design ▸ Designer ▸ Ideias de design** na
-  fita): mostra **esta lâmina** desenhada em cada ideia, em cartões clicáveis — clicar aplica à
-  apresentação inteira. Cada ideia é um **design** (as cores e a fonte) com um **acabamento**:
+
+- **Composição** (aba do painel lateral, ou **Design ▸ Composição** na fita): o sistema de
+  sugestões da apresentação — as antigas **Ideias de design** e os **Arranjos** eram o mesmo
+  sistema em duas abas e viraram **um só**, com nome próprio (o papel do "Designer" do PowerPoint,
+  sem copiar o nome). Cada cartão mostra **esta lâmina** já com a sugestão aplicada e o **filtro**
+  escolhe o que as sugestões mexem:
+  - **Tudo** (o padrão): cada cartão junta as duas metades — a **arrumação** desta lâmina e o
+    **visual** do deck — e o clique aplica as duas num **passo de desfazer só**. O nome do cartão
+    diz as duas ("Grade 2×2 · Clássico"); numa lâmina que não tem o que arrumar (uma lâmina de
+    título, por exemplo) os cartões saem **só de visual**, sem prometer uma fórmula que não muda
+    nada;
+  - **Arrumação**: só as fórmulas da lâmina atual — o visual continua o mesmo, como antes;
+  - **Visual**: só os designs, aplicados à apresentação inteira, como antes.
+
+  O **visual** é um **design** (as cores e a fonte) com um **acabamento**:
   - *cores novas*: troca a paleta e, o mais importante, **remapeia as cores próprias das formas**
     pelo papel de cada uma — a cor da marca vira o acento, os fundos claros viram uma tinta do
     acento e os painéis escuros continuam escuros. Um organograma importado (com verdes que não
@@ -186,11 +196,12 @@ avisado ao abrir (nunca some em silêncio).
   - *cantos arredondados*: os quadros pintados ganham cantos arredondados (raio de 12%);
   - *contorno de acento*: os quadros pintados ganham contorno na cor de acento do design.
 
-  O botão **Gerar mais ideias** percorre as combinações (designs × acabamentos, 8 por vez) e o
-  contador ao lado do título mostra quantas estão à mostra. As ideias são geradas **no
-  computador** (sem nuvem), como no *Design Ideas* do DeckCraft: a prévia é a lâmina de verdade
-  reduzida — com o mapa de cores do deck inteiro —, então o cartão mostra exatamente o que o
-  clique faz.
+  O botão **Gerar mais** percorre as combinações (designs × acabamentos no modo Visual; arrumações
+  × designs no modo Tudo) e o contador ao lado do título mostra quantas estão à mostra. Tudo é
+  gerado **no computador** (sem nuvem e sem IA): a prévia é a lâmina de verdade reduzida — com o
+  mapa de cores do deck inteiro —, então o cartão mostra exatamente o que o clique faz. Na fornada
+  mista a arrumação anda de uma em uma (dois cartões vizinhos nunca repetem a mesma) e o visual
+  anda por saltos pelo catálogo, então a fornada espalha designs em vez de mostrar vizinhos.
 
   Além dos designs do catálogo, **o app cria designs na hora**: a cada fornada entram três
   cartões **Novo**, com uma paleta montada na hora a partir de uma cor de partida (o **ângulo de
@@ -200,7 +211,7 @@ avisado ao abrir (nunca some em silêncio).
   **determinístico**: o `gerado-N` volta pela mesma função, e é isso que faz a prévia do cartão
   ser exatamente o que o clique aplica. O texto de cada paleta é conferido contra o fundo
   (**WCAG 4,5:1**) antes de a ideia aparecer.
-- **Arranjos** (aba do painel lateral, ou **Página Inicial ▸ Designer ▸ Arranjos** na fita): reorganiza a
+- A **arrumação** (o filtro *Arrumação* — e a metade dos cartões do *Tudo*) reorganiza a
   lâmina em **fórmulas padrão**, mantendo o visual (cores, estilos, imagens):
 
   - *Grade* (2×2, 3×2, 4×2… conforme a quantidade), *Lista*, *Destaque* (o primeiro cartão grande
@@ -224,10 +235,11 @@ avisado ao abrir (nunca some em silêncio).
   - o cartão e o que sai dele andam como **um bloco** (nada fica deslocado) e as prévias são desenhadas
     aos poucos, sem travar o app;
   - a prévia é a **sua lâmina** reorganizada e o clique aplica a fórmula **só na lâmina atual** (se ela não tem conteúdo para
-    arrumar — uma lâmina de título, por exemplo — fica como está).
+    arrumar — uma lâmina de título, por exemplo — o painel explica em vez de oferecer cartões que
+    não mudam nada).
 
-  Como o arranjo não troca cores nem fontes, dá para aplicar um arranjo e depois combinar com
-  qualquer ideia de design.
+  Como a fórmula não troca cores nem fontes, quem quer só reorganizar usa o filtro **Arrumação** —
+  e quem quer o pacote completo usa o **Tudo**, que aplica a fórmula e o design de uma vez.
 
 ## Desenho à mão (Draw) e Curva por pontos
 
@@ -392,11 +404,11 @@ avisado ao abrir (nunca some em silêncio).
 - **Fita** com abas (Página Inicial, Inserir, **Desenhar**, **Transições**, **Animações**, Design e Exibir;
   **Formato da Forma** e **Layout da Tabela** aparecem quando a seleção pede), recolhível e
   ajustável, com rolagem horizontal quando não cabe.
-- **Painel Formatar/Animação/Notas/Ideias/Arranjos** à direita: pode ser escondido, redimensionado
+- **Painel Formatar/Animação/Notas/Composição** à direita: pode ser escondido, redimensionado
   e reaberto pela aba **« Formatar**; o painel de animação lista os efeitos da lâmina na ordem
-  (selecionar, mover e remover), as notas ficam na aba **Notas** e **Ideias/Arranjos** mostram os
-  cartões gerados no computador. As abas **quebram de linha** quando não cabem e o painel
-  **encolhe com a janela** — nada vaza para fora do app.
+  (selecionar, mover e remover), as notas ficam na aba **Notas** e a **Composição** mostra os
+  cartões gerados no computador (com o filtro Tudo/Arrumação/Visual). As abas **quebram de linha**
+  quando não cabem e o painel **encolhe com a janela** — nada vaza para fora do app.
 - **Zoom até 800%** ancorado no ponteiro (Ctrl + roda do mouse), com rolagem de verdade; o
   passo do clique/roda cresce no zoom alto (do 100% ao 800% em ~17 passos) e o slider
   continua fino.

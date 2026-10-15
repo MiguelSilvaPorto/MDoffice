@@ -19,6 +19,7 @@
     "test:ligacoes": "node scripts/testar-ligacoes.mjs",
     "test:estilos": "node scripts/testar-estilos.mjs",
     "test:arranjos": "node scripts/testar-arranjos.mjs",
+    "test:composicao": "node scripts/testar-composicao.mjs",
     "test:modelos": "node scripts/testar-modelos.mjs",
     "test:pincel": "node scripts/testar-pincel.mjs",
     "test:formalizar": "node scripts/testar-formalizar.mts",

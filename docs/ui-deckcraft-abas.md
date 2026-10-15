@@ -224,10 +224,11 @@ Não é uma fita: é uma tela cheia que substitui fita, lâminas e barra de stat
 |---|---|---|---|---|
 | Design Ideas | Abre o painel de sugestões de design | Com lâmina aberta | Lâmpada amarela | — |
 
-**Notas para recriar no mdOffice:** atendido na **Página Inicial ▸ grupo Designer ▸ Ideias de
-design** — o grupo que o mdOffice criou na aba Design mudou para cá, junto das tarefas do dia a
-dia. O nome do grupo continuou "Designer" (o do PowerPoint) e o ícone é a estrela do app
-(`i-spark`), no lugar da lâmpada amarela da referência.
+**Notas para recriar no mdOffice:** atendido no **grupo Composição ▸ Composição**, na aba
+**Design** (o grupo nasceu na Página Inicial e voltou para a aba Design, como no Office). Ele se
+chamava **"Designer"** (o nome do PowerPoint) e virou **"Composição"** quando as Ideias de design e
+os Arranjos viraram um sistema só; o ícone é a estrela do app (`i-spark`), no lugar da lâmpada
+amarela da referência.
 
 ---
 
