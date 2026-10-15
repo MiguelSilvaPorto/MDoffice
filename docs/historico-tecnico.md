@@ -9199,3 +9199,21 @@ antigas quando fizer sentido.
   prende a ESTRUTURA (o menu abre a galeria; o card tem os dois alvos), não a implementação. As
   novas prendem o que NÃO pode voltar: o botão do chevron (pedido do usuário) e a duplicação do
   popup.
+
+## CHANGELOG.md
+
+### 2026-10-15 · promoção · 5 entradas do PowerPoint (2 movidas, 3 sobras apagadas)
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** movidas **O "+" do card "Nova lâmina" abre as variações** (`bcbf5f9`) e **Template:
+  os modelos agora têm DESENHO** (`a8803d7`); **apagadas as cópias estale** de **A lâmina tem
+  começo e fim no tema escuro** (`40ed357`), **Arranjos: cartões com gradiente** (`783b188`) e
+  **Arranjos: triângulos** (`4cda57b`) — as três já estavam no "Adicionado" desde as promoções das
+  donas, com a cópia pendente sobrando
+- **Porquê:** as três sobras são efeito de promoções que moveram a entrada mas não apagaram a
+  original (uma delas admite o erro no próprio commit, `50ddfc1`: o script calculava o destino
+  depois de remover a entrada e os índices deslocavam). O script desta promoção ganhou **asserção
+  por contagem**: cada entrada tem de terminar com **uma** ocorrência no arquivo — foi ele que
+  pegou as duplicadas (2 ocorrências) e recusou a rodar antes de mexer em qualquer coisa; depois
+  de apagar as sobras, as cinco fecharam em 1. A conferência também olhou os cinco commits no
+  `git log` da `main` e a ausência de promoções em voo (`git log --all --not main --grep promove`)
+  antes de tocar em qualquer linha.

@@ -408,8 +408,21 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada no momento)
 
 **Frontend**
+- (nada no momento)
 
-- **Template: os modelos agora têm DESENHO, não só cores** — barra lateral, faixas, cantos, círculos, moldura ou blocos, diferentes na capa/seção e no miolo; as decorações ficam nas bordas (nunca cobrem o texto), trocam ao mudar de modelo e de layout, aparecem em miniatura no cartão e vão no "Salvar como modelo". Saem os modelos Esmeralda, Oceano e Ameixa (fundo em gradiente ilegível) e entram Corporativo, Executivo e Terracota. Teste: `npm run test:modelos`.
+
+
+
+
+### Adicionado (na main)
+
+**Backend**
+
+- **Arranjos: o conteúdo não se desloca mais do cartão** — o bloco inteiro (cartão + o que sai dele) é centrado no espaço e todas as formas andam por ele; a detecção roda uma vez e usa mapas por id, em vez de `find` por forma.
+
+- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
+
+**Frontend**
 
 - **O "+" do card "Nova lâmina" abre as variações (e o chevron de recolher a fita saiu)**: o card
   do fim da faixa ficou com **dois alvos de clique**: o **corpo** (a prévia + o rótulo "+ Nova
@@ -422,28 +435,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   vista" e a dica morando na barra das abas (o botão anunciava o que ia fazer e desapareceu com
   ele).
 
-- **A lâmina tem começo e fim no tema escuro**: no escuro o palco usava o mesmo fundo do app
-  (`#0e1014`) e a sombra da lâmina é escura fixa — com a apresentação no tema **Escuro** a lâmina
-  ficava da cor do palco e não dava para ver onde ela começava ou terminava (print do usuário).
-  Agora o **palco tem tom próprio** no escuro (`#1a1e26`, um degrau acima do fundo do app) e a
-  lâmina ganhou uma **moldura de 1px** (`--lamina-borda: #5b6472`, que contrasta 2,9:1 com o palco
-  e 3,3:1 com o fundo do tema Escuro) — o anel aparece nos dois casos: lâmina escura sobre palco
-  claro e lâmina clara sobre palco escuro. A **miniatura** da lista recebeu a mesma moldura (uma
-  lâmina escura sumia dentro dela) e a dica "Clique para adicionar o título/texto" subiu de 40%
-  para **55%** de opacidade, que é o que a deixa visível sem virar texto de verdade.
-- **Arranjos: cartões com gradiente, cartões concêntricos e cartões pequenos agora são detectados, e só aparecem os arranjos legíveis** — antes, num deck importado (organograma com cartões em gradiente, 1,9% da lâmina cada), nenhum cartão era detectado e o app embaralhava as 29 caixas de texto; o cartão de fora e o branco de dentro também se descartavam um ao outro. Agora a Lista/Faixa/Destaque com muitos cartões (tiras de 2%) deixam de ser oferecidas.
-
-- **Arranjos: triângulos e painéis de fundo não viram mais "cartões"** — antes uma forma grande e decorativa (ex.: os triângulos verdes) ou um painel atrás dos cartões era tratado como cartão, engolia os de verdade e o arranjo saía desordenado; agora eles ficam parados e só os cartões com conteúdo se arrumam. Teste: `npm run test:arranjos`.
-
-### Adicionado (na main)
-
-**Backend**
-
-- **Arranjos: o conteúdo não se desloca mais do cartão** — o bloco inteiro (cartão + o que sai dele) é centrado no espaço e todas as formas andam por ele; a detecção roda uma vez e usa mapas por id, em vez de `find` por forma.
-
-- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
-
-**Frontend**
+- **Template: os modelos agora têm DESENHO, não só cores** — barra lateral, faixas, cantos, círculos, moldura ou blocos, diferentes na capa/seção e no miolo; as decorações ficam nas bordas (nunca cobrem o texto), trocam ao mudar de modelo e de layout, aparecem em miniatura no cartão e vão no "Salvar como modelo". Saem os modelos Esmeralda, Oceano e Ameixa (fundo em gradiente ilegível) e entram Corporativo, Executivo e Terracota. Teste: `npm run test:modelos`.
 
 - **Arranjos: cartões com gradiente, cartões concêntricos e cartões pequenos agora são detectados, e só aparecem os arranjos legíveis** — antes, num deck importado (organograma com cartões em gradiente, 1,9% da lâmina cada), nenhum cartão era detectado e o app embaralhava as 29 caixas de texto; o cartão de fora e o branco de dentro também se descartavam um ao outro. Agora a Lista/Faixa/Destaque com muitos cartões (tiras de 2%) deixam de ser oferecidas.
 
