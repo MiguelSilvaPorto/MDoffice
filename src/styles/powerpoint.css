@@ -294,7 +294,7 @@ body.home-open #powerpoint-pane {
   min-height: 0;
   display: flex;
   overflow: hidden;
-  background: var(--bg);
+  background: var(--palco-bg, var(--bg));
 }
 
 .pp-left {
@@ -571,7 +571,9 @@ body.home-open #powerpoint-pane {
   height: 100%;
   background: var(--slide-bg, #ffffff);
   color: var(--slide-fg, #1c212b);
-  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.22);
+  /* a moldura de 1px é o que destaca onde a lâmina termina — no tema escuro a sombra sozinha
+     sumia (fundo escuro sobre fundo escuro) */
+  box-shadow: 0 0 0 1px var(--lamina-borda, var(--border)), 0 8px 28px rgba(15, 23, 42, 0.22);
   border-radius: 2px;
   overflow: hidden;
   container-type: inline-size;

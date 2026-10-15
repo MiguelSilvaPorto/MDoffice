@@ -8973,3 +8973,43 @@ antigas quando fizer sentido.
   primeiro. Antes de promover, a conferência procurou **promoções em voo** (`git log --all --not
   main --grep promove`): nenhuma — as que aparecem no `--all` hoje são só as pré-reescrita do
   histórico (a limpeza dos n-gramas), presas nas branches abertas.
+
+## src/styles/tokens.css · powerpoint.css · powerpoint-edicao.css · word.css
+
+### 2026-10-15 · esta tarefa · a lâmina tem começo e fim no tema escuro (e a folha do Word, relevo)
+
+- **Local:** `tokens.css` — dois tokens novos nos dois temas; `powerpoint.css` — `#pp-stage` e
+  `.pp-slide`; `powerpoint-edicao.css` — `.pp-dica` e a moldura da miniatura; `word.css` —
+  `.wd-sheet` (claro e escuro)
+- **Linha:** `+ --palco-bg: var(--bg)` / `+ --lamina-borda: var(--border)` no `:root` e
+  `+ --palco-bg: #1a1e26` / `+ --lamina-borda: #5b6472` no `[data-theme="dark"]`;
+  `#pp-stage`: `background: var(--bg)` → `var(--palco-bg, var(--bg))`; `.pp-slide`:
+  `box-shadow: 0 8px 28px …` → `0 0 0 1px var(--lamina-borda, var(--border)), 0 8px 28px …`;
+  `.pp-dica`: `opacity: 0.4` → `0.55`; `.wd-sheet`: sombra simples → moldura + sombra em duas
+  camadas + `inset 0 1px 0` (nos dois temas)
+- **Porquê:** o usuário mostrou a lâmina no tema escuro e não conseguia ver **onde ela começa ou
+  termina**. A causa é dupla: o palco usava o **mesmo fundo do app** (`#0e1014`) e a sombra da
+  lâmina é **escura fixa** — com a apresentação no tema Escuro (fundo `#0E1014`) a lâmina e o
+  palco ficam idênticos, sem nenhuma borda. Um palco com tom próprio (`#1a1e26`, um degrau acima
+  do app) resolve a separação geral, mas sozinho ainda era sutil demais (1,14:1) — quem faz o
+  trabalho é a **moldura de 1px**: `#5b6472` dá 2,9:1 contra o palco e 3,3:1 contra o fundo do
+  tema Escuro, e como ela fica **entre** a lâmina e o palco, funciona nos dois sentidos (lâmina
+  escura sobre palco claro e lâmina clara sobre palco escuro). A mesma moldura foi para a
+  **miniatura** (uma lâmina escura sumia dentro dela) e a **dica** "Clique para adicionar" subiu
+  de 40% para 55% de opacidade — discreta, mas visível; ela acompanha a cor do texto da lâmina,
+  então vale nos dois temas. No Word o pedido foi outro: **relevo**. A folha já tinha sombra, mas
+  escura sobre palco escuro não dá profundidade — entraram a moldura, a sombra em **duas camadas**
+  (rente + longa) e a **dobra clara de 1px no topo** (`inset 0 1px 0`), que é a luz batendo na
+  borda de cima da folha; no claro a dobra é branca sobre o papel branco (imperceptível, inofensiva)
+  e no escuro é um fio claro sobre o papel escuro (é ele que dá a leitura de papel).
+- **Local:** `scripts/testar-layout.mts` — a seção "moldura da lâmina e relevo da página no tema
+  escuro" (5 checagens)
+- **Linha:** `novo`, incluindo uma checagem que **mede o contraste** entre a moldura, o palco e o
+  fundo do tema Escuro (lido do `schema.ts`) com a mesma conta do `contrasteDeCores` do editor
+- **Porquê:** o defeito era visual e invisível para as checagens antigas (elas liam estrutura, não
+  cor). Medir o contraste prende o que o usuário relatou: se alguém escurecer a moldura ou igualar
+  o palco ao fundo do app, o teste reprova. Duas coisas ficaram registradas para não parecerem
+  efeito desta mudança: as 2 falhas do `testar-layout` (`Pincel de Formatação`) são **pré-existentes
+  na `main`** (tarefa de outra sessão em andamento) e o `testar-correcoes` **passa na `main`** e
+  falha nesta worktree — o corretor não foi tocado aqui (a mudança é só CSS e documentação), então
+  é ambiente/base, não efeito daqui.

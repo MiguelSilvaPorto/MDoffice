@@ -1979,9 +1979,15 @@ button.ppr.big .ppr-gal-ic svg {
 
 /* dica de uma caixa vazia ("Clique para adicionar o título"): só no editor */
 .pp-dica {
-  opacity: 0.4;
+  opacity: 0.55; /* era 0.4: no tema escuro a dica "Clique para adicionar" sumia */
   font-style: italic;
   pointer-events: none;
+}
+
+/* A miniatura da lista recebe a mesma moldura da lâmina: no tema escuro uma lâmina escura
+   desaparecia dentro dela. */
+.pp-thumb-box {
+  box-shadow: 0 0 0 1px var(--lamina-borda, var(--border));
 }
 
 /* ---------- tabelas ---------- */

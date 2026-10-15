@@ -1723,5 +1723,52 @@ console.log("\nfita: o botão de recolher decide pelo que está à vista");
   );
 }
 
+// ---------------------------------------------------------------- lâmina e página no tema escuro
+
+console.log("\nmoldura da lâmina e relevo da página no tema escuro");
+{
+  const tokensCss = ler("src/styles/tokens.css");
+  const pptCss = ler("src/styles/powerpoint.css");
+  const editCss = ler("src/styles/powerpoint-edicao.css");
+  const wordCss = ler("src/styles/word.css");
+  // a mesma conta do `contrasteDeCores` do editor (o teste aqui lê CSS, não importa módulo)
+  const contraste = (a: string, b: string): number => {
+    const lum = (h: string) => {
+      const v = [0, 1, 2].map((i) => {
+        const c = parseInt(h.slice(i * 2, i * 2 + 2), 16) / 255;
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+    };
+    const la = lum(a);
+    const lb = lum(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  };
+  const hex = (re: RegExp, txt: string) => (re.exec(txt)?.[1] ?? "").toUpperCase();
+  const palcoEscuro = hex(/\[data-theme="dark"\][\s\S]*?--palco-bg:\s*#([0-9a-f]{6})/i, tokensCss);
+  const bordaEscura = hex(/\[data-theme="dark"\][\s\S]*?--lamina-borda:\s*#([0-9a-f]{6})/i, tokensCss);
+  const temaEscuro = hex(/escuro:\s*\{\s*bg:\s*"([0-9A-F]{6})"/, ler("src/powerpoint/schema.ts"));
+  checa(
+    "o palco do escuro tem tom próprio (um degrau acima do fundo do app)",
+    /:root\s*\{[\s\S]*?--palco-bg:\s*var\(--bg\)/.test(tokensCss) && palcoEscuro.length === 6 && palcoEscuro !== "0E1014"
+  );
+  checa(
+    "a moldura do escuro contrasta com o palco E com a lâmina escura (≥ 2,5:1)",
+    bordaEscura.length === 6 && contraste(bordaEscura, palcoEscuro) >= 2.5 && contraste(bordaEscura, temaEscuro) >= 2.5,
+    `borda #${bordaEscura} · palco #${palcoEscuro} (${contraste(bordaEscura, palcoEscuro).toFixed(2)}) · tema #${temaEscuro} (${contraste(bordaEscura, temaEscuro).toFixed(2)})`
+  );
+  checa(
+    "o palco e a lâmina usam os tokens novos",
+    /#pp-stage\s*\{[^}]*background:\s*var\(--palco-bg/.test(pptCss) && /\.pp-slide\s*\{[^}]*box-shadow:\s*0 0 0 1px var\(--lamina-borda/.test(pptCss)
+  );
+  checa("a miniatura da lista recebe a mesma moldura", /\.pp-thumb-box\s*\{[^}]*box-shadow:\s*0 0 0 1px var\(--lamina-borda/.test(editCss));
+  checa("a dica 'Clique para adicionar' ficou legível (0,55 e não 0,4)", /\.pp-dica\s*\{[^}]*opacity:\s*0\.55/.test(editCss) && !/\.pp-dica\s*\{[^}]*opacity:\s*0\.4/.test(editCss));
+  checa(
+    "a folha do Word ganhou relevo (moldura + sombra em duas camadas + dobra clara no topo)",
+    /\.wd-sheet\s*\{[^}]*box-shadow:\s*0 0 0 1px var\(--lamina-borda[^}]*0 1px 3px[^}]*0 8px 28px[^}]*inset 0 1px 0/s.test(wordCss) &&
+      /\[data-theme="dark"\]\s*\.wd-sheet\s*\{[^}]*box-shadow:\s*0 0 0 1px var\(--lamina-borda[^}]*inset 0 1px 0/s.test(wordCss)
+  );
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

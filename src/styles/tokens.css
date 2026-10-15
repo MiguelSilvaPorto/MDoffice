@@ -13,6 +13,11 @@
   --danger: #dc2626;
   --ok: #059669;
   --shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+  /* Palco: a área em volta da lâmina/folha. No claro ele é o fundo do app; no escuro ganha um
+     tom próprio (abaixo), senão uma lâmina escura fica da cor do palco e some. `--lamina-borda`
+     é a moldura fina que destaca onde a lâmina termina. */
+  --palco-bg: var(--bg);
+  --lamina-borda: var(--border);
   --ui-font: Inter, "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
   /* largura máxima da coluna de texto (editor e pré-visualização) */
   --doc-width: 980px;
@@ -32,5 +37,10 @@
   --danger: #f87171;
   --ok: #34d399;
   --shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+  /* O palco do escuro é um degrau ACIMA do fundo do app (#0e1014): é ele que separa a lâmina
+     escura (ou a folha do Word) do resto da tela. A moldura da lâmina é clara o bastante para
+     aparecer tanto sobre o palco quanto sobre uma lâmina escura. */
+  --palco-bg: #1a1e26;
+  --lamina-borda: #5b6472;
   color-scheme: dark;
 }

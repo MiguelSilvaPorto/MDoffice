@@ -363,3 +363,11 @@ avisado ao abrir (nunca some em silêncio).
 - `npm run test:estilos` — o motor das cores (HSL de ida e volta, rampa com o desvio do matiz,
   contraste), o esquema casado, a capa do brilho, o ligar/soltar do estilo e o recálculo vivo
   (trocar a cor ou o tema, órfãos, idempotência).
+
+## Tema escuro: onde a lâmina começa e termina
+
+No tema escuro o **palco** (a área em volta da lâmina) ganha um tom próprio — um degrau acima do
+fundo do app — e a lâmina leva uma **moldura de 1px** (\--lamina-borda\), que destaca o fim dela
+tanto quando a lâmina é escura quanto quando é clara. A **miniatura** da lista usa a mesma moldura,
+e a dica "Clique para adicionar o título/texto" fica em 55% de opacidade (era 40% e sumia no
+escuro). Os dois tokens ficam em \src/styles/tokens.css\.

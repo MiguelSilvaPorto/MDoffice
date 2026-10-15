@@ -573,7 +573,10 @@ body.settings-open #word-pane {
   --wd-link: #0b5bd3; /* link */
   background: var(--wd-papel);
   color: var(--wd-tinta);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), 0 8px 28px rgba(0, 0, 0, 0.14);
+  /* relevo de folha: a moldura fina, uma sombra rente e outra longa por baixo, e uma dobra clara
+     no topo — é o que dá a ilusão de profundidade (no escuro a sombra sozinha sumia) */
+  box-shadow: 0 0 0 1px var(--lamina-borda, var(--border)), 0 1px 3px rgba(0, 0, 0, 0.18),
+    0 8px 28px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 /* Tema escuro: a folha escurece junto com a interface (os tons são os da prévia do
@@ -589,7 +592,10 @@ body.settings-open #word-pane {
   --wd-hr: #2b303b;
   --wd-filete: #2b303b;
   --wd-link: #a5b4fc;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 8px 28px rgba(0, 0, 0, 0.45);
+  /* relevo no escuro: a moldura clara + a sombra em duas camadas + a dobra clara no topo (a
+     luz batendo na borda de cima da folha) */
+  box-shadow: 0 0 0 1px var(--lamina-borda, #3a4150), 0 1px 3px rgba(0, 0, 0, 0.5),
+    0 8px 28px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* O realce é de marca-texto (a paleta é toda clara): o texto por cima dele continua

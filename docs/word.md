@@ -70,3 +70,9 @@ O motor avisa (nunca some em silêncio) o que ainda **não** entende e pode simp
 salvar: comentários, revisões, campos e caixas de texto; e ainda não há tradução ao vivo
 (use **Exportar → Inglês**), desenho, notas de rodapé, colunas e tabelas dentro de tabelas
 com mesclagem complexa. O histórico guarda cópias antes de qualquer alteração.
+
+## Relevo da folha
+
+A folha tem **ilusão de profundidade** nos dois temas: moldura de 1px, sombra em **duas camadas**
+(uma rente e uma longa) e uma **dobra clara de 1px no topo** — a luz batendo na borda de cima do
+papel. No tema escuro é o que separa a folha do palco (a sombra sozinha sumia).
