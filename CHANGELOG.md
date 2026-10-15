@@ -413,6 +413,19 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Estúdio · Modelo e cópias vinculadas: replicar a box sem copiar tudo** (fase 5) — a aba
+  Desenhar ganhou o grupo **Modelo**: **Modelo** (a box escolhida vira a mestra), **Cópia** (cria uma
+  cópia vinculada dela: o cartão e o conteúdo, deslocados), **Desvincular** e **Re-vincular** (por
+  **parte**). É o caso do cartão repetido: o **nome de cada um** se desvincula (basta editá-lo — o
+  app desvincula aquela parte sozinho e avisa como voltar) e **logo, fundo e pintura seguem o
+  modelo** — mudar o modelo muda todas as cópias. A **posição e o tamanho de cada cópia são livres**
+  (mover/redimensionar uma não mexe nas outras); as partes seguem o **arranjo** do modelo dentro do
+  cartão. A unidade da box é o cartão e o que está **dentro** dele (pela contenção do centro, o
+  mesmo critério das Regiões e dos Arranjos), e o vínculo é por parte (`Shape.modelo`), com
+  `Shape.ehModelo`/`Shape.desvinculado` — tudo **do app**: o `.pptx` recebe as formas como estão (o
+  PowerPoint não tem instância) e o rascunho guarda os vínculos para continuar editando depois.
+  Teste: `npm run test:modelo`.
+
 - **Estúdio · Camadas: a pintura numa lista que se esconde, ordena e apaga de uma vez** (fase 4) — o
   painel lateral ganhou a aba **Camadas**: cada **grupo de pintura** (e cada forma solta) aparece
   como uma camada, com **olho**, **nome** editável, **opacidade**, e as ações **subir/descer** (a

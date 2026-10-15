@@ -1774,6 +1774,15 @@ button.ppr.big .ppr-gal-ic svg {
   gap: 1px;
 }
 
+/* o ícone do grupo Modelo: um cartão com um cartão menor atrás (a cópia vinculada) */
+.ppr-modelo-ic {
+  width: 16px;
+  height: 13px;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  box-shadow: -3px 3px 0 -1px currentColor;
+}
+
 /* ---------- Pintura: o pincel, o balde e o vidro (fase 3) ---------- */
 /* com a ferramenta de pintura na mão, as formas não pegam o ponteiro (quem desenha é o palco) */
 .pp-pintura-on .pp-slide [data-shape] {

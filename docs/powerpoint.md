@@ -460,6 +460,31 @@ como uma **camada**, de cima para baixo = da frente para trás. Em cada uma:
 
 Teste: `npm run test:camadas`.
 
+## Estúdio · Modelo e cópias vinculadas
+
+O grupo **Modelo** (aba Desenhar):
+
+- **Modelo**: a box escolhida (o cartão e o que está **dentro** dele) vira a mestra;
+- **Cópia**: cria uma **cópia vinculada** dela — o cartão e o conteúdo, deslocados; a cópia entra
+  logo depois da origem e já fica escolhida;
+- **Desvincular** / **Re-vincular**: por **parte** (o cartão, um texto, uma imagem, uma forma
+  pintada). A parte desvinculada é **própria daquela cópia**; re-vincular traz o que o modelo tem
+  agora.
+
+**Como o vínculo se comporta:** editar uma parte **vinculada** de uma cópia **desvincula essa
+parte sozinha** (com o aviso e o caminho de volta) — é o que faz o "Diego Souza" de cada cartão ser
+dele sem nenhum passo extra, enquanto o **logo, o fundo e a pintura seguem o modelo**: mudar o
+modelo muda todas as cópias. A **posição e o tamanho de cada cópia são livres** (mover ou
+redimensionar uma não mexe nas outras); as partes seguem o **arranjo** do modelo dentro do cartão —
+sem escala automática (o tamanho é seu, o arranjo é do modelo).
+
+**Quem guarda o quê:** os vínculos são **do app** (`Shape.ehModelo`, `Shape.modelo` e
+`Shape.desvinculado` ficam no rascunho/histórico). O **`.pptx` recebe as formas como estão** — o
+PowerPoint não tem instância, e o arquivo mostra exatamente o que você viu. Nesta entrega a lâmina
+tem **um modelo** (vários modelos por lâmina é um passo seguinte).
+
+Teste: `npm run test:modelo`.
+
 ## Conectar formas
 
 - Na aba **Inserir**, o botão **Conectar** (grupo **Diagrama**, ao lado do Fluxo do Mermaid) liga

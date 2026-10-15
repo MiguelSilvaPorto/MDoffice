@@ -8,6 +8,7 @@ import { pedirTexto } from "../dialogoTexto";
 import { fluxoParaFormas, lerFluxoMermaid } from "./edicao/mermaid";
 import { ligarAjusteAlturaFita, ligarEncaixeFita, ligarRecolherFita, ligarRodaHorizontal } from "../fita";
 import { podeIsolar, caminhoDaBox, mascaraDaBox, nomeDaBox } from "./edicao/estudio";
+import { criarModelo, desfazerModelo, novaCopia, desvincular, revincular, sincronizarCopias, ehParteDeCopia, temModelo, podeDesvincular, podeRevincular } from "./edicao/modelo";
 import { camadasDe, criarCamada, renomearCamada, esconderCamada, opacidadeDaCamada, moverCamada, apagarCamada, fundirParaBaixo, PREFIXO_PINTURA } from "./edicao/camadas";
 import { regioesDa, regiaoEm, caminhoDaRegiao, mascaraDaRegiao, poligonoDaForma, type Ponto, type Regiao } from "./edicao/regioes";
 import { recortar, fitaDoTraco, ehConvexo, formaDaPintura } from "./edicao/pintura";
@@ -1118,11 +1119,41 @@ export class PowerPointHost {
     }
   }
 
+  /** Os ids das formas que MUDARAM entre dois estados (a assinatura é o próprio JSON da forma). */
+  private idsMudados(antes: Slide, depois: Slide): string[] {
+    const assinatura = (s: Shape) => JSON.stringify(s);
+    const antesPor = new Map(antes.shapes.map((s) => [s.id, assinatura(s)]));
+    const mudadas: string[] = [];
+    for (const s of depois.shapes) {
+      const a = antesPor.get(s.id);
+      if (a === undefined || a !== assinatura(s)) mudadas.push(s.id);
+    }
+    return mudadas;
+  }
+
   /** Aplica uma edição à lâmina atual: guarda o desfazer, troca a lâmina e redesenha. */
   private editar(fn: (s: Slide) => Slide, chave = ""): void {
     const antes = this.atual();
-    const depois = fn(antes);
+    let depois = fn(antes);
     if (depois === antes) return;
+    // MODELO: editar uma PARTE vinculada de uma cópia DESVINCULA essa parte (o vínculo é do modelo,
+    // não uma jaula: quem mexeu quis que aquela parte fosse própria) — e o aviso diz como voltar
+    const soltas = this.idsMudados(antes, depois).filter((id) => {
+      const s = depois.shapes.find((x) => x.id === id);
+      return !!s && ehParteDeCopia(s) && !s.desvinculado;
+    });
+    if (soltas.length) {
+      depois = desvincular(depois, soltas);
+      toast(
+        soltas.length === 1
+          ? "Esta parte deixou de seguir o modelo — use Re-vincular (aba Desenhar) para voltar."
+          : `${soltas.length} partes deixaram de seguir o modelo — use Re-vincular para voltar.`,
+        "info",
+        4400
+      );
+    }
+    // e as cópias acompanham o modelo a cada edição
+    if (temModelo(depois)) depois = sincronizarCopias(depois, this.dim());
     this.registrar(chave);
     this.substituirSlide(depois);
     this.markDirty();
@@ -1878,6 +1909,9 @@ export class PowerPointHost {
       regiao: this.regiao?.nome,
       pintura: this.pintura,
       pinturaTransp: this.pinturaTransp,
+      modelo: temModelo(this.atual()),
+      desvinculavel: podeDesvincular(this.atual(), this.selecao),
+      revinculavel: podeRevincular(this.atual(), this.selecao),
       transicao: normalizarTransicao(this.atual().transicao),
       transicaoPreservada: !!this.atual().transicaoXml,
       animacao,
@@ -2954,6 +2988,39 @@ export class PowerPointHost {
         this.alternarModoRegioes();
         return;
       }
+      // ---- Modelo de box e cópias vinculadas (fase 5) ----
+      case "modelo-criar": {
+        const alvo = this.principal();
+        if (!alvo) return;
+        this.editar((s) => criarModelo(s, alvo.id, d), "modelo");
+        toast("Esta box virou modelo: as cópias vinculadas seguem o que mudar nela.", "ok", 4400);
+        return;
+      }
+      case "modelo-desfazer": {
+        const alvo = this.principal();
+        if (alvo) this.editar((s) => desfazerModelo(s, alvo.id, d), "modelo");
+        return;
+      }
+      case "modelo-copia": {
+        const alvo = this.principal();
+        if (!alvo) return;
+        const { slide, card, novos } = novaCopia(this.atual(), alvo.id, d);
+        if (!card) return;
+        this.registrar("modelo-copia");
+        this.substituirSlide(slide);
+        this.markDirty();
+        this.selecionar(novos);
+        this.pintar();
+        toast("Cópia vinculada criada: editar o modelo muda todas; o nome de cada uma se desvincula sozinho ao editar.", "ok", 5600);
+        return;
+      }
+      case "modelo-desvincular":
+        this.editar((s) => desvincular(s, ids), "modelo-desvincular");
+        return;
+      case "modelo-revincular":
+        this.editar((s) => revincular(s, ids, d), "modelo-revincular");
+        return;
+
       // ---- Camadas: a pintura (e as formas) agrupada numa lista que se esconde e ordena ----
       case "camada-nova": {
         this.editar((s) => criarCamada(s, this.selecao), "camada-nova");

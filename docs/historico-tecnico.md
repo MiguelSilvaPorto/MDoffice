@@ -12260,3 +12260,52 @@ antigas quando fizer sentido.
   olham a ORDEM das formas depois de cada ação, e não só o `grupo`. O caso do `oculta` removido (e
   não deixado como `false`) prende o JSON do rascunho: uma chave `false` viajaria para o `.pptx`
   como uma forma "não escondida" que o importador teria de entender à toa.
+
+
+## src/powerpoint/edicao/modelo.ts (arquivo novo) · schema.ts · powerpoint.ts · ui/fita.ts
+
+### 2026-10-15 · Estúdio (fase 5) · o modelo de box e as cópias vinculadas
+
+- **Local:** `unidadesDaBox`, `criarModelo`, `desfazerModelo`, `novaCopia`, `desvincular`,
+  `revincular`, `sincronizarCopias`, `podeDesvincular`/`podeRevincular`, `temModelo`; `Shape.ehModelo`,
+  `Shape.modelo` e `Shape.desvinculado` (schema); o grupo **Modelo** da aba Desenhar e o gancho no
+  `editar()` do host
+- **Linha:** `novo` no módulo; `+ ehModelo?: boolean` \| `+ modelo?: string` \| `+ desvinculado?: boolean`
+  no schema; `+` os quatro comandos (`modelo-criar`, `modelo-copia`, `modelo-desvincular`,
+  `modelo-revincular`); no `editar()`: `+ const soltas = this.idsMudados(antes, depois).filter(...)`
+  (desvincula a parte editada) e `+ if (temModelo(depois)) depois = sincronizarCopias(...)`
+- **Porquê:** o motor não tem "container": o cartão e o conteúdo são formas IRMÃS na lâmina, e
+  inventar um container mudaria o modelo de dados inteiro (seleção, grupos, camadas, exportação).
+  A unidade virou, então, **o cartão e o que está dentro dele pela contenção do centro** — o mesmo
+  critério que as Regiões (fase 2), os Arranjos e o encaixe do desenho já usam; nada novo no motor,
+  e o vínculo fica **por parte** (`Shape.modelo` guarda o id da parte do modelo), que é o que
+  permite desvincular só o nome. Duas decisões dão o comportamento que o usuário pediu: (1) editar
+  uma parte vinculada **desvincula sozinho** — sem isso, ou a edição era sobrescrita pela
+  sincronização (uma jaula), ou a pessoa tinha de descobrir e desvincular antes de digitar (burocracia);
+  o aviso diz como voltar; (2) a sincronização usa o **arranjo** do modelo dentro do cartão (a
+  posição relativa), e não a posição absoluta: assim mover a cópia não é desfeito a cada edição, e a
+  lâmina continua com "posição e tamanho livres por cópia" — o que o vínculo segue é o CONTEÚDO e o
+  arranjo. O `novaCopia` desloca a unidade inteira com o limite da lâmina calculado no CONJUNTO: o
+  teste pegou o defeito da primeira versão (prender cada forma por si) — o cartão era preso na
+  borda e as partes não, e a sincronização seguinte reencaixava as partes **fora** do lugar,
+  desalinhando o cartão. `igual()` compara só os campos que a sincronização escreve (e não o JSON
+  inteiro): comparar o objeto todo fazia a sincronização "achar" mudança por causa da ORDEM das
+  chaves criadas pelo clone, e o host redesenha a lâmina a cada edição — sem isso o "não mudou nada"
+  nunca valia.
+
+## scripts/testar-modelo.mjs · package.json
+
+### 2026-10-15 · Estúdio (fase 5) · o teste do vínculo (24 checagens)
+
+- **Local:** script novo; `package.json` ganhou `"test:modelo"`
+- **Linha:** `novo` — a unidade da box, criar o modelo, a cópia (ids novos, `modelo` por parte, sem
+  `ehModelo`, sem grupo herdado, posicionada depois da origem), a propagação (cor e texto do modelo
+  chegam à cópia), a cópia MOVIDA (a sincronização não desfaz o movimento e o arranjo segue), o
+  desvincular/re-vincular (a parte solta mantém o que era dela; re-vincular traz o modelo), o
+  "nada mudou = mesmo slide" e o desfazer o modelo (as cópias perdem o vínculo); e a fiação
+  (schema, grupo, comandos, o gancho no editar, o estado e o ícone)
+- **Porquê:** o vínculo é invisível quando erra: uma parte que segue o modelo sem a pessoa querer
+  apaga o nome dela no próximo clique, e uma cópia que perde o vínculo nunca mais acompanha o
+  modelo. Os testes prendem os DOIS lados (segue × próprio) e o caso que o usuário descreveu (o
+  nome por cópia); a checagem do "mesmo slide" prende o custo — ela falha se a sincronização
+  reescrever a lâmina sem necessidade (e o host redesenha em cima).

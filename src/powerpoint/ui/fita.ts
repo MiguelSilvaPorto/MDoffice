@@ -525,6 +525,15 @@ export class Fita {
          </select>`
       ),
       grupo(
+        "Modelo",
+        `${grande("modelo-criar", `<span class="ppr-modelo-ic"></span>`, "Modelo", "A box escolhida vira MODELO: as cópias vinculadas passam a seguir o que mudar nela")}
+         ${grande("modelo-copia", ic("i-dup"), "Cópia", "Cria uma cópia VINCULADA desta box (o conteúdo segue o modelo; o nome pode ser desvinculado)")}
+         <div class="ppr-col">
+           ${pequeno("modelo-desvincular", ic("i-clear-format"), "Desvincular", "A parte escolhida deixa de seguir o modelo e passa a ser própria desta cópia")}
+           ${pequeno("modelo-revincular", ic("i-refresh"), "Re-vincular", "A parte escolhida volta a seguir o modelo (e já traz o que ele tem agora)")}
+         </div>`
+      ),
+      grupo(
         "Formas",
         `${grande("galeria", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[5], 30)}</span>`, "Formas", "Escolha uma forma e desenhe na lâmina", true)}
          <div class="ppr-col">
@@ -1355,6 +1364,12 @@ export class Fita {
     dis("pintura:pincel", !st.estudio);
     dis("pintura:balde", !st.estudio);
     dis("pintura:vidro", !st.estudio);
+    // Modelo: criar/copiar precisa de uma box escolhida; des/re-vincular, de partes da cópia
+    dis("modelo-criar", !tem);
+    dis("modelo-copia", !tem);
+    dis("modelo-desvincular", !st.desvinculavel);
+    dis("modelo-revincular", !st.revinculavel);
+    on("modelo-criar", st.modelo);
     const transp = this.el.querySelector<HTMLSelectElement>("[data-transp]");
     if (transp) {
       const valor = String(st.pinturaTransp);

@@ -82,6 +82,12 @@ export interface EstadoUI {
   pintura: "nenhuma" | "pincel" | "balde" | "vidro";
   /** a transparência da pintura (0,05 a 1) */
   pinturaTransp: number;
+  /** a lâmina tem modelo e/ou cópias vinculadas */
+  modelo: boolean;
+  /** a seleção tem partes vinculadas que dá para desvincular do modelo */
+  desvinculavel: boolean;
+  /** a seleção tem partes desvinculadas que dá para re-vincular */
+  revinculavel: boolean;
 }
 
 // A lista de fontes comuns do app (fitas do PowerPoint e do Word). O campo de fonte

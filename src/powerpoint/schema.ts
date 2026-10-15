@@ -232,7 +232,13 @@ export interface Shape {
    * não tem camadas, e o nome fica no rascunho/histórico para voltar a mexer nelas depois.
    */
   camada?: string;
-  /** forma escondida no app (o olho do painel de camadas): não é desenhada e NÃO vai ao `.pptx` */
+  /** esta forma é uma parte do MODELO de box (a raiz é o cartão) — só do app */
+  ehModelo?: boolean;
+  /** (cópia vinculada) a parte do MODELO que esta segue — só do app: o .pptx guarda o resultado */
+  modelo?: string;
+  /** (cópia vinculada) esta parte foi DESVINCULADA: é própria da cópia e não segue o modelo */
+  desvinculado?: boolean;
+  /** forma escondida no app (o olho do painel de camadas): não é desenhada e NÃO vai ao .pptx */
   oculta?: boolean;
   /** ligação presa (ferramenta Conectar): a geometria do conector é DERIVADA das formas ligadas */
   liga?: Liga;
