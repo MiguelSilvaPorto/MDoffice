@@ -9448,3 +9448,50 @@ antigas quando fizer sentido.
   real): 1920/1600/1440/1338 px sem rolagem em todas as abas; a 1200 px só Animações ainda rola (+127 px). No Chrome sem janela com "tempo
   virtual" a medição era instável (artefato do teste, não do código). Obs.: o Vite deste ambiente serve arquivos antigos depois de editar
   (precisa reiniciar). Só a fita do PowerPoint usa o ajuste; Word e Excel seguem como estavam.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-15 · o card da faixa · o "+" do canto sai e o rótulo abre a galeria
+- **Local:** o card do fim da faixa (`renderFaixa`) + o import do `ancoraDoPopup`
+- **Linha:** o card perde o `<span class="pp-thumb-add-previa">` e o botão `+ .pp-thumb-add-mais`;
+  o `+ .pp-thumb-add-rot` deixa de chamar `run("slide-new")` e passa a
+  `abrirGaleriaDeLayouts(e.currentTarget, this.setup, (l) => this.run("slide-new", l))`, com o
+  `+ if (ancoraDoPopup() === e.currentTarget) { fecharPopup(); return; }` antes
+- **Porquê:** pedido do usuário ("o botão de cima era para sumir e botão de baixa assumir a função
+  do de cima"): o "+" redondo pendia do canto da prévia e pedia um alvo próprio; o rótulo embaixo,
+  que já é o alvo natural, assume a função dele. O card fica com DOIS alvos sem ornamento — a
+  prévia cria direto (a preferência do "último layout") e o rótulo abre a galeria —, e o
+  `ancoraDoPopup` repete o contrato dos popups da fita (o MESMO botão recolhe o que abriu). Sem o
+  `fecharPopup()` no caminho da reabertura, o clique repetido no rótulo fecharia e reabriria no
+  mesmo toque (o `abrirPopup` fecha o anterior antes de montar).
+
+## src/styles/powerpoint.css
+
+### 2026-10-15 · o card da faixa · o CSS do "+" do canto sai e a largura desce para o corpo
+- **Local:** o bloco `.pp-thumb-add` da faixa de lâminas
+- **Linha:** `- .pp-thumb-add { position: relative; }` · `- .pp-thumb-add .pp-thumb-add-previa { … }` ·
+  `- .pp-thumb-add .pp-thumb-add-mais { … }` e `- …-mais:hover`; o `-corpo` assume
+  `width: calc(100% - 14px)` (era o `-previa` que dava a margem)
+- **Porquê:** sem o "+" absoluto o `-previa` ficou sem função (era a âncora dele) e o CSS morto
+  casaria um elemento que não existe — as checagens passam a negar os dois nomes. A largura foi
+  para o próprio botão para a prévia manter os 7px de margem de cada lado (o desenho continua o
+  mesmo).
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · o card da faixa · as checagens do "+" do canto viram as do rótulo
+- **Local:** o bloco "o card da faixa…" e o do CSS do botão dividido
+- **Linha:** `~` a checagem do card passa a exigir o rótulo chamando `abrirGaleriaDeLayouts` (via
+  `ancoraDoPopup`) e a negar `pp-thumb-add-mais` · `~` a do CSS lê o `-corpo` com a largura própria
+  e nega `-previa`/`-mais`
+- **Porquê:** as checagens antigas prendiam o "+" do canto — exatamente o desenho que o usuário
+  pediu para não voltar. O teste passa a prender a estrutura nova (prévia cria; rótulo abre a
+  galeria; o canto não existe), não a implementação.
+
+## docs/powerpoint.md
+
+### 2026-10-15 · o card da faixa · o documento do módulo
+- **Local:** "Lâminas" (o parágrafo do botão dividido)
+- **Linha:** o card passa a ser descrito como "a **prévia** cria com o último layout e o
+  **rótulo** abre a galeria — o "+" redondo que pendia do canto da prévia saiu"
+- **Porquê:** o documento do módulo descreve o que o app faz; o card mudou de alvos.

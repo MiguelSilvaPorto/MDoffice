@@ -691,21 +691,21 @@ checa(
   "a preferência não sobreviveria ao recarregar (ou o Layout não a atualizaria)"
 );
 checa(
-  "o card da faixa tem dois alvos: o corpo cria e o \"+\" abre a galeria",
+  "o card da faixa: a prévia cria e o rótulo \"+ Nova lâmina\" abre a galeria (o \"+\" do canto saiu)",
   /miniaturaDeLayout\(this\.ultimoLayout, this\.setup\)/.test(ppt) &&
     /pp-thumb-add-corpo/.test(ppt) &&
     /pp-thumb-add-rot/.test(ppt) &&
-    /pp-thumb-add-mais/.test(ppt) &&
+    !/pp-thumb-add-mais/.test(ppt) &&
     /querySelector<HTMLButtonElement>\("\.pp-thumb-add-corpo"\)!\.addEventListener\("click", \(\) => this\.run\("slide-new"\)\)/.test(ppt) &&
-    /querySelector<HTMLButtonElement>\("\.pp-thumb-add-mais"\)!\.addEventListener\("click", \(e\) => \{[\s\S]{0,220}abrirGaleriaDeLayouts\(e\.currentTarget/.test(ppt),
-  "o card voltaria ao “+” sem prévia (ou o “+” sem galeria)"
+    /querySelector<HTMLButtonElement>\("\.pp-thumb-add-rot"\)!\.addEventListener\("click", \(e\) => \{[\s\S]{0,200}ancoraDoPopup\(\) === e\.currentTarget[\s\S]{0,400}abrirGaleriaDeLayouts\(e\.currentTarget/.test(ppt),
+  "o card perderia a prévia, o rótulo deixaria de abrir a galeria (ou o \"+\" voltaria ao canto)"
 );
 checa(
   "css: as duas metades do botão dividido e a prévia do card têm estilo próprio",
   /\.ppr-dividido\s*\{[^}]*display:\s*inline-flex/s.test(ler("src/styles/powerpoint-edicao.css")) &&
     /\.ppr-dividido \.ppr-dividido-seta\s*\{[^}]*min-width:\s*0/s.test(ler("src/styles/powerpoint-edicao.css")) &&
-    /\.pp-thumb-add \.pp-thumb-add-previa\s*\{/.test(ler("src/styles/powerpoint.css")) &&
-    /\.pp-thumb-add \.pp-thumb-add-mais\s*\{/.test(ler("src/styles/powerpoint.css")),
+    /\.pp-thumb-add \.pp-thumb-add-corpo\s*\{[^}]*width:\s*calc\(100% - 14px\)/s.test(ler("src/styles/powerpoint.css")) &&
+    !/pp-thumb-add-(previa|mais)/.test(ler("src/styles/powerpoint.css")),
   "o botão dividido ficaria com duas bordas (ou a prévia sem estilo)"
 );
 checa(

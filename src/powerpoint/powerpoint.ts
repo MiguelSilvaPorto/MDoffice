@@ -79,7 +79,7 @@ import { abrirCores } from "./ui/cores";
 import { Fita } from "./ui/fita";
 import { abrirGaleriaDeLayouts, miniaturaDeLayout } from "./ui/layoutPreview";
 import { Painel } from "./ui/painel";
-import { abrirPopup, fecharPopup } from "./ui/popup";
+import { abrirPopup, ancoraDoPopup, fecharPopup } from "./ui/popup";
 import type { EstadoUI } from "./ui/estado";
 import type { Animacao, AnimacaoDirecao, AnimacaoInicio, AnimacaoTipo, Deck, DeckSetup, Fill, GraficoTipo, Lado, Para, Shape, ShapeBox, Slide, SlideLayout, TextAlign, Transicao, TransicaoDirecao, TransicaoTipo } from "./schema";
 
@@ -1059,17 +1059,20 @@ export class PowerPointHost {
     add.className = "pp-thumb-add";
     const rotuloUltimo = ROTULOS_LAYOUT[this.ultimoLayout];
     const titulo = `Nova lâmina no fim (${rotuloUltimo})`;
-    // o card tem DOIS alvos: o corpo (a prévia e o rótulo) cria a lâmina com o último layout; o
-    // "+" no canto abre a galeria com todas as variações (e a escolha lá passa a ser o "último")
+    // o card tem DOIS alvos: a prévia cria a lâmina com o último layout; o rótulo "+ Nova lâmina"
+    // abre a galeria com todas as variações (e a escolha lá cria e passa a ser o "último").
+    // O "+" redondo que pendia do canto da prévia saiu a pedido — o rótulo assumiu a função dele.
+    const dicaGaleria = "Nova lâmina: escolher o layout";
     add.innerHTML =
-      `<span class="pp-thumb-add-previa">` +
       `<button type="button" class="pp-thumb-add-corpo" title="${titulo}" aria-label="${titulo}">${miniaturaDeLayout(this.ultimoLayout, this.setup)}</button>` +
-      `<button type="button" class="pp-thumb-add-mais" title="Escolher o layout da nova lâmina" aria-label="Escolher o layout da nova lâmina">+</button>` +
-      `</span>` +
-      `<button type="button" class="pp-thumb-add-rot" title="${titulo}" aria-label="${titulo}"><b>+</b> Nova lâmina</button>`;
+      `<button type="button" class="pp-thumb-add-rot" title="${dicaGaleria}" aria-label="${dicaGaleria}"><b>+</b> Nova lâmina</button>`;
     add.querySelector<HTMLButtonElement>(".pp-thumb-add-corpo")!.addEventListener("click", () => this.run("slide-new"));
-    add.querySelector<HTMLButtonElement>(".pp-thumb-add-rot")!.addEventListener("click", () => this.run("slide-new"));
-    add.querySelector<HTMLButtonElement>(".pp-thumb-add-mais")!.addEventListener("click", (e) => {
+    add.querySelector<HTMLButtonElement>(".pp-thumb-add-rot")!.addEventListener("click", (e) => {
+      // o MESMO botão recolhe o que abriu (como nos popups da fita)
+      if (ancoraDoPopup() === e.currentTarget) {
+        fecharPopup();
+        return;
+      }
       abrirGaleriaDeLayouts(e.currentTarget as HTMLElement, this.setup, (l) => this.run("slide-new", l));
     });
     this.strip.append(add);

@@ -119,13 +119,14 @@ avisado ao abrir (nunca some em silêncio).
   abre um menu do app — **Duplicar lâmina**, **Nova lâmina no fim**, **Renomear…**, **Ocultar/
   Mostrar na apresentação** e **Excluir lâmina** — agindo na lâmina clicada (antes caía no menu do
   navegador: Voltar/Atualizar/Salvar como/Imprimir/Inspecionar). **Nova lâmina** é um **botão
-  dividido**: o **clique na frente** (e o **corpo** do card **+ Nova lâmina** do fim da faixa, que
-  mostra a **prévia** do layout) cria a lâmina **na hora**, com o **último layout escolhido** — a
-  primeira nasce **Capa**, e a preferência sobrevive ao recarregar; a **setinha ▾** (e o **"+"** no
-  canto da prévia do card, e o **Layout**) abre a **galeria em grade** com a **miniatura de cada
-  layout** (os espaços como silhuetas cinzas, na proporção do deck), onde o atual vem destacado —
-  clicar cria a lâmina com aquele layout (ou aplica na atual) e passa a ser o "último". A **lâmina
-  nova entra no fim** da apresentação e já fica selecionada.
+  dividido**: o **clique na frente** cria a lâmina **na hora**, com o **último layout escolhido** — a
+  primeira nasce **Capa**, e a preferência sobrevive ao recarregar; a **setinha ▾** (e o **Layout**)
+  abre a **galeria em grade** com a **miniatura de cada layout** (os espaços como silhuetas cinzas,
+  na proporção do deck), onde o atual vem destacado — clicar cria a lâmina com aquele layout (ou
+  aplica na atual) e passa a ser o "último". No **card "+ Nova lâmina" do fim da faixa** o mesmo par:
+  a **prévia** cria com o último layout e o **rótulo** abre a galeria — o "+" redondo que pendia do
+  canto da prévia saiu (o rótulo assumiu a função dele). A **lâmina nova entra no fim** da
+  apresentação e já fica selecionada.
 - **A fita cabe na largura da janela**: a faixa de opções **se ajusta sozinha** ao espaço — se o
   painel da aba ativa não cabe, os espaços e os ícones encolhem em degraus (a **fonte não
   encolhe**), depois os botões grandes ficam **numa linha** (fita compacta) e, por fim, os botões
