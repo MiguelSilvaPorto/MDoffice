@@ -10068,3 +10068,16 @@ antigas quando fizer sentido.
   silêncio — a tela ficaria com o "antes" de um lado e o "depois" do outro sem casar. O caso do
   excedente é o que pega a conta do `max(dels, adds)`; a inserção e a remoção pegam os dois lados
   vazios (sem eles, o "vazio" do CSS nunca apareceria).
+
+## CHANGELOG.md
+
+### 2026-10-15 · o diff lado a lado · a promoção da entrada (não adicionado → adicionado)
+- **Local:** Geral → **Não adicionado** → Frontend (a entrada do diff) e Geral → **Adicionado** →
+  Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou; o "Não adicionado" do
+  Frontend voltou ao "(nada no momento)"
+- **Porquê:** o fecho não pode promover: no instante do commit da tarefa a entrada ainda não está
+  na main (a regra do repositório é "nunca promova o que ainda não entrou na main"), então a
+  promoção é uma tarefa de follow-up, depois que o commit chegou (493f43b). Promovi só a entrada
+  DESTA tarefa: as que seguem em "Não adicionado" pertencem a sessões com trabalho aberto ou com
+  promoção em voo — mexer nelas criaria duplicata ou conflito.

@@ -1139,13 +1139,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Histórico: o diff agora é lado a lado**: o painel abria a mudança numa coluna única (a linha
-  vermelha "saiu" em cima, a verde "entrou" embaixo) — agora o **antes fica à esquerda** e o
-  **depois à direita**, **pareados linha a linha**, com uma barra **Antes · Depois** grudada no
-  topo enquanto o diff rola; o que não mudou sai igual dos dois lados, o lado sem linha fica
-  apagado e o trecho omitido vira um **⋯** atravessando as duas colunas. A legenda passou a
-  explicar esquerda/direita. Vale para **Versões** e para **Alterações** (o `test:log` prende o
-  pareamento: troca, inserção, remoção e bloco com excedente).
+- (nada no momento)
 
 **Ferramentas (dev)**
 
@@ -1194,6 +1188,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **Histórico: o diff agora é lado a lado**: o painel abria a mudança numa coluna única (a linha
+  vermelha "saiu" em cima, a verde "entrou" embaixo) — agora o **antes fica à esquerda** e o
+  **depois à direita**, **pareados linha a linha**, com uma barra **Antes · Depois** grudada no
+  topo enquanto o diff rola; o que não mudou sai igual dos dois lados, o lado sem linha fica
+  apagado e o trecho omitido vira um **⋯** atravessando as duas colunas. A legenda passou a
+  explicar esquerda/direita. Vale para **Versões** e para **Alterações** (o `test:log` prende o
+  pareamento: troca, inserção, remoção e bloco com excedente).
 
 - **A faixa não recolhe mais com dois cliques**: o **duplo clique numa aba** (Página Inicial, Inserir…) alternava o recolher da faixa — e quem troca de aba apertado, ou abre e fecha um popup pelo próprio botão (o **Template**, por exemplo), recolhia a faixa **sem querer** ✗ (relato do usuário). O gesto saiu: **recolher/abrir a faixa agora é só o `Ctrl+F1`** (a dica continua no `title` da barra das abas), e **dois cliques no mesmo botão** — inclusive o que abre e fecha um popup — também não recolhem nada. Um clique simples num comando continua devolvendo o espaço, como sempre.
 
