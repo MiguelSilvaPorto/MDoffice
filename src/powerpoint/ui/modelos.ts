@@ -7,6 +7,8 @@
 // abria a galeria de novo e não achava nem o cartão novo nem como criar outro (parecia que só
 // dava para criar um). O "+" primeiro mantém a criação à vista, sem rolagem.
 import { MODELOS, type ModeloPPT } from "../edicao/modelos";
+import { decoracoesDe } from "../edicao/desenhos";
+import type { Shape } from "../schema";
 import { FAMILIAS, rampaDeTons } from "../edicao/estilos";
 import { lerModelosUsuario } from "../modelosUsuario";
 import { themeOf } from "../themes";
@@ -20,6 +22,27 @@ export interface AcoesModelos {
   criar?: (nome: string) => void;
   /** remove um modelo do usuário pelo id */
   excluir?: (id: string) => void;
+}
+
+/** O desenho do modelo em miniatura (a capa dele): as mesmas decorações que a lâmina recebe. */
+function htmlDesenho(m: ModeloPPT, cores: { bg: string; fg: string; accent: string; muted: string }): string {
+  if (!m.desenho) return "";
+  const poligono = (s: Shape): string => {
+    if (s.flipH && s.flipV) return "100% 100%,100% 0,0 0";
+    if (s.flipH) return "100% 0,100% 100%,0 100%";
+    if (s.flipV) return "0 100%,0 0,100% 0";
+    return "0 0,0 100%,100% 100%";
+  };
+  const partes = decoracoesDe(m.desenho, "titulo", cores, 1.6).map((s) => {
+    const css = [`left:${s.box.x}%`, `top:${s.box.y}%`, `width:${s.box.w}%`, `height:${s.box.h}%`];
+    const cor = s.fillX?.kind === "solid" ? s.fillX : undefined;
+    if (cor) css.push(`background:#${cor.color}`, `opacity:${cor.alpha}`);
+    if (s.ln) css.push(`border:${Math.max(1, Math.round(s.ln.w / 1.5))}px solid #${s.ln.color}`, `opacity:${s.ln.alpha}`, "box-sizing:border-box");
+    if (s.geom === "ellipse") css.push("border-radius:50%");
+    if (s.geom === "rtTriangle") css.push(`clip-path:polygon(${poligono(s)})`);
+    return `<span style="${css.join(";")}"></span>`;
+  });
+  return `<span class="pp-tpl-deco">${partes.join("")}</span>`;
 }
 
 /** Cartão de prévia: o mesmo desenho para os modelos do app e para os do usuário. */
@@ -36,6 +59,7 @@ function cartao(m: ModeloPPT, dados: string): string {
   const previaBg = rampa ? `background:linear-gradient(135deg,#${rampa.claro} 0%,#${rampa.cor} 45%,#${rampa.escuro} 100%)` : `background:#${bg}`;
   return `<button type="button" class="pp-tpl${m.estilo ? " pp-tpl-com-estilo" : ""}" ${dados} title="${esc(m.nome)} — ${esc(m.descricao)}">
       <span class="pp-tpl-previa" style="${previaBg};color:#${fg}">
+        ${htmlDesenho(m, { bg, fg, accent, muted })}
         <span class="pp-tpl-aa" style="font-family:'${esc(m.fonte)}'">Aa</span>
         <span class="pp-tpl-linhas">
           <span style="background:#${fg}"></span>

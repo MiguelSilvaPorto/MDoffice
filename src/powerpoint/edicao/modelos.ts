@@ -10,6 +10,7 @@
 import type { BrilhoEstilo, CelulaTab, DeckSetup, EstiloForma, FamiliaEstilo, Fill, IntensidadeEstilo, Para, Run, Shape, Slide, ThemeId } from "../schema";
 import { themeOf } from "../themes";
 import { corDeContraste, estiloDoDeck } from "./criar";
+import { comDesenho, desenhoDaLamina, type DesenhoId } from "./desenhos";
 
 export interface ModeloPPT {
   id: string;
@@ -28,6 +29,12 @@ export interface ModeloPPT {
    * fundo ao do modelo (o estilo do fundo sai, senão ele seria reescrito pelo recálculo).
    */
   estilo?: { familia: FamiliaEstilo; intensidade: IntensidadeEstilo; brilho: BrilhoEstilo };
+  /**
+   * O desenho do modelo: as decorações da lâmina (barra, faixas, cantos, círculos, moldura, blocos),
+   * diferentes na capa e no miolo. É o que faz o slide parecer OUTRO e não só ter outras cores.
+   * Sem desenho, as decorações que a lâmina já tem ficam como estão (as Ideias geradas não trazem).
+   */
+  desenho?: DesenhoId;
   /** criado pelo usuário: aparece junto dos presets, com opção de remover */
   usuario?: boolean;
   /** criado na hora pelo gerador (Ideias): o cartão mostra "Novo" e não entra no catálogo */
@@ -35,36 +42,33 @@ export interface ModeloPPT {
 }
 
 export const MODELOS: ModeloPPT[] = [
-  { id: "classico", nome: "Clássico", descricao: "Fundo branco, texto escuro e acento índigo", tema: "claro", bg: "", fonte: "Segoe UI" },
-  { id: "papel", nome: "Papel", descricao: "Fundo bege quente e fonte Georgia", tema: "claro", bg: "F7F3EA", fonte: "Georgia" },
-  { id: "moderno", nome: "Moderno", descricao: "Fundo cinza-claro e fonte Inter", tema: "claro", bg: "F3F5FA", fonte: "Inter" },
-  { id: "escuro", nome: "Escuro", descricao: "Fundo quase preto e fonte Segoe UI", tema: "escuro", bg: "", fonte: "Segoe UI" },
-  { id: "meia-noite", nome: "Meia-noite", descricao: "Fundo azul-escuro e fonte Inter", tema: "escuro", bg: "151B26", fonte: "Inter" },
-  { id: "contraste", nome: "Alto contraste", descricao: "Preto e branco com destaques amarelos", tema: "contraste", bg: "", fonte: "Arial" },
+  { id: "classico", nome: "Clássico", descricao: "Fundo branco, texto escuro e acento índigo", tema: "claro", bg: "", fonte: "Segoe UI", desenho: "barra" },
+  { id: "papel", nome: "Papel", descricao: "Fundo bege quente e fonte Georgia", tema: "claro", bg: "F7F3EA", fonte: "Georgia", desenho: "moldura" },
+  { id: "moderno", nome: "Moderno", descricao: "Fundo cinza-claro e fonte Inter", tema: "claro", bg: "F3F5FA", fonte: "Inter", desenho: "faixa" },
+  { id: "escuro", nome: "Escuro", descricao: "Fundo quase preto e fonte Segoe UI", tema: "escuro", bg: "", fonte: "Segoe UI", desenho: "barra" },
+  { id: "meia-noite", nome: "Meia-noite", descricao: "Fundo azul-escuro e fonte Inter", tema: "escuro", bg: "151B26", fonte: "Inter", desenho: "cantos" },
+  { id: "contraste", nome: "Alto contraste", descricao: "Preto e branco com destaques amarelos", tema: "contraste", bg: "", fonte: "Arial", desenho: "moldura" },
   // O catálogo inspirado no DeckCraft (o app irmão): cada design traz as PRÓPRIAS cores nos
   // quatro papéis que o app usa (fundo, texto, acento e secundária) e a fonte — o mesmo
   // formato dos modelos do usuário, então `aplicarModelo` já sabe trocá-las. Os oito primeiros
   // são os temas originais de lá; os cinco últimos, os esquemas de cor extras do catálogo.
-  { id: "deckcraft", nome: "DeckCraft", descricao: "Fundo areia, texto azul-escuro e acento azul", tema: "claro", bg: "EDEBE7", fonte: "Inter", cores: { fg: "1E2B3C", accent: "2E6FD8", muted: "8A5CD8" } },
-  { id: "harbor", nome: "Harbor", descricao: "Fundo azul-marinho e acento turquesa", tema: "escuro", bg: "0B1F2A", fonte: "Open Sans", cores: { fg: "FFFFFF", accent: "1B7FA6", muted: "36B3A8" } },
-  { id: "ember", nome: "Ember", descricao: "Fundo carvão quente e acento laranja", tema: "escuro", bg: "1A1A1A", fonte: "Lato", cores: { fg: "FFFCF7", accent: "D9480F", muted: "F59F00" } },
-  { id: "meadow", nome: "Meadow", descricao: "Fundo verde-mata e acento verde-claro", tema: "escuro", bg: "14281D", fonte: "Open Sans", cores: { fg: "FFFFFF", accent: "4C9A2A", muted: "A4C639" } },
-  { id: "nocturne", nome: "Nocturne", descricao: "Fundo azul-noite e acento violeta", tema: "escuro", bg: "121826", fonte: "Inter", cores: { fg: "F2F4F8", accent: "7C5CFF", muted: "00C2A8" } },
-  { id: "paper", nome: "Paper", descricao: "Cinza de papel com acento azul clássico", tema: "claro", bg: "F2F2F2", fonte: "Lato", cores: { fg: "404040", accent: "4F81BD", muted: "8C8C8C" } },
-  { id: "coral", nome: "Coral Reef", descricao: "Fundo petróleo e acento coral", tema: "escuro", bg: "0F2A33", fonte: "Nunito Sans", cores: { fg: "FDF1EC", accent: "FF6F59", muted: "43AA8B" } },
-  { id: "slate", nome: "Slate", descricao: "Fundo ardósia e acento índigo", tema: "escuro", bg: "111827", fonte: "Roboto", cores: { fg: "F3F4F6", accent: "6366F1", muted: "0EA5E9" } },
-  { id: "grayscale", nome: "Grayscale", descricao: "Preto, branco e cinzas", tema: "claro", bg: "F8F8F8", fonte: "Inter", cores: { fg: "000000", accent: "5F5F5F", muted: "919191" } },
-  { id: "ocean", nome: "Ocean", descricao: "Fundo azul-gelo e acento oceano", tema: "claro", bg: "E8F1F2", fonte: "Inter", cores: { fg: "13293D", accent: "1B98E0", muted: "247BA0" } },
-  { id: "sunset", nome: "Sunset", descricao: "Fundo creme e acento pôr do sol", tema: "claro", bg: "FFF3E6", fonte: "Poppins", cores: { fg: "6F1A07", accent: "FF9F1C", muted: "E76F51" } },
-  { id: "forest", nome: "Forest", descricao: "Fundo palha e acento verde-oliva", tema: "claro", bg: "FEFAE0", fonte: "Merriweather", cores: { fg: "283618", accent: "606C38", muted: "BC6C25" } },
-  { id: "berry", nome: "Berry", descricao: "Fundo rosa-claro e acento vinho", tema: "claro", bg: "F7E8F3", fonte: "Poppins", cores: { fg: "4A1942", accent: "893168", muted: "56A3A6" } },
-  // Os modelos com Estilo de Cor: o FUNDO das lâminas nasce no gradiente da família (a receita
-  // acompanha o acento do próprio modelo), com o texto e a fonte já casados — é o deck da
-  // referência (verde → teal) pronto para usar, e qualquer forma com Estilo de Cor e cor "do
-  // tema" passa a acompanhar o acento daqui.
-  { id: "esmeralda", nome: "Esmeralda", descricao: "Fundo verde→teal com brilho e acento esmeralda", tema: "escuro", bg: "0B3A2B", fonte: "Inter", cores: { fg: "FFFFFF", accent: "2FBF71", muted: "9FD9BC" }, estilo: { familia: "esmeralda", intensidade: "media", brilho: "lustro" } },
-  { id: "oceano", nome: "Oceano", descricao: "Fundo azul→petróleo com brilho e acento oceano", tema: "escuro", bg: "06283D", fonte: "Open Sans", cores: { fg: "FFFFFF", accent: "2D9CDB", muted: "9CC9E8" }, estilo: { familia: "oceano", intensidade: "media", brilho: "lustro" } },
-  { id: "ameixa", nome: "Ameixa", descricao: "Fundo violeta→magenta com brilho e acento ameixa", tema: "escuro", bg: "241033", fonte: "Inter", cores: { fg: "FFFFFF", accent: "A66BD8", muted: "CDA9E8" }, estilo: { familia: "ameixa", intensidade: "media", brilho: "lustro" } },
+  { id: "deckcraft", nome: "DeckCraft", descricao: "Fundo areia, texto azul-escuro e acento azul", tema: "claro", bg: "EDEBE7", fonte: "Inter", cores: { fg: "1E2B3C", accent: "2E6FD8", muted: "8A5CD8" }, desenho: "blocos" },
+  { id: "harbor", nome: "Harbor", descricao: "Fundo azul-marinho e acento turquesa", tema: "escuro", bg: "0B1F2A", fonte: "Open Sans", cores: { fg: "FFFFFF", accent: "1B7FA6", muted: "36B3A8" }, desenho: "faixa" },
+  { id: "ember", nome: "Ember", descricao: "Fundo carvão quente e acento laranja", tema: "escuro", bg: "1A1A1A", fonte: "Lato", cores: { fg: "FFFCF7", accent: "D9480F", muted: "F59F00" }, desenho: "cantos" },
+  { id: "meadow", nome: "Meadow", descricao: "Fundo verde-mata e acento verde-claro", tema: "escuro", bg: "14281D", fonte: "Open Sans", cores: { fg: "FFFFFF", accent: "4C9A2A", muted: "A4C639" }, desenho: "circulos" },
+  { id: "nocturne", nome: "Nocturne", descricao: "Fundo azul-noite e acento violeta", tema: "escuro", bg: "121826", fonte: "Inter", cores: { fg: "F2F4F8", accent: "7C5CFF", muted: "00C2A8" }, desenho: "circulos" },
+  { id: "paper", nome: "Paper", descricao: "Cinza de papel com acento azul clássico", tema: "claro", bg: "F2F2F2", fonte: "Lato", cores: { fg: "404040", accent: "4F81BD", muted: "8C8C8C" }, desenho: "moldura" },
+  { id: "coral", nome: "Coral Reef", descricao: "Fundo petróleo e acento coral", tema: "escuro", bg: "0F2A33", fonte: "Nunito Sans", cores: { fg: "FDF1EC", accent: "FF6F59", muted: "43AA8B" }, desenho: "circulos" },
+  { id: "slate", nome: "Slate", descricao: "Fundo ardósia e acento índigo", tema: "escuro", bg: "111827", fonte: "Roboto", cores: { fg: "F3F4F6", accent: "6366F1", muted: "0EA5E9" }, desenho: "barra" },
+  { id: "grayscale", nome: "Grayscale", descricao: "Preto, branco e cinzas", tema: "claro", bg: "F8F8F8", fonte: "Inter", cores: { fg: "000000", accent: "5F5F5F", muted: "919191" }, desenho: "blocos" },
+  { id: "ocean", nome: "Ocean", descricao: "Fundo azul-gelo e acento oceano", tema: "claro", bg: "E8F1F2", fonte: "Inter", cores: { fg: "13293D", accent: "1B98E0", muted: "247BA0" }, desenho: "faixa" },
+  { id: "sunset", nome: "Sunset", descricao: "Fundo creme e acento pôr do sol", tema: "claro", bg: "FFF3E6", fonte: "Poppins", cores: { fg: "6F1A07", accent: "FF9F1C", muted: "E76F51" }, desenho: "circulos" },
+  { id: "forest", nome: "Forest", descricao: "Fundo palha e acento verde-oliva", tema: "claro", bg: "FEFAE0", fonte: "Merriweather", cores: { fg: "283618", accent: "606C38", muted: "BC6C25" }, desenho: "cantos" },
+  { id: "berry", nome: "Berry", descricao: "Fundo rosa-claro e acento vinho", tema: "claro", bg: "F7E8F3", fonte: "Poppins", cores: { fg: "4A1942", accent: "893168", muted: "56A3A6" }, desenho: "moldura" },
+  // Três modelos de marca, claros e sóbrios, para decks de empresa (o verde é o da marca do app).
+  { id: "corporativo", nome: "Corporativo", descricao: "Fundo branco, texto verde-escuro e acento verde", tema: "claro", bg: "FFFFFF", fonte: "Inter", cores: { fg: "12372A", accent: "0F8B4C", muted: "5B7B6A" }, desenho: "barra" },
+  { id: "executivo", nome: "Executivo", descricao: "Fundo azul-marinho, texto claro e acento dourado", tema: "escuro", bg: "0A1930", fonte: "Georgia", cores: { fg: "F5F1E6", accent: "C9A227", muted: "8FA3BF" }, desenho: "moldura" },
+  { id: "terracota", nome: "Terracota", descricao: "Fundo creme, texto marrom e acento terracota", tema: "claro", bg: "F8EFE7", fonte: "Lato", cores: { fg: "3B2A20", accent: "C2562B", muted: "8C6B5A" }, desenho: "blocos" },
 ];
 
 /** Como o deck está agora — é daqui que saem as cores e a fonte que o modelo substitui. */
@@ -186,7 +190,7 @@ export function contrasteCom(texto: string, superficie: string | undefined, dest
 }
 
 /** Aplica o modelo às lâminas: troca as cores do tema antigo pelas do novo e ajusta a fonte. */
-export function aplicarModelo(slides: Slide[], de: EstiloAtual, modelo: ModeloPPT, tratamento?: TratamentoIdeia): Slide[] {
+export function aplicarModelo(slides: Slide[], de: EstiloAtual, modelo: ModeloPPT, tratamento?: TratamentoIdeia, ratio = 16 / 9): Slide[] {
   const ta = themeOf(de.theme);
   const t0 = themeOf(modelo.tema);
   // um modelo do usuário traz as próprias cores; os presets usam as do tema
@@ -316,7 +320,11 @@ export function aplicarModelo(slides: Slide[], de: EstiloAtual, modelo: ModeloPP
       return f;
     });
     return { ...sl, bg, shapes };
-  }).map((sl) => {
+  }).map((sl0) => {
+    let sl: Slide = sl0;
+    // o desenho do modelo: as decorações da lâmina trocam pelas dele, na paleta dele e no layout
+    // da própria lâmina (a capa e o miolo têm decorações diferentes)
+    if (modelo.desenho) sl = comDesenho(sl, modelo.desenho, { bg: bgNovo, fg: tb.fg, accent: tb.accent, muted: tb.muted }, ratio);
     // o estilo do modelo vive no FUNDO: as lâminas ganham a receita sem cor própria (o estilo
     // segue o acento do modelo); o modelo sem estilo devolve o fundo ao do modelo
     if (modelo.estilo) return { ...sl, bgEstilo: { ...modelo.estilo, base: "" } as EstiloForma };
@@ -360,6 +368,8 @@ export function modeloDoDeck(slides: Slide[], setup: DeckSetup, nome: string, id
   const t = themeOf(setup.theme);
   const est = estiloDoDeck(slides, setup);
   const bg = fundoDoDeck(slides, setup) || setup.bg || t.bg;
+  // o desenho que as lâminas usam (o da primeira que tem) também é do modelo
+  const desenho = slides.map(desenhoDaLamina).find((d) => d);
   return {
     id,
     nome,
@@ -374,6 +384,7 @@ export function modeloDoDeck(slides: Slide[], setup: DeckSetup, nome: string, id
       muted: t.muted,
     },
     ...(estiloDoDeckNasLaminas(slides) ? { estilo: estiloDoDeckNasLaminas(slides)! } : {}),
+    ...(desenho ? { desenho } : {}),
     usuario: true,
   };
 }

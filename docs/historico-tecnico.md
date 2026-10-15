@@ -9029,3 +9029,16 @@ antigas quando fizer sentido.
   já sem a entrada** — o `mover-entrada.mjs`. Fica registrado porque a lição é geral: **índice
   calculado antes de mexer no array não vale depois da mexida** — o mesmo tipo de descuido que já
   tinha aparecido na detecção dos cartões dos Arranjos (área em %² contra limites em %).
+
+### 2026-10-15 · feat/templates-com-desenho · Modelos com desenho (decorações) e sem os três de gradiente
+- **Arquivo/local:** `src/powerpoint/edicao/desenhos.ts` (novo: `decoracoesDe`, `comDesenho`, `refazerDesenho`, `desenhoDaLamina`);
+  `src/powerpoint/edicao/modelos.ts` — `ModeloPPT.desenho`, `MODELOS`, `aplicarModelo(…, ratio)`, `modeloDoDeck`;
+  `src/powerpoint/powerpoint.ts` — `usarModelo()` e o caso `"layout"`; `src/powerpoint/ui/modelos.ts` — `htmlDesenho()`;
+  `src/styles/powerpoint-edicao.css` — `.pp-tpl-deco`; `scripts/testar-modelos.mjs` (novo), `testar-edicao-pptx.mjs`, `testar-layout.mts`.
+- **Linha:** cada modelo era `{tema, bg, fonte, cores}` (só pintura) → + `desenho`; `aplicarModelo` troca as formas fixas marcadas `tpl:`
+  (o desenho e as cores vão no `name`, que sobrevive à cópia de lâmina nova); layout muda → `refazerDesenho`; esmeralda/oceano/ameixa
+  saem de `MODELOS` (as famílias de Estilo de Cor com esses nomes ficam).
+- **Porquê:** o Template só trocava cores e fonte, e o slide continuava igual. Os três de gradiente aplicavam um gradiente fora do tom
+  do modelo com título ilegível. O desenho fica nas bordas (teste garante que não cobre as caixas dos layouts, em 16:9 e 4:3); modelo
+  sem `desenho` (as Ideias geradas) deixa as decorações como estão. `testar-edicao-pptx` ignora as decorações `tpl:` ao conferir cor/fonte.
+- **Observação:** `testar-layout.mts` tem 2 falhas do pincel que já existiam na base desta tarefa (confirmado com o `powerpoint.ts` original).

@@ -792,10 +792,29 @@ button.ppr.big .ppr-gal-ic svg {
 }
 
 .pp-tpl-previa {
+  position: relative;
+  overflow: hidden;
   display: block;
   padding: 9px 8px 8px;
   border-radius: 4px;
   text-align: left;
+}
+
+/* o desenho do modelo em miniatura: atrás do "Aa" e das linhas */
+.pp-tpl-deco {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pp-tpl-deco > span {
+  position: absolute;
+  display: block;
+}
+
+.pp-tpl-aa,
+.pp-tpl-linhas {
+  position: relative;
 }
 
 .pp-tpl-aa {

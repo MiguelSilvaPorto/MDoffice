@@ -18,6 +18,7 @@ import { Historico } from "./edicao/historico";
 import { formasDoLayout, novaLamina, ORDEM_LAYOUTS, ROTULOS_LAYOUT } from "./edicao/layouts";
 import { migrarSlides, registrarMidia } from "./edicao/migrar";
 import { MODELOS, ROTULO_TRATAMENTO, aplicarModelo, type EstiloAtual, type ModeloPPT, type TratamentoIdeia } from "./edicao/modelos";
+import { refazerDesenho } from "./edicao/desenhos";
 import { ARRANJOS, aplicarArranjo, arranjoLegivel, rotuloDoArranjo, unidadesDa, variantesDe, type Arranjo } from "./edicao/arranjos";
 import { gerarDesign } from "./edicao/gerador";
 import { criarModeloUsuario, lerModelosUsuario, removerModeloUsuario } from "./modelosUsuario";
@@ -1857,6 +1858,8 @@ export class PowerPointHost {
         // aplicar um layout à lâmina atual também é uma ESCOLHA de layout: vira o último
         this.definirUltimoLayout(novo);
         this.slides = setLayout(this.deck, this.indice, novo).slides;
+        // a capa e o miolo têm decorações diferentes: o desenho do modelo se refaz para o layout novo
+        this.slides = this.slides.map((sl, i) => (i === this.indice ? refazerDesenho(sl, stageRatio(this.setup)) : sl));
         // lâmina sem caixas próprias (só decoração): recebe as caixas do layout
         const atual = this.atual();
         if (!atual.shapes.some((f) => !f.fixa)) this.substituirSlide({ ...atual, shapes: [...atual.shapes, ...formasDoLayout(novo, this.estilo())] });
@@ -3718,7 +3721,7 @@ export class PowerPointHost {
   /** Aplica um modelo (tema + fundo + fonte) ao deck inteiro, trocando as cores do tema antigo. */
   private usarModelo(modelo: ModeloPPT, tratamento?: TratamentoIdeia): void {
     this.registrar();
-    this.slides = aplicarModelo(this.slides, { theme: this.setup.theme, bg: this.setup.bg, fontFamily: this.setup.fontFamily }, modelo, tratamento);
+    this.slides = aplicarModelo(this.slides, { theme: this.setup.theme, bg: this.setup.bg, fontFamily: this.setup.fontFamily }, modelo, tratamento, stageRatio(this.setup));
     this.setSetup({ theme: modelo.tema, bg: modelo.bg, fontFamily: modelo.fonte });
     // o estilo vivo acompanha o modelo: re-deriva as formas e os fundos com o acento NOVO (a
     // base vazia passou a apontar para ele) — sem isso a pintura ficaria com a rampa antiga até

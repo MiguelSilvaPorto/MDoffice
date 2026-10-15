@@ -127,7 +127,15 @@ avisado ao abrir (nunca some em silêncio).
   lâmina por gesto** (como no PowerPoint; um "tapa" não passa várias). Com a lâmina **ampliada**,
   a roda rola o quadro primeiro e só troca ao chegar ao fim; `Ctrl` + roda é o **zoom** (mirando o
   ponteiro).
-- **Modelos**: o botão **Template** aplica modelos de estilo (tema, cores e fonte) ao deck.
+- **Modelos**: o botão **Template** aplica modelos de estilo (tema, cores, fonte **e desenho**) ao deck.
+  O **desenho** é o que faz a lâmina parecer outra e não só ter outras cores: **barra lateral**,
+  **faixas**, **cantos**, **círculos**, **moldura** ou **blocos**, cada um diferente na **capa/seção**
+  e no **miolo** da apresentação. São formas fixas (atrás do texto, sem seleção) que ficam nas
+  bordas e nos cantos e **nunca cobrem o texto**; trocar de modelo **troca** as decorações (não
+  empilha), trocar o **layout** de uma lâmina refaz o desenho para ele e a lâmina nova herda o da
+  anterior. O cartão do modelo mostra o desenho em miniatura, e **Salvar como modelo** guarda o
+  desenho do deck. Os modelos de gradiente (Esmeralda, Oceano, Ameixa) saíram do catálogo —
+  ficavam ilegíveis — e entraram **Corporativo**, **Executivo** e **Terracota**.
   A galeria tem duas seções: **seus modelos** — o cartão **Novo modelo**, que guarda o visual da
   apresentação atual (quantas vezes você quiser), e os modelos que você já criou, cada um com um
   **× no canto** para apagar; e os **modelos do app**, abaixo do título *Modelos do app*. O cartão
@@ -301,8 +309,8 @@ avisado ao abrir (nunca some em silêncio).
   **ângulo**, sem cor própria ele acompanha o tema e a edição manual solta o estilo, deixando o
   gradiente como pintura. No fundo **não há dobra**: o brilho fica no lustro. "Aplicar a todas as
   lâminas" leva o estilo junto.
-- **Os Modelos combinam com o estilo**: o **Template** tem três modelos com a cara da referência —
-  **Esmeralda**, **Oceano** e **Ameixa** — que põem o Estilo de Cor no fundo das lâminas (o
+- **Os Modelos combinam com o estilo**: o **modelo pode** pôr o Estilo de Cor no fundo das lâminas (os do catálogo
+  não usam mais; os **seus** modelos, sim, se o deck tem) (o
   cartão mostra a **rampa** na prévia) e cujo acento é o do próprio modelo. Aplicar um modelo
   **re-deriva** as formas de Estilo de Cor sem cor própria (a base vazia segue o acento novo) e as
   de cor fixa ficam; aplicar um modelo **sem** estilo devolve o fundo ao do modelo (a receita do

@@ -350,6 +350,9 @@ const H = await empacotar("src/powerpoint/edicao/historico.ts", "historico.mjs")
 
 // ---------------------------------------------------------------- modelos (botão Template)
 const M = await empacotar("src/powerpoint/edicao/modelos.ts", "modelos.mjs");
+// as decorações do desenho do modelo (formas fixas "tpl:") entram antes do texto: os testes de cor, fonte e
+// acabamento olham as formas do deck, então o desenho sai daqui (ele tem o teste próprio, testar-modelos.mjs)
+const aplicar = (...a) => M.aplicarModelo(...a).map((s) => ({ ...s, shapes: s.shapes.filter((f) => !f.name?.startsWith("tpl:")) }));
 {
   const ids = M.MODELOS.map((m) => m.id);
   ok("modelos: ids únicos e campos preenchidos", new Set(ids).size === ids.length && M.MODELOS.every((m) => m.nome && m.descricao && m.fonte && m.tema));
@@ -364,7 +367,7 @@ const M = await empacotar("src/powerpoint/edicao/modelos.ts", "modelos.mjs");
   ];
   const de = { theme: "claro", bg: "", fontFamily: "Segoe UI" };
   const noite = M.MODELOS.find((m) => m.id === "meia-noite");
-  const r = M.aplicarModelo(base, de, noite);
+  const r = aplicar(base, de, noite);
   const rT = r[0].shapes[0];
   const rF = r[1].shapes[0];
   const rC = r[2].shapes[0];
@@ -374,36 +377,33 @@ const M = await empacotar("src/powerpoint/edicao/modelos.ts", "modelos.mjs");
   ok("modelo troca o fundo da lâmina", r[0].bg.color === "151B26");
   ok("cor e fonte próprias ficam como estão", rC.color === "FF0000" && rC.fontFamily === "Consolas");
   ok("aplicar não mexe nas lâminas originais", base[0].shapes[0].color === "1C212B" && base[0].bg.color === "FFFFFF");
-  const duas = M.aplicarModelo(r, { theme: "escuro", bg: "151B26", fontFamily: "Inter" }, noite);
+  const duas = aplicar(r, { theme: "escuro", bg: "151B26", fontFamily: "Inter" }, noite);
   ok("aplicar o mesmo modelo de novo não muda nada", JSON.stringify(duas) === JSON.stringify(r));
   const cont = M.MODELOS.find((m) => m.id === "contraste");
-  const rc = M.aplicarModelo(base, de, cont);
+  const rc = aplicar(base, de, cont);
   ok("contraste recalculado no texto da forma de acento", rc[1].shapes[0].color === "1C212B" && rc[1].shapes[0].fillX.color === "FFD400");
   const cl = M.MODELOS.find((m) => m.id === "classico");
   const basePapel = [mk([caixa({ fontFamily: "Georgia", paras: [para(run("1C212B", "Georgia"))] })], { kind: "solid", color: "F7F3EA" })];
-  const rp = M.aplicarModelo(basePapel, { theme: "claro", bg: "F7F3EA", fontFamily: "Georgia" }, cl);
+  const rp = aplicar(basePapel, { theme: "claro", bg: "F7F3EA", fontFamily: "Georgia" }, cl);
   ok("fundo e fonte personalizados voltam ao padrão do modelo", rp[0].bg.color === "FFFFFF" && rp[0].shapes[0].fontFamily === "Segoe UI");
   const cel = (color) => ({ paras: [para(run(color, "Segoe UI"))], fill: { kind: "solid", color: "4F46E5" } });
   const tab = [mk([caixa({ id: "tb", tabela: { colunas: [50], linhas: [20], celulas: [[cel("1C212B")]] } })])];
-  const rt = M.aplicarModelo(tab, de, noite);
+  const rt = aplicar(tab, de, noite);
   ok("tabela: texto e preenchimento das células trocam junto", rt[0].shapes[0].tabela.celulas[0][0].paras[0].runs[0].color === "F4F5F8" && rt[0].shapes[0].tabela.celulas[0][0].fill.color === "818CF8");
 
   // Estilos de Cor nos modelos (R5): a receita viaja no FUNDO das lâminas e o estilo vivo segue o
   // acento novo — é o que faz o deck inteiro acompanhar o modelo
-  const comEstilo = M.MODELOS.filter((m) => m.estilo);
-  ok(
-    "modelos: as três referências trazem o estilo (média, lustro)",
-    comEstilo.length === 3 && comEstilo.every((m) => m.estilo.familia && m.estilo.intensidade === "media" && m.estilo.brilho === "lustro"),
-    comEstilo.map((m) => m.id).join(", ")
-  );
-  const esmeralda = M.MODELOS.find((m) => m.id === "esmeralda");
-  const rEst = M.aplicarModelo(base, de, esmeralda);
+  // o catálogo do app não traz mais os três modelos de fundo em gradiente (saíam ilegíveis), mas o
+  // MODELO COM ESTILO continua valendo: é o formato dos modelos guardados pelo usuário
+  ok("modelos: o catálogo do app não tem fundo em gradiente", M.MODELOS.every((m) => !m.estilo));
+  const esmeralda = { id: "esmeralda", nome: "Esmeralda", descricao: "", tema: "escuro", bg: "0B3A2B", fonte: "Inter", cores: { fg: "FFFFFF", accent: "2FBF71", muted: "9FD9BC" }, estilo: { familia: "esmeralda", intensidade: "media", brilho: "lustro" }, usuario: true };
+  const rEst = aplicar(base, de, esmeralda);
   ok("modelo com estilo: o fundo das lâminas ganha a receita (sem cor própria)", rEst.every((s) => s.bgEstilo?.familia === "esmeralda" && s.bgEstilo.base === ""));
-  const rSem = M.aplicarModelo(rEst, { theme: "escuro", bg: "0B3A2B", fontFamily: "Inter" }, noite);
+  const rSem = aplicar(rEst, { theme: "escuro", bg: "0B3A2B", fontFamily: "Inter" }, noite);
   ok("modelo sem estilo: o fundo volta ao do modelo (a receita do fundo sai)", rSem.every((s) => !s.bgEstilo));
   const C = await empacotar("src/powerpoint/edicao/criar.ts", "criar.mjs");
   const formaDoTema = caixa({ id: "s", kind: "forma", estilo: { familia: "propria", intensidade: "media", brilho: "nada" }, fillX: { kind: "solid", color: "4F46E5" } });
-  const slidesEst = M.aplicarModelo([mk([formaDoTema], { kind: "solid", color: "FFFFFF" })], de, esmeralda);
+  const slidesEst = aplicar([mk([formaDoTema], { kind: "solid", color: "FFFFFF" })], de, esmeralda);
   const setupNovo = { aspect: "16:9", theme: esmeralda.tema, showNumber: false, footer: "", fontFamily: esmeralda.fonte, fontSize: 18, bg: esmeralda.bg };
   const estNovo = C.estiloDoDeck(slidesEst, setupNovo);
   const derivado = E.atualizarEstilos(slidesEst[0], dim, estNovo).shapes[0];
@@ -452,9 +452,9 @@ const M = await empacotar("src/powerpoint/edicao/modelos.ts", "modelos.mjs");
   ];
   const de = { theme: "claro", bg: "", fontFamily: "Segoe UI" };
   const ocean = M.MODELOS.find((m) => m.id === "ocean");
-  const semTrat = M.aplicarModelo(deck, de, ocean);
+  const semTrat = aplicar(deck, de, ocean);
   ok("ideias: sem tratamento o verde próprio fica como está (o comportamento antigo)", semTrat[0].shapes[0].fillX.color === "2EA36F" && semTrat[0].shapes[0].geom === "rect");
-  const rec = M.aplicarModelo(deck, de, ocean, "recolorir");
+  const rec = aplicar(deck, de, ocean, "recolorir");
   ok(
     "ideias: recolorir leva as cores próprias para a paleta (marca → acento, escuro → fundo escuro, claro → tinta)",
     rec[0].shapes[0].fill === "1B98E0" && rec[0].shapes[0].fillX.color === "1B98E0" && rec[1].shapes[0].fillX.color === "1B98E0" && rec[1].shapes[1].fillX.color === "13293D" && rec[1].shapes[2].fillX.color === "CBE5EF" && rec[0].bg.color === "E8F1F2"
@@ -473,7 +473,7 @@ const M = await empacotar("src/powerpoint/edicao/modelos.ts", "modelos.mjs");
   );
   const escuro = M.MODELOS.find((m) => m.id === "escuro");
   const cartao = [mk([caixa({ id: "card", kind: "forma", fill: "FFFFFF", fillX: { kind: "solid", color: "FFFFFF" }, paras: [para(run("0F2738", "Segoe UI"))] })], { kind: "solid", color: "FFFFFF" })];
-  const comEscuro = M.aplicarModelo(cartao, de, escuro, "recolorir");
+  const comEscuro = aplicar(cartao, de, escuro, "recolorir");
   const card = comEscuro[0].shapes[0];
   ok(
     "ideias: num design escuro o cartão branco escurece e o texto continua legível (o defeito do print)",
@@ -482,13 +482,13 @@ const M = await empacotar("src/powerpoint/edicao/modelos.ts", "modelos.mjs");
   // texto solto em cima de um cartão que é imagem: a cor de trás é desconhecida, então o texto
   // não troca de lado — era o defeito do print (cartão branco de imagem + texto claro em cima)
   const comImagem = [mk([caixa({ id: "card", kind: "imagem", src: "m1", box: { x: 0, y: 0, w: 100, h: 60 } }), caixa({ id: "txt", box: { x: 10, y: 10, w: 60, h: 20 }, color: "0F2738", paras: [para(run("0F2738", "Segoe UI"))] })], { kind: "solid", color: "FFFFFF" })];
-  const sobreImagem = M.aplicarModelo(comImagem, de, escuro, "recolorir")[0].shapes[1];
+  const sobreImagem = aplicar(comImagem, de, escuro, "recolorir")[0].shapes[1];
   ok(
     "ideias: texto solto sobre imagem não troca de lado (o escuro continua escuro e legível)",
     sobreImagem.paras[0].runs[0].color !== "F4F5F8" && M.contrasteDeCores(sobreImagem.paras[0].runs[0].color, "FFFFFF") >= 4.5
   );
-  const cantos = M.aplicarModelo(deck, de, ocean, "cantos");  ok("ideias: cantos arredondados nos quadros pintados (raio 12% no adj) e recoloridos junto", cantos[0].shapes[0].geom === "roundRect" && cantos[0].shapes[0].adj.adj === 12000 && cantos[0].shapes[1].geom === "roundRect" && cantos[0].shapes[0].fillX.color === "1B98E0" && cantos[0].shapes[2].geom === undefined);
-  const cont = M.aplicarModelo(deck, de, ocean, "contorno");
+  const cantos = aplicar(deck, de, ocean, "cantos");  ok("ideias: cantos arredondados nos quadros pintados (raio 12% no adj) e recoloridos junto", cantos[0].shapes[0].geom === "roundRect" && cantos[0].shapes[0].adj.adj === 12000 && cantos[0].shapes[1].geom === "roundRect" && cantos[0].shapes[0].fillX.color === "1B98E0" && cantos[0].shapes[2].geom === undefined);
+  const cont = aplicar(deck, de, ocean, "contorno");
   ok("ideias: contorno de acento nas formas pintadas (1,25 pt no mínimo)", cont[0].shapes[0].ln.color === "1B98E0" && cont[0].shapes[0].ln.w === 1.25 && cont[0].shapes[2].ln === undefined);
   ok("ideias: aplicar não mexe nas lâminas originais", deck[0].shapes[0].fillX.color === "2EA36F" && deck[0].shapes[0].geom === "rect");
 }
@@ -605,7 +605,7 @@ const GEN = await empacotar("src/powerpoint/edicao/gerador.ts", "gerador.mjs");
   const caixa = (extra = {}) => ({ id: "t", kind: "texto", box: { x: 8, y: 10, w: 80, h: 20 }, text: "Oi", fontFamily: "Segoe UI", fontSize: 18, color: "1C212B", bold: false, italic: false, align: "esquerda", fill: "", src: "", rot: 0, ...extra });
   const deckG = [mk([caixa({ paras: [para(run("1C212B"))] })], { kind: "solid", color: "FFFFFF" })];
   const gerado = GEN.gerarDesign(4);
-  const aplicado = M.aplicarModelo(deckG, { theme: "claro", bg: "", fontFamily: "Segoe UI" }, gerado);
+  const aplicado = aplicar(deckG, { theme: "claro", bg: "", fontFamily: "Segoe UI" }, gerado);
   ok(
     "gerador: o design criado na hora aplica como qualquer modelo (fundo, texto e fonte)",
     aplicado[0].bg.color === gerado.bg && aplicado[0].shapes[0].paras[0].runs[0].color === gerado.cores.fg && aplicado[0].shapes[0].fontFamily === gerado.fonte
@@ -631,7 +631,7 @@ const GEN = await empacotar("src/powerpoint/edicao/gerador.ts", "gerador.mjs");
     mk([caixa({ paras: [para(run("1C212B", "Segoe UI"))] })], { kind: "solid", color: "FFFFFF" }),
     mk([caixa({ id: "f", kind: "forma", color: "FFFFFF", fill: "4F46E5", fillX: { kind: "solid", color: "4F46E5" } })]),
   ];
-  const aplicado = M.aplicarModelo(padrao, { theme: "claro", bg: "", fontFamily: "Segoe UI" }, modelo);
+  const aplicado = aplicar(padrao, { theme: "claro", bg: "", fontFamily: "Segoe UI" }, modelo);
   ok(
     "aplicar o modelo do usuário: fundo, texto, fonte e acento",
     aplicado[0].bg.color === "FDF6E3" && aplicado[0].shapes[0].color === "2B2B2B" && aplicado[0].shapes[0].fontFamily === "Georgia" && aplicado[1].shapes[0].fillX.color === "2E7D32",

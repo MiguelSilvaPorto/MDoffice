@@ -1245,12 +1245,9 @@ console.log("\nestilos de cor (galeria, painel e o vivo)");
   const modelosEd = ler("src/powerpoint/edicao/modelos.ts");
   const modelosUi = ler("src/powerpoint/ui/modelos.ts");
   checa(
-    "os modelos podem carregar um Estilo de Cor (e as três referências trazem)",
-    /estilo\?: \{ familia: FamiliaEstilo; intensidade: IntensidadeEstilo; brilho: BrilhoEstilo \}/.test(modelosEd) &&
-      /id: "esmeralda"[\s\S]{0,260}estilo: \{ familia: "esmeralda"/.test(modelosEd) &&
-      /id: "oceano"[\s\S]{0,260}estilo: \{ familia: "oceano"/.test(modelosEd) &&
-      /id: "ameixa"[\s\S]{0,260}estilo: \{ familia: "ameixa"/.test(modelosEd),
-    "faltou o estilo nos modelos novos"
+    "os modelos podem carregar um Estilo de Cor (os do usuário); o catálogo não traz mais os três de gradiente",
+    /estilo\?: \{ familia: FamiliaEstilo; intensidade: IntensidadeEstilo; brilho: BrilhoEstilo \}/.test(modelosEd) && !/\{ id: "(esmeralda|oceano|ameixa)"/.test(modelosEd),
+    "o campo estilo sumiu ou os modelos de gradiente voltaram ao catálogo"
   );
   checa(
     "aplicar um modelo com estilo põe a receita no fundo (e o sem estilo devolve ao do modelo)",
