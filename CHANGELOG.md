@@ -425,6 +425,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - **Arranjos: triângulos e painéis de fundo não viram mais "cartões"** — antes uma forma grande e decorativa (ex.: os triângulos verdes) ou um painel atrás dos cartões era tratado como cartão, engolia os de verdade e o arranjo saía desordenado; agora eles ficam parados e só os cartões com conteúdo se arrumam. Teste: `npm run test:arranjos`.
 
+- **Fonte e Parágrafo à frente das Lâminas na Página Inicial**: o grupo **Lâminas** vinha logo depois da Área de Transferência e empurrava **Fonte** e **Parágrafo** para trás (o pedido veio com print: "quero que esses dois fiquem no lugar das lâminas"). Agora a ordem é **Área de Transferência → Fonte → Parágrafo → Lâminas → Desenho**: o que se usa o tempo todo fica **sem rolar a fita**, e o grupo Lâminas continua inteiro, logo depois do texto.
+
 - **A lâmina tem começo e fim no tema escuro**: no escuro o palco usava o mesmo fundo do app
   (`#0e1014`) e a sombra da lâmina é escura fixa — com a apresentação no tema **Escuro** a lâmina
   ficava da cor do palco e não dava para ver onde ela começava ou terminava (print do usuário).
@@ -444,10 +446,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   faixa deixou de ser o "+" genérico: ele mostra a **prévia do último layout** (a mesma miniatura
   da galeria, com o "+" no canto) e cria com ele no clique — o **clique direito** na miniatura
   segue com as ações da lâmina (Duplicar, Renomear…), intacto.
-
-- **Arranjos: cartões com gradiente, cartões concêntricos e cartões pequenos agora são detectados, e só aparecem os arranjos legíveis** — antes, num deck importado (organograma com cartões em gradiente, 1,9% da lâmina cada), nenhum cartão era detectado e o app embaralhava as 29 caixas de texto; o cartão de fora e o branco de dentro também se descartavam um ao outro. Agora a Lista/Faixa/Destaque com muitos cartões (tiras de 2%) deixam de ser oferecidas.
-
-- **Arranjos: triângulos e painéis de fundo não viram mais "cartões"** — antes uma forma grande e decorativa (ex.: os triângulos verdes) ou um painel atrás dos cartões era tratado como cartão, engolia os de verdade e o arranjo saía desordenado; agora eles ficam parados e só os cartões com conteúdo se arrumam. Teste: `npm run test:arranjos`.
 
 - **O mesmo botão recolhe o popup**: clicar de novo em **Formas**, **Template**, **Layout**, **Nova lâmina**, nas cores ou nas bordas **reabria** o popup em vez de fechá-lo — o clique no próprio botão era ignorado pelo "fecha ao clicar fora" e o comando rodava outra vez. Agora o popup guarda a **âncora** que o abriu e o clique nela **recolhe** (clicar fora ou `Esc` continua fechando, e outro botão troca o popup de lugar).
 

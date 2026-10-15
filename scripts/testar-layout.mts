@@ -792,6 +792,17 @@ checa(
 );
 
 const fitaPptLivre = ler("src/powerpoint/ui/fita.ts");
+checa(
+  "Página Inicial: Fonte e Parágrafo vêm à frente das Lâminas",
+  (() => {
+    const de = fitaPptLivre.indexOf("private inicio(): string {");
+    const ate = fitaPptLivre.indexOf("private inserir(): string {");
+    const trecho = de >= 0 && ate > de ? fitaPptLivre.slice(de, ate) : "";
+    const pos = (rotulo: string) => trecho.indexOf(`        "${rotulo}",`);
+    return pos("Fonte") > 0 && pos("Parágrafo") > pos("Fonte") && pos("Lâminas") > pos("Parágrafo");
+  })(),
+  "a ordem pedida (Fonte e Parágrafo no lugar das Lâminas) se perdeu"
+);
 checa("fita do PowerPoint: fonte e tamanho editáveis", /data-sel="font" data-editavel/.test(fitaPptLivre) && /data-sel="size" data-editavel data-num/.test(fitaPptLivre), "data-editavel ausente nos seletores");
 const fitaWordLivre = ler("src/word/ribbon.ts");
 checa("fita do Word: fonte e tamanho editáveis", /data-sel="font" data-editavel/.test(fitaWordLivre) && /data-sel="size" data-editavel data-num/.test(fitaWordLivre), "data-editavel ausente nos seletores");

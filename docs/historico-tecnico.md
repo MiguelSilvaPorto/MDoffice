@@ -5526,6 +5526,28 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   tirar a âncora do estado ou a comparação do clique, o defeito volta sem nenhum teste quebrar;
   as quatro leem o TS e prendem as duas pontas (nos dois módulos).
 
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-14 · Página Inicial · Fonte e Parágrafo no lugar do grupo Lâminas
+- **Local:** `inicio()` — a ordem dos grupos
+- **Linha:** o bloco `grupo("Lâminas", …)` saiu de **depois da Área de Transferência** e entrou
+  **depois do grupo Parágrafo** (antes do Desenho), com o comentário da decisão; nada mais mudou
+  (os comandos continuam achados por `data-cmd`, então a posição não afeta o `atualizar()`)
+- **Porquê:** o pedido veio com print ("quero que esse dois fiquem no lugar das laminas") — na
+  Página Inicial do PowerPoint o grupo **Lâminas** vinha primeiro e empurrava **Fonte** e
+  **Parágrafo** para trás, obrigando a rolar a fita para chegar no que se usa o tempo todo. A ordem
+  agora é **Área de Transferência → Fonte → Parágrafo → Lâminas → Desenho** (o Lâminas fica
+  inteiro, um grupo depois — trocar os dois de lugar em vez de esconder coisa alguma).
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · Página Inicial · 1 verificação da ordem
+- **Local:** logo depois das checagens da fita do PowerPoint
+- **Linha:** `+ a ordem dos grupos` (as posições de `"Fonte"`, `"Parágrafo"` e `"Lâminas"` na
+  função `inicio()`, lidas do TS)
+- **Porquê:** é uma decisão de produto (o que fica à frente na fita) que um refactor de template
+  desfaz sem ninguém notar — o teste prende a ordem pedida.
+
 ---
 
 ## Próximos registros

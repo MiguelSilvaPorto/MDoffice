@@ -74,6 +74,9 @@ avisado ao abrir (nunca some em silêncio).
   **desabilitados**, em vez de engolir o clique (o relato: "clicado de novo, não abre"); e o menu
   **nunca cobre o próprio botão**: quando não cabe embaixo ele **encolhe** com rolagem por dentro,
   em vez de subir por cima da fita — o clique seguinte no botão continua sendo do botão.
+- **Ordem dos grupos na Página Inicial**: **Área de Transferência → Fonte → Parágrafo → Lâminas →
+  Desenho** — o texto vem **à frente das lâminas** (o que se usa o tempo todo fica sem rolar a
+  fita; o grupo **Lâminas** continua inteiro, logo depois).
 - **Tabelas**: inserir, editar células (Tab anda entre elas), mesclar/dividir, linhas e
   colunas, estilos, bordas e sombreamento — com ida e volta fiel no `.pptx` (`a:tbl`).
 - **Gráficos**: inserir, editar os dados no painel, desenho em SVG e exportação como imagem.

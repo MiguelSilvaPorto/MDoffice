@@ -357,20 +357,6 @@ export class Fita {
          </div>`
       ),
       grupo(
-        "Lâminas",
-        `${grandeDividido("slide-new", "slide-novo", ic("i-plus"), "Nova lâmina", "Nova lâmina no fim (último layout escolhido)", "Escolher o layout da nova lâmina")}
-         <div class="ppr-col">
-           ${pequeno("layout", ic("i-columns"), "Layout", "Layout da lâmina", true)}
-           ${pequeno("slide-dup", ic("i-dup"), "Duplicar", "Duplicar lâmina")}
-           ${pequeno("slide-del", ic("i-trash"), "Excluir", "Excluir lâmina")}
-         </div>
-         <div class="ppr-col">
-           ${pequeno("slide-nome", ic("i-text"), "Renomear", "Dar um nome à lâmina (aparece na miniatura e no .pptx)")}
-           ${pequeno("slide-ocultar", ic("i-eye"), "Ocultar", "Ocultar ou mostrar a lâmina na apresentação")}
-           ${pequeno("slide-reset", ic("i-replace"), "Redefinir", "Redefinir a lâmina: tira as formas próprias e reaplica as caixas do layout")}
-         </div>`
-      ),
-      grupo(
         "Fonte",
         `<div class="ppr-linhas">
            <div class="ppr-linha">
@@ -417,6 +403,22 @@ export class Fita {
              ${btn("v-meio", `<span class="ppr-v">↕</span>`, "Centralizar o texto na vertical", "fmt")}
              ${btn("v-base", `<span class="ppr-v">⤓</span>`, "Alinhar o texto à base", "fmt")}
            </div>
+         </div>`
+      ),
+      // Lâminas vêm DEPOIS do texto, de propósito (pedido do usuário, com print): Fonte e Parágrafo
+      // ocupam o lugar que era dela — o que se usa o tempo todo fica à frente, sem rolar a fita.
+      grupo(
+        "Lâminas",
+        `${grandeDividido("slide-new", "slide-novo", ic("i-plus"), "Nova lâmina", "Nova lâmina no fim (último layout escolhido)", "Escolher o layout da nova lâmina")}
+         <div class="ppr-col">
+           ${pequeno("layout", ic("i-columns"), "Layout", "Layout da lâmina", true)}
+           ${pequeno("slide-dup", ic("i-dup"), "Duplicar", "Duplicar lâmina")}
+           ${pequeno("slide-del", ic("i-trash"), "Excluir", "Excluir lâmina")}
+         </div>
+         <div class="ppr-col">
+           ${pequeno("slide-nome", ic("i-text"), "Renomear", "Dar um nome à lâmina (aparece na miniatura e no .pptx)")}
+           ${pequeno("slide-ocultar", ic("i-eye"), "Ocultar", "Ocultar ou mostrar a lâmina na apresentação")}
+           ${pequeno("slide-reset", ic("i-replace"), "Redefinir", "Redefinir a lâmina: tira as formas próprias e reaplica as caixas do layout")}
          </div>`
       ),
       grupo(
