@@ -413,15 +413,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **A prévia do traço é o que fica (fim da linha fina e serrilhada)**: enquanto se desenha à mão
-  (ou se marcam os pontos da **Curva**), a prévia ao vivo era uma **polilinha em %** com
-  `non-scaling-stroke` — no zoom alto ela saía **fina e com cantos**, enquanto o traço que ficava no
-  fim era **grosso, curvo e suave** (print do usuário). Agora a prévia usa o **mesmo caminho do
-  final**: os pontos viram **pt da lâmina** (a espessura acompanha o zoom, como o traço de
-  verdade), passam pelo **mesmo suavizar/simplificar** e saem nas **cúbicas** do caminho — e, com o
-  **Assistente** ligado, a prévia **já mostra o encaixe nos eixos** (o trecho quase reto fica reto
-  enquanto você desenha). A prévia da **Curva** entrou no mesmo espaço. Teste: `npm run test:layout`.
-
 - **A aba Animações cabe na tela (sem rolar nem cortar o grupo "Animar")** — o plano do encaixe supunha que todo grupo encolhe junto com as métricas, mas a galeria de animações tinha 72 px fixos por cartão e a aba passava da largura mesmo no degrau compacto. Agora a galeria acompanha as métricas e o encaixe **confere no navegador** depois de aplicar o plano: se ainda sobra rolagem, encolhe mais as métricas e, por fim, manda mais um grupo para o menu. Medido num Chrome real: de 1500 a 900 px nenhuma aba rola; em 1338 px a aba Animações cabe inteira.
 
 - **Aba Design completa: Temas, Variantes, Personalizar e Designer**: a aba tinha só dois grupos
@@ -446,6 +437,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **A prévia do traço é o que fica (fim da linha fina e serrilhada)**: enquanto se desenha à mão
+  (ou se marcam os pontos da **Curva**), a prévia ao vivo era uma **polilinha em %** com
+  `non-scaling-stroke` — no zoom alto ela saía **fina e com cantos**, enquanto o traço que ficava no
+  fim era **grosso, curvo e suave** (print do usuário). Agora a prévia usa o **mesmo caminho do
+  final**: os pontos viram **pt da lâmina** (a espessura acompanha o zoom, como o traço de
+  verdade), passam pelo **mesmo suavizar/simplificar** e saem nas **cúbicas** do caminho — e, com o
+  **Assistente** ligado, a prévia **já mostra o encaixe nos eixos** (o trecho quase reto fica reto
+  enquanto você desenha). A prévia da **Curva** entrou no mesmo espaço. Teste: `npm run test:layout`.
 
 - **Arrastar a lâmina para reordenar voltou a funcionar (o app "bloqueava" o gesto)**: clicar e
   segurar a miniatura para levá-la a outra posição **não fazia nada** dentro do app — a faixa usava

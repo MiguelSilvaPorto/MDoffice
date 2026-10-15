@@ -11231,3 +11231,14 @@ antigas quando fizer sentido.
   prévia; a Curva no mesmo espaço)
 - **Porquê:** o documento do módulo descreve o que o app faz; a prévia deixou de ser um desenho
   diferente do que fica.
+
+## CHANGELOG.md
+
+### 2026-10-15 · a prévia do traço · a promoção da entrada (não adicionado → adicionado)
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não pode promover (a entrada ainda não está na main no instante do commit),
+  então a promoção anda depois, quando o commit chega (aqui o `fechar.ps1` já integrara e
+  enviara). Promovi só a entrada DESTA tarefa: as que seguem em "Não adicionado" (a aba Animações
+  e a aba Design completa) são de sessões com trabalho aberto — mexer nelas criaria duplicata ou
+  conflito.
