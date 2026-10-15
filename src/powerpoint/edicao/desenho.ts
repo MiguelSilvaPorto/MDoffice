@@ -543,6 +543,36 @@ export function reconhecerTraco(pontos: PontoTraco[]): TracoReconhecido | null {
 
   const n = pontos.length;
 
+  /**
+   * O trecho RETO nas pontas do traço (a "cauda"): um arco não tem. O canto do cartão desenhado
+   * (reta + curva + reta) virava um arco de uma elipse enorme e GIRADA, e a forma cobria só a
+   * curva — as retas ficavam de fora e o conjunto "jogava para fora" no canto (relato do usuário,
+   * com print). Mede a distância máxima dos pontos da ponta até a CORDA dela numa janela de até
+   * ~50 pt: reta de verdade fica em ~0,5 pt, arco de verdade em ~2–3 pt.
+   */
+  const caudaReta = (): boolean => {
+    const suave = suavizarPontos(pontos);
+    const medir = (seq: PontoTraco[]) => {
+      const p0 = seq[0];
+      let fim = 0;
+      let d = 0;
+      while (fim + 1 < seq.length && d < 50) {
+        fim++;
+        d += Math.hypot(seq[fim].x - seq[fim - 1].x, seq[fim].y - seq[fim - 1].y);
+      }
+      if (d < 25) return false; // ponta curta demais para julgar
+      const p1 = seq[fim];
+      const L = Math.hypot(p1.x - p0.x, p1.y - p0.y) || 1;
+      let max = 0;
+      for (let k = 0; k <= fim; k++) {
+        const dist = Math.abs((seq[k].x - p0.x) * (p1.y - p0.y) - (seq[k].y - p0.y) * (p1.x - p0.x)) / L;
+        if (dist > max) max = dist;
+      }
+      return max <= 1.2;
+    };
+    return medir(suave) || medir([...suave].reverse());
+  };
+
   // --- arco? (um traço curvo que segue uma elipse — o "canto arredondado" ou uma curva larga) ---
   // A elipse é procurada COM orientação: o traço desenhado torto (a mão nunca sai reta) não
   // cabe numa elipse alinhada aos eixos — o ajuste saía grande e a curva não passava pelo
@@ -585,7 +615,7 @@ export function reconhecerTraco(pontos: PontoTraco[]): TracoReconhecido | null {
     const a2 = volta < 0 ? ang0 : angN;
     let varredura = ((a2 - a1) * 180) / Math.PI;
     while (varredura <= 0) varredura += 360;
-    if (varredura >= 35 && varredura <= 330) {
+    if (varredura >= 35 && varredura <= 330 && !caudaReta()) {
       const emAdj = (a: number) => {
         let g = (a * 180) / Math.PI;
         while (g < 0) g += 360;

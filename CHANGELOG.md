@@ -413,6 +413,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A forma criada cobre o traçado todo (o canto com retas não vira um arco solto)**: o canto do
+  cartão desenhado com retas curtas + curva era reconhecido como um **arco de uma elipse enorme e
+  girada** (medido: rx 352 num traçado de 190) — a forma cobria só a curva (as retas do traçado
+  ficavam de fora) e a elipse "jogava para fora" no canto (print do usuário). Agora o reconhecedor
+  mede a **cauda reta** das pontas (reta de verdade fica a ~0,5 pt da corda numa janela de ~50 pt;
+  arco de verdade, ~2–3 pt) e um traçado com cauda reta fica como **desenho livre**, cobrindo tudo —
+  com o encaixe nos eixos e nas formas de baixo. Teste: `npm run test:desenho`.
+
 - **A aba Animações cabe na tela (sem rolar nem cortar o grupo "Animar")** — o plano do encaixe supunha que todo grupo encolhe junto com as métricas, mas a galeria de animações tinha 72 px fixos por cartão e a aba passava da largura mesmo no degrau compacto. Agora a galeria acompanha as métricas e o encaixe **confere no navegador** depois de aplicar o plano: se ainda sobra rolagem, encolhe mais as métricas e, por fim, manda mais um grupo para o menu. Medido num Chrome real: de 1500 a 900 px nenhuma aba rola; em 1338 px a aba Animações cabe inteira.
 
 - **Estúdio: isolar uma box e trabalhar só nela** (fase 1 de um conjunto) — a aba **Desenhar** ganhou

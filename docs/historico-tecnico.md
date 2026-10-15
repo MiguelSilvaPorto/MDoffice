@@ -11738,3 +11738,35 @@ antigas quando fizer sentido.
   as que seguem em "Não adicionado" (a aba Animações, o Estúdio do Desenhar, a aba Design completa e
   o Template com desenho) pertencem a sessões com trabalho aberto — mexer nelas criaria duplicata ou
   conflito.
+
+## src/powerpoint/edicao/desenho.ts
+
+### 2026-10-15 · a forma cobre o traçado · a cauda reta barra o arco
+- **Local:** `reconhecerTraco` — `caudaReta` (nova, logo depois do bloco das formas fechadas) e a
+  condição do ramo do arco
+- **Linha:** `if (varredura >= 35 && varredura <= 330)` → `&& !caudaReta()` · `+ caudaReta` mede a
+  distância máxima dos pontos da ponta até a CORDA numa janela de até ~50 pt (com a suavização de
+  janela 5 só para medir) e considera reta quando ≤ 1,2 pt; ponta com menos de 25 pt não julga
+- **Porquê:** o usuário desenhou o canto do cartão (retas curtas + curva) e a forma cobria só a
+  curva, "jogando para fora" no canto — o ajuste aceitava um arco de uma elipse enorme e girada
+  (medido: rx 352 num traçado de 190, rot 44,5°). O desvio do ajuste não separava os casos (o canto
+  fica a ~2 pt da elipse, como um arco de verdade) — a **cauda reta** separa: o canto mede 0,44–0,6
+  pt da corda, os arcos de verdade 1,94–3,23 pt. Com a cauda reta o traçado vai para o **desenho
+  livre** (cobre o desenho todo, com o encaixe nos eixos e nas formas de baixo).
+
+## scripts/testar-desenho-assistido.mjs
+
+### 2026-10-15 · a forma cobre o traçado · o teste do canto com retas
+- **Local:** o bloco do arco, depois do "C com abertura grande"
+- **Linha:** `+` "canto com retas curtas: fica desenho livre (a forma cobre o traçado todo)" — retas
+  de 50 pt de cada lado da curva de raio 140 têm de dar `reconhecerTraco` nulo
+- **Porquê:** era o caso do print e ele passava em silêncio (virava "Arco"): o teste prende o
+  reconhecimento sem depender de olho.
+
+## docs/powerpoint.md
+
+### 2026-10-15 · a forma cobre o traçado · a bala do arco
+- **Local:** "Desenho à mão (Draw) e Curva por pontos" (a bala do arco)
+- **Linha:** `+` a frase da cauda reta (~0,5 pt contra ~2–3 pt de um arco de verdade)
+- **Porquê:** a bala dizia do desvio e da "faca", mas não do canto com retas — que era o caso que
+  faltava.

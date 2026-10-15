@@ -296,6 +296,20 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
   // "sempre tenta fechar um círculo quando parece ser um círculo") — o C fica ABERTO (arco)
   const cAberto = D.reconhecerTraco(arcoElipse(340, 640, 300, 300, 15, 345, 1.6, 11));
   ok("um C com abertura grande não vira elipse fechada (fica aberto)", cAberto?.geom !== "ellipse", JSON.stringify(cAberto?.geom ?? "livre"));
+  // o canto do cartão com RETAS curtas não é arco: o arco cobria só a curva (as retas do traçado
+  // ficavam de fora) e a elipse enorme e girada "jogava para fora" no canto (relato do usuário,
+  // com print) — vira desenho livre, que cobre o traçado todo
+  {
+    const cantoReto = [];
+    for (let y = 390; y >= 340; y -= 5) cantoReto.push({ x: 200, y });
+    for (let k = 0; k <= 28; k++) {
+      const a = ((180 + (k / 28) * 90) * Math.PI) / 180;
+      cantoReto.push({ x: 340 + 140 * Math.cos(a), y: 340 + 140 * Math.sin(a) });
+    }
+    for (let x = 345; x <= 390; x += 5) cantoReto.push({ x, y: 200 });
+    const canto = D.reconhecerTraco(cantoReto);
+    ok("canto com retas curtas: fica desenho livre (a forma cobre o traçado todo)", canto === null, JSON.stringify(canto?.geom ?? "livre"));
+  }
   const ajusteTopo = D.ajustarElipseOrientada(topoDeCaixa(100, 100, 700, 110, 2, 29, 10, 40));
   ok(
     "ajuste do topo do cartão: o desvio máximo denuncia (média pequena, máximo grande)",

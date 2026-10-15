@@ -297,6 +297,10 @@ avisado ao abrir (nunca some em silêncio).
   livre. O ajuste tem que **passar pelo traço**: o **desvio máximo** da curva (não só a média)
   barra o topo de um cartão (retas com cantos), que virava um arco bojudo **por baixo** do
   desenho — esse traço sai como **linha** (cantos rasos) ou desenho livre com a aresta encaixada.
+  E a **cauda reta** das pontas barra o canto do cartão desenhado com **retas curtas + curva**: ele
+  era aceito como arco de uma elipse enorme e girada (a forma cobria só a curva e "jogava para
+  fora" no canto) — com reta na ponta (a ~0,5 pt da corda numa janela de ~50 pt, contra ~2–3 pt de
+  um arco de verdade) o traçado vai para o **desenho livre**, que cobre o desenho todo.
 - **Desenhar por cima de uma forma existente** (mesmo apagada — a cor não importa) sai **alinhado
   a ela**: a caixa encaixa nas bordas (e nos centros, nas formas reconhecidas) das formas de baixo
   quando está perto — o limiar é 2,5% da largura da lâmina (~24 pt) porque a mão que segue a borda
