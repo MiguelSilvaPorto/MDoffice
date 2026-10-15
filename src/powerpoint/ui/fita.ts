@@ -548,11 +548,9 @@ export class Fita {
            ${pequeno("forma-rapida:3", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[3], 18)}</span>`, "Conector", "Desenhar um conector angular")}
          </div>`
       ),
-      grupo(
-        "Diagrama",
-        `${grande("mermaid-fluxo", ic("i-flow"), "Fluxo do Mermaid", "Cole um flowchart e o app cria os cartões ligados por conectores de cantos suaves")}
-         ${grande("conectar", ic("i-link"), "Conectar", "Ligue duas formas: clique na bolinha da borda de uma e na da outra (Esc sai)")}`
-      ),
+      // O grupo Diagrama (Fluxo do Mermaid e Conectar) saiu daqui: as duas funções são de INSERÇÃO
+      // e já vivem na aba Inserir — repetir o mesmo comando em dois lugares só enche a fita (e foi
+      // o que fez a aba colapsar grupos na largura). Quem desenha usa Canetas/Traço/Estúdio/Pintura.
     ].join("");
   }
 

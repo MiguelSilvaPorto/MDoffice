@@ -413,6 +413,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O grupo "Diagrama" saiu da aba Desenhar (era função repetida)**: **Fluxo do Mermaid** e
+  **Conectar** já vivem na aba **Inserir** — são **inserção**, não desenho — e o atalho na aba
+  Desenhar fazia exatamente a mesma coisa em dois lugares (pedido: *"o diagrama é função repetida, já
+  existe a função e fazem exatamente a mesma coisa"*). Nenhum comando saiu do motor: a segunda porta
+  é que fechou. A aba Desenhar fica com o que é dela — **Canetas**, **Converter**, **Estúdio**,
+  **Traço**, **Pintura**, **Modelo** e **Formas** — e, com um grupo a menos, ela cabe mais larga
+  antes de o encaixe esconder algum outro.
+
 - **A fita não parece mais quebrada quando um grupo vira menu (e ela prefere encolher a esconder)** —
   dois defeitos que apareceram juntos na aba **Desenhar** (que ganhou Estúdio, Pintura e Modelo): o
   **grupo colapsado** era desenhado como um botão **solto no topo** do painel, com o vão do rótulo

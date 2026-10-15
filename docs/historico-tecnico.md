@@ -12334,3 +12334,22 @@ antigas quando fizer sentido.
   ajustado no ponto que mudou de propósito (a 1100 px o plano agora é **compacto**, não **menu**) e
   ganhou a checagem do grupo colapsado **centrado** — as duas coisas ficam presas no
   `test:encaixe`.
+
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-15 · a aba Desenhar sem o grupo Diagrama (função repetida)
+
+- **Local:** `desenhar()` — o grupo "Diagrama" (Fluxo do Mermaid + Conectar) no fim da aba
+- **Linha:** `- grupo("Diagrama", …)` — as duas linhas saíram; os comandos `mermaid-fluxo` e
+  `conectar` continuam vivos, com o botão na aba **Inserir** (o lugar deles)
+- **Porquê:** o pedido do usuário — "o diagrama é função repetida, já existe a função e fazem
+  exatamente a mesma coisa". O atalho nasceu na tarefa da aba Desenhar (para as ferramentas de tinta
+  ficarem descobríveis), mas **Mermaid e Conectar são inserção**: o próprio doc do módulo sempre
+  mandou os dois para o **Inserir**, então a aba Desenhar ganhava um grupo que só repetia comando —
+  e era um dos que o encaixe empurrava para o menu quando a largura apertava (a aba ficou com sete
+  grupos depois do Estúdio, da Pintura e do Modelo; sete é o que faz a barra parecer cheia). Nada foi
+  removido do motor: fechou-se a segunda porta. **Formas** fica: escolher uma forma e desenhá-la na
+  lâmina é desenho (e a galeria do Desenhar mostra a prévia da forma escolhida).
+- **Verificação:** `npm run test:layout`, `test:encaixe`, `test:estudio`, `test:modelo` e
+  `tsc --noEmit` — nenhum deles prendia o grupo na aba, então nada precisou ser afrouxado.
