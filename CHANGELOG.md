@@ -415,17 +415,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - **A aba Animações cabe na tela (sem rolar nem cortar o grupo "Animar")** — o plano do encaixe supunha que todo grupo encolhe junto com as métricas, mas a galeria de animações tinha 72 px fixos por cartão e a aba passava da largura mesmo no degrau compacto. Agora a galeria acompanha as métricas e o encaixe **confere no navegador** depois de aplicar o plano: se ainda sobra rolagem, encolhe mais as métricas e, por fim, manda mais um grupo para o menu. Medido num Chrome real: de 1500 a 900 px nenhuma aba rola; em 1338 px a aba Animações cabe inteira.
 
-- **Arrastar a lâmina para reordenar voltou a funcionar (o app "bloqueava" o gesto)**: clicar e
-  segurar a miniatura para levá-la a outra posição **não fazia nada** dentro do app — a faixa usava
-  o arrasto do **HTML** (`draggable`), e o **Tauri substitui o manipulador de arrasto do WebView2**
-  para entregar os arquivos soltos na janela (a doc do Tauri é explícita: desligar é obrigatório
-  para o HTML5 drag no Windows). O gesto agora é por **eventos de ponteiro**, como o resto do app:
-  **segure e arraste** (um clique simples continua só escolhendo a lâmina), a **linha de acento**
-  mostra onde ela entra — em cima/embaixo na faixa vertical e à esquerda/direita na do topo —, a
-  miniatura na mão fica **esmaecida**, perto da borda a faixa **rola sozinha** e o **Esc** cancela.
-  Como o arrasto só começa depois de um mínimo de movimento, escolher a lâmina, excluir pelo **×** e
-  o **+ Nova lâmina** continuam funcionando como sempre.
-
 - **Aba Design completa: Temas, Variantes, Personalizar e Designer**: a aba tinha só dois grupos
   (fundo e layout) e agora segue os quatro blocos do Office, com a cara do app. **Temas** abre a
   galeria de modelos (a mesma do botão Template), **Variantes** é novo — as seis famílias de cor do
@@ -448,6 +437,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **Arrastar a lâmina para reordenar voltou a funcionar (o app "bloqueava" o gesto)**: clicar e
+  segurar a miniatura para levá-la a outra posição **não fazia nada** dentro do app — a faixa usava
+  o arrasto do **HTML** (`draggable`), e o **Tauri substitui o manipulador de arrasto do WebView2**
+  para entregar os arquivos soltos na janela (a doc do Tauri é explícita: desligar é obrigatório
+  para o HTML5 drag no Windows). O gesto agora é por **eventos de ponteiro**, como o resto do app:
+  **segure e arraste** (um clique simples continua só escolhendo a lâmina), a **linha de acento**
+  mostra onde ela entra — em cima/embaixo na faixa vertical e à esquerda/direita na do topo —, a
+  miniatura na mão fica **esmaecida**, perto da borda a faixa **rola sozinha** e o **Esc** cancela.
+  Como o arrasto só começa depois de um mínimo de movimento, escolher a lâmina, excluir pelo **×** e
+  o **+ Nova lâmina** continuam funcionando como sempre.
 
 - **A apresentação nova nasce clara — o tema do app não decide o papel da lâmina**: o padrão de
   fábrica da apresentação era o tema **Escuro**, então quem usava o app no escuro abria uma lâmina

@@ -10892,4 +10892,14 @@ antigas quando fizer sentido.
   — manter a minha criaria duas entradas para o mesmo fato. O que é desta tarefa naquele arquivo
   (as checagens do resumo e do cartão da Animações atualizadas) segue no histórico técnico, que é
   onde o porquê mora. As outras entradas que continuam em "Não adicionado" são de sessões com
-  trabalho aberto — mexer nelas criaria duplicata ou conflito.
+  trabalho aberto - mexer nelas criaria duplicata ou conflito.
+
+### 2026-10-15 · promoção · a entrada do arrasto da lâmina entra no "Adicionado"
+- **Local:** PowerPoint → "Não adicionado" → Frontend → "Adicionado" → Frontend (topo)
+- **Linha:** 1 entrada movida — **Arrastar a lâmina para reordenar voltou a funcionar** (`79592eb`);
+  a seção "Não adicionado" ficou com o que sobrou da rodada (as entradas da **aba Animações** e da
+  **aba Design**, que continuam lá de propósito: quem cuida delas é a sessão de cada tarefa)
+- **Porquê:** o commit está na `main` (conferido com `git merge-base --is-ancestor 79592eb main`
+  antes de mover), então a promoção não afirma nada falso. Como nas rodadas anteriores, ela anda num
+  passo curto de docs porque o commit do `fechar.ps1` já foi usado para entregar o código —
+  promover junto seria afirmar "está na main" antes de estar.
