@@ -11770,3 +11770,14 @@ antigas quando fizer sentido.
 - **Linha:** `+` a frase da cauda reta (~0,5 pt contra ~2–3 pt de um arco de verdade)
 - **Porquê:** a bala dizia do desvio e da "faca", mas não do canto com retas — que era o caso que
   faltava.
+
+## CHANGELOG.md
+
+### 2026-10-15 · a forma cobre o traçado · a promoção da entrada
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não promove (no instante do commit a entrada ainda não está na main), então a
+  promoção anda depois: a forma que cobre o traçado (fca9ecc). Promovi só a entrada DESTA tarefa —
+  as que seguem em "Não adicionado" (a aba Animações, o Estúdio do Desenhar, a aba Design completa
+  e o Template com desenho) são de sessões com trabalho aberto, mexer nelas criaria duplicata ou
+  conflito.
