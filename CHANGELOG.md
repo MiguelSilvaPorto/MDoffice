@@ -413,13 +413,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **O grupo Canetas ficou agrupado (os 4 botões não estão mais espalhados)**: na fita baixa os botões
-  grandes da aba Desenhar (**Draw**, **Curva**, **Marca-texto**, **Borracha**) tinham ~10 px de ar
-  entre um e outro (o padding de cada botão + o vão do grupo) — o pedido foi compactar ("está muito
-  espalhado"). O ar caiu para ~5 px (metade do vão entre o ícone e o rótulo dentro do próprio botão)
-  e o grupo encolheu de 296 px para 278 px na medição a 1400 px, o que também alivia o encaixe; a
-  mudança vale para os botões grandes de **todas as abas** na fita baixa. Teste: `npm run test:layout`.
-
 - **O grupo "Diagrama" saiu da aba Desenhar (era função repetida)**: **Fluxo do Mermaid** e
   **Conectar** já vivem na aba **Inserir** — são **inserção**, não desenho — e o atalho na aba
   Desenhar fazia exatamente a mesma coisa em dois lugares (pedido: *"o diagrama é função repetida, já
@@ -534,6 +527,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **O grupo Canetas ficou agrupado (os 4 botões não estão mais espalhados)**: na fita baixa os botões
+  grandes da aba Desenhar (**Draw**, **Curva**, **Marca-texto**, **Borracha**) tinham ~10 px de ar
+  entre um e outro (o padding de cada botão + o vão do grupo) — o pedido foi compactar ("está muito
+  espalhado"). O ar caiu para ~5 px (metade do vão entre o ícone e o rótulo dentro do próprio botão)
+  e o grupo encolheu de 296 px para 278 px na medição a 1400 px, o que também alivia o encaixe; a
+  mudança vale para os botões grandes de **todas as abas** na fita baixa. Teste: `npm run test:layout`.
 
 - **Os quatro botões do grupo Desenho ficam juntos e mais compactos**: Preenchimento, Contorno,
   Efeitos e Organizar estavam em **três numa coluna + o Organizar solto ao lado** (print do

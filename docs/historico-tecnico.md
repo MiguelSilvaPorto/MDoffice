@@ -12420,3 +12420,16 @@ antigas quando fizer sentido.
 - **Porquê:** o documento descrevia a compacta só como "espaços menores"; o que o pedido trouxe (e o
   que passa a valer) é o **agrupamento** dos botões grandes — com o caso do Canetas nomeado, para
   quem mexer no CSS não desfazer sem saber por quê.
+
+## CHANGELOG.md
+
+### 2026-10-15 · promoção · a entrada do grupo Canetas agrupado entra no "Adicionado" (PowerPoint)
+- **Local:** PowerPoint ▸ **Não adicionado** ▸ Frontend ▸ **Adicionado** ▸ Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **O grupo Canetas ficou agrupado (os 4 botões não
+  estão mais espalhados)** (`6a9e72e`, worktree `fix/canetas-agrupadas`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não sai no
+  mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
+  entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
+  promoções anteriores. As demais entradas de "Não adicionado" (o grupo Diagrama fora do Desenhar, o
+  Estúdio — Regiões, a aba Animações e as demais) ficaram **intactas** — são de sessões com trabalho
+  aberto.
