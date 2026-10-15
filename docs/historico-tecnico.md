@@ -12353,3 +12353,24 @@ antigas quando fizer sentido.
   lâmina é desenho (e a galeria do Desenhar mostra a prévia da forma escolhida).
 - **Verificação:** `npm run test:layout`, `test:encaixe`, `test:estudio`, `test:modelo` e
   `tsc --noEmit` — nenhum deles prendia o grupo na aba, então nada precisou ser afrouxado.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-15 · o grupo Desenho · os quatro botões em 2×2
+- **Local:** `inicio()` — o `grupo("Desenho", …)`
+- **Linha:** a coluna única (preench/contorno/sombra) + a coluna solta do `ordem` → **duas colunas
+  de dois**: `preench`+`sombra` | `contorno`+`ordem`
+- **Porquê:** o usuário (print) mostrou os quatro botões em **3+1** — a coluna de três deixava o
+  grupo mais alto que os vizinhos e o **Organizar** solto ao lado parecia de fora; o pedido foi
+  "deixe mais compacto a interface para caber os 4 juntos". O 2×2 mantém a largura e corta uma
+  linha de altura (a leitura fica: Preenchimento/Contorno em cima, Efeitos/Organizar embaixo). A
+  ordem no DOM é por **coluna** (o flex enche de cima para baixo), então a primeira coluna leva
+  `preench` e `sombra` — trocar a ordem na mão mudaria o 2×2 de lugar.
+
+## docs/powerpoint.md
+
+### 2026-10-15 · o grupo Desenho · a bala do encaixe da fita
+- **Local:** "A fita cabe na largura da janela, em quatro degraus"
+- **Linha:** `+` a frase do 2×2 do grupo Desenho
+- **Porquê:** a bala descreve o que encolhe e o que colapsa — o grupo mais alto que a faixa era
+  exatamente o que o print mostrava.

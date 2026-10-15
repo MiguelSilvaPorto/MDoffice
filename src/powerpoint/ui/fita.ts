@@ -419,10 +419,10 @@ export class Fita {
         `${grande("galeria", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[6], 30)}</span>`, "Formas", "Inserir uma forma", true)}
          <div class="ppr-col">
            ${pequeno("preench", ic("i-bucket"), "Preenchimento", "Preenchimento da forma", true)}
-           ${pequeno("contorno", ic("i-border"), "Contorno", "Contorno da forma", true)}
            ${pequeno("sombra", `<span class="ppr-sombra-ic"></span>`, "Efeitos", "Sombra e efeitos", true)}
          </div>
          <div class="ppr-col">
+           ${pequeno("contorno", ic("i-border"), "Contorno", "Contorno da forma", true)}
            ${pequeno("ordem", `<span class="ppr-seta">⧉</span>`, "Organizar", "Ordem, alinhamento, grupo e giro", true)}
          </div>`
       ),

@@ -162,7 +162,10 @@ avisado ao abrir (nunca some em silêncio).
   aos poucos e, só então, manda mais um grupo (o último) para o menu. A **galeria de animações**
   deixou de ter 72 px fixos por cartão e acompanha as métricas — era ela que fazia a aba
   **Animações** estourar a largura (medido num Chrome real, de 1500 a 900 px nenhuma aba rola mais;
-  em 1338 px a aba inteira, com a Prévia, o Painel e o Remover, cabe sem menu).
+  em 1338 px a aba inteira, com a Prévia, o Painel e o Remover, cabe sem menu). Os **quatro botões
+  do grupo Desenho** (Preenchimento, Contorno, Efeitos e Organizar) ficam num **2×2** — antes eram
+  três numa coluna e o Organizar solto ao lado, o que deixava o grupo mais alto que o resto da
+  faixa (pedido do usuário, com print).
 - **Popups da fita (Formas, Template, Layout, cores, bordas…)**: abrir e **fechar
   pelo mesmo botão** — clicar de novo nele **recolhe** o que estava aberto (antes o clique no
   próprio botão era ignorado pelo "fecha ao clicar fora" e o comando rodava outra vez, reabrindo).
