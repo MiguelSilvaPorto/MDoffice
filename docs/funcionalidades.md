@@ -16,11 +16,16 @@ Além dos módulos, o app tem recursos que valem para todos eles (abas, tela de 
 histórico de versões, backup em disco, lixeira de documentos, configurações, busca de
 comandos e modo foco) — esses ficam na categoria **Geral** do [changelog](../CHANGELOG.md).
 
-A **tela de Início** mostra os arquivos recentes numa **grade de cartões**, cada um com a
-**prévia do documento** (um papel com o título e o começo do texto, na cor do formato): o
-`.md` lê o próprio texto e os formatos do Office (.docx/.pptx/.xlsx) abrem o zip e tiram o
-texto do XML principal, no lado Rust (comando `preview_file`) — o documento **não** é
-carregado no app só para a prévia.
+A **tela de Início** mostra os arquivos recentes numa **grade de cartões**, cada um com uma
+**versão do documento** pré-carregada — o tipo dá a forma e o arquivo dá o conteúdo: **Word** e
+**Markdown** viram uma **página A4 em pé** no papel do tema (no escuro a folha escurece, como no
+editor; o markdown chega renderizado e cada imagem vira um bloco de figura), o **PowerPoint** uma
+**lâmina 16:9** (sempre clara) e o **Excel** uma **grade** com o cabeçalho das colunas e o número
+das linhas. Sem texto (ou num formato sem prévia), o cartão fica com o ícone do formato. O `.md` lê
+o próprio texto e os formatos do Office (.docx/.pptx/.xlsx) abrem o zip e tiram o texto do XML
+principal, no lado Rust (comando `preview_file`) — o documento **não** é carregado no app só para a
+prévia (no `.xlsx`, o mesmo comando lê a planilha e devolve as primeiras linhas com as células
+separadas por TAB; a estrutura de cada cartão é decidida em `src/homePrevia.ts`).
 
 ## Documentos relacionados
 

@@ -670,19 +670,35 @@ const homePageTs = ler("src/homePage.ts");
 const filesTs = ler("src/files.ts");
 const libRs = ler("src-tauri/src/lib.rs");
 checa(
-  "Início: os recentes são uma grade de cartões com prévia",
-  /\.home-file-grid\s*\{[\s\S]{0,160}display:\s*grid/.test(homeCss) && /class: `home-file-card card-\$\{fmt\}`/.test(homePageTs) && /home-file-papel-titulo/.test(homePageTs),
-  "a lista por linhas não virou grade de cartões"
+  "Início: os recentes são uma grade de cartões com a versão do documento",
+  /\.home-file-grid\s*\{[\s\S]{0,160}display:\s*grid/.test(homeCss) &&
+    /class: `home-file-card card-\$\{fmt\}`/.test(homePageTs) &&
+    /previaEmHtml\(estruturarPrevia\(p\.tipo, p\.texto\)\)/.test(homePageTs) &&
+    /export function estruturarPrevia/.test(ler("src/homePrevia.ts")),
+  "a lista por linhas não virou grade de cartões (ou a prévia não é por tipo)"
 );
 checa(
-  "Início: o texto da prévia entra escapado (é conteúdo de fora)",
-  /escapeHtml\(titulo/.test(homePageTs) && /escapeHtml\(resto\.join/.test(homePageTs) && /escapeHtml\(item\.name\)/.test(homePageTs),
+  "Início: o texto da prévia entra escapado e o markdown passa pelo saneamento",
+  /escapeHtml\(e\.titulo\)/.test(homePageTs) && /escapeHtml\(l\)/.test(homePageTs) && /DOMPurify\.sanitize/.test(homePageTs) && /escapeHtml\(item\.name\)/.test(homePageTs) && /<img\\b/.test(homePageTs),
   "o texto do arquivo poderia virar marcação"
 );
 checa(
-  "Início: a prévia vem do comando preview_file (e o comando está registrado no Rust)",
-  /invoke<PreviaDoc>\("preview_file"/.test(filesTs) && /commands::files::preview_file/.test(libRs) && /pub fn preview_file/.test(ler("src-tauri/src/commands/files.rs")),
-  "o comando da prévia não está ligado"
+  "Início: cada tipo tem a sua forma (página, lâmina, grade) e o papel do tema",
+  /\.home-prev-pagina\s*\{/.test(homeCss) &&
+    /\.home-prev-lamina\s*\{/.test(homeCss) &&
+    /\.home-prev-grade\s*\{/.test(homeCss) &&
+    /\[data-theme="dark"\] \.home-file-preview\s*\{[\s\S]{0,220}--hp-papel:\s*#15181e/.test(homeCss) &&
+    !/home-file-papel/.test(homeCss + homePageTs),
+  "os três desenhos voltariam a ser o mesmo papel branco"
+);
+checa(
+  "Início: a prévia vem do comando preview_file (com a grade da planilha no Rust)",
+  /invoke<PreviaDoc>\("preview_file"/.test(filesTs) &&
+    /commands::files::preview_file/.test(libRs) &&
+    /pub fn preview_file/.test(ler("src-tauri/src/commands/files.rs")) &&
+    /fn valores_da_planilha/.test(ler("src-tauri/src/commands/files.rs")) &&
+    /fn limpar_grade/.test(ler("src-tauri/src/commands/files.rs")),
+  "o comando da prévia não está ligado (ou a planilha perdeu as linhas)"
 );
 checa(
   "o card da faixa abre a galeria de layouts (e a fita não tem mais o 'Nova lâmina')",

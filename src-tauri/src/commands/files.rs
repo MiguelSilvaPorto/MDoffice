@@ -240,23 +240,130 @@ fn limpar_previa(bruto: &str) -> String {
     linhas.join("\n").chars().take(PREVIA_CHARS).collect()
 }
 
+/// O XML cru de uma entrada do pacote (zip) — `None` quando o arquivo ou a entrada não abre.
+fn ler_pacote(p: &Path, entrada: &str) -> Option<String> {
+    use std::io::Read;
+    let arquivo = fs::File::open(p).ok()?;
+    let mut zip = zip::ZipArchive::new(arquivo).ok()?;
+    let mut item = zip.by_name(entrada).ok()?;
+    let mut bruto = String::new();
+    item.read_to_string(&mut bruto).ok()?;
+    Some(bruto)
+}
+
 /// O texto principal de um pacote OOXML (o conteúdo mora num XML dentro do zip).
 fn texto_do_pacote(p: &Path, entrada: &str) -> String {
-    use std::io::Read;
-    let Ok(arquivo) = fs::File::open(p) else {
-        return String::new();
-    };
-    let Ok(mut zip) = zip::ZipArchive::new(arquivo) else {
-        return String::new();
-    };
-    let Ok(mut item) = zip.by_name(entrada) else {
-        return String::new();
-    };
-    let mut bruto = String::new();
-    if item.read_to_string(&mut bruto).is_err() {
-        return String::new();
+    texto_de_xml(&ler_pacote(p, entrada).unwrap_or_default())
+}
+
+/// Quantas linhas e colunas a grade da prévia mostra (o cartão é pequeno).
+const GRADE_LINHAS: usize = 6;
+const GRADE_COLUNAS: usize = 5;
+
+/// Os textos de `xl/sharedStrings.xml`, na ordem: as células de texto apontam para eles por índice.
+fn textos_compartilhados(p: &Path) -> Vec<String> {
+    let bruto = ler_pacote(p, "xl/sharedStrings.xml").unwrap_or_default();
+    let mut out = Vec::new();
+    for pedaco in bruto.split("<si>").skip(1) {
+        let dentro = pedaco.split("</si>").next().unwrap_or("");
+        out.push(texto_de_xml(&format!("<x>{dentro}</x>")).trim().to_string());
     }
-    texto_de_xml(&bruto)
+    out
+}
+
+/// A posição de uma célula pelo `r` do XML ("B3" → linha 3, coluna 2).
+fn ref_da_celula(tag: &str) -> Option<(usize, usize)> {
+    let i = tag.find("r=\"")? + 3;
+    let referencia = &tag[i..i + tag[i..].find('"')?];
+    let letras: String = referencia.chars().take_while(|c| c.is_ascii_alphabetic()).collect();
+    let numeros: String = referencia.chars().skip_while(|c| c.is_ascii_alphabetic()).collect();
+    let mut coluna = 0usize;
+    for c in letras.chars() {
+        coluna = coluna * 26 + (c.to_ascii_uppercase() as usize - 'A' as usize + 1);
+    }
+    Some((numeros.parse().ok()?, coluna))
+}
+
+/// O valor de uma célula: `t="s"` aponta para a lista de textos compartilhados; o texto em linha
+/// (`inlineStr`) mora na própria célula; o resto é o valor cru (números, datas, fórmulas).
+fn valor_da_celula(corpo: &str, strings: &[String]) -> String {
+    if corpo.contains("t=\"s\"") {
+        let indice = corpo
+            .split("<v>")
+            .nth(1)
+            .and_then(|v| v.split("</v>").next())
+            .and_then(|v| v.trim().parse::<usize>().ok());
+        return indice.and_then(|i| strings.get(i).cloned()).unwrap_or_default();
+    }
+    if corpo.contains("<is>") {
+        let dentro = corpo.split("<is>").nth(1).unwrap_or("").split("</is>").next().unwrap_or("");
+        return texto_de_xml(&format!("<x>{dentro}</x>")).trim().to_string();
+    }
+    corpo.split("<v>").nth(1).and_then(|v| v.split("</v>").next()).unwrap_or("").trim().to_string()
+}
+
+/// A prévia da planilha: as primeiras linhas com as células separadas por TAB (a grade do cartão).
+/// A posição sai do próprio XML (`r="A1"`), então as colunas ficam nas casas certas.
+fn valores_da_planilha(p: &Path) -> String {
+    let strings = textos_compartilhados(p);
+    let bruto = ler_pacote(p, "xl/worksheets/sheet1.xml").unwrap_or_default();
+    let mut linhas: Vec<Vec<String>> = Vec::new();
+    for celula in bruto.split("<c ").skip(1) {
+        let corpo = celula.split("</c>").next().unwrap_or("");
+        let Some((linha, coluna)) = ref_da_celula(corpo) else {
+            continue;
+        };
+        if linha == 0 || coluna == 0 || linha > GRADE_LINHAS || coluna > GRADE_COLUNAS {
+            continue;
+        }
+        while linhas.len() < linha {
+            linhas.push(Vec::new());
+        }
+        let alvo = &mut linhas[linha - 1];
+        let valor = valor_da_celula(corpo, &strings);
+        if alvo.len() < coluna {
+            alvo.resize(coluna, String::new());
+        }
+        alvo[coluna - 1] = valor;
+    }
+    linhas.iter().map(|l| l.join("\t")).collect::<Vec<_>>().join("\n")
+}
+
+/// Limpa um pedaço de célula: os espaços viram um só.
+fn limpar_celula(bruto: &str) -> String {
+    let mut out = String::new();
+    let mut espaco = false;
+    for c in bruto.chars() {
+        if c.is_whitespace() {
+            espaco = !out.is_empty();
+            continue;
+        }
+        if espaco {
+            out.push(' ');
+            espaco = false;
+        }
+        out.push(c);
+    }
+    out
+}
+
+/// Como o `limpar_previa`, mas preservando o TAB entre as células (a grade do cartão).
+fn limpar_grade(bruto: &str) -> String {
+    let mut linhas: Vec<String> = Vec::new();
+    let mut total = 0usize;
+    for linha in bruto.lines() {
+        let celulas: Vec<String> = linha.split('\t').map(limpar_celula).collect();
+        if celulas.iter().all(|c| c.is_empty()) {
+            continue; // linha sem valor: a prévia é apertada
+        }
+        let limpa = celulas.join("\t");
+        total += limpa.chars().count() + 1;
+        linhas.push(limpa);
+        if total >= PREVIA_CHARS {
+            break;
+        }
+    }
+    linhas.join("\n")
 }
 
 /// Prévia de um documento para a tela Início (o cartão mostra um papel com o começo do texto).
@@ -271,7 +378,7 @@ pub fn preview_file(path: String) -> Result<Previa, String> {
         "xlsx" => "xlsx",
         _ => "outro",
     };
-    let texto = match tipo {
+    let (texto, grade) = match tipo {
         "md" => {
             use std::io::Read;
             let Ok(arquivo) = fs::File::open(p) else {
@@ -279,12 +386,15 @@ pub fn preview_file(path: String) -> Result<Previa, String> {
             };
             let mut bytes = Vec::new();
             let _ = arquivo.take((PREVIA_CHARS * 4) as u64).read_to_end(&mut bytes);
-            String::from_utf8_lossy(&bytes).into_owned()
+            (String::from_utf8_lossy(&bytes).into_owned(), false)
         }
-        "docx" => texto_do_pacote(p, "word/document.xml"),
-        "pptx" => texto_do_pacote(p, "ppt/slides/slide1.xml"),
-        "xlsx" => texto_do_pacote(p, "xl/sharedStrings.xml"),
-        _ => String::new(),
+        "docx" => (texto_do_pacote(p, "word/document.xml"), false),
+        "pptx" => (texto_do_pacote(p, "ppt/slides/slide1.xml"), false),
+        // a planilha vem em LINHAS de células separadas por TAB: o cartão desenha a grade com as
+        // posições do XML (o `sharedStrings` sozinho só dava a lista de textos, sem linha/coluna)
+        "xlsx" => (valores_da_planilha(p), true),
+        _ => (String::new(), false),
     };
-    Ok(Previa { tipo: tipo.into(), texto: limpar_previa(&texto) })
+    let texto = if grade { limpar_grade(&texto) } else { limpar_previa(&texto) };
+    Ok(Previa { tipo: tipo.into(), texto })
 }

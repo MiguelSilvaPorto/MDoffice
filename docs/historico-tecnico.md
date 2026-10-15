@@ -10947,3 +10947,68 @@ antigas quando fizer sentido.
 - **Linha:** `novo`
 - **Porquê:** a dica vale para o app todo e o conserto do teste é ferramenta de desenvolvimento; as
   duas entradas entram já promovidas, como o fechamento exige.
+
+
+## src/homePrevia.ts (novo)
+
+### 2026-10-15 — a prévia do cartão vira uma ESTRUTURA por tipo
+- **Local:** arquivo novo: `estruturarPrevia(tipo, texto)`, `gradeDoTexto(linhas)` e os limites (`LINHAS_PAGINA`, `LINHAS_LAMINA`, `LINHAS_GRADE`/`COLUNAS_GRADE`)
+- **Linha:** `+` o módulo inteiro (puro, sem DOM)
+- **Porquê:** o cartão recebia só `tipo` + `texto` e desenhava **um papel branco igual para tudo** — o Word parecia slide e o markdown saía com a sintaxe crua. A decisão "que forma isso vira" é regra, não desenho: separada num módulo puro, dá para **testá-la sem navegador** (o mesmo caminho dos Arranjos/Composição) e a tela fica só com o HTML. As formas: `pagina` (Word), `pagina-md` (Markdown — o texto inteiro vai para a tela renderizar), `lamina` (PowerPoint), `grade` (Excel) e `vazia` (o ícone do formato fica). Os limites existem porque o cartão é pequeno: cortar na estrutura é mais barato que cortar no CSS (e o teste prende os números). O primeiro parágrafo vira o **título** e as linhas em branco somem — é o que faz a página parecer um documento, não um recorte de texto.
+
+## src/homePage.ts
+
+### 2026-10-15 — o cartão desenha a versão do documento (markdown renderizado, imagem como bloco)
+- **Local:** os imports (`marked`, `DOMPurify`, `homePrevia`), o `sanitize` local (o mesmo do PowerPoint) e os construtores `previaEmHtml`/`gradeEmHtml`/`htmlDoMarkdown`; o bloco das prévias dentro do `renderHomePage`
+- **Linha:** `- papel.innerHTML = \`<span class="home-file-papel">…\`` (título + corpo crus) → `+ previaEmHtml(estruturarPrevia(p.tipo, p.texto))`; `+ const cru = sanitize(marked.parse(md, { gfm: true, async: false })).replace(/<img\b[^>]*>/gi, '<span class="home-prev-figura"></span>')`; `+ gradeEmHtml(grade)` (o cabeçalho A/B/C e as linhas numeradas)
+- **Porquê:** o cartão passa a mostrar **o documento como ele é**. O markdown vai por `marked` + `DOMPurify` — o MESMO caminho do editor (sem o sanitize, um `.md` de fora viraria marcação dentro da tela) — e cada `<img>` vira um **bloco de figura**: o cartão não carrega os assets do documento (o caminho é relativo ao arquivo, não ao app) e um `<img>` quebrado poluiria o cartão. O Excel ganhou a grade com o cabeçalho e o número das linhas: é o que distingue a planilha da página no primeiro olhar.
+
+## src/styles/home.css
+
+### 2026-10-15 — os três desenhos (página, lâmina, grade) e o papel do tema
+- **Local:** as classes `.home-file-preview` (tokens) e `.home-prev`/`.home-prev-pagina`/`.home-prev-md`/`.home-prev-lamina`/`.home-prev-grade`; o acento por tipo
+- **Linha:** `- .home-file-papel { … background: #fff … }` e as bordas por tipo → `+ .home-file-preview { --hp-papel: #ffffff; --hp-tinta: #1f2328; … }` + `[data-theme="dark"] .home-file-preview { --hp-papel: #15181e; --hp-tinta: #e6e8ee; … }` + as três formas (a página de 76×103 com o `border-top` do acento; a lâmina de 148×83 **sempre clara**; a grade com o `border-top` do acento e as células com filete)
+- **Porquê:** o papel branco fixo era o que fazia "todos parecerem slides". Os tons são **os mesmos da folha do Word no editor** (`#ffffff`/`#1f2328` e `#15181e`/`#e6e8ee`, o relevo com as duas sombras e a dobra clara): no tema escuro o documento escurece junto — é a "versão do documento" que o usuário pediu, e a mesma receita que a folha já usava. O acento por tipo (Word azul, Markdown azul-claro, Excel verde) saiu das bordas do papel antigo para o `--hp-acento` de cada forma; a lâmina fica clara em qualquer tema porque a apresentação nasce no tema claro (senão o cartão mentiria sobre o deck).
+
+## src-tauri/src/commands/files.rs
+
+### 2026-10-15 — a planilha ganha LINHAS no `preview_file`
+- **Local:** o refactor `ler_pacote` (o XML cru do zip), as novas `textos_compartilhados`, `ref_da_celula`, `valor_da_celula`, `valores_da_planilha`, `limpar_celula` e `limpar_grade`; o braço `"xlsx"` do `preview_file`
+- **Linha:** `- "xlsx" => texto_do_pacote(p, "xl/sharedStrings.xml")` → `+ "xlsx" => (valores_da_planilha(p), true)` (e `limpar_grade` no lugar do `limpar_previa` para esse tipo)
+- **Porquê:** o `sharedStrings.xml` só tem a **lista** de textos, sem posição — dava um parágrafo de palavras soltas, e não uma grade. Agora a leitura vai em `xl/worksheets/sheet1.xml`: cada `<c r="B3" t="s">` dá a posição (a coluna sai das letras de `B3`) e o valor (o índice na lista de textos, o `inlineStr` ou o número cru), e as células saem em **linhas separadas por TAB** — o formato que o cartão já sabia desenhar. O `limpar_grade` preserva o TAB (o `limpar_previa` colapsa todo espaço, o que juntaria as colunas). Tudo com teto (6 linhas × 5 colunas) porque é prévia de cartão, não de planilha.
+
+## scripts/testar-previa-inicio.mjs (novo)
+
+### 2026-10-15 — a estrutura da prévia presa por teste
+- **Local:** arquivo novo (esbuild + node, o mesmo caminho dos outros testes): 17 checagens de `estruturarPrevia`/`gradeDoTexto`
+- **Linha:** `+` sem texto vira `vazia`; o primeiro parágrafo vira o título; as linhas em branco somem; os cortes de página/lâmina/grade; o markdown guarda o texto inteiro; o Excel põe as células na coluna certa (com um buraco no meio) e corta as colunas de mais; os espaços internos viram um só
+- **Porquê:** é o coração do cartão — e é puro, então dá para prender sem navegador. Os casos de **célula vazia no meio** (`Bia\t\tOlinda`) e **colunas de mais** são os que mais quebram uma grade; e o `vazia` é o que garante o ícone do formato em vez de um papel em branco.
+
+## package.json
+
+### 2026-10-15 — `npm run test:previa`
+- **Local:** os scripts, ao lado do `test:composicao`
+- **Linha:** `+ "test:previa": "node scripts/testar-previa-inicio.mjs"`
+- **Porquê:** a receita de todos os testes de comportamento é a mesma (esbuild + node); o script é o que os torna descobríveis além do caminho completo.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 — os pinos do Início para a versão do documento (e o bloco quebrado do histórico)
+- **Local:** a seção do Início (a grade de cartões, o escape/saneamento, o comando da prévia) e o fecho do bloco "resumo da alteração" (do outro tema)
+- **Linha:** `- "Início: os recentes são uma grade de cartões com prévia"` → `+ "…com a versão do documento"` (prende o `previaEmHtml(estruturarPrevia(p.tipo, p.texto))` e o módulo novo); `- \`home-file-papel-titulo\`` → `+ escapeHtml(e.titulo)`, o sanitize e o `<img>`; `+ a forma por tipo + o papel do tema` e `+ valores_da_planilha/limpar_grade` no pino do `preview_file`; `+ );\n}` no bloco do "resumo da alteração"`
+- **Porquê:** os dois pinos antigos prendiam o papel único — sem trocá-los, o teste ficaria vermelho por uma decisão já tomada (ou "consertariam" o cartão de volta). O bloco do "resumo da alteração" chegou **sem o fechamento** (`);` e `}`) na base da worktree — o arquivo nem parseava — e o fecho entrou aqui; a versão nova desse bloco (de outra sessão) chega no rebase.
+
+## docs/
+
+### 2026-10-15 — o que a doc diz sobre o cartão
+- **Local:** nenhum documento de módulo descrevia o cartão do Início (a receita vive no `CHANGELOG.md` e aqui)
+- **Linha:** `+` a entrada no **Geral → Não adicionado → Frontend** do `CHANGELOG.md`
+- **Porquê:** a mudança é visível (a cara do Início inteira); o changelog é onde o app conta isso. O `docs/funcionalidades.md` **descrevia** o cartão ("um papel com o título e o começo do texto, na cor do formato") — a busca por "Recentes"/"prévia" achou o trecho antes de fechar e ele foi atualizado: a versão do documento por tipo, o
+  markdown renderizado, a lâmina sempre clara e a grade da planilha.
+
+## docs/funcionalidades.md
+
+### 2026-10-15 — o verbete da tela de Início conta o cartão novo
+- **Local:** o parágrafo da **tela de Início** (antes de "Documentos relacionados")
+- **Linha:** `- "…cada um com a **prévia do documento** (um papel com o título e o começo do texto, na cor do formato)…"` → `+ "…cada um com uma **versão do documento** pré-carregada — o tipo dá a forma e o arquivo dá o conteúdo…"` (com o `.xlsx` lendo a planilha e o `homePrevia.ts` como a decisão da estrutura)
+- **Porquê:** era a única doc de módulo que descrevia o cartão; sem isso ela continuaria prometendo "um papel" — o desenho que o usuário pediu para trocar.

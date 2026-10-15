@@ -742,42 +742,233 @@ body.home-open .sb-tab[data-side="home"] {
   height: 22px;
 }
 
-/* com a prévia, o ícone sai e entra o papel */
-.home-file-preview.com-texto .home-file-preview-ic {
+/* ---------- a versão do documento no cartão (página / lâmina / grade) ---------- */
+
+/* O papel e a tinta saem daqui — os MESMOS tons da folha do Word no editor (claro e escuro): o
+   cartão mostra o documento como ele é, e não um papel branco em qualquer tema. */
+.home-file-preview {
+  --hp-papel: #ffffff;
+  --hp-tinta: #1f2328;
+  --hp-fraca: #6b7280;
+  --hp-borda: rgba(15, 23, 42, 0.14);
+  --hp-filete: rgba(15, 23, 42, 0.1);
+  --hp-relevo: 0 0 0 1px var(--border), 0 1px 3px rgba(0, 0, 0, 0.18), 0 8px 20px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="dark"] .home-file-preview {
+  --hp-papel: #15181e;
+  --hp-tinta: #e6e8ee;
+  --hp-fraca: #93a0b4;
+  --hp-borda: rgba(255, 255, 255, 0.08);
+  --hp-filete: rgba(255, 255, 255, 0.07);
+  --hp-relevo: 0 0 0 1px var(--border), 0 1px 3px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+/* a peça comum: papel do tema, tinta do tema e o relevo da folha */
+.home-prev {
+  position: absolute;
+  overflow: hidden;
+  background: var(--hp-papel);
+  color: var(--hp-tinta);
+  box-shadow: var(--hp-relevo);
+}
+
+/* com a prévia, o ícone do formato sai */
+.home-file-preview.com-previa .home-file-preview-ic {
   display: none;
 }
 
-.home-file-papel {
-  position: absolute;
-  inset: 12px 14px 0;
+/* --- a PÁGINA (Word e Markdown): A4 em pé, com a margem do papel --- */
+.home-prev-pagina {
+  left: 50%;
+  top: 50%;
+  width: 76px;
+  height: 103px;
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 8px 9px;
-  overflow: hidden;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-bottom: none;
-  border-radius: 6px 6px 0 0;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.16);
-  font-size: 7.5px;
-  line-height: 1.45;
-  color: #1f2937;
+  gap: 3.5px;
+  padding: 7px 6px;
+  border-top: 2px solid var(--hp-acento, var(--border));
+  border-radius: 1px;
+  font-size: 4.6px;
+  line-height: 1.5;
 }
 
-.home-file-papel-titulo {
-  font-size: 9px;
+.home-prev-titulo {
+  margin-bottom: 1px;
+  font-size: 6px;
   font-weight: 700;
-  color: #111827;
+  line-height: 1.3;
+}
+
+.home-prev-par {
+  display: block;
+  color: var(--hp-fraca);
+}
+
+.home-prev-pagina > .home-prev-par {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.home-file-papel-corpo {
-  white-space: pre-wrap;
-  word-break: break-word;
+/* o markdown renderizado dentro da página (tudo em escala de cartão) */
+.home-prev-md > :first-child {
+  margin-top: 0;
+}
+
+.home-prev-md h1,
+.home-prev-md h2,
+.home-prev-md h3,
+.home-prev-md h4 {
+  margin: 0 0 2.5px;
+  font-size: 6px;
+  line-height: 1.25;
+}
+
+.home-prev-md h1 {
+  font-size: 7px;
+}
+
+.home-prev-md p {
+  margin: 0 0 2.5px;
+}
+
+.home-prev-md ul,
+.home-prev-md ol {
+  margin: 0 0 2.5px;
+  padding-left: 7px;
+}
+
+.home-prev-md code {
+  padding: 0 1px;
+  background: var(--hp-filete);
+  border-radius: 1px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 4.4px;
+}
+
+.home-prev-md a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.home-prev-md blockquote {
+  margin: 0 0 2.5px;
+  padding-left: 3px;
+  border-left: 1.5px solid var(--hp-borda);
+  color: var(--hp-fraca);
+}
+
+.home-prev-md hr {
+  margin: 2.5px 0;
+  border: 0;
+  border-top: 1px solid var(--hp-filete);
+}
+
+.home-prev-md table {
+  border-collapse: collapse;
+  font-size: 4.4px;
+}
+
+/* a imagem do documento vira um bloco de figura: o cartão não carrega os assets */
+.home-prev-figura {
+  display: block;
+  height: 16px;
+  margin: 0 0 2.5px;
+  background: var(--hp-filete);
+  border-radius: 1.5px;
+}
+
+/* --- a LÂMINA (PowerPoint): 16:9 e sempre clara — a apresentação nasce no tema claro --- */
+.home-prev-lamina {
+  left: 50%;
+  top: 50%;
+  width: 148px;
+  height: 83px;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  gap: 2.5px;
+  padding: 10px 11px;
+  background: #ffffff;
+  color: #202128;
+  border-radius: 1px;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.2), 0 1px 3px rgba(0, 0, 0, 0.2), 0 8px 20px rgba(0, 0, 0, 0.18);
+  font-size: 4.8px;
+  line-height: 1.45;
+}
+
+.home-prev-lamina-titulo {
+  font-size: 7.5px;
+  font-weight: 700;
+}
+
+.home-prev-lamina-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5px;
+}
+
+.home-prev-lamina-corpo .home-prev-par {
   color: #4b5563;
+}
+
+/* --- a GRADE (Excel): o cabeçalho das colunas e o número das linhas --- */
+.home-prev-grade {
+  inset: 7px 5px;
+  display: flex;
+  flex-direction: column;
+  border-top: 2px solid var(--hp-acento, #107c41);
+  border-radius: 2px;
+  font-size: 4.8px;
+  line-height: 1;
+}
+
+.home-prev-grade-linha {
+  display: flex;
+  flex: 1 1 0;
+  min-height: 0;
+  border-top: 1px solid var(--hp-filete);
+}
+
+.home-prev-grade-linha:first-child {
+  border-top: none;
+}
+
+.home-prev-grade-cab {
+  flex: 0 0 10px;
+  color: var(--hp-acento, #107c41);
+  background: color-mix(in srgb, var(--hp-acento, #107c41) 12%, transparent);
+  font-weight: 600;
+}
+
+.home-prev-grade-num {
+  display: grid;
+  place-items: center;
+  flex: 0 0 9px;
+  color: var(--hp-fraca);
+  background: color-mix(in srgb, var(--hp-acento, #107c41) 8%, transparent);
+  border-right: 1px solid var(--hp-filete);
+}
+
+.home-prev-grade-col,
+.home-prev-grade-cel {
+  display: flex;
+  align-items: center;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 2px;
+  border-right: 1px solid var(--hp-filete);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.home-prev-grade-col:last-child,
+.home-prev-grade-cel:last-child {
+  border-right: none;
 }
 
 .home-file-nome {
@@ -822,7 +1013,7 @@ body.home-open .sb-tab[data-side="home"] {
 .home-file-card.card-md .home-file-preview-ic { background: rgba(2, 132, 199, 0.12); color: #0284c7; }
 .home-file-card.card-ppt .home-file-preview-ic { background: rgba(196, 62, 28, 0.12); color: #c43e1c; }
 
-.home-file-card.card-word .home-file-papel { border-top: 3px solid #185abd; }
-.home-file-card.card-excel .home-file-papel { border-top: 3px solid #107c41; }
-.home-file-card.card-md .home-file-papel { border-top: 3px solid #0284c7; }
-.home-file-card.card-ppt .home-file-papel { border-top: 3px solid #c43e1c; }
+/* o acento de cada tipo na prévia (a página e a grade usam; a lâmina é sempre clara) */
+.home-file-card.card-word .home-file-preview { --hp-acento: #185abd; }
+.home-file-card.card-md .home-file-preview { --hp-acento: #0284c7; }
+.home-file-card.card-excel .home-file-preview { --hp-acento: #107c41; }

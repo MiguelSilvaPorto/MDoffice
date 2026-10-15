@@ -1,6 +1,14 @@
 import * as files from "./files";
+import { marked } from "marked";
+import DOMPurify from "dompurify";
 import { fileIcon, kindOfPath } from "./fileIcons";
+import { estruturarPrevia, type PreviaEstruturada } from "./homePrevia";
 import { $, h, fmtTime, baseName, stripExt, docDirOf, escapeHtml } from "./util";
+
+/** O mesmo saneamento do resto do app: o HTML do markdown é de fora e não pode virar marcação. */
+function sanitize(html: string): string {
+  return DOMPurify.sanitize(html, { ADD_ATTR: ["target", "rel"] });
+}
 
 export interface HomeCtx {
   createDoc: (tipo: "word" | "excel" | "md" | "ppt") => void;
@@ -30,6 +38,53 @@ export function detectFormat(path: string): "word" | "excel" | "md" | "ppt" {
   if (p.includes("slide") || p.includes("apresenta") || p.includes("deck")) return "ppt";
   if (p.includes("planilha") || p.includes("tabela") || p.includes("orcamento") || p.includes("financeiro")) return "excel";
   return "md";
+}
+
+// ------------------------------------------------------------------
+// a versão do documento no cartão ("a prévia pré-carregada")
+// ------------------------------------------------------------------
+
+/** Os parágrafos do corpo, um por linha (o cartão é pequeno: a tela corta o resto com overflow). */
+const paragrafos = (linhas: string[]) => linhas.map((l) => `<span class="home-prev-par">${escapeHtml(l)}</span>`).join("");
+
+/** O markdown renderizado; cada imagem vira um bloco de figura (o cartão não carrega os assets). */
+function htmlDoMarkdown(md: string): string {
+  const cru = sanitize(String(marked.parse(md, { gfm: true, async: false })));
+  return cru.replace(/<img\b[^>]*>/gi, `<span class="home-prev-figura"></span>`);
+}
+
+/** A versão do documento para o cartão (vazio = o cartão fica com o ícone do formato). */
+export function previaEmHtml(e: PreviaEstruturada): string {
+  if (e.forma === "vazia") return "";
+  if (e.forma === "pagina-md") {
+    return `<span class="home-prev home-prev-pagina"><span class="home-prev-md">${htmlDoMarkdown(e.bruto)}</span></span>`;
+  }
+  if (e.forma === "pagina") {
+    return `<span class="home-prev home-prev-pagina"><span class="home-prev-titulo">${escapeHtml(e.titulo)}</span>${paragrafos(e.linhas)}</span>`;
+  }
+  if (e.forma === "lamina") {
+    return `<span class="home-prev home-prev-lamina"><span class="home-prev-lamina-titulo">${escapeHtml(e.titulo)}</span><span class="home-prev-lamina-corpo">${paragrafos(e.linhas)}</span></span>`;
+  }
+  return `<span class="home-prev home-prev-grade">${gradeEmHtml(e.grade)}</span>`;
+}
+
+/** A grade do Excel: o cabeçalho das colunas (A, B…) e as linhas com o número e as células. */
+function gradeEmHtml(grade: string[][]): string {
+  const colunas = Math.max(1, ...grade.map((l) => l.length));
+  const letra = (i: number) => String.fromCharCode("A".charCodeAt(0) + i);
+  const cabecalho =
+    `<span class="home-prev-grade-linha home-prev-grade-cab"><span class="home-prev-grade-num"></span>` +
+    Array.from({ length: colunas }, (_, c) => `<span class="home-prev-grade-col">${letra(c)}</span>`).join("") +
+    `</span>`;
+  const linhas = grade
+    .map(
+      (l, i) =>
+        `<span class="home-prev-grade-linha"><span class="home-prev-grade-num">${i + 1}</span>` +
+        Array.from({ length: colunas }, (_, c) => `<span class="home-prev-grade-cel">${escapeHtml(l[c] ?? "")}</span>`).join("") +
+        `</span>`
+    )
+    .join("");
+  return cabecalho + linhas;
 }
 
 const FORMAT_META: Record<"word" | "excel" | "md" | "ppt", { label: string; ext: string; newLabel: string; icon: string }> = {
@@ -369,20 +424,17 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
       listContainer.append(grid);
 
       // As prévias chegam DEPOIS (uma leitura por arquivo, no lado Rust): o cartão nasce com o
-      // ícone do formato e troca pelo "papel" com o começo do texto quando a leitura responde.
-      // O texto do arquivo entra escapado — é conteúdo de fora, não pode virar marcação.
+      // ícone do formato e troca por uma VERSÃO DO DOCUMENTO quando a leitura responde — a página
+      // (Word/Markdown), a lâmina (PowerPoint) ou a grade (Excel), com o conteúdo do arquivo.
+      // O texto do arquivo entra escapado (e o markdown passa pelo saneamento): é conteúdo de
+      // fora, não pode virar marcação.
       void Promise.all(
         cartoes.map(async ({ item, papel }) => {
           const p = await ctx.preview(item.path);
-          if (!p.texto) return;
-          const [titulo, ...resto] = p.texto.split("\n");
-          papel.classList.add("com-texto");
-          papel.innerHTML = `
-            <span class="home-file-papel">
-              <span class="home-file-papel-titulo">${escapeHtml(titulo ?? "")}</span>
-              <span class="home-file-papel-corpo">${escapeHtml(resto.join("\n"))}</span>
-            </span>
-          `;
+          const html = previaEmHtml(estruturarPrevia(p.tipo, p.texto));
+          if (!html) return;
+          papel.classList.add("com-previa");
+          papel.innerHTML = html;
         })
       );
     } else {
