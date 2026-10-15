@@ -413,15 +413,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **O traço que só PARECE um círculo não é mais fechado (nem vira um arco bojudo)**: ao desenhar o
-  topo arredondado de um cartão (quase reto com cantos), o assistente fechava o traço numa
-  **elipse** — um "C" com abertura de ~18% da diagonal contava como "fechado" (o limite era 22%) —
-  ou aceitava um **arco** que passava longe do desenho (para traços grandes os limites eram largos:
-  desvio médio de 1,8% e máximo de 0,6% da diagonal). Agora "fechado" é só quando as pontas quase
-  se encontram (7% da diagonal) e o arco tem de **passar pelo traço** (média 0,8% e máximo 0,35%) —
-  o que não corresponde fica como **desenho livre**, com o encaixe nos eixos. Teste:
-  `npm run test:desenho`.
-
 - **A aba Animações cabe na tela (sem rolar nem cortar o grupo "Animar")** — o plano do encaixe supunha que todo grupo encolhe junto com as métricas, mas a galeria de animações tinha 72 px fixos por cartão e a aba passava da largura mesmo no degrau compacto. Agora a galeria acompanha as métricas e o encaixe **confere no navegador** depois de aplicar o plano: se ainda sobra rolagem, encolhe mais as métricas e, por fim, manda mais um grupo para o menu. Medido num Chrome real: de 1500 a 900 px nenhuma aba rola; em 1338 px a aba Animações cabe inteira.
 
 - **Aba Design completa: Temas, Variantes, Personalizar e Designer**: a aba tinha só dois grupos
@@ -446,6 +437,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **O traço que só PARECE um círculo não é mais fechado (nem vira um arco bojudo)**: ao desenhar o
+  topo arredondado de um cartão (quase reto com cantos), o assistente fechava o traço numa
+  **elipse** — um "C" com abertura de ~18% da diagonal contava como "fechado" (o limite era 22%) —
+  ou aceitava um **arco** que passava longe do desenho (para traços grandes os limites eram largos:
+  desvio médio de 1,8% e máximo de 0,6% da diagonal). Agora "fechado" é só quando as pontas quase
+  se encontram (7% da diagonal) e o arco tem de **passar pelo traço** (média 0,8% e máximo 0,35%) —
+  o que não corresponde fica como **desenho livre**, com o encaixe nos eixos. Teste:
+  `npm run test:desenho`.
 
 - **O traço quase reto sai reto (o encaixe nos eixos voltou a acontecer)**: o desenho livre já
   "encaixava nos eixos", mas o encaixe rodava **depois** da simplificação (RDP): um trecho quase

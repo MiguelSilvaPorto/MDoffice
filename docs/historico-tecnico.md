@@ -11352,3 +11352,13 @@ antigas quando fizer sentido.
 - **Linha:** `+` as frases do "fechado" (7% da diagonal) e dos desvios do arco (0,8%/0,35%)
 - **Porquê:** o documento dizia que o ajuste "tem que passar pelo traço" — agora diz com que
   números, que é o que qualquer ajuste futuro precisa respeitar.
+
+## CHANGELOG.md
+
+### 2026-10-15 · o traço que parece círculo · a promoção da entrada (não adicionado → adicionado)
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não pode promover (a entrada ainda não está na main no instante do commit),
+  então a promoção anda depois, quando o commit chega (759b37f). Promovi só a entrada DESTA tarefa:
+  as que seguem em "Não adicionado" são de sessões com trabalho aberto — mexer nelas criaria
+  duplicata ou conflito.
