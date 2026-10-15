@@ -1090,12 +1090,15 @@ button.ppr.big .ppr-gal-ic svg {
 
 .pp-side-tabs {
   display: flex;
+  /* não cabendo, as abas descem de linha em vez de vazar do painel (a última ficava cortada) */
+  flex-wrap: wrap;
   border-bottom: 1px solid var(--border);
   flex: none;
 }
 
 .pp-side-tabs button {
-  flex: 1;
+  flex: 1 1 auto;
+  white-space: nowrap;
   padding: 8px 6px;
   color: var(--muted);
   background: transparent;
@@ -2494,8 +2497,10 @@ button.ppr.trans-dir {
 
 .pp-side {
   position: relative;
-  width: var(--pp-side-w, 260px);
-  min-width: 200px;
+  /* a janela manda: em janela estreita o painel encolhe (a largura pedida vale quando cabe)
+     em vez de sair para fora do app */
+  width: min(var(--pp-side-w, 260px), 100%);
+  min-width: min(200px, 100%);
   max-width: 600px;
 }
 
@@ -2531,7 +2536,9 @@ button.ppr.trans-dir {
 }
 
 .pp-side > :not(.pp-side-resize) {
-  min-width: var(--pp-side-w, 260px);
+  /* o conteúdo acompanha a largura pedida — e encolhe junto com a janela (senão o painel
+     estourava: os filhos empurravam a largura de 260px para fora em janela estreita) */
+  min-width: min(var(--pp-side-w, 260px), 100%);
 }
 
 .pp-side-anima .pp-side {

@@ -9064,3 +9064,47 @@ antigas quando fizer sentido.
   do modelo com título ilegível. O desenho fica nas bordas (teste garante que não cobre as caixas dos layouts, em 16:9 e 4:3); modelo
   sem `desenho` (as Ideias geradas) deixa as decorações como estão. `testar-edicao-pptx` ignora as decorações `tpl:` ao conferir cor/fonte.
 - **Observação:** `testar-layout.mts` tem 2 falhas do pincel que já existiam na base desta tarefa (confirmado com o `powerpoint.ts` original).
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-15 · painel lateral · as abas quebram de linha e o painel encolhe com a janela
+- **Local:** `.pp-side-tabs`, `.pp-side-tabs button`, `.pp-side` e `.pp-side > :not(.pp-side-resize)`
+- **Linha:** `.pp-side-tabs` `+ flex-wrap: wrap`; o botão `flex: 1` → `flex: 1 1 auto` e
+  `+ white-space: nowrap`; `.pp-side` `width: var(--pp-side-w, 260px)` →
+  `width: min(var(--pp-side-w, 260px), 100%)` e `min-width: 200px` → `min-width: min(200px, 100%)`;
+  o filho `min-width: var(--pp-side-w, 260px)` → `min-width: min(var(--pp-side-w, 260px), 100%)`
+- **Porquê:** duas medidas no navegador mostraram o defeito inteiro: (1) a fileira de abas pedia
+  **326px** num painel de 260 em QUALQUER largura — a última aba ("Arranjos", recém-chegada) ficava
+  cortada, como na captura do usuário; (2) em 420px de janela o painel media 259 e terminava em
+  536 — **116px fora do app**. A causa do (2) não era só o `min-width` do painel: o item tinha
+  `flex: none` e os FILHOS carregavam `min-width: var(--pp-side-w, 260px)` (o truque da animação de
+  esconder/mostrar, que mantém o conteúdo com a largura cheia enquanto a caixa encolhe) — não havia
+  por onde encolher. O `min(…, 100%)` nas três pontas resolve sem perder a largura escolhida (que
+  continua valendo quando cabe) nem a animação (a largura segue interpolável).
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · painel lateral · 3 verificações
+- **Local:** o bloco "PowerPoint: o painel lateral se encaixa (abas e janela estreita)"
+- **Linha:** `novo`
+- **Porquê:** prende as abas com quebra de linha, a largura/piso com `min()` e o conteúdo
+  acompanhando — os três pontos que faziam o painel vazar. A aferição no navegador (1400 → 420px)
+  confirmou: nada vaza em nenhuma largura e em 420 o painel encolhe para **143px** dentro da
+  janela.
+
+## docs/powerpoint.md
+
+### 2026-10-15 · painel lateral · a bala do painel
+- **Local:** "Interface do módulo" → bala do painel
+- **Linha:** "Painel Formatar/Animação/Notas" → "Painel Formatar/Animação/Notas/**Ideias/Arranjos**"
+  + a nota de que as abas quebram de linha e o painel encolhe com a janela
+- **Porquê:** a bala estava desatualizada (não citava Ideias nem Arranjos) e sem o comportamento que
+  acabou de ser corrigido.
+
+## CHANGELOG.md
+
+### 2026-10-15 · painel lateral · a entrada no PowerPoint
+- **Local:** PowerPoint → Adicionado → Frontend
+- **Linha:** `novo`
+- **Porquê:** defeito de interface do módulo PowerPoint; a entrada entra já promovida, como o
+  fechamento exige.

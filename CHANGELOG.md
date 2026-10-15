@@ -1016,6 +1016,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   mesmo `.pptx` de ida e volta. O desenho está preso por **10 verificações** novas em
   `npm run test:layout` — inclusive a **largura do cartão**, medida no harness: o nome
   "Desaparecer" ocupa **61 px** de texto, e em cartões de 54 px ele saía cortado.
+- **O painel lateral se encaixa na janela**: a fileira de abas (Formatar, Animação, Notas, Ideias,
+  **Arranjos**) precisava de 326px num painel de 260 — a última aba ficava **cortada** (o "Arranjos"
+  da captura) e o painel ainda empurrava o palco para fora. As abas agora **quebram de linha**
+  quando não cabem e o painel encolhe com a janela: largura e conteúdo usam
+  `min(var(--pp-side-w, 260px), 100%)` (o piso de 200px vale quando cabe; a largura escolhida no
+  arrasto continua valendo). Medido no navegador em 1400/900/700/560/**420px**: nada vaza em
+  nenhuma largura e em 420 o painel fica com 143px **dentro** da janela (antes terminava 116px
+  fora do app).
 
 ## Geral
 

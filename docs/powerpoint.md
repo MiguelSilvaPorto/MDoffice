@@ -350,9 +350,11 @@ avisado ao abrir (nunca some em silêncio).
 - **Fita** com abas (Página Inicial, Inserir, **Transições**, **Animações**, Design e Exibir;
   **Formato da Forma** e **Layout da Tabela** aparecem quando a seleção pede), recolhível e
   ajustável, com rolagem horizontal quando não cabe.
-- **Painel Formatar/Animação/Notas** à direita: pode ser escondido, redimensionado e reaberto pela
-  aba “« Formatar”; o painel de animação lista os efeitos da lâmina na ordem (selecionar, mover e
-  remover) e as notas ficam na aba **Notas**.
+- **Painel Formatar/Animação/Notas/Ideias/Arranjos** à direita: pode ser escondido, redimensionado
+  e reaberto pela aba **« Formatar**; o painel de animação lista os efeitos da lâmina na ordem
+  (selecionar, mover e remover), as notas ficam na aba **Notas** e **Ideias/Arranjos** mostram os
+  cartões gerados no computador. As abas **quebram de linha** quando não cabem e o painel
+  **encolhe com a janela** — nada vaza para fora do app.
 - **Zoom até 800%** ancorado no ponteiro (Ctrl + roda do mouse), com rolagem de verdade; o
   passo do clique/roda cresce no zoom alto (do 100% ao 800% em ~17 passos) e o slider
   continua fino.

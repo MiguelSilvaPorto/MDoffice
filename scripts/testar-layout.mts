@@ -1778,5 +1778,30 @@ console.log("\nmoldura da lâmina e relevo da página no tema escuro");
   );
 }
 
+// ---------------------------------------------------------------- painel lateral do PowerPoint
+
+console.log("\nPowerPoint: o painel lateral se encaixa (abas e janela estreita)");
+
+{
+  const css = ler("src/styles/powerpoint-edicao.css");
+  checa(
+    "as abas do painel quebram de linha em vez de vazar",
+    /\.pp-side-tabs \{[\s\S]{0,200}flex-wrap: wrap/.test(css) &&
+      /\.pp-side-tabs button \{[\s\S]{0,80}flex: 1 1 auto/.test(css) &&
+      /\.pp-side-tabs button \{[\s\S]{0,140}white-space: nowrap/.test(css),
+    "a última aba (Arranjos) volta a ficar cortada"
+  );
+  checa(
+    "o painel encolhe com a janela (largura e piso com min())",
+    /\.pp-side \{[\s\S]{0,260}width: min\(var\(--pp-side-w, 260px\), 100%\)/.test(css) && /min-width: min\(200px, 100%\)/.test(css),
+    "em janela estreita o painel sai para fora do app"
+  );
+  checa(
+    "o conteúdo do painel acompanha a mesma largura (não empurra para fora)",
+    /\.pp-side > :not\(\.pp-side-resize\) \{[\s\S]{0,260}min-width: min\(var\(--pp-side-w, 260px\), 100%\)/.test(css),
+    "os filhos presos a 260px estouram o painel"
+  );
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);
