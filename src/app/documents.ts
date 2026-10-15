@@ -134,6 +134,7 @@ export const documentsMethods = {
   },
 
   async save(this: App, saveAs = false): Promise<boolean> {
+    if (this.semDocumento()) return false;
     if (this.tab.kind === "word") return this.saveWord(saveAs);
     if (this.tab.kind === "ppt") return this.savePpt(saveAs);
     if (this.tab.kind === "xlsx") return this.saveExcel(saveAs);

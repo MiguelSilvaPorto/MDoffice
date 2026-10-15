@@ -15,6 +15,7 @@ import type { App } from "./app";
 export const formalizarMethods = {
   /** O comando único (Ctrl+Alt+F): decide o editor pela aba ativa. */
   openFormalizar(this: App): void {
+    if (this.semDocumento()) return;
     if (this.tab.kind === "word") {
       this.openFormalizarWord();
       return;

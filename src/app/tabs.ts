@@ -48,6 +48,12 @@ export const tabsMethods = {
     // de abrir sozinho o último rascunho (o relato: "não tem nada aberto e ele abre…"). Os
     // rascunhos continuam guardados e à mão em **Recentes ▸ "Rascunhos guardados no app"**.
     this.showHome();
+    // E sem "Sem título" na fileira: o documento de trabalho fica solto (o editor começa vazio) e
+    // a primeira aba nasce quando a pessoa criar ou abrir um arquivo.
+    if (!this.path && !this.dirty && this.tabs.length === 1 && this.tabs[0] === this.tab) {
+      this.tabs = [];
+      this.afterTabChange();
+    }
   },
 
   /** Cria uma aba (sem ativá-la) para um arquivo já lido. */
@@ -258,16 +264,15 @@ export const tabsMethods = {
     if (tab.path) void this.backupNow(tab.path, "fechar aba");
     const index = this.tabs.indexOf(tab);
     this.tabs = this.tabs.filter((t) => t !== tab);
-    // Fechou o último documento: o app volta para o Início (o Hub de criação)
-    // em vez de deixar um documento vazio aberto esperando. A aba vazia continua
-    // existindo porque o app inteiro assume que sempre há uma aba ativa — o que
-    // muda é o que aparece na tela.
+    // Fechou o último documento: o app fica no Início, SEM um "Sem título" na fileira. O
+    // documento de trabalho continua existindo "solto" (é o estado que o editor segura), mas
+    // não é uma aba — a primeira nasce quando a pessoa criar ou abrir um arquivo.
     const fechouTudo = !this.tabs.length;
-    if (fechouTudo) this.tabs.push(newTab(this.editor.createState("")));
+    if (fechouTudo) this.tab = newTab(this.editor.createState(""));
     if (isCurrent) {
       this.switching = true;
       try {
-        await this.activate(this.tabs[Math.min(index, this.tabs.length - 1)]);
+        await this.activate(this.tabs[Math.min(index, this.tabs.length - 1)] ?? this.tab);
       } finally {
         this.switching = false;
       }
@@ -276,6 +281,29 @@ export const tabsMethods = {
     }
     // depois de ativar: `activate` mexe na tela e o Início tem que ficar por cima
     if (fechouTudo) this.showHome();
+  },
+
+  /** Fecha TODAS as abas de uma vez (o app fica no Início, sem "Sem título" na fileira). */
+  async closeAll(this: App): Promise<void> {
+    if (!this.tabs.length) {
+      toast("Nenhum documento aberto.", "info", 2600);
+      return;
+    }
+    const quantas = this.tabs.length;
+    // de trás para frente: a última passa pelo fluxo normal, que já leva ao Início
+    for (const t of [...this.tabs].reverse()) await this.closeTab(t.id);
+    const fechadas = quantas - this.tabs.length;
+    if (fechadas) toast(`${fechadas} aba${fechadas === 1 ? "" : "s"} fechada${fechadas === 1 ? "" : "s"}.`, "ok", 2600);
+  },
+
+  /**
+   * Sem nenhum documento aberto (a fileira vazia e o Início à vista): os comandos de documento
+   * avisam em vez de agir num documento que não está à vista. Devolve `true` quando avisou.
+   */
+  semDocumento(this: App): boolean {
+    if (this.tabs.length) return false;
+    toast("Nenhum documento aberto — crie ou abra um no Início.", "info", 3400);
+    return true;
   },
 
   async reopenClosedTab(this: App): Promise<void> {
@@ -317,7 +345,8 @@ export const tabsMethods = {
     items.push(
       { label: "Fechar", hint: teclaVisivel("fechar-aba"), run: () => void this.closeTab(id), sep: true },
       { label: "Fechar as outras", run: () => void this.closeOthers(tab) },
-      { label: "Fechar as da direita", run: () => void this.closeOthers(tab, true) }
+      { label: "Fechar as da direita", run: () => void this.closeOthers(tab, true) },
+      { label: "Fechar todos", hint: teclaVisivel("fechar-tudo"), run: () => void this.closeAll() }
     );
     this.openMenuAt(x, y, items);
   },

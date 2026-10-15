@@ -48,6 +48,7 @@ export const deepReviewMethods = {
 
   /** Abre a tela da revisão inteligente. */
   openDeepReview(this: App): void {
+    if (this.semDocumento()) return;
     if (this.deepHandle) return;
     if (this.tab.kind === "settings") {
       toast("Abra um documento para fazer a revisão inteligente.", "info", 2800);

@@ -234,6 +234,7 @@ export const historySearchMethods = {
   },
 
   async openHistory(this: App, aba?: AbaHistorico): Promise<void> {
+    if (this.semDocumento()) return;
     const kind = this.tab.kind;
     // garante que o documento tenha arquivo (o histórico é por arquivo)
     if (kind === "word" && !(await this.ensureWordFile())) return;
@@ -345,6 +346,7 @@ export const historySearchMethods = {
   },
 
   async saveVersionNow(this: App): Promise<void> {
+    if (this.semDocumento()) return;
     const kind = this.tab.kind;
     if (kind === "word" && !(await this.ensureWordFile())) return;
     if (kind === "ppt" && !(await this.ensurePptFile())) return;

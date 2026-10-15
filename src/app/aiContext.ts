@@ -50,6 +50,7 @@ export const aiContextMethods = {
   },
 
   async copyForAI(this: App): Promise<void> {
+    if (this.semDocumento()) return;
     const text = this.editor.getText();
     if (!text.trim()) {
       toast("Nada para copiar ainda.", "info");
@@ -72,6 +73,7 @@ export const aiContextMethods = {
 
   /** Abre a tela de exportação (HTML, PDF, Word, Markdown, texto, pacote para IA ou cópia). */
   openExport(this: App, format?: ExportFormat): void {
+    if (this.semDocumento()) return;
     if (document.querySelector(".export-modal")) return;
     openExportDialog(
       {

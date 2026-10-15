@@ -12,6 +12,17 @@ export const layoutMethods = {
   },
 
   updateStats(this: App): void {
+    // Sem nenhum documento aberto (a fileira vazia, o Início à vista): a barra de status
+    // não fala de um documento que não existe.
+    if (!this.tabs.length) {
+      $("#st-words").textContent = "Nenhum documento aberto";
+      $("#st-chars").textContent = "";
+      $("#st-lines").textContent = "";
+      $("#st-cursor").textContent = "";
+      const badge = document.querySelector<HTMLElement>("#st-writing");
+      if (badge) badge.hidden = true;
+      return;
+    }
     if (this.tab.kind === "xlsx") {
       this.excelStatus();
       return;
@@ -40,6 +51,12 @@ export const layoutMethods = {
 
   setSaveState(this: App): void {
     const el = $("#save-state");
+    if (!this.tabs.length) {
+      el.textContent = "Nenhum documento aberto";
+      el.classList.remove("dirty");
+      this.updateAutosaveUI();
+      return;
+    }
     const autosaveOn = this.settings.autosaveOn;
     if (!autosaveOn) {
       el.textContent = this.dirty
@@ -126,9 +143,10 @@ export const layoutMethods = {
   },
 
   refreshTitle(this: App): void {
+    // sem documento, a janela é só o app (nada de "Sem título.md")
     const name = this.path ? baseName(this.path) : `${this.title ?? "Sem título"}.md`;
     this.renderTabs();
-    const title = `${this.dirty ? "• " : ""}${name} — mdOffice`;
+    const title = this.tabs.length ? `${this.dirty ? "• " : ""}${name} — mdOffice` : "mdOffice";
     document.title = title;
     // Fora do Tauri (ex.: preview no navegador) a API não existe: seguimos em silêncio.
     try {

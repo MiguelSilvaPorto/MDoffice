@@ -41,6 +41,13 @@ export const ATALHOS: Atalho[] = [
   { id: "nova-aba", grupo: "Abas", rotulo: "Nova aba", padrao: "Ctrl+T", acao: (a) => void a.newDoc() },
   { id: "fechar-aba", grupo: "Abas", rotulo: "Fechar aba", padrao: "Ctrl+W", acao: (a) => void a.closeTab(a.activeTabId()) },
   {
+    id: "fechar-tudo",
+    grupo: "Abas",
+    rotulo: "Fechar todos os documentos",
+    padrao: "Ctrl+Shift+W",
+    acao: (a) => void a.closeAll(),
+  },
+  {
     id: "reabrir-aba",
     grupo: "Abas",
     rotulo: "Reabrir a última aba fechada",

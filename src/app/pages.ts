@@ -38,7 +38,10 @@ export const pagesMethods = {
     this.hideSettings();
     this.settingsTab = null;
     this.renderTabs();
-    this.editor.focus();
+    // sem documento aberto, fechar as Configurações volta para o Início (e não para um
+    // editor vazio que não é uma aba)
+    if (!this.tabs.length) this.showHome();
+    else this.editor.focus();
   },
 
   settingsContext(this: App): import("../settingsPage").SettingsCtx {
@@ -237,6 +240,7 @@ export const pagesMethods = {
 
   /** Módulo de apresentações: mostra o documento como slides (cada slide após uma linha ---). */
   openSlides(this: App): void {
+    if (this.semDocumento()) return;
     openPresentation(this.editor.getText(), this.title ?? "Apresentação");
   },
 };

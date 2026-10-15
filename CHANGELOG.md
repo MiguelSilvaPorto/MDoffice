@@ -1,4 +1,4 @@
-# Changelog — mdOffice
+﻿# Changelog — mdOffice
 
 Tudo que é feito no app entra aqui, **na categoria que mexeu**, dividido entre **Backend**
 (`src-tauri/`, Rust) e **Frontend** (`src/`, TypeScript). O "porquê" técnico de cada mudança
@@ -1165,6 +1165,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   é galeria). A alça de altura ganhou **teto**: o menor entre **1,5×** e **um terço da janela** —
   numa janela baixa a faixa não come a tela (o valor guardado segue sendo a sua preferência).
   Testes: `npm run test:encaixe` e `npm run test:layout`.
+
+- **Fechar todos os arquivos — e o app fica sem nenhum aberto**: fechar a **última aba** não cria
+  mais um **"Sem título"** na fileira: o app fica no **Início** com a fileira vazia (o documento de
+  trabalho continua existindo por baixo, mas não é uma aba). Entrar no app **sem sessão** também
+  abre no Início, sem aba nenhuma. E entrou o comando **Fechar todos** — no menu da aba, na paleta
+  do **Ctrl+K** e no **Ctrl+Shift+W** —, que fecha tudo de uma vez. Com a fileira vazia, os
+  comandos de documento (**salvar**, **exportar**, **desenhar**, **imagem**, **revisar**,
+  **apresentar**, **copiar para a IA**, **histórico**…) **avisam em vez de agir** num documento que
+  não está à vista, a barra de status diz **"Nenhum documento aberto"** e a janela fica só
+  "mdOffice". Teste: `npm run test:layout`.
 
 **Ferramentas (dev)**
 

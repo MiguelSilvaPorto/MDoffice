@@ -94,6 +94,7 @@ export const powerpointDocsMethods = {
 
   /** Inicia a apresentação da aba ativa (o botão "Apresentar" da barra superior). */
   presentActive(this: App): void {
+    if (this.semDocumento()) return;
     if (this.tab.kind === "ppt") this.pptHost.present();
   },
 

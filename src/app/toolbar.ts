@@ -11,6 +11,9 @@ import { copyText } from "../util";
 
 export const toolbarMethods = {
   act(this: App, name: string): void {
+    // Sem documento aberto, as ações de escrita e inserção avisam em vez de mexer num documento
+    // que não está à vista (os botões da barra, a fita e a paleta passam por aqui).
+    if (name !== "palette" && name !== "translate-settings" && name !== "export" && this.semDocumento()) return;
     if (this.tab.kind === "word") {
       if (name === "image") {
         this.wordHost.pickImageDialog();

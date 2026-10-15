@@ -13,6 +13,7 @@ export const mediaMethods = {
   },
 
   async insertImageFromDialog(this: App): Promise<void> {
+    if (this.semDocumento()) return;
     const src = await files.pickImageFile();
     if (!src) return;
     if (!(await this.ensureSaved())) return;

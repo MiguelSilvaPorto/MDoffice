@@ -33,6 +33,7 @@ export const commandsMethods = {
     add("Configurações", "Tom do texto: neutro", () => this.setTonePref("neutro"));
     add("Configurações", "Tom do texto: informal", () => this.setTonePref("informal"));
     add("Documento", "Fechar aba", () => void this.closeTab(this.activeTabId()), teclaVisivel("fechar-aba"));
+    add("Documento", "Fechar todos os documentos", () => void this.closeAll(), teclaVisivel("fechar-tudo"), "fechar tudo abas arquivos");
     add("Documento", "Reabrir aba fechada", () => void this.reopenClosedTab(), teclaVisivel("reabrir-aba"));
 
     add("Exportar", "Exportar…", () => this.openExport(), teclaVisivel("exportar"));

@@ -1,4 +1,4 @@
-// Teste das regras de layout que já quebraram: quando o Início abre, ele precisa ocupar
+﻿// Teste das regras de layout que já quebraram: quando o Início abre, ele precisa ocupar
 // TODO o espaço, e não dividir a tela com o painel do documento ativo (Excel, Word ou
 // PowerPoint). O Word já tinha a regra; faltavam Excel e PowerPoint.
 //
@@ -2292,6 +2292,56 @@ console.log("\nhistórico: a alteração mostra o documento (não a serializaç�
       /pendente = \{ path, texto, projetar \}/.test(hist) &&
       /summary: ehAncora \? "marco do documento" : opts\.resumo \|\| summarize\(ops\)/.test(snaps),
     'a lista voltaria a mostrar "+4843 −7259" (tamanho do JSON)'
+console.log("\nfechar todos: o app fica sem nenhuma aba, no Início");
+{
+  const abas = ler("src/app/tabs.ts");
+  // o trecho do restoreSession (do começo do método até o addTabFor): é ali que o
+  // "sem sessão" decide entre abrir no Início e criar a aba "Sem título"
+  const restaura = abas.slice(abas.indexOf("async restoreSession"), abas.indexOf("/** Cria uma aba"));
+  const comandos = ler("src/app/commands.ts");
+  const atalhos = ler("src/app/keymap.ts");
+  const paginas = ler("src/app/pages.ts");
+  const layout = ler("src/app/layout.ts");
+  checa(
+    "fechar a última aba NÃO cria um 'Sem título' na fileira",
+    /const fechouTudo = !this\.tabs\.length;\r?\n\s*if \(fechouTudo\) this\.tab = newTab\(this\.editor\.createState\(""\)\);/.test(abas) &&
+      !/if \(fechouTudo\) this\.tabs\.push\(newTab/.test(abas),
+    "a aba vazia volta a aparecer na fileira"
+  );
+  checa(
+    "a ativação depois de fechar aceita a fileira vazia",
+    /await this\.activate\(this\.tabs\[Math\.min\(index, this\.tabs\.length - 1\)\] \?\? this\.tab\)/.test(abas),
+    "sem o fallback, fechar a última quebra a ativação"
+  );
+  checa("existe o 'Fechar todos' (método, menu, paleta e atalho)", /async closeAll\(this: App\): Promise<void>/.test(abas) && /label: "Fechar todos"/.test(abas) && /"Fechar todos os documentos", \(\) => void this\.closeAll\(\)/.test(comandos) && /id: "fechar-tudo"/.test(atalhos) && /padrao: "Ctrl\+Shift\+W"/.test(atalhos));
+  checa(
+    "iniciar sem sessão abre no Início, sem aba",
+    /this\.showHome\(\);/.test(restaura) &&
+      /if \(!this\.path && !this\.dirty && this\.tabs\.length === 1 && this\.tabs\[0\] === this\.tab\) \{\r?\n\s*this\.tabs = \[\];\r?\n\s*this\.afterTabChange\(\);/.test(restaura),
+    "sem o ramo, a aba 'Sem título' volta a aparecer ao abrir o app"
+  );
+  checa("fechar as Configurações sem documento volta ao Início", /if \(!this\.tabs\.length\) this\.showHome\(\);/.test(paginas));
+  checa(
+    "os comandos de documento avisam em vez de agir no vazio",
+    /semDocumento\(this: App\): boolean/.test(abas) &&
+      /toast\("Nenhum documento aberto — crie ou abra um no Início\."/.test(abas) &&
+      /async save\(this: App, saveAs = false\): Promise<boolean> \{\r?\n\s*if \(this\.semDocumento\(\)\) return false;/.test(ler("src/app/documents.ts")) &&
+      /openExport\(this: App, format\?: ExportFormat\): void \{\r?\n\s*if \(this\.semDocumento\(\)\) return;/.test(ler("src/app/aiContext.ts")) &&
+      /async openDraw\(this: App\): Promise<void> \{\r?\n\s*if \(this\.semDocumento\(\)\) return;/.test(ler("src/app/drawing.ts")) &&
+      /openSlides\(this: App\): void \{\r?\n\s*if \(this\.semDocumento\(\)\) return;/.test(paginas) &&
+      /insertImageFromDialog\(this: App\): Promise<void> \{\r?\n\s*if \(this\.semDocumento\(\)\) return;/.test(ler("src/app/media.ts")) &&
+      /openReview\(this: App\): void \{\r?\n\s*if \(this\.semDocumento\(\)\) return;/.test(ler("src/app/assistant.ts")),
+    "salvar/exportar/desenhar/imagem/revisar não podem agir num documento que não está à vista"
+  );
+  checa(
+    "a barra de formatação também é barrada",
+    /name !== "palette" && name !== "translate-settings" && name !== "export" && this\.semDocumento\(\)/.test(ler("src/app/toolbar.ts"))
+  );
+  checa(
+    "a barra de status fala de 'nenhum documento'",
+    /if \(!this\.tabs\.length\) \{\r?\n\s*\$\("#st-words"\)\.textContent = "Nenhum documento aberto";/.test(layout) &&
+      /if \(!this\.tabs\.length\) \{\r?\n\s*el\.textContent = "Nenhum documento aberto";/.test(layout) &&
+      /const title = this\.tabs\.length \?/.test(layout)
   );
 }
 
