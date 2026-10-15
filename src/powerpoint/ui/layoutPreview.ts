@@ -6,6 +6,7 @@
 
 import { caixasDoLayout, ORDEM_LAYOUTS, ROTULOS_LAYOUT, type Caixa } from "../edicao/layouts";
 import { stageRatio, type DeckSetup, type SlideLayout } from "../schema";
+import { abrirPopup, fecharPopup } from "./popup";
 
 const LARGURA = 160; // unidades do desenho (o tamanho em tela vem do CSS)
 
@@ -62,4 +63,18 @@ export function galeriaDeLayouts(setup: DeckSetup, atual?: SlideLayout): string 
     );
   }).join("");
   return `<div class="pp-pop-rot">${atual ? "Layout da lâmina" : "Nova lâmina"}</div><div class="pp-lays">${itens}</div>`;
+}
+
+/**
+ * Abre a galeria de layouts ancorada num elemento; `aoEscolher` recebe o layout clicado. É o mesmo
+ * popup na fita (Nova lâmina/Layout) e no "+" do card da faixa — uma implementação só.
+ */
+export function abrirGaleriaDeLayouts(ancora: HTMLElement, setup: DeckSetup, aoEscolher: (l: SlideLayout) => void, atual?: SlideLayout): void {
+  const el = abrirPopup(ancora, galeriaDeLayouts(setup, atual), { classe: "pp-pop-galeria pp-pop-layouts" });
+  el.addEventListener("click", (ev) => {
+    const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-lay]");
+    if (!b) return;
+    fecharPopup();
+    aoEscolher(b.dataset.lay as SlideLayout);
+  });
 }

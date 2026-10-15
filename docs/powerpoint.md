@@ -115,13 +115,13 @@ avisado ao abrir (nunca some em silêncio).
   abre um menu do app — **Duplicar lâmina**, **Nova lâmina no fim**, **Renomear…**, **Ocultar/
   Mostrar na apresentação** e **Excluir lâmina** — agindo na lâmina clicada (antes caía no menu do
   navegador: Voltar/Atualizar/Salvar como/Imprimir/Inspecionar). **Nova lâmina** é um **botão
-  dividido**: o **clique na frente** (e o card **+ Nova lâmina** do fim da faixa, que mostra a
-  **prévia** do layout) cria a lâmina **na hora**, com o **último layout escolhido** — a primeira
-  nasce **Capa**, e a preferência sobrevive ao recarregar; a **setinha ▾** (e o **Layout**) abre a
-  **galeria em grade** com a **miniatura de cada layout** (os espaços como silhuetas cinzas, na
-  proporção do deck), onde o atual vem destacado — clicar cria a lâmina com aquele layout (ou
-  aplica na atual) e passa a ser o "último". A **lâmina nova entra no fim** da apresentação e já
-  fica selecionada.
+  dividido**: o **clique na frente** (e o **corpo** do card **+ Nova lâmina** do fim da faixa, que
+  mostra a **prévia** do layout) cria a lâmina **na hora**, com o **último layout escolhido** — a
+  primeira nasce **Capa**, e a preferência sobrevive ao recarregar; a **setinha ▾** (e o **"+"** no
+  canto da prévia do card, e o **Layout**) abre a **galeria em grade** com a **miniatura de cada
+  layout** (os espaços como silhuetas cinzas, na proporção do deck), onde o atual vem destacado —
+  clicar cria a lâmina com aquele layout (ou aplica na atual) e passa a ser o "último". A **lâmina
+  nova entra no fim** da apresentação e já fica selecionada.
 - **Popups da fita (Formas, Template, Layout, Nova lâmina, cores, bordas…)**: abrir e **fechar
   pelo mesmo botão** — clicar de novo nele **recolhe** o que estava aberto (antes o clique no
   próprio botão era ignorado pelo "fecha ao clicar fora" e o comando rodava outra vez, reabrindo).

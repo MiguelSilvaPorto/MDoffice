@@ -60,26 +60,20 @@ const gravarEscala = (v: number): void => {
   }
 };
 
-/** Liga o botão de recolher/expandir; devolve um atalho para alternar por código. */
+/** Liga o recolher/expandir (Ctrl+F1 ou duplo clique numa aba); devolve um atalho por código. */
 export function ligarRecolherFita(o: OpcoesRecolherFita): { alternar: () => void } {
   let recolhida = ler();
   let temporaria = false; // painel à mostra só enquanto o usuário mexe na faixa
 
-  const botao = document.createElement("button");
-  botao.type = "button";
-  botao.className = "fita-recolher";
-  botao.innerHTML = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15.5l6-6 6 6"/></svg>';
-  o.abas.append(botao);
-
   const aplicar = (): void => {
     const escondida = recolhida && !temporaria;
     o.el.classList.toggle("fita-recolhida", escondida);
+    // sem botão (o chevron saiu a pedido): a dica vive na barra das abas, que é onde o gesto mora
     const titulo = escondida
-      ? `Fixar a faixa de opções (${teclaVisivel("fita")})`
-      : `Recolher a faixa de opções (${teclaVisivel("fita")})`;
-    botao.title = titulo;
-    botao.setAttribute("aria-label", titulo);
-    botao.setAttribute("aria-expanded", String(!escondida));
+      ? `Fixar a faixa de opções (${teclaVisivel("fita")}) ou duplo clique numa aba`
+      : `Recolher a faixa de opções (${teclaVisivel("fita")}) ou duplo clique numa aba`;
+    o.abas.title = titulo;
+    o.abas.setAttribute("aria-label", `Abas da faixa de opções — ${titulo}`);
   };
 
   /** Fixa a escolha (recolhida ou não) e guarda; avisa as outras fitas abertas. */
@@ -91,29 +85,26 @@ export function ligarRecolherFita(o: OpcoesRecolherFita): { alternar: () => void
     aplicar();
   };
 
-  botao.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // O clique decide pelo que está À VISTA: com a faixa aberta (mesmo que só "por enquanto",
-    // no modo recolhido — o caso de clicar no Template) ele RECOLHE; recolhida, ele fixa aberta.
-    // Antes usava o estado fixo: com a faixa à mostra e a preferência "recolhida" (a que o próprio
-    // botão anunciava como "Recolher a faixa de opções"), o clique fazia o contrário — fixava
-    // aberta e a faixa não fechava mais.
+  /**
+   * Alterna decidindo pelo que está À VISTA: com a faixa aberta (mesmo que só "por enquanto", no
+   * modo recolhido — o caso de clicar no Template) RECOLHE; recolhida, fixa aberta. O clique do
+   * chevron usava o estado fixo e, com a faixa à mostra e a preferência "recolhida", fazia o
+   * contrário — fixava aberta e a faixa não fechava mais. (O chevron saiu; o gesto ficou.)
+   */
+  const alternarPeloVisivel = (): void => {
     const visivel = !(recolhida && !temporaria);
     fixar(visivel);
-  });
+  };
 
   // duplo clique numa aba fixa ou solta a faixa (como no Office)
   o.abas.addEventListener("dblclick", (e) => {
-    if ((e.target as HTMLElement).closest(".fita-recolher")) return;
     e.preventDefault();
-    fixar(!recolhida);
+    alternarPeloVisivel();
   });
 
   // recolhida: clicar numa aba mostra a faixa por enquanto
   o.abas.addEventListener("click", (e) => {
     if (!recolhida || temporaria) return;
-    if ((e.target as HTMLElement).closest(".fita-recolher")) return;
     temporaria = true;
     aplicar();
   });
@@ -148,7 +139,7 @@ export function ligarRecolherFita(o: OpcoesRecolherFita): { alternar: () => void
     if (!o.el.isConnected || o.el.offsetParent === null) return;
     e.preventDefault();
     e.stopPropagation();
-    fixar(!recolhida);
+    alternarPeloVisivel();
   });
 
   // outra fita mudou a preferência: acompanha

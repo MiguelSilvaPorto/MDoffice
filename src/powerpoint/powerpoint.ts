@@ -76,7 +76,7 @@ import { Stage, passoZoom, type CelulasSel, type Ferramenta } from "./stage";
 import { stageVars, themeOf } from "./themes";
 import { abrirCores } from "./ui/cores";
 import { Fita } from "./ui/fita";
-import { miniaturaDeLayout } from "./ui/layoutPreview";
+import { abrirGaleriaDeLayouts, miniaturaDeLayout } from "./ui/layoutPreview";
 import { Painel } from "./ui/painel";
 import { abrirPopup, fecharPopup } from "./ui/popup";
 import type { EstadoUI } from "./ui/estado";
@@ -1008,18 +1008,23 @@ export class PowerPointHost {
       this.strip.append(btn);
     });
 
-    const add = document.createElement("button");
-    add.type = "button";
-    add.className = "pp-thumb-add pp-thumb-add-lay";
+    const add = document.createElement("div");
+    add.className = "pp-thumb-add";
     const rotuloUltimo = ROTULOS_LAYOUT[this.ultimoLayout];
-    add.title = `Nova lâmina no fim (${rotuloUltimo})`;
-    add.setAttribute("aria-label", `Nova lâmina no fim (${rotuloUltimo})`);
-    // o card mostra a PRÉVIA do último layout escolhido (a mesma miniatura da galeria) e o "+"
-    // no canto — o clique cria direto, sem abrir a galeria
+    const titulo = `Nova lâmina no fim (${rotuloUltimo})`;
+    // o card tem DOIS alvos: o corpo (a prévia e o rótulo) cria a lâmina com o último layout; o
+    // "+" no canto abre a galeria com todas as variações (e a escolha lá passa a ser o "último")
     add.innerHTML =
-      `<span class="pp-thumb-add-previa">${miniaturaDeLayout(this.ultimoLayout, this.setup)}<span class="pp-thumb-add-mais">+</span></span>` +
-      `<span class="pp-thumb-add-rot"><b>+</b> Nova lâmina</span>`;
-    add.addEventListener("click", () => this.run("slide-new"));
+      `<span class="pp-thumb-add-previa">` +
+      `<button type="button" class="pp-thumb-add-corpo" title="${titulo}" aria-label="${titulo}">${miniaturaDeLayout(this.ultimoLayout, this.setup)}</button>` +
+      `<button type="button" class="pp-thumb-add-mais" title="Escolher o layout da nova lâmina" aria-label="Escolher o layout da nova lâmina">+</button>` +
+      `</span>` +
+      `<button type="button" class="pp-thumb-add-rot" title="${titulo}" aria-label="${titulo}"><b>+</b> Nova lâmina</button>`;
+    add.querySelector<HTMLButtonElement>(".pp-thumb-add-corpo")!.addEventListener("click", () => this.run("slide-new"));
+    add.querySelector<HTMLButtonElement>(".pp-thumb-add-rot")!.addEventListener("click", () => this.run("slide-new"));
+    add.querySelector<HTMLButtonElement>(".pp-thumb-add-mais")!.addEventListener("click", (e) => {
+      abrirGaleriaDeLayouts(e.currentTarget as HTMLElement, this.setup, (l) => this.run("slide-new", l));
+    });
     this.strip.append(add);
     // mantém a miniatura da lâmina atual à vista (na horizontal e na vertical)
     this.strip.querySelector(".pp-thumb.active")?.scrollIntoView({ block: "nearest", inline: "nearest" });

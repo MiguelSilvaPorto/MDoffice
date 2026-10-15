@@ -19,7 +19,7 @@ html.cantos-quadrados :where(
     #tb-sidebar, .palette-btn, .tb-pill-btn, .tb-icon-btn, .tb-saved-path, .tb-autosave-badge,
     .tab-input, .st-seg-item, .st-seg-icone, .st-nav-ic, .st-row-ic, .st-select, .st-key,
     .st-key kbd, .color-input, .draw-text-input, .palette-item, .home-resume-btn, .home-import-btn,
-    .home-chip-btn, .home-tab-pill, .home-search-box, .home-file-icon, .path-btn, .fita-recolher,
+    .home-chip-btn, .home-tab-pill, .home-search-box, .home-file-icon, .path-btn,
     .dd-item, .home-badge, .home-card-new-pill, .home-filter-clear-btn, .home-filter-active-bar,
     .pj-skel-bar, mark.pj-mark, .st-opcao-previa
   ) {

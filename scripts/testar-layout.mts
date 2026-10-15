@@ -580,13 +580,27 @@ checa("a miniatura acompanha a proporção do deck", /stageRatio\(setup\)/.test(
 const fitaPpt = ler("src/powerpoint/ui/fita.ts");
 checa(
   "Nova lâmina abre a galeria (não a lista de texto)",
-  /case "slide-novo"[\s\S]{0,400}galeriaDeLayouts\(est\.setup\)/.test(fitaPpt),
+  /case "slide-novo":\s*abrirGaleriaDeLayouts\(ancora, est\.setup/.test(fitaPpt),
   "o menu ainda é a lista de texto"
 );
 checa(
   "Layout abre a mesma galeria com o atual destacado",
-  /case "layout"[\s\S]{0,400}galeriaDeLayouts\(est\.setup, est\.layout\)/.test(fitaPpt),
+  /case "layout":[\s\S]{0,300}abrirGaleriaDeLayouts\(ancora, est\.setup, \(l\) => run\("layout", l\), est\.layout\)/.test(fitaPpt),
   "o menu de Layout não destaca o atual"
+);
+checa(
+  "a galeria é um helper só (fita e card da faixa usam o mesmo)",
+  /export function abrirGaleriaDeLayouts\(ancora: HTMLElement, setup: DeckSetup, aoEscolher/.test(ler("src/powerpoint/ui/layoutPreview.ts")),
+  "a fita e o card teriam duas implementações do mesmo popup"
+);
+// o chevron de recolher saiu a pedido: o gesto vive no Ctrl+F1 e no duplo clique numa aba
+checa(
+  "o chevron de recolher saiu (e o gesto do Ctrl+F1/duplo clique ficou)",
+  !/fita-recolher/.test(ler("src/fita.ts")) &&
+    !/\.fita-recolher/.test(ler("src/styles/fita.css")) &&
+    /addEventListener\("dblclick"[\s\S]{0,200}alternarPeloVisivel\(\)/.test(ler("src/fita.ts")) &&
+    /combina\("fita", e\)[\s\S]{0,300}alternarPeloVisivel\(\)/.test(ler("src/fita.ts")),
+  "o botão voltaria (ou o gesto sumiria)"
 );
 // "Nova lâmina" vira botão dividido: a frente cria com o ÚLTIMO layout e a setinha abre a galeria
 checa(
@@ -618,12 +632,14 @@ checa(
   "a preferência não sobreviveria ao recarregar (ou o Layout não a atualizaria)"
 );
 checa(
-  "o card da faixa mostra a prévia do último layout (o clique cria com ele)",
+  "o card da faixa tem dois alvos: o corpo cria e o \"+\" abre a galeria",
   /miniaturaDeLayout\(this\.ultimoLayout, this\.setup\)/.test(ppt) &&
-    /pp-thumb-add-previa/.test(ppt) &&
+    /pp-thumb-add-corpo/.test(ppt) &&
+    /pp-thumb-add-rot/.test(ppt) &&
     /pp-thumb-add-mais/.test(ppt) &&
-    /add\.addEventListener\("click", \(\) => this\.run\("slide-new"\)\)/.test(ppt),
-  "o card voltaria ao “+” sem prévia"
+    /querySelector<HTMLButtonElement>\("\.pp-thumb-add-corpo"\)!\.addEventListener\("click", \(\) => this\.run\("slide-new"\)\)/.test(ppt) &&
+    /querySelector<HTMLButtonElement>\("\.pp-thumb-add-mais"\)!\.addEventListener\("click", \(e\) => \{[\s\S]{0,220}abrirGaleriaDeLayouts\(e\.currentTarget/.test(ppt),
+  "o card voltaria ao “+” sem prévia (ou o “+” sem galeria)"
 );
 checa(
   "css: as duas metades do botão dividido e a prévia do card têm estilo próprio",

@@ -9108,3 +9108,94 @@ antigas quando fizer sentido.
 - **Linha:** `novo`
 - **Porquê:** defeito de interface do módulo PowerPoint; a entrada entra já promovida, como o
   fechamento exige.
+## src/powerpoint/ui/layoutPreview.ts
+
+### 2026-10-15 · o "+" do card abre a galeria · o helper da galeria
+- **Local:** `abrirGaleriaDeLayouts` (novo, depois de `galeriaDeLayouts`) + o import do `./popup`
+- **Linha:** `novo` — abre o popup (`abrirPopup` com a classe `pp-pop-galeria pp-pop-layouts`),
+  escuta o `[data-lay]` e chama `aoEscolher(layout)`; aceita o `atual` para o destaque
+- **Porquê:** a fita tinha DUAS cópias do mesmo popup (Nova lâmina e Layout) e o card da faixa
+  precisava do terceiro — três cópias divergiriam na primeira mudança de comportamento (fechar,
+  destacar, largura do popup). O helper mora no módulo da galeria (é o dono do desenho) e os três
+  chamadores passaram a ser uma linha; a assinatura com `atual` opcional preserva o destaque do
+  "Layout" sem caso especial.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-15 · o "+" do card abre a galeria · os dois caminhos viram um
+- **Local:** os casos `slide-novo` e `layout` do `abrirMenu`, e o import (`galeriaDeLayouts` →
+  `abrirGaleriaDeLayouts`)
+- **Linha:** `case "slide-novo": abrirGaleriaDeLayouts(ancora, est.setup, (l) => run("slide-new", l))` ·
+  `case "layout": abrirGaleriaDeLayouts(ancora, est.setup, (l) => run("layout", l), est.layout)`
+- **Porquê:** a troca é de uma linha por caso e mantém o contrato (o "+"/setinha abre a galeria; o
+  clique cria/aplica e o `run` de sempre resolve o resto). O `galeriaDeLayouts` continua exportado
+  (o helper o usa), mas a fita deixou de montar o popup na mão — se um dia a galeria mudar, é um
+  lugar só.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-15 · o "+" do card abre a galeria · o card com dois alvos
+- **Local:** o card do fim da faixa (`renderFaixa`) + o import do `abrirGaleriaDeLayouts`
+- **Linha:** o card deixa de ser UM botão e vira um `<div>` com três: `+ .pp-thumb-add-corpo`
+  (a prévia — cria), `+ .pp-thumb-add-rot` (o rótulo — cria) e `+ .pp-thumb-add-mais` (o "+" no
+  canto — `abrirGaleriaDeLayouts(e.currentTarget, this.setup, (l) => this.run("slide-new", l))`)
+- **Porquê:** um botão não pode conter outro, e o "+" precisa ser um alvo próprio (o pedido: "o +
+  mostra todas as variações"). A prévia e o rótulo ficaram como dois botões que fazem a MESMA coisa
+  (criar) em vez de um botão só com o "+" fora: com o "+" posicionado sobre a prévia, o corpo
+  precisava ser o dono da prévia — e o rótulo, fora dele, viraria texto morto ao clique. Escolher
+  na galeria chama `run("slide-new", l)`, que cria com aquele layout **e** o marca como o último
+  (a preferência que a fita e o card usam) — o mesmo caminho da fita.
+
+## src/styles/powerpoint.css
+
+### 2026-10-15 · o "+" do card abre a galeria · o card cresce com a prévia
+- **Local:** `.pp-thumb-add` (e os filhos novos: `-previa`, `-corpo`, `-rot`, `-mais`)
+- **Linha:** o card perde o `aspect-ratio` fixo e ganha `padding: 8px 0`; a `-previa` vira a âncora
+  do "+" (que agora é `position: absolute` com `-5px` no canto); `-corpo`/`-rot` ganham o
+  `cursor: pointer`; o hover continua no card inteiro
+- **Porquê:** com `aspect-ratio` 16/9 (72 px de altura) a prévia (114 px de largura → ~64 px de
+  altura) mais o rótulo estouravam o card — o conteúdo já vazava um pouco antes (o rótulo encostava
+  no limite). Sem a proporção fixa o card cresce com o conteúdo, e a fileira continua alinhada
+  porque a faixa usa `align-items: flex-start` (a carta é alguns pixels mais alta que as
+  miniaturas, como o "+" genérico já era). O "+" encostado no canto (`-5px`) é o mesmo desenho da
+  faixa do PowerPoint: o badge pende para fora do cartão.
+
+## src/fita.ts
+
+### 2026-10-15 · o chevron de recolher saiu · o gesto fica no Ctrl+F1 e no duplo clique
+- **Local:** `ligarRecolherFita` (a criação do botão, o ouvinte de clique e as guardas `.fita-recolher`)
+  e o `aplicar`
+- **Linha:** sai o botão `.fita-recolher` e o `o.abas.append(botao)`; o clique do botão vira
+  `alternarPeloVisivel()` (usado pelo duplo clique e pelo `Ctrl+F1`); `+ o.abas.title` recebe a
+  dica ("Recolher/Fixar a faixa de opções… ou duplo clique numa aba"); as guardas
+  `closest(".fita-recolher")` saem
+- **Porquê:** o usuário pediu para remover o botão de cima ("só vamos usar o da lateral
+  esquerda" — o recolher continua nos gestos). A lógica recém-corrigida ("decide pelo que está à
+  vista", que o outro agente tinha acabado de consertar no clique do botão) foi PRESERVADA e virou
+  a função que os dois gestos usam — a dica migrou para a barra das abas, que é onde o duplo
+  clique mora, então o recurso não perdeu a descoberta nem o contrato do teste (as checagens do
+  `testar-layout` continuam passando sem ajuste).
+
+## src/styles/fita.css · src/styles/cantos.css
+
+### 2026-10-15 · o chevron de recolher saiu · o CSS do botão
+- **Local:** o bloco `.fita-recolher` (hover, `.ic` e o giro do ícone na faixa recolhida) e a
+  lista de cantos (`cantos.css`)
+- **Linha:** `- .fita-recolher { … }`, `- .fita-recolher:hover`, `- .fita-recolher .ic`,
+  `- .fita-recolhida .fita-recolher .ic` e `- .fita-recolher` da lista de `cantos.css`
+- **Porquê:** sem o botão o CSS vira peso morto (e a regra `cantos.css` casaria um elemento que não
+  existe); as regras de `.fita-recolhida` (o ESTADO) ficam — é o que o Ctrl+F1 e o duplo clique
+  continuam alternando.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · o "+" do card abre a galeria · 3 checagens novas (e 3 atualizadas)
+- **Local:** o bloco do "Nova lâmina" (galeria/chevron) e o do card da faixa
+- **Linha:** `+ a checagem do helper compartilhado e a do chevron que saiu (o Ctrl+F1/duplo clique
+  ficam)` · `~ as checagens da fita passaram a ler abrirGaleriaDeLayouts` · `~ a do card agora
+  confere os DOIS alvos (corpo cria; "+" chama o abrirGaleriaDeLayouts)`
+- **Porquê:** as checagens antigas liam o texto exato de antes (`galeriaDeLayouts(est.setup)` e o
+  `add.addEventListener("click")`) — a refatoração as quebra, e isso é o teste funcionando: ele
+  prende a ESTRUTURA (o menu abre a galeria; o card tem os dois alvos), não a implementação. As
+  novas prendem o que NÃO pode voltar: o botão do chevron (pedido do usuário) e a duplicação do
+  popup.

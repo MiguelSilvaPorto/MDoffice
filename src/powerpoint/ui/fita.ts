@@ -13,7 +13,7 @@ import { FONTES_COMUNS, TAMANHOS, cmParaPt, ptParaCm, type EstadoUI } from "./es
 import { abrirGaleria, iconeDeForma } from "./galeria";
 import { abrirModelos } from "./modelos";
 import { abrirPopup, ancoraDoPopup, fecharPopup } from "./popup";
-import { galeriaDeLayouts } from "./layoutPreview";
+import { abrirGaleriaDeLayouts } from "./layoutPreview";
 import { melhorarSelects, fecharSeletor } from "../../seletor";
 import { GALERIA } from "../edicao/criar";
 import { escapeHtml } from "../../util";
@@ -862,16 +862,9 @@ export class Fita {
       // "Nova lâmina" pergunta QUAL layout a lâmina nova deve ter. Sem este
       // menu o botão ficava sem efeito nenhum (ele é um botão de menu).
       // A galeria mostra cada layout como miniatura (silhuetas dos espaços).
-      case "slide-novo": {
-        const el = abrirPopup(ancora, galeriaDeLayouts(est.setup), { classe: "pp-pop-galeria pp-pop-layouts" });
-        el.addEventListener("click", (ev) => {
-          const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-lay]");
-          if (!b) return;
-          fecharPopup();
-          run("slide-new", b.dataset.lay);
-        });
+      case "slide-novo":
+        abrirGaleriaDeLayouts(ancora, est.setup, (l) => run("slide-new", l));
         return;
-      }
       case "tabela-bordas-menu": {
         const itens: [string, string][] = [["todas", "Todas as bordas"], ["externas", "Bordas externas"], ["internas", "Bordas internas"], ["topo", "Borda superior"], ["base", "Borda inferior"], ["esquerda", "Borda esquerda"], ["direita", "Borda direita"], ["nenhuma", "Sem borda"]];
         const el = abrirPopup(ancora, itens.map(([k, n]) => `<button type="button" class="pp-pop-item" data-borda="${k}">${n}</button>`).join(""), { classe: "pp-pop-menu" });
@@ -925,17 +918,10 @@ export class Fita {
         });
         return;
       }
-      case "layout": {
+      case "layout":
         // a mesma galeria do "Nova lâmina", com o layout atual em destaque
-        const el = abrirPopup(ancora, galeriaDeLayouts(est.setup, est.layout), { classe: "pp-pop-galeria pp-pop-layouts" });
-        el.addEventListener("click", (ev) => {
-          const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-lay]");
-          if (!b) return;
-          fecharPopup();
-          run("layout", b.dataset.lay);
-        });
+        abrirGaleriaDeLayouts(ancora, est.setup, (l) => run("layout", l), est.layout);
         return;
-      }
       case "espaco": {
         const opcoes = [1, 1.15, 1.5, 2, 2.5, 3];
         const el = abrirPopup(ancora, opcoes.map((o) => `<button type="button" class="pp-pop-item" data-esp="${o}">${String(o).replace(".", ",")}</button>`).join(""), { classe: "pp-pop-menu" });

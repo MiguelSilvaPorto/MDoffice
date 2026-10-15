@@ -5,39 +5,7 @@
    Vale para as fitas do Word (.wd-), do Excel (.xl-) e das Apresentações (.ppr-).
    ========================================================================== */
 
-/* ---------- recolher ---------- */
-
-.fita-recolher {
-  align-self: center;
-  margin-left: auto;
-  width: 26px;
-  height: 22px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted);
-  background: transparent;
-  border: 0;
-  border-radius: 5px;
-  cursor: pointer;
-  flex: none;
-}
-
-.fita-recolher:hover {
-  color: var(--fg);
-  background: color-mix(in srgb, var(--fg) 9%, transparent);
-}
-
-.fita-recolher .ic {
-  width: 15px;
-  height: 15px;
-  transition: transform 0.15s ease;
-}
-
-.fita-recolhida .fita-recolher .ic {
-  transform: rotate(180deg);
-}
+/* ---------- recolher (Ctrl+F1 ou duplo clique numa aba; sem botão visível) ---------- */
 
 /* recolhida: os painéis somem e o contorno da faixa fica numa linha só */
 .wd-ribbon.fita-recolhida .wd-ribbon-panels,
