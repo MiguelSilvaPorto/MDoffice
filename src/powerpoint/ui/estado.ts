@@ -68,6 +68,12 @@ export interface EstadoUI {
   celulas: CelulasSel | null;
   /** cantos escolhidos para a edição de raio (palco e painel) */
   cantosSel: Canto[];
+  /** o Estúdio está aberto: o palco está no ambiente isolado de uma box */
+  estudio: boolean;
+  /** a forma escolhida pode ser isolada (o botão Isolar da fita acende) */
+  podeIsolar: boolean;
+  /** o nome da box isolada (a trilha do Estúdio) */
+  estudioNome?: string;
 }
 
 // A lista de fontes comuns do app (fitas do PowerPoint e do Word). O campo de fonte

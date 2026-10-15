@@ -492,6 +492,10 @@ export class Fita {
         `${grande("tinta-forma", ic("i-refresh"), "Converter em forma", "Converte o traço de tinta escolhido na forma que o assistente reconhecer")}`
       ),
       grupo(
+        "Estúdio",
+        `${grande("estudio", `<span class="ppr-estudio-ic"></span>`, "Isolar", "Isolar a box escolhida: edite só ela, num ambiente separado (Esc sai)")}`
+      ),
+      grupo(
         "Traço",
         `${btn("pincel:cor", `${ic("i-draw")}<span class="ppr-barra" data-barra="pincel-cor"></span>`, "Cor do traço", "fmt cor", true)}
          <div class="ppr-col">
@@ -1310,6 +1314,19 @@ export class Fita {
     on("pincel-tipo:marca", st.ferramenta?.tipo === "desenho" && st.pincel.tipo === "marca");
     on("borracha", st.ferramenta?.tipo === "borracha");
     dis("tinta-forma", !st.formas.some((f) => !!f.tinta));
+    // Estúdio: o botão isola a box escolhida e, com o Estúdio aberto, ele vira o "Sair"
+    const botaoEstudio = this.el.querySelector<HTMLElement>('[data-cmd="estudio"]');
+    if (botaoEstudio) {
+      const rotulos = botaoEstudio.querySelectorAll<HTMLElement>("span");
+      const rotulo = rotulos[rotulos.length - 1];
+      if (rotulo) rotulo.textContent = st.estudio ? "Sair" : "Isolar";
+      botaoEstudio.title = st.estudio
+        ? `Sair do Estúdio${st.estudioNome ? ` (${st.estudioNome})` : ""} — Esc também sai`
+        : "Isolar a box escolhida: edite só ela, num ambiente separado (Esc sai)";
+      botaoEstudio.setAttribute("aria-label", botaoEstudio.title);
+      botaoEstudio.classList.toggle("estudio-on", st.estudio);
+      dis("estudio", !st.estudio && !st.podeIsolar);
+    }
     on("pincel-assistente", st.pincel.assistente);
     for (const w of [1, 2, 4, 8]) on(`pincel:w:${w}`, st.pincel.w === w);
     on("pincel:modo:livre", st.pincel.modo === "livre");

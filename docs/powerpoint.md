@@ -357,6 +357,29 @@ avisado ao abrir (nunca some em silêncio).
   - `Backspace` ou `Delete`: desfaz o último ponto adicionado.
   - `Esc` ou botão **✕**: descarta e cancela o traçado em andamento.
 
+## Estúdio: isolar uma box
+
+A aba **Desenhar** tem o grupo **Estúdio**: com uma **box escolhida** (um cartão, uma imagem, uma
+caixa de texto — qualquer forma **com área**), o botão **Isolar** põe o palco num **ambiente só
+dela**:
+
+- o **resto da lâmina fica esmaecido** por uma máscara que usa o **próprio caminho da box** (com o
+  **raio dos cantos**, canto por canto) como buraco — o que está dentro continua vivo e brilhante;
+- o **zoom enquadra e centra a box** (a "lâmina da box") e, ao sair, o palco volta ao zoom de antes;
+- uma **trilha** no alto diz qual box está isolada (`Lâmina 3 ▸ Card do Diego`) e traz o **Sair**;
+- a **seleção passa a respeitar a box**: clicar no que está fora (esmaecido) não escolhe nada;
+- **`Esc` sai**; trocar de lâmina ou de documento fecha o modo; e **apagar a box** fecha junto — o
+  Estúdio nunca fica apontando para o que não existe mais.
+
+**O que não dá para isolar:** linha, conector, geometria livre e traço de tinta (não têm área) — o
+aviso diz isso quando você tenta. As geometrias que o app desenha com exatidão são o **retângulo**, o
+**retângulo com cantos arredondados** (raio por canto), a **elipse** e o **triângulo**; as demais
+formas predefinidas caem no retângulo da caixa (previsível, e a máscara continua valendo).
+
+Este é o **primeiro passo** de um conjunto: o caminho da box é o mesmo que a **pintura recortada**
+(vidro, pincel, balde), as **camadas** e as **cópias vinculadas** (modelo → cópias, com partes
+desvinculadas) vão usar como fronteira. Teste: `npm run test:estudio`.
+
 ## Conectar formas
 
 - Na aba **Inserir**, o botão **Conectar** (grupo **Diagrama**, ao lado do Fluxo do Mermaid) liga

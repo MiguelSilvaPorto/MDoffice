@@ -7,6 +7,7 @@ import { $, escapeHtml, toast } from "../util";
 import { pedirTexto } from "../dialogoTexto";
 import { fluxoParaFormas, lerFluxoMermaid } from "./edicao/mermaid";
 import { ligarAjusteAlturaFita, ligarEncaixeFita, ligarRecolherFita, ligarRodaHorizontal } from "../fita";
+import { podeIsolar, caminhoDaBox, mascaraDaBox, nomeDaBox } from "./edicao/estudio";
 import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, novaImagem, type EstiloDeck, type ItemGaleria } from "./edicao/criar";
 import { dicaDoTraco, formaDoTraco, formaDeCurva, formaDaTinta, type Pincel } from "./edicao/desenho";
 import { atualizarEstilos, ehBrilho, ehFamilia, ehIntensidade, estiloDaFamilia, ligarEstilo, ligarEstiloFundo, soltarEstilo, soltarEstiloFundo } from "./edicao/estilos";
@@ -218,12 +219,18 @@ export class PowerPointHost {
   private celulas: CelulasSel | null = null;
   /** cantos escolhidos para a edição de raio (as alças de canto do palco e o painel) */
   private cantosSel: Canto[] = [...CANTOS];
+  /** a box isolada no Estúdio (o id da forma) — null = o Estúdio está fechado */
+  private estudio: string | null = null;
+  /** o zoom de antes de entrar no Estúdio: ao sair, o palco volta para ele */
+  private zoomAntesEstudio = 100;
 
   private strip!: HTMLElement;
   private canvas!: HTMLElement;
   private frame!: HTMLElement;
   private slideEl!: HTMLElement;
   private notesEl!: HTMLTextAreaElement;
+  /** a trilha do Estúdio (nome da box + Sair) */
+  private trilhaEstudio!: HTMLElement;
 
   /**
    * Arrasto da miniatura em andamento. É feito com eventos de PONTEIRO, e não com o `draggable`
@@ -311,6 +318,12 @@ export class PowerPointHost {
           <button type="button" class="pp-pincel-btn pp-pincel-cancelar" data-pincel-cancelar hidden title="Cancelar curva (Esc)">✕</button>
           <span class="pp-pincel-dica" data-pincel-dica></span>
         </div>
+        <div class="pp-estudio" data-estudio hidden>
+          <span class="pp-estudio-marca" aria-hidden="true"></span>
+          <span class="pp-estudio-tag">Estúdio</span>
+          <span class="pp-estudio-nome" data-estudio-nome></span>
+          <button type="button" class="btn small pp-estudio-sair" data-estudio-sair title="Sair do Estúdio (Esc)">Sair</button>
+        </div>
         <div class="pp-left">
           <div class="pp-strip" data-strip aria-label="Lâminas"></div>
           <div class="pp-canvas" data-canvas>
@@ -370,6 +383,8 @@ export class PowerPointHost {
     this.frame = $("[data-frame]", this.pane);
     this.slideEl = $("[data-slide]", this.pane);
     this.notesEl = $<HTMLTextAreaElement>("[data-notes]", this.pane);
+    this.trilhaEstudio = $("[data-estudio]", this.pane);
+    $("[data-estudio-sair]", this.pane).addEventListener("click", () => this.run("estudio"));
 
     this.fita = new Fita($("#pp-ribbon", this.pane), { estado: () => this.estadoUI(), run: (c, v) => this.run(c, v) });
     // recolher a faixa (botão no canto das abas, duplo clique numa aba ou Ctrl+F1), ajustar a
@@ -1074,6 +1089,7 @@ export class PowerPointHost {
     this.slideEl.className = `pp-slide layout-${slide.layout}${this.fixas ? " pp-fixas-on" : ""}`;
     this.slideEl.style.background = fundoValor(slide.bg, this.setup.media ?? {});
     this.pintarSlide(slide);
+    this.pintarEstudio();
     this.pintarStrip();
     this.notes.setText(slide.notes);
     this.atualizarStatus();
@@ -1086,7 +1102,118 @@ export class PowerPointHost {
   /** só a lâmina e a seleção (usado enquanto se arrasta, para não refazer as miniaturas a cada quadro) */
   private pintarRapido(): void {
     this.pintarSlide(this.atual());
+    this.pintarEstudio();
     this.atualizarUI();
+  }
+
+  // ------------------------------------------------------------------
+  // Estúdio (o ambiente isolado de uma box)
+  // ------------------------------------------------------------------
+
+  /** A box isolada (a forma do id guardado, na lâmina atual). */
+  private boxDoEstudio(): Shape | undefined {
+    if (!this.estudio) return undefined;
+    return this.atual().shapes.find((s) => s.id === this.estudio);
+  }
+
+  /**
+   * Pinta a "casca" do Estúdio: a trilha (nome da box + Sair), a classe do palco e a MÁSCARA — o
+   * retângulo da lâmina com a box como buraco, que esmaece todo o resto. A máscara é um SVG em pt
+   * da lâmina (o mesmo caminho que a pintura vai usar como fronteira nas próximas fases).
+   */
+  private pintarEstudio(): void {
+    const box = this.boxDoEstudio();
+    // a box sumiu (apagada, desfeita, outra lâmina): o Estúdio fecha junto — nada de estado fantasma
+    if (this.estudio && !box) this.estudio = null;
+    this.pane.classList.toggle("pp-estudio-on", !!this.estudio);
+    if (this.trilhaEstudio) {
+      this.trilhaEstudio.hidden = !this.estudio;
+      const nome = this.trilhaEstudio.querySelector<HTMLElement>("[data-estudio-nome]");
+      if (box && nome) nome.textContent = nomeDaBox(box);
+    }
+    this.slideEl.querySelector(".pp-estudio-svg")?.remove();
+    for (const el of this.slideEl.querySelectorAll<HTMLElement>("[data-shape]")) el.classList.remove("pp-estudio-box");
+    if (!box) return;
+    const d = this.dim();
+    const caminho = mascaraDaBox(box, d);
+    if (caminho) {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("class", "pp-estudio-svg");
+      svg.setAttribute("viewBox", `0 0 ${d.w} ${d.h}`);
+      svg.setAttribute("preserveAspectRatio", "none");
+      svg.setAttribute("aria-hidden", "true");
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", caminho);
+      path.setAttribute("fill-rule", "evenodd");
+      svg.append(path);
+      this.slideEl.append(svg);
+    }
+    // a box isolada ganha o contorno de destaque (o resto fica atrás da máscara)
+    for (const el of this.slideEl.querySelectorAll<HTMLElement>("[data-shape]")) {
+      if (el.dataset.shape === box.id) el.classList.add("pp-estudio-box");
+    }
+  }
+
+  /** No Estúdio, só o que está DENTRO da box entra na seleção (o resto está esmaecido). */
+  private dentroDaBox(ids: string[]): string[] {
+    const box = this.boxDoEstudio();
+    if (!box) return ids;
+    const b = box.box;
+    return ids.filter((id) => {
+      const f = this.atual().shapes.find((s) => s.id === id);
+      if (!f) return false;
+      const cx = f.box.x + f.box.w / 2;
+      const cy = f.box.y + f.box.h / 2;
+      return cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h;
+    });
+  }
+
+  /** Entra/sai do Estúdio: o ambiente isolado de uma box (o "Photoshop por cima das box"). */
+  private alternarEstudio(): void {
+    if (this.estudio) {
+      this.sairDoEstudio();
+      return;
+    }
+    const alvo = this.principal();
+    if (!alvo || !podeIsolar(alvo)) {
+      toast("Escolha uma box com área para isolar — linha, conector e traço de tinta não têm área.", "info", 5200);
+      return;
+    }
+    this.estudio = alvo.id;
+    this.zoomAntesEstudio = this.stage.zoomAtual;
+    this.enquadrarBox(alvo);
+    this.pintar();
+  }
+
+  private sairDoEstudio(): void {
+    if (!this.estudio) return;
+    this.estudio = null;
+    this.stage.setZoom(this.zoomAntesEstudio);
+    this.pintar();
+  }
+
+  /** Enquadra a box no palco (o "ambiente só dela") e centra: o zoom de antes volta ao sair. */
+  private enquadrarBox(s: Shape): void {
+    const caixa = this.canvas.getBoundingClientRect();
+    const quadro = this.frame.getBoundingClientRect();
+    if (caixa.width < 10 || quadro.width < 10 || s.box.w <= 0 || s.box.h <= 0) return;
+    const escalaX = (caixa.width * 0.86) / ((s.box.w / 100) * quadro.width);
+    const escalaY = (caixa.height * 0.86) / ((s.box.h / 100) * quadro.height);
+    const { min, max } = Stage.limites;
+    const alvo = Math.max(min, Math.min(max, Math.round(this.stage.zoomAtual * Math.min(escalaX, escalaY))));
+    this.stage.setZoom(alvo);
+    this.centrarNaBox(s);
+  }
+
+  /** Deixa o centro da box no centro do que está à vista (o palco rola de verdade). */
+  private centrarNaBox(s: Shape): void {
+    const caixa = this.canvas.getBoundingClientRect();
+    const quadro = this.frame.getBoundingClientRect();
+    if (!caixa.width || !quadro.width) return;
+    const cx = quadro.left + ((s.box.x + s.box.w / 2) / 100) * quadro.width;
+    const cy = quadro.top + ((s.box.y + s.box.h / 2) / 100) * quadro.height;
+    this.canvas.scrollLeft += cx - (caixa.left + caixa.width / 2);
+    this.canvas.scrollTop += cy - (caixa.top + caixa.height / 2);
   }
 
   private atualizarUI(): void {
@@ -1425,6 +1552,7 @@ export class PowerPointHost {
     const d = this.dim();
     const anims = normalizarAnimacoes(this.atual().animacoes);
     const animacao = forma && anims ? anims.find((a) => a.forma === forma.id) : undefined;
+    const isolada = this.boxDoEstudio();
     return {
       temLamina: this.slides.length > 0,
       indice: this.indice,
@@ -1457,6 +1585,9 @@ export class PowerPointHost {
       altura: forma ? (forma.box.h / 100) * d.h : 0,
       celulas: this.celulasDaSelecao(),
       cantosSel: [...this.cantosSel],
+      estudio: !!this.estudio,
+      podeIsolar: podeIsolar(forma),
+      estudioNome: isolada ? nomeDaBox(isolada) : undefined,
       transicao: normalizarTransicao(this.atual().transicao),
       transicaoPreservada: !!this.atual().transicaoXml,
       animacao,
@@ -1474,6 +1605,8 @@ export class PowerPointHost {
   // ------------------------------------------------------------------
 
   private selecionar(ids: string[]): void {
+    // Estúdio aberto: só o que está dentro da box entra na seleção
+    if (this.estudio) ids = this.dentroDaBox(ids);
     const igual = ids.length === this.selecao.length && ids.every((x, i) => x === this.selecao[i]);
     if (igual) return;
     if (this.editando && !(ids.length === 1 && ids[0] === this.editando)) this.sairEdicao();
@@ -2506,6 +2639,12 @@ export class PowerPointHost {
         this.stage.desenharSelecao();
         return;
       }
+      // ---- Estúdio: o ambiente isolado de uma box ----
+      case "estudio": {
+        this.alternarEstudio();
+        return;
+      }
+
       case "tinta-forma": {
         // "Converter em forma": o traço escolhido passa pelo reconhecedor e vira a forma limpa
         const alvos = this.atual().shapes.filter((f) => this.selecao.includes(f.id) && f.tinta);
@@ -3516,6 +3655,8 @@ export class PowerPointHost {
         return;
       }
       if (this.ferramenta) this.consumir(e, () => this.run("ferramenta", ""));
+      // Estúdio aberto: o Esc sai do ambiente isolado (a trilha diz isso)
+      else if (this.estudio) this.consumir(e, () => this.sairDoEstudio());
       else if (this.selecao.length) this.consumir(e, () => this.selecionar([]));
       return;
     }
@@ -4080,6 +4221,8 @@ export class PowerPointHost {
     this.editando = null;
     this.ferramenta = null;
     this.pincelFmt = null;
+    // outra aba/documento: o Estúdio não atravessa (a box é de uma lâmina de um documento)
+    this.estudio = null;
     this.atualizarPincel();
     this.hist.limpar();
     this.pane.style.setProperty("--slide-ratio", String(stageRatio(this.setup)));
@@ -4261,6 +4404,11 @@ export class PowerPointHost {
     const novo = clampIndex(i, this.slides.length);
     if (novo === this.indice) return;
     if (this.editando) this.sairEdicao();
+    // trocar de lâmina fecha o Estúdio (a box é de uma lâmina só) e devolve o zoom de antes
+    if (this.estudio) {
+      this.estudio = null;
+      this.stage.setZoom(this.zoomAntesEstudio);
+    }
     this.indice = novo;
     this.selecao = [];
     this.pintar();

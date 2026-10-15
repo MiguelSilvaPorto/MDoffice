@@ -11484,3 +11484,112 @@ antigas quando fizer sentido.
   promoção anda depois: o encaixe na borda visível (4aa918f). Promovi só a entrada DESTA tarefa —
   as que seguem em "Não adicionado" (a aba Animações, a aba Design completa e o Template com
   desenho) são de sessões com trabalho aberto, mexer nelas criaria duplicata ou conflito.
+
+## src/powerpoint/edicao/estudio.ts (arquivo novo)
+
+### 2026-10-15 · Estúdio (fase 1) · o caminho da box e a máscara do ambiente isolado
+
+- **Local:** `podeIsolar`, `boxEmPt`, `caminhoDaBox`, `mascaraDaBox`, `nomeDaBox`
+- **Linha:** `novo` (módulo puro). A caixa da forma vira pt da lâmina (`(box.x / 100) * d.w`, …); o
+  caminho sai em SVG: retângulo (`M x y L x2 y L x2 y2 L x y2 Z`), retângulo com cantos arredondados
+  (arcos de `raio = canto% × menor lado`, limitado a metade do menor lado), elipse (duas meias-voltas)
+  e triângulo (`triangle`, `triangleInverted` e `rtTriangle`); `mascaraDaBox` concatena o retângulo da
+  lâmina com o caminho da box (o `evenodd` do SVG faz o buraco)
+- **Porquê:** o "Estúdio" precisa de uma fronteira **exata** — é ela que esmaece o resto da lâmina
+  agora e, nas fases seguintes (pintura recortada, camadas, cópias vinculadas), vira o limite do
+  recorte ("não sai nem 1 px"). O raio **por canto** vem do `cantosDe` (o MESMO que o desenho da
+  forma usa): se a máscara tivesse a própria conta de raio, a máscara e a box divergiriam no canto —
+  e no PowerPoint isso apareceria como uma fresta. As coordenadas são **pt da lâmina** (não %): o
+  `viewBox` do SVG usa as mesmas duas casas do resto do motor, e a máscara acompanha o zoom sem
+  conta nenhuma. As geometrias que não são desenhadas com exatidão (estrelas, balões, formas de
+  seta) caem no **retângulo da caixa** de propósito: o comportamento fica previsível, e a fase da
+  pintura vai poder olhar o preset quando precisar. `podeIsolar` recusa linha, conector, geometria
+  livre e traço de tinta — nenhum deles tem área, e isolar um deles daria um "ambiente" vazio.
+
+## src/powerpoint/ui/estado.ts · src/powerpoint/ui/fita.ts
+
+### 2026-10-15 · Estúdio (fase 1) · o grupo na aba Desenhar e o botão Isolar/Sair
+
+- **Local:** `EstadoUI` (três campos novos) e o `desenhar()` + `atualizar()` da fita
+- **Linha:** `+ estudio: boolean; podeIsolar: boolean; estudioNome?: string;`; `+` o grupo **Estúdio**
+  logo depois de **Converter**, com `grande("estudio", `<span class="ppr-estudio-ic"></span>`, "Isolar", …)`;
+  no `atualizar()`, `+` o rótulo vira **"Sair"** com o modo aberto, o `title` ganha o nome da box e o
+  botão fica **desabilitado quando a forma escolhida não pode ser isolada**
+- **Porquê:** o fluxo da aba é "desenhar → converter → isolar": o grupo entra depois do **Converter**
+  porque os dois são o que se faz **com o que já existe** na lâmina. O botão é **um só** (Isolar/Sair)
+  em vez de dois: o comando é o mesmo (alterna) e um segundo botão só apareceria às vezes — o rótulo
+  dizendo "Sair" comunica melhor o estado, e o `title` explica o atalho. O `podeIsolar` desabilita em
+  vez de esconder: o botão apagado com a dica boa ensina o que a ferramenta aceita (é o mesmo
+  contrato do "Converter em forma", que também desabilita sem traço escolhido).
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-15 · Estúdio (fase 1) · entrar, sair e o que o modo muda no palco
+
+- **Local:** `estudio`/`zoomAntesEstudio` (campos), a trilha no `montar()`, `pintarEstudio()`,
+  `boxDoEstudio()`, `dentroDaBox()`, `alternarEstudio()`, `sairDoEstudio()`, `enquadrarBox()`,
+  `centrarNaBox()`, o `case "estudio"` do `run`, o `selecionar()` e o `Escape` do `aoTecla()`
+- **Linha:** `+` a trilha (`data-estudio`, `data-estudio-nome`, `data-estudio-sair`) e o `pintarEstudio()`
+  chamado pelo `pintar()` **e** pelo `pintarRapido()`; `+` a máscara (SVG com `viewBox 0 0 d.w d.h`,
+  `preserveAspectRatio="none"`, `fill-rule="evenodd"`) como último filho da lâmina, mais a classe
+  `pp-estudio-box` na box isolada; `selecionar()`: `+ if (this.estudio) ids = this.dentroDaBox(ids)`;
+  `Escape`: `+ else if (this.estudio) … sairDoEstudio()`; `irPara()` e `load()`: `+ this.estudio = null`
+  (o `irPara` devolve o zoom de antes)
+- **Porquê:** o ambiente isolado é **visual e de escopo**, não um documento novo: a box continua na
+  mesma lâmina, então **histórico, rascunho, exportação e o `.pptx` seguem valendo sem invenção
+  nenhuma** (um "slide separado" de verdade criaria duas casas para a mesma coisa). A máscara ser
+  **redesenhada a cada pintura** é o detalhe que faria o modo parecer quebrado: `pintarSlide()`
+  troca o `innerHTML` da lâmina inteira, e a máscara (que é um filho da lâmina) sumiria no primeiro
+  arrasto — por isso o `pintarEstudio()` roda logo depois, nas duas rotas de pintura. O filtro em
+  `selecionar()` foi escolhido em vez de mexer no palco porque **toda** seleção passa por ali
+  (clique, laço, teclado, criação), então a regra "no Estúdio só entra o que está dentro da box"
+  vale num lugar só. `Esc` sai direto (antes de limpar a seleção): com o ambiente isolado, "sair" é
+  o gesto que a trilha anuncia. O `enquadrarBox()` usa o zoom **relativo** (o da box ÷ o que ela
+  ocupa à vista), então funciona em qualquer tamanho de janela e no zoom que o usuário já tinha —
+  e o valor de antes volta ao sair (sair do Estúdio não pode mudar o zoom de quem estava
+  trabalhando).
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-15 · Estúdio (fase 1) · a trilha, a máscara e a marca
+
+- **Local:** o bloco novo antes da barrinha do pincel (`.pp-estudio*`, `.pp-estudio-svg`,
+  `.pp-estudio-on .pp-estudio-box::after`) e o `.ppr-estudio-ic`
+- **Linha:** `novo` — a trilha é uma pílula centrada no alto (`border-radius: 999px`, borda do
+  acento), a máscara cobre a lâmina (`position: absolute; inset: 0; pointer-events: none`) e pinta
+  `color-mix(in srgb, var(--palco-bg) 82%, transparent)`, a box isolada ganha um contorno de 2px do
+  acento e o ícone da fita é um retângulo tracejado
+- **Porquê:** a máscara **não pode pegar o ponteiro** (senão não daria para clicar em nada dentro da
+  box nem no Sair); o tom dela é o do **palco**, e não uma cor fixa: no tema claro ele é claro e no
+  escuro é escuro — o mesmo token que já separa a lâmina do resto da tela. O `::after` do contorno
+  usa `border-radius: inherit` para copiar o raio da própria box (inclusive um raio por canto) sem
+  repetir a conta no CSS.
+
+## scripts/testar-estudio.mjs · package.json
+
+### 2026-10-15 · Estúdio (fase 1) · o teste do caminho e da fiação (45 checagens)
+
+- **Local:** script novo; `package.json` ganhou `"test:estudio"`
+- **Linha:** `novo` — o núcleo puro (quem pode ser isolado, a caixa em pt, o caminho de cada
+  geometria com o **raio conferido no número**: 10% do menor lado = 43,2 pt; o limite de metade do
+  lado = 48) e a fiação lida dos arquivos (grupo Estúdio na aba Desenhar, rótulo Isolar/Sair,
+  desabilitado sem box isolável, máscara com `evenodd`, trilha, filtro da seleção, `Esc`, troca de
+  lâmina/documento, box apagada, o zoom que enquadra e volta, os três campos do estado e o CSS)
+- **Porquê:** o caminho é a **fronteira** de tudo o que vem depois (pintura recortada, camadas,
+  cópias): um raio errado ou um canto sem arco não apareceria como erro em lugar nenhum — apareceria
+  como uma fresta de 2 px entre a máscara e a box, meses depois. As checagens de fiação prendem os
+  pontos que falham **em silêncio** no uso: o rótulo que não volta a "Isolar", a máscara que só é
+  desenhada no `pintar()` (e some no arrasto), a seleção que continua pegando o que está esmaecido e
+  o zoom que não volta ao sair.
+
+## docs/powerpoint.md · CHANGELOG.md
+
+### 2026-10-15 · Estúdio (fase 1) · o documento do módulo e a entrada
+
+- **Local:** a seção "Estúdio: isolar uma box" (antes de "Conectar formas") e o CHANGELOG →
+  **PowerPoint → Não adicionado → Frontend**
+- **Linha:** `novo` nas duas
+- **Porquê:** o Estúdio muda o que o app faz (um modo novo no palco) e o documento do módulo é onde
+  a pessoa descobre como usar e o que **não** dá para isolar; a entrada no CHANGELOG diz que é a
+  **fase 1** de um conjunto (pintura, camadas, cópias vinculadas), para ninguém ler o "Estúdio" como
+  se ele já fizesse tudo o que foi conversado.

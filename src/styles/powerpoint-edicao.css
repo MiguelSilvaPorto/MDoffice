@@ -1569,12 +1569,100 @@ button.ppr.big .ppr-gal-ic svg {
   z-index: 45;
 }
 
+/* ---------- Estúdio: o ambiente isolado de uma box ---------- */
+
+/* a trilha: qual box está isolada, com o Sair à mão */
+.pp-estudio {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 61;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(92%, 640px);
+  padding: 5px 10px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  font-size: 12px;
+}
+
+.pp-estudio[hidden] {
+  display: none;
+}
+
+/* a marca do Estúdio: um retângulo tracejado (a "box" isolada) */
+.pp-estudio-marca {
+  flex: none;
+  width: 14px;
+  height: 11px;
+  border: 1.5px dashed var(--accent);
+  border-radius: 3px;
+}
+
+.pp-estudio-tag {
+  flex: none;
+  color: var(--accent);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10px;
+}
+
+.pp-estudio-nome {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.pp-estudio-sair {
+  flex: none;
+}
+
+/* a MÁSCARA: a lâmina inteira com a box como buraco (o resto do palco fica atrás dela). O caminho
+   vem em pt da lâmina (o mesmo `viewBox`), então a máscara acompanha o zoom sem conta nenhuma. */
+.pp-estudio-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.pp-estudio-svg path {
+  fill: color-mix(in srgb, var(--palco-bg) 82%, transparent);
+}
+
+/* a box isolada: um contorno de destaque por cima da máscara */
+.pp-estudio-on .pp-estudio-box::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border: 2px solid var(--accent);
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 41;
+}
+
+/* o ícone do grupo Estúdio na fita: a mesma marca tracejada, no tamanho do ícone */
+.ppr-estudio-ic {
+  width: 16px;
+  height: 13px;
+  border: 2px dashed currentColor;
+  border-radius: 4px;
+}
+
 /* a barrinha do pincel (só aparece com o lápis ligado) */
 .pp-pincel {
   position: absolute;
   top: 10px;
   left: 12px;
-  z-index: 60;
   display: flex;
   align-items: center;
   gap: 3px;

@@ -34,6 +34,7 @@
     "test:menus": "node scripts/testar-menus-fita.mjs",
     "test:lamina": "node scripts/testar-tema-lamina.mjs",
     "test:encaixe": "node scripts/testar-fita-encaixe.mjs",
+    "test:estudio": "node scripts/testar-estudio.mjs",
     "test:pptx": "node scripts/testar-pptx.mjs",
     "test:pptx-edicao": "node scripts/testar-edicao-pptx.mjs",
     "preview": "vite preview",
