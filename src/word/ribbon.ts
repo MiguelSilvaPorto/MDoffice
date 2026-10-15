@@ -632,6 +632,9 @@ export class Ribbon {
   }
 
   private place(pop: HTMLElement, anchor: HTMLElement): void {
+    // `app-popup`: marca de "popup do app" — a fita (fita.ts) não recolhe enquanto se clica aqui
+    // dentro (o popup vive no body e o clique nele seria contado como "fora").
+    pop.classList.add("app-popup");
     document.body.append(pop);
     const r = anchor.getBoundingClientRect();
     pop.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - pop.offsetWidth - 8))}px`;

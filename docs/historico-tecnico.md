@@ -5689,6 +5689,45 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   limpeza — foi ela, aliás, que apontou o `pp-texto-um` e as classes aninhadas quando o texto foi
   escrito.
 
+## src/fita.ts · os popups do app (PowerPoint, Word, seletor e Excel)
+
+### 2026-10-14 · fita · escolher num popup não recolhe mais a faixa
+- **Local:** `ligarRecolherFita` — o ouvinte de `click` da faixa (o "escolheu um comando") e o
+  `pointerdown` do "clicou fora"; `powerpoint/ui/popup.ts` (`abrirPopup`), `word/ribbon.ts`
+  (`place`), `seletor.ts` (o menu do campo) e `excel/host.ts` (o menu da aba)
+- **Linha:** no `pointerdown`:
+  `if (o.el.contains(t) || t.closest(".fita-resize")) return;` →
+  `if (o.el.contains(t) || t.closest(".fita-resize, .app-popup, .modal-backdrop, .modal")) return;` ·
+  no `click` da faixa: `temporaria = false; aplicar();` → `+ setTimeout(() => { if (recolhida &&
+  temporaria && !document.querySelector(".app-popup")) { temporaria = false; aplicar(); } }, 0)` ·
+  e a marca: `pp-popup app-popup` (PPT), `+ pop.classList.add("app-popup")` (Word),
+  `dropdown sel-menu app-popup` (seletor) e `dropdown xl-menu app-popup` (Excel)
+- **Porquê:** o relato veio com print ("quando escolho algum modelo ele recolhe a faixa do nada") —
+  a faixa recolhida abre "por enquanto" (`temporaria`) e volta a fechar quando o usuário **sai**
+  dela; o popup do Template, porém, é um elemento **no `document.body`** (como todos os flutuantes
+  do app): o clique num modelo não está "dentro da faixa", então contava como saída ✗. Havia ainda
+  uma segunda porta: o clique no **botão que abre o popup** já zerava o `temporaria` na hora ✗ —
+  com a faixa fechando **atrás** do popup que acabara de abrir. As correções são duas porque as
+  portas são duas: (1) uma **marca comum** nos popups (`app-popup`, junto do `.modal-backdrop`
+  que já existia para os diálogos) faz o "clicou fora" ignorar o que é do app — a marca foi
+  declarada no cabeçalho do `fita.ts` porque é uma **convenção entre módulos** (quem criar um
+  popup novo precisa vesti-la); e (2) o comando que abre popup **espera um tique** para decidir —
+  no mesmo clique o popup ainda não existe, então a checagem roda depois (`setTimeout 0`) e, se
+  houver popup aberto, a faixa **fica**; se não houver (um comando comum), fecha como sempre.
+  Escolhido o modelo, o popup fecha e a faixa segue à vista — que é o que se espera de quem está
+  no meio de uma escolha; o próximo clique fora dela (no documento) a recolhe.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · fita x popups · 3 verificações
+- **Local:** a seção “fita: não recolhe enquanto se escolhe num popup”
+- **Linha:** `+ o clique dentro de popup/diálogo não conta como fora, + a espera de um tique no
+  comando que abre popup, + a marca app-popup nos quatro criadores`
+- **Porquê:** é um contrato **entre módulos** (a faixa pergunta pelo `.app-popup`; cada módulo
+  marca o seu) e uma decisão de **ordem** (a espera do tique) — nenhuma das duas aparece em teste
+  de unidade; as três leem o TS e travam as pontas. A marca no `seletor.ts` cobre também o gesto
+  de escolher uma fonte/tamanho na fita, que sofria do mesmo recolhimento por baixo do menu.
+
 ---
 
 ## Próximos registros

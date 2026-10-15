@@ -1045,6 +1045,31 @@ console.log("\nfita: o mesmo botão recolhe o que ele abriu");
   );
 }
 
+// ---------------------------------------------------------------- fita x popups
+
+console.log("\nfita: não recolhe enquanto se escolhe num popup");
+{
+  const fitaTs = ler("src/fita.ts");
+  checa(
+    "o clique dentro de um popup (ou diálogo) do app não conta como 'fora'",
+    /t\.closest\("\.fita-resize, \.app-popup, \.modal-backdrop, \.modal"\)/.test(fitaTs),
+    "o popup vive no body: sem isso, escolher um modelo recolhe a fita por baixo do menu"
+  );
+  checa(
+    "o comando que abre um popup não recolhe a fita (a decisão espera um tique)",
+    /setTimeout\(\(\) => \{\s*if \(recolhida && temporaria && !document\.querySelector\("\.app-popup"\)\) \{/.test(fitaTs),
+    "sem a espera, clicar no Template recolheria a fita antes de o popup abrir"
+  );
+  checa(
+    "os popups do app marcam `app-popup` (PowerPoint, Word, seletor e menu do Excel)",
+    /pp-popup app-popup/.test(ler("src/powerpoint/ui/popup.ts")) &&
+      /pop\.classList\.add\("app-popup"\)/.test(ler("src/word/ribbon.ts")) &&
+      /class: "dropdown sel-menu app-popup"/.test(ler("src/seletor.ts")) &&
+      /class: "dropdown xl-menu app-popup"/.test(ler("src/excel/host.ts")),
+    "um popup sem a marca volta a recolher a fita ao ser clicado"
+  );
+}
+
 const listaFontes = ler("src/fontes.ts");
 
 checa(

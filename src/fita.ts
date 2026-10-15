@@ -2,7 +2,10 @@
 //
 // - Recolher/expandir: botão no canto das abas, duplo clique numa aba ou Ctrl+F1.
 //   Recolhida, a faixa se abre só na hora de usar: escolher um comando, mudar um
-//   campo ou clicar fora devolve o espaço automaticamente (como no Office).
+//   campo ou clicar fora devolve o espaço automaticamente (como no Office) — menos
+//   enquanto a pessoa escolhe num **popup do app**: eles marcam a classe `app-popup`
+//   (os do PowerPoint, os do Word, o menu do `seletor`, o menu do Excel) e o clique
+//   dentro deles não conta como "fora" — nem o comando que os abre recolhe a faixa.
 // - Ajustar o tamanho: arrastar a borda de baixo da faixa (cursor de redimensionar)
 //   deixa tudo maior ou menor — sem cortar botão — e o duplo clique volta ao normal.
 //
@@ -109,24 +112,32 @@ export function ligarRecolherFita(o: OpcoesRecolherFita): { alternar: () => void
     aplicar();
   });
 
-  // escolheu um comando (ou mexeu num campo): a faixa volta a fechar
+  // escolheu um comando (ou mexeu num campo): a faixa volta a fechar — MENOS quando o comando
+  // abre um popup (Template, cores, Formas…): aí a faixa fica à vista enquanto a pessoa escolhe
+  // (o popup vive no `body` e o clique nele seria "fora"). A decisão espera um tique porque o
+  // popup nasce no mesmo clique — e, se ele fechou, a faixa volta a fechar como sempre.
   o.el.addEventListener("click", (e) => {
     if (!recolhida || !temporaria) return;
     const t = e.target as HTMLElement;
     if (o.abas.contains(t) || t.closest("select, input, textarea, .wd-ribbon-nav")) return;
-    temporaria = false;
-    aplicar();
+    setTimeout(() => {
+      if (recolhida && temporaria && !document.querySelector(".app-popup")) {
+        temporaria = false;
+        aplicar();
+      }
+    }, 0);
   });
   o.el.addEventListener("change", (e) => {
     if (!recolhida || !temporaria) return;
     if ((e.target as HTMLElement).closest("select, input")) fixar(true, false);
   });
 
-  // clicou fora: fecha a faixa que estava aberta só para uso
+  // clicou fora: fecha a faixa que estava aberta só para uso — mas clique dentro de um popup (que
+  // mora no `body`) ou de um diálogo do app NÃO é "fora": a pessoa ainda está usando a faixa.
   document.addEventListener("pointerdown", (e) => {
     if (!recolhida || !temporaria) return;
     const t = e.target as HTMLElement;
-    if (o.el.contains(t) || t.closest(".fita-resize")) return;
+    if (o.el.contains(t) || t.closest(".fita-resize, .app-popup, .modal-backdrop, .modal")) return;
     temporaria = false;
     aplicar();
   });

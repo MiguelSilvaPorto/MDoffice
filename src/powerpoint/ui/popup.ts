@@ -67,7 +67,7 @@ export function posicaoDoPopup(
 export function abrirPopup(ancora: HTMLElement, html: string, op: OpcoesPopup = {}): HTMLElement {
   fecharPopup();
   const el = document.createElement("div");
-  el.className = `pp-popup ${op.classe ?? ""}`;
+  el.className = `pp-popup app-popup ${op.classe ?? ""}`;
   el.innerHTML = html;
   document.body.append(el);
   const r = ancora.getBoundingClientRect();

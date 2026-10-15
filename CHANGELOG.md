@@ -1130,7 +1130,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-
 - (nada no momento)
 
 **Ferramentas (dev)**
@@ -1180,6 +1179,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **A fita não recolhe enquanto se escolhe num popup**: com a faixa recolhida e aberta "por enquanto" (um clique numa aba), **escolher um modelo no Template** — ou qualquer item de um popup do app — **recolhia a faixa do nada** ✗ (print do usuário): o popup vive no `document.body`, então o clique nele contava como "clique fora", e o próprio clique no botão que **abre** o popup já mandava fechar. Agora os popups do app marcam **`app-popup`** (os do PowerPoint, os do Word, o menu do **seletor** de campos e o menu do **Excel**), o clique dentro deles (e dentro de qualquer **diálogo** do app) **não é "fora"** e o comando que abre um popup adia a decisão **um tique** — se o popup já fechou, a faixa volta a fechar como sempre.
 
 - **A lista dos seletores ficou do tamanho do campo (mudar o tamanho da fonte não abre mais uma
   janela)**: o menu dos seletores (tamanho da fonte, fonte, e todos os `<select>` do app) usava a
