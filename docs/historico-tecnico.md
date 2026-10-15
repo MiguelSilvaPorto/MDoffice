@@ -11308,3 +11308,13 @@ antigas quando fizer sentido.
   marca ponto repetido
 - **Porquê:** o documento do módulo descrevia o clique do Livre como recurso e a dica do duplo
   clique como se funcionasse; agora os três batem com o app.
+
+## CHANGELOG.md
+
+### 2026-10-15 · o desenho à mão · a promoção das entradas (não adicionado → adicionado)
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** 2 entradas movidas inteiras, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não pode promover (a entrada ainda não está na main no instante do commit),
+  então a promoção anda depois, quando o commit chega (4bf66e8). Promovi só as entradas DESTA
+  tarefa: as que seguem em "Não adicionado" (a aba Animações, a aba Design completa e o Template
+  com desenho) são de sessões com trabalho aberto — mexer nelas criaria duplicata ou conflito.
