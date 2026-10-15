@@ -1954,8 +1954,8 @@ console.log("\naba Desenhar: as ferramentas de traço num lugar só");
     "sem isso a aba e a barrinha divergem"
   );
   checa(
-    "o estado do pincel chega à fita (cor, espessura, modo, assistente)",
-    /pincel: \{ cor: string; w: number; modo: "livre" \| "pontos"; assistente: boolean \}/.test(estado) &&
+    "o estado do pincel chega à fita (cor, espessura, modo, assistente e tipo)",
+    /pincel: \{ cor: string; w: number; modo: "livre" \| "pontos"; assistente: boolean; tipo: "caneta" \| "marca" \}/.test(estado) &&
       /pincel: \{ cor: this\.pincelUsado\(\)\.cor, w: this\.pincel\.w, modo:/.test(ppt)
   );
   checa(
@@ -1970,6 +1970,82 @@ console.log("\naba Desenhar: as ferramentas de traço num lugar só");
     "a aba também traz as formas para desenhar arrastando",
     /grupo\(\r?\n\s*"Formas",[\s\S]{0,900}forma-rapida:5[\s\S]{0,900}forma-rapida:13/.test(fita),
     "sem as formas rápidas a aba só teria caneta"
+  );
+}
+
+console.log("\ntinta: marca-texto, borracha e converter em forma");
+{
+  const fita = ler("src/powerpoint/ui/fita.ts");
+  const ppt = ler("src/powerpoint/powerpoint.ts");
+  const palco = ler("src/powerpoint/stage.ts");
+  const css = ler("src/styles/powerpoint-edicao.css");
+  const desenho = ler("src/powerpoint/edicao/desenho.ts");
+  const schema = ler("src/powerpoint/schema.ts");
+  checa(
+    "a aba Desenhar tem Marca-texto, Borracha e Converter em forma",
+    /grande\("pincel-tipo:marca", ic\("i-mark"\), "Marca-texto"/.test(fita) &&
+      /grande\("borracha", ic\("i-trash"\), "Borracha"/.test(fita) &&
+      /grupo\(\r?\n\s*"Converter",[\s\S]{0,200}grande\("tinta-forma"/.test(fita)
+  );
+  checa("o despacho leva o tipo do pincel ao host", /cmd\.startsWith\("pincel-tipo:"\)\) this\.hooks\.run\("pincel-tipo", cmd\.slice\(12\)\)/.test(fita));
+  checa(
+    "a barrinha tem Caneta/Marca e o host troca o tipo",
+    /data-pincel-tipo="caneta"/.test(ppt) &&
+      /data-pincel-tipo="marca"/.test(ppt) &&
+      /case "pincel-tipo":/.test(ppt) &&
+      /this\.pincel\.tipo = value === "marca" \? "marca" : "caneta"/.test(ppt)
+  );
+  checa(
+    "os botões da aba acendem com o tipo e com a borracha",
+    /on\("pincel-tipo:marca", st\.ferramenta\?\.tipo === "desenho" && st\.pincel\.tipo === "marca"\)/.test(fita) &&
+      /on\("borracha", st\.ferramenta\?\.tipo === "borracha"\)/.test(fita) &&
+      /dis\("tinta-forma", !st\.formas\.some\(\(f\) => !!f\.tinta\)\)/.test(fita)
+  );
+  checa(
+    "a borracha é uma ferramenta do palco (modo + hook)",
+    /export type Ferramenta = [\s\S]{0,200}\{ tipo: "borracha" \}/.test(palco) &&
+      /\{ t: "borracha" \}/.test(palco) &&
+      /aoApagarTinta: \(id: string\) => void;/.test(palco) &&
+      /if \(ctx\.ferramenta\.tipo === "borracha"\)/.test(palco) &&
+      /private apagarEm\(e: PointerEvent\): void \{/.test(palco) &&
+      /elementFromPoint\(e\.clientX \+ dx, e\.clientY \+ dy\)/.test(palco),
+    "sem o modo no palco a borracha não apaga no arrasto"
+  );
+  checa(
+    "o host apaga SÓ traço de tinta, com desfazer",
+    /private aoApagarTinta\(id: string\): void \{[\s\S]{0,300}if \(!s\?\.tinta \|\| s\.bloqueada\) return;[\s\S]{0,200}this\.registrar\(\)/.test(ppt),
+    "uma forma comum embaixo da borracha não pode sumir"
+  );
+  checa(
+    "converter em forma avisa quando não reconhece e converte com desfazer",
+    /case "tinta-forma": \{/.test(ppt) &&
+      /O assistente não reconheceu o traço/.test(ppt) &&
+      /patchFormas\(sl, ids, \(f\) => patches\.get\(f\.id\) \?\? \{\}\), "tinta-forma"\)/.test(ppt) &&
+      /const nova = formaDaTinta\(s, this\.dim\(\)\)/.test(ppt)
+  );
+  checa(
+    "o pincel do marca-texto é largo e translúcido (e não vira forma)",
+    /export const MARCA_ALFA = 0\.4/.test(desenho) &&
+      /export const MARCA_ESPESSURA = 3/.test(desenho) &&
+      /const rec = pincel\.assistente && !marca \? reconhecerTraco\(pontos\) : null;/.test(desenho) &&
+      /pontosDoDesenhoLivre\(pontos, pincel\.assistente && !marca\)/.test(desenho)
+  );
+  checa(
+    "o traço guarda os pontos (é o que a borracha e o converter usam)",
+    /tinta\?: \{ x: number; y: number; reto\?: boolean \}\[\];/.test(schema) &&
+      /s\.tinta = pontos\.map\(\(p\) => \(\{ x: p\.x, y: p\.y/.test(desenho) &&
+      /export function formaDaTinta\(s: Shape, d: Dim\): Partial<Shape> \| null/.test(desenho)
+  );
+  checa(
+    "com a borracha a barrinha vira só a dica e o cursor vira mira",
+    /barra\.classList\.toggle\("pp-pincel-so-dica", ehBorracha\)/.test(ppt) &&
+      /this\.frame\?\.classList\.toggle\("pp-borracha", ehBorracha\)/.test(ppt) &&
+      /\.pp-pincel\.pp-pincel-so-dica > :not\(\[data-pincel-dica\]\)\s*\{[^}]*display:\s*none/.test(css) &&
+      /\.pp-frame\.pp-borracha \.pp-slide[^{]*\{[^}]*cursor:\s*crosshair/.test(css)
+  );
+  checa(
+    "o Assistente fica apagado no marca-texto (ele não reconhece forma)",
+    /pp-pincel-assist\.pp-fora/.test(css) && /classList\.toggle\("pp-fora", marca\)/.test(ppt)
   );
 }
 

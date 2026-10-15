@@ -259,7 +259,22 @@ avisado ao abrir (nunca some em silêncio).
   rabiscar) e **[Pontos]** (clique para posicionar nós de parada). No modo Livre, dar um clique pontual sem arrastar
   também inicia a inserção de nós de parada automaticamente. A aba **Desenhar** tem os mesmos controles
   (cor, espessuras, **Livre/Pontos** e **Assistente**) antes de começar o traço — é o **mesmo pincel**: o que
-  se escolhe na aba aparece aceso na barrinha (e o contrário também).
+  se escolhe na aba aparece aceso na barrinha (e o contrário também). A barrinha tem **[Caneta] [Marca]** para
+  trocar entre a caneta e o marca-texto sem sair do traço.
+- **Marca-texto de tinta** (aba **Desenhar ▸ Marca-texto**, ou **[Marca]** na barrinha): traço **largo e
+  translúcido** para destacar o que já está na lâmina — ele **não vira forma** (o assistente não endireita um
+  destaque) e a espessura escolhida vale ×3 (1 → 3 pt, 4 → 12 pt, 8 → 24 pt). Escolher o Marca-texto já liga o
+  lápis; o **Esc** sai.
+- **Borracha** (aba **Desenhar ▸ Borracha**): **clique ou arraste sobre os traços de tinta** para apagá-los —
+  desenho livre, curva e marca-texto. Ela só toca o que veio do Draw (uma forma comum embaixo dela **não** é
+  apagada) e cada traço apagado é um passo do **desfazer**. Com a borracha ligada a barrinha vira só a dica e o
+  cursor vira mira; o **Esc** sai.
+- **Converter em forma** (aba **Desenhar ▸ Converter em forma**): com um traço de tinta **escolhido**, ele passa
+  pelo assistente e vira a **forma limpa** (retângulo, elipse, triângulo, linha, seta, arco…) **no lugar e do
+  tamanho em que ele está** — inclusive depois de movido ou esticado. Se o assistente não reconhecer, o app avisa
+  e o traço continua como desenho livre. Para isso o traço guarda os **pontos** em que foi desenhado (`tinta`,
+  um dado **só do app**: o `.pptx` continua com a geometria de sempre, e um traço que vem do arquivo não tem o
+  botão habilitado).
 
 ### Curva por pontos de parada (ferramenta Curva e modo Pontos)
 

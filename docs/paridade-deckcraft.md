@@ -319,13 +319,13 @@ correções simples de imagem e réguas.
 - [ ] **Compare presentations** — P2 · falta
 - [x] **Track changes / version history** — P2 · tem: histórico de versões + log de alterações do app (restaurar em um clique)
 
-## Draw (0/2)
+## Draw (2/2)
 
-- [ ] **Ink pens, highlighter, eraser** — P1 · parcial: o slide tem **caneta (Draw)** e **curva por
-  pontos** na aba **Desenhar** (com assistente de forma, cor e espessura); faltam o **marca-texto**
-  e a **borracha** (o quadro do Markdown tem os dois)
-- [ ] **Ink to shape / text** — P2 · parcial: o assistente já **converte o traço em forma** ao
-  desenhar; falta converter um traço **já existente** (e tinta → texto)
+- [x] **Ink pens, highlighter, eraser** — P1 · tem: **caneta (Draw)**, **curva por pontos**,
+  **marca-texto de tinta** e **borracha** na aba **Desenhar** (com cor, espessura, modo e o
+  assistente de forma). Falta só o laço para selecionar vários traços.
+- [x] **Ink to shape / text** — P2 · parcial: o assistente **converte o traço em forma** ao
+  desenhar e há o **Converter em forma** para um traço já escolhido; falta **tinta → texto**.
 
 ## Undo & clipboard (2/3)
 

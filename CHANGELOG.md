@@ -417,6 +417,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - **A fita do PowerPoint cabe na tela sem rolar** — ela se ajusta sozinha à largura da janela: se o painel da aba não cabe, os espaços e ícones encolhem em degraus (a fonte não), os botões grandes ficam numa linha e, por último, os botões pequenos ficam só com o ícone (o nome fica na dica). Em 1338 px todas as abas cabem (Início estourava 353 px e Animações 218 px); a rolagem lateral fica só para janelas muito estreitas.
 
+- **Ferramentas de tinta na aba Desenhar**: o **marca-texto** (traço **largo e translúcido**, sem
+  virar forma: é marcação), a **borracha** (clique ou arraste **sobre os traços de tinta** para
+  apagar — cada traço é um passo do desfazer, e uma forma comum embaixo dela **não** é tocada) e o
+  **Converter em forma** (o traço escolhido passa pelo reconhecedor e vira a forma limpa, **no
+  lugar e do tamanho em que ele está** — mesmo depois de movido). O traço desenhado guarda os
+  pontos (`tinta`, só do app) — é o que permite apagar e converter depois; o `.pptx` continua com
+  a geometria de sempre. Na barrinha do pincel entram **Caneta/Marca**, e com a borracha ela vira
+  só a dica (cor e espessura não valem para ela). Testes: `npm run test:desenho` e
+  `npm run test:layout`.
 - **Aba "Desenhar" na fita**: as ferramentas de traço ganharam o lugar próprio (como no PowerPoint de
   verdade): **Canetas** (**Draw** e **Curva**, que **saíram do Inserir**), **Traço** (**cor** na
   mesma paleta do pincel, espessuras **1/2/4/8**, **Livre/Pontos** e o **Assistente**), **Formas**

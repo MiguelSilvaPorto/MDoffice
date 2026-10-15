@@ -55,7 +55,7 @@ const r1 = (v: number) => Math.round(v * 10) / 10;
 const r2 = (v: number) => Math.round(v * 100) / 100;
 
 /** Ferramenta ativa: desenhar arrastando, o lápis do "Draw", o "Conectar", a "Curva" por pontos ou o pincel de formatação. */
-export type Ferramenta = { tipo: "forma"; id: string } | { tipo: "texto" } | { tipo: "desenho" } | { tipo: "conectar" } | { tipo: "curva" } | { tipo: "pincel" } | null;
+export type Ferramenta = { tipo: "forma"; id: string } | { tipo: "texto" } | { tipo: "desenho" } | { tipo: "conectar" } | { tipo: "curva" } | { tipo: "pincel" } | { tipo: "borracha" } | null;
 
 export interface ContextoPalco {
   shapes: Shape[];
@@ -111,6 +111,8 @@ export interface StageHooks {
   aoPincelar: (id: string | null) => void;
   /** terminou ou fechou uma curva por pontos de parada */
   aoCurva?: (c: { pontos: { x: number; y: number; reto?: boolean }[]; fechado: boolean }) => void;
+  /** borracha: apagar o traço de tinta com este id (o host confere se é tinta) */
+  aoApagarTinta: (id: string) => void;
 }
 
 type Modo =
@@ -121,6 +123,7 @@ type Modo =
   | { t: "criar"; x0: number; y0: number }
   | { t: "canto"; ids: string[]; alvo: Canto; sel: Canto[]; colapsar: boolean; mexeu: boolean; partida: { x: number; y: number }; ref: { box: ShapeBox; rot: number }; inicial: Map<string, [number, number, number, number]> }
   | { t: "traco"; pontos: { x: number; y: number }[]; partida: { x: number; y: number }; moveu: boolean }
+  | { t: "borracha" }
   | { t: "celulas"; id: string; r0: number; c0: number }
   | {
       /** botão direito pressionado: move a TELA (panorama) em vez de mexer na lâmina */
@@ -542,6 +545,13 @@ export class Stage {
     // ferramenta de criação ativa: começa a desenhar (ou a rabiscar, no modo desenho)
     if (ctx.ferramenta) {
       this.slideEl.setPointerCapture(e.pointerId);
+      if (ctx.ferramenta.tipo === "borracha") {
+        // borracha: apaga os traços de tinta sob o ponteiro (e segue apagando no arrasto)
+        this.modo = { t: "borracha" };
+        this.apagarEm(e);
+        e.preventDefault();
+        return;
+      }
       if (ctx.ferramenta.tipo === "curva" || (ctx.ferramenta.tipo === "desenho" && (this.modoDesenho === "pontos" || this.pontosCurva.length > 0))) {
         const pSnap = this.pontoComSnap(e, ctx);
         if (this.pertoDoInicio && this.pontosCurva.length >= 3) {
@@ -1009,6 +1019,11 @@ export class Stage {
       return;
     }
 
+    if (modo.t === "borracha") {
+      this.apagarEm(e);
+      return;
+    }
+
     if (modo.t === "traco") {
       if (Math.hypot(p.x - modo.partida.x, p.y - modo.partida.y) >= 0.5) {
         modo.moveu = true;
@@ -1059,6 +1074,10 @@ export class Stage {
     }
 
     const ctx = this.hooks.contexto();
+    if (modo.t === "borracha") {
+      this.desenharSelecao();
+      return;
+    }
     if (modo.t === "traco") {
       this.traco = null;
       if (modo.moveu) {
@@ -1150,6 +1169,35 @@ export class Stage {
   }
 
   /** Ponto em % com snap (ao início, ao ângulo de 45° com Shift, e a bordas de formas existentes). */
+  /**
+   * Borracha: apaga o traço de tinta sob o ponteiro. O alvo é o DOM (`elementFromPoint`): o
+   * caminho da forma livre é desenhado com `pointer-events: visiblePainted`, então só o traço
+   * pintado pega o clique — igual a uma borracha de verdade. Uma folga de ~4 px em volta do
+   * ponteiro ajuda quem mira no traço fino (a caneta de 1 pt quase não tem área).
+   */
+  private apagarEm(e: PointerEvent): void {
+    const perto = [
+      [0, 0],
+      [-4, 0],
+      [4, 0],
+      [0, -4],
+      [0, 4],
+      [-3, -3],
+      [3, 3],
+      [-3, 3],
+      [3, -3],
+    ];
+    for (const [dx, dy] of perto) {
+      const el = document.elementFromPoint(e.clientX + dx, e.clientY + dy) as HTMLElement | null;
+      const forma = el?.closest<HTMLElement>(".pp-shape[data-shape]");
+      const id = forma?.dataset.shape;
+      if (id) {
+        this.hooks.aoApagarTinta(id);
+        return;
+      }
+    }
+  }
+
   private pontoComSnap(e: PointerEvent, ctx: ContextoPalco): { x: number; y: number; reto?: boolean } {
     const raw = this.pontoEmPct(e);
     const r = this.slideEl?.getBoundingClientRect();

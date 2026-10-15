@@ -22,7 +22,19 @@ export interface Pincel {
   w: number;
   /** true = reconhece o traço e ajusta a forma; false = mantém o rabisco */
   assistente: boolean;
+  /**
+   * `caneta` (padrão) = traço normal; `marca` = **marca-texto de tinta**: largo e translúcido,
+   * sem reconhecimento de forma (é marcação, não desenho).
+   */
+  tipo?: "caneta" | "marca";
 }
+
+/** O marca-texto de tinta: quantas vezes a espessura escolhida e o quanto translúcido. */
+export const MARCA_ESPESSURA = 3;
+export const MARCA_ALFA = 0.4;
+
+/** É um marca-texto de tinta? */
+export const ehMarca = (p: Pincel): boolean => p.tipo === "marca";
 
 export interface TracoReconhecido {
   geom: "rect" | "roundRect" | "ellipse" | "triangle" | "line" | "arc";
@@ -849,6 +861,12 @@ function baseDaForma(est: EstiloDeck, d: Dim, boxPt: Ret): Shape {
 
 function comPincel(s: Shape, pincel: Pincel, setas?: { head?: boolean; tail?: boolean }): Shape {
   s.fillX = { kind: "none" };
+  if (ehMarca(pincel)) {
+    // marca-texto: largo, translúcido e sem ponta de seta — é marcação, não desenho
+    s.ln = { color: pincel.cor, alpha: MARCA_ALFA, w: Math.max(6, pincel.w * MARCA_ESPESSURA), dash: "solid", cap: "flat", join: "round" };
+    s.name = "Marca-texto";
+    return s;
+  }
   s.ln = { color: pincel.cor, alpha: 1, w: pincel.w, dash: "solid", cap: "round", join: "round" };
   if (setas?.head) s.ln.head = "triangle";
   if (setas?.tail) s.ln.tail = "triangle";
@@ -857,11 +875,13 @@ function comPincel(s: Shape, pincel: Pincel, setas?: { head?: boolean; tail?: bo
 
 /**
  * O traço vira forma: reconhecido pelo assistente (ou desenho livre quando o assistente
- * está desligado ou quando o traço não bate com nenhuma forma).
+ * está desligado ou quando o traço não bate com nenhuma forma). O marca-texto nunca é
+ * reconhecido nem encaixado: sai como desenho livre, fiel à mão.
  */
 export function formaDoTraco(pontos: PontoTraco[], pincel: Pincel, est: EstiloDeck, d: Dim, formas: Shape[] = []): Shape | null {
   if (pontos.length < 2) return null;
-  const rec = pincel.assistente ? reconhecerTraco(pontos) : null;
+  const marca = ehMarca(pincel);
+  const rec = pincel.assistente && !marca ? reconhecerTraco(pontos) : null;
   if (rec) {
     // encaixa nas formas de baixo (bordas e centros) antes de montar: desenhar por cima de uma
     // forma existente sai alinhado a ela
@@ -877,11 +897,13 @@ export function formaDoTraco(pontos: PontoTraco[], pincel: Pincel, est: EstiloDe
   }
   // modo assistente: o desenho livre encaixa nos eixos (as retas quase retas ficam retas e o
   // canto em 90°) — e os trechos encaixados saem como RETA no caminho (a cúbica fazia barriga)
-  const pontosLivre = pontosDoDesenhoLivre(pontos, pincel.assistente);
+  const pontosLivre = pontosDoDesenhoLivre(pontos, pincel.assistente && !marca);
   const s = baseDaForma(est, d, encaixarNoPalco(bboxDe(pontosLivre), formas, d, Math.max(6, d.w * 0.01)));
   s.geom = "custom";
-  s.name = "Desenho livre";
+  s.name = marca ? "Marca-texto" : "Desenho livre";
   s.paths = [caminhoDePontos(pontosLivre)];
+  // guarda o traço: é o que permite apagar e converter depois (só do app)
+  s.tinta = pontos.map((p) => ({ x: p.x, y: p.y, ...(p.reto ? { reto: true } : {}) }));
   return comPincel(s, pincel);
 }
 
@@ -938,5 +960,45 @@ export function formaDeCurva(
   s.geom = "custom";
   s.name = fechado ? "Forma livre" : "Curva";
   s.paths = [caminhoDePontos(pontos, bb, fechado)];
+  // guarda os pontos: a curva também pode ser apagada e convertida depois (só do app)
+  s.tinta = pontos.map((p) => ({ x: p.x, y: p.y, ...(p.reto ? { reto: true } : {}) }));
   return comPincel(s, pincel);
+}
+
+/**
+ * "Converter em forma": pega um traço de tinta já desenhado (a forma guarda os pontos em
+ * `tinta`) e devolve a forma reconhecida pelo assistente — mantendo **onde e do tamanho que
+ * o traço está agora** (os pontos são da criação; a forma pode ter sido movida/redimensionada).
+ * Devolve `null` quando não há pontos ou quando o traço não bate com nenhuma forma.
+ */
+export function formaDaTinta(s: Shape, d: Dim): Partial<Shape> | null {
+  const pontos = s.tinta;
+  if (!pontos || pontos.length < 2) return null;
+  const rec = reconhecerTraco(pontos);
+  if (!rec) return null;
+  // mapeia a caixa reconhecida (pt) para a caixa ATUAL da forma (%), esticando o que a pessoa esticou
+  const origem = dePt(bboxDe(pontos), d);
+  const alvo = dePt(rec.box, d);
+  const sx = origem.w > 0.01 ? s.box.w / origem.w : 1;
+  const sy = origem.h > 0.01 ? s.box.h / origem.h : 1;
+  const box = { x: s.box.x + (alvo.x - origem.x) * sx, y: s.box.y + (alvo.y - origem.y) * sy, w: alvo.w * sx, h: alvo.h * sy };
+  // a linha continua a do traço (cor, espessura, transparência); só ganha as pontas que o
+  // reconhecedor viu no desenho
+  const ln = s.ln ? { ...s.ln } : undefined;
+  if (ln) {
+    if (rec.head) ln.head = "triangle";
+    if (rec.tail) ln.tail = "triangle";
+  }
+  return {
+    box,
+    geom: rec.geom,
+    name: rec.rotulo,
+    adj: rec.adj ? { ...rec.adj } : undefined,
+    rot: rec.rot ?? s.rot,
+    flipH: rec.flipH ? true : undefined,
+    flipV: rec.flipV ? true : undefined,
+    paths: undefined,
+    tinta: undefined,
+    ...(ln ? { ln } : {}),
+  };
 }

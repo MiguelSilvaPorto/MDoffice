@@ -492,7 +492,13 @@ export class Fita {
       grupo(
         "Canetas",
         `${grande("desenho", ic("i-draw"), "Draw", "Desenho à mão: rabisque na lâmina (Esc sai)")}
-         ${grande("ferramenta:curva", ic("i-curve"), "Curva", "Curva por pontos: clique para marcar os pontos (duplo-clique termina, clique no início fecha)")}`
+         ${grande("ferramenta:curva", ic("i-curve"), "Curva", "Curva por pontos: clique para marcar os pontos (duplo-clique termina, clique no início fecha)")}
+         ${grande("pincel-tipo:marca", ic("i-mark"), "Marca-texto", "Marca-texto de tinta: traço largo e translúcido para destacar (não vira forma)")}
+         ${grande("borracha", ic("i-trash"), "Borracha", "Borracha: clique ou arraste sobre os traços de tinta para apagar (Esc sai)")}`
+      ),
+      grupo(
+        "Converter",
+        `${grande("tinta-forma", ic("i-refresh"), "Converter em forma", "Converte o traço de tinta escolhido na forma que o assistente reconhecer")}`
       ),
       grupo(
         "Traço",
@@ -785,6 +791,7 @@ export class Fita {
     else if (cmd.startsWith("ferramenta:")) this.hooks.run("ferramenta", cmd.slice(11));
     else if (cmd.startsWith("pincel:w:")) this.hooks.run("pincel-w", cmd.slice(9));
     else if (cmd.startsWith("pincel:modo:")) this.hooks.run("pincel-modo", cmd.slice(12));
+    else if (cmd.startsWith("pincel-tipo:")) this.hooks.run("pincel-tipo", cmd.slice(12));
     else if (cmd.startsWith("midia:")) this.hooks.run("midia", cmd.slice(6));
     else if (cmd.startsWith("estilo-cor:")) this.hooks.run("estilo-cor", cmd.slice(11));
     else if (cmd.startsWith("estilo:")) this.hooks.run("estilo", cmd.slice(7));
@@ -1320,8 +1327,11 @@ export class Fita {
     for (const b of this.el.querySelectorAll<HTMLElement>("[data-layout]")) b.classList.toggle("on", b.dataset.layout === st.layout);
 
     // aba Desenhar: as canetas acesas e o pincel (cor, espessura, modo e assistente)
-    on("desenho", st.ferramenta?.tipo === "desenho");
+    on("desenho", st.ferramenta?.tipo === "desenho" && st.pincel.tipo === "caneta");
     on("ferramenta:curva", st.ferramenta?.tipo === "curva");
+    on("pincel-tipo:marca", st.ferramenta?.tipo === "desenho" && st.pincel.tipo === "marca");
+    on("borracha", st.ferramenta?.tipo === "borracha");
+    dis("tinta-forma", !st.formas.some((f) => !!f.tinta));
     on("pincel-assistente", st.pincel.assistente);
     for (const w of [1, 2, 4, 8]) on(`pincel:w:${w}`, st.pincel.w === w);
     on("pincel:modo:livre", st.pincel.modo === "livre");

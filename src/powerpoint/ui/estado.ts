@@ -26,7 +26,7 @@ export interface EstadoUI {
   zoom: number;
   ferramenta: Ferramenta;
   /** o pincel do Draw (cor, espessura, modo e assistente) — a aba Desenhar reflete e ajusta */
-  pincel: { cor: string; w: number; modo: "livre" | "pontos"; assistente: boolean };
+  pincel: { cor: string; w: number; modo: "livre" | "pontos"; assistente: boolean; tipo: "caneta" | "marca" };
   fixas: boolean;
   encaixe: boolean;
   grade: boolean;

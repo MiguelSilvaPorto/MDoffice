@@ -513,5 +513,54 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
 }
 
 console.log("");
+
+// ---------------------------------------------------------------- marca-texto, tinta e converter
+{
+  const pincelCaneta = { cor: "FACC15", w: 4, assistente: true };
+  const pincelMarca = { cor: "FACC15", w: 4, assistente: true, tipo: "marca" };
+  const caixa = percorrer([{ x: 100, y: 100 }, { x: 400, y: 100 }, { x: 400, y: 260 }, { x: 100, y: 260 }], 20, 2, 5);
+
+  // 1) o marca-texto NÃO é reconhecido (mesmo com o assistente ligado) e sai largo e translúcido
+  const marca = D.formaDoTraco(caixa, pincelMarca, est, dim, []);
+  ok("marca-texto: fica desenho livre (não vira forma)", marca?.geom === "custom" && marca.name === "Marca-texto", marca?.geom);
+  ok("marca-texto: traço largo e translúcido, sem ponta de seta", marca.ln.alpha < 1 && marca.ln.w >= 12 && !marca.ln.head && !marca.ln.tail, JSON.stringify(marca.ln));
+  ok("marca-texto: guarda o traço em `tinta`", Array.isArray(marca.tinta) && marca.tinta.length === caixa.length);
+
+  // 2) a caneta com o assistente ligado continua reconhecendo o mesmo traço
+  const caneta = D.formaDoTraco(caixa, pincelCaneta, est, dim, []);
+  ok("caneta: o mesmo traço vira retângulo", caneta?.geom === "rect", caneta?.geom);
+  ok("caneta: forma reconhecida NÃO guarda tinta (já é forma)", caneta.tinta === undefined);
+
+  // 3) desenho livre (não reconhecido) guarda os pontos; a curva também
+  const rabisco = reta(120, 300, 260, 340, 30, 6, 3).map((p) => ({ x: p.x, y: p.y + 40 * Math.sin(p.x / 40) }));
+  const livre = D.formaDoTraco(rabisco, pincelCaneta, est, dim, []);
+  ok("desenho livre: guarda o traço em `tinta`", livre?.geom === "custom" && Array.isArray(livre.tinta) && livre.tinta.length === rabisco.length);
+  const curva = D.formaDeCurva([{ x: 200, y: 400 }, { x: 300, y: 430 }, { x: 420, y: 400 }], false, pincelCaneta, est, dim, []);
+  ok("curva: também guarda o traço em `tinta`", Array.isArray(curva?.tinta) && curva.tinta.length === 3);
+
+  // 4) Converter em forma: o traço guardado vira a forma reconhecida, NO LUGAR em que ele está agora
+  const original = D.formaDoTraco(caixa, pincelCaneta, est, dim, []);
+  const stroke = { ...original, geom: "custom", paths: [D.caminhoDePontos(caixa)], tinta: caixa.map((p) => ({ x: p.x, y: p.y })) };
+  const convertido = D.formaDaTinta(stroke, dim);
+  ok("converter: devolve o retângulo reconhecido", convertido?.geom === "rect" && convertido.name === "Retângulo", JSON.stringify(convertido?.geom));
+  ok("converter: mantém a caixa atual do traço", pertoCaixa(convertido.box, stroke.box.x, stroke.box.y, stroke.box.w, stroke.box.h, 1.5), JSON.stringify([convertido.box, stroke.box]));
+  ok("converter: limpa os caminhos e a tinta (deixa de ser traço)", convertido.paths === undefined && convertido.tinta === undefined);
+  ok("converter: a linha do traço continua (cor e espessura)", convertido.ln?.color === stroke.ln.color && convertido.ln?.w === stroke.ln.w);
+
+  // 5) traço movido: a conversão acompanha a posição NOVA (os pontos são da criação)
+  const movido = { ...stroke, box: { ...stroke.box, x: stroke.box.x + 20, y: stroke.box.y + 10 } };
+  const convertidoMovido = D.formaDaTinta(movido, dim);
+  ok(
+    "converter: acompanha o traço que foi movido",
+    perto(convertidoMovido.box.x, movido.box.x, 1.5) && perto(convertidoMovido.box.y, movido.box.y, 1.5),
+    JSON.stringify([convertidoMovido.box, movido.box])
+  );
+
+  // 6) sem pontos ou sem reconhecimento: null (o botão avisa)
+  ok("converter: forma sem `tinta` devolve null", D.formaDaTinta({ ...stroke, tinta: undefined }, dim) === null);
+  const torto = reta(120, 500, 260, 540, 30, 8, 4).map((p, i) => ({ x: p.x + i * 3, y: p.y + Math.sin(i / 2) * 30 }));
+  ok("converter: traço que não é forma devolve null", D.formaDaTinta({ ...stroke, tinta: torto }, dim) === null);
+}
+
 console.log(falhas ? `${falhas} falha(s)` : "Tudo certo.");
 process.exit(falhas ? 1 : 0);

@@ -193,6 +193,12 @@ export interface Shape {
   cantos?: [number, number, number, number];
   /** geometria livre (custGeom): caminhos em unidades do próprio caminho */
   paths?: CustPath[];
+  /**
+   * Pontos do traço à mão que criou esta forma (pt da lâmina), só do app: é o que permite a
+   * borracha e o "Converter em forma" mexerem depois num traço já desenhado. Não vai ao `.pptx`
+   * (o arquivo guarda a geometria); o que vier do arquivo não tem este campo.
+   */
+  tinta?: { x: number; y: number; reto?: boolean }[];
   flipH?: boolean;
   flipV?: boolean;
   /** preenchimento completo (substitui `fill` quando existe) */

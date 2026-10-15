@@ -8,7 +8,7 @@ import { pedirTexto } from "../dialogoTexto";
 import { fluxoParaFormas, lerFluxoMermaid } from "./edicao/mermaid";
 import { ligarAjusteAlturaFita, ligarRecolherFita, ligarRodaHorizontal } from "../fita";
 import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, novaImagem, type EstiloDeck, type ItemGaleria } from "./edicao/criar";
-import { dicaDoTraco, formaDoTraco, formaDeCurva, type Pincel } from "./edicao/desenho";
+import { dicaDoTraco, formaDoTraco, formaDeCurva, formaDaTinta, type Pincel } from "./edicao/desenho";
 import { atualizarEstilos, ehBrilho, ehFamilia, ehIntensidade, estiloDaFamilia, ligarEstilo, ligarEstiloFundo, soltarEstilo, soltarEstiloFundo } from "./edicao/estilos";
 import { atualizarLigacoes, ligacaoParaFormas } from "./edicao/ligacoes";
 import { ajustarCor, CANTOS, comAjuste, comCantos, comLinha, comOpacidade, comPreenchimento, comRaioDeCanto, comSombra, gradiente, SOMBRAS_PRONTAS, solido, corPrincipal, type Canto } from "./edicao/formato";
@@ -254,6 +254,7 @@ export class PowerPointHost {
       aoLigar: (l) => this.aoLigar(l),
       aoPincelar: (id) => this.aoPincelar(id),
       aoCurva: (c) => this.aoCurva(c),
+      aoApagarTinta: (id) => this.aoApagarTinta(id),
     });
     this.montar();
     // fonte da web carregou: as medidas de entrelinha mudam, então redesenha (sem derrubar quem está digitando)
@@ -282,6 +283,9 @@ export class PowerPointHost {
           <button type="button" class="pp-pincel-w" data-pincel-w="2" title="Traço médio (2 pt)">2</button>
           <button type="button" class="pp-pincel-w" data-pincel-w="4" title="Traço grosso (4 pt)">4</button>
           <button type="button" class="pp-pincel-w" data-pincel-w="8" title="Traço bem grosso (8 pt)">8</button>
+          <span class="pp-pincel-sep"></span>
+          <button type="button" class="pp-pincel-modo on" data-pincel-tipo="caneta" title="Caneta: traço normal">Caneta</button>
+          <button type="button" class="pp-pincel-modo" data-pincel-tipo="marca" title="Marca-texto: traço largo e translúcido para destacar">Marca</button>
           <span class="pp-pincel-sep"></span>
           <button type="button" class="pp-pincel-modo on" data-pincel-modo="livre" title="Traço livre: arraste para rabiscar">Livre</button>
           <button type="button" class="pp-pincel-modo" data-pincel-modo="pontos" title="Curva por pontos: clique para marcar pontos de parada">Pontos</button>
@@ -1179,7 +1183,7 @@ export class PowerPointHost {
       temCopia: areaDeTransferencia.length > 0,
       zoom: this.stage.zoomAtual,
       ferramenta: this.ferramenta,
-      pincel: { cor: this.pincelUsado().cor, w: this.pincel.w, modo: this.ferramenta?.tipo === "curva" ? "pontos" : this.stage.obterModoDesenho(), assistente: this.pincel.assistente },
+      pincel: { cor: this.pincelUsado().cor, w: this.pincel.w, modo: this.ferramenta?.tipo === "curva" ? "pontos" : this.stage.obterModoDesenho(), assistente: this.pincel.assistente, tipo: this.pincel.tipo === "marca" ? "marca" : "caneta" },
       fixas: this.fixas,
       encaixe: this.encaixe,
       grade: this.grade,
@@ -1325,7 +1329,7 @@ export class PowerPointHost {
 
   /** O pincel em uso: a cor cai no acento do deck enquanto não foi escolhida. */
   private pincelUsado(): Pincel {
-    return { cor: this.pincel.cor || this.estilo().acento, w: this.pincel.w, assistente: this.pincel.assistente };
+    return { cor: this.pincel.cor || this.estilo().acento, w: this.pincel.w, assistente: this.pincel.assistente, tipo: this.pincel.tipo === "marca" ? "marca" : "caneta" };
   }
 
   /** Liga os controles da barrinha do pincel (cor, espessura e assistente). */
@@ -1353,6 +1357,13 @@ export class PowerPointHost {
         this.atualizarPincel();
       });
     }
+    for (const b of barra.querySelectorAll<HTMLElement>("[data-pincel-tipo]")) {
+      b.addEventListener("click", () => {
+        this.pincel.tipo = b.dataset.pincelTipo === "marca" ? "marca" : "caneta";
+        gravarPincel(this.pincel);
+        this.atualizarPincel();
+      });
+    }
     barra.querySelector<HTMLElement>("[data-pincel-assist]")?.addEventListener("click", () => {
       this.pincel.assistente = !this.pincel.assistente;
       gravarPincel(this.pincel);
@@ -1377,8 +1388,12 @@ export class PowerPointHost {
     if (!barra) return;
     const ehDesenho = this.ferramenta?.tipo === "desenho";
     const ehCurva = this.ferramenta?.tipo === "curva";
-    const ativo = ehDesenho || ehCurva;
+    const ehBorracha = this.ferramenta?.tipo === "borracha";
+    const ativo = ehDesenho || ehCurva || ehBorracha;
     barra.hidden = !ativo;
+    // com a borracha a barrinha vira só a dica: cor/espessura/modo não valem para ela
+    barra.classList.toggle("pp-pincel-so-dica", ehBorracha);
+    this.frame?.classList.toggle("pp-borracha", ehBorracha);
     if (!ativo) return;
     const p = this.pincelUsado();
     const cor = barra.querySelector<HTMLElement>("[data-pincel-cor]");
@@ -1387,6 +1402,11 @@ export class PowerPointHost {
       b.classList.toggle("on", Number(b.dataset.pincelW) === this.pincel.w);
     }
     barra.querySelector("[data-pincel-assist]")?.classList.toggle("on", this.pincel.assistente);
+    const marca = this.pincel.tipo === "marca";
+    for (const b of barra.querySelectorAll<HTMLElement>("[data-pincel-tipo]")) {
+      b.classList.toggle("on", (b.dataset.pincelTipo === "marca") === marca);
+    }
+    barra.querySelector("[data-pincel-assist]")?.classList.toggle("pp-fora", marca);
 
     const modo = ehCurva ? "pontos" : this.stage.obterModoDesenho();
     for (const b of barra.querySelectorAll<HTMLElement>("[data-pincel-modo]")) {
@@ -1401,10 +1421,14 @@ export class PowerPointHost {
 
     const dica = barra.querySelector<HTMLElement>("[data-pincel-dica]");
     if (dica) {
-      if (temPontos) {
+      if (ehBorracha) {
+        dica.textContent = "Borracha: clique ou arraste sobre os traços de tinta — Esc para sair";
+      } else if (temPontos) {
         dica.textContent = "Clique para o próximo · Duplo-clique/Enter termina · Clique no 1º fecha";
       } else if (ehCurva || modo === "pontos") {
         dica.textContent = "Clique para marcar pontos de parada — Esc para sair";
+      } else if (marca) {
+        dica.textContent = "Marca-texto: arraste sobre o que quer destacar — Esc para sair";
       } else {
         dica.textContent = "Rabisque ou clique pontos de parada — Esc para sair";
       }
@@ -1440,6 +1464,21 @@ export class PowerPointHost {
   private aoTracoAndamento(pontos: { x: number; y: number }[]): void {
     const dica = this.pane.querySelector<HTMLElement>("[data-pincel-dica]");
     if (dica) dica.textContent = `entendi: ${dicaDoTraco(pontos, this.pincel.assistente)}`;
+  }
+
+  /**
+   * Borracha: apaga o traço de tinta com este id. Só mexe em forma que veio do Draw (tem
+   * `tinta`) — desenho livre/curva/marca-texto; uma forma qualquer que esteja embaixo fica.
+   * Cada traço apagado é um passo do desfazer.
+   */
+  private aoApagarTinta(id: string): void {
+    const s = this.atual().shapes.find((f) => f.id === id);
+    if (!s?.tinta || s.bloqueada) return;
+    this.registrar();
+    this.substituirSlide({ ...this.atual(), shapes: this.atual().shapes.filter((f) => f.id !== id) });
+    this.selecao = this.selecao.filter((x) => x !== id);
+    this.markDirty();
+    this.pintar();
   }
 
   /** Conectar: as duas formas escolhidas ganham a ligação presa (que se redesenha sozinha). */
@@ -2179,6 +2218,45 @@ export class PowerPointHost {
         gravarPincel(this.pincel);
         this.atualizarPincel();
         return;
+      case "pincel-tipo": {
+        // caneta (traço normal) ou marca-texto de tinta: escolher já liga o Draw com ele
+        this.pincel.tipo = value === "marca" ? "marca" : "caneta";
+        gravarPincel(this.pincel);
+        if (this.ferramenta?.tipo !== "desenho") this.ferramenta = { tipo: "desenho" };
+        this.pincelFmt = null;
+        this.atualizarPincel();
+        this.stage.desenharSelecao();
+        return;
+      }
+      case "borracha": {
+        this.ferramenta = this.ferramenta?.tipo === "borracha" ? null : { tipo: "borracha" };
+        this.selecao = [];
+        this.pincelFmt = null;
+        this.atualizarPincel();
+        this.stage.desenharSelecao();
+        return;
+      }
+      case "tinta-forma": {
+        // "Converter em forma": o traço escolhido passa pelo reconhecedor e vira a forma limpa
+        const alvos = this.atual().shapes.filter((f) => this.selecao.includes(f.id) && f.tinta);
+        if (!alvos.length) {
+          toast("Escolha um traço de tinta para converter em forma.", "info", 3600);
+          return;
+        }
+        const patches = new Map<string, Partial<Shape>>();
+        for (const s of alvos) {
+          const nova = formaDaTinta(s, this.dim());
+          if (nova) patches.set(s.id, nova);
+        }
+        if (!patches.size) {
+          toast("O assistente não reconheceu o traço — ele continua como desenho livre.", "info", 4200);
+          return;
+        }
+        const ids = [...patches.keys()];
+        this.editar((sl) => patchFormas(sl, ids, (f) => patches.get(f.id) ?? {}), "tinta-forma");
+        toast(`${patches.size} traço(s) viraram forma.`, "ok", 3200);
+        return;
+      }
       case "image":
         this.destinoImagem = "inserir";
         return void this.opts.onPickImage?.("inserir");

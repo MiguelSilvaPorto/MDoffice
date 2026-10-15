@@ -1660,6 +1660,22 @@ button.ppr.big .ppr-gal-ic svg {
   color: var(--accent-fg);
 }
 
+/* o Assistente não vale para o marca-texto (ele não reconhece forma): fica apagado */
+.pp-pincel-assist.pp-fora {
+  opacity: 0.4;
+}
+
+/* com a borracha a barrinha vira só a dica: cor, espessura, modo e assistente não valem para ela */
+.pp-pincel.pp-pincel-so-dica > :not([data-pincel-dica]) {
+  display: none;
+}
+
+/* a borracha usa o cursor de mira (o traço fino é um alvo pequeno) */
+.pp-frame.pp-borracha .pp-slide,
+.pp-frame.pp-borracha .pp-shape {
+  cursor: crosshair;
+}
+
 .pp-pincel-concluir {
   background: var(--fi-ppt, #d24a17);
   border-color: var(--fi-ppt, #d24a17);

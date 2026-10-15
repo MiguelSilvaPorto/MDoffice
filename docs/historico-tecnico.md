@@ -9542,3 +9542,87 @@ antigas quando fizer sentido.
   promoção é uma tarefa de follow-up, depois que o commit chegou (284af10). Promovi só a entrada
   DESTA tarefa: as outras que seguem em "Não adicionado" pertencem a sessões com trabalho aberto
   ou com promoção em voo — mexer nelas criaria duplicata ou conflito.
+
+## src/powerpoint/edicao/desenho.ts · src/powerpoint/schema.ts
+
+### 2026-10-15 · esta tarefa · o marca-texto, o traço guardado e o converter em forma
+- **Local:** `Pincel` ganhou `tipo` e as constantes `MARCA_ESPESSURA`/`MARCA_ALFA`; `comPincel`,
+  `formaDoTraco` e `formaDeCurva`; a função nova `formaDaTinta`; `Shape.tinta` no schema
+- **Linha:** `+ tipo?: "caneta" | "marca"`; `+ if (ehMarca(pincel)) { s.ln = { …alpha: MARCA_ALFA, w: Math.max(6, pincel.w * MARCA_ESPESSURA), cap: "flat" … }; s.name = "Marca-texto"; return s; }`;
+  `+ const rec = pincel.assistente && !marca ? reconhecerTraco(pontos) : null;` e
+  `pontosDoDesenhoLivre(pontos, pincel.assistente && !marca)`; `+ s.tinta = pontos.map(…)` no
+  desenho livre e na curva; `+ export function formaDaTinta(s: Shape, d: Dim): Partial<Shape> | null`
+- **Porquê:** o marca-texto do PowerPoint é **tinta**, não desenho: por isso ele não passa pelo
+  reconhecedor nem encaixa nos eixos (o assistente ligado não pode "endireitar" um destaque) e sai
+  largo e translúcido (`alpha` no `ln`, que o render e o `.pptx` já entendem). A largura sai da
+  espessura escolhida × 3 (1→3, 4→12, 8→24 pt): a mesma fileira de botões serve para as duas
+  canetas sem inventar controle novo. O `tinta` existe porque a borracha e o "Converter em forma"
+  precisam dos **pontos originais** — o caminho salvo é geometria, não dá para reconhecer de novo
+  com fidelidade a partir dele. Como os pontos são da criação, o `formaDaTinta` **mapeia a caixa
+  reconhecida** pela caixa atual da forma (escala e deslocamento): o traço movido/esticado vira a
+  forma no lugar em que ele está agora, não onde foi desenhado. O campo é **só do app** (o
+  exportador ignora): o `.pptx` continua com a geometria de sempre, e um traço que vem do arquivo
+  simplesmente não tem `tinta` (o botão avisa em vez de fazer besteira).
+
+## src/powerpoint/stage.ts
+
+### 2026-10-15 · esta tarefa · a borracha como ferramenta do palco
+- **Local:** `Ferramenta` e `Modo` ganharam `borracha`; o `aoPressionar` (antes do traço), o
+  `aoMover` e o `aoSoltar`; o hook `aoApagarTinta` e o helper `apagarEm`
+- **Linha:** `+ { tipo: "borracha" }` e `+ { t: "borracha" }`; `+ this.apagarEm(e)` no
+  pressionar/mover; `+ const el = document.elementFromPoint(e.clientX + dx, e.clientY + dy)`
+- **Porquê:** o alvo da borracha é o **DOM**, não a matemática dos caminhos: o traço livre é
+  desenhado com `pointer-events: visiblePainted`, então só o traço **pintado** pega o ponteiro —
+  é o comportamento de uma borracha de verdade, e de graça. A folga de ~4 px em nove pontos em
+  volta do ponteiro existe porque a caneta de 1 pt quase não tem área: sem ela a borracha só
+  funcionaria acertando o pixel. O palco não decide o que é tinta (ele não conhece o modelo):
+  ele só diz **qual forma** está sob o ponteiro — quem confere o `tinta` (e não deixa uma forma
+  comum sumir) é o host.
+
+## src/powerpoint/powerpoint.ts · src/powerpoint/ui/fita.ts · src/powerpoint/ui/estado.ts
+
+### 2026-10-15 · esta tarefa · os comandos e a cara das ferramentas de tinta
+- **Local:** o `run()` (`pincel-tipo`, `borracha`, `tinta-forma`), o `aoApagarTinta`, o
+  `atualizarPincel` (classe da borracha, "só dica", Caneta/Marca), a barrinha (os botões
+  `data-pincel-tipo`), a aba Desenhar (Canetas + Marca-texto + Borracha, grupo **Converter**) e
+  o `EstadoUI.pincel.tipo`
+- **Linha:** `+ case "pincel-tipo"` (escolher a caneta já liga o Draw), `+ case "borracha"`,
+  `+ case "tinta-forma"` (avisa quando não reconhece; `patchFormas(…, "tinta-forma")` num passo de
+  desfazer); `+ dis("tinta-forma", !st.formas.some((f) => !!f.tinta))`;
+  `+ barra.classList.toggle("pp-pincel-so-dica", ehBorracha)` e
+  `+ this.frame?.classList.toggle("pp-borracha", ehBorracha)`
+- **Porquê:** as três ferramentas são comandos como os outros (a fita não conhece o modelo) e o
+  estado do pincel continua **um só**: a aba e a barrinha mexem no mesmo lugar e o
+  `atualizarPincel` avisa a fita, então o botão Marca aceso na fita aparece aceso na barrinha. O
+  "Converter em forma" **desabilitado** quando não há traço escolhido é melhor que um botão que
+  abre um aviso: a pessoa vê que o comando existe e o que ele pede. Com a borracha a barrinha vira
+  só a dica (`pp-pincel-so-dica` esconde os controles) porque cor/espessura/modo não valem para
+  ela — e o cursor vira mira na moldura inteira (`.pp-frame.pp-borracha`), que não é reconstruída
+  a cada desenho (ao contrário do `.pp-slide`, cujo `className` é reescrito no `pintar`).
+
+## scripts/testar-desenho-assistido.mjs · scripts/testar-layout.mts
+
+### 2026-10-15 · esta tarefa · as travas da tinta
+- **Local:** `testar-desenho-assistido.mjs` — bloco "marca-texto, tinta e converter" (17
+  asserções); `testar-layout.mts` — seção "tinta: marca-texto, borracha e converter em forma" (11
+  checagens)
+- **Linha:** `novo` — no motor: o marca-texto não é reconhecido, sai largo/translúcido/sem seta e
+  guarda `tinta`; a caneta continua reconhecendo; o desenho livre e a curva guardam `tinta`; o
+  `formaDaTinta` devolve o retângulo, mantém a caixa atual (inclusive **depois de movido**), limpa
+  caminhos/tinta, preserva a linha e devolve `null` sem pontos ou sem reconhecimento. No layout: os
+  botões, o despacho, a barra, o modo/hook do palco, o `aoApagarTinta` só com tinta, o aviso do
+  converter, a regra do marca-texto no motor, o campo `tinta`, o "só dica" e o cursor
+- **Porquê:** o marca-texto e o converter têm modos de falha silenciosos (o marca-texto virar forma
+  "limpa", o traço movido converter no lugar errado) e a borracha apagar o que não devia — os três
+  passam no uso normal e voltam numa simplificação. O teste do motor prova a decisão a partir dos
+  dados; o do layout prende a fiação (fita ↔ host ↔ palco), que é onde o repo já prende o resto.
+
+## docs/powerpoint.md · docs/paridade-deckcraft.md
+
+### 2026-10-15 · esta tarefa · as ferramentas de tinta nos docs
+- **Local:** a seção "Desenho à mão (Draw)" do doc do módulo e a seção **Draw** da paridade
+- **Linha:** `novo` — o marca-texto, a borracha e o "Converter em forma" (com o `tinta` só do app);
+  na paridade, **Draw 0/2 → 2/2** ("canetas, marca-texto e borracha" e "tinta → forma")
+- **Porquê:** o doc do módulo é onde a pessoa descobre como usar; a paridade é o placar da
+  referência — as duas linhas que estavam em aberto agora têm o que dizer, com o que **não** existe
+  (tinta → texto, laço) anotado para não parecer completo.
