@@ -9495,3 +9495,15 @@ antigas quando fizer sentido.
 - **Linha:** o card passa a ser descrito como "a **prévia** cria com o último layout e o
   **rótulo** abre a galeria — o "+" redondo que pendia do canto da prévia saiu"
 - **Porquê:** o documento do módulo descreve o que o app faz; o card mudou de alvos.
+
+## CHANGELOG.md
+
+### 2026-10-15 · o card da faixa · a promoção da entrada (não adicionado → adicionado)
+- **Local:** PowerPoint → **Não adicionado** → Frontend (a entrada do card) e PowerPoint →
+  **Adicionado** → Frontend
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não pode promover: no instante do commit da tarefa a entrada ainda não está
+  na main (a regra do repositório é "nunca promova o que ainda não entrou na main"), então a
+  promoção é uma tarefa de follow-up, depois que o commit chegou (284af10). Promovi só a entrada
+  DESTA tarefa: as outras que seguem em "Não adicionado" pertencem a sessões com trabalho aberto
+  ou com promoção em voo — mexer nelas criaria duplicata ou conflito.

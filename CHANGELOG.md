@@ -417,14 +417,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - **A fita do PowerPoint cabe na tela sem rolar** — ela se ajusta sozinha à largura da janela: se o painel da aba não cabe, os espaços e ícones encolhem em degraus (a fonte não), os botões grandes ficam numa linha e, por último, os botões pequenos ficam só com o ícone (o nome fica na dica). Em 1338 px todas as abas cabem (Início estourava 353 px e Animações 218 px); a rolagem lateral fica só para janelas muito estreitas.
 
-- **O card "Nova lâmina" da faixa: o "+" do canto saiu e o rótulo assumiu a galeria**: o card
-  ficou com dois alvos claros — a **prévia** cria a lâmina na hora, com o **último layout
-  escolhido**, e o **rótulo "+ Nova lâmina"** (embaixo) abre a **galeria** com os seis layouts,
-  onde a escolha cria e passa a ser o "último" (o mesmo caminho da fita, pelo
-  `abrirGaleriaDeLayouts`); clicar no rótulo de novo **recolhe** a galeria, como nos outros popups
-  do app. O **"+" redondo** que pendia do canto da prévia era um alvo a mais e saiu (pedido: "o
-  botão de cima era para sumir e o de baixa assumir a função"). Teste: `npm run test:layout`.
-
 - **Aba "Desenhar" na fita**: as ferramentas de traço ganharam o lugar próprio (como no PowerPoint de
   verdade): **Canetas** (**Draw** e **Curva**, que **saíram do Inserir**), **Traço** (**cor** na
   mesma paleta do pincel, espessuras **1/2/4/8**, **Livre/Pontos** e o **Assistente**), **Formas**
@@ -454,6 +446,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **O card "Nova lâmina" da faixa: o "+" do canto saiu e o rótulo assumiu a galeria**: o card
+  ficou com dois alvos claros — a **prévia** cria a lâmina na hora, com o **último layout
+  escolhido**, e o **rótulo "+ Nova lâmina"** (embaixo) abre a **galeria** com os seis layouts,
+  onde a escolha cria e passa a ser o "último" (o mesmo caminho da fita, pelo
+  `abrirGaleriaDeLayouts`); clicar no rótulo de novo **recolhe** a galeria, como nos outros popups
+  do app. O **"+" redondo** que pendia do canto da prévia era um alvo a mais e saiu (pedido: "o
+  botão de cima era para sumir e o de baixa assumir a função"). Teste: `npm run test:layout`.
 
 - **Fita métrica do arrasto**: enquanto se arrasta algo na lâmina, um **balão com a medida** acompanha o gesto — **x · y** (posição) ao **mover** e **largura × altura** ao **redimensionar** uma forma ou **desenhar** uma nova. A unidade é o **cm**, a mesma dos campos de **Tamanho** do painel (o número do gesto bate com o que a pessoa lê depois), com uma casa e vírgula decimal; o balão fica **acima do quadro** (e vira para baixo quando não há espaço no topo), não rouba o ponteiro e **some ao soltar**. Com **várias formas escolhidas**, a medida é a da **moldura do grupo**.
 
