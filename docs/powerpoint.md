@@ -115,7 +115,9 @@ avisado ao abrir (nunca some em silêncio).
   que não é modelado volta cru, com aviso). **Aplicar já mostra o efeito tocando** e a **prévia
   devolve a lâmina ao estado de projeto** ao terminar (o **Esc** interrompe na hora) — nada fica
   aplicado no palco fora da apresentação.
-- **Lâminas**: arrastar as miniaturas para reordenar (na faixa do topo ou na vertical),
+- **Lâminas**: arrastar as miniaturas para reordenar (na faixa do topo ou na vertical) —
+  o gesto é o do **mouse**: **segure a miniatura e leve** para a posição (uma **linha de acento**
+  mostra onde ela entra, o **Esc** cancela e, perto da borda, a faixa **rola sozinha**). Depois,
   ocultar, renomear e resetar (com ida e volta no `.pptx`), duplicar e excluir (o botão
   **Duplicar** está na Página Inicial e na aba **Inserir**). O **clique direito na miniatura**
   abre um menu do app — **Duplicar lâmina**, **Nova lâmina no fim**, **Renomear…**, **Ocultar/

@@ -225,6 +225,17 @@ export class PowerPointHost {
   private slideEl!: HTMLElement;
   private notesEl!: HTMLTextAreaElement;
 
+  /**
+   * Arrasto da miniatura em andamento. É feito com eventos de PONTEIRO, e não com o `draggable`
+   * do HTML: o WebView do Tauri substitui o manipulador de arrasto do Windows (é ele que entrega
+   * os arquivos soltos na janela), e com isso o arrasto nativo nunca começa — a miniatura ficava
+   * presa no app (relato do usuário: "o app bloqueia").
+   */
+  private arrastoFaixa: { de: number; x: number; y: number; ativo: boolean; ponteiro: number } | null = null;
+  /** o clique que o navegador dispara no fim de um arrasto não pode escolher a lâmina errada */
+  private cliqueAposArrasto = false;
+  private rolagemDoArrasto: number | null = null;
+
   private fita!: Fita;
   private painel!: Painel;
   private stage: Stage;
@@ -376,6 +387,7 @@ export class PowerPointHost {
     this.stage.attach(this.frame, this.slideEl);
     this.notes.attach(this.notesEl, (notes) => this.mudarNotas(notes));
     this.ligarPincel();
+    this.ligarArrastoDaFaixa();
 
     this.ligarPainelLateral();
     // abas do painel lateral
@@ -1144,31 +1156,13 @@ export class PowerPointHost {
         cap.textContent = s.nome;
         btn.append(cap);
       }
-      btn.addEventListener("click", () => this.irPara(i));
-      // arrastar para reordenar
-      btn.draggable = true;
-      btn.addEventListener("dragstart", (e) => {
-        e.dataTransfer?.setData("application/x-pp-lamina", String(i));
-        if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
-        btn.classList.add("arrastando");
-      });
-      btn.addEventListener("dragend", () => this.strip.querySelectorAll(".arrastando, .alvo-antes, .alvo-depois").forEach((n) => n.classList.remove("arrastando", "alvo-antes", "alvo-depois")));
-      btn.addEventListener("dragover", (e) => {
-        if (!e.dataTransfer?.types.includes("application/x-pp-lamina")) return;
-        e.preventDefault();
-        const antes = this.antesDaMiniatura(btn, e);
-        btn.classList.toggle("alvo-antes", antes);
-        btn.classList.toggle("alvo-depois", !antes);
-      });
-      btn.addEventListener("dragleave", () => btn.classList.remove("alvo-antes", "alvo-depois"));
-      btn.addEventListener("drop", (e) => {
-        const de = Number(e.dataTransfer?.getData("application/x-pp-lamina"));
-        if (!Number.isFinite(de)) return;
-        e.preventDefault();
-        const antes = this.antesDaMiniatura(btn, e);
-        let para = antes ? i : i + 1;
-        if (de < para) para--;
-        this.moverLaminaPara(de, para);
+      btn.addEventListener("click", () => {
+        // o clique que o navegador dispara no fim de um arrasto não pode escolher a lâmina errada
+        if (this.cliqueAposArrasto) {
+          this.cliqueAposArrasto = false;
+          return;
+        }
+        this.irPara(i);
       });
 
       const del = document.createElement("button");
@@ -1212,10 +1206,146 @@ export class PowerPointHost {
     this.strip.querySelector(".pp-thumb.active")?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
 
-  /** Arrastar na faixa: numa faixa vertical o "antes" é acima; na horizontal, à esquerda. */
-  private antesDaMiniatura(el: HTMLElement, e: { clientX: number; clientY: number }): boolean {
-    const r = el.getBoundingClientRect();
-    return this.faixaVertical ? e.clientY < r.top + r.height / 2 : e.clientX < r.left + r.width / 2;
+  // ------------------------------------------------------------------
+  // arrastar as miniaturas para reordenar
+  // ------------------------------------------------------------------
+
+  /**
+   * Arrasto da faixa de lâminas com eventos de PONTEIRO — e não com o `draggable` do HTML: o
+   * WebView do Tauri substitui o manipulador de arrasto do Windows (é ele que entrega os arquivos
+   * soltos na janela), e por isso o arrasto nativo **nunca começa** dentro do app (a miniatura
+   * ficava presa; relato do usuário: "o app bloqueia"). O gesto é o mesmo do resto do app:
+   * `pointerdown` + captura do ponteiro, um mínimo de movimento para virar arrasto (o clique
+   * simples continua só escolhendo a lâmina), a linha de inserção acompanhando o ponteiro e o
+   * `moverLaminaPara` no soltar.
+   */
+  private ligarArrastoDaFaixa(): void {
+    const miniaturas = (): HTMLElement[] => [...this.strip.querySelectorAll<HTMLElement>(".pp-thumb")];
+
+    /** Índice de inserção (na lista de agora) que o ponteiro aponta — é onde a linha fica. */
+    const destino = (x: number, y: number): number => {
+      const lista = miniaturas();
+      const coord = this.faixaVertical ? y : x;
+      for (let i = 0; i < lista.length; i++) {
+        const r = lista[i].getBoundingClientRect();
+        const meio = this.faixaVertical ? r.top + r.height / 2 : r.left + r.width / 2;
+        if (coord < meio) return i;
+      }
+      return lista.length; // passou da última: entra no fim (o "+ Nova lâmina" não é posição)
+    };
+
+    const marcarDestino = (para: number): void => {
+      for (const n of this.strip.querySelectorAll(".alvo-antes, .alvo-depois")) n.classList.remove("alvo-antes", "alvo-depois");
+      const lista = miniaturas();
+      if (!lista.length) return;
+      // a linha fica ANTES da miniatura que cede o lugar; no fim da faixa, depois da última
+      if (para < lista.length) lista[para].classList.add("alvo-antes");
+      else lista[lista.length - 1].classList.add("alvo-depois");
+    };
+
+    const fim = (): void => {
+      this.pararRolagemDoArrasto();
+      this.strip.classList.remove("pp-arrastando");
+      for (const n of this.strip.querySelectorAll(".arrastando, .alvo-antes, .alvo-depois")) n.classList.remove("arrastando", "alvo-antes", "alvo-depois");
+      document.removeEventListener("keydown", escapar, true);
+      this.arrastoFaixa = null;
+    };
+
+    const mover = (ev: PointerEvent): void => {
+      const a = this.arrastoFaixa;
+      if (!a) return;
+      if (!a.ativo) {
+        // só vira arrasto depois de um mínimo de movimento: o clique simples escolhe a lâmina
+        if (Math.abs(ev.clientX - a.x) < 4 && Math.abs(ev.clientY - a.y) < 4) return;
+        a.ativo = true;
+        // a captura vem AQUI, e não no `pointerdown`: com ela o ponteiro é redirecionado para a
+        // faixa e os cliques das miniaturas (escolher, excluir, "+ Nova lâmina") deixariam de
+        // chegar nos botões. Capturando no começo do arrasto, o clique simples segue intacto.
+        try {
+          this.strip.setPointerCapture(a.ponteiro);
+        } catch {
+          /* ponteiro sem captura (sintético): o arrasto segue pelos eventos do próprio elemento */
+        }
+        this.strip.classList.add("pp-arrastando");
+        miniaturas()[a.de]?.classList.add("arrastando");
+      }
+      ev.preventDefault(); // nada de selecionar o texto dos rótulos no caminho
+      marcarDestino(destino(ev.clientX, ev.clientY));
+      this.rolarFaixaNoArrasto(ev.clientX, ev.clientY);
+    };
+
+    const soltar = (ev: PointerEvent): void => {
+      const a = this.arrastoFaixa;
+      const ativo = !!a?.ativo;
+      // o destino é medido ANTES de limpar: o `moverLaminaPara` redesenha a faixa
+      const para = ativo ? destino(ev.clientX, ev.clientY) : 0;
+      desligar();
+      if (!a || !ativo) return; // clique simples: quem age é o handler do botão
+      this.cliqueAposArrasto = true; // o clique do fim do gesto não pode escolher outra lâmina
+      let final = para;
+      if (a.de < final) final--;
+      this.moverLaminaPara(a.de, final);
+    };
+
+    const cancelar = (): void => desligar();
+
+    const desligar = (): void => {
+      this.strip.removeEventListener("pointermove", mover);
+      this.strip.removeEventListener("pointerup", soltar);
+      this.strip.removeEventListener("pointercancel", cancelar);
+      fim();
+    };
+
+    /** Esc cancela o arrasto (o gesto do app: a tecla sai da ação em andamento). */
+    const escapar = (ev: KeyboardEvent): void => {
+      if (ev.key !== "Escape" || !this.arrastoFaixa) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      desligar();
+    };
+
+    this.strip.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return;
+      const alvo = e.target as HTMLElement;
+      if (alvo.closest(".pp-thumb-del")) return; // o × exclui a lâmina; não é pega de arrasto
+      const btn = alvo.closest<HTMLElement>(".pp-thumb");
+      if (!btn) return;
+      const de = miniaturas().indexOf(btn);
+      if (de < 0) return;
+      this.cliqueAposArrasto = false; // um gesto novo zera o que sobrou do anterior
+      this.arrastoFaixa = { de, x: e.clientX, y: e.clientY, ativo: false, ponteiro: e.pointerId };
+      this.strip.addEventListener("pointermove", mover);
+      this.strip.addEventListener("pointerup", soltar);
+      this.strip.addEventListener("pointercancel", cancelar);
+      document.addEventListener("keydown", escapar, true);
+    });
+  }
+
+  /**
+   * Perto da borda da faixa, o arrasto rola a faixa sozinho: a miniatura de destino pode estar
+   * fora da vista (mesmo gesto do PowerPoint).
+   */
+  private rolarFaixaNoArrasto(x: number, y: number): void {
+    const r = this.strip.getBoundingClientRect();
+    const margem = 30;
+    const passo = 12;
+    const vertical = this.faixaVertical;
+    const direcao = vertical ? (y < r.top + margem ? -passo : y > r.bottom - margem ? passo : 0) : x < r.left + margem ? -passo : x > r.right - margem ? passo : 0;
+    if (direcao === 0) {
+      this.pararRolagemDoArrasto();
+      return;
+    }
+    if (this.rolagemDoArrasto !== null) return;
+    this.rolagemDoArrasto = window.setInterval(() => {
+      if (vertical) this.strip.scrollTop += direcao;
+      else this.strip.scrollLeft += direcao;
+    }, 16);
+  }
+
+  private pararRolagemDoArrasto(): void {
+    if (this.rolagemDoArrasto === null) return;
+    window.clearInterval(this.rolagemDoArrasto);
+    this.rolagemDoArrasto = null;
   }
 
   private atualizarStatus(): void {

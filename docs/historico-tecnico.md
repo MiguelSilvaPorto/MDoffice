@@ -10613,6 +10613,7 @@ antigas quando fizer sentido.
   `this.tabs[-1]` (undefined) nessa hora. O `semDocumento()` é o aviso padrão dos comandos: sem
   ele, o Ctrl+S abriria um "Salvar como" para um documento invisível. O `closeAll` fecha de trás
   para frente para a **última** passar pelo fluxo normal (que já leva ao Início e trata
+  o documento solto como qualquer outro).
 
 ## src/app/keymap.ts · src/app/commands.ts · src/app/pages.ts · src/app/layout.ts
 
@@ -10686,6 +10687,7 @@ antigas quando fizer sentido.
   "consolidar". É o segundo estrago da mesma entrega (o primeiro foi o `testar-layout.mts` acima):
   os dois vieram de resoluções de conflito que trataram o arquivo inteiro em vez do trecho — vale a
   regra de sempre: **resolver o conflito é reescrever só o trecho, nunca escolher um lado inteiro**.
+
 ## CHANGELOG.md
 
 ### 2026-10-15 · promoção · a entrada do "Fechar todos" entra no "Adicionado" (Geral)
@@ -10787,3 +10789,91 @@ antigas quando fizer sentido.
   encolher no degrau compacto, senão a aba Animações estoura). Com o arquivo voltando a rodar
   (entrada acima), a checagem antiga era a única falha do `test:layout` — a atualização é o
   combinado que faltou entre as duas tarefas, não uma mudança de comportamento.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-15 · arrastar a lâmina · o gesto passa a ser do ponteiro (o HTML5 drag não existe no app)
+- **Local:** o render da faixa (o handler da miniatura) e o novo `ligarArrastoDaFaixa`
+- **Linha:** `btn.draggable = true` + `dragstart`/`dragover`/`drop` → `pointerdown` na faixa com
+  `mover`/`soltar`/`cancelar` (e os novos `rolarFaixaNoArrasto`/`pararRolagemDoArrasto`)
+- **Porquê:** o relato ("clico e seguro com o botão esquerdo e o app bloqueia") tem causa de fora do
+  código: o **Tauri substitui o manipulador de arrasto do WebView2** para entregar os arquivos
+  soltos na janela (o `drag_drop_enabled` do `WindowConfig`, ligado por padrão — a doc do Tauri diz
+  que desligar é obrigatório para o HTML5 drag no Windows). Ou seja: **no navegador o arrasto
+  funcionava e no app nunca começava** — e a faixa não tinha nenhum outro caminho (os comandos
+  `slide-up`/`slide-down` do host estão sem botão desde então). Os eventos de ponteiro são o mesmo
+  caminho dos outros gestos do app (palco, pincel, alça do painel) e funcionam nos dois casos.
+- **Local:** o começo do arrasto (`mover`, no primeiro movimento acima do limiar)
+- **Linha:** a captura do ponteiro saiu do `pointerdown` e passou para cá: `+ try { this.strip.setPointerCapture(a.ponteiro) }`
+- **Porquê:** foi a verificação no navegador que pegou: com a captura no `pointerdown`, o ponteiro
+  passa a ser redirecionado para a faixa e **todos** os cliques dentro dela deixam de chegar nos
+  botões (escolher a lâmina, o **×** e o **+ Nova lâmina** ficariam mudos). Capturando só quando o
+  arrasto começa, o clique simples segue intacto — e o clique do fim do gesto, que o navegador
+  dispararia no alvo antigo, não acontece (mousedown e mouseup em alvos diferentes).
+- **Local:** o handler de `click` da miniatura
+- **Linha:** `btn.addEventListener("click", () => this.irPara(i))` → `+ if (this.cliqueAposArrasto) { … return; }`
+- **Porquê:** rede de segurança para o caso de a captura falhar: sem ela, o clique do fim do
+  arrasto escolheria a lâmina do **índice antigo** (a lista já foi reordenada). O sinal é zerado no
+  `pointerdown` seguinte, então ele nunca engole um clique legítimo.
+- **Local:** o destino do arrasto (`destino`, `marcarDestino`) e o `soltar`
+- **Linha:** `+ destino(x, y)` (índice de inserção pela metade de cada miniatura, eixo conforme a
+  faixa) e `+ if (a.de < final) final--` antes do `moverLaminaPara`
+- **Porquê:** é a mesma conta do `drop` antigo (o índice de inserção não é o final: quem está antes
+  anda uma casa ao sair), agora sem depender do `dataTransfer`. O destino é medido **antes** de
+  limpar as classes porque o `moverLaminaPara` redesenha a faixa.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-15 · arrastar a lâmina · o cursor do arrasto e a seleção de texto
+- **Local:** junto das regras do `.pp-thumb.arrastando`/`.alvo-antes`/`.alvo-depois`
+- **Linha:** `novo` — `.pp-strip.pp-arrastando, … .pp-thumb, … .pp-thumb * { cursor: grabbing; user-select: none; }`
+  e `.pp-strip.pp-arrastando .pp-thumb:hover { transform: none }`
+- **Porquê:** o cursor é o aviso de que a peça está na mão (o `.pp-thumb` tem `cursor: pointer`, então
+  a regra precisa alcançar o filho); o `user-select: none` impede que o arrasto pinte de seleção o
+  rótulo da lâmina no caminho; e o `transform: none` para o pulinho do `:hover`, que durante o
+  arrasto só faz a miniatura tremer. As regras da linha de inserção (`alvo-antes`/`alvo-depois`) já
+  existiam e seguem valendo nas duas faixas.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · arrastar a lâmina · as 8 verificações do gesto
+- **Local:** a seção nova "PowerPoint: arrastar a miniatura para reordenar (ponteiro, não HTML5)"
+- **Linha:** `novo`
+- **Porquê:** o defeito nasceu de uma dependência invisível (o manipulador do Tauri) e volta fácil:
+  basta alguém reintroduzir o `draggable` "mais simples". As verificações prendem o caminho de
+  ponteiro, o limiar que protege o clique simples, a linha de inserção nas duas faixas, o índice
+  final, a rolagem na borda, o Esc e o cursor. A verificação no navegador (vite dev + CDP, com
+  `Input.dispatchMouseEvent` — o Chrome deriva os eventos de ponteiro daí) confirmou o gesto na
+  faixa **vertical** e na do **topo**: arrastar a lâmina 1 para depois da 3 e voltar, o clique
+  simples escolhendo, o × excluindo, o "+ Nova lâmina" criando e o Esc cancelando.
+  No meio do caminho este arquivo estava **sem compilar** na `main` (o `);`/`}` que faltavam no
+  bloco do histórico, do `5784eda`): o rebase desta tarefa passou por ali e o fecho entrou — a
+  entrada "o bloco do histórico volta a fechar", logo acima, é de quem consertou o mesmo defeito
+  pela outra ponta; as duas resoluções coincidem no texto final e o `npm run test:layout` roda.
+
+## docs/powerpoint.md
+
+### 2026-10-15 · arrastar a lâmina · a bala das Lâminas
+- **Local:** "Editar as lâminas" → bala **Lâminas**
+- **Linha:** a bala passa a descrever o gesto (segurar e levar, a linha de acento, o Esc, a rolagem
+  na borda)
+- **Porquê:** o documento dizia só "arrastar as miniaturas" — e era justamente o que não funcionava
+  no app; agora diz como o gesto se comporta.
+
+## CHANGELOG.md
+
+### 2026-10-15 · arrastar a lâmina · a entrada no PowerPoint
+- **Local:** PowerPoint → Não adicionado → Frontend
+- **Linha:** `novo`
+- **Porquê:** mudança do módulo PowerPoint; a entrada fica em "Não adicionado" até o commit do
+  `fechar.ps1` entregar a `main` (a promoção é um passo separado).
+
+### 2026-10-15 · arrastar a lâmina · as seções que este rebase ia duplicar
+- **Local:** o fim do arquivo — as seções `## src/app/tabs.ts`, `## src/app/keymap.ts · …`,
+  `## src/app/documents.ts · …` e `## scripts/testar-layout.mts` (as travas do "sem abas")
+- **Linha:** `-` as cópias que vinham no meu ramo saíram (ficaram as da `main`, restauradas na
+  entrada "as seções do 'fechar todos' voltam ao histórico", logo acima)
+- **Porquê:** o meu ramo tinha o texto íntegro de `5784eda` e a `main` já o tinha restaurado por
+  conta própria (a sessão do "fechar todos" consertou os dois estragos: o `);`/`}` do teste e o
+  bloco do histórico). Manter as duas cópias deixaria o registro **duplicado** — a resolução ficou
+  com a versão da `main` e só as entradas desta tarefa entraram depois dela.

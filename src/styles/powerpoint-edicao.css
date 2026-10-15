@@ -2462,6 +2462,19 @@ button.ppr.trans-dir {
 .pp-thumb.alvo-antes { box-shadow: -3px 0 0 var(--accent); }
 .pp-thumb.alvo-depois { box-shadow: 3px 0 0 var(--accent); }
 
+/* arrasto da miniatura (eventos de ponteiro): o cursor avisa que a peça está na mão e nada de
+   selecionar o texto dos rótulos no caminho — o hover da miniatura também para de pular */
+.pp-strip.pp-arrastando,
+.pp-strip.pp-arrastando .pp-thumb,
+.pp-strip.pp-arrastando .pp-thumb * {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.pp-strip.pp-arrastando .pp-thumb:hover {
+  transform: none;
+}
+
 /* ---------- lâminas: ocultar e renomear ---------- */
 
 /* lâmina oculta (Página Inicial > Lâminas > Ocultar): a miniatura fica apagada e

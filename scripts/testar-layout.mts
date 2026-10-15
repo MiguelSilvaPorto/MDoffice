@@ -1833,6 +1833,59 @@ console.log("\nPowerPoint: duplicar lâmina na fita e no clique direito da minia
     /menuDaLamina\(e: MouseEvent, i: number\): void \{\r?\n\s+e\.preventDefault\(\)/.test(ppt),
     "o menu do navegador apareceria por cima"
   );
+console.log("\nPowerPoint: arrastar a miniatura para reordenar (ponteiro, não HTML5)");
+{
+  const ppt = ler("src/powerpoint/powerpoint.ts");
+  const css = ler("src/styles/powerpoint-edicao.css");
+  // O relato: "clico e seguro com o botão esquerdo para arrastar e o app bloqueia". O `draggable`
+  // do HTML não começa dentro do app porque o Tauri substitui o manipulador de arrasto do WebView2
+  // (é ele que entrega os arquivos soltos na janela) — o arrasto passou a ser por eventos de
+  // ponteiro, que funcionam com o manipulador do Tauri ligado.
+  checa(
+    "a miniatura não usa mais o draggable do HTML",
+    !/btn\.draggable = true/.test(ppt) && !/addEventListener\("dragstart"/.test(ppt),
+    "o arrasto nativo nunca começa no WebView do Tauri: a miniatura fica presa"
+  );
+  checa(
+    "o arrasto é por eventos de ponteiro, com captura no começo do gesto",
+    /this\.ligarArrastoDaFaixa\(\)/.test(ppt) &&
+      /this\.strip\.addEventListener\("pointerdown"/.test(ppt) &&
+      /a\.ativo = true;[\s\S]{0,900}this\.strip\.setPointerCapture\(a\.ponteiro\)/.test(ppt) &&
+      !/this\.strip\.setPointerCapture\(e\.pointerId\)/.test(ppt),
+    "capturar no pointerdown redireciona os cliques da faixa: escolher a lâmina, o × e o + Nova lâmina ficariam mudos"
+  );
+  checa(
+    "o clique simples continua escolhendo a lâmina",
+    /if \(Math\.abs\(ev\.clientX - a\.x\) < 4 && Math\.abs\(ev\.clientY - a\.y\) < 4\) return;/.test(ppt) &&
+      /if \(this\.cliqueAposArrasto\) \{/.test(ppt),
+    "sem o mínimo de movimento todo clique viraria arrasto; sem a trava, o clique do fim do gesto escolheria a lâmina errada"
+  );
+  checa(
+    "a linha de inserção segue o ponteiro nas duas faixas (topo e vertical)",
+    /const coord = this\.faixaVertical \? y : x;/.test(ppt) &&
+      /if \(para < lista\.length\) lista\[para\]\.classList\.add\("alvo-antes"\);/.test(ppt) &&
+      /else lista\[lista\.length - 1\]\.classList\.add\("alvo-depois"\);/.test(ppt),
+    "a faixa vertical precisa da linha em cima/embaixo; a do topo, à esquerda/direita"
+  );
+  checa(
+    "soltar leva a lâmina para a posição apontada (índice final ajustado)",
+    /const para = ativo \? destino\(ev\.clientX, ev\.clientY\) : 0;/.test(ppt) &&
+      /if \(a\.de < final\) final--;/.test(ppt) &&
+      /this\.moverLaminaPara\(a\.de, final\);/.test(ppt),
+    "o índice de inserção não é o final: quem está antes anda uma casa ao sair"
+  );
+  checa(
+    "arrastar até a borda rola a faixa",
+    /this\.rolarFaixaNoArrasto\(ev\.clientX, ev\.clientY\)/.test(ppt) && /this\.rolagemDoArrasto = window\.setInterval/.test(ppt),
+    "sem isso o destino que está fora da vista fica inalcançável"
+  );
+  checa("Esc cancela o arrasto em andamento", /if \(ev\.key !== "Escape" \|\| !this\.arrastoFaixa\) return;/.test(ppt));
+  checa(
+    "o cursor avisa o arrasto e o texto não é selecionado no caminho",
+    /\.pp-strip\.pp-arrastando,[\s\S]{0,120}cursor: grabbing;/.test(css) && /user-select: none;/.test(css)
+  );
+}
+
 console.log("menus da fita: o clique nunca fica mudo");
 
 const fitaSrc = ler("src/powerpoint/ui/fita.ts");
