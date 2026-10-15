@@ -11474,3 +11474,13 @@ antigas quando fizer sentido.
   borda começa de verdade)
 - **Porquê:** a bala dizia que a caixa encaixa "nas bordas" — mas a borda do retângulo não é a
   borda do cartão quando o canto é arredondado.
+
+## CHANGELOG.md
+
+### 2026-10-15 · o encaixe na borda visível · a promoção da entrada
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não promove (no instante do commit a entrada ainda não está na main), então a
+  promoção anda depois: o encaixe na borda visível (4aa918f). Promovi só a entrada DESTA tarefa —
+  as que seguem em "Não adicionado" (a aba Animações, a aba Design completa e o Template com
+  desenho) são de sessões com trabalho aberto, mexer nelas criaria duplicata ou conflito.
