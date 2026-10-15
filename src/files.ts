@@ -158,6 +158,21 @@ export async function renameFile(from: string, to: string): Promise<string> {
   return await invoke<string>("rename_file", { from, to });
 }
 
+/** Move o arquivo do documento para outra pasta (sem sobrescrever) e devolve o caminho novo. */
+export async function moveFile(from: string, toDir: string): Promise<string> {
+  return await invoke<string>("move_file", { from, toDir });
+}
+
+/** Renomeia a pasta de um projeto (mantendo a pasta-mãe) e devolve o caminho novo. */
+export async function renameFolder(from: string, to: string): Promise<string> {
+  return await invoke<string>("rename_folder", { from, to });
+}
+
+/** Exclui uma pasta de projeto — só funciona se a pasta estiver vazia. */
+export async function deleteFolder(path: string): Promise<void> {
+  await invoke("delete_folder", { path });
+}
+
 export interface DraftInfo {
   path: string;
   modified_ms: number;

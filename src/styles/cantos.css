@@ -16,6 +16,7 @@
 html.cantos-quadrados :where(
     .btn, .tbtn, .tab-recents, .rc-row, .rc-item, .rc-x, .sb-tab, .sb-pill, .sb-mini, .side-add,
     .recent, .recent-btn, .recent-x, .outline-item, .hm-item, .pj-folder, .pj-folder-ic, .pj-more,
+    .pj-sub, .pj-back, .pj-crumb, .pj-crumb-sep,
     #tb-sidebar, .palette-btn, .tb-pill-btn, .tb-icon-btn, .tb-saved-path, .tb-autosave-badge,
     .tab-input, .st-seg-item, .st-seg-icone, .st-nav-ic, .st-row-ic, .st-select, .st-key,
     .st-key kbd, .color-input, .draw-text-input, .palette-item, .home-resume-btn, .home-import-btn,

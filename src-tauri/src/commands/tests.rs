@@ -2,7 +2,10 @@
 
 use super::assets::copy_assets;
 use super::bundle::export_portable_bundle;
-use super::files::{gravar_bytes, preview_file, rename_file, unique_md_path};
+use super::files::{
+    delete_folder, gravar_bytes, move_file, preview_file, rename_file, rename_folder,
+    unique_md_path,
+};
 use super::projects::list_markdown;
 use super::storage::{argumentos_do_webview, config_de_json, soma_cache, soma_pasta, validar_limite, LIMITES_MB};
 use super::trash::{limpar, mover, read_index};
@@ -83,6 +86,100 @@ fn renomeia_documento_sem_sobrescrever() {
         "já existia"
     );
     fs::remove_dir_all(&dir).expect("limpa arquivos de teste");
+}
+
+#[test]
+fn move_documento_entre_pastas_sem_sobrescrever() {
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("relógio válido")
+        .as_nanos();
+    let raiz = std::env::temp_dir().join(format!("mdoffice-move-{nonce}"));
+    let origem = raiz.join("Markdown");
+    let destino = raiz.join("Word");
+    fs::create_dir_all(&origem).expect("cria origem");
+    fs::create_dir_all(&destino).expect("cria destino");
+    let doc = origem.join("notas.md");
+    fs::write(&doc, "conteúdo").expect("cria documento");
+    // já existe um documento com o mesmo nome no destino: não pode sobrescrever
+    fs::write(destino.join("notas.md"), "já existia").expect("cria conflito");
+
+    let novo = move_file(
+        doc.to_string_lossy().to_string(),
+        destino.to_string_lossy().to_string(),
+    )
+    .expect("move");
+    assert!(novo.ends_with("notas-1.md"), "veio: {novo}");
+    assert!(!doc.exists(), "o original saiu da pasta de origem");
+    assert_eq!(
+        fs::read_to_string(destino.join("notas.md")).expect("lê antigo"),
+        "já existia"
+    );
+    assert_eq!(
+        fs::read_to_string(destino.join("notas-1.md")).expect("lê movido"),
+        "conteúdo"
+    );
+
+    // arrastar para a pasta onde o arquivo já está não muda nada
+    let mesmo = move_file(
+        destino.join("notas-1.md").to_string_lossy().to_string(),
+        destino.to_string_lossy().to_string(),
+    )
+    .expect("mesma pasta");
+    assert!(mesmo.ends_with("notas-1.md"), "veio: {mesmo}");
+    fs::remove_dir_all(&raiz).expect("limpa arquivos de teste");
+}
+
+#[test]
+fn renomeia_pasta_sem_sobrescrever() {
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("relógio válido")
+        .as_nanos();
+    let raiz = std::env::temp_dir().join(format!("mdoffice-rename-folder-{nonce}"));
+    let pasta = raiz.join("Antiga");
+    fs::create_dir_all(&pasta).expect("cria pasta");
+    fs::write(pasta.join("doc.md"), "x").expect("cria documento dentro");
+    fs::create_dir_all(raiz.join("Nova")).expect("cria conflito");
+
+    let novo = rename_folder(
+        pasta.to_string_lossy().to_string(),
+        "Nova/Nome?estranho".to_string(),
+    )
+    .expect("renomeia");
+    // o nome é limpo (separadores e "?" viram "-") e a pasta com documentos vai junto
+    assert!(novo.ends_with("Nova-Nome-estranho"), "veio: {novo}");
+    assert!(Path::new(&novo).join("doc.md").is_file(), "documento foi junto");
+
+    // se a pasta já existe, ganha sufixo em vez de sobrescrever
+    let outra = raiz.join("Outra");
+    fs::create_dir_all(&outra).expect("cria pasta");
+    let novo2 = rename_folder(outra.to_string_lossy().to_string(), "Nova".to_string())
+        .expect("renomeia com conflito");
+    assert!(novo2.ends_with("Nova-1"), "veio: {novo2}");
+    fs::remove_dir_all(&raiz).expect("limpa arquivos de teste");
+}
+
+#[test]
+fn exclui_pasta_apenas_quando_vazia() {
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("relógio válido")
+        .as_nanos();
+    let raiz = std::env::temp_dir().join(format!("mdoffice-delete-folder-{nonce}"));
+    let vazia = raiz.join("Vazia");
+    let cheia = raiz.join("Cheia");
+    fs::create_dir_all(&vazia).expect("cria vazia");
+    fs::create_dir_all(&cheia).expect("cria cheia");
+    fs::write(cheia.join("doc.md"), "x").expect("cria documento");
+
+    // pasta com documento é recusada: nada é apagado por engano
+    assert!(delete_folder(cheia.to_string_lossy().to_string()).is_err());
+    assert!(cheia.join("doc.md").is_file(), "o documento continua lá");
+
+    delete_folder(vazia.to_string_lossy().to_string()).expect("apaga a vazia");
+    assert!(!vazia.exists(), "a pasta vazia saiu");
+    fs::remove_dir_all(&raiz).expect("limpa arquivos de teste");
 }
 
 #[test]
@@ -253,13 +350,14 @@ fn soma_o_tamanho_de_uma_pasta_recursivamente() {
 }
 
 #[test]
-fn a_arvore_do_projeto_lista_os_quatro_tipos_e_esconde_o_resto() {
+fn a_arvore_do_projeto_lista_as_pastas_e_esconde_o_resto() {
     let nonce = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("relógio válido")
         .as_nanos();
     let raiz = std::env::temp_dir().join(format!("mdoffice-projetos-{nonce}"));
-    // as quatro subpastas padrão do app + uma vazia (que não deve aparecer)
+    // as quatro subpastas padrão do app + uma vazia (a vazia TAMBÉM aparece: é onde se cria
+    // uma pasta nova e para onde se arrastam documentos)
     for pasta in ["Markdown", "Word", "Excel", "PowerPoint", "Vazia"] {
         fs::create_dir_all(raiz.join(pasta)).expect("cria a pasta");
     }
@@ -273,13 +371,18 @@ fn a_arvore_do_projeto_lista_os_quatro_tipos_e_esconde_o_resto() {
 
     let arvore = list_markdown(raiz.to_string_lossy().to_string()).expect("lê a árvore");
     let nomes: Vec<&str> = arvore.iter().map(|n| n.name.as_str()).collect();
-    assert_eq!(nomes, vec!["Excel", "Markdown", "PowerPoint", "Word"], "só as pastas com documento, em ordem");
+    assert_eq!(
+        nomes,
+        vec!["Excel", "Markdown", "PowerPoint", "Vazia", "Word"],
+        "as pastas aparecem em ordem, inclusive a vazia"
+    );
 
     let excel: Vec<&str> = arvore[0].children.iter().map(|n| n.name.as_str()).collect();
     assert_eq!(excel, vec!["Documento.xlsm", "Documento.xlsx"], "planilha aparece nos dois formatos");
     let markdown: Vec<&str> = arvore[1].children.iter().map(|n| n.name.as_str()).collect();
     assert_eq!(markdown, vec!["Documento.md"], "txt e imagem não entram na árvore");
-    let word: Vec<&str> = arvore[3].children.iter().map(|n| n.name.as_str()).collect();
+    assert!(arvore[3].children.is_empty(), "a pasta vazia vem sem filhos");
+    let word: Vec<&str> = arvore[4].children.iter().map(|n| n.name.as_str()).collect();
     assert_eq!(word, vec!["Documento.docx"]);
 
     fs::remove_dir_all(&raiz).expect("limpa arquivos de teste");

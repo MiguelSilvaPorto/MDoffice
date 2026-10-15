@@ -38,14 +38,14 @@ fn scan_markdown(dir: &Path, depth: usize, budget: &mut usize) -> Vec<MdNode> {
                 continue;
             }
             let children = scan_markdown(&path, depth - 1, budget);
-            if !children.is_empty() {
-                dirs.push(MdNode {
-                    name,
-                    path: path.to_string_lossy().to_string(),
-                    directory: true,
-                    children,
-                });
-            }
+            // pasta VAZIA também entra na árvore: é onde o usuário cria uma pasta nova
+            // e depois arrasta documentos para dentro dela.
+            dirs.push(MdNode {
+                name,
+                path: path.to_string_lossy().to_string(),
+                directory: true,
+                children,
+            });
         } else if kind.is_file() {
             let lower = name.to_lowercase();
             if lower.ends_with(".md")
@@ -70,7 +70,7 @@ fn scan_markdown(dir: &Path, depth: usize, budget: &mut usize) -> Vec<MdNode> {
     dirs
 }
 
-/// Lista os documentos Markdown de uma pasta (subpastas até 4 níveis; só as que têm .md).
+/// Lista os documentos de uma pasta (subpastas até 4 níveis, inclusive as vazias).
 #[tauri::command]
 pub fn list_markdown(path: String) -> Result<Vec<MdNode>, String> {
     let root = Path::new(&path);

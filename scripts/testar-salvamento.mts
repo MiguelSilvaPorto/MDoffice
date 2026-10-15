@@ -167,6 +167,9 @@ for (const alvo of [
   ["read_file_data_url", files],
   ["rename_file", files],
   ["create_folder", files],
+  ["rename_folder", files],
+  ["delete_folder", files],
+  ["move_file", files],
   ["unique_md_path", files],
 ] as const) {
   const [cmd, fonte] = alvo;
@@ -178,7 +181,7 @@ for (const alvo of [
 }
 checa(
   "todos os comandos de files.rs são async",
-  (files.match(/#\[tauri::command\(async\)\]\r?\npub fn /g) ?? []).length === 7,
+  (files.match(/#\[tauri::command\(async\)\]\r?\npub fn /g) ?? []).length === 11,
   `encontrados: ${(files.match(/#\[tauri::command\(async\)\]\r?\npub fn /g) ?? []).length}`
 );
 

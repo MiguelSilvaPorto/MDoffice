@@ -12566,5 +12566,136 @@ antigas quando fizer sentido.
   inteira de uma vez, cada forma com o grupo dela; dali para trás é só tirar o que não serve com
   Shift+clique."` · `+ 1 entrada no changelog`
 - **Porquê:** é o doc do módulo em que a seleção múltipla é descrita (e onde o "clique-através" das
-  caixas sem preenchimento já estava explicado — o item é o par dele para as formas empilhadas). A
+  caixas sem preenchimento já estava explicado - o item é o par dele para as formas empilhadas). A
   entrada do changelog fica em "Não adicionado" até o `fechar.ps1` entregar.
+
+## src-tauri/src/commands/files.rs
+
+### 2026-10-15 · esta tarefa · mover, renomear e excluir pasta
+- **Local:** `create_folder` + os novos `rename_folder`, `delete_folder` e `move_file`
+- **Linha:** `+ fn nome_pasta_seguro` (o saneamento que o `create_folder` tinha embutido) e `+` os
+  três comandos, todos `#[tauri::command(async)]`
+- **Porquê:** o app só sabia renomear o arquivo DENTRO da mesma pasta (`rename_file`) — não havia como
+  mover um documento entre pastas nem tocar nas pastas pela barra lateral. `move_file` reaproveita o
+  `unique_path` (nunca sobrescreve: vira `nome-1.ext`) e trata o caso de a pasta de destino ser a
+  mesma (devolve o caminho sem tocar no disco). `delete_folder` lê a pasta antes: com qualquer
+  entrada, recusa — um documento nunca é apagado por um clique em "excluir pasta". `rename_folder`
+  mantém a pasta-mãe e limpa o nome pelo mesmo saneamento; o `create_folder` passou a usar o helper
+  em vez de repetir o mapa de caracteres.
+
+## src-tauri/src/commands/projects.rs
+
+### 2026-10-15 · esta tarefa · pastas vazias na árvore
+- **Local:** `scan_markdown` (ramo `kind.is_dir()`)
+- **Linha:** `if !children.is_empty() { dirs.push(...) }` → `dirs.push(...)` (sempre)
+- **Porquê:** a árvore escondia pasta sem documento — mas agora o usuário **cria** uma pasta vazia e
+  precisa vê-la para arrastar um documento para dentro. `assets/` e as pastas de build continuam
+  fora pela lista de nomes ignorados. O teste da árvore passou a esperar a pasta "Vazia".
+
+## src-tauri/src/commands/tests.rs
+
+### 2026-10-15 · esta tarefa · testes de mover/renomear/excluir
+- **Local:** `use super::files::{...}` + três testes novos
+- **Linha:** `+ move_documento_entre_pastas_sem_sobrescrever`, `+ renomeia_pasta_sem_sobrescrever`,
+  `+ exclui_pasta_apenas_quando_vazia`; o teste da árvore virou
+  `a_arvore_do_projeto_lista_as_pastas_e_esconde_o_resto`
+- **Porquê:** prender no `cargo test` o contrato de não sobrescrever, de a pasta com documentos ir
+  junto no rename e de o delete recusar pasta cheia — as três regras de segurança do comando.
+
+## src-tauri/src/lib.rs
+
+### 2026-10-15 · esta tarefa · registro dos comandos
+- **Local:** `invoke_handler` (`generate_handler!`)
+- **Linha:** `+ commands::files::{rename_folder, delete_folder, move_file}`
+- **Porquê:** sem o registro, o `invoke` do frontend falha ("command not found").
+
+## src/files.ts
+
+### 2026-10-15 · esta tarefa · pontes novas
+- **Local:** depois de `renameFile`
+- **Linha:** `+ moveFile(from, toDir)`, `+ renameFolder(from, to)`, `+ deleteFolder(path)`
+- **Porquê:** é a ponte única com os comandos do Tauri (o resto do app não chama `invoke` direto).
+
+## src/app/projects.ts (novo)
+
+### 2026-10-15 · esta tarefa · ações de pasta e mover documento
+- **Local:** arquivo inteiro (`newFolderIn`, `renameFolderAt`, `deleteFolderAt`,
+  `confirmarExcluirPasta`, `moveDoc`, `renomearCaminhos`)
+- **Linha:** novo arquivo
+- **Porquê:** a barra lateral só desenha; as ações que mexem no disco e no estado do app (abas,
+  recentes, histórico de versões) precisam de um módulo do `app/`, como `trash.ts`. `moveDoc` salva
+  antes de mover (`saveTabsFor`), remapeia o caminho da aba (com `moveHistory`/`moveCommits`),
+  atualiza recentes e abas fechadas, e avisa do `assets/` do Markdown (a pasta de imagens é
+  compartilhada e fica para trás). `renomearCaminhos` faz o mesmo para uma pasta inteira renomeada.
+
+## src/app/app.ts
+
+### 2026-10-15 · esta tarefa · ligações da barra lateral
+- **Local:** import + objeto passado ao `new Sidebar(...)` + `type ProjectsMethodsType` +
+  `interface App` + `Object.assign`
+- **Linha:** `+ import { projectsMethods }` e `+ newFolder/renameFolder/deleteFolder/moveDoc` nos hooks
+- **Porquê:** a sidebar fala com o app por hooks (não importa o `App`): cada ação nova ganhou o seu. O
+  mixin `projectsMethods` segue a receita de um arquivo por assunto.
+
+## src/sidebar.ts
+
+### 2026-10-15 · esta tarefa · trilha de caminho, pastas e arrastar-e-soltar
+- **Local:** `SidebarHooks`, o estado novo (`atual`, `historico`, `arrastando`, `pastilha`) e os
+  métodos `renderCrumbs`, `definirAtual`, `voltar`, `irPara`, `focarPasta`, `abrirAncestrais`,
+  `scrollPara`, `realcarAtual`, `projetoDe`, `nosDe`, `nomesDePastas`, `resumoDe`, `repathPrefix`,
+  `forgetFolder`, `menuDePasta`, `removerProjeto`, `botaoNovaSub`, `iniciarArrasto`,
+  `elementoPastaEm`, `realcarAlvo`, `soltarArrasto`, `cancelarArrasto`, `criarPastilha`,
+  `moverPastilha`, `limparAlvos`
+- **Linha:** as linhas das pastas ganharam `data-path` e o botão "nova pasta"; as linhas de documento
+  ganharam `pointerdown` (arrasto manual); o clique numa pasta passou a chamar `definirAtual`; o menu
+  de contexto virou `menuDePasta`
+- **Porquê:** é onde a árvore é desenhada — a trilha e o arrasto são comportamento de apresentação. O
+  `historico` guarda as pastas visitadas para o Voltar; `projetoDe` descobre a qual projeto a pasta
+  em foco pertence (para montar a trilha). O arrasto é feito com **eventos de ponteiro**, não com o
+  *drag and drop* do HTML5: o `dragDropEnabled` do Tauri (que traz o "soltar um arquivo do sistema")
+  desliga o DnD do HTML5 no Windows — então o gesto é manual, com limiar de 5 px para não confundir
+  com o clique que abre o documento. `limparAlvos`/`realcarAlvo` usam `elementFromPoint`, e a
+  pastilha que segue o ponteiro tem `pointer-events: none` para não roubar o ponto. O `renderCrumbs`
+  é chamado no início do `renderProjects`, então qualquer redesenho mantém a trilha em dia.
+  **Renomear/Excluir pasta** só aparecem nas subpastas: na pasta do projeto, renomear mudaria o
+  caminho que o projeto guarda e excluir apagaria a pasta do usuário — ali a ação é "Remover da
+  lista".
+
+## index.html
+
+### 2026-10-15 · esta tarefa · trilha + ícones
+- **Local:** sprite SVG + o painel `#sp-projects`
+- **Linha:** `+ <symbol i-back>` e `<symbol i-edit>`; `+ <div class="pj-crumbs">` (botão Voltar +
+  `nav#proj-path`)
+- **Porquê:** a trilha mora acima da árvore, dentro do painel Projetos; os dois ícones novos são o
+  Voltar (seta) e o Renomear (lápis) — não havia nenhum dos dois no sprite.
+
+## src/styles/workspace.css
+
+### 2026-10-15 · esta tarefa · estilos da trilha e do arrasto
+- **Local:** depois do bloco `.pj-more`
+- **Linha:** `+ .pj-crumbs/.pj-back/.pj-path/.pj-crumb/.pj-crumb-sep`, `+ .pj-folder.atual/.pj-sub.atual`,
+  `+ .pj-solta`, `+ .pj-doc.arrastando`, `+ body.arrastando-doc/.pj-arrasto` (a pastilha que segue o
+  ponteiro) e a regra que mostra o "nova pasta" no hover da pasta
+- **Porquê:** a trilha precisa rolar na horizontal sem estourar a largura da barra (`min-width: 0` +
+  overflow); o realce da pasta em foco usa a mesma linguagem da aba ativa (barra de acento à
+  esquerda); o alvo do arrasto acende com o acento; a pastilha é `position: fixed` com
+  `pointer-events: none` (não pode roubar o `elementFromPoint` que descobre a pasta sob o ponteiro);
+  e o botão de nova pasta só aparece no hover, como o "⋯" dos documentos (não compete com o nome).
+
+## src/styles/cantos.css
+
+### 2026-10-15 · esta tarefa · cantos da trilha
+- **Local:** tier 1 (controles pequenos)
+- **Linha:** `+ .pj-sub, .pj-back, .pj-crumb, .pj-crumb-sep`
+- **Porquê:** o modo "quadrado" aperta os raios por lista curada — sem entrar na lista, a trilha
+  ficaria com canto redondo em meio a uma interface quadrada.
+
+## scripts/testar-salvamento.mts
+
+### 2026-10-15 · esta tarefa · comandos async e novos comandos
+- **Local:** a lista de comandos `async` de `files.rs`
+- **Linha:** `+ rename_folder/delete_folder/move_file` e `7` → `11` no total
+- **Porquê:** o teste existe para impedir que um comando de I/O volte para a thread principal; os três
+  novos nascem `async`, então entram na conta. O valor estava **desatualizado** (dizia 7, mas o
+  `preview_file` já era `async` há tempos: eram 8) — a conta foi acertada de uma vez.

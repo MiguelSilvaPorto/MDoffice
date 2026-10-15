@@ -131,18 +131,26 @@ pub fn rename_file(from: String, to: String) -> Result<String, String> {
     Ok(target.to_string_lossy().to_string())
 }
 
-/// Cria uma subpasta (e devolve o caminho dela).
-#[tauri::command(async)]
-pub fn create_folder(parent: String, name: String) -> Result<String, String> {
-    let clean: String = name
-        .trim()
+/// Limpa o nome de uma pasta: separadores e caracteres inválidos viram "-" (como no `rename_file`).
+fn nome_pasta_seguro(name: &str) -> String {
+    name.trim()
         .chars()
         .map(|c| match c {
             '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '-',
             c => c,
         })
-        .collect();
-    if clean.is_empty() || clean == "." || clean == ".." {
+        .collect::<String>()
+        .trim()
+        .trim_matches('.')
+        .trim()
+        .to_string()
+}
+
+/// Cria uma subpasta (e devolve o caminho dela).
+#[tauri::command(async)]
+pub fn create_folder(parent: String, name: String) -> Result<String, String> {
+    let clean = nome_pasta_seguro(&name);
+    if clean.is_empty() {
         return Err("Nome de pasta inválido.".to_string());
     }
     let target = Path::new(&parent).join(clean);
@@ -150,6 +158,91 @@ pub fn create_folder(parent: String, name: String) -> Result<String, String> {
         return Err("Já existe uma pasta com esse nome.".to_string());
     }
     fs::create_dir_all(&target).map_err(io_err)?;
+    Ok(target.to_string_lossy().to_string())
+}
+
+/// Renomeia uma pasta de projeto (mantendo a pasta-mãe) e devolve o caminho novo.
+/// O nome é limpo de caracteres inválidos e nunca sobrescreve uma pasta existente.
+#[tauri::command(async)]
+pub fn rename_folder(from: String, to: String) -> Result<String, String> {
+    let src = Path::new(&from);
+    if !src.is_dir() {
+        return Err("A pasta não foi encontrada.".to_string());
+    }
+    let atual = src
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
+    let clean = nome_pasta_seguro(&to);
+    if clean.is_empty() {
+        return Err("Nome de pasta inválido.".to_string());
+    }
+    if clean.eq_ignore_ascii_case(&atual) {
+        return Ok(from); // nada mudou
+    }
+    let parent = src
+        .parent()
+        .ok_or_else(|| "Pasta sem pasta-mãe.".to_string())?;
+    // não sobrescreve: ganha "-1", "-2"… se já houver uma pasta com o nome
+    let mut target = parent.join(&clean);
+    let mut i = 1;
+    while target.exists() {
+        target = parent.join(format!("{clean}-{i}"));
+        i += 1;
+    }
+    fs::rename(src, &target).map_err(io_err)?;
+    Ok(target.to_string_lossy().to_string())
+}
+
+/// Exclui uma pasta de projeto. Só apaga pasta **vazia** — documentos nunca saem por engano.
+#[tauri::command(async)]
+pub fn delete_folder(path: String) -> Result<(), String> {
+    let p = Path::new(&path);
+    if !p.is_dir() {
+        return Err("A pasta não foi encontrada.".to_string());
+    }
+    let mut entradas = fs::read_dir(p).map_err(io_err)?;
+    if entradas.next().is_some() {
+        return Err("A pasta não está vazia. Mova ou apague os documentos antes de excluí-la.".to_string());
+    }
+    fs::remove_dir(p).map_err(io_err)
+}
+
+/// Move o arquivo do documento para outra pasta (sem sobrescrever) e devolve o caminho novo.
+#[tauri::command(async)]
+pub fn move_file(from: String, to_dir: String) -> Result<String, String> {
+    let src = Path::new(&from);
+    if !src.is_file() {
+        return Err("O arquivo do documento não foi encontrado.".to_string());
+    }
+    let dir = PathBuf::from(&to_dir);
+    if !dir.is_dir() {
+        return Err("A pasta de destino não foi encontrada.".to_string());
+    }
+    // já está nessa pasta: nada a fazer (o arrasto pode ter voltado ao mesmo lugar).
+    // A comparação ignora maiúsculas porque no Windows `C:\A` e `c:\a` são a mesma pasta.
+    let mesma_pasta = src
+        .parent()
+        .map(|p| p.to_string_lossy().to_lowercase() == dir.to_string_lossy().to_lowercase())
+        .unwrap_or(false);
+    if mesma_pasta {
+        return Ok(from);
+    }
+    // guarda o conteúdo antes de mover, para o caminho novo já valer como conhecido
+    let conteudo = fs::read(src).ok();
+    if let Some(b) = &conteudo {
+        backup::note_disk_content(&from, b);
+    }
+    let nome = src
+        .file_name()
+        .ok_or_else(|| "Arquivo sem nome.".to_string())?;
+    let (stem, ext) = split_name(&nome.to_string_lossy());
+    let target = unique_path(&dir, &stem, &ext);
+    backup::forget_write(&from);
+    fs::rename(src, &target).map_err(io_err)?;
+    if let Some(b) = &conteudo {
+        backup::note_disk_content(&target.to_string_lossy(), b);
+    }
     Ok(target.to_string_lossy().to_string())
 }
 

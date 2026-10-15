@@ -14,7 +14,8 @@ de cada mudança de linha.
 
 Além dos módulos, o app tem recursos que valem para todos eles (abas, tela de Início,
 histórico de versões, backup em disco, lixeira de documentos, configurações, busca de
-comandos e modo foco) — esses ficam na categoria **Geral** do [changelog](../CHANGELOG.md).
+comandos, navegação e organização das pastas dos projetos e modo foco) — esses ficam na
+categoria **Geral** do [changelog](../CHANGELOG.md).
 
 A **tela de Início** mostra os arquivos recentes numa **grade de cartões**, cada um com uma
 **versão do documento** pré-carregada — o tipo dá a forma e o arquivo dá o conteúdo: **Word** e

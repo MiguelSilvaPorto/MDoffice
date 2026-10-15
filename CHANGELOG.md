@@ -1388,7 +1388,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Backend**
 
-- (nada no momento)
+- **Pastas e documentos mexidos pelo próprio app**: três comandos novos em `files.rs` — `move_file`
+  (move um documento para outra pasta **sem sobrescrever**: ganha `-1`, `-2`… se o nome já existir),
+  `rename_folder` (renomeia a pasta mantendo a pasta-mãe, também sem sobrescrever) e `delete_folder`
+  (exclui **apenas pasta vazia** — um documento nunca sai por engano). O `create_folder` passou a
+  reaproveitar o mesmo saneamento de nome. A árvore de projetos (`list_markdown`) agora inclui as
+  **pastas vazias**: é onde se cria uma pasta nova e para onde se arrasta um documento logo depois.
 
 **Frontend**
 
@@ -1437,7 +1442,21 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   de **número** (tamanho) não sugerem — ali o valor é livre e a lista é atalho. 8 checagens novas em
   `npm run test:layout`.
 
+- **Pastas dos projetos: navegar, organizar e mover documentos sem sair do app**: o painel
+  **Projetos** ganhou uma **trilha de caminho** (projeto › subpasta › subpasta) com **botão Voltar**
+  que percorre as pastas visitadas; clicar num nível da trilha abre a árvore até ele. Dá para
+  **criar uma pasta** (botão que aparece na linha da pasta ou "Nova pasta aqui" no clique direito) e
+  **renomear**/**excluir** as subpastas (só pasta vazia, com confirmação) — tudo pela própria barra
+  lateral. E **mover um documento** é **arrastar a linha dele e soltar em cima da pasta de destino**:
+  o app salva o que estiver aberto, move o arquivo, acerta a aba, os recentes e o histórico de
+  versões, e avisa quando o documento é Markdown com imagens em `assets/` (elas ficam na pasta
+  antiga). A pasta em foco ganha realce e a de destino abre sozinha depois do arrasto.
+
 **Ferramentas (dev)**
+
+- `npm run test:salvamento` confere os três comandos novos de `files.rs` (a conta de comandos
+  `async` passou de 7 para 11: o valor antigo já estava desatualizado); o `cargo test` cobre mover
+  entre pastas, renomear pasta e recusar excluir pasta com conteúdo.
 
 ### Adicionado (na main)
 
