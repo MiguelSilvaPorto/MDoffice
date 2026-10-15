@@ -261,6 +261,7 @@ function previaTransicao(tipo: TransicaoTipo): string {
 const ABAS = [
   { id: "inicio", nome: "Página Inicial" },
   { id: "inserir", nome: "Inserir" },
+  { id: "desenhar", nome: "Desenhar" },
   { id: "formato", nome: "Formato da Forma" },
   { id: "tabela", nome: "Layout da Tabela" },
   { id: "transicoes", nome: "Transições" },
@@ -307,6 +308,7 @@ export class Fita {
       <div class="ppr-paineis">
         <div class="ppr-painel" data-painel="inicio">${this.inicio()}</div>
         <div class="ppr-painel" data-painel="inserir" hidden>${this.inserir()}</div>
+        <div class="ppr-painel" data-painel="desenhar" hidden>${this.desenhar()}</div>
         <div class="ppr-painel" data-painel="formato" hidden>${this.formato()}</div>
         <div class="ppr-painel" data-painel="tabela" hidden>${this.tabela()}</div>
         <div class="ppr-painel" data-painel="transicoes" hidden>${this.transicoes()}</div>
@@ -476,12 +478,58 @@ export class Fita {
            ${pequeno("forma-rapida:0", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[0], 18)}</span>`, "Linha", "Desenhar uma linha")}
            ${pequeno("forma-rapida:1", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[1], 18)}</span>`, "Seta", "Desenhar uma seta")}
            ${pequeno("forma-rapida:3", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[3], 18)}</span>`, "Conector", "Desenhar um conector angular")}
-         </div>
-         <div class="ppr-col">
-           ${pequeno("ferramenta:curva", ic("i-curve"), "Curva", "Curva por pontos: clique para marcar pontos de parada (duplo-clique termina, clique no início fecha)")}
          </div>`
       ),
-      grupo("Desenho", `${grande("desenho", ic("i-draw"), "Draw", "Desenho à mão e por pontos: rabisque ou marque pontos de parada (Esc sai)")}`),
+    ].join("");
+  }
+
+  /**
+   * Aba Desenhar: tudo o que é traço num lugar só — as canetas (Draw e Curva, que saíram do
+   * Inserir), o pincel (cor, espessura, Livre/Pontos e Assistente, o MESMO estado da barrinha
+   * flutuante) e as formas para desenhar arrastando. O diagrama fica como atalho.
+   */
+  private desenhar(): string {
+    return [
+      grupo(
+        "Canetas",
+        `${grande("desenho", ic("i-draw"), "Draw", "Desenho à mão: rabisque na lâmina (Esc sai)")}
+         ${grande("ferramenta:curva", ic("i-curve"), "Curva", "Curva por pontos: clique para marcar os pontos (duplo-clique termina, clique no início fecha)")}`
+      ),
+      grupo(
+        "Traço",
+        `${btn("pincel:cor", `${ic("i-draw")}<span class="ppr-barra" data-barra="pincel-cor"></span>`, "Cor do traço", "fmt cor", true)}
+         <div class="ppr-col">
+           ${btn("pincel:w:1", "1", "Traço fino (1 pt)", "txt")}
+           ${btn("pincel:w:2", "2", "Traço médio (2 pt)", "txt")}
+           ${btn("pincel:w:4", "4", "Traço grosso (4 pt)", "txt")}
+           ${btn("pincel:w:8", "8", "Traço bem grosso (8 pt)", "txt")}
+         </div>
+         <div class="ppr-col">
+           ${btn("pincel:modo:livre", "Livre", "Traço livre: arraste para rabiscar", "txt")}
+           ${btn("pincel:modo:pontos", "Pontos", "Curva por pontos: clique para marcar pontos de parada", "txt")}
+         </div>
+         ${grande("pincel-assistente", ic("i-spark"), "Assistente", "Assistente: reconhece o traço e ajusta a forma (retângulo, retângulo arredondado, círculo, triângulo, linha e seta)")}`
+      ),
+      grupo(
+        "Formas",
+        `${grande("galeria", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[5], 30)}</span>`, "Formas", "Escolha uma forma e desenhe na lâmina", true)}
+         <div class="ppr-col">
+           ${pequeno("forma-rapida:5", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[5], 18)}</span>`, "Retângulo", "Desenhar um retângulo")}
+           ${pequeno("forma-rapida:6", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[6], 18)}</span>`, "Retângulo arredondado", "Desenhar um retângulo arredondado")}
+           ${pequeno("forma-rapida:12", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[12], 18)}</span>`, "Elipse", "Desenhar uma elipse")}
+           ${pequeno("forma-rapida:13", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[13], 18)}</span>`, "Triângulo", "Desenhar um triângulo")}
+         </div>
+         <div class="ppr-col">
+           ${pequeno("forma-rapida:0", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[0], 18)}</span>`, "Linha", "Desenhar uma linha")}
+           ${pequeno("forma-rapida:1", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[1], 18)}</span>`, "Seta", "Desenhar uma seta")}
+           ${pequeno("forma-rapida:3", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[3], 18)}</span>`, "Conector", "Desenhar um conector angular")}
+         </div>`
+      ),
+      grupo(
+        "Diagrama",
+        `${grande("mermaid-fluxo", ic("i-flow"), "Fluxo do Mermaid", "Cole um flowchart e o app cria os cartões ligados por conectores de cantos suaves")}
+         ${grande("conectar", ic("i-link"), "Conectar", "Ligue duas formas: clique na bolinha da borda de uma e na da outra (Esc sai)")}`
+      ),
     ].join("");
   }
 
@@ -728,6 +776,8 @@ export class Fita {
     if (cmd.startsWith("layout:")) this.hooks.run("layout", cmd.slice(7));
     else if (cmd.startsWith("forma-rapida:")) this.hooks.run("forma-inserir", cmd.slice(13));
     else if (cmd.startsWith("ferramenta:")) this.hooks.run("ferramenta", cmd.slice(11));
+    else if (cmd.startsWith("pincel:w:")) this.hooks.run("pincel-w", cmd.slice(9));
+    else if (cmd.startsWith("pincel:modo:")) this.hooks.run("pincel-modo", cmd.slice(12));
     else if (cmd.startsWith("midia:")) this.hooks.run("midia", cmd.slice(6));
     else if (cmd.startsWith("estilo-cor:")) this.hooks.run("estilo-cor", cmd.slice(11));
     else if (cmd.startsWith("estilo:")) this.hooks.run("estilo", cmd.slice(7));
@@ -880,6 +930,10 @@ export class Fita {
         abrirCores(ancora, { atual: est.trecho && est.trecho.color !== "misto" ? est.trecho.color : null, paleta: est.paleta, titulo: "Cor da fonte" }, (c) => {
           if (c) run("cor-texto", c);
         });
+        return;
+      case "pincel:cor":
+        // a mesma paleta do pincel (a da barrinha flutuante), aqui na fita
+        abrirCores(ancora, { atual: est.pincel.cor, paleta: est.paleta, titulo: "Cor do traço" }, (c) => run("pincel-cor", c ?? ""));
         return;
       case "marca-texto":
         abrirCores(
@@ -1236,6 +1290,16 @@ export class Fita {
     // a dica (o clique mudo era o que parecia "botão que não abre"). Os de ordem continuam mudos.
     for (const c of ["ordem", "z-topo", "z-fundo", "z-frente", "z-tras"]) dis(c, !tem);
     for (const b of this.el.querySelectorAll<HTMLElement>("[data-layout]")) b.classList.toggle("on", b.dataset.layout === st.layout);
+
+    // aba Desenhar: as canetas acesas e o pincel (cor, espessura, modo e assistente)
+    on("desenho", st.ferramenta?.tipo === "desenho");
+    on("ferramenta:curva", st.ferramenta?.tipo === "curva");
+    on("pincel-assistente", st.pincel.assistente);
+    for (const w of [1, 2, 4, 8]) on(`pincel:w:${w}`, st.pincel.w === w);
+    on("pincel:modo:livre", st.pincel.modo === "livre");
+    on("pincel:modo:pontos", st.pincel.modo === "pontos");
+    const barraPincel = this.el.querySelector<HTMLElement>('[data-barra="pincel-cor"]');
+    if (barraPincel) barraPincel.style.background = `#${st.pincel.cor}`;
 
     // aba Transições: tipo, direção, duração e a prévia
     const tr = st.transicao;

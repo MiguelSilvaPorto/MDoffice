@@ -1819,5 +1819,74 @@ console.log("\nPowerPoint: o painel lateral se encaixa (abas e janela estreita)"
   );
 }
 
+console.log("\naba Desenhar: as ferramentas de traço num lugar só");
+{
+  const fita = ler("src/powerpoint/ui/fita.ts");
+  const ppt = ler("src/powerpoint/powerpoint.ts");
+  const estado = ler("src/powerpoint/ui/estado.ts");
+  checa(
+    "a fita ganhou a aba Desenhar logo depois de Inserir",
+    /\{ id: "inserir", nome: "Inserir" \},\r?\n\s*\{ id: "desenhar", nome: "Desenhar" \}/.test(fita) && /data-painel="desenhar" hidden>\$\{this\.desenhar\(\)\}/.test(fita),
+    "aba ou painel ausentes"
+  );
+  checa(
+    "as canetas (Draw e Curva) moram na aba",
+    /private desenhar\(\): string/.test(fita) &&
+      /grupo\(\r?\n\s*"Canetas",[\s\S]{0,400}grande\("desenho", ic\("i-draw"\)/.test(fita) &&
+      /grande\("ferramenta:curva", ic\("i-curve"\)/.test(fita)
+  );
+  checa(
+    "Draw e Curva SAÍRAM do Inserir",
+    !/grupo\("Desenho",/.test(fita) && !/pequeno\("ferramenta:curva"/.test(fita),
+    "o botão antigo do Inserir ficaria duplicado"
+  );
+  checa(
+    "o Traço traz cor, espessuras, Livre/Pontos e o Assistente",
+    /btn\("pincel:cor",[\s\S]{0,120}data-barra="pincel-cor"/.test(fita) &&
+      /btn\("pincel:w:1"/.test(fita) &&
+      /btn\("pincel:w:8"/.test(fita) &&
+      /btn\("pincel:modo:livre"/.test(fita) &&
+      /btn\("pincel:modo:pontos"/.test(fita) &&
+      /grande\("pincel-assistente"/.test(fita)
+  );
+  checa(
+    "a cor do traço abre a mesma paleta do pincel",
+    /case "pincel:cor":[\s\S]{0,220}abrirCores\(ancora,[\s\S]{0,120}titulo: "Cor do traço"[\s\S]{0,80}run\("pincel-cor"/.test(fita),
+    "sem a paleta o botão não escolhe cor"
+  );
+  checa(
+    "os comandos do pincel chegam ao host com o valor certo",
+    /cmd\.startsWith\("pincel:w:"\)\) this\.hooks\.run\("pincel-w", cmd\.slice\(9\)\)/.test(fita) &&
+      /cmd\.startsWith\("pincel:modo:"\)\) this\.hooks\.run\("pincel-modo", cmd\.slice\(12\)\)/.test(fita)
+  );
+  checa(
+    "o host mexe no MESMO estado do pincel (aba e barrinha juntas)",
+    /case "pincel-cor":/.test(ppt) &&
+      /case "pincel-w":/.test(ppt) &&
+      /case "pincel-modo":/.test(ppt) &&
+      /case "pincel-assistente":/.test(ppt) &&
+      /private atualizarPincel\(\): void \{\r?\n\s*\/\/ a aba Desenhar mostra o mesmo estado: atualiza os botões dela junto com a barrinha\r?\n\s*this\.fita\.atualizar\(\)/.test(ppt),
+    "sem isso a aba e a barrinha divergem"
+  );
+  checa(
+    "o estado do pincel chega à fita (cor, espessura, modo, assistente)",
+    /pincel: \{ cor: string; w: number; modo: "livre" \| "pontos"; assistente: boolean \}/.test(estado) &&
+      /pincel: \{ cor: this\.pincelUsado\(\)\.cor, w: this\.pincel\.w, modo:/.test(ppt)
+  );
+  checa(
+    "os botões da aba acendem com o estado",
+    /on\("desenho", st\.ferramenta\?\.tipo === "desenho"\)/.test(fita) &&
+      /on\("ferramenta:curva", st\.ferramenta\?\.tipo === "curva"\)/.test(fita) &&
+      /on\("pincel-assistente", st\.pincel\.assistente\)/.test(fita) &&
+      /for \(const w of \[1, 2, 4, 8\]\) on\(`pincel:w:\$\{w\}`, st\.pincel\.w === w\)/.test(fita) &&
+      /barraPincel\.style\.background = `#\$\{st\.pincel\.cor\}`/.test(fita)
+  );
+  checa(
+    "a aba também traz as formas para desenhar arrastando",
+    /grupo\(\r?\n\s*"Formas",[\s\S]{0,900}forma-rapida:5[\s\S]{0,900}forma-rapida:13/.test(fita),
+    "sem as formas rápidas a aba só teria caneta"
+  );
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

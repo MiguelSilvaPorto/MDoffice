@@ -9108,6 +9108,7 @@ antigas quando fizer sentido.
 - **Linha:** `novo`
 - **Porquê:** defeito de interface do módulo PowerPoint; a entrada entra já promovida, como o
   fechamento exige.
+
 ## src/powerpoint/ui/layoutPreview.ts
 
 ### 2026-10-15 · o "+" do card abre a galeria · o helper da galeria
@@ -9217,3 +9218,47 @@ antigas quando fizer sentido.
   de apagar as sobras, as cinco fecharam em 1. A conferência também olhou os cinco commits no
   `git log` da `main` e a ausência de promoções em voo (`git log --all --not main --grep promove`)
   antes de tocar em qualquer linha.
+
+## src/powerpoint/ui/fita.ts · src/powerpoint/powerpoint.ts · src/powerpoint/ui/estado.ts
+
+### 2026-10-15 · esta tarefa · a aba Desenhar na fita
+- **Local:** `fita.ts` — `ABAS`, o painel novo e `private desenhar()`; `powerpoint.ts` — os casos
+  `pincel-cor`/`pincel-w`/`pincel-modo`/`pincel-assistente` e o `atualizarPincel` avisando a fita;
+  `estado.ts` — `EstadoUI.pincel`
+- **Linha:** `+ { id: "desenhar", nome: "Desenhar" }` (logo depois de Inserir);
+  `+ <div class="ppr-painel" data-painel="desenhar" hidden>${this.desenhar()}</div>`;
+  `+ case "pincel-cor": … this.pincel.cor = …; gravarPincel(this.pincel); this.atualizarPincel();`;
+  `+ pincel: { cor: this.pincelUsado().cor, w: this.pincel.w, modo: …, assistente: … }` no `estadoUI()`
+- **Porquê:** o Draw estava espalhado — o botão no Inserir e os ajustes só na barrinha que aparece
+  **depois** de ligar o lápis: quem não conhecia a barrinha não descobria cor, espessura, modo nem
+  assistente. A referência (DeckCraft) tem uma aba **Draw** e o `docs/paridade-deckcraft.md` marcava
+  a fita como parcial por causa disso; a aba resolve a descoberta e dá um lugar para as ferramentas
+  de tinta da próxima entrega. **Draw e Curva saíram do Inserir** para não existirem em dois lugares
+  (Inserir é para inserir objetos; desenhar tem aba própria), e Formas/Mermaid/Conectar ficaram como
+  **atalho** na aba nova **sem sair** do Inserir — esses são inserção. O pincel é **um estado só**:
+  a aba e a barrinha chamam os mesmos comandos e o `atualizarPincel()` avisa a fita
+  (`this.fita.atualizar()`), então os botões acendem junto com a barrinha — sem esse aviso a aba
+  mostraria uma cor/espessura velha depois de mexer na barrinha. O modo "Pontos" é do **palco**
+  (`stage.definirModoDesenho`), não do pincel: a aba chama o mesmo método da barrinha.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · esta tarefa · as travas da aba Desenhar
+- **Local:** seção "aba Desenhar" (10 checagens)
+- **Linha:** `novo` — a aba depois de Inserir, o painel, as canetas, a **saída** do Draw/Curva do
+  Inserir, os controles do Traço, a paleta da cor do traço, os prefixos do despacho
+  (`pincel:w:`/`pincel:modo:`), os casos do host, o estado chegando à fita e os botões acendendo
+- **Porquê:** a aba é fiação (fita ↔ host ↔ palco) e o modo de falha é silencioso: um prefixo com
+  `slice` errado, um `on()` sem o estado, ou o botão antigo ficando para trás no Inserir — os três
+  passam desapercebidos no uso e voltam numa simplificação. O teste de layout é onde a fita já é
+  presa (foi ele que prendeu o tamanho estável entre abas, por exemplo).
+
+## docs/powerpoint.md
+
+### 2026-10-15 · esta tarefa · a aba Desenhar no doc do módulo
+- **Local:** "Desenho à mão (Draw) e Curva por pontos" (o "onde encontrar") e "Interface do módulo"
+  (a lista de abas)
+- **Linha:** `na aba **Inserir**` → `na aba **Desenhar**`; a lista de abas ganhou **Desenhar**; o
+  parágrafo dos modos Livre/Pontos passou a dizer que a aba tem os mesmos controles (mesmo pincel)
+- **Porquê:** a tarefa muda o caminho para a ferramenta (o Inserir não tem mais o Draw) — quem lê o
+  doc precisa achar a aba; e a lista de abas é a referência rápida da fita do módulo.

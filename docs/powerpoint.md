@@ -206,7 +206,7 @@ avisado ao abrir (nunca some em silêncio).
 
 ## Desenho à mão (Draw) e Curva por pontos
 
-- Na aba **Inserir**, o botão **Draw** (grupo **Desenho à mão e por pontos**) liga o lápis: **rabisque na lâmina** e,
+- Na aba **Desenhar** (logo depois de Inserir), o botão **Draw** liga o lápis: **rabisque na lâmina** e,
   ao soltar, o assistente **refaz o traço por cima** com a forma exata — **retângulo, retângulo
   arredondado, elipse, triângulo, linha, seta e arco** — no mesmo lugar e tamanho, já como forma
   normal (editável, com medidas em cm e ida e volta no `.pptx`). O traço torto é **endireitado
@@ -229,14 +229,16 @@ avisado ao abrir (nunca some em silêncio).
   é diagonal de propósito (fora da tolerância de ~9°) fica como foi desenhado. Os trechos
   encaixados saem como **segmento reto** no caminho (não como curva): é o que impede a "barriga"
   que a cúbica fazia no meio do topo de um cartão mesmo com os pontos já alinhados.
-- **Modos Livre vs Pontos na barra do Pincel**: enquanto o lápis está ligado, a **barrinha do pincel** define
+- **Modos Livre vs Pontos na aba Desenhar e na barra do Pincel**: enquanto o lápis está ligado, a **barrinha do pincel** define
   **cor**, **espessura** (1, 2, 4 ou 8 pt), assistente, e agora permite alternar entre **[Livre]** (arraste para
   rabiscar) e **[Pontos]** (clique para posicionar nós de parada). No modo Livre, dar um clique pontual sem arrastar
-  também inicia a inserção de nós de parada automaticamente.
+  também inicia a inserção de nós de parada automaticamente. A aba **Desenhar** tem os mesmos controles
+  (cor, espessuras, **Livre/Pontos** e **Assistente**) antes de começar o traço — é o **mesmo pincel**: o que
+  se escolhe na aba aparece aceso na barrinha (e o contrário também).
 
 ### Curva por pontos de parada (ferramenta Curva e modo Pontos)
 
-- **Onde encontrar**: na aba **Inserir ▸ Linhas ▸ Curva** ou ativando **[Pontos]** na barra flutuante do Draw.
+- **Onde encontrar**: na aba **Desenhar ▸ Curva** ou ativando **[Pontos]** na aba/barrinha flutuante do Draw.
 - **Como funciona**: cada clique na lâmina adiciona um nó de controle de passagem. O caminho é interpolado
   em tempo real com spline suave $C^1$ (Catmull-Rom), garantindo contornos limpos e sem oscilações indesejadas.
 - **Fechamento suave**: ao aproximar o mouse do ponto inicial (marcado com halo verde pulsante), um clique fecha o
@@ -347,7 +349,7 @@ avisado ao abrir (nunca some em silêncio).
 
 ## Interface do módulo
 
-- **Fita** com abas (Página Inicial, Inserir, **Transições**, **Animações**, Design e Exibir;
+- **Fita** com abas (Página Inicial, Inserir, **Desenhar**, **Transições**, **Animações**, Design e Exibir;
   **Formato da Forma** e **Layout da Tabela** aparecem quando a seleção pede), recolhível e
   ajustável, com rolagem horizontal quando não cabe.
 - **Painel Formatar/Animação/Notas/Ideias/Arranjos** à direita: pode ser escondido, redimensionado

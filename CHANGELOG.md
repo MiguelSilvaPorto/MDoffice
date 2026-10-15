@@ -408,11 +408,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada no momento)
 
 **Frontend**
-- (nada no momento)
 
-
-
-
+- **Aba "Desenhar" na fita**: as ferramentas de traço ganharam o lugar próprio (como no PowerPoint de
+  verdade): **Canetas** (**Draw** e **Curva**, que **saíram do Inserir**), **Traço** (**cor** na
+  mesma paleta do pincel, espessuras **1/2/4/8**, **Livre/Pontos** e o **Assistente**), **Formas**
+  (a galeria + retângulo, retângulo arredondado, elipse, triângulo, linha, seta e conector para
+  desenhar arrastando) e **Diagrama** (Fluxo do Mermaid e Conectar). A aba mostra o **estado do
+  pincel** (botão aceso na cor/espessura/modo escolhidos) e mexe no **mesmo pincel** da barrinha
+  flutuante — o que se escolhe num lugar aparece no outro. Teste: `npm run test:layout`.
 
 ### Adicionado (na main)
 

@@ -72,7 +72,7 @@ correções simples de imagem e réguas.
 ## Application shell (10/11)
 
 - [x] **Start screen (new, templates/themes, recent)** — P0 · parcial: tela **Início** com os 4 formatos, recentes, rascunhos e busca; temas/modelos ficam dentro do editor (botão **Template** na fita do PowerPoint: 6 modelos + os do usuário)
-- [x] **Ribbon with Home/Insert/Draw/Design/Transitions/Animations/Slide Show/Review/View tabs** — P0 · parcial: fita com **8 abas** (Página Inicial, Inserir, **Transições**, **Animações**, Design e Exibir, mais **Formato da Forma** e **Layout da Tabela** quando a seleção pede); faltam Draw, Slide Show, Review e Record
+- [x] **Ribbon with Home/Insert/Draw/Design/Transitions/Animations/Slide Show/Review/View tabs** — P0 · parcial: fita com **9 abas** (Página Inicial, Inserir, **Desenhar**, **Transições**, **Animações**, Design e Exibir, mais **Formato da Forma** e **Layout da Tabela** quando a seleção pede); faltam Slide Show, Review e Record
 - [x] **Contextual tabs (Shape Format, Picture Format, Table Design/Layout, Chart Design)** — P0 · parcial: **Formato da Forma** e **Layout da Tabela** aparecem conforme a seleção; faltam Picture Format e Chart Design
 - [x] **Quick Access toolbar / title bar commands** — P1 · parcial: barra superior do app (novo, abrir, salvar, salvamento automático, desenhar, exportar, ⋯)
 - [ ] **Native menu bar (macOS) with every command** — P1 · falta (app Windows/Tauri; sem barra de menus nativa)
@@ -321,8 +321,11 @@ correções simples de imagem e réguas.
 
 ## Draw (0/2)
 
-- [ ] **Ink pens, highlighter, eraser** — P1 · falta no PowerPoint (o app tem desenho assistido no **Markdown**; não no slide)
-- [ ] **Ink to shape / text** — P2 · falta
+- [ ] **Ink pens, highlighter, eraser** — P1 · parcial: o slide tem **caneta (Draw)** e **curva por
+  pontos** na aba **Desenhar** (com assistente de forma, cor e espessura); faltam o **marca-texto**
+  e a **borracha** (o quadro do Markdown tem os dois)
+- [ ] **Ink to shape / text** — P2 · parcial: o assistente já **converte o traço em forma** ao
+  desenhar; falta converter um traço **já existente** (e tinta → texto)
 
 ## Undo & clipboard (2/3)
 

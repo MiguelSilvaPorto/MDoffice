@@ -1129,6 +1129,7 @@ export class PowerPointHost {
       temCopia: areaDeTransferencia.length > 0,
       zoom: this.stage.zoomAtual,
       ferramenta: this.ferramenta,
+      pincel: { cor: this.pincelUsado().cor, w: this.pincel.w, modo: this.ferramenta?.tipo === "curva" ? "pontos" : this.stage.obterModoDesenho(), assistente: this.pincel.assistente },
       fixas: this.fixas,
       encaixe: this.encaixe,
       grade: this.grade,
@@ -1320,6 +1321,8 @@ export class PowerPointHost {
 
   /** Mostra/esconde a barrinha do pincel e reflete cor, espessura e assistente. */
   private atualizarPincel(): void {
+    // a aba Desenhar mostra o mesmo estado: atualiza os botões dela junto com a barrinha
+    this.fita.atualizar();
     const barra = this.pane.querySelector<HTMLElement>("[data-pincel]");
     if (!barra) return;
     const ehDesenho = this.ferramenta?.tipo === "desenho";
@@ -2085,6 +2088,28 @@ export class PowerPointHost {
         this.atualizarPincel();
         this.stage.desenharSelecao();
         this.fita.atualizar();
+        return;
+      // ---- pincel do Draw: a aba Desenhar e a barrinha flutuante mexem no MESMO estado ----
+      case "pincel-cor": {
+        const est = this.estilo();
+        this.pincel.cor = String(value ?? "").trim() || est.acento;
+        gravarPincel(this.pincel);
+        this.atualizarPincel();
+        return;
+      }
+      case "pincel-w":
+        this.pincel.w = Number(value) || 2;
+        gravarPincel(this.pincel);
+        this.atualizarPincel();
+        return;
+      case "pincel-modo":
+        this.stage.definirModoDesenho(value === "pontos" ? "pontos" : "livre");
+        this.atualizarPincel();
+        return;
+      case "pincel-assistente":
+        this.pincel.assistente = !this.pincel.assistente;
+        gravarPincel(this.pincel);
+        this.atualizarPincel();
         return;
       case "image":
         this.destinoImagem = "inserir";
