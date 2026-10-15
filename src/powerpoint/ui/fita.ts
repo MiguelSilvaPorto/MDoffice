@@ -555,6 +555,10 @@ export class Fita {
            ${pequeno("forma-rapida:3", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[3], 18)}</span>`, "Conector", "Desenhar um conector angular")}
          </div>`
       ),
+      // O grupo Diagrama (Fluxo do Mermaid e Conectar) saiu daqui: as duas funções são de INSERÇÃO e
+      // já vivem na aba Inserir (o grupo Diagrama de lá) — repetir o mesmo comando em dois lugares
+      // só enche a fita. O grupo Formas FICA (e a outra sessão o deixou compacto, em grade): é
+      // desenho, não inserção — a galeria da aba traz a prévia da forma escolhida.
     ].join("");
   }
 

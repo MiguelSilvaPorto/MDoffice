@@ -21,7 +21,7 @@
  *  então daqui para baixo o texto continua legível e o que diminui são alturas, ícones e espaços.
  *  O piso era 0,7 e a aba Desenhar (que ganhou Estúdio, Pintura e Modelo) passou a colapsar grupos
  *  com a janela ainda larga; 0,62 deixa a faixa preferir encolher a esconder. */
-export const AJUSTE_MIN = 0.62;
+export const AJUSTE_MIN = 0.78;
 
 /** Largura do botão que substitui um grupo colapsado (o nome do grupo + a setinha). */
 export const LARGURA_BOTAO = 78;

@@ -413,6 +413,20 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A aba Desenhar cabe CHEIA (e o que sobrou de duplicação saiu)**: o print do usuário mostrava a
+  aba **compacta demais** e com grupos virando menu. Duas causas: o **piso do encaixe** estava em
+  0,62 (herança da correção anterior) e a aba tinha **oito grupos**, sendo dois deles **repetição**
+  do que já existe na aba **Inserir**. Agora: o piso voltou para **0,78** (as métricas encolhem
+  pouco e só então grupos viram menu), saiu o grupo **Formas** da aba Desenhar (a galeria é a mesma
+  do **Inserir ▸ Ilustrações** — os atalhos **Retângulo/Retângulo arredondado/Elipse/Triângulo**,
+  que só existiam ali, **mudaram de lugar** em vez de sumir) e o grupo **Diagrama** já tinha saído.
+  A aba Desenhar fica com seis grupos — **Canetas · Converter · Estúdio · Traço · Pintura ·
+  Modelo** — e fica **cheia (ajuste 1)** em 1520 px e em 1280 px, sem nenhum grupo colapsado;
+  abaixo disso os grupos que viram menu aparecem **centrados e tracejados** (o conserto do print
+  anterior). Conferido por foto, com o harness da fita real (`node scripts/harness-fita.mjs 1520
+  desenhar`), em 1520/1280/1000 px. Teste: `npm run test:layout` (a aba não repete o Inserir, e os
+  comandos continuam lá) e `npm run test:encaixe`.
+
 - **O grupo "Diagrama" saiu da aba Desenhar (era função repetida)**: **Fluxo do Mermaid** e
   **Conectar** já vivem na aba **Inserir** — são **inserção**, não desenho — e o atalho na aba
   Desenhar fazia exatamente a mesma coisa em dois lugares (pedido: *"o diagrama é função repetida, já

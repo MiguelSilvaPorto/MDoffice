@@ -124,9 +124,9 @@ console.log("\na fita: o grupo Estúdio na aba Desenhar");
 {
   const fita = ler("src/powerpoint/ui/fita.ts");
   ok(
-    "o grupo Estúdio entrou logo depois de Converter (o fluxo: caneta → converter → isolar)",
-    /grupo\(\s*"Converter",[\s\S]{0,400}?\),\s*grupo\(\s*"Estúdio",/m.test(fita),
-    "o grupo novo tem de estar na aba Desenhar"
+    "o grupo Estúdio vive na aba Desenhar (com o Isolar/Sair)",
+    /private desenhar\(\)[\s\S]*?grupo\(\s*"Estúdio",[\s\S]*?private tabela\(\)/.test(fita) && /grande\("estudio",/.test(fita),
+    "o grupo novo tem de estar na aba Desenhar (a posição entre os grupos é do layout, não desta checagem)"
   );
   ok("o botão é o comando `estudio`", /grande\("estudio",/.test(fita));
   ok(

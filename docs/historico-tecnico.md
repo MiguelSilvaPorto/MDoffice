@@ -12898,3 +12898,45 @@ antigas quando fizer sentido.
   as que seguem em "Não adicionado" (o grupo Diagrama, o "Selecionar tudo neste ponto", o Estúdio —
   Modelo e Camadas, a fita que não se recolhe) são de sessões com trabalho aberto — mexer nelas
   criaria duplicata ou conflito.
+
+## src/powerpoint/ui/fita.ts · src/fitaEncaixe.ts · scripts/harness-fita.mjs
+
+### 2026-10-15 · a aba Desenhar CHEIA (o piso do encaixe e a duplicação que sobrou)
+
+- **Local:** `desenhar()` (o grupo "Formas") e o `inserir()` (grupo "Ilustrações", que recebeu os
+  atalhos de forma); `AJUSTE_MIN`; o harness novo
+- **Linha:** `- grupo("Formas", …)` na aba Desenhar e `+` o bloco `.ppr-col` com
+  `forma-rapida:5/6/12/13` no grupo **Ilustrações** do Inserir; `AJUSTE_MIN = 0.62` → `0.78`;
+  `+ scripts/harness-fita.mjs` (novo)
+- **Porquê:** o relato veio com dois prints e um pedido explícito ("fique abrindo o app e tirando
+  foto dessa parte até ajustar"). A foto do harness — a `Fita` **real** com o CSS **real**, num
+  Chrome headless — deu os números que o olho não dá: `ajuste=0,62 · degrau=compacto · colapsados=3`
+  com oito grupos. Com o **Diagrama** fora (tarefa anterior) e o **Formas** COMPACTO (a outra sessão
+  o juntou numa grade, `.ppr-formas-rapidas`), a aba passou a
+  caber **cheia** (`ajuste=1 · degrau=cheio · colapsados=0`) em **1520 px e em 1280 px**; a 1000 px
+  sobram dois menus de grupo, que é o degrau certo para aquela largura. Sobre o `Formas`: a
+  **galeria** era a mesma do `Inserir ▸ Ilustrações`, mas os **atalhos de forma** (retângulo,
+  arredondado, elipse, triângulo) **só existiam ali** — por isso eles **mudaram de lugar** em vez de
+  sumir: tirar duplicação não pode tirar função (o teste novo prende os dois lados: a aba Desenhar
+  não repete o Inserir **e** os comandos continuam no Inserir). O piso 0,62 tinha sido uma correção
+  apressada (para a faixa "preferir encolher a esconder"): resolvia o colapso ao custo de deixar
+  **tudo pequeno** — o certo era tirar da aba o que não precisava estar lá. O **harness fica no
+  repositório** (`scripts/harness-fita.mjs <largura> [aba]`): monta a fita real, aplica o encaixe e
+  fotografa com o Chrome headless, com os números (`ajuste`, `degrau`, `colapsados`) impressos na
+  própria foto — é o instrumento que faltava para discutir aparência sem depender de captura manual.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · a aba Desenhar CHEIA · uma checagem antiga virou duas
+
+- **Local:** a seção "aba Desenhar" — a checagem "a aba também traz as formas para desenhar
+  arrastando"
+- **Linha:** `~` a checagem passou a exigir o contrário (a aba **não** repete o que é da Inserir:
+  sem grupo "Formas", sem `forma-rapida:` e sem "Diagrama"), e entrou a companheira ("os comandos
+  continuam na fita, na aba Inserir"), com os corpos de cada aba recortados do arquivo
+  (`private desenhar()` / `private inserir()`)
+- **Porquê:** a checagem antiga prendia a regra da tarefa que criou a aba ("a aba reúne o que se
+  desenha, inclusive formas"), e a regra mudou por pedido do usuário (a duplicação é o que enchia
+  a fita). Ela não foi afrouxada: virou **duas** — uma negando a repetição na aba, outra exigindo
+  que o comando exista no Inserir —, porque o risco real é o de hoje: tirar a duplicação e
+  **apagar** uma função junto (foi o que aconteceu com os atalhos de forma antes do ajuste).

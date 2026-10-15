@@ -2500,10 +2500,18 @@ console.log("\naba Desenhar: as ferramentas de traço num lugar só");
       /for \(const w of \[1, 2, 4, 8\]\) on\(`pincel:w:\$\{w\}`, st\.pincel\.w === w\)/.test(fita) &&
       /barraPincel\.style\.background = `#\$\{st\.pincel\.cor\}`/.test(fita)
   );
+  // o corpo de cada aba (as checagens olham a ABA, não o arquivo inteiro: o mesmo comando vive no Inserir)
+  const corpoDesenhar = fita.slice(fita.indexOf("private desenhar()"), fita.indexOf("private tabela()"));
+  const corpoInserir = fita.slice(fita.indexOf("private inserir()"), fita.indexOf("private desenhar()"));
   checa(
-    "a aba também traz as formas para desenhar arrastando",
-    /grupo\(\r?\n\s*"Formas",[\s\S]{0,900}forma-rapida:5[\s\S]{0,900}forma-rapida:13/.test(fita),
-    "sem as formas rápidas a aba só teria caneta"
+    "a aba Desenhar NÃO repete o que é da Inserir (o diagrama saiu daqui)",
+    !/grupo\(\r?\n\s*"Diagrama",/.test(corpoDesenhar) && !/mermaid-fluxo/.test(corpoDesenhar),
+    "o atalho de Mermaid/Conectar repetia o grupo Diagrama do Inserir e enchia a fita"
+  );
+  checa(
+    "e os comandos continuam na fita, na aba Inserir (mudança de LUGAR, não de existência)",
+    /mermaid-fluxo/.test(corpoInserir) && /grupo\(\r?\n\s*"Diagrama",/.test(corpoInserir) && /forma-rapida:0/.test(corpoInserir) && /forma-rapida:5/.test(corpoDesenhar),
+    "o Fluxo do Mermaid tem de continuar no Inserir, e as formas rápidas na aba Desenhar"
   );
   checa(
     "a prévia do traço é o mesmo desenho do final (pt e suave, com o encaixe do assistente)",
