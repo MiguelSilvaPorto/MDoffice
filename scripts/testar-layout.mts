@@ -530,6 +530,32 @@ console.log("\nPowerPoint: a fita métrica mostra a medida enquanto arrasta");
       /\.pp-medida\s*\{[^}]*color:\s*var\(--fg\)/s.test(cssMedida),
     "com pointer-events o balão bloquearia o gesto; com cor fixa ficaria ilegível no escuro"
   );
+  checa(
+    "todo elemento do overlay entra na limpeza (senão empilha a cada quadro)",
+    (() => {
+      const i = palcoPpt.indexOf("desenharSelecao(): void {");
+      const f = palcoPpt.indexOf("\n  private ", i);
+      const trecho = i >= 0 && f > i ? palcoPpt.slice(i, f) : "";
+      const limpeza = /const SELETOR_DO_OVERLAY = "([^"]+)"/.exec(palcoPpt)?.[1] ?? "";
+      // Fora da conta: as que vivem DENTRO de outra (somem com o pai), a que divide a tag de uma que
+      // já está na lista e a `pp-texto-um` (classe do próprio div da lâmina, não um elemento).
+      const fora = new Set([
+        "pp-alca",
+        "pp-gira",
+        "pp-gira-haste",
+        "pp-canto",
+        "pp-canto-dica",
+        "pp-canto-nome",
+        "pp-canto-hud",
+        "pp-mover",
+        "pp-curva-preview",
+        "pp-texto-um",
+      ]);
+      const achadas = [...new Set([...trecho.matchAll(/pp-[a-z-]+/g)].map((m) => m[0]))].filter((c) => !fora.has(c));
+      return trecho.length > 0 && limpeza.length > 0 && achadas.every((c) => limpeza.includes(c));
+    })(),
+    "um elemento desenhado pelo palco não seria apagado no próximo redesenho — foi assim que o leque da curva (e o balão da medida) apareceram"
+  );
 }
 
 // 6. Boas-vindas: o logo é o ÍCONE DO APP (o mesmo da janela), não o "M↓" num quadradinho.

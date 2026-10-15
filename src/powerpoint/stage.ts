@@ -31,6 +31,12 @@ const ZOOM_MAX = 800;
 const ZOOM_PASSO = 10;
 /** Faixa (px na tela) da beirada da forma que agarra para mover: por dentro dela, o clique é do texto. */
 const BANDA_BEIRADA_PX = 6;
+/**
+ * Tudo o que o palco desenha POR CIMA da lâmina (overlay): a seleção, as guias, o traço, a medida…
+ * Some inteiro a cada redesenho (`desenharSelecao`). Ao acrescentar um elemento novo, ele entra
+ * aqui: fora da lista, as cópias se **empilham** a cada quadro do arrasto (foi o leque da curva).
+ */
+const SELETOR_DO_OVERLAY = ".pp-sel, .pp-guia, .pp-marquee, .pp-celsel, .pp-selo, .pp-lig-ponto, .pp-traco, .pp-no-curva, .pp-medida";
 
 /**
  * Passo do zoom por clique/roda/atalho: cresce com o nível, como nas pranchetas de
@@ -266,7 +272,7 @@ export class Stage {
   desenharSelecao(): void {
     const el = this.slideEl;
     if (!el) return;
-    el.querySelectorAll(".pp-sel, .pp-guia, .pp-marquee, .pp-celsel, .pp-selo, .pp-lig-ponto").forEach((n) => n.remove());
+    el.querySelectorAll(SELETOR_DO_OVERLAY).forEach((n) => n.remove());
     const ctx = this.hooks.contexto();
     const sel = ctx.shapes.filter((s) => ctx.selecao.includes(s.id));
     // O cursor do texto: com UMA forma escolhida e com texto, o clique no texto é do texto (ver

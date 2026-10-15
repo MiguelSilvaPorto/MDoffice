@@ -455,6 +455,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   do app. O **"+" redondo** que pendia do canto da prévia era um alvo a mais e saiu (pedido: "o
   botão de cima era para sumir e o de baixa assumir a função"). Teste: `npm run test:layout`.
 
+- **O traço e a curva por pontos não deixam mais rastro (o "leque")**: desenhando à mão ou marcando pontos da **Curva**, cada quadro do arrasto **empilhava uma prévia nova** por cima das anteriores — o resultado era um leque de linhas que só crescia conforme o mouse andava (o print do usuário). A limpeza do que o palco desenha por cima da lâmina não conhecia o traço (`pp-traco`), a prévia da curva (`pp-curva-preview`) nem os pontos (`pp-no-curva`) — e, pela mesma porta, o **balão da medida** (`pp-medida`) ficava preso na tela depois de soltar. Agora a lista é uma só (`SELETOR_DO_OVERLAY`) e **o teste trava**: toda classe que o palco empilha tem de estar nela (ou dentro de uma que está).
+
 - **Fita métrica do arrasto**: enquanto se arrasta algo na lâmina, um **balão com a medida** acompanha o gesto — **x · y** (posição) ao **mover** e **largura × altura** ao **redimensionar** uma forma ou **desenhar** uma nova. A unidade é o **cm**, a mesma dos campos de **Tamanho** do painel (o número do gesto bate com o que a pessoa lê depois), com uma casa e vírgula decimal; o balão fica **acima do quadro** (e vira para baixo quando não há espaço no topo), não rouba o ponteiro e **some ao soltar**. Com **várias formas escolhidas**, a medida é a da **moldura do grupo**.
 
 - **O "+" do card "Nova lâmina" abre as variações (e o chevron de recolher a fita saiu)**: o card

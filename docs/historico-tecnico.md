@@ -5654,6 +5654,41 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   o resto é contrato de palco e de CSS — a classe `abaixo`, o `pointer-events: none` e as cores do
   tema não aparecem em teste de unidade, mas são o que faz o balão funcionar sobre qualquer lâmina.
 
+## src/powerpoint/stage.ts
+
+### 2026-10-14 · overlay · a limpeza passa a apagar TUDO o que o palco desenha
+- **Local:** `desenharSelecao` (a primeira linha, a limpeza) e a constante nova `SELETOR_DO_OVERLAY`,
+  junto de `BANDA_BEIRADA_PX`
+- **Linha:** `el.querySelectorAll(".pp-sel, .pp-guia, .pp-marquee, .pp-celsel, .pp-selo,
+  .pp-lig-ponto")` → `el.querySelectorAll(SELETOR_DO_OVERLAY)`, com a lista passando a incluir
+  **`.pp-traco`, `.pp-no-curva` e `.pp-medida`**
+- **Porquê:** o relato veio com print ("existe um bug de desenho marcando pontos onde em vez dele
+  criar um caminho ele fica desenhando sem parar conforme movimento o mouse") — o desenho **livre**
+  e a **Curva por pontos** acumulavam: a limpeza do overlay nasceu antes dessas ferramentas e nunca
+  foi atualizada, então cada `desenharSelecao` (que roda a cada quadro do arrasto) **acrescentava**
+  uma prévia nova por cima das anteriores — cada uma com o cursor do momento, e o conjunto virava o
+  **leque** do print. Os **pontos** (`pp-no-curva`) sofriam o mesmo, mas como nascem no clique e
+  ficam parados, as cópias caíam exatamente por cima umas das outras (invisível — e por isso o
+  defeito passou tanto tempo escondido). Pela mesma porta, o `pp-medida` da fita métrica (recém
+  chegado) ficava **preso na tela** depois de soltar. A correção poderia ser só "acrescentar as
+  classes", mas o erro é de **manutenção**: a lista era um literal solto dentro do método, sem
+  ninguém avisando quem desenha algo novo. Virou uma constante **nomeada**, com o comentário do
+  porquê, num lugar só — e o teste (abaixo) transforma o aviso em falha.
+
+## scripts/testar-layout.mts
+
+### 2026-10-14 · overlay · 1 verificação que trava a regra
+- **Local:** a seção "PowerPoint: a fita métrica mostra a medida enquanto arrasta" (no fim dela)
+- **Linha:** `+ a checagem do overlay`: fatia o corpo de `desenharSelecao`, colhe toda classe
+  `pp-*` que aparece ali e exige que cada uma esteja em `SELETOR_DO_OVERLAY` — com uma lista curta
+  das que não são elemento (vivem dentro de outra, dividem a tag de uma da lista, ou são classe do
+  próprio div da lâmina, como `pp-texto-um`)
+- **Porquê:** o defeito não era uma linha errada, era uma lista **incompleta** que ninguém lembrava
+  de atualizar. Um teste de unidade não alcança isso (é contrato entre o que o palco empilha e o
+  que ele apaga); a checagem lê o TS e falha no próximo elemento que alguém desenhar sem entrar na
+  limpeza — foi ela, aliás, que apontou o `pp-texto-um` e as classes aninhadas quando o texto foi
+  escrito.
+
 ---
 
 ## Próximos registros
