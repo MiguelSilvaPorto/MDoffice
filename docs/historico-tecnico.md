@@ -11725,3 +11725,16 @@ antigas quando fizer sentido.
   a escada do arquivo: por cima de tudo do palco (40–56), abaixo do Estúdio (61) e dos popups (300).
   A verificação no `test:layout` prende as duas pontas (a barrinha com 60, o Estúdio com 61 e os
   popups com 300) para a linha não sumir de novo num ajuste de camadas.
+
+## CHANGELOG.md
+
+### 2026-10-15 · barrinha do pincel · a promoção da entrada (não adicionado → adicionado)
+- **Local:** PowerPoint → **Não adicionado** → Frontend (a entrada da barrinha) e PowerPoint →
+  **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não pode promover: no instante do commit da tarefa a entrada ainda não está na
+  main (a regra do repositório é "nunca promova o que ainda não entrou na main"), então a promoção é
+  uma tarefa de follow-up, depois que o commit chegou (2cd4778). Promovi só a entrada DESTA tarefa:
+  as que seguem em "Não adicionado" (a aba Animações, o Estúdio do Desenhar, a aba Design completa e
+  o Template com desenho) pertencem a sessões com trabalho aberto — mexer nelas criaria duplicata ou
+  conflito.

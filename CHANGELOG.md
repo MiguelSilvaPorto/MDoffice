@@ -413,12 +413,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **A barrinha do pincel (Draw) volta a ficar por cima da faixa de lâminas e do palco**: ela perdeu o
-  `z-index` quando o Estúdio chegou (fase 1) e, sem ele, as miniaturas e a lâmina — posicionadas e
-  **depois** dela no DOM — pintavam por cima: o usuário só via o botão "8" (a espessura acesa)
-  aparecendo por trás das miniaturas. A barrinha volta ao `z-index: 60` da escada do arquivo (por
-  cima de tudo do palco, abaixo do Estúdio, que é 61, e dos popups, 300). Teste: `npm run test:layout`.
-
 - **A aba Animações cabe na tela (sem rolar nem cortar o grupo "Animar")** — o plano do encaixe supunha que todo grupo encolhe junto com as métricas, mas a galeria de animações tinha 72 px fixos por cartão e a aba passava da largura mesmo no degrau compacto. Agora a galeria acompanha as métricas e o encaixe **confere no navegador** depois de aplicar o plano: se ainda sobra rolagem, encolhe mais as métricas e, por fim, manda mais um grupo para o menu. Medido num Chrome real: de 1500 a 900 px nenhuma aba rola; em 1338 px a aba Animações cabe inteira.
 
 - **Estúdio: isolar uma box e trabalhar só nela** (fase 1 de um conjunto) — a aba **Desenhar** ganhou
@@ -463,6 +457,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **A barrinha do pincel (Draw) volta a ficar por cima da faixa de lâminas e do palco**: ela perdeu o
+  `z-index` quando o Estúdio chegou (fase 1) e, sem ele, as miniaturas e a lâmina — posicionadas e
+  **depois** dela no DOM — pintavam por cima: o usuário só via o botão "8" (a espessura acesa)
+  aparecendo por trás das miniaturas. A barrinha volta ao `z-index: 60` da escada do arquivo (por
+  cima de tudo do palco, abaixo do Estúdio, que é 61, e dos popups, 300). Teste: `npm run test:layout`.
 
 - **A animação vale para TODA a seleção (os ajustes e o Remover também)**: aplicar o efeito já era
   por forma escolhida, mas os controles de ajuste (**Início**, **Duração**, **Atraso**, **Direção**
