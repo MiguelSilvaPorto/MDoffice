@@ -12057,6 +12057,7 @@ antigas quando fizer sentido.
   é a mesma nas três fitas. A entrada fica **antes** da "A faixa de opções não se recolhe mais
   sozinha" (a mais nova primeiro, como o arquivo vinha fazendo) — as duas são deste mesmo dia e
   tocam o mesmo `src/fita.ts`.
+
 ## src/powerpoint/edicao/ligacoes.ts · src/powerpoint/schema.ts
 
 ### 2026-10-15 · esta tarefa · a ligação vira uma transição (gradiente da origem ao destino)
@@ -12142,6 +12143,7 @@ antigas quando fizer sentido.
   uma tarefa de follow-up, depois que o commit chegou (385df1b). Promovi só a entrada DESTA tarefa:
   as que seguem em "Não adicionado" (o menu dos grupos da fita e a faixa que não se recolhe) são de
   sessões com trabalho aberto — mexer nelas criaria duplicata ou conflito.
+
 ## CHANGELOG.md
 
 ### 2026-10-15 · promoção · a entrada do conector em gradiente entra no "Adicionado" (PowerPoint)
@@ -12156,3 +12158,51 @@ antigas quando fizer sentido.
   sendo um item, mas o arquivo ficava fora do padrão das outras entradas). As demais entradas de
   "Não adicionado" (o Estádio, a aba Animações, o Estúdio Pintura…) ficaram **intactas** — são de
   sessões com trabalho aberto.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-15 · a transição × a animação · as duas notas com ação
+- **Local:** `transicoes()` (grupo "Aplicar") e `animacoes()` (grupo "Animação") — a nota-base
+  ganhou `data-anim-nota-base`, entrou a nota da transição (`data-anim-trans`, com
+  `data-anim-trans-nome`) e o `atualizar()` (bloco da aba Animações, depois da `data-anim-nota`)
+  decide quem aparece
+- **Linha:** `+` na nota da transição o botão `<button data-aba="animacoes">Animações</button>` · `+`
+  a nota "A transição (**Push**) anima a lâmina inteira — o efeito é só da forma escolhida" com o
+  botão `data-cmd="transicao:none"` ("Tirar transição") · `+` `notaBase.hidden = ligada` e
+  `notaTransLigada.hidden = !ligada` (ligada = `!!tr && tipo !== "none"`)
+- **Porquê:** o relato "eu tentei aplicar animação só nessa box[, mas] aplica em todo o slide" não
+  era a animação: ela grava **só na forma** (confirmado no modelo e na prévia) — quem animava a
+  lâmina inteira era a **transição** que tinha ficado na lâmina desde o teste anterior, e a aba
+  Animações não dizia isso nem dava o caminho de tirar. O botão da aba Transições usa o `[data-aba]`
+  que o `aoClicar` já resolvia (`closest("[data-aba]")` → `irParaAba`), então o pulo é um clique; o
+  "Tirar transição" usa o mesmo comando do cartão **Sem** (`transicao:none`), sem inventar um novo.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-15 · a transição × a animação · a nota com botão
+- **Local:** depois de `.ppr-trans-nota` (a nota que já existia)
+- **Linha:** `+ .ppr-nota-acao` (a nota com ação alarga para 172 px: com 80 px o botão espremia o
+  texto) e `+ .ppr-nota-btn` (botão pequeno, `var(--border)`/`var(--accent)`, fonte herdada)
+- **Porquê:** a nota da transição precisava carregar um botão dentro da fita, e a nota velha tem
+  largura de duas linhas de texto; o botão segue os tokens do app para não destoar nos temas.
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · a transição × a animação · as duas checagens
+- **Local:** o bloco "PowerPoint: animação vai para toda a seleção" (a checagem da nota da aba
+  Transições foi reescrita para o texto novo, com o botão)
+- **Linha:** `+` "a aba Transições aponta a aba Animações (com o botão que leva)" e `+` "a aba
+  Animações diz qual transição anima a lâmina inteira e oferece tirá-la" (a nota, o nome e o
+  `transicao:none`, mais o liga/desliga do `atualizar()`)
+- **Porquê:** a superfície é fonte e o comportamento visual foi conferido no navegador (CDP): a
+  nota aparece com o nome ("Push"), o botão tira a transição e a base volta; as checagens prendem a
+  regressão de alguém reescrever a nota sem o botão (foi o que o usuário pediu).
+
+## docs/powerpoint.md
+
+### 2026-10-15 · a transição × a animação · as balas das transições e das animações
+- **Local:** as balas "Animações de forma" e "Transições de lâmina"
+- **Linha:** `+` "se a lâmina tiver transição, a aba avisa pelo nome que ela anima a lâmina inteira e
+  oferece Tirar transição"; `+` na transição, "a nota traz o botão que leva direto" para as Animações
+- **Porquê:** o documento dizia onde cada coisa mora, mas não que as duas **podem estar ligadas ao
+  mesmo tempo** — e é exatamente aí que nasce a confusão de "a animação pegou no slide todo".

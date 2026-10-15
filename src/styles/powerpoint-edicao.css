@@ -2611,6 +2611,28 @@ button.ppr.seg.on:not(:disabled) {
   line-height: 1.2;
 }
 
+/* nota com ação (o texto e o botão que tira a transição ou leva à aba): mais larga para o botão */
+.ppr-nota-acao {
+  max-width: 172px;
+}
+
+.ppr-nota-btn {
+  margin-left: 3px;
+  padding: 0 6px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--accent);
+  font: inherit;
+  font-size: 10.5px;
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.ppr-nota-btn:hover {
+  border-color: var(--accent);
+}
+
 .ppr-trans-dur {
   color: var(--muted);
   font-size: 11.5px;

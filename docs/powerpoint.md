@@ -97,7 +97,8 @@ avisado ao abrir (nunca some em silêncio).
   editar o texto.
 - **Mídia**: inserir áudio/vídeo, tocar no F5 com corte, volume e repetição, e ida e volta no `.pptx`.
 - **Transições de lâmina**: galeria, direção, duração, no F5 e no arquivo. A aba lembra que a
-  transição é da **lâmina** — para animar uma **forma** escolhida, a aba é a **Animações**.
+  transição é da **lâmina** — para animar uma **forma** escolhida, a aba é a **Animações**, e a
+  nota traz o **botão** que leva direto para lá.
 - **Animações de forma**: aba própria com **Aparecer**, **Surgir**, **Voar**, **Zoom**, **Limpar**,
   **Caixa**, **Círculo**, **Losango**, **Dividir**, **Persianas**, **Dissolver**, **Roda**,
   **Pulsar**, **Ampliar/Reduzir**, **Girar**, **Transparência**, **Desaparecer**, **Sumir**,
@@ -116,7 +117,9 @@ avisado ao abrir (nunca some em silêncio).
   que não é modelado volta cru, com aviso) — o arquivo exportado toca as animações no PowerPoint.
   Os controles (**Início**, **Duração**, **Atraso**, **Direção**, **Texto** e **Remover**) valem
   para **toda a seleção**: com duas ou mais formas escolhidas, o ajuste e a remoção valem para
-  todas, como no PowerPoint. **Aplicar já mostra o efeito tocando** e a **prévia
+  todas, como no PowerPoint. Se a lâmina tiver **transição**, a aba avisa pelo **nome** que ela é
+  que anima a **lâmina inteira** e oferece o botão **Tirar transição** (a dúvida "a animação pegou
+  no slide todo" era ela). **Aplicar já mostra o efeito tocando** e a **prévia
   devolve a lâmina ao estado de projeto** ao terminar (o **Esc** interrompe na hora) — nada fica
   aplicado no palco fora da apresentação.
 - **Lâminas**: arrastar as miniaturas para reordenar (na faixa do topo ou na vertical) —

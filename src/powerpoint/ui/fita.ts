@@ -657,7 +657,7 @@ export class Fita {
       grupo(
         "Aplicar",
         `${grande("transicao-todas", ic("i-addons"), "Aplicar a todas", "Aplicar esta transição a todas as lâminas")}${grande("transicao-previa", ic("i-eye"), "Prévia", "Reproduzir a transição nesta lâmina, sem entrar no F5")}
-         <span class="ppr-trans-nota">Transição é da lâmina — para animar uma forma escolhida, use a aba Animações.</span>`
+         <span class="ppr-trans-nota ppr-nota-acao">Transição é da lâmina. Para animar uma forma escolhida, vá na aba <button type="button" class="ppr-nota-btn" data-aba="animacoes" title="Ir para a aba Animações: é lá que o efeito vai para a forma escolhida">Animações</button></span>`
       ),
     ].join("");
   }
@@ -685,7 +685,9 @@ export class Fita {
       grupo(
         "Animação",
         `<div class="ppr-anim-wrap"><div class="ppr-trans ppr-anim">${galeria}</div>
-         <span class="ppr-trans-nota">A animação vale para as formas escolhidas; a lâmina é a aba Transições.</span>
+         <span class="ppr-trans-nota" data-anim-nota-base>A animação vale para as formas escolhidas; a lâmina é a aba Transições.</span>
+         <span class="ppr-trans-nota ppr-nota-acao" data-anim-trans hidden>A transição (<b data-anim-trans-nome></b>) anima a lâmina inteira — o efeito é só da forma escolhida.
+           <button type="button" class="ppr-nota-btn" data-cmd="transicao:none" title="Tirar a transição desta lâmina: ela é que anima a lâmina inteira na apresentação">Tirar transição</button></span>
          <span class="ppr-trans-nota" data-anim-nota hidden title="As animações deste arquivo não são representadas pelo app: voltam como vieram na exportação">Original preservada</span></div>`
       ),
       grupo("Início", `<div class="ppr-linha">${inicios}</div>`),
@@ -1451,6 +1453,18 @@ export class Fita {
     }
     const notaAnim = this.el.querySelector<HTMLElement>("[data-anim-nota]");
     if (notaAnim) notaAnim.hidden = !st.animacaoPreservada;
+    // a transição da lâmina anima a lâmina INTEIRA — era a confusão do "a animação pegou no slide
+    // todo" com as duas coisas ligadas. A nota diz o nome dela e o botão tira em um clique; sem
+    // transição, fica a nota-base (que só aponta a aba Transições)
+    const notaBase = this.el.querySelector<HTMLElement>("[data-anim-nota-base]");
+    const notaTransLigada = this.el.querySelector<HTMLElement>("[data-anim-trans]");
+    if (notaBase && notaTransLigada) {
+      const ligada = !!tr && tipo !== "none";
+      notaBase.hidden = ligada;
+      notaTransLigada.hidden = !ligada;
+      const nome = this.el.querySelector<HTMLElement>("[data-anim-trans-nome]");
+      if (nome) nome.textContent = ligada ? ROTULOS_TRANSICAO[tipo] : "";
+    }
 
     // seletores de fonte e tamanho
     const selFonte = this.el.querySelector<HTMLSelectElement>('[data-sel="font"]');

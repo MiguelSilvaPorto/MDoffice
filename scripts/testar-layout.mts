@@ -2597,9 +2597,16 @@ console.log("\nPowerPoint: animação vai para toda a seleção (e a exportaçã
     "a última forma da seleção ficava com a animação"
   );
   checa(
-    "a aba Transições aponta a aba Animações para animar uma forma",
-    /Transição é da lâmina — para animar uma forma escolhida, use a aba Animações\./.test(fita),
+    "a aba Transições aponta a aba Animações para animar uma forma (com o botão que leva)",
+    /ppr-nota-acao[\s\S]{0,700}data-aba="animacoes"/.test(fita),
     "o usuário procurou animar a forma na aba da lâmina"
+  );
+  checa(
+    "a aba Animações diz qual transição anima a lâmina inteira e oferece tirá-la",
+    /data-anim-trans[\s\S]{0,700}data-anim-trans-nome[\s\S]{0,500}transicao:none/.test(fita) &&
+      /notaBase\.hidden = ligada[\s\S]{0,180}notaTransLigada\.hidden = !ligada/.test(fita) &&
+      /ROTULOS_TRANSICAO\[tipo\]/.test(fita),
+    "a transição que ficou na lâmina parecia 'a animação aplicada ao slide'"
   );
 }
 
