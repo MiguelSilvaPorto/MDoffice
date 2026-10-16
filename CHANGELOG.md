@@ -413,13 +413,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **O filtro da Composição (Designer/Visual/Arrumação/Tudo) cabe no painel em qualquer largura**:
-  os botões eram `flex: 1 1 auto` com `min-width: auto` — não encolhiam abaixo do próprio texto e o
-  **"Tudo" saía pela borda** quando o painel encolhia (print do usuário). Agora os quatro dividem a
-  largura (`flex: 1 1 0; min-width: 0`) e o rótulo cede com **reticências** quando falta espaço —
-  nunca vaza. Conferido em navegador real (novo `scripts/harness-painel.mjs`): em 260 px os quatro
-  com o rótulo inteiro; em 200/170 px, iguais e dentro do painel.
-
 - **A aba Desenhar cabe CHEIA (e o que sobrou de duplicação saiu)**: o print do usuário mostrava a
   aba **compacta demais** e com grupos virando menu. Duas causas: o **piso do encaixe** estava em
   0,62 (herança da correção anterior) e a aba tinha **oito grupos**, sendo dois deles **repetição**
@@ -576,6 +569,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **O filtro da Composição (Designer/Visual/Arrumação/Tudo) cabe no painel em qualquer largura**:
+  os botões eram `flex: 1 1 auto` com `min-width: auto` — não encolhiam abaixo do próprio texto e o
+  **"Tudo" saía pela borda** quando o painel encolhia (print do usuário). Agora os quatro dividem a
+  largura (`flex: 1 1 0; min-width: 0`) e o rótulo cede com **reticências** quando falta espaço —
+  nunca vaza. Conferido em navegador real (novo `scripts/harness-painel.mjs`): em 260 px os quatro
+  com o rótulo inteiro; em 200/170 px, iguais e dentro do painel.
 
 - **Aba Animações sem a mensagem lateral de escopo**: removida a mensagem `"A animação vale para as
   formas escolhidas; a lâmina é a aba Transições."` (e a nota de transição ao lado da galeria) na

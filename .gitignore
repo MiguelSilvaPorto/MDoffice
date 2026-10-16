@@ -25,4 +25,4 @@ corpus/
 # modelo de linguagem do corretor (gerado por `npm run corpus`; ver public/ngrams/LEIA.md).
 # Não é versionado: cada regeneração reescreve ~9 MB e isso incharia o histórico do git.
 public/ngrams/*.json
-scripts/.harness-fita.ts
+scripts/.harness-*.ts

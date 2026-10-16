@@ -13120,3 +13120,23 @@ antigas quando fizer sentido.
 - **Linha:** `+` a frase do filtro que divide a largura e cede com reticências + o comando do harness
 - **Porquê:** a bala dizia que "nada vaza para fora do app" — e era exatamente o que o print
   desmentia no filtro.
+
+## CHANGELOG.md
+
+### 2026-10-16 · o filtro da Composição · a promoção da entrada
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não promove (no instante do commit a entrada ainda não está na main), então a
+  promoção anda depois: o filtro da Composição que cabe no painel (a4230aa). Promovi só a entrada
+  DESTA tarefa — as que seguem em "Não adicionado" são de sessões com trabalho aberto, mexer nelas
+  criaria duplicata ou conflito.
+
+## .gitignore
+
+### 2026-10-16 · o filtro da Composição · o .ts gerado dos harnesses fora do git
+- **Local:** a lista de ignores (o bloco dos arquivos gerados)
+- **Linha:** `scripts/.harness-fita.ts` → `scripts/.harness-*.ts`
+- **Porquê:** o `harness-painel.mjs` gera o `scripts/.harness-painel.ts` a cada rodada (como o da
+  fita gera o `.harness-fita.ts`) e ele foi comitado junto no fechar — arquivo gerado não pertence
+  ao repositório, e a regra com curinga cobre os dois harnesses (o `git rm --cached` soltou o que
+  já tinha entrado, sem apagar nada do disco).
