@@ -413,15 +413,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **A roda do mouse, no fim da lâmina ampliada, agora pede dois ticos (não pula mais de lâmina sem
-  querer)**: com a lâmina **ampliada**, chegar ao fim da rolagem e dar **um** tico a mais já trocava
-  de lâmina — e é justamente o tico que escapa no meio do trabalho (a rolagem "acabou" e a mão
-  continua). Agora o fim tem **dois passos**: o **primeiro** tico **arma** (a roda fica quieta) e só
-  o **segundo** troca; uma **pausa (650 ms) desarma**, então um tico isolado, mais tarde, nunca troca
-  sozinho. Com a lâmina **inteira à vista** (não há o que rolar) continua **um tico = uma lâmina** —
-  esse fluxo estava certo e não mudou. Testes: `npm run test:pptx-edicao` (a sequência completa com o
-  relógio injetado: rolar, armar, trocar, pausa que desarma) e `npm run test:layout`.
-
 - **Composição ▸ Tudo: volta a gerar cartões quando nenhuma arrumação é legível** — ao exigir que um arranjo "mude algo", o filtro de legibilidade passou a descartar também os cartões só de **visual** (neles a lâmina não muda de propósito) e o painel mostrava "Nenhuma composição cabe nesta lâmina" mesmo havendo visuais. Agora só os cartões com arrumação passam pelo filtro.
 
 - **Arrumação em hierarquia (organograma) e um Designer que arruma sem estragar** — dois arranjos novos entendem a árvore pelos conectores e a redesenham (um nível por linha ou coluna, filhos centrados sob o pai, caixas do nível iguais, conectores novos, texto fixo desviado). O Designer passa a escolher sozinho o melhor arranjo, **remover o desenho antigo** do slide (triângulos, pontilhados, barrinhas) e **adaptar a arte à zona livre**; o que já está arrumado (uma fileira de cartões iguais) não é movido. Um arranjo só é oferecido se tudo continua legível: o texto cabe (palavra e parágrafo), nenhum cartão fica pequeno demais, cobre outro cartão ou cobre um texto que fica no lugar — corrige o caso em que três cartões viraram uma coluna sobre o parágrafo e o texto vazava. O modo **Tudo** deixou de mostrar um cartão só (filtra as arrumações antes de combinar com os visuais). Testes: `npm run test:hierarquia`.
@@ -618,6 +609,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **A roda do mouse, no fim da lâmina ampliada, agora pede dois ticos (não pula mais de lâmina sem
+  querer)**: com a lâmina **ampliada**, chegar ao fim da rolagem e dar **um** tico a mais já trocava
+  de lâmina — e é justamente o tico que escapa no meio do trabalho (a rolagem "acabou" e a mão
+  continua). Agora o fim tem **dois passos**: o **primeiro** tico **arma** (a roda fica quieta) e só
+  o **segundo** troca; uma **pausa (650 ms) desarma**, então um tico isolado, mais tarde, nunca troca
+  sozinho. Com a lâmina **inteira à vista** (não há o que rolar) continua **um tico = uma lâmina** —
+  esse fluxo estava certo e não mudou. Testes: `npm run test:pptx-edicao` (a sequência completa com o
+  relógio injetado: rolar, armar, trocar, pausa que desarma) e `npm run test:layout`.
 
 - **O seletor de cores abre com os "Usados recentemente"**: a lista de cores usadas já existia, mas
   ficava **no fim** do popup e **escondida quando vazia** — quem abria via "Cores do documento" no

@@ -13645,3 +13645,15 @@ antigas quando fizer sentido.
   fechamento e as prévias num passo só de desfazer)
 - **Porquê:** é a mesma bala que já fala do contorno e da espessura; quem lê precisa saber que a cor
   **aplica ao escolher** — é o contrato novo do menu.
+
+## CHANGELOG.md
+
+### 2026-10-16 · docs/promove-roda-dois-ticos · a entrada da roda entra no "Adicionado" (PowerPoint)
+- **Local:** PowerPoint ▸ **Não adicionado** ▸ Frontend ▸ **Adicionado** ▸ Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **A roda do mouse, no fim da lâmina ampliada, agora
+  pede dois ticos**
+- **Porquê:** o fecho **não promove** (no instante do commit a entrada ainda não está na `main`),
+  então a promoção anda depois, num commit só de documentação: a roda pede dois ticos (9790265).
+  Promovi só a entrada DESTA tarefa — as que seguem em "Não adicionado" (Composição ▸ Tudo, a
+  Arrumação em hierarquia) são de sessões com trabalho aberto: mexer nelas criaria duplicata ou
+  conflito.
