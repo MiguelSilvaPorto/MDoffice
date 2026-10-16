@@ -1986,6 +1986,9 @@ export class PowerPointHost {
     }
     if (patches.size) {
       const d = this.dim();
+      // as caixas de ANTES: é com elas que o quadro vivo sabe se dá para mexer só no estilo
+      const antes = new Map<string, ShapeBox>();
+      if (fase === "meio") for (const s of this.atual().shapes) if (patches.has(s.id)) antes.set(s.id, { ...s.box });
       this.substituirSlide({
         ...this.atual(),
         shapes: this.atual().shapes.map((s) => {
@@ -1997,13 +2000,63 @@ export class PowerPointHost {
         }),
       });
       this.markDirty();
-      this.pintarRapido();
+      if (fase === "meio") this.pintarArrasto(patches, antes);
+      else this.pintarRapido();
     }
     if (fase === "fim") {
       if (this.pendente && this.pendente.slides !== this.slides) this.hist.registrar(this.pendente);
       this.pendente = null;
       this.pintar();
     }
+  }
+
+  /**
+   * O quadro VIVO do arrasto: mexe só nas formas que mudaram, sem refazer a lâmina inteira.
+   *
+   * Refazer o `innerHTML` da lâmina a cada evento de movimento invalidava o estilo de TODAS as
+   * formas, e a próxima passada de layout pagava a conta (medido no navegador: ~9 ms por quadro,
+   * contra ~0,2 ms das alças sozinhas — o arrasto ficava abaixo de 20 quadros). Aqui:
+   * - **mover** (a caixa do mesmo tamanho) e **girar** vão direto no estilo do elemento — o mais
+   *   barato, e é o gesto do relato;
+   * - o que **muda o desenho** (redimensionar, cantos...) refaz **só aquela forma**
+   *   (`htmlFormaRica`), em vez de todas;
+   * - o que é **derivado** (ligação/capa que seguem a forma, o Estúdio com a máscara da box) cai no
+   *   caminho completo — quem muda não é só a forma arrastada.
+   * No fim do arrasto o `pintar()` refaz tudo de uma vez.
+   */
+  private pintarArrasto(patches: Map<string, Partial<Shape>>, antes: Map<string, ShapeBox>): void {
+    const slide = this.atual();
+    if (this.estudio || slide.shapes.some((s) => s.liga || s.capa)) return this.pintarRapido();
+    const porId = new Map(slide.shapes.map((s) => [s.id, s]));
+    const pct = (v: number) => String(Math.round(v * 1000) / 1000);
+    const ctx = this.ctxRender(true, this.selecao);
+    for (const [id, p] of patches) {
+      const s = porId.get(id);
+      const velho = antes.get(id);
+      const el = this.slideEl.querySelector<HTMLElement>(`[data-shape="${id}"]`);
+      if (!s || !velho || !el) return this.pintarRapido();
+      const soMoveu =
+        Object.keys(p).every((k) => k === "box" || k === "rot") && (!p.box || (p.box.w === velho.w && p.box.h === velho.h));
+      if (soMoveu) {
+        if (p.box) {
+          el.style.left = `${pct(p.box.x)}%`;
+          el.style.top = `${pct(p.box.y)}%`;
+          el.style.width = `${pct(p.box.w)}%`;
+          el.style.height = `${pct(p.box.h)}%`;
+        }
+        if (p.rot !== undefined) el.style.transform = p.rot ? `rotate(${pct(p.rot)}deg)` : "";
+        continue;
+      }
+      // mudou o desenho (tamanho, cantos...): refaz SÓ esta forma
+      const novo = document.createElement("div");
+      novo.innerHTML = htmlFormaRica(s, ctx);
+      const elNovo = novo.firstElementChild;
+      if (!elNovo) return this.pintarRapido();
+      el.replaceWith(elNovo);
+    }
+    // as alças e a medida acompanham (é o overlay, não a lâmina) e o painel só troca os números
+    this.stage.desenharSelecao();
+    this.painel.vivo();
   }
 
   /** Ctrl+arrastar: duplica a seleção e passa a seleção para as cópias. */

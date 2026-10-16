@@ -432,6 +432,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   vista), e as **decorações do layout** (fixas) entram só com o "Editar elementos do layout" ligado,
   como no clique. O item fica desabilitado com menos de duas formas no ponto.
 
+- **O arrasto das formas deixou de travar**: o quadro do arrasto refazia o **`innerHTML` da lâmina
+  inteira** (todas as formas ricas) + o **painel lateral inteiro** + a fita a cada evento de
+  movimento — e a passada de layout que vinha atrás pagava a conta. Medido no navegador (Chrome
+  headless + CDP, arrasto de ponteiro de verdade): **~14 ms por quadro antes, ~1,7 ms agora** (~8×
+  mais leve; mover e redimensionar). Agora o quadro vivo mexe **só no que mudou**: mover/girar vai
+  direto no estilo da forma, o painel só troca os números de tamanho/posição, o que **muda o
+  desenho** (redimensionar) refaz **só aquela forma**, e o que é **derivado** (ligação, cópia do
+  modelo, Estúdio) segue o desenho completo. No fim do gesto a lâmina é redesenhada uma vez, como
+  sempre (desfazer, miniaturas e painel ficam em dia). 4 verificações novas em `npm run test:layout`.
+
 - **A fita não parece mais quebrada quando um grupo vira menu (e ela prefere encolher a esconder)** —
   dois defeitos que apareceram juntos na aba **Desenhar** (que ganhou Estúdio, Pintura e Modelo): o
   **grupo colapsado** era desenhado como um botão **solto no topo** do painel, com o vão do rótulo

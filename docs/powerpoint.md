@@ -53,6 +53,11 @@ avisado ao abrir (nunca some em silêncio).
   **largura** e a **da direita** a **altura**. A unidade é o **cm**, a mesma dos campos de
   **Tamanho** do painel; perto das bordas o rótulo **vira para o outro lado** e tudo **some ao
   soltar**.
+- **Arrasto leve**: o quadro do arrasto mexe **só no que mudou** — mover ou girar vai direto no
+  estilo da forma (e o painel só troca os números de tamanho/posição), em vez de refazer a lâmina
+  inteira a cada movimento; o que **muda o desenho** (redimensionar) refaz **só aquela forma**, e
+  o que é **derivado** (ligação, cópia do modelo, Estúdio) segue o desenho completo. No fim do
+  gesto a lâmina é redesenhada uma vez, como sempre (desfazer, miniaturas e painel ficam em dia).
 - **Cantos assistidos**: **clique numa alça de canto** para editar só aquele canto (`Shift+clique`
   soma/remove sem arrastar; clique parado num canto já escolhido deixa só ele) e arraste para
   arredondar **apenas os escolhidos** — cada canto guarda o próprio valor (dá para ter o sup. esq.

@@ -12845,3 +12845,43 @@ antigas quando fizer sentido.
   promover junto seria afirmar "está na main" antes de estar. A seção "Não adicionado" ficou com o
   que sobrou da rodada (o grupo Diagrama, o "Selecionar tudo neste ponto", o Estúdio — Modelo e
   Camadas, a aba Animações…), que é de sessões com trabalho aberto.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-15 · arrasto fluido · o quadro vivo do arrasto (`pintarArrasto`)
+- **Local:** `aoTransformar` (fase "meio") e o novo `pintarArrasto`
+- **Linha:** `this.pintarRapido();` → `if (fase === "meio") this.pintarArrasto(patches, antes); else this.pintarRapido();`,
+  com o mapa `antes` (as caixas de antes do `substituirSlide`)
+- **Porquê:** o relato ("o app está muito mal otimizado quando tento arrastar qualquer box — parece
+  que está abaixo de 20 quadros", com print). Medido no navegador (Chrome headless + CDP, arrasto
+  de ponteiro de verdade, deck de 14 formas ricas): **~14 ms por quadro** — e o `pintarSlide`
+  sozinho media 0,9 ms; o resto era a conta da **passada de estilo/layout** que o `innerHTML` da
+  lâmina invalidava a cada movimento (aparecia atribuída à mutação seguinte: as alças mediam 9 ms
+  dentro do arrasto e 0,2 ms isoladas). Agora: mover/girar = estilo no elemento; tamanho/cantos =
+  refaz **só aquela forma** (`htmlFormaRica` + `replaceWith`); ligação/capa (que seguem a forma) e
+  o Estúdio (máscara da box) = desenho completo; elemento ausente = desenho completo (o Ctrl+
+  arrastar, que cria as cópias, cai aqui no primeiro quadro e acerta no seguinte). Resultado
+  medido: **~1,6 ms por quadro** (mover) e **~1,9 ms** (redimensionar) — ~8× mais leve.
+- **Fica de fora de propósito:** as miniaturas da faixa e o painel inteiro só no fim do gesto (o
+  `pintar()` de sempre); no arrasto o painel troca só os números (posição/tamanho/rotação), que é o
+  que muda.
+
+## src/powerpoint/ui/painel.ts
+
+### 2026-10-15 · arrasto fluido · o `vivo()` (só os números)
+- **Local:** o novo `vivo()`, logo depois de `atualizar()`
+- **Linha:** `novo` — atualiza os `input[data-act]` de `pos-w`/`pos-h`/`pos-x`/`pos-y`/`rot`
+- **Porquê:** o `atualizar()` tem guarda de assinatura, mas a assinatura muda a cada quadro do
+  arrasto → o painel inteiro (innerHTML + os selects melhorados) era refeito por quadro. No
+  arrasto só os números mudam; o painel completo fica para o fim (a assinatura fica velha de
+  propósito, então o `atualizar()` refaz tudo quando o arrasto solta).
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · arrasto fluido · 4 verificações
+- **Local:** a seção "PowerPoint: o arrasto vivo mexe só no que mudou"
+- **Linha:** `novo` — o "meio" indo pelo `pintarArrasto` (e o corpo dele sem `pintarSlide`), o
+  mover pelo estilo + o refazimento de uma forma só, o derivado (ligação/capa/Estúdio) no caminho
+  completo e o `vivo()` do painel
+- **Porquê:** a regressão é silenciosa (volta a funcionar, só devagar): sem a trava, alguém pode
+  reintroduzir o `pintarRapido()` no "meio" sem nenhum teste quebrar.

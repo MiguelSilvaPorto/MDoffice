@@ -113,6 +113,31 @@ export class Painel {
     }
   }
 
+  /**
+   * O arrasto VIVO: atualiza só os números de tamanho/posição/rotação do painel.
+   *
+   * Refazer o painel inteiro a cada quadro do arrasto (innerHTML + os selects melhorados) custava
+   * caro e não é o que muda: a caixa anda, o resto da seção fica igual. No fim do arrasto o
+   * `atualizar()` refaz tudo (a assinatura ficou velha de propósito).
+   */
+  vivo(): void {
+    const est = this.hooks.estado();
+    const f = est.forma;
+    if (!f || est.formas.length > 1) return;
+    const d = { w: est.setup.widthIn ? est.setup.widthIn * 72 : 960, h: est.setup.heightIn ? est.setup.heightIn * 72 : 540 };
+    const campos: [string, number][] = [
+      ["pos-w", ptParaCm((f.box.w / 100) * d.w)],
+      ["pos-h", ptParaCm((f.box.h / 100) * d.h)],
+      ["pos-x", ptParaCm((f.box.x / 100) * d.w)],
+      ["pos-y", ptParaCm((f.box.y / 100) * d.h)],
+      ["rot", f.rot],
+    ];
+    for (const [act, valor] of campos) {
+      const inp = this.el.querySelector<HTMLInputElement>(`input[data-act="${act}"]`);
+      if (inp && document.activeElement !== inp) inp.value = String(Math.round(valor * 100) / 100);
+    }
+  }
+
   private assinar(est: EstadoUI): string {
     const f = est.forma;
     return JSON.stringify([

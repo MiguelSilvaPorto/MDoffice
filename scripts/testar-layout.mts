@@ -484,6 +484,38 @@ checa(
   "a barrinha taparia o Estúdio ou um popup aberto"
 );
 
+// ---------------------------------------------------------------- PowerPoint: o arrasto vivo
+
+console.log("\nPowerPoint: o arrasto vivo mexe só no que mudou (sem refazer a lâmina)");
+
+const pptTs = ler("src/powerpoint/powerpoint.ts");
+const painelTs = ler("src/powerpoint/ui/painel.ts");
+const corpoArrasto = pptTs.slice(pptTs.indexOf("private pintarArrasto("), pptTs.indexOf("private duplicarParaArrastar("));
+checa(
+  "o quadro do arrasto (meio) vai pelo caminho vivo, não pelo redesenho da lâmina",
+  /if \(fase === "meio"\) this\.pintarArrasto\(patches, antes\);/.test(pptTs) &&
+    corpoArrasto.length > 200 &&
+    !/pintarSlide\(/.test(corpoArrasto),
+  "o arrasto voltaria a refazer o innerHTML da lâmina a cada movimento (medido: ~14 ms por quadro)"
+);
+checa(
+  "mover/girar vão no estilo do elemento e o resto refaz só aquela forma",
+  /el\.style\.left = `\$\{pct\(p\.box\.x\)\}%`/.test(corpoArrasto) &&
+    /novo\.innerHTML = htmlFormaRica\(s, ctx\);/.test(corpoArrasto) &&
+    /el\.replaceWith\(elNovo\)/.test(corpoArrasto),
+  "mover pelo estilo é o gesto barato; o tamanho refaz só a forma arrastada"
+);
+checa(
+  "o que é derivado (ligação/capa/Estúdio) cai no caminho completo",
+  /if \(this\.estudio \|\| slide\.shapes\.some\(\(s\) => s\.liga \|\| s\.capa\)\) return this\.pintarRapido\(\);/.test(corpoArrasto),
+  "a ligação/capa/máscara ficariam paradas enquanto a forma anda"
+);
+checa(
+  "no arrasto o painel só troca os números (sem refazer o painel)",
+  /vivo\(\): void \{/.test(painelTs) && /\["pos-w", ptParaCm/.test(painelTs) && /\["rot", f\.rot\]/.test(painelTs),
+  "o painel inteiro (innerHTML + selects) a cada quadro era o que fazia o arrasto pesar"
+);
+
 // ---------------------------------------------------------------- PowerPoint: texto x mover
 
 console.log("\nPowerPoint: o texto da forma escolhida é do texto (e o mover fica na beirada)");
