@@ -76,7 +76,7 @@ export function abrirPopup(ancora: HTMLElement, html: string, op: OpcoesPopup = 
   el.style.left = `${p.left}px`;
   el.style.top = `${p.top}px`;
 
-  const fora = (e: MouseEvent) => {
+  const fora = (e: Event) => {
     const t = e.target as Node;
     if (el.contains(t) || ancora.contains(t)) return;
     fecharPopup();
@@ -87,12 +87,16 @@ export function abrirPopup(ancora: HTMLElement, html: string, op: OpcoesPopup = 
       fecharPopup();
     }
   };
-  setTimeout(() => document.addEventListener("mousedown", fora, true), 0);
+  setTimeout(() => {
+    document.addEventListener("pointerdown", fora, true);
+    document.addEventListener("mousedown", fora, true);
+  }, 0);
   document.addEventListener("keydown", tecla, true);
   aberto = {
     el,
     ancora,
     fechar: () => {
+      document.removeEventListener("pointerdown", fora, true);
       document.removeEventListener("mousedown", fora, true);
       document.removeEventListener("keydown", tecla, true);
       el.remove();

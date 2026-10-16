@@ -179,6 +179,10 @@ export class Stage {
     slideEl.addEventListener("pointerup", (e) => this.aoSoltar(e));
     slideEl.addEventListener("pointercancel", (e) => this.aoSoltar(e));
     slideEl.addEventListener("dblclick", (e) => this.aoDuploClique(e));
+    const caixa = this.canvasDe(frame);
+    caixa?.addEventListener("pointerdown", (e) => {
+      if (e.button === 2 && !slideEl.contains(e.target as Node)) this.aoPressionar(e);
+    });
   }
 
   get element(): HTMLElement | null {
@@ -511,7 +515,12 @@ export class Stage {
     if (e.button === 2) {
       const caixa = this.canvasDe(this.frame);
       if (!caixa) return;
-      this.slideEl.setPointerCapture(e.pointerId);
+      if (!this.hooks.contexto().editando) window.getSelection()?.removeAllRanges();
+      try {
+        this.slideEl.setPointerCapture(e.pointerId);
+      } catch {
+        /* ponteiro fora da lâmina ou sintético */
+      }
       this.modo = {
         t: "panorama",
         caixa,
@@ -533,6 +542,7 @@ export class Stage {
 
     // texto em edição: o clique é do cursor de texto
     if (ctx.editando && alvo.closest(`[data-shape="${ctx.editando}"] [data-editando]`)) return;
+    window.getSelection()?.removeAllRanges();
 
     // controles da mídia (player de áudio/vídeo): o clique é do player, não do palco
     if (alvo.closest("[data-player]")) return;

@@ -1,4 +1,4 @@
-﻿// Teste das regras de layout que já quebraram: quando o Início abre, ele precisa ocupar
+// Teste das regras de layout que já quebraram: quando o Início abre, ele precisa ocupar
 // TODO o espaço, e não dividir a tela com o painel do documento ativo (Excel, Word ou
 // PowerPoint). O Word já tinha a regra; faltavam Excel e PowerPoint.
 //
@@ -2678,9 +2678,9 @@ console.log("\nPowerPoint: animação vai para toda a seleção (e a exportaçã
     "a última forma da seleção ficava com a animação"
   );
   checa(
-    "a aba Transições aponta a aba Animações para animar uma forma (com o botão que leva)",
-    /ppr-nota-acao[\s\S]{0,700}data-aba="animacoes"/.test(fita),
-    "o usuário procurou animar a forma na aba da lâmina"
+    "a aba Transições não traz mais a mensagem 'Transição é da lâmina'",
+    !/Transição é da lâmina/.test(fita),
+    "a mensagem na aba Transições foi removida a pedido"
   );
   checa(
     "a aba Animações diz qual transição anima a lâmina inteira e oferece tirá-la",
@@ -2688,6 +2688,36 @@ console.log("\nPowerPoint: animação vai para toda a seleção (e a exportaçã
       /notaBase\.hidden = ligada[\s\S]{0,180}notaTransLigada\.hidden = !ligada/.test(fita) &&
       /ROTULOS_TRANSICAO\[tipo\]/.test(fita),
     "a transição que ficou na lâmina parecia 'a animação aplicada ao slide'"
+  );
+  const popupPpt = ler("src/powerpoint/ui/popup.ts");
+  const cssBase = ler("src/styles/base.css");
+  const cssFita = ler("src/styles/fita.css");
+  const cssEdicao = ler("src/styles/powerpoint-edicao.css");
+  const fitaGlobal = ler("src/fita.ts");
+  checa(
+    "o popup fecha no pointerdown e o clique direito no vazio da lâmina não abre 'Colar / Selecionar tudo'",
+    /addEventListener\("pointerdown", fora, true\)/.test(popupPpt) &&
+      /if \(!forma \|\| \(forma\.fixa && !this\.fixas\)\) return;/.test(ppt) &&
+      !/\["sel-tudo", "Selecionar tudo"/.test(ppt),
+    "o popup ficava preso na tela e aparecia ao navegar com o botão direito"
+  );
+  checa(
+    "a aba Desenhar usa controles segmentados no Traço e grade compacta nas Formas rápidas",
+    /ppr-traco-grade/.test(fita) && /ppr-formas-rapidas/.test(fita) && /\.ppr-formas-rapidas\s*\{[\s\S]{0,120}display:\s*grid/.test(cssEdicao),
+    "a aba Desenhar voltaria a espalhar os botões em colunas altas"
+  );
+  checa(
+    "o ajuste da fita é unificado entre abas, usa cache de larguras e os grupos recolhidos encolhem sem cortar Formas",
+    /cacheLarguras = new WeakMap/.test(fitaGlobal) &&
+      /const compacta = escala < 0\.88/.test(fitaGlobal) &&
+      /\.fita-grupo-recolhido\s*\{[\s\S]{0,120}flex:\s*0 1 auto/.test(cssFita),
+    "as abas voltariam a mudar de tamanho ao alternar ou empurrariam Formas para fora"
+  );
+  checa(
+    "a interface e as formas fora de edição têm user-select: none para não marcar texto em azul",
+    /body\s*\{[\s\S]{0,300}user-select:\s*none/.test(cssBase) &&
+      /\.pp-shape,\r?\n\.pp-shape \*\s*\{[\s\S]{0,80}user-select:\s*none/.test(cssEdicao),
+    "os textos dos botões e das formas voltariam a parecer marcados"
   );
 }
 

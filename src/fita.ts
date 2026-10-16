@@ -174,7 +174,9 @@ export function ligarAjusteAlturaFita(o: { el: HTMLElement; modo?: "zoom" | "met
 
   /** A escala que está de fato no CSS (a preferência depois do teto) — é ela que mede a altura 1×. */
   let aplicada = escala;
-  const alturaNaEscala1 = (): number => Math.max(80, o.el.getBoundingClientRect().height / (aplicada || 1));
+  let baseArrasto = 0;
+  const alturaNaEscala1 = (): number =>
+    baseArrasto > 0 ? baseArrasto : Math.max(80, o.el.getBoundingClientRect().height / (aplicada || 1));
 
   /**
    * O TETO da faixa: o menor entre `ESCALA_MAX` (1,5×) e um TERÇO da janela. A conta usa a altura
@@ -200,8 +202,10 @@ export function ligarAjusteAlturaFita(o: { el: HTMLElement; modo?: "zoom" | "met
       o.el.style.setProperty("zoom", String(efetiva));
     }
     aplicada = efetiva;
-    alca.title = rotulo();
-    alca.setAttribute("aria-valuenow", String(Math.round(efetiva * 100)));
+    if (baseArrasto === 0) {
+      alca.title = rotulo();
+      alca.setAttribute("aria-valuenow", String(Math.round(efetiva * 100)));
+    }
   };
 
   const avisar = (): void => {
@@ -246,17 +250,32 @@ export function ligarAjusteAlturaFita(o: { el: HTMLElement; modo?: "zoom" | "met
     const s0 = escala;
     // altura na escala 1 (a do começo do arrasto) manda na sensibilidade do gesto
     const base = alturaNaEscala1();
+    baseArrasto = base;
+    let quadro = 0;
     const mover = (ev: PointerEvent) => {
       const s = s0 + (ev.clientY - y0) / base;
-      escala = Math.round(Math.max(ESCALA_MIN, Math.min(s, teto())) * 100) / 100;
-      aplicar();
+      const nova = Math.round(Math.max(ESCALA_MIN, Math.min(s, teto())) * 100) / 100;
+      if (nova === escala) return;
+      escala = nova;
+      if (quadro) return;
+      quadro = requestAnimationFrame(() => {
+        quadro = 0;
+        aplicar();
+        avisar();
+      });
     };
     const soltar = (): void => {
+      if (quadro) {
+        cancelAnimationFrame(quadro);
+        quadro = 0;
+      }
+      baseArrasto = 0;
       alca.removeEventListener("pointermove", mover);
       alca.removeEventListener("pointerup", soltar);
       alca.removeEventListener("pointercancel", soltar);
       alca.classList.remove("arrastando");
       document.body.style.removeProperty("cursor");
+      aplicar();
       gravarEscala(escala);
       avisar();
     };
@@ -329,6 +348,8 @@ export function ligarEncaixeFita(o: OpcoesEncaixeFita): void {
 
   /** O grupo que está com o corpo no menu (null = menu fechado). */
   let aberto: { grupo: HTMLElement; corpo: HTMLElement; botao: HTMLButtonElement } | null = null;
+  /** Cache das larguras naturais (escala 1) de cada painel por modo (normal vs compacto). */
+  const cacheLarguras = new WeakMap<HTMLElement, { compacta: boolean; larguras: number[] }>();
 
   const painelAtivo = (): HTMLElement | null => o.el.querySelector<HTMLElement>(`${o.painel}:not([hidden])`);
 
@@ -392,7 +413,23 @@ export function ligarEncaixeFita(o: OpcoesEncaixeFita): void {
     return b;
   };
 
-  /** Aplica o plano dos quatro degraus na aba ativa. */
+  /** Mede (ou recupera do cache) as larguras naturais na escala 1 dos grupos de um painel. */
+  const medirPainel = (p: HTMLElement, grupos: HTMLElement[], escala: number, compacta: boolean): number[] => {
+    const guardado = cacheLarguras.get(p);
+    if (guardado && guardado.compacta === compacta && guardado.larguras.length === grupos.length) {
+      return guardado.larguras;
+    }
+    // medir é SEMPRE com tudo aberto e as métricas em 1: a largura do grupo é a natural dele
+    for (const g of grupos) g.classList.remove("fita-grupo-recolhido");
+    o.el.style.setProperty("--fita-ajuste", "1");
+    const larguras = grupos.map((g) => g.getBoundingClientRect().width / escala);
+    if (larguras.length && larguras.every((w) => w > 0)) {
+      cacheLarguras.set(p, { compacta, larguras });
+    }
+    return larguras;
+  };
+
+  /** Aplica o plano dos quatro degraus na aba ativa, mantendo o mesmo ajuste entre as abas. */
   const aplicar = (): void => {
     if (o.el.offsetParent === null) return; // fita escondida: não há o que medir
     const painel = painelAtivo();
@@ -400,24 +437,51 @@ export function ligarEncaixeFita(o: OpcoesEncaixeFita): void {
     fecharMenu();
     const grupos = [...painel.querySelectorAll<HTMLElement>(o.grupo)];
     if (!grupos.length) return;
-    // medir é SEMPRE com tudo aberto e as métricas em 1: a largura do grupo é a natural dele
-    for (const g of grupos) g.classList.remove("fita-grupo-recolhido");
-    o.el.style.setProperty("--fita-ajuste", "1");
     const escala = escalaAtual();
+    // fita baixa: depende SÓ da escolha de altura do usuário (escala < 0.88), nunca da aba ativa,
+    // para que trocar entre Página Inicial, Inserir e Desenhar mantenha exatamente o mesmo tamanho
+    const compacta = escala < 0.88;
+    o.el.classList.toggle("fita-compacta", compacta);
     const css = getComputedStyle(painel);
     const gap = Number.parseFloat(css.columnGap) || 0;
     const interno = painel.clientWidth - (Number.parseFloat(css.paddingLeft) || 0) - (Number.parseFloat(css.paddingRight) || 0);
-    const larguras = grupos.map((g) => g.getBoundingClientRect().width / escala);
+    const larguras = medirPainel(painel, grupos, escala, compacta);
 
+    // Unifica o ajuste de escala entre as abas principais (Página Inicial, Inserir, Desenhar)
+    // para que o tamanho configurado numa aba permaneça idêntico ao trocar para outra.
+    let largurasRef = larguras;
+    let maiorSoma = larguras.reduce((a, b) => a + b, 0);
+    for (const p of o.el.querySelectorAll<HTMLElement>(o.painel)) {
+      if (p === painel) continue;
+      const nomePainel = p.dataset.painel;
+      if (nomePainel && nomePainel !== "inicio" && nomePainel !== "inserir" && nomePainel !== "desenhar") continue;
+      const gs = [...p.querySelectorAll<HTMLElement>(o.grupo)];
+      if (!gs.length) continue;
+      const ls = medirPainel(p, gs, escala, compacta);
+      const soma = ls.reduce((a, b) => a + b, 0);
+      if (soma > maiorSoma) {
+        maiorSoma = soma;
+        largurasRef = ls;
+      }
+    }
+
+    const faixaUnica = o.el.classList.contains("fita-recolhida");
     const plano = encaixarFita(interno, larguras, {
       escala,
       gap: gap / escala,
-      faixaUnica: o.el.classList.contains("fita-recolhida"),
+      faixaUnica,
     });
+    const planoRef =
+      largurasRef === larguras
+        ? plano
+        : encaixarFita(interno, largurasRef, {
+            escala,
+            gap: gap / escala,
+            faixaUnica,
+          });
+    const ajusteUnificado = faixaUnica ? 1 : Math.min(plano.ajuste, planoRef.ajuste);
 
-    o.el.style.setProperty("--fita-ajuste", String(plano.ajuste));
-    // fita baixa: os botões grandes viram "ícone + nome" numa linha (o piso da fonte está no CSS)
-    o.el.classList.toggle("fita-compacta", escala * plano.ajuste < 0.88);
+    o.el.style.setProperty("--fita-ajuste", String(ajusteUnificado));
     o.el.classList.toggle("fita-modo-unico", plano.degrau === "faixa-unica");
     o.el.dataset.fitaDegrau = plano.degrau;
     grupos.forEach((g, i) => {
@@ -430,11 +494,10 @@ export function ligarEncaixeFita(o: OpcoesEncaixeFita): void {
     // largura própria (a galeria de animações) ou texto com piso de fonte encolhem menos. Então,
     // com o plano aplicado, confere-se no DOM: se ainda sobra rolagem, o último grupo aberto vira
     // botão, e assim por diante (nunca fica um painel rolando).
-    if (plano.degrau !== "faixa-unica") {
+    if (plano.degrau !== "faixa-unica" && painel.scrollWidth > painel.clientWidth + 1) {
       // primeiro encolhe mais as métricas, aos poucos, até o piso — só depois um grupo vira botão
-      for (let aj = plano.ajuste - 0.05; aj >= AJUSTE_MIN - 1e-6 && painel.scrollWidth > painel.clientWidth + 1; aj -= 0.05) {
+      for (let aj = ajusteUnificado - 0.05; aj >= AJUSTE_MIN - 1e-6 && painel.scrollWidth > painel.clientWidth + 1; aj -= 0.05) {
         o.el.style.setProperty("--fita-ajuste", String(Math.round(aj * 100) / 100));
-        o.el.classList.toggle("fita-compacta", escala * aj < 0.88);
       }
       const abertos = grupos.filter((g) => !g.classList.contains("fita-grupo-recolhido"));
       let colapsou = false;

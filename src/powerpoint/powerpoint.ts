@@ -533,6 +533,13 @@ export class PowerPointHost {
     });
     // menu de contexto
     this.slideEl.addEventListener("contextmenu", (e) => this.menuDeContexto(e));
+    this.canvas.addEventListener("contextmenu", (e) => {
+      if (!this.slideEl.contains(e.target as Node)) {
+        e.preventDefault();
+        fecharPopup();
+        this.stage.consumirPanorama();
+      }
+    });
 
     this.pane.style.setProperty("--slide-ratio", String(stageRatio(this.setup)));
     this.pintar();
@@ -580,19 +587,37 @@ export class PowerPointHost {
     const alca = this.pane.querySelector<HTMLElement>("[data-side-resize]")!;
     alca.addEventListener("pointerdown", (e) => {
       e.preventDefault();
-      alca.setPointerCapture(e.pointerId);
+      try {
+        alca.setPointerCapture(e.pointerId);
+      } catch {
+        /* ponteiro sintético */
+      }
+      const direita0 = this.pane.getBoundingClientRect().right;
+      let wAtual = Math.round(parseFloat(this.pane.style.getPropertyValue("--pp-side-w")) || 260);
+      let quadro = 0;
       const move = (ev: PointerEvent) => {
-        const w = Math.max(200, Math.min(600, this.pane.getBoundingClientRect().right - ev.clientX));
-        this.pane.style.setProperty("--pp-side-w", `${w}px`);
+        wAtual = Math.max(200, Math.min(600, direita0 - ev.clientX));
+        if (quadro) return;
+        quadro = requestAnimationFrame(() => {
+          quadro = 0;
+          this.pane.style.setProperty("--pp-side-w", `${Math.round(wAtual)}px`);
+        });
       };
       const fim = () => {
+        if (quadro) {
+          cancelAnimationFrame(quadro);
+          quadro = 0;
+        }
+        this.pane.style.setProperty("--pp-side-w", `${Math.round(wAtual)}px`);
         alca.removeEventListener("pointermove", move);
         alca.removeEventListener("pointerup", fim);
-        guardar("pp-side-w", String(Math.round(parseFloat(this.pane.style.getPropertyValue("--pp-side-w")) || 260)));
+        alca.removeEventListener("pointercancel", fim);
+        guardar("pp-side-w", String(Math.round(wAtual)));
         this.stage.desenharSelecao();
       };
       alca.addEventListener("pointermove", move);
       alca.addEventListener("pointerup", fim);
+      alca.addEventListener("pointercancel", fim);
     });
   }
 
@@ -1936,6 +1961,7 @@ export class PowerPointHost {
     const igual = ids.length === this.selecao.length && ids.every((x, i) => x === this.selecao[i]);
     if (igual) return;
     if (this.editando && !(ids.length === 1 && ids[0] === this.editando)) this.sairEdicao();
+    if (!this.editando) window.getSelection()?.removeAllRanges();
     this.selecao = ids;
     // seleção nova: a edição de cantos volta a valer para os quatro
     this.cantosSel = [...CANTOS];
@@ -4143,36 +4169,35 @@ export class PowerPointHost {
   // ------------------------------------------------------------------
 
   private menuDeContexto(e: MouseEvent): void {
-    // botão direito + arrasto = panorama: não abre o menu (o clique parado continua abrindo)
-    if (this.stage.consumirPanorama()) return;
     e.preventDefault();
+    fecharPopup();
+    // botão direito + arrasto = panorama: não abre o menu (o clique parado na forma continua abrindo)
+    if (this.stage.consumirPanorama()) return;
     const alvo = e.target as HTMLElement;
     const formaEl = alvo.closest<HTMLElement>(".pp-shape[data-shape]");
     const id = formaEl?.dataset.shape;
-    if (id && !this.selecao.includes(id)) this.selecionar(comGrupos(this.atual(), [id]));
-    const tem = this.selecao.length > 0;
+    const forma = id ? this.atual().shapes.find((s) => s.id === id) : undefined;
+    // Clique direito no vazio da lâmina é do gesto de panorama (mover a tela): não abre o popup
+    // de "Colar / Selecionar tudo" para não atrapalhar a navegação.
+    if (!forma || (forma.fixa && !this.fixas)) return;
+    if (!this.selecao.includes(forma.id)) this.selecionar(comGrupos(this.atual(), [forma.id]));
     // A PILHA do ponto clicado: com várias formas empilhadas (um avatar sobre o cartão, os textos
     // por cima…), o clique só pega a de cima — este item pega todas de uma vez (cada uma com o grupo
     // dela), e quem quiser só algumas tira o resto com Shift/clique depois.
     const pilha = comGrupos(this.atual(), this.stage.formasNoPonto(e.clientX, e.clientY));
-    const itens: [string, string, boolean][] = tem
-      ? [
-          ["editar-texto", "Editar texto", this.selecao.length === 1 && !!this.principal()?.paras],
-          ["sel-ponto", pilha.length > 1 ? `Selecionar tudo neste ponto (${pilha.length})` : "Selecionar tudo neste ponto", pilha.length > 1],
-          ["recortar", "Recortar", true],
-          ["copiar", "Copiar", true],
-          ["colar", "Colar", areaDeTransferencia.length > 0],
-          ["duplicar", "Duplicar", true],
-          ["excluir", "Excluir", true],
-          ["z-topo", "Trazer para a frente", true],
-          ["z-fundo", "Enviar para trás", true],
-          ["agrupar", "Agrupar", this.selecao.length > 1],
-          ["desagrupar", "Desagrupar", this.formas().some((s) => !!s.grupo)],
-        ]
-      : [
-          ["colar", "Colar", areaDeTransferencia.length > 0],
-          ["sel-tudo", "Selecionar tudo", true],
-        ];
+    const itens: [string, string, boolean][] = [
+      ["editar-texto", "Editar texto", this.selecao.length === 1 && !!this.principal()?.paras],
+      ["sel-ponto", pilha.length > 1 ? `Selecionar tudo neste ponto (${pilha.length})` : "Selecionar tudo neste ponto", pilha.length > 1],
+      ["recortar", "Recortar", true],
+      ["copiar", "Copiar", true],
+      ["colar", "Colar", areaDeTransferencia.length > 0],
+      ["duplicar", "Duplicar", true],
+      ["excluir", "Excluir", true],
+      ["z-topo", "Trazer para a frente", true],
+      ["z-fundo", "Enviar para trás", true],
+      ["agrupar", "Agrupar", this.selecao.length > 1],
+      ["desagrupar", "Desagrupar", this.formas().some((s) => !!s.grupo)],
+    ];
     const ancora = document.createElement("span");
     ancora.style.cssText = `position:fixed;left:${e.clientX}px;top:${e.clientY}px;width:1px;height:1px`;
     document.body.append(ancora);

@@ -103,9 +103,7 @@ avisado ao abrir (nunca some em silêncio).
   nova em branco** logo depois. Depois de criado, é tudo forma comum: mover, colorir, agrupar e
   editar o texto.
 - **Mídia**: inserir áudio/vídeo, tocar no F5 com corte, volume e repetição, e ida e volta no `.pptx`.
-- **Transições de lâmina**: galeria, direção, duração, no F5 e no arquivo. A aba lembra que a
-  transição é da **lâmina** — para animar uma **forma** escolhida, a aba é a **Animações**, e a
-  nota traz o **botão** que leva direto para lá.
+- **Transições de lâmina**: galeria, direção, duração, no F5 e no arquivo.
 - **Animações de forma**: aba própria com **Aparecer**, **Surgir**, **Voar**, **Zoom**, **Limpar**,
   **Caixa**, **Círculo**, **Losango**, **Dividir**, **Persianas**, **Dissolver**, **Roda**,
   **Pulsar**, **Ampliar/Reduzir**, **Girar**, **Transparência**, **Desaparecer**, **Sumir**,

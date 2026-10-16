@@ -25,12 +25,34 @@ body {
   font-family: var(--ui-font);
   font-size: 13.5px;
   -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 button {
   font-family: inherit;
   font-size: inherit;
   color: inherit;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea,
+[contenteditable="true"],
+[data-editando],
+[data-editando] *,
+.cm-editor,
+.cm-editor *,
+.ProseMirror,
+.ProseMirror *,
+.preview-body,
+.preview-body *,
+.wd-sheet,
+.wd-sheet *,
+.xl-cell-input {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 ::selection {

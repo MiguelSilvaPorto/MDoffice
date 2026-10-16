@@ -3159,3 +3159,67 @@ button.ppr.trans-dir {
   color: var(--muted);
   cursor: pointer;
 }
+
+/* ---------- Aba Desenhar: layout compacto e organizado ---------- */
+.pp-ribbon.ppr [data-painel="desenhar"] .ppr-grupo {
+  padding: 0 var(--pe-6);
+}
+
+.pp-ribbon.ppr:not(.fita-compacta) [data-painel="desenhar"] button.ppr.big {
+  min-width: calc(46px * var(--fita-e));
+  padding: var(--pe-5) var(--pe-4) var(--pe-2);
+}
+
+.ppr-traco-grade {
+  gap: var(--pe-3);
+  justify-content: center;
+}
+
+.ppr-pintura-op {
+  gap: var(--pe-2);
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.ppr-pintura-op .ppr-sel {
+  width: calc(74px * var(--fita-e));
+}
+
+.ppr-formas-rapidas {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: var(--pe-2);
+  align-content: center;
+}
+
+.ppr-formas-rapidas > button.ppr.txt {
+  width: var(--pe-altura);
+  min-width: var(--pe-altura);
+  height: var(--pe-altura);
+  padding: 0;
+  justify-content: center;
+}
+
+.ppr-formas-rapidas > button.ppr.txt > span:not(.ppr-gal-ic) {
+  display: none;
+}
+
+/* ---------- Seleção de texto: apenas quando a forma/célula está em edição ---------- */
+.pp-ribbon,
+.pp-side,
+.pp-strip,
+.pp-status,
+.pp-slide,
+.pp-shape,
+.pp-shape * {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.pp-shape.pp-rica.pp-editando .pp-rt,
+.pp-shape.pp-rica.pp-editando .pp-rt *,
+.pp-tab .pp-cel[data-editando],
+.pp-tab .pp-cel[data-editando] * {
+  user-select: text;
+  -webkit-user-select: text;
+}

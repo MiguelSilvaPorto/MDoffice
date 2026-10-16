@@ -1,4 +1,4 @@
-﻿# Changelog — mdOffice
+# Changelog — mdOffice
 
 Tudo que é feito no app entra aqui, **na categoria que mexeu**, dividido entre **Backend**
 (`src-tauri/`, Rust) e **Frontend** (`src/`, TypeScript). O "porquê" técnico de cada mudança
@@ -538,6 +538,30 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **Redesign da aba Desenhar, grupos recolhidos e clique direito limpo no palco**:
+  - **Aba Desenhar compacta e estruturada**: o grupo **Traço** deixou a coluna alta de 4 linhas
+    e o seletor solto para usar duas linhas horizontais com controles segmentados (**1 · 2 · 4 · 8**
+    ao lado da **Cor**, e **Livre · Pontos** ao lado do **Assistente**); o grupo **Pintura** alinha
+    o botão **Em forma** com a coluna compacta de **Opacidade**; e o grupo **Formas** trocou a lista
+    larga de textos por uma grade rápida 2×4 de ícones ao lado do botão **Formas ▾**.
+  - **Botões de grupo recolhido (`Modelo ▾`, `Formas ▾`…) não jogam mais grupos para fora da tela**:
+    os botões `.fita-grupo-recolhido` ganharam visual de pílula estruturada com `flex: 0 1 auto` e
+    `min-width: 0` (com reticências quando apertado), impedindo que estourem a largura da faixa em
+    janelas estreitas.
+  - **Fim do texto marcado em azul nos botões e formas**: `user-select: none` nos controles da
+    interface e nas formas da lâmina fora de edição (mantendo `user-select: text` dentro da forma em
+    edição e nos campos de entrada), limpando também a seleção nativa do navegador ao sair da edição
+    de texto ou selecionar/arrastar no palco.
+  - **Clique direito para mover a tela sem prender o menu "Selecionar tudo"**: os popups agora
+    fecham já no `pointerdown` em fase de captura (o palco chama `preventDefault()` no `pointerdown`,
+    o que engolia o `mousedown` e deixava o menu preso), o arrasto com botão direito funciona também
+    no pano de fundo ao redor da lâmina e o clique direito no vazio da lâmina não abre mais o menu
+    "Colar / Selecionar tudo" (o menu de contexto abre só ao clicar com o direito sobre uma forma).
+  - **Aba Transições sem o aviso redundante**: removida a mensagem `"Transição é da lâmina. Para
+    animar uma forma escolhida, vá na aba Animações"` da faixa de Transições.
+  - **Redimensionar o painel lateral sem engasgos**: o arrasto de `.pp-side-resize` agora é
+    cadenciado por `requestAnimationFrame` e lê a borda direita apenas no `pointerdown`.
 
 - **O grupo Canetas ficou agrupado (os 4 botões não estão mais espalhados)**: na fita baixa os botões
   grandes da aba Desenhar (**Draw**, **Curva**, **Marca-texto**, **Borracha**) tinham ~10 px de ar
@@ -2049,6 +2073,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **Redimensionamento fluido da fita e tamanho uniforme entre abas**: arrastar a borda da fita
+  (`.fita-resize`) não força mais `getBoundingClientRect()` síncrono nem reabre todos os grupos
+  recolhidos a cada pixel — as medidas naturais da aba são cacheadas no `pointerdown` e por
+  `WeakMap`, e a atualização roda cadenciada em `requestAnimationFrame`. Além disso, a classe
+  `fita-compacta` agora depende apenas da altura escolhida pelo usuário (`escala < 0.88`) e as abas
+  principais (**Página Inicial**, **Inserir** e **Desenhar**) compartilham o mesmo piso de ajuste,
+  mantendo os botões do mesmo tamanho ao trocar de aba.
 
 - **Fechar todos os arquivos — e o app fica sem nenhum aberto**: fechar a **última aba** não cria
   mais um **"Sem título"** na fileira: o app fica no **Início** com a fileira vazia (o documento de

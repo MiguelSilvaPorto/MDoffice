@@ -1,4 +1,4 @@
-﻿# Histórico técnico
+# Histórico técnico
 
 O "porquê" de cada mudança de linha do mdOffice. O [CHANGELOG](../CHANGELOG.md) conta **o que**
 mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local, a linha e o motivo.
@@ -26,6 +26,69 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 ```
 
 ---
+
+## src/fita.ts
+
+### 2026-10-16 · este commit · fluidez no resize da fita e tamanho uniforme entre abas
+- **Local:** `ligarAlcaFita` e `ligarEncaixeFita`
+- **Linha:** medição síncrona em `teto()`/`pointermove` e ` compactar = plano.compacta || escala < 0.88` → cache `baseArrasto` no `pointerdown` + `requestAnimationFrame`, `WeakMap` de larguras dos grupos e `compactar = escala < 0.88` com piso unificado para `inicio`/`inserir`/`desenhar`
+- **Porquê:** medir `getBoundingClientRect()` clonando estilo e abrindo todos os grupos recolhidos a cada evento de ponteiro travava o arrasto da fita, e misturar `plano.compacta` com `escala < 0.88` fazia os botões mudarem de tamanho ao alternar entre Página Inicial, Inserir e Desenhar.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-16 · este commit · redesign da aba Desenhar e limpeza da aba Transições
+- **Local:** `desenhar()` e `transicoes()`
+- **Linha:** coluna de 4 espessuras / seletor solto / lista larga de formas e `span.ppr-nota-escopo` em `transicoes()` → linhas `.ppr-traco-linha` com `.ppr-seg`, coluna `.ppr-pintura-op`, grade `.ppr-formas-rapidas` (2×4 ícones) e remoção da nota `"Transição é da lâmina..."`
+- **Porquê:** o grupo Traço empurrava a altura da fita com 4 botões empilhados e controles desalinhados, a lista de formas ocupava largura demais e jogava grupos para fora, e o usuário pediu a remoção da mensagem na aba Transições.
+
+## src/powerpoint/ui/popup.ts
+
+### 2026-10-16 · este commit · fechar popups já no pointerdown em captura
+- **Local:** `abrirPopup` (listeners de fechamento externo)
+- **Linha:** apenas `document.addEventListener("mousedown", fora, true)` → `pointerdown` + `mousedown` em fase de captura
+- **Porquê:** o palco (`stage.ts`) chama `e.preventDefault()` no `pointerdown`, o que impede o navegador de disparar `mousedown` e deixava o menu de contexto preso na tela ao clicar no palco.
+
+## src/powerpoint/stage.ts
+
+### 2026-10-16 · este commit · panorama com botão direito no canvas e limpeza de seleção de texto nativa
+- **Local:** `ligarEventos` (`pointerdown` no `canvas` e início do `onPointerDown` no `slideEl`)
+- **Linha:** novo listener `pointerdown` (`button === 2`) em `this.canvas` fora de `slideEl`, `try/catch` em `setPointerCapture` e `window.getSelection()?.removeAllRanges()`
+- **Porquê:** permitir mover a tela com o botão direito mesmo começando no pano de fundo ao redor da lâmina e limpar qualquer seleção azul residual do navegador ao interagir com formas.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-16 · este commit · resize fluido do painel lateral e menu de contexto só em formas
+- **Local:** `montar` (`.pp-side-resize` e `contextmenu` no `canvas`), `selecionar` e `menuDeContexto`
+- **Linha:** `getBoundingClientRect()` por pixel no `pointermove` → `direita0` cacheado + `requestAnimationFrame`; remoção do bloco `!id` (`Colar` / `Selecionar tudo`) em `menuDeContexto`
+- **Porquê:** eliminar o travamento ao ajustar a largura do painel lateral e impedir que o menu `"Colar / Selecionar tudo"` apareça ao usar o botão direito no vazio da lâmina ou para se movimentar.
+
+## src/styles/base.css
+
+### 2026-10-16 · este commit · prevenção de seleção acidental de texto na interface
+- **Local:** regras globais após `body`
+- **Linha:** `user-select: none` em botões/controles da interface e `user-select: text` em campos editáveis
+- **Porquê:** evitar que cliques e arrastos nos painéis e botões marquem os rótulos em azul como texto selecionado.
+
+## src/styles/fita.css
+
+### 2026-10-16 · este commit · redesign dos botões de grupo recolhido
+- **Local:** `.fita-grupo.fita-grupo-recolhido` e `.fita-grupo-btn`
+- **Linha:** `flex: 0 0 auto` sem limite de largura → `flex: 0 1 auto !important; min-width: 0` e estilo de pílula compacta com reticências
+- **Porquê:** quando vários grupos recolhiam em larguras pequenas, os botões rígidos empurravam `Formas ▾` para fora da tela.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-16 · este commit · estilos da aba Desenhar compacta e bloqueio de seleção fora de edição
+- **Local:** `.pp-shape` / `.pp-Editing` e bloco da aba Desenhar (`.ppr-seg`, `.ppr-pintura-op`, `.ppr-formas-rapidas`)
+- **Linha:** adição de `user-select: none` em `.pp-shape` (e `text` em `.pp-Editing .pp-texto`) e classes dos controles segmentados e grade 2×4 de formas rápidas
+- **Porquê:** impedir que o texto das formas pareça selecionado fora do modo de edição e dar suporte visual compacto à nova aba Desenhar.
+
+## scripts/testar-layout.mts
+
+### 2026-10-16 · este commit · atualização dos testes de layout para a aba Desenhar e Transições
+- **Local:** bloco da aba `Transições` e da aba `Desenhar`
+- **Linha:** assertiva da nota de escopo em `Transições` → assertiva de ausência do texto `"Transição é da lâmina"` e checagem de `.ppr-seg` e `.ppr-formas-rapidas`
+- **Porquê:** refletir a remoção pedida pelo usuário na aba Transições e validar o novo layout compacto da aba Desenhar.
 
 ## tools/worktrees/fechar.ps1
 

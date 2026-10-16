@@ -492,37 +492,46 @@ export class Fita {
         `${grande("tinta-forma", ic("i-refresh"), "Converter em forma", "Converte o traço de tinta escolhido na forma que o assistente reconhecer")}`
       ),
       grupo(
+        "Traço",
+        `<div class="ppr-linhas ppr-traco-grade">
+           <div class="ppr-linha">
+             ${btn("pincel:cor", `${ic("i-draw")}<span class="ppr-barra" data-barra="pincel-cor"></span>`, "Cor do traço", "fmt cor", true)}
+             <div class="ppr-seg">
+               ${btn("pincel:w:1", "1", "Traço fino (1 pt)", "seg")}
+               ${btn("pincel:w:2", "2", "Traço médio (2 pt)", "seg")}
+               ${btn("pincel:w:4", "4", "Traço grosso (4 pt)", "seg")}
+               ${btn("pincel:w:8", "8", "Traço bem grosso (8 pt)", "seg")}
+             </div>
+           </div>
+           <div class="ppr-linha">
+             <div class="ppr-seg">
+               ${btn("pincel:modo:livre", "Livre", "Traço livre: arraste para rabiscar", "seg")}
+               ${btn("pincel:modo:pontos", "Pontos", "Curva por pontos: clique para marcar pontos de parada", "seg")}
+             </div>
+           </div>
+         </div>
+         ${grande("pincel-assistente", ic("i-spark"), "Assistente", "Assistente: reconhece o traço e ajusta a forma (retângulo, retângulo arredondado, círculo, triângulo, linha e seta)")}`
+      ),
+      grupo(
         "Estúdio",
         `${grande("estudio", `<span class="ppr-estudio-ic"></span>`, "Isolar", "Isolar a box escolhida: edite só ela, num ambiente separado (Esc sai)")}
          ${grande("estudio-regioes", `<span class="ppr-regioes-ic"></span>`, "Regiões", "Mostrar o mapa de contornos: passar o ponteiro acende a face sob ele e clicar isola a região (Esc volta)")}`
-      ),
-      grupo(
-        "Traço",
-        `${btn("pincel:cor", `${ic("i-draw")}<span class="ppr-barra" data-barra="pincel-cor"></span>`, "Cor do traço", "fmt cor", true)}
-         <div class="ppr-col">
-           ${btn("pincel:w:1", "1", "Traço fino (1 pt)", "txt")}
-           ${btn("pincel:w:2", "2", "Traço médio (2 pt)", "txt")}
-           ${btn("pincel:w:4", "4", "Traço grosso (4 pt)", "txt")}
-           ${btn("pincel:w:8", "8", "Traço bem grosso (8 pt)", "txt")}
-         </div>
-         <div class="ppr-col">
-           ${btn("pincel:modo:livre", "Livre", "Traço livre: arraste para rabiscar", "txt")}
-           ${btn("pincel:modo:pontos", "Pontos", "Curva por pontos: clique para marcar pontos de parada", "txt")}
-         </div>
-         ${grande("pincel-assistente", ic("i-spark"), "Assistente", "Assistente: reconhece o traço e ajusta a forma (retângulo, retângulo arredondado, círculo, triângulo, linha e seta)")}`
       ),
       grupo(
         "Pintura",
         `${grande("pintura:pincel", ic("i-draw"), "Pincel", "Pincel de pintura: rabisque dentro da fronteira — o traço é recortado nela (Esc sai)")}
          ${grande("pintura:balde", ic("i-bucket"), "Balde", "Balde: pinta a face inteira sob o ponteiro, já furando o que está dentro dela")}
          ${grande("pintura:vidro", `<span class="ppr-vidro-ic"></span>`, "Vidro", "Vidro: pinta a face com transparência (a cor do traço e o valor do seletor)")}
-         <select class="ppr-sel" data-transp title="Transparência da pintura" aria-label="Transparência da pintura">
-           <option value="1">Opaco</option>
-           <option value="0.75">75%</option>
-           <option value="0.5">50%</option>
-           <option value="0.35">35%</option>
-           <option value="0.2">20%</option>
-         </select>`
+         <div class="ppr-linhas ppr-pintura-op">
+           <span class="ppr-mini">Opacidade</span>
+           <select class="ppr-sel" data-transp title="Transparência da pintura" aria-label="Transparência da pintura">
+             <option value="1">Opaco</option>
+             <option value="0.75">75%</option>
+             <option value="0.5">50%</option>
+             <option value="0.35">35%</option>
+             <option value="0.2">20%</option>
+           </select>
+         </div>`
       ),
       grupo(
         "Modelo",
@@ -536,21 +545,16 @@ export class Fita {
       grupo(
         "Formas",
         `${grande("galeria", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[5], 30)}</span>`, "Formas", "Escolha uma forma e desenhe na lâmina", true)}
-         <div class="ppr-col">
+         <div class="ppr-formas-rapidas">
            ${pequeno("forma-rapida:5", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[5], 18)}</span>`, "Retângulo", "Desenhar um retângulo")}
            ${pequeno("forma-rapida:6", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[6], 18)}</span>`, "Retângulo arredondado", "Desenhar um retângulo arredondado")}
            ${pequeno("forma-rapida:12", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[12], 18)}</span>`, "Elipse", "Desenhar uma elipse")}
            ${pequeno("forma-rapida:13", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[13], 18)}</span>`, "Triângulo", "Desenhar um triângulo")}
-         </div>
-         <div class="ppr-col">
            ${pequeno("forma-rapida:0", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[0], 18)}</span>`, "Linha", "Desenhar uma linha")}
            ${pequeno("forma-rapida:1", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[1], 18)}</span>`, "Seta", "Desenhar uma seta")}
            ${pequeno("forma-rapida:3", `<span class="ppr-gal-ic">${iconeDeForma(GALERIA[3], 18)}</span>`, "Conector", "Desenhar um conector angular")}
          </div>`
       ),
-      // O grupo Diagrama (Fluxo do Mermaid e Conectar) saiu daqui: as duas funções são de INSERÇÃO
-      // e já vivem na aba Inserir — repetir o mesmo comando em dois lugares só enche a fita (e foi
-      // o que fez a aba colapsar grupos na largura). Quem desenha usa Canetas/Traço/Estúdio/Pintura.
     ].join("");
   }
 
@@ -663,8 +667,7 @@ export class Fita {
       grupo("Duração", `<div class="ppr-linha">${duracoes}<span class="ppr-trans-dur" data-trans-dur></span></div>`),
       grupo(
         "Aplicar",
-        `${grande("transicao-todas", ic("i-addons"), "Aplicar a todas", "Aplicar esta transição a todas as lâminas")}${grande("transicao-previa", ic("i-eye"), "Prévia", "Reproduzir a transição nesta lâmina, sem entrar no F5")}
-         <span class="ppr-trans-nota ppr-nota-acao">Transição é da lâmina. Para animar uma forma escolhida, vá na aba <button type="button" class="ppr-nota-btn" data-aba="animacoes" title="Ir para a aba Animações: é lá que o efeito vai para a forma escolhida">Animações</button></span>`
+        `${grande("transicao-todas", ic("i-addons"), "Aplicar a todas", "Aplicar esta transição a todas as lâminas")}${grande("transicao-previa", ic("i-eye"), "Prévia", "Reproduzir a transição nesta lâmina, sem entrar no F5")}`
       ),
     ].join("");
   }
