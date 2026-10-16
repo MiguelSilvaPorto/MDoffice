@@ -78,6 +78,46 @@ export function abrirCores(ancora: HTMLElement, op: OpcoesCores, aoEscolher: (co
     fecharPopup();
     aoEscolher(c);
   };
+  /** A cor do que veio do seletor (com ou sem #, 3 ou 6 dígitos); null = ainda não é cor. */
+  const comoCor = (v: string): string | null => {
+    const s = v.replace(/^#/, "").trim();
+    if (/^[0-9a-fA-F]{6}$/.test(s)) return s.toUpperCase();
+    if (/^[0-9a-fA-F]{3}$/.test(s)) return s.split("").map((c) => c + c).join("").toUpperCase();
+    return null;
+  };
+  /**
+   * O "Outra cor" aplica SEM fechar o menu: clicar na cor do seletor do sistema (gradiente, matiz,
+   * R/G/B, conta-gotas) já é a escolha, e o campo do código aplica quando o valor fica completo —
+   * era o relato ("para aplicar um contorno com perfeição você precisa clicar em OK"). O menu fica
+   * aberto para ajustar espessura/traço logo depois; o OK passa a ser "aplicar e fechar". Durante o
+   * arrasto é uma aplicação por quadro, e a mesma cor não se repete.
+   */
+  let ultimaViva = "";
+  let agendada = "";
+  let marcada = 0;
+  const aplicarAgora = (c: string): void => {
+    if (c === ultimaViva) return;
+    ultimaViva = c;
+    aoEscolher(c);
+  };
+  const aplicarViva = (v: string, agora = false): void => {
+    const c = comoCor(v);
+    if (!c || c === ultimaViva) return;
+    agendada = c;
+    if (agora) {
+      if (marcada) {
+        cancelAnimationFrame(marcada);
+        marcada = 0;
+      }
+      aplicarAgora(c);
+      return;
+    }
+    if (marcada) return;
+    marcada = requestAnimationFrame(() => {
+      marcada = 0;
+      aplicarAgora(agendada);
+    });
+  };
   el.addEventListener("click", (e) => {
     const t = e.target as HTMLElement;
     const sw = t.closest<HTMLElement>("[data-cor]");
@@ -90,18 +130,25 @@ export function abrirCores(ancora: HTMLElement, op: OpcoesCores, aoEscolher: (co
       return;
     }
     if (t.closest("[data-aplicar]")) {
-      const v = el.querySelector<HTMLInputElement>("[data-cor-hex]")!.value.replace(/^#/, "").trim();
-      if (/^[0-9a-fA-F]{6}$/.test(v)) escolher(v.toUpperCase());
-      else if (/^[0-9a-fA-F]{3}$/.test(v)) escolher(v.split("").map((c) => c + c).join("").toUpperCase());
+      const v = comoCor(el.querySelector<HTMLInputElement>("[data-cor-hex]")!.value);
+      if (v) escolher(v);
     }
   });
-  // o seletor nativo do sistema preenche o campo de texto; "OK" aplica
+  // o seletor do sistema manda a cor enquanto se mexe; "OK" (e o Enter) fecham
   const cor = el.querySelector<HTMLInputElement>("[data-cor-input]")!;
   const hex = el.querySelector<HTMLInputElement>("[data-cor-hex]")!;
   cor.addEventListener("input", () => {
     hex.value = cor.value.toUpperCase();
+    aplicarViva(cor.value);
   });
-  cor.addEventListener("change", () => escolher(cor.value.replace(/^#/, "").toUpperCase()));
+  // seletor do sistema fechado: a cor entra nos "Recentes" (a prévia do arrasto não enche a lista)
+  cor.addEventListener("change", () => {
+    const c = comoCor(cor.value);
+    if (!c) return;
+    aplicarViva(c, true);
+    lembrar(c);
+  });
+  hex.addEventListener("input", () => aplicarViva(hex.value));
   hex.addEventListener("keydown", (e) => {
     if (e.key === "Enter") el.querySelector<HTMLElement>("[data-aplicar]")!.click();
   });

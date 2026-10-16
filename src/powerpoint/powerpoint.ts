@@ -3477,7 +3477,9 @@ export class PowerPointHost {
 
       // ---- linha ----
       case "contorno":
-        this.comPintura((s) => patchFormas(s, ids, (f) => (value === "none" ? comLinha(f, null) : comLinha(f, { color: String(value) }))));
+        // a chave junta as prévias do seletor de cores num passo só de desfazer (o seletor aplica
+        // enquanto se mexe — o "Outra cor" não espera mais o OK)
+        this.comPintura((s) => patchFormas(s, ids, (f) => (value === "none" ? comLinha(f, null) : comLinha(f, { color: String(value) }))), "contorno");
         return;
       case "ln-tipo":
         this.comPintura((s) => patchFormas(s, ids, (f) => (value === "none" ? comLinha(f, null) : comLinha(f, f.ln ?? { color: ajustarCor(corPrincipal(f.fillX) ?? "4F46E5", 0.7), w: 1 }))));

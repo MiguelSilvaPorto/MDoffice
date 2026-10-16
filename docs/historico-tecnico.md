@@ -17,6 +17,7 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 ### Modelo
 
 ```markdown
+
 ## caminho/do/arquivo.ts
 
 ### AAAA-MM-DD · commit · resumo curto
@@ -786,6 +787,7 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** arquivos substituídos/novos (pacote gerado com `tauri icon app-icon.png`)
 - **Porquê:** o app passa a usar o ícone novo (documento "M↓" com painéis azul/laranja): o claro
   é o fixo do `.exe`/instalador; os dois ficam disponíveis para a escolha em Configurações.
+
 ## src/sidebar.ts
 
 ### 2026-10-13 · este commit · clique direito abre o menu do arquivo
@@ -1410,6 +1412,7 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** 11 verificações (as 5 do tema atualizadas + 6 novas)
 - **Porquê:** as grades de 2 e de 3, o estado marcado, as prévias, os tempos dos três níveis, o
   gating do discreto, o relevo do completo, os raios dos cantos, as abas e a leitura no boot.
+
 ## src/settingsPage.ts
 
 ### 2026-10-13 · este commit · aba Histórico com resumo e recuperação dentro do app
@@ -1626,6 +1629,7 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   decisão, estilo/norma) e ordena o trabalho em quatro ondas — começando pelas correções de rumo
   baratas (citação no padrão 10520:2023, n-gramas no ranqueamento, sinal negativo no aprendizado,
   margem de confiança) e terminando no motor ABNT e no perfil `.docx`.
+
 ## src/broker/data/phrases.ts
 
 ### 2026-10-13 · este commit · expressões adverbiais que pedem vírgula
@@ -2515,6 +2519,7 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Local:** `docs/abnt-como-escrever-regras.md` (novo)
 - **Porquê:** o contrato em prosa, com os dois lados de cada teste e o que o lint recusa.
   É o que permite mais de uma pessoa (ou agente) escrever regra sem inventar dialeto.
+
 ## src/dialogoTexto.ts
 
 ### 2026-10-14 · esta tarefa · diálogo de texto do app (novo arquivo)
@@ -2712,6 +2717,7 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** nova tabela com o commit desta tarefa
 - **Porquê:** cada fase do F1 registra a sua medição; o documento é o termômetro e sem o número novo
   a próxima mudança não teria com o que se comparar.
+
 ## src/broker/abnt/regras/citacao-sem-ano.toml (novo)
 
 ### 2026-10-14 · citações C01/C03/C04/C06 · "(Silva)" sem ano: só com sobrenome da lista
@@ -3957,6 +3963,7 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Local:** “Escrita assistida (também no Word)”
 - **Linha:** `+ o item "Formalizar"` (atalho, botão da fita, seleção/documento e o formato preservado)
 - **Porquê:** funcionalidade visível no motor Word: o documento do módulo precisa dizer como usar.
+
 ## docs/ · a conferência final da entrega ABNT
 
 ### 2026-10-14 · (este commit) · entrega conferida, changelog promovido
@@ -6056,6 +6063,7 @@ antigas quando fizer sentido.
 - **Linha:** nova linha `"test:abnt-docx": "node scripts/testar-abnt-docx.mts"`
 - **Porquê:** o teste do validador do `.docx` entra no mesmo padrão dos testes do motor ABNT
   (`test:abnt`, `test:abnt-contexto`).
+
 ## src/broker/abnt/verificadores/numeracao.ts
 
 ### 2026-10-14 · este commit · S01 a S04: sumário e numeração (NBR 6027 e 6024)
@@ -6288,6 +6296,7 @@ antigas quando fizer sentido.
   interface (mesmo em pasta de rede) e que nenhuma alteração fica sem salvar
 - **Porquê:** o comportamento visível mudou (o app engasgava a cada salvamento em UNC/SMB e podia
   deixar o fim do texto sem gravar).
+
 ## src/settingsPage.ts
 
 ### 2026-10-14 · esta tarefa · os `dd` viram selects de verdade
@@ -6568,6 +6577,7 @@ antigas quando fizer sentido.
   de "Não adicionado" (F4, no MD\*) é de outro trabalho e ficou onde está — a promoção em
   bloco das rodadas anteriores só era segura porque todas as entradas daquelas seções eram
   desta linha de trabalho.
+
 ## src/fontes.ts
 
 ### 2026-10-14 · esta tarefa · uma lista de fontes para os dois motores (novo arquivo)
@@ -6772,6 +6782,7 @@ antigas quando fizer sentido.
   por impressão. A passada cobre só o que já estava na `main` naquele momento: a entrada de uma
   tarefa que feche depois (ou que esteja com o fechamento em andamento), como a do **corpus dos
   n-gramas**, fica para a promoção seguinte.
+
 ## src/powerpoint/render/midia.ts
 
 ### 2026-10-14 · esta tarefa · o vídeo importado volta a preencher o quadro
@@ -7200,6 +7211,7 @@ antigas quando fizer sentido.
 - **Linha:** a bala do arco ganha a orientação (traço torto sai girado e a caixa acompanha) e o
   desenho livre passa a dizer "duas passadas"; a bala do desenho livre cita o passo fino
 - **Porquê:** é o comportamento visível do assistente, e era o que o usuário estava vendo errado.
+
 ## src/powerpoint/powerpoint.ts · src/powerpoint/edicao/modelos.ts · src/styles/powerpoint-edicao.css
 
 ### 2026-10-14 · esta tarefa · Ideias de design (a lâmina atual em cada modelo)
@@ -8046,6 +8058,7 @@ antigas quando fizer sentido.
 - **Linha:** `novo`
 - **Porquê:** defeito de interface do módulo PowerPoint; a entrada entra já promovida, como o
   fechamento exige.
+
 ## CHANGELOG.md
 
 ### 2026-10-14 · promoção · a entrada da R4 já veio promovida (e o marcador duplicado sai)
@@ -8405,6 +8418,7 @@ antigas quando fizer sentido.
   conectores e traços fora, e as quatro fórmulas com a geometria certa (lista empilha, faixa
   alinha, destaque dá o primeiro maior). A verificação com o deck real (12 lâminas) fechou o
   quadro: 3-4 unidades por lâmina e zero problemas nas quatro fórmulas.
+
 ## src/styles/editor.css
 
 ### 2026-10-14 · lista do seletor compacta · o menu volta a ser um menu
@@ -8456,6 +8470,7 @@ antigas quando fizer sentido.
   `main`: promover as duas de uma vez é o que deixa a seção vazia de verdade — a conferência do
   script olha se a entrada **já existe** em "Adicionado" antes de mover, então não há risco de
   duplicar se a outra sessão promover depois.
+
 ## CHANGELOG.md
 
 ### 2026-10-14 · promoção · a entrada do seletor entra no "Adicionado" (Geral)
@@ -9371,6 +9386,7 @@ antigas quando fizer sentido.
 - **Porquê:** a correção é do módulo compartilhado das fitas (não de um módulo só) e o conserto das
   checagens é de ferramenta de teste; as duas entradas entram já promovidas, como o fechamento
   exige.
+
 ## CHANGELOG.md
 
 ### 2026-10-15 · promoção · 5 entradas de duas categorias entram no "Adicionado"
@@ -9593,6 +9609,7 @@ antigas quando fizer sentido.
   prende a ESTRUTURA (o menu abre a galeria; o card tem os dois alvos), não a implementação. As
   novas prendem o que NÃO pode voltar: o botão do chevron (pedido do usuário) e a duplicação do
   popup.
+
 ## CHANGELOG.md
 
 ### 2026-10-15 · promoção · 5 entradas do PowerPoint (2 movidas, 3 sobras apagadas)
@@ -9734,6 +9751,7 @@ antigas quando fizer sentido.
   real): 1920/1600/1440/1338 px sem rolagem em todas as abas; a 1200 px só Animações ainda rola (+127 px). No Chrome sem janela com "tempo
   virtual" a medição era instável (artefato do teste, não do código). Obs.: o Vite deste ambiente serve arquivos antigos depois de editar
   (precisa reiniciar). Só a fita do PowerPoint usa o ajuste; Word e Excel seguem como estavam.
+
 ## src/powerpoint/powerpoint.ts
 
 ### 2026-10-15 · o card da faixa · o "+" do canto sai e o rótulo abre a galeria
@@ -13414,6 +13432,7 @@ antigas quando fizer sentido.
 - **Porquê:** a entrega anterior fez `arranjoLegivel` devolver falso quando `novo === original` (a hierarquia numa lâmina sem hierarquia não deve
   aparecer). Num cartão só de visual (`s.arranjo === null`) `comTudo === comModelo` de propósito, então todos eram removidos e o painel mostrava
   "Nenhuma composição cabe" — exatamente o caso do slide do usuário, onde nenhuma arrumação é legível.
+
 ## src/powerpoint/powerpoint.ts
 
 ### 2026-10-16 · a barra lateral · a alça de largura da faixa vertical
@@ -13478,6 +13497,7 @@ antigas quando fizer sentido.
   `lembrar` evita a mesma cor duas vezes na lista: a paleta do deck vem da rampa/cor da forma (pode
   estar em caixa alta) e o hex digitado é normalizado na hora de aplicar, então `F2F2F2` e `f2f2f2`
   entrariam como duas.
+
 ## CHANGELOG.md
 
 ### 2026-10-16 · a barra lateral · a promoção da entrada
@@ -13578,3 +13598,50 @@ antigas quando fizer sentido.
 - **Docs:** `docs/powerpoint.md` (a bala da roda) e `docs/ui-deckcraft-paineis.md` (a linha da
   tabela de atalhos) passam a dizer que, no fim da rolagem, são **dois ticos** — é comportamento
   visível e a documentação o descrevia como um tico só.
+
+## src/powerpoint/ui/cores.ts
+
+### 2026-10-16 · a cor ao escolher · o "Outra cor" aplica sem o OK
+- **Local:** `abrirCores` — o helper novo `comoCor`, o `aplicarViva`/`aplicarAgora` (com
+  `requestAnimationFrame`), e os ouvintes do seletor do sistema e do campo do código
+- **Linha:** `cor "input" → só preenchia o hex` e `cor "change" → escolher(...)` (fechava) →
+  `input` chama `aplicarViva(cor.value)`, `change` chama `aplicarViva(c, true)` + `lembrar(c)`, o
+  `hex "input"` chama `aplicarViva(hex.value)` e o `[data-aplicar]` (OK) segue fechando (agora
+  "aplicar e fechar"); o `escolher` (swatch/OK) continua igual
+- **Porquê:** o relato ("para aplicar um contorno com perfeição você precisa clicar em OK") — o
+  seletor do sistema já manda a cor enquanto se mexe, mas ela só valia no OK. Agora a cor aplica
+  **sem fechar o menu** (dá para ajustar espessura/traço em seguida), uma vez por quadro durante o
+  arrasto e sem repetir a mesma cor. A prévia **não** entra nos Recentes (`lembrar` ficou no
+  `change`/`escolher`), senão a lista virava lixo do arrasto.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-16 · a cor ao escolher · a chave do contorno no histórico
+- **Local:** `case "contorno"` (o comando da cor do contorno)
+- **Linha:** `this.comPintura((s) => …)` → `this.comPintura((s) => …, "contorno")`
+- **Porquê:** o `Historico` junta edições seguidas da **mesma chave** dentro de ~1 s; sem chave, cada
+  prévia do seletor (dezenas por arrasto) viraria um passo de desfazer. As outras cores já tinham
+  chave (`ln-cor`, `pf-cor`, `fundo`, `estilo-texto`, e o `preench` usa `estilo`); faltava só o
+  contorno. Medido no navegador: 5 cores seguidas = 1 passo, e um `desfazer` volta à cor anterior.
+
+## scripts/testar-layout.mts
+
+### 2026-10-16 · a cor ao escolher · as checagens (e a do contorno ajustada)
+- **Local:** bloco novo "PowerPoint: o seletor de cores aplica ao escolher (sem o OK)"
+- **Linha:** `+` três checagens — a aplicação viva (com o `requestAnimationFrame`), os Recentes só no
+  `change`, e a chave `"contorno"` no histórico · e na checagem "pintura manual (contorno/sombra)
+  solta o estilo antes de aplicar" o padrão do `case "contorno"` passou a aceitar o comentário novo
+  (`[\s\S]{0,300}?`) em vez de exigir `this.comPintura(` colado
+- **Porquê:** o comportamento é de interface (prévia viva) e já foi conferido no navegador; o que os
+  testes prendem é o **mecanismo** — sem o comentário novo a checagem antiga acusava falha por causa
+  da posição do `this.comPintura(`, não por regressão.
+
+## docs/powerpoint.md
+
+### 2026-10-16 · a cor ao escolher · a bala dos menus de forma
+- **Local:** a bala "Menus de forma (Preenchimento, Contorno e Efeitos) sem forma escolhida", depois
+  do campo livre da espessura
+- **Linha:** `+` a frase da cor que vale na hora (aplica sem OK, o menu fica aberto, os Recentes no
+  fechamento e as prévias num passo só de desfazer)
+- **Porquê:** é a mesma bala que já fala do contorno e da espessura; quem lê precisa saber que a cor
+  **aplica ao escolher** — é o contrato novo do menu.

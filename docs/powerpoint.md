@@ -101,6 +101,11 @@ avisado ao abrir (nunca some em silêncio).
   A **espessura do contorno** tem um **campo livre** (aceita vírgula e ponto: 2,75 pt vale) além
   dos presets: **Enter** ou sair do campo aplica o número escrito (o comando já aceitava qualquer
   valor; faltava a interface — pedido do usuário, com print).
+  E a **cor vale na hora**: mexer no **"Outra cor"** — o seletor do sistema (gradiente, matiz,
+  R/G/B, conta-gotas) ou o código digitado — **aplica sem o OK** e o menu fica aberto para ajustar
+  a espessura e o traço logo depois; o **OK** virou "aplicar e fechar", a cor só entra nos
+  **Recentes** quando o seletor é fechado, e as prévias do arrasto viram **um passo só** de
+  desfazer (pedido: "quando eu clicar em uma cor já virar uma seleção").
 - **Ordem dos grupos na Página Inicial**: **Área de Transferência → Fonte → Parágrafo → Lâminas →
   Desenho** — o texto vem **à frente das lâminas** (o que se usa o tempo todo fica sem rolar a
   fita; o grupo **Lâminas** continua inteiro, logo depois).

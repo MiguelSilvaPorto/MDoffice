@@ -1764,7 +1764,7 @@ console.log("\nestilos de cor (galeria, painel e o vivo)");
   );
   checa(
     "pintura manual (contorno/sombra) solta o estilo antes de aplicar",
-    /private comPintura\(fn: \(s: Slide\) => Slide/.test(pptEst) && /case "contorno":\s*this\.comPintura\(/.test(pptEst) && /case "sombra-pronta":\s*this\.comPintura\(/.test(pptEst) && /this\.comPintura\(\(s\) => patchFormas\(s, this\.selecao, aplicar\)\)/.test(pptEst),
+    /private comPintura\(fn: \(s: Slide\) => Slide/.test(pptEst) && /case "contorno":[\s\S]{0,300}?this\.comPintura\(/.test(pptEst) && /case "sombra-pronta":\s*this\.comPintura\(/.test(pptEst) && /this\.comPintura\(\(s\) => patchFormas\(s, this\.selecao, aplicar\)\)/.test(pptEst),
     "a edição manual seria derrubada pelo recálculo no próximo movimento"
   );
   checa(
@@ -2591,6 +2591,31 @@ console.log("\nPowerPoint: o painel lateral se encaixa (abas e janela estreita)"
     "a alça da faixa arrasta como a do painel (rAF, limites e largura guardada)",
     /\[data-faixa-resize\]/.test(ppt) && /setProperty\("--pp-faixa-w"/.test(ppt) && /guardar\("pp-faixa-w"/.test(ppt) && /\[data-faixa-resize\]"\)/.test(ppt),
     "o arrasto da faixa perdeu rAF/limites ou não guarda a largura"
+  );
+}
+
+console.log("\nPowerPoint: o seletor de cores aplica ao escolher (sem o OK)");
+
+{
+  const cores = ler("src/powerpoint/ui/cores.ts");
+  const ppt = ler("src/powerpoint/powerpoint.ts");
+  checa(
+    "o seletor aplica enquanto se mexe (o OK deixou de ser o caminho)",
+    /const aplicarViva = \(v: string, agora = false\)/.test(cores) &&
+      /aplicarViva\(cor\.value\)/.test(cores) &&
+      /aplicarViva\(hex\.value\)/.test(cores) &&
+      /requestAnimationFrame\(\(\) => \{[\s\S]{0,140}aplicarAgora\(agendada\)/.test(cores),
+    "a cor do 'Outra cor' volta a só valer no OK (o relato)"
+  );
+  checa(
+    "a escolha final entra nos Recentes (a prévia do arrasto não)",
+    /cor\.addEventListener\("change", \(\) => \{[\s\S]{0,200}aplicarViva\(c, true\);[\s\S]{0,60}lembrar\(c\)/.test(cores),
+    "a prévia do arrasto enchendo os Recentes"
+  );
+  checa(
+    "as prévias do contorno viram um passo só de desfazer",
+    /case "contorno":[\s\S]{0,600}"contorno"\)/.test(ppt),
+    "o contorno sem chave no histórico: cada prévia virava um passo de desfazer"
   );
 }
 
