@@ -106,6 +106,34 @@ export function trechoDaMidia(m: Midia): { inicio: number; fim: number | null } 
   return { inicio, fim };
 }
 
+/**
+ * Tempo em segundos no formato `m:ss` (ou `h:mm:ss` quando passa de uma hora), para a
+ * barra de controle da apresentação. Valor inválido ou negativo vira `0:00` — a barra
+ * nunca mostra `NaN` enquanto os metadados não chegaram.
+ */
+export function formatarTempo(segundos: number): string {
+  const s = Number.isFinite(segundos) && segundos > 0 ? Math.floor(segundos) : 0;
+  const dois = (n: number): string => String(n).padStart(2, "0");
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const seg = s % 60;
+  return h > 0 ? `${h}:${dois(m)}:${dois(seg)}` : `${m}:${dois(seg)}`;
+}
+
+/**
+ * O trecho que a barra de mídia percorre (segundos): `[inicio do corte, fim do corte]`,
+ * fechado na duração real do arquivo. Sem metadados (`duration` inválida) devolve os
+ * dois extremos iguais — a barra fica desligada até o arquivo saber o próprio tamanho.
+ */
+export function faixaDaMidia(duration: number, m: Midia): { a: number; b: number } {
+  const dur = Number.isFinite(duration) && duration > 0 ? duration : 0;
+  const { inicio, fim } = trechoDaMidia(m);
+  if (!dur) return { a: 0, b: 0 };
+  const a = Math.min(Math.max(0, inicio), dur);
+  const b = fim === null ? dur : Math.min(Math.max(a + 0.1, fim), dur);
+  return { a, b };
+}
+
 /** Caixa padrão de uma mídia nova, centrada na lâmina (vídeo 16:9; áudio num cartão baixo). */
 export function caixaDaMidia(tipo: MidiaTipo, larguraPt: number, alturaPt: number): ShapeBox {
   const w = Math.min(tipo === "video" ? 62 : 46, Math.max(30, (tipo === "video" ? 480 : 360 / 1.6) / larguraPt * 100));

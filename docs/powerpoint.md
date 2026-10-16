@@ -107,8 +107,11 @@ avisado ao abrir (nunca some em silêncio).
   fluxo usa ela (que vira "Em branco"); se a atual já tem conteúdo, o fluxo ganha uma **lâmina
   nova em branco** logo depois. Depois de criado, é tudo forma comum: mover, colorir, agrupar e
   editar o texto.
-- **Mídia**: inserir áudio/vídeo, tocar no F5 com corte, volume e repetição, e ida e volta no `.pptx`.
-- **Transições de lâmina**: galeria, direção, duração, no F5 e no arquivo.
+- **Mídia**: inserir áudio/vídeo, tocar no F5 com corte, volume e repetição (na apresentação, a
+  **barra de controle do HUD** comanda o player — ver *Apresentar (F5)*), e ida e volta no `.pptx`.
+- **Transições de lâmina**: galeria, direção, duração, no F5 e no arquivo. A aba lembra que a
+  transição é da **lâmina** — para animar uma **forma** escolhida, a aba é a **Animações**, e a
+  nota traz o **botão** que leva direto para lá.
 - **Animações de forma**: aba própria com **Aparecer**, **Surgir**, **Voar**, **Zoom**, **Limpar**,
   **Caixa**, **Círculo**, **Losango**, **Dividir**, **Persianas**, **Dissolver**, **Roda**,
   **Pulsar**, **Ampliar/Reduzir**, **Girar**, **Transparência**, **Desaparecer**, **Sumir**,
@@ -579,9 +582,17 @@ Teste: `npm run test:modelo`.
   qualquer movimento.
 - **Ferramentas no HUD**: progresso e contador clicável, navegação `‹ ›`, **grade de lâminas** (`G`,
   com a miniatura real de cada uma), **tempo decorrido** (`T`), **notas do apresentador** (`N`),
-  **tela preta/branca** (`B`/`W`), **laser** (segure `L` ou `Ctrl`), **caneta** (`P`), **marca-texto**
+  **tela preta/branca** (`B`/`W`), **tela cheia** (`F`, e a apresentação já abre em tela cheia),
+  **laser** (segure `L` ou `Ctrl`), **caneta** (`P`), **marca-texto**
   (`H`), **borracha** (`E`; `Shift+E` limpa a lâmina), **zoom** (`+`/`−`, `Z` volta a 100% e o chip no
   HUD mostra a %), **ajuda** (`?`) e **Encerrar** (`Esc`).
+- **Controles da mídia na apresentação**: toda lâmina com **áudio/vídeo** ganha uma **barra de
+  controle no HUD** — **reproduzir/pausar**, **tempo e busca** (o trecho do corte, quando há um),
+  **volume**, **mudo**, **voltar ao início** e **tela cheia da própria mídia** —, e ela vale mesmo
+  com a opção "Mostrar controles na apresentação" **desligada**. No teclado: `K` reproduz/pausa,
+  `M` liga/desliga o som e `,`/`.` voltam/avançam 5 s. A barra **não se esconde** enquanto a mídia
+  toca (é por ela que se pausa o vídeo) e o player com `continuar` segue tocando ao trocar de lâmina
+  com o controle na mão.
 - **Zoom e marcação ao vivo**: `Ctrl` + roda dá zoom **no ponto do mouse**, `+`/`−` aproximam e
   afastam, e **arrastar com zoom move a tela** (o clique parado continua avançando). A **caneta** e o
   **marca-texto** desenham por cima da lâmina (o traço acompanha o zoom, porque fica na lâmina) e a

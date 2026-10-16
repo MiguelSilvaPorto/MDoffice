@@ -12940,3 +12940,128 @@ antigas quando fizer sentido.
   a fita). Ela não foi afrouxada: virou **duas** — uma negando a repetição na aba, outra exigindo
   que o comando exista no Inserir —, porque o risco real é o de hoje: tirar a duplicação e
   **apagar** uma função junto (foi o que aconteceu com os atalhos de forma antes do ajuste).
+
+## src/powerpoint/edicao/midia.ts
+
+### 2026-10-16 · esta tarefa · o tempo e o trecho da barra de mídia
+- **Local:** fim do arquivo (`formatarTempo` e `faixaDaMidia`, novas)
+- **Linha:** `novo` — as duas funções puras entram logo depois de `trechoDaMidia`
+- **Porquê:** a barra de controle da apresentação precisa mostrar `m:ss` e saber que pedaço do
+  arquivo percorrer. As duas contas são **puras** (sem DOM): o `formatarTempo` nunca deixa sair
+  `NaN` nem negativo (os metadados do vídeo demoram a chegar) e a `faixaDaMidia` fecha o trecho do
+  corte na **duração real** (um corte até 50 s num arquivo de 20 s vale 20). Ficam aqui, ao lado do
+  resto da regra de mídia, para o teste prendê-las no Node.
+
+## src/powerpoint/render/midia.ts
+
+### 2026-10-16 · esta tarefa · o nome do arquivo e a classe dos controles na caixa
+- **Local:** `htmlMidia`, no ramo `ctx.apresentando`
+- **Linha:** `data-auto=… data-continuar=…` → `+ data-nome="${esc(m.nome ?? "")}"`; e
+  `pp-shape pp-rica pp-midia-box…` → `+ " pp-midia-controles"` quando `m.controles`
+- **Porquê:** a barra do HUD identifica o item pela caixa (o `data-midia-id` fica nela) e o nome do
+  arquivo é o rótulo mais útil na hora da fala. A classe existe porque o `pointer-events: none`
+  que isola a lâmina da edição deixava os **controles nativos** inertes: a opção "Mostrar controles
+  na apresentação" nunca mostrava controle nenhum. Com a classe, o CSS devolve o ponteiro só ao
+  player que pediu os controles — o clique na mídia sem controles continua avançando a lâmina.
+
+## src/powerpoint/presenter.ts
+
+### 2026-10-16 · esta tarefa · a mídia da apresentação é o player, não o invólucro
+- **Local:** bloco `---- mídia (áudio/vídeo) ----` (reescrito)
+- **Linha:** `stage.querySelectorAll("[data-midia-id]")` tratado como `HTMLMediaElement` →
+  `elementoDaCaixa(caixa)` (o `<audio>/<video>` dentro do invólucro), com `caixasDeMidia()` e
+  `midiasDoPalco()`
+- **Porquê:** o `data-midia-id` está no **invólucro** da mídia (é ele que anda para o "bolso" quando
+  `continuar` está ligado), mas o código chamava `el.pause()`, `el.play()`, `el.volume` e
+  `el.currentTime` **no invólucro** — um `div`: o `play()` estourava na hora (promessa não tratada)
+  e a mídia da apresentação não tocava nem pausava de verdade. Era o "não existe controle de mídia
+  no modo apresentação" do relato.
+
+### 2026-10-16 · esta tarefa · a barra de controle da mídia no HUD
+- **Local:** bloco novo `---- barra de controle da mídia ----`, o `[data-midia-bar]` do HUD e
+  `montarBarraMidia()` no `pintar` (logo depois de `tocarMidias()`)
+- **Linha:** `novo`
+- **Porquê:** a barra do APP (fora do `.pp-shape`, que é `pointer-events: none`) traz
+  reproduzir/pausar, tempo, busca, volume, mudo, reiniciar e a tela cheia da própria mídia — e
+  aparece **independente** da opção do painel, então a mídia nunca mais fica sem comando. A barra
+  é remontada a cada lâmina (o player é recriado com ela).
+
+### 2026-10-16 · esta tarefa · os ouvintes do player não se acumulam
+- **Local:** `observarMidia`, `preencherItemMidia`, `itensDaBarra` e `observados`
+- **Linha:** `novo`
+- **Porquê:** a barra é remontada a cada lâmina, mas a mídia com `continuar` é o **mesmo nó** que
+  atravessa as lâminas: ligar os eventos a cada pintura empilharia ouvintes no mesmo elemento (uma
+  lâmina por vez, para sempre). O `WeakSet` liga uma vez por elemento e o item de agora é buscado
+  no `Map` pela caixa — com a mídia no bolso não há item, e o evento não faz nada.
+
+### 2026-10-16 · esta tarefa · a barra não se esconde com a mídia tocando
+- **Local:** `acordar` e o `descansar` (novo)
+- **Linha:** `setTimeout(() => overlay.classList.add("ocioso"), 2600)` → `setTimeout(descansar, 2600)`
+- **Porquê:** o HUD some sozinho depois de um tempo parado — e sumiria justamente enquanto o vídeo
+  toca, que é quando o controle é mais necessário. Com mídia tocando o descanso se reagenda a cada
+  segundo; sem ela, o comportamento antigo volta (a lâmina fica limpa).
+
+### 2026-10-16 · esta tarefa · a apresentação em tela cheia
+- **Local:** bloco novo `---- tela cheia ----`, o botão `[data-tool="cheia"]`, a tecla `F` e o
+  `fechar`
+- **Linha:** `novo` — `definirTelaCheia(true)` na abertura e `definirTelaCheia(false)` ao encerrar
+- **Porquê:** o modo apresentação do Office toma a tela; aqui ele só cobria a janela do app. O
+  pedido do elemento (`requestFullscreen`) sai no gesto que abriu — o navegador só concede tela
+  cheia com gesto —, e a **janela do Tauri** (`getCurrentWindow().setFullscreen`) entra como rede
+  de segurança para quando o WebView recusa; falhando as duas, a apresentação continua como estava,
+  sem erro na tela. O `fullscreenchange` mantém o rótulo do botão certo e encerrar devolve a janela
+  ao tamanho normal.
+
+### 2026-10-16 · esta tarefa · as teclas da mídia e o foco no controle da barra
+- **Local:** `onKey`
+- **Linha:** `+` `K` (reproduz/pausa), `M` (mudo), `F` (tela cheia) e `,`/`.` (−5 s/+5 s); e o
+  guarda de `INPUT`/`TEXTAREA`/`contentEditable` logo depois do `acordar()`
+- **Porquê:** apresentar sem tocar no mouse pede pausa e mudo no teclado. O guarda existe porque os
+  `input[type=range]` da barra usam as **setas**: com o foco no controle, a seta é do controle (e
+  não navega a lâmina) — só o `Esc` continua valendo.
+
+### 2026-10-16 · esta tarefa · o ponteiro da mídia com controles nativos
+- **Local:** `pointerdown` do `overlay`
+- **Linha:** `+ if (alvo.closest("audio,video")) return;`
+- **Porquê:** com os controles nativos ativos (a classe `pp-midia-controles` devolve o ponteiro ao
+  player), um `pointerdown` na mídia com zoom ligado iniciava o panorama e capturava o ponteiro — o
+  arrasto do player morria. O ponteiro da mídia é dela.
+
+## src/styles/slides.css
+
+### 2026-10-16 · esta tarefa · a barra da mídia e o ponteiro do player
+- **Local:** bloco novo `---- barra de controle da mídia ----` e, junto do isolamento do deck, a
+  regra `.pp-midia-controles`
+- **Linha:** `novo`
+- **Porquê:** `.slides-midia` é `display: flex` e vive dentro do `.slides-hud` (a barra some junto
+  com ele). Como o `display: flex` venceria o `hidden` do atributo, o `[hidden]` tem regra própria
+  — a mesma lição do `.slides-ajuda`. A regra do `.pp-midia-controles` é o outro lado do
+  `pointer-events: none !important` que isola a lâmina: o player que PEDE controles recebe o
+  ponteiro de volta.
+
+## scripts/testar-edicao-pptx.mjs · scripts/testar-layout.mts
+
+### 2026-10-16 · esta tarefa · o tempo, o trecho e a barra da apresentação
+- **Local:** o bloco "mídia (áudio/vídeo)" e o bloco "PowerPoint: modo apresentação (F5)"
+- **Linha:** `novo`
+- **Porquê:** `formatarTempo`/`faixaDaMidia` são puras e vão direto ao teste (com o `NaN` e o corte
+  maior que o arquivo); o resto é o que o `testar-layout` já faz com o presenter (ler o fonte), e
+  aqui ele prende o que o defeito revelou — o elemento DENTRO da caixa (e não o invólucro), a barra
+  que sempre aparece, o `descansar` que segura o HUD, a tela cheia e o guarda do foco.
+
+## docs/powerpoint.md
+
+### 2026-10-16 · esta tarefa · a bala da mídia e o F5
+- **Local:** "Apresentar (F5)" (o HUD, a nova bala dos controles da mídia) e a bala "Mídia" da lista
+  de recursos
+- **Linha:** `+` as balas novas e um parêntese de remissão
+- **Porquê:** o documento do módulo descreve o que o app faz — a mídia agora tem controle na
+  apresentação e a apresentação abre em tela cheia.
+
+## CHANGELOG.md
+
+### 2026-10-16 · esta tarefa · a entrada da mídia na apresentação
+- **Local:** PowerPoint ▸ **Não adicionado** ▸ Frontend (topo)
+- **Linha:** `novo`
+- **Porquê:** a tarefa ainda não está na main: a entrada nasce em "Não adicionado" e só é promovida
+  no fechamento.

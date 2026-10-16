@@ -427,6 +427,21 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   desenhar`), em 1520/1280/1000 px. Teste: `npm run test:layout` (a aba não repete o Inserir, e os
   comandos continuam lá) e `npm run test:encaixe`.
 
+- **A mídia da apresentação ganhou controle (e a apresentação, tela cheia)**: no F5, uma lâmina com
+  **áudio/vídeo** agora mostra uma **barra de controle no HUD** — **reproduzir/pausar**, **tempo**,
+  **busca**, **volume**, **mudo**, **voltar ao início do trecho** e **tela cheia da própria mídia**
+  (`K`, `M` e `,`/`.` no teclado também comandam). Ela aparece **sempre**, mesmo com "Mostrar
+  controles na apresentação" desligado, e **não se esconde** enquanto a mídia toca — era o buraco:
+  o vídeo começava sozinho e não havia como pausá-lo. Dois defeitos de fundo entraram junto: a
+  reprodução tratava o **invólucro** da mídia como se fosse o player (pausar/tocar um `div` quebrava
+  a mídia e a que tocava entre lâminas nunca pausava de verdade) e o **isolamento da lâmina**
+  (`pointer-events: none` nas formas) deixava os controles nativos **inertes** — a opção ligada no
+  painel nunca mostrou controle nenhum. Agora o player que pede controles recebe o ponteiro. E o
+  modo apresentação **abre em tela cheia** (o pedido sai no gesto do F5, com o botão **Tela cheia**
+  e a tecla `F` alternando; se o navegador recusar, a tela cheia é pedida à janela do app, e
+  encerrar devolve a janela ao tamanho normal).
+
+
 - **O grupo "Diagrama" saiu da aba Desenhar (era função repetida)**: **Fluxo do Mermaid** e
   **Conectar** já vivem na aba **Inserir** — são **inserção**, não desenho — e o atalho na aba
   Desenhar fazia exatamente a mesma coisa em dois lugares (pedido: *"o diagrama é função repetida, já

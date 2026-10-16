@@ -155,8 +155,8 @@ export function htmlMidia(s: Shape, ctx: CtxRender): string {
   if (s.rot) est.push(`transform:rotate(${n3(s.rot)}deg)`);
   if (s.opacity !== undefined && s.opacity < 1) est.push(`opacity:${n3(s.opacity)}`);
   const classes =
-    `pp-shape pp-rica pp-midia-box${ctx.selecionada === s.id ? " selected" : ""}${s.fixa ? " pp-fixa" : ""}` +
-    `${ctx.editando === s.id ? " pp-editando" : ""}${s.bloqueada ? " pp-bloqueada" : ""}`;
+    `pp-shape pp-rica pp-midia-box${ctx.selecionada === s.id ? " selected" : ""}${ctx.apresentando && m.controles ? " pp-midia-controles" : ""}` +
+    `${s.fixa ? " pp-fixa" : ""}${ctx.editando === s.id ? " pp-editando" : ""}${s.bloqueada ? " pp-bloqueada" : ""}`;
   const url = urlDaMidia(s.src, ctx.media);
   // o poster de um deck importado é `media:ID` (a capa é uma mídia do pacote) — sem passar
   // pelo mesmo resolvedor do `src`, o atributo saía cru e a capa não carregava
@@ -169,7 +169,8 @@ export function htmlMidia(s: Shape, ctx: CtxRender): string {
 
   if (ctx.apresentando) {
     const dados =
-      ` data-midia-id="${s.id}" data-tipo="${m.tipo}" data-auto="${m.auto ? "1" : "0"}" data-continuar="${m.continuar ? "1" : "0"}"` +
+      ` data-midia-id="${s.id}" data-tipo="${m.tipo}" data-nome="${esc(m.nome ?? "")}"` +
+      ` data-auto="${m.auto ? "1" : "0"}" data-continuar="${m.continuar ? "1" : "0"}"` +
       ` data-vol="${n3(m.volume ?? 1)}" data-ini="${n3(trecho.inicio)}" data-fim="${trecho.fim === null ? "" : n3(trecho.fim)}"`;
     const el =
       m.tipo === "video"

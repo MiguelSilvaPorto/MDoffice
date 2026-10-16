@@ -3,11 +3,13 @@
 // um documento Markdown qualquer — por isso concentra openPresentation/deckSummary.
 import { marked } from "marked";
 import DOMPurify from "dompurify";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { direcaoDe, duracaoDe } from "./edicao/transicao";
+import { faixaDaMidia, formatarTempo } from "./edicao/midia";
 import { deckFromMarkdown } from "./markdown";
 import { DEFAULT_SETUP, stageRatio } from "./model";
 import { THEME_COLORS } from "./schema";
-import type { Deck, DeckSetup, Slide, Transicao, TransicaoTipo } from "./schema";
+import type { Deck, DeckSetup, Midia, Slide, Transicao, TransicaoTipo } from "./schema";
 import { fundoValor } from "./render/forma";
 import { iniciarAnimacoes, type ControleAnimacoes } from "./render/animacao";
 import { toast } from "../util";
@@ -42,7 +44,9 @@ interface Traco {
 /** Abre o modo apresentação. Setas/Espaço/Enter/clique avançam, Backspace volta,
  *  Home/End vão à primeira/última lâmina, digitar um número e Enter pula direto
  *  para a lâmina, B/W alternam tela preta/branca, N mostra/oculta as notas, Esc
- *  sai. Ctrl+P imprime uma lâmina por página (PDF). Lâminas ocultas não aparecem. */
+ *  sai. Ctrl+P imprime uma lâmina por página (PDF). A mídia da lâmina ganha a
+ *  barra de controle do HUD (K pausa, M cala, F tela cheia, , e . voltam/avançam
+ *  5s) e a apresentação abre em tela cheia. Lâminas ocultas não aparecem. */
 export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titulo?: string, desenharFormas?: (slide: Slide) => string): void {
   if (!deck.slides.length) {
     toast("Este documento não tem conteúdo para apresentar — separe as lâminas com uma linha de três traços (---).", "info", 5600);
@@ -64,6 +68,7 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     <div class="slides-notes" data-notes hidden></div>
     <div class="slides-tela" data-tela hidden></div>
     <div class="slides-hud" data-hud>
+      <div class="slides-midia" data-midia-bar hidden></div>
       <i class="slides-progress"><b data-prog></b></i>
       <div class="slides-linha">
         <span class="slides-title" data-title></span>
@@ -82,6 +87,7 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
           <button class="sl-btn" data-tool="tempo" title="Mostrar o tempo decorrido (T)"><span data-relogio hidden>00:00</span><span data-relogio-off>Tempo</span></button>
           <button class="sl-btn" data-tool="notas" title="Notas do apresentador (N)">Notas</button>
           <button class="sl-btn" data-tool="tela" title="Tela preta (B) ou branca (W)">Tela</button>
+          <button class="sl-btn" data-tool="cheia" title="Tela cheia (F)">Tela cheia</button>
           <button class="sl-btn" data-tool="ajuda" title="Atalhos do teclado (?)">?</button>
           <button class="sl-btn sl-sair" data-close title="Encerrar a apresentação (Esc)">Encerrar</button>
         </span>
@@ -96,6 +102,8 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
         <span>+ / − dá zoom · Z (ou Esc) volta a 100% · Ctrl+roda dá zoom onde o mouse está</span>
         <span>com zoom, arrastar move a tela</span>
         <span>P caneta · H marca-texto · E borracha (Shift+E limpa) · Esc sai da ferramenta</span>
+        <span>F tela cheia</span>
+        <span>mídia na lâmina: K reproduz/pausa · M mudo · , . voltam/avançam 5s</span>
         <span>botão direito volta · Esc encerra</span>
       </div>
     </div>`;
@@ -115,6 +123,8 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   const ajuda = overlay.querySelector<HTMLElement>("[data-ajuda]")!;
   const relogio = overlay.querySelector<HTMLElement>("[data-relogio]")!;
   const relogioOff = overlay.querySelector<HTMLElement>("[data-relogio-off]")!;
+  const barraMidia = overlay.querySelector<HTMLElement>("[data-midia-bar]")!;
+  const botaoCheia = overlay.querySelector<HTMLElement>('[data-tool="cheia"]')!;
   let atual = 0;
   let mostrarNotas = false;
   let inicioEm = Date.now(); // relógio da apresentação (o "Tempo")
@@ -148,32 +158,54 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   // ---- mídia (áudio/vídeo) ----
   // Cada lâmina nova recria o palco; os players com `continuar` são movidos para um "bolso"
   // (o nó continua vivo, tocando) e voltam ao palco quando a lâmina deles aparece de novo.
-  const midiasNoBolso = new Map<string, HTMLMediaElement>();
+  // O que toca, pausa e responde aos controles é o `<audio>/<video>` DENTRO da caixa — o
+  // `data-midia-id` fica no invólucro (é ele que anda para o bolso), então toda conta de
+  // reprodução precisa descer até o elemento (`elementoDaCaixa`).
+  const midiasNoBolso = new Map<string, HTMLElement>();
+  const caixasDeMidia = (): HTMLElement[] => [...stage.querySelectorAll<HTMLElement>("[data-midia-id]")];
+  const elementoDaCaixa = (caixa: Element): HTMLMediaElement | null => caixa.querySelector<HTMLMediaElement>("audio.pp-midia-el, video.pp-midia-el");
+  const midiasDoPalco = (): HTMLMediaElement[] =>
+    caixasDeMidia()
+      .map(elementoDaCaixa)
+      .filter((el): el is HTMLMediaElement => !!el);
+  /** O corte da caixa como `Midia` (é só o que `faixaDaMidia` lê). */
+  const corteDaCaixa = (caixa: HTMLElement): Midia => {
+    const inicio = Number(caixa.dataset.ini ?? "0");
+    const fimTxt = caixa.dataset.fim ?? "";
+    const fim = fimTxt ? Number(fimTxt) : undefined;
+    return {
+      tipo: caixa.dataset.tipo === "audio" ? "audio" : "video",
+      corte: { inicio: Number.isFinite(inicio) ? inicio : 0, ...(fim !== undefined && Number.isFinite(fim) ? { fim } : {}) },
+    };
+  };
   const soltarMidias = () => {
-    for (const el of stage.querySelectorAll<HTMLMediaElement>("[data-midia-id]")) {
-      const id = el.dataset.midiaId!;
-      if (el.dataset.continuar === "1") {
-        midiasNoBolso.set(id, el);
-        el.remove();
+    for (const caixa of caixasDeMidia()) {
+      const el = elementoDaCaixa(caixa);
+      if (!el) continue;
+      if (caixa.dataset.continuar === "1") {
+        midiasNoBolso.set(caixa.dataset.midiaId!, caixa);
+        caixa.remove();
       } else {
         el.pause();
       }
     }
   };
   const tocarMidias = () => {
-    for (const el of stage.querySelectorAll<HTMLMediaElement>("[data-midia-id]")) {
-      const id = el.dataset.midiaId!;
+    for (const caixa of caixasDeMidia()) {
+      const id = caixa.dataset.midiaId!;
       const salvo = midiasNoBolso.get(id);
-      if (salvo && salvo !== el) {
+      if (salvo && salvo !== caixa) {
         // o player que já estava tocando volta no lugar do marcador (posição preservada)
-        el.replaceWith(salvo);
+        caixa.replaceWith(salvo);
         midiasNoBolso.delete(id);
         continue;
       }
-      const vol = Number(el.dataset.vol ?? "1");
+      const el = elementoDaCaixa(caixa);
+      if (!el) continue;
+      const vol = Number(caixa.dataset.vol ?? "1");
       el.volume = Number.isFinite(vol) ? Math.max(0, Math.min(1, vol)) : 1;
-      const ini = Number(el.dataset.ini ?? "0");
-      const fim = el.dataset.fim ? Number(el.dataset.fim) : null;
+      const ini = Number(caixa.dataset.ini ?? "0");
+      const fim = caixa.dataset.fim ? Number(caixa.dataset.fim) : null;
       const posiciona = () => {
         try {
           el.currentTime = ini;
@@ -193,7 +225,204 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
           }
         });
       }
-      if (el.dataset.auto === "1") void el.play().catch(() => {});
+      if (caixa.dataset.auto === "1") void el.play().catch(() => {});
+    }
+  };
+
+  // ---- barra de controle da mídia ----
+  // A caixa do PowerPoint traz os controles nativos no player só quando o painel pede
+  // ("Mostrar controles na apresentação"); a barra do HUD é DO APP e aparece sempre que a
+  // lâmina tem áudio/vídeo: pausar, voltar, buscar, volume, mudo, reiniciar e a tela cheia
+  // da própria mídia ficam à mão durante a fala — e cada item manda no player de verdade.
+  const tocando = (el: HTMLMediaElement): boolean => !el.paused && !el.ended;
+  const alternarMidia = (): void => {
+    const els = midiasDoPalco();
+    if (!els.length) return;
+    const temTocando = els.some(tocando);
+    for (const el of els) {
+      if (temTocando) el.pause();
+      else void el.play().catch(() => {});
+    }
+    acordar();
+  };
+  const alternarMudo = (): void => {
+    const els = midiasDoPalco();
+    if (!els.length) return;
+    const mudo = els.every((el) => el.muted);
+    for (const el of els) el.muted = !mudo;
+    acordar();
+  };
+  const pularMidia = (segundos: number): void => {
+    for (const el of midiasDoPalco()) {
+      if (!Number.isFinite(el.duration) || el.duration <= 0) continue;
+      try {
+        el.currentTime = Math.min(el.duration, Math.max(0, el.currentTime + segundos));
+      } catch {
+        /* sem metadados ainda */
+      }
+    }
+    acordar();
+  };
+  /** Liga os eventos do player UMA vez por elemento (a barra é remontada a cada lâmina;
+   *  a mídia com `continuar` sobrevive à troca e não pode acumular ouvintes). O item de
+   *  agora é procurado pela caixa — o item da lâmina anterior já foi descartado. */
+  const observados = new WeakSet<HTMLMediaElement>();
+  const itensDaBarra = new Map<string, HTMLElement>();
+  const observarMidia = (caixa: HTMLElement, el: HTMLMediaElement): void => {
+    if (observados.has(el)) return;
+    observados.add(el);
+    const atualizar = (): void => {
+      const item = itensDaBarra.get(caixa.dataset.midiaId ?? "");
+      if (item) preencherItemMidia(item, caixa, el);
+    };
+    for (const ev of ["play", "pause", "timeupdate", "seeked", "loadedmetadata", "durationchange", "volumechange", "ended"]) {
+      el.addEventListener(ev, atualizar);
+    }
+  };
+  /** Repõe o que a barra mostra (ícone, tempo, busca e volume) a partir do player. */
+  const preencherItemMidia = (item: HTMLElement, caixa: HTMLElement, el: HTMLMediaElement): void => {
+    const toca = tocando(el);
+    const botao = item.querySelector<HTMLButtonElement>("[data-midia-play]");
+    if (botao) {
+      botao.textContent = toca ? "⏸" : "▶";
+      botao.title = toca ? "Pausar (K)" : "Reproduzir (K)";
+      botao.setAttribute("aria-label", botao.title);
+    }
+    const { a, b } = faixaDaMidia(el.duration, corteDaCaixa(caixa));
+    const tempo = item.querySelector<HTMLElement>("[data-midia-tempo]");
+    if (tempo) tempo.textContent = `${formatarTempo(el.currentTime)} / ${formatarTempo(b)}`;
+    const busca = item.querySelector<HTMLInputElement>("[data-midia-busca]");
+    if (busca) {
+      const faixa = b - a;
+      busca.disabled = faixa <= 0.05;
+      busca.value = faixa <= 0.05 ? "0" : String(Math.round(((el.currentTime - a) / faixa) * 1000));
+    }
+    const mudo = item.querySelector<HTMLButtonElement>("[data-midia-mudo]");
+    if (mudo) {
+      const semSom = el.muted || el.volume === 0;
+      mudo.textContent = semSom ? "🔇" : "🔊";
+      mudo.title = semSom ? "Ligar o som (M)" : "Desligar o som (M)";
+      mudo.setAttribute("aria-label", mudo.title);
+      mudo.classList.toggle("on", semSom);
+    }
+    const vol = item.querySelector<HTMLInputElement>("[data-midia-vol]");
+    if (vol) vol.value = String(Math.round((el.muted ? 0 : el.volume) * 100));
+  };
+  /** Monta a barra da lâmina atual (some quando a lâmina não tem mídia). */
+  const montarBarraMidia = (): void => {
+    barraMidia.textContent = "";
+    itensDaBarra.clear();
+    const caixas = caixasDeMidia();
+    if (!caixas.length) {
+      barraMidia.hidden = true;
+      return;
+    }
+    barraMidia.hidden = false;
+    for (const caixa of caixas) {
+      const el = elementoDaCaixa(caixa);
+      if (!el) continue;
+      const id = caixa.dataset.midiaId!;
+      const video = el.tagName === "VIDEO";
+      const nome = caixa.dataset.nome || (video ? "Vídeo" : "Áudio");
+      const item = document.createElement("div");
+      item.className = "sm-item";
+      item.dataset.midiaItem = id;
+      item.title = nome;
+
+      const botao = document.createElement("button");
+      botao.type = "button";
+      botao.className = "sm-btn sm-play";
+      botao.dataset.midiaPlay = id;
+      botao.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (tocando(el)) el.pause();
+        else void el.play().catch(() => {});
+      });
+
+      const rotuloMidia = document.createElement("span");
+      rotuloMidia.className = "sm-nome";
+      rotuloMidia.textContent = nome;
+
+      const tempo = document.createElement("span");
+      tempo.className = "sm-tempo";
+      tempo.dataset.midiaTempo = id;
+
+      const busca = document.createElement("input");
+      busca.type = "range";
+      busca.className = "sm-busca";
+      busca.dataset.midiaBusca = id;
+      busca.min = "0";
+      busca.max = "1000";
+      busca.value = "0";
+      busca.setAttribute("aria-label", `Posição de ${nome}`);
+      busca.addEventListener("input", () => {
+        const { a, b } = faixaDaMidia(el.duration, corteDaCaixa(caixa));
+        if (b - a <= 0.05) return;
+        try {
+          el.currentTime = a + ((b - a) * Number(busca.value)) / 1000;
+        } catch {
+          /* sem metadados ainda */
+        }
+      });
+
+      const mudo = document.createElement("button");
+      mudo.type = "button";
+      mudo.className = "sm-btn sm-mudo";
+      mudo.dataset.midiaMudo = id;
+      mudo.addEventListener("click", (e) => {
+        e.stopPropagation();
+        el.muted = !el.muted;
+      });
+
+      const vol = document.createElement("input");
+      vol.type = "range";
+      vol.className = "sm-vol";
+      vol.dataset.midiaVol = id;
+      vol.min = "0";
+      vol.max = "100";
+      vol.value = String(Math.round((el.muted ? 0 : el.volume) * 100));
+      vol.setAttribute("aria-label", `Volume de ${nome}`);
+      vol.addEventListener("input", () => {
+        el.volume = Math.max(0, Math.min(1, Number(vol.value) / 100));
+        el.muted = el.volume === 0;
+      });
+
+      item.append(botao, rotuloMidia, tempo, busca, mudo, vol);
+      if (video) {
+        const telaCheia = document.createElement("button");
+        telaCheia.type = "button";
+        telaCheia.className = "sm-btn sm-tela";
+        telaCheia.dataset.midiaTela = id;
+        telaCheia.textContent = "⛶";
+        telaCheia.title = `Ver ${nome} em tela cheia`;
+        telaCheia.setAttribute("aria-label", telaCheia.title);
+        telaCheia.addEventListener("click", (e) => {
+          e.stopPropagation();
+          void el.requestFullscreen?.().catch(() => {});
+        });
+        item.append(telaCheia);
+      }
+      const reiniciar = document.createElement("button");
+      reiniciar.type = "button";
+      reiniciar.className = "sm-btn";
+      reiniciar.dataset.midiaReiniciar = id;
+      reiniciar.textContent = "↺";
+      reiniciar.title = "Voltar ao início do trecho";
+      reiniciar.setAttribute("aria-label", reiniciar.title);
+      reiniciar.addEventListener("click", (e) => {
+        e.stopPropagation();
+        try {
+          el.currentTime = faixaDaMidia(el.duration, corteDaCaixa(caixa)).a;
+        } catch {
+          /* sem metadados ainda */
+        }
+      });
+      item.append(reiniciar);
+
+      barraMidia.append(item);
+      itensDaBarra.set(id, item);
+      observarMidia(caixa, el);
+      preencherItemMidia(item, caixa, el);
     }
   };
 
@@ -295,6 +524,7 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     // animações de forma: entram depois da transição (ou na hora, se não houver)
     anim = iniciarAnimacoes(camada, slide.animacoes, { atrasoMs: transicaoMs });
     tocarMidias();
+    montarBarraMidia();
     contador.textContent = `${atual + 1} / ${ordem.length}`;
     prog.style.width = `${((atual + 1) / ordem.length) * 100}%`;
     notas.textContent = slide.notes || "— esta lâmina não tem notas —";
@@ -349,7 +579,19 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     overlay.classList.remove("ocioso");
     window.clearTimeout(ociosoTimer);
     if (gradeAberta || telaCor || !ajuda.hidden) return; // com um painel aberto a barra fica
-    ociosoTimer = window.setTimeout(() => overlay.classList.add("ocioso"), 2600);
+    ociosoTimer = window.setTimeout(descansar, 2600);
+  };
+
+  /**
+   * O descanso do HUD: some a barra e o cursor. A mídia tocando SEGURA a barra — é por ela
+   * que se pausa o vídeo, e uma lâmina com áudio rolando não pode ficar sem controle nenhum.
+   */
+  const descansar = (): void => {
+    if (midiasDoPalco().some(tocando)) {
+      ociosoTimer = window.setTimeout(descansar, 1000);
+      return;
+    }
+    overlay.classList.add("ocioso");
   };
 
   const alternarNotas = (): void => {
@@ -364,6 +606,54 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     overlay.querySelector('[data-tool="ajuda"]')?.classList.toggle("on", !ajuda.hidden);
     acordar();
   };
+
+  // ---- tela cheia ----
+  // O modo apresentação do Office toma a tela inteira; aqui o pedido sai no gesto que abriu
+  // (F5, botão ou menu) — o navegador só concede tela cheia com um gesto do usuário — e o
+  // mesmo caminho serve ao botão do HUD e à tecla F. Se o pedido do elemento falhar (WebView
+  // sem suporte, permissão negada), a tela cheia é pedida à JANELA do app (Tauri); falhando
+  // as duas, a apresentação continua no tamanho da janela, sem erro na tela.
+  let janelaCheia = false;
+  const emTelaCheia = (): boolean => !!document.fullscreenElement || janelaCheia;
+  const atualizarBotaoCheia = (): void => {
+    const cheia = emTelaCheia();
+    botaoCheia.classList.toggle("on", cheia);
+    botaoCheia.textContent = cheia ? "Sair da tela cheia" : "Tela cheia";
+    botaoCheia.title = cheia ? "Sair da tela cheia (F)" : "Tela cheia (F)";
+  };
+  const telaCheiaDaJanela = (ligado: boolean): void => {
+    if (janelaCheia === ligado) return;
+    janelaCheia = ligado; // otimista: a barra responde na hora, e o erro desfaz
+    try {
+      void getCurrentWindow()
+        .setFullscreen(ligado)
+        .catch(() => {
+          janelaCheia = false;
+          atualizarBotaoCheia();
+        });
+    } catch {
+      janelaCheia = false; // preview no navegador: sem janela nativa
+    }
+  };
+  const definirTelaCheia = (ligado: boolean): void => {
+    if (ligado) {
+      if (!emTelaCheia()) {
+        const pedido = overlay.requestFullscreen?.();
+        if (pedido) void pedido.catch(() => telaCheiaDaJanela(true));
+        else telaCheiaDaJanela(true);
+      }
+    } else {
+      if (document.fullscreenElement) void document.exitFullscreen?.().catch(() => {});
+      telaCheiaDaJanela(false);
+    }
+    atualizarBotaoCheia();
+  };
+  const alternarTelaCheia = (): void => {
+    definirTelaCheia(!emTelaCheia());
+    acordar();
+  };
+  document.addEventListener("fullscreenchange", atualizarBotaoCheia);
+  definirTelaCheia(true);
 
   // Tempo (T): conta desde a abertura da apresentação
   const doisDigitos = (n: number): string => String(n).padStart(2, "0");
@@ -585,6 +875,7 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   const fechar = () => {
     document.removeEventListener("keydown", onKey, true);
     document.removeEventListener("keyup", onKeyUp, true);
+    document.removeEventListener("fullscreenchange", atualizarBotaoCheia);
     window.removeEventListener("resize", aoRedimensionar);
     window.clearInterval(relogioTimer);
     window.clearTimeout(ociosoTimer);
@@ -592,7 +883,9 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     anim?.cancelar();
     anim = null;
     for (const el of stage.querySelectorAll<HTMLMediaElement>("audio,video")) el.pause();
-    for (const el of midiasNoBolso.values()) el.pause();
+    for (const caixa of midiasNoBolso.values()) elementoDaCaixa(caixa)?.pause();
+    // a tela cheia é do overlay: encerrar a apresentação devolve a janela ao tamanho normal
+    definirTelaCheia(false);
     overlay.remove();
     document.body.classList.remove("apresentando");
   };
@@ -604,6 +897,10 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     }
     const tecla = e.key.toLowerCase();
     acordar();
+    // o foco está num controle (a busca/volume da barra de mídia): as setas são do controle,
+    // não da lâmina — só o Esc continua valendo
+    const focado = e.target as HTMLElement | null;
+    if (e.key !== "Escape" && focado && (focado.tagName === "INPUT" || focado.tagName === "TEXTAREA" || focado.isContentEditable)) return;
     // tela preta/branca: B e W alternam; qualquer outra tecla volta para a lâmina
     if (telaCor) {
       e.preventDefault();
@@ -691,6 +988,24 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
       alternarTempo();
       return;
     }
+    // ---- mídia e tela cheia ----
+    if (tecla === "k") {
+      alternarMidia();
+      return;
+    }
+    if (tecla === "m") {
+      alternarMudo();
+      return;
+    }
+    if (tecla === "f") {
+      alternarTelaCheia();
+      return;
+    }
+    if (e.key === "," || e.key === ".") {
+      e.preventDefault();
+      pularMidia(e.key === "." ? 5 : -5);
+      return;
+    }
     if (tecla === "?") {
       alternarAjuda();
       return;
@@ -752,6 +1067,7 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   botao('[data-tool="tempo"]', alternarTempo);
   botao('[data-tool="notas"]', alternarNotas);
   botao('[data-tool="tela"]', () => mostrarTela("preta"));
+  botao('[data-tool="cheia"]', alternarTelaCheia);
   botao('[data-tool="ajuda"]', alternarAjuda);
   botao("[data-close]", fechar);
 
@@ -807,6 +1123,7 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     if (e.button !== 0) return;
     const alvo = e.target as HTMLElement;
     if (alvo.closest(".slides-hud, .slides-grade, .slides-notes")) return;
+    if (alvo.closest("audio,video")) return; // controles nativos da mídia: o ponteiro é deles
     if (telaCor) return;
     ultimoPonteiro = { x: e.clientX, y: e.clientY };
     if (alvo instanceof HTMLCanvasElement && alvo.classList.contains("slides-tinta")) {

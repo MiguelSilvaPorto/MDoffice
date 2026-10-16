@@ -1243,6 +1243,21 @@ const MD = await empacotar("src/powerpoint/edicao/midia.ts", "midia.mjs");
   ok("opções ligam e desligam", MD.comOpcaoMidia(v, "loop", true).loop === true && MD.comOpcaoMidia(v, "auto", false).auto === false);
   const bx = MD.caixaDaMidia("video", 960, 540);
   ok("caixa do vídeo centrada e dentro da lâmina", bx.x > 0 && bx.y > 0 && bx.x + bx.w < 100 && bx.y + bx.h < 100, JSON.stringify(bx));
+  // a barra de controle da apresentação (o tempo e o trecho que ela percorre)
+  ok(
+    "tempo do player em m:ss (e h:mm:ss acima de uma hora)",
+    MD.formatarTempo(0) === "0:00" && MD.formatarTempo(65) === "1:05" && MD.formatarTempo(3725) === "1:02:05",
+    [MD.formatarTempo(0), MD.formatarTempo(65), MD.formatarTempo(3725)].join(" ")
+  );
+  ok("tempo nunca mostra NaN (metadados que não chegaram)", MD.formatarTempo(NaN) === "0:00" && MD.formatarTempo(-3) === "0:00");
+  ok(
+    "a barra percorre o trecho do corte, fechado na duração real",
+    JSON.stringify(MD.faixaDaMidia(120, c)) === JSON.stringify({ a: 1.5, b: 4 }) &&
+      MD.faixaDaMidia(120, v).b === 120 &&
+      MD.faixaDaMidia(20, MD.comCorteDaMidia(v, 0, 50)).b === 20,
+    JSON.stringify(MD.faixaDaMidia(120, c))
+  );
+  ok("sem duração a barra fica desligada (trecho vazio)", MD.faixaDaMidia(NaN, v).b === 0 && MD.faixaDaMidia(0, v).a === 0);
 }
 
 // ---------------------------------------------------------------- mídia: o desenho na lâmina
@@ -1268,6 +1283,13 @@ const RENDMID = await empacotar("src/powerpoint/render/midia.ts", "rend-midia.mj
   ok("a capa do arquivo vai no atributo poster", /poster="data:image\/png/.test(html));
   const htmlPres = RENDMID.htmlMidia(formaVideo, { media: {}, apresentando: true });
   ok("na apresentação o vídeo também preenche o quadro", /object-fit:cover/.test(htmlPres) && /poster="data:image\/png/.test(htmlPres));
+  ok(
+    "na apresentação a caixa leva o nome do arquivo e a classe dos controles",
+    /data-midia-id="v1"/.test(htmlPres) && /data-tipo="video"/.test(htmlPres) && /pp-midia-controles/.test(htmlPres),
+    "a barra do HUD lê o nome da caixa e o CSS depende da classe dos controles"
+  );
+  const semControles = RENDMID.htmlMidia({ ...formaVideo, midia: { ...formaVideo.midia, controles: false } }, { media: {}, apresentando: true });
+  ok("a mídia sem controles não pede o ponteiro (o clique navega a lâmina)", !semControles.includes("pp-midia-controles") && !semControles.includes(" controls"));
   const formaImportada = { ...formaVideo, src: "media:v1", midia: { tipo: "video", auto: true, controles: true, poster: "media:p1" } };
   const htmlImp = RENDMID.htmlMidia(formaImportada, { media: { p1: "data:image/png;base64,QUJD" }, editavel: true });
   ok(

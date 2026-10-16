@@ -1374,6 +1374,50 @@ checa(
 checa("o chip do zoom mostra a % e volta a 100% no clique", /data-tool="zoom"/.test(apresen) && /botao\('\[data-tool="zoom"\]', \(\) => mudarZoom\(1, 50, 50\)\)/.test(apresen));
 checa("Esc sai da ferramenta e do zoom antes de encerrar", /ferramenta\) definirFerramenta\(null\)/.test(apresen) && /zoomK > 1\.001\) mudarZoom\(1, 50, 50\)/.test(apresen));
 
+// mídia e tela cheia (a barra de controle do HUD e o pedido de tela cheia)
+console.log("\nPowerPoint: mídia e tela cheia na apresentação");
+checa("a barra da mídia vive no HUD e é remontada a cada lâmina", /data-midia-bar/.test(apresen) && /tocarMidias\(\);\s*\n\s*montarBarraMidia\(\)/.test(apresen));
+checa(
+  "o que toca é o player DENTRO da caixa (o data-midia-id fica no invólucro)",
+  /const elementoDaCaixa = \(caixa: Element\): HTMLMediaElement \| null/.test(apresen) &&
+    /for \(const caixa of caixasDeMidia\(\)\) \{/.test(apresen) &&
+    !/midiasNoBolso\.values\(\)\) el\.pause\(\)/.test(apresen),
+  "pausar/tocar o invólucro (um div) quebrava a mídia da apresentação"
+);
+checa(
+  "a barra traz reproduzir, tempo, busca, volume, mudo, tela cheia e reiniciar",
+  ["midiaPlay", "midiaTempo", "midiaBusca", "midiaVol", "midiaMudo", "midiaTela", "midiaReiniciar"].every((d) => new RegExp(`dataset\\.${d} = id`).test(apresen))
+);
+checa("teclas da mídia: K reproduz/pausa, M mudo, , e . voltam/avançam 5s", /tecla === "k"/.test(apresen) && /tecla === "m"/.test(apresen) && /e\.key === "," \|\| e\.key === "\."/.test(apresen) && /pularMidia\(e\.key === "\." \? 5 : -5\)/.test(apresen));
+checa(
+  "a apresentação abre em tela cheia e o F alterna (o botão do HUD acompanha)",
+  /requestFullscreen/.test(apresen) &&
+    /definirTelaCheia\(true\)/.test(apresen) &&
+    /document\.addEventListener\("fullscreenchange", atualizarBotaoCheia\)/.test(apresen) &&
+    /tecla === "f"/.test(apresen) &&
+    /data-tool="cheia"/.test(apresen),
+  "o modo apresentação só cobria a janela do app"
+);
+checa("encerrar a apresentação devolve a janela e solta o ouvinte da tela cheia", /document\.removeEventListener\("fullscreenchange", atualizarBotaoCheia\)/.test(apresen) && /if \(document\.fullscreenElement\) void document\.exitFullscreen/.test(apresen));
+checa(
+  "a mídia tocando segura o HUD (a barra não some por baixo do vídeo)",
+  /const descansar = \(\): void => \{/.test(apresen) && /midiasDoPalco\(\)\.some\(tocando\)/.test(apresen)
+);
+checa(
+  "com o foco num controle da barra as setas são do controle, não da lâmina",
+  /focado\.tagName === "INPUT"/.test(apresen) && /e\.key !== "Escape" && focado/.test(apresen)
+);
+checa("os eventos do player são ligados uma vez por elemento (a mídia que continua entre lâminas não acumula ouvintes)", /const observados = new WeakSet<HTMLMediaElement>\(\)/.test(apresen) && /if \(observados\.has\(el\)\) return;/.test(apresen));
+checa(
+  "a barra do HUD tem CSS próprio e não some com o `hidden` do atributo",
+  /\.slides-midia \{/.test(cssSlides) && /\.slides-midia\[hidden\] \{[^}]*display: none/s.test(cssSlides),
+  "sem `.slides-midia[hidden] { display: none }` o display: flex vence o hidden"
+);
+checa(
+  "a mídia que PEDE controles recebe o ponteiro (o isolamento da lâmina o desligava)",
+  /\.slides-overlay \.pp-shape\.pp-midia-controles[\s\S]{0,120}pointer-events: auto !important/.test(cssSlides) && /pp-midia-controles/.test(ler("src/powerpoint/render/midia.ts"))
+);
+
 console.log("\npopup do Template: cabe na janela e rola");
 {
   const css = ler("src/styles/powerpoint-edicao.css");

@@ -214,6 +214,91 @@
   margin-right: 4px;
 }
 
+/* ---------------- barra de controle da mídia (só quando a lâmina tem áudio/vídeo) ---------------- */
+
+.slides-midia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 2px 8px;
+}
+
+/* o `display: flex` acima venceria o `hidden` do atributo */
+.slides-midia[hidden] {
+  display: none;
+}
+
+.sm-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 8px;
+  background: rgba(127, 137, 152, 0.16);
+  border: 1px solid rgba(127, 137, 152, 0.26);
+  border-radius: 8px;
+}
+
+.sm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 24px;
+  padding: 0 6px;
+  color: inherit;
+  background: rgba(127, 137, 152, 0.2);
+  border: 1px solid rgba(127, 137, 152, 0.3);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sm-btn:hover {
+  background: rgba(127, 137, 152, 0.36);
+}
+
+.sm-btn.on {
+  color: #fff;
+  background: var(--accent, #6366f1);
+  border-color: transparent;
+}
+
+.sm-play {
+  min-width: 30px;
+}
+
+.sm-nome {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.sm-tempo {
+  min-width: 78px;
+  text-align: center;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.9;
+}
+
+.sm-busca {
+  flex: 1 1 150px;
+  min-width: 110px;
+  accent-color: var(--accent, #6366f1);
+}
+
+.sm-vol {
+  width: 84px;
+  accent-color: var(--accent, #6366f1);
+}
+
 .slides-overlay.tema-claro .slides-hud {
   color: #14181f;
   background: linear-gradient(to top, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.78) 72%, transparent);
@@ -655,6 +740,14 @@
 .slides-overlay .pp-shape.pp-rica:hover,
 .slides-overlay .pp-shape.pp-rica.selected {
   outline: none;
+}
+
+/* a mídia que PEDE os controles ("Mostrar controles na apresentação", no painel) precisa
+   receber o ponteiro: o `pointer-events: none` acima deixa o player nativo inerte — era por
+   isso que a opção ligada não mostrava controle nenhum no F5 */
+.slides-overlay .pp-shape.pp-midia-controles,
+.slides-overlay .pp-shape.pp-midia-controles * {
+  pointer-events: auto !important;
 }
 
 /* ---------- transições de lâmina (F5 e prévia da fita) ----------
