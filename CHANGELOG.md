@@ -413,6 +413,8 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Composição ▸ Arrumação: o arranjo aparece no palco ao clicar** — o cartão alterava a lâmina na memória mas não repintava o palco, então o resultado só aparecia ao trocar de slide e voltar (os outros comandos da Composição já repintavam). Teste novo confere que os quatro comandos que mudam a lâmina chamam o repintar.
+
 - **Arrumação que funciona em slides reais: Fluxo, região livre, texto proporcional e explicação** — medido em 24 slides reais, 21 não ofereciam nenhum arranjo. Agora: o **Fluxo** mantém o tamanho de cada bloco e os alinha em linhas ou colunas (a grade/lista exigiam blocos iguais e encolhiam tudo); a região dos cartões é a **maior área livre** que não cruza texto fixo (antes, uma faixa fixa); a **legenda** abaixo do cartão anda com ele e a **imagem de canto** é arte, não cartão; o texto escala **na mesma proporção** da caixa (o piso de 8 pt fazia o texto vazar); a grade ganhou 5 e 6 colunas; o Designer só aplica um arranjo que **não encolha** os blocos; e o painel **explica por que** não há arranjo ("já estão alinhados", "não há o que arrumar", "denso demais"). Cerca de metade dos slides medidos passou a ter arranjos.
 
 - **Composição ▸ Tudo: volta a gerar cartões quando nenhuma arrumação é legível** — ao exigir que um arranjo "mude algo", o filtro de legibilidade passou a descartar também os cartões só de **visual** (neles a lâmina não muda de propósito) e o painel mostrava "Nenhuma composição cabe nesta lâmina" mesmo havendo visuais. Agora só os cartões com arrumação passam pelo filtro.

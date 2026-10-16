@@ -1118,6 +1118,13 @@ console.log("\ncomposição (a arrumação e o visual na mesma sugestão)");
       /Os cartões desta lâmina já estão alinhados e do mesmo tamanho/.test(ler("src/powerpoint/edicao/arranjos.ts"))
   );
   checa(
+    "todo comando da Composição que muda a lâmina repinta o palco (o arranjo só aparecia ao trocar de slide)",
+    /case "arranjo": \{[\s\S]{0,700}this\.substituirSlide\(aplicarArranjo\(sl, arranjo\.id[\s\S]{0,260}this\.pintar\(\);/.test(ppt) &&
+      /case "designer-aplicar": \{[\s\S]{0,900}this\.aplicarArteDaComposicao\([\s\S]{0,60}this\.pintar\(\);/.test(ppt) &&
+      /case "composicao-aplicar": \{[\s\S]{0,1100}this\.pintar\(\);/.test(ppt) &&
+      /case "ideia": \{[\s\S]{0,600}this\.pintar\(\);/.test(ppt)
+  );
+  checa(
     "css: o filtro segmentado existe e o modo aceso é o do painel",
     /\.pp-seg\s*\{[^}]*display:\s*flex[^}]*flex:\s*none/s.test(cssPpt) && /\.pp-seg button\.on\s*\{/.test(cssPpt),
     "o corpo do painel é uma coluna flex: sem o flex: none o filtro encolhe até sumir"

@@ -13733,3 +13733,10 @@ antigas quando fizer sentido.
   uma tarefa de follow-up, depois que o commit chegou (39952cc). Promovi só a entrada DESTA tarefa:
   as que seguem em "Não adicionado" (a roda do mouse no fim da lâmina, a fita baixa, a Arrumação —
   hierarquia…) são de sessões com trabalho aberto — mexer nelas criaria duplicata ou conflito.
+
+### 2026-10-16 · fix/arranjo-repinta-o-palco · O arranjo não repintava o palco
+- **Arquivo/local:** `src/powerpoint/powerpoint.ts` — `run()`, caso `"arranjo"`; `scripts/testar-layout.mts`.
+- **Linha:** `this.substituirSlide(aplicarArranjo(…))` → `+ this.pintar()` depois dele.
+- **Porquê:** relato do usuário com print: "você clica em arrumar e só se aplica quando muda de slide". O caso `"arranjo"` era o único da Composição
+  (com `"ideia"`, `"composicao-aplicar"` e `"designer-aplicar"`) sem `this.pintar()`: `substituirSlide` só troca `this.slides`, e o palco é redesenhado
+  por `pintar()`. O teste agora exige o `pintar()` nos quatro casos, para um comando novo não repetir o esquecimento.

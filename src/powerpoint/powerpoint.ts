@@ -2982,6 +2982,9 @@ export class PowerPointHost {
           this.registrar();
           const ratio = stageRatio(this.setup);
           this.substituirSlide(aplicarArranjo(sl, arranjo.id, Number(v) || 0, ratio));
+          // repinta o palco (e as miniaturas): sem isto a lâmina mudava na memória e o resultado só
+          // aparecia ao trocar de slide — os outros comandos da Composição já repintavam
+          this.pintar();
         }
         return;
       }
