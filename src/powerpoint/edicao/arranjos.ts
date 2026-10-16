@@ -14,8 +14,9 @@
 //
 // Funções puras: devolvem lâmina nova, sem mexer na original.
 import type { Run, Shape, ShapeBox, Slide } from "../schema";
+import { aplicarHierarquia, detectarArvore } from "./hierarquia";
 
-export type Arranjo = "grade" | "lista" | "destaque" | "faixa";
+export type Arranjo = "grade" | "lista" | "destaque" | "faixa" | "hierarquia" | "hierarquia-lado";
 
 export interface ArranjoPPT {
   id: Arranjo;
@@ -28,6 +29,9 @@ export const ARRANJOS: ArranjoPPT[] = [
   { id: "lista", nome: "Lista", descricao: "um cartão por linha, empilhados" },
   { id: "destaque", nome: "Destaque", descricao: "o primeiro cartão grande e o resto numa coluna ao lado" },
   { id: "faixa", nome: "Faixa", descricao: "tudo numa linha só, como uma linha do tempo" },
+  // só aparecem (e só mudam a lâmina) quando ela tem uma hierarquia: o resto devolve a lâmina como está
+  { id: "hierarquia", nome: "Hierarquia", descricao: "organograma: um nível por linha, filhos centrados sob o pai e conectores redesenhados" },
+  { id: "hierarquia-lado", nome: "Hierarquia →", descricao: "organograma da esquerda para a direita, com os conectores redesenhados" },
 ];
 
 /** Uma unidade de conteúdo: o cartão e tudo o que anda com ele. */
@@ -130,11 +134,15 @@ function ehLinhaSolta(s: Shape, emCartao: boolean): boolean {
  *  faixa não se move — o arranjo começa abaixo dele. */
 function faixaDoTopo(slide: Slide, cards: Shape[]): number {
   let fim = 0;
+  const topoDosCartoes = cards.length ? Math.min(...cards.map((c) => c.box.y)) : 101;
   for (const s of soltas(slide, cards)) {
     const termina = s.box.y + s.box.h;
     if (s.box.y <= 14 && termina <= 34) fim = Math.max(fim, termina);
+    // o texto que está ACIMA do primeiro cartão (o parágrafo de apresentação, por exemplo) também fica:
+    // sem isto os cartões eram jogados por cima dele
+    else if (cards.length && temTexto(s) && termina <= topoDosCartoes + 1) fim = Math.max(fim, termina);
   }
-  return fim > 0 ? Math.min(fim + 2, 40) : 0;
+  return fim > 0 ? Math.min(fim + 2, 70) : 0;
 }
 
 /** A caixa que envolve todas (a unidade anda como um bloco). */
@@ -240,14 +248,21 @@ function espacos(id: Arranjo, variante: number, quantas: number, topo: number): 
   return saida;
 }
 
-/** O texto da forma na mesma proporção do cartão (com um mínimo para não sumir). */
+/** O texto da forma na mesma proporção do cartão. O piso de 8 pt só segura a letra legível: uma letra que já era menor que isso não é inflada (caberia pior na caixa que encolheu). */
 function escalaDoTexto(s: Shape, k: number): Shape {
-  const fonte = (tamanho: number | undefined): number | undefined => (tamanho ? Math.max(8, Math.round(tamanho * k * 10) / 10) : tamanho);
+  const fonte = (tamanho: number | undefined): number | undefined => (tamanho ? Math.max(Math.min(tamanho, 8), Math.round(tamanho * k * 10) / 10) : tamanho);
   return {
     ...s,
     fontSize: fonte(s.fontSize) ?? s.fontSize,
     paras: s.paras ? s.paras.map((p) => ({ ...p, runs: p.runs.map((r: Run) => ({ ...r, size: fonte(r.size) ?? r.size })) })) : s.paras,
   };
+}
+
+/** Até onde (em %) o arranjo pode descer: acima do rodapé (o que fica fora dos cartões, embaixo). */
+function limiteBaixo(slide: Slide, unidades: Unidade[]): number {
+  const dosCartoes = new Set(unidades.flatMap((u) => u.ids));
+  const rodape = slide.shapes.filter((s) => !s.fixa && !s.liga && !dosCartoes.has(s.id) && s.box.y >= 82).map((s) => s.box.y);
+  return rodape.length ? Math.min(94, Math.min(...rodape) - 1.5) : 94;
 }
 
 /**
@@ -262,6 +277,17 @@ export function aplicarArranjo(slide: Slide, id: Arranjo, variante: number, rati
   // nada a arrumar: uma lâmina de título (dois textos soltos) fica como está
   if (cards.length < 2 && unidades.length < 3) return slide;
   const topo = faixaDoTopo(slide, cards);
+
+  // a hierarquia não é uma grade: ela entende a árvore e redesenha os conectores
+  if (id === "hierarquia" || id === "hierarquia-lado") {
+    const linhas = slide.shapes.filter((s) => !s.fixa && ehLinhaSolta(s, emCartao.has(s.id)));
+    const dosCartoes = new Set(unidades.flatMap((u) => u.ids));
+    // o texto solto que fica onde está (e não pode ser coberto pelo organograma)
+    const obstaculos = slide.shapes.filter((s) => !s.fixa && !s.liga && !dosCartoes.has(s.id) && s.kind === "texto" && temTexto(s)).map((s) => s.box);
+    const entrada = { slide, unidades, linhas, ratio, topo: Math.max(topo, MARGEM), baixo: limiteBaixo(slide, unidades), obstaculos };
+    const arvore = detectarArvore(entrada);
+    return arvore ? aplicarHierarquia(entrada, arvore, id === "hierarquia" ? "baixo" : "lado") : slide;
+  }
 
   // tamanho físico de cada unidade (a altura vale 1/ratio na régua da largura)
   const fisico = (b: ShapeBox) => ({ w: b.w, h: b.h / ratio });
@@ -306,22 +332,197 @@ export function aplicarArranjo(slide: Slide, id: Arranjo, variante: number, rati
   return { ...slide, shapes };
 }
 
+/**
+ * O DESENHO ANTIGO do slide: formas decorativas sem texto fora dos cartões — o triângulo, o pontilhado,
+ * a barrinha de destaque que o deck trazia. O Designer põe arte nova e REMOVE estas (senão as duas
+ * brigam e a antiga cobre o texto). Ficam as imagens (logotipos), os cartões e tudo o que tem texto, as
+ * tabelas, os gráficos e as mídias, e os traços que ligam cartões (a hierarquia os redesenha).
+ */
+export function enfeitesDa(slide: Slide): Set<string> {
+  const { cards, paineis } = analisar(slide);
+  const dosCartoes = new Set(unidadesCom(slide, cards, paineis).flatMap((u) => u.ids));
+  const GEOMS = /^(rect|round|ellipse|triangle|rtTriangle|diamond|parallelogram|trapezoid|hexagon|pentagon|snip)/i;
+  const saida = new Set<string>();
+  for (const s of slide.shapes) {
+    if (s.liga || s.name?.startsWith("arr:")) continue;
+    if (s.kind === "imagem" || s.src || s.tabela || s.grafico || s.midia || temTexto(s)) continue;
+    if (dosCartoes.has(s.id) || cards.some((c) => dentro(c, s))) continue;
+    if (!pintado(s) && !(s.paths?.length)) continue;
+    const area = porcao(s.box);
+    const curto = Math.min(s.box.w, s.box.h);
+    const longo = Math.max(s.box.w, s.box.h);
+    // um TRAÇO fino (relação ≥ 5): é conector ou separador (fica) — a não ser a barrinha curta de destaque,
+    // solta, longe de qualquer cartão. Um traço que toca um cartão é conector, mesmo curto.
+    if (curto <= 1.2 && longo / Math.max(0.01, curto) >= 5) {
+      const encosta = cards.some((c) => s.box.x <= c.box.x + c.box.w + 1.5 && c.box.x <= s.box.x + s.box.w + 1.5 && s.box.y <= c.box.y + c.box.h + 1.5 && c.box.y <= s.box.y + s.box.h + 1.5);
+      if (longo <= 9 && !encosta) saida.add(s.id);
+      continue;
+    }
+    const decorativa = ehDecoracao(s) || (!!s.geom && GEOMS.test(s.geom) && area < AREA_MIN) || (!!s.paths?.length && area >= AREA_MIN);
+    if (decorativa) saida.add(s.id);
+  }
+  return saida;
+}
+
+/**
+ * Os cartões JÁ estão arrumados? Do mesmo tamanho e sobre poucas linhas e colunas (três cartões
+ * lado a lado, uma grade 2×3…). Mexer neles só piora: o Designer deixa onde estão. Um conjunto
+ * espalhado tem uma linha e uma coluna para cada cartão, então não passa.
+ */
+function jaArrumados(unidades: Unidade[], cards: Shape[]): boolean {
+  const caixas = unidades.length ? cards.map((c) => c.box) : [];
+  if (caixas.length < 2) return false;
+  const w0 = caixas[0].w;
+  const h0 = caixas[0].h;
+  if (!caixas.every((b) => Math.abs(b.w - w0) / w0 <= 0.1 && Math.abs(b.h - h0) / h0 <= 0.1)) return false;
+  const grupos = (valores: number[], tol: number): number => {
+    const ordem = [...valores].sort((a, b) => a - b);
+    let n = 0;
+    ordem.forEach((v, i) => {
+      if (i === 0 || v - ordem[i - 1] > tol) n++;
+    });
+    return n;
+  };
+  const linhas = grupos(caixas.map((b) => b.y), 3);
+  const colunas = grupos(caixas.map((b) => b.x), 3);
+  return linhas * colunas <= caixas.length + 1;
+}
+
+/**
+ * O MELHOR arranjo para a lâmina (é o que o Designer aplica sozinho): entre as fórmulas que deixam
+ * tudo legível, a que dá os maiores cartões — com um bônus para a hierarquia, que preserva o sentido
+ * do slide (um organograma não vira grade). A lâmina sem o que arrumar volta como está.
+ */
+export function melhorArranjo(slide: Slide, ratio: number): Slide {
+  const { cards, paineis } = analisar(slide);
+  const unidades = unidadesCom(slide, cards, paineis);
+  if (cards.length < 2 && unidades.length < 3) return slide;
+  // o que já está em ordem (uma fileira de cartões iguais) não é mexido — a arrumação só piora
+  if (jaArrumados(unidades, cards)) return slide;
+  const candidatos: [Arranjo, number, number][] = [
+    ["hierarquia", 0, 2.5],
+    ["hierarquia-lado", 0, 2.2],
+    ...variantesDe("grade", unidades.length).map((v): [Arranjo, number, number] => ["grade", v, 1]),
+    ["lista", 0, 1],
+    ["faixa", 0, 1],
+    ["destaque", 0, 1],
+  ];
+  let melhor = slide;
+  let nota = 0;
+  for (const [id, variante, peso] of candidatos) {
+    const novo = aplicarArranjo(slide, id, variante, ratio);
+    if (!arranjoLegivel(slide, novo)) continue;
+    const caixas = new Map(novo.shapes.map((f) => [f.id, f.box]));
+    const area = unidades.reduce((a, u) => {
+      const bs = u.ids.map((i) => caixas.get(i)).filter((b): b is ShapeBox => !!b);
+      const c = bs.length ? caixaDe(bs) : { w: 0, h: 0 };
+      return a + c.w * c.h;
+    }, 0) / unidades.length;
+    if (area * peso > nota) {
+      nota = area * peso;
+      melhor = novo;
+    }
+  }
+  return melhor;
+}
+
 /** Os menores lados que um cartão pode ter depois do arranjo (nas unidades do app) sem ficar ilegível. */
 const LARGURA_MIN = 7;
 const ALTURA_MIN = 5;
+/** Na hierarquia a área mínima (% × %) vale no lugar das medidas: um cartão alto e estreito lê bem; uma tira de 2% não. */
+const AREA_MIN_CARTAO = 35;
 
 /**
- * O arranjo deixou os cartões num tamanho que dá para ler? Com muitos cartões, fórmulas como Lista
- * e Faixa os reduzem a tiras de 2% da lâmina: nesse caso a fórmula não é oferecida.
+ * Por que o arranjo NÃO deve ser oferecido (lista vazia = pode). Os motivos explicam a rejeição
+ * (o painel e os testes mostram qual regra reprovou, em vez de só "não coube"):
+ * - nada mudou (a fórmula não encontrou o que arrumar);
+ * - um cartão ficou pequeno demais (uma tira de 2% da lâmina não se lê);
+ * - o texto não cabe mais na caixa (a palavra quebra no meio ou o parágrafo vaza para o vizinho);
+ * - um cartão caiu sobre um texto que fica onde está, ou sobre outro cartão.
+ */
+export function motivosDoArranjo(original: Slide, novo: Slide): string[] {
+  // a fórmula que não encontrou o que arrumar (a hierarquia numa lâmina sem hierarquia) devolve a mesma lâmina
+  if (novo === original) return ["a fórmula não encontrou o que arrumar"];
+  const unidades = unidadesDa(original);
+  if (unidades.length < 2) return [];
+  const motivos: string[] = [];
+  const caixas = new Map(novo.shapes.map((s) => [s.id, s.box]));
+  const porId = new Map(novo.shapes.map((s) => [s.id, s]));
+  const original0 = new Map(original.shapes.map((s) => [s.id, s]));
+  // o texto só reprova se o ARRANJO o piorou: uma palavra que já quebrava no slide original não conta
+  const piorou = (id: string): boolean => !textoCabe(porId.get(id)) && textoCabe(original0.get(id));
+  // a hierarquia (reconhecida pelos conectores que ela redesenha) tem o mínimo relaxado; os demais arranjos, o rígido
+  const hierarquia = novo.shapes.some((f) => f.name?.startsWith("arr:"));
+  const minLargura = hierarquia ? 4.5 : LARGURA_MIN;
+  const minAltura = hierarquia ? 4.5 : ALTURA_MIN;
+  const finais: ShapeBox[] = [];
+  unidades.forEach((u, i) => {
+    const bs = u.ids.map((id) => caixas.get(id)).filter((b): b is ShapeBox => !!b);
+    if (!bs.length) return;
+    const c = caixaDe(bs);
+    finais.push(c);
+    // a hierarquia tem cartões altos e estreitos (as pessoas sob uma área): vale a área; os outros arranjos, o mínimo rígido
+    if (c.w < minLargura || c.h < minAltura || (hierarquia && c.w * c.h < AREA_MIN_CARTAO)) motivos.push(`cartão ${i} pequeno demais (${c.w.toFixed(1)}×${c.h.toFixed(1)})`);
+    const vaza = u.ids.filter(piorou);
+    if (vaza.length) motivos.push(`texto não cabe em ${vaza.join(",")}`);
+  });
+  // um cartão não pode cair sobre um texto que fica onde está (o parágrafo, o título)
+  const dosCartoes0 = new Set(unidades.flatMap((u) => u.ids));
+  const fixos = original.shapes.filter((f) => !f.fixa && !f.liga && !dosCartoes0.has(f.id) && temTexto(f));
+  finais.forEach((c, i) => {
+    for (const f of fixos) {
+      const t = f.box;
+      const w = Math.min(c.x + c.w, t.x + t.w) - Math.max(c.x, t.x);
+      const h = Math.min(c.y + c.h, t.y + t.h) - Math.max(c.y, t.y);
+      if (w > 0 && h > 0 && w * h > 0.05 * Math.min(c.w * c.h, t.w * t.h)) motivos.push(`cartão ${i} cobre o texto ${f.id}`);
+    }
+  });
+  // dois cartões não podem se sobrepor (o arranjo que junta tudo num lugar só é o pior resultado possível)
+  for (let i = 0; i < finais.length; i++) {
+    for (let j = i + 1; j < finais.length; j++) {
+      const a = finais[i];
+      const b = finais[j];
+      const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+      const h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+      if (w > 0 && h > 0 && w * h > 0.1 * Math.min(a.w * a.h, b.w * b.h)) motivos.push(`cartões ${i} e ${j} se sobrepõem`);
+    }
+  }
+  return motivos;
+}
+
+/**
+ * O arranjo deixou tudo legível? Com muitos cartões, fórmulas como Lista e Faixa os reduzem a tiras
+ * de 2% da lâmina; com muito texto, a caixa estreita faz o parágrafo vazar; com um texto fixo por perto,
+ * o cartão cai sobre ele. Nesses casos a fórmula não é oferecida (os motivos estão em `motivosDoArranjo`).
  */
 export function arranjoLegivel(original: Slide, novo: Slide): boolean {
-  const unidades = unidadesDa(original);
-  if (unidades.length < 2) return true;
-  const caixas = new Map(novo.shapes.map((s) => [s.id, s.box]));
-  return unidades.every((u) => {
-    const bs = u.ids.map((id) => caixas.get(id)).filter((b): b is ShapeBox => !!b);
-    if (!bs.length) return true;
-    const c = caixaDe(bs);
-    return c.w >= LARGURA_MIN && c.h >= ALTURA_MIN;
-  });
+  return motivosDoArranjo(original, novo).length === 0;
+}
+
+/**
+ * O texto da forma CABE na caixa? Duas conferências, com a letra de cada trecho:
+ * 1. a palavra mais longa cabe na largura (palavra que passa da caixa quebra no meio: "Arauc/ária");
+ * 2. o texto INTEIRO cabe na altura — as linhas que a largura força, uma sobre a outra. Um cartão com
+ *    parágrafos, espremido numa coluna estreita, ganha muitas linhas e vaza por cima do vizinho.
+ * É uma estimativa (0,5 em de largura média por letra, 1,2 de entrelinha; a lâmina tem 960 pt de
+ * largura e `alturaPt` de altura) — conservadora o bastante para reprovar o que visivelmente vaza.
+ */
+function textoCabe(s: Shape | undefined, alturaPt = 540): boolean {
+  if (!s || s.fixa || !temTexto(s)) return true;
+  const larguraPt = (s.box.w / 100) * 960;
+  const util = Math.max(8, larguraPt - 12); // menos o respiro das bordas
+  const paras: { texto: string; letra: number }[] = s.paras?.length
+    ? s.paras.map((p) => ({ texto: p.runs.map((r) => r.text ?? "").join(""), letra: Math.max(1, ...p.runs.map((r) => r.size ?? s.fontSize)) }))
+    : (s.text ?? "").split("\n").map((t) => ({ texto: t, letra: s.fontSize }));
+  // 1) a palavra mais longa, trecho a trecho (um "3" enorme ao lado de uma frase pequena não reprova a frase)
+  const trechos = s.paras?.length ? s.paras.flatMap((p) => p.runs.map((r) => ({ texto: r.text ?? "", letra: r.size ?? s.fontSize }))) : paras;
+  if (!trechos.every((t) => Math.max(1, ...t.texto.split(/\s+/).map((w) => w.length)) * t.letra * 0.55 <= util * 1.08)) return false;
+  // 2) o texto inteiro na altura
+  const linhas = paras.reduce((a, p) => a + Math.max(1, Math.ceil((p.texto.length * p.letra * 0.5) / util)), 0);
+  const necessario = paras.reduce((a, p) => a + Math.max(1, Math.ceil((p.texto.length * p.letra * 0.5) / util)) * p.letra * 1.2, 0);
+  const disponivel = (s.box.h / 100) * alturaPt - 6;
+  // uma linha só (um rótulo) em caixa justa escorrega um pouco e ninguém vê: só a largura importa. Um
+  // parágrafo de VÁRIAS linhas que passa da altura vaza por cima do vizinho — é esse o defeito que a
+  // conferência existe para pegar (o cartão espremido numa coluna estreita)
+  return linhas <= 1 || necessario <= disponivel * 1.12;
 }

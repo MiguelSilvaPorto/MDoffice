@@ -13342,3 +13342,22 @@ antigas quando fizer sentido.
   promoção anda depois: a espessura com campo livre (c9b47d7). Promovi só a entrada DESTA tarefa —
   as que seguem em "Não adicionado" são de sessões com trabalho aberto, mexer nelas criaria
   duplicata ou conflito.
+
+### 2026-10-16 · feat/designer-hierarquia · Hierarquia, Designer que arruma e arranjos que não estragam
+- **Arquivo/local:** `src/powerpoint/edicao/hierarquia.ts` (novo: `detectarArvore`, `aplicarHierarquia`), `src/powerpoint/edicao/arranjos.ts`
+  (`ARRANJOS`, `aplicarArranjo`, `faixaDoTopo`, `limiteBaixo`, `melhorArranjo`, `jaArrumados`, `enfeitesDa`, `motivosDoArranjo`/`arranjoLegivel`,
+  `textoCabe`, `escalaDoTexto`), `src/powerpoint/edicao/arte.ts` (`comporArteNaZona` + quatro geradores de zona), `src/powerpoint/edicao/designer.ts`
+  (`zonaLivre`, `aplicarArte(…, arrumar)`), `src/powerpoint/edicao/sugestoes.ts` (`arrumacoes`, `arrumacoesDe`), `src/powerpoint/powerpoint.ts`
+  (`pintarMistas`, `pintarDesigner`), `scripts/testar-hierarquia.mjs` (novo), `scripts/testar-layout.mts`.
+- **Linha:** a hierarquia nasce da inferência pelo CAMINHO dos traços (busca em largura a partir da haste de cima do filho até a haste de baixo de
+  um cartão acima), não por "o cartão mais alto da rede" (que fazia do gerente pai de todos numa rede emendada); `ancora()` exige terminar no MEIO
+  da borda (haste perpendicular ou barramento a ≤1,5 da borda), senão o separador encostado virava ligação; `arranjoLegivel` ganhou o texto (palavra
+  + parágrafo na altura, só reprova se o arranjo PIOROU), a colisão entre cartões e com texto fixo; `escalaDoTexto`: `Math.max(8, …)` →
+  `Math.max(Math.min(tamanho, 8), …)` (o piso inflava letra de 6 pt dentro de caixa que encolhia); `sugestoesDe` filtra a legibilidade ANTES do sorteio.
+- **Porquê:** os relatos do usuário com prints: (1) a Arrumação movia caixas sem formatar, perdia conectores e o texto estourava ("Arauc");
+  (2) o Designer empilhava três cartões já bem arrumados numa coluna SOBRE o parágrafo e cortava o texto; (3) deixava o triângulo e o pontilhado
+  do deck por cima da arte nova; (4) o modo Tudo mostrava um cartão só. Medido num Chrome real com os decks da equipe (`equipe-ti*.pptx`): v3/v4/v5
+  ficam com a árvore certa; no v1 (o do usuário) nenhum arranjo é legível (o texto fixo "Time de T.I." e as pessoas altas empilhadas), então NADA é
+  oferecido — o comportamento seguro. Os motivos de cada rejeição (`motivosDoArranjo`) é que mostraram o piso de 8 pt inflando as letras e o
+  critério de altura reprovando rótulos de uma linha.
+- **Fica de fora:** hierarquias em que o filho se liga por um traço que não encosta no barramento; recomposição do TEXTO de uma capa que tem cartões.

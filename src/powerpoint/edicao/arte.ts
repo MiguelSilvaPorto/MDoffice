@@ -395,3 +395,162 @@ export function comporArte(id: ArteId, semente: number, layout: SlideLayout, pal
 export function formasDeArte(id: ArteId, semente: number, layout: SlideLayout, paleta: PaletaArte, ratio = 16 / 9): Shape[] {
   return comporArte(id, semente, layout, paleta, ratio)?.formas ?? [];
 }
+
+// ---------------------------------------------------------------- arte na zona livre
+
+/**
+ * Uma zona livre da lâmina (o que sobrou depois do conteúdo) e o lado dela: a arte nasce dentro da
+ * zona e se apaga em direção ao conteúdo, que fica do lado oposto.
+ */
+export interface ZonaArte {
+  box: ShapeBox;
+  lado: "esq" | "dir" | "cima" | "baixo";
+}
+
+/** A distância (0 = colada no conteúdo, 1 = na borda da lâmina) de um ponto (0..1) da zona. */
+function distanciaDaBorda(lado: ZonaArte["lado"], x: number, y: number): number {
+  return lado === "dir" ? x : lado === "esq" ? 1 - x : lado === "baixo" ? y : 1 - y;
+}
+
+/** Os pontos de uma curva (espaço 1000 × 1000) postos de pé ou de cabeça para baixo, conforme o lado da zona. */
+function viraPara(lado: ZonaArte["lado"], pts: [number, number][]): [number, number][] {
+  if (lado === "baixo") return pts;
+  if (lado === "cima") return pts.map(([x, y]) => [x, 1000 - y]);
+  if (lado === "dir") return pts.map(([x, y]) => [y, x]);
+  return pts.map(([x, y]) => [1000 - y, x]);
+}
+
+function ondasNaZona(c: Ctx, z: ZonaArte, semente: number): ComposicaoArte {
+  const p = c.paleta;
+  const escuro = ehEscura(p);
+  const rnd = acaso(semente);
+  const { fill, meio } = fundoBase(p, 120);
+  const viva = girarMatiz(p.accent, 20);
+  const cores = escuro ? [clara(p.accent, 0.25), viva, p.muted, girarMatiz(p.accent, -18)] : [clara(p.accent, 0.55), p.accent, clara(p.muted, 0.35), clara(viva, 0.45)];
+  const formas: Shape[] = [];
+  const horizontal = z.lado === "baixo" || z.lado === "cima";
+  const bandas = 4;
+  const fase = rnd() * Math.PI * 2;
+  for (let i = 0; i < bandas; i++) {
+    // cada banda ocupa uma fatia mais "para fora" da zona (a mais próxima do conteúdo é a mais leve)
+    const fatia = 1 - (i / bandas) * 0.62;
+    const amp = 110 * (0.7 + rnd() * 0.7);
+    const base = Math.max(300 + i * 40, amp * 1.25 + 40);
+    const n = 6;
+    const pts: [number, number][] = [];
+    for (let k = 0; k <= n; k++) pts.push([(1000 / n) * k, Math.max(10, base + amp * Math.sin(fase + k * (0.8 + i * 0.07) + i * 0.9) + (rnd() - 0.5) * amp * 0.4)]);
+    const alfa = escuro ? 0.45 + i * 0.12 : 0.36 + i * 0.12;
+    const cor = cores[i % cores.length];
+    const cor2 = cores[(i + 1) % cores.length];
+    const pintura = gradiente(i % 2 ? 160 : 20, [parada(0, clara(cor, escuro ? 0.12 : 0.05), Math.min(0.95, alfa)), parada(55, cor2, alfa * 0.7), parada(100, cor, alfa * 0.25)]);
+    const box: ShapeBox = horizontal
+      ? { x: z.box.x - 2, y: z.lado === "baixo" ? z.box.y + z.box.h * (1 - fatia) : z.box.y, w: z.box.w + 4, h: z.box.h * fatia }
+      : { x: z.lado === "dir" ? z.box.x + z.box.w * (1 - fatia) : z.box.x, y: z.box.y - 2, w: z.box.w * fatia, h: z.box.h + 4 };
+    const curvaDaOnda = curva(viraPara(z.lado, pts));
+    // o preenchimento vai da onda até a borda da lâmina
+    const fecha: (string | number)[] = z.lado === "baixo" ? ["L", 1000, 1000, "L", 0, 1000, "Z"] : z.lado === "cima" ? ["L", 1000, 0, "L", 0, 0, "Z"] : z.lado === "dir" ? ["L", 1000, 1000, "L", 1000, 0, "Z"] : ["L", 0, 1000, "L", 0, 0, "Z"];
+    formas.push(livre(c, box, [...curvaDaOnda, ...fecha], { fill: pintura }));
+    if (i === 1 || i === bandas - 1) formas.push(livre(c, box, curvaDaOnda, { ln: { cor: escuro ? clara(cor, 0.55) : escura(cor, 0.05), w: 1.25, alpha: escuro ? 0.6 : 0.45 } }));
+  }
+  return { fundo: fill, formas, fundoDoTexto: meio };
+}
+
+function facetasNaZona(c: Ctx, z: ZonaArte, semente: number): ComposicaoArte {
+  const p = c.paleta;
+  const escuro = ehEscura(p);
+  const rnd = acaso(semente);
+  const { fill, meio } = fundoBase(p, 120);
+  const tons = escuro ? [p.accent, girarMatiz(p.accent, 18), p.muted, clara(p.accent, 0.3), misturar(p.bg, p.accent, 0.5)] : [p.accent, escura(p.accent, 0.18), clara(p.accent, 0.35), clara(p.muted, 0.2), clara(p.accent, 0.6)];
+  const formas: Shape[] = [];
+  const horizontal = z.lado === "baixo" || z.lado === "cima";
+  const n = 5;
+  const topos: number[] = [];
+  const bases: number[] = [];
+  for (let i = 0; i <= n; i++) {
+    topos.push((1000 / n) * i + (rnd() - 0.5) * 120);
+    bases.push((1000 / n) * i - 120 + (rnd() - 0.5) * 160);
+  }
+  const lim = (v: number): number => Math.max(0, Math.min(1000, v));
+  for (let i = 0; i < n; i++) {
+    const cor = tons[i % tons.length];
+    const alfa = 0.3 + rnd() * 0.5;
+    const t0 = lim(topos[i]);
+    const t1 = lim(topos[i + 1]);
+    const b0 = lim(bases[i]);
+    const b1 = lim(bases[i + 1]);
+    // lâminas inclinadas ao longo do lado maior da zona
+    const quad = horizontal ? ["M", t0, 0, "L", t1, 0, "L", b1, 1000, "L", b0, 1000, "Z"] : ["M", 0, t0, "L", 0, t1, "L", 1000, b1, "L", 1000, b0, "Z"];
+    formas.push(livre(c, z.box, quad, { fill: solido(cor, alfa) }));
+  }
+  const fio = horizontal ? ["M", 280, 0, "L", 720, 1000] : ["M", 0, 280, "L", 1000, 720];
+  formas.push(livre(c, z.box, fio, { ln: { cor: p.muted, w: 0.75, alpha: 0.55 } }));
+  return { fundo: fill, formas, fundoDoTexto: meio };
+}
+
+function mosaicoNaZona(c: Ctx, z: ZonaArte, semente: number): ComposicaoArte {
+  const p = c.paleta;
+  const escuro = ehEscura(p);
+  const rnd = acaso(semente);
+  const { fill, meio } = fundoBase(p, 120);
+  const tons = escuro
+    ? [clara(p.accent, 0.35), p.accent, misturar(p.accent, p.bg, 0.4), misturar(p.accent, p.bg, 0.65), misturar(p.bg, p.accent, 0.2)]
+    : [escura(p.accent, 0.3), p.accent, misturar(p.accent, p.muted, 0.45), clara(p.accent, 0.5), clara(p.accent, 0.82)];
+  // células quadradas na lâmina de verdade, de ~4 unidades de altura
+  const alvo = 4;
+  const cols = Math.max(2, Math.round((z.box.w * c.ratio) / alvo));
+  const rows = Math.max(2, Math.round(z.box.h / alvo));
+  const cw = 1000 / cols;
+  const ch = 1000 / rows;
+  const baldes: (string | number)[][] = tons.map(() => []);
+  for (let j = 0; j <= rows; j++) {
+    for (let i = 0; i <= cols; i++) {
+      if ((i + j) % 2 !== 0) continue;
+      const dist = distanciaDaBorda(z.lado, i / cols, j / rows);
+      const v = Math.max(0, Math.min(0.999, dist * 0.9 + (rnd() - 0.5) * 0.4));
+      baldes[Math.floor(v * tons.length)].push("M", r1(i * cw - cw * 0.93), r1(j * ch), "L", r1(i * cw), r1(j * ch - ch * 0.93), "L", r1(i * cw + cw * 0.93), r1(j * ch), "L", r1(i * cw), r1(j * ch + ch * 0.93), "Z");
+    }
+  }
+  const formas = baldes.map((cmds, k) => (cmds.length ? livre(c, z.box, cmds, { fill: solido(tons[k], escuro ? 0.92 : 1) }) : null)).filter((s): s is Shape => !!s);
+  return { fundo: fill, formas, fundoDoTexto: meio };
+}
+
+function orbesNaZona(c: Ctx, z: ZonaArte, semente: number): ComposicaoArte {
+  const p = c.paleta;
+  const escuro = ehEscura(p);
+  const rnd = acaso(semente);
+  const { fill, meio } = fundoBase(p, 135);
+  const viva = girarMatiz(p.accent, escuro ? 22 : 16);
+  const cores = escuro ? [p.accent, viva, p.muted] : [clara(p.accent, 0.3), clara(viva, 0.4), clara(p.muted, 0.35)];
+  const formas: Shape[] = [];
+  const centrox = z.box.x + z.box.w / 2;
+  const centroy = z.box.y + z.box.h / 2;
+  const grande = Math.max(z.box.w, z.box.h / c.ratio) * 1.5;
+  const brilho = (cx: number, cy: number, w: number, cor: string, alfa: number): Shape => {
+    const h = w * c.ratio;
+    return forma(c, { x: cx - w / 2, y: cy - h / 2, w, h }, { geom: "ellipse", fillX: { kind: "gradient", radial: true, stops: [parada(0, cor, alfa), parada(55, cor, alfa * 0.4), parada(100, cor, 0)] } });
+  };
+  const dx = z.lado === "dir" ? 0.15 : z.lado === "esq" ? -0.15 : 0;
+  const dy = z.lado === "baixo" ? 0.15 : z.lado === "cima" ? -0.15 : 0;
+  formas.push(brilho(centrox + dx * z.box.w, centroy + dy * z.box.h, grande, cores[0], escuro ? 0.9 : 0.85));
+  formas.push(brilho(centrox - dx * z.box.w * 2 + (rnd() - 0.5) * 4, centroy - dy * z.box.h * 2 + (rnd() - 0.5) * 8, grande * 0.62, cores[1], 0.75));
+  return { fundo: fill, formas, fundoDoTexto: meio };
+}
+
+/**
+ * A arte para uma ZONA livre: preenche o que sobrou depois do conteúdo (o conteúdo fica do lado
+ * oposto ao `lado` da zona). Só para lâminas de conteúdo — a capa tem a arte grande.
+ */
+export function comporArteNaZona(id: ArteId, semente: number, zona: ZonaArte, paleta: PaletaArte, ratio = 16 / 9): ComposicaoArte {
+  const ctx: Ctx = { desenho: desenhoDeArte(id, semente), paleta, ratio };
+  const s = Math.abs(Math.floor(semente));
+  switch (id) {
+    case "ondas":
+      return ondasNaZona(ctx, zona, s);
+    case "facetas":
+      return facetasNaZona(ctx, zona, s);
+    case "mosaico":
+      return mosaicoNaZona(ctx, zona, s);
+    default:
+      return orbesNaZona(ctx, zona, s);
+  }
+}

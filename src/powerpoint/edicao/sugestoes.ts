@@ -36,6 +36,13 @@ export interface OpcoesSugestoes {
    * não é: a fornada sai só de visuais, em vez de oferecer fórmulas que não mudam nada.
    */
   arrumavel?: boolean;
+  /**
+   * As arrumações que JÁ se sabe que funcionam nesta lâmina (legíveis, sem sobrepor). Com elas a
+   * fornada roda por essas e varia o VISUAL — não encolhe para o número delas. Sem isto, as oito
+   * fórmulas eram sorteadas primeiro e o filtro de legibilidade derrubava quase todas depois: o
+   * modo "Tudo" ficava com UM cartão só.
+   */
+  arrumacoes?: { arranjo: Arranjo; variante: number }[];
   /** o catálogo à mão (presets + modelos criados pelo usuário) */
   modelos: ModeloPPT[];
   /** o lote à mostra — o "Gerar mais" avança */
@@ -60,7 +67,11 @@ export function arrumacoesDe(unidades: number): Arrumacao[] {
   // lâmina vazia não tem o que arrumar (o painel mostra o aviso em vez de cartões condenados)
   if (unidades <= 0) return [];
   const lista: Arrumacao[] = [];
-  for (const a of ARRANJOS) for (const v of variantesDe(a.id, unidades)) lista.push({ arranjo: a.id, variante: v });
+  for (const a of ARRANJOS) {
+    // a hierarquia precisa de uma árvore (pai e pelo menos dois níveis): com menos de três cartões não há
+    if ((a.id === "hierarquia" || a.id === "hierarquia-lado") && unidades < 3) continue;
+    for (const v of variantesDe(a.id, unidades)) lista.push({ arranjo: a.id, variante: v });
+  }
   return lista;
 }
 
@@ -70,10 +81,11 @@ export function arrumacoesDe(unidades: number): Arrumacao[] {
  * arrumação vem `null`. Devolve lista vazia só quando não há nem catálogo (não deveria acontecer).
  */
 export function sugestoesDe(op: OpcoesSugestoes): SugestaoPPT[] {
-  const arrumacoes = (op.arrumavel ?? true) ? arrumacoesDe(op.unidades) : [];
-  // a fornada encolhe se a lâmina não tem arrumações suficientes (ou nenhuma): repetir a mesma num
-  // cartão ao lado só faria o olho achar que os cartões são iguais
-  const quantas = arrumacoes.length ? Math.max(1, Math.min(op.quantas ?? QUANTAS_PADRAO, arrumacoes.length)) : Math.max(1, op.quantas ?? QUANTAS_PADRAO);
+  const arrumacoes = op.arrumacoes ?? ((op.arrumavel ?? true) ? arrumacoesDe(op.unidades) : []);
+  // sem a lista de arrumações conhecidas, a fornada encolhe se a lâmina não tem arrumações suficientes
+  // (repetir a mesma num cartão ao lado faria o olho achar que os cartões são iguais); COM ela, o
+  // visual é que varia (a mesma arrumação com designs diferentes), então a fornada tem o tamanho cheio
+  const quantas = op.arrumacoes ? Math.max(1, op.quantas ?? QUANTAS_PADRAO) : arrumacoes.length ? Math.max(1, Math.min(op.quantas ?? QUANTAS_PADRAO, arrumacoes.length)) : Math.max(1, op.quantas ?? QUANTAS_PADRAO);
   const criadas = Math.max(0, Math.min(op.criadas ?? CRIADAS_PADRAO, quantas));
   const catalogo: { modelo: ModeloPPT; tratamento: TratamentoIdeia }[] = [];
   for (const m of op.modelos) for (const t of ACABAMENTOS) catalogo.push({ modelo: m, tratamento: t });

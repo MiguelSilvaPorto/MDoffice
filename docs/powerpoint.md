@@ -235,6 +235,31 @@ avisado ao abrir (nunca some em silêncio).
     catálogo e os três últimos cartões usam **paletas criadas na hora**). Trocar de arte ou de
     modelo **troca** a arte (não empilha), mudar o layout da lâmina a **refaz** para ele e
     **Salvar como modelo** a leva junto;
+  - **O Designer agora ARRUMA o conteúdo, tira o desenho antigo e adapta a arte ao espaço livre**:
+    - escolhe sozinho o **melhor arranjo** (a hierarquia, a grade, a lista…) — a que deixa os cartões
+      maiores e tudo legível; o que **já está arrumado** (uma fileira de cartões iguais) **não é
+      movido**, e nenhum arranjo cai sobre um **texto que fica no lugar** (o parágrafo, o título);
+    - **remove o desenho antigo** do slide (triângulos, pontilhados e a barrinha de destaque soltos fora
+      dos cartões) porque a arte nova o substitui — ficam os cartões, os textos, os logotipos
+      (imagens) e os **conectores**;
+    - a arte **ocupa a zona livre** que o conteúdo deixou (ao lado, embaixo ou em cima), em vez de uma
+      faixa fixa na borda.
+  - **Arrumação em hierarquia** (organograma): dois arranjos novos, **Hierarquia** (a raiz em cima) e
+    **Hierarquia →** (a raiz à esquerda). Entende a árvore pelos **conectores** (traços finos, ou as
+    ligações do Conectar): o pai de um cartão é o primeiro cartão cuja haste de baixo se alcança
+    **caminhando pelos traços** a partir da haste de cima dele — numa rede emendada (a haste do gerente, o
+    barramento do supervisor e uma linha em L) isso separa quem é pai de quem. Cartões empilhados sem
+    conector também valem. O resultado: um nível por linha (ou coluna), **filhos centrados sob o pai**,
+    caixas do mesmo nível com o **mesmo tamanho** e o texto escalado junto, **conectores redesenhados**
+    (haste, barramento e descidas, na cor e espessura dos antigos) e o quadro de números à parte. O texto
+    fixo ao lado (um "Time de T.I.") é **desviado**, não coberto.
+  - **O arranjo só é oferecido se tudo continua legível** (`motivosDoArranjo` diz qual regra reprovou):
+    nenhum cartão pequeno demais, o **texto cabe** (a maior palavra na largura e o parágrafo na altura —
+    um cartão com texto espremido numa coluna estreita **nunca** é oferecido), nenhum cartão sobre outro
+    nem sobre um texto fixo.
+  - O modo **Tudo** primeiro descobre as arrumações que **funcionam** nesta lâmina e só então combina com
+    visuais variados — antes sorteava as oito fórmulas, o filtro derrubava quase todas e sobrava **um
+    cartão só**.
   - **Visual**: muda **cores, fonte, desenho e o formato das caixas** — e **nenhuma
     caixa muda de posição nem de tamanho**, como o Designer do Office. O clique vale **só para a
     lâmina aberta** (o fundo do design vira o fundo dela; o tema do deck não muda). A opção

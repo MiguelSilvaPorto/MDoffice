@@ -7,8 +7,9 @@
 // faz. Funções puras: devolvem lâmina nova.
 import type { Para, Run, Shape, Slide } from "../schema";
 import { themeOf } from "../themes";
-import { ARTES, comporArte, contraste, misturar, type ArteId, type PaletaArte } from "./arte";
-import { semDesenho } from "./desenhos";
+import { ARTES, comporArte, comporArteNaZona, contraste, misturar, type ArteId, type PaletaArte, type ZonaArte } from "./arte";
+import { enfeitesDa, melhorArranjo } from "./arranjos";
+import { ehDecoracaoDeModelo, semDesenho } from "./desenhos";
 import { aplicarModeloALamina, type EstiloAtual, type ModeloPPT } from "./modelos";
 
 /** As quatro cores de um modelo (as do tema onde ele não traz as próprias). */
@@ -74,19 +75,54 @@ function formatar(s: Shape, o: { tamanho: number; negrito: boolean; cor: string;
 }
 
 /**
+ * A maior ZONA LIVRE da lâmina: o que sobra (ao lado, embaixo ou em cima) depois do conteúdo. É nela
+ * que a arte nasce — em vez de uma faixa fixa na borda, ela preenche o espaço que o conteúdo deixou.
+ * Sem zona grande o bastante (o conteúdo ocupa tudo), a arte fica nas bordas como no miolo comum.
+ */
+export function zonaLivre(shapes: Shape[]): ZonaArte | null {
+  const vivas = shapes.filter((s) => !s.fixa && !ehDecoracaoDeModelo(s));
+  if (!vivas.length) return null;
+  const x0 = Math.min(...vivas.map((s) => s.box.x));
+  const y0 = Math.min(...vivas.map((s) => s.box.y));
+  const x1 = Math.max(...vivas.map((s) => s.box.x + s.box.w));
+  const y1 = Math.max(...vivas.map((s) => s.box.y + s.box.h));
+  const m = 2.5;
+  const candidatas: ZonaArte[] = [
+    { lado: "dir", box: { x: x1 + m, y: 0, w: 100 - (x1 + m), h: 100 } },
+    { lado: "esq", box: { x: 0, y: 0, w: x0 - m, h: 100 } },
+    { lado: "baixo", box: { x: 0, y: y1 + m, w: 100, h: 100 - (y1 + m) } },
+    { lado: "cima", box: { x: 0, y: 0, w: 100, h: y0 - m } },
+  ];
+  // uma zona só vale se tem espessura para a arte aparecer (lados: 9% da largura; base/topo: 10% da altura)
+  const validas = candidatas.filter((z) => (z.lado === "dir" || z.lado === "esq" ? z.box.w >= 9 : z.box.h >= 10));
+  if (!validas.length) return null;
+  return validas.reduce((a, b) => (b.box.w * b.box.h > a.box.w * a.box.h ? b : a));
+}
+
+/**
  * A lâmina com a arte aplicada. Cores, fonte e formato das caixas vêm do modelo (como na
  * Composição); a arte troca as decorações dele, e o fundo vira o da arte (um gradiente na paleta).
  */
-export function aplicarArte(slide: Slide, arte: ArteId, semente: number, modelo: ModeloPPT, de: EstiloAtual, ratio = 16 / 9): Slide {
-  const base = aplicarModeloALamina(slide, de, modelo, "recolorir", ratio);
+export function aplicarArte(slide: Slide, arte: ArteId, semente: number, modelo: ModeloPPT, de: EstiloAtual, ratio = 16 / 9, arrumar = true): Slide {
+  // o Designer ARRUMA o conteúdo: a hierarquia redesenhada, a grade, a lista… a que deixa tudo maior e legível
+  const arrumada = arrumar ? melhorArranjo(slide, ratio) : slide;
+  // o desenho ANTIGO do slide (triângulos, pontilhados, barrinhas) sai: a arte nova o substitui
+  const velhos = enfeitesDa(arrumada);
+  const semVelhos = velhos.size ? { ...arrumada, shapes: arrumada.shapes.filter((f) => !velhos.has(f.id)) } : arrumada;
+  const base = aplicarModeloALamina(semVelhos, de, modelo, "recolorir", ratio);
   const paleta = paletaDoModelo(modelo);
   const papeis = papeisDaCapa(base);
   // uma "capa" com imagens ou cartões não é recomposta: a arte vai para as bordas, como no miolo
   const layoutDaArte = papeis ? base.layout : base.layout === "titulo" || base.layout === "secao" ? "conteudo" : base.layout;
-  const comp = comporArte(arte, semente, layoutDaArte, paleta, ratio);
-  if (!comp) return base;
   // as decorações de antes (do modelo ou de outra arte) saem; as formas da arte ficam ATRÁS de tudo
   const resto = semDesenho(base).shapes;
+  let comp = comporArte(arte, semente, layoutDaArte, paleta, ratio);
+  if (!comp) return base;
+  // fora da capa recomposta, a arte ADAPTA-SE: ocupa a zona que o conteúdo deixou livre
+  if (!papeis) {
+    const zona = zonaLivre(resto);
+    if (zona) comp = comporArteNaZona(arte, semente, zona, paleta, ratio);
+  }
   let shapes = resto;
   if (comp.texto && papeis) {
     const cor = corLegivel(paleta.fg, comp.fundoDoTexto);

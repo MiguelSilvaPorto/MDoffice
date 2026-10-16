@@ -23,6 +23,7 @@
     "test:previa": "node scripts/testar-previa-inicio.mjs",
     "test:modelos": "node scripts/testar-modelos.mjs",
     "test:designer": "node scripts/testar-designer.mjs",
+    "test:hierarquia": "node scripts/testar-hierarquia.mjs",
     "test:pincel": "node scripts/testar-pincel.mjs",
     "test:formalizar": "node scripts/testar-formalizar.mts",
     "test:corpus": "node scripts/testar-corpus.mjs",

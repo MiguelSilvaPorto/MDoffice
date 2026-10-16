@@ -1091,8 +1091,9 @@ console.log("\ncomposição (a arrumação e o visual na mesma sugestão)");
   );
   checa(
     "a lâmina que não é arrumável sai só de visual (o cartão não promete fórmula à toa)",
-    /const podeArrumar = arrumavel\(atual\)/.test(ppt) &&
-      /sugestoesDe\(\{ unidades: quantas, arrumavel: podeArrumar/.test(ppt) &&
+    /const podeArrumar = legiveis\.length > 0;/.test(ppt) &&
+      /arrumavel\(atual\)\s*\?\s*ARRANJOS\.flatMap/.test(ppt) &&
+      /sugestoesDe\(\{ unidades: quantas, arrumavel: podeArrumar, arrumacoes: podeArrumar \? legiveis : undefined/.test(ppt) &&
       /const arranjo = id === "-" \? null : ARRANJOS\.find\(\(a\) => a\.id === id\)/.test(ppt) &&
       /export function arrumavel\(slide: Slide\): boolean \{/.test(ler("src/powerpoint/edicao/arranjos.ts")) &&
       /return cards\.length >= 2 \|\| unidadesCom\(slide, cards, paineis\)\.length >= 3;/.test(ler("src/powerpoint/edicao/arranjos.ts"))

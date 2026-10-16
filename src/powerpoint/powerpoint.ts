@@ -27,6 +27,7 @@ import { modelosDasVariantes } from "./edicao/variantes";
 import { refazerDesenho } from "./edicao/desenhos";
 import { ARTES, type ArteId } from "./edicao/arte";
 import { aplicarArte, papeisDaCapa, sugestoesDeArte } from "./edicao/designer";
+import { melhorArranjo } from "./edicao/arranjos";
 import { ARRANJOS, aplicarArranjo, arranjoLegivel, arrumavel, rotuloDoArranjo, unidadesDa, variantesDe, type Arranjo } from "./edicao/arranjos";
 import { gerarDesign } from "./edicao/gerador";
 import { ACABAMENTOS, sugestoesDe } from "./edicao/sugestoes";
@@ -374,7 +375,7 @@ export class PowerPointHost {
           </div>
           <div class="pp-side-corpo" data-composicao-corpo hidden>
             <div class="pp-side-head"><span>Composição</span><span class="pp-side-hint" data-composicao-hint>geradas no seu computador</span></div>
-            <p class="pp-ideias-dica">Sugestões para <b>esta lâmina</b>: o <b>Designer</b> desenha a arte e, na capa, recompõe o título; o <b>Visual</b> muda cores, fonte e o formato das caixas <b>sem mover nenhuma</b>; a <b>Arrumação</b> reposiciona o conteúdo. Clicar aplica só nesta lâmina (e dá para desfazer).</p>
+            <p class="pp-ideias-dica">Sugestões para <b>esta lâmina</b>: o <b>Designer</b> arruma o conteúdo, desenha a arte (adaptada ao espaço livre) e, na capa, recompõe o título; o <b>Visual</b> muda cores, fonte e o formato das caixas <b>sem mover nenhuma</b>; a <b>Arrumação</b> reposiciona o conteúdo. Clicar aplica só nesta lâmina (e dá para desfazer).</p>
             <div class="pp-seg" data-composicao-filtro role="group" aria-label="O que as sugestões mudam">
               <button type="button" class="on" data-filtro="designer" title="Arte vetorial (ondas, facetas, mosaico, brilhos) com a paleta de um modelo; a capa é recomposta">Designer</button>
               <button type="button" data-filtro="visual">Visual</button>
@@ -678,8 +679,13 @@ export class PowerPointHost {
     const ratio = stageRatio(this.setup);
     const altura = Math.round(largura / ratio);
     const quantas = unidadesDa(atual).length;
-    const podeArrumar = arrumavel(atual);
-    const sugestoes = sugestoesDe({ unidades: quantas, arrumavel: podeArrumar, modelos: [...MODELOS, ...lerModelosUsuario()], lote: this.loteComposicao });
+    // as arrumações que FUNCIONAM nesta lâmina (legíveis, sem sobrepor): a fornada roda por elas e varia o
+    // visual — o filtro vem ANTES do sorteio, senão sobrava um cartão só
+    const legiveis = arrumavel(atual)
+      ? ARRANJOS.flatMap((a) => variantesDe(a.id, quantas).map((v) => ({ arranjo: a.id, variante: v }))).filter((o) => arranjoLegivel(atual, aplicarArranjo(atual, o.arranjo, o.variante, ratio)))
+      : [];
+    const podeArrumar = legiveis.length > 0;
+    const sugestoes = sugestoesDe({ unidades: quantas, arrumavel: podeArrumar, arrumacoes: podeArrumar ? legiveis : undefined, modelos: [...MODELOS, ...lerModelosUsuario()], lote: this.loteComposicao });
     this.previasVista = null; // o host troca de conteúdo: a prévia dos Arranjos não vale mais
     const criadas = sugestoes.filter((s) => s.modelo.gerado).length;
     this.atualizarDica(
@@ -769,6 +775,8 @@ export class PowerPointHost {
     const largura = 960;
     const ratio = stageRatio(this.setup);
     const altura = Math.round(largura / ratio);
+    // a lâmina já arrumada (uma vez só: as oito prévias partem dela) — o Designer arruma o conteúdo
+    const arrumada = melhorArranjo(atual, ratio);
     const criadas = 3; // os últimos cartões usam paletas CRIADAS na hora (a semente avança a cada lote)
     const catalogo = [...MODELOS, ...lerModelosUsuario()];
     const sugestoes = sugestoesDeArte(this.loteComposicao, catalogo, 8).map((s, i, todas) => (i >= todas.length - criadas ? { ...s, modelo: gerarDesign(s.semente) } : s));
@@ -790,7 +798,7 @@ export class PowerPointHost {
       previa.style.width = `${largura}px`;
       previa.style.height = `${altura}px`;
       pendentes.push(() => {
-        const comArte = aplicarArte(atual, s.arte, s.semente, s.modelo, de, ratio);
+        const comArte = aplicarArte(arrumada, s.arte, s.semente, s.modelo, de, ratio, false);
         previa.style.background = fundoValor(comArte.bg, this.setup.media ?? {});
         previa.innerHTML = comArte.shapes.map((f) => htmlFormaRica(f, ctx)).join("");
         const w = moldura.clientWidth;
