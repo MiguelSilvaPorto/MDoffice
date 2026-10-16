@@ -417,15 +417,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - **Arrumação em hierarquia (organograma) e um Designer que arruma sem estragar** — dois arranjos novos entendem a árvore pelos conectores e a redesenham (um nível por linha ou coluna, filhos centrados sob o pai, caixas do nível iguais, conectores novos, texto fixo desviado). O Designer passa a escolher sozinho o melhor arranjo, **remover o desenho antigo** do slide (triângulos, pontilhados, barrinhas) e **adaptar a arte à zona livre**; o que já está arrumado (uma fileira de cartões iguais) não é movido. Um arranjo só é oferecido se tudo continua legível: o texto cabe (palavra e parágrafo), nenhum cartão fica pequeno demais, cobre outro cartão ou cobre um texto que fica no lugar — corrige o caso em que três cartões viraram uma coluna sobre o parágrafo e o texto vazava. O modo **Tudo** deixou de mostrar um cartão só (filtra as arrumações antes de combinar com os visuais). Testes: `npm run test:hierarquia`.
 
-- **O seletor de cores abre com os "Usados recentemente"**: a lista de cores usadas já existia, mas
-  ficava **no fim** do popup e **escondida quando vazia** — quem abria via "Cores do documento" no
-  topo. Agora o popup abre com **Usados recentemente** no lugar dela (com as cores usadas ou, sem
-  nenhuma ainda, a dica "As cores que você usar aparecem aqui"), **Cores do documento** logo abaixo
-  e depois **Cores padrão** e **Outra cor**. Vale para todos os seletores (fonte, contorno,
-  preenchimento, marca-texto, traço do pincel e o painel), que são o mesmo popup. A cor lembrada
-  passou a ser normalizada em maiúsculas, para a mesma cor não entrar duas vezes (a paleta do deck e
-  o hex digitado podem vir em caixas diferentes). Teste: `npm run test:layout`.
-
 - **A aba Desenhar cabe CHEIA (e o que sobrou de duplicação saiu)**: o print do usuário mostrava a
   aba **compacta demais** e com grupos virando menu. Duas causas: o **piso do encaixe** estava em
   0,62 (herança da correção anterior) e a aba tinha **oito grupos**, sendo dois deles **repetição**
@@ -582,6 +573,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **O seletor de cores abre com os "Usados recentemente"**: a lista de cores usadas já existia, mas
+  ficava **no fim** do popup e **escondida quando vazia** — quem abria via "Cores do documento" no
+  topo. Agora o popup abre com **Usados recentemente** no lugar dela (com as cores usadas ou, sem
+  nenhuma ainda, a dica "As cores que você usar aparecem aqui"), **Cores do documento** logo abaixo
+  e depois **Cores padrão** e **Outra cor**. Vale para todos os seletores (fonte, contorno,
+  preenchimento, marca-texto, traço do pincel e o painel), que são o mesmo popup. A cor lembrada
+  passou a ser normalizada em maiúsculas, para a mesma cor não entrar duas vezes (a paleta do deck e
+  o hex digitado podem vir em caixas diferentes). Teste: `npm run test:layout`.
 
 - **A barra lateral de lâminas (faixa vertical) agora pode ser arrastada para expandir/reduzir**: a
   alça de 6 px fica entre a faixa e o palco (o cursor vira `col-resize`, com realce no hover) e

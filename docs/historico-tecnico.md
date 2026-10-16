@@ -13488,3 +13488,15 @@ antigas quando fizer sentido.
   as que seguem em "Não adicionado" são de sessões com trabalho aberto, mexer nelas criaria
   duplicata ou conflito. O fechamento pegou **dois conflitos** com sessões que commitaram no meio
   (a Arrumação em hierarquia e o Composição → Tudo): resolvi mantendo os dois lados.
+
+## CHANGELOG.md
+
+### 2026-10-16 · promoção · a entrada do seletor de cores entra no "Adicionado" (PowerPoint)
+- **Local:** PowerPoint ▸ **Não adicionado** ▸ Frontend ▸ **Adicionado** ▸ Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **O seletor de cores abre com os "Usados recentemente"**
+  (`e64ba03`, worktree `feat-cores-recentes-no-topo`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não sai no
+  mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
+  entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
+  promoções anteriores; as demais entradas de "Não adicionado" (a aba Desenhar cheia, o Composição ·
+  Tudo, a Arrumação em hierarquia…) ficaram **intactas** — são de sessões com trabalho aberto.
