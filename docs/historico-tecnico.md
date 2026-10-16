@@ -1,4 +1,4 @@
-# Histórico técnico
+﻿# Histórico técnico
 
 O "porquê" de cada mudança de linha do mdOffice. O [CHANGELOG](../CHANGELOG.md) conta **o que**
 mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local, a linha e o motivo.
@@ -13195,3 +13195,29 @@ antigas quando fizer sentido.
   entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
   promoções anteriores. As demais entradas de "Não adicionado" (a aba Desenhar cheia, o Estúdio —
   Regiões e as demais) ficaram **intactas** — são de sessões com trabalho aberto.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-16 · esta tarefa · o clique que só escolhe não repinta (a seleção múltipla destravou)
+- **Local:** o fim do `aoTransformar`, o começo do `pintarStrip` e os campos novos
+  `stripDeck`/`stripSetup`
+- **Linha:** `if (this.pendente && this.pendente.slides !== this.slides) this.hist.registrar(this.pendente); this.pendente = null; this.pintar();` →
+  `const mudou = !!this.pendente && this.pendente.slides !== this.slides; if (mudou) this.hist.registrar(this.pendente!); this.pendente = null; if (mudou || patches.size) this.pintar();`;
+  `+ if (this.stripDeck === this.slides && this.stripSetup === this.setup) { …só o "aceso"…; return; }`
+- **Porquê:** o relato ("quando seleciono várias box trava a cada seleção") foi reproduzido com o
+  **input real do Chromium** (`Input.dispatchMouseEvent`), cronometrando o host: cada shift+clique
+  custava **~65 ms de repaint** além dos ~16 ms da seleção. O motivo: o palco chama
+  `aoTransformar(new Map(), "fim")` em **todo** `pointerup` — inclusive no clique que só escolheu —
+  e o host chamava `pintar()` **sem olhar se algo tinha mudado**. E o `pintar` é caro por um motivo
+  específico: o `pintarStrip` **redesenha as miniaturas de todas as lâminas** (~59 ms num deck de 12
+  lâminas × 31 formas, medido). Guardar o HTML em cache **não** resolve: o custo é o **parse** do
+  `innerHTML` (vira DOM de verdade). Duas correções: (1) sem mudança não há repaint — o `pendente`
+  guardado no "início" diz se as lâminas mudaram, e `patches` aplicados continuam repintando como
+  sempre; (2) a fileira só é refeita quando o **conjunto de lâminas** (a referência do array) ou o
+  `setup` mudou — as lâminas são imutáveis, então lâmina igual = miniatura igual; ao trocar de
+  lâmina só o "aceso" anda. Medido depois: `pintar` de 65–95 ms → **~10 ms**; `pintarStrip` de
+  59 ms → **0** no caso comum; o shift+clique de ~250 ms → ~105 ms de ida-e-volta (15 ms de
+  trabalho do app; o resto é o protocolo de medição). As travas ficaram no `test:layout` (o repaint
+  condicional e o guarda da fileira) e a checagem funcional no app confirmou que a fileira continua
+  certa: trocar de lâmina não refaz (só o aceso anda), editar uma forma refaz a fileira e a prévia
+  da lâmina acompanha (a forma editada saiu laranja na miniatura).

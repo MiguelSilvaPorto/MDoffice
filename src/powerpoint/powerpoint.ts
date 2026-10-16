@@ -1643,8 +1643,21 @@ export class PowerPointHost {
     if (this.editando) this.ligarEdicao(this.editando);
   }
 
+  /** o que a fileira de miniaturas desenhou por último (evita refazer o que não mudou) */
+  private stripDeck: Slide[] | null = null;
+  private stripSetup: DeckSetup | null = null;
+
   /** miniaturas das lâminas */
   private pintarStrip(): void {
+    // Nada mudou desde o último desenho (as lâminas são imutáveis): a fileira já está certa e só
+    // o "aceso" pode ter andado (trocar de lâmina). Refazer as N miniaturas custa caro — cada
+    // `innerHTML` vira DOM de verdade (medido: ~59 ms num deck de 12 lâminas).
+    if (this.stripDeck === this.slides && this.stripSetup === this.setup) {
+      for (const [i, b] of [...this.strip.querySelectorAll<HTMLElement>(".pp-thumb")].entries()) b.classList.toggle("active", i === this.indice);
+      return;
+    }
+    this.stripDeck = this.slides;
+    this.stripSetup = this.setup;
     this.strip.textContent = "";
     for (const [k, v] of Object.entries(stageVars(this.setup))) this.strip.style.setProperty(k, v);
     const ctx = this.ctxRender(false);
@@ -2064,9 +2077,14 @@ export class PowerPointHost {
       else this.pintarRapido();
     }
     if (fase === "fim") {
-      if (this.pendente && this.pendente.slides !== this.slides) this.hist.registrar(this.pendente);
+      const mudou = !!this.pendente && this.pendente.slides !== this.slides;
+      if (mudou) this.hist.registrar(this.pendente!);
       this.pendente = null;
-      this.pintar();
+      // Sem edição não há o que repintar. O palco chama isto a CADA pointerup — inclusive no
+      // clique que só ESCOLHEU uma forma — e o `pintar` redesenha as miniaturas de todas as
+      // lâminas: era isso que travava a seleção múltipla (medido: ~65 ms por clique, 55 deles
+      // nas miniaturas). Com `patches` aplicados o repaint continua vindo, como sempre.
+      if (mudou || patches.size) this.pintar();
     }
   }
 

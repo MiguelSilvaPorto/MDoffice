@@ -2005,6 +2005,26 @@ checa("o clique da bolinha também é geométrico (com folga)", /bolinhaDaConexa
 checa("os conectores ficam fora do alvo", (palcoConectar.match(/!s\.liga/g) ?? []).length >= 2, "a linha da ligação atravessa a lâmina e roubaria o ponteiro");
 checa("a histerese existe (a borda não fica piscando)", /margemX/.test(ligPpt) && /margemY/.test(ligPpt), "sem folga o alvo alterna entre a caixa e a de baixo");
 
+// ---------------------------------------------------------------- o clique que só escolhe
+
+console.log("\nPowerPoint: o clique que só escolhe não repinta (a seleção múltipla destravou)");
+
+{
+  const ppt = ler("src/powerpoint/powerpoint.ts");
+  checa(
+    "o fim do arrasto só repinta quando houve mudança",
+    /const mudou = !!this\.pendente && this\.pendente\.slides !== this\.slides;/.test(ppt) && /if \(mudou \|\| patches\.size\) this\.pintar\(\);/.test(ppt),
+    "o pointerup de um clique que só ESCOLHEU voltaria a pagar o repaint inteiro (~65 ms medidos)"
+  );
+  checa(
+    "a fileira de miniaturas não é refeita quando nada mudou",
+    /if \(this\.stripDeck === this\.slides && this\.stripSetup === this\.setup\) \{/.test(ppt) &&
+      /private stripDeck: Slide\[\] \| null = null;/.test(ppt) &&
+      /private stripSetup: DeckSetup \| null = null;/.test(ppt),
+    "as N miniaturas voltariam a ser redesenhadas a cada repaint (~59 ms num deck de 12 lâminas)"
+  );
+}
+
 // ---------------------------------------------------------------- o traço em gradiente (Conectar)
 
 console.log("\nConectar: o traço em gradiente da origem ao destino (uma forma só)");
