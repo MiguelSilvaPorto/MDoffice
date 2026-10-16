@@ -413,14 +413,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **A espessura do contorno aceita qualquer número**: o menu **Contorno → Espessura** só tinha os
-  traçados predefinidos (0,25 a 6 pt) e o print do usuário pediu uma caixa que aceite **qualquer
-  número**. Agora há um **campo livre** (aceita **vírgula e ponto**: 2,75 pt vale) acima dos
-  presets, que continuam como atalho; **Enter** ou sair do campo aplica. O comando `espessura` já
-  aceitava qualquer valor — faltava a interface. Conferido no navegador (harness temporário): o
-  campo abre com a espessura atual (2,25 pt), digitar 7,5 + Enter aplica `espessura=7,5` e sair do
-  campo com 0,25 aplica `espessura=0,25`. Teste: `npm run test:layout`.
-
 - **A aba Desenhar cabe CHEIA (e o que sobrou de duplicação saiu)**: o print do usuário mostrava a
   aba **compacta demais** e com grupos virando menu. Duas causas: o **piso do encaixe** estava em
   0,62 (herança da correção anterior) e a aba tinha **oito grupos**, sendo dois deles **repetição**
@@ -577,6 +569,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **A espessura do contorno aceita qualquer número**: o menu **Contorno → Espessura** só tinha os
+  traçados predefinidos (0,25 a 6 pt) e o print do usuário pediu uma caixa que aceite **qualquer
+  número**. Agora há um **campo livre** (aceita **vírgula e ponto**: 2,75 pt vale) acima dos
+  presets, que continuam como atalho; **Enter** ou sair do campo aplica. O comando `espessura` já
+  aceitava qualquer valor — faltava a interface. Conferido no navegador (harness temporário): o
+  campo abre com a espessura atual (2,25 pt), digitar 7,5 + Enter aplica `espessura=7,5` e sair do
+  campo com 0,25 aplica `espessura=0,25`. Teste: `npm run test:layout`.
 
 - **Selecionar várias formas deixou de travar a cada clique**: o palco chama o "fim da
   transformação" a cada `pointerup` — inclusive no clique que só **escolheu** uma forma — e o host

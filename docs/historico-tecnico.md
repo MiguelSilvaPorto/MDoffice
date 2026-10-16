@@ -13332,3 +13332,13 @@ antigas quando fizer sentido.
 - **Local:** "Menus de forma (Preenchimento, Contorno e Efeitos) sem forma escolhida"
 - **Linha:** `+` a frase do campo livre de espessura (Enter ou sair aplica)
 - **Porquê:** a bala fala dos menus de forma e dos seus itens — o campo da espessura é um deles.
+
+## CHANGELOG.md
+
+### 2026-10-16 · a espessura do contorno · a promoção da entrada
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não promove (no instante do commit a entrada ainda não está na main), então a
+  promoção anda depois: a espessura com campo livre (c9b47d7). Promovi só a entrada DESTA tarefa —
+  as que seguem em "Não adicionado" são de sessões com trabalho aberto, mexer nelas criaria
+  duplicata ou conflito.
