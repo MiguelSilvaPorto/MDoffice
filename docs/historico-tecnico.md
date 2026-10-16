@@ -13657,3 +13657,15 @@ antigas quando fizer sentido.
   Promovi só a entrada DESTA tarefa — as que seguem em "Não adicionado" (Composição ▸ Tudo, a
   Arrumação em hierarquia) são de sessões com trabalho aberto: mexer nelas criaria duplicata ou
   conflito.
+
+### 2026-10-16 · promoção · a entrada da cor ao escolher entra no "Adicionado" (PowerPoint)
+- **Local:** PowerPoint ▸ **Não adicionado** ▸ Frontend ▸ **Adicionado** ▸ Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **A cor do contorno vale na hora (o "Outra cor" não
+  espera mais o OK)** (`7fa7b3e`, worktree `feat/cor-aplica-ao-escolher`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não sai no
+  mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
+  entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
+  promoções anteriores. As demais entradas de "Não adicionado" (a fita baixa legível, a Arrumação em
+  hierarquia, o seletor com os Usados recentemente e as demais) ficaram **intactas** — são de sessões
+  com trabalho aberto. Este fechamento pegou **oito conflitos** com sessões que commitaram no meio;
+  resolvi todos mantendo os dois lados.

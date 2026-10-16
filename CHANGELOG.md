@@ -436,15 +436,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   passou a ser normalizada em maiúsculas, para a mesma cor não entrar duas vezes (a paleta do deck e
   o hex digitado podem vir em caixas diferentes). Teste: `npm run test:layout`.
 
-- **A cor do contorno vale na hora (o "Outra cor" não espera mais o OK)**: escolher a cor no seletor
-  do sistema — gradiente, matiz, R/G/B, conta-gotas — **já aplica** enquanto se mexe, e o código
-  digitado também; o menu fica **aberto** para ajustar a espessura e o traço logo depois, e o **OK**
-  virou "aplicar e fechar" ("quando eu clicar em uma cor já virar uma seleção"). A cor só entra nos
-  **Recentes** quando o seletor é fechado (a prévia do arrasto não enche a lista) e as prévias viram
-  **um passo só** de desfazer: durante o arrasto é uma aplicação por quadro e o `contorno` ganhou a
-  **chave** que junta as edições seguidas no histórico (medido no navegador: 5 cores seguidas =
-  1 passo; um desfazer volta à cor de antes). Teste: `npm run test:layout`.
-
 - **A espessura do contorno aceita qualquer número**: o menu **Contorno → Espessura** só tinha os
   traçados predefinidos (0,25 a 6 pt) e o print do usuário pediu uma caixa que aceite **qualquer
   número**. Agora há um **campo livre** (aceita **vírgula e ponto**: 2,75 pt vale) acima dos
@@ -618,6 +609,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   sozinho. Com a lâmina **inteira à vista** (não há o que rolar) continua **um tico = uma lâmina** —
   esse fluxo estava certo e não mudou. Testes: `npm run test:pptx-edicao` (a sequência completa com o
   relógio injetado: rolar, armar, trocar, pausa que desarma) e `npm run test:layout`.
+- **A cor do contorno vale na hora (o "Outra cor" não espera mais o OK)**: escolher a cor no seletor
+  do sistema — gradiente, matiz, R/G/B, conta-gotas — **já aplica** enquanto se mexe, e o código
+  digitado também; o menu fica **aberto** para ajustar a espessura e o traço logo depois, e o **OK**
+  virou "aplicar e fechar" ("quando eu clicar em uma cor já virar uma seleção"). A cor só entra nos
+  **Recentes** quando o seletor é fechado (a prévia do arrasto não enche a lista) e as prévias viram
+  **um passo só** de desfazer: durante o arrasto é uma aplicação por quadro e o `contorno` ganhou a
+  **chave** que junta as edições seguidas no histórico (medido no navegador: 5 cores seguidas =
+  1 passo; um desfazer volta à cor de antes). Teste: `npm run test:layout`.
 
 - **O seletor de cores abre com os "Usados recentemente"**: a lista de cores usadas já existia, mas
   ficava **no fim** do popup e **escondida quando vazia** — quem abria via "Cores do documento" no
