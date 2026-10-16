@@ -13183,3 +13183,15 @@ antigas quando fizer sentido.
 - **Porquê:** o documento descrevia o comportamento antigo como se fosse bom ("quebram de linha");
   quem for mexer no painel precisa saber que a **regularidade** (células iguais, colunas alinhadas)
   é o que faz a aba ser clicável de primeira.
+
+## CHANGELOG.md
+
+### 2026-10-16 · promoção · a entrada das abas do painel em grade entra no "Adicionado" (PowerPoint)
+- **Local:** PowerPoint ▸ **Não adicionado** ▸ Frontend ▸ **Adicionado** ▸ Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **As abas do painel lateral ficaram fáceis de clicar
+  (grade regular, com hover)** (`5990e9e`, worktree `fix/abas-do-painel-facil-de-clicar`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não sai no
+  mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
+  entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
+  promoções anteriores. As demais entradas de "Não adicionado" (a aba Desenhar cheia, o Estúdio —
+  Regiões e as demais) ficaram **intactas** — são de sessões com trabalho aberto.
