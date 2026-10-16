@@ -13272,3 +13272,13 @@ antigas quando fizer sentido.
 - **Local:** "Fonte e tamanho como no PowerPoint"
 - **Linha:** `+` a nota da lista enxuta (linha de 11,5 px e teto de 240 px)
 - **Porquê:** o doc descreve o campo da fita e a lista aberta é parte dele.
+
+## CHANGELOG.md
+
+### 2026-10-16 · a lista de fontes · a promoção da entrada
+- **Local:** Geral → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não promove (no instante do commit a entrada ainda não está na main), então a
+  promoção anda depois: a lista de fontes menor (0da7f87). Promovi só a entrada DESTA tarefa — as
+  que seguem em "Não adicionado" são de sessões com trabalho aberto, mexer nelas criaria duplicata
+  ou conflito.
