@@ -13684,3 +13684,40 @@ antigas quando fizer sentido.
   e o texto proporcional, 12 dos 21 passaram a ter arranjo. Verificado num Chrome real: o Fluxo some quando a moldura branca de fundo (que não anda) o torna ilegível, e
   `melhorArranjo` ganhou a regra de não encolher, porque no p5-6 o Fluxo piorava uma fileira que já estava boa.
 - **Fica de fora:** as molduras/painéis que envolvem cartões continuam parados (por isso alguns slides seguem sem arranjo); slides muito densos continuam sem fórmula.
+
+## src/powerpoint/edicao/ligacoes.ts
+
+### 2026-10-16 · ligação · o eixo do gradiente segue o trecho mais longo da rota
+- **Local:** `anguloDaLigacao` (agora recebe a rota), `gradienteDaLigacao` (idem) e os dois
+  chamadores (`ligacaoParaFormas` e `recomputar`, que passaram a guardar a rota numa variável)
+- **Linha:** `anguloDaLigacao(a: Pto, b: Pto)` com `Math.atan2(b.y - a.y, b.x - a.x)` →
+  `anguloDaLigacao(rota: readonly Pto[])`, que percorre os trechos, fica com o de maior
+  `Math.hypot(ex, ey)` e vira o sentido pelo produto escalar com (destino − origem)
+- **Porquê:** o relato com print ("o degradê só acontece do B → A… e se encontra no meio") é o
+  cotovelo: com o eixo na reta origem→destino (uma diagonal), o trecho comprido já sai misturado e a
+  transição se concentra no fim. Medido no navegador: no cotovelo do relato o ângulo foi de
+  **26,8°** (diagonal) para **90°** (a descida) e o `linearGradient` da tela, de
+  `x1=-28,1 y1=55,7 x2=323,5 y2=233,1` (diagonal) para `x1=147,7 y1=0 x2=147,7 y2=288,8` (vertical)
+  — a cor passa a andar pela descida, saindo da origem com a cor da origem e chegando no destino com
+  a do destino. A ligação reta não muda (a rota tem um trecho só).
+- **O sentido é o do fluxo:** o produto escalar com (destino − origem) vira o eixo quando o trecho
+  aponta "para trás" — sem isso, um cotovelo subindo (ou indo para a esquerda) sairia invertido.
+
+## scripts/testar-ligacoes.mjs
+
+### 2026-10-16 · ligação · 5 verificações (e a do ângulo reescrita)
+- **Local:** o bloco "criação da ligação"
+- **Linha:** a checagem do ângulo deixou de comparar com a reta origem→destino e passou a comparar
+  com `L.anguloDaLigacao(rota)`; entraram o "Z" (0°: o trecho principal é o horizontal), o cotovelo
+  descendo (90°), o subindo (270°) e as paradas origem→destino nos dois
+- **Porquê:** o ângulo deixou de ser uma conta de duas pontas — o teste agora prende o critério (o
+  trecho mais longo) e o sentido do fluxo, que é o que pode voltar a inverter sem ninguém ver.
+
+## scripts/testar-layout.mts
+
+### 2026-10-16 · ligação · as travas do eixo
+- **Local:** a seção "Conectar: o traço em gradiente da origem ao destino"
+- **Linha:** a assinatura do `gradienteDaLigacao` (com a rota) e a checagem do ângulo passaram a
+  exigir o `Math.hypot`/`comp > maior`; entrou a trava do sentido (`dx * (b.x - a.x) + …`)
+- **Porquê:** são os dois pontos que a mudança introduziu e que uma "limpeza" futura pode desfazer
+  sem quebrar nada visível.

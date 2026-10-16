@@ -594,9 +594,12 @@ Teste: `npm run test:modelo`.
   bordas se encontram, um "Z" quando as laterais pedem desvio e um "L" quando uma ponta é vertical
   e a outra horizontal.
 - **A cor acompanha as caixas, em transição**: o traço é **uma forma só**, com um **gradiente**
-  que sai da **cor da forma de origem** e chega na **cor da forma de destino** — o ângulo é a
-  **reta entre as duas bordas escolhidas**, então num "L" a passagem é diagonal e o canto já é
-  mistura (era o corte seco de antes, uma metade de cada cor). Quando o destino é branco/sem cor, o
+  que sai da **cor da forma de origem** e chega na **cor da forma de destino** — o eixo é o do
+  **trecho mais longo da rota**, no sentido do fluxo: numa ligação reta é a própria reta, e num
+  **cotovelo** é o trecho comprido (a descida, por exemplo), então a cor anda **ao longo do
+  caminho** — sai da origem com a cor da origem, atravessa o trecho principal e chega no destino
+  com a cor do destino (antes o eixo era a reta origem→destino, uma diagonal que não corresponde ao
+  caminho: o trecho comprido já começava no meio da mistura). Quando o destino é branco/sem cor, o
   fim segue a cor da origem; **cores iguais** saem em traço sólido (sem gradiente à toa). O fim
   leva **seta**, na cor do destino. Se a caixa tem **Estilo de cor**, a ligação usa a **cor-base da
   rampa** (a do meio), não o tom claro da ponta.

@@ -137,12 +137,34 @@ const emPt = (s, i) => {
   const fim = emPt(f, f.paths[0].cmds.length - 2);
   ok("ligação: a seta chega no ponto escolhido do destino", perto(fim.x, 60 / 100 * dim.w, 0.6) && perto(fim.y, 40 / 100 * dim.h, 0.6), `${JSON.stringify(fim)}`);
 
-  // o ângulo é a reta entre as duas bordas escolhidas (a mesma ideia de "da origem para o destino")
+  // o ângulo é o do TRECHO MAIS LONGO da rota, no sentido do fluxo (num cotovelo, a reta
+  // origem→destino é uma diagonal que não corresponde ao caminho: o trecho comprido começaria no
+  // meio da mistura e a transição se concentraria no fim)
   const pDe = L.pontoDaBorda({ x: 0.1 * dim.w, y: 0.1 * dim.h, w: 0.3 * dim.w, h: 0.1 * dim.h }, "base");
   const pPara = L.pontoDaBorda({ x: 0.5 * dim.w, y: 0.4 * dim.h, w: 0.2 * dim.w, h: 0.1 * dim.h }, "topo");
-  const esperado = ((Math.atan2(pPara.y - pDe.y, pPara.x - pDe.x) * 180) / Math.PI + 360) % 360;
-  ok("ligação: o ângulo é a reta origem→destino", perto(f.ln.grad.angle, esperado, 0.01), `${f.ln.grad.angle} vs ${esperado}`);
+  const rota = L.rotaDaLigacao(pDe, "base", pPara, "topo");
+  ok("ligação: o ângulo é o do trecho mais longo da rota", perto(f.ln.grad.angle, L.anguloDaLigacao(rota), 0.01), `${f.ln.grad.angle} vs ${L.anguloDaLigacao(rota)}`);
+  ok("ligação: no \"Z\" do teste o trecho principal é o horizontal (0°)", perto(f.ln.grad.angle, 0, 0.01), `${f.ln.grad.angle}`);
   ok("ligação: o ângulo nunca é negativo (o `a:lin` do .pptx não aceita)", f.ln.grad.angle >= 0 && f.ln.grad.angle < 360);
+
+  // o cotovelo do relato: sai pela direita da caixa de cima, desce um trecho comprido e entra por
+  // cima na caixa de baixo — o eixo tem de seguir a DESCIDA (90°), não a diagonal
+  const alta = forma("d", 10, 10, 30, 10, { fillX: { kind: "solid", color: "2F6F4E" } });
+  const baixa = forma("e", 50, 60, 20, 10, { fillX: { kind: "solid", color: "1F5FA8" } });
+  const fe = L.ligacaoParaFormas(alta, "direita", baixa, "topo", dim, est)[0];
+  ok("ligação em cotovelo: o eixo segue o trecho mais longo (a descida), não a diagonal", perto(fe.ln.grad.angle, 90, 0.01), `${fe.ln.grad.angle}`);
+  ok(
+    "ligação em cotovelo: a cor sai da origem e chega no destino",
+    fe.ln.grad.stops[0].color === "2F6F4E" && fe.ln.grad.stops[1].color === "1F5FA8",
+    JSON.stringify(fe.ln.grad.stops)
+  );
+  // o mesmo cotovelo de baixo para cima, com a descida/subida ainda sendo o trecho longo: o eixo
+  // vira (270°) para continuar apontando no fluxo
+  const baixa2 = forma("f", 20, 80, 20, 10, { fillX: { kind: "solid", color: "1F5FA8" } });
+  const alta2 = forma("g", 10, 10, 30, 10, { fillX: { kind: "solid", color: "2F6F4E" } });
+  const volta = L.ligacaoParaFormas(baixa2, "direita", alta2, "base", dim, est)[0];
+  ok("ligação em cotovelo: subindo, o eixo aponta para cima (270°)", perto(volta.ln.grad.angle, 270, 0.01), `${volta.ln.grad.angle}`);
+  ok("ligação em cotovelo: as paradas continuam origem → destino", volta.ln.grad.stops[0].color === "1F5FA8" && volta.ln.grad.stops[1].color === "2F6F4E");
 
   // caixa branca no destino: sem gradiente, o traço fica na cor da origem
   const branca = forma("c", 50, 40, 20, 10, { fillX: { kind: "solid", color: "FFFFFF" }, ln: { color: "EDEDED" } });

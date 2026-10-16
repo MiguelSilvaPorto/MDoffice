@@ -167,24 +167,52 @@ export function corDaForma(s: Shape): string {
   return "";
 }
 
-/** Ângulo do gradiente da ligação: da borda de origem para a de destino, na convenção do
- *  preenchimento (0 = esquerda→direita; 90 = cima→baixo). Normalizado em 0..360 porque o
- *  `a:lin` do `.pptx` não aceita ângulo negativo. */
-export function anguloDaLigacao(a: Pto, b: Pto): number {
-  const g = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
+/**
+ * Ângulo do gradiente da ligação: a direção do TRECHO MAIS LONGO da rota, no sentido do fluxo
+ * (origem → destino), na convenção do preenchimento (0 = esquerda→direita; 90 = cima→baixo).
+ * Normalizado em 0..360 porque o `a:lin` do `.pptx` não aceita ângulo negativo.
+ *
+ * Numa ligação reta dá no mesmo que a reta origem→destino. Num COTOVELO, a reta origem→destino é
+ * uma diagonal que não corresponde ao caminho: o trecho comprido já começa no meio da mistura e a
+ * transição se concentra no fim (relato: "o degradê só acontece do B → A, não do A → B, e se
+ * encontra no meio"). Com o eixo no trecho mais longo, a cor anda ao longo do caminho: sai da
+ * origem com a cor da origem, atravessa o trecho principal e chega no destino com a do destino.
+ */
+export function anguloDaLigacao(rota: readonly Pto[]): number {
+  const a = rota[0];
+  const b = rota[rota.length - 1];
+  let maior = -1;
+  let dx = b.x - a.x;
+  let dy = b.y - a.y;
+  for (let i = 1; i < rota.length; i++) {
+    const ex = rota[i].x - rota[i - 1].x;
+    const ey = rota[i].y - rota[i - 1].y;
+    const comp = Math.hypot(ex, ey);
+    if (comp > maior) {
+      maior = comp;
+      dx = ex;
+      dy = ey;
+    }
+  }
+  // o sentido é o do fluxo: o eixo precisa apontar da origem para o destino
+  if (dx * (b.x - a.x) + dy * (b.y - a.y) < 0) {
+    dx = -dx;
+    dy = -dy;
+  }
+  const g = (Math.atan2(dy, dx) * 180) / Math.PI;
   return (g + 360) % 360;
 }
 
 /** O gradiente da ligação: cor da origem (0%) → cor do destino (100%). Cores iguais (ou uma sem
  *  cor) devolvem `undefined`: o traço sai sólido e o arquivo não carrega um gradiente à toa. */
-export function gradienteDaLigacao(corDe: string, corPara: string, a: Pto, b: Pto): LineGrad | undefined {
+export function gradienteDaLigacao(corDe: string, corPara: string, rota: readonly Pto[]): LineGrad | undefined {
   if (!corDe || !corPara || corDe.toUpperCase() === corPara.toUpperCase()) return undefined;
   return {
     stops: [
       { pos: 0, color: corDe, alpha: 1 },
       { pos: 100, color: corPara, alpha: 1 },
     ],
-    angle: anguloDaLigacao(a, b),
+    angle: anguloDaLigacao(rota),
   };
 }
 
@@ -266,11 +294,12 @@ const ligaDe = (de: string, ladoDe: Lado, para: string, ladoPara: Lado, grupo: s
 export function ligacaoParaFormas(de: Shape, ladoDe: Lado, para: Shape, ladoPara: Lado, d: Dim, est: EstiloDeck): Shape[] {
   const a = pontoDaBorda(paraPt(de.box, d), ladoDe);
   const b = pontoDaBorda(paraPt(para.box, d), ladoPara);
-  const cmds = caminhoDaLigacao(rotaDaLigacao(a, ladoDe, b, ladoPara));
+  const rota = rotaDaLigacao(a, ladoDe, b, ladoPara);
+  const cmds = caminhoDaLigacao(rota);
   const corPadrao = ajustarCor(est.acento, 0.9);
   const corDe = corDaForma(de) || corPadrao;
   const corPara = corDaForma(para) || corDe;
-  return [formaDa(cmds, corPara, gradienteDaLigacao(corDe, corPara, a, b), ligaDe(de.id, ladoDe, para.id, ladoPara, uid()), d, est)];
+  return [formaDa(cmds, corPara, gradienteDaLigacao(corDe, corPara, rota), ligaDe(de.id, ladoDe, para.id, ladoPara, uid()), d, est)];
 }
 
 /** Recalcula a ligação a partir das caixas atuais (mantendo id e nome da forma). */
@@ -278,12 +307,13 @@ function recomputar(s: Shape, de: Shape, para: Shape, d: Dim, destaque: string):
   const l = s.liga!;
   const a = pontoDaBorda(paraPt(de.box, d), l.ladoDe);
   const b = pontoDaBorda(paraPt(para.box, d), l.ladoPara);
-  const cmds = caminhoDaLigacao(rotaDaLigacao(a, l.ladoDe, b, l.ladoPara));
+  const rota = rotaDaLigacao(a, l.ladoDe, b, l.ladoPara);
+  const cmds = caminhoDaLigacao(rota);
   const corPadrao = ajustarCor(destaque, 0.9);
   const corDe = corDaForma(de) || corPadrao;
   const corPara = corDaForma(para) || corDe;
   const est: EstiloDeck = { fonte: s.fontFamily, tamanho: s.fontSize, corTexto: s.color, acento: destaque, paleta: [] };
-  const nova = formaDa(cmds, corPara, gradienteDaLigacao(corDe, corPara, a, b), l, d, est);
+  const nova = formaDa(cmds, corPara, gradienteDaLigacao(corDe, corPara, rota), l, d, est);
   nova.id = s.id;
   nova.name = s.name;
   return nova;

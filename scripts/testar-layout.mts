@@ -2105,15 +2105,23 @@ console.log("\nConectar: o traço em gradiente da origem ao destino (uma forma s
   const esquema = ler("src/powerpoint/schema.ts");
   checa(
     "a ligação é UMA forma, com o gradiente da origem ao destino",
-    /export function gradienteDaLigacao\(corDe: string, corPara: string, a: Pto, b: Pto\): LineGrad \| undefined/.test(lig) &&
+    /export function gradienteDaLigacao\(corDe: string, corPara: string, rota: readonly Pto\[\]\): LineGrad \| undefined/.test(lig) &&
       /stops: \[\r?\n\s*\{ pos: 0, color: corDe, alpha: 1 \},\r?\n\s*\{ pos: 100, color: corPara, alpha: 1 \},/.test(lig) &&
-      /return \[formaDa\(cmds, corPara, gradienteDaLigacao\(corDe, corPara, a, b\), ligaDe\(/.test(lig),
+      /return \[formaDa\(cmds, corPara, gradienteDaLigacao\(corDe, corPara, rota\), ligaDe\(/.test(lig),
     "a ligação voltaria a sair em duas metades de cor (o corte seco)"
   );
   checa(
-    "o ângulo do gradiente é a reta entre as bordas (normalizado em 0..360)",
-    /Math\.atan2\(b\.y - a\.y, b\.x - a\.x\)/.test(lig) && /\(g \+ 360\) % 360/.test(lig),
-    "ângulo negativo não existe no `a:lin` do .pptx"
+    "o ângulo do gradiente é o do TRECHO MAIS LONGO da rota (normalizado em 0..360)",
+    /export function anguloDaLigacao\(rota: readonly Pto\[\]\): number/.test(lig) &&
+      /const comp = Math\.hypot\(ex, ey\);/.test(lig) &&
+      /if \(comp > maior\)/.test(lig) &&
+      /\(g \+ 360\) % 360/.test(lig),
+    "com a reta origem→destino, o cotovelo começa no meio da mistura (o trecho comprido já sai misturado)"
+  );
+  checa(
+    "o eixo aponta no sentido do fluxo (origem → destino)",
+    /if \(dx \* \(b\.x - a\.x\) \+ dy \* \(b\.y - a\.y\) < 0\) \{/.test(lig),
+    "subindo ou indo para a esquerda, o gradiente sairia invertido"
   );
   checa(
     "cores iguais (ou uma sem cor) = traço sólido, sem gradiente",
