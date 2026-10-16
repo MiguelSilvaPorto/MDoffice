@@ -13721,3 +13721,15 @@ antigas quando fizer sentido.
   exigir o `Math.hypot`/`comp > maior`; entrou a trava do sentido (`dx * (b.x - a.x) + …`)
 - **Porquê:** são os dois pontos que a mudança introduziu e que uma "limpeza" futura pode desfazer
   sem quebrar nada visível.
+
+## CHANGELOG.md
+
+### 2026-10-16 · ligação · a promoção da entrada (não adicionado → adicionado)
+- **Local:** PowerPoint → **Não adicionado** → Frontend (a entrada do cotovelo) e PowerPoint →
+  **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não pode promover: no instante do commit da tarefa a entrada ainda não está na
+  main (a regra do repositório é "nunca promova o que ainda não entrou na main"), então a promoção é
+  uma tarefa de follow-up, depois que o commit chegou (39952cc). Promovi só a entrada DESTA tarefa:
+  as que seguem em "Não adicionado" (a roda do mouse no fim da lâmina, a fita baixa, a Arrumação —
+  hierarquia…) são de sessões com trabalho aberto — mexer nelas criaria duplicata ou conflito.

@@ -415,15 +415,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - **Arrumação que funciona em slides reais: Fluxo, região livre, texto proporcional e explicação** — medido em 24 slides reais, 21 não ofereciam nenhum arranjo. Agora: o **Fluxo** mantém o tamanho de cada bloco e os alinha em linhas ou colunas (a grade/lista exigiam blocos iguais e encolhiam tudo); a região dos cartões é a **maior área livre** que não cruza texto fixo (antes, uma faixa fixa); a **legenda** abaixo do cartão anda com ele e a **imagem de canto** é arte, não cartão; o texto escala **na mesma proporção** da caixa (o piso de 8 pt fazia o texto vazar); a grade ganhou 5 e 6 colunas; o Designer só aplica um arranjo que **não encolha** os blocos; e o painel **explica por que** não há arranjo ("já estão alinhados", "não há o que arrumar", "denso demais"). Cerca de metade dos slides medidos passou a ter arranjos.
 
-- **A ligação em cotovelo ganhou o degradê no caminho certo**: o eixo do gradiente era a **reta
-  origem→destino** — numa ligação reta dá no mesmo, mas num **cotovelo** essa reta é uma diagonal
-  que não corresponde ao caminho: o trecho comprido já começava no meio da mistura e a transição se
-  concentrava no fim (relato com print: "o degradê só acontece do B → A, não do A → B, e se
-  encontra no meio"). Agora o eixo é o **trecho mais longo da rota**, no sentido do fluxo: a cor
-  sai da origem com a cor da origem, anda pelo trecho principal e chega no destino com a cor do
-  destino. A ligação reta fica igual (a rota tem um trecho só) e a seta continua na cor do destino.
-  Teste: `npm run test:ligacoes` (5 casos, incluindo o cotovelo descendo e subindo).
-
 - **Composição ▸ Tudo: volta a gerar cartões quando nenhuma arrumação é legível** — ao exigir que um arranjo "mude algo", o filtro de legibilidade passou a descartar também os cartões só de **visual** (neles a lâmina não muda de propósito) e o painel mostrava "Nenhuma composição cabe nesta lâmina" mesmo havendo visuais. Agora só os cartões com arrumação passam pelo filtro.
 
 - **Arrumação em hierarquia (organograma) e um Designer que arruma sem estragar** — dois arranjos novos entendem a árvore pelos conectores e a redesenham (um nível por linha ou coluna, filhos centrados sob o pai, caixas do nível iguais, conectores novos, texto fixo desviado). O Designer passa a escolher sozinho o melhor arranjo, **remover o desenho antigo** do slide (triângulos, pontilhados, barrinhas) e **adaptar a arte à zona livre**; o que já está arrumado (uma fileira de cartões iguais) não é movido. Um arranjo só é oferecido se tudo continua legível: o texto cabe (palavra e parágrafo), nenhum cartão fica pequeno demais, cobre outro cartão ou cobre um texto que fica no lugar — corrige o caso em que três cartões viraram uma coluna sobre o parágrafo e o texto vazava. O modo **Tudo** deixou de mostrar um cartão só (filtra as arrumações antes de combinar com os visuais). Testes: `npm run test:hierarquia`.
@@ -611,6 +602,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **A ligação em cotovelo ganhou o degradê no caminho certo**: o eixo do gradiente era a **reta
+  origem→destino** — numa ligação reta dá no mesmo, mas num **cotovelo** essa reta é uma diagonal
+  que não corresponde ao caminho: o trecho comprido já começava no meio da mistura e a transição se
+  concentrava no fim (relato com print: "o degradê só acontece do B → A, não do A → B, e se
+  encontra no meio"). Agora o eixo é o **trecho mais longo da rota**, no sentido do fluxo: a cor
+  sai da origem com a cor da origem, anda pelo trecho principal e chega no destino com a cor do
+  destino. A ligação reta fica igual (a rota tem um trecho só) e a seta continua na cor do destino.
+  Teste: `npm run test:ligacoes` (5 casos, incluindo o cotovelo descendo e subindo).
 
 - **A roda do mouse, no fim da lâmina ampliada, agora pede dois ticos (não pula mais de lâmina sem
   querer)**: com a lâmina **ampliada**, chegar ao fim da rolagem e dar **um** tico a mais já trocava
