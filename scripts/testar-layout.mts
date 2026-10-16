@@ -1157,6 +1157,23 @@ checa(
   "a ordem pedida (Fonte e Parágrafo no lugar das Lâminas) se perdeu"
 );
 checa("fita do PowerPoint: fonte e tamanho editáveis", /data-sel="font" data-editavel/.test(fitaPptLivre) && /data-sel="size" data-editavel data-num/.test(fitaPptLivre), "data-editavel ausente nos seletores");
+// A espessura do contorno tem CAMPO livre (pedido do usuário, com print: só havia os presets):
+// o valor vive num input do popup e o `cores.ts` o aplica no Enter e ao sair do campo
+checa(
+  "menu do contorno: a espessura tem campo que aceita qualquer número",
+  /data-extra-campo="espessura"/.test(fitaPptLivre) && /\.pp-esp input\s*\{/.test(ler("src/styles/powerpoint-edicao.css")),
+  "a espessura do contorno voltaria a ter só os presets"
+);
+checa(
+  "menu do contorno: o campo de espessura aplica no Enter e ao sair",
+  /\[data-extra-campo\]/.test(ler("src/powerpoint/ui/cores.ts")) && /campo\.addEventListener\("change", aplicar\)/.test(ler("src/powerpoint/ui/cores.ts")),
+  "o valor digitado não chegaria ao contorno"
+);
+checa(
+  "o comando espessura aceita vírgula (o campo manda como a pessoa escreveu)",
+  /case "espessura":[^;]*replace\(",", "\."\)/.test(ler("src/powerpoint/powerpoint.ts")),
+  "o valor com vírgula viraria NaN"
+);
 const fitaWordLivre = ler("src/word/ribbon.ts");
 checa("fita do Word: fonte e tamanho editáveis", /data-sel="font" data-editavel/.test(fitaWordLivre) && /data-sel="size" data-editavel data-num/.test(fitaWordLivre), "data-editavel ausente nos seletores");
 checa("o Word acrescenta o valor que a lista não tem", /valor que a lista não conhece/.test(fitaWordLivre), "sel() não cria opção para o valor do documento");

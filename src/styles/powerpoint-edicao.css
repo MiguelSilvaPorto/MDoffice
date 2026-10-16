@@ -609,6 +609,32 @@ button.ppr.big .ppr-gal-ic svg {
   font: inherit;
 }
 
+/* a espessura do contorno: um campo que aceita QUALQUER número (Enter ou sair aplica); os presets
+   ao lado continuam sendo atalho (pedido do usuário, com print: só havia os traçados predefinidos) */
+.pp-esp {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.pp-esp input {
+  width: 88px;
+  height: 26px;
+  padding: 0 6px;
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: inherit;
+  text-align: right;
+}
+
+.pp-esp span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .pp-pop-item {
   display: flex;
   align-items: center;

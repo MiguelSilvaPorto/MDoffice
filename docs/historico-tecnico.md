@@ -13282,3 +13282,53 @@ antigas quando fizer sentido.
   promoção anda depois: a lista de fontes menor (0da7f87). Promovi só a entrada DESTA tarefa — as
   que seguem em "Não adicionado" são de sessões com trabalho aberto, mexer nelas criaria duplicata
   ou conflito.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-16 · a espessura do contorno · o campo livre no menu
+- **Local:** `menuContorno()` — o bloco `extra` da Espessura
+- **Linha:** `+` o `<label class="pp-esp">` com `<input type="text" inputmode="decimal"
+  data-extra-campo="espessura" value="${String(l?.w ?? 1).replace(".", ",")}">` + o "pt", acima dos
+  presets (que ficam como atalho)
+- **Porquê:** o usuário (print) viu só os traçados predefinidos (0,25 a 6 pt) e pediu uma caixa que
+  aceite **qualquer número**. O comando `espessura` já convertia vírgula e aplicava qualquer valor
+  (`Math.max(0, Number(...replace(",", ".")))` em `powerpoint.ts`) — faltava a interface. O campo
+  mostra a espessura ATUAL (inclusive um valor fora dos presets, como 2,75) e o `cores.ts` o aplica
+  no Enter e ao sair do campo.
+
+## src/powerpoint/ui/cores.ts
+
+### 2026-10-16 · a espessura do contorno · a fiação do campo (Enter e sair)
+- **Local:** `abrirCores()` — depois do campo de cor hexadecimal
+- **Linha:** `+` o laço em `[data-extra-campo]`: `keydown` com Enter → `aplicar()`;
+  `change` (que dispara ao sair do campo com o valor mudado) → `aplicar()`; `aplicar()` fecha o
+  popup e chama `aoExtra("<campo>:<valor>")` (o mesmo canal dos presets)
+- **Porquê:** o campo vive DENTRO do popup (um seletor com lista pendurada no `body` fecharia o
+  popup no clique, porque o `abrirPopup` fecha ao clicar fora); com o input simples a interação
+  fica inteira dentro do menu. Aplicar no `change` cobre quem digita e clica fora sem dar Enter —
+  o caso mais comum.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-16 · a espessura do contorno · o visual do campo
+- **Local:** `.pp-esp` (+ `input` e `span`), logo antes do `.pp-pop-item`
+- **Linha:** `novo` — uma linha flex com o input de 88×26 px (fundo do painel, borda, alinhado à
+  direita) e o "pt" em cinza
+- **Porquê:** o campo é irmão dos presets, não um controle novo: mesma altura e cores dos campos do
+  popup (o `.pp-pop-hex` da cor) para o menu continuar parecendo um menu.
+
+## scripts/testar-layout.mts
+
+### 2026-10-16 · a espessura do contorno · as três checagens
+- **Local:** a seção da fita do PowerPoint (depois de "fonte e tamanho editáveis")
+- **Linha:** `+` três checagens: o campo existe no menu (`data-extra-campo="espessura"` + o CSS do
+  `.pp-esp`), o `cores.ts` o aplica no Enter e no `change`, e o comando `espessura` aceita vírgula
+- **Porquê:** o valor digitado percorre três arquivos (fita → cores → host); sem as checagens, uma
+  ponta solta voltaria a deixar a espessura só nos presets sem ninguém notar.
+
+## docs/powerpoint.md
+
+### 2026-10-16 · a espessura do contorno · a bala dos menus de forma
+- **Local:** "Menus de forma (Preenchimento, Contorno e Efeitos) sem forma escolhida"
+- **Linha:** `+` a frase do campo livre de espessura (Enter ou sair aplica)
+- **Porquê:** a bala fala dos menus de forma e dos seus itens — o campo da espessura é um deles.

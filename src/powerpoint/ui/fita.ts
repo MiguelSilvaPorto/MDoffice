@@ -1201,6 +1201,10 @@ export class Fita {
         semSelecao: !tem,
         dica: "Selecione uma forma na lâmina para desenhar o contorno.",
         extra: `<div class="pp-pop-t">Espessura</div>
+          <label class="pp-esp" title="Espessura do contorno em pt — escreva qualquer número (aceita vírgula)">
+            <input type="text" inputmode="decimal" data-extra-campo="espessura" value="${String(l?.w ?? 1).replace(".", ",")}" aria-label="Espessura do contorno (pt)">
+            <span>pt</span>
+          </label>
           <div class="pp-linhas-op">${espessuras.map((w) => `<button type="button" class="pp-op${l?.w === w ? " on" : ""}" data-extra="espessura:${w}"><span style="height:${Math.max(1, w)}px"></span>${String(w).replace(".", ",")} pt</button>`).join("")}</div>
           <div class="pp-pop-t">Tipo de traço</div>
           <div class="pp-linhas-op">${tracos.map(([v, n]) => `<button type="button" class="pp-op${(l?.dash ?? "solid") === v ? " on" : ""}" data-extra="traco:${v}">${n}</button>`).join("")}</div>

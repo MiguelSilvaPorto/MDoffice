@@ -93,6 +93,9 @@ avisado ao abrir (nunca some em silêncio).
   **desabilitados**, em vez de engolir o clique (o relato: "clicado de novo, não abre"); e o menu
   **nunca cobre o próprio botão**: quando não cabe embaixo ele **encolhe** com rolagem por dentro,
   em vez de subir por cima da fita — o clique seguinte no botão continua sendo do botão.
+  A **espessura do contorno** tem um **campo livre** (aceita vírgula e ponto: 2,75 pt vale) além
+  dos presets: **Enter** ou sair do campo aplica o número escrito (o comando já aceitava qualquer
+  valor; faltava a interface — pedido do usuário, com print).
 - **Ordem dos grupos na Página Inicial**: **Área de Transferência → Fonte → Parágrafo → Lâminas →
   Desenho** — o texto vem **à frente das lâminas** (o que se usa o tempo todo fica sem rolar a
   fita; o grupo **Lâminas** continua inteiro, logo depois).

@@ -100,4 +100,19 @@ export function abrirCores(ancora: HTMLElement, op: OpcoesCores, aoEscolher: (co
   hex.addEventListener("keydown", (e) => {
     if (e.key === "Enter") el.querySelector<HTMLElement>("[data-aplicar]")!.click();
   });
+  // Campos de número do bloco extra (a espessura do contorno, por exemplo): aceitam QUALQUER
+  // número — Enter ou sair do campo aplica. É o valor que a pessoa escreveu, sem lista fechando
+  // o caminho (o presets ao lado continuam sendo atalho).
+  for (const campo of el.querySelectorAll<HTMLInputElement>("[data-extra-campo]")) {
+    const aplicar = () => {
+      const v = campo.value.trim();
+      if (!v || !aoExtra) return;
+      fecharPopup();
+      aoExtra(`${campo.dataset.extraCampo}:${v}`);
+    };
+    campo.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") aplicar();
+    });
+    campo.addEventListener("change", aplicar);
+  }
 }
