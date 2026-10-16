@@ -2525,6 +2525,24 @@ console.log("\nPowerPoint: o painel lateral se encaixa (abas e janela estreita)"
     /\.pp-side > :not\(\.pp-side-resize\) \{[\s\S]{0,260}min-width: min\(var\(--pp-side-w, 260px\), 100%\)/.test(css),
     "os filhos presos a 260px estouram o painel"
   );
+  // a faixa de lâminas ganhou alça de largura no modo vertical (pedido do usuário, com print):
+  // a mesma mecânica do painel, com a largura na var `--pp-faixa-w` (as miniaturas acompanham)
+  const cssFita = ler("src/styles/powerpoint.css");
+  checa(
+    "a faixa vertical tem alça de largura (só no modo vertical)",
+    /\.pp-faixa-alca \{\s*display: none/.test(cssFita) && /\.pp-left\.faixa-vertical \.pp-faixa-alca \{[\s\S]{0,200}cursor: col-resize/.test(cssFita),
+    "a barra lateral ficaria sem a alça de arrasto"
+  );
+  checa(
+    "as miniaturas saem da var `--pp-faixa-w` (crescem com a faixa)",
+    /\.pp-thumb \{[\s\S]{0,160}width: var\(--pp-faixa-w, 128px\)/.test(cssFita) && /\.pp-left\.faixa-vertical \.pp-thumb \{[\s\S]{0,80}width: var\(--pp-faixa-w, 112px\)/.test(cssFita),
+    "a faixa mudaria de largura sem as miniaturas acompanharem"
+  );
+  checa(
+    "a alça da faixa arrasta como a do painel (rAF, limites e largura guardada)",
+    /\[data-faixa-resize\]/.test(ppt) && /setProperty\("--pp-faixa-w"/.test(ppt) && /guardar\("pp-faixa-w"/.test(ppt) && /\[data-faixa-resize\]"\)/.test(ppt),
+    "o arrasto da faixa perdeu rAF/limites ou não guarda a largura"
+  );
 }
 
 console.log("\naba Desenhar: as ferramentas de traço num lugar só");

@@ -348,6 +348,7 @@ export class PowerPointHost {
         </div>
         <div class="pp-left">
           <div class="pp-strip" data-strip aria-label="Lâminas"></div>
+          <div class="pp-faixa-alca" data-faixa-resize title="Arraste para mudar a largura da faixa de lâminas"></div>
           <div class="pp-canvas" data-canvas>
             <div class="pp-frame" data-frame>
               <div class="pp-slide" data-slide></div>
@@ -567,6 +568,8 @@ export class PowerPointHost {
     };
     const largura = Number(guardado("pp-side-w"));
     if (largura >= 200 && largura <= 600) this.pane.style.setProperty("--pp-side-w", `${largura}px`);
+    const larguraFaixa = Number(guardado("pp-faixa-w"));
+    if (larguraFaixa >= 72 && larguraFaixa <= 320) this.pane.style.setProperty("--pp-faixa-w", `${larguraFaixa}px`);
     const aplicar = (oculto: boolean) => {
       // a animação só vale no esconder/mostrar (arrastar a borda não deve "deslizar")
       this.pane.classList.add("pp-side-anima");
@@ -622,6 +625,46 @@ export class PowerPointHost {
       alca.addEventListener("pointermove", move);
       alca.addEventListener("pointerup", fim);
       alca.addEventListener("pointercancel", fim);
+    });
+    // a alça da faixa de lâminas (modo vertical): a MESMA mecânica do painel — rAF, limites e a
+    // largura guardada —, escrevendo na `--pp-faixa-w` (as miniaturas acompanham, porque o texto
+    // delas é `cqw` dentro da moldura). Antes a faixa vertical ficava presa em 112 px.
+    const alcaFaixa = this.pane.querySelector<HTMLElement>("[data-faixa-resize]");
+    alcaFaixa?.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      try {
+        alcaFaixa.setPointerCapture(e.pointerId);
+      } catch {
+        /* ponteiro sintético */
+      }
+      const x0 = e.clientX;
+      const w0 = Math.round(parseFloat(this.pane.style.getPropertyValue("--pp-faixa-w")) || 112);
+      const max = Math.max(160, Math.min(320, this.pane.getBoundingClientRect().width * 0.45));
+      let wAtual = w0;
+      let quadro = 0;
+      const move = (ev: PointerEvent) => {
+        wAtual = Math.max(72, Math.min(max, w0 + (ev.clientX - x0)));
+        if (quadro) return;
+        quadro = requestAnimationFrame(() => {
+          quadro = 0;
+          this.pane.style.setProperty("--pp-faixa-w", `${Math.round(wAtual)}px`);
+        });
+      };
+      const fim = () => {
+        if (quadro) {
+          cancelAnimationFrame(quadro);
+          quadro = 0;
+        }
+        this.pane.style.setProperty("--pp-faixa-w", `${Math.round(wAtual)}px`);
+        alcaFaixa.removeEventListener("pointermove", move);
+        alcaFaixa.removeEventListener("pointerup", fim);
+        alcaFaixa.removeEventListener("pointercancel", fim);
+        guardar("pp-faixa-w", String(Math.round(wAtual)));
+        this.stage.desenharSelecao();
+      };
+      alcaFaixa.addEventListener("pointermove", move);
+      alcaFaixa.addEventListener("pointerup", fim);
+      alcaFaixa.addEventListener("pointercancel", fim);
     });
   }
 

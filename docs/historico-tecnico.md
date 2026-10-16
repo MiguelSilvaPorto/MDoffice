@@ -13414,3 +13414,48 @@ antigas quando fizer sentido.
 - **Porquê:** a entrega anterior fez `arranjoLegivel` devolver falso quando `novo === original` (a hierarquia numa lâmina sem hierarquia não deve
   aparecer). Num cartão só de visual (`s.arranjo === null`) `comTudo === comModelo` de propósito, então todos eram removidos e o painel mostrava
   "Nenhuma composição cabe" — exatamente o caso do slide do usuário, onde nenhuma arrumação é legível.
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-16 · a barra lateral · a alça de largura da faixa vertical
+- **Local:** o `montar()` (a restauração da largura, ao lado da `pp-side-w`) e o handler da alça
+  (depois do `[data-side-resize]`); o markup do `.pp-left`
+- **Linha:** `+` `<div class="pp-faixa-alca" data-faixa-resize …>` entre a faixa e o palco ·
+  `+` a restauração `Number(guardado("pp-faixa-w"))` (72–320 px) · `+` o `pointerdown` com
+  `setPointerCapture`, rAF, limites `Math.max(72, Math.min(max, w0 + (ev.clientX - x0)))` (o teto é
+  o menor entre 320 e 45% do painel) e `guardar("pp-faixa-w", …)`
+- **Porquê:** o usuário (print da faixa vertical) pediu arrastar para expandir/reduzir a barra
+  lateral. A mecânica é a MESMA do painel direito (rAF, limites, largura guardada) para os dois
+  lados do palco se comportarem igual; a única diferença é o eixo (a faixa cresce para a direita,
+  então a largura é `w0 + Δx`, e não `direita0 - clientX`). O teto em 45% do painel impede a faixa
+  de engolir o palco numa janela estreita.
+
+## src/styles/powerpoint.css
+
+### 2026-10-16 · a barra lateral · a var das miniaturas e o visual da alça
+- **Local:** `.pp-thumb` (o `width`), `.pp-left.faixa-vertical .pp-thumb` / `.pp-thumb-add`, e o
+  bloco novo do `.pp-faixa-alca`
+- **Linha:** `width: 128px` → `width: var(--pp-faixa-w, 128px)` (idem 112px no modo vertical) ·
+  `+` `.pp-faixa-alca { display: none }` e `.pp-left.faixa-vertical .pp-faixa-alca { display:block;
+  width:6px; cursor: col-resize }` com realce no hover
+- **Porquê:** as miniaturas crescem JUNTO com a faixa porque a largura passou a sair da var (o
+  conteúdo rico delas é `cqw` dentro da moldura `container-type: inline-size`, então a lâmina
+  inteira escala sozinha — nenhum repaint por quadro precisa acontecer). A alça fica no `display:
+  none` fora do modo vertical: no topo a faixa é horizontal e o arrasto não se aplica.
+
+## scripts/testar-layout.mts
+
+### 2026-10-16 · a barra lateral · as três checagens da alça
+- **Local:** o bloco do painel lateral (depois das checagens da `--pp-side-w`)
+- **Linha:** `+` três checagens: a alça existe e só no modo vertical (com `col-resize`), as
+  miniaturas saem da `--pp-faixa-w` (128/112 de fallback) e o arrasto tem o `data-faixa-resize`,
+  o `setProperty("--pp-faixa-w")` e o `guardar("pp-faixa-w")`
+- **Porquê:** o gesto atravessa três arquivos (markup → CSS → handler); sem as checagens, a faixa
+  voltaria a ficar presa em 112 px sem ninguém notar.
+
+## docs/powerpoint.md
+
+### 2026-10-16 · a barra lateral · a bala da faixa
+- **Local:** "Faixa de lâminas no topo ou na vertical"
+- **Linha:** `+` a frase do arrasto (alça de 6 px, miniaturas acompanhando, largura guardada)
+- **Porquê:** a bala só dizia que a faixa existe nos dois modos — faltava dizer que na vertical ela
+  é redimensionável.

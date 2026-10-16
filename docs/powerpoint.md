@@ -678,7 +678,10 @@ Teste: `npm run test:modelo`.
 - **Botão direito + arrastar move a tela** (panorama) — o jeito de navegar no zoom alto, em
   qualquer direção; o cursor vira "agarrando" durante o arrasto e o menu de contexto só abre
   no clique direito parado.
-- **Faixa de lâminas** no topo ou na vertical (Exibir → Faixa vertical).
+- **Faixa de lâminas** no topo ou na vertical (Exibir → Faixa vertical). Na vertical ela é a **barra
+  lateral** e dá para **arrastar a borda** (a alça de 6 px entre a faixa e o palco) para aumentar ou
+  reduzir a largura — as **miniaturas acompanham** (72 px a ~45% do painel) e a largura fica
+  **guardada** entre sessões, como a do painel direito. Antes ela ficava presa em 112 px.
 
 ## Testes
 
