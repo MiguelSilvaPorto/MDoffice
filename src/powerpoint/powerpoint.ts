@@ -720,8 +720,9 @@ export class PowerPointHost {
       pendentes.push(() => {
         const comModelo = aplicarModeloALamina(atual, de, s.modelo, s.tratamento, ratio);
         const comTudo = s.arranjo ? aplicarArranjo(comModelo, s.arranjo, s.variante, ratio) : comModelo;
-        // a fórmula que reduz os cartões a tiras ilegíveis não é oferecida
-        if (!arranjoLegivel(comModelo, comTudo)) {
+        // a fórmula que reduz os cartões a tiras ilegíveis não é oferecida; o cartão só de VISUAL (sem
+        // arrumação) não passa por esta conferência — nele a lâmina "não mudou" de propósito
+        if (s.arranjo && !arranjoLegivel(comModelo, comTudo)) {
           cartao.remove();
           return;
         }

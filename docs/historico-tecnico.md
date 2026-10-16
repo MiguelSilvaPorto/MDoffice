@@ -13407,3 +13407,10 @@ antigas quando fizer sentido.
   uma tarefa de follow-up, depois que o commit chegou (3e3187f). Promovi só a entrada DESTA tarefa:
   as que seguem em "Não adicionado" (a aba Desenhar cheia, a hierarquia do Designer…) são de sessões
   com trabalho aberto — mexer nelas criaria duplicata ou conflito.
+
+### 2026-10-16 · fix/tudo-so-visual · O modo Tudo sem arrumação possível não fica vazio
+- **Arquivo/local:** `src/powerpoint/powerpoint.ts` — `pintarMistas()` (a conferência de legibilidade da prévia); `scripts/testar-layout.mts`.
+- **Linha:** `if (!arranjoLegivel(comModelo, comTudo))` → `if (s.arranjo && !arranjoLegivel(comModelo, comTudo))`.
+- **Porquê:** a entrega anterior fez `arranjoLegivel` devolver falso quando `novo === original` (a hierarquia numa lâmina sem hierarquia não deve
+  aparecer). Num cartão só de visual (`s.arranjo === null`) `comTudo === comModelo` de propósito, então todos eram removidos e o painel mostrava
+  "Nenhuma composição cabe" — exatamente o caso do slide do usuário, onde nenhuma arrumação é legível.

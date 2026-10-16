@@ -1065,7 +1065,7 @@ console.log("\ncomposição (a arrumação e o visual na mesma sugestão)");
     "a prévia do cartão misto é a lâmina de verdade: modelo + fórmula, com o ratio do deck",
     /aplicarModeloALamina\(atual, de, s\.modelo, s\.tratamento, ratio\)/.test(ppt) &&
       /const comTudo = s\.arranjo \? aplicarArranjo\(comModelo, s\.arranjo, s\.variante, ratio\) : comModelo/.test(ppt) &&
-      /if \(!arranjoLegivel\(comModelo, comTudo\)\)/.test(ppt)
+      /if \(s\.arranjo && !arranjoLegivel\(comModelo, comTudo\)\)/.test(ppt)
   );
   checa(
     "a prévia do modo Visual também usa o ratio do deck (antes era 16/9 fixo)",
