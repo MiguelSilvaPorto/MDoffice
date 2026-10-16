@@ -145,13 +145,47 @@ function igualEstilo(a: Run, b: Run): boolean {
 // texto avançado por trecho: caixa das letras e "limpar formatação"
 // ---------------------------------------------------------------------------
 
-export type TipoCaixa = "maiusculas" | "minusculas" | "primeira";
+export type TipoCaixa = "maiusculas" | "minusculas" | "primeira" | "frase" | "alternar";
+
+/** tOGGLE cASE: troca a caixa de cada letra e deixa o resto como está ("Olá Mundo" → "oLÁ mUNDO"). */
+function caixaTrocada(t: string): string {
+  let saida = "";
+  for (const ch of t) {
+    const baixa = ch.toLocaleLowerCase("pt-BR");
+    const alta = ch.toLocaleUpperCase("pt-BR");
+    if (ch === baixa && ch !== alta) saida += alta;
+    else if (ch === alta && ch !== baixa) saida += baixa;
+    else saida += ch;
+  }
+  return saida;
+}
+
+/**
+ * Frase normal: minúsculas com a primeira letra de cada frase em maiúscula. Devolve também o estado
+ * ("a próxima letra abre a frase"), porque a frase ATRAVESSA os trechos: um trecho em negrito no meio
+ * não reinicia a frase (e cada parágrafo abre uma frase nova — quem chama reseta).
+ */
+function caixaDaFrase(t: string, abre: boolean): [string, boolean] {
+  let saida = "";
+  for (const ch of t.toLocaleLowerCase("pt-BR")) {
+    if (/[\p{L}\p{N}]/u.test(ch)) {
+      saida += abre ? ch.toLocaleUpperCase("pt-BR") : ch;
+      abre = false;
+      continue;
+    }
+    saida += ch;
+    if (ch === "." || ch === "!" || ch === "?" || ch === "\n") abre = true;
+  }
+  return [saida, abre];
+}
 
 /** Texto na caixa pedida, com o alfabeto do português (acentos certos: "informação" → "INFORMAÇÃO"). */
 function naCaixa(t: string, tipo: TipoCaixa): string {
   if (tipo === "maiusculas") return t.toLocaleUpperCase("pt-BR");
   if (tipo === "minusculas") return t.toLocaleLowerCase("pt-BR");
-  // Primeira Letra: cada palavra começa com maiúscula e o resto fica minúsculo
+  if (tipo === "alternar") return caixaTrocada(t);
+  if (tipo === "frase") return caixaDaFrase(t, true)[0];
+  // Primeira Letra De Cada Palavra: cada palavra começa com maiúscula e o resto fica minúsculo
   let saida = "";
   let inicio = true;
   for (const ch of t.toLocaleLowerCase("pt-BR")) {
@@ -164,12 +198,14 @@ function naCaixa(t: string, tipo: TipoCaixa): string {
 
 /**
  * Aplica `fn` aos trechos tocados por [ini, fim), dividindo-os nas bordas. Com `ini < 0` (ou seleção vazia,
- * `ini === fim`) vale para todo o texto, como em `estiloNoIntervalo`.
+ * `ini === fim`) vale para todo o texto, como em `estiloNoIntervalo`. `aoTrocarParagrafo` (opcional) avisa
+ * quando um parágrafo novo começa — quem transforma com estado (a frase) reseta ali.
  */
-function transformarNoIntervalo(paras: Para[], ini: number, fim: number, fn: (r: Run) => Run): Para[] {
+function transformarNoIntervalo(paras: Para[], ini: number, fim: number, fn: (r: Run) => Run, aoTrocarParagrafo?: () => void): Para[] {
   const todos = ini < 0 || ini === fim;
   let off = 0;
   return paras.map((p) => {
+    aoTrocarParagrafo?.();
     const runs: Run[] = [];
     for (const r of p.runs) {
       const rs = off;
@@ -196,8 +232,28 @@ function transformarNoIntervalo(paras: Para[], ini: number, fim: number, fn: (r:
   });
 }
 
-/** Transforma a caixa do texto do trecho selecionado: MAIÚSCULAS, minúsculas ou Primeira Letra. */
+/**
+ * Transforma a caixa do texto do trecho selecionado: MAIÚSCULAS, minúsculas, Primeira Letra De Cada
+ * Palavra, Frase normal ou aLTERNAR (as cinco do Office).
+ */
 export function mudarCaixaTexto(paras: Para[], ini: number, fim: number, tipo: TipoCaixa): Para[] {
+  if (tipo === "frase") {
+    // a frase atravessa os trechos (o negrito no meio não reinicia a frase); cada parágrafo abre uma
+    const estado = { abre: true };
+    return transformarNoIntervalo(
+      paras,
+      ini,
+      fim,
+      (r) => {
+        const [texto, abre] = caixaDaFrase(r.text, estado.abre);
+        estado.abre = abre;
+        return { ...r, text: texto };
+      },
+      () => {
+        estado.abre = true;
+      }
+    );
+  }
   return transformarNoIntervalo(paras, ini, fim, (r) => ({ ...r, text: naCaixa(r.text, tipo) }));
 }
 

@@ -13361,3 +13361,37 @@ antigas quando fizer sentido.
   oferecido — o comportamento seguro. Os motivos de cada rejeição (`motivosDoArranjo`) é que mostraram o piso de 8 pt inflando as letras e o
   critério de altura reprovando rótulos de uma linha.
 - **Fica de fora:** hierarquias em que o filho se liga por um traço que não encosta no barramento; recomposição do TEXTO de uma capa que tem cartões.
+
+## src/powerpoint/edicao/texto.ts
+
+### 2026-10-16 · caixa do texto · as cinco do Office (Frase normal e aLTERNAR)
+- **Local:** `TipoCaixa`, `naCaixa` (com as novas `caixaTrocada` e `caixaDaFrase`) e `mudarCaixaTexto`
+- **Linha:** `type TipoCaixa = "maiusculas" | "minusculas" | "primeira";` → `… | "frase" | "alternar"`;
+  `mudarCaixaTexto` ganhou o ramo do "frase" com o estado da frase (`{ abre: true }`) e o
+  `transformarNoIntervalo` ganhou o `aoTrocarParagrafo` (opcional)
+- **Porquê:** o pedido veio com print ("quero que vc adicione as opção que falta") — o menu tinha 3
+  e o Office tem 5. O rótulo "Primeira Letra" também não dizia o que fazia: a implementação sempre
+  foi **título por palavra** (o "Capitalize Each Word" do Office), então o rótulo virou **Primeira
+  Letra De Cada Palavra** e o **Frase normal** entrou de verdade. O "frase" é o único com ESTADO (a
+  frase atravessa os trechos: um negrito no meio não reinicia), daí o estado viver no
+  `mudarCaixaTexto` e o `transformarNoIntervalo` avisar quando um parágrafo novo começa (cada
+  parágrafo abre uma frase). O "alternar" é por letra, sem estado — cabe no `naCaixa`.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-16 · caixa do texto · o menu com as cinco
+- **Local:** o `case "caixa"` (as opções do popup) e o `title` do botão "Aa"
+- **Linha:** as 3 opções → as 5 do Office, na ordem dele (Frase normal, minúsculas, MAIÚSCULAS,
+  Primeira Letra De Cada Palavra, aLTERNAR mAIÚSCULAS/mINÚSCULAS)
+- **Porquê:** é o menu do print do usuário; a ordem segue a do Office (as transformações "de frase"
+  antes das "de palavra", o alternar por último) e os rótulos são os dele — inclusive o
+  "aLTERNAR mAIÚSCULAS/mINÚSCULAS" com a caixa trocada, que é como o Office escreve.
+
+## scripts/testar-edicao-pptx.mjs
+
+### 2026-10-16 · caixa do texto · 4 verificações novas (e a do título renomeada)
+- **Local:** o bloco "mudar caixa"
+- **Linha:** `novo` — Frase normal (com pontuação e acentos), a frase atravessando trechos, a frase
+  por parágrafo e o aLTERNAR; a checagem do título ganhou o nome novo
+- **Porquê:** o "frase" tem estado — é o que pode quebrar sem ninguém ver (o negrito no meio do
+  parágrafo reiniciaria a frase); as quatro prendem o comportamento.

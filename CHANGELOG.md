@@ -415,6 +415,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - **Arrumação em hierarquia (organograma) e um Designer que arruma sem estragar** — dois arranjos novos entendem a árvore pelos conectores e a redesenham (um nível por linha ou coluna, filhos centrados sob o pai, caixas do nível iguais, conectores novos, texto fixo desviado). O Designer passa a escolher sozinho o melhor arranjo, **remover o desenho antigo** do slide (triângulos, pontilhados, barrinhas) e **adaptar a arte à zona livre**; o que já está arrumado (uma fileira de cartões iguais) não é movido. Um arranjo só é oferecido se tudo continua legível: o texto cabe (palavra e parágrafo), nenhum cartão fica pequeno demais, cobre outro cartão ou cobre um texto que fica no lugar — corrige o caso em que três cartões viraram uma coluna sobre o parágrafo e o texto vazava. O modo **Tudo** deixou de mostrar um cartão só (filtra as arrumações antes de combinar com os visuais). Testes: `npm run test:hierarquia`.
 
+- **Mudar a caixa do texto ganhou as cinco opções do Office**: o menu tinha três (**MAIÚSCULAS**,
+  **minúsculas** e "Primeira Letra" — que na verdade fazia **título por palavra**, apesar do
+  rótulo) e faltavam as duas que se usam o tempo todo: **Frase normal** (minúsculas com a primeira
+  letra de cada frase em maiúscula) e **aLTERNAR mAIÚSCULAS/mINÚSCULAS** (tOGGLE cASE). Agora são
+  as cinco, na ordem do Office, e o rótulo do título ficou explícito (**Primeira Letra De Cada
+  Palavra**). A **Frase normal** entende a frase **através dos trechos** (um trecho em negrito no
+  meio não reinicia a frase) e **cada parágrafo abre uma frase**; o **aLTERNAR** troca a caixa de
+  cada letra e não mexe no resto. Os acentos saem certos nos dois. Teste: `npm run test:edicao-pptx`
+  (5 casos novos, incluindo a frase atravessando trechos e por parágrafo).
+
 - **A aba Desenhar cabe CHEIA (e o que sobrou de duplicação saiu)**: o print do usuário mostrava a
   aba **compacta demais** e com grupos virando menu. Duas causas: o **piso do encaixe** estava em
   0,62 (herança da correção anterior) e a aba tinha **oito grupos**, sendo dois deles **repetição**

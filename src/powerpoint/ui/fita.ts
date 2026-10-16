@@ -369,7 +369,7 @@ export class Fita {
              ${btn("sobrescrito", "x<sup>2</sup>", "Sobrescrito", "fmt")}
              ${btn("subscrito", "x<sub>2</sub>", "Subscrito", "fmt")}
              ${btn("versalete", `A<span class="ppr-va">bc</span>`, "Versalete (maiúsculas pequenas)", "fmt")}
-             ${btn("caixa", "Aa", "Mudar a caixa do texto: MAIÚSCULAS, minúsculas ou Primeira Letra", "fmt", true)}
+             ${btn("caixa", "Aa", "Mudar a caixa do texto: Frase normal, minúsculas, MAIÚSCULAS, Primeira Letra De Cada Palavra ou aLTERNAR", "fmt", true)}
              ${btn("espacamento", `<span class="ppr-seta">A↔</span>`, "Espaçamento entre caracteres", "fmt", true)}
              ${btn("limpar-formatacao", ic("i-clear-format"), "Limpar formatação", "fmt")}
            </div>
@@ -1058,9 +1058,11 @@ export class Fita {
       }
       case "caixa": {
         const opcoes: [string, string][] = [
-          ["maiusculas", "MAIÚSCULAS"],
+          ["frase", "Frase normal"],
           ["minusculas", "minúsculas"],
-          ["primeira", "Primeira Letra"],
+          ["maiusculas", "MAIÚSCULAS"],
+          ["primeira", "Primeira Letra De Cada Palavra"],
+          ["alternar", "aLTERNAR mAIÚSCULAS/mINÚSCULAS"],
         ];
         const el = abrirPopup(ancora, opcoes.map(([v, n]) => `<button type="button" class="pp-pop-item" data-caixa="${v}">${n}</button>`).join(""), { classe: "pp-pop-menu" });
         el.addEventListener("click", (ev) => {

@@ -167,7 +167,23 @@ const para = (runs, extra = {}) => ({ runs, align: "esquerda", lvl: 0, marL: 0, 
   ok("MAIÚSCULAS com acentos certos", T.mudarCaixaTexto([para([run("informação jurídica")])], -1, -1, "maiusculas")[0].runs[0].text === "INFORMAÇÃO JURÍDICA");
   ok("minúsculas com acentos certos", T.mudarCaixaTexto([para([run("SÃO PAULO")])], -1, -1, "minusculas")[0].runs[0].text === "são paulo");
   const titulo = T.mudarCaixaTexto([para([run("olá mundo (teste)")])], -1, -1, "primeira");
-  ok("Primeira Letra põe maiúscula em cada palavra", titulo[0].runs[0].text === "Olá Mundo (Teste)", titulo[0].runs[0].text);
+  ok("Primeira Letra De Cada Palavra põe maiúscula em cada palavra", titulo[0].runs[0].text === "Olá Mundo (Teste)", titulo[0].runs[0].text);
+  const frase = T.mudarCaixaTexto([para([run("OLÁ MUNDO. tudo bem? SIM, tudo.")])], -1, -1, "frase");
+  ok("Frase normal: minúsculas com a primeira letra de cada frase em maiúscula", frase[0].runs[0].text === "Olá mundo. Tudo bem? Sim, tudo.", frase[0].runs[0].text);
+  const fraseTrechos = T.mudarCaixaTexto([para([run("OLÁ"), run(" MUNDO. TUDO BEM", { bold: true })])], -1, -1, "frase");
+  ok(
+    "Frase normal atravessa os trechos (o negrito no meio não reinicia a frase)",
+    fraseTrechos[0].runs.map((r) => r.text).join("") === "Olá mundo. Tudo bem",
+    JSON.stringify(fraseTrechos[0].runs.map((r) => r.text))
+  );
+  const fraseParas = T.mudarCaixaTexto([para([run("PRIMEIRA LINHA")]), para([run("SEGUNDA LINHA")])], -1, -1, "frase");
+  ok(
+    "Frase normal: cada parágrafo abre uma frase",
+    fraseParas.map((p) => p.runs[0].text).join("|") === "Primeira linha|Segunda linha",
+    fraseParas.map((p) => p.runs[0].text).join("|")
+  );
+  const trocada = T.mudarCaixaTexto([para([run("Olá Mundo 2 (teste)")])], -1, -1, "alternar");
+  ok("aLTERNAR troca a caixa de cada letra (e não mexe no resto)", trocada[0].runs[0].text === "oLÁ mUNDO 2 (TESTE)", trocada[0].runs[0].text);
   const soTrecho = T.mudarCaixaTexto([para([run("um dois três")])], 3, 7, "maiusculas");
   ok("mudar caixa só no trecho selecionado", soTrecho[0].runs.map((r) => r.text).join("") === "um DOIS três", JSON.stringify(soTrecho[0].runs.map((r) => r.text)));
 

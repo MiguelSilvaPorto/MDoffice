@@ -78,7 +78,12 @@ avisado ao abrir (nunca some em silêncio).
   escolhidas, o arrasto continua movendo o conjunto; sem a forma escolhida, o primeiro arrasto pega
   e move, como sempre. O **cursor** troca (`mover` ↔ `texto`) para dizer quem manda em cada estado.
 - **Texto formatado por trecho**: negrito/itálico/sublinhado/riscado, marca-texto,
-  sobrescrito, versalete, espaçamento, caixa alta/baixa, cor e limpar formatação.
+  sobrescrito, versalete, espaçamento, cor e limpar formatação.
+- **Mudar a caixa do texto (as cinco do Office)**: **Frase normal** (minúsculas com a primeira
+  letra de cada frase em maiúscula — a frase atravessa os trechos e cada parágrafo abre uma),
+  **minúsculas**, **MAIÚSCULAS**, **Primeira Letra De Cada Palavra** e
+  **aLTERNAR mAIÚSCULAS/mINÚSCULAS** (troca a caixa de cada letra). Vale para o texto todo ou só
+  para o trecho selecionado, com os acentos certos do português.
 - **Fonte e tamanho como no PowerPoint**: o campo da fita mostra o que o texto **tem** — mesmo
   que o `.pptx` use um tamanho fora da lista (41, 27, 17 pt…) ou uma fonte que o app não conhece —
   e aceita **digitação**: dá para escrever qualquer tamanho (com vírgula) ou qualquer nome de fonte,
