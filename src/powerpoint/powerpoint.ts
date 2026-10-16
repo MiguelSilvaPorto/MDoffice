@@ -25,6 +25,8 @@ import { migrarSlides, registrarMidia } from "./edicao/migrar";
 import { MODELOS, ROTULO_TRATAMENTO, aplicarModelo, aplicarModeloALamina, type EstiloAtual, type ModeloPPT, type TratamentoIdeia } from "./edicao/modelos";
 import { modelosDasVariantes } from "./edicao/variantes";
 import { refazerDesenho } from "./edicao/desenhos";
+import { ARTES, type ArteId } from "./edicao/arte";
+import { aplicarArte, papeisDaCapa, sugestoesDeArte } from "./edicao/designer";
 import { ARRANJOS, aplicarArranjo, arranjoLegivel, arrumavel, rotuloDoArranjo, unidadesDa, variantesDe, type Arranjo } from "./edicao/arranjos";
 import { gerarDesign } from "./edicao/gerador";
 import { ACABAMENTOS, sugestoesDe } from "./edicao/sugestoes";
@@ -211,7 +213,7 @@ export class PowerPointHost {
   /** qual lote da Composição está à mostra (o botão "Gerar mais" avança) */
   private loteComposicao = 0;
   /** o filtro da Composição: o visual (padrão: formata as caixas sem movê-las), só a arrumação ou as duas metades juntas (Tudo) */
-  private filtroComposicao: "tudo" | "arrumacao" | "visual" = "visual";
+  private filtroComposicao: "designer" | "tudo" | "arrumacao" | "visual" = "designer";
   /** o visual da Composição vale para a apresentação inteira (desligado: só para a lâmina aberta) */
   private composicaoTodas = false;
   /** a lâmina e a proporção de que as prévias foram desenhadas (evita refazê-las à toa) */
@@ -372,9 +374,10 @@ export class PowerPointHost {
           </div>
           <div class="pp-side-corpo" data-composicao-corpo hidden>
             <div class="pp-side-head"><span>Composição</span><span class="pp-side-hint" data-composicao-hint>geradas no seu computador</span></div>
-            <p class="pp-ideias-dica">Sugestões para <b>esta lâmina</b>: o <b>Visual</b> muda cores, fonte e o formato das caixas <b>sem mover nenhuma</b>; a <b>Arrumação</b> reposiciona o conteúdo. Clicar aplica só nesta lâmina (e dá para desfazer).</p>
+            <p class="pp-ideias-dica">Sugestões para <b>esta lâmina</b>: o <b>Designer</b> desenha a arte e, na capa, recompõe o título; o <b>Visual</b> muda cores, fonte e o formato das caixas <b>sem mover nenhuma</b>; a <b>Arrumação</b> reposiciona o conteúdo. Clicar aplica só nesta lâmina (e dá para desfazer).</p>
             <div class="pp-seg" data-composicao-filtro role="group" aria-label="O que as sugestões mudam">
-              <button type="button" class="on" data-filtro="visual">Visual</button>
+              <button type="button" class="on" data-filtro="designer" title="Arte vetorial (ondas, facetas, mosaico, brilhos) com a paleta de um modelo; a capa é recomposta">Designer</button>
+              <button type="button" data-filtro="visual">Visual</button>
               <button type="button" data-filtro="arrumacao">Arrumação</button>
               <button type="button" data-filtro="tudo">Tudo</button>
             </div>
@@ -473,7 +476,7 @@ export class PowerPointHost {
     filtro?.addEventListener("click", (ev) => {
       const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-filtro]");
       if (!b) return;
-      this.filtroComposicao = (b.dataset.filtro as "tudo" | "arrumacao" | "visual") ?? "visual";
+      this.filtroComposicao = (b.dataset.filtro as "designer" | "tudo" | "arrumacao" | "visual") ?? "designer";
       for (const x of filtro.querySelectorAll<HTMLElement>("[data-filtro]")) x.classList.toggle("on", x === b);
       this.previasVista = null; // o host troca de conteúdo: a prévia guardada não vale mais
       this.pintarComposicao();
@@ -654,6 +657,7 @@ export class PowerPointHost {
   private pintarComposicao(): void {
     const host = this.pane.querySelector<HTMLElement>("[data-composicao]");
     if (!host) return;
+    if (this.filtroComposicao === "designer") return this.pintarDesigner(host);
     if (this.filtroComposicao === "arrumacao") return this.pintarArranjos(host);
     if (this.filtroComposicao === "visual") return this.pintarVisuais(host);
     return this.pintarMistas(host);
@@ -750,6 +754,62 @@ export class PowerPointHost {
   private atualizarDica(texto: string): void {
     const dica = this.pane.querySelector<HTMLElement>("[data-composicao-hint]");
     if (dica) dica.textContent = texto || "geradas no seu computador";
+  }
+
+  /**
+   * Modo Designer: a lâmina atual com a ARTE de cada sugestão (ondas, facetas, mosaico, brilhos) na
+   * paleta de um modelo — e, na capa, o título recomposto para a arte. A prévia sai do MESMO caminho
+   * do clique (`aplicarArte`); cada uma é desenhada num quadro próprio (a arte tem muitas formas).
+   * "Gerar mais" avança o lote: as artes giram e a paleta anda por passos, sem repetir.
+   */
+  private pintarDesigner(host: HTMLElement): void {
+    const atual = this.atual();
+    const de: EstiloAtual = { theme: this.setup.theme, bg: this.setup.bg, fontFamily: this.setup.fontFamily };
+    const ctx = this.ctxRender(false);
+    const largura = 960;
+    const ratio = stageRatio(this.setup);
+    const altura = Math.round(largura / ratio);
+    const criadas = 3; // os últimos cartões usam paletas CRIADAS na hora (a semente avança a cada lote)
+    const catalogo = [...MODELOS, ...lerModelosUsuario()];
+    const sugestoes = sugestoesDeArte(this.loteComposicao, catalogo, 8).map((s, i, todas) => (i >= todas.length - criadas ? { ...s, modelo: gerarDesign(s.semente) } : s));
+    this.previasVista = null;
+    this.atualizarDica(`${sugestoes.length} composições por vez — ${criadas} com paleta criada na hora${papeisDaCapa(atual) ? " · a capa é recomposta" : ""}`);
+    host.textContent = "";
+    const token = ++this.previasToken;
+    const pendentes: (() => void)[] = [];
+    for (const s of sugestoes) {
+      const nomeArte = ARTES.find((a) => a.id === s.arte)?.nome ?? s.arte;
+      const cartao = document.createElement("button");
+      cartao.type = "button";
+      cartao.className = "pp-ideia";
+      cartao.title = `${nomeArte} · ${s.modelo.nome} — ${s.modelo.descricao}`;
+      const moldura = document.createElement("span");
+      moldura.className = "pp-ideia-moldura";
+      const previa = document.createElement("span");
+      previa.className = "pp-slide pp-ideia-slide";
+      previa.style.width = `${largura}px`;
+      previa.style.height = `${altura}px`;
+      pendentes.push(() => {
+        const comArte = aplicarArte(atual, s.arte, s.semente, s.modelo, de, ratio);
+        previa.style.background = fundoValor(comArte.bg, this.setup.media ?? {});
+        previa.innerHTML = comArte.shapes.map((f) => htmlFormaRica(f, ctx)).join("");
+        const w = moldura.clientWidth;
+        if (w > 0) previa.style.transform = `scale(${w / largura})`;
+      });
+      moldura.append(previa);
+      const nome = document.createElement("span");
+      nome.className = "pp-ideia-nome";
+      nome.textContent = `${s.modelo.gerado ? "Novo · " : ""}${nomeArte} · ${s.modelo.nome}`;
+      cartao.append(moldura, nome);
+      cartao.addEventListener("click", () => this.run("designer-aplicar", `${s.arte}|${s.semente}|${s.modelo.id}`));
+      host.append(cartao);
+    }
+    const proxima = (): void => {
+      if (token !== this.previasToken) return;
+      pendentes.shift()?.();
+      if (pendentes.length) requestAnimationFrame(proxima);
+    };
+    requestAnimationFrame(proxima);
   }
 
   /**
@@ -2805,6 +2865,18 @@ export class PowerPointHost {
         this.mostrarPainelLateral();
         this.mostrarLateral("composicao");
         return;
+      case "designer-aplicar": {
+        // cartão do Designer ("arte|semente|modelo"): a arte e a paleta valem para esta lâmina — ou
+        // para o deck inteiro, com a opção "todas as lâminas" (a capa recebe a arte grande, as demais, a de borda)
+        const [arteId, semente, idModelo] = String(value ?? "").split("|");
+        const arte = ARTES.find((a) => a.id === arteId)?.id as ArteId | undefined;
+        const m = [...MODELOS, ...lerModelosUsuario()].find((x) => x.id === idModelo) ?? (idModelo?.startsWith("gerado-") ? gerarDesign(Number(idModelo.slice("gerado-".length))) : undefined);
+        if (!arte || !m) return;
+        this.registrar();
+        this.aplicarArteDaComposicao(arte, Number(semente) || 0, m);
+        this.pintar();
+        return;
+      }
       case "composicao-aplicar": {
         // cartão misto ("arranjo|variante|modelo|tratamento"): o visual e a arrumação valem para
         // esta lâmina — as duas metades num passo de desfazer só
@@ -4883,6 +4955,25 @@ export class PowerPointHost {
     if (this.composicaoTodas) return this.aplicarModeloDeck(modelo, tratamento);
     const de: EstiloAtual = { theme: this.setup.theme, bg: this.setup.bg, fontFamily: this.setup.fontFamily };
     this.substituirSlide(aplicarModeloALamina(this.atual(), de, modelo, tratamento, stageRatio(this.setup)));
+  }
+
+  /**
+   * A arte do Designer: só a lâmina aberta, ou o deck inteiro com a opção "todas as lâminas" (aí o
+   * tema, o fundo e a fonte do deck também seguem o modelo, como no Template). Sem histórico e sem
+   * pintar: o chamador cuida dos dois.
+   */
+  private aplicarArteDaComposicao(arte: ArteId, semente: number, modelo: ModeloPPT): void {
+    const de: EstiloAtual = { theme: this.setup.theme, bg: this.setup.bg, fontFamily: this.setup.fontFamily };
+    const ratio = stageRatio(this.setup);
+    if (!this.composicaoTodas) {
+      this.substituirSlide(aplicarArte(this.atual(), arte, semente, modelo, de, ratio));
+      return;
+    }
+    this.slides = this.slides.map((sl, i) => aplicarArte(sl, arte, semente + i, modelo, de, ratio));
+    this.setup = { ...this.setup, theme: modelo.tema, bg: modelo.bg, fontFamily: modelo.fonte };
+    const d = this.dim();
+    const tema = this.estilo();
+    this.slides = this.slides.map((s) => atualizarEstilos(s, d, tema));
   }
 
   private usarModelo(modelo: ModeloPPT, tratamento?: TratamentoIdeia): void {

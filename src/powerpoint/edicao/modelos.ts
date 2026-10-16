@@ -429,11 +429,15 @@ function fonteDominante(slide: Slide, padrao: string): string {
  * segundo modelo conseguir trocar a do primeiro.
  */
 export function aplicarModeloALamina(slide: Slide, de: EstiloAtual, modelo: ModeloPPT, tratamento: TratamentoIdeia | undefined, ratio = 16 / 9): Slide {
-  const [novo] = aplicarModelo([slide], { ...de, fontFamily: fonteDominante(slide, de.fontFamily) }, modelo, tratamento, ratio);
   // o modelo com Estilo de Cor desenha o fundo pela receita; uma imagem de fundo é conteúdo da
   // lâmina e fica. Nos demais casos o fundo é parte do design: o do modelo substitui o de antes
   // (senão um segundo modelo trataria o fundo do primeiro como um "painel escuro" e o manteria).
-  if (modelo.estilo || slide.bg?.kind === "image") return novo;
+  const troca = !modelo.estilo && slide.bg?.kind !== "image";
   const fundo = modelo.cores?.bg || modelo.bg || themeOf(modelo.tema).bg;
-  return { ...novo, bg: { kind: "solid", color: fundo, alpha: 1 } };
+  const solido = { kind: "solid", color: fundo, alpha: 1 } as const;
+  // O fundo novo entra ANTES: é nele que a cor de cada texto é decidida (a superfície onde ele
+  // senta). Com o fundo antigo (ou nenhum), o texto escuro de uma lâmina clara continuava escuro
+  // num modelo escuro — o contraste era calculado contra uma superfície que já ia sumir.
+  const [novo] = aplicarModelo([troca ? { ...slide, bg: solido } : slide], { ...de, fontFamily: fonteDominante(slide, de.fontFamily) }, modelo, tratamento, ratio);
+  return troca ? { ...novo, bg: solido } : novo;
 }

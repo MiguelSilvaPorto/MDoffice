@@ -13065,3 +13065,22 @@ antigas quando fizer sentido.
 - **Linha:** `novo`
 - **Porquê:** a tarefa ainda não está na main: a entrada nasce em "Não adicionado" e só é promovida
   no fechamento.
+
+### 2026-10-16 · feat/designer-arte · Designer: arte vetorial gerada e capa recomposta
+- **Arquivo/local:** `src/powerpoint/edicao/arte.ts` (novo: `comporArte`, quatro geradores, cor/acaso), `src/powerpoint/edicao/designer.ts`
+  (novo: `aplicarArte`, `papeisDaCapa`, `sugestoesDeArte`, `tamanhoQueCabe`), `src/powerpoint/edicao/desenhos.ts` (`DesenhoId` aceita
+  `arte-<id>-<semente>`; `decoracoesDe`/`lerDecoracao` delegam à arte), `src/powerpoint/edicao/modelos.ts` (`aplicarModeloALamina`),
+  `src/powerpoint/powerpoint.ts` (`pintarDesigner`, `aplicarArteDaComposicao`, comando `designer-aplicar`, filtro `designer`),
+  `scripts/testar-designer.mjs` (novo), `scripts/testar-layout.mts`, `scripts/testar-modelos.mjs`, `package.json` (`test:designer`).
+- **Linha:** o padrão da Composição `"visual"` → `"designer"`; a arte são formas fixas `tpl:arte-…` (formas livres `paths` + `fillX` gradiente
+  linear/radial com alfa) — o prefixo `tpl:` faz o Template e outra arte as trocarem; `aplicarModeloALamina`: o fundo do modelo entra
+  ANTES de `aplicarModelo` (era depois).
+- **Porquê:** o pedido era a resposta do Designer do Office a um slide simples (arte, composição, estilo). Sem biblioteca de imagens, a arte
+  nasce de curvas e gradientes: ondas (Catmull-Rom → Bézier), lâminas de vidro, losangos quadrados na lâmina (`rows = cols·100/(largura·ratio)`)
+  e luz radial. Verificado num Chrome real (página temporária com o renderizador do app) — o que o teste de geometria pegou: crista de onda e
+  losango vazando para a zona do texto, lasca lateral encostando no texto, palavra longa quebrando no meio ("apresentaçã/o"), matizes girando
+  ±40° (dourado virava verde-limão e vermelho: agora ±20°) e o fundo dos escuros misturando o acento inteiro (oliva barrento: agora sobe o tom).
+  O bug do contraste: `aplicarModelo` decide a cor de cada texto contra o fundo da lâmina — sem fundo próprio (ou com o do modelo anterior) o
+  texto escuro seguia escuro num modelo escuro.
+- **Fica de fora:** o miolo recebe só arte de borda (conteúdo não é recomposto); fotos/ilustrações de banco; recomposição de lâminas com
+  imagens ou cartões.

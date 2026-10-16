@@ -50,6 +50,20 @@ function corLegivel(preferida: string, fundo: string): string {
   return candidatas.find((c) => contraste(c, fundo) >= 4.5) ?? candidatas.reduce((a, b) => (contraste(b, fundo) > contraste(a, fundo) ? b : a));
 }
 
+/** O texto da forma (uma linha por parágrafo). */
+const textoDe = (s: Shape): string => (s.paras?.length ? s.paras.map((p) => p.runs.map((r) => r.text ?? "").join("")).join("\n") : s.text ?? "");
+
+/**
+ * O maior tamanho (pt) em que a PALAVRA mais longa ainda cabe na caixa: palavra que passa da caixa
+ * quebra no meio ("apresentaçã/o"). A conta é uma estimativa conservadora (0,62 em de largura média
+ * por letra, que cobre fontes largas e serifadas); a lâmina tem 960 pt de largura.
+ */
+export function tamanhoQueCabe(texto: string, larguraPct: number, maximo: number, minimo = 26): number {
+  const maior = Math.max(1, ...texto.split(/\s+/).map((w) => w.length));
+  const cabe = (larguraPct / 100) * 960 * 0.94 / (maior * 0.62);
+  return Math.max(minimo, Math.min(maximo, Math.floor(cabe)));
+}
+
 /** A forma com o tamanho, o peso, a cor e o alinhamento novos (o texto em si não muda). */
 function formatar(s: Shape, o: { tamanho: number; negrito: boolean; cor: string; align: "esquerda" | "centro"; box: Shape["box"]; ancora: "t" | "b" | "ctr" }): Shape {
   const tam = Math.max(1, tamanhoDe(s));
@@ -79,8 +93,8 @@ export function aplicarArte(slide: Slide, arte: ArteId, semente: number, modelo:
     const sub = misturar(cor, comp.fundoDoTexto, 0.3);
     const corSub = contraste(sub, comp.fundoDoTexto) >= 4.5 ? sub : cor;
     shapes = resto.map((s) => {
-      if (s.id === papeis.titulo.id) return formatar(s, { tamanho: 54, negrito: true, cor, align: comp.texto!.align, box: comp.texto!.titulo, ancora: "b" });
-      if (papeis.subtitulo && s.id === papeis.subtitulo.id) return formatar(s, { tamanho: 22, negrito: false, cor: corSub, align: comp.texto!.align, box: comp.texto!.subtitulo, ancora: "t" });
+      if (s.id === papeis.titulo.id) return formatar(s, { tamanho: tamanhoQueCabe(textoDe(s), comp.texto!.titulo.w, 54), negrito: true, cor, align: comp.texto!.align, box: comp.texto!.titulo, ancora: "b" });
+      if (papeis.subtitulo && s.id === papeis.subtitulo.id) return formatar(s, { tamanho: tamanhoQueCabe(textoDe(s), comp.texto!.subtitulo.w, 22, 14), negrito: false, cor: corSub, align: comp.texto!.align, box: comp.texto!.subtitulo, ancora: "t" });
       return s;
     });
   }

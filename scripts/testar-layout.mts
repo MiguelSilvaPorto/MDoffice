@@ -1039,16 +1039,18 @@ console.log("\ncomposição (a arrumação e o visual na mesma sugestão)");
     /export const ACABAMENTOS: TratamentoIdeia\[\] = \["recolorir", "cartao", "sombra", "cantos", "contorno"\]/.test(sug) && /acabamentos/.test(sug + ppt)
   );
   checa(
-    "o filtro tem os três modos e começa no Visual (que não move caixas)",
+    "o filtro tem os quatro modos e começa no Designer (arte + capa recomposta; nenhuma caixa de conteúdo se move)",
     /data-composicao-filtro/.test(ppt) &&
-      /class="on" data-filtro="visual">Visual</.test(ppt) &&
+      /class="on" data-filtro="designer"[^>]*>Designer</.test(ppt) &&
+      /data-filtro="visual">Visual</.test(ppt) &&
       /data-filtro="arrumacao">Arrumação</.test(ppt) &&
       /data-filtro="tudo">Tudo</.test(ppt) &&
-      /private filtroComposicao: "tudo" \| "arrumacao" \| "visual" = "visual"/.test(ppt)
+      /private filtroComposicao: "designer" \| "tudo" \| "arrumacao" \| "visual" = "designer"/.test(ppt)
   );
   checa(
-    "o filtro troca o pintor (misto, Arranjos, Visuais) e invalida a prévia guardada",
-    /this\.filtroComposicao = \(b\.dataset\.filtro as "tudo" \| "arrumacao" \| "visual"\) \?\? "visual"/.test(ppt) &&
+    "o filtro troca o pintor (Designer, misto, Arranjos, Visuais) e invalida a prévia guardada",
+    /this\.filtroComposicao = \(b\.dataset\.filtro as "designer" \| "tudo" \| "arrumacao" \| "visual"\) \?\? "designer"/.test(ppt) &&
+      /if \(this\.filtroComposicao === "designer"\) return this\.pintarDesigner\(host\)/.test(ppt) &&
       /this\.previasVista = null;/.test(ppt) &&
       /if \(this\.filtroComposicao === "arrumacao"\) return this\.pintarArranjos\(host\)/.test(ppt) &&
       /if \(this\.filtroComposicao === "visual"\) return this\.pintarVisuais\(host\)/.test(ppt) &&

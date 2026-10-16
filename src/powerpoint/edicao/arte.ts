@@ -186,7 +186,9 @@ const eCapa = (layout: SlideLayout): boolean => layout === "titulo" || layout ==
 /** O fundo da lâmina: o do modelo, com um gradiente suave na direção da arte. */
 function fundoBase(p: PaletaArte, angulo: number): { fill: Fill; meio: string } {
   const escuro = ehEscura(p);
-  const fim = escuro ? misturar(p.bg, p.accent, 0.3) : misturar(p.bg, p.accent, 0.14);
+  // no escuro o fundo SOBE de tom (mais claro, com um toque do acento) em vez de misturar o acento
+  // inteiro: acento dourado sobre azul-marinho virava um oliva barrento
+  const fim = escuro ? misturar(clara(p.bg, 0.12), p.accent, 0.1) : misturar(p.bg, p.accent, 0.14);
   return { fill: gradiente(angulo, [parada(0, p.bg), parada(100, fim)]), meio: misturar(p.bg, fim, 0.35) };
 }
 
@@ -197,29 +199,31 @@ function ondas(c: Ctx, capa: boolean, semente: number): ComposicaoArte {
   const escuro = ehEscura(p);
   const rnd = acaso(semente);
   const { fill, meio } = fundoBase(p, 120);
-  const viva = girarMatiz(p.accent, 38);
-  const cores = escuro ? [clara(p.accent, 0.25), viva, p.muted, girarMatiz(p.accent, -34)] : [clara(p.accent, 0.55), p.accent, clara(p.muted, 0.35), clara(viva, 0.45)];
+  const viva = girarMatiz(p.accent, 20);
+  const cores = escuro ? [clara(p.accent, 0.25), viva, p.muted, girarMatiz(p.accent, -18)] : [clara(p.accent, 0.55), p.accent, clara(p.muted, 0.35), clara(viva, 0.45)];
   const formas: Shape[] = [];
-  const bandas = capa ? 5 : 3;
-  const topo0 = capa ? 52 : 93; // onde a primeira onda nasce (em % da lâmina)
-  const passo = capa ? 8 : 2.4;
+  const bandas = capa ? 6 : 3;
+  const topo0 = capa ? 47 : 93; // onde a primeira onda nasce (em % da lâmina)
+  const passo = capa ? 7.5 : 2.4;
   const fase = rnd() * Math.PI * 2;
   for (let i = 0; i < bandas; i++) {
     const topo = topo0 + i * passo;
     const alto = 100 - topo + 2;
-    const amp = (capa ? 120 : 160) * (0.7 + rnd() * 0.7);
+    const amp = (capa ? 150 : 160) * (0.75 + rnd() * 0.8);
     const n = 7;
-    const base = capa ? 230 - i * 30 : 380;
+    // a base sobe até onde a crista mais alta ainda cabe DENTRO da caixa (um traçado fora dela vaza no .pptx)
+    const base = Math.max(capa ? 260 - i * 28 : 380, amp * 1.25 + 30);
     const pts: [number, number][] = [];
-    for (let k = 0; k <= n; k++) pts.push([(1000 / n) * k, base + amp * Math.sin(fase + k * 0.95 + i * 0.8) + (rnd() - 0.5) * amp * 0.4]);
-    const alfa = escuro ? 0.5 + i * 0.1 : 0.4 + i * 0.1;
+    for (let k = 0; k <= n; k++) pts.push([(1000 / n) * k, Math.max(10, base + amp * Math.sin(fase + k * (0.8 + i * 0.07) + i * 0.9) + (rnd() - 0.5) * amp * 0.45)]);
+    const alfa = escuro ? 0.42 + i * 0.1 : 0.34 + i * 0.1;
     const cor = cores[i % cores.length];
     const cor2 = cores[(i + 1) % cores.length];
-    const pintura = gradiente(0, [parada(0, cor, alfa * 0.4), parada(45, cor2, Math.min(0.92, alfa)), parada(100, cor, alfa * 0.5)]);
+    // o gradiente vertical (claro em cima, translúcido embaixo) é o brilho de seda; o horizontal, a mudança de cor
+    const pintura = gradiente(i % 2 ? 160 : 20, [parada(0, clara(cor, escuro ? 0.12 : 0.05), Math.min(0.95, alfa)), parada(55, cor2, alfa * 0.7), parada(100, cor, alfa * 0.25)]);
     formas.push(livre(c, { x: -2, y: topo, w: 104, h: alto }, [...curva(pts), "L", 1000, 1000, "L", 0, 1000, "Z"], { fill: pintura }));
-    // um fio de luz na crista de duas ondas: é ele que faz parecer seda
-    if (i === 1 || i === bandas - 2) {
-      formas.push(livre(c, { x: -2, y: topo, w: 104, h: alto }, curva(pts), { ln: { cor: escuro ? clara(cor, 0.5) : escura(cor, 0.1), w: 1.25, alpha: escuro ? 0.55 : 0.4 } }));
+    // um fio de luz na crista de algumas ondas: é ele que faz parecer seda
+    if (capa ? i % 2 === 0 : i === 1) {
+      formas.push(livre(c, { x: -2, y: topo, w: 104, h: alto }, curva(pts), { ln: { cor: escuro ? clara(cor, 0.55) : escura(cor, 0.05), w: 1.25, alpha: escuro ? 0.6 : 0.45 } }));
     }
   }
   return capa
@@ -227,7 +231,7 @@ function ondas(c: Ctx, capa: boolean, semente: number): ComposicaoArte {
         fundo: fill,
         formas,
         fundoDoTexto: meio,
-        texto: { titulo: { x: 7, y: 15, w: 72, h: 27 }, subtitulo: { x: 7, y: 43, w: 62, h: 9 }, align: "esquerda" },
+        texto: { titulo: { x: 7, y: 10, w: 72, h: 26 }, subtitulo: { x: 7, y: 37, w: 62, h: 9 }, align: "esquerda" },
       }
     : { fundo: fill, formas, fundoDoTexto: meio };
 }
@@ -241,41 +245,52 @@ function facetas(c: Ctx, capa: boolean, semente: number): ComposicaoArte {
   const espelho = semente % 2 === 1; // a arte à esquerda ou à direita
   const ex = (x: number): number => (espelho ? 1000 - x : x);
   const { fill, meio } = fundoBase(p, espelho ? 60 : 120);
-  const tons = escuro ? [p.accent, girarMatiz(p.accent, 32), p.muted, clara(p.accent, 0.3), misturar(p.bg, p.accent, 0.5)] : [p.accent, escura(p.accent, 0.18), clara(p.accent, 0.35), clara(p.muted, 0.2), clara(p.accent, 0.6)];
+  const tons = escuro ? [p.accent, girarMatiz(p.accent, 18), p.muted, clara(p.accent, 0.3), misturar(p.bg, p.accent, 0.5)] : [p.accent, escura(p.accent, 0.18), clara(p.accent, 0.35), clara(p.muted, 0.2), clara(p.accent, 0.6)];
   const formas: Shape[] = [];
-  const regiao: ShapeBox = capa ? { x: espelho ? 0 : 44, y: 0, w: 56, h: 100 } : { x: espelho ? 0 : 94.5, y: 0, w: 5.5, h: 14 };
-  const n = capa ? 7 : 3;
-  // pontos no perímetro da região: os vértices das facetas
-  const perimetro = (t: number): [number, number] => {
-    const q = (((t % 4) + 4) % 4) * 1000;
-    if (q < 1000) return [q, 0];
-    if (q < 2000) return [1000, q - 1000];
-    if (q < 3000) return [3000 - q, 1000];
-    return [0, 4000 - q];
-  };
-  for (let i = 0; i < n; i++) {
-    const a = perimetro(rnd() * 4);
-    const b = perimetro(rnd() * 4);
-    const d = perimetro(rnd() * 4);
-    const area = Math.abs((b[0] - a[0]) * (d[1] - a[1]) - (d[0] - a[0]) * (b[1] - a[1])) / 2;
-    if (area < 90000) continue; // facetas minúsculas só sujam
-    const cor = tons[i % tons.length];
-    const alfa = 0.3 + rnd() * 0.55;
-    formas.push(livre(c, regiao, ["M", ex(a[0]), a[1], "L", ex(b[0]), b[1], "L", ex(d[0]), d[1], "Z"], { fill: solido(cor, alfa) }));
+  const regiao: ShapeBox = capa ? { x: espelho ? 0 : 52, y: 0, w: 48, h: 100 } : { x: espelho ? 0 : 94.5, y: 0, w: 5.5, h: 14 };
+  if (capa) {
+    // lâminas inclinadas: cada uma vai da borda de cima à de baixo, entre duas retas que se abrem
+    // — sobrepostas e translúcidas, formam os tons de vidro que o Designer usa nos temas de facetas
+    const n = 6;
+    const topos: number[] = [];
+    const bases: number[] = [];
+    for (let i = 0; i <= n; i++) {
+      topos.push(150 + (850 / n) * i + (rnd() - 0.5) * 110);
+      bases.push(-60 + (900 / n) * i + (rnd() - 0.5) * 140);
+    }
+    for (let i = 0; i < n; i++) {
+      const cor = tons[i % tons.length];
+      const alfa = 0.28 + rnd() * 0.5;
+      const t0 = Math.max(0, topos[i]);
+      const t1 = Math.min(1000, topos[i + 1] + (rnd() > 0.55 ? 380 : 0));
+      const b0 = Math.max(0, bases[i]);
+      const b1 = Math.min(1000, bases[i + 1] + (rnd() > 0.55 ? 380 : 0));
+      formas.push(livre(c, regiao, ["M", ex(t0), 0, "L", ex(t1), 0, "L", ex(b1), 1000, "L", ex(b0), 1000, "Z"], { fill: solido(cor, alfa) }));
+    }
+    // dois triângulos translúcidos por cima criam as dobras (onde as lâminas se cruzam)
+    for (let i = 0; i < 2; i++) {
+      const cor = tons[(i * 2 + 1) % tons.length];
+      const x0 = 250 + rnd() * 400;
+      formas.push(livre(c, regiao, ["M", ex(x0), 0, "L", ex(1000), 0, "L", ex(1000), 420 + rnd() * 500, "Z"], { fill: solido(cor, 0.22 + rnd() * 0.25) }));
+    }
+  } else {
+    const cor = tons[0];
+    formas.push(livre(c, regiao, ["M", ex(0), 0, "L", ex(1000), 0, "L", ex(1000), 1000, "Z"], { fill: solido(cor, 0.8) }));
+    formas.push(livre(c, regiao, ["M", ex(0), 0, "L", ex(620), 0, "L", ex(0), 700, "Z"], { fill: solido(tons[2], 0.5) }));
   }
   if (capa) {
     // a lasca do lado oposto: equilibra a composição (como nos temas de facetas do Office)
     const lasca: ShapeBox = { x: espelho ? 90 : 0, y: 0, w: 10, h: 100 };
     formas.push(livre(c, lasca, ["M", ex(0), 0, "L", ex(700), 0, "L", ex(0), 880, "Z"], { fill: solido(p.accent, 0.85) }));
     // dois fios finos cruzando, como as linhas de construção do desenho
-    formas.push(livre(c, regiao, ["M", ex(380), 0, "L", ex(700), 1000], { ln: { cor: p.muted, w: 0.75, alpha: 0.6 } }));
+    formas.push(livre(c, regiao, ["M", ex(300), 0, "L", ex(760), 1000], { ln: { cor: p.muted, w: 0.75, alpha: 0.55 } }));
   }
   return capa
     ? {
         fundo: fill,
         formas,
         fundoDoTexto: meio,
-        texto: { titulo: { x: espelho ? 44 : 7, y: 26, w: 49, h: 26 }, subtitulo: { x: espelho ? 44 : 7, y: 53, w: 45, h: 10 }, align: "esquerda" },
+        texto: { titulo: { x: espelho ? 54 : 7, y: 26, w: 37, h: 26 }, subtitulo: { x: espelho ? 54 : 7, y: 53, w: 35, h: 10 }, align: "esquerda" },
       }
     : { fundo: fill, formas, fundoDoTexto: meio };
 }
@@ -292,7 +307,7 @@ function mosaico(c: Ctx, capa: boolean, semente: number): ComposicaoArte {
     ? [clara(p.accent, 0.35), p.accent, misturar(p.accent, p.bg, 0.4), misturar(p.accent, p.bg, 0.65), misturar(p.bg, p.accent, 0.2)]
     : [escura(p.accent, 0.3), p.accent, misturar(p.accent, p.muted, 0.45), clara(p.accent, 0.5), clara(p.accent, 0.82)];
   const largura = capa ? 42 : 4.2;
-  const cols = capa ? 9 : 2;
+  const cols = capa ? 9 : 3;
   // as células são quadradas na lâmina de verdade: `rows` acompanha a proporção da região
   const rows = Math.max(2, Math.round((cols * 100) / (largura * c.ratio)));
   const cw = 1000 / cols;
@@ -331,8 +346,8 @@ function orbes(c: Ctx, capa: boolean, semente: number): ComposicaoArte {
   const escuro = ehEscura(p);
   const rnd = acaso(semente);
   const { fill, meio } = fundoBase(p, 135);
-  const viva = girarMatiz(p.accent, escuro ? 42 : 28);
-  const cores = escuro ? [p.accent, viva, p.muted, girarMatiz(p.accent, -40)] : [clara(p.accent, 0.3), clara(viva, 0.4), clara(p.muted, 0.35), clara(p.accent, 0.55)];
+  const viva = girarMatiz(p.accent, escuro ? 22 : 16);
+  const cores = escuro ? [p.accent, viva, p.muted, girarMatiz(p.accent, -22)] : [clara(p.accent, 0.3), clara(viva, 0.4), clara(p.muted, 0.35), clara(p.accent, 0.55)];
   const formas: Shape[] = [];
   const brilho = (cx: number, cy: number, w: number, cor: string, alfa: number): Shape => {
     const h = w * c.ratio;
@@ -342,10 +357,10 @@ function orbes(c: Ctx, capa: boolean, semente: number): ComposicaoArte {
     });
   };
   if (capa) {
-    formas.push(brilho(72 + rnd() * 14, 12 + rnd() * 10, 66, cores[0], escuro ? 0.95 : 0.7));
-    formas.push(brilho(4 + rnd() * 12, 62 + rnd() * 14, 56, cores[1], escuro ? 0.85 : 0.6));
-    formas.push(brilho(34 + rnd() * 22, 96 + rnd() * 6, 46, cores[2], escuro ? 0.8 : 0.55));
-    formas.push(brilho(92 - rnd() * 8, 78 + rnd() * 8, 30, cores[3], escuro ? 0.7 : 0.5));
+    formas.push(brilho(72 + rnd() * 14, 12 + rnd() * 10, 66, cores[0], escuro ? 0.95 : 0.9));
+    formas.push(brilho(4 + rnd() * 12, 62 + rnd() * 14, 56, cores[1], escuro ? 0.85 : 0.85));
+    formas.push(brilho(34 + rnd() * 22, 96 + rnd() * 6, 46, cores[2], escuro ? 0.8 : 0.8));
+    formas.push(brilho(92 - rnd() * 8, 78 + rnd() * 8, 30, cores[3], escuro ? 0.7 : 0.75));
     // um pó de pontos de luz (só no escuro: no claro eles sujariam)
     if (escuro) {
       for (let i = 0; i < 9; i++) {

@@ -117,6 +117,11 @@ ok("o modelo guardado pelo usuário leva o desenho do deck", meu.desenho === "ba
   ok("cartão: a decoração fixa não é formatada (fica como está)", !deco.shadow && deco.geom === "rect");
   const sombra = aplicarL(original, de, corp, "sombra");
   ok("sombra: dá sombra sem arredondar", !!sombra.shapes.find((f) => f.id === "c1").shadow && sombra.shapes.find((f) => f.id === "c1").geom === "rect");
+  // o texto escuro de uma lâmina clara tem que virar claro num modelo escuro: o contraste é decidido
+  // contra o fundo NOVO (antes era contra o antigo — ou nenhum — e o texto ficava azul-escuro no azul-marinho)
+  const noEscuro = aplicarL(original, de, M.MODELOS.find((m) => m.id === "executivo"), "recolorir");
+  const corTxt = noEscuro.shapes.find((f) => f.id === "t").color;
+  ok("modelo escuro numa lâmina de texto escuro: o texto continua legível (4,5:1)", M.contrasteDeCores(corTxt, noEscuro.bg.color) >= 4.5, `${corTxt} sobre ${noEscuro.bg.color}`);
   const cantos = aplicarL(M.aplicarModelo([original], de, corp)[0], de, corp, "cantos");
   ok("cantos: as decorações do modelo (tpl:) não são arredondadas", cantos.shapes.filter((f) => f.name?.startsWith("tpl:")).every((f) => f.geom !== "roundRect"));
 }

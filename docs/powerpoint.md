@@ -219,7 +219,21 @@ avisado ao abrir (nunca some em silêncio).
   sistema em duas abas e viraram **um só**, com nome próprio (o papel do "Designer" do PowerPoint,
   sem copiar o nome). Cada cartão mostra **esta lâmina** já com a sugestão aplicada e o **filtro**
   escolhe o que as sugestões mexem:
-  - **Visual** (o padrão): muda **cores, fonte, desenho e o formato das caixas** — e **nenhuma
+  - **Designer** (o padrão): o app **desenha a arte** da lâmina — **ondas** de seda, **facetas** de
+    vidro, **mosaico** de losangos e **brilhos** — na paleta de um modelo, em **vetor** (curvas
+    de Bézier e gradientes com transparência, formas editáveis que saem no .pptx; nada de imagem
+    de banco). Cada estilo vale para o tom **escuro** e o **claro** (a paleta escura ganha arte
+    luminosa sobre fundo profundo; a clara, uma arte suave) e é **determinístico** por semente:
+    o cartão mostra exatamente o que o clique faz. Na **capa** (e na seção) feita só de texto o
+    **título e o subtítulo são recompostos** para a zona que a arte deixa livre — com o
+    alinhamento e a cor que leem bem ali (**4,5:1**) e a letra reduzida quando uma palavra não
+    cabe na caixa. Uma capa com **imagens ou cartões não é recomposta** (a arte vai para as
+    bordas), e nas lâminas de **conteúdo** a arte fica só nas bordas e **nenhuma caixa muda de
+    posição**. "Gerar mais" traz outras combinações (as artes giram, a paleta anda espalhada pelo
+    catálogo e os três últimos cartões usam **paletas criadas na hora**). Trocar de arte ou de
+    modelo **troca** a arte (não empilha), mudar o layout da lâmina a **refaz** para ele e
+    **Salvar como modelo** a leva junto;
+  - **Visual**: muda **cores, fonte, desenho e o formato das caixas** — e **nenhuma
     caixa muda de posição nem de tamanho**, como o Designer do Office. O clique vale **só para a
     lâmina aberta** (o fundo do design vira o fundo dela; o tema do deck não muda). A opção
     **Aplicar o visual a todas as lâminas** (abaixo do filtro) leva o design ao deck inteiro;
