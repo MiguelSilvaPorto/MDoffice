@@ -13234,3 +13234,41 @@ antigas quando fizer sentido.
   promoções anteriores; as demais entradas de "Não adicionado" (a aba Desenhar cheia, a mídia com
   controle, o Estúdio em todas as fases, a aba Animações…) ficaram **intactas** — são de sessões com
   trabalho aberto.
+
+## src/styles/editor.css
+
+### 2026-10-16 · a lista de fontes · menor (linha e teto da lista)
+- **Local:** `.dropdown.sel-menu` (o teto de altura) e `.sel-menu .dd-item` (a linha)
+- **Linha:** `max-height: min(60vh, 330px)` → `min(42vh, 240px)` · `padding: 3px 8px` → `2px 7px` ·
+  `font-size: 12px` → `11.5px`
+- **Porquê:** o usuário (print) mostrou a lista de fontes grande demais: linhas altas e a lista
+  cobrindo meia tela. Medido no navegador (harness novo): a linha caiu de **21,5 para 18,5 px** e a
+  lista visível de **253 para 177 px**. A largura (`max-content`, com o campo como mínimo) e o
+  comportamento (rolar dentro, abrir no item marcado) não mudaram — só o tamanho.
+
+## scripts/testar-layout.mts
+
+### 2026-10-16 · a lista de fontes · as checagens das medidas novas
+- **Local:** "seletor do app" (as duas checagens das medidas do menu, e a da altura presa no meio do
+  arquivo)
+- **Linha:** `max-height: min(60vh, 330px)` → `min(42vh, 240px)` (nos dois lugares); "as linhas da
+  lista são compactas (3-4px de padding, 12px de fonte)" → "enxutas (2px de padding, 11,5px de
+  fonte) e cortam com reticências"
+- **Porquê:** as checagens prendem as medidas de propósito, para a lista não voltar a crescer; os
+  números acompanham a decisão nova e a intenção (teto de altura, linhas baixas) fica igual.
+
+## scripts/harness-seletor.mjs
+
+### 2026-10-16 · a lista de fontes · o harness do seletor
+- **Local:** script novo (espelha o `harness-fita.mjs` e o `harness-painel.mjs`)
+- **Linha:** `novo` — monta o seletor de verdade (`melhorarSeletor` + `FONTES_COMUNS`), abre a
+  lista, imprime itens/altura da linha/fonte/menu e fotografa em `temp/seletor.png`
+- **Porquê:** o problema é de tamanho e só aparece com a lista aberta; o harness deixa medir e ver
+  sem abrir o app (e fica para as próximas mudanças do seletor).
+
+## docs/powerpoint.md
+
+### 2026-10-16 · a lista de fontes · a bala do campo de fonte
+- **Local:** "Fonte e tamanho como no PowerPoint"
+- **Linha:** `+` a nota da lista enxuta (linha de 11,5 px e teto de 240 px)
+- **Porquê:** o doc descreve o campo da fita e a lista aberta é parte dele.

@@ -82,7 +82,8 @@ avisado ao abrir (nunca some em silêncio).
 - **Fonte e tamanho como no PowerPoint**: o campo da fita mostra o que o texto **tem** — mesmo
   que o `.pptx` use um tamanho fora da lista (41, 27, 17 pt…) ou uma fonte que o app não conhece —
   e aceita **digitação**: dá para escrever qualquer tamanho (com vírgula) ou qualquer nome de fonte,
-  com a lista do app (e as fontes do próprio deck) no botão ao lado; tamanho misto fica em branco,
+  com a lista do app (e as fontes do próprio deck) no botão ao lado (a lista é **enxuta**: linha de
+  11,5 px e teto de 240 px, sem tomar a tela); tamanho misto fica em branco,
   como no Office, e digitar aplica a todos os trechos escolhidos. **Digitar sugere**: a lista abre
   filtrada pelo que se escreveu (sem ligar para maiúsculas nem acentos — "time" acha "Times New
   Roman"), as setas andam pelos itens, o **Enter** escolhe o destacado, o **Esc** devolve o texto

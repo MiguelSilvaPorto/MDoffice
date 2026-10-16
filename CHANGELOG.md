@@ -1508,6 +1508,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A lista de fontes/tamanho ficou menor**: o menu do seletor (o campo Fonte da fita, no Word e no
+  PowerPoint) abria com **linhas altas e até 330 px** de lista — no print do usuário a lista de
+  fontes tomava meia tela. As linhas foram de 3/12 px para **2/11,5 px** (a altura da linha caiu de
+  21,5 para 18,5 px) e a lista de 330 para **240 px** de teto (no harness, 253 → 177 px de altura
+  visível). Conferido no navegador com `node scripts/harness-seletor.mjs`.
+
   markdown passa pelo saneamento, como todo HTML de fora no app.
 
 - (nada no momento)

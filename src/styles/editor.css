@@ -111,20 +111,21 @@
    cobria a tela inteira. A altura fica presa à janela e a lista rola DENTRO dela. O menu de
    seletor NÃO usa a largura dos menus "⋯" (250px): ele abraça o rótulo mais largo, com a largura
    do próprio campo como mínimo (como a lista nativa) e linhas compactas — num seletor de números
-   o menu tem que parecer continuação do campo, não uma janela. */
+   o menu tem que parecer continuação do campo, não uma janela. As medidas são enxutas de
+   propósito (pedido do usuário, com print: a lista de fontes estava grande demais). */
 .dropdown.sel-menu {
   width: max-content;
   min-width: 0;
   max-width: min(320px, calc(100vw - 16px));
-  max-height: min(60vh, 330px);
+  max-height: min(42vh, 240px);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
 .sel-menu .dd-item {
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 12px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 11.5px;
 }
 
 /* o item que o Enter aplica: mesmo realce do hover (o mouse também move o destaque) */

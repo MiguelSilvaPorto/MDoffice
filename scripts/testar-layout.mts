@@ -276,7 +276,7 @@ checa("a lista aberta fecha antes de redesenhar um painel", /export function fec
 checa("a setinha acompanha o tamanho do contexto (1em)", /\.sel-face \.ic\s*\{[^}]*width:\s*1em/.test(ler("src/styles/base.css")));
 checa(
   "a lista longa não cobre a tela (altura presa, rolagem dentro)",
-  /\.dropdown\.sel-menu\s*\{[^}]*max-height:\s*min\(60vh,\s*330px\)[^}]*overflow-y:\s*auto/s.test(ler("src/styles/editor.css")),
+  /\.dropdown\.sel-menu\s*\{[^}]*max-height:\s*min\(42vh,\s*240px\)[^}]*overflow-y:\s*auto/s.test(ler("src/styles/editor.css")),
   "a lista do tamanho da fonte abre na altura natural e cobre a janela"
 );
 checa(
@@ -1130,12 +1130,12 @@ checa(
   /\.dropdown\.sel-menu\s*\{[^}]*width:\s*max-content/s.test(cssEditorSel) &&
     /\.dropdown\.sel-menu\s*\{[^}]*min-width:\s*0/s.test(cssEditorSel) &&
     /\.dropdown\.sel-menu\s*\{[^}]*max-width:\s*min\(320px/s.test(cssEditorSel) &&
-    /\.dropdown\.sel-menu\s*\{[^}]*max-height:\s*min\(60vh, 330px\)/s.test(cssEditorSel),
+    /\.dropdown\.sel-menu\s*\{[^}]*max-height:\s*min\(42vh, 240px\)/s.test(cssEditorSel),
   "o sel-menu voltaria à largura dos menus ⋯ (250px) ou à altura antiga (430px)"
 );
 checa(
-  "as linhas da lista são compactas (3-4px de padding, 12px de fonte)",
-  /\.sel-menu \.dd-item\s*\{[^}]*padding:\s*3px 8px/s.test(cssEditorSel) && /\.sel-menu \.dd-item\s*\{[^}]*font-size:\s*12px/s.test(cssEditorSel) && /\.sel-menu \.dd-item > span:first-child\s*\{[^}]*text-overflow:\s*ellipsis/s.test(cssEditorSel),
+  "as linhas da lista são enxutas (2px de padding, 11,5px de fonte) e cortam com reticências",
+  /\.sel-menu \.dd-item\s*\{[^}]*padding:\s*2px 7px/s.test(cssEditorSel) && /\.sel-menu \.dd-item\s*\{[^}]*font-size:\s*11\.5px/s.test(cssEditorSel) && /\.sel-menu \.dd-item > span:first-child\s*\{[^}]*text-overflow:\s*ellipsis/s.test(cssEditorSel),
   "o item continuaria com o padding alto dos menus ⋯"
 );
 checa(
