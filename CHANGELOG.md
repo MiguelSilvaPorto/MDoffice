@@ -432,22 +432,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   vista), e as **decorações do layout** (fixas) entram só com o "Editar elementos do layout" ligado,
   como no clique. O item fica desabilitado com menos de duas formas no ponto.
 
-- **O menu "Organizar" põe o par dos extremos junto (como no Office)**: a ordem era
-  **Trazer para a frente**, Avançar, Recuar, **Enviar para trás** — o par que se usa junto ficava
-  separado pelos passos de camada e o "Enviar para trás" só aparecia na quarta linha (relato com
-  print). Agora é **Trazer para a frente ▸ Enviar para trás ▸ Avançar ▸ Recuar** (o resto da lista
-  não mudou), como na fita e no menu do clique direito, que já mostravam o par junto. Vale para os
-  dois botões que abrem esse menu (o **Organizar** da aba Desenhar e o **Alinhar e girar** da
-  Página Inicial).
-
-- **Dois comandos "criar modelo" com o mesmo nome — um deles nunca rodava**: o botão **Modelo** do
-  Estúdio Modelo ("esta box vira modelo, as cópias vinculadas seguem o que mudar nela") mandava
-  `modelo-criar`, o mesmo comando do cartão **Novo modelo** do **Template** — e o `switch` pega o
-  primeiro `case`, então o do Estúdio Modelo era **código morto**: clicar em **Modelo** criava um
-  **cartão de Template** ("Meu modelo") em vez de marcar a box como modelo (o Vite já avisava disso
-  no build). Os nomes agora são próprios — `template-criar` (Template) e `modelo-criar` (Estúdio
-  Modelo) — e um teste novo barra comando repetido no `switch`.
-
 - **A fita não parece mais quebrada quando um grupo vira menu (e ela prefere encolher a esconder)** —
   dois defeitos que apareceram juntos na aba **Desenhar** (que ganhou Estúdio, Pintura e Modelo): o
   **grupo colapsado** era desenhado como um botão **solto no topo** do painel, com o vão do rótulo
@@ -554,6 +538,22 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **O menu "Organizar" põe o par dos extremos junto (como no Office)**: a ordem era
+  **Trazer para a frente**, Avançar, Recuar, **Enviar para trás** — o par que se usa junto ficava
+  separado pelos passos de camada e o "Enviar para trás" só aparecia na quarta linha (relato com
+  print). Agora é **Trazer para a frente ▸ Enviar para trás ▸ Avançar ▸ Recuar** (o resto da lista
+  não mudou), como na fita e no menu do clique direito, que já mostravam o par junto. Vale para os
+  dois botões que abrem esse menu (o **Organizar** da aba Desenhar e o **Alinhar e girar** da
+  Página Inicial).
+
+- **Dois comandos "criar modelo" com o mesmo nome — um deles nunca rodava**: o botão **Modelo** do
+  Estúdio Modelo ("esta box vira modelo, as cópias vinculadas seguem o que mudar nela") mandava
+  `modelo-criar`, o mesmo comando do cartão **Novo modelo** do **Template** — e o `switch` pega o
+  primeiro `case`, então o do Estúdio Modelo era **código morto**: clicar em **Modelo** criava um
+  **cartão de Template** ("Meu modelo") em vez de marcar a box como modelo (o Vite já avisava disso
+  no build). Os nomes agora são próprios — `template-criar` (Template) e `modelo-criar` (Estúdio
+  Modelo) — e um teste novo barra comando repetido no `switch`.
 
 - **Redesign da aba Desenhar, grupos recolhidos e clique direito limpo no palco**:
   - **Aba Desenhar compacta e estruturada**: o grupo **Traço** deixou a coluna alta de 4 linhas

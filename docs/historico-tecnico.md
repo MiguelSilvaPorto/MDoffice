@@ -12831,3 +12831,17 @@ antigas quando fizer sentido.
 - **Linha:** `novo` (2 entradas: a ordem do menu e o comando repetido)
 - **Porquê:** mudanças do módulo PowerPoint; as entradas ficam em "Não adicionado" até o commit do
   `fechar.ps1` entregar a `main` (a promoção é um passo separado).
+
+## CHANGELOG.md
+
+### 2026-10-15 · promoção · as duas entradas do menu Organizar entram no "Adicionado"
+- **Local:** PowerPoint → "Não adicionado" → Frontend → "Adicionado" → Frontend (topo)
+- **Linha:** 2 entradas movidas, sem reescrita — **O menu "Organizar" põe o par dos extremos junto
+  (como no Office)** e **Dois comandos "criar modelo" com o mesmo nome — um deles nunca rodava**
+  (`82d1f72`)
+- **Porquê:** o commit está na `main` (conferido com `git merge-base --is-ancestor 82d1f72 main`
+  antes de mover), então a promoção não afirma nada falso. Como nas rodadas anteriores, ela anda num
+  passo curto de docs porque o commit do `fechar.ps1` já foi usado para entregar o código —
+  promover junto seria afirmar "está na main" antes de estar. A seção "Não adicionado" ficou com o
+  que sobrou da rodada (o grupo Diagrama, o "Selecionar tudo neste ponto", o Estúdio — Modelo e
+  Camadas, a aba Animações…), que é de sessões com trabalho aberto.
