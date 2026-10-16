@@ -19,7 +19,9 @@
   /* ------------------------------------------------------------------
      Escala da fita (arrastar a borda de baixo — ver src/fita.ts).
      As MÉTRICAS (alturas, ícones, espaçamentos) acompanham a escala para
-     a fita caber melhor; a FONTE tem piso, senão o texto fica ilegível.
+     a fita caber melhor, mas com PISO: o texto e os ícones não encolhem
+     abaixo do que se enxerga (o dono relatou a fita baixa "difícil de
+     enxergar" quando o ícone caía para 14 px).
      Tudo abaixo sai daqui: mudar a escala aqui ajusta a fita inteira.
      ------------------------------------------------------------------ */
   /* a escala do usuário (borda de baixo) × o ajuste automático à largura (src/fita.ts) */
@@ -33,15 +35,19 @@
   --pe-8: calc(8px * var(--fita-e));
   --pe-10: calc(10px * var(--fita-e));
   --pe-14: calc(14px * var(--fita-e));
-  --pe-aba-alt: max(22px, calc(24px * var(--fita-e)));
-  --pe-altura: max(22px, calc(26px * var(--fita-e)));
-  --pe-icone: max(14px, calc(16px * var(--fita-e)));
+  --pe-aba-alt: max(24px, calc(24px * var(--fita-e)));
+  --pe-altura: max(24px, calc(26px * var(--fita-e)));
+  --pe-icone: max(16px, calc(16px * var(--fita-e)));
   --pe-icone-g: max(20px, calc(28px * var(--fita-e)));
+  /* o ícone do botão grande na fita BAIXA (uma linha): 19 px no piso, para ele ficar do mesmo
+     tamanho do ícone do botão empilhado (20–24 px) — era 14 px (o piso do ícone pequeno) e com a
+     fita baixa a fita virava "difícil de enxergar" (relato do dono) */
+  --pe-icone-c: max(19px, calc(20px * var(--fita-e)));
 
-  /* pisos de fonte: 10,5px é o menor texto confortável; 11,5px para ações */
+  /* pisos de fonte: 11px no rótulo do grupo (a informação menos importante) e 11,5px no resto */
   --pe-fonte: max(11.5px, calc(13px * var(--fita-e)));
-  --pe-fonte-peq: max(11px, calc(12px * var(--fita-e)));
-  --pe-fonte-rot: max(10.5px, calc(11px * var(--fita-e)));
+  --pe-fonte-peq: max(11.5px, calc(12px * var(--fita-e)));
+  --pe-fonte-rot: max(11px, calc(11px * var(--fita-e)));
 }
 
 .ppr-abas {
@@ -282,8 +288,8 @@ button.ppr.big > span:not(.car):not(.ppr-gal-ic) {
 }
 
 .pp-ribbon.ppr.fita-compacta button.ppr.big .ic {
-  width: var(--pe-icone);
-  height: var(--pe-icone);
+  width: var(--pe-icone-c);
+  height: var(--pe-icone-c);
 }
 
 .pp-ribbon.ppr.fita-compacta button.ppr.big > span:not(.car):not(.ppr-gal-ic) {
@@ -429,8 +435,8 @@ button.ppr.big .ppr-gal-ic svg {
 }
 
 .pp-ribbon.ppr.fita-compacta button.ppr.big .ppr-gal-ic svg {
-  width: var(--pe-icone);
-  height: var(--pe-icone);
+  width: var(--pe-icone-c);
+  height: var(--pe-icone-c);
 }
 
 .ppr-sombra-ic {

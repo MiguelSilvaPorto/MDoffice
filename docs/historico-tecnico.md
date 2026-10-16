@@ -13500,3 +13500,53 @@ antigas quando fizer sentido.
   entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
   promoções anteriores; as demais entradas de "Não adicionado" (a aba Desenhar cheia, o Composição ·
   Tudo, a Arrumação em hierarquia…) ficaram **intactas** — são de sessões com trabalho aberto.
+- **Fica de fora:** hierarquias em que o filho se liga por um traço que não encosta no barramento
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-16 · esta tarefa · os pisos da fita baixa (a fita não encolhe abaixo do que se enxerga)
+- **Local:** o bloco de variáveis da fita (`.pp-ribbon.ppr`), as duas regras da fita baixa
+  (`button.ppr.big .ic` e `.ppr-gal-ic svg`) e o comentário do bloco
+- **Linha:** `--pe-icone: max(14px …)` → `max(16px …)` · `--pe-aba-alt: max(22px …)` → `max(24px …)` ·
+  `--pe-altura: max(22px …)` → `max(24px …)` · `--pe-fonte-peq: max(11px …)` → `max(11.5px …)` ·
+  `--pe-fonte-rot: max(10.5px …)` → `max(11px …)` · `+ --pe-icone-c: max(19px, calc(20px * var(--fita-e)))`
+  (nova) · nas duas regras da fita baixa: `var(--pe-icone)` → `var(--pe-icone-c)`
+- **Porquê:** o relato ("gostei dessa disposição de botão, o problema dessa disposição é o tamanho que
+  diminui o tamanho e fica muito feio difícil de até enxergar", com os dois prints: a fita cheia e a
+  fita baixa). As métricas da fita acompanham a escala (`--fita-e`) e cada uma tinha o seu piso — mas
+  o **ícone do botão grande na fita baixa usava o piso do ícone PEQUENO (14 px)**, e com a escala em
+  0,7 o cálculo pedia ~9 px: o piso cortava em 14 px. Medido no navegador (escala 0,7 e aperto 0,78,
+  a pior combinação): antes, o ícone do botão grande = **14 px**, o do pequeno = 14 px, a altura =
+  22 px, o texto = 11 px e o rótulo do grupo = 10,5 px; depois, **19 px**, 16 px, 24 px, 11,5 px e
+  11 px. O desenho NÃO mudou (a fita baixa continua a linha única — é o que devolve altura, o motivo
+  de arrastá-la): o que mudou é que a disposição agora tem piso em tudo o que se lê/enxerga. O piso
+  novo do ícone grande da fita baixa é um `--pe-icone-c` (19 px) e não o `--pe-icone-g` (28 px): o
+  ícone da fita baixa fica **quase do tamanho do empilhado** (20–24 px) sem alargar a linha. Só o
+  PowerPoint: as fitas do Word e do Excel têm os próprios pisos (cada um no seu CSS) e o relato veio
+  com print da apresentação.
+
+## scripts/testar-layout.mts
+
+### 2026-10-16 · esta tarefa · 3 verificações (os pisos da fita)
+- **Local:** o bloco "fita do PowerPoint: tamanho estável entre abas" (onde já viviam os pisos do
+  Word) — a checagem do preview da fita baixa e duas novas
+- **Linha:** a checagem "na fita compacta o preview usa o ícone normal" passa a olhar
+  `var(--pe-icone-c)` (e o nome/mensagem acompanham); `+ "os ícones da fita têm piso (o da fita baixa
+  quase do tamanho do empilhado)"` (16px/19px/20px) e `+ "as alturas e o texto param em 24px e
+  11,5px"` (as quatro variáveis)
+- **Porquê:** o defeito é do tipo que não aparece em teste de unidade (é um `max()` no CSS com o
+  valor errado) e o sintoma é visual ("difícil de enxergar") — a checagem prende os valores para o
+  piso não voltar a cair numa limpeza de CSS. A checagem do preview mudou de valor porque o preview
+  da fita baixa passou a usar o piso próprio (`--pe-icone-c`), não o do ícone pequeno: o propósito
+  dela (o preview não usa o `--pe-icone-g` gigante) continua o mesmo.
+
+## docs/powerpoint.md · CHANGELOG.md
+
+### 2026-10-16 · esta tarefa · a bala da fita e a entrada
+- **Local:** o degrau (2) da bala "A fita cabe na largura da janela…" (a parte da fita compacta) e o
+  CHANGELOG → **PowerPoint → Não adicionado → Frontend** (topo)
+- **Linha:** `+ "a fonte não encolhe e os ícones têm piso: 16 px no pequeno e 19 px no da fita baixa,
+  o texto em 11,5 px e as alturas em 24 px — nada fica abaixo do que se enxerga"` · `+ 1 entrada`
+- **Porquê:** a bala dizia só "a fonte não encolhe" — metade da verdade: o ícone encolhia (e era o
+  que doía). A entrada do changelog fica em "Não adicionado" até o `fechar.ps1` entregar; a categoria
+  é **PowerPoint** porque o piso mexido é o do CSS da apresentação (o Word e o Excel têm os deles).; recomposição do TEXTO de uma capa que tem cartões.

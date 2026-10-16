@@ -62,7 +62,20 @@ checa("o painel inativo não some do layout", /\.ppr-painel\[hidden\]\s*\{[^}]*d
 checa("o painel inativo fica invisível (clique/foco/leitura)", /\.ppr-painel\[hidden\]\s*\{[^}]*visibility:\s*hidden/.test(pp), "visibility ausente em .ppr-painel[hidden]");
 checa("o rótulo da aba reserva a largura do negrito", /\.ppr-aba-rot::after\s*\{[^}]*font-weight:\s*600/.test(pp) && /\.ppr-aba-rot::after\s*\{[^}]*visibility:\s*hidden/.test(pp), "regra .ppr-aba-rot::after ausente");
 checa("o preview da Formas segue o tamanho do ícone grande", /button\.ppr\.big \.ppr-gal-ic svg\s*\{[^}]*width:\s*var\(--pe-icone-g\)/.test(pp), "regra button.ppr.big .ppr-gal-ic svg ausente");
-checa("na fita compacta o preview usa o ícone normal", /fita-compacta button\.ppr\.big \.ppr-gal-ic svg\s*\{[^}]*width:\s*var\(--pe-icone\)/.test(pp), "regra .fita-compacta .ppr-gal-ic svg ausente");
+checa("na fita baixa o preview usa o ícone da própria fita baixa (não o pequeno)", /fita-compacta button\.ppr\.big \.ppr-gal-ic svg\s*\{[^}]*width:\s*var\(--pe-icone-c\)/.test(pp), "regra .fita-compacta .ppr-gal-ic svg ausente");
+// A fita baixa não pode ficar "difícil de enxergar" (o relato veio com print): as MÉTRICAS encolhem
+// com a escala, mas com piso — o ícone grande da fita baixa tem o seu (19px, quase o do empilhado) e
+// o pequeno 16px; as alturas param em 24px e o texto em 11,5px/11px.
+checa(
+  "os ícones da fita têm piso (o da fita baixa quase do tamanho do empilhado)",
+  /--pe-icone:\s*max\(16px/.test(pp) && /--pe-icone-c:\s*max\(19px/.test(pp) && /--pe-icone-g:\s*max\(20px/.test(pp),
+  "sem piso, a escala baixa derruba o ícone para 14 px (o 'difícil de enxergar')"
+);
+checa(
+  "as alturas e o texto param em 24px e 11,5px (nunca abaixo)",
+  /--pe-aba-alt:\s*max\(24px/.test(pp) && /--pe-altura:\s*max\(24px/.test(pp) && /--pe-fonte-peq:\s*max\(11\.5px/.test(pp) && /--pe-fonte-rot:\s*max\(11px/.test(pp),
+  "a fita baixa voltaria a encolher o texto e as linhas abaixo do legível"
+);
 // Os botões grandes da fita baixa ficam AGRUPADOS: com o padding de --pe-6 e o vão de --pe-4
 // sobrava ~10 px de ar entre um e outro (o "muito espalhado" do grupo Canetas). Aqui a fita baixa
 // é a fita de trabalho — o par de valores (--pe-3/--pe-2) é o que mantém os itens juntos.

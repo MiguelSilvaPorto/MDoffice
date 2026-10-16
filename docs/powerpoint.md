@@ -167,7 +167,9 @@ avisado ao abrir (nunca some em silêncio).
   ou avisa quando a mudança foi **visual** (cores, formas e posição, sem mexer no texto).
 - **A fita cabe na largura da janela, em quatro degraus (sem rolagem lateral)**: do mais folgado ao
   mais apertado — (1) **cheia**, com as métricas em 1; (2) **compacta**, com espaços e ícones
-  menores (a **fonte não encolhe**: o piso está no CSS) e os botões grandes numa linha, **agrupados**
+  menores (a **fonte não encolhe** e os **ícones têm piso**: 16 px no pequeno e 19 px no da fita
+  baixa, o texto em 11,5 px e as alturas em 24 px — nada fica abaixo do que se enxerga) e os botões
+  grandes numa linha, **agrupados**
   (o ar entre um botão e outro fica ~a metade do vão de dentro dele — o grupo **Canetas** da aba
   Desenhar, com Draw/Curva/Marca-texto/Borracha, era o caso espalhado que pediu isso); (3) os
   **grupos que não couberem viram um botão** com o nome do grupo, e clicar nele abre um menu com os
