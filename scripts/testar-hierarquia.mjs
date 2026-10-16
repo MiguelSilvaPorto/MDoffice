@@ -168,6 +168,75 @@ function capaComCartoes() {
   ok("toda fórmula oferecida mantém os cartões separados e largos o bastante para o parágrafo", ruins.length === 0, ruins.join(" "));
 }
 
+// ---------------------------------------------------------------- o Fluxo: blocos de tamanhos diferentes (um infográfico)
+{
+  const bloco = (x, y, w, h, t) => {
+    const c = cartao(x, y, w, h, { fill: "FFFFFF", fillX: { kind: "solid", color: "FFFFFF", alpha: 1 } });
+    return { c, formas: [c, texto(x + 1, y + 1, w - 2, Math.min(h - 2, 6), t, 12)] };
+  };
+  const bs = [bloco(5, 20, 40, 20, "Um"), bloco(50, 22, 45, 8, "Dois"), bloco(5, 50, 20, 25, "Três"), bloco(30, 52, 30, 12, "Quatro"), bloco(65, 55, 28, 15, "Cinco")];
+  const sl = lamina(bs.flatMap((b) => b.formas));
+  const novo = A.aplicarArranjo(sl, "fluxo", 0, RATIO);
+  ok("o Fluxo é oferecido numa lâmina de blocos variados (grade e lista exigem blocos iguais)", novo !== sl && A.arranjoLegivel(sl, novo), A.motivosDoArranjo(sl, novo).slice(0, 2).join(" | "));
+  const razoes = bs.map((b) => caixaDe(novo, b.c.id).w / b.c.box.w);
+  ok("cada bloco MANTÉM a proporção e todos escalam igual (nenhum vira outro tamanho)", razoes.every((r) => Math.abs(r - razoes[0]) < 0.01) && bs.every((b) => Math.abs(caixaDe(novo, b.c.id).h / b.c.box.h - razoes[0]) < 0.01), razoes.map((r) => r.toFixed(2)).join(" "));
+  const cxs = bs.map((b) => caixaDe(novo, b.c.id));
+  ok("os blocos não se sobrepõem e ficam dentro da lâmina", cxs.every((c, i) => c.x >= 0 && c.y >= 0 && c.x + c.w <= 100 && c.y + c.h <= 100 && cxs.every((d, j) => j <= i || !(Math.min(c.x + c.w, d.x + d.w) - Math.max(c.x, d.x) > 0.01 && Math.min(c.y + c.h, d.y + d.h) - Math.max(c.y, d.y) > 0.01))));
+  ok("o texto de cada bloco anda com ele (continua dentro do cartão)", bs.every((b) => { const c = caixaDe(novo, b.c.id); const f = caixaDe(novo, b.formas[1].id); return f.x >= c.x - 0.01 && f.y >= c.y - 0.01 && f.x + f.w <= c.x + c.w + 0.01 && f.y + f.h <= c.y + c.h + 0.01; }));
+  // um slide diagramado em COLUNAS de alturas diferentes cabe sem encolher (as linhas desperdiçariam espaço)
+  const col = [bloco(6, 22, 42, 5, "a"), bloco(6, 30, 42, 20, "b"), bloco(6, 53, 42, 20, "c"), bloco(54, 22, 42, 40, "d"), bloco(54, 65, 42, 17, "e")];
+  const slc = lamina(col.flatMap((b) => b.formas));
+  const nc = A.aplicarArranjo(slc, "fluxo", 0, RATIO);
+  const k = caixaDe(nc, col[1].c.id).w / col[1].c.box.w;
+  ok("um slide em colunas de alturas diferentes cabe quase sem encolher (colunas, não linhas)", k >= 0.85, `escala ${k.toFixed(2)}`);
+}
+
+// ---------------------------------------------------------------- a imagem de canto é arte; a legenda anda com o cartão
+{
+  const canto = base({ kind: "imagem", box: { x: 75, y: 0, w: 25, h: 33 }, src: "media:9", fill: "", fillX: undefined });
+  const cartoes = [6, 36, 66].map((x) => cartao(x, 55, 26, 25, { fill: "FFFFFF", fillX: { kind: "solid", color: "FFFFFF", alpha: 1 } }));
+  const sl = lamina([canto, ...cartoes, texto(8, 60, 22, 6, "Alfa", 12), texto(38, 60, 22, 6, "Beta", 12), texto(68, 60, 22, 6, "Gama", 12)]);
+  const un = A.unidadesDa(sl);
+  ok("a imagem que sangra pelo canto é arte, não um cartão", un.length === 3 && !un.some((u) => u.ids.includes(canto.id)), `${un.length} unidades`);
+  const cartaoA = cartao(6, 30, 40, 20, { fill: "FFFFFF", fillX: { kind: "solid", color: "FFFFFF", alpha: 1 } });
+  const cartaoB = cartao(54, 30, 40, 20, { fill: "FFFFFF", fillX: { kind: "solid", color: "FFFFFF", alpha: 1 } });
+  const legenda = texto(8, 52.5, 36, 6, "Legenda do primeiro cartão", 11);
+  const sl2 = lamina([cartaoA, texto(8, 33, 36, 6, "Primeiro", 14), cartaoB, texto(56, 33, 36, 6, "Segundo", 14), legenda]);
+  const dono = A.unidadesDa(sl2).find((u) => u.ids.includes(cartaoA.id));
+  ok("a legenda logo abaixo do cartão (até 3,5) faz parte dele e anda junto", dono.ids.includes(legenda.id));
+}
+
+// ---------------------------------------------------------------- o texto escala junto com a caixa (sem inflar)
+{
+  const c1 = cartao(6, 30, 40, 22), c2 = cartao(54, 30, 40, 22), c3 = cartao(6, 60, 40, 22), c4 = cartao(54, 60, 40, 22);
+  const rotulo = texto(8, 33, 36, 4, "Etiqueta", 6);
+  const titulo = texto(8, 38, 36, 6, "Título do cartão", 20);
+  const sl = lamina([c1, rotulo, titulo, c2, texto(56, 33, 36, 6, "x", 12), c3, texto(8, 63, 36, 6, "y", 12), c4, texto(56, 63, 36, 6, "z", 12)]);
+  const novo = A.aplicarArranjo(sl, "grade", 3, RATIO);
+  const tam = (id) => novo.shapes.find((f) => f.id === id).paras[0].runs[0].size;
+  ok("uma letra de 6 pt NÃO é inflada para 8 pt dentro de uma caixa que encolheu", tam(rotulo.id) <= 6.01, `${tam(rotulo.id)} pt`);
+  const k = caixaDe(novo, c1.id).w / c1.box.w;
+  ok("a letra grande acompanha a caixa na mesma proporção (sem piso que quebre o encaixe)", Math.abs(tam(titulo.id) - Math.max(6, 20 * k)) < 0.6, `${tam(titulo.id)} pt (k=${k.toFixed(2)})`);
+}
+
+// ---------------------------------------------------------------- o Designer não piora o que já está bem
+{
+  const bloco = (x, y, w, h) => [cartao(x, y, w, h, { fill: "FFFFFF", fillX: { kind: "solid", color: "FFFFFF", alpha: 1 } })];
+  // cinco cartões de processo na fileira de cima + um bloco largo embaixo: o Fluxo só os encolheria
+  const sl = lamina([...[5, 23, 41, 59, 77].flatMap((x) => bloco(x, 25, 17, 22)), ...bloco(5, 55, 90, 15), ...bloco(5, 74, 40, 14)]);
+  const melhor = A.melhorArranjo(sl, RATIO);
+  const fluxo = A.aplicarArranjo(sl, "fluxo", 0, RATIO);
+  const k = caixaDe(fluxo, sl.shapes[0].id).w / sl.shapes[0].box.w;
+  ok("o Designer não aplica um arranjo que só encolhe os blocos (o que já estava bem fica)", melhor === sl || k >= 0.95, `escala do fluxo ${k.toFixed(2)}`);
+}
+
+// ---------------------------------------------------------------- o painel diz POR QUE não há arranjo
+{
+  const fileira = lamina([0, 1, 2].map((i) => cartao(6 + i * 31, 60, 27, 22, { fill: "FFFFFF", fillX: { kind: "solid", color: "FFFFFF", alpha: 1 } })));
+  ok("cartões já alinhados e iguais: o painel diz que não há o que arrumar", /já estão alinhados/.test(A.explicarSemArranjo(fileira)));
+  ok("sem cartões nem blocos: o painel diz que não há o que arrumar", /não tem cartões nem blocos/.test(A.explicarSemArranjo(lamina([texto(5, 5, 60, 10, "Só um título", 30)]))));
+}
+
 // ---------------------------------------------------------------- o modo Tudo não pode ficar com UM cartão
 {
   const legiveis = [{ arranjo: "grade", variante: 3 }];

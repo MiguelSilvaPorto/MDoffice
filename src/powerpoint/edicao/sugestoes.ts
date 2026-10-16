@@ -70,6 +70,8 @@ export function arrumacoesDe(unidades: number): Arrumacao[] {
   for (const a of ARRANJOS) {
     // a hierarquia precisa de uma árvore (pai e pelo menos dois níveis): com menos de três cartões não há
     if ((a.id === "hierarquia" || a.id === "hierarquia-lado") && unidades < 3) continue;
+    // o fluxo alinha vários blocos: com um só não há o que alinhar
+    if (a.id === "fluxo" && unidades < 2) continue;
     for (const v of variantesDe(a.id, unidades)) lista.push({ arranjo: a.id, variante: v });
   }
   return lista;

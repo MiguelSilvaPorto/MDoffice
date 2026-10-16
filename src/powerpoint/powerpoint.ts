@@ -27,7 +27,7 @@ import { modelosDasVariantes } from "./edicao/variantes";
 import { refazerDesenho } from "./edicao/desenhos";
 import { ARTES, type ArteId } from "./edicao/arte";
 import { aplicarArte, papeisDaCapa, sugestoesDeArte } from "./edicao/designer";
-import { melhorArranjo } from "./edicao/arranjos";
+import { explicarSemArranjo, melhorArranjo } from "./edicao/arranjos";
 import { ARRANJOS, aplicarArranjo, arranjoLegivel, arrumavel, rotuloDoArranjo, unidadesDa, variantesDe, type Arranjo } from "./edicao/arranjos";
 import { gerarDesign } from "./edicao/gerador";
 import { ACABAMENTOS, sugestoesDe } from "./edicao/sugestoes";
@@ -793,7 +793,7 @@ export class PowerPointHost {
       else if (!host.querySelector(".pp-ideia")) {
         const aviso = document.createElement("p");
         aviso.className = "pp-ideias-vazio";
-        aviso.textContent = "Nenhuma composição cabe nesta lâmina sem deixar o conteúdo ilegível.";
+        aviso.textContent = explicarSemArranjo(atual);
         host.append(aviso);
       }
     };
@@ -1053,7 +1053,8 @@ export class PowerPointHost {
       else if (!host.querySelector(".pp-ideia")) {
         const aviso = document.createElement("p");
         aviso.className = "pp-ideias-vazio";
-        aviso.textContent = "Nenhum arranjo cabe nesta lâmina sem deixar o conteúdo ilegível.";
+        // diz POR QUE (já está arrumado, não há o que arrumar, ou é denso demais) em vez da frase genérica
+        aviso.textContent = explicarSemArranjo(atual);
         host.append(aviso);
       }
     };

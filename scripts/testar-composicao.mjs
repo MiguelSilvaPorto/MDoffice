@@ -59,7 +59,7 @@ const visual = (s) => `${s.modelo.id}|${s.tratamento}`;
 // 5) a fornada encolhe quando a lâmina tem poucas arrumações (em vez de repetir)
 {
   const poucas = S.sugestoesDe({ unidades: 2, modelos, lote: 0 });
-  ok("lâmina com 2 unidades: a fornada encolhe (grade 2×1, lista, destaque, faixa)", poucas.length === 4, `${poucas.length} cartões: ${poucas.map(arrumacao).join(" ")}`);
+  ok("lâmina com 2 unidades: a fornada encolhe (grade 2×1, lista, destaque, faixa e o fluxo)", poucas.length === 5, `${poucas.length} cartões: ${poucas.map(arrumacao).join(" ")}`);
   ok("lâmina com 1 unidade: sobra lista, destaque e faixa", S.sugestoesDe({ unidades: 1, modelos, lote: 0 }).length === 3);
   ok("lâmina vazia (não arrumável) sai só de visual", S.sugestoesDe({ unidades: 0, arrumavel: false, modelos, lote: 0 }).every((s) => s.arranjo === null));
 }
@@ -80,7 +80,7 @@ const visual = (s) => `${s.modelo.id}|${s.tratamento}`;
 // 6) a grade abre em variantes conforme as unidades (3 unidades → 2 e 3 colunas; 8 → 2, 3 e 4)
 {
   const grade = (u) => S.arrumacoesDe(u).filter((a) => a.arranjo === "grade").map((a) => a.variante);
-  ok("a grade acompanha as unidades (3 → 2×2 e 3×1; 8 → 2×4, 3×3 e 4×2)", JSON.stringify(grade(3)) === "[2,3]" && JSON.stringify(grade(8)) === "[2,3,4]", `${grade(3)} · ${grade(8)}`);
+  ok("a grade acompanha as unidades (3 → 2×2 e 3×1; 8 → 2 a 6 colunas, para o slide cheio de cartões)", JSON.stringify(grade(3)) === "[2,3]" && JSON.stringify(grade(8)) === "[2,3,4,5,6]", `${grade(3)} · ${grade(8)}`);
 }
 
 // 7) sem catálogo a fornada é toda criada na hora (não quebra)

@@ -239,7 +239,7 @@ export function detectarArvore(e: EntradaH): Arvore | null {
 // ---------------------------------------------------------------- o texto acompanha o cartão
 
 function escalaDoTexto(s: Shape, k: number): Shape {
-  const fonte = (t: number | undefined): number | undefined => (t ? Math.max(Math.min(t, 8), Math.round(t * k * 10) / 10) : t);
+  const fonte = (t: number | undefined): number | undefined => (t ? Math.max(Math.min(t, 6), Math.round(t * k * 10) / 10) : t);
   return {
     ...s,
     fontSize: fonte(s.fontSize) ?? s.fontSize,

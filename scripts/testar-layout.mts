@@ -1113,8 +1113,9 @@ console.log("\ncomposição (a arrumação e o visual na mesma sugestão)");
   );
   checa(
     "quando nada cabe, o painel explica em vez de ficar vazio",
-    /Nenhuma composição cabe nesta lâmina sem deixar o conteúdo ilegível/.test(ppt) &&
-      /Esta lâmina não tem conteúdo para arrumar/.test(ppt)
+    /aviso\.textContent = explicarSemArranjo\(atual\)/.test(ppt) &&
+      /Esta lâmina não tem conteúdo para arrumar/.test(ppt) &&
+      /Os cartões desta lâmina já estão alinhados e do mesmo tamanho/.test(ler("src/powerpoint/edicao/arranjos.ts"))
   );
   checa(
     "css: o filtro segmentado existe e o modo aceso é o do painel",

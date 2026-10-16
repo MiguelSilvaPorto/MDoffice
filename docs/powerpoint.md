@@ -271,6 +271,23 @@ avisado ao abrir (nunca some em silêncio).
     caixas do mesmo nível com o **mesmo tamanho** e o texto escalado junto, **conectores redesenhados**
     (haste, barramento e descidas, na cor e espessura dos antigos) e o quadro de números à parte. O texto
     fixo ao lado (um "Time de T.I.") é **desviado**, não coberto.
+  - **Fluxo** (arranjo novo, para blocos de tamanhos diferentes — um infográfico): cada bloco **mantém
+    o tamanho** e todos escalam igual (a maior escala em que cabe), alinhados em **linhas** ou em
+    **colunas** — vale o que der a maior escala; as linhas centradas e o mesmo espaço entre os blocos.
+    A grade e a lista exigem cartões do mesmo tamanho, então num slide variado o maior ditava o tamanho
+    de todos e tudo encolhia a 48%. A grade ganhou 5 e 6 colunas (para slides cheios de cartões).
+  - **O arranjo desvia dos textos que ficam**: a região onde os cartões vão é a **maior área livre**
+    que não cruza nenhum texto fixo (abaixo, acima, à direita ou à esquerda dele), e não mais a faixa
+    fixa "margem a margem". Uma **legenda** logo abaixo de um cartão (até 3,5 de distância) é parte
+    dele e anda junto; uma **imagem que sangra pelo canto** da lâmina é arte, não um cartão.
+  - **Texto e caixa escalam na mesma proporção** (o texto que cabia continua cabendo; o piso de 8 pt
+    antigo quebrava isso e fazia o texto vazar). Uma letra de 6 pt não é inflada, e só reprova a
+    letra de leitura (9 pt ou mais) que ficaria menor que 6,5 pt.
+  - **O Designer não piora o que já está bem**: só aplica um arranjo se os blocos **não encolhem**
+    (a hierarquia pode encolher até 30%, porque dá estrutura ao que não tinha).
+  - **Quando não há arranjo, o painel diz por quê**: "não tem cartões nem blocos para arrumar", "os
+    cartões já estão alinhados e do mesmo tamanho" ou "há texto demais ou blocos variados demais" — no
+    lugar da frase genérica "nenhum arranjo cabe".
   - **O arranjo só é oferecido se tudo continua legível** (`motivosDoArranjo` diz qual regra reprovou):
     nenhum cartão pequeno demais, o **texto cabe** (a maior palavra na largura e o parágrafo na altura —
     um cartão com texto espremido numa coluna estreita **nunca** é oferecido), nenhum cartão sobre outro

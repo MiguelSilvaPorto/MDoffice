@@ -16,7 +16,7 @@
 import type { Run, Shape, ShapeBox, Slide } from "../schema";
 import { aplicarHierarquia, detectarArvore } from "./hierarquia";
 
-export type Arranjo = "grade" | "lista" | "destaque" | "faixa" | "hierarquia" | "hierarquia-lado";
+export type Arranjo = "grade" | "lista" | "destaque" | "faixa" | "fluxo" | "hierarquia" | "hierarquia-lado";
 
 export interface ArranjoPPT {
   id: Arranjo;
@@ -29,6 +29,8 @@ export const ARRANJOS: ArranjoPPT[] = [
   { id: "lista", nome: "Lista", descricao: "um cartão por linha, empilhados" },
   { id: "destaque", nome: "Destaque", descricao: "o primeiro cartão grande e o resto numa coluna ao lado" },
   { id: "faixa", nome: "Faixa", descricao: "tudo numa linha só, como uma linha do tempo" },
+  // blocos de tamanhos diferentes (um infográfico): cada um MANTÉM o tamanho e todos se alinham em linhas
+  { id: "fluxo", nome: "Fluxo", descricao: "cada bloco mantém o tamanho e todos se alinham em linhas, centradas, com o mesmo espaço entre eles" },
   // só aparecem (e só mudam a lâmina) quando ela tem uma hierarquia: o resto devolve a lâmina como está
   { id: "hierarquia", nome: "Hierarquia", descricao: "organograma: um nível por linha, filhos centrados sob o pai e conectores redesenhados" },
   { id: "hierarquia-lado", nome: "Hierarquia →", descricao: "organograma da esquerda para a direita, com os conectores redesenhados" },
@@ -93,8 +95,15 @@ function ehDecoracao(s: Shape): boolean {
   return !geomDeCartao(s) || (s.opacity !== undefined && s.opacity < 0.7);
 }
 
+/** A forma sangra pelo canto da lâmina (toca duas bordas perpendiculares): é arte, não um cartão. */
+function sangraNoCanto(b: ShapeBox): boolean {
+  const lado = b.x <= 1 || b.x + b.w >= 99;
+  const topoBase = b.y <= 1 || b.y + b.h >= 99;
+  return lado && topoBase;
+}
+
 function ehCartao(s: Shape): boolean {
-  return pintado(s) && geomDeCartao(s) && !ehDecoracao(s) && porcao(s.box) >= AREA_MIN && porcao(s.box) <= AREA_MAX;
+  return pintado(s) && geomDeCartao(s) && !ehDecoracao(s) && !sangraNoCanto(s.box) && porcao(s.box) >= AREA_MIN && porcao(s.box) <= AREA_MAX;
 }
 
 /** Ordem de leitura: de cima para baixo e, na mesma faixa, da esquerda para a direita. */
@@ -174,6 +183,17 @@ function unidadesCom(slide: Slide, cards: Shape[], paineis: Set<string>): Unidad
     for (const c of [...cards].sort((a, b) => area(a.box) - area(b.box))) {
       for (const s of vivas) if (s.id !== c.id && dentro(c, s) && !dono.has(s.id)) dono.set(s.id, c.id);
     }
+    // uma LEGENDA — o texto solto logo ABAIXO de um cartão, sob a largura dele — é parte do cartão: senão
+    // ela ficaria parada no meio do slide quando o cartão se mexe, e viraria obstáculo para o arranjo
+    for (const t of vivas) {
+      if (dono.has(t.id) || !temTexto(t) || cards.some((c) => c.id === t.id)) continue;
+      const alvo = cards.find((c) => {
+        const colado = t.box.y - (c.box.y + c.box.h);
+        const sobre = Math.min(t.box.x + t.box.w, c.box.x + c.box.w) - Math.max(t.box.x, c.box.x);
+        return colado >= -0.5 && colado <= 3.5 && sobre >= 0.5 * Math.min(t.box.w, c.box.w);
+      });
+      if (alvo) dono.set(t.id, alvo.id);
+    }
     return cards.map((c) => {
       const ids = [c.id, ...[...dono.entries()].filter(([, cid]) => cid === c.id).map(([sid]) => sid)];
       return { ids, box: caixaDe(ids.map((id) => porId.get(id)!.box)) };
@@ -199,7 +219,7 @@ export function arrumavel(slide: Slide): boolean {
 /** As variantes que fazem sentido (a grade muda de colunas). */
 export function variantesDe(id: Arranjo, quantas: number): number[] {
   if (id !== "grade") return [0];
-  return [2, 3, 4].filter((c) => c <= quantas);
+  return [2, 3, 4, 5, 6].filter((c) => c <= quantas);
 }
 
 /** Como o arranjo aparece no painel ("Grade 3×2", "Lista", …). */
@@ -221,12 +241,145 @@ function grade(id: Arranjo, variante: number, quantas: number): { colunas: numbe
   return { colunas: 1, linhas: quantas }; // lista
 }
 
-/** O espaço de cada cartão, na ordem (o cartão é centrado nele depois). */
-function espacos(id: Arranjo, variante: number, quantas: number, topo: number): ShapeBox[] {
-  const x0 = MARGEM;
+/**
+ * Empacota os blocos em LINHAS dentro da região, na ordem de leitura: cada bloco mantém o tamanho
+ * (todos na mesma escala `k`, a maior em que tudo cabe), a linha quebra quando acaba a largura, cada
+ * linha fica centrada e o conjunto, centrado na altura. As fórmulas de grade exigem cartões do mesmo
+ * tamanho — num infográfico (cartões, barras e linhas de texto juntos) o maior dita o tamanho de todos
+ * e tudo encolhe; aqui cada bloco é só alinhado.
+ */
+function empacotar(blocos: ShapeBox[], reg: ShapeBox, ratio: number): { caixas: ShapeBox[]; k: number } {
+  const opcoes = [empacotarEmLinhas(blocos, reg, ratio)];
+  for (const n of [2, 3, 4]) if (n <= blocos.length) opcoes.push(empacotarEmColunas(blocos, reg, ratio, n));
+  // a maior escala vence (a mesma ordem de leitura; com empate, as linhas)
+  return opcoes.reduce((a, b) => (b.k > a.k + 0.01 ? b : a));
+}
+
+/**
+ * Empacota em COLUNAS (como um mural): cada bloco, na ordem de leitura, vai para a coluna mais baixa.
+ * A coluna tem a largura do seu bloco mais largo e os blocos ficam centrados nela; o conjunto, centrado
+ * na largura. Um slide diagramado em colunas de alturas diferentes (um infográfico) cabe bem assim —
+ * em linhas, a linha mais alta desperdiça o espaço ao lado dos blocos baixos.
+ */
+function empacotarEmColunas(blocos: ShapeBox[], reg: ShapeBox, ratio: number, colunas: number): { caixas: ShapeBox[]; k: number } {
+  const vao = ESPACO;
+  const w = blocos.map((b) => b.w * ratio);
+  const h = blocos.map((b) => b.h);
+  // quem vai para qual coluna depende só das proporções (a escala multiplica tudo igual)
+  const alturaDe = Array.from({ length: colunas }, () => 0);
+  const dono = blocos.map((_, i) => {
+    let c = 0;
+    for (let j = 1; j < colunas; j++) if (alturaDe[j] < alturaDe[c]) c = j;
+    alturaDe[c] += h[i] + vao;
+    return c;
+  });
+  const larguraDa = Array.from({ length: colunas }, (_, c) => Math.max(0, ...blocos.map((_, i) => (dono[i] === c ? w[i] : 0))));
+  const usadas = larguraDa.map((l, c) => (l > 0 ? c : -1)).filter((c) => c >= 0);
+  const somaW = usadas.reduce((a, c) => a + larguraDa[c], 0);
+  const vaosW = vao * Math.max(0, usadas.length - 1);
+  const maisAlta = Math.max(...usadas.map((c) => blocos.reduce((a, _, i) => a + (dono[i] === c ? h[i] : 0), 0)));
+  const nMax = Math.max(...usadas.map((c) => blocos.filter((_, i) => dono[i] === c).length));
+  const k = Math.max(0.15, Math.min(1.4, (reg.w * ratio - vaosW) / somaW, (reg.h - vao * (nMax - 1)) / maisAlta));
+  const caixas: ShapeBox[] = blocos.map((b) => ({ ...b }));
+  let x = reg.x * ratio + (reg.w * ratio - (somaW * k + vaosW)) / 2;
+  for (const c of usadas) {
+    let y = reg.y;
+    for (let i = 0; i < blocos.length; i++) {
+      if (dono[i] !== c) continue;
+      const iw = w[i] * k;
+      caixas[i] = { x: (x + (larguraDa[c] * k - iw) / 2) / ratio, y, w: iw / ratio, h: h[i] * k };
+      y += h[i] * k + vao;
+    }
+    x += larguraDa[c] * k + vao;
+  }
+  return { caixas, k };
+}
+
+function empacotarEmLinhas(blocos: ShapeBox[], reg: ShapeBox, ratio: number): { caixas: ShapeBox[]; k: number } {
+  const W = reg.w * ratio; // em unidades de altura
+  const H = reg.h;
+  const vao = ESPACO;
+  const w = blocos.map((b) => b.w * ratio);
+  const h = blocos.map((b) => b.h);
+  const linhasPara = (k: number): { itens: number[]; w: number; h: number }[] | null => {
+    const linhas: { itens: number[]; w: number; h: number }[] = [];
+    let atual = { itens: [] as number[], w: 0, h: 0 };
+    for (let i = 0; i < blocos.length; i++) {
+      const iw = w[i] * k;
+      if (iw > W) return null;
+      if (atual.itens.length && atual.w + vao + iw > W) {
+        linhas.push(atual);
+        atual = { itens: [], w: 0, h: 0 };
+      }
+      atual.w += (atual.itens.length ? vao : 0) + iw;
+      atual.h = Math.max(atual.h, h[i] * k);
+      atual.itens.push(i);
+    }
+    if (atual.itens.length) linhas.push(atual);
+    const altura = linhas.reduce((a, l) => a + l.h, 0) + vao * Math.max(0, linhas.length - 1);
+    return altura <= H ? linhas : null;
+  };
+  // a maior escala em que tudo cabe (busca binária; 1,4 é o teto: um bloco pequeno não vira outdoor)
+  let lo = 0.15;
+  let hi = 1.4;
+  for (let i = 0; i < 24; i++) {
+    const mid = (lo + hi) / 2;
+    if (linhasPara(mid)) lo = mid;
+    else hi = mid;
+  }
+  const k = lo;
+  const linhas = linhasPara(k) ?? [];
+  const altura = linhas.reduce((a, l) => a + l.h, 0) + vao * Math.max(0, linhas.length - 1);
+  const caixas: ShapeBox[] = blocos.map((b) => ({ ...b }));
+  let y = reg.y + Math.max(0, (H - altura) / 2);
+  for (const l of linhas) {
+    let x = reg.x * ratio + (W - l.w) / 2;
+    for (const i of l.itens) {
+      const bh = h[i] * k;
+      caixas[i] = { x: x / ratio, y: y + (l.h - bh) / 2, w: (w[i] * k) / ratio, h: bh };
+      x += w[i] * k + vao;
+    }
+    y += l.h + vao;
+  }
+  return { caixas, k };
+}
+
+const cruza = (a: ShapeBox, b: ShapeBox): boolean => a.x < b.x + b.w - 0.2 && b.x < a.x + a.w - 0.2 && a.y < b.y + b.h - 0.2 && b.y < a.y + a.h - 0.2;
+
+/**
+ * A região onde os cartões podem ir: a MAIOR área livre da lâmina que não cruza nenhum texto que fica
+ * onde está (o título, o parágrafo, uma coluna de texto ao lado). Antes a região era fixa — da margem
+ * à margem, abaixo do cabeçalho — e qualquer texto fora do topo virava um obstáculo sem saída (o
+ * arranjo era reprovado). Agora ele desvia: abaixo do texto, à direita ou à esquerda dele.
+ */
+function regiaoLivre(slide: Slide, unidades: Unidade[], topo: number): ShapeBox {
+  const dosCartoes = new Set(unidades.flatMap((u) => u.ids));
+  const obst = slide.shapes.filter((f) => !f.fixa && !f.liga && !dosCartoes.has(f.id) && temTexto(f)).map((f) => f.box);
+  const baixo = limiteBaixo(slide, unidades);
   const y0 = Math.max(topo, MARGEM);
-  const largura = 100 - 2 * MARGEM;
-  const altura = 100 - y0 - MARGEM;
+  const base: ShapeBox = { x: MARGEM, y: y0, w: 100 - 2 * MARGEM, h: baixo - y0 };
+  const cand: ShapeBox[] = [base];
+  const abaixoDe = (y: number): ShapeBox => ({ x: MARGEM, y: Math.max(y0, y), w: base.w, h: baixo - Math.max(y0, y) });
+  const aDireitaDe = (x: number): ShapeBox => ({ x: Math.max(MARGEM, x), y: y0, w: 100 - MARGEM - Math.max(MARGEM, x), h: base.h });
+  const aEsquerdaDe = (x: number): ShapeBox => ({ x: MARGEM, y: y0, w: Math.min(100 - MARGEM, x) - MARGEM, h: base.h });
+  const acimaDe = (y: number): ShapeBox => ({ x: MARGEM, y: y0, w: base.w, h: Math.min(baixo, y) - y0 });
+  for (const o of obst) {
+    cand.push(abaixoDe(o.y + o.h + 1.5), acimaDe(o.y - 1.5), aDireitaDe(o.x + o.w + 2), aEsquerdaDe(o.x - 2));
+  }
+  // abaixo de TODO o texto da metade de cima (o cabeçalho e o parágrafo juntos)
+  const cabecalho = obst.filter((o) => o.y + o.h / 2 < 50);
+  if (cabecalho.length) cand.push(abaixoDe(Math.max(...cabecalho.map((o) => o.y + o.h)) + 1.5));
+  const livres = cand.filter((r) => r.w >= 28 && r.h >= 22 && !obst.some((o) => cruza(r, o)));
+  // sem região livre, fica a base (o conferidor de legibilidade reprova o que cair sobre um texto)
+  return livres.length ? livres.reduce((a, b) => (b.w * b.h > a.w * a.h ? b : a)) : base;
+}
+
+/** O espaço de cada cartão, na ordem (o cartão é centrado nele depois). */
+function espacos(id: Arranjo, variante: number, quantas: number, reg: ShapeBox): ShapeBox[] {
+  const x0 = reg.x;
+  const y0 = reg.y;
+  const largura = reg.w;
+  const altura = reg.h;
   const { colunas, linhas } = grade(id, variante, quantas);
   const passoX = largura / colunas;
   const passoY = altura / linhas;
@@ -248,9 +401,13 @@ function espacos(id: Arranjo, variante: number, quantas: number, topo: number): 
   return saida;
 }
 
-/** O texto da forma na mesma proporção do cartão. O piso de 8 pt só segura a letra legível: uma letra que já era menor que isso não é inflada (caberia pior na caixa que encolheu). */
+/**
+ * O texto da forma na MESMA proporção do cartão: caixa e letra escalam juntas, então o texto que cabia
+ * continua cabendo (o piso de 8 pt de antes quebrava isso — a caixa encolhia 40% e a letra 20%, e o
+ * texto vazava). O piso de 6 pt só segura a letra legível; o conferidor reprova o que ficaria menor.
+ */
 function escalaDoTexto(s: Shape, k: number): Shape {
-  const fonte = (tamanho: number | undefined): number | undefined => (tamanho ? Math.max(Math.min(tamanho, 8), Math.round(tamanho * k * 10) / 10) : tamanho);
+  const fonte = (tamanho: number | undefined): number | undefined => (tamanho ? Math.max(Math.min(tamanho, 6), Math.round(tamanho * k * 10) / 10) : tamanho);
   return {
     ...s,
     fontSize: fonte(s.fontSize) ?? s.fontSize,
@@ -289,6 +446,29 @@ export function aplicarArranjo(slide: Slide, id: Arranjo, variante: number, rati
     return arvore ? aplicarHierarquia(entrada, arvore, id === "hierarquia" ? "baixo" : "lado") : slide;
   }
 
+  // o fluxo: cada bloco mantém o tamanho (escala comum) e todos se alinham (em linhas ou em colunas — o que der a maior escala)
+  if (id === "fluxo") {
+    const reg = regiaoLivre(slide, unidades, topo);
+    const empacotado = empacotar(unidades.map((u) => u.box), reg, ratio);
+    const escalaF = new Map<string, number>();
+    const caixasF = new Map<string, ShapeBox>();
+    unidades.forEach((u, i) => {
+      const B = empacotado.caixas[i];
+      for (const sid of u.ids) {
+        const f = porId.get(sid)!;
+        escalaF.set(sid, empacotado.k);
+        caixasF.set(sid, { x: B.x + (f.box.x - u.box.x) * empacotado.k, y: B.y + (f.box.y - u.box.y) * empacotado.k, w: f.box.w * empacotado.k, h: f.box.h * empacotado.k });
+      }
+    });
+    const formas = slide.shapes
+      .filter((f) => !f.liga && !ehLinhaSolta(f, emCartao.has(f.id)))
+      .map((f) => {
+        const caixa = caixasF.get(f.id);
+        return caixa ? { ...escalaDoTexto(f, escalaF.get(f.id) ?? 1), box: caixa } : f;
+      });
+    return { ...slide, shapes: formas };
+  }
+
   // tamanho físico de cada unidade (a altura vale 1/ratio na régua da largura)
   const fisico = (b: ShapeBox) => ({ w: b.w, h: b.h / ratio });
   const alvo = unidades.reduce((t, u) => ({ w: Math.max(t.w, fisico(u.box).w), h: Math.max(t.h, fisico(u.box).h) }), { w: 0, h: 0 });
@@ -296,18 +476,18 @@ export function aplicarArranjo(slide: Slide, id: Arranjo, variante: number, rati
   // o espaço que a fórmula reserva limita o tamanho do cartão (o mesmo para todos — menos no
   // destaque, em que o primeiro cartão ocupa a metade da esquerda e pode ser maior)
   const { colunas, linhas } = grade(id, variante, unidades.length);
-  const y0 = Math.max(topo, MARGEM);
-  const espacoW = (100 - 2 * MARGEM) / colunas - ESPACO;
-  const espacoH = (100 - y0 - MARGEM) / linhas - ESPACO;
+  const reg = regiaoLivre(slide, unidades, topo);
+  const espacoW = reg.w / colunas - ESPACO;
+  const espacoH = reg.h / linhas - ESPACO;
   const k = Math.min(1.6, espacoW / alvo.w, espacoH / (alvo.h * ratio));
   const cartao = { w: Math.max(4, alvo.w * k), h: Math.max(4, alvo.h * k * ratio) };
-  const kGrande = id === "destaque" ? Math.min(2.4, ((100 - 2 * MARGEM) / 2 - ESPACO) / alvo.w, (100 - y0 - MARGEM) / (alvo.h * ratio)) : k;
+  const kGrande = id === "destaque" ? Math.min(2.4, (reg.w / 2 - ESPACO) / alvo.w, reg.h / (alvo.h * ratio)) : k;
   const cartaoGrande = id === "destaque" ? { w: Math.max(4, alvo.w * kGrande), h: Math.max(4, alvo.h * kGrande * ratio) } : cartao;
 
   // a escala de cada unidade e a caixa nova de cada forma que anda com ela
   const escala = new Map<string, number>();
   const caixas = new Map<string, ShapeBox>();
-  espacos(id, variante, unidades.length, topo).forEach((slot, i) => {
+  espacos(id, variante, unidades.length, reg).forEach((slot, i) => {
     const u = unidades[i];
     const tamanho = i === 0 ? cartaoGrande : cartao;
     const ku = Math.min(ESCALA_MAX, tamanho.w / fisico(u.box).w, tamanho.h / (fisico(u.box).h * ratio));
@@ -409,6 +589,9 @@ export function melhorArranjo(slide: Slide, ratio: number): Slide {
   ];
   let melhor = slide;
   let nota = 0;
+  // o tamanho médio dos blocos ANTES: um arranjo que só os encolhe não melhora nada (o que já estava bem
+  // fica como está). A hierarquia, que dá estrutura ao que não tinha, pode encolher um pouco mais.
+  const antes = unidades.reduce((a, u) => a + u.box.w * u.box.h, 0) / unidades.length;
   for (const [id, variante, peso] of candidatos) {
     const novo = aplicarArranjo(slide, id, variante, ratio);
     if (!arranjoLegivel(slide, novo)) continue;
@@ -418,12 +601,26 @@ export function melhorArranjo(slide: Slide, ratio: number): Slide {
       const c = bs.length ? caixaDe(bs) : { w: 0, h: 0 };
       return a + c.w * c.h;
     }, 0) / unidades.length;
+    if (area < antes * (id.startsWith("hierarquia") ? 0.7 : 0.95)) continue;
     if (area * peso > nota) {
       nota = area * peso;
       melhor = novo;
     }
   }
   return melhor;
+}
+
+/**
+ * Por que o painel não tem arranjo para esta lâmina — a frase que o painel mostra no lugar da
+ * genérica. Três casos honestos: não há o que arrumar, os cartões JÁ estão arrumados, ou o conteúdo é
+ * denso/variado demais para qualquer fórmula deixar legível.
+ */
+export function explicarSemArranjo(slide: Slide): string {
+  const { cards, paineis } = analisar(slide);
+  const unidades = unidadesCom(slide, cards, paineis);
+  if (cards.length < 2 && unidades.length < 3) return "Esta lâmina não tem cartões nem blocos para arrumar.";
+  if (jaArrumados(unidades, cards)) return "Os cartões desta lâmina já estão alinhados e do mesmo tamanho — não há o que arrumar.";
+  return "Nenhuma fórmula deixa o conteúdo todo legível aqui: há texto demais ou blocos variados demais. Os modos Designer e Visual não mexem nas posições.";
 }
 
 /** Os menores lados que um cartão pode ter depois do arranjo (nas unidades do app) sem ficar ilegível. */
@@ -462,9 +659,18 @@ export function motivosDoArranjo(original: Slide, novo: Slide): string[] {
     const c = caixaDe(bs);
     finais.push(c);
     // a hierarquia tem cartões altos e estreitos (as pessoas sob uma área): vale a área; os outros arranjos, o mínimo rígido
-    if (c.w < minLargura || c.h < minAltura || (hierarquia && c.w * c.h < AREA_MIN_CARTAO)) motivos.push(`cartão ${i} pequeno demais (${c.w.toFixed(1)}×${c.h.toFixed(1)})`);
+    // pequeno demais só se ENCOLHEU (menos de 80% do que era): uma barra fina que já era fina não reprova
+    const encolheu = c.w < 0.8 * u.box.w || c.h < 0.8 * u.box.h;
+    if (encolheu && (c.w < minLargura || c.h < minAltura || (hierarquia && c.w * c.h < AREA_MIN_CARTAO))) motivos.push(`cartão ${i} pequeno demais (${c.w.toFixed(1)}×${c.h.toFixed(1)})`);
     const vaza = u.ids.filter(piorou);
     if (vaza.length) motivos.push(`texto não cabe em ${vaza.join(",")}`);
+    // a letra que era de leitura (9 pt ou mais) não pode ficar do tamanho de uma nota de rodapé
+    const miudo = u.ids.filter((id) => {
+      const antes = letraMax(original0.get(id));
+      const agora = letraMax(porId.get(id));
+      return antes >= 9 && agora < 6.5;
+    });
+    if (miudo.length) motivos.push(`letra pequena demais em ${miudo.join(",")}`);
   });
   // um cartão não pode cair sobre um texto que fica onde está (o parágrafo, o título)
   const dosCartoes0 = new Set(unidades.flatMap((u) => u.ids));
@@ -497,6 +703,12 @@ export function motivosDoArranjo(original: Slide, novo: Slide): string[] {
  */
 export function arranjoLegivel(original: Slide, novo: Slide): boolean {
   return motivosDoArranjo(original, novo).length === 0;
+}
+
+/** O maior tamanho de letra (pt) de uma forma. */
+function letraMax(s: Shape | undefined): number {
+  if (!s) return 0;
+  return Math.max(s.fontSize || 0, ...(s.paras ?? []).flatMap((p) => p.runs.map((r) => r.size ?? 0)));
 }
 
 /**

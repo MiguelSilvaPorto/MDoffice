@@ -13669,3 +13669,18 @@ antigas quando fizer sentido.
   hierarquia, o seletor com os Usados recentemente e as demais) ficaram **intactas** — são de sessões
   com trabalho aberto. Este fechamento pegou **oito conflitos** com sessões que commitaram no meio;
   resolvi todos mantendo os dois lados.
+
+### 2026-10-16 · fix/arrumacao-sempre-oferece · Arranjos que aparecem de verdade
+- **Arquivo/local:** `src/powerpoint/edicao/arranjos.ts` — `ARRANJOS` (+`fluxo`), `variantesDe` (2–6 colunas), `ehCartao`/`sangraNoCanto`, `unidadesCom`
+  (legenda), `regiaoLivre`, `espacos`, `aplicarArranjo`, `empacotar`/`empacotarEmLinhas`/`empacotarEmColunas`, `escalaDoTexto`, `motivosDoArranjo`,
+  `melhorArranjo`, `explicarSemArranjo`; `src/powerpoint/edicao/hierarquia.ts` (`escalaDoTexto`); `src/powerpoint/edicao/sugestoes.ts` (`arrumacoesDe`);
+  `src/powerpoint/powerpoint.ts` (mensagens do painel); `scripts/testar-hierarquia.mjs`, `testar-composicao.mjs`, `testar-layout.mts`.
+- **Linha:** região fixa `MARGEM..100-MARGEM` abaixo do cabeçalho → `regiaoLivre()` (maior retângulo sem cruzar texto fixo); `Math.max(8, t·k)` → `Math.max(Math.min(t, 6), t·k)`;
+  `pequeno demais` só se o bloco ENCOLHEU (<80%); `melhorArranjo` exige área ≥ 95% do que era (hierarquia: 70%).
+- **Porquê:** o usuário relatou "em nenhum slide ele arruma as boxes" e o painel só dizia "nenhum arranjo cabe". Medi 24 slides reais de 3 decks
+  (`p5.pptx`, `apresentacao.pptx`, o deck de integração): 21 sem nenhum arranjo. Os motivos (`motivosDoArranjo`) apontaram três erros de projeto: (1) grade/lista
+  exigem blocos IGUAIS — num infográfico (cartões 21×28, barras 41×5, linhas 39×6, imagem de canto) o maior dita o tamanho de todos (k=0,48); (2) o piso de 8 pt
+  quebrava a proporção caixa×letra e o texto vazava; (3) a região fixa tratava qualquer texto fora do topo como obstáculo sem saída. Com o Fluxo, a região livre, a legenda
+  e o texto proporcional, 12 dos 21 passaram a ter arranjo. Verificado num Chrome real: o Fluxo some quando a moldura branca de fundo (que não anda) o torna ilegível, e
+  `melhorArranjo` ganhou a regra de não encolher, porque no p5-6 o Fluxo piorava uma fileira que já estava boa.
+- **Fica de fora:** as molduras/painéis que envolvem cartões continuam parados (por isso alguns slides seguem sem arranjo); slides muito densos continuam sem fórmula.
