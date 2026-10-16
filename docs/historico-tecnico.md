@@ -13221,3 +13221,16 @@ antigas quando fizer sentido.
   condicional e o guarda da fileira) e a checagem funcional no app confirmou que a fileira continua
   certa: trocar de lâmina não refaz (só o aceso anda), editar uma forma refaz a fileira e a prévia
   da lâmina acompanha (a forma editada saiu laranja na miniatura).
+
+## CHANGELOG.md
+
+### 2026-10-16 · promoção · a entrada da trava na seleção múltipla entra no "Adicionado" (PowerPoint)
+- **Local:** PowerPoint ▸ **Não adicionado** ▸ Frontend ▸ **Adicionado** ▸ Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **Selecionar várias formas deixou de travar a cada
+  clique** (`6d3fd59`, worktree `fix/trava-na-selecao-multipla`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não sai
+  no mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
+  entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
+  promoções anteriores; as demais entradas de "Não adicionado" (a aba Desenhar cheia, a mídia com
+  controle, o Estúdio em todas as fases, a aba Animações…) ficaram **intactas** — são de sessões com
+  trabalho aberto.

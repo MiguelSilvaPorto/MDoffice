@@ -444,16 +444,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - **Composição ▸ Designer: o app desenha a arte da lâmina (ondas, facetas, mosaico e brilhos) e recompõe a capa** — como o Designer do Office responde a um slide simples, mas gerado no computador, em vetor e editável: gradientes com transparência e curvas de Bézier na paleta de um modelo, nos tons escuro e claro, determinísticos por semente. Na capa feita só de texto, o título e o subtítulo vão para a zona livre, com cor legível (4,5:1) e letra que cabe; no conteúdo a arte fica nas bordas e nenhuma caixa se move. É o novo modo padrão da Composição ("Gerar mais" traz outras combinações, com paletas criadas na hora). Também: modelo escuro numa lâmina de texto escuro agora vira texto claro (o contraste era calculado contra o fundo antigo). Teste: `npm run test:designer`.
 
-- **Selecionar várias formas deixou de travar a cada clique**: o palco chama o "fim da
-  transformação" a cada `pointerup` — inclusive no clique que só **escolheu** uma forma — e o host
-  **repintava tudo** ali: ~65 ms por clique, dos quais ~59 ms eram as **miniaturas de todas as
-  lâminas** (cada `innerHTML` de miniatura vira DOM de verdade). Agora o fim do arrasto **só
-  repinta quando houve mudança** e a fileira de miniaturas **não é refeita quando nada mudou** (as
-  lâminas são imutáveis: lâmina igual, miniatura igual — só o "aceso" anda ao trocar de lâmina).
-  Medido no app, num deck de 12 lâminas × 31 formas: o repaint caiu de **65–95 ms para ~10 ms** e o
-  shift+clique de ~250 ms para ~105 ms de ida-e-volta (15 ms de trabalho do app). Teste:
-  `npm run test:layout`.
-
 - **O grupo "Diagrama" saiu da aba Desenhar (era função repetida)**: **Fluxo do Mermaid** e
   **Conectar** já vivem na aba **Inserir** — são **inserção**, não desenho — e o atalho na aba
   Desenhar fazia exatamente a mesma coisa em dois lugares (pedido: *"o diagrama é função repetida, já
@@ -579,6 +569,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **Selecionar várias formas deixou de travar a cada clique**: o palco chama o "fim da
+  transformação" a cada `pointerup` — inclusive no clique que só **escolheu** uma forma — e o host
+  **repintava tudo** ali: ~65 ms por clique, dos quais ~59 ms eram as **miniaturas de todas as
+  lâminas** (cada `innerHTML` de miniatura vira DOM de verdade). Agora o fim do arrasto **só
+  repinta quando houve mudança** e a fileira de miniaturas **não é refeita quando nada mudou** (as
+  lâminas são imutáveis: lâmina igual, miniatura igual — só o "aceso" anda ao trocar de lâmina).
+  Medido no app, num deck de 12 lâminas × 31 formas: o repaint caiu de **65–95 ms para ~10 ms** e o
+  shift+clique de ~250 ms para ~105 ms de ida-e-volta (15 ms de trabalho do app). Teste:
+  `npm run test:layout`.
 
 - **As abas do painel lateral ficaram fáceis de clicar (grade regular, com hover)**: **Formatar**,
   **Animação**, **Notas**, **Composição**, **Camadas** e o **»** estavam numa fila que quebrava em
