@@ -413,6 +413,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **As abas do painel lateral ficaram fáceis de clicar (grade regular, com hover)**: **Formatar**,
+  **Animação**, **Notas**, **Composição**, **Camadas** e o **»** estavam numa fila que quebrava em
+  linhas irregulares — cada célula do tamanho do texto, o rótulo "flutuando" no meio e sem nenhum
+  estado de hover ("está muito difícil de clicar"). Agora é uma **grade**: todas as células têm a
+  mesma largura por linha e alinham coluna com coluna (no painel padrão, 3+3; no mínimo de 200 px,
+  2+2+2; com o painel largo, as seis numa linha só), a área de clique ganhou um piso de altura e a
+  aba **acende no hover**. Conferido no navegador: os cinco cliques acertam a aba em qualquer
+  largura. Teste: `npm run test:layout`.
+
 - **A aba Desenhar cabe CHEIA (e o que sobrou de duplicação saiu)**: o print do usuário mostrava a
   aba **compacta demais** e com grupos virando menu. Duas causas: o **piso do encaixe** estava em
   0,62 (herança da correção anterior) e a aba tinha **oito grupos**, sendo dois deles **repetição**

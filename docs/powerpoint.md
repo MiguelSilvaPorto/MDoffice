@@ -631,11 +631,13 @@ Teste: `npm run test:modelo`.
 - **Painel Formatar/Animação/Notas/Composição** à direita: pode ser escondido, redimensionado
   e reaberto pela aba **« Formatar**; o painel de animação lista os efeitos da lâmina na ordem
   (selecionar, mover e remover), as notas ficam na aba **Notas** e a **Composição** mostra os
-  cartões gerados no computador (com o filtro Tudo/Arrumação/Visual). As abas **quebram de linha**
-  quando não cabem e o painel **encolhe com a janela** — nada vaza para fora do app. O **filtro da
-  Composição** (Designer/Visual/Arrumação/Tudo) divide a largura do painel e cede com **reticências**
-  quando o painel encolhe: os quatro ficam sempre dentro, em qualquer largura (antes o "Tudo" saía
-  pela borda). Conferido no navegador com `node scripts/harness-painel.mjs 260|200|170`.
+  cartões gerados no computador (com o filtro Tudo/Arrumação/Visual). As abas ficam numa **grade
+  regular** — células iguais, alinhadas coluna com coluna (3+3 no painel padrão, as seis numa linha
+  quando o painel é largo), com **hover** para mostrar que são clicáveis — e o painel **encolhe com
+  a janela**: nada vaza para fora do app. O **filtro da Composição** (Designer/Visual/Arrumação/Tudo)
+  divide a largura do painel e cede com **reticências** quando o painel encolhe: os quatro ficam
+  sempre dentro, em qualquer largura (antes o "Tudo" saía pela borda). Conferido no navegador com
+  `node scripts/harness-painel.mjs 260|200|170`.
 - **Zoom até 800%** ancorado no ponteiro (Ctrl + roda do mouse), com rolagem de verdade; o
   passo do clique/roda cresce no zoom alto (do 100% ao 800% em ~17 passos) e o slider
   continua fino.

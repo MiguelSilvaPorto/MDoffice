@@ -13140,3 +13140,46 @@ antigas quando fizer sentido.
   fita gera o `.harness-fita.ts`) e ele foi comitado junto no fechar — arquivo gerado não pertence
   ao repositório, e a regra com curinga cobre os dois harnesses (o `git rm --cached` soltou o que
   já tinha entrado, sem apagar nada do disco).
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-16 · as abas do painel lateral · a grade regular e o hover
+- **Local:** `.pp-side-tabs` (a faixa) e `.pp-side-tabs button`/`:hover`; e
+  `.pp-side-tabs .pp-side-fechar` (o **»**), que perdeu `flex: none; width: 30px`
+- **Linha:** `display: flex; flex-wrap: wrap` + `button { flex: 1 1 auto }` → `display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr))`; `button` ganhou `min-height: 34px` e o
+  `:hover` novo (`color: var(--fg); background: var(--panel-2)`)
+- **Porquê:** o usuário mostrou a faixa quebrada ("Formatar Animação Notas"/"Composição Camadas") e
+  disse que estava **difícil de clicar**: no flex com `wrap`, cada célula tinha a largura do texto —
+  o rótulo ficava centrado "flutuando" no meio de células de larguras diferentes, sem alinhar coluna
+  com coluna, e não havia **hover** nenhum (a aba nem parecia clicável). A grade dá células iguais
+  por linha (medido no navegador: 86 px cada no painel padrão, 100 px no mínimo de 200 px — sempre
+  alinhadas) e o piso de altura faz área de clique uniforme. O **»** deixa de ter largura própria:
+  na grade a célula manda, e ele fica igual às outras abas. O piso de 72 px mantém "Composição"
+  dentro da célula na largura mínima do painel (200 px, 2+2+2).
+
+## scripts/testar-layout.mts
+
+### 2026-10-16 · as abas do painel lateral · as checagens da grade e do hover
+- **Local:** bloco "PowerPoint: o painel lateral se encaixa", a checagem das abas (reescrita — ela
+  prendia `flex-wrap: wrap` + `flex: 1 1 auto`, o estado que o usuário reprovou) + a checagem nova do
+  hover
+- **Linha:** `-` a checagem do flex com wrap · `+` "as abas do painel ficam numa grade regular
+  (células iguais, sem fila quebrada)" (display: grid + `repeat(auto-fit, minmax(72px, 1fr))` +
+  `white-space: nowrap`) e `+` "a aba do painel tem hover (parece clicável)" (`:hover` com
+  `background: var(--panel-2)`)
+- **Porquê:** a checagem antiga ("as abas quebram de linha em vez de vazar") prendia exatamente o
+  mecanismo que deixava a faixa irregular — a intenção dela (não vazar do painel) continua na grade,
+  que desce de linha por colunas iguais. O hover entra como checagem porque "difícil de clicar" era,
+  na prática, "não parecia clicável".
+
+## docs/powerpoint.md
+
+### 2026-10-16 · as abas do painel lateral · a bala do painel
+- **Local:** a bala "Painel Formatar/Animação/Notas/Composição"
+- **Linha:** "As abas **quebram de linha** quando não cabem" → "As abas ficam numa **grade regular**
+  — células iguais, alinhadas coluna com coluna (3+3 no painel padrão, as seis numa linha quando o
+  painel é largo), com **hover**"
+- **Porquê:** o documento descrevia o comportamento antigo como se fosse bom ("quebram de linha");
+  quem for mexer no painel precisa saber que a **regularidade** (células iguais, colunas alinhadas)
+  é o que faz a aba ser clicável de primeira.

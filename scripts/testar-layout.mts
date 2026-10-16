@@ -2466,11 +2466,16 @@ console.log("\nPowerPoint: o painel lateral se encaixa (abas e janela estreita)"
 {
   const css = ler("src/styles/powerpoint-edicao.css");
   checa(
-    "as abas do painel quebram de linha em vez de vazar",
-    /\.pp-side-tabs \{[\s\S]{0,200}flex-wrap: wrap/.test(css) &&
-      /\.pp-side-tabs button \{[\s\S]{0,80}flex: 1 1 auto/.test(css) &&
+    "as abas do painel ficam numa grade regular (células iguais, sem fila quebrada)",
+    /\.pp-side-tabs \{[\s\S]{0,700}display: grid/.test(css) &&
+      /\.pp-side-tabs \{[\s\S]{0,700}grid-template-columns: repeat\(auto-fit, minmax\(72px, 1fr\)\)/.test(css) &&
       /\.pp-side-tabs button \{[\s\S]{0,140}white-space: nowrap/.test(css),
-    "a última aba (Arranjos) volta a ficar cortada"
+    "as abas voltam a quebrar em fila irregular (células do tamanho do texto, difíceis de clicar)"
+  );
+  checa(
+    "a aba do painel tem hover (parece clicável)",
+    /\.pp-side-tabs button:hover \{[\s\S]{0,140}background: var\(--panel-2\)/.test(css),
+    "sem hover a aba não parecia clicável"
   );
   checa(
     "o painel encolhe com a janela (largura e piso com min())",

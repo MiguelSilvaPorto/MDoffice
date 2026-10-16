@@ -1073,15 +1073,19 @@ button.ppr.big .ppr-gal-ic svg {
 }
 
 .pp-side-tabs {
-  display: flex;
-  /* não cabendo, as abas descem de linha em vez de vazar do painel (a última ficava cortada) */
-  flex-wrap: wrap;
+  display: grid;
+  /* Grade regular: cada aba ocupa uma CÉLULA IGUAL (não o tamanho do texto). A fila quebrada de
+     antes ("Formatar Animação Notas" / "Composição Camadas") deixava o texto flutuando no meio de
+     células de larguras diferentes, sem alinhar coluna com coluna — era o "difícil de clicar" do
+     relato. A grade acomoda 3 por linha no painel padrão e todas as abas numa linha só quando o
+     painel é largo. */
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
   border-bottom: 1px solid var(--border);
   flex: none;
 }
 
 .pp-side-tabs button {
-  flex: 1 1 auto;
+  min-height: 34px;
   white-space: nowrap;
   padding: 8px 6px;
   color: var(--muted);
@@ -1091,6 +1095,12 @@ button.ppr.big .ppr-gal-ic svg {
   font: inherit;
   font-size: 12.5px;
   cursor: pointer;
+}
+
+/* celular pequenas não têm estado de hover nenhum: sem ele a aba nem parecia clicável */
+.pp-side-tabs button:hover {
+  color: var(--fg);
+  background: var(--panel-2);
 }
 
 .pp-side-tabs button.on {
@@ -2879,8 +2889,7 @@ button.ppr.trans-dir {
 }
 
 .pp-side-tabs .pp-side-fechar {
-  flex: none;
-  width: 30px;
+  /* na grade a célula manda na largura: o » ocupa a célula inteira como as outras abas */
   font-size: 15px;
 }
 
