@@ -13395,3 +13395,15 @@ antigas quando fizer sentido.
   por parágrafo e o aLTERNAR; a checagem do título ganhou o nome novo
 - **Porquê:** o "frase" tem estado — é o que pode quebrar sem ninguém ver (o negrito no meio do
   parágrafo reiniciaria a frase); as quatro prendem o comportamento.
+
+## CHANGELOG.md
+
+### 2026-10-16 · caixa do texto · a promoção da entrada (não adicionado → adicionado)
+- **Local:** PowerPoint → **Não adicionado** → Frontend (a entrada da caixa) e PowerPoint →
+  **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não pode promover: no instante do commit da tarefa a entrada ainda não está na
+  main (a regra do repositório é "nunca promova o que ainda não entrou na main"), então a promoção é
+  uma tarefa de follow-up, depois que o commit chegou (3e3187f). Promovi só a entrada DESTA tarefa:
+  as que seguem em "Não adicionado" (a aba Desenhar cheia, a hierarquia do Designer…) são de sessões
+  com trabalho aberto — mexer nelas criaria duplicata ou conflito.
