@@ -192,6 +192,10 @@ avisado ao abrir (nunca some em silêncio).
   pelo mesmo botão** — clicar de novo nele **recolhe** o que estava aberto (antes o clique no
   próprio botão era ignorado pelo "fecha ao clicar fora" e o comando rodava outra vez, reabrindo).
   Clicar fora ou `Esc` continua fechando, e clicar em **outro** botão troca o popup de lugar.
+- **Seletor de cores** (fonte, contorno, preenchimento, marca-texto, traço do pincel, painel — é o
+  mesmo popup em todos): abre com **Usados recentemente** no topo (as últimas 10 cores usadas; sem
+  nenhuma ainda, a dica "As cores que você usar aparecem aqui"), depois **Cores do documento** (as
+  mais usadas no deck), **Cores padrão** e **Outra cor** (seletor do sistema ou o hex digitado).
 - **Navegar com a roda do mouse**: com o ponteiro sobre a lâmina, girar a roda **sobe/desce uma
   lâmina por gesto** (como no PowerPoint; um "tapa" não passa várias). Com a lâmina **ampliada**,
   a roda rola o quadro primeiro e só troca ao chegar ao fim; `Ctrl` + roda é o **zoom** (mirando o

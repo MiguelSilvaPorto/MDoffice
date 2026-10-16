@@ -2043,6 +2043,32 @@ console.log("\nPowerPoint: o clique que só escolhe não repinta (a seleção m�
   );
 }
 
+// ---------------------------------------------------------------- o seletor de cores
+
+console.log("\nPowerPoint: o seletor de cores abre com os usados recentemente");
+
+{
+  const cores = ler("src/powerpoint/ui/cores.ts");
+  const iRecentes = cores.indexOf("Usados recentemente");
+  const iDoc = cores.indexOf("Cores do documento");
+  const iPadrao = cores.indexOf("Cores padrão");
+  checa(
+    "os usados recentemente vêm antes das cores do documento",
+    iRecentes > 0 && iDoc > iRecentes && iPadrao > iDoc,
+    "a ordem do popup voltaria ao que era (Cores do documento no topo)"
+  );
+  checa(
+    "a seção aparece mesmo sem cor usada (com a dica)",
+    /<div class="pp-pop-t">Usados recentemente<\/div>\r?\n\s*\$\{usadas\.length \?/.test(cores) && /As cores que você usar aparecem aqui\./.test(cores),
+    "sem cor usada a seção sumiria e a mudança não apareceria para quem abre o seletor"
+  );
+  checa(
+    "a cor lembrada é normalizada (não duplica por caixa)",
+    /const c = cor\.toUpperCase\(\);/.test(cores) && /recentes\(\)\.filter\(\(x\) => x !== c\)/.test(cores),
+    "a mesma cor entraria duas vezes (F2F2F2 e f2f2f2)"
+  );
+}
+
 // ---------------------------------------------------------------- o traço em gradiente (Conectar)
 
 console.log("\nConectar: o traço em gradiente da origem ao destino (uma forma só)");

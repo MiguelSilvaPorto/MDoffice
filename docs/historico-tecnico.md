@@ -13459,3 +13459,22 @@ antigas quando fizer sentido.
 - **Linha:** `+` a frase do arrasto (alça de 6 px, miniaturas acompanhando, largura guardada)
 - **Porquê:** a bala só dizia que a faixa existe nos dois modos — faltava dizer que na vertical ela
   é redimensionável.
+
+## src/powerpoint/ui/cores.ts
+
+### 2026-10-16 · esta tarefa · os usados recentemente no topo do seletor de cores
+- **Local:** o miolo do `abrirCores` (a ordem das seções do popup) e o `lembrar`
+- **Linha:** `+ <div class="pp-pop-t">Usados recentemente</div>` **antes** de "Cores do documento"
+  (que era a primeira seção), com `${usadas.length ? swatches : dica}`; a seção `Recentes` que ficava
+  no fim (abaixo de "Cores padrão") saiu; `+ const c = cor.toUpperCase();` no `lembrar`
+- **Porquê:** o pedido ("no lugar de Cores do documento, um novo botão usados recentemente, e Cores
+  do documento vai para baixo") esbarrava em duas coisas: a lista de recentes **já existia**, mas
+  ficava **no fim** do popup e **só aparecia quando tinha alguma cor** — quem abria via "Cores do
+  documento" no topo e não descobria a seção. Agora ela abre o popup, com as cores usadas ou, sem
+  nenhuma ainda, a dica "As cores que você usar aparecem aqui" (a seção **sempre** aparece, senão a
+  mudança não se mostraria para quem ainda não escolheu cor nenhuma). Como o popup é o **mesmo** em
+  todos os pontos de cor (fonte, contorno, preenchimento, marca-texto, traço do pincel e o painel),
+  a ordem nova vale para todos de uma vez — como no Office. A normalização em maiúsculas no
+  `lembrar` evita a mesma cor duas vezes na lista: a paleta do deck vem da rampa/cor da forma (pode
+  estar em caixa alta) e o hex digitado é normalizado na hora de aplicar, então `F2F2F2` e `f2f2f2`
+  entrariam como duas.

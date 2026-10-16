@@ -1,4 +1,4 @@
-// Seletor de cores no estilo do PowerPoint: cores do documento, cores padrão, recentes e "mais cores" (hex).
+// Seletor de cores no estilo do PowerPoint: usados recentemente, cores do documento, cores padrão e "mais cores" (hex).
 import { abrirPopup, fecharPopup } from "./popup";
 
 /** Paleta padrão: tons de cinza e as cores clássicas do Office. */
@@ -20,7 +20,10 @@ function recentes(): string[] {
 
 function lembrar(cor: string): void {
   try {
-    const l = [cor, ...recentes().filter((c) => c !== cor)].slice(0, 10);
+    // maiúsculas: a paleta do deck e o hex digitado podem vir em caixas diferentes, e a mesma cor
+    // não pode aparecer duas vezes na lista
+    const c = cor.toUpperCase();
+    const l = [c, ...recentes().filter((x) => x !== c)].slice(0, 10);
     localStorage.setItem(CHAVE_RECENTES, JSON.stringify(l));
   } catch {
     /* sem armazenamento: tudo bem */
@@ -48,13 +51,15 @@ export interface OpcoesCores {
 /** Abre o seletor; `aoEscolher(null)` = "sem cor", `aoEscolher("RRGGBB")` = cor. */
 export function abrirCores(ancora: HTMLElement, op: OpcoesCores, aoEscolher: (cor: string | null) => void, aoExtra?: (valor: string) => void): void {
   const doc = (op.paleta ?? []).slice(0, 10);
+  const usadas = recentes();
   const html = `
     ${op.titulo ? `<div class="pp-pop-t">${op.titulo}</div>` : ""}
     ${op.semSelecao && op.dica ? `<p class="pp-pop-dica">${op.dica}</p>` : ""}
+    <div class="pp-pop-t">Usados recentemente</div>
+    ${usadas.length ? `<div class="pp-swatches">${usadas.map(quad).join("")}</div>` : `<p class="pp-pop-dica">As cores que você usar aparecem aqui.</p>`}
     ${doc.length ? `<div class="pp-pop-t">Cores do documento</div><div class="pp-swatches">${doc.map(quad).join("")}</div>` : ""}
     <div class="pp-pop-t">Cores padrão</div>
     <div class="pp-swatches grade">${PADRAO.flat().map(quad).join("")}</div>
-    ${recentes().length ? `<div class="pp-pop-t">Recentes</div><div class="pp-swatches">${recentes().map(quad).join("")}</div>` : ""}
     <div class="pp-pop-t">Outra cor</div>
     <div class="pp-pop-hex">
       <input type="color" data-cor-input value="#${(op.atual ?? "000000").padEnd(6, "0")}" aria-label="Escolher cor">
