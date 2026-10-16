@@ -288,6 +288,15 @@ avisado ao abrir (nunca some em silêncio).
   - **Quando não há arranjo, o painel diz por quê**: "não tem cartões nem blocos para arrumar", "os
     cartões já estão alinhados e do mesmo tamanho" ou "há texto demais ou blocos variados demais" — no
     lugar da frase genérica "nenhum arranjo cabe".
+  - **Conectores de traço** (os do PowerPoint — reta ou em cotovelo, só contorno — e os do Conectar):
+    a hierarquia os lê pelas **duas pontas** (cada ponta encosta num cartão; o de cima é o pai), respeitando o
+    **espelhamento** do cotovelo, e **mantém a cor de cada ramo** (o da SAP continua azul). **Todos** os
+    arranjos apagam esses conectores — ficam sem sentido quando os cartões se mexem — e a hierarquia os
+    **redesenha**. A região da hierarquia é escolhida pela **posição real** dos cartões: a árvore centrada
+    pode passar longe de um título num canto, mesmo que o retângulo dela o cruze.
+  - **Mais de um estilo**: o **Fluxo** tem o melhor dos dois, **em linhas** e **em 2, 3 ou 4 colunas**
+    (a partir de 3 blocos). Na aba Arrumação **não há "Gerar mais"** — os estilos são finitos e aparecem
+    todos de uma vez, sem os que saem idênticos; nos outros modos o botão traz combinações novas.
   - **O arranjo só é oferecido se tudo continua legível** (`motivosDoArranjo` diz qual regra reprovou):
     nenhum cartão pequeno demais, o **texto cabe** (a maior palavra na largura e o parágrafo na altura —
     um cartão com texto espremido numa coluna estreita **nunca** é oferecido), nenhum cartão sobre outro

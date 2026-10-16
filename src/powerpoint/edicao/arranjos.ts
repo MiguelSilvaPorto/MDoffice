@@ -75,6 +75,33 @@ function temTexto(s: Shape): boolean {
   return (s.paras ?? []).some((p) => p.runs.some((r) => (r.text ?? "").trim()));
 }
 
+const GEOM_CONECTOR = /^(line|straightConnector|bentConnector|curvedConnector)/i;
+
+/**
+ * Um conector de TRAÇO: linha reta ou em cotovelo, só contorno (como o PowerPoint e o Conectar os
+ * gravam). Não é um retângulo fino — a caixa dele é a rota inteira — por isso não passava pelo
+ * detector de traços e ficava solto no meio do slide quando os cartões se mexiam.
+ */
+export function ehConectorDeTraco(s: Shape): boolean {
+  if (s.fixa || s.liga || temTexto(s) || s.kind === "imagem" || !!s.src || s.tabela || s.grafico || s.midia) return false;
+  if (s.geom && GEOM_CONECTOR.test(s.geom)) return true;
+  // um caminho livre só com contorno
+  return !!s.paths?.length && !!s.ln && !(s.fillX && s.fillX.kind !== "none") && !s.fill;
+}
+
+/** O conector encosta em algum cartão (uma das pontas, na diagonal da caixa)? Então ele LIGA e não é enfeite. */
+function conectorQueLiga(s: Shape, cards: Shape[], ratio: number): boolean {
+  const b = { x0: s.box.x * ratio, y0: s.box.y, x1: (s.box.x + s.box.w) * ratio, y1: s.box.y + s.box.h };
+  const pontas: [number, number][] = [[b.x0, b.y0], [b.x1, b.y1], [b.x1, b.y0], [b.x0, b.y1]];
+  return cards.some((c) => {
+    const x0 = c.box.x * ratio - 1.8;
+    const x1 = (c.box.x + c.box.w) * ratio + 1.8;
+    const y0 = c.box.y - 1.8;
+    const y1 = c.box.y + c.box.h + 1.8;
+    return pontas.some(([x, y]) => x >= x0 && x <= x1 && y >= y0 && y <= y1);
+  });
+}
+
 /** Pinta ou mostra imagem — o que faz de uma forma um cartão. */
 function pintado(s: Shape): boolean {
   return s.kind === "imagem" || !!s.src || (!!s.fillX && s.fillX.kind !== "none") || !!s.fill;
@@ -218,6 +245,8 @@ export function arrumavel(slide: Slide): boolean {
 
 /** As variantes que fazem sentido (a grade muda de colunas). */
 export function variantesDe(id: Arranjo, quantas: number): number[] {
+  // o fluxo tem estilos de verdade: o melhor dos dois (0), só em linhas (1) e em 2, 3 ou 4 colunas
+  if (id === "fluxo") return quantas < 2 ? [] : quantas < 3 ? [0] : [0, 1, 2, 3, 4].filter((v) => v < 2 || v <= quantas);
   if (id !== "grade") return [0];
   return [2, 3, 4, 5, 6].filter((c) => c <= quantas);
 }
@@ -225,6 +254,7 @@ export function variantesDe(id: Arranjo, quantas: number): number[] {
 /** Como o arranjo aparece no painel ("Grade 3×2", "Lista", …). */
 export function rotuloDoArranjo(id: Arranjo, variante: number, quantas: number): string {
   const nome = ARRANJOS.find((a) => a.id === id)?.nome ?? id;
+  if (id === "fluxo") return variante === 0 ? nome : variante === 1 ? `${nome} em linhas` : `${nome} em ${variante} colunas`;
   if (id !== "grade") return nome;
   const colunas = Math.max(1, Math.min(variante || 2, quantas));
   return `${nome} ${colunas}×${Math.ceil(quantas / colunas)}`;
@@ -248,7 +278,10 @@ function grade(id: Arranjo, variante: number, quantas: number): { colunas: numbe
  * tamanho — num infográfico (cartões, barras e linhas de texto juntos) o maior dita o tamanho de todos
  * e tudo encolhe; aqui cada bloco é só alinhado.
  */
-function empacotar(blocos: ShapeBox[], reg: ShapeBox, ratio: number): { caixas: ShapeBox[]; k: number } {
+function empacotar(blocos: ShapeBox[], reg: ShapeBox, ratio: number, modo = 0): { caixas: ShapeBox[]; k: number } {
+  // modo 1 = só linhas; 2, 3 ou 4 = esse número de colunas; 0 = o melhor de todos
+  if (modo === 1) return empacotarEmLinhas(blocos, reg, ratio);
+  if (modo >= 2) return empacotarEmColunas(blocos, reg, ratio, Math.min(modo, blocos.length));
   const opcoes = [empacotarEmLinhas(blocos, reg, ratio)];
   for (const n of [2, 3, 4]) if (n <= blocos.length) opcoes.push(empacotarEmColunas(blocos, reg, ratio, n));
   // a maior escala vence (a mesma ordem de leitura; com empate, as linhas)
@@ -441,7 +474,8 @@ export function aplicarArranjo(slide: Slide, id: Arranjo, variante: number, rati
     const dosCartoes = new Set(unidades.flatMap((u) => u.ids));
     // o texto solto que fica onde está (e não pode ser coberto pelo organograma)
     const obstaculos = slide.shapes.filter((s) => !s.fixa && !s.liga && !dosCartoes.has(s.id) && s.kind === "texto" && temTexto(s)).map((s) => s.box);
-    const entrada = { slide, unidades, linhas, ratio, topo: Math.max(topo, MARGEM), baixo: limiteBaixo(slide, unidades), obstaculos };
+    const tracosDeLinha = slide.shapes.filter((f) => ehConectorDeTraco(f) && conectorQueLiga(f, cards, ratio));
+    const entrada = { slide, unidades, linhas, tracos: tracosDeLinha, ratio, topo: Math.max(topo, MARGEM), baixo: limiteBaixo(slide, unidades), obstaculos };
     const arvore = detectarArvore(entrada);
     return arvore ? aplicarHierarquia(entrada, arvore, id === "hierarquia" ? "baixo" : "lado") : slide;
   }
@@ -449,7 +483,7 @@ export function aplicarArranjo(slide: Slide, id: Arranjo, variante: number, rati
   // o fluxo: cada bloco mantém o tamanho (escala comum) e todos se alinham (em linhas ou em colunas — o que der a maior escala)
   if (id === "fluxo") {
     const reg = regiaoLivre(slide, unidades, topo);
-    const empacotado = empacotar(unidades.map((u) => u.box), reg, ratio);
+    const empacotado = empacotar(unidades.map((u) => u.box), reg, ratio, variante);
     const escalaF = new Map<string, number>();
     const caixasF = new Map<string, ShapeBox>();
     unidades.forEach((u, i) => {
@@ -461,7 +495,7 @@ export function aplicarArranjo(slide: Slide, id: Arranjo, variante: number, rati
       }
     });
     const formas = slide.shapes
-      .filter((f) => !f.liga && !ehLinhaSolta(f, emCartao.has(f.id)))
+      .filter((f) => !f.liga && !ehLinhaSolta(f, emCartao.has(f.id)) && !(ehConectorDeTraco(f) && conectorQueLiga(f, cards, ratio)))
       .map((f) => {
         const caixa = caixasF.get(f.id);
         return caixa ? { ...escalaDoTexto(f, escalaF.get(f.id) ?? 1), box: caixa } : f;
@@ -502,8 +536,8 @@ export function aplicarArranjo(slide: Slide, id: Arranjo, variante: number, rati
   });
 
   const shapes = slide.shapes
-    // os conectores e as linhas de ligação saem: a vizinhança dos cartões mudou
-    .filter((s) => !s.liga && !ehLinhaSolta(s, emCartao.has(s.id)))
+    // os conectores e as linhas de ligação saem: a vizinhança dos cartões mudou (inclusive os de traço, em cotovelo)
+    .filter((s) => !s.liga && !ehLinhaSolta(s, emCartao.has(s.id)) && !(ehConectorDeTraco(s) && conectorQueLiga(s, cards, ratio)))
     .map((s) => {
       const caixa = caixas.get(s.id);
       if (!caixa) return s;

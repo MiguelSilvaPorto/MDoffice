@@ -28,6 +28,8 @@ export interface EntradaH {
   unidades: UnidadeH[];
   /** traços finos fora dos cartões: os candidatos a conector */
   linhas: Shape[];
+  /** conectores de TRAÇO (linha reta ou em cotovelo, só contorno): o PowerPoint e o Conectar os gravam assim */
+  tracos?: Shape[];
   ratio: number;
   /** de onde (em %) o arranjo pode começar — abaixo do cabeçalho — e até onde — acima do rodapé */
   topo: number;
@@ -48,6 +50,8 @@ export interface Arvore {
   orfaos: number[];
   /** os traços e ligações que fazem parte da árvore (saem, porque são redesenhados) */
   tracos: Set<string>;
+  /** a cor original do ramo que chega a cada filho (o conector azul da SAP continua azul) */
+  corDoFilho: Map<number, string>;
 }
 
 const MARGEM = 5;
@@ -182,6 +186,48 @@ export function detectarArvore(e: EntradaH): Arvore | null {
     }
     if (achado >= 0) arestas.push([achado, f]);
   }
+  // 1b) os conectores de TRAÇO: cada ponta encosta num cartão (a diagonal da caixa liga os dois); o de cima
+  // (ou o da esquerda, se estão lado a lado) é o pai. Não precisa de rede: um conector liga exatamente dois.
+  const corDoFilho = new Map<number, string>();
+  const cartaoEm = (x: number, y: number): number => {
+    let melhor = -1;
+    let areaMelhor = Infinity;
+    cartao.forEach((c, i) => {
+      if (x < c.x0 - TOL_CARTAO || x > c.x1 + TOL_CARTAO || y < c.y0 - TOL_CARTAO || y > c.y1 + TOL_CARTAO) return;
+      const a = (c.x1 - c.x0) * (c.y1 - c.y0);
+      if (a < areaMelhor) (melhor = i, areaMelhor = a);
+    });
+    return melhor;
+  };
+  for (const t of e.tracos ?? []) {
+    const b = ret(t.box, ratio);
+    // a diagonal PRINCIPAL é a que o espelhamento diz (sem espelho: do canto de cima-esquerda ao de baixo-direita;
+    // espelhado só na horizontal OU só na vertical: a outra); a segunda só vale se a principal não achar dois cartões
+    const principal: [number, number, number, number] = !!t.flipH !== !!t.flipV ? [b.x1, b.y0, b.x0, b.y1] : [b.x0, b.y0, b.x1, b.y1];
+    const secundaria: [number, number, number, number] = !!t.flipH !== !!t.flipV ? [b.x0, b.y0, b.x1, b.y1] : [b.x1, b.y0, b.x0, b.y1];
+    const diagonais = [principal, secundaria];
+    let par: [number, number] | null = null;
+    for (const [ax, ay, cx, cy] of diagonais) {
+      const i = cartaoEm(ax, ay);
+      const j = cartaoEm(cx, cy);
+      if (i >= 0 && j >= 0 && i !== j) {
+        par = [i, j];
+        break;
+      }
+    }
+    if (!par) continue;
+    let [pai, filho] = par;
+    const dy = centroY(cartao[filho]) - centroY(cartao[pai]);
+    if (Math.abs(dy) > 0.5 * altura(cartao[pai])) {
+      if (dy < 0) [pai, filho] = [filho, pai];
+    } else if (cartao[pai].x0 > cartao[filho].x0) {
+      [pai, filho] = [filho, pai];
+    }
+    arestas.push([pai, filho]);
+    tracos.add(t.id);
+    const cor = t.ln?.grad?.stops?.[t.ln.grad.stops.length - 1]?.color ?? t.ln?.color;
+    if (cor) corDoFilho.set(filho, cor);
+  }
   // 2) as ligações nativas do Conectar: o extremo de cima é o pai
   for (const s of slide.shapes) {
     if (!s.liga) continue;
@@ -233,7 +279,7 @@ export function detectarArvore(e: EntradaH): Arvore | null {
   const profundidade = Math.max(-1, ...nivel.values()) + 1;
   if (naArvore.size < 3 || profundidade < 2) return null;
   const orfaos = unidades.map((_, i) => i).filter((i) => !naArvore.has(i));
-  return { pai, filhos, nivel, raizes, orfaos, tracos };
+  return { pai, filhos, nivel, raizes, orfaos, tracos, corDoFilho };
 }
 
 // ---------------------------------------------------------------- o texto acompanha o cartão
@@ -262,11 +308,18 @@ interface No {
 /** O estilo do conector: a cor e a espessura dos traços originais (ou o acento e um fio). */
 function estiloDoConector(e: EntradaH, arv: Arvore): { cor: string; espessura: number } {
   const usados = e.linhas.filter((l) => arv.tracos.has(l.id));
+  const tracos = (e.tracos ?? []).filter((t) => arv.tracos.has(t.id));
+  // a cor: o preenchimento dos traços finos; senão o contorno dos conectores de traço; senão a da ligação
+  // nativa; senão o verde padrão. (Um conector reto tem largura 0 e entra nas duas listas — só vale a cor
+  // que ele de fato tem.)
   const cor = usados.map((l) => (l.fillX?.kind === "solid" ? l.fillX.color : l.fill)).find((c): c is string => !!c)
+    ?? tracos.map((t) => t.ln?.color).find((c): c is string => !!c)
     ?? e.slide.shapes.filter((s) => s.liga && arv.tracos.has(s.id)).map((s) => s.ln?.color).find((c): c is string => !!c)
     ?? "18A303";
-  const espessuras = usados.map((l) => Math.min(l.box.w * e.ratio, l.box.h));
-  const t = espessuras.length ? mediana(espessuras) : 0.35;
+  const espessuras = usados.filter((l) => (l.fillX?.kind === "solid" ? l.fillX.color : l.fill)).map((l) => Math.min(l.box.w * e.ratio, l.box.h));
+  // os conectores de traço guardam a espessura em pt (a lâmina tem 540 pt de altura: 1 pt = 0,185 u)
+  const doTraco = tracos.map((t) => (t.ln?.w ?? 1.5) / 5.4);
+  const t = espessuras.length ? mediana(espessuras) : doTraco.length ? mediana(doTraco) : 0.35;
   return { cor, espessura: Math.max(0.25, Math.min(0.7, t)) };
 }
 
@@ -372,11 +425,27 @@ export function aplicarHierarquia(e: EntradaH, arv: Arvore, orientacao: Orientac
   };
   const xe = esq + (aparte.length && !aparteNaDireita ? colunaAparte + 3 : 0);
   const xd = dir - (aparte.length && aparteNaDireita ? colunaAparte + 3 : 0);
-  // o que fica onde está (um texto ao lado do organograma) não pode ficar sob os conectores: a
-  // região desvia dele pelos lados ou começa abaixo dele — vale a que dá a MAIOR escala
+  // a posição de cada nível no eixo dos níveis
+  const inicioNivel: number[] = [];
+  let lNivel = 0;
+  for (let n = 0; n < total; n++) {
+    inicioNivel.push(lNivel);
+    lNivel += tamNivel[n].l + VAO_NIVEL;
+  }
+  /** A caixa (em %) de um nó numa região — para conferir, pela posição REAL, se ele encosta num texto fixo. */
+  const caixaNa = (no: No, r: { k: number; origemS: number; origemL: number }): ShapeBox => {
+    const t = tamNivel[no.nivel];
+    const s0 = r.origemS + (no.cs - t.s / 2) * r.k;
+    const l0 = r.origemL + inicioNivel[no.nivel] * r.k;
+    return baixo ? { x: s0 / ratio, y: l0, w: (t.s * r.k) / ratio, h: t.l * r.k } : { x: l0 / ratio, y: s0, w: (t.l * r.k) / ratio, h: t.s * r.k };
+  };
+  const batem = (a: ShapeBox, b: ShapeBox): boolean => a.x < b.x + b.w + 0.8 && b.x < a.x + a.w + 0.8 && a.y < b.y + b.h + 0.8 && b.y < a.y + a.h + 0.8;
+  // o que fica onde está (um texto ao lado do organograma) não pode ficar sob os cartões: vale a região de
+  // MAIOR escala cujos nós, na posição real, não batem em nenhum deles. A região inteira também é candidata —
+  // a árvore centrada pode passar longe do título que está num canto, mesmo que o retângulo o cruze.
   const obstaculos = (e.obstaculos ?? []).filter((o) => o.y < regiaoBaixo && o.y + o.h > e.topo);
-  // com obstáculo, a região inteira NÃO é candidata (ela passaria por cima dele, mesmo dando a maior escala)
-  const candidatas = obstaculos.length ? [] : [regiaoCom(xe, xd, e.topo)];
+  const livreDeObstaculos = (r: { k: number; origemS: number; origemL: number }): boolean => ![...nos.values()].some((no) => obstaculos.some((o) => batem(caixaNa(no, r), o)));
+  const candidatas = [regiaoCom(xe, xd, e.topo)].filter(livreDeObstaculos);
   if (obstaculos.length) {
     const aEsq = obstaculos.filter((o) => o.x + o.w / 2 < 50);
     const aDir = obstaculos.filter((o) => o.x + o.w / 2 >= 50);
@@ -385,18 +454,11 @@ export function aplicarHierarquia(e: EntradaH, arv: Arvore, orientacao: Orientac
     if (xd2 - xe2 > 20) candidatas.push(regiaoCom(xe2, xd2, e.topo));
     candidatas.push(regiaoCom(xe, xd, Math.min(regiaoBaixo - 20, Math.max(e.topo, ...obstaculos.map((o) => o.y + o.h + 1.5)))));
   }
+  // (a de baixo do último obstáculo e a que desvia pelos lados não batem por construção)
   const reg = candidatas.reduce((a, c) => (c.k > a.k + 0.02 ? c : a));
   const { k, origemS, origemL } = reg;
   const regiaoL0 = reg.topo;
   const regiaoL1 = regiaoBaixo;
-
-  // a posição de cada nível no eixo dos níveis
-  const inicioNivel: number[] = [];
-  let l = 0;
-  for (let n = 0; n < total; n++) {
-    inicioNivel.push(l);
-    l += tamNivel[n].l + VAO_NIVEL;
-  }
 
   // as caixas novas dos cartões (em %) e o conteúdo de cada um, escalado junto
   const caixas = new Map<string, ShapeBox>();
@@ -447,19 +509,19 @@ export function aplicarHierarquia(e: EntradaH, arv: Arvore, orientacao: Orientac
 
   // os conectores novos: haste, barramento e descidas, no estilo dos antigos
   const { cor, espessura } = estiloDoConector(e, arv);
-  const fio = (x: number, y: number, w: number, h: number): Shape => ({
+  const fio = (x: number, y: number, w: number, h: number, corDele?: string): Shape => ({
     id: uid(),
     kind: "forma",
     box: { x, y, w, h },
     text: "",
     fontFamily: "",
     fontSize: 12,
-    color: cor,
+    color: corDele ?? cor,
     bold: false,
     italic: false,
     align: "esquerda",
-    fill: cor,
-    fillX: { kind: "solid", color: cor, alpha: 1 },
+    fill: corDele ?? cor,
+    fillX: { kind: "solid", color: corDele ?? cor, alpha: 1 },
     src: "",
     rot: 0,
     geom: "rect",
@@ -468,13 +530,13 @@ export function aplicarHierarquia(e: EntradaH, arv: Arvore, orientacao: Orientac
   const tx = espessura / ratio; // a espessura em % da largura
   const ty = espessura; // e em % da altura
   const fios: Shape[] = [];
-  const horizontal = (xa: number, xb: number, y: number): void => {
+  const horizontal = (xa: number, xb: number, y: number, c?: string): void => {
     const a = Math.min(xa, xb) - tx / 2;
-    fios.push(fio(a, y - ty / 2, Math.abs(xb - xa) + tx, ty));
+    fios.push(fio(a, y - ty / 2, Math.abs(xb - xa) + tx, ty, c));
   };
-  const vertical = (x: number, ya: number, yb: number): void => {
+  const vertical = (x: number, ya: number, yb: number, c?: string): void => {
     const a = Math.min(ya, yb) - ty / 2;
-    fios.push(fio(x - tx / 2, a, tx, Math.abs(yb - ya) + ty));
+    fios.push(fio(x - tx / 2, a, tx, Math.abs(yb - ya) + ty, c));
   };
   for (const [p, filhos] of arv.filhos) {
     const P = caixaDoNo.get(p)!;
@@ -486,12 +548,12 @@ export function aplicarHierarquia(e: EntradaH, arv: Arvore, orientacao: Orientac
       const px = P.x + P.w / 2;
       const cxs = Fs.map((f) => f.x + f.w / 2);
       if (Fs.length === 1 && Math.abs(cxs[0] - px) < 0.3) {
-        vertical(px, saida, entrada);
+        vertical(px, saida, entrada, arv.corDoFilho.get(filhos[0]));
         continue;
       }
       vertical(px, saida, barra);
       horizontal(Math.min(px, ...cxs), Math.max(px, ...cxs), barra);
-      Fs.forEach((f, i) => vertical(cxs[i], barra, f.y));
+      Fs.forEach((f, i) => vertical(cxs[i], barra, f.y, arv.corDoFilho.get(filhos[i])));
     } else {
       const saida = P.x + P.w;
       const entrada = Math.min(...Fs.map((f) => f.x));
@@ -499,12 +561,12 @@ export function aplicarHierarquia(e: EntradaH, arv: Arvore, orientacao: Orientac
       const py = P.y + P.h / 2;
       const cys = Fs.map((f) => f.y + f.h / 2);
       if (Fs.length === 1 && Math.abs(cys[0] - py) < 0.3) {
-        horizontal(saida, entrada, py);
+        horizontal(saida, entrada, py, arv.corDoFilho.get(filhos[0]));
         continue;
       }
       horizontal(saida, barra, py);
       vertical(barra, Math.min(py, ...cys), Math.max(py, ...cys));
-      Fs.forEach((f, i) => horizontal(barra, f.x, cys[i]));
+      Fs.forEach((f, i) => horizontal(barra, f.x, cys[i], arv.corDoFilho.get(filhos[i])));
     }
   }
 

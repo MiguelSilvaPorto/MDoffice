@@ -701,6 +701,10 @@ export class PowerPointHost {
   private pintarComposicao(): void {
     const host = this.pane.querySelector<HTMLElement>("[data-composicao]");
     if (!host) return;
+    // na Arrumação não há "mais": as fórmulas e os estilos são finitos e aparecem todos de uma vez — um botão
+    // que só repete os mesmos cartões confundia (nos outros modos ele traz combinações novas)
+    const mais = this.pane.querySelector<HTMLElement>("[data-composicao-mais]");
+    if (mais) mais.hidden = this.filtroComposicao === "arrumacao";
     if (this.filtroComposicao === "designer") return this.pintarDesigner(host);
     if (this.filtroComposicao === "arrumacao") return this.pintarArranjos(host);
     if (this.filtroComposicao === "visual") return this.pintarVisuais(host);
@@ -1012,6 +1016,8 @@ export class PowerPointHost {
     // para o clique e a edição não esperarem seis lâminas inteiras serem montadas
     this.atualizarDica(`${ideias.length} arrumações — o visual continua o mesmo`);
     const pendentes: (() => void)[] = [];
+    // duas fórmulas que dão o MESMO resultado (o "melhor" do fluxo igual ao em linhas) não aparecem duas vezes
+    const vistos = new Set<string>();
     for (const { id, variante } of ideias) {
       const cartao = document.createElement("button");
       cartao.type = "button";
@@ -1030,6 +1036,12 @@ export class PowerPointHost {
           cartao.remove();
           return;
         }
+        const assinatura = comArranjo.shapes.map((f) => `${f.id}:${f.box.x.toFixed(1)},${f.box.y.toFixed(1)},${f.box.w.toFixed(1)},${f.box.h.toFixed(1)}`).join("|");
+        if (vistos.has(assinatura)) {
+          cartao.remove();
+          return;
+        }
+        vistos.add(assinatura);
         previa.style.background = fundoValor(comArranjo.bg, this.setup.media ?? {}) || `#${themeOf(this.setup.theme).bg}`;
         previa.innerHTML = comArranjo.shapes.length
           ? comArranjo.shapes.map((f) => htmlFormaRica(f, ctx)).join("")

@@ -168,6 +168,41 @@ function capaComCartoes() {
   ok("toda fórmula oferecida mantém os cartões separados e largos o bastante para o parágrafo", ruins.length === 0, ruins.join(" "));
 }
 
+// ---------------------------------------------------------------- o organograma com conectores de TRAÇO (como o PowerPoint os grava)
+{
+  const tr = (x0, y0, x1, y1, cor = "2EAD6A", reto = false) => base({ box: { x: Math.min(x0, x1), y: Math.min(y0, y1), w: Math.abs(x1 - x0), h: Math.abs(y1 - y0) }, geom: reto ? "straightConnector1" : "bentConnector3", flipH: x1 < x0, fill: "", ln: { color: cor, alpha: 1, w: 1.5, dash: "solid", cap: "round", join: "round" } });
+  const no = (x, y, w, h, nome) => ({ c: cartao(x, y, w, h), t: texto(x + 1, y + 2, w - 2, 4, nome, 11) });
+  const ana = no(39, 8, 24, 9, "Ana"), bruno = no(35, 25, 32, 9, "Bruno");
+  const a1 = no(9, 43, 28, 9, "Araucária"), a2 = no(47, 43, 22, 9, "Cambé"), a3 = no(77, 43, 17, 9, "SAP");
+  const p1 = no(9, 64, 8, 18, "Renan"), p2 = no(20, 64, 8, 18, "Gustavo"), p3 = no(55, 64, 8, 18, "Diego"), p4 = no(81, 64, 8, 18, "Leo");
+  const todos = [ana, bruno, a1, a2, a3, p1, p2, p3, p4];
+  const liga = [tr(51, 17, 51, 25, "2EAD6A", true), tr(51, 34, 23, 43), tr(51, 34, 58, 43), tr(51, 34, 85, 43, "1F6FE0"), tr(23, 52, 13, 64), tr(23, 52, 24, 64), tr(58, 52, 59, 64), tr(85, 52, 85, 64, "1F6FE0", true)];
+  const titulo = texto(5, 8, 26, 6, "EQUIPE", 30);
+  const triangulo = base({ box: { x: 88, y: 0, w: 12, h: 24 }, geom: "triangle", fill: "C8E6BF", fillX: { kind: "solid", color: "C8E6BF", alpha: 1 } });
+  const sl = lamina([triangulo, ...liga, titulo, ...todos.flatMap((k) => [k.c, k.t])]);
+  const idsLiga = liga.map((l) => l.id);
+  const h = A.aplicarArranjo(sl, "hierarquia", 0, RATIO);
+  ok("o organograma com conectores de TRAÇO é entendido e a hierarquia é oferecida", h !== sl && A.arranjoLegivel(sl, h), A.motivosDoArranjo(sl, h).slice(0, 2).join(" | "));
+  ok("pai e filhos certos: o supervisor desce do gerente e as áreas descem do supervisor", caixaDe(h, ana.c.id).y < caixaDe(h, bruno.c.id).y && caixaDe(h, bruno.c.id).y < caixaDe(h, a1.c.id).y && Math.abs(caixaDe(h, a1.c.id).y - caixaDe(h, a3.c.id).y) < 0.5);
+  ok("os conectores de traço antigos saem na hierarquia e entram conectores novos", idsLiga.every((i) => !h.shapes.some((f) => f.id === i)) && h.shapes.filter((f) => f.name === "arr:conector").length >= 8);
+  ok("o ramo azul continua azul (a cor de cada ramo é a do conector original)", h.shapes.some((f) => f.name === "arr:conector" && f.fillX.color === "1F6FE0") && h.shapes.filter((f) => f.name === "arr:conector" && f.fillX.color === "2EAD6A").length >= 5);
+  for (const [id, v] of [["fluxo", 0], ["fluxo", 3], ["grade", 3], ["lista", 0]]) {
+    const novo = A.aplicarArranjo(sl, id, v, RATIO);
+    ok(`${id}${v || ""}: nenhum conector de traço antigo fica solto no meio do slide`, idsLiga.every((i) => !novo.shapes.some((f) => f.id === i)));
+  }
+  // cada pessoa recebe a descida do conector do PAI CERTO (a diagonal do cotovelo segue o espelhamento)
+  const filhosDe = (pai, filhos) => filhos.every((f) => {
+    const P = caixaDe(h, pai.c.id), F = caixaDe(h, f.c.id);
+    return h.shapes.some((x) => x.name === "arr:conector" && x.box.w < x.box.h && Math.abs(x.box.x + x.box.w / 2 - (F.x + F.w / 2)) < 0.4 && Math.abs(x.box.y + x.box.h - F.y) < 0.8) && F.y > P.y + P.h;
+  });
+  ok("cada pessoa fica sob o pai certo e tem a descida do conector (cotovelo espelhado incluso)", filhosDe(a1, [p1, p2]) && filhosDe(a2, [p3]) && filhosDe(a3, [p4]));
+  ok("os filhos de cada pai ficam à esquerda e à direita na mesma ordem do original", caixaDe(h, p1.c.id).x < caixaDe(h, p2.c.id).x && caixaDe(h, a1.c.id).x < caixaDe(h, a2.c.id).x && caixaDe(h, a2.c.id).x < caixaDe(h, a3.c.id).x);
+  ok("o título e o desenho do deck não são conectores (ficam)", !!caixaDe(h, titulo.id) && A.enfeitesDa(sl).has(triangulo.id) && !A.enfeitesDa(sl).has(titulo.id));
+  ok("a conferência de conector não apaga uma linha decorativa longe dos cartões", A.ehConectorDeTraco(tr(5, 90, 95, 90, "999999", true)) && A.aplicarArranjo(lamina([...sl.shapes, tr(5, 96, 95, 96, "999999", true)]), "hierarquia", 0, RATIO).shapes.some((f) => f.geom === "straightConnector1" && f.box.y > 95));
+  ok("o fluxo tem estilos: o melhor, só linhas e colunas (e o painel descarta os iguais)", A.variantesDe("fluxo", 9).join() === "0,1,2,3,4" && A.variantesDe("fluxo", 2).join() === "0" && A.variantesDe("fluxo", 1).length === 0);
+  ok("o rótulo diz o estilo do fluxo", A.rotuloDoArranjo("fluxo", 0, 9) === "Fluxo" && A.rotuloDoArranjo("fluxo", 1, 9) === "Fluxo em linhas" && A.rotuloDoArranjo("fluxo", 3, 9) === "Fluxo em 3 colunas");
+}
+
 // ---------------------------------------------------------------- o Fluxo: blocos de tamanhos diferentes (um infográfico)
 {
   const bloco = (x, y, w, h, t) => {

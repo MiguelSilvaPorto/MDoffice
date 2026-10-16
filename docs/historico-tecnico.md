@@ -13740,3 +13740,16 @@ antigas quando fizer sentido.
 - **Porquê:** relato do usuário com print: "você clica em arrumar e só se aplica quando muda de slide". O caso `"arranjo"` era o único da Composição
   (com `"ideia"`, `"composicao-aplicar"` e `"designer-aplicar"`) sem `this.pintar()`: `substituirSlide` só troca `this.slides`, e o palco é redesenhado
   por `pintar()`. O teste agora exige o `pintar()` nos quatro casos, para um comando novo não repetir o esquecimento.
+
+### 2026-10-16 · fix/arrumacao-organograma-real · Conectores de traço, estilos e região pela posição real
+- **Arquivo/local:** `src/powerpoint/edicao/arranjos.ts` — novos `ehConectorDeTraco`/`conectorQueLiga`, `aplicarArranjo` (filtros dos conectores), `variantesDe`/`rotuloDoArranjo` (fluxo),
+  `empacotar(…, modo)`; `src/powerpoint/edicao/hierarquia.ts` — `EntradaH.tracos`, `Arvore.corDoFilho`, `detectarArvore` (1b), `estiloDoConector`, `aplicarHierarquia` (região,
+  `caixaNa`/`livreDeObstaculos`, cor por ramo); `src/powerpoint/powerpoint.ts` — `pintarArranjos` (dedupe), `pintarComposicao` (oculta o "Gerar mais" na Arrumação);
+  `src/powerpoint/edicao/sugestoes.ts`; `scripts/testar-hierarquia.mjs`.
+- **Linha:** conector = só retângulo fino → também forma com `geom` `line|straightConnector|bentConnector|curvedConnector` (ou caminho livre só com contorno); a ponta de cada
+  conector acha o cartão pela DIAGONAL da caixa, na ordem que `flipH`/`flipV` dizem; `estiloDoConector`: cor = preenchimento do fio fino → contorno do conector de traço → ligação → padrão
+  (um conector reto tem largura 0 e entrava nas duas listas sem cor, caindo no verde padrão); a região inteira volta a ser candidata, validada pelos nós reais (`batem`) e não pelo retângulo.
+- **Porquê:** o print do usuário mostrava só o Fluxo no organograma e linhas soltas no resultado; reconstruí o slide pelas medidas (cartões, conectores de cotovelo, azul da SAP, triângulos) e reproduzi:
+  com retângulos finos a hierarquia funcionava, com conectores de traço não — o importador grava `cxnSp` como forma de traço, e o filtro só apagava/lia retângulos finos. A primeira versão da leitura
+  aceitava a primeira diagonal que tocasse dois cartões (Araucária↔Gustavo em vez de Araucária↔Renan): o espelhamento decide. O "Gerar mais" da Arrumação só incrementava um contador que o painel ignorava.
+- **Fica de fora:** a hierarquia compacta (folhas empilhadas) e conectores arredondados redesenhados como curvas (hoje saem em ângulo reto).
