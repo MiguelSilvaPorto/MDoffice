@@ -200,8 +200,10 @@ avisado ao abrir (nunca some em silêncio).
   mais usadas no deck), **Cores padrão** e **Outra cor** (seletor do sistema ou o hex digitado).
 - **Navegar com a roda do mouse**: com o ponteiro sobre a lâmina, girar a roda **sobe/desce uma
   lâmina por gesto** (como no PowerPoint; um "tapa" não passa várias). Com a lâmina **ampliada**,
-  a roda rola o quadro primeiro e só troca ao chegar ao fim; `Ctrl` + roda é o **zoom** (mirando o
-  ponteiro).
+  a roda rola o quadro primeiro e, ao chegar ao **fim**, são **dois ticos**: o primeiro **arma**
+  (a roda não faz nada) e só o segundo troca de lâmina — assim quem está só rolando não pula de
+  lâmina sem querer (uma pausa desarma; um tico isolado nunca troca). `Ctrl` + roda é o **zoom**
+  (mirando o ponteiro).
 - **Modelos**: o botão **Template** aplica modelos de estilo (tema, cores, fonte **e desenho**) ao deck.
   O **desenho** é o que faz a lâmina parecer outra e não só ter outras cores: **barra lateral**,
   **faixas**, **cantos**, **círculos**, **moldura** ou **blocos**, cada um diferente na **capa/seção**

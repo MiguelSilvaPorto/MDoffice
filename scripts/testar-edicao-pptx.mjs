@@ -1426,20 +1426,34 @@ const RODA = await empacotar("src/powerpoint/roda-laminas.ts", "roda.mjs");
   let relogio = 10_000;
   const trocas = [];
   const roda = RODA.criarRodaDeLaminas({ irPara: (d) => trocas.push(d), agora: () => relogio });
-  ok("roda: um gesto para baixo troca para a próxima", roda({ dy: 100, podeRolar: false }) === "trocar" && trocas.join() === "1");
-  ok("roda: a inércia do mesmo gesto não passa adiante", roda({ dy: 100, podeRolar: false }) === "segurar" && trocas.length === 1);
+  /** lâmina inteira à vista: não há rolagem nenhuma */
+  const semRolagem = (dy) => roda({ dy, podeRolar: false, temRolagem: false });
+  /** lâmina ampliada, rolagem já no fim: é aqui que o tico acidental trocava de lâmina */
+  const noFim = (dy) => roda({ dy, podeRolar: false, temRolagem: true });
+  ok("roda: um gesto para baixo troca para a próxima", semRolagem(100) === "trocar" && trocas.join() === "1");
+  ok("roda: a inércia do mesmo gesto não passa adiante", semRolagem(100) === "segurar" && trocas.length === 1);
   relogio += RODA.ESPERA_DA_TROCA + 40;
-  ok("roda: para cima volta uma lâmina", roda({ dy: -100, podeRolar: false }) === "trocar" && trocas.join() === "1,-1");
+  ok("roda: para cima volta uma lâmina", semRolagem(-100) === "trocar" && trocas.join() === "1,-1");
   relogio += RODA.ESPERA_DA_TROCA + 40;
-  ok("roda: com a lâmina ampliada, primeiro rola a tela", roda({ dy: 100, podeRolar: true }) === "rolar" && trocas.length === 2);
-  ok("roda: no fim da rolagem o gesto troca", roda({ dy: 100, podeRolar: false }) === "trocar" && trocas.length === 3);
+  ok("roda: com a lâmina ampliada, primeiro rola a tela", roda({ dy: 100, podeRolar: true, temRolagem: true }) === "rolar" && trocas.length === 2);
+  ok("roda: no fim da rolagem o primeiro tico só arma (não troca sem querer)", noFim(100) === "segurar" && trocas.length === 2);
+  ok("roda: o SEGUNDO tico no fim é o que troca", noFim(100) === "trocar" && trocas.length === 3);
   relogio += RODA.ESPERA_DA_TROCA + 40;
-  ok("roda: gesto pequeno (menos que o passo) segura", roda({ dy: 20, podeRolar: false }) === "segurar" && trocas.length === 3);
-  ok("roda: dois movimentos pequenos somam o gesto", roda({ dy: 30, podeRolar: false }) === "trocar" && trocas.length === 4);
+  ok("roda: tico no fim com pausa depois não troca sozinho", noFim(100) === "segurar" && trocas.length === 3);
+  relogio += RODA.ESPERA_DA_ARMACAO + 40;
+  ok("roda: a pausa desarma a armação antiga", noFim(100) === "segurar" && trocas.length === 3);
+  ok("roda: e o tico seguinte, junto, troca", noFim(100) === "trocar" && trocas.length === 4);
   relogio += RODA.ESPERA_DA_TROCA + 40;
-  roda({ dy: 100, podeRolar: true });
-  ok("roda: rolar zera o que estava acumulado", roda({ dy: 30, podeRolar: false }) === "segurar");
-  ok("roda: o passo e a espera existem", RODA.PASSO_DA_RODA === 40 && RODA.ESPERA_DA_TROCA === 260);
+  ok("roda: gesto pequeno (menos que o passo) segura", noFim(20) === "segurar" && trocas.length === 4);
+  ok("roda: dois movimentos pequenos somam e ARMAM", noFim(25) === "segurar" && trocas.length === 4);
+  ok("roda: o gesto seguinte no fim troca", noFim(40) === "trocar" && trocas.length === 5);
+  relogio += RODA.ESPERA_DA_TROCA + 40;
+  const rolou = roda({ dy: 100, podeRolar: true, temRolagem: true });
+  ok("roda: rolar desarma e zera o que estava acumulado", rolou === "rolar" && noFim(30) === "segurar" && trocas.length === 5);
+  ok(
+    "roda: passo, espera e armação existem (a armação dura mais que a inércia)",
+    RODA.PASSO_DA_RODA === 40 && RODA.ESPERA_DA_TROCA === 260 && RODA.ESPERA_DA_ARMACAO > RODA.ESPERA_DA_TROCA
+  );
 }
 
 // ---------------------------------------------------------------- desenho assistido: arco girado

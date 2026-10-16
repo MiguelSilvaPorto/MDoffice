@@ -1361,6 +1361,16 @@ checa("a roda ignora Ctrl (o zoom continua sendo dele)", /if \(e\.ctrlKey \|\| e
 checa("a inércia do gesto não passa várias lâminas", /ESPERA_DA_TROCA/.test(rodaLaminas) && /t - ultimaTroca < ESPERA_DA_TROCA/.test(rodaLaminas));
 checa("a roda lateral não troca de lâmina", /Math\.abs\(e\.deltaX\) > Math\.abs\(e\.deltaY\)/.test(rodaLaminas));
 checa("com a lâmina ampliada a roda rola o quadro primeiro", /temRolagem &&/.test(rodaLaminas) && /scrollTop \+ canvas\.clientHeight < canvas\.scrollHeight/.test(rodaLaminas));
+checa(
+  "no fim da rolagem são DOIS ticos (o primeiro arma, o segundo troca)",
+  /ESPERA_DA_ARMACAO/.test(rodaLaminas) && /armado = \{ direcao, t \}/.test(rodaLaminas) && /if \(!armado \|\| armado\.direcao !== direcao\)/.test(rodaLaminas),
+  "um tico no fim de uma lâmina ampliada trocava de lâmina sem querer"
+);
+checa(
+  "a armação expira na pausa (um tico isolado nunca troca sozinho)",
+  /t - armado\.t > ESPERA_DA_ARMACAO/.test(rodaLaminas)
+);
+checa("com a lâmina inteira à vista um tico troca (o fluxo de sempre)", /if \(!a\.temRolagem\) \{/.test(rodaLaminas));
 checa("o editor liga a roda do palco à troca de lâmina", /ligarRodaDeLaminas\(this\.canvas, \(direcao\) => this\.irPara\(this\.indice \+ direcao\)\)/.test(ppt));
 
 // ---------------------------------------------------------------- apresentação (F5) redesenhada

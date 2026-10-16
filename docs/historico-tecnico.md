@@ -13550,3 +13550,31 @@ antigas quando fizer sentido.
 - **Porquê:** a bala dizia só "a fonte não encolhe" — metade da verdade: o ícone encolhia (e era o
   que doía). A entrada do changelog fica em "Não adicionado" até o `fechar.ps1` entregar; a categoria
   é **PowerPoint** porque o piso mexido é o do CSS da apresentação (o Word e o Excel têm os deles).; recomposição do TEXTO de uma capa que tem cartões.
+
+## src/powerpoint/roda-laminas.ts · scripts/testar-edicao-pptx.mjs · scripts/testar-layout.mts
+
+### 2026-10-16 · fix/roda-laminas-dois-passos · no fim da lâmina ampliada, dois ticos (o primeiro arma)
+- **Local:** `criarRodaDeLaminas` — constante nova `ESPERA_DA_ARMACAO`, campo novo `temRolagem` em
+  `AmostraDaRoda`, o estado `armado` e o ramo do fim da rolagem; em `ligarRodaDeLaminas`, a amostra
+  passou a levar `temRolagem`
+- **Linha:** o ramo do fim, `acumulado = 0; ultimaTroca = t; opcoes.irPara(a.dy > 0 ? 1 : -1); return
+  "trocar"`, virou dois: `if (!a.temRolagem) { … return "trocar" }` (a lâmina inteira à vista, o
+  fluxo de sempre) e o ramo novo, que **arma** no primeiro tico (`armado = { direcao, t }` →
+  `"segurar"`) e só troca no segundo (`if (!armado || armado.direcao !== direcao)`); a amostra virou
+  `roda({ dy, podeRolar, temRolagem })`
+- **Porquê:** o usuário reportou que, com a lâmina ampliada, chegar ao fim e dar mais um tico
+  **trocava de lâmina sem querer** — e o tico a mais é justamente o que escapa quando a mão continua
+  rolando. O `podeRolar` sozinho não distinguia os dois casos: "cheguei ao fim" (a lâmina está
+  ampliada, dois ticos) e "nunca houve rolagem" (a lâmina inteira à vista, um tico) — daí o
+  `temRolagem` na amostra. A armação **expira na pausa** (`t - armado.t > ESPERA_DA_ARMACAO`, 650 ms)
+  de propósito: sem isso, um tico agora e outro cinco segundos depois trocariam de lâmina, que é o
+  mesmo acidente por outro caminho. Rolar de novo (`podeRolar`) desarma, e a armação vale para um
+  **lado** só — armar para baixo e depois girar para cima não troca.
+- **Teste:** em `testar-edicao-pptx.mjs` o bloco da roda ganhou `semRolagem(dy)`/`noFim(dy)` (a
+  diferença agora é explícita em cada caso) e a sequência nova: rolar → primeiro tico arma → segundo
+  troca → pausa desarma → o próximo tico troca; mais o `ESPERA_DA_ARMACAO` validado pelos valores do
+  módulo. Em `testar-layout.mts`, três checagens: os dois ticos, a expiração na pausa e o caminho da
+  lâmina inteira à vista.
+- **Docs:** `docs/powerpoint.md` (a bala da roda) e `docs/ui-deckcraft-paineis.md` (a linha da
+  tabela de atalhos) passam a dizer que, no fim da rolagem, são **dois ticos** — é comportamento
+  visível e a documentação o descrevia como um tico só.

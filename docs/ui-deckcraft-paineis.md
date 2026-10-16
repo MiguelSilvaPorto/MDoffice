@@ -1271,7 +1271,7 @@ porque o DeckCraft trata os dois como o mesmo modificador.
 | ⌘0 | ajustar à janela | global |
 | ⌘F1 | recolher/abrir a fita | global |
 | Ctrl + roda do mouse | zoom no palco (ancorado no ponteiro) | palco |
-| roda do mouse | passa as lâminas (com a lâmina ajustada à janela) | palco |
+| roda do mouse | passa as lâminas (com a lâmina ajustada à janela; ampliada, no fim da rolagem são **dois ticos** — o primeiro arma, o segundo troca) | palco |
 | ⌘ + roda do mouse | zoom na classificação de lâminas | Classificação |
 | PageDown / PageUp | próxima / anterior | Página de Notas |
 | Esc | volta à apresentação | aba Arquivo |
