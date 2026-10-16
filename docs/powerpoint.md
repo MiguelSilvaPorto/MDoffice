@@ -130,9 +130,7 @@ avisado ao abrir (nunca some em silêncio).
   que não é modelado volta cru, com aviso) — o arquivo exportado toca as animações no PowerPoint.
   Os controles (**Início**, **Duração**, **Atraso**, **Direção**, **Texto** e **Remover**) valem
   para **toda a seleção**: com duas ou mais formas escolhidas, o ajuste e a remoção valem para
-  todas, como no PowerPoint. Se a lâmina tiver **transição**, a aba avisa pelo **nome** que ela é
-  que anima a **lâmina inteira** e oferece o botão **Tirar transição** (a dúvida "a animação pegou
-  no slide todo" era ela). **Aplicar já mostra o efeito tocando** e a **prévia
+  todas, como no PowerPoint. **Aplicar já mostra o efeito tocando** e a **prévia
   devolve a lâmina ao estado de projeto** ao terminar (o **Esc** interrompe na hora) — nada fica
   aplicado no palco fora da apresentação.
 - **Lâminas**: arrastar as miniaturas para reordenar (na faixa do topo ou na vertical) —

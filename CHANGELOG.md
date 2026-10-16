@@ -570,6 +570,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Aba Animações sem a mensagem lateral de escopo**: removida a mensagem `"A animação vale para as
+  formas escolhidas; a lâmina é a aba Transições."` (e a nota de transição ao lado da galeria) na
+  aba **Animações**, liberando o espaço lateral do grupo **Animação**.
+
 - **O arrasto das formas deixou de travar**: o quadro do arrasto refazia o **`innerHTML` da lâmina
   inteira** (todas as formas ricas) + o **painel lateral inteiro** + a fita a cada evento de
   movimento — e a passada de layout que vinha atrás pagava a conta. Medido no navegador (Chrome

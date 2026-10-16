@@ -36,6 +36,11 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ## src/powerpoint/ui/fita.ts
 
+### 2026-10-16 · este commit · remoção da nota de escopo na aba Animações
+- **Local:** `animacoes()` e `atualizar()`
+- **Linha:** `<span class="ppr-trans-nota" data-anim-nota-base>A animação vale para as formas escolhidas; a lâmina é a aba Transições.</span>` (+ `data-anim-trans`) → removido
+- **Porquê:** o usuário pediu para remover a mensagem lateral que ficava espremida ao lado da galeria na aba Animações.
+
 ### 2026-10-16 · este commit · redesign da aba Desenhar e limpeza da aba Transições
 - **Local:** `desenhar()` e `transicoes()`
 - **Linha:** coluna de 4 espessuras / seletor solto / lista larga de formas e `span.ppr-nota-escopo` em `transicoes()` → linhas `.ppr-traco-linha` com `.ppr-seg`, coluna `.ppr-pintura-op`, grade `.ppr-formas-rapidas` (2×4 ícones) e remoção da nota `"Transição é da lâmina..."`

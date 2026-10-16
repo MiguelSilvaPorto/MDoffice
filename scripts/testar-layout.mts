@@ -2803,11 +2803,9 @@ console.log("\nPowerPoint: animação vai para toda a seleção (e a exportaçã
     "a mensagem na aba Transições foi removida a pedido"
   );
   checa(
-    "a aba Animações diz qual transição anima a lâmina inteira e oferece tirá-la",
-    /data-anim-trans[\s\S]{0,700}data-anim-trans-nome[\s\S]{0,500}transicao:none/.test(fita) &&
-      /notaBase\.hidden = ligada[\s\S]{0,180}notaTransLigada\.hidden = !ligada/.test(fita) &&
-      /ROTULOS_TRANSICAO\[tipo\]/.test(fita),
-    "a transição que ficou na lâmina parecia 'a animação aplicada ao slide'"
+    "a aba Animações não traz mais a mensagem 'A animação vale para as formas escolhidas'",
+    !/A animação vale para as formas escolhidas/.test(fita) && !/data-anim-nota-base/.test(fita),
+    "a mensagem na aba Animações foi removida a pedido"
   );
   const popupPpt = ler("src/powerpoint/ui/popup.ts");
   const cssBase = ler("src/styles/base.css");
