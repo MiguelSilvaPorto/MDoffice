@@ -1454,17 +1454,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   é guardada, como a do **Ctrl+F1**, que continua alternando e passa a ser o único gesto que
   recolhe. A marca `app-popup`, que existia só para a regra antiga reconhecer os popups do app,
   saiu dos quatro criadores.
-- **O campo de fonte sugere enquanto se digita (e a lista para de fechar sozinha)**: no relato,
-  digitar o nome da fonte não sugeria nada e a lista aberta **fechava** no primeiro clique dentro do
-  campo. Agora o controle (o mesmo das fitas do PowerPoint e do Word, do Excel, das Configurações e
-  dos diálogos) abre a lista **filtrada pelo texto** — sem ligar para maiúsculas nem acentos ("time"
-  acha "Times New Roman") — e ela **continua aberta** enquanto se escreve, com os itens trocando no
-  lugar (sem piscar: a entrada animada do menu toca uma vez só, na abertura). As **setas** andam
-  pelos itens, o **Enter** aplica o destacado (sem sugestão, vale o texto digitado, como antes), o
-  **Esc** devolve o texto que estava e a seta para baixo abre a lista toda (como no Office). Sem
-  correspondência, a própria lista avisa: "Nada corresponde — Enter usa o texto digitado". Os campos
-  de **número** (tamanho) não sugerem — ali o valor é livre e a lista é atalho. 8 checagens novas em
-  `npm run test:layout`.
 
 - **Pastas dos projetos: navegar, organizar e mover documentos sem sair do app**: o painel
   **Projetos** ganhou uma **trilha de caminho** (projeto › subpasta › subpasta) com **botão Voltar**
@@ -2452,6 +2441,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   passada do mouse sobre o filho escondia o balão e o reabria, alternando os textos: o "piscar" do
   relato. Agora mexer **dentro** do dono atual não troca a dica, e a saída **esvanece** (classe
   `saindo`, ~130 ms) antes de sair do fluxo, em vez de sumir de uma vez. 4 verificações novas em
+  `npm run test:layout`.
+- **O campo de fonte sugere enquanto se digita (e a lista para de fechar sozinha)**: no relato,
+  digitar o nome da fonte não sugeria nada e a lista aberta **fechava** no primeiro clique dentro do
+  campo. Agora o controle (o mesmo das fitas do PowerPoint e do Word, do Excel, das Configurações e
+  dos diálogos) abre a lista **filtrada pelo texto** — sem ligar para maiúsculas nem acentos ("time"
+  acha "Times New Roman") — e ela **continua aberta** enquanto se escreve, com os itens trocando no
+  lugar (sem piscar: a entrada animada do menu toca uma vez só, na abertura). As **setas** andam
+  pelos itens, o **Enter** aplica o destacado (sem sugestão, vale o texto digitado, como antes), o
+  **Esc** devolve o texto que estava e a seta para baixo abre a lista toda (como no Office). Sem
+  correspondência, a própria lista avisa: "Nada corresponde — Enter usa o texto digitado". Os campos
+  de **número** (tamanho) não sugerem — ali o valor é livre e a lista é atalho. 8 checagens novas em
   `npm run test:layout`.
 
 **Ferramentas (dev)**

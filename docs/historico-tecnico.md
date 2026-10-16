@@ -12762,3 +12762,17 @@ antigas quando fizer sentido.
 - **Porquê:** o teste existe para impedir que um comando de I/O volte para a thread principal; os três
   novos nascem `async`, então entram na conta. O valor estava **desatualizado** (dizia 7, mas o
   `preview_file` já era `async` há tempos: eram 8) — a conta foi acertada de uma vez.
+
+## CHANGELOG.md
+
+### 2026-10-16 · promoção · a entrada do campo de fonte no "Adicionado"
+- **Local:** Geral → **Não adicionado** → Frontend → **Adicionado** → Frontend (fim da lista)
+- **Linha:** 1 entrada movida — **O campo de fonte sugere enquanto se digita** (`6769f12`), com o
+  "Não adicionado" conferido depois (nenhuma sobra)
+- **Porquê:** o fecho não promove (no instante do commit a entrada ainda não está na `main`), então
+  a promoção anda num passo curto de docs, como nas rodadas anteriores. Duas conferências antes de
+  fechar: o commit é ancestral da `main` e a entrada existe **uma** vez só. Vale registrar o tropeço
+  da primeira tentativa: eu havia anexado a entrada no **fim do arquivo**, que ali é o grupo
+  **Ferramentas (dev)** — o lugar certo é o fim da lista do **Frontend**, antes do rótulo. O passo
+  conferiu a seção inteira (rótulos `Backend`/`Frontend`/`Ferramentas (dev)`) e nada de worktree em
+  andamento foi tocado.
