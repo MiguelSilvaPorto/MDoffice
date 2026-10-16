@@ -13089,3 +13089,34 @@ antigas quando fizer sentido.
   texto escuro seguia escuro num modelo escuro.
 - **Fica de fora:** o miolo recebe só arte de borda (conteúdo não é recomposto); fotos/ilustrações de banco; recomposição de lâminas com
   imagens ou cartões.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-16 · o filtro da Composição · cabe no painel em qualquer largura
+- **Local:** `.pp-seg button` (o controle segmentado do painel)
+- **Linha:** `flex: 1 1 auto; padding: 4px 6px` → `flex: 1 1 0; min-width: 0; padding: 4px 4px`,
+  `+ white-space: nowrap; overflow: hidden; text-overflow: ellipsis`
+- **Porquê:** o usuário (print) mostrou o "Tudo" saindo pela borda do painel. Com `flex-basis: auto`
+  e o `min-width: auto` padrão do flex, o botão **não cede abaixo do próprio texto**; na largura
+  mínima do painel (~200 px) a soma dos quatro passava da largura e o último era cortado. Com
+  `flex: 1 1 0` os quatro ficam iguais e com `min-width: 0` podem encolher — o rótulo cede com
+  reticências em vez de estourar. Medido no navegador (harness novo): 260 px = 257/257 (sobra 0),
+  200 px = 197/197, 170 px = 167/167; antes, em 200 px, sobrava 5 px e o "Tudo" saía.
+
+## scripts/harness-painel.mjs
+
+### 2026-10-16 · o filtro da Composição · o harness do painel
+- **Local:** script novo (espelha o `harness-fita.mjs`)
+- **Linha:** `novo` — monta o corpo da Composição com o CSS real, imprime a linha de medidas
+  (painel, filtro clientWidth/scrollWidth, sobra, cada botão, cortados) e fotografa em
+  `temp/painel-<largura>.png`
+- **Porquê:** o problema é de LARGURA e só aparece em painel estreito; o harness deixa medir e ver
+  em 260/200/170 px sem abrir o app — e fica para as próximas mudanças do painel.
+
+## docs/powerpoint.md
+
+### 2026-10-16 · o filtro da Composição · a bala do painel
+- **Local:** "Painel Formatar/Animação/Notas/Composição"
+- **Linha:** `+` a frase do filtro que divide a largura e cede com reticências + o comando do harness
+- **Porquê:** a bala dizia que "nada vaza para fora do app" — e era exatamente o que o print
+  desmentia no filtro.

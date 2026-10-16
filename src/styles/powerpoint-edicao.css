@@ -2977,13 +2977,21 @@ button.ppr.trans-dir {
 }
 
 .pp-seg button {
-  flex: 1 1 auto;
-  padding: 4px 6px;
+  /* Todos dividem a largura do painel e PODEM encolher: sem o `min-width: 0` o botão não cede
+     abaixo do próprio texto e o último ("Tudo") saía pela borda do painel quando ele encolhe
+     (relato do usuário, com print). Se sobrar pouco, o rótulo corta com reticências — nunca
+     estoura a tela. */
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 4px 4px;
   color: var(--muted);
   background: transparent;
   border: 0;
   font: inherit;
   font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   cursor: pointer;
 }
 
