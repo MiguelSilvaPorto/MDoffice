@@ -413,13 +413,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **A barra lateral de lâminas (faixa vertical) agora pode ser arrastada para expandir/reduzir**: a
-  alça de 6 px fica entre a faixa e o palco (o cursor vira `col-resize`, com realce no hover) e
-  arrastar escreve na largura da faixa — as **miniaturas acompanham** (o texto delas é `cqw`, então
-  a lâmina inteira cresce junto) e a largura fica **guardada** entre sessões, como a do painel
-  direito (72 px a ~45% do painel). Antes a faixa vertical ficava presa em 112 px (print do
-  usuário). Só aparece no modo **Exibir → Faixa vertical**. Teste: `npm run test:layout`.
-
 - **Composição ▸ Tudo: volta a gerar cartões quando nenhuma arrumação é legível** — ao exigir que um arranjo "mude algo", o filtro de legibilidade passou a descartar também os cartões só de **visual** (neles a lâmina não muda de propósito) e o painel mostrava "Nenhuma composição cabe nesta lâmina" mesmo havendo visuais. Agora só os cartões com arrumação passam pelo filtro.
 
 - **Arrumação em hierarquia (organograma) e um Designer que arruma sem estragar** — dois arranjos novos entendem a árvore pelos conectores e a redesenham (um nível por linha ou coluna, filhos centrados sob o pai, caixas do nível iguais, conectores novos, texto fixo desviado). O Designer passa a escolher sozinho o melhor arranjo, **remover o desenho antigo** do slide (triângulos, pontilhados, barrinhas) e **adaptar a arte à zona livre**; o que já está arrumado (uma fileira de cartões iguais) não é movido. Um arranjo só é oferecido se tudo continua legível: o texto cabe (palavra e parágrafo), nenhum cartão fica pequeno demais, cobre outro cartão ou cobre um texto que fica no lugar — corrige o caso em que três cartões viraram uma coluna sobre o parágrafo e o texto vazava. O modo **Tudo** deixou de mostrar um cartão só (filtra as arrumações antes de combinar com os visuais). Testes: `npm run test:hierarquia`.
@@ -589,6 +582,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **A barra lateral de lâminas (faixa vertical) agora pode ser arrastada para expandir/reduzir**: a
+  alça de 6 px fica entre a faixa e o palco (o cursor vira `col-resize`, com realce no hover) e
+  arrastar escreve na largura da faixa — as **miniaturas acompanham** (o texto delas é `cqw`, então
+  a lâmina inteira cresce junto) e a largura fica **guardada** entre sessões, como a do painel
+  direito (72 px a ~45% do painel). Antes a faixa vertical ficava presa em 112 px (print do
+  usuário). Só aparece no modo **Exibir → Faixa vertical**. Teste: `npm run test:layout`.
 
 - **Mudar a caixa do texto ganhou as cinco opções do Office**: o menu tinha três (**MAIÚSCULAS**,
   **minúsculas** e "Primeira Letra" — que na verdade fazia **título por palavra**, apesar do

@@ -13478,3 +13478,13 @@ antigas quando fizer sentido.
   `lembrar` evita a mesma cor duas vezes na lista: a paleta do deck vem da rampa/cor da forma (pode
   estar em caixa alta) e o hex digitado é normalizado na hora de aplicar, então `F2F2F2` e `f2f2f2`
   entrariam como duas.
+## CHANGELOG.md
+
+### 2026-10-16 · a barra lateral · a promoção da entrada
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não promove (no instante do commit a entrada ainda não está na main), então a
+  promoção anda depois: a barra lateral arrastável (f1084ee). Promovi só a entrada DESTA tarefa —
+  as que seguem em "Não adicionado" são de sessões com trabalho aberto, mexer nelas criaria
+  duplicata ou conflito. O fechamento pegou **dois conflitos** com sessões que commitaram no meio
+  (a Arrumação em hierarquia e o Composição → Tudo): resolvi mantendo os dois lados.
