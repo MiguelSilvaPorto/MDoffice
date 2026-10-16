@@ -7,8 +7,9 @@
 // corpo) ocupam o miolo e não são tocadas. Funções puras.
 import { uid } from "../../util";
 import type { Fill, Shape, ShapeBox, Slide, SlideLayout } from "../schema";
+import { formasDeArte, lerDesenhoArte, type DesenhoArte } from "./arte";
 
-export type DesenhoId = "barra" | "faixa" | "cantos" | "circulos" | "moldura" | "blocos";
+export type DesenhoId = "barra" | "faixa" | "cantos" | "circulos" | "moldura" | "blocos" | DesenhoArte;
 
 export const DESENHOS: { id: DesenhoId; nome: string }[] = [
   { id: "barra", nome: "Barra lateral" },
@@ -69,6 +70,9 @@ const ehCapa = (layout: SlideLayout): boolean => layout === "titulo" || layout =
  */
 export function decoracoesDe(desenho: DesenhoId, layout: SlideLayout, c: CoresDesenho, ratio = 16 / 9): Shape[] {
   if (layout === "vazio") return [];
+  // a arte do Designer (ondas, facetas, mosaico, brilhos) vem do gerador próprio
+  const arte = lerDesenhoArte(desenho);
+  if (arte) return formasDeArte(arte.id, arte.semente, layout, c, ratio);
   const capa = ehCapa(layout);
   const d = (geom: string, box: ShapeBox, p: Parameters<typeof deco>[4]) => deco(desenho, c, geom, box, p);
   /** altura (em %) de uma forma que precisa ser quadrada com `w` (em %) de largura */
@@ -106,6 +110,8 @@ export function decoracoesDe(desenho: DesenhoId, layout: SlideLayout, c: CoresDe
       return capa
         ? [d("rect", { x: 0, y: 88, w: 100, h: 12 }, { cor: c.accent }), d("rect", { x: 8, y: 84.5, w: 7, h: q(1) }, { cor: c.muted })]
         : [d("rect", { x: 0, y: 94, w: 100, h: 6 }, { cor: c.accent }), d("rect", { x: 0, y: 6, w: 1.2, h: 14 }, { cor: c.accent })];
+    default:
+      return [];
   }
 }
 
@@ -117,7 +123,7 @@ function lerDecoracao(slide: Slide): { desenho: DesenhoId; cores: CoresDesenho }
   const marca = slide.shapes.find(ehDecoracaoDeModelo)?.name;
   if (!marca) return null;
   const [desenho, bg, fg, accent, muted] = marca.slice(MARCA.length).split(":");
-  if (!DESENHOS.some((x) => x.id === desenho) || !muted) return null;
+  if ((!DESENHOS.some((x) => x.id === desenho) && !lerDesenhoArte(desenho)) || !muted) return null;
   return { desenho: desenho as DesenhoId, cores: { bg, fg, accent, muted } };
 }
 
