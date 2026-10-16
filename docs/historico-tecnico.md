@@ -12885,3 +12885,16 @@ antigas quando fizer sentido.
   completo e o `vivo()` do painel
 - **Porquê:** a regressão é silenciosa (volta a funcionar, só devagar): sem a trava, alguém pode
   reintroduzir o `pintarRapido()` no "meio" sem nenhum teste quebrar.
+
+## CHANGELOG.md
+
+### 2026-10-16 · arrasto fluido · a promoção da entrada (não adicionado → adicionado)
+- **Local:** PowerPoint → **Não adicionado** → Frontend (a entrada do arrasto) e PowerPoint →
+  **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não pode promover: no instante do commit da tarefa a entrada ainda não está na
+  main (a regra do repositório é "nunca promova o que ainda não entrou na main"), então a promoção é
+  uma tarefa de follow-up, depois que o commit chegou (0ebfef7). Promovi só a entrada DESTA tarefa:
+  as que seguem em "Não adicionado" (o grupo Diagrama, o "Selecionar tudo neste ponto", o Estúdio —
+  Modelo e Camadas, a fita que não se recolhe) são de sessões com trabalho aberto — mexer nelas
+  criaria duplicata ou conflito.
