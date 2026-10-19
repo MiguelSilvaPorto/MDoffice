@@ -13753,3 +13753,38 @@ antigas quando fizer sentido.
   com retângulos finos a hierarquia funcionava, com conectores de traço não — o importador grava `cxnSp` como forma de traço, e o filtro só apagava/lia retângulos finos. A primeira versão da leitura
   aceitava a primeira diagonal que tocasse dois cartões (Araucária↔Gustavo em vez de Araucária↔Renan): o espelhamento decide. O "Gerar mais" da Arrumação só incrementava um contador que o painel ignorava.
 - **Fica de fora:** a hierarquia compacta (folhas empilhadas) e conectores arredondados redesenhados como curvas (hoje saem em ângulo reto).
+
+## src/md/editor.ts
+
+### 2026-10-19 · a sugestão não some ao rolar · o popup acompanha o trecho
+- **Local:** o construtor (o listener de `scroll`), `closeIssuesPopup`, `showIssuePopup` e os dois
+  métodos novos `posicionarPopup`/`reposicionarPopup`
+- **Linha:** `scrollDOM.addEventListener("scroll", () => this.closeIssuesPopup())` → um
+  `acompanhar` com `requestAnimationFrame` chamando `reposicionarPopup()` (e o mesmo no
+  `window.addEventListener("resize")`) · `+ this.popupIssue/this.popupView` guardados em
+  `showIssuePopup` e limpos em `closeIssuesPopup` · a conta de posição (que estava inline) saiu
+  para `posicionarPopup(coords)` e é reusada
+- **Porquê:** o usuário (print do cartão "Esse trecho está muito longo…") disse que a mensagem some
+  a cada movimento; o código fechava o popup em QUALQUER rolagem ("as posições mudam") — a pessoa
+  perdia a mensagem no meio da leitura. Agora o cartão é recolocado no trecho (`coordsAtPos(issue.from)`,
+  clampado na janela) a cada quadro de rolagem, e só fecha quando o trecho sai da janela do editor
+  (`coords` nulo ou fora do `scrollDOM`) — não há onde ancorar. Fechar no clique fora e no
+  `docChanged` continua: com o texto mudado, a correção pendente aplicaria no lugar errado.
+
+## scripts/testar-layout.mts
+
+### 2026-10-19 · a sugestão não some ao rolar · as três checagens
+- **Local:** o fim do arquivo (um bloco novo antes do resumo)
+- **Linha:** `+` três checagens: o `scroll` agora chama `acompanhar`/`reposicionarPopup` (e não
+  `closeIssuesPopup`), o `resize` também reposiciona, e o `docChanged` continua fechando
+- **Porquê:** o gesto é invisível em teste de unidade (depende do scroll e das coordenadas do
+  CodeMirror); as checagens garantem que ninguém volte a trocar o "acompanhar" pelo "fechar" sem
+  perceber.
+
+## docs/md.md
+
+### 2026-10-19 · a sugestão não some ao rolar · a bala do assistente
+- **Local:** "Escrita assistida (português, offline)" — a bala do assistente
+- **Linha:** `+` a frase do cartão que acompanha o trecho (e quando ele fecha)
+- **Porquê:** a bala dizia como abrir o cartão, mas não que ele permanece enquanto se rola — que
+  era o que faltava para o usuário.

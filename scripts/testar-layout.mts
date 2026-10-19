@@ -2990,5 +2990,29 @@ console.log("\nPowerPoint: animação vai para toda a seleção (e a exportaçã
   );
 }
 
+// O cartão de sugestão do corretor ACOMPANHA o trecho: rolar (ou redimensionar) não pode mais
+// fechar a mensagem — ela só sai quando o trecho sai da janela do editor ou o texto muda.
+{
+  const editorMd = ler("src/md/editor.ts");
+  checa(
+    "o popup do corretor acompanha o trecho ao rolar (não fecha)",
+    /scrollDOM\.addEventListener\("scroll", acompanhar/.test(editorMd) &&
+      /private reposicionarPopup\(\): void/.test(editorMd) &&
+      /coordsAtPos\(this\.popupIssue\.from\)/.test(editorMd) &&
+      /private posicionarPopup\(/.test(editorMd),
+    "rolar o texto fecharia a mensagem de sugestão de novo"
+  );
+  checa(
+    "o popup do corretor se reposiciona no redimensionar",
+    /window\.addEventListener\("resize", acompanhar\)/.test(editorMd),
+    "mudar o tamanho da janela deixaria o cartão no lugar antigo"
+  );
+  checa(
+    "o popup do corretor fecha quando o texto muda (a correção pendente ficaria velha)",
+    /if \(u\.docChanged\) \{\s*this\.closeIssuesPopup\(\);/.test(editorMd),
+    "a correção pendente aplicaria sobre um texto que mudou"
+  );
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

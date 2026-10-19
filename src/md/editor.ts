@@ -70,8 +70,19 @@ export class MdEditor {
       state: EditorState.create({ doc: "", extensions: this.extensions }),
       parent,
     });
-    // ao rolar ou mudar o texto, o popup de sugestões some (as posições mudam)
-    this.view.scrollDOM.addEventListener("scroll", () => this.closeIssuesPopup(), { passive: true });
+    // ao rolar (ou redimensionar), o popup do corretor ACOMPANHA o trecho: antes ele sumia a
+    // cada rolagem, porque as posições mudam — e a pessoa perdia a mensagem no meio da leitura.
+    // Um quadro por rolagem, como nos outros gestos da tela.
+    let quadroDoPopup = 0;
+    const acompanhar = () => {
+      if (!this.popup || quadroDoPopup) return;
+      quadroDoPopup = requestAnimationFrame(() => {
+        quadroDoPopup = 0;
+        this.reposicionarPopup();
+      });
+    };
+    this.view.scrollDOM.addEventListener("scroll", acompanhar, { passive: true });
+    window.addEventListener("resize", acompanhar);
     // clicar fora (menu, painel, preview) também fecha o popup
     document.addEventListener(
       "mousedown",
@@ -231,9 +242,44 @@ export class MdEditor {
   closeIssuesPopup(): void {
     this.popup?.remove();
     this.popup = null;
+    this.popupIssue = null;
+    this.popupView = null;
   }
 
   private popup: HTMLElement | null = null;
+  /** o aviso e a visão do popup aberto: é o que deixa ele ACOMPANHAR o trecho ao rolar */
+  private popupIssue: WritingIssue | null = null;
+  private popupView: EditorView | null = null;
+
+  /** Põe o popup na posição atual do trecho (clampado na janela). */
+  private posicionarPopup(coords: { left: number; top: number; bottom: number }): void {
+    const pop = this.popup;
+    if (!pop) return;
+    const width = pop.offsetWidth;
+    const height = pop.offsetHeight;
+    const left = coords.left - 10;
+    pop.style.left = `${Math.max(8, Math.min(left, window.innerWidth - width - 12))}px`;
+    const abaixo = coords.bottom + 6;
+    const acima = coords.top - height - 6;
+    pop.style.top = `${abaixo + height > window.innerHeight - 6 && acima > 6 ? acima : abaixo}px`;
+  }
+
+  /**
+   * Recoloca o popup do aviso onde o trecho está AGORA. Antes, rolar o texto fechava o cartão (as
+   * posições mudam) — a pessoa perdia a mensagem no meio da leitura ("some a cada movimento"). Ele
+   * só fecha quando o trecho sai da janela do editor (não há onde ancorar) ou quando o texto muda
+   * (aí a correção ficaria velha e aplicaria no lugar errado).
+   */
+  private reposicionarPopup(): void {
+    if (!this.popup || !this.popupIssue || !this.popupView) return;
+    const coords = this.popupView.coordsAtPos(this.popupIssue.from);
+    const janela = this.popupView.scrollDOM.getBoundingClientRect();
+    if (!coords || coords.bottom < janela.top || coords.top > janela.bottom) {
+      this.closeIssuesPopup();
+      return;
+    }
+    this.posicionarPopup(coords);
+  }
 
   /**
    * Clique na palavra sublinhada: NUNCA intercepta o mouse — é o que permite clicar no meio
@@ -484,14 +530,10 @@ export class MdEditor {
     const coords = view.coordsAtPos(issue.from);
     document.body.append(pop);
     pop.style.position = "fixed";
-    const width = pop.offsetWidth;
-    const height = pop.offsetHeight;
-    const left = (coords?.left ?? 0) - 10;
-    pop.style.left = `${Math.max(8, Math.min(left, window.innerWidth - width - 12))}px`;
-    const abaixo = (coords?.bottom ?? 0) + 6;
-    const acima = (coords?.top ?? 0) - height - 6;
-    pop.style.top = `${abaixo + height > window.innerHeight - 6 && acima > 6 ? acima : abaixo}px`;
     this.popup = pop;
+    this.popupIssue = issue;
+    this.popupView = view;
+    if (coords) this.posicionarPopup(coords);
   }
 
   /** Insere texto; o marcador $0 define onde o cursor fica. */

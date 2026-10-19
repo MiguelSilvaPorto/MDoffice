@@ -82,7 +82,10 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   repetições, pontuação, frase começando em minúscula…). **Clique na palavra** para ver
   sugestões e sinônimos; nos avisos de estilo (ex.: **frase muito comprida**) o popup mostra o
   trecho **já corrigido** — a frase quebrada, a vírgula que falta — para aplicar num clique, e
-  **“Ignorar neste texto”** dispensa aquele aviso só neste documento. **Revisar texto** (`F7`)
+  **“Ignorar neste texto”** dispensa aquele aviso só neste documento. O cartão **acompanha o
+  trecho** ao rolar ou redimensionar a janela (antes ele sumia a cada rolagem e a mensagem se
+  perdia no meio da leitura); ele só fecha quando o trecho sai da janela do editor, quando o
+  texto muda (a correção pendente ficaria velha) ou ao clicar fora. **Revisar texto** (`F7`)
   agrupa os avisos, estatísticas e **“Corrigir tudo (estilo)”**; dicionário pessoal e
   “ignorar palavra”.
 - **Correção automática** (liga/desliga): palavras erradas com certeza, maiúsculas, espaços,
