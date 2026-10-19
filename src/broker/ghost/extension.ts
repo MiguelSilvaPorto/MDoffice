@@ -65,7 +65,9 @@ export function createGhostTextExtension(options: GhostOptions): Extension {
           return;
         }
 
-        // Se o documento mudou ou a seleção mudou, agenda cálculo com debounce rápido (90ms)
+        // Se o documento mudou ou a seleção mudou, agenda cálculo com debounce curto: a previsão
+        // custa ~0,4 ms, então 45 ms já mostram a sugestão entre uma tecla e outra — antes eram
+        // 90 ms e, digitando rápido, o relógio nunca fechava (a sugestão só aparecia nas pausas).
         if (update.docChanged || update.selectionSet) {
           if (debounceTimer) window.clearTimeout(debounceTimer);
           debounceTimer = window.setTimeout(() => {
@@ -76,7 +78,7 @@ export function createGhostTextExtension(options: GhostOptions): Extension {
               effects: setGhostEffect.of(pred),
             });
             refineLater(update.view);
-          }, 90);
+          }, 45);
         }
       }
 

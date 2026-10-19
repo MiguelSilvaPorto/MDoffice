@@ -32,6 +32,21 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A sugestão enquanto você digita ganhou uma decisão calibrada (e ficou mais rápida)**: o
+  texto fantasma aparecia por limiares fixos (0,45 / 0,6 / 0,8…) sobre a probabilidade
+  **normalizada entre candidatas**, que não é a chance de acertar — cada ajuste trocava precisão
+  por cobertura (o relato: "toda vez que tento arrumar fica pior"; "sugere uma ou duas palavras a
+  cada 12 palavras"). Agora a decisão é **P(acertar) calibrada** (regressão logística ajustada em
+  `scripts/calibrar-ghost.mts`, no fluxo de digitação) **× teclas poupadas ≥ custo do erro**, com
+  piso por modo. Medido em `scripts/corpus-wikipedia.txt`: **92,7% de acerto** (era 85,7%),
+  **20,2% de economia** (era 20,9%) e 5,2% de cobertura no mesmo ponto de precisão — e a **próxima
+  palavra** e a corrente seguem a regra antiga (a calibração não se sustenta nelas). O aprendizado
+  do uso passou a mexer **no máximo ±25%** (antes multiplicava a probabilidade e as recusas
+  faziam a sugestão sumir) e a previsão espera **45 ms** (era 90 ms) — com a previsão custando
+  menos de 1 ms, a sugestão acompanha a digitação em vez de só aparecer nas pausas. Teste:
+  `npm run test:ghost` (régua em população fixa, independente do modelo) e o novo
+  `scripts/calibrar-ghost.mts`.
+
 ### Adicionado (na main)
 
 **Backend**

@@ -8,7 +8,7 @@ import { DocumentIndex, SENTENCE_START } from "./documentIndex";
 import { getLanguageModel, type LangModel, START, COMMA, NUMBER } from "./model";
 import { predictLegacy } from "./legacy";
 import { personalIndex } from "./memory";
-import { preference, thresholdScale, minSuffixDelta } from "../personal/feedback";
+import { preference, getGhostMode, minSuffixDelta, thresholdScale } from "../personal/feedback";
 import { agreementFactor } from "./agreement";
 import { fixTypo } from "./typo";
 
@@ -51,10 +51,83 @@ export const THRESHOLDS = {
 const minChars = (): number => Math.max(1, THRESHOLDS.minSuffix + minSuffixDelta());
 
 /**
- * Limiar já escalado pelo modo (discreto aperta, agressivo solta), com TETO em 0,98: a base já é
- * exigente e, sem o teto, o "discreto" (×1,4) passaria de 1 e nunca mostraria nada.
+ * Limiar já escalado pelo modo (discreto aperta, agressivo solta), com TETO em 0,98. É o critério da
+ * PRÓXIMA palavra: ali a calibração não se sustenta (a taxa-base é baixa e o texto de ajuste não
+ * cobre o assunto do documento), então fica a regra que já era medida no `eval-ghost`.
  */
 const limiar = (t: number, mode: "next" | "prefix"): number => Math.min(0.98, t * thresholdScale(mode));
+
+// ---------------------------------------------------------------- decisão calibrada
+
+/**
+ * A decisão de mostrar (e de continuar) uma sugestão é pelo **ganho esperado**:
+ *
+ *     P(acertar | evidências) × teclas poupadas ≥ custo de uma sugestão errada
+ *
+ * `P(acertar)` sai de uma regressão logística ajustada em `scripts/calibrar-ghost.mts` (no mesmo
+ * tipo de texto do `eval-ghost`), em vez dos limiares fixos de antes — eles comparavam a
+ * probabilidade NORMALIZADA entre as candidatas (0,45 / 0,6 / 0,8…), que não é a chance de
+ * acertar: mexer neles sempre trocava precisão por cobertura (o relato "toda vez que arrumo fica
+ * pior"). O custo do erro é a "intensidade" das Configurações.
+ */
+export const CALIB = {
+  /** pesos de [1, logit(p), prefixo?, letras/4, pSelf−p, começo?, documento, nomePróprio] */
+  w: [-1.8779, 0.3267, -0.299, 1.2468, -1.3148, -0.3969, 1.5371, -2.7874] as number[],
+  /** custo (em teclas) de mostrar uma sugestão errada, por intensidade (medido no calibrar-ghost) */
+  custo: { discreto: 2.2, equilibrado: 1.4, agressivo: 1.2 } as Record<string, number>,
+  /**
+   * Piso de P(acertar): o ganho cresce com o tamanho da sugestão, mas o incômodo de uma sugestão
+   * errada não — sem o piso, uma candidata longa e improvável passaria só por "render mais".
+   */
+  pMin: { discreto: 0.5, equilibrado: 0.38, agressivo: 0.3 } as Record<string, number>,};
+
+/** logit com corte para não estourar em p = 0/1. */
+const logit = (p: number): number => {
+  const q = Math.max(1e-4, Math.min(1 - 1e-4, p));
+  return Math.log(q / (1 - q));
+};
+
+/** As evidências do ponto, na ordem de `CALIB.w`. (O comprimento NÃO entra: ele é o ganho, não a chance.) */
+function evidencias(p: number, pSelf: number, prefixLen: number, lambda: number, sentenceStart: boolean, capsMismatch: boolean): number[] {
+  return [1, logit(p), prefixLen > 0 ? 1 : 0, Math.min(1, prefixLen / 4), Math.max(0, pSelf - p), sentenceStart ? 1 : 0, lambda, capsMismatch ? 1 : 0];
+}
+
+/** P(acertar | evidências), calibrada. */
+export function probAcerto(x: readonly number[]): number {
+  let z = 0;
+  for (let i = 0; i < x.length && i < CALIB.w.length; i++) z += CALIB.w[i] * x[i];
+  return 1 / (1 + Math.exp(-Math.max(-30, Math.min(30, z))));
+}
+
+/** O custo (em teclas) de uma sugestão errada, no modo escolhido. */
+export function custoDoModo(): number {
+  return CALIB.custo[getGhostMode()] ?? 1;
+}
+
+/** O piso de P(acertar), no modo escolhido. */
+export function pisoDoModo(): number {
+  return CALIB.pMin[getGhostMode()] ?? 0.35;
+}
+
+/** O ganho esperado de mostrar a sugestão: teclas poupadas × chance de acertar. */
+export function ganhoEsperado(x: readonly number[], keys: number): number {
+  return probAcerto(x) * keys;
+}
+
+/** O ajuste do aprendizado do uso na decisão, num intervalo curto (não derruba a sugestão). */
+function fatorPreferencia(prev: string, lc: string): number {
+  return Math.max(0.75, Math.min(1.25, preference(prev, lc)));
+}
+
+/** A decisão sobre um P já com o ajuste do aprendizado: passa do piso e o ganho paga o custo? */
+export function decidir(p: number, keys: number): boolean {
+  return p >= pisoDoModo() && p * keys >= custoDoModo();
+}
+
+/** A decisão direto das evidências (com o fator opcional). */
+export function valeMostrar(x: readonly number[], keys: number, fator = 1): boolean {
+  return decidir(probAcerto(x) * fator, keys);
+}
 
 /** Analisa a linha e a posição do cursor e devolve a sugestão de texto fantasma, se houver. */
 export function predictCompletion(doc: Text, pos: number, index: DocumentIndex): GhostSuggestion | null {
@@ -140,6 +213,8 @@ interface Ranked {
   p: number;
   /** probabilidade da própria palavra digitada estar completa (modo prefixo) */
   pSelf: number;
+  /** quanto do documento entrou na mistura (0 = só o modelo do idioma) */
+  lambda: number;
 }
 
 /** Fontes de evidência: o documento aberto (peso 1) e a memória dos outros documentos (peso 0,5). */
@@ -286,14 +361,17 @@ function rank(model: LangModel, index: DocumentIndex, tokens: string[], prefix: 
       pSelf = p;
       continue; // a própria palavra completa: não há o que sugerir
     }
-    p *= preference(tokens.length ? tokens[tokens.length - 1] : SENTENCE_START, c.lc); // o que a pessoa costuma aceitar
+    // O aprendizado do uso (aceitas/recusadas) NÃO entra aqui: ele ajusta a decisão final, num
+    // intervalo curto (0,75–1,25). Antes ele multiplicava a probabilidade crua e, como a
+    // calibração foi ajustada sem ele, uma sequência de recusas derrubava P(acertar) e a sugestão
+    // sumia justamente para quem mais precisava dela.
     if (THRESHOLDS.agreement) p *= agreementFactor(tokens[tokens.length - 1], c.lc); // concordância de gênero e número
     p *= repeatPenalty(tokens, c.lc);
     if (p <= 0) continue;
     scored.push({ c, p });
   }
   scored.sort((x, y) => y.p - x.p);
-  return scored.slice(0, k).map((x) => ({ best: x.c, p: x.p, pSelf }));
+  return scored.slice(0, k).map((x) => ({ best: x.c, p: x.p, pSelf, lambda }));
 }
 
 /** Sugestão principal + alternativas (da mais para a menos provável). A primeira é a que aparece em cinza. */
@@ -338,34 +416,37 @@ function predictWithModel(model: LangModel, before: string, index: DocumentIndex
   return { texts: out, words, prev: prev0, mode: ctx.prefix !== null ? "prefix" : "next" };
 }
 
-/** Monta o texto a sugerir a partir de uma palavra escolhida (ou nada, se faltar confiança). */
+/** Monta o texto a sugerir a partir de uma palavra escolhida (ou nada, se o ganho não pagar o custo). */
 function suggestFrom(model: LangModel, index: DocumentIndex, ctx: Ctx, first: Ranked, main: boolean): string | null {
   const T = THRESHOLDS;
   const words: string[] = [];
   let tokens = ctx.tokens;
+  const prev = ctx.tokens.length ? ctx.tokens[ctx.tokens.length - 1] : SENTENCE_START;
   if (ctx.prefix !== null) {
     const n = ctx.prefix.length;
-    const need = limiar(n === 1 ? T.prefix1 : n === 2 ? T.prefix2 : T.prefix3, "prefix");
-    // a própria palavra digitada já é provável: deixa a pessoa terminar
-    if (main && (first.p < need || first.pSelf > first.p)) return null;
     let disp = first.best.display;
     if (ctx.prefix === ctx.prefix.toUpperCase() && n > 1) disp = disp.toUpperCase();
     else if (ctx.prefix[0] !== ctx.prefix[0].toLowerCase() && disp[0] === disp[0].toLowerCase() && first.best.id >= 0 && model.caps.has(first.best.id)) disp = disp[0].toUpperCase() + disp.slice(1);
     const suffix = disp.slice(n);
     if (!suffix) return null;
+    const capsMismatch = ctx.prefix[0] === ctx.prefix[0].toLowerCase() && first.best.id >= 0 && model.caps.has(first.best.id);
+    // completar palavra: a chance calibrada (é o que a régua mede e o que mais aparece)
+    const prob = probAcerto(evidencias(first.p, first.pSelf, n, first.lambda, ctx.sentenceStart, capsMismatch)) * fatorPreferencia(prev, first.best.lc);
+    if (main && !decidir(prob, suffix.length)) return null;
     words.push(suffix);
     tokens = [...tokens, first.best.lc];
-    // palavra completada com folga: pode seguir com a próxima
-    if (!main || first.p < 0.6) return suffix;
+    if (!main) return suffix;
   } else {
-    if (main && first.p < limiar(T.next, "next")) return null;
     let w = first.best.display;
     if (ctx.sentenceStart) w = w[0].toUpperCase() + w.slice(1);
+    // próxima palavra: a regra já validada (a calibração não se sustenta aqui — taxa-base baixa)
+    if (main && first.p < limiar(T.next, "next")) return null;
     words.push(w);
     tokens = [...tokens, first.best.lc];
     if (!main) return w;
   }
-  // continua enquanto houver muita certeza (frases feitas: "de acordo com o")
+  // a corrente segue o limiar já validado de 0,75 no n-grama: ela é RARA (a calibração dela exigiria
+  // muitos dados que quase não existem) e multiplicar as chances deixava a corrente impossível.
   while (words.length < T.maxWords) {
     const nx = rank(model, index, tokens, null)[0];
     if (!nx || nx.p < T.chain) break;
@@ -373,6 +454,33 @@ function suggestFrom(model: LangModel, index: DocumentIndex, ctx: Ctx, first: Ra
     tokens = [...tokens, nx.best.lc];
   }
   return ctx.prefix !== null ? words[0] + (words.length > 1 ? " " + words.slice(1).join(" ") : "") : words.join(" ");
+}
+
+/**
+ * O ponto de decisão SEM os cortes: a sugestão que apareceria e as evidências dela. É o que o
+ * `scripts/calibrar-ghost.mts` lê para ajustar `CALIB.w` e o que o avaliador usa para medir.
+ */
+export function pontoCru(before: string, index: DocumentIndex): { text: string; keys: number; x: number[]; p: number; pSelf: number; lambda: number; prefixLen: number; sentenceStart: boolean } | null {
+  const model = getLanguageModel();
+  if (!model) return null;
+  const ctx = readContext(before);
+  if (!ctx) return null;
+  const list = rank(model, index, ctx.tokens, ctx.prefix, 1);
+  if (!list.length) return null;
+  const first = list[0];
+  if (ctx.prefix !== null) {
+    const n = ctx.prefix.length;
+    let disp = first.best.display;
+    if (ctx.prefix === ctx.prefix.toUpperCase() && n > 1) disp = disp.toUpperCase();
+    else if (ctx.prefix[0] !== ctx.prefix[0].toLowerCase() && disp[0] === disp[0].toLowerCase() && first.best.id >= 0 && model.caps.has(first.best.id)) disp = disp[0].toUpperCase() + disp.slice(1);
+    const suffix = disp.slice(n);
+    if (!suffix) return null;
+    const capsMismatch = ctx.prefix[0] === ctx.prefix[0].toLowerCase() && first.best.id >= 0 && model.caps.has(first.best.id);
+    return { text: suffix, keys: suffix.length, x: evidencias(first.p, first.pSelf, n, first.lambda, ctx.sentenceStart, capsMismatch), p: first.p, pSelf: first.pSelf, lambda: first.lambda, prefixLen: n, sentenceStart: ctx.sentenceStart };
+  }
+  let w = first.best.display;
+  if (ctx.sentenceStart) w = w[0].toUpperCase() + w.slice(1);
+  return { text: w, keys: w.length + 1, x: evidencias(first.p, first.pSelf, 0, first.lambda, ctx.sentenceStart, false), p: first.p, pSelf: first.pSelf, lambda: first.lambda, prefixLen: 0, sentenceStart: ctx.sentenceStart };
 }
 
 /** Uma candidata do n-grama (com a chance dela). */

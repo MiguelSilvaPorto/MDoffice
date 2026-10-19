@@ -49,58 +49,49 @@ G.setLanguageModel(JSON.parse(readFileSync(join(raiz, "public/ngrams/pt.json"), 
   const texto = readFileSync(join(raiz, "scripts/corpus-wikipedia.txt"), "utf8");
   const paras = texto.split(/\n+/).filter((p) => p.trim().length > 30);
   const index = new G.DocumentIndex();
-  const st = { keys: 0, chars: 0, shown: 0, hit: 0, posicoes: 0 };
+  const st = { keys: 0, ganho: 0, shown: 0, hit: 0, posicoes: 0 };
+  // A régua é uma POPULAÇÃO FIXA: cada fronteira de digitação, sem "pular" o texto aceito. A
+  // simulação com salto (eval-ghost) depende das decisões do próprio modelo (a população muda
+  // quando o modelo muda) e por isso não serve para comparar versões.
   for (const para of paras) {
-    let i = 1;
-    st.keys += 1;
-    while (i < para.length) {
+    for (let i = 1; i < para.length; i++) {
+      st.keys++;
       const before = para.slice(0, i);
       const rest = para.slice(i);
-      const typedBoundary = /[A-Za-zÀ-ÿ0-9]$/.test(before) || /\s$/.test(before);
-      let accepted = false;
-      if (typedBoundary) {
-        st.posicoes++;
-        const pred = G.predictFromLine(before, "", i, index);
-        if (pred && pred.text) {
-          st.shown++;
-          // o mesmo critério do eval: a sugestão "acerta" quando as palavras dela são o que vem
-          const palavras = pred.text.trim().split(/\s+/);
-          let okn = 0;
-          let len = 0;
-          for (const w of palavras) {
-            if (rest.toLowerCase().startsWith((pred.text.slice(0, len) + w).toLowerCase())) {
-              okn++;
-              len += w.length;
-            } else break;
-          }
-          if (okn === 0 && palavras.length === 1 && rest.toLowerCase().startsWith(pred.text.trimEnd().toLowerCase())) {
-            okn = 1;
-            len = pred.text.trimEnd().length;
-          }
-          if (okn > 0) {
-            st.hit++;
-            accepted = true;
-            st.keys += okn === palavras.length ? 1 : okn;
-            i += len;
-          }
-        }
+      if (!(/[A-Za-zÀ-ÿ0-9]$/.test(before) || /\s$/.test(before))) continue;
+      st.posicoes++;
+      const pred = G.predictFromLine(before, "", i, index);
+      // a correção do que foi digitado tem teste próprio (acima) e não entra na régua
+      if (!pred?.text || pred.replace) continue;
+      st.shown++;
+      const palavras = pred.text.trim().split(/\s+/);
+      let okn = 0;
+      let len = 0;
+      for (const w of palavras) {
+        if (rest.toLowerCase().startsWith((pred.text.slice(0, len) + w).toLowerCase())) {
+          okn++;
+          len += w.length;
+        } else break;
       }
-      if (!accepted) {
-        st.keys += 1;
-        i += 1;
+      if (okn === 0 && palavras.length === 1 && rest.toLowerCase().startsWith(pred.text.trimEnd().toLowerCase())) {
+        okn = 1;
+        len = pred.text.trimEnd().length;
+      }
+      if (okn > 0) {
+        st.hit++;
+        st.ganho += Math.max(0, len - 1);
       }
     }
-    st.chars += para.length;
     index.update(para);
   }
   const precisao = (100 * st.hit) / Math.max(1, st.shown);
-  const economia = (100 * (st.chars + paras.length - st.keys)) / (st.chars + paras.length);
+  const economia = (100 * st.ganho) / Math.max(1, st.keys);
   const cobertura = (100 * st.shown) / Math.max(1, st.posicoes);
   console.log(`   mostradas: ${st.shown} em ${st.posicoes} posições (cobertura ${cobertura.toFixed(1)}%)`);
   console.log(`   precisão: ${precisao.toFixed(1)}%   economia de teclas: ${economia.toFixed(1)}%`);
-  ok("ghost: a sugestão mostrada acerta pelo menos 68% das vezes", precisao >= 68, `${precisao.toFixed(1)}%`);
-  ok("ghost: ainda economiza teclas (não é mostrar nada)", economia >= 7, `${economia.toFixed(1)}%`);
-  ok("ghost: mostra com regularidade (não é raridade)", cobertura >= 2, `${cobertura.toFixed(1)}%`);
+  ok("ghost: a sugestão mostrada acerta pelo menos 88% das vezes", precisao >= 88, `${precisao.toFixed(1)}%`);
+  ok("ghost: ainda economiza teclas (não é mostrar nada)", economia >= 18, `${economia.toFixed(1)}%`);
+  ok("ghost: mostra com regularidade (não é raridade)", cobertura >= 5, `${cobertura.toFixed(1)}%`);
 }
 
 console.log("");

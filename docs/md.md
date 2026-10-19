@@ -196,13 +196,22 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   fantasma (digitando por cima ou com `Esc`) também conta —, e o corretor reconhece **classes
   de erro** (transposição, tecla vizinha, acento, dígrafo) para acertar antes de conhecer o par
   exato. Há um **perfil do seu estilo** e um **modo de intensidade** (discreta, equilibrada,
-  agressiva).
-- **Mostra pouco e mostra certo**: a confiança mínima para a sugestão aparecer é medida em
-  `scripts/corpus-wikipedia.txt` e o `test:ghost` prende os números — a sugestão mostrada acerta
-  ~73% das vezes (antes, ~49%) economizando ~9% das teclas. Os **modos** abrem o leque: discreta
-  ~94% de acerto (quase só o óbvio), equilibrada ~73% e agressiva ~61% mostrando mais. A
-  **correção do que acabou de ser digitado** ("noçao" → "noção") vem antes de qualquer previsão e
-  não depende desses limiares.
+  agressiva). O aprendizado mexe **no máximo ±25%** na decisão: antes ele multiplicava a
+  probabilidade e uma sequência de recusas fazia a sugestão sumir justamente para quem digita mais.
+- **A decisão é calibrada, não um limiar fixo**: completar palavra mostra quando a **chance de
+  acertar** (uma regressão logística ajustada em `scripts/calibrar-ghost.mts` sobre o n-grama, as
+  letras já digitadas, o documento e a concordância) é alta **e** o ganho esperado (teclas
+  poupadas × chance) paga o custo de uma sugestão errada. O resultado é medido em
+  `scripts/corpus-wikipedia.txt`: a sugestão mostrada acerta **~93%** das vezes e economiza
+  **~20%** das teclas — o `test:ghost` prende os números. A **próxima palavra** e a corrente de
+  palavras seguem a regra já validada no avaliador (a calibração não se sustenta lá: a taxa-base
+  é baixa e o texto de ajuste não cobre o assunto do documento). Os **modos** abrem o leque
+  (discreta exige mais certeza; agressiva, menos) e a sugestão aparece em **45 ms** parado — a
+  previsão custa menos de 1 ms, então ela acompanha a digitação em vez de só aparecer nas pausas.
+  A **correção do que acabou de ser digitado** ("noçao" → "noção") vem antes de qualquer previsão.
+- **O ajuste é reproduzível**: `npx tsx scripts/calibrar-ghost.mts [treino] [validação] --fluxo`
+  refaz os pesos e mostra a fronteira precisão × cobertura × economia; o `eval-ghost` mede a
+  simulação de digitação (com `GHOST_C`/`GHOST_P` para varrer a decisão).
 
 ## Revisão inteligente e IA local
 

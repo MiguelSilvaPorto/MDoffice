@@ -13890,3 +13890,59 @@ antigas quando fizer sentido.
   mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que ainda não
   entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
   promoções anteriores.
+
+## src/broker/ghost/predict.ts
+
+### 2026-10-19 · sugestão · a decisão calibrada (chance × ganho)
+
+- **Local:** `CALIB`, `evidencias`, `probAcerto`, `decidir`, `valeMostrar`, `fatorPreferencia`,
+  `pontoCru` (novo), `suggestFrom` e o `rank` (que deixou de aplicar o aprendizado do uso).
+- **Linha:** `if (main && (first.p < need || first.pSelf > first.p)) return null;` e
+  `if (main && first.p < limiar(T.next, "next")) return null;` → no prefixo,
+  `decidir(probAcerto(evidencias(…)) × fator, sufixo.length)`, que é
+  `P(acertar) ≥ pisoDoModo()` **e** `P × teclas ≥ custoDoModo()`; a **próxima palavra** e a
+  **corrente** (`nx.p < T.chain`, 0,75) ficaram como estavam. O `p *= preference(prev, lc)` saiu do
+  `rank` e virou `fatorPreferencia` (±25%) na decisão.
+- **Porquê:** o relato ("a sugestão está muito lenta… sugere uma ou duas palavras a cada 12
+  palavras"; "toda vez que tento arrumar fica pior") — o limiar comparava a probabilidade
+  normalizada entre candidatas, que **não é** a chance de acertar; por isso cada ajuste trocava
+  precisão por cobertura. Medido: a calibração no fluxo de digitação dá AUC ~0,71; no ponto
+  escolhido (equilibrada: piso 0,38, custo 1,4) a régua fixa do `test:ghost` fica em **92,7% de
+  precisão** (era 85,7%), **20,2% de economia** (era 20,9%) e 5,2% de cobertura — e a simulação de
+  digitação (`eval-ghost`) fica em ~70% de acerto / ~12% de economia (a população dela depende do
+  próprio modelo, por isso a régua do teste é fixa). A calibração **não** foi usada na próxima
+  palavra e na corrente: ali a taxa-base é baixa e o texto de ajuste não cobre o assunto do
+  documento — a regra antiga, medida no avaliador, continua melhor. O aprendizado do uso agora só
+  **inclina** a decisão (±25%): antes ele multiplicava a probabilidade e, como a calibração foi
+  ajustada sem ele, uma sequência de recusas derrubava P(acertar) — a sugestão sumia justamente
+  para quem digita mais (a "raridade" do relato).
+- **Onde ajustar:** `scripts/calibrar-ghost.mts` (novo) refaz os pesos no fluxo e mostra a
+  fronteira; `eval-ghost` ganhou `GHOST_C` (custo) e `GHOST_P` (piso) para varrer a decisão.
+
+## src/broker/ghost/extension.ts
+
+### 2026-10-19 · sugestão · a espera cai de 90 ms para 45 ms
+
+- **Local:** o `setTimeout` do `update` (o debounce da previsão).
+- **Linha:** `}, 90);` → `}, 45);`, com o comentário do porquê.
+- **Porquê:** a previsão custa ~0,4 ms (medido no `testar-ghost`: 3711 posições em ~1,2 s), então
+  a espera de 90 ms é o que separa a tecla da sugestão. Digitando rápido, cada tecla reiniciava o
+  relógio e a sugestão só aparecia nas pausas ("a cada 12 palavras"); com 45 ms ela acompanha a
+  digitação.
+
+## scripts/testar-ghost.mjs · scripts/eval-ghost.mts · scripts/calibrar-ghost.mts
+
+### 2026-10-19 · sugestão · a régua fixa e a ferramenta de calibração
+
+- **Local:** a seção "a régua (precisão e economia)" do teste; o cabeçalho do `eval-ghost`; o
+  script novo `calibrar-ghost.mts`.
+- **Linha:** a simulação que **avança o texto quando aceita** (`i += len`) → uma população FIXA
+  (cada fronteira, sem pular; a correção do digitado sai da régua e fica no teste dela); as barras
+  passam a 88% de precisão, 18% de economia e 5% de cobertura; o `eval-ghost` ganhou `GHOST_C` e
+  `GHOST_P`; o `calibrar-ghost` ajusta a logística (features padronizadas, L2), converte os pesos
+  para o espaço cru e mede a fronteira.
+- **Porquê:** a simulação com salto depende das decisões do próprio modelo (a população muda
+  quando o modelo muda), então não serve para comparar versões — com a régua fixa, a mesma versão
+  medida antes e depois dá números comparáveis. A ferramenta de calibração é o que torna a decisão
+  **reproduzível**: o `CALIB.w` do código sai dela, e o texto de treino/validação pode ser trocado
+  sem mexer no app.

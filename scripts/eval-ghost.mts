@@ -4,11 +4,14 @@
 //   GHOST_MODEL=public/ngrams/pt.json  liga o modelo de idioma (sem ele, mede o plano B)
 //   NO_LEARN=1  não aprende com o próprio texto (documento novo)   ALT=1  conta as alternativas (Alt+Seta)
 //   GHOST_T / GHOST_MIX  JSON para testar outros limiares/pesos   SHOW_MISSES=1  mostra exemplos de erro
+//   GHOST_C (custo do erro) e GHOST_P (piso de P(acertar))  ajustam a decisão calibrada
 import fs from "node:fs";
 import { DocumentIndex } from "../src/broker/ghost/documentIndex.ts";
-import { predictFromLine, THRESHOLDS, MIX } from "../src/broker/ghost/predict.ts";
+import { predictFromLine, THRESHOLDS, MIX, CALIB } from "../src/broker/ghost/predict.ts";
 if (process.env.GHOST_T) Object.assign(THRESHOLDS, JSON.parse(process.env.GHOST_T));
 if (process.env.GHOST_MIX) Object.assign(MIX, JSON.parse(process.env.GHOST_MIX));
+if (process.env.GHOST_C) for (const k of Object.keys(CALIB.custo)) CALIB.custo[k] = +process.env.GHOST_C;
+if (process.env.GHOST_P) for (const k of Object.keys(CALIB.pMin)) CALIB.pMin[k] = +process.env.GHOST_P;
 
 const file = process.argv[2];
 const maxChars = +(process.argv[3] ?? 60000);
