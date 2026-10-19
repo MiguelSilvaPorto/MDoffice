@@ -13995,3 +13995,14 @@ antigas quando fizer sentido.
   preservando o que já estava) — sem caixa escolhida, ele **cria a própria caixa** e cola"
 - **Porquê:** a bala falava só de copiar/colar **formas**; o colar de texto tem regra própria e era
   o que o usuário procurava.
+
+## CHANGELOG.md
+
+### 2026-10-19 · promoção · a entrada do colar texto na caixa entra no "Adicionado" (PowerPoint)
+- **Local:** PowerPoint ▸ **Não adicionado** ▸ Frontend ▸ **Adicionado** ▸ Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **Colar texto entra na caixa escolhida (ou cria a
+  própria caixa)** (`e21409f`, worktree `feat/colar-texto-na-caixa`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não sai no
+  mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
+  entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
+  promoções anteriores.
