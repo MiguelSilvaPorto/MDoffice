@@ -173,7 +173,23 @@ export function analisar(slide: Slide): Conteudo {
     }
   }
 
-  return { titulo, grupos, rodape, paineis };
+  // ---- painel de fundo de UM grupo (o cartão do rodapé, por exemplo) anda com ele: senão o texto
+  // muda de lugar e o fundo fica para trás
+  const todosGrupos = [...(titulo ? [titulo] : []), ...grupos, ...(rodape ? [rodape] : [])];
+  const presosDePainel = new Set<string>();
+  for (const p of paineis) {
+    if (usados.has(p.id)) continue;
+    const dentro = textos.filter((t) => contem(p.box, t.box));
+    if (!dentro.length) continue;
+    const dono = todosGrupos.find((g) => dentro.every((t) => g.ids.includes(t.id)));
+    if (dono) {
+      dono.presos.push(p.id);
+      usados.add(p.id);
+      presosDePainel.add(p.id);
+    }
+  }
+
+  return { titulo, grupos, rodape, paineis: paineis.filter((p) => !presosDePainel.has(p.id)) };
 }
 
 /** Colunas naturais: duas formas estão na mesma coluna quando se sobrepõem no eixo X. */
@@ -407,6 +423,10 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
     conteudo?: Shape[];
     /** ou blocos inteiros só movidos/escalados */
     colocacoes?: Colocacao[];
+    /** o padrão já posicionou o título (não colocar de novo no fim) */
+    tituloProprio?: boolean;
+    /** o fundo do padrão é escuro (rodapé e textos do título precisam ser claros) */
+    fundoEscuro?: boolean;
   }
 
   const n = c.grupos.length;
@@ -415,12 +435,17 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
   // nunca apagada (e o véu branco por cima garante o contraste do texto)
   // A imagem de FUNDO tem texto por cima (é decoração: pode ser coberta). A imagem de CONTEÚDO
   // (print, foto) não tem texto por cima — essa não pode ser coberta nem sumir.
+  const presosDeGrupo = new Set([
+    ...(c.titulo?.presos ?? []),
+    ...c.grupos.flatMap((g) => g.presos),
+    ...(c.rodape?.presos ?? []),
+  ]);
   const textosDa = slide.shapes.filter((s) => temTexto(s) && s.kind !== "imagem");
   const temTextoEm = (p: Shape): boolean => textosDa.some((t) => contem(p.box, t.box));
   // arte de canto (a tarja verde do deck) não é "imagem de conteúdo"
   const ehCanto = (p: Shape): boolean =>
     (p.box.x >= 68 && p.box.y <= 4) || (p.box.x >= 68 && p.box.y + p.box.h >= 96) || (p.box.x <= 4 && p.box.y + p.box.h >= 96) || (p.box.x <= 4 && p.box.y <= 4);
-  const imagemDeConteudo = (p: Shape): boolean => area(p.box) >= 300 && !temTextoEm(p) && !ehCanto(p);
+  const imagemDeConteudo = (p: Shape): boolean => area(p.box) >= 300 && !temTextoEm(p) && !ehCanto(p) && !presosDeGrupo.has(p.id);
   const painelDe = (g: Grupo): Shape | undefined =>
     c.paineis.find((p) => imagemDeConteudo(p) && !contem(p.box, g.box) && sobreposicao(p.box, g.box) > 0.2);
   const paineisUsados = new Set<Shape>();
@@ -452,7 +477,8 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
     const ctx = contexto();
     const fc = fonteCss(fonte || "sans-serif", negrito);
     if (ctx) ctx.font = `${fc.peso} ${tamanho}px ${fc.stack}`;
-    const porLinha = Math.max(6, Math.floor(larguraPt / (tamanho * 0.62)));
+    // a bancada não tem canvas: usa uma média de largura de caractere mais conservadora
+    const porLinha = Math.max(6, Math.floor(larguraPt / (tamanho * 0.58)));
     let total = 0;
     for (const bloco of texto.split("\n")) {
       if (!bloco.trim()) {
@@ -498,7 +524,7 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
       const fonte = p.runs[0]?.font || s.fontFamily || "sans-serif";
       const linhas = linhasDe(texto, tamanho, Math.max(12, larguraPt - marL), fonte, negrito);
       // a mesma razão de linha que o renderizador usa (medida na fonte de verdade)
-      total += linhas * tamanho * razaoDeLinha(fonte, negrito) * (p.lnSpc?.pct ?? 1) + (p.spcBef ?? 0) + (p.spcAft ?? 0);
+      total += linhas * tamanho * Math.max(1.3, razaoDeLinha(fonte, negrito)) * (p.lnSpc?.pct ?? 1) + (p.spcBef ?? 0) + (p.spcAft ?? 0);
     }
     return (total * 1.05 * 100) / 540;
   }
@@ -551,6 +577,8 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
     return {
       ...l.forma,
       box,
+      // a caixa nova precisa quebrar linha: o texto do .pptx pode vir com "não quebrar"
+      wrap: true,
       fontSize: tamanho,
       color: cor ?? l.forma.color,
       paras: (l.forma.paras ?? []).map((p) => ({
@@ -660,7 +688,7 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
         y += alturas[i] + VAO;
       }
     });
-    return { fundos, conteudo };
+    return { fundos, conteudo, tituloProprio: true };
   };
 
   // ---- faixas re-tipografadas: cada grupo numa faixa larga, texto grande
@@ -699,7 +727,7 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
       }
       y += h + vao;
     });
-    return { fundos, conteudo };
+    return { fundos, conteudo, tituloProprio: true };
   };
 
   /** O grupo tem cabeçalho em texto claro (branco, desenhado para a faixa colorida antiga)? */
@@ -886,7 +914,7 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
       conteudo.push(reescrever({ forma: b.s, texto: txt(b.s), negrito: b.s.bold, icones: [] }, { x: MARGEM + 1, y: yy, w: largura, h }, b.tamanho, "FFFFFF"));
       yy += h + 1.1;
     }
-    return { fundos, conteudo };
+    return { fundos, conteudo, tituloProprio: true, fundoEscuro: true };
   };
 
   // -------------------------------------------------------------------------
@@ -1059,7 +1087,7 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
       conteudo.push(reescrever({ forma: b.s, texto: txt(b.s), negrito: b.s.bold, icones: [] }, { x, y, w: largura, h }, b.tamanho, tom.texto));
       y += h + 1.1;
     }
-    return { fundos, conteudo };
+    return { fundos, conteudo, tituloProprio: true };
   };
   const artes: ArteId[] = ["ondas", "facetas", "mosaico", "orbes"];
   const comArte = false;
@@ -1080,7 +1108,7 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
   {
     const caixasNovas = [...desenho.fundos, ...(desenho.conteudo ?? [])].map((s) => s.box);
     for (const s of slide.shapes) {
-      if (!c.paineis.includes(s) || paineisUsados.has(s) || !imagemDeConteudo(s)) continue;
+      if (!c.paineis.includes(s) || paineisUsados.has(s) || !imagemDeConteudo(s) || presosDeGrupo.has(s.id)) continue;
       if (caixasNovas.some((b) => sobreposicao(b, s.box) > 0.02)) return slide;
     }
   }
@@ -1093,12 +1121,12 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
     muted: misturar(p.acento, "FFFFFF", 0.62),
   };
   const formasArte: Shape[] = comArte ? formasDeArte(artes[semente % artes.length], semente, "conteudo", paletaArte, ratio) : [];
-  const corDoTexto = comArte ? "FFFFFF" : undefined;
+  const corDoTexto = desenho.fundoEscuro ? "FFFFFF" : undefined;
   const novos: Shape[] = [];
   novos.push(...formasArte);
   for (const s of slide.shapes) if (s.fixa) novos.push(s);
   // imagem que não virou cartão continua na lâmina (nada de mídia ou imagem apagada)
-  for (const s of slide.shapes) if (c.paineis.includes(s) && !paineisUsados.has(s)) novos.push(s);
+  for (const s of slide.shapes) if (c.paineis.includes(s) && !paineisUsados.has(s) && !presosDeGrupo.has(s.id)) novos.push(s);
   novos.push(...desenho.fundos);
 
   const tituloDestino = c.titulo ? { x: MARGEM, y: MARGEM, w: c.titulo.box.w * escalaTitulo, h: alturaTitulo } : null;
@@ -1122,7 +1150,7 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
   // conteúdo
   if (desenho.conteudo) novos.push(...desenho.conteudo);
   else for (const col of desenho.colocacoes ?? []) aplicarGrupo(slide, col.g, col.destino, col.escala, novos);
-  if (tituloDestino && c.titulo) aplicarGrupo(slide, c.titulo, tituloDestino, escalaTitulo, novos, corDoTexto);
+  if (tituloDestino && c.titulo && !desenho.tituloProprio) aplicarGrupo(slide, c.titulo, tituloDestino, escalaTitulo, novos, corDoTexto);
   if (rodapeDestino && c.rodape) aplicarGrupo(slide, c.rodape, rodapeDestino, escalaRodape, novos, corDoTexto);
 
   return { ...slide, shapes: novos, bg: comArte ? { kind: "solid", color: paletaArte.bg } : slide.bg };
