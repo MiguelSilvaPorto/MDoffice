@@ -392,6 +392,7 @@ function acentoMaisUsado(palavra: string, anterior?: string): string | null {
   const vantagem = aqui >= USO_RARO ? VANTAGEM_RARA : VANTAGEM;
   let melhor: string | null = null;
   let melhorUso = 0;
+  let segundoUso = 0;
   for (let i = 0; i < lower.length; i++) {
     for (const alt of ACENTOS[lower[i]] ?? []) {
       const forma = lower.slice(0, i) + alt + lower.slice(i + 1);
@@ -400,12 +401,18 @@ function acentoMaisUsado(palavra: string, anterior?: string): string | null {
       if (uso < PISO_ACENTO) continue;
       if (uso < vantagem * Math.max(aqui, 1)) continue;
       if (uso > melhorUso) {
+        segundoUso = melhorUso;
         melhor = forma;
         melhorUso = uso;
+      } else if (uso > segundoUso) {
+        segundoUso = uso;
       }
     }
   }
   if (melhor) {
+    // Duas formas acentuadas comuns ("avó"/"avô", "bebê"/"bebé"): quem decide é o
+    // sentido (ou o gênero), e a frase pode não dizer — não escolhe por frequência.
+    if (segundoUso >= melhorUso * 0.2) return null;
     // Depois de "tinha/havia/tem…" a palavra é particípio ("tinha valido"), não
     // adjetivo ("válido"): o acento mudaria a classe e o sentido.
     if (anterior && AUXILIARES.has(anterior.toLowerCase())) return null;
