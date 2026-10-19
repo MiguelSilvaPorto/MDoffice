@@ -37,7 +37,12 @@ avisado ao abrir (nunca some em silêncio).
   ponto quem atende é a alça da forma), **agrupar/desagrupar**, ordem (frente/trás), alinhar,
   distribuir, copiar/colar, duplicar e desfazer/refazer. **Colar texto** de outro programa põe o
   texto **dentro da caixa escolhida** (no fim do texto dela, preservando o que já estava) — sem
-  caixa escolhida, ele **cria a própria caixa** e cola o conteúdo. Com as formas **empilhadas** (um avatar em
+  caixa escolhida, ele **cria a própria caixa** e cola o conteúdo. O **Copiar** põe na área de
+  transferência do sistema **a imagem em PNG** (quando a escolha é uma imagem, como no PowerPoint —
+  colar em outro app dá o desenho) e o **formato interno** (o que o colar daqui usa, com id e
+  estilo); `text/plain` leva só o **texto** das caixas de texto — o JSON interno **nunca** é colado
+  como texto (o relato com print mostrava o `mdc-formas:[…]` colado fora do app). Com as formas
+  **empilhadas** (um avatar em
   cima do cartão, os textos por cima do fundo…), o clique pega a de cima: o **clique direito na
   forma** traz **"Selecionar tudo neste ponto"** (com a contagem — "Selecionar tudo neste ponto
   (3)"), que pega a pilha inteira de uma vez, cada forma com o grupo dela; dali para trás é só

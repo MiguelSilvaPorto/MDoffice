@@ -446,6 +446,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Copiar uma imagem cola a imagem (não o JSON interno como texto)**: o `Copiar` gravava o
+  `mdc-formas:[…]` (o formato interno) como **text/plain** na área de transferência do sistema —
+  colar num outro app dava aquele texto gigante (print do usuário). Agora a área de transferência
+  leva, como no PowerPoint: a **imagem em PNG** (quando a escolha é uma imagem — JPEG/WebP passam
+  por um canvas e saem PNG) e o formato interno num **tipo próprio** (`web text/x-mdc-formas`), que
+  só o colar do app lê; `text/plain` fica com o **texto** das caixas de texto (nunca o JSON). O
+  colar lê o formato interno **antes** dos arquivos (copiar uma imagem daqui e colar daqui cola a
+  **forma**, com id e estilo) e mantém o caminho dos arquivos para imagens de fora. Teste:
+  `npm run test:layout` (3 checagens).
 - **Organograma real: a hierarquia lê conectores de traço, apaga os antigos em todo arranjo e a Arrumação tem mais estilos** — o organograma importado usa conectores de traço (reta e cotovelo, com o ramo da SAP azul), que o detector não enxergava: a hierarquia não era oferecida e os conectores ficavam soltos no meio do slide depois do Fluxo. Agora a hierarquia lê os conectores pelas duas pontas (com o espelhamento do cotovelo), mantém a cor de cada ramo, e **todos** os arranjos os apagam. O Fluxo ganhou estilos (em linhas e em 2, 3 ou 4 colunas), a Arrumação mostra todos os estilos distintos de uma vez (sem o "Gerar mais", que repetia os mesmos cartões) e a região da hierarquia é escolhida pela posição real dos cartões, não pelo retângulo.
 
 - **Composição ▸ Arrumação: o arranjo aparece no palco ao clicar** — o cartão alterava a lâmina na memória mas não repintava o palco, então o resultado só aparecia ao trocar de slide e voltar (os outros comandos da Composição já repintavam). Teste novo confere que os quatro comandos que mudam a lâmina chamam o repintar.

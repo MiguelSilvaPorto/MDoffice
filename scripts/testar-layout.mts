@@ -3027,5 +3027,31 @@ console.log("\nPowerPoint: animação vai para toda a seleção (e a exportaçã
   );
 }
 
+// O copiar/colar do PowerPoint: a IMAGEM vai em PNG para outros apps (como no PowerPoint) e o
+// formato interno vai num tipo próprio — o JSON nunca mais cai no text/plain (print do usuário).
+{
+  const ppt = ler("src/powerpoint/powerpoint.ts");
+  checa(
+    "copiar põe a imagem em PNG e o formato interno num tipo próprio (sem o JSON em text/plain)",
+    /"web text\/x-mdc-formas": new Blob/.test(ppt) &&
+      /itens\["image\/png"\] = png/.test(ppt) &&
+      /private async pngDaImagemCopiavel\(\): Promise<Blob \| null>/.test(ppt) &&
+      !/writeText\(`mdc-formas:\$\{JSON\.stringify/.test(ppt),
+    "o copiar voltaria a vazar o JSON como texto na área de transferência"
+  );
+  checa(
+    "colar lê o formato interno ANTES dos arquivos (cópia daqui cola a FORMA, não o PNG)",
+    /const interno = dt\.getData\("web text\/x-mdc-formas"\)/.test(ppt) &&
+      /const json = interno \|\| \(texto\.startsWith\("mdc-formas:"\)/.test(ppt) &&
+      /if \(json\) \{/.test(ppt),
+    "colar uma cópia daqui inseriria o PNG em vez da forma (e perderia id/estilo)"
+  );
+  checa(
+    "copiar de texto oferece o TEXTO no text/plain (nunca o JSON)",
+    /"text\/plain": new Blob\(\[texto\]/.test(ppt),
+    "colar um texto num editor daria nada (ou o JSON)"
+  );
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

@@ -79,7 +79,7 @@ import { alturaDaLinha, ajustarAoTamanho, alinharVerticalmente, aplicarPreset, b
 import { NotesPanel } from "./notes";
 import { deckFromMarkdown } from "./markdown";
 import { openDeckView } from "./presenter";
-import { aoCarregarFontes, fundoValor, htmlFormaRica, parasComEstilo, parasComTexto, registrarFontes, type CtxRender } from "./render/forma";
+import { aoCarregarFontes, fundoValor, htmlFormaRica, parasComEstilo, parasComTexto, registrarFontes, urlDaMidia, type CtxRender } from "./render/forma";
 import { shapeText } from "./shapes";
 import { clampIndex, duplicateSlide, moveSlide, removeSlide, replaceSlide, resetSlide, setLayout } from "./slides";
 import { Stage, passoZoom, type CelulasSel, type Ferramenta } from "./stage";
@@ -4149,18 +4149,67 @@ export class PowerPointHost {
     if (!p.fixo) this.run("ferramenta", "");
   }
 
+  /** O que vai para a área de transferência ao copiar:
+   * - o formato INTERNO num tipo próprio (`web text/x-mdc-formas`) — é o que o colar daqui lê;
+   * - a IMAGEM em PNG quando a escolha é uma imagem (outros apps colam o desenho, como no
+   *   PowerPoint — antes colavam o JSON interno como texto, o relato com print);
+   * - `text/plain` = o texto das formas de TEXTO (nunca o JSON: colar num editor de texto tem de
+   *   dar o texto, e num app sem suporte, nada).
+   */
   private copiar(): void {
+    void this.copiarParaAreaDeTransferencia();
+  }
+
+  private async copiarParaAreaDeTransferencia(): Promise<void> {
     const ids = comGrupos(this.atual(), this.selecao);
     const formas = this.atual().shapes.filter((s) => ids.includes(s.id));
     if (!formas.length) return;
     areaDeTransferencia = formas.map((s) => JSON.parse(JSON.stringify(s)) as Shape);
-    // também no sistema, para colar em outra janela do app
+    const texto = formas
+      .filter((s) => s.kind === "texto" && s.text)
+      .map((s) => s.text)
+      .join("\n\n");
     try {
-      void navigator.clipboard?.writeText(`mdc-formas:${JSON.stringify(areaDeTransferencia)}`);
+      const itens: Record<string, Blob> = {
+        "web text/x-mdc-formas": new Blob([JSON.stringify(areaDeTransferencia)], { type: "text/plain" }),
+        "text/plain": new Blob([texto], { type: "text/plain" }),
+      };
+      const png = await this.pngDaImagemCopiavel();
+      if (png) itens["image/png"] = png;
+      await navigator.clipboard.write([new ClipboardItem(itens)]);
     } catch {
-      /* sem acesso à área de transferência */
+      // sem a área de transferência rica: o colar daqui continua pelo `areaDeTransferencia`; e o
+      // texto (nunca o JSON) é o que dá para oferecer
+      try {
+        await navigator.clipboard?.writeText(texto);
+      } catch {
+        /* sem acesso à área de transferência */
+      }
     }
     this.atualizarUI();
+  }
+
+  /** O PNG da imagem escolhida (só quando a seleção é UMA imagem): é o que outros apps colam. */
+  private async pngDaImagemCopiavel(): Promise<Blob | null> {
+    const formas = this.atual().shapes.filter((s) => this.selecao.includes(s.id));
+    if (formas.length !== 1 || formas[0].kind !== "imagem" || !formas[0].src) return null;
+    const src = urlDaMidia(formas[0].src, this.setup.media ?? {});
+    if (!src) return null;
+    try {
+      const blob = await (await fetch(src)).blob();
+      if (blob.type === "image/png") return blob;
+      // JPEG/WebP/etc.: redesenha num canvas e devolve PNG (o único tipo que a área de
+      // transferência aceita de forma universal)
+      const bmp = await createImageBitmap(blob);
+      const cv = document.createElement("canvas");
+      cv.width = bmp.width;
+      cv.height = bmp.height;
+      cv.getContext("2d")?.drawImage(bmp, 0, 0);
+      bmp.close?.();
+      return await new Promise<Blob | null>((ok) => cv.toBlob((b) => ok(b), "image/png"));
+    } catch {
+      return null;
+    }
   }
 
   private colar(): void {
@@ -4179,16 +4228,15 @@ export class PowerPointHost {
     if (alvo && (alvo.closest("textarea, input, select") || (alvo.isContentEditable && this.editando))) return;
     const dt = e.clipboardData;
     if (!dt) return;
-    const img = Array.from(dt.files).find((f) => f.type.startsWith("image/"));
-    if (img) {
-      e.preventDefault();
-      void this.lerArquivoDeImagem(img).then((src) => this.insertImage(src));
-      return;
-    }
+    // o formato INTERNO vem primeiro: copiar uma imagem daqui e colar daqui tem de colar a FORMA
+    // (com id e estilo), e não inserir o PNG que também acompanha a cópia (o caminho dos arquivos
+    // fica para as imagens que vêm DE FORA)
     const texto = dt.getData("text/plain");
-    if (texto.startsWith("mdc-formas:")) {
+    const interno = dt.getData("web text/x-mdc-formas") || dt.getData("text/x-mdc-formas");
+    const json = interno || (texto.startsWith("mdc-formas:") ? texto.slice(11) : "");
+    if (json) {
       try {
-        const formas = JSON.parse(texto.slice(11)) as Shape[];
+        const formas = JSON.parse(json) as Shape[];
         if (Array.isArray(formas) && formas.length) {
           e.preventDefault();
           areaDeTransferencia = formas;
@@ -4198,6 +4246,12 @@ export class PowerPointHost {
       } catch {
         /* texto comum */
       }
+    }
+    const img = Array.from(dt.files).find((f) => f.type.startsWith("image/"));
+    if (img) {
+      e.preventDefault();
+      void this.lerArquivoDeImagem(img).then((src) => this.insertImage(src));
+      return;
     }
     if (texto.trim()) {
       // texto solto vai para a CAIXA ESCOLHIDA, no fim do texto dela (pedido: o texto da área de

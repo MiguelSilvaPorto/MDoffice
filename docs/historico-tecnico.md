@@ -14006,3 +14006,35 @@ antigas quando fizer sentido.
   mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
   entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
   promoções anteriores.
+### 2026-10-19 · copiar uma imagem · PNG na área de transferência, JSON em tipo próprio
+- **Local:** `copiar` (virou um invólucro de `copiarParaAreaDeTransferencia`), `pngDaImagemCopiavel`
+  (nova) e o começo do `aoColarDoSistema`
+- **Linha:** `void navigator.clipboard?.writeText(\`mdc-formas:${JSON.stringify(...)}\`)` → um
+  `ClipboardItem` com `web text/x-mdc-formas` (o interno), `text/plain` (só o texto das caixas de
+  texto) e, quando a escolha é UMA imagem, `image/png` (o PNG ou, se a origem for JPEG/WebP, o
+  redesenho num canvas) · no colar, o formato interno é lido **antes** de `dt.files` (com o
+  `mdc-formas:` antigo ainda aceito)
+- **Porquê:** o usuário (print) copiou uma imagem colada na apresentação e, ao colar em outro local,
+  veio o JSON interno como texto — porque o `text/plain` era o JSON. O PowerPoint põe a IMAGEM na
+  área de transferência; agora o app faz o mesmo e o formato interno vive num tipo que só ele lê
+  (o `text/plain` fica com o texto — colar num editor dá o texto, e num app sem suporte, nada). O
+  PNG vem da própria mídia (`urlDaMidia` + fetch), sem rasterizar a lâmina: a imagem é o desenho que
+  o usuário quer. No colar, ler o interno primeiro evita o efeito colateral de o `image/png` também
+  estar na área de transferência (colar uma cópia daqui dentro do app tem de colar a FORMA, com id
+  e estilo, e não inserir o PNG).
+
+## scripts/testar-layout.mts
+
+### 2026-10-19 · copiar uma imagem · as três checagens da área de transferência
+- **Local:** o fim do arquivo (um bloco novo antes do resumo)
+- **Linha:** `+` três checagens: o copiar grava o interno no tipo próprio + o PNG + **não** usa mais
+  `writeText("mdc-formas:…")`; o colar lê o interno antes dos arquivos; o `text/plain` leva o texto
+- **Porquê:** o defeito era o formato do que ia para o sistema — invisível nos testes do motor; as
+  checagens prendem as três pontas (interno, imagem e texto) para o JSON não voltar a vazar.
+
+## docs/powerpoint.md
+
+### 2026-10-19 · copiar uma imagem · a bala do copiar/colar
+- **Local:** a seção das ferramentas da lâmina (edição, "copiar/colar")
+- **Linha:** `+` a frase do PNG + formato interno + `text/plain` só com texto
+- **Porquê:** a bala só dizia "copiar/colar" — agora diz o que vai para a área de transferência.
