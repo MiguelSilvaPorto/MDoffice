@@ -2635,6 +2635,19 @@ console.log("\nPowerPoint: o seletor de cores aplica ao escolher (sem o OK)");
   );
 }
 
+console.log("\nPowerPoint: colar texto entra na caixa escolhida (ou cria a própria)");
+
+{
+  const ppt = ler("src/powerpoint/powerpoint.ts");
+  checa(
+    "colar texto usa a caixa escolhida — e cria uma caixa quando não há seleção",
+    /private aoColarDoSistema\([\s\S]{0,3000}const caixaAlvo = escolhida && !escolhida\.tabela \? escolhida : null/.test(ppt) &&
+      /const atual = textoDosParas\(caixaAlvo\.paras \?\? \[\]\)/.test(ppt) &&
+      /const caixa = novaCaixaDeTexto\(caixaCentrada\(50, 50, Math\.min\(d\.w \* 0\.6, 420\), 60, d\), this\.estilo\(\)\)/.test(ppt),
+    "o texto colado virava uma caixa nova mesmo com uma caixa escolhida"
+  );
+}
+
 console.log("\naba Desenhar: as ferramentas de traço num lugar só");
 {
   const fita = ler("src/powerpoint/ui/fita.ts");

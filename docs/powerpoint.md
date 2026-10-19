@@ -35,7 +35,9 @@ avisado ao abrir (nunca some em silêncio).
   arrastar uma delas redimensiona **só aquela forma**, sem desfazer a seleção; o quadro do grupo
   segue com as 8 para redimensionar todas de uma vez, e no canto em que as duas caem no mesmo
   ponto quem atende é a alça da forma), **agrupar/desagrupar**, ordem (frente/trás), alinhar,
-  distribuir, copiar/colar, duplicar e desfazer/refazer. Com as formas **empilhadas** (um avatar em
+  distribuir, copiar/colar, duplicar e desfazer/refazer. **Colar texto** de outro programa põe o
+  texto **dentro da caixa escolhida** (no fim do texto dela, preservando o que já estava) — sem
+  caixa escolhida, ele **cria a própria caixa** e cola o conteúdo. Com as formas **empilhadas** (um avatar em
   cima do cartão, os textos por cima do fundo…), o clique pega a de cima: o **clique direito na
   forma** traz **"Selecionar tudo neste ponto"** (com a contagem — "Selecionar tudo neste ponto
   (3)"), que pega a pilha inteira de uma vez, cada forma com o grupo dela; dali para trás é só

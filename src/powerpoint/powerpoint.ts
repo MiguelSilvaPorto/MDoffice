@@ -49,7 +49,7 @@ import {
   type ModoAlinhar,
 } from "./edicao/operacoes";
 import { lerSelecao, restaurarSelecao, textoDaCaixa } from "./edicao/selecaoDom";
-import { alternarMarcador, estadoDoTrecho, estiloDosParas, estiloNoIntervalo, limparEstiloNoIntervalo, mudarCaixaTexto, mudarRecuo, mudarTamanhoRelativo, parasDaSelecao, type EstiloRun, type RunPatch, type TipoCaixa } from "./edicao/texto";
+import { alternarMarcador, estadoDoTrecho, estiloDosParas, estiloNoIntervalo, limparEstiloNoIntervalo, mudarCaixaTexto, mudarRecuo, mudarTamanhoRelativo, parasDaSelecao, textoDosParas, type EstiloRun, type RunPatch, type TipoCaixa } from "./edicao/texto";
 import { comTransicao, direcaoDe, duracaoDe, normalizarTransicao, ROTULOS_DIRECAO } from "./edicao/transicao";
 import { comAnimacao, comAtraso, comDirecao, comDuracao, comInicio, comPorParagrafo, moverAnimacao, normalizarAnimacoes, paragrafosDe, podarAnimacoes, semAnimacao, suave, TIPOS_ANIMACAO, aceitaDirecaoAnimacao, atrasoDe, direcaoDeAnimacao, duracaoDeAnimacao, inicioDe, formatarDuracao, ROTULOS_ANIMACAO, ROTULOS_INICIO } from "./edicao/animacao";
 import { iniciarAnimacoes, type ControleAnimacoes } from "./render/animacao";
@@ -4200,8 +4200,27 @@ export class PowerPointHost {
       }
     }
     if (texto.trim()) {
-      // texto solto vira uma caixa de texto
+      // texto solto vai para a CAIXA ESCOLHIDA, no fim do texto dela (pedido: o texto da área de
+      // transferência entra dentro de uma caixa; sem caixa escolhida, ele cria a própria caixa e
+      // cola). O "digitado" é aplicado sobre os parágrafos, então o que já estava fica como está.
       e.preventDefault();
+      const escolhida = this.principal();
+      const caixaAlvo = escolhida && !escolhida.tabela ? escolhida : null;
+      if (caixaAlvo) {
+        const atual = textoDosParas(caixaAlvo.paras ?? []);
+        const junto = atual.trim() ? `${atual.replace(/\s+$/, "")}\n${texto.trim()}` : texto.trim();
+        const paras = parasComTexto(caixaAlvo.paras ?? [], junto, this.estiloDeDigitacao(caixaAlvo));
+        this.registrar();
+        this.substituirSlide({
+          ...this.atual(),
+          shapes: this.atual().shapes.map((s) => (s.id === caixaAlvo.id ? { ...s, paras, text: textoDosParas(paras) } : s)),
+        });
+        this.selecao = [caixaAlvo.id];
+        this.markDirty();
+        this.pintar();
+        return;
+      }
+      // sem caixa escolhida: uma caixa nova recebe o conteúdo (como já era)
       const d = this.dim();
       const caixa = novaCaixaDeTexto(caixaCentrada(50, 50, Math.min(d.w * 0.6, 420), 60, d), this.estilo());
       caixa.paras = parasComTexto(caixa.paras ?? [], texto.trim(), this.estiloDeDigitacao(caixa));

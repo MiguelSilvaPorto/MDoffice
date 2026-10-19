@@ -446,6 +446,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Colar texto entra na caixa escolhida (ou cria a própria caixa)**: texto na área de transferência
+  agora sempre vira conteúdo **dentro de uma caixa** — com uma caixa escolhida, ele entra no **fim
+  do texto dela** (parágrafo novo, preservando o que já estava), e o `Ctrl+V` deixa de criar uma
+  caixa centralizada por cima; **sem seleção**, o app cria a **própria caixa** com o conteúdo, como
+  era ("quando eu tiver texto na área de transferência ele deve ser colado dentro da sua própria box
+  mesmo que não esteja selecionada nenhuma box"). Tabela escolhida não recebe o texto (colar em
+  célula é com a célula em edição) — nesse caso vale a caixa nova. Conferido no navegador: com a
+  caixa escolhida o slide ficou com 2 formas e o texto da caixa ganhou o parágrafo colado; sem
+  seleção ficou com 3, e a caixa nova contém o texto. Teste: `npm run test:layout`.
+
 - **Organograma real: a hierarquia lê conectores de traço, apaga os antigos em todo arranjo e a Arrumação tem mais estilos** — o organograma importado usa conectores de traço (reta e cotovelo, com o ramo da SAP azul), que o detector não enxergava: a hierarquia não era oferecida e os conectores ficavam soltos no meio do slide depois do Fluxo. Agora a hierarquia lê os conectores pelas duas pontas (com o espelhamento do cotovelo), mantém a cor de cada ramo, e **todos** os arranjos os apagam. O Fluxo ganhou estilos (em linhas e em 2, 3 ou 4 colunas), a Arrumação mostra todos os estilos distintos de uma vez (sem o "Gerar mais", que repetia os mesmos cartões) e a região da hierarquia é escolhida pela posição real dos cartões, não pelo retângulo.
 
 - **Composição ▸ Arrumação: o arranjo aparece no palco ao clicar** — o cartão alterava a lâmina na memória mas não repintava o palco, então o resultado só aparecia ao trocar de slide e voltar (os outros comandos da Composição já repintavam). Teste novo confere que os quatro comandos que mudam a lâmina chamam o repintar.

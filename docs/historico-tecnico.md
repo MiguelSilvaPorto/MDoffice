@@ -13958,3 +13958,40 @@ antigas quando fizer sentido.
   uma tarefa de follow-up, depois que o commit chegou (ed77cde). Promovi só a entrada DESTA tarefa:
   as que seguem em "Não adicionado" são de sessões com trabalho aberto — mexer nelas criaria
   duplicata ou conflito.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-19 · colar texto · entra na caixa escolhida (ou cria a própria)
+- **Local:** `aoColarDoSistema` — o ramo do texto solto (`if (texto.trim())`)
+- **Linha:** `texto solto vira uma caixa de texto` (sempre criava `novaCaixaDeTexto(caixaCentrada(50,
+  50, …))`) → primeiro testa `const caixaAlvo = escolhida && !escolhida.tabela ? escolhida : null`:
+  com caixa escolhida, `textoDosParas` + `parasComTexto` aplicam o texto **no fim do que já estava**
+  (parágrafo novo) e gravam `{ ...s, paras, text: textoDosParas(paras) }`; só sem alvo é que a caixa
+  nova nasce. `textoDosParas` entrou no import de `edicao/texto`.
+- **Porquê:** o pedido ("quando eu tiver texto na área de transferência ele deve ser colado dentro da
+  sua própria box mesmo que não esteja selecionada nenhuma box ele cria a sua própria box") — o
+  colar de texto criava uma caixa centralizada **por cima** mesmo com uma caixa escolhida. A tabela
+  fica de fora do alvo: colar em célula continua sendo com a célula em edição (o handler do
+  `contentEditable` cola no cursor). Conferido no navegador: com caixa escolhida o slide ficou com
+  as mesmas 2 formas e o texto da caixa ganhou "Sua apresentação\nTEXTO COLADO…"; sem seleção
+  ficaram 3 formas e a nova contém o texto colado.
+
+## scripts/testar-layout.mts
+
+### 2026-10-19 · colar texto · a checagem do destino
+- **Local:** bloco novo "PowerPoint: colar texto entra na caixa escolhida (ou cria a própria)",
+  antes do bloco da aba Desenhar
+- **Linha:** `+` uma checagem com três âncoras: `const caixaAlvo = escolhida && !escolhida.tabela ?
+  escolhida : null`, o `textoDosParas(caixaAlvo.paras ?? [])` e a criação (`novaCaixaDeTexto(
+  caixaCentrada(50, 50, …))`)
+- **Porquê:** o destino do colar é uma decisão de interface (qual caixa recebe); sem a checagem, o
+  ramo "caixa nova sempre" volta sem ninguém notar — foi exatamente o estado que o relato reprovou.
+
+## docs/powerpoint.md
+
+### 2026-10-19 · colar texto · a bala das Formas
+- **Local:** a bala "**Formas**: galeria, desenhar arrastando, …", depois de "copiar/colar"
+- **Linha:** `+` "**Colar texto** … põe o texto **dentro da caixa escolhida** (no fim do texto dela,
+  preservando o que já estava) — sem caixa escolhida, ele **cria a própria caixa** e cola"
+- **Porquê:** a bala falava só de copiar/colar **formas**; o colar de texto tem regra própria e era
+  o que o usuário procurava.
