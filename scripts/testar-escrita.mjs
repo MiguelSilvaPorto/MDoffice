@@ -274,9 +274,10 @@ const ok = (nome, cond, detalheTxt = "") => {
   console.log(`${cond ? "OK   " : "FALHA"} ${nome}${detalheTxt ? `  ${detalheTxt}` : ""}`);
 };
 
-const exemplos = [];
+const exemplos = { A: [], A2: [], B: [] };
 const anotar = (o) => {
-  if (exemplos.length < 40) exemplos.push(o);
+  const lista = exemplos[o.regua] ?? (exemplos[o.regua] = []);
+  if (lista.length < 40) lista.push(o);
 };
 
 console.log("Corretor de escrita — pares formal/informal\n");
@@ -457,11 +458,10 @@ for (const rodada of rodadas()) {
 // ---------------------------------------------------------------- resumo
 
 console.log("\n================ resumo ================");
-if (exemplos.length) {
-  const porRegua = new Map();
-  for (const e of exemplos) porRegua.set(e.regua, (porRegua.get(e.regua) ?? 0) + 1);
-  console.log(`exemplos anotados: ${[...porRegua.entries()].map(([r, n]) => `${r}=${n}`).join(", ")} (use --detalhe)`);
-  for (const e of exemplos.slice(0, detalhe ? 40 : 0)) {
+const todos = [...exemplos.A, ...exemplos.A2, ...exemplos.B];
+if (todos.length) {
+  console.log(`exemplos anotados: A=${exemplos.A.length}, A2=${exemplos.A2.length}, B=${exemplos.B.length} (use --detalhe)`);
+  for (const e of todos.slice(0, detalhe ? 120 : 0)) {
     if (e.regua === "B" && e.tipo === "acento") {
       console.log(`  B acento: “${e.antes}” → “${e.palavra}” (gabarito ${e.esperado})`);
     } else if (e.regua === "B") {

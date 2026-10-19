@@ -91,11 +91,23 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   divergência”), a sugestão é uma **pergunta** (“…pede **haja**?”) e **nunca** troca uma palavra
   minúscula por um **nome próprio** (“Ana”) — nome só entra quando a pessoa já escreveu com
   maiúscula.
-- **Correção automática** (liga/desliga): palavras erradas com certeza, maiúsculas, espaços,
-  pontuação repetida (inclusive **“....” → “...”**: reticências são três pontos) e abreviações
-  entram sozinhas ao pausar; ao **terminar o parágrafo** o parágrafo ganha ponto/vírgulas; ao
-  **salvar**, o documento é revisado. Cada correção é um passo único de `Ctrl+Z` — e **desfazer
-  ensina**: a troca desfeita volta a ser só sugestão.
+- **Correção automática com decisão** (liga/desliga): só o que é **forma** entra sozinho —
+  maiúsculas, espaços, pontuação repetida (inclusive **“....” → “...”**: reticências são três
+  pontos) e ortografia com certeza — ao pausar, ao **terminar o parágrafo** e ao **salvar**.
+  **Gíria e registro** (“pra”, “tá”, “a gente”, “pq”…) ficam como **sugestão**: são escolha de
+  quem escreve, não erro de forma. Num documento **sem acento por escolha** (informal, áudio
+  transcrito), a correção automática **não mexe em nada** — nem acento, nem vírgula, nem
+  maiúscula; o aviso continua no texto e a ação explícita resolve. Cada correção é um passo
+  único de `Ctrl+Z` — e **desfazer ensina**: a troca desfeita volta a ser só sugestão.
+- **“Formatar texto” = correção formal**: restaura acentos/cedilha, insere pontuação, acerta
+  espaçamento e maiúsculas em quantas rodadas precisar — e **não troca palavras**: “vc → você”
+  ou “pra → para” não entram por aqui (ficam como sugestão). A regra é estrutural: o que entra
+  tem as **mesmas letras e o mesmo número de palavras** do trecho. Os parágrafos são preservados.
+- **Log de decisões (`?diag=1`)**: com `?diag=1` na URL (ou `__mdofficeDiag.ligar()`, no console)
+  cada decisão do corretor — o que detectou, o que aplicou, o que ignorou e **por quê** — vira uma
+  linha em JSONL, com o trecho e a janela de texto, num painel flutuante **“Diagnóstico (N)”**
+  (copiar/baixar/limpar). Desligado custa zero; é a ferramenta para responder “por que ele mexeu
+  nisso?” sem adivinhar.
 - **Aprendizado do corretor (auto-cura)**: os pares que você aceita viram correção automática e as
   recusas descontam; os termos que você insiste em manter (**“Ignorar neste texto”**) entram
   sozinhos no **dicionário pessoal** — com histerese (3 sinais) e decaimento (meia-vida de 30 dias:

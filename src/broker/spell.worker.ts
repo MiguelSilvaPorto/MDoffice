@@ -267,7 +267,12 @@ function sugerirPalavra(
       { pontos: ordenadas.map(([, nota]) => nota), certo, contexto: notaContexto(primeiro[0], anterior, contexto) },
       tau
     );
-    if (decisao.aplicar) best = ajustarCaixa(palavra, primeiro[0]);
+    if (decisao.aplicar) {
+      // o par de número ("mantém"/"mantêm") é ambíguo sem o sujeito: fica como sugestão
+      const irmao = parDeNumero(primeiro[0]);
+      const ambiguo = !!irmao && (contagensExatas?.get(irmao) ?? 0) >= 20;
+      if (!ambiguo) best = ajustarCaixa(palavra, primeiro[0]);
+    }
   }
   return { sugestoes, best, decisao, notas: ordenadas.slice(0, 8), distanciaTopo: primeiro ? (distanciaDe.get(primeiro[0]) ?? 9) : 9 };
 }
@@ -352,11 +357,38 @@ const PISO_ACENTO = 50;
  * "aniversário" (486). Acima de 1.000 a forma escrita é comum: é palavra de verdade,
  * e o acento pode trocar o sentido ("esta" × "está", "as" × "às") — não mexe.
  */
-function acentoMaisUsado(palavra: string): string | null {
+/**
+ * Singular/plural do verbo ("mantém"/"mantêm", "vem"/"vêm", "tem"/"têm"). As duas
+ * formas existem no dicionário e só o SUJEITO decide — sem ele, acentuar é chute.
+ * Devolve a forma irmã quando ela existe (para tratar o par como ambíguo).
+ */
+function parDeNumero(forma: string): string | null {
+  const lower = forma.toLowerCase();
+  if (!lower.endsWith("m") || lower.length < 3) return null;
+  const radical = lower.slice(0, -1);
+  const vogal = radical.slice(-1);
+  if (vogal !== "e" && vogal !== "é" && vogal !== "ê") return null;
+  const irmao = `${radical.slice(0, -1)}êm`;
+  if (irmao === lower) return null;
+  return typo?.check(irmao) ? irmao : null;
+}
+
+/** Formas de "ter"/"haver" que pedem particípio depois ("tinha valido"). */
+const AUXILIARES = new Set([
+  "tinha", "tinham", "tive", "teve", "tiveram", "tem", "têm", "tivesse", "tivessem",
+  "havia", "haviam", "houve", "houveram", "ter", "haver", "tendo", "tido",
+]);
+
+function acentoMaisUsado(palavra: string, anterior?: string): string | null {
   if (!contagensExatas) return null;
   const lower = palavra.toLowerCase();
   const aqui = contagensExatas.get(lower) ?? 0;
   if (aqui >= USO_COMUM) return null; // a forma escrita é comum: é palavra de verdade
+  // Com 3+ letras, QUALQUER uso no corpus já é leitura possível: "bebe" (verbo) ×
+  // "bebê" (substantivo), "valido" (particípio) × "válido" (adjetivo). Frequência não
+  // decide sentido — a correção formal não acentua, fica a sugestão. As palavras de
+  // duas letras ("ja", "so", "ha") não têm outra leitura e seguem pelas faixas abaixo.
+  if (lower.length > 2 && aqui >= 1) return null;
   const vantagem = aqui >= USO_RARO ? VANTAGEM_RARA : VANTAGEM;
   let melhor: string | null = null;
   let melhorUso = 0;
@@ -372,6 +404,18 @@ function acentoMaisUsado(palavra: string): string | null {
         melhorUso = uso;
       }
     }
+  }
+  if (melhor) {
+    // Depois de "tinha/havia/tem…" a palavra é particípio ("tinha valido"), não
+    // adjetivo ("válido"): o acento mudaria a classe e o sentido.
+    if (anterior && AUXILIARES.has(anterior.toLowerCase())) return null;
+    // "mantém" × "mantêm": as duas são válidas; a pessoa é que sabe o número.
+    const irmao = parDeNumero(melhor);
+    if (irmao && (contagensExatas.get(irmao) ?? 0) >= USO_RARO) return null;
+    // O contexto manda: se a frase pede a forma SEM acento ("tinha valido",
+    // "ele bebe agua"), a escrita é palavra de verdade ali — não acentua.
+    const notaEscrita = notaContexto(lower, anterior, contexto);
+    if (notaEscrita > 0 && notaEscrita >= notaContexto(melhor, anterior, contexto)) return null;
   }
   return melhor;
 }
@@ -605,7 +649,7 @@ self.addEventListener("message", (event: MessageEvent) => {
       if (typo.check(word) || (lower !== word && typo.check(lower))) {
         // O dicionário aceita — mas e o resto da língua?
         // 1) Faltou o acento? "ira" (raiva) e "irá" (verbo) existem; o uso decide.
-        const comAcento = acentoMaisUsado(word);
+        const comAcento = acentoMaisUsado(word, ctx[word]);
         if (comAcento) {
           hits.push({ word, duvida: true, suggestions: [comAcento] });
           continue;
