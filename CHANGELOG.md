@@ -32,7 +32,25 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **O corretor passou a DECIDIR antes de mexer (e nunca "conserta" o informal)**: o relato era
+  uma correção sem sentido aplicada sozinha ao parar de digitar (print "esc … r"). Agora
+  **texto sem acento por escolha** (informal, áudio transcrito) não recebe **nenhuma** alteração
+  automática — nem acento, nem vírgula, nem maiúscula; o aviso continua e a ação explícita
+  resolve. **Gíria e registro** ("pra", "tá", "a gente", "pq") saíram da varredura automática:
+  ficam como sugestão. A ortografia parou de chutar acento: variante desempatada pelo uso
+  ("pao" → "pão", não "paó"), plural do verbo sem sujeito ("mantém"/"mantêm") e homógrafos
+  ("bebe"/"bebê", "valido"/"válido") viram sugestão, e depois de auxiliar ("tinha valido") não
+  se acentua como adjetivo. O comando **"Formatar texto" virou correção formal estrita**:
+  restaura acentos/cedilha, insere pontuação, acerta espaçamento e maiúsculas em quantas
+  rodadas precisar, preserva parágrafos e **não troca palavras** (mesmas letras, mesmo número
+  de palavras). Novo **log de decisões** (`?diag=1` ou `__mdofficeDiag.ligar()`): painel
+  flutuante com o que foi detectado/aplicado/ignorado, o motivo e o trecho, em JSONL
+  (copiar/baixar). Medido com corpus novo de pares formal/informal (48 mil palavras em
+  `tests/escrita/rodada-1`, 6 autores): **zero** alteração automática em ~135 mil pausas
+  simuladas (cada fronteira e o meio de cada palavra), **zero** troca/remoção/reordenação de
+  palavra na correção formal, parágrafos preservados, **zero** acento divergente do gabarito e
+  92–96% dos acentos restaurados (os que faltam são ambíguos por sentido). Teste:
+  `node scripts/testar-escrita.mjs`.
 
 ### Adicionado (na main)
 

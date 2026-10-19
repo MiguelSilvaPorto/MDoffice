@@ -28,6 +28,83 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/broker/diag.ts
+
+### 2026-10-19 — 2d4e6c6 — log de decisões do corretor (novo arquivo)
+- **Local:** `diag`, `diagAtivo`, `diagJSONL`, `janelaDe`, `diagResumo`
+- **Linha:** novo arquivo (buffer de 4.000 entradas, uma por decisão)
+- **Por quê:** o relato da "correção lixo" não tinha como ser explicado: não existia registro de por que o corretor aplicou (ou ignorou) cada trecho. Cada entrada guarda gatilho, regra, span, palavra, `safe`/`auto`, veredito, motivo e a janela do texto; ligado só por `?diag=1`/`localStorage`, custo zero desligado.
+
+## src/app/diagPanel.ts
+
+### 2026-10-19 — 2d4e6c6 — painel do diagnóstico (novo arquivo)
+- **Local:** `initDiagPanel`, `abrir`, `renderizar`
+- **Linha:** novo arquivo
+- **Por quê:** dar acesso ao log sem console: botão flutuante "Diagnóstico (N)", resumo por regra, últimas decisões, copiar/baixar JSONL e limpar. Também publica `__mdofficeDiag` para inspeção em teste.
+
+## src/broker/regime.ts
+
+### 2026-10-19 — 2d4e6c6 — regime do documento (novo arquivo)
+- **Local:** `usaAcentos`
+- **Linha:** novo arquivo
+- **Por quê:** separar "esqueci o acento" de "escrevo sem acento de propósito". Com nenhuma palavra acentuada, o app assume o regime informal e a correção automática fica quieta (só sugere); a ação explícita continua.
+
+## src/broker/formal.ts
+
+### 2026-10-19 — 2d4e6c6 — correção formal estrita (novo arquivo)
+- **Local:** `planejarCorrecaoFormal`, `corrigirFormal`, `esqueleto`, `aplicarCorrecoes`
+- **Linha:** novo arquivo
+- **Por quê:** o "Formatar texto" aplicava qualquer `fix`/`auto`, inclusive troca de palavra ("pra"→"para", "vc"→"você"). A regra agora é estrutural: o que entra tem as mesmas letras (sem acento) e o mesmo número de palavras do trecho; então acento, cedilha, pontuação, espaço e maiúscula passam, vocabulário não. `corrigirFormal` repete até estabilizar (uma correção abre caminho para a outra) e preserva parágrafos.
+
+## src/broker/autofix.ts
+
+### 2026-10-19 — 2d4e6c6/c223ac2 — registro fora da varredura automática, com log
+- **Local:** `planejarVarredura`
+- **Linha:** `if (i.classe && CLASSES_REGISTRO.has(i.classe))` (novo) antes de enfileirar; cada decisão (aplicada/barrada e o motivo) vai para `diag`
+- **Por quê:** gíria, internetês, contração, muleta e oralidade são escolha de quem escreve, não erro de forma. A varredura da pausa aplicava "pra"→"para", "tava"→"estava" e "a gente teve"→"nós tivemos" sozinha — a "correção lixo". Agora só a forma entra; essas trocas ficam no aviso/painel.
+
+## src/broker/spell.worker.ts
+
+### 2026-10-19 — c223ac2 — acento sem chute
+- **Local:** `sugerirPalavra` (variantes), `acentoMaisUsado`, `parDeNumero`
+- **Linha:** variantes de acento com `1 + log10(uso+1)/100` (antes todas com nota 1, vencia a primeira gerada) · `if (lower.length > 2 && aqui >= 1) return null` · `parDeNumero` (novo) · guarda de auxiliares (`AUXILIARES`) · nota de contexto antes de acentuar
+- **Por quê:** "pao" virava "paó" (a variante gerada primeiro vencia "pão"); "aniversario"/"ha" não eram acentuados porque a forma escrita tinha uso no corpus; "mantem" virava "mantém" mesmo em sujeito plural; "valido" (particípio) virava "válido" (adjetivo) e "bebe" (verbo) virava "bebê" (substantivo). Agora o uso desempata a variante, plural sem sujeito e homógrafo ficam como sugestão, e depois de "tinha/havia/tem" não se acentua como adjetivo.
+
+## src/broker/check.ts
+
+### 2026-10-19 — 2d4e6c6/c223ac2 — log de detecções e opção `curtas`
+- **Local:** `checkText`
+- **Linha:** `const rx = opcoes?.curtas ? /[\p{L}][\p{L}'-]{1,}/gu : /...{2,}/gu` · `token.word.length >= 3 ? commonNeighbor(...) : null` · laço final que grava `diag(...)` para o que tem `auto`/`fix`/`safe`
+- **Por quê:** a correção formal precisa enxergar palavras de duas letras ("ja"→"já", "so"→"só", "ha"→"há"), mas trocar vizinha/contexto em "de"/"da" seria ruído — por isso a opção e o corte de 3 letras. O log registra só o que PODE ser aplicado, para explicar a correção sem afogar o painel.
+
+## src/app/assistant.ts
+
+### 2026-10-19 — 2d4e6c6 — pausa, parágrafo, salvamento e "Formatar texto" com decisão
+- **Local:** `runIdleFix`, `runAutoFix`, `applySaveFixes`, `formatarTexto`, `autoFixSafe`, `autoFixWords`, `autoFixFinishedParagraph`
+- **Linha:** guarda `if (!usaAcentos(texto)) { ... return; }` nas três correções automáticas · `formatarTexto` usa `corrigirFormal` e substitui o documento numa transação · logs `diag(...)` por decisão e por candidato de ortografia
+- **Por quê:** a pausa automática mexia no texto sem acento por escolha e trocava palavras sem confirmação. Agora o regime informal bloqueia a automação, "Formatar texto" só corrige forma (e reporta quantas rodadas/ajustes), e cada candidato de ortografia registra por que foi aplicado ou ficou de fora ("palavra sob o cursor", "texto mudou", "sem confiança").
+
+## scripts/testar-escrita.mjs
+
+### 2026-10-19 — 2d4e6c6 — régua do corretor em pares formal/informal (novo arquivo)
+- **Local:** simulação de pausa (A), sonda forçada (A2) e correção formal (B)
+- **Linha:** novo arquivo
+- **Por quê:** medir o comportamento real sem depender de olhar a tela: (A) pausa em cada fronteira e no meio da palavra → zero alteração automática; (B) ação formal → nenhuma troca/remoção/reordenação de palavra, parágrafos preservados e formas acentuadas iguais às do gabarito. O worker do dicionário roda com o mesmo shim de `self`/`fetch`/`Worker` dos outros testes.
+
+## tests/escrita/rodada-1
+
+### 2026-10-19 — 2d4e6c6 — corpus de pares formal/informal
+- **Local:** `agente-01..06-{formal,informal}.txt`
+- **Linha:** novos arquivos (6 pares, ~48 mil palavras no informal)
+- **Por quê:** cada bloco informal (sem acento, sem ponto, sem vírgula) tem o parágrafo formal correspondente como gabarito; blocos alinhados 1:1 permitem medir acento, pontuação e parágrafo sem depender de reescrita automática. Textos inéditos a cada rodada.
+
+## docs/md.md
+
+### 2026-10-19 — 2d4e6c6 — "Escrita assistida" documenta o regime e a correção formal
+- **Local:** seção "Escrita assistida (português, offline)"
+- **Linha:** bullet da correção automática reescrito; novos bullets de "Formatar texto" e do log (`?diag=1`)
+- **Por quê:** o comportamento mudou de forma visível para quem usa: o app não mexe mais no texto sem acento por escolha nem troca gíria sozinha, e o comando de formatar virou correção formal (sem vocabulário). A documentação precisa dizer isso antes de a tarefa fechar.
+
 ## src/fita.ts
 
 ### 2026-10-16 · este commit · fluidez no resize da fita e tamanho uniforme entre abas

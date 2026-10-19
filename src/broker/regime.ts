@@ -14,9 +14,12 @@ const PALAVRA = /[\p{Letter}]{2,}/gu;
 /**
  * O documento dá sinal de escrita com acento?
  *
- * Basta uma palavra acentuada para valer (quem escreve "não" ou "você" está no
- * regime normal). Sem nenhuma, o padrão é NÃO mexer: uma frase curta sem acento
- * pode ser só uma frase curta, e corrigir por conta própria é pior do que esperar.
+ * Um texto em português normal tem uma boa fatia de palavras acentuadas (mais de
+ * 10%); um texto sem acento por escolha tem zero. O corte de 1% separa os dois sem
+ * depender de uma palavra isolada ("não" perdido no meio de 800 palavras não liga a
+ * correção automática num texto que é todo sem acento). Sem nenhuma palavra acentuada,
+ * o padrão é NÃO mexer: uma frase curta sem acento pode ser só uma frase curta, e
+ * corrigir por conta própria é pior do que esperar.
  */
 export function usaAcentos(texto: string): boolean {
   const palavras = texto.match(PALAVRA) ?? [];
@@ -24,8 +27,6 @@ export function usaAcentos(texto: string): boolean {
   let comAcento = 0;
   for (const p of palavras) {
     if (COM_DIACRITICO.test(p)) comAcento++;
-    // duas já bastam: não precisa varrer um texto enorme
-    if (comAcento >= 2) return true;
   }
-  return comAcento > 0 && comAcento / palavras.length >= 0.005;
+  return comAcento > 0 && comAcento / palavras.length >= 0.01;
 }

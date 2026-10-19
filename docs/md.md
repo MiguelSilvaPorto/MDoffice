@@ -131,9 +131,9 @@ dentro do documento e contar com uma escrita assistida de português que roda of
 - **Modo formal**: “pra/tá/a gente” → linguagem formal, com o verbo ajustado pela frase
   (“a gente vai” → “nós vamos”); modo **informal** e **neutro** também disponíveis.
 - **Formalidade por classe + MIP**: o catálogo informal → formal tem **94 padrões** por classe
-  (internetês, contração, muleta, gíria, oralidade, atenuação, redundância, vagueza e **clichê**) — com o
-  que **corrige sozinho** (“pra → para”, “vc → você”, “subir para cima → subir”, “nos dias de hoje →
-  atualmente”) separado do que **só sugere** (“acho que” → “considera-se que”/“entende-se que”,
+  (internetês, contração, muleta, gíria, oralidade, atenuação, redundância, vagueza e **clichê**) — o
+  que dá para **aplicar num clique** (“pra → para”, “vc → você”, “subir para cima → subir”, “nos dias de hoje →
+  atualmente”) fica separado do que **só sugere** (“acho que” → “considera-se que”/“entende-se que”,
   “faz-se necessário” → “é necessário”), cada sugestão com o risco. As **frases** ganham janelas de
   contexto (“a gente vê que” → “nós vemos”/“vê-se que”; “Aí eu fui” → “Então, eu”/“Em seguida, eu”;
   “então” repetido; “há três anos atrás” → “há três anos”; **“vou estar enviando” → “enviarei”**,
