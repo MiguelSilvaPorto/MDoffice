@@ -17,6 +17,7 @@
     "test:ghost": "node scripts/testar-ghost.mjs",
     "test:desenho": "node scripts/testar-desenho-assistido.mjs",
     "test:ligacoes": "node scripts/testar-ligacoes.mjs",
+    "test:recompor": "node scripts/testar-recompor.mjs",
     "test:estilos": "node scripts/testar-estilos.mjs",
     "test:arranjos": "node scripts/testar-arranjos.mjs",
     "test:composicao": "node scripts/testar-composicao.mjs",

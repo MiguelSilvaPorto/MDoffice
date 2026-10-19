@@ -729,7 +729,7 @@ export class PowerPointHost {
     // as arrumações que FUNCIONAM nesta lâmina (legíveis, sem sobrepor): a fornada roda por elas e varia o
     // visual — o filtro vem ANTES do sorteio, senão sobrava um cartão só
     const legiveis = arrumavel(atual)
-      ? ARRANJOS.flatMap((a) => variantesDe(a.id, quantas).map((v) => ({ arranjo: a.id, variante: v }))).filter((o) => arranjoLegivel(atual, aplicarArranjo(atual, o.arranjo, o.variante, ratio)))
+      ? ARRANJOS.flatMap((a) => variantesDe(a.id, quantas).map((v) => ({ arranjo: a.id, variante: v }))).filter((o) => { const novo = aplicarArranjo(atual, o.arranjo, o.variante, ratio); return o.arranjo === "recompor" ? novo !== atual : arranjoLegivel(atual, novo); })
       : [];
     const podeArrumar = legiveis.length > 0;
     const sugestoes = sugestoesDe({ unidades: quantas, arrumavel: podeArrumar, arrumacoes: podeArrumar ? legiveis : undefined, modelos: [...MODELOS, ...lerModelosUsuario()], lote: this.loteComposicao });
@@ -1031,8 +1031,9 @@ export class PowerPointHost {
       previa.style.height = `${altura}px`;
       pendentes.push(() => {
         const comArranjo = aplicarArranjo(atual, id, variante, ratio);
-        // a fórmula que reduz os cartões a tiras ilegíveis não é oferecida
-        if (!arranjoLegivel(atual, comArranjo)) {
+        // a fórmula que reduz os cartões a tiras ilegíveis não é oferecida; a Recomposição já se
+        // recusa sozinha (devolve a lâmina original quando não melhora) e some quando não muda nada
+        if (comArranjo === atual || (id !== "recompor" && !arranjoLegivel(atual, comArranjo))) {
           cartao.remove();
           return;
         }

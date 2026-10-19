@@ -1,4 +1,4 @@
-﻿# Histórico técnico
+# Histórico técnico
 
 O "porquê" de cada mudança de linha do mdOffice. O [CHANGELOG](../CHANGELOG.md) conta **o que**
 mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local, a linha e o motivo.
@@ -13844,3 +13844,38 @@ antigas quando fizer sentido.
   mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
   entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
   promoções anteriores.
+
+## src/powerpoint/edicao/recompor.ts (arquivo novo) · arranjos.ts · powerpoint.ts
+
+### 2026-10-19 · esta tarefa · a Recomposição: a lâmina lida por blocos e normalizada
+- **Local:** `recompor.ts` (novo: `blocosDa`, `recompor`, `layoutar`, `avaliar`, `defeitos`, `textoCabe`);
+  `arranjos.ts` (o id `"recompor"`, a entrada em `ARRANJOS` e o desvio no `aplicarArranjo`);
+  `powerpoint.ts` (os dois gates do painel, `Composição ▸ Arrumação` e o modo Tudo)
+- **Linha:** `+ if (id === "recompor") return recompor(slide, ratio);` no `aplicarArranjo`;
+  `+ { id: "recompor", nome: "Recompor", … }`; no painel, o cartão sai quando `comArranjo === atual`
+  e a Recomposição **não** passa pelo `arranjoLegivel` (ela já se recusa sozinha); o filtro do modo
+  Tudo idem
+- **Porquê:** o relato ("arrumar não redesenha nem poda as posições; sempre sai errado") foi medido
+  na cópia do deck: a Arrumação só entende **cartões** (forma pintada/imagem) e aplica 7 fórmulas
+  fixas; num slide de infográfico (108 formas, 67 pintadas, 18 textos) as fórmulas mexem em **ícones
+  e elipses como se fossem cartões** e a régua `motivosDoArranjo` — que reprova a fórmula inteira por
+  **uma** forma (letra < 6,5 pt, cartão < 7×5, texto que não cabe) — recusa todas. Na lâmina 2, por
+  exemplo, **todas** as variações de grade/lista reprovavam por etiquetas de 6 pt. A saída não era
+  afrouxar a régua: era **entender a estrutura** e **normalizar** em vez de reconstruir. O motor
+  classifica os **blocos** (título com antetítulo/subtítulo; colunas de conteúdo por vãos; rodapé;
+  painéis = imagens grandes; diagrama = formas sem texto que se encostam — e, quando ele ocupa a
+  lâmina, leva junto os textos de dentro), alinha e distribui (margens 4,5/4,5/4; vão de coluna 2,6;
+  vão de bloco 1,8) e, quando a coluna passa do rodapé, sobe o bloco em vez de deixá-lo sair da lâmina.
+  **A primeira versão escalava as caixas** (com a letra no piso de 9 pt) e o teste NO APP mostrou o
+  defeito que a métrica não pegava: o texto vazava **por cima do vizinho** (a caixa encolhia, a letra
+  ficava no piso e o texto crescia para fora). Por isso a versão entregue é **conservadora**: nada escala
+  — o ritmo vertical do desenho fica como está e o que muda é o **alinhamento** das colunas e das margens.
+  Três variantes (colunas naturais, uma coluna e duas iguais) são pontuadas por **defeitos RELATIVOS
+  ao original** (texto que passou a vazar, sobreposição nova, letra abaixo do piso), **canonicalidade**
+  (desvio das margens/colunas/rodapé) e, se nenhuma superar a lâmina original, ela **volta intacta** —
+  a régua antiga acusava caixas justas que o próprio deck usa (a medição absoluta dava 18-77
+  "sobreposições" falsas só por contar texto sobre painel de fundo). Medido na cópia do deck (12
+  lâminas): **12/12 sem sobreposição nova, sem texto vazando, nada fora da lâmina** — 8 recompostas
+  (3, 4, 5, 6, 8, 10, 11 e 12) e 4 preservadas (1, 2, 7 e 9), com a letra de conteúdo ≥ 9 pt (o rodapé
+  fica no piso de 6). A bancada é `scripts/testar-recompor.mjs` (`npm run test:recompor -- <arquivo>`),
+  sempre sobre uma **cópia** do .pptx.

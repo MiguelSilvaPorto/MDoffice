@@ -59,8 +59,8 @@ const visual = (s) => `${s.modelo.id}|${s.tratamento}`;
 // 5) a fornada encolhe quando a lâmina tem poucas arrumações (em vez de repetir)
 {
   const poucas = S.sugestoesDe({ unidades: 2, modelos, lote: 0 });
-  ok("lâmina com 2 unidades: a fornada encolhe (grade 2×1, lista, destaque, faixa e o fluxo)", poucas.length === 5, `${poucas.length} cartões: ${poucas.map(arrumacao).join(" ")}`);
-  ok("lâmina com 1 unidade: sobra lista, destaque e faixa", S.sugestoesDe({ unidades: 1, modelos, lote: 0 }).length === 3);
+  ok("lâmina com 2 unidades: a fornada encolhe (grade 2×1, lista, destaque, faixa, o fluxo e a Recomposição)", poucas.length === 6, `${poucas.length} cartões: ${poucas.map(arrumacao).join(" ")}`);
+  ok("lâmina com 1 unidade: sobra lista, destaque, faixa e a Recomposição", S.sugestoesDe({ unidades: 1, modelos, lote: 0 }).length === 4);
   ok("lâmina vazia (não arrumável) sai só de visual", S.sugestoesDe({ unidades: 0, arrumavel: false, modelos, lote: 0 }).every((s) => s.arranjo === null));
 }
 

@@ -276,6 +276,15 @@ avisado ao abrir (nunca some em silêncio).
     **colunas** — vale o que der a maior escala; as linhas centradas e o mesmo espaço entre os blocos.
     A grade e a lista exigem cartões do mesmo tamanho, então num slide variado o maior ditava o tamanho
     de todos e tudo encolhia a 48%. A grade ganhou 5 e 6 colunas (para slides cheios de cartões).
+  - **Recompor** (arrumação para lâminas que não são de cartões): em vez de uma fórmula fixa, lê a
+    **estrutura** da lâmina — **título** (com antetítulo e subtítulo), **colunas de conteúdo**, **rodapé**,
+    **painéis de fundo** e ícones — e **normaliza** as posições: margens iguais, colunas alinhadas com o
+    mesmo vão e o rodapé no lugar. Ela é **conservadora**: o **ritmo vertical do desenho é preservado**
+    (nenhum bloco é re-empilhado e **nada escala** — a letra e a caixa ficam como o design as deixou), o
+    que muda é o **alinhamento**; um bloco que passe do rodapé sobe até caber e um **diagrama** (formas sem
+    texto que se encostam — setas, elipses, ícones) anda como **um bloco**, sem embaralhar as peças. Se
+    nada mudar (ou se a mudança piorar a lâmina), ela **volta como está** — a Recomposição nunca entrega
+    uma lâmina pior.
   - **O arranjo desvia dos textos que ficam**: a região onde os cartões vão é a **maior área livre**
     que não cruza nenhum texto fixo (abaixo, acima, à direita ou à esquerda dele), e não mais a faixa
     fixa "margem a margem". Uma **legenda** logo abaixo de um cartão (até 3,5 de distância) é parte

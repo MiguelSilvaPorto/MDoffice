@@ -1,4 +1,4 @@
-﻿# Changelog — mdOffice
+# Changelog — mdOffice
 
 Tudo que é feito no app entra aqui, **na categoria que mexeu**, dividido entre **Backend**
 (`src-tauri/`, Rust) e **Frontend** (`src/`, TypeScript). O "porquê" técnico de cada mudança
@@ -428,6 +428,22 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada no momento)
 
 **Frontend**
+
+- **A Arrumação ganhou "Recompor": ela lê a estrutura da lâmina e devolve as posições ao lugar**: as
+  fórmulas antigas (grade, lista, destaque, faixa, fluxo, hierarquia) só entendem **cartões** — num deck
+  de infográficos (dezenas de elipses, setas, ícones e grades de imagem) elas tratam ícone como cartão e
+  **recusam tudo** ("Nenhuma fórmula deixa o conteúdo todo legível": a régua reprovava a fórmula inteira
+  por causa de uma forma só). A **Recomposição** lê a **estrutura** — **título** (com antetítulo e
+  subtítulo), **colunas de conteúdo**, **rodapé**, **painéis de fundo** e ícones — e **normaliza** as
+  posições: margens iguais, colunas alinhadas com o mesmo vão, os painéis emoldurando as colunas e o
+  rodapé no lugar. Ela é **conservadora**: o **ritmo vertical do desenho é preservado** (nenhum bloco é
+  re-empilhado e **nada escala** — a letra e a caixa ficam como o design as deixou), o que muda é o
+  **alinhamento**; um bloco que passe do rodapé sobe até caber, a decoração não sai da lâmina e um
+  **diagrama** anda como **um bloco**. Se nada mudar (ou se a mudança piorar a lâmina), ela **volta como
+  está** — a Recomposição nunca entrega uma lâmina pior. Testada numa **cópia** do deck real (12 lâminas
+  de um infográfico corporativo), lâmina por lâmina, **no app**: **12/12 sem sobreposição nova, sem texto
+  vazando e sem nada fora da lâmina** — 9 recompostas e 3 preservadas. Teste:
+  `npm run test:recompor -- <arquivo.pptx>`.
 
 - **Organograma real: a hierarquia lê conectores de traço, apaga os antigos em todo arranjo e a Arrumação tem mais estilos** — o organograma importado usa conectores de traço (reta e cotovelo, com o ramo da SAP azul), que o detector não enxergava: a hierarquia não era oferecida e os conectores ficavam soltos no meio do slide depois do Fluxo. Agora a hierarquia lê os conectores pelas duas pontas (com o espelhamento do cotovelo), mantém a cor de cada ramo, e **todos** os arranjos os apagam. O Fluxo ganhou estilos (em linhas e em 2, 3 ou 4 colunas), a Arrumação mostra todos os estilos distintos de uma vez (sem o "Gerar mais", que repetia os mesmos cartões) e a região da hierarquia é escolhida pela posição real dos cartões, não pelo retângulo.
 

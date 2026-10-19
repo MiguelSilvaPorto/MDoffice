@@ -15,8 +15,9 @@
 // Funções puras: devolvem lâmina nova, sem mexer na original.
 import type { Run, Shape, ShapeBox, Slide } from "../schema";
 import { aplicarHierarquia, detectarArvore } from "./hierarquia";
+import { recompor } from "./recompor";
 
-export type Arranjo = "grade" | "lista" | "destaque" | "faixa" | "fluxo" | "hierarquia" | "hierarquia-lado";
+export type Arranjo = "grade" | "lista" | "destaque" | "faixa" | "fluxo" | "hierarquia" | "hierarquia-lado" | "recompor";
 
 export interface ArranjoPPT {
   id: Arranjo;
@@ -34,6 +35,9 @@ export const ARRANJOS: ArranjoPPT[] = [
   // só aparecem (e só mudam a lâmina) quando ela tem uma hierarquia: o resto devolve a lâmina como está
   { id: "hierarquia", nome: "Hierarquia", descricao: "organograma: um nível por linha, filhos centrados sob o pai e conectores redesenhados" },
   { id: "hierarquia-lado", nome: "Hierarquia →", descricao: "organograma da esquerda para a direita, com os conectores redesenhados" },
+  // normaliza a lâmina (margens, colunas, rodapé e painéis) sem reconstruir o desenho: é a que entende
+  // título + colunas de texto + ícones e devolve a lâmina intacta quando não consegue melhorar
+  { id: "recompor", nome: "Recompor", descricao: "margens iguais, colunas alinhadas e o texto ajustado na caixa" },
 ];
 
 /** Uma unidade de conteúdo: o cartão e tudo o que anda com ele. */
@@ -460,6 +464,9 @@ function limiteBaixo(slide: Slide, unidades: Unidade[]): number {
  * para caber no espaço da fórmula) e o conteúdo de cada um escala junto, na mesma proporção.
  */
 export function aplicarArranjo(slide: Slide, id: Arranjo, variante: number, ratio: number): Slide {
+  // a Recomposição não é uma fórmula de cartões: ela entende a estrutura da lâmina (título, colunas,
+  // rodapé, painéis) e devolve a lâmina ORIGINAL quando nenhuma variante fica melhor
+  if (id === "recompor") return recompor(slide, ratio);
   const { cards, paineis } = analisar(slide);
   const unidades = unidadesCom(slide, cards, paineis);
   const porId = new Map(slide.shapes.map((s) => [s.id, s]));
