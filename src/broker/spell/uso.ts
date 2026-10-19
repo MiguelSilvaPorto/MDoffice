@@ -63,11 +63,17 @@ export function trocaPorContexto(escrita: string, anterior: string | undefined, 
   const n = (id: number): number => modelo.data.n[id] ?? 0;
   const pCtx = (id: number): number => (contaBigrama(modelo, idAnterior, id) + SUAVIZACAO * (n(id) / modelo.total)) / (total + SUAVIZACAO);
   const pEscrita = pCtx(idEscrita);
+  // Nome próprio não é troca de classe: quem escreve "caso aja divergência" quer "haja", não
+  // "Ana". As variantes de tecla vizinha/acento chegam a nomes do corpus ("aja" → "ana"), e o
+  // modelo os prefere porque o nome é frequente — o resultado era a sugestão absurda do relato.
+  // Só deixa passar quando a própria pessoa escreveu com maiúscula ("Ana" não vira "ana").
+  const escritaMaiuscula = escrita[0] !== escrita[0]?.toLowerCase();
 
   let melhor: TrocaComUso | null = null;
   for (const variante of variantesDeClasse(base)) {
     const id = modelo.idOf.get(variante);
     if (id === undefined) continue;
+    if (modelo.caps?.has(id) && !escritaMaiuscula) continue;
     const freq = n(id);
     if (freq < PISO_FREQUENCIA) continue;
     const vantagem = pCtx(id) / pEscrita;

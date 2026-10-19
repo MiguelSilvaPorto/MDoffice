@@ -32,6 +32,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A sugestão de "troca por contexto" não manda mais um nome próprio no lugar de uma palavra**: em
+  "caso **aja** divergência" o app perguntava se você queria **"Ana"** — a variante de tecla vizinha
+  "ana" existe no corpus como nome próprio, e o nome, por ser frequente, batia a correção certa.
+  Agora a mesma frase oferece **"haja"**, e um nome próprio só é cotado quando a palavra escrita já
+  está com maiúscula (`Aja` continua podendo virar `Ana`). Medido no navegador com o texto do
+  relato: a marca de "aja" passou de "contexto pede **Ana**?" para "contexto pede **haja**?".
+  Teste: `npm run test:correcao`.
+
 ### Adicionado (na main)
 
 **Backend**

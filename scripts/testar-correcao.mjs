@@ -623,6 +623,26 @@ const USO = await empacotar("src/broker/spell/uso.ts", "uso.mjs");
   ok("uso: escrita que já combina não é questionada", USO.trocaPorContexto("média", "a", modelo) === null);
   ok("uso: sem modelo não opina", USO.trocaPorContexto("media", "a", null) === null);
   ok("uso: início de frase conta como contexto", USO.trocaPorContexto("media", "<s>", modelo)?.palavra === "média");
+  // Nome próprio não é troca de classe: "caso aja divergência" pede "haja", nunca "Ana" (as
+  // variantes de tecla vizinha chegam a nomes do corpus, e o nome é frequente — era a sugestão
+  // absurda do relato). O modelo falso tem o nome marcado em `caps`, como o modelo real.
+  const modeloNome = {
+    idOf: new Map([
+      ["<s>", 0],
+      ["caso", 1],
+      ["aja", 2],
+      ["ana", 3],
+      ["haja", 4],
+    ]),
+    caps: new Set([3]),
+    data: { n: [0, 4000, 0, 4000, 900] },
+    total: 10000,
+    bigram: (id) => ({ succ: id === 1 ? [{ id: 3, count: 300 }, { id: 4, count: 200 }] : [], total: id === 1 ? 500 : 0 }),
+    display: (id) => ["<s>", "caso", "aja", "Ana", "haja"][id],
+  };
+  const comNome = USO.trocaPorContexto("aja", "caso", modeloNome);
+  ok("uso: nome próprio no meio da frase não é sugerido (aja → haja, não Ana)", comNome?.palavra === "haja", JSON.stringify(comNome ?? null));
+  ok("uso: nome próprio com maiúscula escrita continua cotado", USO.trocaPorContexto("Aja", "caso", modeloNome)?.palavra === "Ana", JSON.stringify(USO.trocaPorContexto("Aja", "caso", modeloNome) ?? null));
 }
 
 // ---------------------------------------------------------------- rerank por contexto (F4)

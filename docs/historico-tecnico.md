@@ -13798,3 +13798,38 @@ antigas quando fizer sentido.
   promoção anda depois: o cartão que acompanha o trecho (0fe0348). Promovi só a entrada DESTA
   tarefa — as que seguem em "Não adicionado" são de sessões com trabalho aberto, mexer nelas
   criaria duplicata ou conflito.
+
+## src/broker/spell/uso.ts
+
+### 2026-10-19 · a sugestão ruim · nome próprio no meio da frase
+- **Local:** `trocaPorContexto` — o laço das variantes de classe (`for (const variante of variantesDeClasse(base))`)
+- **Linha:** `+ const escritaMaiuscula = escrita[0] !== escrita[0]?.toLowerCase();` e
+  `+ if (modelo.caps?.has(id) && !escritaMaiuscula) continue;`
+- **Porquê:** o relato ("o sistema de correção e sugestão está muito ruim") trouxe o texto do
+  usuário; rodando o verificador nele, a marca de "aja" (de "caso **aja** divergência") sugeria
+  **"Ana"**. A causa: `variantesDeClasse("aja")` gera as teclas vizinhas e chega a **"ana"**, que
+  existe no corpus como **nome próprio** (frequente) — e o nome ganhava da correção certa
+  ("haja") por vantagem de contexto. Nome próprio não é troca de classe: agora só entra quando a
+  palavra escrita já está com maiúscula (`Aja` ainda pode virar `Ana`). No texto do relato a
+  marca passou a pedir **"haja"** (conferido no navegador, com o modelo real).
+
+## scripts/testar-correcao.mjs
+
+### 2026-10-19 · a sugestão ruim · os dois casos do nome próprio
+- **Local:** bloco "uso e contexto", depois do caso de início de frase
+- **Linha:** `+` dois casos — com um modelo falso que tem "Ana" em `caps`: `trocaPorContexto("aja",
+  "caso")` devolve **"haja"** (nunca "Ana") e `trocaPorContexto("Aja", "caso")` continua podendo
+  devolver **"Ana"**
+- **Porquê:** o laço das variantes não tinha teste para a **capitalização**; sem ele, qualquer
+  variante que coincida com um nome do corpus volta a vencer a correção certa (o caso do relato).
+  O modelo falso deixou o teste independente do `pt.json` (que não é versionado).
+
+## docs/md.md
+
+### 2026-10-19 · a sugestão ruim · a bala do assistente de escrita
+- **Local:** "Escrita assistida (português, offline)", primeira bala
+- **Linha:** `+` a frase da troca por contexto ("pergunta", nunca nome próprio para palavra
+  minúscula)
+- **Porquê:** o documento prometia "sugestões e sinônimos" sem dizer o limite que o relato furou —
+  uma **pergunta** de contexto pode trocar a palavra por outra de classe vizinha, mas não por um
+  nome próprio no meio da frase.

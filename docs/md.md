@@ -87,7 +87,10 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   perdia no meio da leitura); ele só fecha quando o trecho sai da janela do editor, quando o
   texto muda (a correção pendente ficaria velha) ou ao clicar fora. **Revisar texto** (`F7`)
   agrupa os avisos, estatísticas e **“Corrigir tudo (estilo)”**; dicionário pessoal e
-  “ignorar palavra”.
+  “ignorar palavra”. Numa palavra que **existe** mas não combina com o contexto (“caso **aja**
+  divergência”), a sugestão é uma **pergunta** (“…pede **haja**?”) e **nunca** troca uma palavra
+  minúscula por um **nome próprio** (“Ana”) — nome só entra quando a pessoa já escreveu com
+  maiúscula.
 - **Correção automática** (liga/desliga): palavras erradas com certeza, maiúsculas, espaços,
   pontuação repetida (inclusive **“....” → “...”**: reticências são três pontos) e abreviações
   entram sozinhas ao pausar; ao **terminar o parágrafo** o parágrafo ganha ponto/vírgulas; ao
