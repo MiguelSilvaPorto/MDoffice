@@ -1,52 +1,53 @@
-// Recompor a lâmina: em vez de fórmulas fixas de cartão, entende a ESTRUTURA da lâmina — título
-// (com o antetítulo e o subtítulo que andam com ele), colunas de conteúdo, rodapé, painéis de fundo
-// e ícones — e redesenha tudo com margens iguais, na ordem de leitura, escalando a letra até um piso
-// por papel (título 16 pt, corpo 9 pt, etiqueta 6 pt). O que é diagrama (um grupo de formas sem texto
-// que se encostam) anda como UM bloco, sem embaralhar as peças.
+// Compor a lâmina: gera uma composição NOVA a partir do conteúdo — o caminho do Designer, não o de
+// "empurrar o que já existe". A lâmina é lida em GRUPOS (título com antetítulo/subtítulo, cada coluna
+// de conteúdo, rodapé, diagrama), a decoração antiga (painéis de fundo, cartões, filetes) é podada e o
+// conteúdo é recolocado em padrões de página (cartões, faixas, destaque, grade) desenhados na hora.
+//
+// O texto nunca vaza por construção: cada grupo anda e escala INTEIRO (as caixas e as letras na mesma
+// proporção), e o grupo só entra num espaço se a escala respeitar o piso de 9 pt do texto de conteúdo.
+// Por isso não há reflow de parágrafo nem estimativa de linha: o desenho interno do bloco é preservado.
 //
 // Função pura: devolve lâmina nova. Só a lâmina que recebe muda — quem chama é a Arrumação do painel.
-import type { Para, Shape, ShapeBox, Slide } from "../schema";
-import { aplicarArranjo, variantesDe } from "./arranjos";
+import type { Fill, Shape, ShapeBox, Slide } from "../schema";
+import { formasDeArte, type ArteId } from "./arte";
+import { fonteCss, razaoDeLinha } from "../render/forma";
 
-/** Piso de letra por papel (pt). */
-const PISO_TITULO = 16;
-const PISO_CORPO = 9;
-const PISO_ETIQUETA = 6;
-
-/** Margens e vãos em % da lâmina (o mesmo respiro do modelo do deck). */
-const MARGEM_X = 4.5;
-const MARGEM_TOPO = 4.5;
-const MARGEM_BASE = 4;
-const VAO_COLUNA = 2.6;
-const VAO_BLOCO = 1.8;
-/** O terço de cima é a faixa do título; abaixo de 76% é rodapé. */
-const FAIXA_TITULO = 34;
-const FAIXA_RODAPE = 76;
-/** A partir disto a imagem é fundo/painel (e não conteúdo). */
+/** Margens e vãos em % da lâmina. */
+const MARGEM = 4.5;
+const VAO = 2.6;
+/** Piso da letra de conteúdo (pt): o grupo não entra num espaço que a leve abaixo disto. */
+const PISO_LETRA = 9;
+/** A partir disto a imagem é fundo/painel (decoração da composição antiga). */
 const AREA_PAINEL = 12;
-/** Um grupo de formas sem texto que se encostam é UM diagrama. */
-const DIAGRAMA_MIN = 4;
-const ENCOSTA = 2.5;
+/** Abaixo disto a forma é ícone/filete e anda junto do grupo. */
+const ALCANCE_ICONE = 6;
+const ENCOSTA = 2.2;
 
-type Papel = "titulo" | "corpo" | "rodape" | "painel" | "diagrama";
+// ---------------------------------------------------------------------------
+// conteúdo
+// ---------------------------------------------------------------------------
 
-interface Bloco {
-  papel: Papel;
-  /** formas que o bloco move/escala (textos, cartões, o diagrama) */
+interface Grupo {
+  /** formas que andam juntas (textos e o diagrama) */
   ids: string[];
-  /** a caixa que envolve o conteúdo do bloco */
-  box: ShapeBox;
-  /** maior letra do bloco (pt); 0 = sem texto */
-  letra: number;
-  /** ícones/linhas que andam junto (não contam para a caixa) */
+  /** ícones presos ao grupo (andam junto, não contam para a caixa) */
   presos: string[];
+  box: ShapeBox;
 }
 
-const area = (b: ShapeBox): number => b.w * b.h;
+interface Conteudo {
+  titulo: Grupo | null;
+  grupos: Grupo[];
+  rodape: Grupo | null;
+  /** imagens grandes da composição antiga (painéis, cartões, arte) — podadas */
+  paineis: Shape[];
+}
+
 const txt = (s: Shape): string => (s.paras ?? []).flatMap((p) => p.runs.map((r) => r.text ?? "")).join("").trim();
 const temTexto = (s: Shape): boolean => !!txt(s);
 const maiorLetra = (s: Shape): number => Math.max(s.fontSize || 0, ...(s.paras ?? []).flatMap((p) => p.runs.map((r) => r.size ?? 0)));
 const ehImagem = (s: Shape): boolean => s.kind === "imagem" || !!s.src;
+const area = (b: ShapeBox): number => b.w * b.h;
 
 function caixaDe(boxes: ShapeBox[]): ShapeBox {
   const x = Math.min(...boxes.map((b) => b.x));
@@ -61,142 +62,135 @@ const contem = (fora: ShapeBox, b: ShapeBox): boolean => {
   const c = centro(b);
   return c.x >= fora.x && c.x <= fora.x + fora.w && c.y >= fora.y && c.y <= fora.y + fora.h;
 };
-const encosta = (a: ShapeBox, b: ShapeBox, folga = ENCOSTA): boolean =>
-  a.x - folga <= b.x + b.w && b.x - folga <= a.x + a.w && a.y - folga <= b.y + b.h && b.y - folga <= a.y + a.h;
 const distancia = (a: ShapeBox, b: ShapeBox): number => {
   const ca = centro(a);
   const cb = centro(b);
   return Math.hypot(ca.x - cb.x, ca.y - cb.y);
 };
+/** Quanto duas caixas se sobrepõem na horizontal, em % da menor. */
+const sobreX = (a: ShapeBox, b: ShapeBox): number => {
+  const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+  return w <= 0 ? 0 : w / Math.max(0.01, Math.min(a.w, b.w));
+};
+/** Quanto duas caixas se sobrepõem, em % da menor delas. */
+const sobreposicao = (a: ShapeBox, b: ShapeBox): number => {
+  const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+  const h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+  if (w <= 0 || h <= 0) return 0;
+  return (w * h) / Math.max(0.01, Math.min(area(a), area(b)));
+};
+const encosta = (a: ShapeBox, b: ShapeBox, folga = ENCOSTA): boolean =>
+  a.x - folga <= b.x + b.w && b.x - folga <= a.x + a.w && a.y - folga <= b.y + b.h && b.y - folga <= a.y + a.h;
 
 /**
- * Os blocos da lâmina, na ordem de leitura (título, colunas da esquerda para a direita, rodapé).
- * Quem não é conteúdo (ícone, filete, seta) fica em `presos` do bloco mais próximo e anda com ele.
+ * A lâmina em grupos. Título e rodapé saem pelas faixas (como no resto do app); o conteúdo é
+ * agrupado por COLUNAS (quem se sobrepõe no eixo X) e, dentro da coluna, pelos vãos verticais — é o
+ * que separa "três cartões lado a lado" de "um cartão com três parágrafos".
  */
-export function blocosDa(slide: Slide): Bloco[] {
+export function analisar(slide: Slide): Conteudo {
   const vivas = slide.shapes.filter((s) => !s.fixa && !s.liga && !s.oculta);
-  const mapa = new Map(vivas.map((s) => [s.id, s]));
   const textos = vivas.filter((s) => temTexto(s) && s.kind !== "imagem" && !s.tabela && !s.grafico);
-  const imagens = vivas.filter((s) => ehImagem(s) && !temTexto(s));
-  const paineis = imagens.filter((s) => area(s.box) >= AREA_PAINEL);
-  const soltas = vivas.filter((s) => !textos.includes(s) && !paineis.includes(s));
+  // painéis são as imagens de fundo/cartão — mas mídia (vídeo/áudio) NÃO é painel: nunca é podada
+  const paineis = vivas.filter((s) => ehImagem(s) && !temTexto(s) && !s.midia && area(s.box) >= AREA_PAINEL);
   const usados = new Set<string>();
-  const blocos: Bloco[] = [];
-  const criar = (papel: Papel, ids: string[]): Bloco => {
-    const boxes = ids.map((id) => mapa.get(id)!.box);
-    const letra = Math.max(0, ...ids.map((id) => maiorLetra(mapa.get(id)!)));
+  const grupo = (ids: string[]): Grupo => {
     ids.forEach((id) => usados.add(id));
-    return { papel, ids: [...ids], box: caixaDe(boxes), letra, presos: [] };
-  };
-  const recalcular = (b: Bloco) => {
-    b.box = caixaDe(b.ids.map((id) => mapa.get(id)!.box));
-    b.letra = Math.max(0, ...b.ids.map((id) => maiorLetra(mapa.get(id)!)));
+    const formas = ids.map((id) => slide.shapes.find((s) => s.id === id)).filter((s): s is Shape => !!s);
+    return { ids: [...ids], presos: [], box: caixaDe(formas.map((s) => s.box)) };
   };
 
-  // ---- painéis de fundo: as imagens grandes viram o fundo da coluna mais próxima
-  for (const p of paineis) blocos.push(criar("painel", [p.id]));
-
-  // ---- título: o(s) texto(s) grande(s) da faixa de cima
-  const daFaixa = textos.filter((t) => t.box.y + t.box.h / 2 < FAIXA_TITULO);
+  // ---- título: o(s) texto(s) grande(s) da faixa de cima + o antetítulo/subtítulo que o acompanham
+  const daFaixa = textos.filter((t) => t.box.y + t.box.h / 2 < 34);
   const maiorDaFaixa = Math.max(0, ...daFaixa.map(maiorLetra));
-  const tituloIds = daFaixa.filter((t) => maiorLetra(t) >= Math.max(14, maiorDaFaixa * 0.72)).map((t) => t.id);
-  let titulo: Bloco | null = tituloIds.length ? criar("titulo", tituloIds) : null;
-  if (titulo) {
-    // antetítulo/subtítulo: textos na mesma faixa de largura, logo acima ou abaixo do título
+  const tituloIds = new Set(daFaixa.filter((t) => maiorLetra(t) >= Math.max(14, maiorDaFaixa * 0.72)).map((t) => t.id));
+  let titulo: Grupo | null = null;
+  if (tituloIds.size) {
+    const caixaTitulo = caixaDe(textos.filter((t) => tituloIds.has(t.id)).map((t) => t.box));
     for (const t of textos) {
-      if (usados.has(t.id)) continue;
-      const perto = t.box.y + t.box.h > titulo.box.y - 4 && t.box.y < titulo.box.y + titulo.box.h + 4.5;
-      const sobre = Math.min(t.box.x + t.box.w, titulo.box.x + titulo.box.w) - Math.max(t.box.x, titulo.box.x);
-      if (perto && sobre > 0.5 * Math.min(t.box.w, titulo.box.w)) {
-        titulo.ids.push(t.id);
-        usados.add(t.id);
-      }
+      if (tituloIds.has(t.id)) continue;
+      const perto = t.box.y + t.box.h > caixaTitulo.y - 4 && t.box.y < caixaTitulo.y + caixaTitulo.h + 4.5;
+      const sobre = sobreX(t.box, caixaTitulo);
+      if (perto && sobre > 0.5) tituloIds.add(t.id);
     }
-    recalcular(titulo);
-    blocos.push(titulo);
+    titulo = grupo([...tituloIds]);
   }
 
   // ---- rodapé: os textos da faixa de baixo
-  const rodapeIds = textos.filter((t) => !usados.has(t.id) && t.box.y >= FAIXA_RODAPE).map((t) => t.id);
-  if (rodapeIds.length) blocos.push(criar("rodape", rodapeIds));
+  const rodapeIds = textos.filter((t) => !usados.has(t.id) && t.box.y >= 76).map((t) => t.id);
+  const rodape = rodapeIds.length ? grupo(rodapeIds) : null;
 
-  // ---- diagrama: formas sem texto que se encostam viram UM bloco. Quando ele ocupa a lâmina
-  // (organograma, infográfico), leva junto os textos de dentro: o conjunto anda como um todo.
-  const semTexto = soltas.filter((s) => !temTexto(s));
-  const grande = agrupar(semTexto).find((g) => g.length >= DIAGRAMA_MIN && g.reduce((a, s) => a + area(s.box), 0) > 6);
-  if (grande) {
-    const caixa = caixaDe(grande.map((s) => s.box));
-    const dentro = textos.filter((t) => !usados.has(t.id) && contem(caixa, t.box));
-    if ((area(caixa) >= 25 || grande.length >= 8) && dentro.length) {
-      for (const t of dentro) usados.add(t.id);
-      blocos.push(criar("diagrama", [...grande.map((s) => s.id), ...dentro.map((t) => t.id)]));
-    } else {
-      blocos.push(criar("diagrama", grande.map((s) => s.id)));
+  // ---- diagrama: um bloco de formas sem texto que ocupa a lâmina (organograma, quadro) anda inteiro,
+  // levando junto os textos de dentro. É conteúdo desenhado, não uma coluna de texto.
+  // painéis são fundo, não diagrama: sem esta exclusão os cartões de fundo "grudam" e engolem o texto todo
+  const soltas = vivas.filter((s) => !usados.has(s.id) && !temTexto(s) && !paineis.includes(s));
+  let diagrama: Grupo | null = null;
+  for (const g of agrupar(soltas)) {
+    if (g.length < 4) continue;
+    const caixa = caixaDe(g.map((s) => s.box));
+    if (area(caixa) < 25) continue;
+    const dentro = textos.filter((t) => !usados.has(t.id) && contem(caixa, t.box)).map((t) => t.id);
+    if (dentro.length) {
+      diagrama = grupo([...g.map((s) => s.id), ...dentro]);
+      break;
     }
   }
 
-  // ---- conteúdo: o resto, em COLUNAS (vãos verticais) e, dentro delas, em blocos (vãos horizontais)
-  const corpo = textos.filter((t) => !usados.has(t.id));
-  for (const col of colunasDe(corpo)) {
+  // ---- conteúdo: o resto, em colunas (sobreposição no eixo X) e grupos (vãos verticais)
+  const restantes = textos.filter((t) => !usados.has(t.id));
+  const grupos: Grupo[] = [];
+  for (const col of colunasDe(restantes)) {
     const ordenadas = [...col].sort((a, b) => a.box.y - b.box.y);
     let atual: Shape[] = [];
     const fechar = () => {
-      if (atual.length) blocos.push(criar("corpo", atual.map((s) => s.id)));
+      if (atual.length) grupos.push(grupo(atual.map((s) => s.id)));
       atual = [];
     };
     for (const t of ordenadas) {
       const ultimo = atual[atual.length - 1];
-      if (ultimo && t.box.y - (ultimo.box.y + ultimo.box.h) > 1.6) fechar();
+      if (ultimo && t.box.y - (ultimo.box.y + ultimo.box.h) > 5) fechar();
       atual.push(t);
     }
     fechar();
   }
-  // ---- ícones, filetes e sobras: presos ao bloco mais próximo (contido nele vale distância 0)
+  if (diagrama) grupos.push(diagrama);
+
+  // ---- ícones e miudezas: presos ao grupo mais próximo (dentro dele vale distância 0)
+  const todos = [...(titulo ? [titulo] : []), ...grupos, ...(rodape ? [rodape] : [])];
   for (const s of vivas) {
-    if (usados.has(s.id)) continue;
-    let melhor: Bloco | null = null;
+    if (usados.has(s.id) || paineis.includes(s)) continue;
+    let melhor: Grupo | null = null;
     let d = Infinity;
-    for (const b of blocos) {
-      // a decoração segue o CONTEÚDO, não o painel de fundo (o painel escala para cobrir a coluna)
-      if (b.papel === "painel") continue;
-      const dd = contem(b.box, s.box) ? 0 : distancia(b.box, s.box);
+    for (const g of todos) {
+      const dd = contem(g.box, s.box) ? 0 : distancia(g.box, s.box);
       if (dd < d) {
         d = dd;
-        melhor = b;
+        melhor = g;
       }
     }
-    if (melhor && d <= 9) {
+    if (melhor && d <= ALCANCE_ICONE) {
       melhor.presos.push(s.id);
       usados.add(s.id);
     }
   }
-  return blocos;
+
+  return { titulo, grupos, rodape, paineis };
 }
 
-/** Colunas naturais: projeta as caixas no eixo X e corta nos vãos maiores que o vão de coluna. */
+/** Colunas naturais: duas formas estão na mesma coluna quando se sobrepõem no eixo X. */
 function colunasDe(formas: Shape[]): Shape[][] {
   if (!formas.length) return [];
-  const ordenadas = [...formas].sort((a, b) => a.box.x - b.box.x || a.box.y - b.box.y);
   const colunas: Shape[][] = [];
-  let atual: Shape[] = [ordenadas[0]];
-  let fim = ordenadas[0].box.x + ordenadas[0].box.w;
-  for (const s of ordenadas.slice(1)) {
-    if (s.box.x <= fim + 1.2) {
-      atual.push(s);
-      fim = Math.max(fim, s.box.x + s.box.w);
-    } else {
-      colunas.push(atual);
-      atual = [s];
-      fim = s.box.x + s.box.w;
-    }
+  for (const s of [...formas].sort((a, b) => a.box.x - b.box.x)) {
+    const col = colunas.find((c) => sobreX(s.box, caixaDe(c.map((f) => f.box))) > 0.55);
+    if (col) col.push(s);
+    else colunas.push([s]);
   }
-  colunas.push(atual);
   return colunas;
 }
 
 /** Agrupa as formas que se encostam (união por proximidade). */
 function agrupar(formas: Shape[]): Shape[][] {
-  const grupo: Shape[][] = [];
+  const grupos: Shape[][] = [];
   const vistos = new Set<Shape>();
   for (const s of formas) {
     if (vistos.has(s)) continue;
@@ -213,279 +207,660 @@ function agrupar(formas: Shape[]): Shape[][] {
         }
       }
     }
-    if (g.length) grupo.push(g);
+    if (g.length) grupos.push(g);
   }
-  return grupo;
+  return grupos;
 }
 
 // ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// layout
+// paleta
 // ---------------------------------------------------------------------------
 
-type Modo = "natural" | "empilhado" | "duas";
-
-/** Uma transformação de bloco: escala em volta do canto superior esquerdo + deslocamento, com o piso da letra. */
-interface Transf {
-  s: number;
-  dx: number;
-  dy: number;
-  origem: ShapeBox;
-  piso: number;
+interface Paleta {
+  acento: string;
+  escuro: string;
+  /** quase branco, para os cartões */
+  tinta: string;
+  /** bem claro, para faixas alternadas */
+  suave: string;
 }
 
-const caixaEm = (b: ShapeBox, t: Transf): ShapeBox => ({
-  x: t.origem.x + (b.x - t.origem.x) * t.s + t.dx,
-  y: t.origem.y + (b.y - t.origem.y) * t.s + t.dy,
-  w: Math.max(0.01, b.w * t.s),
-  h: Math.max(0.01, b.h * t.s),
-});
+const rgb = (hex: string): [number, number, number] => {
+  const h = hex.replace("#", "");
+  const n = h.length === 3 ? h.split("").map((c) => c + c).join("") : h.padEnd(6, "0").slice(0, 6);
+  return [parseInt(n.slice(0, 2), 16), parseInt(n.slice(2, 4), 16), parseInt(n.slice(4, 6), 16)];
+};
+const hex = (r: number, g: number, b: number): string =>
+  [r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("");
+const misturar = (a: string, b: string, f: number): string => {
+  const [r1, g1, b1] = rgb(a);
+  const [r2, g2, b2] = rgb(b);
+  return hex(r1 + (r2 - r1) * f, g1 + (g2 - g1) * f, b1 + (b2 - b1) * f);
+};
+const luminancia = (c: string): number => {
+  const [r, g, b] = rgb(c);
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+};
+/** Saturação grosseira: serve para separar a cor da marca dos cinzas do texto. */
+const saturacao = (c: string): number => {
+  const [r, g, b] = rgb(c);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  return max === 0 ? 0 : (max - min) / max;
+};
 
-const pisoDe = (b: Bloco): number => (b.papel === "titulo" ? PISO_TITULO : b.papel === "rodape" ? PISO_ETIQUETA : PISO_CORPO);
-
-/** Aplica a transformação numa forma: caixa, letra de cada trecho (com piso) e espessura do traço. */
-function transformar(f: Shape, t: Transf): Shape {
-  if (t.s === 1 && t.dx === 0 && t.dy === 0) return f;
-  const escalar = (v: number, piso: number): number => Math.max(piso, v * t.s);
+/** A cor da marca: a mais frequente entre os preenchimentos saturados (fora branco/preto/cinza). */
+function paletaDe(slide: Slide): Paleta {
+  const contagem = new Map<string, number>();
+  for (const f of slide.shapes) {
+    for (const c of [f.fillX?.kind === "solid" ? f.fillX.color : undefined, f.fill]) {
+      if (!c) continue;
+      const cor = c.replace("#", "").toUpperCase();
+      if (!/^[0-9A-F]{6}$/.test(cor)) continue;
+      if (luminancia(cor) > 0.92 || luminancia(cor) < 0.12) continue;
+      if (saturacao(cor) < 0.25) continue;
+      contagem.set(cor, (contagem.get(cor) ?? 0) + 1);
+    }
+  }
+  const acento = [...contagem.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "0B7A45";
   return {
-    ...f,
-    box: caixaEm(f.box, t),
-    fontSize: escalar(f.fontSize, t.piso),
-    paras: f.paras?.map((p: Para): Para => ({ ...p, runs: p.runs.map((r) => (r.text?.trim() ? { ...r, size: escalar(r.size, t.piso) } : r)) })),
-    ln: f.ln ? { ...f.ln, w: Math.max(0.25, f.ln.w * t.s) } : f.ln,
+    acento,
+    escuro: misturar(acento, "000000", 0.35),
+    tinta: misturar(acento, "FFFFFF", 0.94),
+    suave: misturar(acento, "FFFFFF", 0.88),
   };
+}
+
+// ---------------------------------------------------------------------------
+// desenho
+// ---------------------------------------------------------------------------
+
+let sequencia = 0;
+
+interface Estilo {
+  paleta: Paleta;
+  /** 0 = cartões claros, 1 = faixas, 2 = destaque */
+  variante: number;
+}
+
+const solido = (color: string): Fill => ({ kind: "solid", color });
+
+/** Uma forma decorativa nova (fundo de cartão, faixa, filete). */
+function forma(box: ShapeBox, opts: { fill?: string; ln?: { color: string; w: number; alpha?: number }; cantos?: number; alpha?: number }): Shape {
+  const s: Shape = {
+    id: `cmp-${++sequencia}`,
+    kind: "forma",
+    box,
+    text: "",
+    fontFamily: "",
+    fontSize: 12,
+    color: "000000",
+    bold: false,
+    italic: false,
+    align: "esquerda",
+    fill: opts.fill ?? "",
+    src: "",
+    rot: 0,
+    geom: opts.cantos ? "roundRect" : "rect",
+    cantos: opts.cantos ? [opts.cantos, opts.cantos, opts.cantos, opts.cantos] : undefined,
+    fillX: opts.fill ? { ...solido(opts.fill), alpha: opts.alpha } : undefined,
+    ln: opts.ln ? { color: opts.ln.color, alpha: opts.ln.alpha ?? 1, w: opts.ln.w } : undefined,
+  };
+  return s;
+}
+
+/** A cor do texto é clara? (branco/near-white: foi desenhado para uma faixa colorida) */
+const textoClaro = (s: Shape): boolean => {
+  const cores = [s.color, ...(s.paras ?? []).flatMap((p) => p.runs.map((r) => r.color))].filter((c): c is string => !!c);
+  return cores.length > 0 && cores.some((c) => /^[0-9a-fA-F]{6}$/.test(c.replace("#", "")) && luminancia(c) > 0.86);
+};
+
+const cartao = (box: ShapeBox, p: Paleta, faixa: number): Shape[] => {
+  const fundo = forma(box, { fill: p.tinta, ln: { color: p.acento, w: 0.75, alpha: 0.28 }, cantos: 1.1 });
+  if (faixa <= 0) return [fundo];
+  const topo = forma({ ...box, h: Math.min(box.h, faixa) }, { fill: p.acento, cantos: 1.1 });
+  // só os cantos de cima arredondados, para encostar no cartão
+  topo.cantos = [1.1, 1.1, 0, 0];
+  return [fundo, topo];
+};
+
+const faixaFundo = (box: ShapeBox, p: Paleta, destaque: boolean, faixa: number): Shape[] => {
+  const cor = destaque ? p.tinta : "ffffff";
+  const fundo = forma(box, { fill: cor, ln: { color: p.acento, w: 0.6, alpha: 0.16 }, cantos: 0.8 });
+  const barra = forma({ x: box.x, y: box.y + 0.5, w: 0.32, h: Math.max(0.8, box.h - 1) }, { fill: p.acento, cantos: 0.16 });
+  const partes = [fundo, barra];
+  if (faixa > 0) {
+    const topo = forma({ ...box, h: Math.min(box.h, faixa) }, { fill: p.acento, cantos: 0.8 });
+    topo.cantos = [0.8, 0.8, 0, 0];
+    partes.push(topo);
+  }
+  return partes;
+};
+
+/** Escala mínima do grupo para o texto de conteúdo não descer do piso. */
+function escalaMinima(slide: Slide, g: Grupo): number {
+  const letras = g.ids
+    .map((id) => slide.shapes.find((s) => s.id === id))
+    .filter((s): s is Shape => !!s && temTexto(s))
+    .map(maiorLetra)
+    .filter((n) => n >= 10);
+  if (!letras.length) return 0.55;
+  return Math.max(0.55, PISO_LETRA / Math.min(...letras));
+}
+
+/** Aplica o grupo na lâmina: caixa e letra na mesma proporção, nunca abaixo do piso. */
+function aplicarGrupo(slide: Slide, g: Grupo, destino: ShapeBox, escala: number, novos: Shape[], cor?: string): void {
+  const origem = g.box;
+  for (const id of [...g.ids, ...g.presos]) {
+    const f = slide.shapes.find((s) => s.id === id);
+    if (!f) continue;
+    const ehTexto = temTexto(f) && f.kind !== "imagem";
+    const escalaLetra = ehTexto ? Math.max(escala, Math.min(1, maiorLetra(f) >= 10 ? PISO_LETRA / Math.max(1, maiorLetra(f)) : 1)) : escala;
+    const box: ShapeBox = {
+      x: destino.x + (f.box.x - origem.x) * escala,
+      y: destino.y + (f.box.y - origem.y) * escala,
+      w: Math.max(0.01, f.box.w * escala),
+      h: Math.max(0.01, f.box.h * escala),
+    };
+    const novo: Shape = { ...f, box };
+    if (ehTexto && f.paras?.length) {
+      novo.fontSize = Math.max(1, f.fontSize * escalaLetra);
+      novo.paras = f.paras.map((p) => ({
+        ...p,
+        runs: p.runs.map((r) => ({ ...r, size: Math.max(1, r.size * escalaLetra), color: cor ?? r.color })),
+      }));
+      if (cor) novo.color = cor;
+    }
+    if (f.ln) novo.ln = { ...f.ln, w: Math.max(0.25, f.ln.w * escala) };
+    novos.push(novo);
+  }
 }
 
 /**
- * Recompor = NORMALIZAR a lâmina (não reconstruir): o desenho é preservado e o que muda é a
- * posição — margens iguais, colunas alinhadas e com o mesmo vão, rodapé no lugar, painéis
- * emoldurando as colunas, e a letra só desce quando o texto não cabe (até o piso). Entre as
- * variantes (as colunas naturais, tudo numa coluna e duas colunas iguais), vence a de menos defeito.
+ * Monta a lâmina composta. Devolve `null` quando o conteúdo não cabe em nenhum padrão com o texto
+ * legível (aí a lâmina fica como está — melhor não mexer do que entregar ilegível).
  */
-export function recompor(slide: Slide, ratio: number): Slide {
-  const blocos = blocosDa(slide);
-  const conteudo = blocos.filter((b) => b.papel === "corpo" || b.papel === "diagrama");
-  if (!conteudo.length) return slide;
-  let melhor: Slide = slide;
-  let nota = -Infinity;
-  const candidatos: Slide[] = [];
-  for (const modo of ["natural", "duas", "empilhado"] as const) {
-    const novo = layoutar(slide, blocos, modo);
-    if (novo) candidatos.push(novo);
+export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
+  // lâmina com vídeo/áudio fica como está: recomposta poderia esconder ou perder a mídia
+  if (slide.shapes.some((s) => s.midia)) return slide;
+  const c = analisar(slide);
+  if (!c.grupos.length || !c.titulo) return slide;
+  const p = paletaDe(slide);
+
+  const util = 100 - 2 * MARGEM;
+  const escalaTitulo = c.titulo ? Math.min(1, util / Math.max(1, c.titulo.box.w)) : 1;
+  const alturaTitulo = c.titulo ? c.titulo.box.h * escalaTitulo : 0;
+  const topoConteudo = MARGEM + alturaTitulo + (c.titulo ? 4.6 : 0);
+  const escalaRodape = c.rodape ? Math.min(1, util / Math.max(1, c.rodape.box.w)) : 1;
+  const alturaRodape = c.rodape ? c.rodape.box.h * escalaRodape : 0;
+  const baseConteudo = 100 - MARGEM - (c.rodape ? alturaRodape + 3.2 : 0);
+  const alturaUtil = Math.max(8, baseConteudo - topoConteudo);
+
+  interface Colocacao {
+    g: Grupo;
+    destino: ShapeBox;
+    escala: number;
   }
-  // a lâmina de cartões (fotos, cards) continua se entendendo com a grade: ela entra como candidata
-  const cards = slide.shapes.filter((f) => !f.fixa && (f.kind === "imagem" || f.src) && f.box.w * f.box.h >= 3).length;
-  if (cards >= 4) {
-    for (const v of variantesDe("grade", cards).slice(0, 3)) candidatos.push(aplicarArranjo(slide, "grade", v, ratio));
-    candidatos.push(aplicarArranjo(slide, "fluxo", 0, ratio));
+  interface Desenho {
+    fundos: Shape[];
+    /** conteúdo re-tipografado (já posicionado) */
+    conteudo?: Shape[];
+    /** ou blocos inteiros só movidos/escalados */
+    colocacoes?: Colocacao[];
   }
-  // a rede de segurança: se nenhuma variante ficou melhor que a lâmina ORIGINAL, ela volta como está
-  nota = avaliar(slide, slide, blocos);
-  for (const c of candidatos) {
-    const n = avaliar(slide, c, blocos);
-    if (n > nota + 0.02) {
-      nota = n;
-      melhor = c;
+
+  const n = c.grupos.length;
+
+  // o painel que estava atrás do grupo vira o FUNDO do cartão dele: a imagem é reaproveitada,
+  // nunca apagada (e o véu branco por cima garante o contraste do texto)
+  // A imagem de FUNDO tem texto por cima (é decoração: pode ser coberta). A imagem de CONTEÚDO
+  // (print, foto) não tem texto por cima — essa não pode ser coberta nem sumir.
+  const textosDa = slide.shapes.filter((s) => temTexto(s) && s.kind !== "imagem");
+  const temTextoEm = (p: Shape): boolean => textosDa.some((t) => contem(p.box, t.box));
+  // arte de canto (a tarja verde do deck) não é "imagem de conteúdo"
+  const ehCanto = (p: Shape): boolean =>
+    (p.box.x >= 68 && p.box.y <= 4) || (p.box.x >= 68 && p.box.y + p.box.h >= 96) || (p.box.x <= 4 && p.box.y + p.box.h >= 96) || (p.box.x <= 4 && p.box.y <= 4);
+  const imagemDeConteudo = (p: Shape): boolean => area(p.box) >= 300 && !temTextoEm(p) && !ehCanto(p);
+  const painelDe = (g: Grupo): Shape | undefined =>
+    c.paineis.find((p) => imagemDeConteudo(p) && !contem(p.box, g.box) && sobreposicao(p.box, g.box) > 0.2);
+  const paineisUsados = new Set<Shape>();
+
+  // -------------------------------------------------------------------------
+  // re-tipografia: o texto é reescrito no padrão novo (título grande no topo do
+  // cartão, corpo legível), em vez de o bloco antigo só encolher
+  // -------------------------------------------------------------------------
+
+  const PT_CABECALHO = 17;
+  const PT_CORPO = 12.5;
+  const LINHA = 1.26;
+  const LARGURA_CHAR = 0.52;
+
+  // medida de verdade: no navegador o texto é medido no canvas (a mesma fonte que vai desenhar);
+  // na bancada (Node) cai numa estimativa conservadora. Subestimar aqui = texto vazando depois.
+  let medidor: CanvasRenderingContext2D | null | undefined;
+  function contexto(): CanvasRenderingContext2D | null {
+    if (medidor !== undefined) return medidor;
+    try {
+      medidor = typeof document !== "undefined" ? document.createElement("canvas").getContext("2d") : null;
+    } catch {
+      medidor = null;
     }
-  }
-  void ratio;
-  return melhor;
-}
-
-/** Coloca os blocos na lâmina, alinhando e distribuindo. */
-function layoutar(slide: Slide, blocos: Bloco[], modo: Modo): Slide | null {
-  const transf = new Map<string, Transf>();
-  const util = 100 - 2 * MARGEM_X;
-  const anotar = (b: Bloco, x: number, y: number, s: number): Transf => {
-    const t: Transf = { s, dx: x - b.box.x, dy: y - b.box.y, origem: b.box, piso: pisoDe(b) };
-    b.ids.forEach((id) => transf.set(id, t));
-    b.presos.forEach((id) => transf.set(id, t));
-    return t;
-  };
-  let topo = MARGEM_TOPO;
-
-  // ---- título: alinhado à margem; só encolhe se passar da largura útil
-  const titulo = blocos.find((b) => b.papel === "titulo");
-  if (titulo) {
-    // sem escalar: a caixa do texto não pode encolher com a letra no piso (o texto vazaria)
-    anotar(titulo, MARGEM_X, topo, 1);
-    topo += titulo.box.h + 2.6;
+    return medidor;
   }
 
-  // ---- rodapé: alinhado embaixo, na margem
-  let base = 100 - MARGEM_BASE;
-  const rodape = blocos.find((b) => b.papel === "rodape");
-  if (rodape) {
-    base -= rodape.box.h;
-    anotar(rodape, MARGEM_X, base, 1);
-    base -= 2;
-  }
-
-  // ---- colunas do conteúdo, conforme o modo
-  const corpo = blocos.filter((b) => b.papel === "corpo" || b.papel === "diagrama").sort((a, b) => a.box.x - b.box.x || a.box.y - b.box.y);
-  const colunas: Bloco[][] = [];
-  if (modo === "empilhado") colunas.push(corpo);
-  else if (modo === "duas") {
-    const meio = Math.ceil(corpo.length / 2);
-    colunas.push(corpo.slice(0, meio), corpo.slice(meio));
-  } else {
-    let atual: Bloco[] = [];
-    let fim = -Infinity;
-    for (const b of corpo) {
-      if (atual.length && b.box.x > fim + 1.2) {
-        colunas.push(atual);
-        atual = [];
-        fim = -Infinity;
+  function linhasDe(texto: string, tamanho: number, larguraPt: number, fonte: string, negrito: boolean): number {
+    const ctx = contexto();
+    const fc = fonteCss(fonte || "sans-serif", negrito);
+    if (ctx) ctx.font = `${fc.peso} ${tamanho}px ${fc.stack}`;
+    const porLinha = Math.max(6, Math.floor(larguraPt / (tamanho * 0.62)));
+    let total = 0;
+    for (const bloco of texto.split("\n")) {
+      if (!bloco.trim()) {
+        total += 1;
+        continue;
       }
-      atual.push(b);
-      fim = Math.max(fim, b.box.x + b.box.w);
-    }
-    if (atual.length) colunas.push(atual);
-  }
-  const uteis = colunas.filter((c) => c.length);
-  if (!uteis.length) return null;
-  // CONSERVADOR: o ritmo vertical do desenho é preservado (cada bloco fica na altura em que está);
-  // o que muda é o **alinhamento** — os blocos de uma coluna na mesma borda esquerda — e, se algum
-  // passar do rodapé, ele sobe até caber. Nada é re-empilhado e nada escala.
-  uteis.forEach((col) => {
-    const colunaX = Math.min(...col.map((b) => b.box.x));
-    for (const b of col) {
-      const t = anotar(b, colunaX, b.box.y, 1);
-      const fim = b.box.y + b.box.h;
-      if (fim > base) t.dy -= fim - base;
-    }
-  });
-
-  // ---- painéis de fundo: cada imagem grande emoldura a coluna mais próxima
-  for (const p of blocos.filter((b) => b.papel === "painel" && transf.has(b.ids[0]))) {
-    const t = transf.get(p.ids[0])!;
-    const box = caixaEm(p.box, t);
-    const c = centro(box);
-    let alvo = uteis[0];
-    let d = Infinity;
-    for (const col of uteis) {
-      const cb = caixaDe(col.map((b) => ({ ...b.box, ...caixaEm(b.box, transf.get(b.ids[0])!) })));
-      const cc = centro(cb);
-      const dd = Math.hypot(c.x - cc.x, c.y - cc.y);
-      if (dd < d) {
-        d = dd;
-        alvo = col;
+      if (!ctx) {
+        total += Math.max(1, Math.ceil(bloco.length / porLinha));
+        continue;
       }
+      let n = 1;
+      let atual = "";
+      for (const palavra of bloco.split(/\s+/).filter(Boolean)) {
+        const teste = atual ? `${atual} ${palavra}` : palavra;
+        if (atual && ctx.measureText(teste).width > larguraPt) {
+          n++;
+          atual = palavra;
+        } else atual = teste;
+      }
+      total += n;
     }
-    const cb = caixaDe(alvo.map((b) => ({ ...b.box, ...caixaEm(b.box, transf.get(b.ids[0])!) })));
-    // o painel mantém o enquadramento: cobre a coluna, com um respiro igual em cima e embaixo
-    const alvoW = Math.max(6, cb.w + 2.4);
-    const s = alvoW / Math.max(1, p.box.w);
-    const cx = cb.x + cb.w / 2;
-    const cy = cb.y + cb.h / 2;
-    let dx = cx - (p.box.x + p.box.w / 2) * s;
-    let dy = cy - (p.box.y + p.box.h / 2) * s;
-    // o painel não sai da lâmina (cobre a coluna e para na borda)
-    const novoT = { w: p.box.w * s, h: p.box.h * s };
-    if (p.box.x * s + dx < 0) dx = -p.box.x * s;
-    if (p.box.y * s + dy < 0) dy = -p.box.y * s;
-    if (p.box.x * s + dx + novoT.w > 100) dx = 100 - novoT.w - p.box.x * s;
-    if (p.box.y * s + dy + novoT.h > 100) dy = 100 - novoT.h - p.box.y * s;
-    const t2: Transf = { s, dx, dy, origem: { x: 0, y: 0, w: 100, h: 100 }, piso: PISO_ETIQUETA };
-    transf.set(p.ids[0], t2);
+    return Math.max(1, total);
   }
 
-  return {
-    ...slide,
-    shapes: slide.shapes.map((s) => {
-      if (s.fixa) return s;
-      const t = transf.get(s.id);
-      const r = t ? transformar(s, t) : s;
-      // decoração não sai da lâmina (um filete preso a um bloco que subiu/desceu não pode vazar)
-      if (!r.paras?.length) {
-        const b = r.box;
-        if (b.x < 0 || b.y < 0 || b.x + b.w > 100 || b.y + b.h > 100) {
-          return { ...r, box: { ...b, x: Math.max(0, Math.min(100 - b.w, b.x)), y: Math.max(0, Math.min(100 - b.h, b.y)) } };
-        }
-      }
-      return r;
-    }),
-  };
-}
+  /** Altura da faixa de imagem no topo do cartão (a imagem aparece INTEIRA, nunca atrás do texto). */
+  function bandaDaImagem(papel: Shape | undefined, largura: number): number {
+    if (!papel) return 0;
+    const util = largura - 4;
+    const proporcao = papel.box.h / Math.max(0.01, papel.box.w);
+    return Math.min(util * proporcao, largura * 0.42);
+  }
 
-/**
- * Último recurso: quando a letra no piso ainda não cabe (caixa pequena demais), a letra desce até
- * caber. É melhor um texto um pouco menor do que um texto vazando por cima do vizinho.
- */
-function ajustarLetra(f: Shape): Shape {
-  if (!f.paras?.length || textoCabe(f)) return f;
-  let atual = f;
-  for (let i = 0; i < 30 && !textoCabe(atual); i++) {
-    if (maiorLetra(atual) <= 6.1) break;
-    const paras = atual.paras;
-    if (!paras) break;
-    atual = {
-      ...atual,
-      fontSize: Math.max(6, atual.fontSize * 0.93),
-      paras: paras.map((p) => ({ ...p, runs: p.runs.map((r) => ({ ...r, size: Math.max(6, r.size * 0.93) })) })),
+  /** Altura (em % da lâmina) da forma reescrita no tamanho dado. */
+  function alturaDaForma(s: Shape, tamanho: number, larguraPct: number): number {
+    const larguraPt = Math.max(20, (larguraPct / 100) * 960);
+    let total = 0;
+    for (const p of s.paras ?? []) {
+      // quebras de linha dentro do parágrafo (run.br = <br>) contam como linha
+      const texto = p.runs.map((r) => (r.br ? "\n" : r.text ?? "")).join("");
+      const base = Math.max(1, p.runs[0]?.size ?? tamanho);
+      const marL = (p.marL ?? 0) * (tamanho / base);
+      const negrito = p.runs.some((r) => r.bold) || s.bold;
+      const fonte = p.runs[0]?.font || s.fontFamily || "sans-serif";
+      const linhas = linhasDe(texto, tamanho, Math.max(12, larguraPt - marL), fonte, negrito);
+      // a mesma razão de linha que o renderizador usa (medida na fonte de verdade)
+      total += linhas * tamanho * razaoDeLinha(fonte, negrito) * (p.lnSpc?.pct ?? 1) + (p.spcBef ?? 0) + (p.spcAft ?? 0);
+    }
+    return (total * 1.05 * 100) / 540;
+  }
+
+  interface Linha {
+    forma: Shape;
+    texto: string;
+    negrito: boolean;
+    icones: Shape[];
+  }
+  interface GrupoTexto {
+    cabecalho: Linha | null;
+    corpo: Linha[];
+    g: Grupo;
+  }
+
+  /** Lê um grupo como texto corrido: um cabeçalho e os parágrafos. Só vale para grupos de UMA coluna. */
+  function preparar(g: Grupo): GrupoTexto | null {
+    const textos = g.ids
+      .map((id) => slide.shapes.find((s) => s.id === id))
+      .filter((s): s is Shape => !!s && temTexto(s) && s.kind !== "imagem");
+    if (!textos.length) return null;
+    if (!textos.every((t) => sobreX(t.box, g.box) > 0.6)) return null;
+    textos.sort((a, b) => a.box.y - b.box.y);
+    const imagens = g.presos.map((id) => slide.shapes.find((s) => s.id === id)).filter((s): s is Shape => !!s && ehImagem(s));
+    const iconesDe = (t: Shape) =>
+      imagens.filter((i) => {
+        const meio = i.box.y + i.box.h / 2;
+        return meio >= t.box.y - 0.4 && meio <= t.box.y + t.box.h + 0.4;
+      });
+    const linhas: Linha[] = textos.map((t) => ({
+      forma: t,
+      texto: txt(t),
+      negrito: t.bold || (t.paras ?? []).some((p) => p.runs.some((r) => r.bold)),
+      icones: iconesDe(t),
+    }));
+    const primeiro = linhas[0];
+    // é cabeçalho quando é curto e (negrito, CAIXA ALTA ou maior que o texto de baixo) — o "título"
+    // de um cartão no estilo Office costuma ser uma etiqueta em caixa alta, não a maior letra
+    const caixaAlta = primeiro.texto.length > 3 && primeiro.texto === primeiro.texto.toUpperCase();
+    const temCabecalho =
+      linhas.length >= 2 &&
+      primeiro.texto.length <= 90 &&
+      (primeiro.negrito || caixaAlta || maiorLetra(primeiro.forma) > maiorLetra(linhas[1].forma) + 0.4);
+    return { cabecalho: temCabecalho ? primeiro : null, corpo: temCabecalho ? linhas.slice(1) : linhas, g };
+  }
+
+  /** Reescreve uma forma de texto na caixa e no tamanho pedidos (mantém o desenho dos trechos). */
+  function reescrever(l: Linha, box: ShapeBox, tamanho: number, cor?: string): Shape {
+    return {
+      ...l.forma,
+      box,
+      fontSize: tamanho,
+      color: cor ?? l.forma.color,
+      paras: (l.forma.paras ?? []).map((p) => ({
+        ...p,
+        runs: p.runs.map((r) => ({ ...r, size: tamanho, color: cor ?? r.color })),
+      })),
     };
   }
-  return atual;
-}
 
-/** O que a lâmina tem de errado: textos que não cabem e textos que se sobrepõem. */
-function defeitos(slide: Slide, blocos: Bloco[]): { vaza: number; sobre: number } {
-  const ids = new Set(blocos.filter((b) => b.papel !== "painel").flatMap((b) => b.ids));
-  const textos = slide.shapes.filter((s) => !s.fixa && ids.has(s.id) && s.paras?.length && txt(s));
-  let sobre = 0;
-  for (let i = 0; i < textos.length; i++) {
-    for (let j = i + 1; j < textos.length; j++) {
-      const a = textos[i].box;
-      const b = textos[j].box;
-      const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
-      const h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
-      if (w > 0 && h > 0 && w * h > 0.08 * Math.min(a.w * a.h, b.w * b.h)) sobre++;
+  /**
+   * Coloca o grupo num cartão re-tipografado. `comFaixa` desenha o cabeçalho em faixa colorida.
+   * Devolve as formas (fundo + conteúdo) e a altura usada.
+   */
+  function cartaoDeTexto(gt: GrupoTexto, box: ShapeBox, comFaixa: boolean, papel?: Shape): { fundos: Shape[]; conteudo: Shape[]; altura: number } {
+    const pad = 2;
+    const cab = gt.cabecalho;
+    const cabAltura = cab ? alturaDaForma(cab.forma, PT_CABECALHO, box.w - 2 * pad) + 2.2 : 0;
+    const banda = bandaDaImagem(papel, box.w);
+    const fundos: Shape[] = [];
+    const conteudo: Shape[] = [];
+    // o cartão é o do deck: quase branco, sem borda, canto macio
+    fundos.push(forma(box, { fill: p.tinta, cantos: 1.8 }));
+    if (papel && banda > 0) {
+      // a imagem informativa aparece INTEIRA no topo do cartão (ajustada pela proporção, centrada)
+      const escala = Math.min((box.w - 2 * pad) / Math.max(0.01, papel.box.w), banda / Math.max(0.01, papel.box.h));
+      const w = papel.box.w * escala;
+      const h = papel.box.h * escala;
+      fundos.push({ ...papel, box: { x: box.x + (box.w - w) / 2, y: box.y + 1.6, w, h } });
+    }
+    const topoFaixa = box.y + (banda > 0 ? banda + 1.6 : 0);
+    if (comFaixa && cab) {
+      // minimalista: um filete curto na cor da marca e o título em verde — sem faixa pesada
+      fundos.push(forma({ x: box.x + pad, y: topoFaixa + 0.8, w: 6, h: 0.24 }, { fill: p.acento, cantos: 0.12 }));
+      const hb = { x: box.x + pad, y: topoFaixa + 1.4, w: box.w - 2 * pad, h: alturaDaForma(cab.forma, PT_CABECALHO - 1, box.w - 2 * pad) };
+      conteudo.push(reescrever(cab, hb, PT_CABECALHO - 1, p.acento));
+    }
+    let y = topoFaixa + (comFaixa && cab ? alturaDaForma(cab.forma, PT_CABECALHO - 1, box.w - 2 * pad) + 2 : banda > 0 ? 0.2 : pad);
+    if (cab && !comFaixa) {
+      const h = alturaDaForma(cab.forma, PT_CABECALHO - 1, box.w - 2 * pad);
+      conteudo.push(reescrever(cab, { x: box.x + pad, y, w: box.w - 2 * pad, h }, PT_CABECALHO - 1, p.acento));
+      y += h + 0.6;
+    }
+    for (const par of gt.corpo) {
+      const desloca = par.icones.length ? 3.4 : 0;
+      const h = alturaDaForma(par.forma, PT_CORPO, box.w - 2 * pad - desloca) * 1.08 + 0.3;
+      // ícone à esquerda, alinhado à primeira linha
+      for (const ic of par.icones) {
+        const lado = Math.min(2.4, h * 0.75);
+        conteudo.push({ ...ic, box: { x: box.x + pad, y: y + (h - lado) / 2, w: lado, h: lado } });
+      }
+      const cor = textoClaro(par.forma) ? p.escuro : undefined;
+      conteudo.push(reescrever(par, { x: box.x + pad + desloca, y, w: box.w - 2 * pad - desloca, h }, PT_CORPO, cor));
+      y += h + 0.7;
+    }
+    const altura = Math.max(12, y - box.y + pad - 0.7);
+    return { fundos, conteudo, altura };
+  }
+
+  /** Altura que o cartão de texto vai precisar (para balancear as colunas antes de desenhar). */
+  function alturaDoCartao(gt: GrupoTexto, largura: number, comFaixa: boolean, papel?: Shape): number {
+    const pad = 2;
+    const cab = gt.cabecalho;
+    const banda = bandaDaImagem(papel, largura);
+    let h = (banda > 0 ? banda + 1.6 : 0) + (comFaixa && cab ? alturaDaForma(cab.forma, PT_CABECALHO - 1, largura - 2 * pad) + 2 : banda > 0 ? 0.2 : pad);
+    if (cab && !comFaixa) h += alturaDaForma(cab.forma, PT_CABECALHO - 1, largura - 2 * pad) + 0.6;
+    for (const par of gt.corpo) h += (alturaDaForma(par.forma, PT_CORPO, largura - 2 * pad - (par.icones.length ? 3.4 : 0)) * 1.08 + 0.3) + 0.7;
+    return Math.max(12, h + pad - 0.7);
+  }
+
+  /** Distribui os grupos em colunas por altura (masonry), preservando a ordem de leitura. */
+  function colunasPorAltura(alturas: number[], cols: number): number[][] {
+    const colunas: number[][] = Array.from({ length: cols }, () => []);
+    const totais = new Array(cols).fill(0);
+    alturas.forEach((h, i) => {
+      const menor = totais.indexOf(Math.min(...totais));
+      colunas[menor].push(i);
+      totais[menor] += h;
+    });
+    return colunas.filter((c) => c.length);
+  }
+
+  // ---- cartões re-tipografados (o desenho principal)
+  const cartoesTexto = (cols: number, comFaixa: boolean): Desenho | null => {
+    const preparados = c.grupos.map(preparar);
+    if (preparados.some((g) => !g)) return null;
+    const gts = preparados as GrupoTexto[];
+    if (gts.length > 6) return null;
+    const k = Math.min(cols, gts.length);
+    const larg = (util - VAO * (k - 1)) / k;
+
+    const alturas = gts.map((gt) => alturaDoCartao(gt, larg, comFaixa, painelDe(gt.g)));
+    const colunas = colunasPorAltura(alturas, k);
+    const totais = colunas.map((col) => col.reduce((a, i) => a + alturas[i], 0) + VAO * (col.length - 1));
+    if (Math.max(...totais) > alturaUtil + 0.5) return null;
+    const sobra = alturaUtil - Math.max(...totais);
+    const fundos: Shape[] = [];
+    const conteudo: Shape[] = [];
+    colunas.forEach((col, ci) => {
+      const x = MARGEM + ci * (larg + VAO);
+      let y = topoConteudo + sobra / 2;
+      for (const i of col) {
+        const papel = painelDe(gts[i].g);
+        if (papel) paineisUsados.add(papel);
+        const r = cartaoDeTexto(gts[i], { x, y, w: larg, h: alturas[i] }, comFaixa, papel);
+        fundos.push(...r.fundos);
+        conteudo.push(...r.conteudo);
+        y += alturas[i] + VAO;
+      }
+    });
+    return { fundos, conteudo };
+  };
+
+  // ---- faixas re-tipografadas: cada grupo numa faixa larga, texto grande
+  const faixasTexto = (): Desenho | null => {
+    const preparados = c.grupos.map(preparar);
+    if (preparados.some((g) => !g)) return null;
+    const gts = preparados as GrupoTexto[];
+    const pad = 2.2;
+    const larg = util - 2 * pad - 1.2;
+    const alturas = gts.map((gt) => {
+      let h = gt.cabecalho ? alturaDaForma(gt.cabecalho.forma, PT_CABECALHO + 2, larg) + 0.6 : 0;
+      for (const par of gt.corpo) h += alturaDaForma(par.forma, PT_CORPO, larg) * 1.08 + 0.3 + 0.7;
+      return Math.max(10, h + 2 * pad);
+    });
+    const total = alturas.reduce((a, v) => a + v, 0);
+    if (total + 1.4 * (gts.length - 1) > alturaUtil) return null;
+    const vao = gts.length > 1 ? Math.min(5, (alturaUtil - total) / (gts.length - 1)) : 0;
+    const sobra = gts.length > 1 ? 0 : (alturaUtil - total) / 2;
+    const fundos: Shape[] = [];
+    const conteudo: Shape[] = [];
+    let y = topoConteudo + sobra;
+    gts.forEach((gt, i) => {
+      const h = alturas[i];
+      fundos.push(...faixaFundo({ x: MARGEM, y, w: util, h }, p, i % 2 === 1, 0.6));
+      let yy = y + pad;
+      if (gt.cabecalho) {
+        const ch = alturaDaForma(gt.cabecalho.forma, PT_CABECALHO + 2, larg);
+        conteudo.push(reescrever(gt.cabecalho, { x: MARGEM + pad, y: yy, w: larg, h: ch }, PT_CABECALHO + 2, p.acento));
+        yy += ch + 0.6;
+      }
+      for (const par of gt.corpo) {
+        const ph = alturaDaForma(par.forma, PT_CORPO, larg) * 1.08 + 0.3;
+        const cor = textoClaro(par.forma) ? p.escuro : undefined;
+        conteudo.push(reescrever(par, { x: MARGEM + pad, y: yy, w: larg, h: ph }, PT_CORPO, cor));
+        yy += ph + 0.7;
+      }
+      y += h + vao;
+    });
+    return { fundos, conteudo };
+  };
+
+  /** O grupo tem cabeçalho em texto claro (branco, desenhado para a faixa colorida antiga)? */
+  const cabecalhoClaro = (g: Grupo): boolean =>
+    g.ids.map((id) => slide.shapes.find((s) => s.id === id)).some((s): boolean => !!s && temTexto(s) && textoClaro(s));
+
+  /** Altura da faixa colorida atrás de um cabeçalho branco (para ele não sumir no cartão claro). */
+  const faixaDoCabecalho = (g: Grupo, escala: number, pad: number): number => {
+    const formas = g.ids.map((id) => slide.shapes.find((s) => s.id === id)).filter((s): s is Shape => !!s && temTexto(s));
+    const claros = formas.filter(textoClaro);
+    if (!claros.length) return 0.6;
+    const fim = Math.max(...claros.map((s) => s.box.y + s.box.h));
+    const escuros = formas.filter((f) => !textoClaro(f));
+    const limite = escuros.length ? Math.min(...escuros.map((s) => s.box.y)) - 0.45 : fim;
+    return Math.max(0.6, (Math.min(fim, limite) - g.box.y) * escala + pad + 0.6 + 0.8);
+  };
+
+  /** Põe o grupo no cartão: com cabeçalho claro encosta no topo (a faixa manda); senão centra. */
+  const porNoCartao = (g: Grupo, cell: ShapeBox, escala: number, pad: number): { destino: ShapeBox; faixa: number } => {
+    const claro = cabecalhoClaro(g);
+    const w = g.box.w * escala;
+    const h = g.box.h * escala;
+    return {
+      destino: { x: cell.x + (cell.w - w) / 2, y: claro ? cell.y + pad + 0.6 : cell.y + Math.max(pad, (cell.h - h) / 2), w, h },
+      faixa: claro ? faixaDoCabecalho(g, escala, pad) : 0.6,
+    };
+  };
+
+  // ---- blocos inteiros (para grupos que não são texto corrido: quadros, diagramas)
+  const gradeDe = (cols: number): Desenho | null => {
+    const linhas = Math.ceil(n / cols);
+    const pad = 1.8;
+    const larg = (util - VAO * (cols - 1)) / cols;
+    const eW = c.grupos.map((g) => Math.min(1.6, (larg - 2 * pad) / Math.max(1, g.box.w)));
+    const alturas = c.grupos.map((g, i) => Math.max(g.box.h * eW[i] + 2 * pad + 0.6, 0.6 + pad));
+    const altLinha: number[] = [];
+    for (let r = 0; r < linhas; r++) altLinha.push(Math.max(...alturas.slice(r * cols, r * cols + cols)));
+    let soma = altLinha.reduce((a, v) => a + v, 0) + VAO * (linhas - 1);
+    if (soma > alturaUtil) {
+      const f = (alturaUtil - VAO * (linhas - 1)) / Math.max(0.01, soma - VAO * (linhas - 1));
+      for (let r = 0; r < linhas; r++) altLinha[r] *= f;
+      soma = alturaUtil;
+    }
+    let y = topoConteudo + (alturaUtil - soma) / 2;
+    const fundos: Shape[] = [];
+    const colocacoes: Colocacao[] = [];
+    for (let i = 0; i < n; i++) {
+      const r = Math.floor(i / cols);
+      const cell = { x: MARGEM + (i % cols) * (larg + VAO), y, w: larg, h: altLinha[r] };
+      const g = c.grupos[i];
+      const escala = Math.min(1.6, (cell.w - 2 * pad) / Math.max(1, g.box.w), (cell.h - 2 * pad - 0.6) / Math.max(1, g.box.h));
+      if (escala < escalaMinima(slide, g)) return null;
+      const d = porNoCartao(g, cell, escala, pad);
+      fundos.push(...cartao(cell, p, d.faixa));
+      colocacoes.push({ g, destino: d.destino, escala });
+      if (i % cols === cols - 1 || i === n - 1) y += altLinha[r] + VAO;
+    }
+    return { fundos, colocacoes };
+  };
+
+  // a variante escolhe o desenho; se não couber, tenta os outros
+  const cartoes = (): Desenho | null => cartoesTexto(n <= 3 ? n : n <= 6 ? Math.ceil(n / 2) : 2, true);
+  const lista = (): Desenho | null => cartoesTexto(1, false);
+  const grade = (): Desenho | null => gradeDe(n <= 4 ? 2 : n <= 6 ? 3 : n <= 8 ? 4 : 5);
+  // a arte generativa (formas) entra atrás do conteúdo: é o "design" quando não há imagem
+  const semente = [...(c.titulo ? c.titulo.ids : []), ...c.grupos.flatMap((g) => g.ids)].join("").split("").reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7) % 997;
+  // imagem + conteúdo: a maior imagem vira o "herói" (redimensionada para caber) e os textos
+  // se acomodam ao lado dela — é o desenho que aproveita a imagem em vez de escondê-la
+  const midiaHero = (): Desenho | null => {
+    const maior = [...c.paineis].filter(imagemDeConteudo).sort((a, b) => area(b.box) - area(a.box))[0];
+    if (!maior) return null;
+    const preparados = c.grupos.map(preparar);
+    if (preparados.some((g) => !g)) return null;
+    const gts = preparados as GrupoTexto[];
+    const heroW = util * 0.46;
+    const colW = util - heroW - VAO;
+    const alturas = gts.map((gt) => alturaDoCartao(gt, colW, true));
+    const total = alturas.reduce((a, v) => a + v, 0) + VAO * (gts.length - 1);
+    if (total > alturaUtil + 0.5) return null;
+    const fundos: Shape[] = [];
+    const conteudo: Shape[] = [];
+    const escala = Math.min(heroW / Math.max(1, maior.box.w), alturaUtil / Math.max(1, maior.box.h));
+    const w = maior.box.w * escala;
+    const h = maior.box.h * escala;
+    const cx = MARGEM + util - heroW + heroW / 2;
+    const cy = topoConteudo + alturaUtil / 2;
+    // o círculo grande atrás da imagem e alguns pontos dão o contraste do desenho
+    const raio = Math.max(w, h) * 0.62;
+    fundos.push({ ...forma({ x: cx - raio, y: cy - raio * 0.9, w: raio * 2, h: raio * 1.8 }, { fill: p.tinta }), geom: "ellipse" });
+    fundos.push({ ...forma({ x: cx + w * 0.42, y: cy - raio * 0.78, w: 1.5, h: 1.5 }, { fill: p.acento, cantos: 0.75 }), geom: "ellipse" });
+    fundos.push({ ...forma({ x: cx + w * 0.5, y: topoConteudo + 1.2, w: 0.9, h: 0.9 }, { fill: misturar(p.acento, "FFFFFF", 0.45), cantos: 0.45 }), geom: "ellipse" });
+    fundos.push({ ...forma({ x: cx - w * 0.5, y: cy + raio * 0.6, w: 1.1, h: 1.1 }, { fill: misturar(p.acento, "000000", 0.15), cantos: 0.55 }), geom: "ellipse" });
+    fundos.push({ ...maior, box: { x: cx - w / 2, y: cy - h / 2, w, h } });
+    paineisUsados.add(maior);
+    let y = topoConteudo + (alturaUtil - total) / 2;
+    gts.forEach((gt, i) => {
+      const r = cartaoDeTexto(gt, { x: MARGEM, y, w: colW, h: alturas[i] }, true);
+      fundos.push(...r.fundos);
+      conteudo.push(...r.conteudo);
+      y += alturas[i] + VAO;
+    });
+    return { fundos, conteudo };
+  };
+
+  const artes: ArteId[] = ["ondas", "facetas", "mosaico", "orbes"];
+  const comArte = false;
+  const ordem = [midiaHero, cartoes, faixasTexto, lista, grade];
+  const pedido = variante % ordem.length;
+  const desenho = [ordem[pedido], ...ordem.filter((_, i) => i !== pedido)].map((f) => f()).find((d): d is Desenho => !!d) ?? null;
+  if (!desenho) return slide;
+  // imagem que NÃO entrou no desenho não pode ficar coberta pelo conteúdo novo (informação perdida)
+  {
+    const caixasNovas = [...desenho.fundos, ...(desenho.conteudo ?? [])].map((s) => s.box);
+    for (const s of slide.shapes) {
+      if (!c.paineis.includes(s) || paineisUsados.has(s) || !imagemDeConteudo(s)) continue;
+      if (caixasNovas.some((b) => sobreposicao(b, s.box) > 0.02)) return slide;
     }
   }
-  const vaza = textos.filter((s) => !textoCabe(s)).length;
-  return { vaza, sobre };
+
+  // ---- monta a lâmina: arte (se for a variante) + fixas + fundos novos + conteúdo
+  const paletaArte = {
+    bg: misturar(p.acento, "08130D", 0.86),
+    fg: "FFFFFF",
+    accent: misturar(p.acento, "FFFFFF", 0.3),
+    muted: misturar(p.acento, "FFFFFF", 0.62),
+  };
+  const formasArte: Shape[] = comArte ? formasDeArte(artes[semente % artes.length], semente, "conteudo", paletaArte, ratio) : [];
+  const corDoTexto = comArte ? "FFFFFF" : undefined;
+  const novos: Shape[] = [];
+  novos.push(...formasArte);
+  for (const s of slide.shapes) if (s.fixa) novos.push(s);
+  // imagem que não virou cartão continua na lâmina (nada de mídia ou imagem apagada)
+  for (const s of slide.shapes) if (c.paineis.includes(s) && !paineisUsados.has(s)) novos.push(s);
+  novos.push(...desenho.fundos);
+
+  const tituloDestino = c.titulo ? { x: MARGEM, y: MARGEM, w: c.titulo.box.w * escalaTitulo, h: alturaTitulo } : null;
+  const rodapeDestino = c.rodape ? { x: MARGEM, y: 100 - MARGEM - alturaRodape, w: c.rodape.box.w * escalaRodape, h: alturaRodape } : null;
+
+  // decoração do título, por variante
+  if (tituloDestino) {
+    if (variante === 1) {
+      novos.push(forma({ x: 0, y: 0, w: 100, h: tituloDestino.h + 2.2 * MARGEM }, { fill: p.tinta }));
+      novos.push(forma({ x: MARGEM, y: tituloDestino.h + 2.2 * MARGEM - 0.18, w: 100, h: 0.18 }, { fill: p.acento, alpha: 0.5 }));
+    } else if (variante === 2) {
+      novos.push(forma({ x: MARGEM - 1.2, y: tituloDestino.y + 0.4, w: 0.36, h: Math.max(1.2, tituloDestino.h - 0.8) }, { fill: p.acento }));
+    } else {
+      novos.push(forma({ x: MARGEM, y: tituloDestino.y - 1.5, w: 9, h: 0.34 }, { fill: p.acento, cantos: 0.17 }));
+    }
+  }
+  if (rodapeDestino) {
+    novos.push(forma({ x: MARGEM, y: rodapeDestino.y - 1.6, w: util, h: 0.08 }, { fill: p.acento, alpha: 0.22 }));
+  }
+
+  // conteúdo
+  if (desenho.conteudo) novos.push(...desenho.conteudo);
+  else for (const col of desenho.colocacoes ?? []) aplicarGrupo(slide, col.g, col.destino, col.escala, novos);
+  if (tituloDestino && c.titulo) aplicarGrupo(slide, c.titulo, tituloDestino, escalaTitulo, novos, corDoTexto);
+  if (rodapeDestino && c.rodape) aplicarGrupo(slide, c.rodape, rodapeDestino, escalaRodape, novos, corDoTexto);
+
+  return { ...slide, shapes: novos, bg: comArte ? { kind: "solid", color: paletaArte.bg } : slide.bg };
 }
 
-/**
- * Nota da variante RELATIVA à lâmina original: só pesa o que ela piorou (a régua do estimator
- * acusa caixas justas que o deck já usa) e a cobertura da área soma.
- */
-function avaliar(original: Slide, novo: Slide, blocos: Bloco[]): number {
-  const antes = defeitos(original, blocos);
-  const depois = defeitos(novo, blocos);
-  let nota = 1 - Math.max(0, depois.vaza - antes.vaza) * 1.2 - Math.max(0, depois.sobre - antes.sobre) * 0.5;
-  // a letra abaixo do piso de conteúdo desce a nota (a não ser que a original já fosse miúda ali)
-  const ids = new Set(blocos.filter((b) => b.papel !== "painel").flatMap((b) => b.ids));
-  const miudas = novo.shapes.filter((s) => !s.fixa && ids.has(s.id) && s.paras?.length && maiorLetra(s) < PISO_CORPO - 0.01).length;
-  const miudasAntes = original.shapes.filter((s) => !s.fixa && ids.has(s.id) && s.paras?.length && maiorLetra(s) < PISO_CORPO - 0.01).length;
-  nota -= Math.max(0, miudas - miudasAntes) * 0.8;
-  // a qualidade da POSIÇÃO: o quanto a lâmina está fora da grade canônica (margem, topo, rodapé, coluna)
-  const porId = new Map(novo.shapes.map((s) => [s.id, s]));
-  const cx = (b: Bloco) => caixaDe(b.ids.map((id) => porId.get(id)?.box).filter((x): x is ShapeBox => !!x));
-  let desvio = 0;
-  const tit = blocos.find((b) => b.papel === "titulo");
-  if (tit) {
-    const c = cx(tit);
-    desvio += Math.abs(c.x - MARGEM_X) + Math.abs(c.y - MARGEM_TOPO);
-  }
-  const rod = blocos.find((b) => b.papel === "rodape");
-  if (rod) {
-    const c = cx(rod);
-    desvio += Math.abs(c.x - MARGEM_X) + Math.abs(100 - MARGEM_BASE - (c.y + c.h));
-  }
-  const corpos = blocos.filter((b) => b.papel === "corpo" || b.papel === "diagrama");
-  if (corpos.length) desvio += Math.abs(caixaDe(corpos.map(cx)).x - MARGEM_X);
-  nota -= Math.min(0.5, desvio / 40);
-  return nota;
-}
-
-/** O texto cabe na caixa? (a mesma estimativa da Arrumação: a palavra na largura e o texto na altura) */
-function textoCabe(s: Shape, alturaPt = 540): boolean {
-  const util = Math.max(8, (s.box.w / 100) * 960 - 8);
-  const paras = (s.paras ?? []).map((p) => ({ texto: p.runs.map((r) => r.text ?? "").join(""), letra: Math.max(1, ...p.runs.map((r) => r.size ?? s.fontSize)) }));
-  if (!paras.length) return true;
-  if (!paras.every((p) => Math.max(1, ...p.texto.split(/\s+/).map((w) => w.length)) * p.letra * 0.55 <= util * 1.08)) return false;
-  const necessario = paras.reduce((a, p) => a + Math.max(1, Math.ceil((p.texto.length * p.letra * 0.5) / util)) * p.letra * 1.2, 0);
-  const disponivel = (s.box.h / 100) * alturaPt - 4;
-  return disponivel <= 0 || necessario <= disponivel * 1.2;
-}
+/** O nome com que as composições aparecem no painel. */
+export const NOMES_COMPOSICAO = ["Compor em cartões", "Compor em faixas", "Compor em lista"] as const;

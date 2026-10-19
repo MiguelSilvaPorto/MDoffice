@@ -15,7 +15,7 @@
 // Funções puras: devolvem lâmina nova, sem mexer na original.
 import type { Run, Shape, ShapeBox, Slide } from "../schema";
 import { aplicarHierarquia, detectarArvore } from "./hierarquia";
-import { recompor } from "./recompor";
+import { NOMES_COMPOSICAO, recompor } from "./recompor";
 
 export type Arranjo = "grade" | "lista" | "destaque" | "faixa" | "fluxo" | "hierarquia" | "hierarquia-lado" | "recompor";
 
@@ -37,7 +37,7 @@ export const ARRANJOS: ArranjoPPT[] = [
   { id: "hierarquia-lado", nome: "Hierarquia →", descricao: "organograma da esquerda para a direita, com os conectores redesenhados" },
   // normaliza a lâmina (margens, colunas, rodapé e painéis) sem reconstruir o desenho: é a que entende
   // título + colunas de texto + ícones e devolve a lâmina intacta quando não consegue melhorar
-  { id: "recompor", nome: "Recompor", descricao: "margens iguais, colunas alinhadas e o texto ajustado na caixa" },
+  { id: "recompor", nome: "Compor", descricao: "três composições novas para a lâmina: cartões, faixas e destaque" },
 ];
 
 /** Uma unidade de conteúdo: o cartão e tudo o que anda com ele. */
@@ -251,6 +251,8 @@ export function arrumavel(slide: Slide): boolean {
 export function variantesDe(id: Arranjo, quantas: number): number[] {
   // o fluxo tem estilos de verdade: o melhor dos dois (0), só em linhas (1) e em 2, 3 ou 4 colunas
   if (id === "fluxo") return quantas < 2 ? [] : quantas < 3 ? [0] : [0, 1, 2, 3, 4].filter((v) => v < 2 || v <= quantas);
+  // a composição tem três desenhos de verdade (cartões, faixas e destaque), como as ideias de design
+  if (id === "recompor") return [0, 1, 2];
   if (id !== "grade") return [0];
   return [2, 3, 4, 5, 6].filter((c) => c <= quantas);
 }
@@ -259,6 +261,7 @@ export function variantesDe(id: Arranjo, quantas: number): number[] {
 export function rotuloDoArranjo(id: Arranjo, variante: number, quantas: number): string {
   const nome = ARRANJOS.find((a) => a.id === id)?.nome ?? id;
   if (id === "fluxo") return variante === 0 ? nome : variante === 1 ? `${nome} em linhas` : `${nome} em ${variante} colunas`;
+  if (id === "recompor") return NOMES_COMPOSICAO[variante % NOMES_COMPOSICAO.length] ?? nome;
   if (id !== "grade") return nome;
   const colunas = Math.max(1, Math.min(variante || 2, quantas));
   return `${nome} ${colunas}×${Math.ceil(quantas / colunas)}`;
@@ -466,7 +469,7 @@ function limiteBaixo(slide: Slide, unidades: Unidade[]): number {
 export function aplicarArranjo(slide: Slide, id: Arranjo, variante: number, ratio: number): Slide {
   // a Recomposição não é uma fórmula de cartões: ela entende a estrutura da lâmina (título, colunas,
   // rodapé, painéis) e devolve a lâmina ORIGINAL quando nenhuma variante fica melhor
-  if (id === "recompor") return recompor(slide, ratio);
+  if (id === "recompor") return recompor(slide, ratio, variante);
   const { cards, paineis } = analisar(slide);
   const unidades = unidadesCom(slide, cards, paineis);
   const porId = new Map(slide.shapes.map((s) => [s.id, s]));

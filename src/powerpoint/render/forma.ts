@@ -162,7 +162,7 @@ function carregarDepois(spec: string): void {
 }
 
 /** Altura natural da linha da fonte (entrelinha 100% do PowerPoint), medida na própria fonte. */
-function razaoDeLinha(nome: string, negrito: boolean): number {
+export function razaoDeLinha(nome: string, negrito: boolean): number {
   const fc = fonteCss(nome, negrito);
   const spec = `${fc.peso} 100px ${fc.stack}`;
   const chave = spec;
