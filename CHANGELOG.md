@@ -32,14 +32,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **O cartão de sugestão da escrita não some mais ao rolar**: o popup do corretor fechava a cada
-  rolagem do texto (o código dizia "as posições mudam") — a pessoa perdia a mensagem no meio da
-  leitura ("some a cada movimento", com print). Agora ele **acompanha o trecho** (reposicionado por
-  quadro, com `coordsAtPos`, também ao redimensionar a janela) e só fecha quando o trecho sai da
-  janela do editor, quando o **texto muda** (a correção pendente aplicaria sobre outro texto) ou ao
-  clicar fora. Teste: `npm run test:layout` (3 checagens: o acompanhar ao rolar, o resize e o
-  fechar ao mudar o texto).
-
 ### Adicionado (na main)
 
 **Backend**
@@ -47,6 +39,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — arquivos, imagens e rascunhos passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **O cartão de sugestão da escrita não some mais ao rolar**: o popup do corretor fechava a cada
+  rolagem do texto (o código dizia "as posições mudam") — a pessoa perdia a mensagem no meio da
+  leitura ("some a cada movimento", com print). Agora ele **acompanha o trecho** (reposicionado por
+  quadro, com `coordsAtPos`, também ao redimensionar a janela) e só fecha quando o trecho sai da
+  janela do editor, quando o **texto muda** (a correção pendente aplicaria sobre outro texto) ou ao
+  clicar fora. Teste: `npm run test:layout` (3 checagens: o acompanhar ao rolar, o resize e o
+  fechar ao mudar o texto).
 
 - **Prancheta de letras: botão direito + arrastar move a tela**: no zoom alto, andar pelo desenho
   dependia da barra de rolagem. Agora **segurar o botão direito e arrastar** move a tela

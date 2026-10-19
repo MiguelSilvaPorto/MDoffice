@@ -13788,3 +13788,13 @@ antigas quando fizer sentido.
 - **Linha:** `+` a frase do cartão que acompanha o trecho (e quando ele fecha)
 - **Porquê:** a bala dizia como abrir o cartão, mas não que ele permanece enquanto se rola — que
   era o que faltava para o usuário.
+
+## CHANGELOG.md
+
+### 2026-10-19 · a sugestão não some ao rolar · a promoção da entrada
+- **Local:** MD\* → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não promove (no instante do commit a entrada ainda não está na main), então a
+  promoção anda depois: o cartão que acompanha o trecho (0fe0348). Promovi só a entrada DESTA
+  tarefa — as que seguem em "Não adicionado" são de sessões com trabalho aberto, mexer nelas
+  criaria duplicata ou conflito.
