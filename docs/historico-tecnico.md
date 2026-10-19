@@ -14038,3 +14038,15 @@ antigas quando fizer sentido.
 - **Local:** a seção das ferramentas da lâmina (edição, "copiar/colar")
 - **Linha:** `+` a frase do PNG + formato interno + `text/plain` só com texto
 - **Porquê:** a bala só dizia "copiar/colar" — agora diz o que vai para a área de transferência.
+
+## CHANGELOG.md
+
+### 2026-10-19 · copiar uma imagem · a promoção da entrada
+- **Local:** PowerPoint → **Não adicionado** → Frontend → **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não promove (no instante do commit a entrada ainda não está na main), então a
+  promoção anda depois: o copiar imagem (9c1268c). Promovi só a entrada DESTA tarefa — as que
+  seguem em "Não adicionado" são de sessões com trabalho aberto, mexer nelas criaria duplicata ou
+  conflito. O fechamento pegou **três rodadas de conflito** com sessões que commitaram no meio
+  (o colar texto na caixa e o organograma): resolvi mantendo os dois lados e descartando a cópia
+  velha do "colar texto" (já promovida).
