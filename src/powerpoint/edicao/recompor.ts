@@ -1063,9 +1063,18 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
   };
   const artes: ArteId[] = ["ondas", "facetas", "mosaico", "orbes"];
   const comArte = false;
-  const ordem = [padraoUnico, circulo, midiaHero, cartoes, faixasTexto, lista, grade];
-  const pedido = variante % ordem.length;
-  const desenho = [ordem[pedido], ...ordem.filter((_, i) => i !== pedido)].map((f) => f()).find((d): d is Desenho => !!d) ?? null;
+  // cada ideia começa por uma ESTRUTURA diferente (não é a mesma arrumação recolorida):
+  //   0 = imagem/forma protagonista + coluna de texto
+  //   1 = cartões (grade)
+  //   2 = faixas largas empilhadas
+  // se a estrutura não couber, a próxima da lista assume — mas a primeira tentativa é sempre outra
+  const ordens = [
+    [padraoUnico, circulo, midiaHero, cartoes, faixasTexto, lista, grade],
+    [cartoes, faixasTexto, padraoUnico, midiaHero, lista, grade],
+    [faixasTexto, cartoes, padraoUnico, midiaHero, lista, grade],
+  ];
+  const ordem = ordens[variante % ordens.length];
+  const desenho = ordem.map((f) => f()).find((d): d is Desenho => !!d) ?? null;
   if (!desenho) return slide;
   // imagem que NÃO entrou no desenho não pode ficar coberta pelo conteúdo novo (informação perdida)
   {
@@ -1120,4 +1129,4 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
 }
 
 /** O nome com que as composições aparecem no painel. */
-export const NOMES_COMPOSICAO = ["Compor (escuro)", "Compor (claro)", "Compor (cor)"] as const;
+export const NOMES_COMPOSICAO = ["Compor — imagem + texto", "Compor — cartões", "Compor — faixas"] as const;
