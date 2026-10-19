@@ -67,8 +67,8 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ### 2026-10-19 — c223ac2 — acento sem chute
 - **Local:** `sugerirPalavra` (variantes), `acentoMaisUsado`, `parDeNumero`
-- **Linha:** variantes de acento com `1 + log10(uso+1)/100` (antes todas com nota 1, vencia a primeira gerada) · `if (lower.length > 2 && aqui >= 1) return null` · `parDeNumero` (novo) · guarda de auxiliares (`AUXILIARES`) · nota de contexto antes de acentuar
-- **Por quê:** "pao" virava "paó" (a variante gerada primeiro vencia "pão"); "aniversario"/"ha" não eram acentuados porque a forma escrita tinha uso no corpus; "mantem" virava "mantém" mesmo em sujeito plural; "valido" (particípio) virava "válido" (adjetivo) e "bebe" (verbo) virava "bebê" (substantivo). Agora o uso desempata a variante, plural sem sujeito e homógrafo ficam como sugestão, e depois de "tinha/havia/tem" não se acentua como adjetivo.
+- **Linha:** variantes de acento com `1 + log10(uso+1)/100` (antes todas com nota 1, vencia a primeira gerada) · `if (lower.length > 2 && aqui >= 1) return null` · `parDeNumero` (novo) · guarda de auxiliares (`AUXILIARES`) · nota de contexto antes de acentuar · `segundoUso >= melhorUso * 0.2` (duas formas acentuadas comuns)
+- **Por quê:** "pao" virava "paó" (a variante gerada primeiro vencia "pão"); "aniversario"/"ha" não eram acentuados porque a forma escrita tinha uso no corpus; "mantem" virava "mantém" mesmo em sujeito plural; "valido" (particípio) virava "válido" (adjetivo), "bebe" (verbo) virava "bebê" (substantivo) e "avo" virava "avó" num trecho que pedia "avô" (o par avó/avô só o gênero decide). Agora o uso desempata a variante, plural sem sujeito, homógrafo e par de acentos comuns ficam como sugestão, e depois de "tinha/havia/tem" não se acentua como adjetivo.
 
 ## src/broker/check.ts
 

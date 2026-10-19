@@ -45,12 +45,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   rodadas precisar, preserva parágrafos e **não troca palavras** (mesmas letras, mesmo número
   de palavras). Novo **log de decisões** (`?diag=1` ou `__mdofficeDiag.ligar()`): painel
   flutuante com o que foi detectado/aplicado/ignorado, o motivo e o trecho, em JSONL
-  (copiar/baixar). Medido com corpus novo de pares formal/informal (48 mil palavras em
-  `tests/escrita/rodada-1`, 6 autores): **zero** alteração automática em ~135 mil pausas
-  simuladas (cada fronteira e o meio de cada palavra), **zero** troca/remoção/reordenação de
-  palavra na correção formal, parágrafos preservados, **zero** acento divergente do gabarito e
-  92–96% dos acentos restaurados (os que faltam são ambíguos por sentido). Teste:
-  `node scripts/testar-escrita.mjs`.
+  (copiar/baixar). Medido com corpus novo de pares formal/informal (96 mil palavras em duas
+  rodadas de 6 autores — a segunda com textos inéditos, `tests/escrita/rodada-1` e `rodada-2`):
+  **zero** alteração automática em ~270 mil pausas simuladas (cada fronteira e o meio de cada
+  palavra), **zero** troca/remoção/reordenação de palavra na correção formal, parágrafos
+  preservados em 12/12 pares, **zero** acento divergente do gabarito e 92–96% dos acentos
+  restaurados (os que faltam são ambíguos por sentido: "sai"/"saí", "as"/"às", "avó"/"avô").
+  Teste: `node scripts/testar-escrita.mjs`.
 
 ### Adicionado (na main)
 
