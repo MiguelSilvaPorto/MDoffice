@@ -13833,3 +13833,14 @@ antigas quando fizer sentido.
 - **Porquê:** o documento prometia "sugestões e sinônimos" sem dizer o limite que o relato furou —
   uma **pergunta** de contexto pode trocar a palavra por outra de classe vizinha, mas não por um
   nome próprio no meio da frase.
+
+## CHANGELOG.md
+
+### 2026-10-19 · promoção · a entrada da sugestão sem nome próprio entra no "Adicionado" (MD\*)
+- **Local:** MD\* ▸ **Não adicionado** ▸ Frontend ▸ **Adicionado** ▸ Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **A sugestão de "troca por contexto" não manda mais um
+  nome próprio no lugar de uma palavra** (`4e210ad`, worktree `fix/marcas-demais-na-correcao`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não sai no
+  mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
+  entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
+  promoções anteriores.
