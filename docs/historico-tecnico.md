@@ -13879,3 +13879,14 @@ antigas quando fizer sentido.
   (3, 4, 5, 6, 8, 10, 11 e 12) e 4 preservadas (1, 2, 7 e 9), com a letra de conteúdo ≥ 9 pt (o rodapé
   fica no piso de 6). A bancada é `scripts/testar-recompor.mjs` (`npm run test:recompor -- <arquivo>`),
   sempre sobre uma **cópia** do .pptx.
+
+## CHANGELOG.md
+
+### 2026-10-19 · promoção · a entrada da Recomposição entra no "Adicionado" (PowerPoint)
+- **Local:** PowerPoint ▸ **Não adicionado** ▸ Frontend ▸ **Adicionado** ▸ Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **A Arrumação ganhou "Recompor": ela lê a estrutura da
+  lâmina e devolve as posições ao lugar** (`bbd46df`, worktree `feat/recompor-laminas`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não sai no
+  mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que ainda não
+  entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
+  promoções anteriores.
