@@ -227,8 +227,14 @@ function sugerirPalavra(
   // Vale tanto quanto um erro clássico — é o que faz o corretor melhorar com o uso.
   const aprendida = APRENDIDAS.get(p);
   if (aprendida) anotar(aprendida, 1.5, 0);
-  // 1) só acento/cedilha: nota máxima
-  for (const v of variantesAcento(palavra)) anotar(v, 1, 0);
+  // 1) só acento/cedilha: nota máxima, mas o USO desempata as variantes:
+  //    "pao" é aceito como "pão" e "paó"; quem aparece no corpus é "pão". Sem isso
+  //    a primeira variante gerada (a ordem é alfabética) vencia, e o corretor
+  //    aplicava sozinho a forma errada.
+  for (const v of variantesAcento(palavra)) {
+    const uso = contagensExatas?.get(v.toLowerCase()) ?? 0;
+    anotar(v, 1 + Math.min(0.1, Math.log10(uso + 1) / 100), 0, uso);
+  }
   // 2) parecidas de verdade (índice de trigramas + distância de edição + frequência)
   for (const c of parecidas(palavra)) anotar(c.p, c.nota, c.distancia, c.contagem);
 
@@ -322,10 +328,14 @@ const ACENTOS: Record<string, string[]> = {
   c: ["ç"],
 };
 
-/** A partir de quantos usos a forma escrita é considerada de uso real. */
-const USO_REAL = 20;
-/** Quantas vezes a forma acentuada precisa ser mais usada que a escrita. */
+/** A partir de quantos usos a forma escrita é considerada comum (palavra de verdade). */
+const USO_COMUM = 1000;
+/** Abaixo disso (mas acima de 20), a forma escrita ainda pode ser só o acento faltando. */
+const USO_RARO = 20;
+/** Quantas vezes a forma acentuada precisa ser mais usada que a escrita (forma rara). */
 const VANTAGEM = 20;
+/** Quantas vezes quando a escrita é rara, mas não inexistente ("aniversario" 55 × "aniversário" 486). */
+const VANTAGEM_RARA = 3;
 /** Piso de uso da forma acentuada, para não trocar raridade por raridade. */
 const PISO_ACENTO = 50;
 
@@ -337,14 +347,17 @@ const PISO_ACENTO = 50;
  * ir). Quem decide é o USO — e o aviso é pergunta, nunca correção sozinha, porque o
  * acento troca o sentido e quem escreveu é quem sabe qual era.
  *
- * As medidas são as mesmas do "você quis dizer…" (`neighbor.ts`): a forma escrita tem
- * de ser rara, a acentuada tem de ser bem mais usada e existir de verdade.
+ * Duas faixas: forma escrita INEXISTENTE/rara (até 20 usos) exige vantagem de 20×; forma
+ * escrita rara mas usada (21 a 1.000) exige 3× — é o caso de "aniversario" (55) contra
+ * "aniversário" (486). Acima de 1.000 a forma escrita é comum: é palavra de verdade,
+ * e o acento pode trocar o sentido ("esta" × "está", "as" × "às") — não mexe.
  */
 function acentoMaisUsado(palavra: string): string | null {
   if (!contagensExatas) return null;
   const lower = palavra.toLowerCase();
   const aqui = contagensExatas.get(lower) ?? 0;
-  if (aqui >= USO_REAL) return null; // a forma escrita é usada: não mexe
+  if (aqui >= USO_COMUM) return null; // a forma escrita é comum: é palavra de verdade
+  const vantagem = aqui >= USO_RARO ? VANTAGEM_RARA : VANTAGEM;
   let melhor: string | null = null;
   let melhorUso = 0;
   for (let i = 0; i < lower.length; i++) {
@@ -353,7 +366,7 @@ function acentoMaisUsado(palavra: string): string | null {
       if (!typo?.check(forma)) continue; // a sugestão precisa ser palavra de verdade
       const uso = contagensExatas.get(forma) ?? 0;
       if (uso < PISO_ACENTO) continue;
-      if (uso < VANTAGEM * Math.max(aqui, 1)) continue;
+      if (uso < vantagem * Math.max(aqui, 1)) continue;
       if (uso > melhorUso) {
         melhor = forma;
         melhorUso = uso;

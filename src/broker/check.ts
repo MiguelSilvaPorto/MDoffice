@@ -14,8 +14,9 @@ import type { WritingIssue } from "./types";
 import { rerankSuggestions } from "./personal/rerank";
 import { personalIndex } from "./ghost/memory";
 import { DocumentIndex } from "./ghost/documentIndex";
+import { diag, janelaDe } from "./diag";
 
-export async function checkText(bruto: string, ignore: Set<string>, opcoes?: { titulos?: readonly number[] }): Promise<WritingIssue[]> {
+export async function checkText(bruto: string, ignore: Set<string>, opcoes?: { titulos?: readonly number[]; curtas?: boolean }): Promise<WritingIssue[]> {
   // A frequência é a mesma tabela que o corretor usa. Espera curta: se não
   // chegar, as regras que dependem dela ficam quietas e nada quebra.
   await Promise.race([carregarFrequencia(), new Promise((r) => setTimeout(r, 1500))]);
@@ -30,7 +31,9 @@ export async function checkText(bruto: string, ignore: Set<string>, opcoes?: { t
 
   const issues = checkStyle(text, opcoes);
   const mask = maskNonProse(text);
-  const rx = /[\p{L}][\p{L}'-]{2,}/gu;
+  // `curtas` (usado pela correção formal, não pela digitação) inclui as palavras de
+  // duas letras: "ja", "so", "ha" só se acentuam por aí — e o uso no corpus decide.
+  const rx = opcoes?.curtas ? /[\p{L}][\p{L}'-]{1,}/gu : /[\p{L}][\p{L}'-]{2,}/gu;
   const tokens: { word: string; from: number; to: number }[] = [];
   const unique = new Set<string>();
   let m: RegExpExecArray | null;
@@ -95,7 +98,10 @@ export async function checkText(bruto: string, ignore: Set<string>, opcoes?: { t
       // É uma troca de PALAVRA, não de acento: por isso vem com `fix` (entra no
       // "Corrigir tudo", na pausa e ao salvar) e NÃO com `auto` — quem decide é
       // quem escreve, porque a palavra original também existe.
-      const near = commonNeighbor(token.word, contagem);
+      //
+      // Palavras de duas letras (só entram com `curtas`) ficam de fora: "de"/"da"
+      // não são erro de uma letra, e sugerir troca nelas seria ruído.
+      const near = token.word.length >= 3 ? commonNeighbor(token.word, contagem) : null;
       if (near) {
         issues.push({
           from: token.from,
@@ -106,7 +112,7 @@ export async function checkText(bruto: string, ignore: Set<string>, opcoes?: { t
           suggestions: [near],
           fix: near,
         });
-      } else {
+      } else if (token.word.length >= 3) {
         // A palavra existe, mas o CONTEXTO pode pedir outra leitura: "a media das notas" é
         // "média"; "há aguda a prever" é "ajuda". Quem decide é o uso no corpus (o modelo de
         // n-gramas): a escrita não aparece depois daquela palavra e uma troca de classe
@@ -161,7 +167,27 @@ export async function checkText(bruto: string, ignore: Set<string>, opcoes?: { t
   }
   // De volta ao texto ORIGINAL: os avisos nasceram em posições do normalizado, e quem
   // consome (o editor) conta posições no que está escrito na tela.
-  return fundidos
+  const finais = fundidos
     .map((i) => ({ ...i, from: paraOriginal(norm, i.from), to: paraOriginal(norm, i.to) }))
     .sort((a, b) => a.from - b.from);
+  // Log de decisões: só o que PODE ser aplicado (auto/fix/safe) — é o que interessa para explicar
+  // uma correção que apareceu (ou deixou de aparecer) quando o diagnóstico está ligado.
+  for (const i of finais) {
+    if (!i.auto && i.fix === undefined && !i.safe) continue;
+    diag({
+      gatilho: "checagem",
+      tipo: i.kind,
+      regra: i.message,
+      from: i.from,
+      to: i.to,
+      palavra: i.word,
+      safe: i.safe,
+      auto: i.auto,
+      fix: i.fix,
+      sugestao: i.suggestions[0],
+      veredito: "detectado",
+      janela: janelaDe(bruto, i.from, i.to),
+    });
+  }
+  return finais;
 }

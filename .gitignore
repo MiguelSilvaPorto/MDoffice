@@ -26,3 +26,5 @@ corpus/
 # Não é versionado: cada regeneração reescreve ~9 MB e isso incharia o histórico do git.
 public/ngrams/*.json
 scripts/.harness-*.ts
+
+tests/escrita/**/saida/

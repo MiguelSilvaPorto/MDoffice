@@ -3,6 +3,9 @@
 import type { App } from "./app";
 import { checkText, checkStyle, marcarAplicacao, planejarVarredura, stats as writingStats, spellIsReady, spellHasFailed, type WritingIssue } from "../broker/writing";
 import { openReviewModal } from "../broker/review";
+import { diag, janelaDe } from "../broker/diag";
+import { corrigirFormal, type ResultadoFormal } from "../broker/formal";
+import { usaAcentos } from "../broker/regime";
 import { limparAplicadasAuto, marcarAplicadasAuto, registrarCorrecao } from "../broker/aprendizado";
 import { contarVarredura } from "../broker/personal/metricas";
 import { esquecerTermo, marcarPromovidoManual } from "../broker/personal/termos";
@@ -25,6 +28,13 @@ export const assistantMethods = {
   runIdleFix(this: App): void {
     if (!this.autoFix || !this.autoFixArmed) return;
     const texto = this.editor.getText();
+    // Regime sem acento (informal deliberado): a varredura automática não mexe. O que
+    // ela faria — acentuar, pôr vírgula, fechar parágrafo — é justamente o que quem
+    // escreveu assim não quer. Fica a sugestão; a correção formal é ação explícita.
+    if (!usaAcentos(texto)) {
+      diag({ gatilho: "pausa", regra: "varredura de pausa", veredito: "ignorado", motivo: "documento sem acento por escolha: correção automática quieta" });
+      return;
+    }
     const pos = this.editor.view.state.selection.main.head;
     const par = this.paragrafoDoCursor(pos);
     const correcoes = planejarVarredura(texto, { pos, from: 0, to: texto.length, parFrom: par.from, parTo: par.to, parConcluido: par.concluido });
@@ -53,6 +63,8 @@ export const assistantMethods = {
   /** Correção automática: não depende do dicionário, roda logo depois de você pausar. */
   runAutoFix(this: App): void {
     if (!this.autoFix || !this.autoFixArmed) return;
+    // Mesmo regime da varredura: sem acento por escolha, nada entra sozinho.
+    if (!usaAcentos(this.editor.getText())) return;
     let typed = 0;
     let ended = 0;
     // repete algumas vezes porque uma correção pode abrir caminho para outra
@@ -64,7 +76,10 @@ export const assistantMethods = {
       ended += e;
       if (!t && !e) break;
     }
-    if (typed + ended > 0) void this.runWritingCheck();
+    if (typed + ended > 0) {
+      diag({ gatilho: "pausa", regra: "varredura da pausa", veredito: "aplicado", motivo: `${typed} palavra(s) e ${ended} ajuste(s) de estilo` });
+      void this.runWritingCheck();
+    }
     if (ended) toast(`Correção automática: ${ended} ajuste${ended === 1 ? "" : "s"}.`, "ok", 2400);
   },
 
@@ -115,22 +130,24 @@ export const assistantMethods = {
       toast("Não há texto para formatar.", "info", 2600);
       return;
     }
-    let issues: WritingIssue[] = [];
+    const ignore = new Set([...this.ignoreWords, ...this.ignoredHere]);
+    let resultado: ResultadoFormal;
     try {
-      issues = await checkText(texto, new Set([...this.ignoreWords, ...this.ignoredHere]));
+      // Correção formal: forma (acento, pontuação, espaço, maiúscula), nunca vocabulário.
+      // `curtas` inclui as palavras de duas letras na restauração de acento ("ja" → "já").
+      resultado = await corrigirFormal(texto, (t) => checkText(t, ignore, { curtas: true }), 4);
     } catch {
       toast("Não foi possível verificar o texto agora.", "err", 3200);
       return;
     }
-    const aplicaveis = issues.filter((i) => this.replacementFor(i) !== undefined);
-    if (!aplicaveis.length) {
+    if (resultado.texto === texto) {
       toast("O texto já está formatado.", "ok", 2600);
       return;
     }
-    const quantos = this.applyFixes(aplicaveis);
-    this.editor.setIssues(issues);
+    this.editor.replaceRanges([{ from: 0, to: texto.length, insert: resultado.texto }]);
     this.updateWritingBadge();
-    toast(`${quantos} ajuste(s) de formatação aplicado(s). Ctrl+Z desfaz.`, "ok", 4200);
+    diag({ gatilho: "formatar", regra: "correção formal", veredito: "aplicado", motivo: `${resultado.mudancas} ajuste(s) em ${resultado.rodadas} rodada(s)` });
+    toast(`${resultado.mudancas} ajuste(s) de formatação aplicado(s). Ctrl+Z desfaz.`, "ok", 4200);
     this.checkWritingSoon();
   },
 
@@ -140,7 +157,7 @@ export const assistantMethods = {
     saveJSON("mdc.autofix", on);
     toast(
       on
-        ? "Correção automática ligada: ponto, vírgulas, maiúsculas e trocas formais entram sozinhos."
+        ? "Correção automática ligada: ponto, vírgulas, maiúsculas e ortografia segura entram sozinhos. Gíria e registro ficam como sugestão."
         : "Correção automática desligada.",
       "info",
       3400
@@ -174,6 +191,8 @@ export const assistantMethods = {
   applySaveFixes(this: App): number {
     const pos = this.editor.view.state.selection.main.head;
     const texto = this.editor.getText();
+    // Salvar também respeita o regime: texto sem acento por escolha não é "corrigido" ao salvar.
+    if (!usaAcentos(texto)) return 0;
     const par = this.paragrafoDoCursor(pos);
     const correcoes = planejarVarredura(texto, { pos, from: 0, to: texto.length, parFrom: par.from, parTo: par.to, parConcluido: par.concluido });
     if (correcoes.length) this.editor.replaceRanges(correcoes, -1);
@@ -229,15 +248,30 @@ export const assistantMethods = {
     const view = this.editor.view;
     const doc = view.state.doc;
     const pos = view.state.selection.main.head;
-    const alvos = this.issues.filter(
-      (i) =>
-        i.kind === "spell" &&
-        i.auto &&
-        i.from >= from &&
-        i.to <= to &&
-        (!soDepoisDoCursor || pos > i.to) &&
-        doc.sliceString(i.from, i.to) === i.word
+    const texto = doc.toString();
+    const candidatos = this.issues.filter((i) => i.kind === "spell" && i.from >= from && i.to <= to);
+    const alvos = candidatos.filter(
+      (i) => i.auto && (!soDepoisDoCursor || pos > i.to) && doc.sliceString(i.from, i.to) === i.word
     );
+    // Log de decisões: por que CADA candidato foi aplicado ou ficou de fora. É o que explica a
+    // "correção lixo" (palavra pela metade, texto que mudou, falta de confiança).
+    for (const i of candidatos) {
+      const base = {
+        gatilho: "pausa" as const,
+        tipo: i.kind,
+        regra: i.message,
+        from: i.from,
+        to: i.to,
+        palavra: i.word,
+        auto: i.auto,
+        sugestao: i.suggestions[0],
+        janela: janelaDe(texto, i.from, i.to),
+      };
+      if (!i.auto) diag({ ...base, veredito: "ignorado", motivo: "sem confiança para aplicar sozinho (fica como sugestão)" });
+      else if (soDepoisDoCursor && pos <= i.to) diag({ ...base, veredito: "ignorado", motivo: "é (ou encosta n)a palavra sob o cursor — pode estar pela metade" });
+      else if (doc.sliceString(i.from, i.to) !== i.word) diag({ ...base, veredito: "ignorado", motivo: "o texto naquele ponto mudou desde a verificação" });
+      else diag({ ...base, veredito: "aplicado", motivo: `vira “${i.auto}”` });
+    }
     if (!alvos.length) return 0;
     const antes = this.editor.getText();
     const quantos = this.applyFixes(alvos, true);
@@ -255,6 +289,23 @@ export const assistantMethods = {
     // recalcula na hora: as posições antigas podem ter mudado
     const fresh = checkStyle(doc.toString()).filter((i) => i.safe && i.from >= line.from && i.to <= line.to);
     const parFrom = this.paragraphStartAt(pos);
+    // log de decisões: o que a regra segura aplicou na linha do cursor (e por quê)
+    for (const i of fresh) {
+      diag({
+        gatilho: "pausa",
+        tipo: i.kind,
+        regra: i.message,
+        from: i.from,
+        to: i.to,
+        palavra: i.word,
+        safe: i.safe,
+        fix: i.fix,
+        sugestao: i.suggestions[0],
+        veredito: "aplicado",
+        motivo: `regra segura vira “${i.fix ?? i.suggestions[0] ?? ""}” na linha do cursor`,
+        janela: janelaDe(doc.toString(), i.from, i.to),
+      });
+    }
     return this.applyFixes(fresh) + this.autoFixWords(parFrom, pos);
   },
 
@@ -289,6 +340,7 @@ export const assistantMethods = {
       limparAplicadasAuto();
       this.editor.replaceRanges(correcoes, -1);
       marcarAplicacao(todoTexto);
+      diag({ gatilho: "paragrafo", regra: "varredura do parágrafo concluído", veredito: "aplicado", motivo: `${correcoes.length} ajuste(s) de estilo` });
     }
     return correcoes.length + this.autoFixWords(from, to);
   },

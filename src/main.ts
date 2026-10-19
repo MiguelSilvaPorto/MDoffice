@@ -5,9 +5,12 @@ import { ligarMovimentoDeSaida } from "./movimento";
 import { ligarDicas } from "./dica";
 import { App } from "./app/app";
 import { ligarBatimento } from "./app/batimento";
+import { initDiagPanel } from "./app/diagPanel";
 
 const app = new App();
 ligarMovimentoDeSaida();
+// Log de decisões do corretor (desligado por padrão; `?diag=1` na URL liga e mostra o painel)
+initDiagPanel();
 // As dicas do app (o balão no lugar do `title` nativo do navegador)
 ligarDicas();
 // Em desenvolvimento, avisa o servidor de dev que a página está viva: é assim que o
