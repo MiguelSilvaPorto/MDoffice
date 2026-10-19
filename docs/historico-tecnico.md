@@ -13946,3 +13946,15 @@ antigas quando fizer sentido.
   medida antes e depois dá números comparáveis. A ferramenta de calibração é o que torna a decisão
   **reproduzível**: o `CALIB.w` do código sai dela, e o texto de treino/validação pode ser trocado
   sem mexer no app.
+
+## CHANGELOG.md
+
+### 2026-10-19 · sugestão · a promoção da entrada (não adicionado → adicionado)
+- **Local:** MD\* → **Não adicionado** → Frontend (a entrada da sugestão calibrada) e MD\* →
+  **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não pode promover: no instante do commit da tarefa a entrada ainda não está na
+  main (a regra do repositório é "nunca promova o que ainda não entrou na main"), então a promoção é
+  uma tarefa de follow-up, depois que o commit chegou (ed77cde). Promovi só a entrada DESTA tarefa:
+  as que seguem em "Não adicionado" são de sessões com trabalho aberto — mexer nelas criaria
+  duplicata ou conflito.

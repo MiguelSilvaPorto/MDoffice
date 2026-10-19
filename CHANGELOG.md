@@ -32,6 +32,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- (nada no momento)
+
+### Adicionado (na main)
+
+**Backend**
+
+- (nada específico do módulo — arquivos, imagens e rascunhos passam pelos comandos do **Geral**)
+
+**Frontend**
+
 - **A sugestão enquanto você digita ganhou uma decisão calibrada (e ficou mais rápida)**: o
   texto fantasma aparecia por limiares fixos (0,45 / 0,6 / 0,8…) sobre a probabilidade
   **normalizada entre candidatas**, que não é a chance de acertar — cada ajuste trocava precisão
@@ -46,14 +56,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   menos de 1 ms, a sugestão acompanha a digitação em vez de só aparecer nas pausas. Teste:
   `npm run test:ghost` (régua em população fixa, independente do modelo) e o novo
   `scripts/calibrar-ghost.mts`.
-
-### Adicionado (na main)
-
-**Backend**
-
-- (nada específico do módulo — arquivos, imagens e rascunhos passam pelos comandos do **Geral**)
-
-**Frontend**
 
 - **A sugestão de "troca por contexto" não manda mais um nome próprio no lugar de uma palavra**: em
   "caso **aja** divergência" o app perguntava se você queria **"Ana"** — a variante de tecla vizinha
