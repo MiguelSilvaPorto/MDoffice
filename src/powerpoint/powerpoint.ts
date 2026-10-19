@@ -732,7 +732,11 @@ export class PowerPointHost {
       ? ARRANJOS.flatMap((a) => variantesDe(a.id, quantas).map((v) => ({ arranjo: a.id, variante: v }))).filter((o) => { const novo = aplicarArranjo(atual, o.arranjo, o.variante, ratio); return o.arranjo === "recompor" ? novo !== atual : arranjoLegivel(atual, novo); })
       : [];
     const podeArrumar = legiveis.length > 0;
-    const sugestoes = sugestoesDe({ unidades: quantas, arrumavel: podeArrumar, arrumacoes: podeArrumar ? legiveis : undefined, modelos: [...MODELOS, ...lerModelosUsuario()], lote: this.loteComposicao });
+    // quando a lâmina tem uma COMPOSIÇÃO de verdade (estrutura nova), os cartões "Novo · ..." que só
+    // trocam cor/fundo do mesmo arranjo saem: o painel não promete design novo onde só há recolorido
+    const temComposicao = legiveis.some((o) => o.arranjo === "recompor");
+    const todas = sugestoesDe({ unidades: quantas, arrumavel: podeArrumar, arrumacoes: podeArrumar ? legiveis : undefined, modelos: [...MODELOS, ...lerModelosUsuario()], lote: this.loteComposicao });
+    const sugestoes = temComposicao ? todas.filter((s) => !s.modelo.gerado) : todas;
     this.previasVista = null; // o host troca de conteúdo: a prévia dos Arranjos não vale mais
     const criadas = sugestoes.filter((s) => s.modelo.gerado).length;
     this.atualizarDica(
