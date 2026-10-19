@@ -804,9 +804,266 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
     return { fundos, conteudo };
   };
 
+  /**
+   * O desenho de impacto: a imagem vira um CÍRCULO recortado (sangrando na lâmina), o fundo é
+   * tom da marca, formas de contraste (pontos) preenchem o vazio e o texto fica na coluna da
+   * esquerda — título grande, corpo legível. É a lógica do "design uau", não um slide desenhado
+   * à mão: qualquer lâmina com imagem e texto cai neste padrão.
+   */
+  const circulo = (): Desenho | null => {
+    // com imagem, ela é a protagonista; sem imagem, o "herói" é um motivo geométrico gerado
+    const imagem = [...c.paineis].filter(imagemDeConteudo).sort((a, b) => area(b.box) - area(a.box))[0];
+    if (!imagem || !c.titulo) return null;
+    const escuro = misturar(p.acento, "06120C", 0.84);
+    const claro = misturar(p.acento, "FFFFFF", 0.55);
+    const fundos: Shape[] = [];
+    const conteudo: Shape[] = [];
+    fundos.push(forma({ x: 0, y: 0, w: 100, h: 100 }, { fill: escuro }));
+
+    // a imagem num círculo: a caixa é quadrada em pontos e o `crop` recorta o miolo (sem distorcer)
+    const diametro = 430; // pt
+    const lado = diametro / 960; // % da largura
+    const altura = diametro / 540; // % da altura
+    const cx = 79;
+    const cy = 50;
+    const box = { x: cx - lado / 2, y: cy - altura / 2, w: lado, h: altura };
+    const ar = imagem.box.w / Math.max(0.01, imagem.box.h);
+    const corte = ar > 1 ? ((1 - 1 / ar) / 2) * 100 : 0;
+    const corteV = ar > 1 ? 0 : ((1 - ar) / 2) * 100;
+    fundos.push({ ...imagem, box, geom: "ellipse", crop: [corte, corteV, corte, corteV] });
+    paineisUsados.add(imagem);
+
+    // formas de contraste: pontos e um arco atrás do círculo
+    fundos.push({ ...forma({ x: cx - lado * 0.62, y: cy - altura * 0.62, w: lado * 1.24, h: altura * 1.24 }, { fill: misturar(p.acento, escuro, 0.55), alpha: 0.55 }), geom: "ellipse" });
+    for (const [dx, dy, d] of [
+      [-0.58, -0.48, 1.5],
+      [-0.44, 0.62, 1.1],
+      [0.52, -0.55, 1.9],
+      [0.66, 0.5, 1.2],
+    ] as [number, number, number][]) {
+      fundos.push({ ...forma({ x: cx + lado * dx, y: cy + altura * dy, w: d, h: d * 1.78 }, { fill: claro, cantos: d / 2 }), geom: "ellipse" });
+    }
+
+    // texto na coluna da esquerda: título grande, antetítulo e subtítulo menores
+    const largura = 42;
+    const textos = c.titulo.ids
+      .map((id) => slide.shapes.find((s) => s.id === id))
+      .filter((s): s is Shape => !!s && temTexto(s))
+      .sort((a, b) => a.box.y - b.box.y);
+    const maior = Math.max(...textos.map(maiorLetra));
+    let y = 0;
+    const blocos: { s: Shape; tamanho: number; cor: string }[] = [];
+    for (const s of textos) {
+      const l = maiorLetra(s);
+      const tamanho = l >= maior - 0.1 ? 27 : l >= 12 ? 12.5 : 9.5;
+      const cor = l >= maior - 0.1 ? "FFFFFF" : "FFFFFF";
+      blocos.push({ s, tamanho, cor });
+      y += alturaDaForma(s, tamanho, largura) + (tamanho >= 20 ? 1.2 : 0.6);
+    }
+    y += 2.2;
+    const corpo: { s: Shape; tamanho: number }[] = [];
+    for (const g of c.grupos) {
+      for (const id of g.ids) {
+        const s = slide.shapes.find((x) => x.id === id);
+        if (!s || !temTexto(s)) continue;
+        const tamanho = maiorLetra(s) >= 14 ? 13 : 11.5;
+        corpo.push({ s, tamanho });
+        y += alturaDaForma(s, tamanho, largura) + 1.1;
+      }
+      y += 1.6;
+    }
+    if (y > 88) return null;
+
+    let yy = Math.max(10, (100 - y) / 2 + 2);
+    for (const b of blocos) {
+      const h = alturaDaForma(b.s, b.tamanho, largura);
+      conteudo.push(reescrever({ forma: b.s, texto: txt(b.s), negrito: b.s.bold, icones: [] }, { x: MARGEM + 1, y: yy, w: largura, h }, b.tamanho, b.cor));
+      yy += h + (b.tamanho >= 20 ? 1.2 : 0.6);
+    }
+    yy += 2.2;
+    for (const b of corpo) {
+      const h = alturaDaForma(b.s, b.tamanho, largura);
+      conteudo.push(reescrever({ forma: b.s, texto: txt(b.s), negrito: b.s.bold, icones: [] }, { x: MARGEM + 1, y: yy, w: largura, h }, b.tamanho, "FFFFFF"));
+      yy += h + 1.1;
+    }
+    return { fundos, conteudo };
+  };
+
+  // -------------------------------------------------------------------------
+  // padrão ÚNICO: a mesma lógica, combinada por semente
+  //
+  // O desenho não é escolhido à mão: a semente liga as peças que podem variar sem quebrar a
+  // leitura — tom do fundo, forma do recorte da imagem (círculo, arco, retângulo arredondado),
+  // lado e sangria, motivo de contraste (pontos, anéis, grade) e zona do texto. Duas lâminas
+  // nunca caem na mesma combinação; e a legibilidade é uma regra fixa: o texto nunca entra na
+  // área da imagem e o contraste é sempre calculado sobre o fundo escolhido.
+  // -------------------------------------------------------------------------
+
+  /** PRNG determinístico (mulberry32): a mesma semente devolve o mesmo desenho. */
+  const sorteador = (semente: number) => {
+    let a = semente >>> 0;
+    return () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  };
+
+  /** Recorte (cover) para a imagem preencher a caixa sem distorcer. */
+  const recorteCover = (imagem: ShapeBox, caixa: ShapeBox, ratio: number): [number, number, number, number] => {
+    const alvo = (caixa.w / caixa.h) * ratio;
+    const fonte = imagem.w / Math.max(0.01, imagem.h);
+    if (fonte > alvo) {
+      const c = ((1 - alvo / fonte) / 2) * 100;
+      return [c, 0, c, 0];
+    }
+    const c = ((1 - fonte / alvo) / 2) * 100;
+    return [0, c, 0, c];
+  };
+
+  const padraoUnico = (): Desenho | null => {
+    // com imagem, ela é a protagonista; sem imagem, o "herói" é um motivo geométrico gerado
+    const imagem = [...c.paineis].filter(imagemDeConteudo).sort((a, b) => area(b.box) - area(a.box))[0];
+    if (!c.titulo || c.grupos.length < 1) return null;
+    const rnd = sorteador(semente + variante * 977);
+    const escolha = <T,>(lista: T[]): T => lista[Math.floor(rnd() * lista.length) % lista.length];
+
+    // 1) tom do fundo: escuro da marca, creme ou a cor da marca
+    const tons = [
+      { fundo: misturar(p.acento, "06120C", 0.86), texto: "FFFFFF", suave: misturar(p.acento, "FFFFFF", 0.62), contraste: p.acento },
+      { fundo: "FBF8F2", texto: misturar(p.acento, "000000", 0.78), suave: misturar(p.acento, "000000", 0.25), contraste: p.acento },
+      { fundo: p.acento, texto: "FFFFFF", suave: "FFFFFF", contraste: misturar(p.acento, "FFFFFF", 0.55) },
+    ];
+    // cada variante puxa um tom (escuro, claro, cor da marca) — as três ideias nunca empatam
+    const tom = tons[variante % tons.length];
+
+    // 2) recorte da imagem: círculo, arco (topo arredondado) ou retângulo de cantos macios
+    const recorte = escolha(["circulo", "circulo", "arco", "retangulo"] as const);
+    // 3) lado e sangria
+    const lado = rnd() < 0.5 ? "direita" : "esquerda";
+    const sangra = rnd() < 0.45;
+    const tamanho = 0.62 + rnd() * 0.2; // fração da altura
+
+    const fundos: Shape[] = [];
+    const conteudo: Shape[] = [];
+    fundos.push(forma({ x: 0, y: 0, w: 100, h: 100 }, { fill: tom.fundo }));
+
+    // caixa da imagem (em % — o círculo precisa de lados iguais em pontos)
+    const alturaImg = 100 * tamanho;
+    const larguraImg = (alturaImg * 5.4) / 9.6; // mesma medida em pontos
+    const cx = lado === "direita" ? (sangra ? 88 : 74) : sangra ? 12 : 26;
+    const cy = 50 + (rnd() - 0.5) * 8;
+    let caixa = { x: cx - larguraImg / 2, y: cy - alturaImg / 2, w: larguraImg, h: alturaImg };
+    if (recorte === "arco") caixa = { ...caixa, w: larguraImg * 1.15, h: alturaImg };
+    if (recorte === "retangulo") caixa = { ...caixa, w: larguraImg * 1.1, h: alturaImg * 0.92 };
+
+    if (imagem) {
+      const formaImg: Shape = { ...imagem, box: caixa, crop: recorteCover(imagem.box, caixa, ratio) };
+      if (recorte === "circulo") formaImg.geom = "ellipse";
+      else if (recorte === "arco") {
+        formaImg.geom = "roundRect";
+        formaImg.cantos = [50, 50, 0, 0];
+      } else {
+        formaImg.geom = "roundRect";
+        formaImg.cantos = [12, 12, 12, 12];
+      }
+      fundos.push(formaImg);
+      paineisUsados.add(imagem);
+    } else {
+      // sem imagem: o herói é uma forma na cor da marca, com anel e pontos (o recorte vira desenho)
+      const hx = caixa.x + caixa.w / 2;
+      const hy = caixa.y + caixa.h / 2;
+      const raio = Math.min(caixa.w, caixa.h * 1.78) / 2;
+      if (recorte === "arco") {
+        fundos.push({ ...forma({ x: hx - raio, y: hy - caixa.h / 2, w: raio * 2, h: caixa.h }, { fill: tom.contraste, cantos: raio }), geom: "roundRect", cantos: [50, 50, 0, 0] });
+      } else if (recorte === "retangulo") {
+        fundos.push({ ...forma({ x: hx - raio, y: hy - caixa.h / 2, w: raio * 2, h: caixa.h }, { fill: tom.contraste, cantos: 8 }), geom: "roundRect", cantos: [8, 8, 8, 8] });
+      } else {
+        fundos.push({ ...forma({ x: hx - raio, y: hy - raio * 0.9, w: raio * 2, h: raio * 1.8 }, { fill: tom.contraste }), geom: "ellipse" });
+        fundos.push({ ...forma({ x: hx - raio * 1.14, y: hy - raio * 1.03, w: raio * 2.28, h: raio * 2.05 }, { ln: { color: tom.suave, w: 1.5, alpha: 0.5 } }), geom: "ellipse" });
+      }
+    }
+
+    // 4) motivo de contraste, do lado oposto à imagem
+    const motivo = escolha(["pontos", "aneis", "grade"] as const);
+    const mx = lado === "direita" ? 8 : 92;
+    const my = 12 + rnd() * 20;
+    if (motivo === "pontos") {
+      for (let k = 0; k < 3; k++) {
+        const d = 1.1 + rnd() * 1.4;
+        fundos.push({ ...forma({ x: mx + (rnd() - 0.5) * 10, y: my + k * 4.2, w: d, h: d * 1.78 }, { fill: tom.contraste, cantos: d / 2 }), geom: "ellipse" });
+      }
+    } else if (motivo === "aneis") {
+      const d = 16 + rnd() * 12;
+      fundos.push({ ...forma({ x: mx - d / 2, y: my, w: d, h: (d * 1.78) }, { ln: { color: tom.contraste, w: 2, alpha: 0.5 } }), geom: "ellipse" });
+      fundos.push({ ...forma({ x: mx - d / 3, y: my + d * 0.4, w: d * 0.66, h: d * 1.18 }, { ln: { color: tom.suave, w: 1, alpha: 0.4 } }), geom: "ellipse" });
+    } else {
+      const cols = 4;
+      const linhas = 5;
+      const passo = 2.2;
+      for (let l = 0; l < linhas; l++) {
+        for (let col = 0; col < cols; col++) {
+          fundos.push({ ...forma({ x: mx + col * passo - (cols * passo) / 2, y: my + l * passo * 1.4, w: 0.55, h: 0.55 * 1.78 }, { fill: tom.suave, cantos: 0.27 }), geom: "ellipse" });
+        }
+      }
+    }
+
+    // 5) zona do texto: sempre no lado oposto ao da imagem, com largura folgada
+    const largura = 38;
+    const x = lado === "direita" ? MARGEM + 2 : 100 - MARGEM - 2 - largura;
+    const textos = c.titulo.ids
+      .map((id) => slide.shapes.find((s) => s.id === id))
+      .filter((s): s is Shape => !!s && temTexto(s))
+      .sort((a, b) => a.box.y - b.box.y);
+    const maior = Math.max(...textos.map(maiorLetra));
+    // o texto desce de tamanho até caber (nunca abaixo de 9 pt) — é o encaixe, não um corte
+    const escalas = [1, 0.9, 0.8, 0.72];
+    let blocos: { s: Shape; tamanho: number }[] = [];
+    let corpo: { s: Shape; tamanho: number }[] = [];
+    let alturaTotal = 0;
+    for (const escala of escalas) {
+      blocos = [];
+      corpo = [];
+      alturaTotal = 0;
+      for (const s of textos) {
+        const base = maiorLetra(s) >= maior - 0.1 ? 26 : maiorLetra(s) >= 12 ? 12.5 : 9.5;
+        const tamanho = Math.max(9, base * escala);
+        blocos.push({ s, tamanho });
+        alturaTotal += alturaDaForma(s, tamanho, largura) + (tamanho >= 20 ? 1.2 : 0.6);
+      }
+      alturaTotal += 2.4;
+      for (const g of c.grupos) {
+        for (const id of g.ids) {
+          const s = slide.shapes.find((y2) => y2.id === id);
+          if (!s || !temTexto(s)) continue;
+          const tamanho = Math.max(9, (maiorLetra(s) >= 14 ? 12.5 : 11) * escala);
+          corpo.push({ s, tamanho });
+          alturaTotal += alturaDaForma(s, tamanho, largura) + 1.1;
+        }
+        alturaTotal += 1.6;
+      }
+      if (alturaTotal <= 86) break;
+    }
+    if (alturaTotal > 86) return null;
+    let y = Math.max(9, (100 - alturaTotal) / 2);
+    for (const b of blocos) {
+      const h = alturaDaForma(b.s, b.tamanho, largura);
+      conteudo.push(reescrever({ forma: b.s, texto: txt(b.s), negrito: b.s.bold, icones: [] }, { x, y, w: largura, h }, b.tamanho, b.tamanho >= 20 ? tom.texto : tom.suave));
+      y += h + (b.tamanho >= 20 ? 1.2 : 0.6);
+    }
+    y += 2.4;
+    for (const b of corpo) {
+      const h = alturaDaForma(b.s, b.tamanho, largura);
+      conteudo.push(reescrever({ forma: b.s, texto: txt(b.s), negrito: b.s.bold, icones: [] }, { x, y, w: largura, h }, b.tamanho, tom.texto));
+      y += h + 1.1;
+    }
+    return { fundos, conteudo };
+  };
   const artes: ArteId[] = ["ondas", "facetas", "mosaico", "orbes"];
   const comArte = false;
-  const ordem = [midiaHero, cartoes, faixasTexto, lista, grade];
+  const ordem = [padraoUnico, circulo, midiaHero, cartoes, faixasTexto, lista, grade];
   const pedido = variante % ordem.length;
   const desenho = [ordem[pedido], ...ordem.filter((_, i) => i !== pedido)].map((f) => f()).find((d): d is Desenho => !!d) ?? null;
   if (!desenho) return slide;
@@ -863,4 +1120,4 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
 }
 
 /** O nome com que as composições aparecem no painel. */
-export const NOMES_COMPOSICAO = ["Compor em cartões", "Compor em faixas", "Compor em lista"] as const;
+export const NOMES_COMPOSICAO = ["Compor (escuro)", "Compor (claro)", "Compor (cor)"] as const;
