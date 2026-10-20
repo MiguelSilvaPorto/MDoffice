@@ -15301,3 +15301,14 @@ antigas quando fizer sentido.
   `main`, então a promoção anda depois, num commit só de documentação, como nas rodadas
   anteriores. Promovi só a entrada DESTA tarefa (`2e6fdf4`); as que seguem em "Não adicionado"
   são de sessões com trabalho aberto.
+## README.md
+
+### 2026-10-20 · esta tarefa · a suíte descrita como suíte, não como imitação
+- **Local:** "Como começou" (o parágrafo da origem do nome)
+- **Linha:** `- Com o tempo a ambição cresceu e tentei construir o Office inteiro dentro dele: abas,` →
+  `+ Com o tempo a ambição cresceu e tentei construir uma **suíte de documentos** inteira`;
+  `- **mdOffice** - … ganha por cima os programas do Office.` → `+ … ganha por cima os **editores da suíte**.`
+- **Por quê:** "o Office inteiro" e "os programas do Office" podem ser lidos como imitação do produto da
+  Microsoft, e o README é a primeira coisa que alguém lê. A descrição passou a ser neutra e própria. As
+  menções restantes a "Office" são nomes próprios (mdOffice, MDOFFICE, a URL do repositório e o LibreOffice,
+  citado como origem dos dicionários), que não sugerem imitação. Não havia "Estilo Office" em nenhum documento.

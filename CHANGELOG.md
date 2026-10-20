@@ -1841,6 +1841,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
   markdown passa pelo saneamento, como todo HTML de fora no app.
 
+- **O README fala da suíte, não de "imitar o Office"**: as frases "construir o Office inteiro" e "os programas do
+  Office" viraram "construir uma **suíte de documentos** inteira" e "os **editores da suíte**". As menções que
+  continuam são nomes próprios (mdOffice, MDOFFICE, o endereço do repositório e o LibreOffice, de onde vêm os
+  dicionários) — nenhuma delas sugere imitação.
+
 - (nada no momento)
 
 - **O menu dos grupos da fita abre e fica (o controle de dentro volta a ser clicável)**: com a faixa

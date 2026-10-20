@@ -23,9 +23,10 @@
 ## Como começou
 
 O app nasceu como **mdEditor**, um editor de Markdown simples — só escrever e pronto.
-Com o tempo a ambição cresceu e tentei construir o Office inteiro dentro dele: abas,
-Word, Excel, PowerPoint, desenho, tradução, revisão. Foi por isso que o nome virou
-**mdOffice** — mantém a origem (o Markdown) e ganha por cima os programas do Office.
+Com o tempo a ambição cresceu e tentei construir uma **suíte de documentos** inteira
+dentro dele: abas, Word, Excel, PowerPoint, desenho, tradução, revisão. Foi por isso
+que o nome virou **mdOffice** — mantém a origem (o Markdown) e ganha por cima os
+**editores da suíte**.
 Em vários momentos quase desisti.
 
 O que me fez continuar foi a referência do **[DeckCraft](https://getartcraft.com)**,
