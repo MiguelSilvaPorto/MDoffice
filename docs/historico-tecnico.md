@@ -15207,3 +15207,16 @@ antigas quando fizer sentido.
   mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
   entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
   promoções anteriores.
+
+## src/word/schema.ts
+
+### 2026-10-20 · esta tarefa · a imagem não vaza mais sobre o texto
+- **Local:** `paraStyle`/`withStyle` (agora recebem `semEntrelinha`), `temImagem` (novo) e os `toDOM` de
+  `paragraph` e `heading`
+- **Linha:** `- if (a.lineHeight != null) css.push(`line-height:${a.lineHeight}`);` →
+  `+ if (a.lineHeight != null && !semEntrelinha) css.push(…)`; `+ withStyle(…, temImagem(n))` nos dois `toDOM`
+- **Por quê:** a imagem do Word é **inline** (`schema.image`), e um parágrafo importado pode trazer entrelinha
+  fixa (ex.: 1). Com a caixa da linha menor que a imagem, ela **vaza** por cima das linhas vizinhas e recebe o
+  ponteiro, então o texto embaixo não é editável (relato com print: "a imagem interfere na escrita"). A
+  entrelinha fixa deixa de valer só no parágrafo que contém imagem; os demais continuam iguais. Trava nova:
+  `scripts/testar-word-imagem.mjs` (monta o parágrafo com imagem e confere que o `style` não leva `line-height`).

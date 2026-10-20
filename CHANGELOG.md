@@ -368,6 +368,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada no momento)
 
 **Frontend**
+- **A imagem parou de atrapalhar a escrita no Word**: um parágrafo com **entrelinha fixa** (1 ou um valor exato)
+  e uma imagem **inline** grande ficava com a caixa da linha menor que a imagem — ela vazava por cima das linhas
+  vizinhas e **capturava o clique**, então não dava para clicar/editar o texto embaixo. Agora parágrafo (e título)
+  que contém imagem **não aplica a entrelinha fixa**: a linha cresce para caber a imagem, que continua inline e
+  redimensionável; os demais parágrafos mantêm a entrelinha como estava. Trava: `npm run test:word-imagem`.
+
 
 ### Adicionado (na main)
 

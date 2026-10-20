@@ -51,13 +51,26 @@ function toPt(v: string | null | undefined): number | null {
   return n;
 }
 
-function paraStyle(attrs: Record<string, unknown>): string {
+/**
+ * O parágrafo tem imagem? Uma imagem inline é mais alta que a linha e, com entrelinha fixa (ex.: 1), ela
+ * vaza por cima das linhas vizinhas e captura o clique — o texto fica impossível de editar.
+ */
+const temImagem = (n: PMNode): boolean => {
+  let achou = false;
+  n.descendants((filho) => {
+    if (filho.type.name === "image") achou = true;
+  });
+  return achou;
+};
+
+function paraStyle(attrs: Record<string, unknown>, semEntrelinha = false): string {
   const a = attrs as unknown as ParaAttrs;
   const css: string[] = [];
   if (a.align) css.push(`text-align:${a.align}`);
   if (a.spaceBefore != null) css.push(`margin-top:${a.spaceBefore}pt`);
   if (a.spaceAfter != null) css.push(`margin-bottom:${a.spaceAfter}pt`);
-  if (a.lineHeight != null) css.push(`line-height:${a.lineHeight}`);
+  // com imagem, a entrelinha fixa some: a linha cresce para caber a imagem (que continua inline)
+  if (a.lineHeight != null && !semEntrelinha) css.push(`line-height:${a.lineHeight}`);
   if (a.indentLeft != null) css.push(`margin-left:${a.indentLeft}pt`);
   if (a.indentFirst != null) css.push(`text-indent:${a.indentFirst}pt`);
   if (a.bg) css.push(`background-color:${a.bg};padding:4px 8px;border-radius:3px`);
@@ -80,8 +93,8 @@ function paraFromDOM(dom: HTMLElement): Partial<ParaAttrs> {
   };
 }
 
-const withStyle = (tag: string, attrs: Record<string, unknown>, extra: Record<string, string> = {}): DOMOutputSpec => {
-  const style = paraStyle(attrs);
+const withStyle = (tag: string, attrs: Record<string, unknown>, extra: Record<string, string> = {}, semEntrelinha = false): DOMOutputSpec => {
+  const style = paraStyle(attrs, semEntrelinha);
   return [tag, { ...extra, ...(style ? { style } : {}) }, 0];
 };
 
@@ -99,7 +112,7 @@ const nodes: Record<string, NodeSpec> = {
         return { ...paraFromDOM(el), pid: el.getAttribute("data-pid") || null };
       },
     }],
-    toDOM: (n) => withStyle("p", n.attrs, n.attrs.pid ? { "data-pid": n.attrs.pid } : {}),
+    toDOM: (n) => withStyle("p", n.attrs, n.attrs.pid ? { "data-pid": n.attrs.pid } : {}, temImagem(n)),
   },
 
   heading: {
@@ -114,7 +127,7 @@ const nodes: Record<string, NodeSpec> = {
         return { level, ...paraFromDOM(el), pid: el.getAttribute?.("data-pid") || null };
       },
     })),
-    toDOM: (n) => withStyle(`h${n.attrs.level}`, n.attrs, n.attrs.pid ? { "data-pid": n.attrs.pid } : {}),
+    toDOM: (n) => withStyle(`h${n.attrs.level}`, n.attrs, n.attrs.pid ? { "data-pid": n.attrs.pid } : {}, temImagem(n)),
   },
 
   blockquote: {
