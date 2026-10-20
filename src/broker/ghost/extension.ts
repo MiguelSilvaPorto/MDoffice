@@ -4,7 +4,7 @@ import { EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
 import { type Extension } from "@codemirror/state";
 import { DocumentIndex } from "./documentIndex";
 import { predictCompletion } from "./predict";
-import { setGhostEffect, ghostTextField, ghostTextKeymap } from "./field";
+import { setGhostEffect, ghostTextField, ghostTextKeymap, ghostPredictor } from "./field";
 import { refineSuggestion, REFINE } from "./refine";
 
 export interface GhostOptions {
@@ -13,7 +13,6 @@ export interface GhostOptions {
 
 export function createGhostTextExtension(options: GhostOptions): Extension {
   const docIndex = new DocumentIndex();
-  let debounceTimer: number | null = null;
   let indexTimer: number | null = null;
   let llmTimer: number | null = null;
 
@@ -59,36 +58,20 @@ export function createGhostTextExtension(options: GhostOptions): Extension {
           }, 800);
         }
 
-        // Se a seleção não estiver vazia, não agenda predição
-        const sel = update.view.state.selection.main;
-        if (!sel.empty) {
-          return;
-        }
-
-        // Se o documento mudou ou a seleção mudou, agenda cálculo com debounce curto: a previsão
-        // custa ~0,4 ms, então 45 ms já mostram a sugestão entre uma tecla e outra — antes eram
-        // 90 ms e, digitando rápido, o relógio nunca fechava (a sugestão só aparecia nas pausas).
-        if (update.docChanged || update.selectionSet) {
-          if (debounceTimer) window.clearTimeout(debounceTimer);
-          debounceTimer = window.setTimeout(() => {
-            if (!options.getEnabled()) return;
-            const head = update.view.state.selection.main.head;
-            const pred = predictCompletion(update.view.state.doc, head, docIndex);
-            update.view.dispatch({
-              effects: setGhostEffect.of(pred),
-            });
-            refineLater(update.view);
-          }, 45);
-        }
+        // A sugestão em si já saiu na transação da tecla (ghostPredictor); aqui só fica a IA local,
+        // que espera uma pausa.
+        if (!update.view.state.selection.main.empty) return;
+        if (update.docChanged || update.selectionSet) refineLater(update.view);
       }
 
       destroy(): void {
-        if (debounceTimer) window.clearTimeout(debounceTimer);
         if (indexTimer) window.clearTimeout(indexTimer);
         if (llmTimer) window.clearTimeout(llmTimer);
       }
     }
   );
 
-  return [ghostTextField, ghostTextKeymap, plugin];
+  const predictor = ghostPredictor.of((state) => (options.getEnabled() ? predictCompletion(state.doc, state.selection.main.head, docIndex) : null));
+
+  return [predictor, ghostTextField, ghostTextKeymap, plugin];
 }

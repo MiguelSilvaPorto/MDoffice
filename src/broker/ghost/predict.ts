@@ -27,8 +27,12 @@ const seen = (c: number): number => (c >= 2 ? Math.min(c, 5) : c * MIX.single);
 export const THRESHOLDS = {
   /** próxima palavra, depois de um espaço */
   next: 0.45,
-  /** continuar a sugestão com mais uma palavra (até 3 no total) */
-  chain: 0.75,
+  /**
+   * continuar a sugestão com mais uma palavra (até 3 no total). Era 0,75: no eval-ghost as
+   * sugestões de várias palavras acertavam só 46% (as que mais incomodam quando erram); com 0,85
+   * a precisão geral sobe de 70,2% para 71,5% e a economia de teclas fica igual (12,2% → 11,9%).
+   */
+  chain: 0.85,
   /** completar a palavra com 1 letra digitada / 2 / 3 ou mais */
   prefix1: 0.97,
   prefix2: 0.8,
@@ -129,6 +133,9 @@ export function valeMostrar(x: readonly number[], keys: number, fator = 1): bool
   return decidir(probAcerto(x) * fator, keys);
 }
 
+/** Quanto do texto antes do cursor a previsão lê (letras). */
+const TAIL = 400;
+
 /** Analisa a linha e a posição do cursor e devolve a sugestão de texto fantasma, se houver. */
 export function predictCompletion(doc: Text, pos: number, index: DocumentIndex): GhostSuggestion | null {
   const line = doc.lineAt(pos);
@@ -147,6 +154,12 @@ export function predictFromLine(before: string, after: string, pos: number, inde
   if (before.trim().startsWith("```")) return null;
   const model = getLanguageModel();
   if (!model) return predictLegacy(before, after, pos, index);
+  // agora a previsão roda a cada tecla: num parágrafo comprido, só o fim conta (o contexto usa a
+  // frase atual e as últimas palavras), então não vale reler o parágrafo inteiro
+  if (before.length > TAIL) {
+    const sp = before.indexOf(" ", before.length - TAIL);
+    if (sp > 0) before = before.slice(sp + 1);
+  }
   const r = predictWithModel(model, before, index, THRESHOLDS.alternatives);
   if (r?.replace) return { text: r.texts[0], pos, replace: r.replace }; // correção do que foi digitado: sem alternativas nem aprendizado
   return r ? { text: r.texts[0], pos, alts: r.texts, altWords: r.words, prev: r.prev, mode: r.mode } : null;
@@ -445,7 +458,7 @@ function suggestFrom(model: LangModel, index: DocumentIndex, ctx: Ctx, first: Ra
     tokens = [...tokens, first.best.lc];
     if (!main) return w;
   }
-  // a corrente segue o limiar já validado de 0,75 no n-grama: ela é RARA (a calibração dela exigiria
+  // a corrente segue o limiar fixo T.chain no n-grama: ela é RARA (a calibração dela exigiria
   // muitos dados que quase não existem) e multiplicar as chances deixava a corrente impossível.
   while (words.length < T.maxWords) {
     const nx = rank(model, index, tokens, null)[0];

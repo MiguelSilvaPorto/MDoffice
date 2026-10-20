@@ -1,7 +1,7 @@
 // Widget visual, estado do CodeMirror 6 e atalhos (Tab, Esc, Alt+Seta, Ctrl+Seta).
 
 import { EditorView, WidgetType, Decoration, type DecorationSet, keymap } from "@codemirror/view";
-import { StateField, StateEffect, Prec, type Text } from "@codemirror/state";
+import { StateField, StateEffect, Facet, Prec, type Text, type EditorState } from "@codemirror/state";
 import { type GhostSuggestion } from "./types";
 import { consumeTyped, cycleSuggestion, altLabel, outcomeOf, parDaCorrecao } from "./suggestion";
 import { accepted, rejected } from "../personal/feedback";
@@ -46,6 +46,15 @@ export class GhostTextWidget extends WidgetType {
 
 export const setGhostEffect = StateEffect.define<GhostSuggestion | null>();
 
+/**
+ * Quem calcula a sugestão para o cursor. O campo chama na própria transação da tecla (a previsão
+ * custa ~0,2 ms): antes ela esperava um relógio de 45 ms que reiniciava a cada tecla e, digitando
+ * rápido, nunca chegava a fechar — a sugestão só aparecia nas pausas.
+ */
+export const ghostPredictor = Facet.define<(state: EditorState) => GhostSuggestion | null, ((state: EditorState) => GhostSuggestion | null) | null>({
+  combine: (fns) => fns[0] ?? null,
+});
+
 export const ghostTextField = StateField.define<{
   suggestion: GhostSuggestion | null;
   decorations: DecorationSet;
@@ -56,15 +65,17 @@ export const ghostTextField = StateField.define<{
   update(val, tr) {
     let suggestion = val.suggestion;
     let changed = false;
+    let explicit = false;
 
     for (const effect of tr.effects) {
       if (effect.is(setGhostEffect)) {
         suggestion = effect.value;
         changed = true;
+        explicit = true;
       }
     }
 
-    if (tr.docChanged) {
+    if (tr.docChanged && !explicit) {
       if (suggestion) {
         // Se o usuário digitou exatamente o caractere inicial da sugestão, fatia em 0ms
         let matched = false;
@@ -101,10 +112,19 @@ export const ghostTextField = StateField.define<{
           changed = true;
         }
       }
-    } else if (tr.selection) {
+    } else if (tr.selection && !explicit) {
       // Se apenas o cursor moveu e saiu da posição da sugestão, limpa imediatamente
       if (suggestion && tr.state.selection.main.head !== suggestion.pos) {
         suggestion = null;
+        changed = true;
+      }
+    }
+
+    // sem sugestão viva depois da tecla (ou do Tab que aceitou tudo): calcula a nova agora mesmo
+    if (!suggestion && (tr.docChanged || (tr.selection && !explicit))) {
+      const predict = tr.state.facet(ghostPredictor);
+      if (predict && tr.state.selection.main.empty) {
+        suggestion = predict(tr.state);
         changed = true;
       }
     }

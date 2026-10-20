@@ -225,8 +225,8 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   **~20%** das teclas — o `test:ghost` prende os números. A **próxima palavra** e a corrente de
   palavras seguem a regra já validada no avaliador (a calibração não se sustenta lá: a taxa-base
   é baixa e o texto de ajuste não cobre o assunto do documento). Os **modos** abrem o leque
-  (discreta exige mais certeza; agressiva, menos) e a sugestão aparece em **45 ms** parado — a
-  previsão custa menos de 1 ms, então ela acompanha a digitação em vez de só aparecer nas pausas.
+  (discreta exige mais certeza; agressiva, menos) e a sugestão é calculada **na própria tecla** — a
+  previsão custa menos de 1 ms, então ela acompanha a digitação mesmo rápida, sem esperar pausa.
   A **correção do que acabou de ser digitado** ("noçao" → "noção") vem antes de qualquer previsão.
 - **O ajuste é reproduzível**: `npx tsx scripts/calibrar-ghost.mts [treino] [validação] --fluxo`
   refaz os pesos e mostra a fronteira precisão × cobertura × economia; o `eval-ghost` mede a

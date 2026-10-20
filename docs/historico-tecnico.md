@@ -14334,6 +14334,56 @@ antigas quando fizer sentido.
   relógio e a sugestão só aparecia nas pausas ("a cada 12 palavras"); com 45 ms ela acompanha a
   digitação.
 
+### 2026-10-20 · sugestão · sem relógio: a previsão sai na transação da tecla
+
+- **Local:** `update` do ViewPlugin e o retorno de `createGhostTextExtension`.
+- **Linha:** o `debounceTimer` de 45 ms que chamava `predictCompletion` e fazia `dispatch` → removido;
+  a previsão vira o facet `ghostPredictor` (ver `field.ts`) e o `update` só agenda a IA local (`refineLater`).
+- **Porquê:** a espera reiniciava a cada tecla. Medido com o modelo real: a previsão custa p50 0,15 ms,
+  p99 1,5 ms — não há o que economizar esperando, e qualquer espera (90 ms no Word, 45 ms aqui) some
+  quando se digita acima de ~10–20 letras/s: a sugestão só aparecia nas pausas (o relato "não aparece
+  nada digitando rápido" / "só a cada 3 palavras").
+
+## src/broker/ghost/field.ts
+
+### 2026-10-20 · sugestão · o campo calcula a sugestão nova na mesma transação
+
+- **Local:** `ghostPredictor` (facet novo) e o fim de `ghostTextField.update`.
+- **Linha:** novo `if (!suggestion && (tr.docChanged || …)) suggestion = predict(tr.state)`; e os
+  ramos `tr.docChanged` / `tr.selection` passam a ignorar a transação que trouxe `setGhostEffect`
+  (`explicit`).
+- **Porquê:** o CodeMirror não deixa despachar dentro do `update` de um plugin, então a previsão foi
+  para dentro do StateField — a sugestão chega no mesmo quadro da letra. O `explicit` corrige um erro
+  antigo: o `Ctrl+Seta`/`Alt+Seta` mandava o resto da sugestão no efeito, mas o ramo `docChanged`
+  comparava a inserção com a posição NOVA e apagava esse resto (o relógio recalculava depois e às
+  vezes trazia outra coisa).
+
+## src/word/ghost.ts
+
+### 2026-10-20 · sugestão · previsão no `apply` do plugin (fim do relógio de 90 ms)
+
+- **Local:** `predict` (novo) e `state.apply` de `ghostPlugin`; `view().update`.
+- **Linha:** `predictTimer = setTimeout(…, 90)` + `setSuggestion` → `apply(tr, cur, _old, state)`
+  devolve `consumeTyped(…) ?? predict(state)` (ou `predict(state)` quando não há sugestão viva, quando
+  o cursor sai dela ou depois do Tab); `!prev.doc.eq(v.state.doc)` → `prev.doc !== v.state.doc`.
+- **Porquê:** 90 ms de espera reiniciada a cada tecla: a 10 letras/s (100 ms entre teclas, com rajadas
+  bem mais rápidas dentro da palavra) o relógio quase nunca fechava. Calcular no `apply` não despacha
+  uma segunda transação por tecla. A comparação por referência basta (o ProseMirror troca o `doc` só
+  quando ele muda) e não percorre o documento a cada transação.
+
+## src/broker/ghost/predict.ts
+
+### 2026-10-20 · sugestão · corrente mais exigente e só o fim do parágrafo
+
+- **Local:** `THRESHOLDS.chain`; `predictFromLine` (constante `TAIL`).
+- **Linha:** `chain: 0.75` → `chain: 0.85`; novo corte de `before` às últimas ~400 letras (numa
+  fronteira de palavra).
+- **Porquê:** no `eval-ghost` (corpus-wikipedia, aprendendo) as sugestões de várias palavras acertavam
+  46% — as que mais incomodam quando erram. Com 0,85 a precisão geral sobe de 70,2% para 71,5% e a
+  economia fica em 11,9% (era 12,2%); o `test:ghost` continua em 92,7% / 20,2%. O corte: agora a
+  previsão roda a cada tecla e o contexto só usa a frase atual e as últimas palavras — reler um
+  parágrafo de milhares de letras a cada tecla não muda o resultado.
+
 ## scripts/testar-ghost.mjs · scripts/eval-ghost.mts · scripts/calibrar-ghost.mts
 
 ### 2026-10-19 · sugestão · a régua fixa e a ferramenta de calibração

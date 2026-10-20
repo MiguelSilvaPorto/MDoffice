@@ -67,7 +67,6 @@ function accept(view: EditorView, wordOnly: boolean): boolean {
 
 export function ghostPlugin(hooks: WordGhostHooks): Plugin {
   const index = new DocumentIndex();
-  let predictTimer: number | undefined;
   let indexTimer: number | undefined;
   let llmTimer: number | undefined;
   const reindex = (state: EditorState): void => index.update(state.doc.textBetween(0, state.doc.content.size, "\n", " "));
@@ -92,14 +91,27 @@ export function ghostPlugin(hooks: WordGhostHooks): Plugin {
     }, REFINE.pauseMs);
   };
 
+  /**
+   * A sugestão para o cursor, calculada na própria transação da tecla (custa ~0,2 ms). Antes ela
+   * esperava um relógio de 90 ms que reiniciava a cada tecla: digitando a 10 letras por segundo o
+   * relógio quase nunca fechava e a sugestão só aparecia nas pausas (de tantas em tantas palavras).
+   */
+  const predict = (state: EditorState): GhostSuggestion | null => {
+    if (!hooks.enabled()) return null;
+    const ctx = around(state);
+    return ctx ? predictFromLine(ctx.before, ctx.after, state.selection.head, index) : null;
+  };
+
   return new Plugin<GhostSuggestion | null>({
     key,
     state: {
       init: () => null,
-      apply(tr, cur) {
+      apply(tr, cur, _old, state) {
         const meta = tr.getMeta(key) as { set: GhostSuggestion | null } | undefined;
-        if (meta) return meta.set;
-        if (!cur) return null;
+        // Tab que aceitou tudo: a próxima sugestão já vem junto
+        if (meta) return meta.set ?? (tr.docChanged ? predict(state) : null);
+        if (!tr.docChanged && !tr.selectionSet) return cur;
+        if (!cur) return predict(state);
         if (tr.docChanged) {
           // digitou exatamente o começo da sugestão: consome sem esperar o próximo cálculo
           let typed = "";
@@ -123,11 +135,11 @@ export function ghostPlugin(hooks: WordGhostHooks): Plugin {
             // correção do fantasma: digitar por cima (ou começar a digitar o que ela
             // propunha) sem aceitar conta como recusa do par
             if (cur.replace) recusarCorrecao(cur, tr.before);
-            return consumeTyped(cur, typed);
+            return consumeTyped(cur, typed) ?? predict(state);
           }
-          return null;
+          return predict(state);
         }
-        if (tr.selectionSet && tr.selection.head !== cur.pos) return null;
+        if (tr.selection.head !== cur.pos) return predict(state);
         return cur;
       },
     },
@@ -171,26 +183,16 @@ export function ghostPlugin(hooks: WordGhostHooks): Plugin {
       return {
         update(v, prev) {
           if (!hooks.enabled()) return;
-          const changed = !prev.doc.eq(v.state.doc);
+          const changed = prev.doc !== v.state.doc;
           if (changed) {
             window.clearTimeout(indexTimer);
             indexTimer = window.setTimeout(() => reindex(v.state), 800);
           }
+          // a sugestão já saiu na transação (predict); aqui só fica a IA local, que espera uma pausa
           if (!changed && prev.selection.eq(v.state.selection)) return;
-          window.clearTimeout(predictTimer);
-          predictTimer = window.setTimeout(() => {
-            if (!hooks.enabled()) return;
-            const ctx = around(v.state);
-            const pos = v.state.selection.head;
-            const pred = ctx ? predictFromLine(ctx.before, ctx.after, pos, index) : null;
-            const cur = key.getState(v.state);
-            if (pred?.text === cur?.text && pred?.pos === cur?.pos && pred?.alts?.length === cur?.alts?.length) return;
-            setSuggestion(v, pred);
-            refineLater(v);
-          }, 90);
+          refineLater(v);
         },
         destroy() {
-          window.clearTimeout(predictTimer);
           window.clearTimeout(indexTimer);
           window.clearTimeout(llmTimer);
         },
