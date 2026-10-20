@@ -14265,6 +14265,7 @@ antigas quando fizer sentido.
   mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
   entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
   promoções anteriores.
+
 ### 2026-10-19 · copiar uma imagem · PNG na área de transferência, JSON em tipo próprio
 - **Local:** `copiar` (virou um invólucro de `copiarParaAreaDeTransferencia`), `pngDaImagemCopiavel`
   (nova) e o começo do `aoColarDoSistema`
@@ -14412,6 +14413,7 @@ antigas quando fizer sentido.
   **própria imagem arrastada** na lista de arquivos: a original ficava no lugar e entrava uma cópia.
   Medido no navegador com uma sonda: na versão antiga o drop interno chamava o `onImage` (a
   inserção) e agora não chama; arquivo de fora continua entrando (o `moved` é falso).
+
 ## src/word/model.ts
 
 ### 2026-10-20 · esta tarefa · o tamanho do papel em cm (o rótulo da folha)
@@ -14472,6 +14474,7 @@ antigas quando fizer sentido.
   que há **Ajustar** e o **100%** no clique
 - **Porquê:** é no doc do módulo que se procura "qual é o tamanho da folha" — e a dúvida do dono era
   exatamente essa. A entrada fica em "Não adicionado" até o `fechar.ps1` entregar.
+
 ## src/powerpoint/edicao/recompor.ts · arranjos.ts · powerpoint.ts · render/forma.ts
 
 ### 2026-10-20 · esta tarefa · a composição por grupos e padrões (o "Compor")
@@ -14500,6 +14503,7 @@ antigas quando fizer sentido.
   (o .pptx traz `wrap` desligado) e rodapé escuro no fundo escuro. A captura também foi consertada (painel e
   avisos fixos escondidos só no print, viewport maior e `captureBeyondViewport`), senão o print incluía a área
   de fora e não dava para julgar o desenho.
+
 ## CHANGELOG.md
 
 ### 2026-10-20 · Word · a promoção da entrada (não adicionado → adicionado)
@@ -14593,6 +14597,7 @@ antigas quando fizer sentido.
   `view.dom` e o menu mínimo de **Copiar** saiu (o `preventDefault` continua). A escolha de "sem
   seleção, nada aparece" caiu junto: com o cursor numa **tabela** — mesmo sem seleção — o menu é o
   caminho para o **Excluir tabela**.
+
 ## src/word/contexto.ts (novo)
 
 ### 2026-10-20 · esta tarefa · a lista do menu do clique direito (pura, para teste)
@@ -14658,3 +14663,67 @@ antigas quando fizer sentido.
 - **Linha:** `+ **Clique direito no documento**: abre o menu do app … "Excluir tabela" vem em primeiro …`
 - **Porquê:** o doc do módulo listava as tabelas mas não dizia **como tirá-las**; a entrada fica em "Não
   adicionado" até o `fechar.ps1` entregar.
+
+## src/homePreviaPptx.ts (novo)
+
+### 2026-10-20 · a prévia real · a lâmina do .pptx desenhada no cartão
+- **Local:** `htmlDaLaminaDoDeck` (puro) e `htmlDaLaminaDeBytes` (importa e delega)
+- **Linha:** `novo` — monta o `CtxRender` com as medidas da lâmina (`aspectSize(setup) * 72`), o
+  fundo (`fundoValor(slide.bg) || THEME_COLORS[setup.theme].bg`), as formas com `htmlFormaRica` e
+  devolve `<span class="home-prev home-prev-lamina-real" style="background:…;aspect-ratio:w / h">`
+  com o palco dentro
+- **Porquê:** a prévia do PowerPoint era uma **reconstrução de texto** (primeira linha como título,
+  resto como corpo) — o usuário: "as prévias parecem algo falso". O app já tem o renderizador de
+  verdade (o do palco/F5) e o importador do `.pptx`: a lâmina real mostra tema, posições e imagens.
+  O módulo fica **puro** (sem DOM/Tauri) para o teste poder rodar em Node.
+
+## src/homePage.ts
+
+### 2026-10-20 · a prévia real · ler o pptx e cair para o texto
+- **Local:** `laminaReal` (novo helper + cache `laminasReais`) e o bloco que preenche os cartões
+- **Linha:** `const html = previaEmHtml(estruturarPrevia(p.tipo, p.texto));` → `const real =
+  p.tipo === "pptx" ? await laminaReal(item.path, p.texto) : null; const html = real ?? …` (o texto
+  fica de plano B)
+- **Porquê:** no navegador não há arquivos (o `readDataUrl` falha) e um deck importado pode não ter
+  formas desenháveis — nesses casos o cartão continua com a versão em texto. O cache usa o **texto
+  extraído** como chave: quando o arquivo muda, a leitura muda e a lâmina é redesenhada (o `Recent`
+  não tem mtime).
+
+## src/homePrevia.ts
+
+### 2026-10-20 · a prévia real · a página com mais parágrafos
+- **Local:** `LINHAS_PAGINA`
+- **Linha:** `11` → `16`
+- **Porquê:** com a página ocupando a altura do cartão, 11 linhas deixavam o papel vazio embaixo —
+  a sensação de mockup. As 16 linhas enchem a página como um documento de verdade (o teste usa a
+  constante, então acompanha).
+
+## src/styles/home.css
+
+### 2026-10-20 · a prévia real · o palco da lâmina
+- **Local:** logo antes da grade do Excel
+- **Linha:** `+ .home-prev-lamina-real` (preenche a moldura do cartão, teto de 320 px, a proporção
+  vem inline do arquivo) e `+ .home-prev-lamina-palco` (`position: absolute; inset: 0;
+  container-type: size`) — as formas usam `%`/`cqw`, então o palco é o contêiner das medidas e a
+  lâmina escala sozinha
+- **Porquê:** sem o `container-type` as medidas em `cqw` caíam no viewport (o título saía gigante);
+  com o palco de tamanho definido, a lâmina encolhe como uma miniatura de verdade (medido:
+  197×111 no cartão de 215×110).
+
+## scripts/testar-previa-inicio.mjs
+
+### 2026-10-20 · a prévia real · o teste do deck desenhado
+- **Local:** bloco novo "8) PowerPoint: a lâmina REAL", no fim
+- **Linha:** `+` empacota `src/homePreviaPptx.ts` e confere: a forma e o texto do deck aparecem
+  (`left:10%`), a proporção (`13.333 / 7.5`) e o fundo do tema; deck vazio devolve `null`
+- **Porquê:** o renderizador é o mesmo do palco, mas o caminho "deck → HTML do cartão" é novo e não
+  tinha teste; sem ele, a prévia poderia voltar a ser a reconstrução sem ninguém notar.
+
+## docs/funcionalidades.md
+
+### 2026-10-20 · a prévia real · o parágrafo da tela de Início
+- **Local:** o parágrafo "A tela de Início mostra os arquivos recentes…"
+- **Linha:** `+` "No **PowerPoint** o cartão desenha a **lâmina de verdade**… o texto extraído fica
+  só como plano B"
+- **Porquê:** o documento dizia que a versão pré-carregada vinha do texto do arquivo — no PowerPoint
+  agora vem do **documento** (importado e desenhado).

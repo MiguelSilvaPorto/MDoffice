@@ -3,6 +3,7 @@ import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { fileIcon, kindOfPath } from "./fileIcons";
 import { estruturarPrevia, type PreviaEstruturada } from "./homePrevia";
+import { htmlDaLaminaDeBytes } from "./homePreviaPptx";
 import { $, h, fmtTime, baseName, stripExt, docDirOf, escapeHtml } from "./util";
 
 /** O mesmo saneamento do resto do app: o HTML do markdown é de fora e não pode virar marcação. */
@@ -93,6 +94,26 @@ const FORMAT_META: Record<"word" | "excel" | "md" | "ppt", { label: string; ext:
   md: { label: "Markdown", ext: ".md", newLabel: "documento Markdown", icon: "i-doc" },
   ppt: { label: "PowerPoint", ext: ".pptx", newLabel: "apresentação PowerPoint", icon: "i-eye" },
 };
+
+/**
+ * A lâmina de verdade do `.pptx` (lida do disco uma vez por cartão). No navegador não há arquivos:
+ * devolve null e o cartão fica com a versão em texto.
+ */
+const laminasReais = new Map<string, { chave: string; html: string }>();
+
+async function laminaReal(path: string, chave: string): Promise<string | null> {
+  const guardada = laminasReais.get(path);
+  if (guardada?.chave === chave) return guardada.html;
+  try {
+    const url = await files.readDataUrl(path);
+    const bytes = Uint8Array.from(atob(url.slice(url.indexOf(",") + 1)), (c) => c.charCodeAt(0));
+    const html = await htmlDaLaminaDeBytes(bytes);
+    if (html) laminasReais.set(path, { chave, html });
+    return html;
+  } catch {
+    return null;
+  }
+}
 
 export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
   container.textContent = "";
@@ -428,10 +449,14 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
       // (Word/Markdown), a lâmina (PowerPoint) ou a grade (Excel), com o conteúdo do arquivo.
       // O texto do arquivo entra escapado (e o markdown passa pelo saneamento): é conteúdo de
       // fora, não pode virar marcação.
+      //
+      // No PowerPoint a página de texto é só o plano B: o `.pptx` é importado e a lâmina é
+      // DESENHADA (tema, formas, imagens) — o cartão mostra o documento de verdade.
       void Promise.all(
         cartoes.map(async ({ item, papel }) => {
           const p = await ctx.preview(item.path);
-          const html = previaEmHtml(estruturarPrevia(p.tipo, p.texto));
+          const real = p.tipo === "pptx" ? await laminaReal(item.path, p.texto) : null;
+          const html = real ?? previaEmHtml(estruturarPrevia(p.tipo, p.texto));
           if (!html) return;
           papel.classList.add("com-previa");
           papel.innerHTML = html;

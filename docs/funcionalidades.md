@@ -28,7 +28,10 @@ A **tela de Início** mostra os arquivos recentes numa **grade de cartões**, ca
 **Markdown** viram uma **página A4 em pé** no papel do tema (no escuro a folha escurece, como no
 editor; o markdown chega renderizado e cada imagem vira um bloco de figura), o **PowerPoint** uma
 **lâmina 16:9** (sempre clara) e o **Excel** uma **grade** com o cabeçalho das colunas e o número
-das linhas. Sem texto (ou num formato sem prévia), o cartão fica com o ícone do formato. O `.md` lê
+das linhas. No **PowerPoint** o cartão desenha a **lâmina de verdade**: o `.pptx` é importado e o
+mesmo renderizador do palco e do F5 põe fundo do tema, formas, imagens e o título no tamanho real
+(16:9 ou 4:3, conforme o arquivo) — o texto extraído fica só como plano B. Sem texto (ou num
+formato sem prévia), o cartão fica com o ícone do formato. O `.md` lê
 o próprio texto e os formatos do Office (.docx/.pptx/.xlsx) abrem o zip e tiram o texto do XML
 principal, no lado Rust (comando `preview_file`) — o documento **não** é carregado no app só para a
 prévia (no `.xlsx`, o mesmo comando lê a planilha e devolve as primeiras linhas com as células

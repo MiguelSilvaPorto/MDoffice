@@ -916,6 +916,24 @@ body.home-open .sb-tab[data-side="home"] {
   color: #4b5563;
 }
 
+/* --- a LÂMINA REAL (PowerPoint): o documento desenhado (tema, formas, imagens) --- */
+.home-prev-lamina-real {
+  left: 50%;
+  top: 50%;
+  width: calc(100% - 18px);
+  max-width: 320px;
+  transform: translate(-50%, -50%);
+  border-radius: 1px;
+}
+
+/* o palco é o contêiner das medidas: as formas usam % e `cqw`, então a lâmina escala sozinha */
+.home-prev-lamina-palco {
+  position: absolute;
+  inset: 0;
+  container-type: size;
+  overflow: hidden;
+}
+
 /* --- a GRADE (Excel): o cabeçalho das colunas e o número das linhas --- */
 .home-prev-grade {
   inset: 7px 5px;

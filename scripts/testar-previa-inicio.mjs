@@ -76,5 +76,43 @@ const ok = (nome, cond, detalhe = "") => {
   ok("os espaços internos da célula viram um só", g[0] === "Ana Maria", JSON.stringify(g));
 }
 
+// 8) PowerPoint: a lâmina REAL (importada e desenhada), não uma reconstrução de texto
+{
+  await build({ entryPoints: [join(raiz, "src/homePreviaPptx.ts")], bundle: true, platform: "node", format: "esm", outfile: join(tmp, "previa-pptx.mjs"), logLevel: "error" });
+  const PP = await import(pathToFileURL(join(tmp, "previa-pptx.mjs")).href);
+  const deck = {
+    slides: [
+      {
+        md: "",
+        layout: "titulo",
+        shapes: [
+          {
+            id: "s1",
+            kind: "caixa",
+            box: { x: 10, y: 10, w: 60, h: 20 },
+            paras: [
+              {
+                runs: [{ text: "Lâmina de verdade", size: 28, bold: true, italic: false, underline: false, strike: false, color: "123456", font: "Arial" }],
+                align: "esquerda",
+                lvl: 0,
+                marL: 0,
+                indent: 0,
+                spcBef: 0,
+                spcAft: 0,
+                endSize: 28,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  const html = PP.htmlDaLaminaDoDeck(deck, { aspect: "16:9", theme: "claro", showNumber: false, footer: "", fontFamily: "Arial" });
+  ok("a lâmina real desenha a forma e o texto do deck", /home-prev-lamina-real/.test(html) && /Lâmina de verdade/.test(html) && /left:10%/.test(html), String(html).slice(0, 120));
+  ok("a lâmina real leva a proporção da lâmina (16:9)", /aspect-ratio:13\.333 \/ 7\.5/.test(html) || /aspect-ratio:16 \/ 9/.test(html), html.match(/aspect-ratio:[^"]+/)?.[0]);
+  ok("a lâmina real pinta o fundo do tema", /background:#[0-9A-Fa-f]{6}/.test(html));
+  ok("deck vazio não vira cartão", PP.htmlDaLaminaDoDeck({ slides: [] }, { aspect: "16:9", theme: "claro", showNumber: false, footer: "", fontFamily: "Arial" }) === null);
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);

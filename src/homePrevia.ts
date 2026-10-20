@@ -26,8 +26,8 @@ export interface PreviaEstruturada {
   grade: string[][];
 }
 
-/** Quantas linhas de corpo a página mostra (o cartão é pequeno). */
-export const LINHAS_PAGINA = 11;
+/** Quantas linhas de corpo a página mostra (o cartão é pequeno, mas a página tem de parecer cheia). */
+export const LINHAS_PAGINA = 16;
 /** Quantas linhas de corpo a lâmina mostra. */
 export const LINHAS_LAMINA = 5;
 /** Quantas linhas e colunas a grade do Excel mostra. */
