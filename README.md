@@ -72,7 +72,7 @@ npm run app     # abre o app em modo desenvolvimento (Tauri + Vite)
 - [Estrutura do projeto](docs/estrutura-do-projeto.md)
 - [Changelog](CHANGELOG.md) — por categoria, o que está na `main` e o que ainda não está
 - [Histórico técnico](docs/historico-tecnico.md) — arquivo, linha e o porquê de cada mudança
-- [Paridade com o DeckCraft](docs/paridade-deckcraft.md) — checklist do que falta para alcançar a referência
+- [Roadmap de funcionalidades](docs/roadmap-funcionalidades.md) — o que o módulo de Apresentações já faz e o que vem depois
 - [Funções do Excel](docs/excel/formulas/README.md)
 - [Mapas da UI do DeckCraft](docs/ui-deckcraft-abas.md) · [painéis](docs/ui-deckcraft-paineis.md)
 

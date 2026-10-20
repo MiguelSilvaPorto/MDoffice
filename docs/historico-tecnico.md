@@ -15312,3 +15312,57 @@ antigas quando fizer sentido.
   Microsoft, e o README é a primeira coisa que alguém lê. A descrição passou a ser neutra e própria. As
   menções restantes a "Office" são nomes próprios (mdOffice, MDOFFICE, a URL do repositório e o LibreOffice,
   citado como origem dos dicionários), que não sugerem imitação. Não havia "Estilo Office" em nenhum documento.
+
+## docs/roadmap-funcionalidades.md (era docs/paridade-deckcraft.md)
+
+### 2026-10-20 · roadmap · o checklist de paridade vira roadmap de funcionalidades
+- **Local:** o documento inteiro — título, introdução, legenda, tabela-resumo, as 22 áreas e o fim
+- **Linha:** `# Paridade: mdOffice × DeckCraft — checklist de pendências` → `# Roadmap de
+  funcionalidades — Apresentações (PowerPoint)`; a introdução ("Comparação… Base do checklist:
+  `docs/parity-checklist.md` do DeckCraft") → "O que é este documento / Régua de escopo"; `P0/P1/P2
+  — prioridade que o DeckCraft dá à feature` → **prioridade do roadmap**; "itens do DeckCraft já
+  cobertos pelo mdOffice" → "itens do roadmap já prontos"; as áreas e os ~190 itens, que estavam em
+  inglês, → **em português**; "Mapa de edição (o que o DeckCraft edita e falta aqui)" → "Escopo do
+  editor (o que o módulo precisa editar)"; "O que o mdOffice tem que o DeckCraft não tem" → "Além do
+  escopo de um editor de slides"; a tabela de arquitetura comparada (2 colunas) → "Arquitetura
+  (contexto)" só com o app; `+ "Fora do roadmap (decisões de produto)"` com formato próprio de
+  trabalho, menu nativo do macOS e BSD (esses três saíram das listas: 191 → 188 itens); a menção à
+  referência ficou **uma vez**, no topo, com o link do README
+- **Porquê:** a revisão do usuário apontou a contradição: o README diz que o DeckCraft é
+  **inspiração de produto** e que a implementação é própria, mas um "checklist para alcançar a
+  referência" se lê como cópia de funcionalidades — mesmo sem ser. Reescrito como roadmap, o
+  documento passa a ser sobre **o nosso produto** (o que já entregamos, o que vem e por quê), e a
+  referência vira só a régua de ambição que foi. Traduzir as áreas e os itens tira o outro sinal de
+  "lista copiada" (eram os nomes da checklist de origem); e as **decisões de produto** — inclusive o
+  que **não** fazemos — mostram escolha, não espelhamento.
+- **Contagens:** conferidas com um script temporário (fora do repositório, como os harnesses):
+  **112 de 188** prontos. A versão antiga dizia 109/191 e divergia dos próprios cabeçalhos (Mestres
+  6/14 no resumo contra 8/14 no cabeçalho; Animações 7/8 contra 6/8 nos itens). A tabela-resumo agora
+  é gerada **dos itens**, então não pode divergir de novo.
+- **Fora do escopo (registrado, não tocado):** o catálogo de modelos do app tem um modelo chamado
+  **"DeckCraft"** e o comentário de `src/powerpoint/edicao/modelos.ts` diz que os 13 designs vêm do
+  catálogo da referência. Isso é **conteúdo do produto**, não deste documento — ficou como estava, e
+  foi apontado ao usuário, porque é o que mais pesa contra a frase "sem copiar código ou conteúdo"
+  do README.
+
+## README.md · docs/funcionalidades.md · docs/ui-deckcraft-abas.md
+
+### 2026-10-20 · roadmap · os links e o vocabulário acompanham
+- **Local:** a lista **Documentação** (README), **Documentos relacionados** (funcionalidades) e as
+  duas notas de grupo do mapa de UI que falavam em "paridade"
+- **Linha:** `[Paridade com o DeckCraft](…/paridade-deckcraft.md) — checklist do que falta para
+  alcançar a referência` → `[Roadmap de funcionalidades](…/roadmap-funcionalidades.md) — o que o
+  módulo de Apresentações já faz e o que vem depois`; `(paridade: "lock aspect ratio")` →
+  `(no roadmap: "travar proporção")` e `(paridade: parcial)` → `(no roadmap: parcial)`
+- **Porquê:** link quebrado depois do `git mv` e, mais importante, o **vocabulário**: "paridade"
+  remete a "alcançar a referência", que é exatamente a leitura que o roadmap veio corrigir. Os dois
+  docs de UI do DeckCraft continuam como estão — eles são, de propósito, mapas da interface da
+  referência usados como inspiração (e é isso que o README diz).
+
+## CHANGELOG.md
+
+### 2026-10-20 · roadmap · a entrada no Geral
+- **Local:** Geral → Não adicionado → Frontend
+- **Linha:** `novo` (promovido a "Adicionado" no fechamento)
+- **Porquê:** é documentação do app todo (o roadmap do módulo de Apresentações e os links do
+  README), não de um módulo — a categoria é **Geral**.

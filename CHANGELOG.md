@@ -1887,6 +1887,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   o app salva o que estiver aberto, move o arquivo, acerta a aba, os recentes e o histórico de
   versões, e avisa quando o documento é Markdown com imagens em `assets/` (elas ficam na pasta
   antiga). A pasta em foco ganha realce e a de destino abre sozinha depois do arrasto.
+- **O checklist "Paridade com o DeckCraft" virou o roadmap de funcionalidades**: o documento era um
+  checklist de "o que falta para alcançar a referência" — e isso podia ser lido como cópia de
+  funcionalidades, contradizendo o que o README afirma (o DeckCraft é **inspiração de produto**; a
+  implementação é própria). Agora ele é o **roadmap do módulo de Apresentações**: título e
+  introdução próprios, **áreas e itens em português**, prioridades **do roadmap** (não as da
+  referência), uma única menção à inspiração (no topo, com o link do README) e uma seção de
+  **decisões de produto** com o que fica **fora** do roadmap (formato próprio de trabalho, menu
+  nativo do macOS e BSD). As contagens por área foram refeitas **a partir dos itens** (**112 de 188**
+  prontos) — a versão antiga divergia entre o resumo e os cabeçalhos. O arquivo passou a se chamar
+  `docs/roadmap-funcionalidades.md`, e o README e a lista de funcionalidades apontam para ele. Feito
+  só de documentação: nada do app mudou.
 
 **Ferramentas (dev)**
 

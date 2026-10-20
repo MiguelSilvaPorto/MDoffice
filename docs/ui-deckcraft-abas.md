@@ -702,7 +702,7 @@ Aparece quando há forma, grupo, conector ou edição de texto selecionada.
 | Height | Altura exata em polegadas | Com uma forma selecionada | — | — |
 | Width | Largura exata em polegadas | Com uma forma selecionada | — | — |
 
-**Notas para recriar no mdOffice:** o mdOffice já tem Altura/Largura em cm na aba Formato; só falta a unidade configurável e travar proporção (paridade: "lock aspect ratio").
+**Notas para recriar no mdOffice:** o mdOffice já tem Altura/Largura em cm na aba Formato; só falta a unidade configurável e travar proporção (no roadmap: "travar proporção").
 
 ### Grupo "Painel de Formatação"
 
@@ -834,7 +834,7 @@ Aparece junto com o Design da Tabela.
 | Distribute Rows | Iguala as alturas | Com tabela | Três barras entre linhas | — |
 | Distribute Columns | Iguala as larguras | Com tabela | Três barras entre colunas | — |
 
-**Notas para recriar no mdOffice:** o mdOffice tem largura/altura exatas, mas não distribuir (paridade: parcial) — dois botões a acrescentar.
+**Notas para recriar no mdOffice:** o mdOffice tem largura/altura exatas, mas não distribuir (no roadmap: parcial) — dois botões a acrescentar.
 
 ### Grupo "Alinhamento"
 

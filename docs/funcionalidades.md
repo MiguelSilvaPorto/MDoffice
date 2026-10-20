@@ -42,6 +42,6 @@ separadas por TAB; a estrutura de cada cartão é decidida em `src/homePrevia.ts
 ## Documentos relacionados
 
 - [Estrutura do projeto](estrutura-do-projeto.md) — como o código está organizado.
-- [Paridade com o DeckCraft](paridade-deckcraft.md) — checklist do que falta para alcançar a referência.
+- [Roadmap de funcionalidades](roadmap-funcionalidades.md) — o que o módulo de Apresentações já faz e o que vem depois.
 - [Funções do Excel](excel/formulas/README.md) — cada função com sintaxe, regras e exemplos.
 - [Mapas da UI do DeckCraft](ui-deckcraft-abas.md) · [painéis](ui-deckcraft-paineis.md) — referência de interface usada como inspiração.
