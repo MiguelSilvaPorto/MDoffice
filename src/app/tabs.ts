@@ -320,13 +320,14 @@ export const tabsMethods = {
   },
 
   async switchTo(this: App, id: string): Promise<void> {
-    // Um aviso de confirmação aberto ("Salvar alterações?") é modal: trocar de aba agora
-    // deixaria o aviso sobre outro documento e a resposta poderia agir na aba errada.
-    if (document.body.classList.contains("modal-aberto")) return;
     this.hideSettings();
     this.hideHome();
     const target = this.tabs.find((t) => t.id === id);
     if (!target || target === this.tab || this.switching) return;
+    // Trocar de aba com um aviso de salvar aberto cancela o aviso: ele é do documento
+    // que ia ser fechado e não deve aparecer sobre a aba nova. (Antes ele ia junto; depois
+    // travamos a troca, mas o usuário precisa poder consultar outro documento.)
+    this.cancelarAvisoSalvar?.();
     this.switching = true;
     try {
       // lê o "sujo" ANTES do autosave (ele limpa a marca)

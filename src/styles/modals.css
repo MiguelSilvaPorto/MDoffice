@@ -11,10 +11,16 @@
   backdrop-filter: blur(3px);
 }
 
-/* Aviso que não escurece o documento atrás: o modal flutua, o fundo fica limpo. */
+/* Aviso que não escurece o documento atrás: o modal flutua, o fundo fica limpo e os
+   cliques fora dele continuam chegando ao app (abas, documento). */
 .modal-backdrop.sem-fundo {
   background: transparent;
   backdrop-filter: none;
+  pointer-events: none;
+}
+
+.modal-backdrop.sem-fundo > .modal {
+  pointer-events: auto;
 }
 
 .modal {

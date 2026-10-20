@@ -210,6 +210,34 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** `.modal-backdrop.sem-fundo { background: transparent; backdrop-filter: none; }` · `.wm-grip` (grid 3×3 de pontos) · `.wm-close` (28 px, `border-radius: 50%`, hover) · `.wm-close .ic`
 - **Por quê:** o pedido era ver o documento atrás do aviso e ter uma alça visual para o arrasto. O X é um botão redondo com o ícone `#i-close`; a alça usa `currentColor`, então acompanha o tema.
 
+## src/app/app.ts
+
+### 2026-10-20 — fix/popup-salvar-trocar-aba — `cancelarAvisoSalvar`
+- **Local:** campos do `App`
+- **Linha:** `cancelarAvisoSalvar: (() => void) | null = null;`
+- **Por quê:** o aviso “Salvar alterações?” precisa de um jeito de ser cancelado quando a pessoa troca de aba (ele é do documento que ia ser fechado). O campo guarda o `done("cancel")` do aviso aberto; trocar de aba o chama e o aviso não fica sobre o documento novo.
+
+## src/app/wordDocs.ts
+
+### 2026-10-20 — fix/popup-salvar-trocar-aba — trocar de aba cancela o aviso
+- **Local:** `askSaveChanges`
+- **Linha:** `this.cancelarAvisoSalvar = () => done("cancel");` ao abrir · `this.cancelarAvisoSalvar = null` no `done` · remoção do `document.body.classList.add/remove("modal-aberto")`
+- **Por quê:** a versão anterior travava a troca de aba para o aviso não ir junto — mas o usuário precisa consultar outro documento antes de responder. O aviso agora se cancela na troca (a aba que ia fechar continua aberta) e a classe de bloqueio deixou de existir.
+
+## src/app/tabs.ts
+
+### 2026-10-20 — fix/popup-salvar-trocar-aba — `switchTo` cancela o aviso em vez de travar
+- **Local:** `switchTo`
+- **Linha:** `if (document.body.classList.contains("modal-aberto")) return;` → `this.cancelarAvisoSalvar?.();`
+- **Por quê:** trocar de aba com o aviso aberto agora cancela o aviso e segue para a aba escolhida. O bloqueio anterior (feito para o aviso não aparecer sobre outro documento) impedia justamente a consulta que o usuário precisava fazer.
+
+## src/styles/modals.css
+
+### 2026-10-20 — fix/popup-salvar-trocar-aba — fundo deixa os cliques passarem
+- **Local:** `.modal-backdrop.sem-fundo`
+- **Linha:** `pointer-events: none` (backdrop) e `.modal-backdrop.sem-fundo > .modal { pointer-events: auto; }`
+- **Por quê:** com o fundo transparente, o overlay ainda cobria a tela e bloqueava o clique nas abas/documento. O aviso virou uma janela flutuante: só ele recebe o ponteiro; o resto do app continua clicável (e a troca de aba cancela o aviso).
+
 ## src/broker/diag.ts
 
 ### 2026-10-19 — 2d4e6c6 — log de decisões do corretor (novo arquivo)

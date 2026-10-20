@@ -75,6 +75,8 @@ export class App {
   /** Todas as abas abertas (na ordem da fileira) e a que está ativa. */
   tabs: DocTab[] = [];
   tab!: DocTab;
+  /** Cancela o aviso "Salvar alterações?" aberto (ao trocar de aba, o aviso pertence à aba que ia fechar). */
+  cancelarAvisoSalvar: (() => void) | null = null;
   closedTabs: string[] = [];
   /** Janela de UM documento (aba arrastada para fora): não restaura nem grava a sessão das outras. */
   janelaDeDocumento = false;

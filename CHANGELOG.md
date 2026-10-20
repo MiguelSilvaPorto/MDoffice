@@ -1878,11 +1878,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 **Frontend**
 
 
+- **Dá para trocar de aba com o aviso “Salvar alterações?” aberto**: a trava da versão anterior
+  impedia consultar outro documento; agora o aviso fica **flutuando sem bloquear o resto do app**
+  (o fundo transparente deixa os cliques passarem) e **trocar de aba cancela o aviso** — ele é do
+  documento que ia ser fechado e nunca aparece sobre a aba nova.
+
 - **O aviso “Salvar alterações?” ficou com cara de pop-up de verdade**: ganhou **X circular**
   (cancela, como o Esc), uma alça de **9 pontos** no cabeçalho (mostra que dá para arrastar) e o
-  fundo **não escurece mais** o documento atrás. E o aviso agora **trava a troca de aba**
-  enquanto está aberto — antes dava para ir para outra aba e o aviso ficava sobre o documento
-  errado (a resposta podia agir na aba errada).
+  fundo **não escurece mais** o documento atrás. E o aviso **não trava a troca de aba**: trocar de
+  aba cancela o aviso (ele pertence ao documento que ia fechar) — antes ele ia junto para a aba
+  nova, e a resposta podia agir na aba errada.
 
 - **O aviso “Salvar alterações?” agora é arrastável**: o pop-up de confirmação ao fechar uma aba
   com alterações (Word, PowerPoint e Excel) ficava preso no centro e cobria o documento. A barra

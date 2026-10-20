@@ -268,16 +268,17 @@ export const wordDocsMethods = {
       modal.querySelector("b")!.textContent = name;
       // o pop-up pode ser tirado da frente do documento pela barra de título
       tornarArrastavel(modal);
-      // enquanto a resposta não vem, trocar de aba deixaria o aviso sobre outro documento
-      document.body.classList.add("modal-aberto");
       backdrop.append(modal);
       document.body.append(backdrop);
       const done = (v: "save" | "discard" | "cancel") => {
-        document.body.classList.remove("modal-aberto");
+        this.cancelarAvisoSalvar = null;
         document.removeEventListener("keydown", onKey, true);
         backdrop.remove();
         resolve(v);
       };
+      // trocar de aba com o aviso aberto cancela o aviso: ele pertence ao documento que
+      // ia ser fechado e não deve ir junto para a aba nova
+      this.cancelarAvisoSalvar = () => done("cancel");
       const onKey = (e: KeyboardEvent) => {
         if (e.key === "Escape") {
           e.preventDefault();
