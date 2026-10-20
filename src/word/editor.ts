@@ -27,6 +27,7 @@ import {
 import { EditorView } from "prosemirror-view";
 import { FONT_SIZES, emptyDoc, schema, type Align } from "./schema";
 import { DEFAULT_SETUP, type PageSetup } from "./model";
+import { ImagemView } from "./imagem";
 
 export interface FormatState {
   bold: boolean;
@@ -91,6 +92,10 @@ export class WordEditor {
       // `handleFiles` inseria uma SEGUNDA cópia (o relato "arrasto a imagem e ela duplica").
       // Arquivo de fora (do Explorer, de outra janela) continua entrando por aqui.
       handleDrop: (_v, event, _slice, moved) => (moved ? false : this.handleFiles((event as DragEvent).dataTransfer?.files)),
+      nodeViews: {
+        // a imagem tem alças de redimensionar e de arrastar (src/word/imagem.ts)
+        image: (node, view, getPos) => new ImagemView(node, view, getPos),
+      },
     });
   }
 

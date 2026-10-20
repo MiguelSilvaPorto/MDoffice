@@ -273,6 +273,32 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** `pointer-events: none` (backdrop) e `.modal-backdrop.sem-fundo > .modal { pointer-events: auto; }`
 - **Por quê:** com o fundo transparente, o overlay ainda cobria a tela e bloqueava o clique nas abas/documento. O aviso virou uma janela flutuante: só ele recebe o ponteiro; o resto do app continua clicável (e a troca de aba cancela o aviso).
 
+## src/word/imagem.ts
+
+### 2026-10-20 — feat/word-imagem-mover-redimensionar — imagem com alças (novo arquivo)
+- **Local:** `ImagemView` (NodeView)
+- **Linha:** novo arquivo
+- **Por quê:** a imagem do Word era um `<img>` inline sem nenhuma alça; não dava para redimensionar nem mover. A NodeView:
+  - clique no `<img>` vira `NodeSelection` (as alças aparecem; `stopEvent` impede o cursor de texto de passar por cima);
+  - 8 alças (`wd-img-p`) fazem o gesto com `pointer capture`: o tamanho é atualizado **ao vivo** e, no `pointerup`, **uma** transação grava `width`/`height` (histórico: Ctrl+Z volta);
+  - a transação de `setNodeMarkup` troca o nó e o `NodeSelection` vira cursor de texto — por isso a seleção da imagem é recolocada antes do `dispatch` (senão as alças sumiam ao soltar);
+  - a alça pontilhada (`draggable`) deixa o ProseMirror arrastar o nó (`draggable` do schema) para outro ponto do fluxo; o `setDragImage` usa a própria imagem;
+  - a proporção vem de `naturalWidth/naturalHeight` (ou do tamanho atual) e nunca é quebrada; o tamanho é limitado pela largura do editor e por 24 px no mínimo.
+
+## src/word/editor.ts
+
+### 2026-10-20 — feat/word-imagem-mover-redimensionar — `nodeViews` da imagem
+- **Local:** construtor (`new EditorView`)
+- **Linha:** `nodeViews: { image: (node, view, getPos) => new ImagemView(node, view, getPos) }`
+- **Por quê:** o editor desenhava a imagem pelo `toDOM` do schema; sem `nodeViews` não havia DOM próprio para prender alças/seleção. O arrasto já é o do ProseMirror (o nó é `draggable` e a alça tem `draggable=true`), então não foi preciso handler de drag próprio.
+
+## src/styles/word.css
+
+### 2026-10-20 — feat/word-imagem-mover-redimensionar — alças e alça de arrastar
+- **Local:** depois de `.wd-doc img`
+- **Linha:** `.wd-img` (inline-block, `position: relative`), `.wd-img.sel` (contorno), `.wd-img-p` (8 pontos `#4f46e5`), posições `p-nw…p-se` com cursores de redimensionar, `.wd-img-alca` (6 pontos, `cursor: grab`, aparece no hover/seleção)
+- **Por quê:** sem o contorno e as alças o recurso não se anuncia. O contorno é no wrapper (não no `<img>`, que é substituído pelo NodeView); a alça aparece no hover para não poluir o texto.
+
 ## src/broker/diag.ts
 
 ### 2026-10-19 — 2d4e6c6 — log de decisões do corretor (novo arquivo)

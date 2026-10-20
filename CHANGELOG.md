@@ -377,6 +377,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+
+- **Imagens no Word agora se movem e redimensionam**: clicar seleciona a imagem (8 alças nos
+  cantos e lados); arrastar uma alça mantém a proporção e grava `width`/`height` no documento —
+  o tamanho vai para o `.docx` e `Ctrl+Z` volta ao anterior. A alça pontilhada à esquerda
+  arrasta a imagem para outro ponto do texto. Antes era só um `<img>` inline sem alça nenhuma.
 - **A aba Layout ganhou o botão Tamanho — e o papel vai até A3/A2 (relato do usuário)**: o papel da
   folha só mudava no **Configurar Página**, num seletor com **A4 e Carta**; na aba **Layout** não
   havia botão para isso. Agora a aba tem **Tamanho ▾**, um menu com **A5, A4, A3, A2 e Carta**
