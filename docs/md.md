@@ -109,7 +109,8 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   espaçamento e maiúsculas em quantas rodadas precisar — e **não troca palavras**: “vc → você”
   ou “pra → para” não entram por aqui (ficam como sugestão). A regra é estrutural: o que entra
   tem as **mesmas letras e o mesmo número de palavras** do trecho. Os parágrafos são preservados.
-- **Log de decisões (`?diag=1`)**: com `?diag=1` na URL (ou `__mdofficeDiag.ligar()`, no console)
+- **Log de decisões (`?diag=1`)**: com `?diag=1` na URL, **Ctrl+Alt+D** na janela do app (ou
+  `__mdofficeDiag.ligar()`, no console)
   cada decisão do corretor — o que detectou, o que aplicou, o que ignorou e **por quê** — vira uma
   linha em JSONL, com o trecho e a janela de texto, num painel flutuante **“Diagnóstico (N)”**
   (copiar/baixar/limpar). Desligado custa zero; é a ferramenta para responder “por que ele mexeu

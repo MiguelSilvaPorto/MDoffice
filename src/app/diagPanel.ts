@@ -43,6 +43,15 @@ export function initDiagPanel(): void {
     },
   };
   (window as unknown as Record<string, unknown>).__mdofficeDiag = gancho;
+
+  // Atalho para abrir/ligar o diagnóstico sem console nem URL (a janela do Tauri não
+  // tem `?diag=1`): Ctrl+Alt+D abre o painel; se ainda não estiver ligado, liga antes.
+  window.addEventListener("keydown", (e) => {
+    if (!e.ctrlKey || !e.altKey || e.key.toLowerCase() !== "d") return;
+    e.preventDefault();
+    if (!diagAtivo()) ligar();
+    abrir();
+  });
 }
 
 function ligar(): void {
