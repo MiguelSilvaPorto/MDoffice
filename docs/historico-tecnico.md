@@ -14455,7 +14455,7 @@ antigas quando fizer sentido.
   na próxima letra e Alt+Seta troca a opção. O modo Discreta virou exatamente o padrão antigo (o
   `test:ghost` prende 92,7% / 20,2% / 5,2% nele).
 
-### 2026-10-20 · sugestão · completar com 2 letras faltando
+### 2026-10-20 · a7b7d2c · completar com 2 letras faltando
 
 - **Local:** `THRESHOLDS.minSuffix` (predict.ts) e `minSuffixDelta` (feedback.ts).
 - **Linha:** `minSuffix: 3` → `2`; `discreto ? 1` → `discreto ? 2` (o discreto continua em 4).
