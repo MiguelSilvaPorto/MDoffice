@@ -2,7 +2,7 @@
 
 import type { App } from "./app";
 import * as files from "../files";
-import { newTab } from "../tabs";
+import { newTab, tabLabel } from "../tabs";
 import { type HomeCtx } from "../homePage";
 import { $, toast, baseName } from "../util";
 import { AI_TEMPLATE } from "./constants";
@@ -166,6 +166,12 @@ export const homeContextMethods = {
 
       closeHome: () => this.hideHome(),
       hasOpenTabs: this.tabs.length > 0,
+      // o documento que está aberto agora: o botão de voltar diz o nome dele
+      docAberto: (() => {
+        const t = this.tabs.find((x) => x.id === this.tab?.id) ?? this.tabs[0];
+        if (!t) return null;
+        return { nome: tabLabel(t), tipo: t.kind && t.kind !== "doc" ? t.kind : "md" };
+      })(),
     };
   },
 };

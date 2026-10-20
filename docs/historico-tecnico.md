@@ -397,6 +397,48 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** `.pf-sub`, `.pf-inv`, `.pf-inv.on`, `.pf-presets`
 - **Por quê:** separar a seção no painel, deixar o botão de inverter com estado visível e os três presets caberem na linha sem quebrar o painel.
 
+## src/tabs.ts
+
+### 2026-10-20 — feat/voltar-para-o-documento — clicar na aba ativa também seleciona
+- **Local:** `TabBar.enableDrag` (`pointerdown`)
+- **Linha:** `if (!el.classList.contains("active")) selectNow();` → `selectNow();`
+- **Por quê:** o `onSelect` é o que fecha o Início (`hideHome`). Só a aba **nova** o chamava, então clicar na aba do documento que já estava aberto não tirava o Início da frente — o usuário tinha de escolher outro arquivo e voltar para o original. O `switchTo` já sai cedo quando é a mesma aba, então chamar sempre não muda nada além disso.
+
+## src/app/homeContext.ts
+
+### 2026-10-20 — feat/voltar-para-o-documento — o Início sabe qual documento está aberto
+- **Local:** `homeContext`
+- **Linha:** `docAberto: (() => { const t = this.tabs.find((x) => x.id === this.tab?.id) ?? this.tabs[0]; ... })()`
+- **Por quê:** o botão de volta precisa dizer **qual** arquivo volta (o Início é a tela de criação: tem muitos documentos na tela e o aberto se perde no meio).
+
+## src/homePage.ts
+
+### 2026-10-20 — feat/voltar-para-o-documento — Voltar fixo e "Continuar editando" com o nome
+- **Local:** cabeçalho do Início
+- **Linha:** botão `home-voltar-btn` inserido no começo de `.home-brand` · `home-resume-btn` passa a ser a **primeira** ação de `home-header-actions` e ganha `home-resume-nome` com o nome do documento
+- **Por quê:** o "Continuar editando" vivia no canto direito, colado no "Importar arquivo" — em janela estreita ele saía da tela (e o Início é a tela que se abre por cima do documento, justamente quando se precisa voltar). Agora há um caminho de volta **fixo** (ao lado do logo) e o botão da direita diz o nome do arquivo.
+
+## src/app/pages.ts
+
+### 2026-10-20 — feat/voltar-para-o-documento — Esc fecha o Início
+- **Local:** `showHome` / `hideHome`
+- **Linha:** `showHome` monta `this.fecharHomeTecla` (keydown na captura) e `hideHome` remove o ouvinte
+- **Por quê:** o Início é uma tela sobre o editor; `Esc` é o fechar esperado em qualquer tela do app e devolve o foco ao documento (o `hideHome` já focava o editor).
+
+## src/app/app.ts
+
+### 2026-10-20 — feat/voltar-para-o-documento — campo do ouvinte do Esc
+- **Local:** campos do `App`
+- **Linha:** `fecharHomeTecla: ((e: KeyboardEvent) => void) | null = null;`
+- **Por quê:** o `showHome` pode ser chamado várias vezes; o ouvinte é criado uma vez e desfeito no `hideHome` (sem vazar `keydown` na página).
+
+## src/styles/home.css
+
+### 2026-10-20 — feat/voltar-para-o-documento — estilos do Voltar e do nome do documento
+- **Local:** depois de `.home-resume-btn:hover`
+- **Linha:** `.home-resume-nome` (trunca em 190 px) e `.home-voltar-btn`
+- **Por quê:** o nome do arquivo não pode empurrar as ações para fora da tela, e o botão novo precisa do mesmo desenho dos outros botões do Início.
+
 ## src/broker/diag.ts
 
 ### 2026-10-19 — 2d4e6c6 — log de decisões do corretor (novo arquivo)

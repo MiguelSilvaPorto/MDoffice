@@ -1982,6 +1982,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+
+- **Clicar na aba que já está ativa traz o documento de volta**: com o Início aberto por cima do
+  editor, só a aba **nova** escondia o Início — para voltar ao arquivo que estava aberto era
+  preciso escolher outro documento e voltar para ele. Agora a aba ativa também responde. E o
+  Início ganhou o caminho de volta sempre à vista: o botão **Voltar** fixo ao lado do logo, o
+  **Continuar editando** (com o nome do arquivo) como primeira ação do cabeçalho e o **Esc**
+  fechando a tela.
 - **A IA local (Gemma 3 270M) saiu do app**: pesava ~280 MB no instalador e ~0,6 GB de memória
   quando carregava, e só ajudava com placa de vídeo compatível (WebGPU). Saíram o modelo, o download no
   `npm run build` (`scripts/baixar-modelo.mjs`, `npm run prep:modelo`) e o grupo **IA local** das

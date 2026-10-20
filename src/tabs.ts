@@ -201,7 +201,9 @@ export class TabBar {
       let baseLeft = 0;
       let fora = false;
       const selectNow = () => this.hooks.onSelect(id);
-      if (!el.classList.contains("active")) selectNow();
+      // clicar na aba que JÁ está ativa também conta: é o jeito de voltar para o documento
+      // quando o Início está por cima dele (antes só a aba nova escondia o Início)
+      selectNow();
 
       // com o ponteiro capturado, o evento continua chegando fora da janela (coordenadas
       // negativas ou além do tamanho): é assim que o "soltei fora" é detectado

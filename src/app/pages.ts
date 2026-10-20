@@ -174,11 +174,25 @@ export const pagesMethods = {
     this.sidebar?.setHomeActive(true);
     renderHomePage($("#home-page"), this.homeContext());
     $("#home-page").hidden = false;
+    // Esc fecha o Início e devolve o foco para o documento aberto
+    if (!this.fecharHomeTecla) {
+      this.fecharHomeTecla = (e: KeyboardEvent) => {
+        if (e.key !== "Escape" || !this.showingHome) return;
+        e.preventDefault();
+        e.stopPropagation();
+        this.hideHome();
+      };
+      document.addEventListener("keydown", this.fecharHomeTecla, true);
+    }
   },
 
   hideHome(this: App): void {
     if (!this.showingHome) return;
     this.showingHome = false;
+    if (this.fecharHomeTecla) {
+      document.removeEventListener("keydown", this.fecharHomeTecla, true);
+      this.fecharHomeTecla = null;
+    }
     document.body.classList.remove("home-open");
     this.sidebar?.setHomeActive(false);
     $("#home-page").hidden = true;

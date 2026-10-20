@@ -23,7 +23,9 @@ janela** e soltar ali — ou escolher o item do menu — abre o documento numa *
 o app inteiro **sem as outras abas** (a barra do app, os diálogos e o salvar funcionam nela) e não
 mexe na sessão das outras janelas. O documento é persistido antes de a aba sair da janela atual:
 rascunhos são gravados, **documento novo ganha o rascunho dele na hora** e arquivos seus perguntam
-se há alterações.
+se há alterações. Com o **Início** aberto por cima, **clicar na aba que já está ativa** traz o
+documento de volta — antes só a aba nova escondia o Início, e era preciso escolher outro arquivo e
+voltar para o original.
 
 A **tela de Início** mostra os arquivos recentes numa **grade de cartões**, cada um com uma
 **versão do documento** pré-carregada — o tipo dá a forma e o arquivo dá o conteúdo: **Documentos
@@ -38,7 +40,10 @@ formato sem prévia), o cartão fica com o ícone do formato. O `.md` lê
 o próprio texto e os formatos do Office (.docx/.pptx/.xlsx) abrem o zip e tiram o texto do XML
 principal, no lado Rust (comando `preview_file`) — o documento **não** é carregado no app só para a
 prévia (no `.xlsx`, o mesmo comando lê a planilha e devolve as primeiras linhas com as células
-separadas por TAB; a estrutura de cada cartão é decidida em `src/homePrevia.ts`).
+separadas por TAB; a estrutura de cada cartão é decidida em `src/homePrevia.ts`). Com documento
+aberto, o Início tem o caminho de volta visível: o botão **Voltar** fixo ao lado do logo e o
+**Continuar editando** (com o nome do arquivo) como primeira ação do cabeçalho — e o **Esc**
+fecha o Início, devolvendo o foco para o editor.
 
 **Identidade e marcas**: os quatro formatos têm **cores e desenhos próprios** — índigo (Markdown),
 violeta (Word), fúcsia (Excel) e rosa (PowerPoint) —, de propósito longe do azul, verde e laranja das

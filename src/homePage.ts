@@ -27,6 +27,8 @@ export interface HomeCtx {
   deleteDraft: (path: string) => Promise<void>;
   closeHome: () => void;
   hasOpenTabs: boolean;
+  /** O documento aberto agora (nome e tipo): o botão de volta diz qual é. */
+  docAberto?: { nome: string; tipo: string } | null;
 }
 
 export type FormatFilter = "all" | "word" | "excel" | "md" | "ppt";
@@ -174,20 +176,43 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
   });
   importBtn.innerHTML = '<svg class="ic"><use href="#i-import"/></svg><span>Importar arquivo</span>';
   importBtn.addEventListener("click", () => ctx.importOffice());
-  headerActions.append(importBtn);
 
+  // Voltar para o documento aberto: vem PRIMEIRO (é a ação principal quando existe
+  // documento aberto) e mostra o nome dele — no canto direito ele saía da tela.
   if (ctx.hasOpenTabs) {
+    const doc = ctx.docAberto;
     const resumeBtn = h("button", {
       class: "btn home-resume-btn",
       type: "button",
-      title: "Voltar para o editor no documento aberto",
+      title: doc ? `Voltar para o editor — ${doc.nome}` : "Voltar para o editor no documento aberto",
     });
     resumeBtn.innerHTML = '<svg class="ic"><use href="#i-doc"/></svg><span>Continuar editando</span>';
+    if (doc) {
+      const nome = h("span", { class: "home-resume-nome", text: doc.nome });
+      nome.title = doc.nome;
+      resumeBtn.append(nome);
+    }
     resumeBtn.addEventListener("click", () => ctx.closeHome());
     headerActions.append(resumeBtn);
   }
+  headerActions.append(importBtn);
   header.append(headerActions);
   wrap.append(header);
+
+  // "Voltar" fixo ao lado do logo: o caminho de volta para o documento nunca some
+  if (ctx.hasOpenTabs) {
+    const brand = heroLeft.querySelector(".home-brand");
+    if (brand) {
+      const voltar = h("button", {
+        class: "btn home-voltar-btn",
+        type: "button",
+        title: ctx.docAberto ? `Voltar para ${ctx.docAberto.nome}` : "Voltar para o documento aberto",
+      });
+      voltar.innerHTML = '<svg class="ic"><use href="#i-back"/></svg><span>Voltar</span>';
+      voltar.addEventListener("click", () => ctx.closeHome());
+      brand.insertBefore(voltar, brand.firstChild);
+    }
+  }
 
   // Estado do filtro ativo (all, word, excel, md, ppt)
   let selectedFormat: FormatFilter = "all";

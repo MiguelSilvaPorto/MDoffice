@@ -75,6 +75,8 @@ export class App {
   /** Todas as abas abertas (na ordem da fileira) e a que está ativa. */
   tabs: DocTab[] = [];
   tab!: DocTab;
+  /** Tecla que fecha o Início (Esc): fica montada enquanto o Início está aberto. */
+  fecharHomeTecla: ((e: KeyboardEvent) => void) | null = null;
   /** Cancela o aviso "Salvar alterações?" aberto (ao trocar de aba, o aviso pertence à aba que ia fechar). */
   cancelarAvisoSalvar: (() => void) | null = null;
   closedTabs: string[] = [];
