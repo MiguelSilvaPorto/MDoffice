@@ -14357,3 +14357,16 @@ antigas quando fizer sentido.
   mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
   entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
   promoções anteriores.
+
+## src/word/editor.ts
+
+### 2026-10-20 · imagem · arrastar dentro da página move (não duplica)
+- **Local:** o `handleDrop` do `WordEditor` (as props do ProseMirror)
+- **Linha:** `handleDrop: (_v, event) => this.handleFiles((event as DragEvent).dataTransfer?.files),`
+  → `handleDrop: (_v, event, _slice, moved) => (moved ? false : this.handleFiles(…)),`
+- **Porquê:** o relato com print ("arrasto a imagem e ela duplica"). O ProseMirror informa no
+  quarto argumento se o arrasto começou **dentro** do editor e, nesse caso, ele mesmo move o trecho.
+  O `handleFiles` inseria **qualquer** arquivo do `dataTransfer` — e o WebView2 (Windows) entrega a
+  **própria imagem arrastada** na lista de arquivos: a original ficava no lugar e entrava uma cópia.
+  Medido no navegador com uma sonda: na versão antiga o drop interno chamava o `onImage` (a
+  inserção) e agora não chama; arquivo de fora continua entrando (o `moved` é falso).ao duplica))

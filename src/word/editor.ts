@@ -86,7 +86,11 @@ export class WordEditor {
         if (tr.docChanged || tr.selectionSet || tr.storedMarksSet) this.hooks.onSelection();
       },
       handlePaste: (_v, event) => this.handleFiles(event.clipboardData?.files),
-      handleDrop: (_v, event) => this.handleFiles((event as DragEvent).dataTransfer?.files),
+      // `moved` = o arrasto começou DENTRO deste editor. Aí o ProseMirror já move o trecho
+      // sozinho; o WebView2 entrega a própria imagem arrastada na lista de arquivos e o
+      // `handleFiles` inseria uma SEGUNDA cópia (o relato "arrasto a imagem e ela duplica").
+      // Arquivo de fora (do Explorer, de outra janela) continua entrando por aqui.
+      handleDrop: (_v, event, _slice, moved) => (moved ? false : this.handleFiles((event as DragEvent).dataTransfer?.files)),
     });
   }
 

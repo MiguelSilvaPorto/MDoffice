@@ -1571,6 +1571,11 @@ console.log("\nWord: a folha escurece junto com o tema (o papel)");
 {
   const css = ler("src/styles/word.css");
   checa(
+    "Word: arrastar uma imagem dentro da página move (o drop interno não insere cópia)",
+    /handleDrop: \(_v, event, _slice, moved\) => \(moved \? false : this\.handleFiles\(/.test(ler("src/word/editor.ts")),
+    "o WebView2 entrega a própria imagem arrastada como arquivo — o handleFiles inseriria uma segunda cópia"
+  );
+  checa(
     "o papel e a tinta da folha saem de variáveis",
     /\.wd-sheet \{[\s\S]*?--wd-papel: #ffffff;[\s\S]*?--wd-tinta: #1f2328;[\s\S]*?background: var\(--wd-papel\);[\s\S]*?color: var\(--wd-tinta\);/.test(css),
     "com os tons fixos na folha, o tema escuro não tem onde trocar"

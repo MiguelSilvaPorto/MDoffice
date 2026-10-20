@@ -369,6 +369,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Arrastar uma imagem (ou um trecho) dentro do documento move em vez de duplicar**: o
+  `handleDrop` do editor mandava **qualquer arquivo** da área de transferência do arrasto para o
+  `handleFiles` — e o WebView2 entrega a **própria imagem arrastada** na lista de arquivos. Como o
+  ProseMirror já move o trecho, a imagem era inserida de novo e a original ficava no lugar (o
+  relato com print: "arrasto a imagem e ela duplica"). Agora o drop recebe o sinal `moved` do
+  ProseMirror e, quando o arrasto começou **dentro** do editor, deixa o movimento acontecer;
+  arquivo de **fora** (do Explorer, de outra janela) continua entrando pelo `handleFiles`. Teste:
+  `npm run test:layout` (a checagem lê o `handleDrop`).
+
 ### Adicionado (na main)
 
 **Backend**
