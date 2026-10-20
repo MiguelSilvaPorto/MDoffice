@@ -147,7 +147,7 @@
 
 .tb-autosave-toggle[aria-checked="true"] .tb-autosave-track,
 .tb-autosave-toggle.is-active .tb-autosave-track {
-  background: #185abd; /* Office Word Blue */
+  background: var(--accent); /* a cor do app (não é a de nenhum programa do Office) */
   opacity: 1;
 }
 

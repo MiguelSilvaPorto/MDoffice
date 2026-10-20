@@ -126,9 +126,14 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
   const header = h("header", { class: "home-header" });
   const heroLeft = h("div", { class: "home-hero" });
   heroLeft.innerHTML = `
-    <div class="home-tag">
-      <svg class="ic"><use href="#i-spark"/></svg>
-      <span>mdOffice Hub</span>
+    <div class="home-brand">
+      <svg class="home-brand-mark" viewBox="0 0 54 54" width="54" height="54" fill="none" aria-hidden="true">
+        <rect x="1" y="1" width="52" height="52" rx="14" fill="var(--mod-md-placa)"/>
+        <path d="M17 35V21l5 5.5 5-5.5v14" stroke="#fff" stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M37 21v10m0 0l-3.4-3.4M37 31l3.4-3.4" stroke="#fff" stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="home-brand-nome">mdOffice</span>
+      <span class="home-brand-hub">Hub</span>
     </div>
     <h1 class="home-title">Início</h1>
     <p class="home-subtitle">Selecione um formato abaixo para filtrar seus arquivos recentes ou crie um novo documento.</p>
@@ -141,7 +146,7 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
     type: "button",
     title: "Importar documento (.docx), planilha (.xlsx/.xlsm) ou apresentação (.pptx)",
   });
-  importBtn.innerHTML = '<svg class="ic"><use href="#i-import"/></svg><span>Importar do Office</span>';
+  importBtn.innerHTML = '<svg class="ic"><use href="#i-import"/></svg><span>Importar arquivo</span>';
   importBtn.addEventListener("click", () => ctx.importOffice());
   headerActions.append(importBtn);
 
@@ -216,50 +221,39 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
     return card;
   };
 
-  const svgWord = `
-    <svg class="home-brand-icon" viewBox="0 0 54 54" width="54" height="54" fill="none">
-      <rect x="6" y="8" width="32" height="38" rx="5" fill="#103F91"/>
-      <rect x="12" y="15" width="20" height="3" rx="1.5" fill="#8CB5F8" fill-opacity="0.8"/>
-      <rect x="12" y="21" width="20" height="3" rx="1.5" fill="#8CB5F8" fill-opacity="0.8"/>
-      <rect x="12" y="27" width="14" height="3" rx="1.5" fill="#8CB5F8" fill-opacity="0.8"/>
-      <rect x="12" y="33" width="18" height="3" rx="1.5" fill="#8CB5F8" fill-opacity="0.8"/>
-      <rect x="18" y="16" width="30" height="30" rx="6" fill="#185ABD"/>
-      <text x="33" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="20" fill="#FFFFFF" text-anchor="middle">W</text>
+  /** O ícone de um módulo: uma chapa na cor dele (tokens de identidade) + o desenho branco.
+   *  Sem letra em quadrado colorido: o desenho é o do editor (folha, grade, lâmina, M↓). */
+  const iconeModulo = (placa: string, desenho: string) => `
+    <svg class="home-brand-icon" viewBox="0 0 48 48" width="48" height="48" fill="none" aria-hidden="true">
+      <rect x="1" y="1" width="46" height="46" rx="12" fill="var(${placa})"/>
+      ${desenho}
     </svg>`;
 
-  const svgExcel = `
-    <svg class="home-brand-icon" viewBox="0 0 54 54" width="54" height="54" fill="none">
-      <rect x="6" y="8" width="32" height="38" rx="5" fill="#0E5C2F"/>
-      <rect x="11" y="15" width="22" height="2" rx="1" fill="#72D699" fill-opacity="0.8"/>
-      <rect x="11" y="22" width="22" height="2" rx="1" fill="#72D699" fill-opacity="0.8"/>
-      <rect x="11" y="29" width="22" height="2" rx="1" fill="#72D699" fill-opacity="0.8"/>
-      <rect x="11" y="36" width="22" height="2" rx="1" fill="#72D699" fill-opacity="0.8"/>
-      <rect x="21" y="12" width="2" height="28" rx="1" fill="#72D699" fill-opacity="0.8"/>
-      <rect x="18" y="16" width="30" height="30" rx="6" fill="#107C41"/>
-      <text x="33" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="20" fill="#FFFFFF" text-anchor="middle">X</text>
-    </svg>`;
+  const svgWord = iconeModulo(
+    "--mod-word-placa",
+    `<path d="M16 12.5h10.5L32 18v17.5a1.5 1.5 0 0 1-1.5 1.5h-14A1.5 1.5 0 0 1 16 35.5z" stroke="#fff" stroke-width="2.1" stroke-linejoin="round"/>
+     <path d="M26.5 12.5V18H32" stroke="#fff" stroke-width="2.1" stroke-linejoin="round"/>
+     <path d="M20 24h8M20 28h8M20 32h5" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/>`
+  );
 
-  const svgMd = `
-    <svg class="home-brand-icon" viewBox="0 0 54 54" width="54" height="54" fill="none">
-      <rect x="6" y="8" width="32" height="38" rx="5" fill="#0D4E7A"/>
-      <rect x="12" y="15" width="20" height="3" rx="1.5" fill="#7DD3FC" fill-opacity="0.8"/>
-      <rect x="12" y="21" width="20" height="3" rx="1.5" fill="#7DD3FC" fill-opacity="0.8"/>
-      <rect x="12" y="27" width="14" height="3" rx="1.5" fill="#7DD3FC" fill-opacity="0.8"/>
-      <rect x="12" y="33" width="18" height="3" rx="1.5" fill="#7DD3FC" fill-opacity="0.8"/>
-      <rect x="18" y="16" width="30" height="30" rx="6" fill="#0284C7"/>
-      <path d="M23 35v-8l3.5 4 3.5-4v8" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M40 27v8m0 0l-2.5-2.5m2.5 2.5l2.5-2.5" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`;
+  const svgExcel = iconeModulo(
+    "--mod-excel-placa",
+    `<rect x="14" y="14" width="20" height="20" rx="2.6" stroke="#fff" stroke-width="2.1"/>
+     <path d="M14 20.6h20M14 27.4h20M20.6 14v20M27.4 14v20" stroke="#fff" stroke-width="1.7"/>`
+  );
 
-  const svgPpt = `
-    <svg class="home-brand-icon" viewBox="0 0 54 54" width="54" height="54" fill="none">
-      <rect x="6" y="8" width="32" height="38" rx="5" fill="#8E2A12"/>
-      <rect x="12" y="15" width="20" height="3" rx="1.5" fill="#FCA585" fill-opacity="0.8"/>
-      <circle cx="20" cy="28" r="6" stroke="#FCA585" stroke-width="2" fill="none" opacity="0.85"/>
-      <path d="M20 22v6h6" stroke="#FCA585" stroke-width="2" opacity="0.85"/>
-      <rect x="18" y="16" width="30" height="30" rx="6" fill="#C43E1C"/>
-      <text x="33" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="20" fill="#FFFFFF" text-anchor="middle">P</text>
-    </svg>`;
+  const svgMd = iconeModulo(
+    "--mod-md-placa",
+    `<path d="M13 34V16l6.5 7.5L26 16v18" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+     <path d="M36 16v15m0 0l-3.8-3.8M36 31l3.8-3.8" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>`
+  );
+
+  const svgPpt = iconeModulo(
+    "--mod-ppt-placa",
+    `<rect x="12.5" y="13.5" width="23" height="16" rx="2.6" stroke="#fff" stroke-width="2.1"/>
+     <path d="M21.6 17.6l6.2 4-6.2 4z" fill="#fff"/>
+     <path d="M24 29.5v3.4M20.8 34.6h6.4" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/>`
+  );
 
   const cardWord = makeCard("word", "DOCX", "Documentos (.docx)", "Texto & ABNT", "Texto formatado, cabeçalhos, páginas A4, normas ABNT e exportação .docx.", svgWord);
   const cardExcel = makeCard(
@@ -330,6 +324,13 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
   const listContainer = h("div", { class: "home-list-container" });
   secRecents.append(listContainer);
   wrap.append(secRecents);
+
+  // 5. Aviso de marcas — o mdOffice usa os nomes dos formatos, mas não é afiliado à Microsoft.
+  const legal = h("footer", { class: "home-legal" });
+  legal.innerHTML =
+    "<strong>mdOffice</strong> não é afiliado, patrocinado nem endossado pela Microsoft. " +
+    "Word, Excel e PowerPoint são marcas da Microsoft Corporation.";
+  wrap.append(legal);
 
   container.append(wrap);
 

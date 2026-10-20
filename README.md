@@ -1,4 +1,9 @@
 <div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/icones/mdoffice-escuro.png">
+    <img src="public/icones/mdoffice-claro.png" alt="mdOffice" width="104" height="104">
+  </picture>
+
   <sub>MDOFFICE</sub>
 
 # mdOffice
@@ -75,6 +80,14 @@ npm run app     # abre o app em modo desenvolvimento (Tauri + Vite)
 - [Roadmap de funcionalidades](docs/roadmap-funcionalidades.md) — o que o módulo de Apresentações já faz e o que vem depois
 - [Funções do Excel](docs/excel/formulas/README.md)
 - [Mapas da UI do DeckCraft](docs/ui-deckcraft-abas.md) · [painéis](docs/ui-deckcraft-paineis.md)
+
+## Marcas e afiliação
+
+O **mdOffice** não é afiliado, patrocinado nem endossado pela Microsoft. **Word**, **Excel** e
+**PowerPoint** são marcas da Microsoft Corporation. Os nomes aparecem no app e nesta documentação
+só para dizer **quais formatos** ele abre e salva (`.docx`, `.xlsx`, `.pptx`) — a implementação é
+própria, feita do zero. A identidade visual do mdOffice (logo e cores dos módulos) também é própria:
+nada de azul, verde ou laranja das marcas do Office.
 
 ## Licença
 

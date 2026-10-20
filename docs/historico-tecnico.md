@@ -15497,3 +15497,57 @@ antigas quando fizer sentido.
   mas soltar não movia o nó — relato "não consigo movimentar nada da imagem". O gesto de ponteiro (o mesmo padrão do
   redimensionamento) calcula a posição de destino com `posAtCoords`, mostra o cursor e move o nó numa transação no
   soltar; arrastar o corpo da imagem também move, como no Word. `Ctrl+Z` desfaz o movimento.
+
+## src/styles/tokens.css · src/styles/home.css · src/styles/topbar.css · src/homePage.ts
+
+### 2026-10-20 · fix/identidade-e-aviso-microsoft · o app deixa de imitar as cores e os ícones do Office
+- **Local:** `tokens.css` — tokens novos dos módulos (`--mod-md/word/excel/ppt` e
+  `--mod-*-placa`); `home.css` — os quatro blocos de cor dos cartões (hover, selecionado, badges,
+  ícones da lista, tipo do arquivo e `--hp-acento` da prévia); `homePage.ts` — os quatro SVGs dos
+  módulos e o cabeçalho/rodapé da Início; `topbar.css` — o fundo do botão de salvamento automático
+- **Linha:** `border-color: #185abd` (e `#107c41`, `#0284c7`, `#c43e1c`, com os `rgba(...)` deles)
+  → `var(--mod-word)` (e `--mod-excel`, `--mod-md`, `--mod-ppt`), com `color-mix` nos fundos;
+  `background: #185abd; /* Office Word Blue */` → `background: var(--accent)`; os SVGs com
+  `<rect fill="#103F91"/><rect fill="#185ABD"/><text>W</text>` (e X/P) → uma chapa só na cor do
+  módulo com o desenho do editor (folha, grade, lâmina, M↓)
+- **Porquê:** a checagem do usuário achou o que o código dizia em voz alta — `#185ABD` é o azul da
+  marca do Word, `#107C41` o verde do Excel, `#C43E1C` o laranja do PowerPoint, e o desenho (letra
+  branca numa chapa sobre uma chapa escura) é a linguagem dos ícones do Office. Um produto que não é
+  afiliado à Microsoft não deve usar nem os hexes nem a composição. A paleta nova é a do próprio app
+  (índigo `#4f46e5` → violeta `#7c3aed` → fúcsia `#c026d3` → rosa `#e11d48`): `--mod-*-placa` é a
+  chapa do ícone, **a mesma nos dois temas** (o desenho branco por cima), e `--mod-*` é a cor de
+  texto/borda, que **clareia no escuro** (`#a5b4fc`, `#c4b5fd`, `#f0abfc`, `#fda4af`) para continuar
+  legível. O botão de salvamento automático não é de nenhum módulo: passou a usar o acento do app.
+- **Aviso de marcas:** no `homePage.ts`, o rodapé da Início (`.home-legal`) nasce com a frase exata
+  — **"mdOffice não é afiliado, patrocinado nem endossado pela Microsoft. Word, Excel e PowerPoint
+  são marcas da Microsoft Corporation."** — e o README traz a mesma frase na seção **Marcas e
+  afiliação**. O botão **"Importar do Office"** virou **"Importar arquivo"** (o título continua
+  listando os formatos): o nome do Office fica onde é referência ao formato, não como origem do app.
+- **Conferência:** `node scripts/harness-inicio.mjs claro` e `... escuro` montam a Início REAL (o
+  `renderHomePage` + o CSS do app) e a foto mostra o logo no cabeçalho, as quatro placas novas e o
+  aviso no rodapé — nos dois temas.
+- **Teste:** `scripts/testar-identidade.mjs` (`npm run test:identidade`) — o aviso no README e na
+  Início (a mesma frase), o logo referenciado (e os PNGs existindo), nenhum hex do Office em `src/`
+  (varre todos os `.ts`/`.css`), as placas da identidade nos cartões (e nenhuma letra W/X/P), o
+  salvamento automático no acento e o comentário "Office Word Blue" fora.
+
+## README.md · index.html · app-icon.svg · scripts/gerar-icones.mjs
+
+### 2026-10-20 · fix/identidade-e-aviso-microsoft · o logo aparece — e o ícone do app é uma marca própria
+- **Local:** `README.md` — o cabeçalho (um `<picture>` com o PNG claro/escuro) e a seção nova
+  **Marcas e afiliação**; `index.html` — o SVG da tela de carregamento; `app-icon.svg` +
+  `scripts/gerar-icones.mjs` (novos) — a marca e o gerador dos PNGs/ícones do Tauri
+- **Linha:** o cabeçalho do README, que era só `<sub>MDOFFICE</sub>` (nenhuma imagem), ganhou o
+  `<picture>` apontando para `public/icones/mdoffice-claro.png` / `-escuro.png`; o SVG do boot tinha
+  `#0D4E7A` + `#4F46E5` (azul) e passou à chapa índigo com o "M↓"; o ícone do executável (duas chapas
+  azul e laranja atrás de uma folha) foi redesenhado como **uma chapa no gradiente da marca**
+  (`#4F46E5 → #7C3AED → #C026D3`) com a folha branca e o "M↓"
+- **Porquê:** o relato ("o logo não aparece na página que li") tinha razão: o README não tinha imagem
+  nenhuma. E o ícone do app era o último lugar com o motivo do Microsoft 365 — duas chapas, uma azul
+  e uma laranja, sobrepostas. A fonte vetorial (`app-icon.svg`) passa a morar no repositório e o
+  `gerar-icones.mjs` refaz os PNGs pelo Chrome (fundo transparente) e roda `tauri icon` para os
+  tamanhos do Windows/macOS — trocar a marca de novo é editar o SVG e rodar um comando, não caçar
+  PNG em seis pastas. O `mdoffice-claro/escuro` mantém a chapa (clara/escura) escolhida em
+  Configurações, agora com a folha e o "M↓" da marca nova por cima.
+- **Gerado:** `app-icon.png` (1024), `public/icones/mdoffice-claro.png` e `-escuro.png` (256) e
+  `src-tauri/icons/*` (Windows `.ico`, macOS `.icns`, Android/iOS e as lojas).

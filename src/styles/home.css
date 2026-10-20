@@ -50,23 +50,53 @@ body.home-open .sb-tab[data-side="home"] {
   flex: 1;
 }
 
-.home-tag {
-  display: inline-flex;
+/* A marca do produto (o logo aparece na página): o "M↓" em índigo + o nome. */
+.home-brand {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 11px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  border-radius: 999px;
-  font-size: 11.5px;
-  font-weight: 650;
-  letter-spacing: 0.04em;
-  margin-bottom: 12px;
+  gap: 10px;
+  margin-bottom: 18px;
 }
 
-.home-tag .ic {
-  width: 13px;
-  height: 13px;
+.home-brand-mark {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  filter: drop-shadow(0 4px 10px color-mix(in srgb, var(--accent) 28%, transparent));
+}
+
+.home-brand-nome {
+  font-size: 17px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+
+.home-brand-hub {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Aviso de marcas: fica no fim da Início, discreto, mas presente em toda a página. */
+.home-legal {
+  margin-top: 34px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.home-legal strong {
+  color: var(--fg);
+  font-weight: 650;
 }
 
 .home-title {
@@ -199,25 +229,26 @@ body.home-open .sb-tab[data-side="home"] {
   background: var(--panel);
 }
 
-/* Cores de destaque nos 4 cards */
+/* Cores de destaque nos 4 cards — a paleta PRÓPRIA do app (tokens.css). Nada de hex do
+   Office: o mdOffice não é afiliado à Microsoft. */
 .home-card.card-word:hover {
-  border-color: #185abd;
-  box-shadow: 0 10px 28px rgba(24, 90, 189, 0.2);
+  border-color: var(--mod-word);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--mod-word) 22%, transparent);
 }
 
 .home-card.card-excel:hover {
-  border-color: #107c41;
-  box-shadow: 0 10px 28px rgba(16, 124, 65, 0.2);
+  border-color: var(--mod-excel);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--mod-excel) 22%, transparent);
 }
 
 .home-card.card-md:hover {
-  border-color: #0284c7;
-  box-shadow: 0 10px 28px rgba(2, 132, 199, 0.2);
+  border-color: var(--mod-md);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--mod-md) 22%, transparent);
 }
 
 .home-card.card-ppt:hover {
-  border-color: #c43e1c;
-  box-shadow: 0 10px 28px rgba(196, 62, 28, 0.2);
+  border-color: var(--mod-ppt);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--mod-ppt) 22%, transparent);
 }
 
 /* Card selecionado como filtro ativo */
@@ -226,27 +257,27 @@ body.home-open .sb-tab[data-side="home"] {
 }
 
 .home-card.card-word.selected {
-  border-color: #185abd !important;
-  background: color-mix(in srgb, #185abd 10%, var(--panel)) !important;
-  box-shadow: 0 0 0 2px #185abd, 0 8px 24px rgba(24, 90, 189, 0.22) !important;
+  border-color: var(--mod-word) !important;
+  background: color-mix(in srgb, var(--mod-word) 10%, var(--panel)) !important;
+  box-shadow: 0 0 0 2px var(--mod-word), 0 8px 24px color-mix(in srgb, var(--mod-word) 26%, transparent) !important;
 }
 
 .home-card.card-excel.selected {
-  border-color: #107c41 !important;
-  background: color-mix(in srgb, #107c41 10%, var(--panel)) !important;
-  box-shadow: 0 0 0 2px #107c41, 0 8px 24px rgba(16, 124, 65, 0.22) !important;
+  border-color: var(--mod-excel) !important;
+  background: color-mix(in srgb, var(--mod-excel) 10%, var(--panel)) !important;
+  box-shadow: 0 0 0 2px var(--mod-excel), 0 8px 24px color-mix(in srgb, var(--mod-excel) 26%, transparent) !important;
 }
 
 .home-card.card-md.selected {
-  border-color: #0284c7 !important;
-  background: color-mix(in srgb, #0284c7 10%, var(--panel)) !important;
-  box-shadow: 0 0 0 2px #0284c7, 0 8px 24px rgba(2, 132, 199, 0.22) !important;
+  border-color: var(--mod-md) !important;
+  background: color-mix(in srgb, var(--mod-md) 10%, var(--panel)) !important;
+  box-shadow: 0 0 0 2px var(--mod-md), 0 8px 24px color-mix(in srgb, var(--mod-md) 26%, transparent) !important;
 }
 
 .home-card.card-ppt.selected {
-  border-color: #c43e1c !important;
-  background: color-mix(in srgb, #c43e1c 10%, var(--panel)) !important;
-  box-shadow: 0 0 0 2px #c43e1c, 0 8px 24px rgba(196, 62, 28, 0.22) !important;
+  border-color: var(--mod-ppt) !important;
+  background: color-mix(in srgb, var(--mod-ppt) 10%, var(--panel)) !important;
+  box-shadow: 0 0 0 2px var(--mod-ppt), 0 8px 24px color-mix(in srgb, var(--mod-ppt) 26%, transparent) !important;
 }
 
 .home-card-top {
@@ -266,23 +297,23 @@ body.home-open .sb-tab[data-side="home"] {
 }
 
 .badge-word {
-  background: rgba(24, 90, 189, 0.12);
-  color: #185abd;
+  background: color-mix(in srgb, var(--mod-word) 12%, transparent);
+  color: var(--mod-word);
 }
 
 .badge-excel {
-  background: rgba(16, 124, 65, 0.12);
-  color: #107c41;
+  background: color-mix(in srgb, var(--mod-excel) 12%, transparent);
+  color: var(--mod-excel);
 }
 
 .badge-md {
-  background: rgba(2, 132, 199, 0.12);
-  color: #0284c7;
+  background: color-mix(in srgb, var(--mod-md) 12%, transparent);
+  color: var(--mod-md);
 }
 
 .badge-ppt {
-  background: rgba(196, 62, 28, 0.12);
-  color: #c43e1c;
+  background: color-mix(in srgb, var(--mod-ppt) 12%, transparent);
+  color: var(--mod-ppt);
 }
 
 .home-card-icon-box {
@@ -573,23 +604,23 @@ body.home-open .sb-tab[data-side="home"] {
 }
 
 .home-file-icon.file-icon-word {
-  background: rgba(24, 90, 189, 0.12);
-  color: #185abd;
+  background: color-mix(in srgb, var(--mod-word) 12%, transparent);
+  color: var(--mod-word);
 }
 
 .home-file-icon.file-icon-excel {
-  background: rgba(16, 124, 65, 0.12);
-  color: #107c41;
+  background: color-mix(in srgb, var(--mod-excel) 12%, transparent);
+  color: var(--mod-excel);
 }
 
 .home-file-icon.file-icon-md {
-  background: rgba(2, 132, 199, 0.12);
-  color: #0284c7;
+  background: color-mix(in srgb, var(--mod-md) 12%, transparent);
+  color: var(--mod-md);
 }
 
 .home-file-icon.file-icon-ppt {
-  background: rgba(196, 62, 28, 0.12);
-  color: #c43e1c;
+  background: color-mix(in srgb, var(--mod-ppt) 12%, transparent);
+  color: var(--mod-ppt);
 }
 
 .home-file-icon.file-icon-draft {
@@ -939,7 +970,7 @@ body.home-open .sb-tab[data-side="home"] {
   inset: 7px 5px;
   display: flex;
   flex-direction: column;
-  border-top: 2px solid var(--hp-acento, #107c41);
+  border-top: 2px solid var(--hp-acento, var(--mod-excel));
   border-radius: 2px;
   font-size: 4.8px;
   line-height: 1;
@@ -958,8 +989,8 @@ body.home-open .sb-tab[data-side="home"] {
 
 .home-prev-grade-cab {
   flex: 0 0 10px;
-  color: var(--hp-acento, #107c41);
-  background: color-mix(in srgb, var(--hp-acento, #107c41) 12%, transparent);
+  color: var(--hp-acento, var(--mod-excel));
+  background: color-mix(in srgb, var(--hp-acento, var(--mod-excel)) 12%, transparent);
   font-weight: 600;
 }
 
@@ -968,7 +999,7 @@ body.home-open .sb-tab[data-side="home"] {
   place-items: center;
   flex: 0 0 9px;
   color: var(--hp-fraca);
-  background: color-mix(in srgb, var(--hp-acento, #107c41) 8%, transparent);
+  background: color-mix(in srgb, var(--hp-acento, var(--mod-excel)) 8%, transparent);
   border-right: 1px solid var(--hp-filete);
 }
 
@@ -1020,18 +1051,18 @@ body.home-open .sb-tab[data-side="home"] {
   text-overflow: ellipsis;
 }
 
-/* cada formato pinta o cartão (as mesmas cores da lista antiga) */
-.home-file-card.card-word .home-file-tipo { background: rgba(24, 90, 189, 0.14); color: #185abd; }
-.home-file-card.card-excel .home-file-tipo { background: rgba(16, 124, 65, 0.14); color: #107c41; }
-.home-file-card.card-md .home-file-tipo { background: rgba(2, 132, 199, 0.14); color: #0284c7; }
-.home-file-card.card-ppt .home-file-tipo { background: rgba(196, 62, 28, 0.14); color: #c43e1c; }
+/* cada formato pinta o cartão (as mesmas cores de identidade dos cards) */
+.home-file-card.card-word .home-file-tipo { background: color-mix(in srgb, var(--mod-word) 14%, transparent); color: var(--mod-word); }
+.home-file-card.card-excel .home-file-tipo { background: color-mix(in srgb, var(--mod-excel) 14%, transparent); color: var(--mod-excel); }
+.home-file-card.card-md .home-file-tipo { background: color-mix(in srgb, var(--mod-md) 14%, transparent); color: var(--mod-md); }
+.home-file-card.card-ppt .home-file-tipo { background: color-mix(in srgb, var(--mod-ppt) 14%, transparent); color: var(--mod-ppt); }
 
-.home-file-card.card-word .home-file-preview-ic { background: rgba(24, 90, 189, 0.12); color: #185abd; }
-.home-file-card.card-excel .home-file-preview-ic { background: rgba(16, 124, 65, 0.12); color: #107c41; }
-.home-file-card.card-md .home-file-preview-ic { background: rgba(2, 132, 199, 0.12); color: #0284c7; }
-.home-file-card.card-ppt .home-file-preview-ic { background: rgba(196, 62, 28, 0.12); color: #c43e1c; }
+.home-file-card.card-word .home-file-preview-ic { background: color-mix(in srgb, var(--mod-word) 12%, transparent); color: var(--mod-word); }
+.home-file-card.card-excel .home-file-preview-ic { background: color-mix(in srgb, var(--mod-excel) 12%, transparent); color: var(--mod-excel); }
+.home-file-card.card-md .home-file-preview-ic { background: color-mix(in srgb, var(--mod-md) 12%, transparent); color: var(--mod-md); }
+.home-file-card.card-ppt .home-file-preview-ic { background: color-mix(in srgb, var(--mod-ppt) 12%, transparent); color: var(--mod-ppt); }
 
 /* o acento de cada tipo na prévia (a página e a grade usam; a lâmina é sempre clara) */
-.home-file-card.card-word .home-file-preview { --hp-acento: #185abd; }
-.home-file-card.card-md .home-file-preview { --hp-acento: #0284c7; }
-.home-file-card.card-excel .home-file-preview { --hp-acento: #107c41; }
+.home-file-card.card-word .home-file-preview { --hp-acento: var(--mod-word); }
+.home-file-card.card-md .home-file-preview { --hp-acento: var(--mod-md); }
+.home-file-card.card-excel .home-file-preview { --hp-acento: var(--mod-excel); }

@@ -40,6 +40,13 @@ principal, no lado Rust (comando `preview_file`) — o documento **não** é car
 prévia (no `.xlsx`, o mesmo comando lê a planilha e devolve as primeiras linhas com as células
 separadas por TAB; a estrutura de cada cartão é decidida em `src/homePrevia.ts`).
 
+**Identidade e marcas**: os quatro formatos têm **cores e desenhos próprios** — índigo (Markdown),
+violeta (Word), fúcsia (Excel) e rosa (PowerPoint) —, de propósito longe do azul, verde e laranja das
+marcas do Office; os cartões trazem uma **folha, uma grade, uma lâmina e o "M↓"**, nunca letras em
+chapas coloridas. O logo (o mesmo do executável) aparece no cabeçalho, e o rodapé da Início diz que o
+**mdOffice não é afiliado, patrocinado nem endossado pela Microsoft** — Word, Excel e PowerPoint são
+marcas da Microsoft Corporation (o mesmo aviso está no `README`).
+
 ## Documentos relacionados
 
 - [Estrutura do projeto](estrutura-do-projeto.md) — como o código está organizado.
