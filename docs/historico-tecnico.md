@@ -14910,3 +14910,12 @@ antigas quando fizer sentido.
   e a entrada existe **uma** vez só, no fim da lista do **Frontend** — antes do rótulo
   **Ferramentas (dev)**, que é o último grupo do arquivo (a promoção anterior de outra tarefa caiu
   nele por engano; aqui a seção foi conferida antes de fechar).
+
+### 2026-10-20 · promoção · a entrada do corretor/imagem no "Adicionado" (Word)
+- **Local:** Word ▸ **Não adicionado** ▸ Frontend ▸ **Adicionado** ▸ Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **O corretor não abre mais sugestão quando o clique
+  cai numa imagem** (`f7b9427`); o "Não adicionado" do Word volta a ficar com "(nada no momento)"
+- **Porquê:** o fecho **não promove** (no instante do commit a entrada ainda não está na `main`),
+  então a promoção anda depois, num commit só de documentação — como nas rodadas anteriores. Promovi
+  só a entrada DESTA tarefa: as que seguem em "Não adicionado" nas outras categorias são de sessões
+  com trabalho aberto, e mexer nelas criaria duplicata ou conflito. A entrada existe **uma** vez só.

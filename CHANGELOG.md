@@ -369,6 +369,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- (nada no momento)
+
+### Adicionado (na main)
+
+**Backend**
+
+- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
+
+**Frontend**
+
 - **O corretor não abre mais sugestão quando o clique cai numa imagem**: no print, a imagem estava
   selecionada e o popup do corretor abria com a sugestão de uma palavra ("Awdaw") — e no canto da
   página, longe dela. A imagem é **inline** (ocupa **uma** posição), então o fim da faixa da palavra
@@ -379,14 +389,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   faixa inteira e **apagaria a imagem**. Conferido no harness com o corretor real
   (`node scripts/harness-corretor.mjs`: clique na imagem "não abriu ✓", na palavra "abriu ✓", popup a
   **0 px** da palavra; com a regra antiga o harness acusa "ABRIU ✗"). Teste: `npm run test:corretor-word`.
-
-### Adicionado (na main)
-
-**Backend**
-
-- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
-
-**Frontend**
 
 - **A legenda do cartão de Estilo não sai mais do cartão (fita do Word)**: na galeria **Estilos**,
   o segundo texto de cada cartão ("Calibri Light, 16") era mais largo que o cartão quando a fita
