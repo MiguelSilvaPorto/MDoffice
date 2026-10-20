@@ -32,11 +32,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **A sugestão enquanto digita aparece na hora, mesmo digitando rápido**: ela esperava 45 ms sem tecla
-  nenhuma e o relógio reiniciava a cada letra — digitando depressa a sugestão só surgia nas pausas. Agora ela é
-  calculada **na própria tecla** (a previsão custa ~0,2 ms). `Ctrl+Seta`/`Alt+Seta` (aceitar uma palavra) também
-  deixa de apagar o resto da sugestão. A continuação com várias palavras ficou mais exigente (acertava só 46%):
-  precisão geral de 70,2% → 71,5% no `eval-ghost`, economia de teclas praticamente igual.
+- (nada no momento)
 
 ### Adicionado (na main)
 
@@ -45,6 +41,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — arquivos, imagens e rascunhos passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **A sugestão enquanto digita aparece na hora, mesmo digitando rápido**: ela esperava 45 ms sem tecla
+  nenhuma e o relógio reiniciava a cada letra — digitando depressa a sugestão só surgia nas pausas. Agora ela é
+  calculada **na própria tecla** (a previsão custa ~0,2 ms). `Ctrl+Seta`/`Alt+Seta` (aceitar uma palavra) também
+  deixa de apagar o resto da sugestão. A continuação com várias palavras ficou mais exigente (acertava só 46%):
+  precisão geral de 70,2% → 71,5% no `eval-ghost`, economia de teclas praticamente igual.
 
 - **O corretor passou a DECIDIR antes de mexer (e nunca "conserta" o informal)**: o relato era
   uma correção sem sentido aplicada sozinha ao parar de digitar (print "esc … r"). Agora
@@ -372,11 +374,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada no momento)
 
 **Frontend**
-- **A sugestão enquanto digita aparece na hora, mesmo digitando rápido**: no Word ela esperava **90 ms** sem
-  tecla e o relógio reiniciava a cada letra — a 10 letras por segundo quase nunca chegava a aparecer (só nas
-  pausas, de tantas em tantas palavras). Agora é calculada **na própria tecla**, como no editor Markdown (mesma
-  mudança, ver MD\*).
-
 - **A imagem voltou a poder ser movida no documento**: a alça de arrastar disparava o *drag* nativo do navegador, mas
   o editor não registrava o movimento — soltar não movia nada (a imagem ficava presa no lugar). Agora o movimento é um
   **gesto de ponteiro** próprio: arrastar a alça **ou o corpo da imagem** mostra o cursor onde ela vai cair e, ao
@@ -396,6 +393,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **A sugestão enquanto digita aparece na hora, mesmo digitando rápido**: no Word ela esperava **90 ms** sem
+  tecla e o relógio reiniciava a cada letra — a 10 letras por segundo quase nunca chegava a aparecer (só nas
+  pausas, de tantas em tantas palavras). Agora é calculada **na própria tecla**, como no editor Markdown (mesma
+  mudança, ver MD\*).
 
 - **Clique direito numa imagem: "Excluir imagem" no menu**: o menu de contexto do Word (que já
   conhecia tabela) tratava a imagem como texto — abria desfazer/recortar/copiar/colar/selecionar

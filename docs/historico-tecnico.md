@@ -14334,7 +14334,7 @@ antigas quando fizer sentido.
   relógio e a sugestão só aparecia nas pausas ("a cada 12 palavras"); com 45 ms ela acompanha a
   digitação.
 
-### 2026-10-20 · sugestão · sem relógio: a previsão sai na transação da tecla
+### 2026-10-20 · d146575 · sem relógio: a previsão sai na transação da tecla
 
 - **Local:** `update` do ViewPlugin e o retorno de `createGhostTextExtension`.
 - **Linha:** o `debounceTimer` de 45 ms que chamava `predictCompletion` e fazia `dispatch` → removido;
@@ -14346,7 +14346,7 @@ antigas quando fizer sentido.
 
 ## src/broker/ghost/field.ts
 
-### 2026-10-20 · sugestão · o campo calcula a sugestão nova na mesma transação
+### 2026-10-20 · d146575 · o campo calcula a sugestão nova na mesma transação
 
 - **Local:** `ghostPredictor` (facet novo) e o fim de `ghostTextField.update`.
 - **Linha:** novo `if (!suggestion && (tr.docChanged || …)) suggestion = predict(tr.state)`; e os
@@ -14360,7 +14360,7 @@ antigas quando fizer sentido.
 
 ## src/word/ghost.ts
 
-### 2026-10-20 · sugestão · previsão no `apply` do plugin (fim do relógio de 90 ms)
+### 2026-10-20 · d146575 · previsão no `apply` do plugin (fim do relógio de 90 ms)
 
 - **Local:** `predict` (novo) e `state.apply` de `ghostPlugin`; `view().update`.
 - **Linha:** `predictTimer = setTimeout(…, 90)` + `setSuggestion` → `apply(tr, cur, _old, state)`
@@ -14373,7 +14373,7 @@ antigas quando fizer sentido.
 
 ## src/broker/ghost/predict.ts
 
-### 2026-10-20 · sugestão · corrente mais exigente e só o fim do parágrafo
+### 2026-10-20 · d146575 · corrente mais exigente e só o fim do parágrafo
 
 - **Local:** `THRESHOLDS.chain`; `predictFromLine` (constante `TAIL`).
 - **Linha:** `chain: 0.75` → `chain: 0.85`; novo corte de `before` às últimas ~400 letras (numa
