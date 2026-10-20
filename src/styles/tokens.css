@@ -13,19 +13,18 @@
   --danger: #dc2626;
   --ok: #059669;
   --shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
-  /* Identidade dos módulos: paleta PRÓPRIA do mdOffice (índigo → violeta → fúcsia → rosa).
-     De propósito LONGE do azul, verde e laranja das marcas do Office — o mdOffice não é
-     afiliado, patrocinado nem endossado pela Microsoft. `--mod-*-placa` é o fundo dos ícones
-     (o mesmo nos dois temas, com o desenho branco por cima); `--mod-*` é a cor de texto/borda,
-     que clareia no escuro para continuar legível. */
-  --mod-md: #4338ca;
-  --mod-word: #6d28d9;
-  --mod-excel: #a21caf;
-  --mod-ppt: #be123c;
-  --mod-md-placa: #4f46e5;
-  --mod-word-placa: #7c3aed;
-  --mod-excel-placa: #c026d3;
-  --mod-ppt-placa: #e11d48;
+  /* Identidade dos módulos: a mesma paleta do conjunto de ícones por formato (azul, verde,
+     roxo, laranja — distante dos hexes oficiais do Office; o mdOffice não é afiliado,
+     patrocinado nem endossado pela Microsoft). `--mod-*-placa` é o fundo/chapa dos ícones
+     dos cartões; `--mod-*` é a cor de texto/borda, que clareia no escuro para continuar legível. */
+  --mod-md: #7c3aed;
+  --mod-word: #2b6ce4;
+  --mod-excel: #16a34a;
+  --mod-ppt: #ea580c;
+  --mod-md-placa: #7c3aed;
+  --mod-word-placa: #2b6ce4;
+  --mod-excel-placa: #16a34a;
+  --mod-ppt-placa: #ea580c;
   /* Palco: a área em volta da lâmina/folha. No claro ele é o fundo do app; no escuro ganha um
      tom próprio (abaixo), senão uma lâmina escura fica da cor do palco e some. `--lamina-borda`
      é a moldura fina que destaca onde a lâmina termina. */
@@ -51,10 +50,10 @@
   --ok: #34d399;
   --shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
   /* as cores de TEXTO dos módulos clareiam no escuro (as placas dos ícones não mudam) */
-  --mod-md: #a5b4fc;
-  --mod-word: #c4b5fd;
-  --mod-excel: #f0abfc;
-  --mod-ppt: #fda4af;
+  --mod-md: #a78bfa;
+  --mod-word: #60a5fa;
+  --mod-excel: #4ade80;
+  --mod-ppt: #fb923c;
   /* O palco do escuro é um degrau ACIMA do fundo do app (#0e1014): é ele que separa a lâmina
      escura (ou a folha do Word) do resto da tela. A moldura da lâmina é clara o bastante para
      aparecer tanto sobre o palco quanto sobre uma lâmina escura. */

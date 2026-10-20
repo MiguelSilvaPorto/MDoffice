@@ -108,6 +108,7 @@ export class Sidebar {
           this.hooks.onHome();
           return;
         }
+        if (document.body.classList.contains("home-open")) this.hooks.onHome();
         if (b.dataset.side === "projects") this.animar = "*";
         this.show(b.dataset.side as SidePanel);
       })
@@ -168,8 +169,9 @@ export class Sidebar {
   show(panel: SidePanel): void {
     this.active = panel;
     saveJSON(SIDE_KEY, panel);
+    const homeAberto = document.body.classList.contains("home-open");
     document.querySelectorAll<HTMLElement>(".sb-tab").forEach((b) => {
-      const on = b.dataset.side === panel;
+      const on = homeAberto ? b.dataset.side === "home" : b.dataset.side === panel;
       b.classList.toggle("active", on);
       b.setAttribute("aria-selected", String(on));
     });
@@ -183,8 +185,11 @@ export class Sidebar {
   private posicionarPilula(alvo?: HTMLElement | null): void {
     const pilula = document.querySelector<HTMLElement>(".sb-pill");
     if (!pilula) return;
+    const homeBtn = document.body.classList.contains("home-open")
+      ? document.querySelector<HTMLElement>('.sb-tab[data-side="home"]')
+      : null;
     const ativo =
-      alvo ?? document.querySelector<HTMLElement>('.sb-tab.active:not([data-side="home"])') ?? document.querySelector<HTMLElement>(".sb-tab.active");
+      alvo ?? homeBtn ?? document.querySelector<HTMLElement>('.sb-tab.active:not([data-side="home"])') ?? document.querySelector<HTMLElement>(".sb-tab.active");
     if (!ativo) return;
     // o tamanho vem do BOTÃO (não de um 30×28 fixo no CSS): se o tamanho da aba mudar num ajuste
     // de estilo, a pílula acompanha em vez de ficar deslocada (o print do usuário)
@@ -211,12 +216,13 @@ export class Sidebar {
   }
 
   setHomeActive(active: boolean): void {
+    document.querySelectorAll<HTMLElement>(".sb-tab").forEach((b) => {
+      const on = active ? b.dataset.side === "home" : b.dataset.side === this.active;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-selected", String(on));
+    });
     const homeBtn = document.querySelector<HTMLElement>('.sb-tab[data-side="home"]');
-    if (homeBtn) {
-      homeBtn.classList.toggle("active", active);
-      homeBtn.setAttribute("aria-selected", String(active));
-      this.posicionarPilula(active ? homeBtn : undefined);
-    }
+    this.posicionarPilula(active ? homeBtn : undefined);
   }
 
   private persist(): void {

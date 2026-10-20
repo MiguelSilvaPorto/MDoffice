@@ -1,9 +1,10 @@
 import * as files from "./files";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
-import { fileIcon, kindOfPath } from "./fileIcons";
+import { fileIcon, kindOfPath, type FileKind } from "./fileIcons";
 import { estruturarPrevia, type PreviaEstruturada } from "./homePrevia";
 import { htmlDaLaminaDeBytes } from "./homePreviaPptx";
+import { iconeDoApp } from "./md/preview";
 import { $, h, fmtTime, baseName, stripExt, docDirOf, escapeHtml } from "./util";
 
 /** O mesmo saneamento do resto do app: o HTML do markdown é de fora e não pode virar marcação. */
@@ -54,9 +55,37 @@ function htmlDoMarkdown(md: string): string {
   return cru.replace(/<img\b[^>]*>/gi, `<span class="home-prev-figura"></span>`);
 }
 
-/** A versão do documento para o cartão (vazio = o cartão fica com o ícone do formato). */
+/** A versão do documento para o cartão (em branco = folha/grade/lâmina em esqueleto da forma do tipo). */
 export function previaEmHtml(e: PreviaEstruturada): string {
-  if (e.forma === "vazia") return "";
+  if (e.forma === "vazia") {
+    if (e.tipo === "xlsx") {
+      return `<span class="home-prev home-prev-grade home-prev-vazia">${gradeEmHtml([["", "", "", ""], ["", "", "", ""], ["", "", "", ""], ["", "", "", ""], ["", "", "", ""]])}</span>`;
+    }
+    if (e.tipo === "pptx") {
+      return (
+        `<span class="home-prev home-prev-lamina home-prev-vazia">` +
+        `<span class="home-prev-skel-titulo"></span>` +
+        `<span class="home-prev-skel-linha w75"></span>` +
+        `<span class="home-prev-skel-linha w55"></span>` +
+        `</span>`
+      );
+    }
+    if (e.tipo === "md" || e.tipo === "docx") {
+      return (
+        `<span class="home-prev home-prev-pagina home-prev-vazia">` +
+        `<span class="home-prev-skel-titulo"></span>` +
+        `<span class="home-prev-skel-linha w90"></span>` +
+        `<span class="home-prev-skel-linha w80"></span>` +
+        `<span class="home-prev-skel-linha w60"></span>` +
+        `<span class="home-prev-skel-espaco"></span>` +
+        `<span class="home-prev-skel-linha w85"></span>` +
+        `<span class="home-prev-skel-linha w70"></span>` +
+        `<span class="home-prev-skel-linha w45"></span>` +
+        `</span>`
+      );
+    }
+    return "";
+  }
   if (e.forma === "pagina-md") {
     return `<span class="home-prev home-prev-pagina"><span class="home-prev-md">${htmlDoMarkdown(e.bruto)}</span></span>`;
   }
@@ -66,7 +95,7 @@ export function previaEmHtml(e: PreviaEstruturada): string {
   if (e.forma === "lamina") {
     return `<span class="home-prev home-prev-lamina"><span class="home-prev-lamina-titulo">${escapeHtml(e.titulo)}</span><span class="home-prev-lamina-corpo">${paragrafos(e.linhas)}</span></span>`;
   }
-  return `<span class="home-prev home-prev-grade">${gradeEmHtml(e.grade)}</span>`;
+  return `<span class="home-prev home-prev-grade">${gradeEmHtml(e.grade.length ? e.grade : [["", "", "", ""], ["", "", "", ""], ["", "", "", ""], ["", "", "", ""]])}</span>`;
 }
 
 /** A grade do Excel: o cabeçalho das colunas (A, B…) e as linhas com o número e as células. */
@@ -125,13 +154,10 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
   // 1. Cabeçalho / Hero
   const header = h("header", { class: "home-header" });
   const heroLeft = h("div", { class: "home-hero" });
+  const iconeApp = iconeDoApp();
   heroLeft.innerHTML = `
     <div class="home-brand">
-      <svg class="home-brand-mark" viewBox="0 0 54 54" width="54" height="54" fill="none" aria-hidden="true">
-        <rect x="1" y="1" width="52" height="52" rx="14" fill="var(--mod-md-placa)"/>
-        <path d="M17 35V21l5 5.5 5-5.5v14" stroke="#fff" stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M37 21v10m0 0l-3.4-3.4M37 31l3.4-3.4" stroke="#fff" stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <img class="home-brand-mark" src="/icones/mdoffice-${iconeApp}.png" alt="" width="36" height="36" />
       <span class="home-brand-nome">mdOffice</span>
       <span class="home-brand-hub">Hub</span>
     </div>
@@ -221,38 +247,40 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
     return card;
   };
 
-  /** O ícone de um módulo: uma chapa na cor dele (tokens de identidade) + o desenho branco.
-   *  Sem letra em quadrado colorido: o desenho é o do editor (folha, grade, lâmina, M↓). */
+  /** O ícone de um módulo: uma chapa suave na cor do tipo (tokens de identidade) + a folha em
+   *  contorno com a marca adotada (o mesmo conjunto de `fileIcons.ts`: #, linhas, grade, gráfico). */
+  const folhaModulo = `<path d="M6 2h9l4.5 4.5v14.6a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z"/><path d="M15 2v3.5a1 1 0 0 0 1 1h3.5"/>`;
   const iconeModulo = (placa: string, desenho: string) => `
-    <svg class="home-brand-icon" viewBox="0 0 48 48" width="48" height="48" fill="none" aria-hidden="true">
-      <rect x="1" y="1" width="46" height="46" rx="12" fill="var(${placa})"/>
-      ${desenho}
+    <svg class="home-brand-icon" style="--mod-ic: var(${placa})" viewBox="0 0 48 48" width="48" height="48" fill="none" aria-hidden="true">
+      <rect class="home-brand-icon-bg" x="1" y="1" width="46" height="46" rx="13"/>
+      <g class="home-brand-icon-fg" transform="translate(8.4 7.8) scale(1.3)">
+        ${folhaModulo}
+        ${desenho}
+      </g>
     </svg>`;
 
   const svgWord = iconeModulo(
     "--mod-word-placa",
-    `<path d="M16 12.5h10.5L32 18v17.5a1.5 1.5 0 0 1-1.5 1.5h-14A1.5 1.5 0 0 1 16 35.5z" stroke="#fff" stroke-width="2.1" stroke-linejoin="round"/>
-     <path d="M26.5 12.5V18H32" stroke="#fff" stroke-width="2.1" stroke-linejoin="round"/>
-     <path d="M20 24h8M20 28h8M20 32h5" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/>`
+    `<path d="M7.4 10.2h9.2M7.4 12.4h9.2M7.4 14.6h9.2M7.4 16.8h4.4" stroke-width="1.45"/>`
   );
 
   const svgExcel = iconeModulo(
     "--mod-excel-placa",
-    `<rect x="14" y="14" width="20" height="20" rx="2.6" stroke="#fff" stroke-width="2.1"/>
-     <path d="M14 20.6h20M14 27.4h20M20.6 14v20M27.4 14v20" stroke="#fff" stroke-width="1.7"/>`
+    `<rect x="7.2" y="9.8" width="9.6" height="7.6" rx="0.9" stroke-width="1.45"/>
+     <path class="home-brand-icon-fill" d="M7.2 10.7a0.9 0.9 0 0 1 0.9-0.9h7.8a0.9 0.9 0 0 1 0.9 0.9v1.5H7.2z"/>
+     <path d="M11.5 12.3v5.1M14.9 12.3v5.1M7.2 14.9h9.6" stroke-width="1.15"/>`
   );
 
   const svgMd = iconeModulo(
     "--mod-md-placa",
-    `<path d="M13 34V16l6.5 7.5L26 16v18" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
-     <path d="M36 16v15m0 0l-3.8-3.8M36 31l3.8-3.8" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>`
+    `<path d="M10.8 10.1 9.9 17M13.6 10.1 12.7 17M8 12.3h8.4M7.8 15h8.4" stroke-width="1.45"/>`
   );
 
   const svgPpt = iconeModulo(
     "--mod-ppt-placa",
-    `<rect x="12.5" y="13.5" width="23" height="16" rx="2.6" stroke="#fff" stroke-width="2.1"/>
-     <path d="M21.6 17.6l6.2 4-6.2 4z" fill="#fff"/>
-     <path d="M24 29.5v3.4M20.8 34.6h6.4" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/>`
+    `<rect x="7.2" y="9.4" width="9.6" height="6.2" rx="0.9" stroke-width="1.45"/>
+     <path d="M9.9 14.2v-1.6M12 14.2v-3M14.1 14.2v-4.3" stroke-width="1.8"/>
+     <path d="M12 16.6v2.8M10.2 19.6h3.6" stroke-width="1.15"/>`
   );
 
   const cardWord = makeCard("word", "DOCX", "Documentos (.docx)", "Texto & ABNT", "Texto formatado, cabeçalhos, páginas A4, normas ABNT e exportação .docx.", svgWord);
@@ -281,19 +309,20 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
   secTemplates.append(tplHead);
 
   const chips = h("div", { class: "home-chips" });
-  const addChip = (iconId: string, label: string, desc: string, onClick: () => void) => {
+  const addChip = (iconOrKind: string | FileKind, isFileKind: boolean, label: string, desc: string, onClick: () => void) => {
     const btn = h("button", { class: "home-chip-btn", type: "button", title: desc });
-    btn.innerHTML = `<svg class="ic"><use href="#${iconId}"/></svg><span class="chip-label">${label}</span>`;
+    const icHtml = isFileKind ? fileIcon(iconOrKind as FileKind) : `<svg class="ic"><use href="#${iconOrKind}"/></svg>`;
+    btn.innerHTML = `${icHtml}<span class="chip-label">${label}</span>`;
     btn.addEventListener("click", onClick);
     chips.append(btn);
   };
 
-  addChip("i-word", "Trabalho ABNT", "Modelo acadêmico completo nas normas ABNT", () => ctx.createTemplate("abnt"));
-  addChip("i-doc", "Relatório Executivo", "Resumo executivo, metas, resultados e conclusão", () => ctx.createTemplate("relatorio"));
-  addChip("i-grid", "Planilha Orçamentária", "Planilha com receitas, despesas e totais calculados", () => ctx.createTemplate("orcamento"));
-  addChip("i-spark", "Pedido para IA", "Template estruturado para orientar IAs e LLMs", () => ctx.createTemplate("ia"));
-  addChip("i-import", "Importar do Office", "Abrir arquivos .docx, .xlsx/.xlsm e .pptx do seu computador", () => ctx.importOffice());
-  addChip("i-open", "Abrir arquivo do PC", "Abrir qualquer arquivo existente do disco (Ctrl+O)", () => ctx.openExisting());
+  addChip("word", true, "Trabalho ABNT", "Modelo acadêmico completo nas normas ABNT", () => ctx.createTemplate("abnt"));
+  addChip("md", true, "Relatório Executivo", "Resumo executivo, metas, resultados e conclusão", () => ctx.createTemplate("relatorio"));
+  addChip("excel", true, "Planilha Orçamentária", "Planilha com receitas, despesas e totais calculados", () => ctx.createTemplate("orcamento"));
+  addChip("i-spark", false, "Pedido para IA", "Template estruturado para orientar IAs e LLMs", () => ctx.createTemplate("ia"));
+  addChip("i-import", false, "Importar do Office", "Abrir arquivos .docx, .xlsx/.xlsm e .pptx do seu computador", () => ctx.importOffice());
+  addChip("i-open", false, "Abrir arquivo do PC", "Abrir qualquer arquivo existente do disco (Ctrl+O)", () => ctx.openExisting());
 
   secTemplates.append(chips);
   wrap.append(secTemplates);
@@ -428,18 +457,24 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
       filtered.forEach((item) => {
         const fmt = detectFormat(item.path);
         const meta = FORMAT_META[fmt];
+        const kind = kindOfPath(item.path);
         const card = h("button", { class: `home-file-card card-${fmt}`, type: "button" });
         card.title = item.path;
         card.innerHTML = `
           <span class="home-file-preview">
-            <span class="home-file-preview-ic">${fileIcon(kindOfPath(item.path))}</span>
+            <span class="home-file-preview-ic">${fileIcon(kind)}</span>
           </span>
-          <span class="home-file-nome">${escapeHtml(item.name)}</span>
-          <span class="home-file-meta">
-            <span class="home-file-tipo">${meta.label}</span>
-            <span class="home-file-time">${fmtTime(new Date(item.at))}</span>
+          <span class="home-file-foot">
+            <span class="home-file-head">
+              <span class="home-file-card-ic">${fileIcon(kind)}</span>
+              <span class="home-file-nome">${escapeHtml(item.name)}</span>
+            </span>
+            <span class="home-file-meta">
+              <span class="home-file-tipo">${meta.label}</span>
+              <span class="home-file-time">${fmtTime(new Date(item.at))}</span>
+            </span>
+            <span class="home-file-dir">${escapeHtml(docDirOf(item.path))}</span>
           </span>
-          <span class="home-file-dir">${escapeHtml(docDirOf(item.path))}</span>
         `;
         card.addEventListener("click", () => ctx.openPath(item.path));
         grid.append(card);

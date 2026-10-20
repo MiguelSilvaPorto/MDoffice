@@ -3368,6 +3368,26 @@ console.log("\nBarra do topo: o Desenhar sai na apresentação");
       /this\.ajustarBarraDoTipo\(\);/.test(tabsApp),
     "o botão do topo só dizia 'o desenho ainda não está disponível em apresentações'"
   );
+  checa(
+    "Início: o cabeçalho usa o ícone do app, os 4 formatos usam a folha em contorno com a paleta unificada e a prévia vazia desenha o esqueleto da folha/grade/lâmina",
+    /class="home-brand-mark" src="\/icones\/mdoffice-\$\{iconeApp\}\.png"/.test(homePageTs) &&
+      /--mod-word:\s*#2b6ce4/.test(ler("src/styles/tokens.css")) &&
+      /--mod-excel:\s*#16a34a/.test(ler("src/styles/tokens.css")) &&
+      /--mod-md:\s*#7c3aed/.test(ler("src/styles/tokens.css")) &&
+      /--mod-ppt:\s*#ea580c/.test(ler("src/styles/tokens.css")) &&
+      /home-brand-icon-fg/.test(homePageTs) &&
+      /home-prev-vazia/.test(homePageTs) &&
+      /home-prev-skel-linha/.test(homeCss) &&
+      /\.home-file-preview-ic \.fi/.test(homeCss),
+    "o cabeçalho/cards da Início voltariam aos ícones antigos ou os recentes vazios ficariam sem silhueta"
+  );
+  checa(
+    "barra lateral: o botão de Projetos usa o ícone de pasta e clicar em Projetos/Estrutura fecha o Início para não duplicar o destaque",
+    /data-side="projects"[^>]*><svg class="ic"><use href="#i-folder"\/>/.test(html) &&
+      /if \(document\.body\.classList\.contains\("home-open"\)\) this\.hooks\.onHome\(\);/.test(ler("src/sidebar.ts")) &&
+      /const homeAberto = document\.body\.classList\.contains\("home-open"\);/.test(ler("src/sidebar.ts")),
+    "a pílula ficaria num painel enquanto o botão de Início continuava aceso"
+  );
 }
 
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");

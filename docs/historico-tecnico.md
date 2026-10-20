@@ -28,6 +28,48 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## index.html
+
+### 2026-10-20 · fix/melhorias-interface-inicio · ícones da barra lateral redesenhados e pasta em Projetos
+- **Local:** sprite SVG (`#i-folder`, `#i-home`, `#i-list`) e `#sidebar .sb-tabs`
+- **Linha:** `<symbol id="i-home" ...><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10.5V20h12v-9.5"/></symbol>` → telhado + corpo arredondado + porta sem cruzamento de linhas; `#i-list` com `<circle>` nos marcadores; e `<button class="sb-tab" data-side="projects" ...><use href="#i-grid"/>` → `<use href="#i-folder"/>`
+- **Porquê:** o ícone de casa tinha traços cruzando nas pontas (`y=11.5` vs `y=10.5`), o de Projetos usava uma grade 2×2 igual à de tabela em vez de pasta, e os pontos de `#i-list` usavam `h.01` que ficava disforme dependendo da escala.
+
+## src/sidebar.ts
+
+### 2026-10-20 · fix/melhorias-interface-inicio · sincronização da pílula ativa com o Início aberto
+- **Local:** `init`, `show`, `posicionarPilula` e `setHomeActive`
+- **Linha:** clique em `.sb-tab` fecha o Início se `document.body.classList.contains("home-open")`; `show()` e `posicionarPilula()` mantêm `.active` e a pílula no botão `home` enquanto `home-open` estiver ativo; `setHomeActive()` alterna `.active` entre `home` e `this.active`
+- **Porquê:** `sidebar.init()` terminava o `await defaultDir()` depois de `restoreSession()` ter aberto o Início e chamava `this.show(this.active)`, movendo a pílula para Projetos/Estrutura enquanto o botão de Início continuava pintado por `body.home-open .sb-tab[data-side="home"]` (dois botões acesos ao mesmo tempo).
+
+## src/styles/tokens.css
+
+### 2026-10-20 · fix/melhorias-interface-inicio · paleta dos módulos unificada com os ícones de formato
+- **Local:** `:root` e `[data-theme="dark"]` (`--mod-*` e `--mod-*-placa`)
+- **Linha:** `--mod-md: #4338ca; --mod-word: #6d28d9; --mod-excel: #a21caf; --mod-ppt: #be123c;` → `--mod-md: #7c3aed; --mod-word: #2b6ce4; --mod-excel: #16a34a; --mod-ppt: #ea580c;` (e equivalentes claros no tema escuro)
+- **Porquê:** os ícones de arquivo (`fileicons.css`) já usavam azul/verde/roxo/laranja enquanto os cartões, etiquetas e cabeçalhos de prévia do Início continuavam com a paleta antiga roxo/fúcsia/carmim, causando conflito visual dentro do mesmo cartão.
+
+## src/homePrevia.ts
+
+### 2026-10-20 · fix/melhorias-interface-inicio · preservar o tipo na prévia vazia
+- **Local:** `PreviaEstruturada` e `estruturarPrevia`
+- **Linha:** incluído `tipo: string` no retorno de `estruturarPrevia` em todas as formas (inclusive `forma: "vazia"`)
+- **Porquê:** quando um documento recém-criado em `Documentos\mdOffice` ainda está em branco, `previaEmHtml` precisa saber o formato (`md`, `docx`, `xlsx`, `pptx`) para desenhar a silhueta da folha, planilha ou lâmina em vez de deixar o quadro vazio.
+
+## src/homePage.ts
+
+### 2026-10-20 · fix/melhorias-interface-inicio · marca do app no cabeçalho, ícones em contorno nos 4 cards e prévia para arquivos em branco
+- **Local:** `previaEmHtml`, `renderHomePage` (`.home-brand`, `iconeModulo`, `addChip` e `.home-file-card`)
+- **Linha:** `.home-brand-mark` trocado do SVG `M↓` por `<img class="home-brand-mark" src="/icones/mdoffice-${iconeApp}.png">`; `iconeModulo` redesenhado com a folha em contorno e a marca adotada de cada formato; `addChip` usando `fileIcon` nos modelos de documento/planilha/markdown; `previaEmHtml` gerando `.home-prev-vazia` com esqueleto de página/grade/lâmina; e `.home-file-card` exibindo o ícone do formato junto ao título no rodapé
+- **Porquê:** o topo e os 4 cards do Início ainda exibiam os ícones antigos (`M↓` e monitor com play) abandonados no resto do app, e os cartões de recentes de arquivos recém-criados apareciam sem nenhuma miniatura de documento.
+
+## src/styles/home.css
+
+### 2026-10-20 · fix/melhorias-interface-inicio · estilo dos ícones em contorno, cartões de recentes e esqueletos de prévia
+- **Local:** `.home-brand-icon*`, `.home-file-card`, `.home-file-preview*`, `.home-prev-pagina`, `.home-prev-lamina*`, `.home-prev-grade` e `.home-file-foot`
+- **Linha:** adicionadas regras `.home-brand-icon-bg/fg/fill`, `.home-file-preview-ic .fi { width: 26px; height: 26px }`, `.home-prev-skel-*`, `.home-file-foot/.home-file-head` e ajustadas dimensões e sombras de `.home-file-preview` (`height: 124px`), `.home-prev-pagina` (`86×110px`), `.home-prev-lamina` (`164×92px`) e `.home-prev-lamina-real` (`max-width: 176px`)
+- **Porquê:** `.home-file-preview-ic` só dimensionava `.ic` (deixando `.fi` minúsculo em 16 px), a lâmina real não tinha sombra própria nem limite proporcional ao cartão, e os cartões de recentes precisavam de acabamento coeso com os cartões superiores.
+
 ## src/powerpoint/edicao/desenho.ts
 
 ### 2026-10-20 — esta tarefa — o ímã nas formas de baixo é do Assistente

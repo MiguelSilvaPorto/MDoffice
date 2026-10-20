@@ -59,8 +59,10 @@ body.home-open .sb-tab[data-side="home"] {
 }
 
 .home-brand-mark {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  object-fit: contain;
   flex: none;
   filter: drop-shadow(0 4px 10px color-mix(in srgb, var(--accent) 28%, transparent));
 }
@@ -325,7 +327,31 @@ body.home-open .sb-tab[data-side="home"] {
 .home-brand-icon {
   width: 52px;
   height: 52px;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.14));
+  filter: drop-shadow(0 4px 12px color-mix(in srgb, var(--mod-ic, var(--accent)) 18%, transparent));
+}
+
+.home-brand-icon-bg {
+  fill: color-mix(in srgb, var(--mod-ic, var(--accent)) 12%, var(--panel-2));
+  stroke: color-mix(in srgb, var(--mod-ic, var(--accent)) 32%, transparent);
+  stroke-width: 1.4;
+}
+
+[data-theme="dark"] .home-brand-icon-bg {
+  fill: color-mix(in srgb, var(--mod-ic, var(--accent)) 18%, var(--panel-2));
+  stroke: color-mix(in srgb, var(--mod-ic, var(--accent)) 42%, transparent);
+}
+
+.home-brand-icon-fg {
+  fill: none;
+  stroke: var(--mod-ic, var(--accent));
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.home-brand-icon-fill {
+  fill: var(--mod-ic, var(--accent));
+  stroke: none;
 }
 
 .home-card-body {
@@ -481,9 +507,14 @@ body.home-open .sb-tab[data-side="home"] {
   transition: all 0.12s ease;
 }
 
+.home-chip-btn .ic,
+.home-chip-btn .fi {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
 .home-chip-btn .ic {
-  width: 15px;
-  height: 15px;
   color: var(--muted);
 }
 
@@ -724,53 +755,75 @@ body.home-open .sb-tab[data-side="home"] {
 
 .home-file-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(198px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(212px, 1fr));
+  gap: 14px;
 }
 
 .home-file-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px;
+  gap: 10px;
+  padding: 10px;
   text-align: left;
   color: var(--fg);
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 13px;
   font: inherit;
   cursor: pointer;
-  transition: border-color 0.12s ease, background 0.12s ease, transform 0.12s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
 }
 
 .home-file-card:hover {
-  background: var(--panel-2);
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
-  transform: translateY(-1px);
+  background: var(--panel);
+  transform: translateY(-2px);
+}
+
+.home-file-card.card-word:hover {
+  border-color: color-mix(in srgb, var(--mod-word) 60%, var(--border));
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--mod-word) 16%, transparent);
+}
+
+.home-file-card.card-excel:hover {
+  border-color: color-mix(in srgb, var(--mod-excel) 60%, var(--border));
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--mod-excel) 16%, transparent);
+}
+
+.home-file-card.card-md:hover {
+  border-color: color-mix(in srgb, var(--mod-md) 60%, var(--border));
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--mod-md) 16%, transparent);
+}
+
+.home-file-card.card-ppt:hover {
+  border-color: color-mix(in srgb, var(--mod-ppt) 60%, var(--border));
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--mod-ppt) 16%, transparent);
 }
 
 .home-file-preview {
   position: relative;
   display: grid;
   place-items: center;
-  height: 110px;
+  height: 124px;
   overflow: hidden;
-  background: var(--panel-2);
-  border-radius: 8px;
+  background: color-mix(in srgb, var(--hp-acento, var(--accent)) 6%, var(--panel-2));
+  border: 1px solid color-mix(in srgb, var(--hp-acento, var(--border)) 16%, var(--border));
+  border-radius: 9px;
 }
 
 .home-file-preview-ic {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   color: var(--muted);
 }
 
-.home-file-preview-ic .ic {
-  width: 22px;
-  height: 22px;
+.home-file-preview-ic .ic,
+.home-file-preview-ic .fi {
+  width: 26px;
+  height: 26px;
 }
 
 /* ---------- a versão do documento no cartão (página / lâmina / grade) ---------- */
@@ -814,18 +867,49 @@ body.home-open .sb-tab[data-side="home"] {
 .home-prev-pagina {
   left: 50%;
   top: 50%;
-  width: 76px;
-  height: 103px;
+  width: 86px;
+  height: 110px;
   transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   gap: 3.5px;
-  padding: 7px 6px;
-  border-top: 2px solid var(--hp-acento, var(--border));
-  border-radius: 1px;
-  font-size: 4.6px;
+  padding: 8px 7px;
+  border-top: 2.5px solid var(--hp-acento, var(--border));
+  border-radius: 3px;
+  font-size: 4.8px;
   line-height: 1.5;
 }
+
+/* esqueleto para documento recém-criado/em branco: a folha mostra pautas discretas */
+.home-prev-skel-titulo {
+  display: block;
+  width: 58%;
+  height: 4.5px;
+  margin-bottom: 3px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--hp-acento, var(--hp-tinta)) 42%, transparent);
+}
+
+.home-prev-skel-linha {
+  display: block;
+  height: 3px;
+  border-radius: 99px;
+  background: var(--hp-filete);
+}
+
+.home-prev-skel-espaco {
+  display: block;
+  height: 3px;
+}
+
+.home-prev-skel-linha.w90 { width: 90%; }
+.home-prev-skel-linha.w85 { width: 85%; }
+.home-prev-skel-linha.w80 { width: 80%; }
+.home-prev-skel-linha.w75 { width: 75%; }
+.home-prev-skel-linha.w70 { width: 70%; }
+.home-prev-skel-linha.w60 { width: 60%; }
+.home-prev-skel-linha.w55 { width: 55%; }
+.home-prev-skel-linha.w45 { width: 45%; }
 
 .home-prev-titulo {
   margin-bottom: 1px;
@@ -917,8 +1001,8 @@ body.home-open .sb-tab[data-side="home"] {
 .home-prev-lamina {
   left: 50%;
   top: 50%;
-  width: 148px;
-  height: 83px;
+  width: 164px;
+  height: 92px;
   transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
@@ -926,8 +1010,8 @@ body.home-open .sb-tab[data-side="home"] {
   padding: 10px 11px;
   background: #ffffff;
   color: #202128;
-  border-radius: 1px;
-  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.2), 0 1px 3px rgba(0, 0, 0, 0.2), 0 8px 20px rgba(0, 0, 0, 0.18);
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.18), 0 2px 5px rgba(0, 0, 0, 0.2), 0 8px 20px rgba(0, 0, 0, 0.16);
   font-size: 4.8px;
   line-height: 1.45;
 }
@@ -951,10 +1035,11 @@ body.home-open .sb-tab[data-side="home"] {
 .home-prev-lamina-real {
   left: 50%;
   top: 50%;
-  width: calc(100% - 18px);
-  max-width: 320px;
+  width: calc(100% - 22px);
+  max-width: 176px;
   transform: translate(-50%, -50%);
-  border-radius: 1px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(0, 0, 0, 0.22), 0 8px 20px rgba(0, 0, 0, 0.18);
 }
 
 /* o palco é o contêiner das medidas: as formas usam % e `cqw`, então a lâmina escala sozinha */
@@ -967,11 +1052,11 @@ body.home-open .sb-tab[data-side="home"] {
 
 /* --- a GRADE (Excel): o cabeçalho das colunas e o número das linhas --- */
 .home-prev-grade {
-  inset: 7px 5px;
+  inset: 9px 10px;
   display: flex;
   flex-direction: column;
-  border-top: 2px solid var(--hp-acento, var(--mod-excel));
-  border-radius: 2px;
+  border-top: 2.5px solid var(--hp-acento, var(--mod-excel));
+  border-radius: 4px;
   font-size: 4.8px;
   line-height: 1;
 }
@@ -1020,32 +1105,62 @@ body.home-open .sb-tab[data-side="home"] {
   border-right: none;
 }
 
+.home-file-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0 2px;
+  min-width: 0;
+}
+
+.home-file-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.home-file-card-ic {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+}
+
+.home-file-card-ic .fi {
+  width: 16px;
+  height: 16px;
+}
+
 .home-file-nome {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 620;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .home-file-meta {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
   font-size: 11px;
   color: var(--muted);
 }
 
 .home-file-tipo {
-  padding: 1px 6px;
+  padding: 1.5px 7px;
   border-radius: 999px;
   background: var(--panel-2);
-  font-weight: 600;
+  font-size: 10.5px;
+  font-weight: 620;
 }
 
 .home-file-dir {
   font-size: 10.5px;
   color: var(--muted);
+  opacity: 0.85;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1066,3 +1181,4 @@ body.home-open .sb-tab[data-side="home"] {
 .home-file-card.card-word .home-file-preview { --hp-acento: var(--mod-word); }
 .home-file-card.card-md .home-file-preview { --hp-acento: var(--mod-md); }
 .home-file-card.card-excel .home-file-preview { --hp-acento: var(--mod-excel); }
+.home-file-card.card-ppt .home-file-preview { --hp-acento: var(--mod-ppt); }

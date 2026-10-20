@@ -16,6 +16,8 @@ export type FormaPrevia = "pagina" | "pagina-md" | "lamina" | "grade" | "vazia";
 
 export interface PreviaEstruturada {
   forma: FormaPrevia;
+  /** o formato reconhecido pelo preview_file ("md", "docx", "pptx", "xlsx" ou "outro") */
+  tipo: string;
   /** o texto bruto do documento (o markdown usa ele inteiro) */
   bruto: string;
   /** o título: a primeira linha com texto */
@@ -38,17 +40,17 @@ export const COLUNAS_GRADE = 5;
 export function estruturarPrevia(tipo: string, texto: string): PreviaEstruturada {
   const bruto = texto.replace(/\r\n?/g, "\n").trim();
   const linhas = bruto.split("\n").map((l) => l.trim());
-  if (!bruto) return { forma: "vazia", bruto, titulo: "", linhas: [], grade: [] };
-  if (tipo === "xlsx") return { forma: "grade", bruto, titulo: "", linhas: [], grade: gradeDoTexto(linhas) };
+  if (!bruto) return { forma: "vazia", tipo, bruto, titulo: "", linhas: [], grade: [] };
+  if (tipo === "xlsx") return { forma: "grade", tipo, bruto, titulo: "", linhas: [], grade: gradeDoTexto(linhas) };
   const comTexto = linhas.filter((l) => l);
-  if (!comTexto.length) return { forma: "vazia", bruto, titulo: "", linhas: [], grade: [] };
+  if (!comTexto.length) return { forma: "vazia", tipo, bruto, titulo: "", linhas: [], grade: [] };
   const titulo = comTexto[0];
   const corpo = comTexto.slice(1);
-  if (tipo === "pptx") return { forma: "lamina", bruto, titulo, linhas: corpo.slice(0, LINHAS_LAMINA), grade: [] };
+  if (tipo === "pptx") return { forma: "lamina", tipo, bruto, titulo, linhas: corpo.slice(0, LINHAS_LAMINA), grade: [] };
   // Markdown: a tela renderiza o texto inteiro (as linhas não são usadas)
-  if (tipo === "md") return { forma: "pagina-md", bruto, titulo, linhas: [], grade: [] };
+  if (tipo === "md") return { forma: "pagina-md", tipo, bruto, titulo, linhas: [], grade: [] };
   // Word (e o que mais trouxe texto): parágrafos numa página
-  return { forma: "pagina", bruto, titulo, linhas: corpo.slice(0, LINHAS_PAGINA), grade: [] };
+  return { forma: "pagina", tipo, bruto, titulo, linhas: corpo.slice(0, LINHAS_PAGINA), grade: [] };
 }
 
 /**
