@@ -28,6 +28,76 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/app/media.ts
+
+### 2026-10-20 — 7a69847 — colar imagem lê todas as formas da área de transferência
+- **Local:** `onPaste`
+- **Linha:** leitura de `dt.files`, depois de `dt.items` (`kind === "file"`), `pareceImagem` (`dt.types` com `Files`/`image/*`) para `preventDefault`, e reserva `navigator.clipboard.read()`; cada tentativa grava `diag(...)` com tipos/arquivos/itens e se o documento é rascunho
+- **Por quê:** o usuário colava um print no Markdown e “nada acontecia”. No WebView2 a imagem nem sempre vem em `clipboardData.files` (às vezes só em `items` ou só pela área de transferência rica), e o handler antigo desistia em silêncio. Agora tenta as três formas e deixa rastro no diagnóstico para qualquer variação do sistema.
+
+## src/app/app.ts
+
+### 2026-10-20 — 7a69847 — colar imagem capturado no documento
+- **Local:** construtor (ligação do editor)
+- **Linha:** `this.editor.view.contentDOM.addEventListener("paste", ...)` → `document.addEventListener("paste", ..., true)` com guarda `this.editor.view.contentDOM.contains(alvo)`
+- **Por quê:** o CodeMirror pode consumir o evento de colar antes do `contentDOM` (e o alvo pode ser um filho dele). A captura no documento garante que a imagem chegue ao `onPaste` sem afetar o colar de texto (quando não há imagem, o evento segue normal).
+
+## src/broker/spell/uso.ts
+
+### 2026-10-20 — 7a69847 — palavra comum sem evidência de contexto não é questionada
+- **Local:** `trocaPorContexto`
+- **Linha:** `const frequenciaEscrita = n(idEscrita)` e `if (contaBigrama(modelo, idAnterior, id) === 0 && frequenciaEscrita >= 1000) continue;`
+- **Por quê:** a tabela de bigramas guarda só os sucessores mais frequentes de cada contexto; a ausência de “mão” depois de “à” não é erro, é recorte do modelo. Sem a candidata atestada naquele contexto, a razão caía na frequência das palavras e “mão” (1.280 usos) virava “não” (57 mil) — o falso positivo do print. Agora palavra comum só é questionada com evidência real do bigrama.
+
+## src/broker/check.ts
+
+### 2026-10-20 — 7a69847 — trocas de palavra marcadas como "escolha"
+- **Local:** `checkText` (`commonNeighbor` e `trocaPorContexto`)
+- **Linha:** `classe: "escolha"` nos dois avisos (antes sem classe)
+- **Por quê:** eram `fix` de estilo e entravam na varredura automática da pausa — “mão” → “não” aplicado sozinho no meio da digitação. A classe nova diz que a troca é pergunta de leitura; a política automática a ignora e o aviso continua no painel.
+
+## src/broker/style/punctuation.ts
+
+### 2026-10-20 — 7a69847 — vírgulas opinativas não entram sozinhas
+- **Local:** `subordinateComma` e a regra do “como” de exemplo
+- **Linha:** `push(..., false)` → `push(..., false, "escolha")` nos dois avisos “Costuma vir vírgula…”/“Antes de ‘como’…”
+- **Por quê:** “diretamente enquanto escrevo” não pede vírgula obrigatória; a regra aplicava a vírgula na pausa como se fosse correção. Agora é sugestão (classe `escolha`), no aviso e no “Corrigir tudo” — que é ação explícita.
+
+## src/app/assistant.ts
+
+### 2026-10-20 — 7a69847 — pausa não fecha o parágrafo em que se escreve; palavra não leva ponto
+- **Local:** `runIdleFix`, `runWritingCheck`, `autoFixWords`, `autoFixFinishedParagraph`, `applySaveFixes`
+- **Linha:** `parConcluido: par.concluido` → `parConcluido: false` na pausa · filtro do aviso `ponto-final` quando `doc.sliceString(par.to).trim() === ""` · `autoFixWords(..., permitirPontuacao = false)` com `temPontuacao(i.auto)` · `autoFixWords(from, to, true, true)` no parágrafo concluído e no salvar
+- **Por quê:** o cursor “no fim do parágrafo” é o estado normal de quem digita, então a pausa adicionava ponto no meio da frase (“…arquivo md.”, “…transferência.”) e a maiúscula seguinte (“Percebi”, “Ele”). O ponto agora entra quando o parágrafo fica para trás ou no salvamento; e a ortografia automática nunca acrescenta pontuação junto da palavra (o aviso fundido “palavra + falta ponto final” ficava com `auto: "transferência."`).
+
+## src/broker/types.ts
+
+### 2026-10-20 — 7a69847 — classe "escolha"
+- **Local:** `WritingIssue["classe"]`
+- **Linha:** `... | "escolha" | ClasseMarcador` e o comentário da categoria
+- **Por quê:** faltava um nome para a sugestão que depende de leitura/estilo (troca de palavra por contexto, vírgula opinativa): ela aparece e pode ser aplicada, mas nunca sozinha. Sem a classe, a política da pausa não tinha como distingui-la de uma correção de forma.
+
+## src/broker/autofix.ts
+
+### 2026-10-20 — 7a69847 — pausa ignora "escolha"
+- **Local:** `planejarVarredura`
+- **Linha:** `if (i.classe === "escolha") { diag(...); continue; }`
+- **Por quê:** a varredura aplicava qualquer `fix` sem classe estrutural — inclusive troca de palavra por contexto e vírgula opinativa. Agora elas ficam no aviso e o motivo aparece no log de decisões.
+
+## src/broker/formal.ts
+
+### 2026-10-20 — 7a69847 — correção formal ignora "escolha"
+- **Local:** `planejarCorrecaoFormal`
+- **Linha:** `if (i.classe === "escolha") { diag(...); continue; }`
+- **Por quê:** a ação explícita também não deve decidir leitura/estilo (o filtro estrutural já barrava a troca de palavra, mas a vírgula opinativa passaria como pontuação). Agora “Formatar texto” só mexe no que é forma.
+
+## scripts/testar-escrita.mjs
+
+### 2026-10-20 — 7a69847 — sonda espelha a política nova
+- **Local:** `planejado` e a sonda A2
+- **Linha:** `parTo` no `planejado`, corte do `ponto-final` dentro do parágrafo atual, `escolha` no conjunto de registro e corte de `auto` com pontuação
+- **Por quê:** a sonda precisa medir o que o app faria de verdade; sem isso ela continuaria contando pontos no parágrafo em digitação e vírgulas opinativas como se fossem automáticos.
+
 ## src/broker/diag.ts
 
 ### 2026-10-19 — 2d4e6c6 — log de decisões do corretor (novo arquivo)
