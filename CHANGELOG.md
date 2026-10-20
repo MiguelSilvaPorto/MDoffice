@@ -1844,6 +1844,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+
+- **O aviso “Salvar alterações?” agora é arrastável**: o pop-up de confirmação ao fechar uma aba
+  com alterações (Word, PowerPoint e Excel) ficava preso no centro e cobria o documento. A barra
+  de título virou a alça (pointer events, com captura): arrasta com o mouse/dedo, fica limitado à
+  janela e volta ao centro com duplo clique. Botões e campos da barra continuam clicáveis.
 - **Arrastar a aba para fora da janela abre o documento numa janela própria**: o gesto da aba (que
   já reordenava) agora detecta o ponteiro **fora da janela** — soltar ali abre o documento numa
   **janela independente** ("quero pegar a aba e arrastar para fora… a aba ganha seu aplicativo de

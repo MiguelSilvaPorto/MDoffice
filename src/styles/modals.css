@@ -23,6 +23,21 @@
   overflow: hidden;
 }
 
+/* Pop-up arrastável: a barra de título é a alça; o movimento é um translate
+   (o backdrop continua centralizando e o duplo clique volta ao centro). */
+.modal .wm-head.arrastavel {
+  cursor: grab;
+  touch-action: none;
+}
+
+.modal.arrastando .wm-head.arrastavel {
+  cursor: grabbing;
+}
+
+.modal.arrastando {
+  user-select: none;
+}
+
 .draw-modal .dr-head {
   display: flex;
   align-items: center;

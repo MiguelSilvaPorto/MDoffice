@@ -13,7 +13,7 @@ import { deserialize as wordDeserialize, serialize as wordSerialize, type PageSe
 import { plainText } from "../word/schema";
 import { type Node as PMNode } from "prosemirror-model";
 import { bytesToBase64 } from "../util";
-import { $, h, toast, baseName, joinPath, fmtTime, slugify } from "../util";
+import { $, h, toast, baseName, joinPath, fmtTime, slugify, tornarArrastavel } from "../util";
 
 export const wordDocsMethods = {
   /** Cria uma aba de documento Word (sem ativá-la). */
@@ -260,6 +260,8 @@ export const wordDocsMethods = {
           <button class="btn primary" data-save>Salvar</button>
         </footer>`;
       modal.querySelector("b")!.textContent = name;
+      // o pop-up pode ser tirado da frente do documento pela barra de título
+      tornarArrastavel(modal);
       backdrop.append(modal);
       document.body.append(backdrop);
       const done = (v: "save" | "discard" | "cancel") => {

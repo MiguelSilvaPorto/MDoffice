@@ -169,6 +169,79 @@ export async function copyText(text: string): Promise<boolean> {
   }
 }
 
+// ---------- arrastar pop-up ----------
+
+/**
+ * Deixa um pop-up arrastável pela barra de título.
+ *
+ * O modal continua centralizado pelo `.modal-backdrop` (flex); o arrasto é só um
+ * `translate`, então o layout não muda e o pop-up volta ao centro com duplo clique na
+ * barra. O movimento fica limitado à janela (não dá para jogar o pop-up para fora e
+ * perder os botões).
+ */
+export function tornarArrastavel(modal: HTMLElement, seletorAlca = ".wm-head"): void {
+  const alca = modal.querySelector<HTMLElement>(seletorAlca);
+  if (!alca) return;
+  alca.classList.add("arrastavel");
+  let deslocX = 0;
+  let deslocY = 0;
+  let inicio: { x: number; y: number; dx: number; dy: number; base: { left: number; top: number; width: number; height: number } } | null = null;
+
+  const aplicar = () => {
+    modal.style.transform = deslocX || deslocY ? `translate(${deslocX}px, ${deslocY}px)` : "";
+  };
+  const soltar = (e: PointerEvent) => {
+    if (!inicio) return;
+    inicio = null;
+    modal.classList.remove("arrastando");
+    try {
+      if (alca.hasPointerCapture(e.pointerId)) alca.releasePointerCapture(e.pointerId);
+    } catch {
+      /* sem captura */
+    }
+  };
+
+  alca.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    // botões e campos na barra continuam clicáveis
+    if ((e.target as HTMLElement).closest("button, a, input, select, textarea")) return;
+    e.preventDefault();
+    const r = modal.getBoundingClientRect();
+    inicio = {
+      x: e.clientX,
+      y: e.clientY,
+      dx: deslocX,
+      dy: deslocY,
+      base: { left: r.left - deslocX, top: r.top - deslocY, width: r.width, height: r.height },
+    };
+    modal.classList.add("arrastando");
+    try {
+      alca.setPointerCapture(e.pointerId);
+    } catch {
+      /* ponteiro sintético (teste) não tem captura */
+    }
+  });
+
+  alca.addEventListener("pointermove", (e) => {
+    if (!inicio) return;
+    const margem = 8;
+    const { base } = inicio;
+    const limitar = (v: number, min: number, max: number) => (max < min ? (min + max) / 2 : Math.min(max, Math.max(min, v)));
+    deslocX = limitar(inicio.dx + (e.clientX - inicio.x), margem - base.left, window.innerWidth - margem - (base.left + base.width));
+    deslocY = limitar(inicio.dy + (e.clientY - inicio.y), margem - base.top, window.innerHeight - margem - (base.top + base.height));
+    aplicar();
+  });
+
+  alca.addEventListener("pointerup", soltar);
+  alca.addEventListener("pointercancel", soltar);
+  alca.addEventListener("dblclick", (e) => {
+    if ((e.target as HTMLElement).closest("button, a, input, select, textarea")) return;
+    deslocX = 0;
+    deslocY = 0;
+    aplicar();
+  });
+}
+
 // ---------- localStorage ----------
 
 export function loadJSON<T>(key: string, fallback: T): T {

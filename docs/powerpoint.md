@@ -8,6 +8,9 @@ avisado ao abrir (nunca some em silêncio).
 - **Apresentação nova já salva na pasta padrão**: `+ → Apresentação PowerPoint` cria e guarda de
   uma vez em `Documentos\mdOffice\PowerPoint\Documento.pptx`, sem perguntar pasta ("Salvar
   como…" escolhe outro lugar). A raiz entra sozinha nos **Projetos**, com uma subpasta por tipo.
+- **Aviso “Salvar alterações?” arrastável**: ao fechar uma aba com alterações, o pop-up pode
+  ser **arrastado pela barra de título** para sair da frente do documento (duplo clique na barra
+  volta ao centro).
 - Lê cada lâmina como o PowerPoint a monta: formas posicionadas com precisão (grupos, rotação
   e espelhamento), retângulos arredondados, elipses, setas e formas livres; preenchimento
   sólido, em gradiente e com imagem; contornos; sombras; imagens com recorte; fundos da lâmina;

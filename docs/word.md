@@ -74,6 +74,9 @@ arquivos `.docx` de verdade.
   gravado no `Ctrl+S` (o motor pode simplificar comentários, revisões, campos). O selo da barra
   mostra **Não salvo** enquanto houver alterações pendentes e o aviso explica na primeira vez —
   o histórico guarda cópias de qualquer jeito.
+- **Aviso “Salvar alterações?” arrastável**: ao fechar uma aba com alterações, o pop-up pode
+  ser **arrastado pela barra de título** para sair da frente do documento (duplo clique na barra
+  volta ao centro).
 - **Exportar PDF** imprime a própria folha (com páginas, cabeçalho e rodapé).
 - **Importar do Office**: abre `.docx` direto das pastas do Office (e explica os formatos
   antigos `.doc`).

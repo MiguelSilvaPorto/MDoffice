@@ -168,6 +168,27 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** `const emWorktree = /[\\/]\.worktrees[\\/][^\\/]+$/.test(process.cwd());` · `ignored: [..., ...(emWorktree ? [] : ["**/.worktrees/**"])]` · `usePolling: true, interval: 400` · estáticos grandes em `ignored`
 - **Por quê:** o padrão `**/.worktrees/**` ignorava a **raiz inteira** quando o Vite roda dentro de uma worktree — nenhuma edição era vista e o dev server servia módulos velhos até reiniciar (o HMR “não chegava”). Fora da worktree a proteção contra observar as worktrees dos outros continua. O polling cobre o watcher nativo que não avisava mudanças na unidade A:; os arquivos grandes (dicionário, n-gramas, modelos) ficam fora da varredura para não pesar.
 
+## src/util.ts
+
+### 2026-10-20 — feat/popup-arrastavel — `tornarArrastavel` (novo)
+- **Local:** `tornarArrastavel`
+- **Linha:** nova função (translate + pointer capture + limite na janela + duplo clique)
+- **Por quê:** o pop-up de confirmação ficava fixo no centro e cobria o documento; o usuário queria tirá-lo da frente. O arrasto é um `transform` (o backdrop continua centralizando), então o layout não muda; o movimento fica limitado à janela (não dá para perder os botões) e o duplo clique na barra volta ao centro.
+
+## src/app/wordDocs.ts
+
+### 2026-10-20 — feat/popup-arrastavel — pop-up de salvar arrastável
+- **Local:** `askSaveChanges`
+- **Linha:** `tornarArrastavel(modal);` depois de montar o HTML do modal
+- **Por quê:** é o mesmo modal usado por Word, PowerPoint e Excel (os três chamam este método). Só a barra de título arrasta — botões e campos continuam clicáveis.
+
+## src/styles/modals.css
+
+### 2026-10-20 — feat/popup-arrastavel — alça do pop-up
+- **Local:** regra nova depois de `.modal`
+- **Linha:** `.modal .wm-head.arrastavel { cursor: grab; touch-action: none; }`, `.modal.arrastando .wm-head.arrastavel { cursor: grabbing; }` e `.modal.arrastando { user-select: none; }`
+- **Por quê:** mostrar que a barra pode ser agarrada, impedir a seleção de texto durante o arrasto e desligar o gesto de toque nela (no touch, o arrasto vira movimento do pop-up).
+
 ## src/broker/diag.ts
 
 ### 2026-10-19 — 2d4e6c6 — log de decisões do corretor (novo arquivo)

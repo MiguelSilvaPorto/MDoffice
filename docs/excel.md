@@ -18,6 +18,9 @@ Planilha com grade que cresce sob demanda, fórmulas em português e abertura de
 - **Salvamento automático**: rascunhos do app são regravados sozinhos; uma planilha **sua** só é
   gravada no `Ctrl+S` — o selo da barra mostra **Não salvo** enquanto houver alterações pendentes
   (o histórico guarda cópias de qualquer jeito).
+- **Aviso “Salvar alterações?” arrastável**: ao fechar uma aba com alterações, o pop-up pode
+  ser **arrastado pela barra de título** para sair da frente da planilha (duplo clique na barra
+  volta ao centro).
 
 ## Fita (abas Início, Fórmulas e Exibir)
 
