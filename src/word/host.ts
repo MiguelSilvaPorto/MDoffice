@@ -49,7 +49,7 @@ export interface WordStats {
 }
 
 /** Os modos de exibição da folha (aba Exibir). */
-export type ModoExibicao = "impressao" | "rascunho" | "leitura";
+export type ModoExibicao = "impressao" | "rascunho" | "leitura" | "livro";
 
 /** O que a fita precisa saber para marcar o que está ligado. */
 export interface EstadoExibicao {
@@ -113,8 +113,15 @@ export class WordHost {
             getSetup: () => this.editor.setup,
             // no modo Rascunho o texto é contínuo: não há quebras de página
             ativo: () => this.modo !== "rascunho",
+            // no modo Livro a paginação monta a grade de duas páginas por faixa
+            modo: () => (this.modo === "livro" ? "livro" : "normal"),
             onPages: (n) => {
               this.pages = n;
+              // o livro mede as faixas de duas páginas: a altura muda com o número de páginas
+              if (this.modo === "livro") {
+                this.sheet.style.setProperty("--pg-livro-h", `${Math.round(this.alturaDoLivro())}px`);
+                this.fitHolder();
+              }
               this.statusSoon();
             },
           }),
@@ -148,6 +155,8 @@ export class WordHost {
     this.reguas = new Reguas(q<HTMLCanvasElement>("#wd-regua-h"), q<HTMLCanvasElement>("#wd-regua-v"), {
       getSetup: () => this.editor.setup,
       getZoom: () => this.zoom,
+      // no modo livro a folha mede duas páginas de largura
+      getPaginas: () => (this.modo === "livro" ? 2 : 1),
     });
 
     // clique direito no documento abre o MENU DO APP no ponto clicado: o nativo do WebView2
@@ -226,7 +235,9 @@ export class WordHost {
     st.setProperty("--mr", `${Math.round(s.margins.right * CM_TO_PX)}px`);
     st.setProperty("--wd-font", `'${s.defaultFont}', 'Segoe UI', sans-serif`);
     st.setProperty("--wd-size", `${s.defaultSize}pt`);
-    this.zoomEl.style.width = `${w}px`;
+    // no modo livro a folha mede duas páginas de largura e as faixas de duas páginas de altura
+    st.setProperty("--pg-livro-h", `${Math.round(this.alturaDoLivro())}px`);
+    this.zoomEl.style.width = `${this.larguraDaVista()}px`;
     // o TAMANHO DO PAPEL à vista (o papel vem do Configurar Página/Tamanho; o que muda de tamanho
     // na tela é a vista — o usuário leu a folha pequena do zoom como "o papel mudou" e este rótulo
     // responde a pergunta)
@@ -286,7 +297,8 @@ export class WordHost {
 
   /**
    * Troca o modo de exibição da folha: **Impressão** (a folha com as páginas de verdade),
-   * **Rascunho** (o texto contínuo, sem a folha) ou **Leitura** (uma coluna confortável).
+   * **Rascunho** (o texto contínuo, sem a folha), **Leitura** (uma coluna confortável) ou
+   * **Livro** (a folha aberta: duas páginas lado a lado, com a lombada no meio).
    */
   setModo(modo: ModoExibicao): void {
     if (this.modo === modo) return;
@@ -294,10 +306,25 @@ export class WordHost {
     const pane = this.opts.pane;
     pane.classList.toggle("wd-modo-rascunho", modo === "rascunho");
     pane.classList.toggle("wd-modo-leitura", modo === "leitura");
+    pane.classList.toggle("wd-modo-livro", modo === "livro");
     // o modo muda a folha: refaz o papel e a paginação
     this.applySetup();
     requestPagination(this.editor.view);
     this.ribbon?.update();
+  }
+
+  /** A largura da folha na tela (no modo livro, duas páginas lado a lado). */
+  private larguraDaVista(): number {
+    const { w } = pageSizePx(this.editor.setup);
+    return this.modo === "livro" ? w * 2 : w;
+  }
+
+  /** A altura do livro: as faixas de duas páginas, uma embaixo da outra. */
+  private alturaDoLivro(): number {
+    const { h } = pageSizePx(this.editor.setup);
+    const passo = h + GAP_PX;
+    const faixas = Math.max(1, Math.ceil(this.pages / 2));
+    return (faixas - 1) * passo + h;
   }
 
   /** Liga/desliga a régua (horizontal e vertical). */
@@ -313,9 +340,9 @@ export class WordHost {
    * caminho é o "Ajustar", que faz a LARGURA caber.
    */
   private fitPage(): void {
-    const { h } = pageSizePx(this.editor.setup);
+    const altura = this.modo === "livro" ? this.alturaDoLivro() : pageSizePx(this.editor.setup).h;
     const disponivel = this.stage.clientHeight - 106; // o respiro do palco (em cima e embaixo)
-    if (disponivel > 0 && h > 0) this.setZoom(Math.min(2, disponivel / h));
+    if (disponivel > 0 && altura > 0) this.setZoom(Math.min(2, disponivel / altura));
   }
 
   /**
@@ -324,14 +351,14 @@ export class WordHost {
    * Nunca AUMENTA além de 100%: "caber" é para quando não cabe.
    */
   private fitToWidth(): void {
-    const { w } = pageSizePx(this.editor.setup);
+    const largura = this.larguraDaVista();
     const disponivel = this.stage.clientWidth - 32;
-    if (disponivel > 0 && w > 0) this.setZoom(Math.min(1, disponivel / w));
+    if (disponivel > 0 && largura > 0) this.setZoom(Math.min(1, disponivel / largura));
   }
 
   private fitHolder(): void {
-    const { w } = pageSizePx(this.editor.setup);
-    this.holder.style.width = `${Math.round(w * this.zoom)}px`;
+    const largura = this.larguraDaVista();
+    this.holder.style.width = `${Math.round(largura * this.zoom)}px`;
     this.holder.style.height = `${Math.round(this.zoomEl.offsetHeight * this.zoom)}px`;
   }
 
@@ -482,7 +509,14 @@ export class WordHost {
       const padTop = parseFloat(getComputedStyle(view.dom).paddingTop) || 0;
       const c = view.coordsAtPos(view.state.selection.head);
       const y = (c.top - box.top) / scale - padTop;
-      const stride = pageSizePx(this.editor.setup).h + GAP_PX;
+      const { w, h } = pageSizePx(this.editor.setup);
+      const stride = h + GAP_PX;
+      if (this.modo === "livro") {
+        // na grade do livro a página vem da FAIXA (o alto) e da COLUNA (o lado)
+        const faixa = Math.max(0, Math.floor((y + 4) / stride));
+        const coluna = (c.left - box.left) / scale >= w ? 1 : 0;
+        return Math.min(this.pages, faixa * 2 + coluna + 1);
+      }
       return Math.min(this.pages, Math.max(1, Math.floor((y + 4) / stride) + 1));
     } catch {
       return 1;

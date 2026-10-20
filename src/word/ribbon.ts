@@ -26,8 +26,8 @@ export interface RibbonHooks {
   /** Suplementos / extensões */
   onAddons?: () => void;
   // ---------- aba Exibir ----------
-  /** Troca o modo de exibição da folha (impressão, rascunho, leitura). */
-  setModo?: (modo: "impressao" | "rascunho" | "leitura") => void;
+  /** Troca o modo de exibição da folha (impressão, rascunho, leitura, livro). */
+  setModo?: (modo: "impressao" | "rascunho" | "leitura" | "livro") => void;
   /** Liga/desliga a régua. */
   alternarRegua?: () => void;
   /** O zoom da vista. */
@@ -201,6 +201,7 @@ export class Ribbon {
               ${btn("view-print", icon("i-doc") + "<span>Impressão</span>", "Layout de impressão: a folha com as páginas de verdade", "big")}
               ${btn("view-draft", icon("i-text") + "<span>Rascunho</span>", "Rascunho: o texto contínuo, sem a folha nem as quebras de página", "big")}
               ${btn("view-reading", icon("i-eye") + "<span>Leitura</span>", "Leitura: uma coluna confortável, sem as bordas do papel", "big")}
+              ${btn("view-book", icon("i-columns") + "<span>Livro</span>", "Livro: a folha aberta, com duas páginas lado a lado e a lombada no meio", "big")}
             </div>`)}
           ${group("Mostrar", `
             <div class="rb-col">
@@ -450,6 +451,7 @@ export class Ribbon {
       marcado("view-print", ex.modo === "impressao");
       marcado("view-draft", ex.modo === "rascunho");
       marcado("view-reading", ex.modo === "leitura");
+      marcado("view-book", ex.modo === "livro");
       marcado("ruler", ex.regua);
     }
   }
@@ -634,6 +636,8 @@ export class Ribbon {
         return this.hooks.setModo?.("rascunho");
       case "view-reading":
         return this.hooks.setModo?.("leitura");
+      case "view-book":
+        return this.hooks.setModo?.("livro");
       case "ruler":
         return this.hooks.alternarRegua?.();
       case "zoom-menu":

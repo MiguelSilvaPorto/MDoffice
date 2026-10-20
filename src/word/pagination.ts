@@ -8,12 +8,41 @@ import { fillHeaderFooter, pageSizePx, CM_TO_PX, type PageSetup } from "./model"
 
 export const GAP_PX = 28;
 
+/** O modo da folha: "normal" (uma página por faixa) ou "livro" (duas páginas lado a lado). */
+export type ModoPagina = "normal" | "livro";
+
 export interface PaginationHooks {
   getSetup: () => PageSetup;
   /** Quantas páginas o documento tem agora. */
   onPages: (count: number) => void;
   /** A paginação está ligada? (no modo Rascunho o texto é contínuo: não há páginas) */
   ativo?: () => boolean;
+  /** O modo da folha (o livro monta a grade de duas páginas por faixa). */
+  modo?: () => ModoPagina;
+}
+
+/** O passo entre uma página e a seguinte no fluxo (a altura da página + o vão). */
+export function passoDaPagina(setup: PageSetup): number {
+  return pageSizePx(setup).h + GAP_PX;
+}
+
+/**
+ * Onde a página N cai na grade do livro: duas por faixa (a primeira à esquerda, a segunda à
+ * direita) e as faixas uma embaixo da outra. O deslocamento sai da posição natural da página
+ * no fluxo (uma pilha) — é ele que vira o `transform` de cada bloco.
+ */
+export function lugarDaPagina(pagina: number, larguraPagina: number, passo: number): { dx: number; dy: number } {
+  return { dx: (pagina % 2) * larguraPagina, dy: (Math.floor(pagina / 2) - pagina) * passo };
+}
+
+/** Hash curto (a assinatura da paginação não pode crescer com o documento). */
+function hashCurto(s: string): string {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0).toString(36);
 }
 
 interface PState {
@@ -41,15 +70,25 @@ function hf(text: string, page: number, total: number): string {
 }
 
 function buildSpacer(s: Spacer, total: number, setup: PageSetup): HTMLElement {
-  const mt = Math.round(setup.margins.top * CM_TO_PX);
-  const mb = Math.round(setup.margins.bottom * CM_TO_PX);
   const el = document.createElement("div");
   el.className = "wd-spacer";
   el.contentEditable = "false";
   el.style.height = `${Math.max(0, Math.round(s.height))}px`;
+  el.append(buildFill(), buildFoot(s, total, setup));
+  if (!s.end) el.append(buildGap(setup), buildHead(s, total, setup));
+  return el;
+}
 
+/** O espaço vazio que sobrou na página (o rodapé desce para o fim dela). */
+function buildFill(): HTMLElement {
   const fill = document.createElement("div");
   fill.className = "wd-sp-fill";
+  return fill;
+}
+
+/** O rodapé da página (com o número, se o documento pedir). */
+function buildFoot(s: Spacer, total: number, setup: PageSetup): HTMLElement {
+  const mb = Math.round(setup.margins.bottom * CM_TO_PX);
   const foot = document.createElement("div");
   foot.className = "wd-sp-foot";
   foot.style.height = `${mb}px`;
@@ -57,21 +96,56 @@ function buildSpacer(s: Spacer, total: number, setup: PageSetup): HTMLElement {
   if (setup.footer.trim()) parts.push(hf(setup.footer, s.endsPage + 1, total));
   if (setup.pageNumbers) parts.push(`Página ${s.endsPage + 1} de ${total}`);
   foot.textContent = parts.join("   ·   ");
-  el.append(fill, foot);
+  return foot;
+}
 
-  if (!s.end) {
-    const gap = document.createElement("div");
-    gap.className = "wd-sp-gap";
-    gap.style.height = `${GAP_PX}px`;
-    // o vão cinza sai das margens para ocupar a largura toda da folha
-    gap.style.marginLeft = `-${Math.round(setup.margins.left * CM_TO_PX)}px`;
-    gap.style.marginRight = `-${Math.round(setup.margins.right * CM_TO_PX)}px`;
-    const head = document.createElement("div");
-    head.className = "wd-sp-head";
-    head.style.height = `${mt}px`;
-    head.textContent = hf(setup.header, s.endsPage + 2, total);
-    el.append(gap, head);
-  }
+/** O vão cinza entre uma página e a outra. */
+function buildGap(setup: PageSetup): HTMLElement {
+  const gap = document.createElement("div");
+  gap.className = "wd-sp-gap";
+  gap.style.height = `${GAP_PX}px`;
+  // o vão cinza sai das margens para ocupar a largura toda da folha
+  gap.style.marginLeft = `-${Math.round(setup.margins.left * CM_TO_PX)}px`;
+  gap.style.marginRight = `-${Math.round(setup.margins.right * CM_TO_PX)}px`;
+  return gap;
+}
+
+/** O cabeçalho da página que vem a seguir. */
+function buildHead(s: Spacer, total: number, setup: PageSetup): HTMLElement {
+  const mt = Math.round(setup.margins.top * CM_TO_PX);
+  const head = document.createElement("div");
+  head.className = "wd-sp-head";
+  head.style.height = `${mt}px`;
+  head.textContent = hf(setup.header, s.endsPage + 2, total);
+  return head;
+}
+
+/**
+ * No modo LIVRO o espaçador se divide em dois: o **rodapé** viaja com a página que termina
+ * (ele fica no pé dela) e o **cabeçalho** com a página seguinte (no topo dela) — na grade do
+ * livro as duas páginas de uma faixa estão lado a lado, e um bloco só não poderia ficar nos
+ * dois lugares ao mesmo tempo.
+ */
+function buildRodape(s: Spacer, total: number, setup: PageSetup, lugar: { dx: number; dy: number }): HTMLElement {
+  const mt = Math.round(setup.margins.top * CM_TO_PX);
+  const el = document.createElement("div");
+  el.className = "wd-spacer wd-sp-rodape";
+  el.contentEditable = "false";
+  el.style.height = `${Math.max(0, Math.round(s.height - GAP_PX - mt))}px`;
+  el.style.transform = `translate(${Math.round(lugar.dx)}px, ${Math.round(lugar.dy)}px)`;
+  el.append(buildFill(), buildFoot(s, total, setup));
+  return el;
+}
+
+/** O vão e o cabeçalho da página seguinte (viajam com ela). */
+function buildTopo(s: Spacer, total: number, setup: PageSetup, lugar: { dx: number; dy: number }): HTMLElement {
+  const mt = Math.round(setup.margins.top * CM_TO_PX);
+  const el = document.createElement("div");
+  el.className = "wd-spacer wd-sp-topo";
+  el.contentEditable = "false";
+  el.style.height = `${GAP_PX + mt}px`;
+  el.style.transform = `translate(${Math.round(lugar.dx)}px, ${Math.round(lugar.dy)}px)`;
+  el.append(buildGap(setup), buildHead(s, total, setup));
   return el;
 }
 
@@ -115,7 +189,14 @@ function lineBoxes(el: HTMLElement, origin: number, scale: number): { top: numbe
   return lines;
 }
 
-function measure(view: EditorView, setup: PageSetup): { spacers: Spacer[]; pages: number } {
+interface FolhaMedida {
+  pos: number;
+  tamanho: number;
+  /** a página (0-based) onde a folha cai */
+  pagina: number;
+}
+
+function measure(view: EditorView, setup: PageSetup): { spacers: Spacer[]; pages: number; folhas: FolhaMedida[] } {
   const { h: pageH } = pageSizePx(setup);
   const mt = Math.round(setup.margins.top * CM_TO_PX);
   const mb = Math.round(setup.margins.bottom * CM_TO_PX);
@@ -125,6 +206,7 @@ function measure(view: EditorView, setup: PageSetup): { spacers: Spacer[]; pages
   const dom = view.dom as HTMLElement;
   dom.classList.add("wd-measuring");
   const spacers: Spacer[] = [];
+  const folhas: FolhaMedida[] = [];
   let page = 0;
   try {
     const box = dom.getBoundingClientRect();
@@ -210,6 +292,8 @@ function measure(view: EditorView, setup: PageSetup): { spacers: Spacer[]; pages
         bottom += s;
         page++;
       }
+      // a folha ficou nesta página (o modo livro usa isso para montar a grade)
+      folhas.push({ pos: leaf.pos, tamanho: leaf.node.nodeSize, pagina: page });
       lastBottom = Math.max(lastBottom, bottom);
       // bloco que atravessou várias páginas (tabela enorme): a página atual acompanha
       const reached = Math.floor((bottom - mbot - 1) / stride);
@@ -222,7 +306,7 @@ function measure(view: EditorView, setup: PageSetup): { spacers: Spacer[]; pages
   } finally {
     dom.classList.remove("wd-measuring");
   }
-  return { spacers, pages: page + 1 };
+  return { spacers, pages: page + 1, folhas };
 }
 
 export function paginationPlugin(hooks: PaginationHooks): Plugin<PState> {
@@ -262,14 +346,56 @@ export function paginationPlugin(hooks: PaginationHooks): Plugin<PState> {
           return;
         }
         const setup = hooks.getSetup();
-        const { spacers, pages } = measure(view, setup);
+        const { spacers, pages, folhas } = measure(view, setup);
         hooks.onPages(pages);
-        const sig = JSON.stringify(spacers.map((s) => [s.pos, Math.round(s.height), s.end ? 1 : 0])) + pages + JSON.stringify(setup);
+        const livro = hooks.modo?.() === "livro";
+        const sig =
+          JSON.stringify(spacers.map((s) => [s.pos, Math.round(s.height), s.end ? 1 : 0])) +
+          pages +
+          JSON.stringify(setup) +
+          (livro ? "|livro" : "|normal") +
+          (livro ? hashCurto(folhas.map((f) => `${f.pos}:${f.pagina}`).join(",")) : "");
         if (sig === signature) return;
         signature = sig;
-        const decos = spacers.map((s) =>
-          Decoration.widget(s.pos, () => buildSpacer(s, pages, setup), { side: s.end ? 1 : -1, key: `sp-${s.pos}-${Math.round(s.height)}-${s.endsPage}-${pages}-${setup.footer}-${setup.header}-${setup.pageNumbers}` })
-        );
+        const decos: Decoration[] = [];
+        if (livro) {
+          // MODO LIVRO: cada bloco é levado para a casa da sua página na grade (duas por
+          // faixa). A medição acontece SEM o deslocamento (a classe `wd-measuring` desliga
+          // o `transform`), senão as caixas mediriam a página já movida.
+          const { w: larguraPagina } = pageSizePx(setup);
+          const passo = passoDaPagina(setup);
+          for (const f of folhas) {
+            const { dx, dy } = lugarDaPagina(f.pagina, larguraPagina, passo);
+            decos.push(
+              Decoration.node(f.pos, f.pos + f.tamanho, {
+                class: "wd-livro",
+                style: `transform:translate(${Math.round(dx)}px, ${Math.round(dy)}px)`,
+              }),
+            );
+          }
+          // o espaçador se divide: o rodapé fica no pé da página que termina, o cabeçalho
+          // no topo da seguinte (na grade, as duas páginas de uma faixa estão lado a lado)
+          for (const s of spacers) {
+            const base = `sp-${s.pos}-${Math.round(s.height)}-${s.endsPage}-${pages}-${setup.footer}-${setup.header}-${setup.pageNumbers}`;
+            const a = lugarDaPagina(s.endsPage, larguraPagina, passo);
+            decos.push(
+              Decoration.widget(s.pos, () => buildRodape(s, pages, setup, a), { side: s.end ? 1 : -1, key: `${base}-rod` }),
+            );
+            if (!s.end) {
+              const b = lugarDaPagina(s.endsPage + 1, larguraPagina, passo);
+              decos.push(Decoration.widget(s.pos, () => buildTopo(s, pages, setup, b), { side: -1, key: `${base}-topo` }));
+            }
+          }
+        } else {
+          for (const s of spacers) {
+            decos.push(
+              Decoration.widget(s.pos, () => buildSpacer(s, pages, setup), {
+                side: s.end ? 1 : -1,
+                key: `sp-${s.pos}-${Math.round(s.height)}-${s.endsPage}-${pages}-${setup.footer}-${setup.header}-${setup.pageNumbers}`,
+              }),
+            );
+          }
+        }
         view.dispatch(view.state.tr.setMeta(paginationKey, { deco: DecorationSet.create(view.state.doc, decos) }).setMeta("addToHistory", false));
       };
       const schedule = (delay = 90) => {

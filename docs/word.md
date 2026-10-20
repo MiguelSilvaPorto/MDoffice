@@ -51,10 +51,13 @@ arquivos `.docx` de verdade.
 - Abas **Início**, **Inserir**, **Layout**, **Revisão** e **Exibir** (e a aba contextual **Tabela**
   quando o cursor está numa tabela).
 - **Exibir**: os **modos de exibição** — **Impressão** (a folha com as páginas de verdade),
-  **Rascunho** (o texto contínuo, sem a folha nem as quebras de página) e **Leitura** (uma coluna
-  confortável, com a letra e o entrelinha maiores, sem as bordas do papel); a **régua**
-  (horizontal e vertical, com as margens sombreadas e as medidas em centímetros, que acompanha o
-  papel, as margens e o zoom); e o **zoom** (50/75/100/150/200%, *Ajustar* e *Página inteira*).
+  **Rascunho** (o texto contínuo, sem a folha nem as quebras de página), **Leitura** (uma coluna
+  confortável, com a letra e o entrelinha maiores, sem as bordas do papel) e **Livro** (a folha
+  **aberta**: a página 1 à esquerda, a 2 à direita, a 3 e a 4 na faixa de baixo, com a **lombada
+  no meio**); a **régua** (horizontal e vertical, com as margens sombreadas e as medidas em
+  centímetros, que acompanha o papel, as margens e o zoom); e o **zoom** (50/75/100/150/200%,
+  *Ajustar* e *Página inteira*). O modo **Livro** é da tela: no impresso e no PDF a folha volta
+  a ter uma página de largura e o texto sai na sequência.
 - **Fonte**: família e tamanho, negrito/itálico/sublinhado/riscado, sub/sobrescrito,
   **cor da letra** e **destaque** (marca-texto), limpar formatação. Os dois campos **mostram o
   que o documento tem** (fonte ou tamanho vindo de um `.docx` fora da lista não some) e aceitam

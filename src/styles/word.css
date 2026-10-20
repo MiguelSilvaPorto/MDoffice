@@ -1313,6 +1313,69 @@ body.settings-open #word-pane {
     --wd-filete: #b8bec8;
     --wd-link: #0b5bd3;
   }
+
+  /* O modo LIVRO é da TELA: no impresso a folha volta a ter uma página de largura e o
+     texto sai na sequência (é o @page do navegador que pagina). */
+  body.word-open #word-pane.wd-modo-livro .wd-sheet {
+    width: var(--pg-w) !important;
+    min-height: var(--pg-h) !important;
+    background: var(--wd-papel) !important;
+  }
+
+  body.word-open #word-pane.wd-modo-livro .wd-doc {
+    width: auto !important;
+    height: auto !important;
+  }
+
+  .wd-livro {
+    transform: none !important;
+  }
+}
+
+/* ------------------------------------------------------------------
+   MODO LIVRO: a folha vira um livro aberto — página 1 à esquerda,
+   2 à direita, 3 e 4 na faixa de baixo, com a lombada no meio.
+   A paginação leva cada bloco para a casa da sua página na grade
+   (o `transform` de cada bloco); aqui é o desenho do papel: a folha
+   mede DUAS páginas de largura e a lombada fica no meio.
+   ------------------------------------------------------------------ */
+#word-pane.wd-modo-livro .wd-sheet {
+  width: calc(var(--pg-w) * 2);
+  min-height: var(--pg-livro-h, var(--pg-h));
+  background:
+    linear-gradient(
+      90deg,
+      transparent calc(50% - 18px),
+      rgba(0, 0, 0, 0.06) calc(50% - 18px),
+      rgba(0, 0, 0, 0.16) 50%,
+      rgba(0, 0, 0, 0.06) calc(50% + 18px),
+      transparent calc(50% + 18px)
+    ),
+    var(--wd-papel);
+}
+
+/* o texto continua com a largura de UMA página (a outra metade do livro é a página ao lado) */
+#word-pane.wd-modo-livro .wd-doc {
+  width: var(--pg-w);
+  height: var(--pg-livro-h, auto);
+}
+
+/* o cabeçalho da primeira página fica na metade esquerda */
+#word-pane.wd-modo-livro .wd-hdr-first {
+  right: auto;
+  width: var(--pg-w);
+}
+
+/* o vão entre uma faixa e a outra atravessa o livro inteiro */
+#word-pane.wd-modo-livro .wd-sp-gap {
+  margin-left: calc(-1 * (var(--ml, 113px) + var(--pg-w)));
+  margin-right: calc(-1 * var(--mr, 113px));
+}
+
+/* a medição da paginação acontece SEM o deslocamento: com ele, as caixas mediriam a
+   página já movida e a quebra de página sairia errada */
+.wd-doc.wd-measuring .wd-livro {
+  transform: none !important;
 }
 
 body.home-open #word-pane {

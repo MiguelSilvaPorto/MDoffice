@@ -21,6 +21,8 @@ export interface ReguaHooks {
   getSetup: () => PageSetup;
   /** O zoom da vista (a régua acompanha). */
   getZoom: () => number;
+  /** Quantas páginas a folha mede (o modo livro mede duas, lado a lado). */
+  getPaginas?: () => number;
 }
 
 interface Cores {
@@ -100,10 +102,11 @@ export class Reguas {
     const s = this.hooks.getSetup();
     const zoom = this.hooks.getZoom();
     const { w } = pageSizePx(s);
+    const paginas = Math.max(1, this.hooks.getPaginas?.() ?? 1);
     const ml = Math.round(s.margins.left * CM_TO_PX);
     const mr = Math.round(s.margins.right * CM_TO_PX);
     const dpr = window.devicePixelRatio || 1;
-    const larguraTela = Math.max(1, Math.round(w * zoom));
+    const larguraTela = Math.max(1, Math.round(w * paginas * zoom));
     canvas.width = Math.max(1, Math.round(larguraTela * dpr));
     canvas.height = Math.max(1, Math.round(ESPESSURA * dpr));
     canvas.style.width = `${larguraTela}px`;
@@ -116,8 +119,11 @@ export class Reguas {
     ctx.fillRect(0, 0, larguraTela, ESPESSURA);
     // as margens do papel sombreadas: a parte clara é a área de texto
     ctx.fillStyle = "rgba(128,128,128,0.30)";
-    ctx.fillRect(0, 0, ml * zoom, ESPESSURA);
-    ctx.fillRect(larguraTela - mr * zoom, 0, mr * zoom, ESPESSURA);
+    for (let p = 0; p < paginas; p++) {
+      const base = p * w * zoom;
+      ctx.fillRect(base, 0, ml * zoom, ESPESSURA);
+      ctx.fillRect(base + larguraTela / paginas - mr * zoom, 0, mr * zoom, ESPESSURA);
+    }
     ctx.strokeStyle = cores.tinta;
     ctx.fillStyle = cores.tinta;
     ctx.lineWidth = 1;

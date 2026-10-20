@@ -394,6 +394,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada no momento)
 
 **Frontend**
+- **O Word ganhou o modo LIVRO** (aba **Exibir** ▸ *Modos de Exibição*): a folha vira um **livro
+  aberto** — a página 1 fica à esquerda, a 2 à direita, a 3 e a 4 na faixa de baixo, com a
+  **lombada no meio**. A paginação monta essa grade: cada bloco é levado para a casa da sua
+  página (a primeira de cada faixa à esquerda, a segunda à direita) e o rodapé e o cabeçalho
+  viajam com a página a que pertencem (o espaçador se divide em dois — senão o rodapé de uma
+  página cairia no pé da outra). A folha passa a medir **duas páginas de largura** e a régua,
+  o *Ajustar* e o *Página inteira* acompanham o livro. No **impresso** (e no PDF) o modo é da
+  tela: a folha volta a ter uma página de largura e o texto sai na sequência, como antes.
+
 - **O Word ganhou a aba Exibir** (entre **Revisão** e **Tabela**): até agora o motor do documento só tinha
   Início, Inserir, Layout e Revisão — e o `docs/word.md` prometia uma régua que o código nunca teve.
   A aba nova traz:

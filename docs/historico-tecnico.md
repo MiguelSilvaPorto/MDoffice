@@ -16515,3 +16515,63 @@ antigas quando fizer sentido.
 - **Local:** `scripts`
 - **Linha:** novo `"test:autosave-doc": "node scripts/testar-autosave-por-documento.mjs"`
 - **Porquê:** a regra entra na série de travas do repositório.
+
+## src/word/pagination.ts
+
+### 2026-10-20 · feat/word-modo-livro · a grade do modo Livro (duas páginas por faixa)
+- **Local:** `PaginationHooks` (o gancho `modo`), `lugarDaPagina` e `passoDaPagina` (novos), `buildSpacer` (partida em `buildFill`/`buildFoot`/`buildGap`/`buildHead`, com `buildRodape` e `buildTopo` novas), `measure` (devolve as folhas e a página de cada uma) e o `run()` da paginação
+- **Linha:** o gancho `modo?: () => ModoPagina`; no modo "livro" cada folha ganha uma decoração com `transform: translate(...)` (a casa dela na grade) e o espaçador vira **dois** widgets (o rodapé com a página que termina, o cabeçalho com a seguinte)
+- **Porquê:** o texto do documento vive num **fluxo só** (uma pilha de páginas) — não há como
+  quebrá-lo em colunas sem quebrar a edição. A saída é **mover** cada bloco para a casa da sua
+  página na grade: a página ímpar de cada faixa vai para a esquerda, a par para a direita, e as
+  faixas se empilham. O `transform` não muda o fluxo (o texto continua o mesmo), só onde ele é
+  desenhado — por isso a **medição** precisa desligar o deslocamento (a classe `wd-measuring`):
+  com ele, as caixas mediriam a página já movida e a quebra de página sairia errada.
+  O **espaçador teve de ser dividido**: ele carrega o rodapé da página que termina E o cabeçalho
+  da seguinte, e na grade as duas páginas de uma faixa estão lado a lado — um bloco só não
+  poderia estar nos dois lugares ao mesmo tempo.
+
+## src/word/host.ts
+
+### 2026-10-20 · feat/word-modo-livro · a geometria do livro
+- **Local:** `WordHost` (`ModoExibicao`, `setModo`, `larguraDaVista`, `alturaDoLivro`, `applySetup`, `fitPage`, `fitToWidth`, `fitHolder`, `currentPage`, o gancho `modo` da paginação e o `getPaginas` da régua)
+- **Linha:** o modo ganhou **"livro"**; a largura da folha passou a vir de `larguraDaVista()` (duas páginas no livro) e a altura de `alturaDoLivro()` (as faixas de duas páginas); `currentPage()` passou a ler a **faixa** e a **coluna** na grade
+- **Porquê:** no livro a folha mede duas páginas de largura e as faixas de duas páginas de altura
+  (a altura depende de quantas páginas o documento tem — por isso ela é recalculada quando a
+  contagem muda). E o "em que página estou" deixa de ser só a altura: na grade, a página vem
+  da faixa (o alto) **e** do lado (a coluna).
+
+## src/styles/word.css
+
+### 2026-10-20 · feat/word-modo-livro · o papel do livro (duas páginas e a lombada)
+- **Local:** o bloco do modo livro e o `@media print`
+- **Linha:** novas regras `#word-pane.wd-modo-livro .wd-sheet` (duas páginas de largura + a lombada em gradiente no meio), `.wd-doc` (uma página de largura), `.wd-hdr-first`, `.wd-sp-gap` (o vão atravessa o livro) e `.wd-doc.wd-measuring .wd-livro` (a medição sem o deslocamento); no `@media print` a folha volta a uma página e o `transform` é desligado
+- **Porquê:** a **lombada** é o gradiente no meio da folha — é o que faz a folha parecer um livro
+  aberto. O texto continua com a largura de **uma** página (a outra metade do livro é a página
+  ao lado): se o texto usasse a largura toda, as duas páginas da faixa escreveriam por cima uma
+  da outra. E o **vão** entre uma faixa e a outra precisa atravessar o livro inteiro (a margem
+  extra) — senão só a metade esquerda mostraria o vão.
+
+## src/word/regua.ts
+
+### 2026-10-20 · feat/word-modo-livro · a régua mede as duas páginas do livro
+- **Local:** `ReguaHooks` e `desenharHorizontal`
+- **Linha:** novo gancho `getPaginas?: () => number`; a régua horizontal passou a medir `w × páginas` e a sombrear as margens de cada página
+- **Porquê:** no livro a régua tem de medir a folha **inteira** (duas páginas) — e as margens
+  sombreadas são as de cada página, não só as da primeira.
+
+## src/word/ribbon.ts
+
+### 2026-10-20 · feat/word-modo-livro · o botão Livro na aba Exibir
+- **Local:** o grupo "Modos de Exibição", o `run()` e o `update()`
+- **Linha:** novo botão `view-book` (ícone de duas colunas) e o comando `setModo("livro")`; o `update()` marca o botão do modo ligado
+- **Porquê:** o modo livro é mais um modo de exibição — ele entra no mesmo grupo dos outros
+  (Impressão, Rascunho, Leitura), que é onde as pessoas procuram.
+
+## scripts/testar-word-livro.mjs
+
+### 2026-10-20 · feat/word-modo-livro · a trava da grade do livro (novo arquivo)
+- **Local:** arquivo novo
+- **Linha:** novo arquivo — trava a casa de cada página na grade (a ímpar à esquerda, a par à direita, a faixa seguinte embaixo), o desenho do papel (a lombada, as duas páginas de largura) e a medição sem o deslocamento
+- **Porquê:** a aritmética da grade é regra pura (dá para travar no Node) — e é ela que decide se
+  a página 2 fica ao lado da 1 ou cai no pé dela.
