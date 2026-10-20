@@ -370,6 +370,46 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** novas funções
 - **Por quê:** centralizar a edição do contorno parcial: lado a 100% sai do objeto, tudo em 100% sem inversão volta a `undefined` (contorno inteiro), inversão sem lado parcial fica guardada para quando o percentual baixar, e os presets (Completo/50%/10% no topo) são um passo só de desfazer.
 
+## src/powerpoint/stage.ts
+
+### 2026-10-20 — fix/ppt-cursor-mover-vazio — a escolha marcada no DOM (novo método)
+- **Local:** `desenharSelecao`, `marcarEscolhidas` (novo)
+- **Linha:** em `desenharSelecao`, uma chamada a `marcarEscolhidas(el, ctx)` · o método novo
+  alterna `pp-escolhida` (a forma está escolhida) e `pp-pega` (forma **sem preenchimento**
+  escolhida, fora da edição) em cada `.pp-shape[data-shape]` da lâmina
+- **Por quê:** a classe `pp-pega` (que torna o miolo da box sem preenchimento uma área de
+  arrasto, com o cursor de mover) era calculada no **desenho** da forma (`htmlFormaRica`, pelo
+  `ctx.selecionadas`), e a lâmina só é redesenhada quando o CONTEÚDO muda — nunca quando a
+  ESCOLHA muda. Como a escolha nunca chegava ao desenho, a classe nunca era aplicada: com a
+  box escolhida o vazio ficava com o cursor normal e o clique nele caía na lâmina (desfazendo
+  a escolha) — o gesto ficava escondido (print do usuário). A lâmina é caro de redesenhar, então
+  quem marca a escolha é o palco, a cada `desenharSelecao` (que roda em toda mudança de
+  seleção e depois de cada pintura).
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-20 — fix/ppt-cursor-mover-vazio — o cursor da forma escolhida
+- **Local:** bloco da seleção no palco (`.pp-pega`) e a regra nova `.pp-escolhida`
+- **Linha:** `.pp-shape.pp-rica.pp-sem-fundo.pp-pega, ... .pp-rt span { pointer-events: auto;
+  cursor: move; }` → só o contêiner da forma (`pointer-events: auto; cursor: move`) · nova
+  `.pp-shape.pp-rica.pp-escolhida:not(.pp-tabela) { cursor: move; }`
+- **Por quê:** o cursor de mover ficava preso às LETRAS (o `.pp-rt span`), e o resto da regra
+  sumia junto: o vazio da box — justamente onde o gesto acontece — ficava sem cursor. Agora o
+  cursor é do **contêiner** da forma (o miolo inteiro) e as letras ficam com o de texto (ver
+  `powerpoint.css`). A tabela fica de fora: o clique nela escolhe CÉLULA, e ela se move pela
+  alça ✥.
+
+## src/styles/powerpoint.css
+
+### 2026-10-20 — fix/ppt-cursor-mover-vazio — o cursor de texto da forma escolhida
+- **Local:** regra do cursor do texto (`.pp-texto-um`)
+- **Linha:** `.pp-slide.pp-texto-um .pp-shape.selected .pp-shape-text.pp-rt { cursor: text; }` →
+  `.pp-slide.pp-texto-um .pp-shape.pp-escolhida .pp-rt span { cursor: text; }`
+- **Por quê:** a regra era MORTA: `.selected` nunca era aplicada às formas rich (o `ctx.selecionada`
+  do desenho é sempre `null`), e a seleção é desenhada pelo overlay do palco. Como o `selected`
+  não existia, o cursor de texto nunca aparecia — o clique nas letras entra na edição, mas o
+  ponteiro dizia "mover". Agora usa a classe que o palco realmente marca (`pp-escolhida`) e
+  mira nas LETRAS (que são o que pega o ponteiro).
 ## src/powerpoint/render/forma.ts
 
 ### 2026-10-20 — feat/ppt-contorno-parcial — desenhar os trechos

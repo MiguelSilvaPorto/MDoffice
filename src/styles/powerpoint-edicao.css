@@ -1611,10 +1611,17 @@ button.ppr.big .ppr-gal-ic svg {
 /* ...menos quando ela está ESCOLHIDA: aí o miolo inteiro vira área de arrasto (e o cursor avisa).
    Sem isso só as letras pegavam o ponteiro — arrastar uma caixa de texto era quase impossível,
    porque o clique no vazio caía na lâmina e ainda desfazia a seleção. Editando, não vale: o
-   texto (`.pp-rt`) já cobre a caixa e quem manda é o cursor de texto. */
-.pp-shape.pp-rica.pp-sem-fundo.pp-pega,
-.pp-shape.pp-rica.pp-sem-fundo.pp-pega .pp-rt span {
+   texto (`.pp-rt`) já cobre a caixa e quem manda é o cursor de texto.
+   A classe é do palco (`marcarEscolhidas`): a escolha muda sem redesenhar a lâmina. */
+.pp-shape.pp-rica.pp-sem-fundo.pp-pega {
   pointer-events: auto;
+  cursor: move;
+}
+
+/* A forma ESCOLHIDA avisa que o miolo dela é área de arrasto — o cursor de mover no vazio
+   (é o que faltava: com a box escolhida, o vazio não dizia nada e o gesto ficava escondido).
+   A tabela fica de fora: o clique nela escolhe CÉLULA, e ela se move pela alça ✥. */
+.pp-shape.pp-rica.pp-escolhida:not(.pp-tabela) {
   cursor: move;
 }
 

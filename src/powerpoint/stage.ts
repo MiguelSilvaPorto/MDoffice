@@ -287,6 +287,7 @@ export class Stage {
     // O cursor do texto: com UMA forma escolhida e com texto, o clique no texto é do texto (ver
     // aoPressionar) — e o cursor diz isso; sem escolha ou com várias, pegar a forma é mover.
     el.classList.toggle("pp-texto-um", sel.length === 1 && temTexto(sel[0].paras) && !sel[0].bloqueada);
+    this.marcarEscolhidas(el, ctx);
     const html: string[] = [];
     const caixa = (b: ShapeBox, rot: number, extra: string, alcas: boolean, dentro = "", dono?: string) => {
       // `dono`: as alças pertencem a UMA forma (as 4 de canto, menores) — arrastar
@@ -484,6 +485,27 @@ export class Stage {
     // cruz fica para quem cria/rabisca)
     el.classList.toggle("criando", !!ctx.ferramenta && ctx.ferramenta.tipo !== "pincel");
     el.classList.toggle("pincel-fmt", ctx.ferramenta?.tipo === "pincel");
+  }
+
+  /**
+   * A ESCOLHA no DOM das formas.
+   *
+   * A lâmina é redesenhada quando o CONTEÚDO muda — a escolha muda o tempo todo, e sem isto as
+   * classes nasciam desatualizadas: a forma escolhida não dizia que o vazio dela podia ser
+   * arrastado (`pp-pega`, que também vira área de arrasto) e o cursor do texto nunca aparecia.
+   * Como o desenho da lâmina é caro, quem marca a escolha é o palco, a cada `desenharSelecao`.
+   *
+   * - `pp-escolhida`: a forma está escolhida (o cursor do miolo é o de mover);
+   * - `pp-pega`: forma **sem preenchimento** escolhida — o miolo inteiro vira área de arrasto
+   *   (fora da edição: com o texto em edição quem manda é o cursor de texto).
+   */
+  private marcarEscolhidas(el: HTMLElement, ctx: ContextoPalco): void {
+    const ids = new Set(ctx.selecao);
+    for (const n of el.querySelectorAll<HTMLElement>(".pp-shape[data-shape]")) {
+      const escolhida = ids.has(n.dataset.shape ?? "");
+      n.classList.toggle("pp-escolhida", escolhida);
+      n.classList.toggle("pp-pega", escolhida && !ctx.editando && n.classList.contains("pp-sem-fundo"));
+    }
   }
 
   // ------------------------------------------------------------------

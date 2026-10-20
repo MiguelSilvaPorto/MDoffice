@@ -532,6 +532,8 @@ export function htmlFormaRica(s: Shape, ctx: CtxRender): string {
   // Forma sem fundo ESCOLHIDA: o miolo vira área de arrasto. Sem isso o vazio é clique-atraves
   // e só as letras pegam o ponteiro — arrastar uma caixa de texto ficava quase impossível (e o
   // clique no vazio ainda desfazia a seleção). Editando, o texto já cobre a caixa.
+  // Esta é a marca do PRIMEIRO desenho; quem a mantém em dia é o PALCO (`marcarEscolhidas`),
+  // porque a escolha muda sem a lâmina ser redesenhada.
   const pega = semFundo && !ctx.editando && !!ctx.selecionadas?.includes(s.id);
   const classes = `pp-shape pp-rica${sel ? " selected" : ""}${s.fixa ? " pp-fixa" : ""}${ctx.editando === s.id ? " pp-editando" : ""}${semFundo ? " pp-sem-fundo" : ""}${pega ? " pp-pega" : ""}${s.bloqueada ? " pp-bloqueada" : ""}`;
   const attrs = `class="${classes}" data-shape="${s.id}" data-kind="${s.kind}" style="${est.join(";")}"`;

@@ -58,7 +58,9 @@ avisado ao abrir (nunca some em silêncio).
   Arrastar: a forma **escolhida** pega o
   ponteiro em **qualquer ponto do miolo** (cursor de mover) — inclusive as caixas de texto **sem
   preenchimento**, que fora da seleção continuam clique-através para não esconder o que está
-  embaixo. E o **Copiar formatação** (o Pincel de
+  embaixo. Na box escolhida, a **parte vazia** mostra o cursor de **mover** (ali dá para
+  arrastar a box) e as **letras** mostram o cursor de **texto** (ali o clique entra na edição).
+  E o **Copiar formatação** (o Pincel de
   Formatação): com uma forma escolhida, o clique no botão guarda a pintura e o formato do texto dela
   e o **ponteiro vira “copiar”** — cada clique numa forma veste o formato guardado, sem mexer na
   caixa, no giro nem no texto do alvo; **duplo clique** deixa o pincel **ligado** (pinta várias) e o

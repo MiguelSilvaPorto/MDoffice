@@ -583,6 +583,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A box escolhida agora avisa que o vazio dela serve para arrastar**: com a caixa de texto
+  escolhida, a parte vazia ficava com o cursor normal e o clique nela caía na lâmina
+  (desfazendo a escolha) — o gesto ficava escondido. Agora o **vazio** da box escolhida mostra
+  o cursor de **mover** (e arrastar dali move a box) e as **letras** mostram o cursor de
+  **texto** (ali o clique entra na edição). A causa: a marca da escolha era calculada no
+  desenho da lâmina, que só acontece quando o conteúdo muda — e a escolha muda o tempo todo,
+  sem redesenhar nada. Agora é o palco que marca a escolha a cada desenho da seleção.
+
 - **O Assistente desligado deixa o desenho fiel (e a dica para de dizer "entendi")**: o traço livre
   ainda **encaixava nas formas de baixo** com o Assistente desligado — ao soltar, a caixa pulava e
   esticava até a borda do cartão (a prévia não mostra esse encaixe, então o salto era ainda mais
