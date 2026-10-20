@@ -508,6 +508,9 @@ export class Ribbon {
         return ed.table("split");
       case "t-del":
         return ed.table("delete");
+      case "img-del":
+        ed.deleteImage();
+        return;
       case "t-shade":
         return this.palette(anchor, ["#f3f4f6", "#fde68a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#e5e7eb", "#fecaca"], false, (c) => ed.table("shade", c), "Sem cor");
       case "page":
@@ -630,8 +633,11 @@ export class Ribbon {
     e.preventDefault();
     this.closePop();
     const dentroDeTabela = this.hooks.editor.cursorNoPonto(e.clientX, e.clientY);
+    // o alvo do clique diz quando é uma IMAGEM (o cursor fica encostado no nó atômico; o próprio
+    // elemento <img> é o sinal direto) — o menu abre com "Excluir imagem"
+    const sobImagem = !!(e.target as HTMLElement | null)?.closest?.("img");
     const pop = h("div", { class: "wd-pal wd-menu-pop wd-menu-contexto" });
-    for (const item of itensDoContexto(dentroDeTabela)) {
+    for (const item of itensDoContexto(dentroDeTabela, sobImagem)) {
       if (item.tipo === "separador") {
         pop.append(h("div", { class: "wd-menu-sep" }));
         continue;

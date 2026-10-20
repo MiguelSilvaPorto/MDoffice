@@ -7,7 +7,7 @@ import { history, redo, undo } from "prosemirror-history";
 import { keymap } from "prosemirror-keymap";
 import { Fragment, type MarkType, type Node as PMNode, type NodeType } from "prosemirror-model";
 import { liftListItem, sinkListItem, splitListItem, wrapInList } from "prosemirror-schema-list";
-import { EditorState, Plugin, TextSelection, type Command, type Transaction } from "prosemirror-state";
+import { EditorState, NodeSelection, Plugin, TextSelection, type Command, type Transaction } from "prosemirror-state";
 import {
   addColumnAfter,
   addColumnBefore,
@@ -522,6 +522,28 @@ export class WordEditor {
     const node = schema.nodes.image.create({ src, alt, width, height });
     this.view.dispatch(this.view.state.tr.replaceSelectionWith(node).scrollIntoView());
     this.view.focus();
+  }
+
+  /**
+   * Exclui a imagem sob o cursor (o item **Excluir imagem** do clique direito). A imagem é um nó
+   * atômico: o cursor fica encostado nela (antes ou depois), então é por aí que ela é achada —
+   * tanto no nó selecionado (clique que virou seleção) quanto no vizinho do cursor.
+   */
+  deleteImage(): boolean {
+    const { state } = this.view;
+    const sel = state.selection;
+    if (sel instanceof NodeSelection && sel.node.type.name === "image") {
+      this.view.dispatch(state.tr.delete(sel.from, sel.to).scrollIntoView());
+      return true;
+    }
+    const { $from } = sel;
+    const depois = $from.nodeAfter?.type.name === "image" ? $from.nodeAfter : null;
+    const antes = depois ? null : $from.nodeBefore?.type.name === "image" ? $from.nodeBefore : null;
+    const no = depois ?? antes;
+    if (!no) return false;
+    const from = depois ? $from.pos : $from.pos - no.nodeSize;
+    this.view.dispatch(state.tr.delete(from, from + no.nodeSize).scrollIntoView());
+    return true;
   }
 
   insertTable(rows: number, cols: number): void {

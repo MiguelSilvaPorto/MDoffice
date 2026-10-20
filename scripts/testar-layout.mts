@@ -1765,6 +1765,19 @@ console.log("\nWord: o clique direito abre o menu do app (e a tabela tem 'Exclui
     }),
     "separador solto no topo/fim (ou dobrado) vira um risco sem grupo"
   );
+  // clicar com o botão direito NUMA IMAGEM: "Excluir imagem" abre a lista (o relato: só aparecia o
+  // menu de texto, sem como apagar a imagem)
+  const imagem = itensDoContexto(false, true) as { tipo: string; comando?: string }[];
+  checa(
+    'com o clique numa imagem, "Excluir imagem" é o primeiro item do menu',
+    imagem[0]?.tipo === "acao" && imagem[0]?.comando === "img-del",
+    "o clique direito na imagem não tinha como excluí-la"
+  );
+  checa(
+    "o menu da imagem continua com os itens de texto (não virou um menu só de imagem)",
+    ["undo", "cut", "copy", "paste", "select-all"].every((c) => comandos(imagem).includes(c)),
+    "quem erra o alvo ainda precisa dos comandos de texto"
+  );
   const hostWord = ler("src/word/host.ts");
   const ribbonWord = ler("src/word/ribbon.ts");
   const editorWord = ler("src/word/editor.ts");
@@ -1780,6 +1793,13 @@ console.log("\nWord: o clique direito abre o menu do app (e a tabela tem 'Exclui
     "o menu de contexto tem separadores e fecha no Esc",
     /\.wd-menu-sep \{/.test(cssWord) && /ev\.key !== "Escape"/.test(ribbonWord),
     "grupos sem separador viram uma lista só, e sem Esc o menu fica preso na tela"
+  );
+  checa(
+    "o clique direito na imagem chega ao menu e apaga o nó da imagem",
+    /closest\?\.\("img"\)/.test(ribbonWord) &&
+      /case "img-del":[\s\S]{0,60}ed\.deleteImage\(\);/.test(ribbonWord) &&
+      /deleteImage\(\): boolean/.test(editorWord),
+    "sem o alvo <img> o clique abriria o ramo de texto (o relato)"
   );
 }
 

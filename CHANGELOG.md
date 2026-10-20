@@ -369,6 +369,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Clique direito numa imagem: "Excluir imagem" no menu**: o menu de contexto do Word (que já
+  conhecia tabela) tratava a imagem como texto — abria desfazer/recortar/copiar/colar/selecionar
+  tudo e **não havia como apagar a imagem** pelo caminho natural ("quando eu clico com o botão
+  direito na imagem não aparece a opção de poder excluir ela"). Agora, com o clique sobre a imagem,
+  o menu abre com **"Excluir imagem"** em primeiro — e o comando apaga o nó da imagem (o mesmo
+  caminho do "Excluir tabela"). Os itens de texto continuam abaixo, para quem erra o alvo.
+  Conferido no navegador: imagem inserida → clique direito → menu "Excluir imagem…" → clique → a
+  imagem sai do documento. Teste: `npm run test:layout`.
+
 ### Adicionado (na main)
 
 **Backend**

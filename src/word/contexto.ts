@@ -16,9 +16,12 @@ const separador: ItemDoContexto = { tipo: "separador" };
 
 /**
  * Itens do menu de contexto do documento. Com o cursor dentro de uma tabela, os comandos de
- * tabela vêm primeiro — e "Excluir tabela" abre a lista, que é o que se procura ali.
+ * tabela vêm primeiro — e "Excluir tabela" abre a lista, que é o que se procura ali. Em cima de
+ * uma imagem, "Excluir imagem" abre a lista pelo mesmo motivo (o clique direito nela não tinha
+ * como apagar).
  */
-export function itensDoContexto(dentroDeTabela: boolean): ItemDoContexto[] {
+export function itensDoContexto(dentroDeTabela: boolean, sobImagem = false): ItemDoContexto[] {
+  const imagem: ItemDoContexto[] = sobImagem ? [acao("img-del", "Excluir imagem"), separador] : [];
   const tabela: ItemDoContexto[] = dentroDeTabela
     ? [
         acao("t-del", "Excluir tabela"),
@@ -39,5 +42,5 @@ export function itensDoContexto(dentroDeTabela: boolean): ItemDoContexto[] {
   const edicao: ItemDoContexto[] = dentroDeTabela
     ? [acao("cut", "Recortar"), acao("copy", "Copiar"), acao("paste", "Colar"), separador]
     : [acao("undo", "Desfazer"), separador, acao("cut", "Recortar"), acao("copy", "Copiar"), acao("paste", "Colar"), separador];
-  return [...tabela, ...edicao, acao("select-all", "Selecionar tudo")];
+  return [...imagem, ...tabela, ...edicao, acao("select-all", "Selecionar tudo")];
 }

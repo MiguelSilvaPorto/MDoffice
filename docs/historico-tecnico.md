@@ -15143,3 +15143,56 @@ antigas quando fizer sentido.
   descer do piso. A correção do título veio de uma regressão da tarefa anterior: ao marcar os padrões que
   posicionam o título, `cartoesTexto` e `faixasTexto` foram marcados por engano — como não posicionam o título, a
   lâmina saía sem ele (visto na captura da lâmina 4).
+
+## src/word/contexto.ts
+
+### 2026-10-20 · Excluir imagem · o item no menu do clique direito
+- **Local:** `itensDoContexto`
+- **Linha:** `itensDoContexto(dentroDeTabela: boolean)` → `(dentroDeTabela: boolean, sobImagem = false)`;
+  `+ const imagem = sobImagem ? [acao("img-del", "Excluir imagem"), separador] : [];` e a lista passou
+  a devolver `[...imagem, ...tabela, ...edicao, acao("select-all", …)]`
+- **Porquê:** o relato ("clico com o botão direito na imagem e não aparece a opção de excluir ela") —
+  o menu só sabia de **tabela**; numa imagem abria o ramo de texto, sem como apagar. O item fica em
+  primeiro, como o "Excluir tabela" (é o que se procura ali); os itens de texto continuam abaixo,
+  para quem erra o alvo.
+
+## src/word/editor.ts
+
+### 2026-10-20 · Excluir imagem · apagar o nó da imagem
+- **Local:** `deleteImage` (novo, logo depois de `insertImage`); `NodeSelection` entrou no import de
+  `prosemirror-state`
+- **Linha:** `novo` — se a seleção é uma `NodeSelection` de imagem, apaga `sel.from..sel.to`; senão
+  acha o nó `image` em `$from.nodeAfter` (apaga a partir de `$from.pos`) ou em `$from.nodeBefore`
+  (apaga a partir de `$from.pos - nodeSize`), numa transação só com `scrollIntoView`
+- **Porquê:** a imagem é um nó **atômico**: o cursor fica encostado nela (antes/depois), nunca
+  "dentro"; sem tratar os dois lados, o comando não acharia o nó em metade dos cliques. O
+  `NodeSelection` cobre o clique que selecionou a imagem inteira.
+
+## src/word/ribbon.ts
+
+### 2026-10-20 · Excluir imagem · o alvo do clique e o comando
+- **Local:** `menuDeContexto` e o despacho de comandos
+- **Linha:** `+ const sobImagem = !!(e.target as HTMLElement | null)?.closest?.("img");` passado para
+  `itensDoContexto(dentroDeTabela, sobImagem)` · `+ case "img-del": ed.deleteImage(); return;`
+- **Porquê:** o `cursorNoPonto` só devolve "está em tabela"; o elemento clicado é o sinal direto da
+  imagem (o `<img>` dentro do `view.dom`). O comando espelha o `t-del` da tabela.
+
+## scripts/testar-layout.mts
+
+### 2026-10-20 · Excluir imagem · as três checagens
+- **Local:** bloco "Word: o clique direito abre o menu do app…"
+- **Linha:** `+` "com o clique numa imagem, 'Excluir imagem' é o primeiro item" · `+` "o menu da
+  imagem continua com os itens de texto" · `+` na checagem do menu: `closest?.("img")`,
+  `case "img-del"` → `ed.deleteImage()` e o método no editor
+- **Porquê:** a lista é pura e o caminho "clique → menu → apagar" foi conferido no navegador
+  (imagem inserida → menu com o item → a imagem saiu do documento) — as checagens prendem o item e a
+  ligação do alvo `<img>`.
+
+## docs/word.md
+
+### 2026-10-20 · Excluir imagem · a bala do clique direito
+- **Local:** "**Clique direito**"
+- **Linha:** `+` "**Em cima de uma imagem**, o menu abre com **'Excluir imagem'** em primeiro (e os
+  itens de texto continuam abaixo)"
+- **Porquê:** a bala descrevia o menu de tabela e o de texto; faltava a imagem, que era justamente
+  onde o usuário procurou.
