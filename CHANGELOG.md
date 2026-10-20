@@ -1848,17 +1848,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - (nada no momento)
 
-- **Os módulos agora se chamam pelo formato, não pela marca da Microsoft**: na interface, "Word",
-  "Excel" e "PowerPoint" viraram **Documentos (.docx)**, **Planilhas (.xlsx)** e
-  **Apresentações (.pptx)** — nos cartões e filtros do Início, no menu "+", na paleta de comandos
-  (Ctrl+K), nos menus de exportar/importar, nas dicas das abas, nos avisos e nos diálogos de
-  salvar. É o formato que identifica cada módulo; dizer que o app abre e salva `.docx`, `.xlsx` e
-  `.pptx` continua sendo uso descritivo e aceito. As **subpastas padrão** também mudaram
-  (`Documentos/`, `Planilhas/`, `Apresentações/`): as antigas (`Word/`, `Excel/`, `PowerPoint/`)
-  são renomeadas uma vez, e se o nome novo já existir nada é movido nem juntado (nenhum arquivo
-  se perde). O Markdown não é marca e ficou como está; os arquivos de código e os nomes internos
-  (`src/word`, `src/excel`, `src/powerpoint`) não mudaram. Teste: `npm run test:layout`.
-
 - **O menu dos grupos da fita abre e fica (o controle de dentro volta a ser clicável)**: com a faixa
   apertada, o grupo que não cabe vira um **botão com menu** — mas o menu **abria e sumia no mesmo
   tique**: o `hidden` que o próprio menu liga/desliga re-disparava o re-planejo do encaixe, e o
@@ -1967,6 +1956,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **Os módulos agora se chamam pelo formato, não pela marca da Microsoft**: na interface, "Word",
+  "Excel" e "PowerPoint" viraram **Documentos (.docx)**, **Planilhas (.xlsx)** e
+  **Apresentações (.pptx)** — nos cartões e filtros do Início, no menu "+", na paleta de comandos
+  (Ctrl+K), nos menus de exportar/importar, nas dicas das abas, nos avisos e nos diálogos de
+  salvar. É o formato que identifica cada módulo; dizer que o app abre e salva `.docx`, `.xlsx` e
+  `.pptx` continua sendo uso descritivo e aceito. As **subpastas padrão** também mudaram
+  (`Documentos/`, `Planilhas/`, `Apresentações/`): as antigas (`Word/`, `Excel/`, `PowerPoint/`)
+  são renomeadas uma vez, e se o nome novo já existir nada é movido nem juntado (nenhum arquivo
+  se perde). O Markdown não é marca e ficou como está; os arquivos de código e os nomes internos
+  (`src/word`, `src/excel`, `src/powerpoint`) não mudaram. Teste: `npm run test:layout`.
 
 - **A pílula da barra lateral (o fundo da aba ativa) não desalinha mais**: o tamanho dela era
   **fixo em px** (30×28) e a posição só era medida na **troca de painel** — se o tamanho da aba

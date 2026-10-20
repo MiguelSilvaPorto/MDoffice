@@ -15462,3 +15462,14 @@ antigas quando fizer sentido.
   (.xlsx)" e "Apresentações (.pptx)"
 - **Porquê:** a documentação chamava os módulos pela marca; o nome do produto e os caminhos dos
   documentos (`docs/word.md` etc.) não mudaram — só o rótulo visível, para ficar igual ao app.
+
+## CHANGELOG.md
+
+### 2026-10-20 · promoção · a entrada dos módulos pelo formato entra no "Adicionado" (Geral)
+- **Local:** Geral ▸ **Não adicionado** ▸ Frontend ▸ **Adicionado** ▸ Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **Os módulos agora se chamam pelo formato, não pela
+  marca da Microsoft** (`df529a7`, worktree `fix/modulos-sem-marcas-da-microsoft`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não sai
+  no mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
+  entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend do Geral,
+  como as promoções anteriores.
