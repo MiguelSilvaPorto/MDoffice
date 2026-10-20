@@ -117,7 +117,7 @@ export default defineConfig({
     // O scanner de dependências não lê arquivo de worker, então `typo-js` só era
     // descoberto quando o corretor subia — ~20s depois de abrir o app — e aí o Vite
     // re-otimizava e mandava o app inteiro recarregar, no meio do uso.
-    // `@huggingface/transformers` (IA local e tradução offline) tinha o mesmo destino.
+    // `@huggingface/transformers` (tradução offline) tinha o mesmo destino.
     //
     // O resto o scanner acha: ele segue os `import()` dinâmicos e o esbuild já embute
     // os pacotes que os outros carregam sob demanda (os `@codemirror/lang-*` que os
@@ -151,10 +151,9 @@ export default defineConfig({
       ignored: [
         "**/src-tauri/**",
         "**/dist/**",
-        // estáticos grandes (dicionário, n-gramas, modelos): não mudam em uso e o
+        // estáticos grandes (dicionário, n-gramas, motor da tradução): não mudam em uso e o
         // polling não precisa varrê-los a cada 400 ms
         "**/public/ngrams/**",
-        "**/public/modelos/**",
         "**/public/ort/**",
         "**/public/dicionario/**",
         "**/temp/**",

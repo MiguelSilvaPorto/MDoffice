@@ -94,8 +94,7 @@ nada de azul, verde ou laranja das marcas do Office.
 MIT — veja [LICENSE](LICENSE). © 2026 Miguel Silva Porto.
 
 O código do projeto é MIT; os componentes de terceiros mantêm as licenças próprias —
-o modelo **Gemma** (Termos de Uso do Gemma, aviso em `AVISO-GEMMA.txt`), as fontes
-embutidas (OFL) e os dicionários derivados do LibreOffice/TeP.
+as fontes embutidas (OFL) e os dicionários derivados do LibreOffice/TeP.
 
 <div align="center">
   <sub>

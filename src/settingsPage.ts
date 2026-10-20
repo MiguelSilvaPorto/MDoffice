@@ -14,8 +14,6 @@ import { limparMetricas, metricasCorretor } from "./broker/personal/metricas";
 import { exportarAprendizado } from "./broker/personal/aprendizadoArquivo";
 import { calibragem } from "./broker/spell/decisao";
 import { profileSummary } from "./broker/personal/profile";
-import { llmEnabled, llmUseGpu, llmTypingSetting, setLlmEnabled, setLlmUseGpu, setLlmTyping } from "./broker/llm/config";
-import { llmAvailable, llmDevice } from "./broker/llm/client";
 import { getGhostMode, setGhostMode, clearFeedback, feedbackSummary, type GhostMode } from "./broker/personal/feedback";
 import { limparRitmo, resumoRitmo } from "./broker/writing";
 import type { Translation, ProviderChoice } from "./translate/controller";
@@ -224,17 +222,6 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
               ${rowIcon("i-focus")}
               <span class="st-text"><b>Intensidade das sugestões</b><small>Discreta: só com muita certeza (aparece pouco, quase sempre certa). Equilibrada: arrisca o palpite mais provável, mesmo faltando só 2 letras (Alt+Seta para baixo troca a opção). Agressiva: aparece ainda mais e erra mais.</small></span>
               ${dd("ghostmode", [["discreto", "Discreta"], ["equilibrado", "Equilibrada"], ["agressivo", "Agressiva"]], getGhostMode())}
-            </div>
-          </div>
-
-          <h4 class="st-group">IA local</h4>
-          <div class="st-list">
-            ${toggle("llm", "IA local na revisão inteligente", "Um modelo de linguagem pequeno (Gemma 3 270M, que já vem no app) confere cada troca de palavra sugerida. Roda em uma thread só, usa a GPU, trabalha só com o computador parado e sai da memória quando não está em uso. Nada sai do seu computador.", llmEnabled(), "i-shield")}
-            ${toggle("llmtyping", "IA ajuda nas sugestões enquanto digito", "Numa pausa curta no meio de uma palavra, a IA local escolhe, entre os candidatos do modelo de palavras, o que combina com a frase (acerta bem mais). Só aparece quando a IA tem bastante certeza. Precisa da IA local e da GPU; carrega na primeira vez (alguns segundos) e sai da memória depois de 90 s parado.", llmTypingSetting(), "i-feather")}
-            ${toggle("llmgpu", "Usar a GPU para a IA local", "A IA local só funciona na GPU (WebGPU). Se você desligar, ela fica inativa e a revisão usa só as regras.", llmUseGpu(), "i-grid")}
-            <div class="st-row">
-              ${rowIcon("i-check")}
-              <span class="st-text"><b>Estado da IA local</b><small data-llm-status>verificando…</small></span>
             </div>
           </div>
 
@@ -712,31 +699,6 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     const n = ctx.dictionaryCount();
     q("[data-dict-count]").textContent = n ? `${n} palavra(s) que você mandou ignorar` : "Nenhuma palavra ainda — clique numa palavra sublinhada e escolha “Adicionar ao dicionário”.";
   };
-  const paintLlm = async () => {
-    const el = q("[data-llm-status]");
-    const gpu = (navigator as unknown as { gpu?: { requestAdapter: () => Promise<unknown> } }).gpu;
-    const [modelo, adapter] = await Promise.all([llmAvailable(), gpu ? gpu.requestAdapter().catch(() => null) : Promise.resolve(null)]);
-    if (!llmEnabled()) el.textContent = "Desligada.";
-    else if (!modelo) el.textContent = "O modelo não está nesta cópia do app (rode \"npm run prep:modelo\" antes de gerar o instalador).";
-    else if (!adapter) el.textContent = "Este computador não oferece WebGPU, então a IA local fica inativa. As revisões seguem só com as regras.";
-    else if (!llmUseGpu()) el.textContent = "A GPU está desligada nas configurações: a IA local fica inativa.";
-    else el.textContent = `Pronta (GPU${llmDevice() ? ", em uso agora" : ""}). Carrega ao fazer uma revisão e sai da memória após 90 s parada.`;
-  };
-  void paintLlm();
-  sw("llm").addEventListener("change", (e) => {
-    setLlmEnabled((e.target as HTMLInputElement).checked);
-    void paintLlm();
-    flash();
-  });
-  sw("llmtyping").addEventListener("change", (e) => {
-    setLlmTyping((e.target as HTMLInputElement).checked);
-    flash();
-  });
-  sw("llmgpu").addEventListener("change", (e) => {
-    setLlmUseGpu((e.target as HTMLInputElement).checked);
-    void paintLlm();
-    flash();
-  });
   const paintStyle = () => {
     const p = profileSummary();
     const fb = feedbackSummary();

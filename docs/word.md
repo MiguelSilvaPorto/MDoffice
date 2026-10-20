@@ -77,7 +77,7 @@ arquivos `.docx` de verdade.
   apagaria a imagem). O **texto fantasma** (sugestões enquanto digita) funciona aqui também, com
   **Tab/Alt+→/Alt+↓**.
 - **Revisar texto** (`F7`) e a **revisão inteligente** analisam o documento Word como o
-  Markdown (regras, sinônimos e a IA local).
+  Markdown (regras e sinônimos).
 - **Formalizar** (`Ctrl+Alt+F` ou **Revisão → Revisão de Texto → Formalizar**): a mesma janela
   do Markdown, com **antes × depois** e o MIP caindo ao vivo. Pega a seleção (sem seleção, o
   documento inteiro) e aplica cada troca **no lugar dela** — o texto em volta e o formato ficam

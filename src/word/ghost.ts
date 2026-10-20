@@ -5,7 +5,6 @@ import { Plugin, PluginKey, TextSelection, type EditorState } from "prosemirror-
 import { Decoration, DecorationSet, type EditorView } from "prosemirror-view";
 import { DocumentIndex } from "../broker/ghost/documentIndex";
 import { predictFromLine } from "../broker/ghost/predict";
-import { refineSuggestion, REFINE } from "../broker/ghost/refine";
 import type { GhostSuggestion } from "../broker/ghost/types";
 import { consumeTyped, cycleSuggestion, altLabel, outcomeOf, parDaCorrecao } from "../broker/ghost/suggestion";
 import { accepted, rejected } from "../broker/personal/feedback";
@@ -68,28 +67,7 @@ function accept(view: EditorView, wordOnly: boolean): boolean {
 export function ghostPlugin(hooks: WordGhostHooks): Plugin {
   const index = new DocumentIndex();
   let indexTimer: number | undefined;
-  let llmTimer: number | undefined;
   const reindex = (state: EditorState): void => index.update(state.doc.textBetween(0, state.doc.content.size, "\n", " "));
-
-  /** Depois de uma pausa no meio de uma palavra, a IA local escolhe entre os candidatos (se estiver ligada). */
-  const refineLater = (v: EditorView, retry = true): void => {
-    window.clearTimeout(llmTimer);
-    llmTimer = window.setTimeout(async () => {
-      if (!hooks.enabled()) return;
-      const doc = v.state.doc;
-      const head = v.state.selection.head;
-      const ctx = around(v.state);
-      if (!ctx || /^[\p{L}0-9_-]/u.test(ctx.after)) return;
-      const r = await refineSuggestion(ctx.before, head, index, key.getState(v.state) ?? null);
-      if (!r) return;
-      // a pessoa continuou digitando enquanto a IA pensava: o resultado já não vale; pede de novo uma vez
-      if (!v.state.doc.eq(doc) || v.state.selection.head !== head) {
-        if (retry) refineLater(v, false);
-        return;
-      }
-      setSuggestion(v, r);
-    }, REFINE.pauseMs);
-  };
 
   /**
    * A sugestão para o cursor, calculada na própria transação da tecla (custa ~0,2 ms). Antes ela
@@ -188,13 +166,9 @@ export function ghostPlugin(hooks: WordGhostHooks): Plugin {
             window.clearTimeout(indexTimer);
             indexTimer = window.setTimeout(() => reindex(v.state), 800);
           }
-          // a sugestão já saiu na transação (predict); aqui só fica a IA local, que espera uma pausa
-          if (!changed && prev.selection.eq(v.state.selection)) return;
-          refineLater(v);
         },
         destroy() {
           window.clearTimeout(indexTimer);
-          window.clearTimeout(llmTimer);
         },
       };
     },

@@ -378,7 +378,7 @@ pendência:
 ## Além do escopo de um editor de slides (o que o app já entrega)
 
 - **Suíte completa**: Word (.docx), Excel (.xlsx) e Markdown no mesmo app.
-- **IA local**: corretor de português, sugestões enquanto digita (modelo de n-gramas + Gemma local), revisão inteligente com sinônimos.
+- **IA local**: corretor de português, sugestões enquanto digita (modelo de n-gramas + o que você escreve), revisão inteligente com sinônimos.
 - **Tradução automática PT-BR → inglês** com memória local, glossário e pré-visualização lado a lado.
 - **Backup em disco** (duas pastas, política de limpeza, restauração) e **histórico com log de alterações**.
 - **Importar do Office** (.docx/.xlsx/.xlsm/.pptx) direto pelo Início.

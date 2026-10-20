@@ -14365,6 +14365,25 @@ antigas quando fizer sentido.
 - **Onde ajustar:** `scripts/calibrar-ghost.mts` (novo) refaz os pesos no fluxo e mostra a
   fronteira; `eval-ghost` ganhou `GHOST_C` (custo) e `GHOST_P` (piso) para varrer a decisão.
 
+## src/broker/llm/* · src/broker/ghost/refine.ts · src/broker/deep/refine.ts · scripts/baixar-modelo.mjs
+
+### 2026-10-20 · remover-gemma · a IA local (Gemma 3 270M) sai do app
+
+- **Local:** os arquivos inteiros (cliente, configuração e worker da IA; a escolha da IA na sugestão;
+  a conferência da IA na revisão inteligente; o download do modelo).
+- **Linha:** arquivos removidos. Junto: `refineLater`/`llmTimer` em `ghost/extension.ts` e
+  `word/ghost.ts`; `refineWithLm` em `app/deepReview.ts`; `lm`/`lmDelta` em `deep/analyze.ts` e a frase
+  da IA em `deep/panel.ts`; o grupo **IA local** e `paintLlm` em `settingsPage.ts`; `candidatesAt`,
+  `completionSuffix`, `minSuffixChars`, `RerankCand`/`RerankPoint` em `ghost/predict.ts` (só a IA
+  usava); `baixar-modelo.mjs` do `build` e o `prep:modelo` no `package.json`; `public/modelos` no
+  `watch.ignored` do `vite.config.ts`.
+- **Porquê:** pedido do usuário ("remova o gemma, é muito pesada"): ~280 MB no instalador, ~0,6 GB de
+  memória ao carregar, e só funcionava com WebGPU. Na sugestão ela só reordenava os candidatos do
+  n-grama numa pausa no meio da palavra (não trazia palavra nova); na revisão só conferia as trocas que
+  as regras já propunham. O `@huggingface/transformers` e o `public/ort` ficam: a tradução offline usa.
+  As listas `PastasLigadas` das ferramentas de worktree mantêm `public\modelos` de propósito: a remoção
+  segura de worktrees antigas ainda precisa reconhecer esse link.
+
 ## src/broker/ghost/extension.ts
 
 ### 2026-10-19 · sugestão · a espera cai de 90 ms para 45 ms

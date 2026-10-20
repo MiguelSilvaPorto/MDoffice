@@ -34,8 +34,6 @@ export interface Proposal {
   /** palavra-base que se repete */
   lemma: string;
   confidence: Confidence;
-  /** nota da IA local: quanto a frase com a troca é mais (+) ou menos (−) natural que a original */
-  lmDelta?: number;
   /** por que esta troca cabe aqui */
   reason: string;
   /** a frase em volta, para mostrar a troca em contexto */
@@ -58,8 +56,6 @@ export interface DeepResult {
   groups: Group[];
   words: number;
   at: number;
-  /** onde a IA local conferiu as trocas ("webgpu"), ou nada se ela não estava disponível */
-  lm?: string;
 }
 
 export interface DeepOptions {

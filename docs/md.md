@@ -209,8 +209,6 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   embutido é feito de **contagens** de palavras e sequências (1–3 palavras) de um corpus da
   **Wikipédia em português** (CC BY-SA 4.0) — nenhum trecho de texto é copiado para o app, e o
   corpus pode ser refeito com `scripts/baixar-corpus.mjs` + `scripts/build-ngrams.mjs`.
-- **IA ajuda nas sugestões** (Configurações): numa pausa, a IA local escolhe entre candidatos
-  o que combina com a frase — só para completar palavra e só quando tem confiança.
 - **Aprende com você**: aceitar e recusar ajustam a confiança — recusar uma correção do
   fantasma (digitando por cima ou com `Esc`) também conta —, e o corretor reconhece **classes
   de erro** (transposição, tecla vizinha, acento, dígrafo) para acertar antes de conhecer o par
@@ -237,14 +235,13 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   refaz os pesos e mostra a fronteira precisão × cobertura × economia; o `eval-ghost` mede a
   simulação de digitação (com `GHOST_C`/`GHOST_P` para varrer a decisão).
 
-## Revisão inteligente e IA local
+## Revisão inteligente
 
 - **Revisão inteligente** (Ctrl+K): analisa o documento e propõe trocas para palavras repetidas
   demais, **na mesma forma** (tempo, plural, gênero), com **diff** e **o porquê**; só propõe
   com contexto e nada muda sem aceitar. Roda em fatias, numa thread, com o computador parado.
-- **IA local (Gemma 3 270M, embutida)**: confere cada troca (pontua a frase com e sem) e
-  descarta as que pioram o texto. Roda **só na GPU** (WebGPU), sai da memória depois de 90 s
-  sem uso; sem GPU, tudo continua funcionando com as regras.
+- As trocas seguem as **regras e o dicionário de sinônimos**. (Até 2026-10-20 um modelo de
+  linguagem local, Gemma 3 270M, conferia cada troca na GPU; ele saiu do app por pesar ~280 MB.)
 
 ## Tradução automática
 

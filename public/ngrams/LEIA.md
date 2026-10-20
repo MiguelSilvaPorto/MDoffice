@@ -24,6 +24,6 @@ Depois de gerar, o juiz é o harness: `node scripts/avaliar-correcao.mts` (com e
 - **Sem estes arquivos o app funciona** — o corretor e a sugestão (*ghost*) apenas rodam **sem o
   modelo** (a qualidade das sugestões cai; nada quebra).
 - Numa **worktree** não precisa gerar de novo: `tools\worktrees\abrir.ps1` liga esta pasta à cópia
-  principal por *junction* (como faz com `public/ort` e `public/modelos`).
+  principal por *junction* (como faz com `public/ort` e `public/dicionario`).
 - Num **clone novo**, rode `npm run corpus` uma vez antes de contar com o corretor — ou copie a
   pasta de outra cópia (os arquivos são os mesmos).
