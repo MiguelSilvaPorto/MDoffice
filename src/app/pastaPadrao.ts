@@ -85,6 +85,7 @@ export const pastaPadraoMethods = {
    * Documento.docx`, por exemplo. Sem diálogo — quem quer outro lugar usa "Salvar como…".
    */
   async nascerNoPadrao(this: App, tipo: TipoComPasta): Promise<void> {
+    const tab = this.tab;
     try {
       this.tab.path = await caminhoPadraoLivre(tipo);
       this.tab.isDraft = false;
@@ -93,6 +94,12 @@ export const pastaPadraoMethods = {
       await this.sidebar.refresh();
       toast(`Documento novo em Documentos\\mdOffice\\${PASTA_DO_TIPO[tipo]} — “Salvar como…” escolhe outro lugar.`, "ok", 4600);
     } catch (e) {
+      // a gravação falhou: o selo não pode continuar dizendo "Salvo"
+      tab.dirty = true;
+      tab.saveFailed = true;
+      tab.statusSaved = "Não foi possível salvar";
+      if (tab === this.tab) this.setSaveState();
+      this.renderTabs();
       toast(`Não consegui guardar o documento na pasta padrão (${String(e)}). Use “Salvar como…” para escolher a pasta.`, "info", 7000);
     }
   },

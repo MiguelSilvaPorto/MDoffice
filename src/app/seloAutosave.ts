@@ -1,28 +1,29 @@
-// O selo do salvamento automático na barra e o aviso dos arquivos do Office.
+﻿// O selo do salvamento automÃ¡tico na barra e o aviso dos arquivos do Office.
 //
-// O autosave reescreve rascunhos do app e documentos Markdown, mas **não** reescreve um
-// arquivo SEU do Word/PowerPoint/Excel: o motor pode simplificar recursos que ainda não
-// entende (animações, gráficos, comentários, revisões) e sobrescrever o original seria
-// perda silenciosa — o arquivo só é gravado no Salvar (Ctrl+S).
+// O autosave reescreve rascunhos do app e documentos Markdown, mas **nÃ£o** reescreve um
+// arquivo SEU do Word/PowerPoint/Excel: o motor pode simplificar recursos que ainda nÃ£o
+// entende (animaÃ§Ãµes, grÃ¡ficos, comentÃ¡rios, revisÃµes) e sobrescrever o original seria
+// perda silenciosa â€” o arquivo sÃ³ Ã© gravado no Salvar (Ctrl+S).
 //
-// O que estava errado era o **recado**: para esses arquivos o selo dizia "Salvando…" para
-// sempre (como se houvesse uma gravação que nunca termina), o chip do caminho sumia junto
-// e nada explicava o Ctrl+S — lido como um loop que nunca salva. Aqui ficam as decisões
+// O que estava errado era o **recado**: para esses arquivos o selo dizia "Salvandoâ€¦" para
+// sempre (como se houvesse uma gravaÃ§Ã£o que nunca termina), o chip do caminho sumia junto
+// e nada explicava o Ctrl+S â€” lido como um loop que nunca salva. Aqui ficam as decisÃµes
 // puras: o estado do selo e o aviso (uma vez por arquivo).
 
-export type ModoSelo = "desligado" | "salvando" | "nao-salvo" | "salvo";
+export type ModoSelo = "desligado" | "salvando" | "nao-salvo" | "erro" | "salvo";
 
-/** O arquivo da aba é um arquivo do Office DO USUÁRIO (salvo por ele), não um rascunho do app. */
+/** O arquivo da aba Ã© um arquivo do Office DO USUÃRIO (salvo por ele), nÃ£o um rascunho do app. */
 export function ehArquivoOfficeDoUsuario(kind: string | undefined, temPath: boolean, rascunho: boolean): boolean {
   return (kind === "word" || kind === "ppt" || kind === "xlsx") && temPath && !rascunho;
 }
 
 /**
  * O estado do selo da barra:
- * - `desligado` — o salvamento automático está desligado;
- * - `salvando`  — há gravação a caminho (a fila) ou em andamento: o autosave VAI gravar;
- * - `nao-salvo` — arquivo do Office do usuário com alterações: o autosave **não** vai gravar;
- * - `salvo`     — nada pendente.
+ * - `desligado` â€” o salvamento automÃ¡tico estÃ¡ desligado;
+ * - `salvando`  â€” hÃ¡ gravaÃ§Ã£o a caminho (a fila) ou em andamento: o autosave VAI gravar;
+ * - `nao-salvo` â€” arquivo do Office do usuÃ¡rio com alteraÃ§Ãµes: o autosave **nÃ£o** vai gravar;
+ * - `erro`      â€” a Ãºltima gravaÃ§Ã£o falhou: o selo nÃ£o pode dizer "Salvo";
+ * - `salvo`     â€” nada pendente.
  */
 export function modoDoSelo(opts: {
   ligado: boolean;
@@ -31,7 +32,10 @@ export function modoDoSelo(opts: {
   rascunho: boolean;
   sujo: boolean;
   salvando: boolean;
+  /** a Ãºltima tentativa de gravar falhou */
+  erro?: boolean;
 }): ModoSelo {
+  if (opts.erro) return "erro";
   if (!opts.ligado) return "desligado";
   if (ehArquivoOfficeDoUsuario(opts.kind, opts.temPath, opts.rascunho)) {
     return opts.sujo ? "nao-salvo" : "salvo";
@@ -40,8 +44,8 @@ export function modoDoSelo(opts: {
 }
 
 /**
- * Avisos já dados nesta sessão, por arquivo. O aviso é sobre o **comportamento** (vale para
- * o arquivo inteiro), não sobre uma tecla: uma vez por arquivo basta — e o selo "Não salvo"
+ * Avisos jÃ¡ dados nesta sessÃ£o, por arquivo. O aviso Ã© sobre o **comportamento** (vale para
+ * o arquivo inteiro), nÃ£o sobre uma tecla: uma vez por arquivo basta â€” e o selo "NÃ£o salvo"
  * continua lembrando.
  */
 export function criarAvisosOffice(): { primeiraVez(path: string): boolean } {
@@ -56,12 +60,12 @@ export function criarAvisosOffice(): { primeiraVez(path: string): boolean } {
   };
 }
 
-/** O texto do aviso, com a extensão do tipo aberto. */
+/** O texto do aviso, com a extensÃ£o do tipo aberto. */
 export function avisoOfficeSemAutosave(kind: string): string {
   const ext = kind === "word" ? ".docx" : kind === "ppt" ? ".pptx" : ".xlsx";
   return (
-    `Este ${ext} é um arquivo seu: o salvamento automático não reescreve arquivos do Office ` +
-    `(recursos que o app ainda não entende podem se perder ao salvar). ` +
-    `As alterações ficam no histórico do app — use Ctrl+S para gravar o arquivo.`
+    `Este ${ext} Ã© um arquivo seu: o salvamento automÃ¡tico nÃ£o reescreve arquivos do Office ` +
+    `(recursos que o app ainda nÃ£o entende podem se perder ao salvar). ` +
+    `As alteraÃ§Ãµes ficam no histÃ³rico do app â€” use Ctrl+S para gravar o arquivo.`
   );
 }

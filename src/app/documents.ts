@@ -95,6 +95,7 @@ export const documentsMethods = {
     if (!files.emTauri()) {
       this.saveBrowserTabs();
       tab.dirty = false;
+      tab.saveFailed = false;
       tab.statusSaved = `Salvo neste navegador às ${fmtTime()}`;
       this.afterSave(tab);
       return;
@@ -123,10 +124,14 @@ export const documentsMethods = {
       this.backupOnceADay(tab.path);
       // se o texto mudou enquanto gravava, continua "sujo" (o próximo autosave pega)
       if (tab !== this.tab || this.editor.getText() === text) tab.dirty = false;
+      tab.saveFailed = false;
       tab.statusSaved = tab.isDraft ? `Rascunho atualizado às ${fmtTime()}` : `Salvo automaticamente às ${fmtTime()}`;
       this.afterSave(tab);
     } catch {
       // não conseguiu gravar pelo app (navegador): guarda em temp/ do projeto
+      tab.saveFailed = true;
+      if (tab === this.tab) this.setSaveState();
+      this.renderTabs();
       await files.saveDraftFallback("rascunho", text);
     }
   },
@@ -193,6 +198,7 @@ export const documentsMethods = {
       }
 
       this.dirty = false;
+      this.tab.saveFailed = false;
       this.statusSaved = `Salvo às ${fmtTime()}`;
       this.setPreviewPath(this.path);
       if (!this.isDraft) this.addRecent(this.path);
@@ -205,6 +211,9 @@ export const documentsMethods = {
       }
       return true;
     } catch (e) {
+      this.tab.saveFailed = true;
+      this.setSaveState();
+      this.renderTabs();
       toast("Erro ao salvar: " + e, "err");
       return false;
     }
@@ -321,6 +330,8 @@ export const documentsMethods = {
       );
       return true;
     } catch (e) {
+      this.tab.saveFailed = true;
+      if (this.tab === tab) this.setSaveState();
       toast("Não consegui guardar o rascunho: " + e, "err", 7000);
       return false;
     }

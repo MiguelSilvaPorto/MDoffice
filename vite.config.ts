@@ -97,6 +97,9 @@ function batimentoPlugin(): Plugin {
   };
 }
 
+/** O servidor está rodando dentro de uma worktree? (muda o padrão de `watch.ignored`) */
+const emWorktree = /[\\/]\.worktrees[\\/][^\\/]+$/.test(process.cwd());
+
 // Configuração pensada para o Tauri 2:
 // - porta fixa 1420 (definida em tauri.conf.json > build.devUrl)
 // - não limpar o terminal para não esconder logs do cargo
@@ -125,6 +128,12 @@ export default defineConfig({
     port: 1420,
     strictPort: true,
     watch: {
+      // O vigia nativo do Windows não avisa mudanças em algumas unidades/pastas
+      // (aqui, o projeto em A:): sem polling o dev server serve módulos VELHOS — o
+      // HMR nunca chega e o código novo só aparece reiniciando o Vite. O polling
+      // custa pouco e deixa o ciclo editar→ver confiável.
+      usePolling: true,
+      interval: 400,
       // `src-tauri` é do Rust (quem recompila é o cargo).
       //
       // `.worktrees` e `dist` ficam de fora porque o servidor de dev não tem nada
@@ -134,7 +143,23 @@ export default defineConfig({
       //   EBUSY — o Vite cai junto e o app fecha sozinho;
       // - observar a worktree de outra pessoa é justamente o que o AGENTS.md
       //   pede para não fazer.
-      ignored: ["**/src-tauri/**", "**/.worktrees/**", "**/dist/**"],
+      //
+      // MAS: quando o próprio servidor roda DENTRO de uma worktree, ignorar
+      // `**/.worktrees/**` casa com a raiz inteira e o watcher não vê nada — o dev
+      // server passa a servir módulos velhos (HMR nunca chega). Nesse caso a
+      // exclusão sai: só a worktree atual é observada.
+      ignored: [
+        "**/src-tauri/**",
+        "**/dist/**",
+        // estáticos grandes (dicionário, n-gramas, modelos): não mudam em uso e o
+        // polling não precisa varrê-los a cada 400 ms
+        "**/public/ngrams/**",
+        "**/public/modelos/**",
+        "**/public/ort/**",
+        "**/public/dicionario/**",
+        "**/temp/**",
+        ...(emWorktree ? [] : ["**/.worktrees/**"]),
+      ],
     },
   },
   build: {

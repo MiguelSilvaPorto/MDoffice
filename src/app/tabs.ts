@@ -603,6 +603,13 @@ export const tabsMethods = {
     const tab = newTab(this.editor.createState(""));
     this.tabs.push(tab);
     await this.switchTo(tab.id);
+    // No navegador não há pasta padrão (nem Tauri para gravar): a aba fica como documento
+    // novo e o autosave guarda o texto na sessão do navegador.
+    if (!files.emTauri()) {
+      tab.statusSaved = "Novo documento (navegador)";
+      this.setSaveState();
+      return;
+    }
     // nasce salvo na pasta padrão do app (Documentos/mdOffice/Markdown), sem perguntar nada
     await this.nascerNoPadrao("md");
   },

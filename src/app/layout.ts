@@ -58,7 +58,9 @@ export const layoutMethods = {
       return;
     }
     const autosaveOn = this.settings.autosaveOn;
-    if (!autosaveOn) {
+    if (this.tab.saveFailed) {
+      el.textContent = "Não foi possível salvar";
+    } else if (!autosaveOn) {
       el.textContent = this.dirty
         ? "Alterações não salvas (Auto-salvar desligado)"
         : "Salvo (Auto-salvar desligado)";
@@ -93,12 +95,13 @@ export const layoutMethods = {
       rascunho: this.isDraft,
       sujo: this.dirty,
       salvando: this.saving,
+      erro: this.tab.saveFailed === true,
     });
 
     badge.classList.toggle("is-on", on);
     badge.classList.toggle("is-off", !on);
     badge.classList.toggle("is-dirty", modo === "salvando" && this.dirty);
-    badge.classList.toggle("is-pendente", modo === "nao-salvo");
+    badge.classList.toggle("is-pendente", modo === "nao-salvo" || modo === "erro");
 
     if (modo === "desligado") {
       btn.title = "Salvamento Automático: Desativado (clique para ligar)";
@@ -113,6 +116,11 @@ export const layoutMethods = {
         "se perder. Salve com Ctrl+S.";
       text.textContent = "Não salvo";
       if (iconUse) iconUse.setAttribute("href", "#i-save");
+    } else if (modo === "erro") {
+      btn.title = "Salvamento Automático: Ativado (clique para desligar)";
+      badge.title = this.statusSaved || "A última gravação falhou — use Ctrl+S ou “Salvar como…”";
+      text.textContent = "Não salvo";
+      if (iconUse) iconUse.setAttribute("href", "#i-cloud-off");
     } else if (modo === "salvando") {
       btn.title = "Salvamento Automático: Ativado (clique para desligar)";
       badge.title = this.saving ? "Salvando documento…" : "Salvando alterações pendentes…";
@@ -193,6 +201,7 @@ export const layoutMethods = {
         rascunho: this.isDraft,
         sujo: this.dirty,
         salvando: this.saving,
+        erro: this.tab.saveFailed === true,
       });
       topBtn.hidden = modo === "salvando";
       topText.textContent = dirText || baseName(this.path);

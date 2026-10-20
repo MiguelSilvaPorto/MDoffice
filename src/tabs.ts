@@ -21,6 +21,8 @@ export interface DocTab {
   title: string | null;
   isDraft: boolean;
   dirty: boolean;
+  /** A última tentativa de gravar falhou (o selo não pode dizer "Salvo"). */
+  saveFailed?: boolean;
   statusSaved: string;
   autoFixArmed: boolean;
   ignoredHere: Set<string>;
@@ -42,6 +44,7 @@ export function newTab(state: EditorState, init: Partial<DocTab> = {}): DocTab {
     title: null,
     isDraft: false,
     dirty: false,
+    saveFailed: false,
     statusSaved: "Novo documento",
     autoFixArmed: false,
     ignoredHere: new Set(),
