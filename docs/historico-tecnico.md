@@ -14369,7 +14369,7 @@ antigas quando fizer sentido.
   O `handleFiles` inseria **qualquer** arquivo do `dataTransfer` — e o WebView2 (Windows) entrega a
   **própria imagem arrastada** na lista de arquivos: a original ficava no lugar e entrava uma cópia.
   Medido no navegador com uma sonda: na versão antiga o drop interno chamava o `onImage` (a
-  inserção) e agora não chama; arquivo de fora continua entrando (o `moved` é falso).ao duplica))
+  inserção) e agora não chama; arquivo de fora continua entrando (o `moved` é falso).
 ## src/word/model.ts
 
 ### 2026-10-20 · esta tarefa · o tamanho do papel em cm (o rótulo da folha)
@@ -14458,3 +14458,15 @@ antigas quando fizer sentido.
   (o .pptx traz `wrap` desligado) e rodapé escuro no fundo escuro. A captura também foi consertada (painel e
   avisos fixos escondidos só no print, viewport maior e `captureBeyondViewport`), senão o print incluía a área
   de fora e não dava para julgar o desenho.
+## CHANGELOG.md
+
+### 2026-10-20 · Word · a promoção da entrada (não adicionado → adicionado)
+- **Local:** Word → **Não adicionado** → Frontend (a entrada do arrasto da imagem) e Word →
+  **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou; e o resto de marcação que
+  ficou no fim da entrada do histórico na `main` (`…(o `moved` é falso).ao duplica))`) saiu
+- **Porquê:** o fecho não pode promover: no instante do commit da tarefa a entrada ainda não está na
+  main (a regra do repositório é "nunca promova o que ainda não entrou na main"), então a promoção é
+  uma tarefa de follow-up, depois que o commit chegou (0618728). Promovi só a entrada DESTA tarefa —
+  e aproveitei para tirar o resto de marcação que a resolução do conflito do histórico deixou
+  passar (ele aparecia como texto solto no fim da entrada).

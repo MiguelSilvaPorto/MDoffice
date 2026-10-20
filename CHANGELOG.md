@@ -369,6 +369,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+### Adicionado (na main)
+
+**Backend**
+
+- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
+
+**Frontend**
+
 - **Arrastar uma imagem (ou um trecho) dentro do documento move em vez de duplicar**: o
   `handleDrop` do editor mandava **qualquer arquivo** da área de transferência do arrasto para o
   `handleFiles` — e o WebView2 entrega a **própria imagem arrastada** na lista de arquivos. Como o
@@ -386,14 +394,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   janela (nunca aumenta além de 100%) — e o **número do zoom virou botão**: um clique volta a **100%**.
   O papel continua saindo só da configuração de página (mudar o conteúdo, imagem inclusive, não mexe
   nele) e há teste prendendo isso.
-
-### Adicionado (na main)
-
-**Backend**
-
-- (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
-
-**Frontend**
 
 - **A folha do Word ganhou relevo (ilusão de profundidade)**: no tema escuro a sombra da folha era
   escura sobre um palco escuro e a página ficava "flutuando" sem contorno — o usuário pediu relevo.
