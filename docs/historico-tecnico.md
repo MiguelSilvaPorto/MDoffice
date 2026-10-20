@@ -14503,3 +14503,35 @@ antigas quando fizer sentido.
   com o que o modelo entende. Mostrá-lo a cada abertura ("Aberto com limitações: …") fazia o usuário achar
   que algo tinha se perdido — relato com print. Os avisos que **representam perda real** (fonte embutida,
   imagem que não carregou, tabela/gráfico sem suporte) continuam, agregados numa mensagem única por arquivo.
+
+## src/styles/word.css
+
+### 2026-10-15 · galeria de Estilos · a legenda não sai mais do cartão (relato com print)
+- **Local:** `.rb-style` (a largura), `.rb-style span` e `.rb-style small` (o recorte)
+- **Linha:** `.rb-style`: `width: max(64px, calc(80px * var(--fita-e, 1)))` → `width: max(80px, calc(80px * var(--fita-e, 1)))`;
+  `.rb-style span`: `max-width: 86px` → `max-width: 100%`; `.rb-style small`: `+ max-width: 100%; overflow: hidden; text-overflow: ellipsis`
+- **Porquê:** medido no app (vite dev + CDP): com a fita encolhida (`--fita-e = calc(1 * 0.81)`) o
+  cartão ficava com **65 px** (o piso era 64 px), mas a legenda "Calibri Light, 16" ocupa **70 px** —
+  e ela não tinha recorte (`overflow: visible`, `text-overflow: clip`), então vazava 6 px e encostava
+  no cartão vizinho. O piso de **80 px** é o que a maior legenda atual ocupa (a 100% o cartão já era
+  80 px; a mudança só vale quando a fita encolhe, e a galeria já rola de lado — 495 px de conteúdo em
+  340 px). As reticências são a rede para uma legenda futura maior; e o `max-width` do nome era **86 px**
+  fixo, maior que o cartão — também virou 100%. Depois: os 6 cartões com 80 px, a maior legenda com
+  **2 px de folga** e nenhuma cortada (1440 e a janela estreita, no claro e no escuro).
+
+## scripts/testar-layout.mts
+
+### 2026-10-15 · galeria de Estilos · as 2 verificações
+- **Local:** a seção nova "Word: a legenda do cartão de Estilo fica DENTRO do cartão"
+- **Linha:** `novo`
+- **Porquê:** o defeito é invisível para quem olha o código (o cartão "parece" certo a 100%) e volta
+  numa troca de piso ou num `max-width` fixo — a verificação prende o piso de 80 px e o par
+  `overflow: hidden` + `text-overflow: ellipsis` no nome e na legenda.
+
+## CHANGELOG.md
+
+### 2026-10-15 · galeria de Estilos · a entrada no Word
+- **Local:** Word → Não adicionado → Frontend
+- **Linha:** `novo`
+- **Porquê:** mudança do módulo Word; a entrada fica em "Não adicionado" até o commit do `fechar.ps1`
+  entregar a `main` (a promoção é um passo separado).

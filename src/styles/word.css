@@ -345,7 +345,11 @@ body.settings-open #word-pane {
   justify-content: center;
   gap: 1px;
   flex: none;
-  width: max(64px, calc(80px * var(--fita-e, 1)));
+  /* A legenda ("Calibri Light, 16") é texto de tamanho fixo: o cartão NÃO pode encolher abaixo do
+     que ela precisa. Antes o piso era 64px e, com a fita encolhida (--fita-e < 1), o cartão ia a
+     65px enquanto a legenda pedia 70px — ela saía do cartão e encostava no vizinho (relato com
+     print). O piso de 80px é o que a maior legenda atual ocupa; a galeria já rola de lado. */
+  width: max(80px, calc(80px * var(--fita-e, 1)));
   height: max(32px, calc(48px * var(--fita-e, 1)));
   padding: calc(2px * var(--fita-e, 1)) calc(3px * var(--fita-e, 1));
   color: var(--fg);
@@ -373,7 +377,9 @@ body.settings-open #word-pane {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 86px;
+  /* 100% do cartão (e não um número fixo): um número maior que o cartão deixaria o nome sair
+     também quando a fita encolhe */
+  max-width: 100%;
 }
 
 .rb-style small {
@@ -381,6 +387,10 @@ body.settings-open #word-pane {
   color: var(--muted);
   opacity: 0.8;
   white-space: nowrap;
+  /* a legenda nunca sai do cartão: quando não couber, termina em reticências */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rb-style.st-h1 span {

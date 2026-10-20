@@ -369,6 +369,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A legenda do cartão de Estilo não sai mais do cartão (fita do Word)**: na galeria **Estilos**,
+  o segundo texto de cada cartão ("Calibri Light, 16") era mais largo que o cartão quando a fita
+  encolhia — com `--fita-e` em 0,81 o cartão ia a **65 px** (o piso era 64 px) e a legenda pedia
+  **70 px**, então ela vazava e encostava no cartão vizinho (relato com print). Agora o **piso do
+  cartão é 80 px** — o que a maior legenda atual ocupa —, e **nome e legenda são recortados**
+  (`overflow: hidden` + reticências) para nenhum texto futuro vazar. O nome também deixou de ter um
+  `max-width` fixo (86 px) maior que o cartão. A galeria continua rolando de lado normalmente.
+
 ### Adicionado (na main)
 
 **Backend**

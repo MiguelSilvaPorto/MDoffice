@@ -1565,6 +1565,25 @@ console.log("\nfita do Word: o ajuste escala métricas (como as Apresentações)
   );
 }
 
+console.log("\nWord: a legenda do cartão de Estilo fica DENTRO do cartão");
+{
+  const css = ler("src/styles/word.css");
+  // O relato veio com print: com a fita encolhida (--fita-e = 0,81) o cartão ia a 65 px pelo piso
+  // de 64 px, mas a legenda "Calibri Light, 16" precisa de 70 px e saía do cartão, encostando no
+  // vizinho (ela não tinha recorte). O piso do cartão passou a ser o que a maior legenda ocupa.
+  checa(
+    "o cartão não encolhe abaixo do que a legenda precisa (piso de 80 px)",
+    /\.rb-style\s*\{[^}]*width:\s*max\(80px, calc\(80px \* var\(--fita-e, 1\)\)\)/.test(css),
+    "com o piso de 64 px a legenda de 70 px vaza do cartão"
+  );
+  checa(
+    "nome e legenda são recortados no cartão (reticências quando não couber)",
+    /\.rb-style span\s*\{[^}]*max-width:\s*100%/.test(css) &&
+      /\.rb-style small\s*\{[^}]*max-width:\s*100%;[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*ellipsis/.test(css),
+    "sem o recorte a legenda sai do cartão (o nome tinha um max-width fixo de 86 px, maior que o cartão)"
+  );
+}
+
 // ---------------------------------------------------------------- a folha do Word no tema escuro
 
 console.log("\nWord: a folha escurece junto com o tema (o papel)");
