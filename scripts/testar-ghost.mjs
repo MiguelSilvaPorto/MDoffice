@@ -16,6 +16,10 @@ const empacotar = async (fonte, saida) => {
   return import(pathToFileURL(join(tmp, saida)).href);
 };
 
+// a intensidade (Configurações) mora no localStorage: o teste escolhe o modo de cada régua
+let modo = "equilibrado";
+globalThis.localStorage = { getItem: (k) => (k === "mdc.ghost.mode" ? modo : null), setItem() {}, removeItem() {} };
+
 let falhas = 0;
 const ok = (nome, cond, detalhe = "") => {
   if (!cond) falhas++;
@@ -44,8 +48,21 @@ G.setLanguageModel(JSON.parse(readFileSync(join(raiz, "public/ngrams/pt.json"), 
   ok("ghost: palavra certa não vira correção", !certo?.replace, JSON.stringify(certo ?? null));
 }
 
-// ---------------------------------------------------------------- a régua (precisão e economia)
+// ---------------------------------------------------------------- pronome + verbo
 {
+  const idx = new G.DocumentIndex();
+  // o relato: "colo" querendo "coloquei" — depois de "eu" vem verbo na 1ª pessoa
+  const r = G.predictFromLine("Eu colo", "", 7, idx);
+  ok("ghost: eu colo → coloquei", r?.text === "quei", JSON.stringify(r?.text ?? null));
+  const n = G.predictFromLine("Ontem nós fize", "", 14, idx);
+  ok("ghost: nós fize → fizemos", n?.text === "mos", JSON.stringify(n?.text ?? null));
+  // próxima palavra: "dia" é 8× mais provável que a segunda — antes só aparecia com 45% de chance
+  const p = G.predictFromLine("Bom ", "", 4, idx);
+  ok("ghost: Bom → dia", p?.text?.startsWith("dia") === true, JSON.stringify(p?.text ?? null));
+}
+
+// ---------------------------------------------------------------- a régua (precisão e economia)
+function regua() {
   const texto = readFileSync(join(raiz, "scripts/corpus-wikipedia.txt"), "utf8");
   const paras = texto.split(/\n+/).filter((p) => p.trim().length > 30);
   const index = new G.DocumentIndex();
@@ -89,9 +106,24 @@ G.setLanguageModel(JSON.parse(readFileSync(join(raiz, "public/ngrams/pt.json"), 
   const cobertura = (100 * st.shown) / Math.max(1, st.posicoes);
   console.log(`   mostradas: ${st.shown} em ${st.posicoes} posições (cobertura ${cobertura.toFixed(1)}%)`);
   console.log(`   precisão: ${precisao.toFixed(1)}%   economia de teclas: ${economia.toFixed(1)}%`);
-  ok("ghost: a sugestão mostrada acerta pelo menos 88% das vezes", precisao >= 88, `${precisao.toFixed(1)}%`);
-  ok("ghost: ainda economiza teclas (não é mostrar nada)", economia >= 18, `${economia.toFixed(1)}%`);
-  ok("ghost: mostra com regularidade (não é raridade)", cobertura >= 5, `${cobertura.toFixed(1)}%`);
+  return { precisao, economia, cobertura };
+}
+
+// discreta: a régua de sempre (mostra pouco e certeiro)
+modo = "discreto";
+{
+  const { precisao, economia, cobertura } = regua();
+  ok("ghost (discreta): a sugestão mostrada acerta pelo menos 88% das vezes", precisao >= 88, `${precisao.toFixed(1)}%`);
+  ok("ghost (discreta): ainda economiza teclas", economia >= 18, `${economia.toFixed(1)}%`);
+  ok("ghost (discreta): mostra com regularidade", cobertura >= 5, `${cobertura.toFixed(1)}%`);
+}
+// equilibrada (o padrão): arrisca como o Copilot — mostra muito mais e economiza mais teclas
+modo = "equilibrado";
+{
+  const { precisao, economia, cobertura } = regua();
+  ok("ghost (equilibrada): economiza mais teclas que a discreta", economia >= 24, `${economia.toFixed(1)}%`);
+  ok("ghost (equilibrada): aparece em boa parte das posições", cobertura >= 15, `${cobertura.toFixed(1)}%`);
+  ok("ghost (equilibrada): ainda acerta boa parte do que mostra", precisao >= 40, `${precisao.toFixed(1)}%`);
 }
 
 console.log("");

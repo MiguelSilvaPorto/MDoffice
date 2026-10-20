@@ -32,7 +32,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **A sugestão passou a arriscar (estilo Copilot) e entende o pronome**: antes ela só aparecia com
+  muita certeza — "colo", "pesq" ou "Bom " não sugeriam nada. Agora, no modo **Equilibrado** (padrão), ela
+  mostra o palpite mais provável (Alt+Seta para baixo troca a opção): "pesq" → pesquisa, "Bom " → dia,
+  "obrig" → obrigado. E depois de **eu / nós / eles / você** o verbo concorda: "Eu colo" → **coloquei**,
+  "nós fize" → fizemos (o modelo, feito da Wikipédia, quase não tem 1ª pessoa). Economia de teclas no
+  `eval-ghost`: ~12% → ~25% (documento novo: ~7% → ~19%). O modo **Discreta** ficou igual ao comportamento
+  antigo, para quem prefere pouca sugestão e quase sempre certa. Vale no Word também.
 
 ### Adicionado (na main)
 

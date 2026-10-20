@@ -217,7 +217,12 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   exato. Há um **perfil do seu estilo** e um **modo de intensidade** (discreta, equilibrada,
   agressiva). O aprendizado mexe **no máximo ±25%** na decisão: antes ele multiplicava a
   probabilidade e uma sequência de recusas fazia a sugestão sumir justamente para quem digita mais.
-- **A decisão é calibrada, não um limiar fixo**: completar palavra mostra quando a **chance de
+- **Equilibrada (padrão) arrisca o palpite mais provável**: completar palavra aparece quando a
+  favorita tem 15%+ de chance entre as palavras com aquele começo; a próxima palavra, com 25%+ ou
+  quando é 3× mais provável que a segunda ("Bom " → "dia"). Depois de um pronome, o verbo concorda
+  ("Eu colo" → "coloquei", "nós fize" → "fizemos"). No `eval-ghost` a economia de teclas vai de
+  ~12% para ~25% (documento novo: ~7% → ~19%). O modo **Discreta** mantém a decisão calibrada abaixo.
+- **A decisão é calibrada, não um limiar fixo** (modo Discreta): completar palavra mostra quando a **chance de
   acertar** (uma regressão logística ajustada em `scripts/calibrar-ghost.mts` sobre o n-grama, as
   letras já digitadas, o documento e a concordância) é alta **e** o ganho esperado (teclas
   poupadas × chance) paga o custo de uma sugestão errada. O resultado é medido em

@@ -104,7 +104,8 @@ export function preference(prev: string, word: string): number {
 
 export type GhostMode = "discreto" | "equilibrado" | "agressivo";
 const MODE_KEY = "mdc.ghost.mode";
-const MODE_SCALE: Record<GhostMode, number> = { discreto: 1.4, equilibrado: 1, agressivo: 0.75 };
+// discreto = o padrão antigo (decisão calibrada, limiares de antes); equilibrado e agressivo arriscam mais
+const MODE_SCALE: Record<GhostMode, number> = { discreto: 1, equilibrado: 1, agressivo: 0.75 };
 
 /** Intensidade escolhida nas Configurações: discreto mostra menos e mais certeiro; agressivo mostra mais. */
 export function getGhostMode(): GhostMode {

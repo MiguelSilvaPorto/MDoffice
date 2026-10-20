@@ -9,7 +9,7 @@ import { getLanguageModel, type LangModel, START, COMMA, NUMBER } from "./model"
 import { predictLegacy } from "./legacy";
 import { personalIndex } from "./memory";
 import { preference, getGhostMode, minSuffixDelta, thresholdScale } from "../personal/feedback";
-import { agreementFactor } from "./agreement";
+import { agreementFactor, pessoaDoSujeito, personFactor } from "./agreement";
 import { fixTypo } from "./typo";
 
 /**
@@ -25,8 +25,11 @@ export const MIX = { kNext: 4, kPrefix: 3, maxLambda: 0.8, personal: 0.5, /** pe
 const seen = (c: number): number => (c >= 2 ? Math.min(c, 5) : c * MIX.single);
 
 export const THRESHOLDS = {
-  /** próxima palavra, depois de um espaço */
-  next: 0.45,
+  /**
+   * próxima palavra, depois de um espaço. Era 0,45: quase nunca aparecia ("Bom " não sugeria "dia").
+   * Com 0,25 a próxima palavra aparece 2,2× mais e ainda acerta ~58% (eval-ghost).
+   */
+  next: 0.25,
   /**
    * continuar a sugestão com mais uma palavra (até 3 no total). Era 0,75: no eval-ghost as
    * sugestões de várias palavras acertavam só 46% (as que mais incomodam quando erram); com 0,85
@@ -37,8 +40,21 @@ export const THRESHOLDS = {
   prefix1: 0.97,
   prefix2: 0.8,
   prefix3: 0.6,
+  /**
+   * completar palavra: além da decisão calibrada, mostra a candidata favorita quando ela tem pelo menos
+   * esta chance entre as palavras que começam assim (estilo Copilot: arrisca, e Alt+Seta troca). A
+   * calibrada sozinha escondia até "pesq" → "pesquisa" (52%). No eval-ghost a economia de teclas vai de
+   * 11,9% para ~21% (documento novo: 6,8% → ~15%). O modo discreto fica só com a calibrada.
+   */
+  prefixShow: 0.15,
   /** completar a palavra só vale a pena se faltar pelo menos isto de letras (o Tab também custa uma tecla) */
-  minSuffix: 4,
+  minSuffix: 3,
+  /**
+   * próxima palavra: também mostra quando a favorita tem pelo menos `nextLead` e é `nextRatio` vezes
+   * mais provável que a segunda ("Bom " → "dia": 17%, 8× a segunda). Só nos modos não discretos.
+   */
+  nextLead: 0.08,
+  nextRatio: 3,
   /** quantas palavras no máximo numa sugestão */
   maxWords: 3,
   /** oferece corrigir a palavra recém-digitada quando parece erro de digitação */
@@ -50,6 +66,9 @@ export const THRESHOLDS = {
   /** confiança mínima para uma alternativa */
   alt: 0.06,
 };
+
+/** O limiar antigo da próxima palavra: o modo discreto continua mostrando pouco e certeiro. */
+const NEXT_DISCRETO = 0.45;
 
 /** Quantas letras, no mínimo, a sugestão de completar palavra precisa poupar (depende do modo de intensidade). */
 const minChars = (): number => Math.max(1, THRESHOLDS.minSuffix + minSuffixDelta());
@@ -78,12 +97,12 @@ export const CALIB = {
   /** pesos de [1, logit(p), prefixo?, letras/4, pSelf−p, começo?, documento, nomePróprio] */
   w: [-1.8779, 0.3267, -0.299, 1.2468, -1.3148, -0.3969, 1.5371, -2.7874] as number[],
   /** custo (em teclas) de mostrar uma sugestão errada, por intensidade (medido no calibrar-ghost) */
-  custo: { discreto: 2.2, equilibrado: 1.4, agressivo: 1.2 } as Record<string, number>,
+  custo: { discreto: 1.4, equilibrado: 1.4, agressivo: 1.2 } as Record<string, number>,
   /**
    * Piso de P(acertar): o ganho cresce com o tamanho da sugestão, mas o incômodo de uma sugestão
    * errada não — sem o piso, uma candidata longa e improvável passaria só por "render mais".
    */
-  pMin: { discreto: 0.5, equilibrado: 0.38, agressivo: 0.3 } as Record<string, number>,};
+  pMin: { discreto: 0.38, equilibrado: 0.38, agressivo: 0.3 } as Record<string, number>,};
 
 /** logit com corte para não estourar em p = 0/1. */
 const logit = (p: number): number => {
@@ -361,6 +380,22 @@ function rank(model: LangModel, index: DocumentIndex, tokens: string[], prefix: 
     pcSum += c.pc;
     pdSum += c.pd;
   }
+  const pessoa = THRESHOLDS.agreement ? pessoaDoSujeito(tokens) : null;
+  const exists = (w: string): boolean => model.idOf.has(w);
+  if (pessoa) {
+    // o sujeito ("eu", "nós"…) muda quem é provável: aplica antes de normalizar, para a chance continuar comparável
+    for (const c of cands.values()) {
+      const f = personFactor(pessoa, c.lc, exists);
+      c.pc *= f;
+      c.pd *= f;
+    }
+    pcSum = 0;
+    pdSum = 0;
+    for (const c of cands.values()) {
+      pcSum += c.pc;
+      pdSum += c.pd;
+    }
+  }
   const norm = lowPrefix !== null; // com prefixo: probabilidade entre as palavras que começam assim
   const scored: { c: Cand; p: number }[] = [];
   let pSelf = 0;
@@ -414,7 +449,7 @@ function predictWithModel(model: LangModel, before: string, index: DocumentIndex
   const out: string[] = [];
   const words: string[] = [];
   for (let i = 0; i < list.length; i++) {
-    let text = suggestFrom(model, index, ctx, list[i], i === 0);
+    let text = suggestFrom(model, index, ctx, list[i], i === 0, list[1]?.p ?? 0);
     // faltam poucas letras: digitar custa quase o mesmo que o Tab, então a sugestão só atrapalha
     if (text && ctx.prefix !== null && text.trimEnd().length < minChars()) text = null;
     if (i === 0) {
@@ -430,7 +465,7 @@ function predictWithModel(model: LangModel, before: string, index: DocumentIndex
 }
 
 /** Monta o texto a sugerir a partir de uma palavra escolhida (ou nada, se o ganho não pagar o custo). */
-function suggestFrom(model: LangModel, index: DocumentIndex, ctx: Ctx, first: Ranked, main: boolean): string | null {
+function suggestFrom(model: LangModel, index: DocumentIndex, ctx: Ctx, first: Ranked, main: boolean, second = 0): string | null {
   const T = THRESHOLDS;
   const words: string[] = [];
   let tokens = ctx.tokens;
@@ -445,7 +480,8 @@ function suggestFrom(model: LangModel, index: DocumentIndex, ctx: Ctx, first: Ra
     const capsMismatch = ctx.prefix[0] === ctx.prefix[0].toLowerCase() && first.best.id >= 0 && model.caps.has(first.best.id);
     // completar palavra: a chance calibrada (é o que a régua mede e o que mais aparece)
     const prob = probAcerto(evidencias(first.p, first.pSelf, n, first.lambda, ctx.sentenceStart, capsMismatch)) * fatorPreferencia(prev, first.best.lc);
-    if (main && !decidir(prob, suffix.length)) return null;
+    const solta = getGhostMode() !== "discreto" && first.p >= limiar(T.prefixShow, "prefix");
+    if (main && !solta && !decidir(prob, suffix.length)) return null;
     words.push(suffix);
     tokens = [...tokens, first.best.lc];
     if (!main) return suffix;
@@ -453,7 +489,9 @@ function suggestFrom(model: LangModel, index: DocumentIndex, ctx: Ctx, first: Ra
     let w = first.best.display;
     if (ctx.sentenceStart) w = w[0].toUpperCase() + w.slice(1);
     // próxima palavra: a regra já validada (a calibração não se sustenta aqui — taxa-base baixa)
-    if (main && first.p < limiar(T.next, "next")) return null;
+    const discreto = getGhostMode() === "discreto";
+    const folgada = !discreto && first.p >= T.nextLead && first.p >= T.nextRatio * second;
+    if (main && !folgada && first.p < limiar(discreto ? NEXT_DISCRETO : T.next, "next")) return null;
     words.push(w);
     tokens = [...tokens, first.best.lc];
     if (!main) return w;

@@ -14426,7 +14426,62 @@ antigas quando fizer sentido.
   previsão roda a cada tecla e o contexto só usa a frase atual e as últimas palavras — reler um
   parágrafo de milhares de letras a cada tecla não muda o resultado.
 
+## src/broker/ghost/agreement.ts
+
+### 2026-10-20 · sugestão · concordância pronome + verbo
+
+- **Local:** bloco novo "pessoa do verbo" (`pessoaDoSujeito`, `personFactor`, `formaDaPessoa`).
+- **Linha:** novo.
+- **Porquê:** o relato "escrevi colo querendo coloquei e nem sugeriu". O modelo do idioma veio da
+  Wikipédia (quase sem 1ª pessoa) e guarda só os 12 sucessores de cada palavra — "eu" → "coloquei" não
+  existe nele, e "colocar" (1314) esmagava "coloquei" (98). Depois de eu/tu/ele/nós/eles (com "não",
+  "já", "me"… no meio), a forma verbal da pessoa certa ×6 e o resto ×0,35. Para não confundir verbo
+  com substantivo ("filho", "colocado"), a forma só conta como verbo se o infinitivo dela existe no
+  vocabulário (coloquei → coloqu→coloc + ar); irregulares comuns têm lista.
+
+## src/broker/ghost/predict.ts
+
+### 2026-10-20 · sugestão · o modo equilibrado arrisca o palpite
+
+- **Local:** `THRESHOLDS` (`next`, `prefixShow`, `nextLead`, `nextRatio`, `minSuffix`), `rank` (aplica
+  `personFactor` antes de normalizar), `suggestFrom` (regras `solta` e `folgada`), `CALIB.custo/pMin`.
+- **Linha:** `next: 0.45` → `0.25`; novos `prefixShow: 0.15`, `nextLead: 0.08`, `nextRatio: 3`;
+  `minSuffix: 4` → `3`; `custo.discreto 2.2 → 1.4`, `pMin.discreto 0.5 → 0.38`; o limiar da próxima
+  palavra no discreto fica no antigo `NEXT_DISCRETO = 0.45`.
+- **Porquê:** a decisão calibrada só mostrava com P(acertar) ≥ 0,38 e a calibração subestima: "pesq"
+  → "pesquisa" (52% entre as candidatas) ficava escondido; o relato era "não aparece nada". Medido no
+  `eval-ghost` (corpus-wikipedia): economia de teclas 11,9% → 24,6% (sem aprender: 6,8% → 18,9%),
+  cobertura 5% → 32%; a precisão do que aparece cai (71% → 33%) — é o Copilot: o palpite errado some
+  na próxima letra e Alt+Seta troca a opção. O modo Discreta virou exatamente o padrão antigo (o
+  `test:ghost` prende 92,7% / 20,2% / 5,2% nele).
+
+## src/broker/personal/feedback.ts
+
+### 2026-10-20 · sugestão · discreto deixa de apertar os limiares
+
+- **Local:** `MODE_SCALE`.
+- **Linha:** `discreto: 1.4` → `discreto: 1`.
+- **Porquê:** o discreto agora é o comportamento padrão antigo (decisão calibrada e limiar 0,45 da
+  próxima palavra); a escala extra o deixava mudo.
+
+## src/settingsPage.ts
+
+### 2026-10-20 · sugestão · o texto da intensidade
+
+- **Local:** a linha "Intensidade das sugestões".
+- **Linha:** "Discreta: 4+ letras… Equilibrada: 3+ letras…" → "Discreta: só com muita certeza…
+  Equilibrada: arrisca o palpite mais provável…".
+- **Porquê:** os modos mudaram de sentido (ver `predict.ts`).
+
 ## scripts/testar-ghost.mjs · scripts/eval-ghost.mts · scripts/calibrar-ghost.mts
+
+### 2026-10-20 · sugestão · régua por modo e casos de pronome
+
+- **Local:** `testar-ghost.mjs`: stub de `localStorage` (escolhe o modo), a régua vira `regua()`.
+- **Linha:** uma régua (88% / 18% / 5%) → a mesma régua no modo **discreto** + uma no **equilibrado**
+  (economia ≥ 24%, cobertura ≥ 15%, precisão ≥ 40% na população fixa) + "Eu colo" → "quei",
+  "Ontem nós fize" → "mos", "Bom " → "dia".
+- **Porquê:** o padrão passou a arriscar; a régua antiga continua valendo para quem escolhe Discreta.
 
 ### 2026-10-19 · sugestão · a régua fixa e a ferramenta de calibração
 
