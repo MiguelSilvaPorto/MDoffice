@@ -13,9 +13,9 @@ export const MEDIA_FILTER = {
   extensions: ["mp4", "webm", "ogv", "mov", "m4v", "mp3", "wav", "m4a", "aac", "ogg", "oga", "flac"],
 };
 
-export const DOCX_FILTER = { name: "Documento do Word", extensions: ["docx"] };
-export const PPTX_FILTER = { name: "Apresentação do PowerPoint", extensions: ["pptx"] };
-export const XLSX_FILTER = { name: "Planilha do Excel", extensions: ["xlsx"] };
+export const DOCX_FILTER = { name: "Documento (.docx)", extensions: ["docx"] };
+export const PPTX_FILTER = { name: "Apresentação (.pptx)", extensions: ["pptx"] };
+export const XLSX_FILTER = { name: "Planilha (.xlsx)", extensions: ["xlsx"] };
 
 /** Formatos do Office que o app abre (modernos + os antigos, que só avisam). */
 export const OFFICE_FILTER = {
@@ -51,7 +51,7 @@ export async function pickImportOffice(): Promise<string | null> {
     filters: [
       OFFICE_FILTER,
       DOCX_FILTER,
-      { name: "Planilha do Excel (inclui .xlsm)", extensions: ["xlsx", "xlsm", "xls"] },
+      { name: "Planilha (.xlsx, inclui .xlsm)", extensions: ["xlsx", "xlsm", "xls"] },
       PPTX_FILTER,
     ],
   });

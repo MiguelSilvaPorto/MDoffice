@@ -395,7 +395,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
 
           <h4 class="st-group">Salvamento</h4>
           <div class="st-list">
-            ${toggle("autosave", "Salvamento automático", "Regrava rascunhos do app e documentos MD* enquanto você escreve. Arquivos do Word, PowerPoint e Excel são gravados só no Ctrl+S (o selo da barra mostra “Não salvo”).", s.autosaveOn, "i-save")}
+            ${toggle("autosave", "Salvamento automático", "Regrava rascunhos do app e documentos MD* enquanto você escreve. Arquivos .docx, .pptx e .xlsx são gravados só no Ctrl+S (o selo da barra mostra “Não salvo”).", s.autosaveOn, "i-save")}
             ${toggle("hist", "Guardar versões dos documentos", "Uma cópia automática a cada 5 minutos (se o texto mudou) e ao salvar.", s.historyOn, "i-clock")}
             <div class="st-row">
               ${rowIcon("i-list")}
@@ -408,7 +408,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
           <h4 class="st-group">Backup em disco</h4>
           <p class="st-sub">Uma cópia de verdade do arquivo, gravada em duas pastas ao mesmo tempo. Se uma falhar (HD desconectado, sem permissão), a outra ainda salva.</p>
           <div class="st-list">
-            ${toggle("backup", "Guardar cópia dos documentos em disco", "Ao salvar, ao sair de um documento com alterações e uma vez por dia. Também vale para Word, PowerPoint e Excel.", s.backupOn, "i-folder")}
+            ${toggle("backup", "Guardar cópia dos documentos em disco", "Ao salvar, ao sair de um documento com alterações e uma vez por dia. Também vale para documentos (.docx), apresentações (.pptx) e planilhas (.xlsx).", s.backupOn, "i-folder")}
             ${toggle("backupwarn", "Avisar quando o original sumir", "Se você apagar um arquivo do disco, o app avisa na barra inferior e deixa restaurar pela cópia.", s.backupWarnMissing, "i-eye")}
             <div class="st-row">
               ${rowIcon("i-trash")}

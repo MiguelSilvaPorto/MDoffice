@@ -3,7 +3,7 @@
 
 # mdOffice
 
-**Suíte de documentos em português: Markdown, Word, Excel e PowerPoint num app só — com escrita assistida e IA local, sem cobrança extra por IA.**
+**Suíte de documentos em português: Markdown, documentos, planilhas e apresentações num app só — com escrita assistida e IA local, sem cobrança extra por IA.**
 
 ![status](https://img.shields.io/badge/status-em%20desenvolvimento-orange)
 ![feito com](https://img.shields.io/badge/feito%20com-TypeScript%20%2B%20Rust%2FTauri-blue)
@@ -18,13 +18,13 @@
 
 ---
 
-**mdOffice** é uma suíte de produtividade feita para o português e para rodar no seu computador: você escreve **Markdown**, edita **documentos Word (.docx)**, **planilhas (.xlsx)** e **apresentações (.pptx)** — e a escrita anda junto com um corretor/revisor próprio, tradução automática e uma **IA pequena que roda na sua máquina**. A ideia é simples: assistência de IA faz parte do produto, sem cobrança separada por isso.
+**mdOffice** é uma suíte de produtividade feita para o português e para rodar no seu computador: você escreve **Markdown**, edita **documentos (.docx)**, **planilhas (.xlsx)** e **apresentações (.pptx)** — e a escrita anda junto com um corretor/revisor próprio, tradução automática e uma **IA pequena que roda na sua máquina**. A ideia é simples: assistência de IA faz parte do produto, sem cobrança separada por isso.
 
 ## Como começou
 
 O app nasceu como **mdEditor**, um editor de Markdown simples — só escrever e pronto.
 Com o tempo a ambição cresceu e tentei construir uma **suíte de documentos** inteira
-dentro dele: abas, Word, Excel, PowerPoint, desenho, tradução, revisão. Foi por isso
+dentro dele: abas, documentos, planilhas, apresentações, desenho, tradução, revisão. Foi por isso
 que o nome virou **mdOffice** — mantém a origem (o Markdown) e ganha por cima os
 **editores da suíte**.
 Em vários momentos quase desisti.
@@ -39,11 +39,11 @@ copiar código ou conteúdo.
 - **MD\*** — o editor de Markdown: realce de sintaxe, pré-visualização ao vivo, desenho
   assistido e em letras, diagramas, imagens, e a escrita assistida (corretor, correção
   automática, sugestões, revisão inteligente, formalização com prévia e tradução PT-BR → inglês). → [detalhes](docs/md.md)
-- **Word** — motor de `.docx` de verdade: folha A4/Carta com páginas, cabeçalho, rodapé,
+- **Documentos (.docx)** — motor de `.docx` de verdade: folha A4/Carta com páginas, cabeçalho, rodapé,
   estilos, tabelas, imagens, zoom; abre e salva `.docx`. → [detalhes](docs/word.md)
-- **Excel** — planilha com grade que cresce, fórmulas (com [documentação própria](docs/excel/formulas/README.md)),
+- **Planilhas (.xlsx)** — planilha com grade que cresce, fórmulas (com [documentação própria](docs/excel/formulas/README.md)),
   formatação, mesclagem, bordas, abas e zoom; abre `.xlsx`/`.xlsm`. → [detalhes](docs/excel.md)
-- **PowerPoint** — apresentações: abre e salva `.pptx` com fidelidade, editor de formas,
+- **Apresentações (.pptx)** — apresentações: abre e salva `.pptx` com fidelidade, editor de formas,
   tabelas, gráficos, mídia, transições, modelos, notas e modo apresentação. → [detalhes](docs/powerpoint.md)
 - **Geral** — o que vale para o app todo: abas, tela de Início, histórico de versões,
   backup em disco, configurações, busca de comandos e modo foco. → [no changelog](CHANGELOG.md)

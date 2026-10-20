@@ -15301,6 +15301,7 @@ antigas quando fizer sentido.
   `main`, então a promoção anda depois, num commit só de documentação, como nas rodadas
   anteriores. Promovi só a entrada DESTA tarefa (`2e6fdf4`); as que seguem em "Não adicionado"
   são de sessões com trabalho aberto.
+
 ## README.md
 
 ### 2026-10-20 · esta tarefa · a suíte descrita como suíte, não como imitação
@@ -15366,3 +15367,98 @@ antigas quando fizer sentido.
 - **Linha:** `novo` (promovido a "Adicionado" no fechamento)
 - **Porquê:** é documentação do app todo (o roadmap do módulo de Apresentações e os links do
   README), não de um módulo — a categoria é **Geral**.
+
+## src/homePage.ts
+
+### 2026-10-20 · módulos pelo formato · Início
+- **Local:** `FORMAT_META` e os cartões/atalhos da tela de Início
+- **Linha:** `label: "Word"/"Excel"/"PowerPoint"` → `"Documentos"/"Planilhas"/"Apresentações"`;
+  `newLabel: "documento Word"` → `"documento (.docx)"` (idem planilha/apresentação); cartões
+  `"Word"` → `"Documentos (.docx)"`, `"Excel"` → `"Planilhas (.xlsx)"`, `"PowerPoint"` →
+  `"Apresentações (.pptx)"`; títulos de importar e dos atalhos citam o formato, não a marca
+- **Porquê:** o uso do nome da marca como **nome de funcionalidade** pode sugerir que o app é da
+  Microsoft ou afiliado a ela. O nome do módulo passa a ser o **formato** que ele abre e salva
+  (`.docx/.xlsx/.pptx`), que é uso descritivo aceito. "Markdown" não é marca e ficou. O filtro
+  monta `"${meta.label} (${meta.ext})"`, então a barra de filtro já mostra "Documentos (.docx)".
+
+## src/fileIcons.ts
+
+### 2026-10-20 · módulos pelo formato · dicas das abas
+- **Local:** `FILE_KIND_LABEL`
+- **Linha:** `"Documento Word (.docx)"` → `"Documento (.docx)"`; `"Planilha Excel (.xlsx)"` →
+  `"Planilha (.xlsx)"`; `"Apresentação PowerPoint (.pptx)"` → `"Apresentação (.pptx)"`
+- **Porquê:** é o texto que aparece na dica de cada aba; descreve o **arquivo** pelo formato (o
+  tipo real continua vindo da extensão/`kind`), sem a marca no nome da funcionalidade.
+
+## src/app/commands.ts
+
+### 2026-10-20 · módulos pelo formato · paleta e menus
+- **Local:** `openPalette` (grupos Documento/Exportar/Ver)
+- **Linha:** "Nova planilha Excel (.xlsx)" → "Nova planilha (.xlsx)", "Novo documento Word
+  (.docx)" → "Novo documento (.docx)", "Nova apresentação PowerPoint (.pptx)" → "Nova
+  apresentação (.pptx)", "Importar do Office (Word, Excel, PowerPoint)…" → "(… .docx, .xlsx,
+  .pptx)…", "Exportar como Word (.docx)" → "Exportar como documento (.docx)", "Copiar formatado
+  (colar no Word)" → "(colar em outro editor)", "Início (Hub: Word, Excel, MD, PowerPoint)" →
+  "(documentos, planilhas, apresentações e Markdown)"
+- **Porquê:** a paleta é a lista de comandos que o usuário vê; os rótulos nomeavam o módulo pela
+  marca. As **palavras-chave** de busca (`excel`, `word`…) ficaram de propósito: quem ainda
+  procurar pelo nome antigo encontra o comando, e elas não aparecem na tela.
+
+## src/app/tabs.ts
+
+### 2026-10-20 · módulos pelo formato · menu "+"
+- **Local:** `openNewMenu`
+- **Linha:** "Documento Word (.docx)" → "Documentos (.docx)"; "Planilha"/"Excel (.xlsx)" →
+  "Planilhas (.xlsx)"; "Apresentação"/"PowerPoint (slides, F5)" → "Apresentações (.pptx)" (as
+  dicas passam a descrever o que tem dentro: páginas/fórmulas/lâminas)
+- **Porquê:** o menu de criar é o primeiro lugar em que o usuário escolhe o módulo; o nome agora é
+  o formato.
+
+## src/pastas.ts · src/app/pastaPadrao.ts
+
+### 2026-10-20 · módulos pelo formato · subpastas padrão
+- **Local:** `PASTA_DO_TIPO`; `raizPadrao` + `migrarPastasAntigas` (novo)
+- **Linha:** `word: "Word"` → `"Documentos"`, `excel: "Excel"` → `"Planilhas"`, `ppt:
+  "PowerPoint"` → `"Apresentações"`; `+ migrarPastasAntigas(raiz)` antes de garantir as pastas
+- **Porquê:** as subpastas aparecem no disco e na árvore de projetos — eram o nome da marca num
+  lugar visível. A migração chama `rename_folder` (do Rust) para `Word→Documentos` etc.; o comando
+  **nunca sobrescreve**, então, se o nome novo já existir, as duas pastas ficam como estão e
+  nenhum arquivo é movido nem juntado. A pasta `Markdown` não muda.
+
+## Strings de interface (mesma tarefa)
+
+### 2026-10-20 · módulos pelo formato · avisos e diálogos
+- **Local/arquivo:** `src/app/documents.ts` (avisos de .xls/.csv/.doc/.ppt),
+  `src/app/drawing.ts` e `src/app/toolbar.ts` (desenho em documentos), `src/app/app.ts` (lista do
+  backup e reorganizar seções), `src/app/layout.ts` (selo "Não salvo"), `src/app/wordDocs.ts`,
+  `excelDocs.ts` e `powerpointDocs.ts` (status e diálogo de salvar), `src/app/formalizar.ts`,
+  `src/app/assistant.ts`, `src/settingsPage.ts` (textos das opções), `src/export/{run,formats,
+  dialog}.ts` (exportar/copiar), `src/files.ts` (filtros do diálogo do sistema),
+  `src/word/docxImport.ts` e `src/excel/xlsximport/index.ts` (erros de arquivo),
+  `src/powerpoint/ui/painel.ts` (notas de forma), `src/aiDocs/modelos.ts` (modelos de texto),
+  `index.html` (`aria-label` da folha e dica de justificar)
+- **Linha:** menções que **nomeavam o módulo** ("documentos Word", "Arquivos do Word, PowerPoint e
+  Excel", "Abra no Excel e salve como .xlsx", "cole no Word") → o formato ou uma descrição
+  ("documentos (.docx)", "arquivos .docx, .pptx e .xlsx", "Salve a planilha como .xlsx") — a dica
+  de justificar virou "alinhar às duas margens"
+- **Porquê:** manter "Word/Excel/PowerPoint" nos avisos deixaria a marca como nome de
+  funcionalidade no meio da interface, mesmo com os cartões renomeados. Onde o texto **só
+  descreve o formato** (abrir/salvar `.docx`), a menção ao formato continua — é uso descritivo.
+
+## scripts/testar-layout.mts
+
+### 2026-10-20 · módulos pelo formato · a checagem
+- **Local:** bloco "pasta padrão dos documentos" e a checagem nova dos nomes
+- **Linha:** esperados `Word/Excel/PowerPoint` → `Documentos/Planilhas/Apresentações`; `+` checagem
+  dos rótulos de `FORMAT_META` e `FILE_KIND_LABEL`
+- **Porquê:** prende os nomes novos (e as pastas) para a marca não voltar sem alguém perceber. O
+  teste não olha comentários nem símbolos internos: só os textos que o usuário vê.
+
+## README.md · docs/funcionalidades.md
+
+### 2026-10-20 · módulos pelo formato · documentação
+- **Local:** apresentação do projeto, lista de módulos e tabela de funcionalidades
+- **Linha:** "Word/Excel/PowerPoint" como nome dos módulos → "Documentos (.docx)", "Planilhas
+  (.xlsx)" e "Apresentações (.pptx)"
+- **Porquê:** a documentação chamava os módulos pela marca; o nome do produto e os caminhos dos
+  documentos (`docs/word.md` etc.) não mudaram — só o rótulo visível, para ficar igual ao app.

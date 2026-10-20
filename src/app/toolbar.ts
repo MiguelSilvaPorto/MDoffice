@@ -20,7 +20,7 @@ export const toolbarMethods = {
         return;
       }
       if (name === "draw") {
-        toast("O desenho ainda não está disponível em documentos Word.", "info", 3200);
+        toast("O desenho ainda não está disponível em documentos (.docx).", "info", 3200);
         return;
       }
     }

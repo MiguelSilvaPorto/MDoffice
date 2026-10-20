@@ -1,15 +1,16 @@
 // Pasta padrão dos documentos: onde um documento novo nasce, sem o usuário escolher nada.
 //
 // A raiz é `…/Documentos/mdOffice` (o Rust cria: `default_docs_dir`) e dentro dela vivem as
-// quatro subpastas por tipo — Markdown, Word, Excel, PowerPoint. O documento novo nasce **salvo**
-// na subpasta do próprio tipo (nome livre: Documento, Documento-2, …) e a raiz entra na lista de
-// projetos da barra lateral, então as subpastas aparecem na árvore como pastas normais.
+// quatro subpastas por tipo — Markdown, Documentos, Planilhas, Apresentações. O documento novo
+// nasce **salvo** na subpasta do próprio tipo (nome livre: Documento, Documento-2, …) e a raiz
+// entra na lista de projetos da barra lateral, então as subpastas aparecem na árvore como pastas
+// normais.
 //
 // Quem quiser outro lugar usa "Salvar como…", que continua perguntando — já sugerindo a subpasta
 // do tipo.
 
-import { createFolder, defaultDocsDir, existsText } from "../files";
-import { comRaizPadrao, EXTENSAO_DO_TIPO, PASTA_DO_TIPO, type TipoComPasta } from "../pastas";
+import { createFolder, defaultDocsDir, existsText, renameFolder } from "../files";
+import { comRaizPadrao, EXTENSAO_DO_TIPO, PASTA_DO_TIPO, juntarPasta, type TipoComPasta } from "../pastas";
 import { joinPath, toast } from "../util";
 import type { App } from "./app";
 
@@ -18,9 +19,32 @@ let raiz: string | null = null;
 /** As subpastas já garantidas nesta sessão. */
 const prontas = new Set<string>();
 
+/** Os nomes antigos das subpastas (quando a pasta ainda usava o nome das marcas). */
+const PASTA_ANTIGA: Partial<Record<TipoComPasta, string>> = {
+  word: "Word",
+  excel: "Excel",
+  ppt: "PowerPoint",
+};
+
+/**
+ * Renomeia uma vez as subpastas antigas (`Word`, `Excel`, `PowerPoint`) para os nomes
+ * descritivos. O Rust nunca sobrescreve: se o nome novo já existir, a renomeação falha e as duas
+ * pastas ficam como estão — nenhum arquivo é movido nem juntado.
+ */
+async function migrarPastasAntigas(raiz: string): Promise<void> {
+  for (const tipo of Object.keys(PASTA_ANTIGA) as TipoComPasta[]) {
+    try {
+      await renameFolder(juntarPasta(raiz, PASTA_ANTIGA[tipo]!), PASTA_DO_TIPO[tipo]);
+    } catch {
+      /* não havia a pasta antiga (ou o nome novo já ocupava o lugar): fica como está */
+    }
+  }
+}
+
 /** A raiz `…/Documentos/mdOffice`, garantindo as quatro subpastas por tipo. */
 export async function raizPadrao(): Promise<string> {
   if (!raiz) raiz = await defaultDocsDir();
+  await migrarPastasAntigas(raiz);
   for (const tipo of Object.keys(EXTENSAO_DO_TIPO) as TipoComPasta[]) {
     if (prontas.has(tipo)) continue;
     try {

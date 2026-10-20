@@ -1,9 +1,10 @@
 // Pastas padrão dos documentos: cada tipo tem a sua debaixo de `Documentos/mdOffice`.
 //
 // A ideia é o usuário nunca precisar escolher pasta: o documento novo nasce salvo na subpasta
-// do próprio tipo (Markdown, Word, Excel, PowerPoint) e a raiz vira um projeto na barra
-// lateral — as subpastas aparecem como pastas normais na árvore. Quem salva em outro lugar
-// escolhe "Salvar como…" e pronto.
+// do próprio tipo (Markdown, Documentos, Planilhas, Apresentações) e a raiz vira um projeto na
+// barra lateral — as subpastas aparecem como pastas normais na árvore. Quem salva em outro lugar
+// escolhe "Salvar como…" e pronto. Os nomes são descritivos (o formato, não a marca): a pasta é
+// o que o usuário vê no disco e na árvore.
 //
 // Puro (sem DOM e sem Tauri): o que é regra fica aqui e é testado no Node; quem fala com o
 // disco é `files.ts`.
@@ -16,9 +17,9 @@ export type TipoComPasta = Exclude<FileKind, "settings" | "other">;
 /** O nome da subpasta de cada tipo — é o que o usuário vê no disco e na árvore de projetos. */
 export const PASTA_DO_TIPO: Record<TipoComPasta, string> = {
   md: "Markdown",
-  word: "Word",
-  excel: "Excel",
-  ppt: "PowerPoint",
+  word: "Documentos",
+  excel: "Planilhas",
+  ppt: "Apresentações",
 };
 
 /** A extensão com que cada tipo nasce (sem ponto). */

@@ -16,7 +16,7 @@ import { readHeaderFooter } from "./docx/page";
 export async function importDocx(bytes: Uint8Array | ArrayBuffer): Promise<{ doc: PMNode; setup: PageSetup }> {
   const zip = await JSZip.loadAsync(bytes);
   const docFile = zip.file("word/document.xml");
-  if (!docFile) throw new Error("Este arquivo não parece ser um documento do Word (.docx).");
+  if (!docFile) throw new Error("Este arquivo não parece ser um documento (.docx).");
   const read = async (path: string) => (zip.file(path) ? await zip.file(path)!.async("string") : null);
 
   const stylesDoc = (await read("word/styles.xml")) ? parseXml((await read("word/styles.xml"))!) : null;

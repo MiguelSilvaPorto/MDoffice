@@ -65,7 +65,7 @@ export async function runExport(ctx: ExportCtx, prefs: ExportPrefs, say: (t: str
     } else {
       await navigator.clipboard.writeText(plain);
     }
-    toast("Copiado com formatação. Cole no Word, Docs ou e-mail.", "ok", 3600);
+    toast("Copiado com formatação. Cole no seu editor, no Google Docs ou no e-mail.", "ok", 3600);
     return true;
   }
 
@@ -120,7 +120,7 @@ export async function runExport(ctx: ExportCtx, prefs: ExportPrefs, say: (t: str
       break;
     }
     case "docx": {
-      say("Gerando o documento do Word…");
+      say("Gerando o documento (.docx)…");
       const bytes =
         ctx.nativeDocx && prefs.lang === "pt"
           ? await ctx.nativeDocx()

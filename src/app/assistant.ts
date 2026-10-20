@@ -443,7 +443,7 @@ export const assistantMethods = {
   openReview(this: App): void {
     if (this.semDocumento()) return;
     if (this.tab.kind === "word") {
-      toast("Em documentos Word, clique nas palavras sublinhadas para ver as sugestões.", "info", 3600);
+      toast("Em documentos (.docx), clique nas palavras sublinhadas para ver as sugestões.", "info", 3600);
       return;
     }
     if (this.reviewHandle) return;

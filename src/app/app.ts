@@ -261,7 +261,7 @@ export class App {
             ? toast("A estrutura de títulos não se aplica a planilhas.", "info", 2600)
             : this.editor.gotoLine(line),
       edit: (from, to, insert) => {
-        if (this.tab.kind === "word") toast("Reorganizar seções ainda não funciona em documentos Word.", "info", 3200);
+        if (this.tab.kind === "word") toast("Reorganizar seções ainda não funciona em documentos (.docx).", "info", 3200);
         else this.editor.replaceRange(from, to, insert);
       },
       copy: (text) => void copyText(text).then((ok) => toast(ok ? "Texto da seção copiado." : "Não foi possível copiar.", ok ? "ok" : "err", 2200)),
@@ -460,7 +460,7 @@ export class App {
         <ul class="bk-ask-list">
           <li><b>Cópia a cada salvamento</b> e uma por dia, mesmo que você esqueça de salvar.</li>
           <li><b>Antes de sobrescrever</b> qualquer arquivo, o app guarda a versão anterior.</li>
-          <li><b>Vale para Word, PowerPoint e Excel</b> também — não só Markdown.</li>
+          <li><b>Vale para documentos (.docx), apresentações (.pptx) e planilhas (.xlsx)</b> também — não só Markdown.</li>
           <li>Você escolhe quanto tempo guardar e pode apagar quando quiser.</li>
         </ul>
         <p class="bk-ask-pasta">Onde guardar?</p>

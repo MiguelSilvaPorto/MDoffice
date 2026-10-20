@@ -14,11 +14,11 @@ export const commandsMethods = {
       items.push({ group, label, run, hint, keywords });
 
     add("Documento", "Novo documento (nova aba)", () => void this.newDoc(), teclaVisivel("nova-aba"), "criar");
-    add("Documento", "Nova planilha Excel (.xlsx)", () => void this.newExcelDoc(), undefined, "planilha excel tabela");
-    add("Documento", "Novo documento Word (.docx)", () => void this.newWordDoc(), undefined, "word documento");
-    add("Documento", "Nova apresentação PowerPoint (.pptx)", () => void this.newPowerPointDoc(), undefined, "apresentacao slides");
+    add("Documento", "Nova planilha (.xlsx)", () => void this.newExcelDoc(), undefined, "planilha excel tabela");
+    add("Documento", "Novo documento (.docx)", () => void this.newWordDoc(), undefined, "word documento");
+    add("Documento", "Nova apresentação (.pptx)", () => void this.newPowerPointDoc(), undefined, "apresentacao slides");
     add("Documento", "Abrir arquivo…", () => void this.openDocDialog(), teclaVisivel("abrir"));
-    add("Documento", "Importar do Office (Word, Excel, PowerPoint)…", () => void this.importOfficeDialog(), undefined, "docx xlsx xlsm pptx excel word abrir importar");
+    add("Documento", "Importar do Office (.docx, .xlsx, .pptx)…", () => void this.importOfficeDialog(), undefined, "docx xlsx xlsm pptx excel word abrir importar");
     add("Documento", "Salvar", () => void this.save(false), teclaVisivel("salvar"));
     add("Documento", "Salvar como…", () => void this.save(true), teclaVisivel("salvar-como"));
     add("Documento", this.settings.autosaveOn ? "Desativar salvamento automático" : "Ativar salvamento automático", () => this.toggleAutosave(), undefined, "autosave salvar automático ligar desligar");
@@ -38,12 +38,12 @@ export const commandsMethods = {
 
     add("Exportar", "Exportar…", () => this.openExport(), teclaVisivel("exportar"));
     add("Exportar", "Exportar como PDF", () => this.openExport("pdf"), undefined, "imprimir");
-    add("Exportar", "Exportar como Word (.docx)", () => this.openExport("docx"), undefined, "doc");
+    add("Exportar", "Exportar como documento (.docx)", () => this.openExport("docx"), undefined, "doc");
     add("Exportar", "Exportar como página web (.html)", () => this.openExport("html"), undefined, "site");
     add("Exportar", "Exportar Markdown", () => this.openExport("md"));
     add("Exportar", "Exportar texto simples", () => this.openExport("txt"), undefined, "txt");
     add("Exportar", "Pacote para IA (.zip)", () => this.openExport("zip"), undefined, "zip");
-    add("Exportar", "Copiar formatado (colar no Word)", () => this.openExport("copy"));
+    add("Exportar", "Copiar formatado (colar em outro editor)", () => this.openExport("copy"));
     add("Exportar", "Copiar Markdown para a IA", () => void this.copyForAI(), teclaVisivel("copiar-ia"));
 
     const tr = this.translation;
@@ -70,7 +70,7 @@ export const commandsMethods = {
     add("Ver", "Alternar tema claro/escuro", () => this.applyTheme(document.documentElement.dataset.theme !== "dark"), undefined, "escuro dark");
     add("Ver", "Mostrar/ocultar painel lateral", () => this.toggle("no-sidebar"));
     add("Ver", "Mostrar/ocultar pré-visualização", () => this.toggle("no-preview"));
-    add("Ver", "Início (Hub de criação: Word, Excel, MD, PowerPoint)", () => this.showHome(), undefined, "home inicio novo hub criar");
+    add("Ver", "Início (Hub de criação: documentos, planilhas, apresentações e Markdown)", () => this.showHome(), undefined, "home inicio novo hub criar");
     add("Ver", "Painel: Projetos", () => this.openSidePanel("projects"));
     add("Ver", "Painel: Estrutura do documento", () => this.openSidePanel("outline"));
     add("Ver", "Boas-vindas e ajuda", () => this.showWelcome(), teclaVisivel("ajuda"));
@@ -102,7 +102,7 @@ export const commandsMethods = {
 
   toggleTranslation(this: App): void {
     if (this.tab.kind === "word") {
-      toast("A tradução ao vivo ainda é só para Markdown. Em documentos Word use Exportar e escolha o idioma Inglês.", "info", 5200);
+      toast("A tradução ao vivo ainda é só para Markdown. Em documentos (.docx) use Exportar e escolha o idioma Inglês.", "info", 5200);
       return;
     }
     if (this.tab.kind === "xlsx") {

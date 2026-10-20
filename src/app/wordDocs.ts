@@ -18,7 +18,7 @@ import { $, h, toast, baseName, joinPath, fmtTime, slugify, tornarArrastavel } f
 export const wordDocsMethods = {
   /** Cria uma aba de documento Word (sem ativá-la). */
   addWordTab(this: App, data: WordTabData, init: Partial<DocTab> = {}): DocTab {
-    const tab = newTab(this.editor.createState(""), { kind: "word", word: data, title: "Documento", statusSaved: "Novo documento Word", ...init });
+    const tab = newTab(this.editor.createState(""), { kind: "word", word: data, title: "Documento", statusSaved: "Novo documento (.docx)", ...init });
     this.tabs.push(tab);
     return tab;
   },
@@ -62,7 +62,7 @@ export const wordDocsMethods = {
       }
       return true;
     } catch (e) {
-      toast("Não foi possível abrir o documento do Word: " + e, "err", 7000);
+      toast("Não foi possível abrir o documento (.docx): " + e, "err", 7000);
       return false;
     }
   },
@@ -184,7 +184,7 @@ export const wordDocsMethods = {
         } catch {
           /* só o nome */
         }
-        const picked = await files.pickSaveAny(defaultPath, "Documento do Word", ["docx"]);
+        const picked = await files.pickSaveAny(defaultPath, "Documento (.docx)", ["docx"]);
         if (!picked) return false;
         tab.path = /\.docx$/i.test(picked) ? picked : `${picked.replace(/\.[a-zA-Z0-9]+$/, "")}.docx`;
         tab.isDraft = false;
@@ -207,7 +207,7 @@ export const wordDocsMethods = {
       this.afterTabChange();
       if (!this.docxNotice) {
         this.docxNotice = true;
-        toast("Salvo como .docx. Se o arquivo veio do Word, recursos que o mdOffice ainda não entende (comentários, revisões, campos) podem ser simplificados.", "info", 7500);
+        toast("Salvo como .docx. Se o arquivo veio de outro editor, recursos que o mdOffice ainda não entende (comentários, revisões, campos) podem ser simplificados.", "info", 7500);
       } else toast(`Documento salvo em ${baseName(tab.path!)}`, "ok", 2600);
       return true;
     } catch (e) {

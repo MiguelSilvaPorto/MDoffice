@@ -203,7 +203,7 @@ export const excelDocsMethods = {
         } catch {
           /* só o nome */
         }
-        const picked = await files.pickSaveAny(defaultPath, "Planilha do Excel", ["xlsx"]);
+        const picked = await files.pickSaveAny(defaultPath, "Planilha (.xlsx)", ["xlsx"]);
         if (!picked) return false;
         tab.path = /\.xlsx$/i.test(picked) ? picked : `${picked.replace(/\.[a-zA-Z0-9]+$/, "")}.xlsx`;
         tab.isDraft = false;

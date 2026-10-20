@@ -112,7 +112,7 @@ export const layoutMethods = {
       btn.title = "Salvamento Automático: Ativado (clique para desligar)";
       badge.title =
         `Alterações não salvas em ${this.path ? baseName(this.path) : "documento"}: o salvamento automático ` +
-        "não reescreve arquivos do Word, PowerPoint e Excel — recursos que o app ainda não entende podem " +
+        "não reescreve arquivos .docx, .pptx e .xlsx — recursos que o app ainda não entende podem " +
         "se perder. Salve com Ctrl+S.";
       text.textContent = "Não salvo";
       if (iconUse) iconUse.setAttribute("href", "#i-save");

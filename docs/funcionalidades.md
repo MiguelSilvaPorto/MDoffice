@@ -8,9 +8,9 @@ de cada mudança de linha.
 | Módulo | O que é | Documento |
 | --- | --- | --- |
 | **MD\*** | O editor de Markdown: escrita, desenho, diagramas e a escrita assistida (corretor, sugestões, revisão, formalização e tradução) | [md.md](md.md) |
-| **Word** | Documentos `.docx` de verdade: páginas, estilos, tabelas, imagens e impressão em PDF | [word.md](word.md) |
-| **Excel** | Planilhas `.xlsx`/`.xlsm`: grade que cresce, fórmulas, formatação e mesclagem | [excel.md](excel.md) |
-| **PowerPoint** | Apresentações `.pptx`: abrir/salvar com fidelidade, editar formas e apresentar (F5) | [powerpoint.md](powerpoint.md) |
+| **Documentos (.docx)** | Documentos `.docx` de verdade: páginas, estilos, tabelas, imagens e impressão em PDF | [word.md](word.md) |
+| **Planilhas (.xlsx)** | Planilhas `.xlsx`/`.xlsm`: grade que cresce, fórmulas, formatação e mesclagem | [excel.md](excel.md) |
+| **Apresentações (.pptx)** | Apresentações `.pptx`: abrir/salvar com fidelidade, editar formas e apresentar (F5) | [powerpoint.md](powerpoint.md) |
 
 Além dos módulos, o app tem recursos que valem para todos eles (abas, tela de Início,
 histórico de versões, backup em disco, lixeira de documentos, configurações, busca de
@@ -26,11 +26,12 @@ rascunhos são gravados, **documento novo ganha o rascunho dele na hora** e arqu
 se há alterações.
 
 A **tela de Início** mostra os arquivos recentes numa **grade de cartões**, cada um com uma
-**versão do documento** pré-carregada — o tipo dá a forma e o arquivo dá o conteúdo: **Word** e
-**Markdown** viram uma **página A4 em pé** no papel do tema (no escuro a folha escurece, como no
-editor; o markdown chega renderizado e cada imagem vira um bloco de figura), o **PowerPoint** uma
-**lâmina 16:9** (sempre clara) e o **Excel** uma **grade** com o cabeçalho das colunas e o número
-das linhas. No **PowerPoint** o cartão desenha a **lâmina de verdade**: o `.pptx` é importado e o
+**versão do documento** pré-carregada — o tipo dá a forma e o arquivo dá o conteúdo: **Documentos
+(.docx)** e **Markdown** viram uma **página A4 em pé** no papel do tema (no escuro a folha escurece,
+como no editor; o markdown chega renderizado e cada imagem vira um bloco de figura), as
+**Apresentações (.pptx)** uma **lâmina 16:9** (sempre clara) e as **Planilhas (.xlsx)** uma **grade**
+com o cabeçalho das colunas e o número das linhas. Nas **Apresentações (.pptx)** o cartão desenha a
+**lâmina de verdade**: o `.pptx` é importado e o
 mesmo renderizador do palco e do F5 põe fundo do tema, formas, imagens e o título no tamanho real
 (16:9 ou 4:3, conforme o arquivo) — o texto extraído fica só como plano B. Sem texto (ou num
 formato sem prévia), o cartão fica com o ícone do formato. O `.md` lê

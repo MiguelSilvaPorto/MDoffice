@@ -707,9 +707,9 @@ console.log("\npasta padrão dos documentos (Documentos/mdOffice com as quatro s
   checa(
     "cada tipo tem a sua subpasta",
     pastas.PASTA_DO_TIPO.md === "Markdown" &&
-      pastas.PASTA_DO_TIPO.word === "Word" &&
-      pastas.PASTA_DO_TIPO.excel === "Excel" &&
-      pastas.PASTA_DO_TIPO.ppt === "PowerPoint",
+      pastas.PASTA_DO_TIPO.word === "Documentos" &&
+      pastas.PASTA_DO_TIPO.excel === "Planilhas" &&
+      pastas.PASTA_DO_TIPO.ppt === "Apresentações",
     JSON.stringify(pastas.PASTA_DO_TIPO)
   );
   checa(
@@ -719,7 +719,7 @@ console.log("\npasta padrão dos documentos (Documentos/mdOffice com as quatro s
   checa(
     "o caminho usa o separador do sistema e não duplica a barra",
     pastas.comRaizPadrao("C:\\Users\\ana\\Documents\\mdOffice", "md") === "C:\\Users\\ana\\Documents\\mdOffice\\Markdown" &&
-      pastas.juntarPasta("/home/ana/mdOffice/", "Word") === "/home/ana/mdOffice/Word",
+      pastas.juntarPasta("/home/ana/mdOffice/", "Documentos") === "/home/ana/mdOffice/Documentos",
     pastas.comRaizPadrao("C:\\Users\\ana\\Documents\\mdOffice", "md")
   );
   checa(
@@ -728,6 +728,19 @@ console.log("\npasta padrão dos documentos (Documentos/mdOffice com as quatro s
       pastas.nomeLivre(["Documento.md"], "md") === "Documento-2.md" &&
       pastas.nomeLivre(["documento.md", "Documento-2.md"], "md") === "Documento-3.md",
     pastas.nomeLivre(["Documento.md"], "md")
+  );
+
+  // Os módulos são o FORMATO, não a marca da Microsoft: "Documentos (.docx)", "Planilhas
+  // (.xlsx)" e "Apresentações (.pptx)". O uso descritivo do formato é o que está dito na tela.
+  const inicio = ler("src/homePage.ts");
+  checa(
+    "os módulos usam nomes descritivos (sem as marcas da Microsoft)",
+    /word: \{ label: "Documentos", ext: "\.docx"/.test(inicio) &&
+      /excel: \{ label: "Planilhas", ext: "\.xlsx"/.test(inicio) &&
+      /ppt: \{ label: "Apresentações", ext: "\.pptx"/.test(inicio) &&
+      /word: "Documento \(\.docx\)"/.test(ler("src/fileIcons.ts")) &&
+      /excel: "Planilha \(\.xlsx\)"/.test(ler("src/fileIcons.ts")),
+    "o nome da marca não pode ser o nome da funcionalidade; citar o formato (.docx/.xlsx/.pptx) é uso descritivo"
   );
 
   // o documento novo nasce pela pasta padrão: os quatro fluxos chamam nascerNoPadrao

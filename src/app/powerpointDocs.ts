@@ -187,7 +187,7 @@ export const powerpointDocsMethods = {
         } catch {
           /* só o nome */
         }
-        const picked = await files.pickSaveAny(defaultPath, "Apresentação do PowerPoint", ["pptx"]);
+        const picked = await files.pickSaveAny(defaultPath, "Apresentação (.pptx)", ["pptx"]);
         if (!picked) return false;
         tab.path = /\.pptx$/i.test(picked) ? picked : `${picked.replace(/\.[a-zA-Z0-9]+$/, "")}.pptx`;
         tab.isDraft = false;

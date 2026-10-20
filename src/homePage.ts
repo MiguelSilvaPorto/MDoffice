@@ -88,11 +88,13 @@ function gradeEmHtml(grade: string[][]): string {
   return cabecalho + linhas;
 }
 
+// Os nomes dos módulos são descritivos (o formato, não a marca): "Documentos (.docx)",
+// "Planilhas (.xlsx)" e "Apresentações (.pptx)". "Markdown" não é marca e fica como está.
 const FORMAT_META: Record<"word" | "excel" | "md" | "ppt", { label: string; ext: string; newLabel: string; icon: string }> = {
-  word: { label: "Word", ext: ".docx", newLabel: "documento Word", icon: "i-word" },
-  excel: { label: "Excel", ext: ".xlsx", newLabel: "planilha Excel", icon: "i-grid" },
+  word: { label: "Documentos", ext: ".docx", newLabel: "documento (.docx)", icon: "i-word" },
+  excel: { label: "Planilhas", ext: ".xlsx", newLabel: "planilha (.xlsx)", icon: "i-grid" },
   md: { label: "Markdown", ext: ".md", newLabel: "documento Markdown", icon: "i-doc" },
-  ppt: { label: "PowerPoint", ext: ".pptx", newLabel: "apresentação PowerPoint", icon: "i-eye" },
+  ppt: { label: "Apresentações", ext: ".pptx", newLabel: "apresentação (.pptx)", icon: "i-eye" },
 };
 
 /**
@@ -137,7 +139,7 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
   const importBtn = h("button", {
     class: "btn home-import-btn",
     type: "button",
-    title: "Importar documento do Word (.docx), Excel (.xlsx/.xlsm) ou PowerPoint (.pptx)",
+    title: "Importar documento (.docx), planilha (.xlsx/.xlsm) ou apresentação (.pptx)",
   });
   importBtn.innerHTML = '<svg class="ic"><use href="#i-import"/></svg><span>Importar do Office</span>';
   importBtn.addEventListener("click", () => ctx.importOffice());
@@ -259,17 +261,17 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
       <text x="33" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="20" fill="#FFFFFF" text-anchor="middle">P</text>
     </svg>`;
 
-  const cardWord = makeCard("word", "DOCX", "Word", "Documento de Texto", "Texto formatado, cabeçalhos, páginas A4, normas ABNT e exportação .docx.", svgWord);
+  const cardWord = makeCard("word", "DOCX", "Documentos (.docx)", "Texto & ABNT", "Texto formatado, cabeçalhos, páginas A4, normas ABNT e exportação .docx.", svgWord);
   const cardExcel = makeCard(
     "excel",
     "XLSX",
-    "Excel",
-    "Planilha & Tabelas",
-    "Grade de verdade com fórmulas calculadas, R$/%/data, várias abas, mesclas e arquivo .xlsx que abre no Excel.",
+    "Planilhas (.xlsx)",
+    "Tabelas & Cálculos",
+    "Grade de verdade com fórmulas calculadas, R$/%/data, várias abas, mesclas e arquivo .xlsx de verdade.",
     svgExcel
   );
   const cardMd = makeCard("md", "MARKDOWN", "Markdown", "Texto Rápido & IA", "Escrita rápida, leve e focada, com visualização dupla simultânea em tempo real.", svgMd);
-  const cardPpt = makeCard("ppt", "PPTX", "PowerPoint", "Apresentação de Slides", "Editor de lâminas com fita de formatação, caixas de texto posicionadas, notas do apresentador e exportação .pptx de verdade.", svgPpt);
+  const cardPpt = makeCard("ppt", "PPTX", "Apresentações (.pptx)", "Lâminas & Slides", "Editor de lâminas com fita de formatação, caixas de texto posicionadas, notas do apresentador e exportação .pptx de verdade.", svgPpt);
 
   grid.append(cardWord, cardExcel, cardMd, cardPpt);
   secCards.append(grid);
@@ -294,9 +296,9 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
 
   addChip("i-word", "Trabalho ABNT", "Modelo acadêmico completo nas normas ABNT", () => ctx.createTemplate("abnt"));
   addChip("i-doc", "Relatório Executivo", "Resumo executivo, metas, resultados e conclusão", () => ctx.createTemplate("relatorio"));
-  addChip("i-grid", "Planilha Orçamentária", "Planilha Excel com receitas, despesas e totais calculados", () => ctx.createTemplate("orcamento"));
+  addChip("i-grid", "Planilha Orçamentária", "Planilha com receitas, despesas e totais calculados", () => ctx.createTemplate("orcamento"));
   addChip("i-spark", "Pedido para IA", "Template estruturado para orientar IAs e LLMs", () => ctx.createTemplate("ia"));
-  addChip("i-import", "Importar do Office", "Abrir Word (.docx), Excel (.xlsx/.xlsm) e PowerPoint (.pptx) do seu computador", () => ctx.importOffice());
+  addChip("i-import", "Importar do Office", "Abrir arquivos .docx, .xlsx/.xlsm e .pptx do seu computador", () => ctx.importOffice());
   addChip("i-open", "Abrir arquivo do PC", "Abrir qualquer arquivo existente do disco (Ctrl+O)", () => ctx.openExisting());
 
   secTemplates.append(chips);

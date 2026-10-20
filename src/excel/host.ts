@@ -2059,7 +2059,7 @@ export class ExcelHost {
   /** Alterna a visão entre valores e texto das fórmulas. */
   private mostrarFormulas(v: boolean): void {
     this.mostrarFrases = v;
-    this.aviso(v ? "Mostrando o texto das fórmulas (como Ctrl+` no Excel)." : "Mostrando os valores.");
+    this.aviso(v ? "Mostrando o texto das fórmulas (como o Ctrl+`)." : "Mostrando os valores.");
     this.pintar();
   }
 

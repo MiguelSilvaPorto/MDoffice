@@ -22,7 +22,7 @@ export const formalizarMethods = {
     }
     const tipo = this.tab.kind;
     if (tipo === "ppt" || tipo === "xlsx" || tipo === "settings") {
-      toast("A formalização com prévia está disponível no Markdown e no Word.", "info", 3400);
+      toast("A formalização com prévia está disponível no Markdown e em documentos (.docx).", "info", 3400);
       return;
     }
     const view = this.editor.view;
@@ -58,7 +58,7 @@ export const formalizarMethods = {
     }
     abrirFormalizar({
       texto,
-      origem: temSelecao ? "seleção do Word" : "documento do Word",
+      origem: temSelecao ? "seleção do documento" : "documento (.docx)",
       aplicar: (novo, aplicadas) => {
         const quantas = this.aplicarFormalizacaoWord(blocos, novo, aplicadas);
         if (!quantas) {
@@ -66,7 +66,7 @@ export const formalizarMethods = {
           return;
         }
         this.wordHost.recheckSpelling();
-        toast(`Formalizado: ${quantas} troca(s) no Word. Ctrl+Z desfaz.`, "ok", 3800);
+        toast(`Formalizado: ${quantas} troca(s) no documento. Ctrl+Z desfaz.`, "ok", 3800);
       },
     });
   },

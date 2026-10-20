@@ -92,7 +92,7 @@ export function openExportDialog(ctx: ExportCtx, initial?: ExportFormat): void {
       prefs.format === "pdf"
         ? "Abre a janela de impressão: escolha “Salvar como PDF” (ou “Microsoft Print to PDF”) como impressora."
         : prefs.format === "copy"
-          ? "Copia o texto com formatação. Depois é só colar (Ctrl+V) no Word, Google Docs ou e-mail."
+          ? "Copia o texto com formatação. Depois é só colar (Ctrl+V) no seu editor, no Google Docs ou no e-mail."
           : "";
     go.querySelector("span")!.textContent = prefs.format === "copy" ? "Copiar" : prefs.format === "pdf" ? "Abrir impressão" : "Exportar";
   };

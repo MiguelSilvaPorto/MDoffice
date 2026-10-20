@@ -542,9 +542,9 @@ export const tabsMethods = {
     this.openMenu(anchor, (menu) => {
       menu.classList.add("recents-menu");
       this.ddItem(menu, { iconHtml: fileIcon("md"), label: "Documento Markdown", hint: ".md", onPick: () => void this.newDoc() });
-      this.ddItem(menu, { iconHtml: fileIcon("word"), label: "Documento Word (.docx)", hint: "páginas, fontes, tabelas", onPick: () => void this.newWordDoc() });
-      this.ddItem(menu, { iconHtml: fileIcon("excel"), label: "Planilha", hint: "Excel (.xlsx)", onPick: () => void this.newExcelDoc() });
-      this.ddItem(menu, { iconHtml: fileIcon("ppt"), label: "Apresentação", hint: "PowerPoint (slides, F5)", onPick: () => void this.newPowerPointDoc() });
+      this.ddItem(menu, { iconHtml: fileIcon("word"), label: "Documentos (.docx)", hint: "páginas, fontes, tabelas", onPick: () => void this.newWordDoc() });
+      this.ddItem(menu, { iconHtml: fileIcon("excel"), label: "Planilhas (.xlsx)", hint: "grade, fórmulas, tabelas", onPick: () => void this.newExcelDoc() });
+      this.ddItem(menu, { iconHtml: fileIcon("ppt"), label: "Apresentações (.pptx)", hint: "lâminas, slides, F5", onPick: () => void this.newPowerPointDoc() });
     });
   },
 

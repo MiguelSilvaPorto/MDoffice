@@ -253,19 +253,19 @@ export const documentsMethods = {
       return ok;
     }
     if (/\.xls$/i.test(path)) {
-      toast("O formato antigo .xls não é aceito. Abra no Excel e salve como .xlsx.", "info", 5500);
+      toast("O formato antigo .xls não é aceito. Salve a planilha como .xlsx.", "info", 5500);
       return false;
     }
     if (/\.csv$/i.test(path)) {
-      toast("Arquivo .csv não é aceito como planilha. Abra no Excel e salve como .xlsx.", "info", 5500);
+      toast("Arquivo .csv não é aceito como planilha. Salve a planilha como .xlsx.", "info", 5500);
       return false;
     }
     if (/\.doc$/i.test(path)) {
-      toast("O formato antigo .doc não é aceito. Abra no Word e salve como .docx.", "info", 5500);
+      toast("O formato antigo .doc não é aceito. Salve o documento como .docx.", "info", 5500);
       return false;
     }
     if (/\.ppt$/i.test(path)) {
-      toast("O formato antigo .ppt não é aceito. Abra no PowerPoint e salve como .pptx.", "info", 5500);
+      toast("O formato antigo .ppt não é aceito. Salve a apresentação como .pptx.", "info", 5500);
       return false;
     }
     try {

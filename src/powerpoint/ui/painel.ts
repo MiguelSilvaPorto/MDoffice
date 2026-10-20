@@ -268,11 +268,11 @@ export class Painel {
     };
     const nota: Record<string, string> = {
       rect: "Sem arredondamento: vai como Retângulo comum.",
-      roundRect: "No arquivo: Retângulo arredondado (forma nativa do PowerPoint).",
+      roundRect: "No arquivo: Retângulo arredondado (forma nativa do .pptx).",
       round1Rect: "No arquivo: forma nativa com um canto arredondado.",
       round2SameRect: "No arquivo: forma nativa com os cantos de cima/baixo arredondados.",
       round2DiagRect: "No arquivo: forma nativa com os cantos em diagonal arredondados.",
-      livre: "No arquivo: forma livre (desenha igual; é o que o “Combinar formas” do PowerPoint produz).",
+      livre: "No arquivo: forma livre (desenha igual; é o que o “Combinar formas” produz no .pptx).",
     };
     return `
       <div class="pf-cantos">

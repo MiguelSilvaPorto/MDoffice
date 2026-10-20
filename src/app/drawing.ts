@@ -16,7 +16,7 @@ export const drawingMethods = {
   async openDraw(this: App): Promise<void> {
     if (this.semDocumento()) return;
     if (this.tab.kind === "word") {
-      toast("O desenho ainda não está disponível em documentos Word.", "info", 3200);
+      toast("O desenho ainda não está disponível em documentos (.docx).", "info", 3200);
       return;
     }
     if (this.drawingEditorOpen()) {

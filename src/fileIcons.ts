@@ -8,9 +8,9 @@ export type FileKind = "md" | "word" | "excel" | "ppt" | "settings" | "other";
 /** Nome do tipo, para dicas ao passar o mouse. */
 export const FILE_KIND_LABEL: Record<FileKind, string> = {
   md: "Documento Markdown (.md)",
-  word: "Documento Word (.docx)",
-  excel: "Planilha Excel (.xlsx)",
-  ppt: "Apresentação PowerPoint (.pptx)",
+  word: "Documento (.docx)",
+  excel: "Planilha (.xlsx)",
+  ppt: "Apresentação (.pptx)",
   settings: "Configurações",
   other: "Arquivo",
 };

@@ -321,7 +321,7 @@ export async function xlsxParaLivro(bytes: Uint8Array): Promise<{ livro: Livro; 
   const zip = await JSZip.loadAsync(bytes);
 
   const workbookXml = await zip.file("xl/workbook.xml")?.async("string");
-  if (!workbookXml) throw new Error("Este arquivo não parece ser uma planilha do Excel (.xlsx).");
+  if (!workbookXml) throw new Error("Este arquivo não parece ser uma planilha (.xlsx).");
 
   const estilosXml = await zip.file("xl/styles.xml")?.async("string");
   const estilos = estilosXml ? lerEstilos(estilosXml) : [{}];
