@@ -873,7 +873,7 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
     }
 
     // texto na coluna da esquerda: título grande, antetítulo e subtítulo menores
-    const largura = 42;
+    const largura = 47;
     const textos = c.titulo.ids
       .map((id) => slide.shapes.find((s) => s.id === id))
       .filter((s): s is Shape => !!s && temTexto(s))
@@ -972,7 +972,7 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
     // 3) lado e sangria
     const lado = rnd() < 0.5 ? "direita" : "esquerda";
     const sangra = rnd() < 0.45;
-    const tamanho = 0.62 + rnd() * 0.2; // fração da altura
+    const tamanho = 0.56 + rnd() * 0.16; // fração da altura
 
     const fundos: Shape[] = [];
     const conteudo: Shape[] = [];
@@ -1016,7 +1016,8 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
 
     // 4) motivo de contraste, do lado oposto à imagem
     const motivo = escolha(["pontos", "aneis", "grade"] as const);
-    const mx = lado === "direita" ? 8 : 92;
+    // o motivo fica do lado da imagem (nunca sobre o texto, que está no lado oposto)
+    const mx = lado === "direita" ? 90 : 10;
     const my = 12 + rnd() * 20;
     if (motivo === "pontos") {
       for (let k = 0; k < 3; k++) {
@@ -1075,9 +1076,10 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
           alturaTotal += alturaDaForma(s, tamanho, largura) + gap;
         });
       }
-      if (alturaTotal <= 86) break;
+      // a altura do texto tem de caber ACIMA do rodapé reservado
+      if (alturaTotal <= baseConteudo - 4) break;
     }
-    if (alturaTotal > 86) return null;
+    if (alturaTotal > baseConteudo - 4) return null;
     let y = Math.max(9, (100 - alturaTotal) / 2);
     for (const b of blocos) {
       const h = alturaDaForma(b.s, b.tamanho, largura);
