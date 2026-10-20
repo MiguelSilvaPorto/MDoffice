@@ -369,7 +369,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **O corretor não abre mais sugestão quando o clique cai numa imagem**: no print, a imagem estava
+  selecionada e o popup do corretor abria com a sugestão de uma palavra ("Awdaw") — e no canto da
+  página, longe dela. A imagem é **inline** (ocupa **uma** posição), então o fim da faixa da palavra
+  é exatamente o começo da imagem: o clique na imagem "caía na palavra" e, pior, o popup ancorava no
+  **parágrafo** inteiro. Agora o popup só abre quando o clique cai **no texto sublinhado** (nunca na
+  imagem, no espaço da linha ou na margem) e a âncora é a **própria palavra**. E um problema que
+  **atravessa** uma imagem ou uma quebra de linha fica sem sugestão — aplicar a correção substitui a
+  faixa inteira e **apagaria a imagem**. Conferido no harness com o corretor real
+  (`node scripts/harness-corretor.mjs`: clique na imagem "não abriu ✓", na palavra "abriu ✓", popup a
+  **0 px** da palavra; com a regra antiga o harness acusa "ABRIU ✗"). Teste: `npm run test:corretor-word`.
 
 ### Adicionado (na main)
 

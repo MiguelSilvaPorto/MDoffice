@@ -5,6 +5,7 @@ import { Decoration, DecorationSet, type EditorView } from "prosemirror-view";
 import type { Node as PMNode } from "prosemirror-model";
 import { checkText, type WritingIssue } from "../broker/writing";
 import { project, toPm } from "./project";
+import { atravessaNaoTexto, marcaSobClique } from "./cliqueSugestao";
 
 export interface WordSpellHooks {
   /** Palavras que o usuário mandou ignorar (dicionário pessoal + só neste texto). */
@@ -126,12 +127,15 @@ export function spellPlugin(hooks: WordSpellHooks): Plugin<SState> & { recheck: 
     props: {
       decorations: (state) => key.getState(state)?.deco ?? DecorationSet.empty,
       handleClick(view, pos, event) {
+        // O popup abre no TEXTO marcado — e só nele. Clicar na imagem (que fica na borda da
+        // faixa, logo depois da palavra), no espaço da linha ou na margem não é clicar na
+        // palavra: não há sugestão a dar. E a âncora é a marca (a palavra), não o parágrafo.
+        const marca = marcaSobClique(event.target as HTMLElement) as HTMLElement | null;
+        if (!marca) return false;
         const st = key.getState(view.state);
         const f = st?.found.find((x) => pos >= x.from && pos <= x.to);
         if (!f) return false;
-        const target = (event.target as HTMLElement).closest(".wd-issue") as HTMLElement | null;
-        const rect = (target ?? (event.target as HTMLElement)).getBoundingClientRect();
-        showPopup(view, f, rect, hooks, () => recheckFn?.(view));
+        showPopup(view, f, marca.getBoundingClientRect(), hooks, () => recheckFn?.(view));
         return false;
       },
     },
@@ -157,8 +161,12 @@ export function spellPlugin(hooks: WordSpellHooks): Plugin<SState> & { recheck: 
           const a = toPm(blocks, issue.from);
           const b = toPm(blocks, Math.max(issue.from, issue.to - 1));
           if (!a || !b || a.bloco !== b.bloco) continue;
-        const to = b.pos + 1;
+          const to = b.pos + 1;
           if (to <= a.pos) continue;
+          // Problema que atravessa uma imagem (ou uma quebra) fica de fora: a sugestão
+          // substitui a faixa inteira e apagaria o que não é texto. A imagem também não
+          // recebe o sublinhado — o corretor é do texto.
+          if (atravessaNaoTexto(doc, a.pos, to)) continue;
           found.push({ from: a.pos, to, issue });
         }
         const decos = found.map((f) => Decoration.inline(f.from, f.to, { class: `wd-issue ${f.issue.kind === "spell" ? "spell" : "style"}` }));

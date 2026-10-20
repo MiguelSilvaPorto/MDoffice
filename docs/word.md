@@ -62,8 +62,11 @@ arquivos `.docx` de verdade.
 
 ## Escrita assistida (também no Word)
 
-- O **corretor de português** sublinha erros e abre sugestões ao clicar; o **texto fantasma**
-  (sugestões enquanto digita) funciona aqui também, com **Tab/Alt+→/Alt+↓**.
+- O **corretor de português** sublinha erros e abre sugestões ao clicar **no texto sublinhado** —
+  clicar numa imagem, no espaço da linha ou na margem não abre o popup (a imagem é inline e ficava na
+  borda da faixa da palavra); um aviso que atravessa uma imagem não oferece sugestão (aplicar
+  apagaria a imagem). O **texto fantasma** (sugestões enquanto digita) funciona aqui também, com
+  **Tab/Alt+→/Alt+↓**.
 - **Revisar texto** (`F7`) e a **revisão inteligente** analisam o documento Word como o
   Markdown (regras, sinônimos e a IA local).
 - **Formalizar** (`Ctrl+Alt+F` ou **Revisão → Revisão de Texto → Formalizar**): a mesma janela

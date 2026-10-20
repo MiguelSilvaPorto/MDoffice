@@ -14833,3 +14833,36 @@ antigas quando fizer sentido.
   mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
   entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
   promoções anteriores.
+
+## src/word/cliqueSugestao.ts · src/word/spell.ts
+
+### 2026-10-20 · fix/corretor-clique-imagem · o clique numa imagem não abre mais sugestão
+- **Local:** arquivo novo `cliqueSugestao.ts` (`marcaSobClique`, `atravessaNaoTexto`); em `spell.ts`,
+  o `handleClick` do plugin e a varredura que monta os `Found`
+- **Linha:** `const target = (event.target as HTMLElement).closest(".wd-issue") as HTMLElement | null;
+  const rect = (target ?? (event.target as HTMLElement)).getBoundingClientRect();` → `const marca =
+  marcaSobClique(event.target as HTMLElement) as HTMLElement | null; if (!marca) return false;` e o
+  `showPopup` recebe `marca.getBoundingClientRect()`; a varredura ganhou `if (atravessaNaoTexto(doc,
+  a.pos, to)) continue;` (antes de `found.push`)
+- **Porquê:** o relato com print mostrava a **imagem selecionada** e o popup do corretor com a
+  sugestão de uma palavra ("Awdaw") — ainda por cima no canto da página. A imagem é **inline** no
+  schema do Word: ocupa **uma posição**, e o texto projetado a troca por **um espaço** (é o que
+  mantém o mapa 1:1). Consequência: o fim da faixa do problema (`to = b.pos + 1`) é exatamente o
+  começo da imagem logo depois da palavra, e o teste do clique era **inclusivo** (`pos <= x.to`), então
+  clicar na imagem casava com a palavra. O `closest(".wd-issue")` vazio caía no `event.target` — a
+  **imagem** ou o parágrafo —, e o popup ancorava no parágrafo inteiro (por isso ele aparecia no
+  canto superior da página, longe da palavra). Agora o popup exige duas coisas: o alvo do clique
+  **não é imagem** e está **dentro da marca** do problema (o `closest` da faixa); a âncora é a marca.
+  A segunda metade é a segurança que faltava: um problema que **atravessa** a imagem (frase longa,
+  por exemplo) continua na lista do corretor, mas aplicar a sugestão substitui a faixa inteira —
+  `insertText` sobre a posição da imagem **apagaria a imagem**. Por isso esses problemas ficam de
+  fora da decoração e do popup (o corretor é do texto; a imagem não tem o que corrigir).
+- **Teste:** `scripts/testar-corretor-word.mjs` (`npm run test:corretor-word`) — a marca sob o
+  clique (palavra, negrito dentro dela, imagem, parágrafo, alvo sem `closest`), a faixa contra nós do
+  documento (imagem no meio × na borda, quebra, parágrafo) e duas invariantes do `spell.ts` (o
+  `handleClick` usa a marca/âncora; a varredura descarta a faixa que atravessa).
+- **Conferência visual:** `scripts/harness-corretor.mjs` monta o editor **real** (ProseMirror + o
+  schema do Word + o plugin do corretor, com um dublê do assistente que acusa "Awdaw") e responde na
+  própria foto: clique na imagem → **não abriu ✓**, na palavra → **abriu ✓**, âncora a **0 px** da
+  palavra. Rodado com a regra antiga, o mesmo harness acusa **"ABRIU ✗"** — é o print do usuário.
+  O dublê é só da lista de sugestões (`checkText`); a decisão do clique é o código de produção.
