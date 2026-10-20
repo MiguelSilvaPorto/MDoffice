@@ -26,9 +26,21 @@ import {
   type ParagraphChild,
 } from "docx";
 import type { Mark, Node as PMNode } from "prosemirror-model";
-import { HEADING_STYLE, type PageSetup } from "./model";
+import { HEADING_STYLE, type PageSetup, type PaperSize } from "./model";
 
 type Block = Paragraph | Table;
+
+/**
+ * Medidas de cada papel em twips (1 cm = 567), retrato — as mesmas do `PAPER_SIZES` do modelo.
+ * O Word lê `w:pgSz` da seção; trocar o papel aqui é o que faz o .docx abrir com A3/A2.
+ */
+const PAPER_TWIPS: Record<PaperSize, { width: number; height: number }> = {
+  A5: { width: 8391, height: 11906 },
+  A4: { width: 11906, height: 16838 },
+  A3: { width: 16838, height: 23811 },
+  A2: { width: 23811, height: 33676 },
+  Letter: { width: 12240, height: 15840 },
+};
 
 interface Ctx {
   setup: PageSetup;
@@ -345,9 +357,8 @@ export async function exportDocx(doc: PMNode, setup: PageSetup, title = "Documen
   if (!children.length) children.push(new Paragraph({ children: [] }));
 
   const cm = (v: number) => Math.round(v * 567);
-  const sizeA4 = { width: 11906, height: 16838 };
-  const sizeLetter = { width: 12240, height: 15840 };
-  const base = setup.size === "A4" ? sizeA4 : sizeLetter;
+  // o papel escolhido no Configurar Página / na fita vai nas medidas da seção (twips; 1 cm = 567)
+  const base = PAPER_TWIPS[setup.size] ?? PAPER_TWIPS.A4;
 
   const headers = setup.header.trim()
     ? {

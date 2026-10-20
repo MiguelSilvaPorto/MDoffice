@@ -8,15 +8,16 @@ arquivos `.docx` de verdade.
 - **Novo documento Word**: **+ → Documento Word** cria o documento já editável na folha **e já
   salvo** em `Documentos\mdOffice\Word\Documento.docx` (a pasta padrão do app — "Salvar como…"
   escolhe outro lugar); **Abrir** aceita `.docx` do Word.
-- Folha **A4/Carta** com margens configuráveis (tamanho, orientação, margens, cabeçalho,
-  rodapé e “Página X de Y”) em **Layout → Configurar Página**.
+- Folha **A5, A4, A3, A2 ou Carta** com margens configuráveis (tamanho, orientação, margens,
+  cabeçalho, rodapé e “Página X de Y”) em **Layout → Configurar Página** — e o **Tamanho** (aba
+  Layout) troca só o papel de uma vez, com as medidas de cada um no menu.
 - **Páginas de verdade**: o texto flui de uma página para a outra e parágrafos longos se
   dividem entre elas (paginação calculada, não é só uma folha rolando).
 - **Zoom** (barra inferior) e régua de trabalho na coluna de escrita. A folha é **sempre do
-  tamanho do papel** (A4, 21 × 29,7 cm — ou Carta): o **zoom é só a vista** e o tamanho do papel
-  aparece ao lado da página (com a orientação), para uma folha vista pequena não ser confundida com
-  "o papel mudou" — e a barra traz **Ajustar** (a folha cabe na largura da janela; nunca amplia
-  além de 100%) e o número do zoom, que **volta a 100%** no clique.
+  tamanho do papel** escolhido (A4, 21 × 29,7 cm, por padrão): o **zoom é só a vista** e o tamanho
+  do papel aparece ao lado da página (com a orientação), para uma folha vista pequena não ser
+  confundida com "o papel mudou" — e a barra traz **Ajustar** (a folha cabe na largura da janela;
+  nunca amplia além de 100%) e o número do zoom, que **volta a 100%** no clique.
 - **Tema escuro**: a folha **escurece junto** — papel e tinta acompanham o tema (é o mesmo
   desenho da prévia do Markdown), então escrever à noite não leva clarão; “Preto” do documento
   entra como **tinta automática** (é o que o Word grava em “Automático”) e o **marca-texto**
@@ -42,6 +43,9 @@ arquivos `.docx` de verdade.
 - **Área de transferência**: colar, recortar, copiar e **pincel de formatação**
   (uma vez ou fixo), desfazer/refazer.
 - **Páginas**: quebra de página, cabeçalho e rodapé, números de página.
+- **Layout**: **Tamanho** troca o papel de uma vez (**A5, A4, A3, A2 ou Carta**, com as medidas de
+  cada um no menu) e **Página** abre o **Configurar Página** completo (papel, orientação, margens,
+  cabeçalho/rodapé e “Página X de Y”). O papel escolhido vale na folha, na impressão/PDF e no `.docx`.
 - **Ilustrações**: imagens (inserir, colar ou arrastar — arrastar uma imagem **dentro** da página
   **move**; arquivo de fora continua entrando), links, **tabelas** (inserir,
   linhas/colunas, mesclar, dividir, sombrear, bordas) e marcas de parágrafo.

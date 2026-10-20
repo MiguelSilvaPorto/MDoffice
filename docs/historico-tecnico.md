@@ -15018,3 +15018,78 @@ antigas quando fizer sentido.
 - **Porquê:** o fecho não pode promover: no instante do commit da tarefa a entrada ainda não está na
   main (a regra do repositório é "nunca promova o que ainda não entrou na main"), então a promoção é
   uma tarefa de follow-up, depois que o commit chegou (71be1ab). Promovi só a entrada DESTA tarefa.
+
+## src/word/model.ts
+
+### 2026-10-20 · papel até A3/A2 · a tabela de papéis
+- **Local:** novo `PaperSize`, `PAPER_SIZES` e `papel()`; o tipo de `PageSetup.size`; `pageSizeCm`
+- **Linha:** `size: "A4" | "Letter"` → `PaperSize` (`"A5" | "A4" | "A3" | "A2" | "Letter"`) e
+  `const [wcm, hcm] = setup.size === "A4" ? [21, 29.7] : [21.59, 27.94]` → `const p = papel(setup.size)`
+  sobre a tabela
+- **Porquê:** o pedido foi A3 e A2 — o seletor só tinha A4 e Carta. A tabela (id, rótulo e cm) é o
+  único lugar a mexer num papel novo: a folha (`pageSizeCm`/`pageSizePx`), o rótulo da barra, a
+  impressão e o `.docx` leem dela, sem um `if` novo em cada canto.
+
+## src/word/docxExport.ts
+
+### 2026-10-20 · papel até A3/A2 · as medidas da seção no arquivo
+- **Local:** novo `PAPER_TWIPS` (topo) e o `base` da seção em `exportDocx`
+- **Linha:** `sizeA4`/`sizeLetter` + `setup.size === "A4" ? sizeA4 : sizeLetter` → `PAPER_TWIPS[setup.size] ?? PAPER_TWIPS.A4`
+  (A3 = 16838 × 23811 e A2 = 23811 × 33676 twips)
+- **Porquê:** sem isto o `.docx` sairia em A4 mesmo com A3 na tela — o Word lê o papel do
+  `w:pgSz` da seção.
+
+## src/word/docxImport.ts
+
+### 2026-10-20 · papel até A3/A2 · o papel mais próximo do arquivo
+- **Local:** o trecho do `if (pgSz)` na leitura da página
+- **Linha:** `Math.abs(short - 21.59) < Math.abs(short - 21) ? "Letter" : "A4"` → o
+  `PAPER_SIZES.reduce(...)` pelo lado menor
+- **Porquê:** com dois tamanhos na lista, um A3 importado virava A4 (e um A5 também). O mais
+  próximo preserva o papel do arquivo sem inventar medida.
+
+## src/word/host.ts
+
+### 2026-10-20 · papel até A3/A2 · o rótulo e a impressão
+- **Local:** `applySetup` (o rótulo `#wd-pagesize`) e `printStyle` (o `@page size`)
+- **Linha:** `${s.size}` → `${papel(s.size).rotulo}` (mostra "Carta", não "Letter"); e
+  `s.size === "A4" ? "A4" : "letter"` → `s.size === "Letter" ? "letter" : s.size`
+- **Porquê:** o rótulo mostrava o id cru e a impressão só conhecia A4/Carta — com A3 escolhido o
+  papel sairia em A4. `A5`/`A3`/`A2` são palavras-chave válidas do `@page`.
+
+## src/word/ribbon.ts
+
+### 2026-10-20 · papel até A3/A2 · o botão Tamanho (aba Layout) e os cinco papéis no diálogo
+- **Local:** o painel `layout` (novo botão `page-size`), o novo `sizeMenu(anchor)`, o `case "page-size"`,
+  o `<select data-k="size">` e o `next.size` do `pageDialog`
+- **Linha:** `+ ${btn("page-size", … "<span>Tamanho ▾</span>", …)}`; `+ sizeMenu` (a lista `PAPER_SIZES`
+  com ✓ no atual e as medidas); o seletor do diálogo passou a ser gerado da tabela (5 opções)
+- **Porquê:** o pedido foi "falta um botão" na aba Layout — e o diálogo só oferecia A4/Carta. O menu
+  segue o padrão dos outros menus da fita (`wd-menu-item` + `place`), no mesmo formato do diálogo
+  (rótulo + medidas), com o ✓ no papel atual.
+
+## scripts/testar-layout.mts
+
+### 2026-10-20 · papel até A3/A2 · as 5 verificações (e o rótulo que mudou)
+- **Local:** a seção nova "Word: a aba Layout tem o botão Tamanho…" e a checagem do rótulo do papel
+- **Linha:** `novo`; na checagem antiga, `Tamanho do papel: ${s.size}` → `${papel(s.size).rotulo}` e
+  as medidas da tabela
+- **Porquê:** prende o botão, a tabela (A3/A2), a folha/impressão/rótulo lendo o papel escolhido, as
+  medidas do `.docx` e a importação pelo mais próximo. A verificação no navegador confirmou: A3 e A2
+  mudam a folha (1123 × 1587 e 1587 × 2245 px), o rótulo e o `@page`, e o diálogo lista os cinco.
+
+## docs/word.md
+
+### 2026-10-20 · papel até A3/A2 · as páginas e a aba Layout
+- **Local:** "Documento e páginas" (a folha) e "Fita" (a lista de grupos)
+- **Linha:** "Folha **A4/Carta**" → "Folha **A5, A4, A3, A2 ou Carta**"; `+` a bala do **Layout**
+  (Tamanho × Página)
+- **Porquê:** o documento dizia dois papéis; agora são cinco e há um botão para eles.
+
+## CHANGELOG.md
+
+### 2026-10-20 · papel até A3/A2 · a entrada no Word
+- **Local:** Word → Não adicionado → Frontend
+- **Linha:** `novo`
+- **Porquê:** mudança do módulo Word; a entrada fica em "Não adicionado" até o commit do `fechar.ps1`
+  entregar a `main` (a promoção é um passo separado).

@@ -2,8 +2,29 @@
 import type { Node as PMNode } from "prosemirror-model";
 import { schema } from "./schema";
 
+/** Tamanhos de papel do Word. O id é o nome que vai para o .docx e para o CSS da impressão. */
+export type PaperSize = "A5" | "A4" | "A3" | "A2" | "Letter";
+
+/**
+ * Medidas do papel em centímetros (retrato). A ordem é a da fita/diálogo: do menor para o maior,
+ * com a Carta no fim. Para um papel novo, basta uma linha aqui — a folha, a impressão e o .docx
+ * leem desta tabela.
+ */
+export const PAPER_SIZES: { id: PaperSize; rotulo: string; w: number; h: number }[] = [
+  { id: "A5", rotulo: "A5", w: 14.8, h: 21 },
+  { id: "A4", rotulo: "A4", w: 21, h: 29.7 },
+  { id: "A3", rotulo: "A3", w: 29.7, h: 42 },
+  { id: "A2", rotulo: "A2", w: 42, h: 59.4 },
+  { id: "Letter", rotulo: "Carta", w: 21.59, h: 27.94 },
+];
+
+/** O papel pelo id (o A4 é o padrão de tudo). */
+export function papel(id: PaperSize): { id: PaperSize; rotulo: string; w: number; h: number } {
+  return PAPER_SIZES.find((p) => p.id === id) ?? PAPER_SIZES[1];
+}
+
 export interface PageSetup {
-  size: "A4" | "Letter";
+  size: PaperSize;
   landscape: boolean;
   /** margens em centímetros */
   margins: { top: number; bottom: number; left: number; right: number };
@@ -31,8 +52,8 @@ export const CM_TO_PX = 96 / 2.54;
 
 /** Tamanho do papel em centímetros, já considerando a orientação. */
 export function pageSizeCm(setup: PageSetup): { w: number; h: number } {
-  const [wcm, hcm] = setup.size === "A4" ? [21, 29.7] : [21.59, 27.94];
-  return setup.landscape ? { w: hcm, h: wcm } : { w: wcm, h: hcm };
+  const p = papel(setup.size);
+  return setup.landscape ? { w: p.h, h: p.w } : { w: p.w, h: p.h };
 }
 
 /** Tamanho da folha em pixels (96 dpi) já considerando a orientação. */

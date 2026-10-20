@@ -1,7 +1,7 @@
 // Fita de ferramentas do documento Word (Início, Inserir, Tabela, Página) e janela "Configurar página".
 import type { WordEditor, FormatState } from "./editor";
 import { FONT_FAMILIES, FONT_SIZES } from "./schema";
-import { DEFAULT_SETUP, type PageSetup } from "./model";
+import { DEFAULT_SETUP, PAPER_SIZES, papel, type PageSetup, type PaperSize } from "./model";
 import { itensDoContexto } from "./contexto";
 import { h, toast } from "../util";
 import { melhorarSelects } from "../seletor";
@@ -165,6 +165,7 @@ export class Ribbon {
 
         <div class="wd-rpanel" data-panel="layout" hidden>
           ${group("Configurar Página", `
+            ${btn("page-size", icon("i-doc") + "<span>Tamanho ▾</span>", "Tamanho do papel: A5, A4, A3, A2 ou Carta", "big")}
             ${btn("page", icon("i-doc") + "<span>Página</span>", "Tamanho do papel, margens, orientação, cabeçalho e rodapé", "big")}`)}
         </div>
 
@@ -511,7 +512,33 @@ export class Ribbon {
         return this.palette(anchor, ["#f3f4f6", "#fde68a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#e5e7eb", "#fecaca"], false, (c) => ed.table("shade", c), "Sem cor");
       case "page":
         return this.pageDialog();
+      case "page-size":
+        return this.sizeMenu(anchor);
     }
+  }
+
+  /**
+   * Menu do botão **Tamanho** (aba Layout): troca o papel da folha inteira de uma vez. O tamanho
+   * atual vem marcado e cada item mostra as medidas em cm — o mesmo formato do Configurar Página.
+   */
+  private sizeMenu(anchor: HTMLElement): void {
+    const pop = h("div", { class: "wd-pal wd-menu-pop" });
+    const atual = this.hooks.editor.setup.size;
+    for (const p of PAPER_SIZES) {
+      const isSelected = p.id === atual;
+      const b = h("button", { class: `wd-menu-item${isSelected ? " active" : ""}`, type: "button" });
+      const cm = (v: number) => String(v).replace(".", ",");
+      b.innerHTML =
+        `<span style="width:16px;display:inline-block;color:var(--accent);font-weight:bold">${isSelected ? "✓" : ""}</span>` +
+        `<span>${p.rotulo}</span><small style="margin-left:auto;color:var(--muted)">${cm(p.w)} × ${cm(p.h)} cm</small>`;
+      b.addEventListener("mousedown", (e) => e.preventDefault());
+      b.addEventListener("click", () => {
+        this.closePop();
+        this.hooks.setSetup({ ...this.hooks.editor.setup, size: p.id });
+      });
+      pop.append(b);
+    }
+    this.place(pop, anchor);
   }
 
   private caseMenu(anchor: HTMLElement): void {
@@ -736,7 +763,7 @@ export class Ribbon {
         <section>
           <h4>Papel</h4>
           <div class="pg-row">
-            <label class="st-field">Tamanho<select data-k="size" class="st-select"><option value="A4">A4 (21 × 29,7 cm)</option><option value="Letter">Carta (21,6 × 27,9 cm)</option></select></label>
+            <label class="st-field">Tamanho<select data-k="size" class="st-select">${PAPER_SIZES.map((p) => `<option value="${p.id}">${p.rotulo} (${String(p.w).replace(".", ",")} × ${String(p.h).replace(".", ",")} cm)</option>`).join("")}</select></label>
             <label class="st-field">Orientação<select data-k="landscape" class="st-select"><option value="0">Retrato</option><option value="1">Paisagem</option></select></label>
           </div>
         </section>
@@ -812,7 +839,7 @@ export class Ribbon {
         return Number.isFinite(v) ? Math.min(8, Math.max(0.5, v)) : d;
       };
       const next: PageSetup = {
-        size: q<HTMLSelectElement>('[data-k="size"]').value === "Letter" ? "Letter" : "A4",
+        size: (PAPER_SIZES.find((p) => p.id === q<HTMLSelectElement>('[data-k="size"]').value)?.id ?? "A4") as PaperSize,
         landscape: q<HTMLSelectElement>('[data-k="landscape"]').value === "1",
         margins: { top: num("top", s.margins.top), bottom: num("bottom", s.margins.bottom), left: num("left", s.margins.left), right: num("right", s.margins.right) },
         defaultFont: q<HTMLSelectElement>('[data-k="font"]').value,

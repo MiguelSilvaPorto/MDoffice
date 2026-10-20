@@ -369,7 +369,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **A aba Layout ganhou o botão Tamanho — e o papel vai até A3/A2 (relato do usuário)**: o papel da
+  folha só mudava no **Configurar Página**, num seletor com **A4 e Carta**; na aba **Layout** não
+  havia botão para isso. Agora a aba tem **Tamanho ▾**, um menu com **A5, A4, A3, A2 e Carta**
+  (cada um com as medidas em cm e o atual marcado) — a troca vale na hora para a folha inteira. O
+  **Configurar Página** lista os cinco, e o papel escolhido vale na **folha**, na **impressão/PDF**
+  (`@page size`) e no **`.docx`** exportado (as medidas da seção, em twips). Na importação, um
+  `.docx` em A3 (ou A2/A5) passa a ser reconhecido pelo **tamanho mais próximo** em vez de cair
+  sempre em A4/Carta.
 
 ### Adicionado (na main)
 

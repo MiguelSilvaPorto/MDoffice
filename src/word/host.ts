@@ -8,7 +8,7 @@ import { ghostPlugin } from "./ghost";
 import { paginationPlugin, requestPagination, GAP_PX } from "./pagination";
 import { spellPlugin } from "./spell";
 import { emptyDoc, plainText } from "./schema";
-import { CM_TO_PX, DEFAULT_SETUP, deserialize, pageSizeCm, pageSizePx, serialize, type PageSetup } from "./model";
+import { CM_TO_PX, DEFAULT_SETUP, deserialize, pageSizeCm, pageSizePx, papel, serialize, type PageSetup } from "./model";
 import { outlineSource, type WordOutlineSource } from "./markdown";
 import { h } from "../util";
 
@@ -197,15 +197,16 @@ export class WordHost {
     st.setProperty("--wd-font", `'${s.defaultFont}', 'Segoe UI', sans-serif`);
     st.setProperty("--wd-size", `${s.defaultSize}pt`);
     this.zoomEl.style.width = `${w}px`;
-    // o TAMANHO DO PAPEL à vista (o papel é fixo: A4/Carta; o que muda de tamanho na tela é a vista —
-    // o usuário leu a folha pequena do zoom como "o papel mudou" e este rótulo responde a pergunta)
+    // o TAMANHO DO PAPEL à vista (o papel vem do Configurar Página/Tamanho; o que muda de tamanho
+    // na tela é a vista — o usuário leu a folha pequena do zoom como "o papel mudou" e este rótulo
+    // responde a pergunta)
     const cm = pageSizeCm(s);
     const num = (v: number) => String(v).replace(".", ",");
-    const rotulo = `${s.size} · ${num(cm.w)} × ${num(cm.h)} cm`;
-    const papel = this.opts.pane.querySelector<HTMLElement>("#wd-pagesize");
-    if (papel) {
-      papel.textContent = rotulo;
-      papel.title = `Tamanho do papel: ${s.size} (${s.landscape ? "paisagem" : "retrato"}) · ${num(cm.w)} × ${num(cm.h)} cm — a vista (zoom) não muda o papel`;
+    const rotulo = `${papel(s.size).rotulo} · ${num(cm.w)} × ${num(cm.h)} cm`;
+    const papelEl = this.opts.pane.querySelector<HTMLElement>("#wd-pagesize");
+    if (papelEl) {
+      papelEl.textContent = rotulo;
+      papelEl.title = `Tamanho do papel: ${papel(s.size).rotulo} (${s.landscape ? "paisagem" : "retrato"}) · ${num(cm.w)} × ${num(cm.h)} cm — a vista (zoom) não muda o papel`;
     }
     this.firstHeader.textContent = s.header.replace(/\{pagina\}/gi, "1").replace(/\{total\}/gi, String(this.pages));
     this.firstHeader.hidden = !s.header.trim();
@@ -229,7 +230,7 @@ export class WordHost {
     if (s.pageNumbers) boxes.push(`@bottom-center { content: ${foot}"Página " counter(page) " de " counter(pages); font: 9pt 'Segoe UI', sans-serif; color: #6b7280; }`);
     else if (foot) boxes.push(`@bottom-center { content: ${q(s.footer)}; font: 9pt 'Segoe UI', sans-serif; color: #6b7280; }`);
     const m = s.margins;
-    el.textContent = `@media print { @page { size: ${s.size === "A4" ? "A4" : "letter"} ${s.landscape ? "landscape" : "portrait"}; margin: ${m.top}cm ${m.right}cm ${m.bottom}cm ${m.left}cm; ${boxes.join(" ")} } }`;
+    el.textContent = `@media print { @page { size: ${s.size === "Letter" ? "letter" : s.size} ${s.landscape ? "landscape" : "portrait"}; margin: ${m.top}cm ${m.right}cm ${m.bottom}cm ${m.left}cm; ${boxes.join(" ")} } }`;
   }
 
   private setZoom(z: number): void {

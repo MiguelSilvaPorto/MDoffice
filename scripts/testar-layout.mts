@@ -1597,6 +1597,43 @@ console.log("\nWord: a legenda do cartão de Estilo fica DENTRO do cartão");
   );
 }
 
+console.log("\nWord: a aba Layout tem o botão Tamanho (A5, A4, A3, A2 e Carta)");
+{
+  const rib = ler("src/word/ribbon.ts");
+  const modelo = ler("src/word/model.ts");
+  const host = ler("src/word/host.ts");
+  const exp = ler("src/word/docxExport.ts");
+  // O relato: na aba Layout só havia "Página" (o Configurar Página) e o papel só oferecia A4 e Carta.
+  checa(
+    "o botão Tamanho está na aba Layout e abre o menu dos papéis",
+    /data-panel="layout"[\s\S]{0,400}btn\("page-size"/.test(rib) && /case "page-size":\s*\r?\n\s*return this\.sizeMenu\(anchor\);/.test(rib),
+    "sem o botão, o papel só muda no Configurar Página (e o usuário procura na fita)"
+  );
+  checa(
+    "a tabela de papéis tem A5, A4, A3, A2 e Carta",
+    /export const PAPER_SIZES/.test(modelo) && ["A3", "A2", "A5", "A4", "Letter"].every((id) => new RegExp(`id: "${id}"`).test(modelo)),
+    "A3/A2 é o pedido; a tabela é o único lugar a mexer para um papel novo"
+  );
+  checa(
+    "folha, rótulo e impressão seguem o papel escolhido",
+    /const p = papel\(setup\.size\)/.test(modelo) && /papel\(s\.size\)\.rotulo/.test(host) && /size: \$\{s\.size === "Letter" \? "letter" : s\.size\}/.test(host),
+    "a folha continuaria A4 e a impressão sairia em A4 mesmo escolhendo A3"
+  );
+  checa(
+    "o .docx exporta as medidas do papel escolhido",
+    /const PAPER_TWIPS: Record<PaperSize/.test(exp) &&
+      /A3: \{ width: 16838, height: 23811 \}/.test(exp) &&
+      /A2: \{ width: 23811, height: 33676 \}/.test(exp) &&
+      /PAPER_TWIPS\[setup\.size\]/.test(exp),
+    "o arquivo abriria em A4 mesmo com A3 na tela"
+  );
+  checa(
+    "o .docx importado cai no papel mais próximo",
+    /PAPER_SIZES\.reduce\(\(melhor, p\) =>/.test(ler("src/word/docxImport.ts")),
+    "um A3 importado viraria A4 (a lista antiga só tinha dois tamanhos)"
+  );
+}
+
 // ---------------------------------------------------------------- a folha do Word no tema escuro
 
 console.log("\nWord: a folha escurece junto com o tema (o papel)");
@@ -1675,12 +1712,12 @@ console.log("\nWord: o papel é fixo (A4/Carta) e o zoom é só a vista");
     "o fit poderia ampliar a página (não é para isso) ou nem existir"
   );
   checa(
-    "o tamanho do papel aparece ao lado da página (A4/Carta, em cm, com a orientação)",
+    "o tamanho do papel aparece ao lado da página (o papel escolhido, em cm, com a orientação)",
     /export function pageSizeCm\(setup: PageSetup\)/.test(modelWord) &&
-      /21, 29\.7/.test(modelWord) &&
-      /21\.59, 27\.94/.test(modelWord) &&
+      /w: 21, h: 29\.7/.test(modelWord) &&
+      /w: 21\.59, h: 27\.94/.test(modelWord) &&
       /id="wd-pagesize"/.test(htmlWord) &&
-      /Tamanho do papel: \$\{s\.size\}/.test(hostWord),
+      /Tamanho do papel: \$\{papel\(s\.size\)\.rotulo\}/.test(hostWord),
     "sem o rótulo, uma folha vista com zoom baixo continua parecendo 'o papel mudou'"
   );
   checa(
