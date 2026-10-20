@@ -1791,6 +1791,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A pílula da barra lateral (o fundo da aba ativa) não desalinha mais**: o tamanho dela era
+  **fixo em px** (30×28) e a posição só era medida na **troca de painel** — se o tamanho da aba
+  mudasse (um ajuste de estilo, a fonte carregando, o zoom) ou se a barra mudasse de largura, a
+  pílula ficava deslocada em relação ao ícone (o print do usuário). Agora o tamanho é **copiado do
+  botão ativo** (`offsetWidth`/`offsetHeight`) e a posição é recalculada no **primeiro quadro**,
+  no **resize**, quando as **fontes** ficam prontas e quando a **largura da barra** muda
+  (`ResizeObserver`). Teste: `npm run test:layout`.
+
   markdown passa pelo saneamento, como todo HTML de fora no app.
 
 - (nada no momento)

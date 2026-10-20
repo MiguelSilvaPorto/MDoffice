@@ -14992,3 +14992,19 @@ antigas quando fizer sentido.
 - **Linha:** `novo`
 - **Porquê:** a tarefa ainda não está na main: a entrada nasce em "Não adicionado" e só é promovida
   no fechamento.
+
+## src/sidebar.ts · src/styles/workspace.css
+
+### 2026-10-20 · pílula da barra lateral · o tamanho vem da aba e a posição acompanha o layout
+- **Local:** `posicionarPilula`, o novo `acompanharPilula` (chamado no fim do `init`) e o comentário
+  do `.sb-pill` no CSS
+- **Linha:** `+ pilula.style.width = ${ativo.offsetWidth}px` e
+  `+ pilula.style.height = ${ativo.offsetHeight}px`; `+ requestAnimationFrame(reposicionar)`,
+  `+ document.fonts?.ready.then(reposicionar)`, `+ window.addEventListener("resize", reposicionar)`
+  e `+ new ResizeObserver(reposicionar).observe(tabs)`
+- **Porquê:** o print do usuário mostra a pílula (o fundo da aba ativa) deslocada em relação ao
+  ícone. Medido no navegador (o app em `vite`): com o layout atual a pílula de 30×28 cai
+  exatamente sobre a aba de 30×28 — ou seja, o defeito está nas premissas: o tamanho é **fixo**
+  (qualquer mudança no tamanho da aba desalinha) e a posição é medida **só na troca de painel**
+  (fica velha se a fonte, o zoom ou um resize mudar o layout depois). As duas coisas ficaram presas
+  no `test:layout`.

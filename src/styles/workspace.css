@@ -75,6 +75,9 @@
   left: 0;
   top: 0;
   z-index: 0;
+  /* o TAMANHO é copiado do botão ativo pelo JS (offsetWidth/offsetHeight); estes valores são só o
+     estado inicial, antes do primeiro posicionamento — um tamanho fixo desalinhava a pílula
+     quando a aba mudava de tamanho (o print do usuário). */
   width: 30px;
   height: 28px;
   border-radius: 7px;

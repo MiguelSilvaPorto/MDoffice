@@ -107,6 +107,19 @@ checa("a barra lateral tem transição de largura", /#sidebar\s*\{[^}]*transitio
 checa("a pílula desliza (transição de transform)", /\.sb-pill\s*\{[^}]*transition:[^}]*transform/.test(mov), "transition de transform ausente em .sb-pill");
 checa("a pílula fica ancorada no seletor", /\.sb-tabs\s*\{[^}]*position:\s*relative/.test(ws) && /\.sb-pill\s*\{[^}]*position:\s*absolute/.test(ws));
 checa("o botão ativo do seletor deixa o fundo para a pílula", /\.sb-tab\.active\s*\{[^}]*background:\s*transparent/.test(ws));
+checa(
+  "a pílula copia o tamanho da aba ativa (não um 30×28 fixo)",
+  /pilula\.style\.width = `\$\{ativo\.offsetWidth\}px`/.test(ler("src/sidebar.ts")) &&
+    /pilula\.style\.height = `\$\{ativo\.offsetHeight\}px`/.test(ler("src/sidebar.ts")),
+  "com o tamanho fixo, qualquer mudança no tamanho da aba desalinha a pílula (o print do usuário)"
+);
+checa(
+  "a pílula se reposiciona quando o layout muda (resize, fontes, largura da barra)",
+  /addEventListener\("resize", reposicionar\)/.test(ler("src/sidebar.ts")) &&
+    /document\.fonts\?\.ready\.then\(reposicionar\)/.test(ler("src/sidebar.ts")) &&
+    /new ResizeObserver\(reposicionar\)/.test(ler("src/sidebar.ts")),
+  "a posição medida no start fica velha depois de um resize ou de a fonte carregar"
+);
 checa("o Início destaca a aba só pela cor (sem pintar o fundo)", !/\.sb-tab\[data-side="home"\]\.active[^{]*\{[^}]*background/.test(home));
 checa("a troca de painel usa o passo curto (mdc-painel), sem escala", /\.sb-panel:not\(\[hidden\]\)[^{]*\{[^}]*mdc-painel/.test(mov));
 

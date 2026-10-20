@@ -162,6 +162,7 @@ export class Sidebar {
       this.renderProjects();
     }
     window.addEventListener("focus", () => void this.refresh());
+    this.acompanharPilula();
   }
 
   show(panel: SidePanel): void {
@@ -185,8 +186,28 @@ export class Sidebar {
     const ativo =
       alvo ?? document.querySelector<HTMLElement>('.sb-tab.active:not([data-side="home"])') ?? document.querySelector<HTMLElement>(".sb-tab.active");
     if (!ativo) return;
+    // o tamanho vem do BOTÃO (não de um 30×28 fixo no CSS): se o tamanho da aba mudar num ajuste
+    // de estilo, a pílula acompanha em vez de ficar deslocada (o print do usuário)
+    pilula.style.width = `${ativo.offsetWidth}px`;
+    pilula.style.height = `${ativo.offsetHeight}px`;
     pilula.style.transform = `translate(${ativo.offsetLeft}px, ${ativo.offsetTop}px)`;
     pilula.classList.add("on");
+    this.pilulaAlvo = ativo;
+  }
+
+  /** O botão que a pílula está seguindo (para reposicionar quando o layout mudar). */
+  private pilulaAlvo: HTMLElement | null = null;
+
+  /** Reposiciona a pílula no próximo quadro e quando o layout mudar (fonte, zoom, redimensionar). */
+  private acompanharPilula(): void {
+    const reposicionar = () => this.posicionarPilula(this.pilulaAlvo);
+    requestAnimationFrame(reposicionar);
+    // a fonte da interface pode carregar depois do start e mexer nas medidas
+    void document.fonts?.ready.then(reposicionar);
+    window.addEventListener("resize", reposicionar);
+    // a barra lateral pode mudar de largura (arrasto da alça) sem resize da janela
+    const tabs = document.querySelector<HTMLElement>(".sb-tabs");
+    if (tabs && typeof ResizeObserver !== "undefined") new ResizeObserver(reposicionar).observe(tabs);
   }
 
   setHomeActive(active: boolean): void {
