@@ -119,6 +119,55 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** `return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;`
 - **Por quê:** separar o app de verdade (com arquivos) da aba de desenvolvimento (sem eles) para escolher o salvamento e a restauração certos sem depender de tentativa e erro do `invoke`.
 
+## index.html
+
+### 2026-10-20 — 24daa2a — favicon do app
+- **Local:** `<head>`
+- **Linha:** novos `<link rel="icon" type="image/png" href="/icones/mdoffice-escuro.png" />` e `apple-touch-icon`
+- **Por quê:** o HTML não declarava ícone; na aba do navegador (modo dev) aparecia o ícone genérico/sem marca. A janela do Tauri não muda (usa o ícone do executável).
+
+## src/app/seloAutosave.ts
+
+### 2026-10-20 — 24daa2a — modo "erro" no selo
+- **Local:** `ModoSelo`, `modoDoSelo`
+- **Linha:** `+ "erro"` e `if (opts.erro) return "erro";` (antes das demais regras)
+- **Por quê:** o selo só conhecia desligado/salvando/não-salvo/salvo; com uma gravação que falhou e `dirty` falso, ele dizia “Salvo” — o falso positivo do print. O erro tem precedência: nunca finge gravação.
+
+## src/app/layout.ts
+
+### 2026-10-20 — 24daa2a — selo e linha de estado mostram a falha
+- **Local:** `setSaveState`, `updateAutosaveUI`, `refreshPath`
+- **Linha:** `if (this.tab.saveFailed) el.textContent = "Não foi possível salvar"` · `erro: this.tab.saveFailed === true` nas duas chamadas de `modoDoSelo` · ramo `modo === "erro"` com “Não salvo” e `#i-cloud-off` · `is-pendente` inclui `erro`
+- **Por quê:** a barra de status e o selo bebiam de `dirty`/`statusSaved`; uma falha não estava em nenhum dos dois. Agora a última gravação malsucedida aparece nos dois lugares.
+
+## src/app/documents.ts
+
+### 2026-10-20 — 24daa2a — marcar/limpar a falha de gravação
+- **Local:** `salvarAgora`, `save`, `ensureSaved`
+- **Linha:** `tab.saveFailed = false` nos sucessos (inclusive no ramo do navegador) · `tab.saveFailed = true` nos `catch` (com `setSaveState`/`renderTabs` quando é a aba ativa)
+- **Por quê:** o selo depende desse estado para não mentir. No ramo do navegador o autosave grava a sessão e limpa a falha; no Tauri, o `catch` do `saveDoc`/`ensureSaved` marca a aba como não salva.
+
+## src/app/pastaPadrao.ts
+
+### 2026-10-20 — 24daa2a — documento novo que não grava fica “não salvo”
+- **Local:** `nascerNoPadrao`
+- **Linha:** `const tab = this.tab` antes do `try`; `catch` marca `tab.dirty = true`, `tab.saveFailed = true`, `statusSaved = "Não foi possível salvar"` e atualiza selo/abas
+- **Por quê:** no navegador (sem Tauri) o `invoke` do caminho padrão falhava, o toast aparecia e a aba continuava “Salvo” — o falso positivo. O `newDoc` agora nem chama isso no navegador; no Tauri, se a pasta padrão falhar, o estado é honesto.
+
+## src/app/tabs.ts
+
+### 2026-10-20 — 24daa2a — novo documento no navegador e o campo `saveFailed`
+- **Local:** `newDoc`, `saveBrowserTabs`
+- **Linha:** `if (!files.emTauri()) { tab.statusSaved = "Novo documento (navegador)"; this.setSaveState(); return; }` antes de `nascerNoPadrao("md")` · `saveFailed` incluído em `DocTab`/`newTab`
+- **Por quê:** no navegador não existe pasta padrão: tentar criá-la só produzia o erro de `invoke` e um “Salvo” mentiroso. A aba nasce sem caminho e o autosave do navegador assume.
+
+## vite.config.ts
+
+### 2026-10-20 — 24daa2a — watch dentro de worktree + polling
+- **Local:** `emWorktree` (novo) e `server.watch`
+- **Linha:** `const emWorktree = /[\\/]\.worktrees[\\/][^\\/]+$/.test(process.cwd());` · `ignored: [..., ...(emWorktree ? [] : ["**/.worktrees/**"])]` · `usePolling: true, interval: 400` · estáticos grandes em `ignored`
+- **Por quê:** o padrão `**/.worktrees/**` ignorava a **raiz inteira** quando o Vite roda dentro de uma worktree — nenhuma edição era vista e o dev server servia módulos velhos até reiniciar (o HMR “não chegava”). Fora da worktree a proteção contra observar as worktrees dos outros continua. O polling cobre o watcher nativo que não avisava mudanças na unidade A:; os arquivos grandes (dicionário, n-gramas, modelos) ficam fora da varredura para não pesar.
+
 ## src/broker/diag.ts
 
 ### 2026-10-19 — 2d4e6c6 — log de decisões do corretor (novo arquivo)

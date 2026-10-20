@@ -214,8 +214,8 @@ export const tabsMethods = {
    * localStorage a cada edição/ troca de aba. É o que faz um reload não perder os
    * documentos abertos (no Tauri as abas têm caminho e a sessão normal resolve).
    */
-  saveBrowserTabs(this: App): void {
-    if (files.emTauri()) return;
+  saveBrowserTabs(this: App): boolean {
+    if (files.emTauri()) return true;
     const abas: { texto: string; status?: string }[] = [];
     let ativa = 0;
     for (const t of this.tabs) {
@@ -226,8 +226,14 @@ export const tabsMethods = {
       abas.push({ texto, status: t.statusSaved });
     }
     // Só a aba inicial vazia: é o começo do app — não apaga a sessão anterior.
-    if (!abas.length && this.tabs.length <= 1) return;
-    saveJSON("mdc.browser.session", { abas, ativa, at: Date.now() });
+    if (!abas.length && this.tabs.length <= 1) return true;
+    // Sem passar pelo saveJSON: aqui a falha importa (o selo precisa saber se gravou).
+    try {
+      localStorage.setItem("mdc.browser.session", JSON.stringify({ abas, ativa, at: Date.now() }));
+      return true;
+    } catch {
+      return false; // cota cheia/armazenamento indisponível: o autosave marca "não salvo"
+    }
   },
 
   /**

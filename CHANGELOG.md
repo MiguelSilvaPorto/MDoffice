@@ -32,6 +32,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- (nada no momento)
+
+### Adicionado (na main)
+
+**Backend**
+
+- (nada específico do módulo — arquivos, imagens e rascunhos passam pelos comandos do **Geral**)
+
+**Frontend**
+
 - **O corretor passou a DECIDIR antes de mexer (e nunca "conserta" o informal)**: o relato era
   uma correção sem sentido aplicada sozinha ao parar de digitar (print "esc … r"). Agora
   **texto sem acento por escolha** (informal, áudio transcrito) não recebe **nenhuma** alteração
@@ -63,15 +73,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   `clipboard.read` de reserva), captura o evento no documento (o CodeMirror podia consumi-lo
   antes) e registra no diagnóstico (`?diag=1`) o que veio no colar — tipos, arquivos e itens —
   para diagnosticar qualquer variação da área de transferência.
-
-### Adicionado (na main)
-
-**Backend**
-
-- (nada específico do módulo — arquivos, imagens e rascunhos passam pelos comandos do **Geral**)
-
-**Frontend**
-
 - **A sugestão enquanto você digita ganhou uma decisão calibrada (e ficou mais rápida)**: o
   texto fantasma aparecia por limiares fixos (0,45 / 0,6 / 0,8…) sobre a probabilidade
   **normalizada entre candidatas**, que não é a chance de acertar — cada ajuste trocava precisão
@@ -1747,15 +1748,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   versões, e avisa quando o documento é Markdown com imagens em `assets/` (elas ficam na pasta
   antiga). A pasta em foco ganha realce e a de destino abre sozinha depois do arrasto.
 
-- **A sessão do navegador não perde mais os documentos no reload (e o 1º documento da sessão
-  reaberta não some)**: no modo de desenvolvimento sem Tauri, o autosave gravava **um único**
-  `temp/rascunho.md` e nunca o lia — recarregar a página perdia todas as abas. Agora o texto de
-  **todas as abas Markdown** vai para o `localStorage` a cada edição/troca de aba e volta no
-  reload (com os avisos contando “Salvo neste navegador”). De quebra, o primeiro documento de
-  uma sessão reaberta perdia o texto quando outra aba era ativada em seguida:
-  `dropPristineStartTab` remove a aba inicial vazia e agora **carrega o estado da aba que assume**
-  antes do próximo snapshot.
-
 **Ferramentas (dev)**
 
 - `npm run test:salvamento` confere os três comandos novos de `files.rs` (a conta de comandos
@@ -1826,6 +1818,32 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   do navegador (com pop-up liberado). Conferido no navegador: soltar fora chamou
   `index.html?doc=…` e a aba saiu; e a janela `?doc=` não sobrescreveu a sessão (sentinela intacta).
   Teste: `npm run test:layout`.
+
+- **A sessão do navegador não perde mais os documentos no reload (e o 1º documento da sessão
+  reaberta não some)**: no modo de desenvolvimento sem Tauri, o autosave gravava **um único**
+  `temp/rascunho.md` e nunca o lia — recarregar a página perdia todas as abas. Agora o texto de
+  **todas as abas Markdown** vai para o `localStorage` a cada edição/troca de aba e volta no
+  reload (com os avisos contando “Salvo neste navegador”). De quebra, o primeiro documento de
+  uma sessão reaberta perdia o texto quando outra aba era ativada em seguida:
+  `dropPristineStartTab` remove a aba inicial vazia e agora **carrega o estado da aba que assume**
+  antes do próximo snapshot.
+
+- **O selo de salvamento não diz mais “Salvo” quando a gravação falhou**: `saveFailed` no
+  `DocTab` e o modo `erro` no selo (“Não salvo”); o documento novo que não consegue ir para a
+  pasta padrão fica marcado como não salvo (antes o erro aparecia e o selo continuava “Salvo” —
+  o falso positivo do print). No **navegador** o “novo documento” não tenta mais a pasta padrão
+  (não existe Tauri): a aba nasce como “Novo documento (navegador)” e o autosave guarda na
+  sessão do navegador — o erro `Cannot read properties of undefined (reading 'invoke')` sumiu.
+
+- **Ícone na aba do navegador**: o app não declarava favicon (a aba ficava sem ícone); agora usa
+  `public/icones/mdoffice-escuro.png` (e o `apple-touch-icon` para a versão instalada).
+
+- **Dev server dentro de worktree serve o código novo (HMR)**: o `watch.ignored` excluía
+  `**/.worktrees/**`; quando o Vite roda dentro de uma worktree, esse padrão casa com a raiz
+  inteira e nenhuma mudança era vista — o servidor servia módulos velhos até reiniciar (foi o
+  que aconteceu nos testes). Fora da worktree a exclusão continua; dentro dela só a worktree
+  atual é observada, com **polling** (o watcher nativo do Windows não avisava mudanças na
+  unidade A:) e os estáticos grandes (dicionário, n-gramas, modelos) fora da varredura.
 
 - **A lista de fontes/tamanho ficou menor**: o menu do seletor (o campo Fonte da fita, no Word e no
   PowerPoint) abria com **linhas altas e até 330 px** de lista — no print do usuário a lista de
