@@ -1049,7 +1049,7 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
     // o texto desce de tamanho até caber (nunca abaixo de 9 pt) — é o encaixe, não um corte
     const escalas = [1, 0.9, 0.8, 0.72];
     let blocos: { s: Shape; tamanho: number }[] = [];
-    let corpo: { s: Shape; tamanho: number }[] = [];
+    let corpo: { s: Shape; tamanho: number; gap: number }[] = [];
     let alturaTotal = 0;
     for (const escala of escalas) {
       blocos = [];
@@ -1063,14 +1063,17 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
       }
       alturaTotal += 2.4;
       for (const g of c.grupos) {
-        for (const id of g.ids) {
+        const ids = g.ids.filter((id) => {
           const s = slide.shapes.find((y2) => y2.id === id);
-          if (!s || !temTexto(s)) continue;
+          return !!s && temTexto(s);
+        });
+        ids.forEach((id, k) => {
+          const s = slide.shapes.find((y2) => y2.id === id)!;
           const tamanho = Math.max(9, (maiorLetra(s) >= 14 ? 12.5 : 11) * escala);
-          corpo.push({ s, tamanho });
-          alturaTotal += alturaDaForma(s, tamanho, largura) + 1.1;
-        }
-        alturaTotal += 1.6;
+          const gap = k === ids.length - 1 ? 3.4 : 1.1;
+          corpo.push({ s, tamanho, gap });
+          alturaTotal += alturaDaForma(s, tamanho, largura) + gap;
+        });
       }
       if (alturaTotal <= 86) break;
     }
@@ -1085,9 +1088,9 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
     for (const b of corpo) {
       const h = alturaDaForma(b.s, b.tamanho, largura);
       conteudo.push(reescrever({ forma: b.s, texto: txt(b.s), negrito: b.s.bold, icones: [] }, { x, y, w: largura, h }, b.tamanho, tom.texto));
-      y += h + 1.1;
+      y += h + b.gap;
     }
-    return { fundos, conteudo, tituloProprio: true };
+    return { fundos, conteudo, tituloProprio: true, fundoEscuro: tom.fundo !== "FBF8F2" };
   };
   const artes: ArteId[] = ["ondas", "facetas", "mosaico", "orbes"];
   const comArte = false;
