@@ -6,7 +6,8 @@
 // gesto: Ctrl+Z volta ao tamanho anterior).
 
 import type { Node as PMNode } from "prosemirror-model";
-import { NodeSelection } from "prosemirror-state";
+import { NodeSelection, TextSelection } from "prosemirror-state";
+import { moverImagem } from "./imagemMover";
 import type { EditorView, NodeView } from "prosemirror-view";
 
 /** Tamanho mínimo de uma imagem redimensionada (px). */
@@ -42,15 +43,17 @@ export class ImagemView implements NodeView {
     });
     this.dom.append(this.img);
 
-    // alça de arrastar (mover no texto)
+    // alça de arrastar (mover no texto) — gesto de PONTEIRO, não o drag nativo: o drag do
+    // navegador não avisa o ProseMirror e o nó ficava preso no lugar ao soltar
     this.alca = document.createElement("span");
     this.alca.className = "wd-img-alca";
     this.alca.title = "Arrastar a imagem";
-    this.alca.draggable = true;
     this.alca.innerHTML = "<i></i><i></i><i></i><i></i><i></i><i></i>";
-    this.alca.addEventListener("dragstart", (e) => {
-      // a miniatura do arrasto é a própria imagem (não a alça)
-      e.dataTransfer?.setDragImage(this.img, 12, 12);
+    this.alca.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      this.iniciarMovimento(e, this.alca);
     });
     this.dom.append(this.alca);
 
@@ -63,11 +66,12 @@ export class ImagemView implements NodeView {
       ponto.addEventListener("pointerdown", (e) => this.iniciarGesto(e, dir, ponto));
     }
 
-    // clique seleciona a imagem (como no Word); sem isso o clique só põe o cursor ao lado
-    this.img.addEventListener("mousedown", (e) => {
+    // clique seleciona a imagem; arrastar o CORPO também move (como no Word)
+    this.img.addEventListener("pointerdown", (e) => {
       if (e.button !== 0) return;
       e.preventDefault();
       this.selecionar();
+      this.iniciarMovimento(e, this.img);
     });
 
     this.aplicar(node);
@@ -94,7 +98,7 @@ export class ImagemView implements NodeView {
     const alvo = event.target as HTMLElement | null;
     if (!alvo) return false;
     if (alvo.closest(".wd-img-p")) return true;
-    if (event.type === "mousedown" && alvo === this.img) return true;
+    if ((event.type === "pointerdown" || event.type === "mousedown") && (alvo === this.img || alvo === this.alca)) return true;
     return false;
   }
 
@@ -135,6 +139,65 @@ export class ImagemView implements NodeView {
     this.view.focus();
     const sel = NodeSelection.create(this.view.state.doc, pos);
     this.view.dispatch(this.view.state.tr.setSelection(sel));
+  }
+
+  /** Gesto de mover: de onde saiu, para onde vai e se já andou o bastante para valer. */
+  private movendo: { pos: number; x: number; y: number; alvo: number | null; andou: boolean } | null = null;
+
+  private iniciarMovimento(e: PointerEvent, alvo: HTMLElement): void {
+    const pos = this.getPos();
+    if (typeof pos !== "number") return;
+    this.selecionar();
+    this.movendo = { pos, x: e.clientX, y: e.clientY, alvo: null, andou: false };
+    try {
+      alvo.setPointerCapture(e.pointerId);
+    } catch {
+      /* ponteiro sintético (teste) não tem captura */
+    }
+    const mover = (ev: PointerEvent) => this.arrastarMovimento(ev);
+    const soltar = () => {
+      alvo.removeEventListener("pointermove", mover);
+      alvo.removeEventListener("pointerup", soltar);
+      alvo.removeEventListener("pointercancel", soltar);
+      this.soltarMovimento();
+    };
+    alvo.addEventListener("pointermove", mover);
+    alvo.addEventListener("pointerup", soltar);
+    alvo.addEventListener("pointercancel", soltar);
+  }
+
+  /** Mostra onde a imagem vai cair (cursor de texto); soltar é quem move. */
+  private arrastarMovimento(e: PointerEvent): void {
+    const m = this.movendo;
+    if (!m) return;
+    if (!m.andou && Math.hypot(e.clientX - m.x, e.clientY - m.y) > 4) m.andou = true;
+    if (!m.andou) return;
+    this.dom.classList.add("movendo");
+    const coords = this.view.posAtCoords({ left: e.clientX, top: e.clientY });
+    if (!coords) {
+      m.alvo = null;
+      return;
+    }
+    // não vale soltar dentro da própria imagem
+    if (coords.pos >= m.pos && coords.pos <= m.pos + this.node.nodeSize) {
+      m.alvo = null;
+      return;
+    }
+    const sel = TextSelection.near(this.view.state.doc.resolve(coords.pos), 1);
+    m.alvo = sel.from;
+    this.view.dispatch(this.view.state.tr.setSelection(sel));
+  }
+
+  /** Move o nó no documento (uma transação: Ctrl+Z desfaz). */
+  private soltarMovimento(): void {
+    const m = this.movendo;
+    this.movendo = null;
+    this.dom.classList.remove("movendo");
+    if (!m || !m.andou || m.alvo == null) return;
+    const r = moverImagem(this.view.state, m.pos, m.alvo);
+    if (!r) return;
+    r.tr.setSelection(NodeSelection.create(r.tr.doc, r.destino));
+    this.view.dispatch(r.tr);
   }
 
   private iniciarGesto(e: PointerEvent, dir: string, ponto: HTMLElement): void {

@@ -814,6 +814,13 @@ body.settings-open #word-pane {
   user-select: none;
 }
 
+/* Arrastando a imagem para outro ponto do texto */
+.wd-img.movendo,
+.wd-img.movendo img {
+  cursor: grabbing;
+  user-select: none;
+}
+
 .wd-doc img.ProseMirror-selectednode {
   outline: 2px solid #4f46e5;
 }

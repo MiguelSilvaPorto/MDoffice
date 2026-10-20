@@ -15,7 +15,7 @@ arquivos `.docx` de verdade.
   dividem entre elas (paginação calculada, não é só uma folha rolando).
 - **Imagens com alças**: clique na imagem para selecioná-la; as **8 alças** nos cantos e lados
   redimensionam mantendo a proporção (o tamanho fica no documento e vai para o `.docx`) e a
-  **alça pontilhada** à esquerda arrasta a imagem para outro ponto do texto. `Ctrl+Z` volta ao
+  **alça pontilhada** à esquerda arrasta a imagem para outro ponto do texto (arrastar o próprio corpo da imagem também move, e Ctrl+Z desfaz). `Ctrl+Z` volta ao
   tamanho anterior. A imagem entra pelo botão *Imagem*, por `Ctrl+V` ou arrastada do Explorer. Em parágrafo com **entrelinha fixa**, a imagem desliga a entrelinha daquele parágrafo para a linha crescer e a imagem não vazar sobre o texto vizinho.
 - **Zoom** (barra inferior) e régua de trabalho na coluna de escrita. A folha é **sempre do
   tamanho do papel** escolhido (A4, 21 × 29,7 cm, por padrão): o **zoom é só a vista** e o tamanho

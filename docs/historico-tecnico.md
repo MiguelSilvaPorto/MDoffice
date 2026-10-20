@@ -15485,3 +15485,15 @@ antigas quando fizer sentido.
   commit está na `main`; a entrada ficou no **fim da lista do Frontend** (antes do rótulo
   **Ferramentas (dev)**, que é o último grupo do arquivo) — não no fim do arquivo, que ali é o grupo
   de ferramentas (o tropeço que já aconteceu numa rodada anterior).
+## src/word/imagem.ts · src/styles/word.css
+
+### 2026-10-20 · esta tarefa · mover a imagem com gesto de ponteiro
+- **Local:** `ImagemView` (alça e corpo da imagem), novos `iniciarMovimento`/`arrastarMovimento`/`soltarMovimento`;
+  `stopEvent` e a classe `.wd-img.movendo` no CSS
+- **Linha:** `- this.alca.draggable = true;` + `dragstart` → `+ this.alca.addEventListener("pointerdown", …)`;
+  `- this.img.addEventListener("mousedown", …)` → `+ … "pointerdown", … this.iniciarMovimento(e, this.img)`;
+  `+ tr.delete(pos, pos + node.nodeSize); tr.insert(destino, node);`
+- **Por quê:** a alça usava o `drag` nativo (HTML5), que não avisa o ProseMirror: o navegador até mostrava a miniatura,
+  mas soltar não movia o nó — relato "não consigo movimentar nada da imagem". O gesto de ponteiro (o mesmo padrão do
+  redimensionamento) calcula a posição de destino com `posAtCoords`, mostra o cursor e move o nó numa transação no
+  soltar; arrastar o corpo da imagem também move, como no Word. `Ctrl+Z` desfaz o movimento.

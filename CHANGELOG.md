@@ -368,6 +368,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada no momento)
 
 **Frontend**
+- **A imagem voltou a poder ser movida no documento**: a alça de arrastar disparava o *drag* nativo do navegador, mas
+  o editor não registrava o movimento — soltar não movia nada (a imagem ficava presa no lugar). Agora o movimento é um
+  **gesto de ponteiro** próprio: arrastar a alça **ou o corpo da imagem** mostra o cursor onde ela vai cair e, ao
+  soltar, o nó é movido no documento numa transação (`Ctrl+Z` desfaz). O redimensionamento pelas 8 alças continua igual.
+
 - **A imagem parou de atrapalhar a escrita no Word**: um parágrafo com **entrelinha fixa** (1 ou um valor exato)
   e uma imagem **inline** grande ficava com a caixa da linha menor que a imagem — ela vazava por cima das linhas
   vizinhas e **capturava o clique**, então não dava para clicar/editar o texto embaixo. Agora parágrafo (e título)
