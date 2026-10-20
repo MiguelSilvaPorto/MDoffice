@@ -205,6 +205,14 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ## src/app/seloAutosave.ts
 
+### 2026-10-20 — fix/texto-aviso-codificacao — o aviso do selo com os acentos de novo
+- **Local:** arquivo inteiro (comentário de cabeçalho, `ModoSelo`, `ehArquivoOfficeDoUsuario`, `modoDoSelo`, `criarAvisosOffice`, `avisoOfficeSemAutosave`)
+- **Linha:** todo o texto do arquivo estava gravado com o UTF-8 reinterpretado como Windows-1252 (duplo-encode) → reescrito em UTF-8 (cada acento volta a ser um acento: "é", "á", "§", "µ", "—")
+- **Por quê:** o commit `d7d1ff0` gravou o arquivo pelo PowerShell 5.1, que escreve sem BOM e lê como ANSI — o conteúdo chegou ao disco já reinterpretado, byte a byte. Como o TypeScript compila qualquer sequência de bytes, nada quebrou na compilação: o defeito só apareceu na TELA, no aviso "Este .pptx é um arquivo seu: o salvamento automático não reescreve arquivos do Office". Desfazer o duplo-encode (o texto de volta para bytes cp1252 e a leitura desses bytes como UTF-8) recuperou o original — o arquivo tinha BOM e as marcas de duplo-encode só apareciam nos textos.
+- **Como não voltar:** `scripts/testar-codificacao.mjs` (npm run test:codificacao) varre `src/`, `scripts/`, `docs/` e a raiz atrás das marcas do duplo-encode e confere que o aviso do selo sai com os acentos certos. Uma linha com o marcador `codificacao-ok` é ignorada — assim a documentação pode citar o texto corrompido de propósito (como esta e a entrada do PowerShell 5.1).
+
+## src/app/seloAutosave.ts
+
 ### 2026-10-20 — 24daa2a — modo "erro" no selo
 - **Local:** `ModoSelo`, `modoDoSelo`
 - **Linha:** `+ "erro"` e `if (opts.erro) return "erro";` (antes das demais regras)
@@ -2108,7 +2116,7 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Local:** arquivo inteiro
 - **Linha:** gravado com **BOM de UTF-8**
 - **Porquê:** o PowerShell 5.1 lê arquivo sem BOM como ANSI. Sem o BOM os acentos do script viravam
-  lixo já na memória e o log saía corrompido ("página" virava "pÃ¡gina") — foi um teste que pegou.
+  lixo já na memória e o log saía corrompido ("página" virava "pÃ¡gina") — foi um teste que pegou. <!-- codificacao-ok: citação intencional do texto corrompido -->
 
 ## src/app/aiContext.ts
 

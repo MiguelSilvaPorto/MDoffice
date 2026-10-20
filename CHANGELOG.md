@@ -1890,6 +1890,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O aviso do selo do arquivo do Office voltou a ter os acentos**: o texto que aparece na tela
+  (o aviso de que o salvamento automático não reescreve um .pptx/.docx/.xlsx do próprio
+  usuário) estava com a codificação quebrada — o arquivo `src/app/seloAutosave.ts` foi gravado
+  com o UTF-8 reinterpretado como Windows-1252 (duplo-encode), e assim cada acento virava um
+  caractere estranho na tela. O arquivo foi reescrito em UTF-8 e o `npm run test:codificacao`
+  (novo) passa a varrer o repositório atrás de texto corrompido, para o aviso (e qualquer
+  outro texto do app) não voltar a quebrar em silêncio.
+
   markdown passa pelo saneamento, como todo HTML de fora no app.
 
 - **O README fala da suíte, não de "imitar o Office"**: as frases "construir o Office inteiro" e "os programas do

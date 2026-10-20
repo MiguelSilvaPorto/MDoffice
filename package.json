@@ -36,6 +36,7 @@
     "test:backup": "node scripts/testar-backup.mts && node scripts/testar-backup-e2e.cjs",
     "test:lixeira": "node scripts/testar-lixeira.mts",
     "test:salvamento": "node scripts/testar-salvamento.mts",
+    "test:codificacao": "node scripts/testar-codificacao.mjs",
     "test:layout": "node scripts/testar-layout.mts",
     "test:menus": "node scripts/testar-menus-fita.mjs",
     "test:lamina": "node scripts/testar-tema-lamina.mjs",
