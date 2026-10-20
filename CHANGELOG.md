@@ -526,6 +526,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O Assistente desligado deixa o desenho fiel (e a dica para de dizer "entendi")**: o traço livre
+  ainda **encaixava nas formas de baixo** com o Assistente desligado — ao soltar, a caixa pulava e
+  esticava até a borda do cartão (a prévia não mostra esse encaixe, então o salto era ainda mais
+  estranho), e a dica continuava "entendi: …", como se ele estivesse lendo o traço. Agora o **ímã nas
+  formas** (como o reconhecimento e o encaixe nos eixos) só age com o **Assistente** ligado; desligado,
+  o traço fica onde a mão passou e a dica mostra só **Desenho livre**. Teste: `npm run test:desenho`.
+
 - **O aviso "Animações desta lâmina foram mantidas como vieram" saiu**: ao abrir um .pptx com animações
   fora do modelo (mídia com tempo próprio, efeitos interativos), o importador **preserva o XML** — nada se
   perde — mas avisava "Aberto com limitações: …" a cada abertura, o que não fazia sentido (o arquivo está

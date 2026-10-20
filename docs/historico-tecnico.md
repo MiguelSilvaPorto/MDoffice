@@ -28,6 +28,41 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/powerpoint/edicao/desenho.ts
+
+### 2026-10-20 — esta tarefa — o ímã nas formas de baixo é do Assistente
+- **Local:** `formaDoTraco`, no ramo do desenho livre (depois do `if (rec)`)
+- **Linha:** `- const pontosLivre = pontosDoDesenhoLivre(pontos, pincel.assistente && !marca);` e `- const s = baseDaForma(est, d, encaixarNoPalco(bboxDe(pontosLivre), formas, d, limiarDoPalco(d), false));` → `+ const ajustar = pincel.assistente && !marca;` / `+ const pontosLivre = pontosDoDesenhoLivre(pontos, ajustar);` / `+ const boxLivre = ajustar ? encaixarNoPalco(bboxDe(pontosLivre), formas, d, limiarDoPalco(d), false) : bboxDe(pontosLivre);` / `+ const s = baseDaForma(est, d, boxLivre);`
+- **Porquê:** o relato com print ("o assistente, mesmo desligado, acaba ajudando no desenho") mostrava o botão apagado e a dica "entendi…" durante o traço. O reconhecimento e o encaixe nos eixos já consultavam `pincel.assistente`, mas o terceiro ajuste — o ímã nas bordas das formas de baixo — rodava **sempre**: um traço livre perto de um cartão tinha a caixa movida/esticada até a borda ao soltar (a prévia não mostra esse encaixe, então o desenho "pulava" para a forma de baixo). Desligado, o traço tem de ficar onde a mão passou.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-20 — esta tarefa — a dica do traço não diz "entendi" com o Assistente desligado
+- **Local:** `aoTracoAndamento`
+- **Linha:** `- if (dica) dica.textContent = \`entendi: ${dicaDoTraco(pontos, this.pincel.assistente)}\`;` → `+ const assistindo = this.pincel.assistente && this.pincel.tipo !== "marca";` / `+ dica.textContent = assistindo ? \`entendi: ${dicaDoTraco(pontos, true)}\` : dicaDoTraco(pontos, false);`
+- **Porquê:** com o assistente desligado a dica continuava prefixada com "entendi:" ("entendi: Desenho livre") — o texto dizia que ele estava lendo o traço, contradizendo o botão apagado. O marca-texto também não é lido pelo assistente; a dica dele fica só "Desenho livre".
+
+## scripts/testar-desenho-assistido.mjs
+
+### 2026-10-20 — esta tarefa — o caso do ímã desligado
+- **Local:** bloco "encaixe nas formas de baixo", depois do "desenhar por cima da caixa sai alinhado a ela"
+- **Linha:** novo — um traço livre (senoide) perto da borda do cartão, comparado com e sem a forma de baixo, com `assistente: false` e com o pincel padrão
+- **Porquê:** a regressão do relato não aparecia nos testes existentes: o caso "com o assistente desligado o traço fica como desenhado" usava `formas = []`, então nunca exercitava o ímã nas formas. Agora o teste falha se o encaixe voltar a rodar desligado (e confirma que ligado ele continua).
+
+## scripts/testar-layout.mts
+
+### 2026-10-20 — esta tarefa — as duas travas do Assistente desligado
+- **Local:** bloco "aba Desenhar: as ferramentas de traço num lugar só"
+- **Linha:** `+` checagem do `const ajustar = pincel.assistente && !marca;` + `boxLivre = ajustar ? encaixarNoPalco(...) : bboxDe(pontosLivre)`; `+` checagem do `assistindo ? "entendi: ..." : dicaDoTraco(pontos, false)`; e a checagem do marca-texto passou a olhar `pontosDoDesenhoLivre(pontos, ajustar)` (a variável nova) em vez da expressão repetida
+- **Porquê:** o layout test é o que prende as decisões de comportamento que moram no texto do host; sem essas checagens, uma limpeza futura poderia voltar a rodar o ímã sempre ou a prefixar a dica.
+
+## docs/powerpoint.md — CHANGELOG.md
+
+### 2026-10-20 — esta tarefa — a doc e a entrada
+- **Local:** o parágrafo "Desenhar por cima de uma forma existente" e o do desenho livre; PowerPoint → Não adicionado → Frontend (topo)
+- **Linha:** o ímã agora está dito como parte do Assistente ("com o Assistente ligado"; "desligado o ímã não acontece") e a entrada conta o relato, o salto do traço e a dica
+- **Porquê:** a doc prometia o encaixe nas formas sem dizer que ele dependia do Assistente — quem desliga o botão procura ali o que ainda pode acontecer. A entrada fica em "Não adicionado" até o `fechar.ps1` entregar na main.
+
 ## src/app/media.ts
 
 ### 2026-10-20 — 7a69847 — colar imagem lê todas as formas da área de transferência

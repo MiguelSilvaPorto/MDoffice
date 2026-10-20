@@ -451,6 +451,25 @@ const pincel = { cor: "00B050", w: 4, assistente: true };
   const f = D.formaDoTraco(percorrer([{ x: 196, y: 56 }, { x: 670, y: 56 }, { x: 670, y: 210 }, { x: 196, y: 210 }]), pincel, est, dim, [existente]);
   ok("desenhar por cima da caixa sai alinhado a ela", f && perto(f.box.x, 20, 0.6) && perto(f.box.y, 10, 0.6) && perto(f.box.w, 50, 0.6) && perto(f.box.h, 30, 0.6), JSON.stringify(f?.box));
 
+  // O ímã nas formas de baixo é do ASSISTENTE: com ele desligado o traço fica onde a mão fez.
+  // Era o que ainda "ajudava" o desenho desligado — a caixa pulava/esticava até a borda do cartão
+  // ao soltar o traço (a prévia não mostra esse encaixe, então o salto era ainda mais estranho).
+  const livrePerto = [];
+  for (let i = 0; i <= 30; i++) livrePerto.push({ x: 260 + i * 8, y: 75 + Math.sin(i / 3) * 8 });
+  const cruPerto = D.formaDoTraco(livrePerto, { ...pincel, assistente: false }, est, dim, []);
+  const cruComCartao = D.formaDoTraco(livrePerto, { ...pincel, assistente: false }, est, dim, [existente]);
+  ok(
+    "assistente desligado: o traço livre não encaixa nas formas de baixo",
+    cruPerto?.geom === "custom" && JSON.stringify(cruComCartao?.box) === JSON.stringify(cruPerto?.box),
+    JSON.stringify({ sem: cruPerto?.box, com: cruComCartao?.box })
+  );
+  const ligadoPerto = D.formaDoTraco(livrePerto, pincel, est, dim, [existente]);
+  ok(
+    "assistente ligado: o traço livre continua encaixando nas formas de baixo",
+    ligadoPerto?.geom === "custom" && JSON.stringify(ligadoPerto?.box) !== JSON.stringify(cruPerto?.box),
+    JSON.stringify({ sem: cruPerto?.box, com: ligadoPerto?.box })
+  );
+
   // o gesto do usuário (print): o canto desenhado POR DENTRO do cartão, ~18pt — a mão erra mais
   // que o limiar antigo (~10pt) e o desenho não grudava no cartão; agora gruda nas BORDAS dele
   const dentro = [];

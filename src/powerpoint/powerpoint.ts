@@ -2407,7 +2407,11 @@ export class PowerPointHost {
   /** Traço em andamento: mostra o que o assistente está entendendo. */
   private aoTracoAndamento(pontos: { x: number; y: number }[]): void {
     const dica = this.pane.querySelector<HTMLElement>("[data-pincel-dica]");
-    if (dica) dica.textContent = `entendi: ${dicaDoTraco(pontos, this.pincel.assistente)}`;
+    if (!dica) return;
+    // "entendi" é o assistente lendo o traço: desligado (ou no marca-texto, que ele não lê),
+    // a dica só diz o que o traço é — o prefixo fazia parecer que ele continuava trabalhando.
+    const assistindo = this.pincel.assistente && this.pincel.tipo !== "marca";
+    dica.textContent = assistindo ? `entendi: ${dicaDoTraco(pontos, true)}` : dicaDoTraco(pontos, false);
   }
 
   /**

@@ -2911,6 +2911,18 @@ console.log("\naba Desenhar: as ferramentas de traço num lugar só");
     "o \"L\" desenhado quase reto volta a sair torto"
   );
   checa(
+    "o ímã nas formas de baixo só vale com o Assistente ligado",
+    /const ajustar = pincel\.assistente && !marca;/.test(desenhoPpt) &&
+      /const boxLivre = ajustar \? encaixarNoPalco\(bboxDe\(pontosLivre\), formas, d, limiarDoPalco\(d\), false\) : bboxDe\(pontosLivre\);/.test(desenhoPpt),
+    "a caixa pulava/esticava até a borda da forma de baixo mesmo com o Assistente desligado"
+  );
+  checa(
+    "a dica do traço não diz 'entendi' com o Assistente desligado",
+    /const assistindo = this\.pincel\.assistente && this\.pincel\.tipo !== "marca";/.test(ppt) &&
+      /assistindo \? `entendi: \$\{dicaDoTraco\(pontos, true\)\}` : dicaDoTraco\(pontos, false\)/.test(ppt),
+    "o prefixo fazia parecer que o assistente continuava lendo o traço"
+  );
+  checa(
     "o duplo clique termina a curva aberta (e o clique do Livre não marca nó)",
     !/this\.pontosCurva = \[pSnap\]/.test(palcoPpt) &&
       !/cursorCurva/.test(palcoPpt) &&
@@ -2981,7 +2993,8 @@ console.log("\ntinta: marca-texto, borracha e converter em forma");
     /export const MARCA_ALFA = 0\.4/.test(desenho) &&
       /export const MARCA_ESPESSURA = 3/.test(desenho) &&
       /const rec = pincel\.assistente && !marca \? reconhecerTraco\(pontos\) : null;/.test(desenho) &&
-      /pontosDoDesenhoLivre\(pontos, pincel\.assistente && !marca\)/.test(desenho)
+      /const ajustar = pincel\.assistente && !marca;/.test(desenho) &&
+      /pontosDoDesenhoLivre\(pontos, ajustar\)/.test(desenho)
   );
   checa(
     "o traço guarda os pontos (é o que a borracha e o converter usam)",

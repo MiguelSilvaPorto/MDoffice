@@ -1131,9 +1131,13 @@ export function formaDoTraco(pontos: PontoTraco[], pincel: Pincel, est: EstiloDe
   // modo assistente: o desenho livre encaixa nos eixos (as retas quase retas ficam retas e o
   // canto em 90°) — e os trechos encaixados saem como RETA no caminho (a cúbica fazia barriga).
   // O traço gruda nas BORDAS das formas de baixo (sem o ímã do centro): desenhar o canto por cima
-  // do cartão sai com a caixa sentada nas bordas dele (o pedido do usuário, com print)
-  const pontosLivre = pontosDoDesenhoLivre(pontos, pincel.assistente && !marca);
-  const s = baseDaForma(est, d, encaixarNoPalco(bboxDe(pontosLivre), formas, d, limiarDoPalco(d), false));
+  // do cartão sai com a caixa sentada nas bordas dele (o pedido do usuário, com print). O ímã
+  // também é do assistente: desligado, ele movia/esticava o traço sozinho (o desenho "pulava"
+  // para a borda ao soltar) — o traço fica onde a mão passou.
+  const ajustar = pincel.assistente && !marca;
+  const pontosLivre = pontosDoDesenhoLivre(pontos, ajustar);
+  const boxLivre = ajustar ? encaixarNoPalco(bboxDe(pontosLivre), formas, d, limiarDoPalco(d), false) : bboxDe(pontosLivre);
+  const s = baseDaForma(est, d, boxLivre);
   s.geom = "custom";
   s.name = marca ? "Marca-texto" : "Desenho livre";
   s.paths = [caminhoDePontos(pontosLivre)];

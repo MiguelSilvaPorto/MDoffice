@@ -433,17 +433,20 @@ avisado ao abrir (nunca some em silêncio).
   visível** (o preset `arc` tem a caixa da elipse inteira e girada — a seleção pegava um retângulo
   enorme e o encaixe mexia na elipse, não no traço); no `.pptx` sai como custGeom com curvas.
 - **Desenhar por cima de uma forma existente** (mesmo apagada — a cor não importa) sai **alinhado
-  a ela**: a caixa encaixa nas bordas (e nos centros, nas formas reconhecidas) das formas de baixo
+  a ela** (com o **Assistente** ligado): a caixa encaixa nas bordas (e nos centros, nas formas
+  reconhecidas) das formas de baixo
   quando está perto — o limiar é 2,5% da largura da lâmina (~24 pt) porque a mão que segue a borda
   de um cartão erra mais que os ~10 pt do início. Os alvos são as bordas **visíveis**: num cartão de
   canto arredondado o canto do retângulo é vazio e a linha desenhada no topo cola onde a borda
   começa de verdade (no fim do arco do canto), não na quina que não existe; o trecho só vale quando
   cruza a faixa do desenho e a ponta do traço entra no fim dele. Nos **traços** (desenho livre e
   curva) o encaixe é só nas **bordas**: o ímã do centro deslocava o traço inteiro para o meio da
-  forma de baixo.
+  forma de baixo. Com o **Assistente desligado** o ímã não acontece — o traço fica onde a mão passou.
 - O que o assistente **não** reconhece fica como **desenho livre** — um caminho de verdade,
   **suavizado** (duas passadas de média móvel + curvas, com passo fino para não cortar os cantos),
-  que também vai para o arquivo; com o **assistente desligado**, todo traço fica livre. No modo
+  que também vai para o arquivo; com o **assistente desligado**, todo traço fica livre (sem
+  reconhecimento, sem encaixe nos eixos e sem o ímã nas formas) e a dica mostra só **Desenho livre**
+  (o "entendi: …" é do assistente lendo o traço). No modo
   assistente o desenho livre **encaixa nos eixos**: os trechos quase horizontais/verticais viram
   retas de verdade — o "L" desenhado alguns graus torto sai **reto, com o canto em 90°** — e o que
   é diagonal de propósito (fora da tolerância de ~9°) fica como foi desenhado. Os trechos
