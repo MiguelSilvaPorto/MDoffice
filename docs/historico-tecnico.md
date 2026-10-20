@@ -14580,3 +14580,11 @@ antigas quando fizer sentido.
   antes de mover), então a promoção não afirma nada falso. Como nas rodadas anteriores, ela anda num
   passo curto de docs porque o commit do `fechar.ps1` já foi usado para entregar o código —
   promover junto seria afirmar "está na main" antes de estar.
+
+### 2026-10-20 · Word · a promoção da entrada (não adicionado → adicionado)
+- **Local:** Word → **Não adicionado** → Frontend (a entrada do menu de contexto) e Word →
+  **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não pode promover: no instante do commit da tarefa a entrada ainda não está na
+  main (a regra do repositório é "nunca promova o que ainda não entrou na main"), então a promoção é
+  uma tarefa de follow-up, depois que o commit chegou (6e9d332). Promovi só a entrada DESTA tarefa.
