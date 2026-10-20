@@ -32,12 +32,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Modelo de palavras em níveis (Configurações)**: o modelo da sugestão guardava só as 12 palavras
-  seguintes mais comuns de cada palavra. Agora há **Básico (40)**, **Médio (80)** e **Alto (160)**, com
-  vocabulário maior e feitos de **texto da web** (blogs, notícias, sites), mais parecido com o que se
-  escreve no dia a dia; **Automático** (padrão) escolhe pelo computador. Economia de teclas medida em
-  texto fora do treino: 19,8% → 21,6% / 22,9% / 23,8%. O modelo antigo vira o nível **Leve**; o corretor
-  não muda. Os arquivos são gerados por `npm run corpus` (não vão para o git). Vale no Word também.
+- (nada no momento)
 
 ### Adicionado (na main)
 
@@ -46,6 +41,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — arquivos, imagens e rascunhos passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **Modelo de palavras em níveis (Configurações)**: o modelo da sugestão guardava só as 12 palavras
+  seguintes mais comuns de cada palavra. Agora há **Básico (40)**, **Médio (80)** e **Alto (160)**, com
+  vocabulário maior e feitos de **texto da web** (blogs, notícias, sites), mais parecido com o que se
+  escreve no dia a dia; **Automático** (padrão) escolhe pelo computador. Economia de teclas medida em
+  texto fora do treino: 19,8% → 21,6% / 22,9% / 23,8%. O modelo antigo vira o nível **Leve**; o corretor
+  não muda. Os arquivos são gerados por `npm run corpus` (não vão para o git). Vale no Word também.
 
 - **A sugestão completa a palavra mesmo faltando só 2 letras**: em "é uma área pou" o app tinha
   "pouco" com 61% de certeza, mas escondia porque faltava só "co" (o mínimo era 3). Agora aparece no

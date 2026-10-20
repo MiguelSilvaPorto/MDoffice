@@ -14561,7 +14561,7 @@ antigas quando fizer sentido.
 
 ## src/broker/ghost/model.ts · src/settingsPage.ts · scripts/build-ngrams.mjs · scripts/regerar-ngrams.mjs
 
-### 2026-10-20 · modelos-tamanhos · o modelo de palavras em níveis
+### 2026-10-20 · ce63dc6 · o modelo de palavras em níveis
 
 - **Local:** `model.ts`: bloco novo "tamanho do modelo" (`MODELOS`, `getEscolhaModelo`,
   `tamanhoAutomatico`, `carregarTamanho`, `trocarTamanhoModelo`) e `loadLanguageModel`;
