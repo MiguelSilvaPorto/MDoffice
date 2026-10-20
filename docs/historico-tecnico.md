@@ -14569,3 +14569,14 @@ antigas quando fizer sentido.
   menu do app repete o padrão do MD\*: posiciona com o limite da janela, abre só com seleção (sem
   seleção não há o que oferecer) e fecha ao clicar fora. A checagem no `test:layout` prende o
   `preventDefault`.
+
+## CHANGELOG.md
+
+### 2026-10-15 · promoção · a entrada da legenda do cartão de Estilo entra no "Adicionado"
+- **Local:** Word → "Não adicionado" → Frontend → "Adicionado" → Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **A legenda do cartão de Estilo não sai mais do cartão
+  (fita do Word)** (`09c6549`)
+- **Porquê:** o commit está na `main` (conferido com `git merge-base --is-ancestor 09c6549 main`
+  antes de mover), então a promoção não afirma nada falso. Como nas rodadas anteriores, ela anda num
+  passo curto de docs porque o commit do `fechar.ps1` já foi usado para entregar o código —
+  promover junto seria afirmar "está na main" antes de estar.

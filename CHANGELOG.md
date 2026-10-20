@@ -369,14 +369,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **A legenda do cartão de Estilo não sai mais do cartão (fita do Word)**: na galeria **Estilos**,
-  o segundo texto de cada cartão ("Calibri Light, 16") era mais largo que o cartão quando a fita
-  encolhia — com `--fita-e` em 0,81 o cartão ia a **65 px** (o piso era 64 px) e a legenda pedia
-  **70 px**, então ela vazava e encostava no cartão vizinho (relato com print). Agora o **piso do
-  cartão é 80 px** — o que a maior legenda atual ocupa —, e **nome e legenda são recortados**
-  (`overflow: hidden` + reticências) para nenhum texto futuro vazar. O nome também deixou de ter um
-  `max-width` fixo (86 px) maior que o cartão. A galeria continua rolando de lado normalmente.
-
 - **O clique direito no Word abre o menu do app, não o do navegador**: o `#word-pane` não tratava o
   `contextmenu`, então o WebView2 mostrava o menu nativo (**Emoji**, **Inspecionar**, **Direção da
   escrita**…) por cima do documento (o print do usuário). Agora o evento é suprimido no editor e,
@@ -390,6 +382,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **A legenda do cartão de Estilo não sai mais do cartão (fita do Word)**: na galeria **Estilos**,
+  o segundo texto de cada cartão ("Calibri Light, 16") era mais largo que o cartão quando a fita
+  encolhia — com `--fita-e` em 0,81 o cartão ia a **65 px** (o piso era 64 px) e a legenda pedia
+  **70 px**, então ela vazava e encostava no cartão vizinho (relato com print). Agora o **piso do
+  cartão é 80 px** — o que a maior legenda atual ocupa —, e **nome e legenda são recortados**
+  (`overflow: hidden` + reticências) para nenhum texto futuro vazar. O nome também deixou de ter um
+  `max-width` fixo (86 px) maior que o cartão. A galeria continua rolando de lado normalmente.
 
 - **Arrastar uma imagem (ou um trecho) dentro do documento move em vez de duplicar**: o
   `handleDrop` do editor mandava **qualquer arquivo** da área de transferência do arrasto para o
