@@ -10,7 +10,7 @@ import { spellPlugin } from "./spell";
 import { emptyDoc, plainText } from "./schema";
 import { CM_TO_PX, DEFAULT_SETUP, deserialize, pageSizeCm, pageSizePx, serialize, type PageSetup } from "./model";
 import { outlineSource, type WordOutlineSource } from "./markdown";
-import { h } from "../util";
+import { h, toast, copyText } from "../util";
 
 /** O que cada aba de documento Word guarda (texto, desfazer, página e rolagem). */
 export interface WordTabData {
@@ -104,6 +104,39 @@ export class WordHost {
           this.spell,
         ];
       },
+    });
+
+    // O clique direito NÃO abre o menu do navegador (Emoji, Inspecionar, Direção da escrita): o
+    // Word usa o menu do app, como o editor MD*. Sem seleção não há o que oferecer — o nativo fica
+    // suprimido de qualquer jeito (o relato com print mostrava o menu do WebView2).
+    q("#word-editor").addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      const { from, to } = this.editor.view.state.selection;
+      if (from === to) return;
+      document.querySelector(".editor-context-menu")?.remove();
+      const menu = h("div", { class: "editor-context-menu" });
+      const copiar = h("button", { class: "context-menu-item" });
+      copiar.innerHTML = '<svg class="ic"><use href="#i-copy"/></svg><span>Copiar</span><kbd>Ctrl+C</kbd>';
+      copiar.addEventListener("click", () => {
+        menu.remove();
+        const trecho = this.editor.view.state.doc.textBetween(from, to, "\n");
+        void copyText(trecho).then((ok) => {
+          if (!ok) toast("Não foi possível copiar.", "err", 3000);
+        });
+      });
+      menu.append(copiar);
+      document.body.append(menu);
+      const x = Math.min(e.clientX, window.innerWidth - menu.offsetWidth - 8);
+      const y = Math.min(e.clientY, window.innerHeight - menu.offsetHeight - 8);
+      menu.style.left = `${Math.max(8, x)}px`;
+      menu.style.top = `${Math.max(8, y)}px`;
+      const sair = (ev: MouseEvent) => {
+        if (!menu.contains(ev.target as Node)) {
+          menu.remove();
+          document.removeEventListener("mousedown", sair, true);
+        }
+      };
+      document.addEventListener("mousedown", sair, true);
     });
 
     this.ribbon = new Ribbon(q("#word-ribbon"), {

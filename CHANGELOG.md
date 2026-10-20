@@ -377,6 +377,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   (`overflow: hidden` + reticências) para nenhum texto futuro vazar. O nome também deixou de ter um
   `max-width` fixo (86 px) maior que o cartão. A galeria continua rolando de lado normalmente.
 
+- **O clique direito no Word abre o menu do app, não o do navegador**: o `#word-pane` não tratava o
+  `contextmenu`, então o WebView2 mostrava o menu nativo (**Emoji**, **Inspecionar**, **Direção da
+  escrita**…) por cima do documento (o print do usuário). Agora o evento é suprimido no editor e,
+  com **seleção**, aparece o menu do app com **Copiar** — o mesmo padrão do editor MD\*. Sem
+  seleção, nada aparece (o nativo continua suprimido). Teste: `npm run test:layout`.
+
 ### Adicionado (na main)
 
 **Backend**

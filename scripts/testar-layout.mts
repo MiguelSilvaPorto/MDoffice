@@ -1595,6 +1595,11 @@ console.log("\nWord: a folha escurece junto com o tema (o papel)");
     "o WebView2 entrega a própria imagem arrastada como arquivo — o handleFiles inseriria uma segunda cópia"
   );
   checa(
+    "Word: o clique direito suprime o menu do navegador (o app mostra o dele)",
+    /addEventListener\("contextmenu", \(e\) => \{\s*e\.preventDefault\(\);/.test(ler("src/word/host.ts")),
+    "o menu do WebView2 (Emoji, Inspecionar, Direção da escrita) apareceria no documento"
+  );
+  checa(
     "o papel e a tinta da folha saem de variáveis",
     /\.wd-sheet \{[\s\S]*?--wd-papel: #ffffff;[\s\S]*?--wd-tinta: #1f2328;[\s\S]*?background: var\(--wd-papel\);[\s\S]*?color: var\(--wd-tinta\);/.test(css),
     "com os tons fixos na folha, o tema escuro não tem onde trocar"

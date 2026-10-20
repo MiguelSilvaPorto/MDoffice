@@ -45,6 +45,8 @@ arquivos `.docx` de verdade.
 - **Ilustrações**: imagens (inserir, colar ou arrastar — arrastar uma imagem **dentro** da página
   **move**; arquivo de fora continua entrando), links, **tabelas** (inserir,
   linhas/colunas, mesclar, dividir, sombrear, bordas) e marcas de parágrafo.
+- **Clique direito**: com texto selecionado, o menu do app abre com **Copiar**; sem seleção, nada
+  aparece — o menu do navegador (Emoji, Inspecionar…) não abre no documento.
 - **Revisão de texto**: corretor de português (sublinhados e sugestões) e voz/suplementos — em
   **título** ele não pede ponto final (o corpo do texto continua pedindo normalmente).
 - **A fita cabe na largura (sem rolagem)**: as mesmas quatro etapas do PowerPoint — **cheia**,

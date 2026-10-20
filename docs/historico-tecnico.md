@@ -14535,3 +14535,16 @@ antigas quando fizer sentido.
 - **Linha:** `novo`
 - **Porquê:** mudança do módulo Word; a entrada fica em "Não adicionado" até o commit do `fechar.ps1`
   entregar a `main` (a promoção é um passo separado).
+
+## src/word/host.ts
+
+### 2026-10-20 · menu de contexto · o clique direito no Word deixa de abrir o menu do navegador
+- **Local:** o `contextmenu` no `#word-editor`, logo depois da criação do `WordEditor`
+- **Linha:** `novo` — `e.preventDefault()` sempre; com seleção, o menu `.editor-context-menu` do app
+  com **Copiar** (o mesmo componente do editor MD\*)
+- **Porquê:** o relato com print mostrava o menu **nativo** do WebView2 (**Emoji**, **Inspecionar**,
+  **Direção da escrita**…) por cima do documento. O `#word-pane` era o único editor do app sem
+  tratamento de `contextmenu` (o MD\*, o PowerPoint, o Excel e a prancheta suprimem o nativo). O
+  menu do app repete o padrão do MD\*: posiciona com o limite da janela, abre só com seleção (sem
+  seleção não há o que oferecer) e fecha ao clicar fora. A checagem no `test:layout` prende o
+  `preventDefault`.
