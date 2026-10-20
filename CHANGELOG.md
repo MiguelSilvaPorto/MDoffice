@@ -1898,6 +1898,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O teste do cursor de mover parou de falhar por motivo errado**: o `npm run test:cursor-mover`
+  (novo) subia o servidor de desenvolvimento numa porta fixa e esperava o app ficar pronto em
+  poucos segundos — quando um Vite antigo de outra worktree estava segurando a porta, ou na
+  primeira vez (quando o Vite ainda otimiza as dependências), a falha saía como erro de
+  código, sem dizer o que tinha acontecido. Agora o teste escolhe uma **porta livre**, espera o
+  app aparecer (até 60 s) e avisa com clareza quando ele não carrega.
+
 - **O aviso do selo do arquivo do Office voltou a ter os acentos**: o texto que aparece na tela
   (o aviso de que o salvamento automático não reescreve um .pptx/.docx/.xlsx do próprio
   usuário) estava com a codificação quebrada — o arquivo `src/app/seloAutosave.ts` foi gravado

@@ -370,6 +370,18 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** novas funções
 - **Por quê:** centralizar a edição do contorno parcial: lado a 100% sai do objeto, tudo em 100% sem inversão volta a `undefined` (contorno inteiro), inversão sem lado parcial fica guardada para quando o percentual baixar, e os presets (Completo/50%/10% no topo) são um passo só de desfazer.
 
+## scripts/testar-cursor-mover.mjs
+
+### 2026-10-20 — fix/test-cursor-mover-espera — o teste espera o app e escolhe a porta
+- **Local:** topo do arquivo (a espera do app) e o começo (a porta do Vite)
+- **Linha:** `const PORTA = 1491` → `portaLivre(1491)` (abre e fecha a porta para achar uma
+  livre) · a espera do app: 60 tentativas de 300 ms → 120 de 500 ms, com mensagem clara
+  ("o app não carregou no navegador") quando ela estoura
+- **Por quê:** o teste falhava com um erro de código (`Cannot read properties of undefined`)
+  quando o Vite ainda não tinha subido — por causa de um Vite ANTIGO de outra worktree
+  segurando a porta fixa (o `--strictPort` faz o novo sair e o antigo responder 404), ou na
+  primeira execução (o Vite otimiza as dependências e a página recarrega no meio). Agora a
+  causa aparece na mensagem, e o teste espera o app de verdade.
 ## src/powerpoint/stage.ts
 
 ### 2026-10-20 — fix/ppt-cursor-mover-vazio — a escolha marcada no DOM (novo método)

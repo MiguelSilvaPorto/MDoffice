@@ -16,11 +16,11 @@
 // Uso: node scripts/testar-cursor-mover.mjs
 import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
+import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const raiz = new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
-const PORTA = 1491;
 const CHROME = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 
 let falhas = 0;
@@ -30,10 +30,25 @@ const ok = (nome, cond, detalhe = "") => {
 };
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/** Uma porta livre: um Vite antigo (de outra worktree) pode estar segurando a fixa. */
+const portaLivre = async (primeira) => {
+  for (let p = primeira; p < primeira + 20; p++) {
+    const livre = await new Promise((resolve) => {
+      const s = createServer();
+      s.once("error", () => resolve(false));
+      s.once("listening", () => s.close(() => resolve(true)));
+      s.listen(p, "127.0.0.1");
+    });
+    if (livre) return p;
+  }
+  throw new Error("nenhuma porta livre");
+};
+
 // ---------------------------------------------------------------------------
 // o ambiente: Vite (dev) + Chrome sem cabeça, falados por CDP
 // ---------------------------------------------------------------------------
 const perfil = mkdtempSync(join(tmpdir(), "mdc-cursor-"));
+const PORTA = await portaLivre(1491);
 // o Vite direto (sem shell): o npx.cmd nao aceita spawn sem shell nesta versao do Node
 const vite = spawn(process.execPath, [join(raiz, "node_modules", "vite", "bin", "vite.js"), "--port", String(PORTA), "--strictPort"], { cwd: raiz, stdio: "ignore" });
 let chrome = null;
@@ -45,12 +60,18 @@ const limpar = async () => {
 };
 process.on("exit", () => { try { chrome?.kill(); } catch { /* nada */ } try { vite.kill(); } catch { /* nada */ } });
 
-for (let i = 0; i < 60; i++) {
+let subiu = false;
+for (let i = 0; i < 60 && !subiu; i++) {
   try {
     const r = await fetch(`http://localhost:${PORTA}/`);
-    if (r.ok) break;
+    if (r.ok) subiu = true;
   } catch { /* ainda subindo */ }
-  await dormir(500);
+  if (!subiu) await dormir(500);
+}
+if (!subiu) {
+  console.log(`FALHA o servidor de desenvolvimento nao subiu na porta ${PORTA}`);
+  await limpar();
+  process.exit(1);
 }
 
 const portaCdp = 9401;
@@ -98,7 +119,19 @@ await cmd("Runtime.enable");
 await cmd("Page.enable");
 await cmd("Page.navigate", { url: `http://localhost:${PORTA}/` });
 await dormir(4500);
-for (let i = 0; i < 60 && !(await avaliar("!!window.__mdoffice?.app")); i++) await dormir(300);
+// O app pode demorar: na PRIMEIRA vez o Vite otimiza as dependências (typo-js, transformers),
+// a página recarrega no meio e o `window.__mdoffice` só existe quando o boot termina. Sem esta
+// espera, o teste falhava com um erro de código em vez de dizer o que aconteceu.
+let carregou = false;
+for (let i = 0; i < 120 && !carregou; i++) {
+  carregou = await avaliar("!!window.__mdoffice?.app");
+  if (!carregou) await dormir(500);
+}
+if (!carregou) {
+  console.log("FALHA o app nao carregou no navegador (o Vite ainda esta otimizando as dependencias?)");
+  await limpar();
+  process.exit(1);
+}
 await dormir(1200);
 
 // ---------------------------------------------------------------------------
