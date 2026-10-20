@@ -161,12 +161,15 @@ function measure(view: EditorView, setup: PageSetup): { spacers: Spacer[]; pages
       }
 
       const isHeading = leaf.node.type.name === "heading";
+      // um parágrafo FLUTUANTE (a imagem flutuante) não é texto: ele não se divide linha a
+      // linha — a imagem é um bloco só e fica inteira (ou sobe inteira para a página seguinte)
+      const ehFloat = leaf.el.classList.contains("wd-flutuante");
       let guard = 0;
       // quanto o bloco ainda precisa caber nesta página (títulos pedem espaço para 2–3 linhas depois)
       while (bottom + (isHeading ? 56 : 0) > page * stride + contentH && guard++ < 400) {
         const pageEnd = page * stride + contentH;
         const isText = leaf.node.type.name === "paragraph" || leaf.node.type.name === "heading";
-        if (isText && !isHeading) {
+        if (isText && !isHeading && !ehFloat) {
           const lines = lineBoxes(leaf.el, origin, scale).map((l) => ({ top: l.top + shift, bottom: l.bottom + shift, left: l.left }));
           let fit = lines.filter((l) => l.bottom <= pageEnd).length;
           // não deixa linha órfã/viúva: pelo menos 2 linhas de cada lado

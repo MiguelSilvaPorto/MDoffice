@@ -21,7 +21,9 @@ const separador: ItemDoContexto = { tipo: "separador" };
  * como apagar).
  */
 export function itensDoContexto(dentroDeTabela: boolean, sobImagem = false): ItemDoContexto[] {
-  const imagem: ItemDoContexto[] = sobImagem ? [acao("img-del", "Excluir imagem"), separador] : [];
+  const imagem: ItemDoContexto[] = sobImagem
+    ? [acao("img-del", "Excluir imagem"), acao("img-wrap", "Quebra de Texto"), separador]
+    : [];
   const tabela: ItemDoContexto[] = dentroDeTabela
     ? [
         acao("t-del", "Excluir tabela"),

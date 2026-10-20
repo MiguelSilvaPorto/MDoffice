@@ -26,8 +26,17 @@ import {
 } from "prosemirror-tables";
 import { EditorView } from "prosemirror-view";
 import { FONT_SIZES, emptyDoc, schema, type Align } from "./schema";
-import { DEFAULT_SETUP, type PageSetup } from "./model";
+import { DEFAULT_SETUP, CM_TO_PX, pageSizePx, type PageSetup } from "./model";
 import { ImagemView } from "./imagem";
+import {
+  dadosDaImagem,
+  deixarImagemSozinha,
+  flutuanteKey,
+  pluginFlutuante,
+  type DadosFlutuante,
+  type LadoHorizontal,
+  type WrapImagem,
+} from "./imagemFlutuante";
 
 export interface FormatState {
   bold: boolean;
@@ -49,6 +58,8 @@ export interface FormatState {
   inTable: boolean;
   canUndo: boolean;
   canRedo: boolean;
+  /** A imagem selecionada (a fita mostra a aba "Imagem" quando existe). */
+  imagem: DadosFlutuante | null;
 }
 
 export interface WordEditorHooks {
@@ -176,12 +187,25 @@ export class WordEditor {
       tableEditing(),
       dropCursor({ color: "#4f46e5" }),
       gapCursor(),
+      // a imagem flutuante: o parágrafo-âncora vira o float e o texto se organiza em volta
+      pluginFlutuante({ larguraConteudo: () => this.larguraConteudo() }),
       ...(this.hooks.plugins?.() ?? []),
     ];
   }
 
   getDoc(): PMNode {
     return this.view.state.doc;
+  }
+
+  /** Largura da área de texto da página (px): o flutuante usa para centralizar a imagem. */
+  larguraConteudo(): number {
+    const s = this.setup;
+    return Math.max(40, pageSizePx(s).w - Math.round((s.margins.left + s.margins.right) * CM_TO_PX));
+  }
+
+  /** Redesenha os flutuantes (a página mudou de tamanho: a área de texto mudou). */
+  refreshFlutuante(): void {
+    this.view.dispatch(this.view.state.tr.setMeta(flutuanteKey, { refresh: true }));
   }
 
   /** Troca o documento inteiro por outro estado (outra aba). */
@@ -269,6 +293,11 @@ export class WordEditor {
       inTable: isInTable(state),
       canUndo: undo(state),
       canRedo: redo(state),
+      // a aba "Imagem" da fita só aparece com uma imagem SELECIONADA
+      imagem:
+        state.selection instanceof NodeSelection && state.selection.node.type.name === "image"
+          ? dadosDaImagem(state.selection.node.attrs as Record<string, unknown>)
+          : null,
     };
   }
 
@@ -522,6 +551,115 @@ export class WordEditor {
     const node = schema.nodes.image.create({ src, alt, width, height });
     this.view.dispatch(this.view.state.tr.replaceSelectionWith(node).scrollIntoView());
     this.view.focus();
+  }
+
+  // ---------- imagem: flutuação e quebras de texto ----------
+
+  /** A imagem SELECIONADA (a fita mostra a aba "Imagem" só quando existe uma). */
+  imagemSelecionada(): { node: PMNode; pos: number } | null {
+    const sel = this.view.state.selection;
+    if (sel instanceof NodeSelection && sel.node.type.name === "image") {
+      return { node: sel.node, pos: sel.from };
+    }
+    return null;
+  }
+
+  /** A imagem selecionada OU encostada no cursor (para os comandos). */
+  imagemEmFoco(): { node: PMNode; pos: number } | null {
+    const sel = this.view.state.selection;
+    if (sel instanceof NodeSelection && sel.node.type.name === "image") {
+      return { node: sel.node, pos: sel.from };
+    }
+    const { $from } = sel;
+    const depois = $from.nodeAfter?.type.name === "image" ? $from.nodeAfter : null;
+    const antes = depois ? null : $from.nodeBefore?.type.name === "image" ? $from.nodeBefore : null;
+    const no = depois ?? antes;
+    if (!no) return null;
+    return { node: no, pos: depois ? $from.pos : $from.pos - no.nodeSize };
+  }
+
+  /**
+   * Troca a quebra de texto da imagem (quadrado, contorno, topo e base, através, atrás,
+   * à frente ou alinhado). A imagem ganha parágrafo próprio quando ela dividia o parágrafo
+   * com texto — é o parágrafo que vira o flutuante, e o texto dos vizinhos se reorganiza
+   * em volta dele.
+   */
+  setQuebraDeTexto(wrap: WrapImagem): void {
+    const alvo = this.imagemEmFoco();
+    if (!alvo) return;
+    const { tr, pos } = deixarImagemSozinha(this.view.state, alvo.pos);
+    const node = tr.doc.nodeAt(pos);
+    if (!node || node.type.name !== "image") return;
+    tr.setNodeMarkup(pos, undefined, { ...node.attrs, wrap });
+    tr.setSelection(NodeSelection.create(tr.doc, pos));
+    this.view.dispatch(tr);
+    this.view.focus();
+  }
+
+  /** Lado em que a imagem flutua (esquerda, direita ou centralizada). */
+  setAlinhamentoImagem(hAlign: LadoHorizontal): void {
+    const alvo = this.imagemEmFoco();
+    if (!alvo) return;
+    const tr = this.view.state.tr.setNodeMarkup(alvo.pos, undefined, { ...alvo.node.attrs, hAlign });
+    tr.setSelection(NodeSelection.create(tr.doc, alvo.pos));
+    this.view.dispatch(tr);
+    this.view.focus();
+  }
+
+  /** Texto alternativo da imagem (o "alt" do HTML e o "texto alternativo" do Word). */
+  setTextoAlternativo(alt: string): void {
+    const alvo = this.imagemEmFoco();
+    if (!alvo) return;
+    const tr = this.view.state.tr.setNodeMarkup(alvo.pos, undefined, { ...alvo.node.attrs, alt: alt || null });
+    tr.setSelection(NodeSelection.create(tr.doc, alvo.pos));
+    this.view.dispatch(tr);
+    this.view.focus();
+  }
+
+  /** Distância do texto no contorno (px). */
+  setDistanciaDoTexto(px: number): void {
+    const alvo = this.imagemEmFoco();
+    if (!alvo) return;
+    const tr = this.view.state.tr.setNodeMarkup(alvo.pos, undefined, { ...alvo.node.attrs, shapeMargin: Math.max(0, Math.round(px)) });
+    tr.setSelection(NodeSelection.create(tr.doc, alvo.pos));
+    this.view.dispatch(tr);
+    this.view.focus();
+  }
+
+  /** Ajusta a imagem à largura da área de texto da página. */
+  ajustarLargura(): void {
+    const alvo = this.imagemEmFoco();
+    if (!alvo) return;
+    const s = this.setup;
+    const largura = pageSizePx(s).w - Math.round((s.margins.left + s.margins.right) * CM_TO_PX);
+    const altura = Math.round((Number(alvo.node.attrs.height) || 0) * (largura / (Number(alvo.node.attrs.width) || largura)));
+    const tr = this.view.state.tr.setNodeMarkup(alvo.pos, undefined, { ...alvo.node.attrs, width: largura, height: altura });
+    tr.setSelection(NodeSelection.create(tr.doc, alvo.pos));
+    this.view.dispatch(tr);
+    this.view.focus();
+  }
+
+  /** Volta a imagem ao tamanho natural (a proporção original do arquivo). */
+  async proporcaoOriginal(): Promise<void> {
+    const alvo = this.imagemEmFoco();
+    if (!alvo) return;
+    const src = String(alvo.node.attrs.src);
+    try {
+      const im = new Image();
+      im.src = src;
+      await im.decode();
+      if (!im.naturalWidth || !im.naturalHeight) return;
+      const tr = this.view.state.tr.setNodeMarkup(alvo.pos, undefined, {
+        ...alvo.node.attrs,
+        width: im.naturalWidth,
+        height: im.naturalHeight,
+      });
+      tr.setSelection(NodeSelection.create(tr.doc, alvo.pos));
+      this.view.dispatch(tr);
+      this.view.focus();
+    } catch {
+      /* a imagem não carregou: o tamanho fica como está */
+    }
   }
 
   /**

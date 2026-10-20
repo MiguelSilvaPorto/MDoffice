@@ -211,6 +211,8 @@ export class WordHost {
     this.firstHeader.textContent = s.header.replace(/\{pagina\}/gi, "1").replace(/\{total\}/gi, String(this.pages));
     this.firstHeader.hidden = !s.header.trim();
     this.printStyle(s);
+    // a área de texto mudou: os flutuantes (a imagem centralizada) se reposicionam
+    this.editor.refreshFlutuante();
     requestPagination(this.editor.view);
     this.fitHolder();
   }

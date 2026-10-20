@@ -31,6 +31,34 @@ export function marksFor(ctx: Ctx, props: RunProps, base: RunProps, link: string
 
 export type Inline = PMNode;
 
+/**
+ * Lê uma imagem ANCORADA do Word (`wp:anchor`): a quebra de texto, o lado e a posição.
+ * O que o app não entende do arquivo (o contorno exato, por exemplo) entra pelo que o
+ * Word grava — e o desenho volta a ser o do app.
+ */
+function leituraDaAncoragem(anchor: El): Record<string, unknown> {
+  const wrap = anchor.getElementsByTagName("wp:wrapTight")[0]
+    ? "contorno"
+    : anchor.getElementsByTagName("wp:wrapThrough")[0]
+      ? "atravessar"
+      : anchor.getElementsByTagName("wp:wrapTopAndBottom")[0]
+        ? "topo-base"
+        : anchor.getElementsByTagName("wp:wrapNone")[0]
+          ? anchor.getAttribute("behindDoc") === "1"
+            ? "atras"
+            : "frente"
+          : "quadrado";
+  const posH = anchor.getElementsByTagName("wp:positionH")[0];
+  const align = posH?.getElementsByTagName("wp:align")[0]?.textContent?.trim().toLowerCase();
+  const offH = posH?.getElementsByTagName("wp:posOffset")[0]?.textContent;
+  const posV = anchor.getElementsByTagName("wp:positionV")[0];
+  const offV = posV?.getElementsByTagName("wp:posOffset")[0]?.textContent;
+  const hAlign = align === "right" ? "right" : align === "center" ? "center" : "left";
+  const hOffset = offH ? Math.round(+offH / EMU_PER_PX) : 0;
+  const vOffset = offV ? Math.round(+offV / EMU_PER_PX) : 0;
+  return { wrap, hAlign, hOffset, vOffset };
+}
+
 /** Lê um parágrafo e devolve o texto em partes, separando onde há quebra de página. */
 export function readParagraphInlines(ctx: Ctx, p: El, styleRun: RunProps, isHeading: boolean): { parts: Inline[][]; breaks: number } {
   const parts: Inline[][] = [[]];
@@ -126,12 +154,16 @@ export function readParagraphInlines(ctx: Ctx, p: El, styleRun: RunProps, isHead
     const cx = ext ? +(ext.getAttribute("cx") ?? 0) : 0;
     const cy = ext ? +(ext.getAttribute("cy") ?? 0) : 0;
     const docPr = el.getElementsByTagName("wp:docPr")[0];
-    return schema.nodes.image.create({
+    const attrs: Record<string, unknown> = {
       src,
       alt: docPr?.getAttribute("descr") || null,
       width: cx ? Math.round(cx / EMU_PER_PX) : null,
       height: cy ? Math.round(cy / EMU_PER_PX) : null,
-    });
+    };
+    // ancorada (`wp:anchor`)? então a imagem é flutuante: a quebra e a posição voltam do arquivo
+    const anchor = el.getElementsByTagName("wp:anchor")[0];
+    if (anchor) Object.assign(attrs, leituraDaAncoragem(anchor));
+    return schema.nodes.image.create(attrs);
   };
 
   walk(p, null, {});

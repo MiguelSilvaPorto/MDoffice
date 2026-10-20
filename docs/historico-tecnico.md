@@ -15971,3 +15971,131 @@ antigas quando fizer sentido.
   A entrada convive com a **"Os módulos agora se chamam pelo formato"** (outra tarefa, já na `main`):
   ela explica por que a interface deixou os nomes das marcas, e esta fecha o outro lado — as **cores
   e os ícones** também deixaram de ser os do Office.
+
+## src/word/imagemFlutuante.ts
+
+### 2026-10-20 · feat/word-imagem-fluante · a imagem flutuante do Word (novo arquivo)
+- **Local:** arquivo novo — tipos da quebra, folha viva do `shape-outside`, plugin que flutua o parágrafo-âncora e `deixarImagemSozinha`
+- **Linha:** novo arquivo — `WrapImagem` (`alinhado`/`quadrado`/`contorno`/`topo-base`/`atravessar`/`atras`/`frente`), `dadosDaImagem`, `estiloDoFlutuante`, `classeDoContorno`, `pluginFlutuante`, `deixarImagemSozinha`
+- **Porquê:** no motor do Word a imagem era um nó **inline**: o arrasto fazia *recortar e colar* noutro
+  ponto do texto e o texto nunca se reorganizava em volta dela — o que o Word faz (e o que foi
+  pedido). A decisão de fundo: **a imagem continua inline no esquema** (é assim que o `.docx`
+  importa e exporta, e a posição dela no texto é o que ANCORA o flutuante), mas o **parágrafo que a
+  contém vira o próprio flutuante** (`float` no CSS). Flutuando no nível do parágrafo, o texto dos
+  parágrafos **vizinhos** se reorganiza em volta — flutuando a imagem dentro do parágrafo, só o
+  texto daquele parágrafo contornaria. Daí `deixarImagemSozinha`: com texto dividindo o parágrafo,
+  o texto do próprio parágrafo ficaria espremido na caixa do float.
+  O **contorno** (o texto segue o desenho do PNG, entrando no vão de um círculo) vem do
+  `shape-outside: url(...)` — o navegador usa o canal ALFA da imagem como forma do flutuante. A
+  URL (um data URL de centenas de KB) mora numa **folha de estilo viva**, e não no atributo `style`
+  do parágrafo: a decoração ficaria pesada e o navegador reparsearia o atributo a cada mudança.
+
+## src/word/schema.ts
+
+### 2026-10-20 · feat/word-imagem-fluante · a imagem ganha os atributos de flutuação
+- **Local:** `nodes.image` (`attrs`, `parseDOM`, `toDOM`)
+- **Linha:** `attrs: { src, alt, width, height }` → `attrs: { src, alt, width, height, wrap, hAlign, hOffset, vOffset, shapeMargin }`; o `toDOM` passa a gravar `data-wd-wrap`/`data-wd-halign` quando a imagem não está alinhada
+- **Porquê:** a quebra de texto, o lado e a posição precisam **viajar com a imagem** (o histórico,
+  o rascunho e o `.docx`). Ficaram como atributos do nó (e não como estado da tela) porque a
+  posição de uma imagem flutuante é parte do documento — no Word ela também é. O `data-wd-wrap` no
+  `toDOM` mantém a quebra na ida e volta pelo HTML.
+
+## src/word/imagem.ts
+
+### 2026-10-20 · feat/word-imagem-fluante · o arrasto da imagem flutuante move a folha em tempo real
+- **Local:** `ImagemView` (`iniciarMovimento`, novos `iniciarMovimentoFlutuante`/`arrastarFlutuante`/`soltarFlutuante`, `escala`)
+- **Linha:** `iniciarMovimento` ganhou a saída para o gesto flutuante (`ehFlutuante(this.dados)`); novo `escala()` (px de tela → px de documento)
+- **Porquê:** o gesto antigo ("soltar em outro ponto do texto") não serve para uma imagem flutuante:
+  no Word a imagem **se move** e o texto se acomoda. O deslocamento vai direto para o elemento
+  flutuante (o parágrafo, quando a imagem é um `float`; a própria imagem, quando é absoluta) — sem
+  passar pelo documento — para o texto se reorganizar **a cada pixel** do arrasto; no fim do gesto
+  o deslocamento vira uma transação (Ctrl+Z desfaz). O `escala()` apareceu junto porque o gesto
+  media a caixa da imagem em **pixels de tela** e gravava em pixels de documento: com o zoom
+  diferente de 100% o tamanho saía torto — o mesmo erro agora corrigido no redimensionamento.
+
+## src/word/editor.ts
+
+### 2026-10-20 · feat/word-imagem-fluante · os comandos da imagem flutuante
+- **Local:** `FormatState`, `query()`, `imagemSelecionada`, `imagemEmFoco`, `setQuebraDeTexto`, `setAlinhamentoImagem`, `setTextoAlternativo`, `setDistanciaDoTexto`, `ajustarLargura`, `proporcaoOriginal`, `larguraConteudo`, `refreshFlutuante`, `plugins()`
+- **Linha:** `FormatState` ganhou `imagem: DadosFlutuante | null`; `query()` devolve a imagem **selecionada** (é o que abre a aba "Imagem" da fita); novos comandos; `plugins()` ganhou o `pluginFlutuante`
+- **Porquê:** a fita precisa saber se há uma imagem selecionada (para mostrar a aba contextual) e
+  precisa de comandos para a quebra, o lado, o texto alternativo e o ajuste. O `query()` usa a
+  imagem **selecionada** (e não a encostada no cursor) porque a aba contextual do Word aparece com
+  a imagem escolhida.
+
+## src/word/ribbon.ts
+
+### 2026-10-20 · feat/word-imagem-fluante · a aba "Imagem" da fita (contextual)
+- **Local:** as abas (`data-tab="image"`), o painel `data-panel="image"`, `run()`, `update()`, `wrapMenu`/`criaMenuDeQuebra`/`wrapMenuEm`, `altTextPopup`, `menuDeContexto`
+- **Linha:** nova aba contextual **Imagem** (ao lado de **Tabela**), com os grupos *Quebra de Texto*, *Posição*, *Ajustar* e *Imagem*; `update()` mostra/esconde a aba conforme a seleção; o clique direito na imagem ganhou **Quebra de Texto**
+- **Porquê:** no Word as opções de uma imagem_selected ficam numa aba contextual própria
+  ("Formato de Imagem"). A **Quebra de Texto** também foi para o clique direito, que é o caminho
+  que as pessoas já conhecem do Word.
+
+## src/word/pagination.ts
+
+### 2026-10-20 · feat/word-imagem-fluante · a paginação sabe que um parágrafo flutuante não é texto
+- **Local:** `measure()` (o laço dos blocos)
+- **Linha:** `if (isText && !isHeading)` → `if (isText && !isHeading && !ehFloat)`, com `ehFloat` lido da classe `wd-flutuante` do elemento
+- **Porquê:** a paginação media as **linhas** de cada parágrafo para cortar a página no lugar
+  certo. Um parágrafo flutuante não tem linhas: é a imagem, um bloco só — e a lógica de divisão
+  linha a linha tentaria abrir o parágrafo no meio da imagem.
+
+## src/word/host.ts
+
+### 2026-10-20 · feat/word-imagem-fluante · a página nova reposiciona os flutuantes
+- **Local:** `applySetup()`
+- **Linha:** antes de `requestPagination(...)` entrou `this.editor.refreshFlutuante()`
+- **Porquê:** a largura da área de texto muda quando o papel ou a margem mudam — e é dela que sai
+  o quanto sobra para centralizar uma imagem flutuante.
+
+## src/word/docxExport.ts
+
+### 2026-10-20 · feat/word-imagem-fluante · a imagem flutuante sai ancorada no `.docx`
+- **Local:** `flutuanteDoDocx` (novo) e o `ImageRun` de `inlineRuns`
+- **Linha:** `new ImageRun({ type, data, transformation })` → o mesmo `ImageRun` com `floating` quando a imagem não está alinhada (`wp:anchor`, com `wrapSquare`/`wrapTight`/`wrapThrough`/`wrapTopAndBottom`/`wrapNone` e a posição)
+- **Porquê:** uma imagem flutuante guardada como `wp:inline` volta **alinhada** no Word — a quebra
+  e a posição se perdiam no round-trip. O `docx` (a biblioteca) aceita `floating`, e o desenho
+  ancorado é o que o Word entende.
+
+## src/word/docx/inline.ts
+
+### 2026-10-20 · feat/word-imagem-fluante · a quebra de texto volta do `.docx`
+- **Local:** `readImage` e `leituraDaAncoragem` (novo)
+- **Linha:** `readImage` passou a ler o `wp:anchor` (a quebra, o lado e o deslocamento) e a gravá-los nos atributos da imagem
+- **Porquê:** sem isto, abrir um `.docx` com imagem ancorada trazia a imagem **alinhada**, e o
+  trabalho de flutuar se perdia a cada ida e volta.
+
+## src/word/contexto.ts
+
+### 2026-10-20 · feat/word-imagem-fluante · "Quebra de Texto" no clique direito da imagem
+- **Local:** `itensDoContexto`
+- **Linha:** `sobImagem ? [acao("img-del", "Excluir imagem"), separador]` → `sobImagem ? [acao("img-del", "Excluir imagem"), acao("img-wrap", "Quebra de Texto"), separador]`
+- **Porquê:** o clique direito na imagem é o caminho que as pessoas já conhecem do Word para trocar
+  a quebra de texto.
+
+## src/styles/word.css
+
+### 2026-10-20 · feat/word-imagem-fluante · o estilo do flutuante e da imagem atrás do texto
+- **Local:** as regras de `.wd-flutuante`, `.wd-img-atras`, `.wd-img-frente`, `.wd-img-atravessar`, `#word-editor` e os menus novos (`.wd-wrap-pop`, `.wd-alt-input`)
+- **Linha:** novo bloco "Imagem FLUTUANTE"; `#word-editor` ganhou `z-index: 0`
+- **Porquê:** o `text-indent: 0 !important` no parágrafo flutuante tira o recuo da primeira linha
+  (que empurraria a imagem para fora da caixa do float) — e precisa ser `!important` porque o
+  recuo vem do `style` do próprio parágrafo. O `z-index: 0` no `#word-editor` cria um **contexto
+  de empilhamento**: sem ele a imagem "atrás do texto" (z-index negativo) sumiria **atrás do
+  branco da folha**.
+
+## scripts/testar-word-flutuante.mjs
+
+### 2026-10-20 · feat/word-imagem-fluante · a trava do módulo de flutuação (novo arquivo)
+- **Local:** arquivo novo
+- **Linha:** novo arquivo — trava o estilo de cada quebra, a classe do contorno e a divisão do parágrafo (`deixarImagemSozinha`)
+- **Porquê:** a quebra de texto e o "deixar a imagem sozinha" são regra pura (sem DOM): dá para
+  travar no Node, como o resto dos testes do repositório.
+
+## package.json
+
+### 2026-10-20 · feat/word-imagem-fluante · o comando de teste do módulo de flutuação
+- **Local:** `scripts`
+- **Linha:** novo `"test:word-flutuante": "node scripts/testar-word-flutuante.mjs"`
+- **Porquê:** o módulo novo entra na série de travas do repositório (uma por motor).

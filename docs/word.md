@@ -17,6 +17,22 @@ arquivos `.docx` de verdade.
   redimensionam mantendo a proporção (o tamanho fica no documento e vai para o `.docx`) e a
   **alça pontilhada** à esquerda arrasta a imagem para outro ponto do texto (arrastar o próprio corpo da imagem também move, e Ctrl+Z desfaz). `Ctrl+Z` volta ao
   tamanho anterior. A imagem entra pelo botão *Imagem*, por `Ctrl+V` ou arrastada do Explorer. Em parágrafo com **entrelinha fixa**, a imagem desliga a entrelinha daquele parágrafo para a linha crescer e a imagem não vazar sobre o texto vizinho.
+- **A imagem flutua e o texto se acomoda em volta** (como no Word): com a imagem **selecionada**
+  aparece a aba **Imagem** da fita, e o **clique direito** traz **Quebra de Texto**. São **7 modos**:
+  **Alinhado com o texto** (o de sempre, a imagem na linha do texto), **Quadrado** (o texto passa
+  dos dois lados), **Contorno** (o texto segue o **desenho** da imagem: num PNG em círculo o texto
+  entra no vão e sai por fora), **Topo e base** (o texto só passa por cima e por baixo),
+  **Através**, **Atrás do texto** e **À frente do texto**. A mesma aba traz a **posição**
+  (esquerda, centro, direita), o **ajustar à largura do texto**, a **proporção original** e o
+  **texto alternativo**.
+  - **Arrastar a imagem flutuante reorganiza o texto enquanto se arrasta**: o deslocamento vai
+    direto para a folha (o texto se acomoda a cada movimento) e, no fim do gesto, a posição vira
+    uma transação — `Ctrl+Z` desfaz.
+  - A imagem flutuante ganha **parágrafo próprio** (é o parágrafo que vira o flutuante): por isso
+    o texto dos parágrafos **vizinhos** se reorganiza em volta dela, e não só o do parágrafo onde
+    ela está.
+  - O `.docx` guardado sai com a imagem **ancorada** (com a quebra e a posição) e volta igual ao
+    ser aberto.
 - **Zoom** (barra inferior) e régua de trabalho na coluna de escrita. A folha é **sempre do
   tamanho do papel** escolhido (A4, 21 × 29,7 cm, por padrão): o **zoom é só a vista** e o tamanho
   do papel aparece ao lado da página (com a orientação), para uma folha vista pequena não ser

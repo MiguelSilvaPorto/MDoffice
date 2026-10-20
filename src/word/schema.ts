@@ -3,6 +3,7 @@
 import { Schema, type DOMOutputSpec, type MarkSpec, type Node as PMNode, type NodeSpec } from "prosemirror-model";
 import { tableNodes } from "prosemirror-tables";
 import { FONTES_COMUNS } from "../fontes";
+import type { LadoHorizontal, WrapImagem } from "./imagemFlutuante";
 
 export type Align = "left" | "center" | "right" | "justify";
 
@@ -188,7 +189,22 @@ const nodes: Record<string, NodeSpec> = {
     inline: true,
     group: "inline",
     draggable: true,
-    attrs: { src: {}, alt: { default: null }, width: { default: null as number | null }, height: { default: null as number | null } },
+    attrs: {
+      src: {},
+      alt: { default: null as string | null },
+      width: { default: null as number | null },
+      height: { default: null as number | null },
+      /** Como o texto se organiza em volta da imagem (ver `imagemFlutuante.ts`). */
+      wrap: { default: "alinhado" as WrapImagem },
+      /** Lado em que a imagem flutua. */
+      hAlign: { default: "left" as LadoHorizontal },
+      /** Deslocamento horizontal (px) a partir da margem. */
+      hOffset: { default: 0 },
+      /** Deslocamento vertical (px) a partir do parágrafo âncora. */
+      vOffset: { default: 0 },
+      /** Distância do texto (px) no contorno. */
+      shapeMargin: { default: 8 },
+    },
     parseDOM: [
       {
         tag: "img[src]",
@@ -199,14 +215,28 @@ const nodes: Record<string, NodeSpec> = {
             alt: el.getAttribute("alt"),
             width: num(el.getAttribute("width")) ?? num(el.style.width),
             height: num(el.getAttribute("height")) ?? num(el.style.height),
+            wrap: (el.getAttribute("data-wd-wrap") as WrapImagem) || "alinhado",
+            hAlign: (el.getAttribute("data-wd-halign") as LadoHorizontal) || "left",
           };
         },
       },
     ],
     toDOM: (n) => {
-      const { src, alt, width, height } = n.attrs;
+      const { src, alt, width, height, wrap, hAlign } = n.attrs as {
+        src: string;
+        alt: string | null;
+        width: number | null;
+        height: number | null;
+        wrap: WrapImagem;
+        hAlign: LadoHorizontal;
+      };
       const style = [width ? `width:${width}px` : "", height ? `height:${height}px` : ""].filter(Boolean).join(";");
-      return ["img", { src, ...(alt ? { alt } : {}), ...(style ? { style } : {}) }];
+      const extra: Record<string, string> = {};
+      if (wrap && wrap !== "alinhado") {
+        extra["data-wd-wrap"] = wrap;
+        extra["data-wd-halign"] = hAlign;
+      }
+      return ["img", { src, ...(alt ? { alt } : {}), ...(style ? { style } : {}), ...extra }];
     },
   },
 

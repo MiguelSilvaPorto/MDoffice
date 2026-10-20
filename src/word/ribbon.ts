@@ -3,6 +3,7 @@ import type { WordEditor, FormatState } from "./editor";
 import { FONT_FAMILIES, FONT_SIZES } from "./schema";
 import { DEFAULT_SETUP, PAPER_SIZES, papel, type PageSetup, type PaperSize } from "./model";
 import { itensDoContexto } from "./contexto";
+import { MODOS_DE_QUEBRA, type WrapImagem } from "./imagemFlutuante";
 import { h, toast } from "../util";
 import { melhorarSelects } from "../seletor";
 import { ligarAjusteAlturaFita, ligarEncaixeFita, ligarRecolherFita, ligarRodaHorizontal } from "../fita";
@@ -72,6 +73,7 @@ export class Ribbon {
         <button type="button" class="wd-rtab" data-tab="layout" role="tab" aria-selected="false">Layout</button>
         <button type="button" class="wd-rtab" data-tab="review" role="tab" aria-selected="false">Revisão</button>
         <button type="button" class="wd-rtab wd-rtab-contextual" data-tab="table" role="tab" aria-selected="false" hidden>Tabela</button>
+        <button type="button" class="wd-rtab wd-rtab-contextual" data-tab="image" role="tab" aria-selected="false" hidden>Imagem</button>
       </div>
       <div class="wd-ribbon-panels">
         <div class="wd-rpanel active" data-panel="home">
@@ -212,6 +214,35 @@ export class Ribbon {
             </div>`)}
           ${group("Excluir", `
             ${btn("t-del", icon("i-trash") + "<span>Excluir Tabela</span>", "Excluir tabela inteira", "big")}`)}
+        </div>
+
+        <div class="wd-rpanel" data-panel="image" hidden>
+          ${group("Quebra de Texto", `
+            ${btn("img-wrap", icon("i-flow") + "<span>Quebra ▾</span>", "Como o texto se organiza em volta da imagem", "big")}`)}
+          ${group("Posição", `
+            <div class="rb-col">
+              <div class="rb-row">
+                ${btn("img-left", icon("i-align-left"), "Alinhar à esquerda")}
+                ${btn("img-center", icon("i-align-center"), "Centralizar")}
+                ${btn("img-right", icon("i-align-right"), "Alinhar à direita")}
+              </div>
+            </div>`)}
+          ${group("Ajustar", `
+            <div class="rb-col">
+              <div class="rb-row">
+                ${btn("img-fit", icon("i-columns"), "Ajustar à largura do texto")}
+                ${btn("img-original", icon("i-refresh"), "Proporção original")}
+              </div>
+            </div>`)}
+          ${group("Imagem", `
+            <div class="rb-col">
+              <div class="rb-row">
+                ${btn("img-alt", icon("i-text") + "<span>Alt</span>", "Texto alternativo da imagem")}
+              </div>
+              <div class="rb-row">
+                ${btn("img-inline", icon("i-doc") + "<span>Remover do fluxo</span>", "Voltar a alinhar a imagem com o texto")}
+              </div>
+            </div>`)}
         </div>
       </div>
     `;
@@ -356,6 +387,19 @@ export class Ribbon {
       tableTab.hidden = !st.inTable;
       if (!st.inTable && this.activeTab === "table") {
         this.switchTab("home");
+      }
+    }
+    // a aba "Imagem" só existe com uma imagem SELECIONADA (como no Word)
+    const imageTab = this.el.querySelector<HTMLButtonElement>('.wd-rtab[data-tab="image"]');
+    if (imageTab) {
+      imageTab.hidden = !st.imagem;
+      if (!st.imagem && this.activeTab === "image") {
+        this.switchTab("home");
+      }
+      if (st.imagem) {
+        on("img-left", st.imagem.hAlign === "left");
+        on("img-center", st.imagem.hAlign === "center");
+        on("img-right", st.imagem.hAlign === "right");
       }
     }
   }
@@ -511,6 +555,22 @@ export class Ribbon {
       case "img-del":
         ed.deleteImage();
         return;
+      case "img-wrap":
+        return this.wrapMenu(anchor);
+      case "img-left":
+        return ed.setAlinhamentoImagem("left");
+      case "img-center":
+        return ed.setAlinhamentoImagem("center");
+      case "img-right":
+        return ed.setAlinhamentoImagem("right");
+      case "img-fit":
+        return ed.ajustarLargura();
+      case "img-original":
+        return void ed.proporcaoOriginal();
+      case "img-alt":
+        return this.altTextPopup(anchor);
+      case "img-inline":
+        return ed.setQuebraDeTexto("alinhado");
       case "t-shade":
         return this.palette(anchor, ["#f3f4f6", "#fde68a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#e5e7eb", "#fecaca"], false, (c) => ed.table("shade", c), "Sem cor");
       case "page":
@@ -518,6 +578,60 @@ export class Ribbon {
       case "page-size":
         return this.sizeMenu(anchor);
     }
+  }
+
+  /**
+   * Menu **Quebra de Texto** da aba Imagem: como o texto se organiza em volta da imagem.
+   * É a lista do Word — quadrado, contorno, topo e base, através, atrás e à frente — e cada
+   * item explica o que faz (o contorno é o que deixa o texto seguir o desenho do PNG).
+   */
+  private wrapMenu(anchor: HTMLElement): void {
+    this.place(this.criaMenuDeQuebra(), anchor);
+  }
+
+  /** O mesmo menu de quebra, mas ancorado no PONTO (o clique direito na imagem). */
+  private wrapMenuEm(x: number, y: number): void {
+    this.placeEm(this.criaMenuDeQuebra(), x, y);
+  }
+
+  private criaMenuDeQuebra(): HTMLElement {
+    const pop = h("div", { class: "wd-pal wd-menu-pop wd-wrap-pop" });
+    const atual = this.hooks.editor.query().imagem?.wrap ?? "alinhado";
+    for (const modo of MODOS_DE_QUEBRA) {
+      const marcado = modo.id === atual;
+      const b = h("button", { class: `wd-menu-item${marcado ? " active" : ""}`, type: "button" });
+      b.innerHTML =
+        `<span style="width:16px;display:inline-block;color:var(--accent);font-weight:bold">${marcado ? "✓" : ""}</span>` +
+        `<span>${modo.nome}</span>`;
+      b.title = modo.dica;
+      b.addEventListener("mousedown", (e) => e.preventDefault());
+      b.addEventListener("click", () => {
+        this.closePop();
+        this.hooks.editor.setQuebraDeTexto(modo.id as WrapImagem);
+      });
+      pop.append(b);
+    }
+    return pop;
+  }
+
+  /** Texto alternativo da imagem (o "alt"): a caixa de texto com o botão de aplicar. */
+  private altTextPopup(anchor: HTMLElement): void {
+    const alvo = this.hooks.editor.imagemEmFoco();
+    if (!alvo) return;
+    const pop = h("div", { class: "wd-pal wd-menu-pop" });
+    const input = h("input", { class: "wd-alt-input", type: "text" });
+    input.placeholder = "Descreva a imagem";
+    input.value = String(alvo.node.attrs.alt ?? "");
+    const aplicar = h("button", { class: "wd-pal-reset", type: "button", text: "Aplicar" });
+    aplicar.addEventListener("mousedown", (e) => e.preventDefault());
+    aplicar.addEventListener("click", () => {
+      this.closePop();
+      this.hooks.editor.setTextoAlternativo(input.value.trim());
+    });
+    pop.append(input, aplicar);
+    this.place(pop, anchor);
+    input.focus();
+    input.select();
   }
 
   /**
@@ -646,6 +760,12 @@ export class Ribbon {
       // o botão não rouba o foco/seleção do documento — o comando age nela
       b.addEventListener("mousedown", (ev) => ev.preventDefault());
       b.addEventListener("click", () => {
+        // a quebra de texto abre o MESMO menu, no ponto do clique (o item some com o menu)
+        if (item.comando === "img-wrap") {
+          this.closePop();
+          this.wrapMenuEm(e.clientX, e.clientY);
+          return;
+        }
         this.closePop();
         void this.run(item.comando, b);
       });

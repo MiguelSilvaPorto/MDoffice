@@ -392,6 +392,20 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **gesto de ponteiro** próprio: arrastar a alça **ou o corpo da imagem** mostra o cursor onde ela vai cair e, ao
   soltar, o nó é movido no documento numa transação (`Ctrl+Z` desfaz). O redimensionamento pelas 8 alças continua igual.
 
+- **A imagem agora FLUTUA e o texto se reorganiza em volta dela, como no Word**: antes a imagem era
+  *recortada e colada* noutro ponto do texto — não dava para arrastá-la enquanto o texto se ajustava.
+  Agora a imagem sai do fluxo do texto e o **texto dos parágrafos vizinhos se reorganiza em volta**
+  durante o arrasto (o deslocamento vai direto para a folha, sem passar pelo documento: o texto se
+  ajusta a cada pixel e, no fim do gesto, a posição vira uma transação — `Ctrl+Z` desfaz). São **7
+  quebras de texto**, na aba **Imagem** que aparece com a imagem selecionada (e no clique direito):
+  **Alinhado com o texto** (o de sempre), **Quadrado** (o texto passa dos dois lados), **Contorno**
+  (o texto segue o **desenho** da imagem — entra no vão de um PNG em círculo e sai por fora),
+  **Topo e base**, **Através**, **Atrás do texto** e **À frente do texto**. A aba **Imagem** traz
+  também a posição (esquerda, centro, direita), o **ajuste à largura do texto**, a **proporção
+  original** e o **texto alternativo**. A imagem ganha **parágrafo próprio** quando flutua (é o
+  parágrafo que vira o flutuante) e o `.docx` guardado sai **ancorado**, com a quebra e a posição
+  — e volta igual ao ser aberto.
+
 - **A imagem parou de atrapalhar a escrita no Word**: um parágrafo com **entrelinha fixa** (1 ou um valor exato)
   e uma imagem **inline** grande ficava com a caixa da linha menor que a imagem — ela vazava por cima das linhas
   vizinhas e **capturava o clique**, então não dava para clicar/editar o texto embaixo. Agora parágrafo (e título)

@@ -498,6 +498,29 @@ body.settings-open #word-pane {
   z-index: 120;
 }
 
+/* menu de quebra de texto: os nomes são longos ("Alinhado com o texto") */
+.wd-wrap-pop {
+  min-width: 210px;
+}
+
+/* caixa do texto alternativo (aba Imagem) */
+.wd-alt-input {
+  width: 240px;
+  margin: 4px;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.wd-alt-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
 .wd-menu-sep {
   height: 1px;
   margin: 4px 2px;
@@ -624,6 +647,9 @@ body.settings-open #word-pane {
 
 #word-editor {
   position: relative;
+  /* contexto de empilhamento: a imagem "atrás do texto" (z-index negativo) fica ACIMA do
+     papel da folha e ABAIXO do texto — sem isto ela sumiria atrás do branco da folha */
+  z-index: 0;
 }
 
 .wd-doc {
@@ -823,6 +849,44 @@ body.settings-open #word-pane {
 
 .wd-doc img.ProseMirror-selectednode {
   outline: 2px solid #4f46e5;
+}
+
+/* ------------------------------------------------------------------
+   Imagem FLUTUANTE (src/word/imagemFlutuante.ts).
+   O parágrafo que ancora a imagem vira o próprio flutuante (`float`):
+   flutuando no nível do parágrafo, o texto dos parágrafos VIZINHOS se
+   reorganiza em volta — que é o que o Word faz. O "contorno" (o texto
+   segue o desenho do PNG, entrando nos vãos) vem do `shape-outside` com
+   a própria imagem, escrito numa folha de estilo viva.
+   ------------------------------------------------------------------ */
+.wd-doc p.wd-flutuante,
+.wd-doc h1.wd-flutuante,
+.wd-doc h2.wd-flutuante,
+.wd-doc h3.wd-flutuante,
+.wd-doc h4.wd-flutuante,
+.wd-doc h5.wd-flutuante,
+.wd-doc h6.wd-flutuante {
+  /* o recuo da primeira linha empurraria a imagem para fora da caixa do float */
+  text-indent: 0 !important;
+}
+
+/* o float não pode "espalhar" o texto: a imagem é o conteúdo dele */
+.wd-doc p.wd-flutuante > .wd-img {
+  vertical-align: top;
+}
+
+/* "atrás do texto" e "à frente do texto": a imagem sai do fluxo (position:absolute)
+   e o parágrafo-âncora some — ele é só a âncora. */
+.wd-doc .wd-img-atras,
+.wd-doc .wd-img-frente {
+  position: absolute;
+  max-width: none;
+}
+
+/* "através": a imagem fica ATRÁS do texto, que passa por cima dela */
+.wd-doc .wd-img-atravessar {
+  position: relative;
+  z-index: -1;
 }
 
 .wd-doc table {

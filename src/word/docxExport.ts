@@ -6,6 +6,7 @@ import {
   ExternalHyperlink,
   Footer,
   Header,
+  HorizontalPositionRelativeFrom,
   ImageRun,
   LevelFormat,
   LineRuleType,
@@ -19,14 +20,19 @@ import {
   TableCell,
   TableRow,
   TextRun,
+  TextWrappingSide,
+  TextWrappingType,
+  VerticalPositionRelativeFrom,
   WidthType,
   HeadingLevel,
   PageBreak,
+  type IImageOptions,
   type IParagraphOptions,
   type ParagraphChild,
 } from "docx";
 import type { Mark, Node as PMNode } from "prosemirror-model";
-import { HEADING_STYLE, type PageSetup, type PaperSize } from "./model";
+import { HEADING_STYLE, CM_TO_PX, pageSizePx, type PageSetup, type PaperSize } from "./model";
+import { dadosDaImagem, ehFlutuante, type DadosFlutuante } from "./imagemFlutuante";
 
 type Block = Paragraph | Table;
 
@@ -88,6 +94,52 @@ async function toPng(url: string): Promise<string | null> {
 
 function markValue(marks: readonly Mark[], name: string): Mark | undefined {
   return marks.find((m) => m.type.name === name);
+}
+
+/** EMU por pixel (1 px = 1/96 pol) — a unidade de posição do Word. */
+const EMU_PX = 9525;
+
+/**
+ * A imagem flutuante no `.docx`: vira um desenho ANCORADO (`wp:anchor`), com a quebra de
+ * texto e a posição que o app mostra. O contorno vai como `wrapTight`/`wrapThrough` — o Word
+ * recalcula o contorno real do desenho quando a imagem é mexida lá.
+ */
+function flutuanteDoDocx(d: DadosFlutuante, ctx: Ctx, largura: number): NonNullable<IImageOptions["floating"]> {
+  const s = ctx.setup;
+  const conteudo = pageSizePx(s).w - Math.round((s.margins.left + s.margins.right) * CM_TO_PX);
+  // posição horizontal a partir da coluna (a área de texto)
+  let x = d.hOffset;
+  if (d.hAlign === "center") x = Math.round((conteudo - largura) / 2) + d.hOffset;
+  else if (d.hAlign === "right") x = conteudo - largura - d.hOffset;
+  const folga = Math.max(0, Math.round(d.shapeMargin));
+  const tipo =
+    d.wrap === "contorno"
+      ? TextWrappingType.TIGHT
+      : d.wrap === "atravessar"
+        ? TextWrappingType.THROUGH
+        : d.wrap === "topo-base"
+          ? TextWrappingType.TOP_AND_BOTTOM
+          : d.wrap === "atras" || d.wrap === "frente"
+            ? TextWrappingType.NONE
+            : TextWrappingType.SQUARE;
+  return {
+    horizontalPosition: {
+      relative: HorizontalPositionRelativeFrom.COLUMN,
+      offset: Math.round(x * EMU_PX),
+    },
+    verticalPosition: {
+      relative: VerticalPositionRelativeFrom.PARAGRAPH,
+      offset: Math.round(d.vOffset * EMU_PX),
+    },
+    wrap: {
+      type: tipo,
+      side: TextWrappingSide.BOTH_SIDES,
+      margins: { distL: folga * EMU_PX, distR: folga * EMU_PX },
+    },
+    // "atrás do texto": a imagem fica no fundo da página
+    behindDocument: d.wrap === "atras",
+    allowOverlap: true,
+  };
 }
 
 async function inlineRuns(node: PMNode, ctx: Ctx): Promise<ParagraphChild[]> {
@@ -157,7 +209,15 @@ async function inlineRuns(node: PMNode, ctx: Ctx): Promise<ParagraphChild[]> {
           }
           const max = 600;
           const k = w > max ? max / w : 1;
-          slot.push(new ImageRun({ type: data.type, data: data.bytes, transformation: { width: Math.round(w * k), height: Math.round(h * k) } }));
+          // imagem flutuante: vai ancorada no .docx, com a quebra de texto e a posição
+          const dados = dadosDaImagem(child.attrs as Record<string, unknown>);
+          const opcoes: IImageOptions = {
+            type: data.type,
+            data: data.bytes,
+            transformation: { width: Math.round(w * k), height: Math.round(h * k) },
+            ...(ehFlutuante(dados) ? { floating: flutuanteDoDocx(dados, ctx, Math.round(w * k)) } : {}),
+          };
+          slot.push(new ImageRun(opcoes));
           src = "";
         })()
       );
