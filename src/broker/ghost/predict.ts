@@ -47,8 +47,12 @@ export const THRESHOLDS = {
    * 11,9% para ~21% (documento novo: 6,8% → ~15%). O modo discreto fica só com a calibrada.
    */
   prefixShow: 0.15,
-  /** completar a palavra só vale a pena se faltar pelo menos isto de letras (o Tab também custa uma tecla) */
-  minSuffix: 3,
+  /**
+   * completar a palavra só vale a pena se faltar pelo menos isto de letras (o Tab também custa uma
+   * tecla). Era 3 (4 antes disso): "é uma área pou" não mostrava "pouco" (61%) porque faltava "co".
+   * Com 2, a economia no eval-ghost sobe de 24,6% para 25,6% (documento novo 18,9% → 20,5%).
+   */
+  minSuffix: 2,
   /**
    * próxima palavra: também mostra quando a favorita tem pelo menos `nextLead` e é `nextRatio` vezes
    * mais provável que a segunda ("Bom " → "dia": 17%, 8× a segunda). Só nos modos não discretos.

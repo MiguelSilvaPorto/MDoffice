@@ -32,7 +32,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **A sugestão completa a palavra mesmo faltando só 2 letras**: em "é uma área pou" o app tinha
+  "pouco" com 61% de certeza, mas escondia porque faltava só "co" (o mínimo era 3). Agora aparece no
+  modo Equilibrado (economia de teclas no `eval-ghost`: 24,6% → 25,6%; documento novo 18,9% → 20,5%,
+  precisão igual). O modo Discreta continua exigindo 4 letras.
 
 ### Adicionado (na main)
 

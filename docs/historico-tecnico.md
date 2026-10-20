@@ -14455,6 +14455,16 @@ antigas quando fizer sentido.
   na próxima letra e Alt+Seta troca a opção. O modo Discreta virou exatamente o padrão antigo (o
   `test:ghost` prende 92,7% / 20,2% / 5,2% nele).
 
+### 2026-10-20 · sugestão · completar com 2 letras faltando
+
+- **Local:** `THRESHOLDS.minSuffix` (predict.ts) e `minSuffixDelta` (feedback.ts).
+- **Linha:** `minSuffix: 3` → `2`; `discreto ? 1` → `discreto ? 2` (o discreto continua em 4).
+- **Porquê:** o relato "é uma área po… e não sugeriu mais nada": em "pou" a favorita era "pouco"
+  (61%), mas faltava "co" e o mínimo de 3 letras escondia. Com 2 a economia no `eval-ghost` sobe de
+  24,6% para 25,6% (sem aprender, 18,9% → 20,5%) e a precisão fica igual (~32%). O que segue
+  ("pouco " → "explorada") é limite do modelo: ele guarda só os 12 sucessores mais comuns de cada
+  palavra; o documento aprende a sequência depois que ela aparece uma vez.
+
 ## src/broker/personal/feedback.ts
 
 ### 2026-10-20 · 2679d83 · discreto deixa de apertar os limiares

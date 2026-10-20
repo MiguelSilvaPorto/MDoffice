@@ -222,7 +222,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
             ${toggle("copilot", "Sugestões enquanto digita", "Mostra a continuação da frase em cinza. Tab aceita; Alt+Seta aceita uma palavra.", ctx.copilot(), "i-spark")}
             <div class="st-row">
               ${rowIcon("i-focus")}
-              <span class="st-text"><b>Intensidade das sugestões</b><small>Discreta: só com muita certeza (aparece pouco, quase sempre certa). Equilibrada: arrisca o palpite mais provável (Alt+Seta para baixo troca a opção). Agressiva: aparece ainda mais e erra mais.</small></span>
+              <span class="st-text"><b>Intensidade das sugestões</b><small>Discreta: só com muita certeza (aparece pouco, quase sempre certa). Equilibrada: arrisca o palpite mais provável, mesmo faltando só 2 letras (Alt+Seta para baixo troca a opção). Agressiva: aparece ainda mais e erra mais.</small></span>
               ${dd("ghostmode", [["discreto", "Discreta"], ["equilibrado", "Equilibrada"], ["agressivo", "Agressiva"]], getGhostMode())}
             </div>
           </div>
