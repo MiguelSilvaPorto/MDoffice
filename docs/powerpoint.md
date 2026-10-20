@@ -728,7 +728,8 @@ Teste: `npm run test:modelo`.
   **ajustável** — e ela **cabe na largura da janela** (sem rolagem lateral). Recolhida (**Ctrl+F1**),
   a faixa é a **faixa única** (os grupos viram botões com menu); a faixa **não se recolhe sozinha**:
   clicar numa aba mostra a faixa **completa** e **a escolha fica** (trabalhar na lâmina não a recolhe
-  mais), e o **Ctrl+F1** alterna — é o único gesto que recolhe.
+  mais), e o **Ctrl+F1** alterna — é o único gesto que recolhe. O **Desenhar** da barra do topo não
+  aparece na apresentação: o desenho aqui é a **aba Desenhar** da fita.
 - **Painel Formatar/Animação/Notas/Composição** à direita: pode ser escondido, redimensionado
   e reaberto pela aba **« Formatar**; o painel de animação lista os efeitos da lâmina na ordem
   (selecionar, mover e remover), as notas ficam na aba **Notas** e a **Composição** mostra os

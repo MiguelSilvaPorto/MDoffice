@@ -15130,6 +15130,7 @@ antigas quando fizer sentido.
   de mover), então a promoção não afirma nada falso. Como nas rodadas anteriores, ela anda num passo
   curto de docs porque o commit do `fechar.ps1` já foi usado para entregar o código — promover junto
   seria afirmar "está na main" antes de estar.
+
 ## src/powerpoint/edicao/recompor.ts
 
 ### 2026-10-20 · esta tarefa · "faixa + duas colunas" e o título que sumia
@@ -15220,3 +15221,43 @@ antigas quando fizer sentido.
   ponteiro, então o texto embaixo não é editável (relato com print: "a imagem interfere na escrita"). A
   entrelinha fixa deixa de valer só no parágrafo que contém imagem; os demais continuam iguais. Trava nova:
   `scripts/testar-word-imagem.mjs` (monta o parágrafo com imagem e confere que o `style` não leva `line-height`).
+
+## src/app/toolbar.ts
+
+### 2026-10-20 · o Desenhar do topo · o grupo sai na apresentação
+- **Local:** `ajustarBarraDoTipo` (novo, antes do `setupToolbar`)
+- **Linha:** `novo` — `const desenhar = document.querySelector(".tb-split-draw"); if (desenhar)
+  desenhar.style.display = this.tab?.kind === "ppt" ? "none" : "";`
+- **Porquê:** o pedido ("o botão desenhar quando tiver na apresentação pode ser removido") — no PPT o
+  desenho é a aba **Desenhar** da fita, e o botão do topo só caía no `act("draw")`, que responde com
+  o toast "o desenho ainda não está disponível em apresentações" (código morto). O grupo inteiro
+  (botão + setinha de estilo) some; `style.display` é usado porque o `hidden` do HTML não vence as
+  regras de layout do topo.
+
+## src/app/tabs.ts
+
+### 2026-10-20 · o Desenhar do topo · acompanhar a troca de abas
+- **Local:** `afterTabChange`
+- **Linha:** `+ this.ajustarBarraDoTipo();` (depois do `renderOutline`)
+- **Porquê:** a barra do topo é fixa no HTML; sem este gancho ela só mudaria ao recarregar. O
+  `afterTabChange` roda em toda ativação/troca de aba, então o botão some ao entrar na apresentação
+  e volta ao sair (conferido no navegador na ida e volta).
+
+## scripts/testar-layout.mts
+
+### 2026-10-20 · o Desenhar do topo · a checagem
+- **Local:** bloco novo "Barra do topo: o Desenhar sai na apresentação", antes do fecho
+- **Linha:** `+` uma checagem: o método `ajustarBarraDoTipo`, o seletor `.tb-split-draw`, o teste
+  `kind === "ppt" ? "none" : ""` e a chamada no `afterTabChange`
+- **Porquê:** o caminho é de interface (a barra é HTML estático) e foi conferido no navegador; a
+  checagem prende o seletor e o gancho que fazem o botão voltar nos outros módulos — sem o gancho,
+  ele ficaria escondido para sempre depois de abrir uma apresentação.
+
+## docs/powerpoint.md
+
+### 2026-10-20 · o Desenhar do topo · a bala da fita
+- **Local:** "**Fita** com abas…"
+- **Linha:** `+` "O **Desenhar** da barra do topo não aparece na apresentação: o desenho aqui é a
+  **aba Desenhar** da fita."
+- **Porquê:** o documento lista a aba Desenhar; a ausência do botão do topo agora é proposital e
+  precisa estar dita para ninguém "consertar" de volta.

@@ -193,6 +193,8 @@ export const tabsMethods = {
     this.setSaveState();
     this.updateStats();
     this.renderOutline();
+    // a barra do topo muda com o módulo (o "Desenhar" sai na apresentação)
+    this.ajustarBarraDoTipo();
     this.saveSession();
     this.sidebar?.render();
   },

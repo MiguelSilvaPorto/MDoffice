@@ -193,6 +193,16 @@ export const toolbarMethods = {
     );
   },
 
+  /**
+   * A barra do topo acompanha o módulo. Na **apresentação** o grupo do **Desenhar** (o botão e a
+   * setinha de estilo) sai: o desenho lá é a aba **Desenhar** da fita, e o botão do topo só respondia
+   * com o aviso "ainda não disponível em apresentações". Nos outros módulos ele volta.
+   */
+  ajustarBarraDoTipo(this: App): void {
+    const desenhar = document.querySelector<HTMLElement>(".tb-split-draw");
+    if (desenhar) desenhar.style.display = this.tab?.kind === "ppt" ? "none" : "";
+  },
+
   setupToolbar(this: App): void {
     $$("[data-act]").forEach((btn) => {
       const name = btn.dataset.act!;

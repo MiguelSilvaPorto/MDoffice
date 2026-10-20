@@ -3318,5 +3318,20 @@ console.log("\nPowerPoint: animação vai para toda a seleção (e a exportaçã
   );
 }
 
+console.log("\nBarra do topo: o Desenhar sai na apresentação");
+
+{
+  const tb = ler("src/app/toolbar.ts");
+  const tabsApp = ler("src/app/tabs.ts");
+  checa(
+    "o grupo Desenhar do topo some na apresentação (e volta nos outros módulos)",
+    /ajustarBarraDoTipo\(this: App\): void \{/.test(tb) &&
+      /\.tb-split-draw/.test(tb) &&
+      /this\.tab\?\.kind === "ppt" \? "none" : ""/.test(tb) &&
+      /this\.ajustarBarraDoTipo\(\);/.test(tabsApp),
+    "o botão do topo só dizia 'o desenho ainda não está disponível em apresentações'"
+  );
+}
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

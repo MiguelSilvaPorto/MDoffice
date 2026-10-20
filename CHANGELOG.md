@@ -554,6 +554,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O botão "Desenhar" do topo sai na apresentação**: no PowerPoint o desenho é a aba **Desenhar** da
+  fita; o botão da barra do topo (com a setinha de estilo) só respondia com o aviso "o desenho ainda
+  não está disponível em apresentações" — foi removido ali ("não vejo necessidade de ter ele"). Nos
+  outros módulos ele continua (no Markdown é lá que se desenha), e a barra acompanha a troca de
+  abas: some ao entrar na apresentação e volta ao sair. Conferido no navegador: MD visível → PPT
+  oculto → MD visível → PPT oculto. Teste: `npm run test:layout`.
+
 - **O Assistente desligado deixa o desenho fiel (e a dica para de dizer "entendi")**: o traço livre
   ainda **encaixava nas formas de baixo** com o Assistente desligado — ao soltar, a caixa pulava e
   esticava até a borda do cartão (a prévia não mostra esse encaixe, então o salto era ainda mais
