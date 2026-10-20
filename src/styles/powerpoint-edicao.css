@@ -673,6 +673,24 @@ button.ppr.big .ppr-gal-ic svg {
   min-width: 210px;
 }
 
+/* Item "Organizar" do menu de contexto: o mesmo ícone do botão da fita e a seta à direita
+   (é o que abre o menu completo de arranjo). */
+.pp-pop-organizar {
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.pp-pop-organizar .ppr-seta {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.pp-pop-caret {
+  margin-left: auto;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
 /* título curto no topo de um popup de menu (ex.: "Nova lâmina") */
 .pp-pop-rot {
   padding: 4px 8px 6px;

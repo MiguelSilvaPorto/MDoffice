@@ -88,6 +88,7 @@ import { Fita } from "./ui/fita";
 import { abrirGaleriaDeLayouts, miniaturaDeLayout } from "./ui/layoutPreview";
 import { Painel } from "./ui/painel";
 import { abrirPopup, ancoraDoPopup, fecharPopup } from "./ui/popup";
+import { abrirMenuOrganizar, ITEM_ORGANIZAR } from "./ui/organizar";
 import type { EstadoUI } from "./ui/estado";
 import type { Animacao, AnimacaoDirecao, AnimacaoInicio, AnimacaoTipo, Deck, DeckSetup, Fill, GraficoTipo, Lado, Para, Shape, ShapeBox, Slide, SlideLayout, TextAlign, Transicao, TransicaoDirecao, TransicaoTipo } from "./schema";
 
@@ -4441,26 +4442,40 @@ export class PowerPointHost {
     // por cima…), o clique só pega a de cima — este item pega todas de uma vez (cada uma com o grupo
     // dela), e quem quiser só algumas tira o resto com Shift/clique depois.
     const pilha = comGrupos(this.atual(), this.stage.formasNoPonto(e.clientX, e.clientY));
-    const itens: [string, string, boolean][] = [
-      ["editar-texto", "Editar texto", this.selecao.length === 1 && !!this.principal()?.paras],
-      ["sel-ponto", pilha.length > 1 ? `Selecionar tudo neste ponto (${pilha.length})` : "Selecionar tudo neste ponto", pilha.length > 1],
-      ["recortar", "Recortar", true],
-      ["copiar", "Copiar", true],
-      ["colar", "Colar", areaDeTransferencia.length > 0],
-      ["duplicar", "Duplicar", true],
-      ["excluir", "Excluir", true],
-      ["z-topo", "Trazer para a frente", true],
-      ["z-fundo", "Enviar para trás", true],
-      ["agrupar", "Agrupar", this.selecao.length > 1],
-      ["desagrupar", "Desagrupar", this.formas().some((s) => !!s.grupo)],
-    ];
+    // O menu de contexto da forma: em grupos (editar, área de transferência, forma) e com o
+    // item "Organizar" — o MESMO menu da fita, com o mesmo ícone (ordem, alinhamento, grupo,
+    // giro e bloqueio), para não ter dois lugares diferentes com o mesmo nome.
+    const item = (c: string, n: string, ok = true) =>
+      `<button type="button" class="pp-pop-item" data-c="${c}"${ok ? "" : " disabled"}>${n}</button>`;
+    const titulo = (t: string) => `<div class="pp-pop-t">${t}</div>`;
+    const html = [
+      titulo("Editar"),
+      item("editar-texto", "Editar texto", this.selecao.length === 1 && !!this.principal()?.paras),
+      item("sel-ponto", pilha.length > 1 ? `Selecionar tudo neste ponto (${pilha.length})` : "Selecionar tudo neste ponto", pilha.length > 1),
+      titulo("Área de transferência"),
+      item("recortar", "Recortar"),
+      item("copiar", "Copiar"),
+      item("colar", "Colar", areaDeTransferencia.length > 0),
+      titulo("Forma"),
+      item("duplicar", "Duplicar"),
+      item("excluir", "Excluir"),
+      titulo("Organizar"),
+      ITEM_ORGANIZAR,
+    ].join("");
     const ancora = document.createElement("span");
     ancora.style.cssText = `position:fixed;left:${e.clientX}px;top:${e.clientY}px;width:1px;height:1px`;
     document.body.append(ancora);
-    const el = abrirPopup(ancora, itens.map(([c, n, ok]) => `<button type="button" class="pp-pop-item" data-c="${c}"${ok ? "" : " disabled"}>${n}</button>`).join(""), { classe: "pp-pop-menu", aoFechar: () => ancora.remove() });
+    const el = abrirPopup(ancora, html, { classe: "pp-pop-menu", aoFechar: () => ancora.remove() });
     el.addEventListener("click", (ev) => {
-      const b = (ev.target as HTMLElement).closest<HTMLButtonElement>("[data-c]");
-      if (!b || b.disabled) return;
+      const alvo = ev.target as HTMLElement;
+      const b = alvo.closest<HTMLButtonElement>("[data-c],[data-organizar]");
+      if (!b) return;
+      if (b.hasAttribute("data-organizar")) {
+        // o item "Organizar" abre o menu completo (o da fita), ancorado nele
+        abrirMenuOrganizar(b, (cmd, valor) => this.run(cmd, valor));
+        return;
+      }
+      if (b.disabled) return;
       fecharPopup();
       const c = b.dataset.c!;
       if (c === "editar-texto") this.entrarEdicao(this.selecao[0]);

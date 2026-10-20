@@ -50,7 +50,12 @@ avisado ao abrir (nunca some em silêncio).
   cima do cartão, os textos por cima do fundo…), o clique pega a de cima: o **clique direito na
   forma** traz **"Selecionar tudo neste ponto"** (com a contagem — "Selecionar tudo neste ponto
   (3)"), que pega a pilha inteira de uma vez, cada forma com o grupo dela; dali para trás é só
-  tirar o que não serve com `Shift`+clique. Arrastar: a forma **escolhida** pega o
+  tirar o que não serve com `Shift`+clique. O menu de contexto da forma é organizado em
+  **Editar** (editar o texto, selecionar a pilha), **Área de transferência** (recortar, copiar,
+  colar), **Forma** (duplicar, excluir) e **Organizar** — o item **Organizar** (mesmo ícone do
+  botão da fita) abre o menu completo de arranjo: frente/trás, avançar/recuar, agrupar,
+  alinhar, centralizar, distribuir, girar 90°, espelhar, mesma largura/altura e bloquear.
+  Arrastar: a forma **escolhida** pega o
   ponteiro em **qualquer ponto do miolo** (cursor de mover) — inclusive as caixas de texto **sem
   preenchimento**, que fora da seleção continuam clique-através para não esconder o que está
   embaixo. E o **Copiar formatação** (o Pincel de

@@ -12,6 +12,7 @@ import { FONTES_COMUNS, TAMANHOS, cmParaPt, ptParaCm, type EstadoUI } from "./es
 import { abrirGaleria, iconeDeForma } from "./galeria";
 import { abrirModelos } from "./modelos";
 import { abrirPopup, ancoraDoPopup, fecharPopup } from "./popup";
+import { abrirMenuOrganizar } from "./organizar";
 import { abrirGaleriaDeLayouts } from "./layoutPreview";
 import { melhorarSelects, fecharSeletor } from "../../seletor";
 import { GALERIA } from "../edicao/criar";
@@ -1078,29 +1079,7 @@ export class Fita {
         // abaixo, "Enviar para trás") e só depois os passos de camada ("Avançar"/"Recuar") — é o
         // par que se usa junto (pedido do usuário, com print do menu). Antes os passos ficavam no
         // meio e o "Enviar para trás" só aparecia na quarta linha.
-        const itens: [string, string][] = [
-          ["z-topo", "Trazer para a frente"], ["z-fundo", "Enviar para trás"], ["z-frente", "Avançar"], ["z-tras", "Recuar"],
-          ["agrupar", "Agrupar"], ["desagrupar", "Desagrupar"],
-          ["al-esquerda", "Alinhar à esquerda"], ["al-centro", "Centralizar na horizontal"], ["al-direita", "Alinhar à direita"],
-          ["al-topo", "Alinhar ao topo"], ["al-meio", "Centralizar na vertical"], ["al-base", "Alinhar embaixo"],
-          ["dist-h", "Distribuir na horizontal"], ["dist-v", "Distribuir na vertical"],
-          ["girar-90", "Girar 90° à direita"], ["girar--90", "Girar 90° à esquerda"], ["espelhar-h", "Espelhar na horizontal"], ["espelhar-v", "Espelhar na vertical"],
-          ["igualar-largura", "Mesma largura"], ["igualar-altura", "Mesma altura"],
-          ["bloquear", "Bloquear / desbloquear"],
-        ];
-        const el = abrirPopup(ancora, itens.map(([c, n]) => `<button type="button" class="pp-pop-item" data-o="${c}">${n}</button>`).join(""), { classe: "pp-pop-menu" });
-        el.addEventListener("click", (ev) => {
-          const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-o]");
-          if (!b) return;
-          fecharPopup();
-          const c = b.dataset.o!;
-          if (c.startsWith("girar-")) run("girar", c.slice(6));
-          else if (c.startsWith("al-")) run("alinhar", c.slice(3));
-          else if (c.startsWith("dist-")) run("distribuir", c.slice(5));
-          else if (c.startsWith("espelhar-")) run("espelhar", c.slice(9));
-          else if (c.startsWith("igualar-")) run("igualar", c.slice(8));
-          else run(c);
-        });
+        abrirMenuOrganizar(ancora, (cmd, valor) => run(cmd, valor));
         return;
       }
       case "fundo":

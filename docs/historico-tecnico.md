@@ -453,6 +453,34 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** `.pp-slide.pp-vazio-edicao .pp-shape.pp-rica.pp-editando .pp-rt { cursor: grab; }`
 - **Por quê:** a beirada já avisava (`cursor: move`) que ali se arrasta a forma; o vazio da box também precisa dizer isso, senão o cursor de texto mente sobre o que o clique vai fazer.
 
+## src/powerpoint/ui/organizar.ts
+
+### 2026-10-20 — feat/ppt-menu-organizar — o menu "Organizar" em um módulo só (novo arquivo)
+- **Local:** `ITENS_ORGANIZAR`, `abrirMenuOrganizar`, `ITEM_ORGANIZAR`
+- **Linha:** novo arquivo
+- **Por quê:** o menu de organizar vivia dentro do clique do botão da fita, e o menu de contexto da forma tinha só "Trazer para a frente"/"Enviar para trás" — dois lugares diferentes para a mesma coisa, com nomes diferentes ("Sobreposição" vs "Organizar"). Agora a lista de comandos e o Popup ficam num módulo só, e o item do menu de contexto leva o **mesmo ícone** do botão da fita (⧉) para ficar óbvio que é o mesmo menu.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-20 — feat/ppt-menu-organizar — a fita usa o menu compartilhado
+- **Local:** `menu`, caso `"ordem"`
+- **Linha:** a lista de 21 itens e o clique que despacham os comandos → `abrirMenuOrganizar(ancora, (cmd, valor) => run(cmd, valor));`
+- **Por quê:** sem duplicar a lista (e o mapeamento dos nomes curtos: "al-esquerda" → alinhar/esquerda, "girar--90" → girar/-90…), a fita e o menu de contexto não podem divergir: um comando novo em um lugar e não no outro.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-20 — feat/ppt-menu-organizar — menu de contexto da forma em grupos
+- **Local:** `menuDeContexto`
+- **Linha:** a lista plana de 11 itens → HTML com títulos ("Editar", "Área de transferência", "Forma", "Organizar") e o item `ITEM_ORGANIZAR`; o clique trata `[data-organizar]` abrindo `abrirMenuOrganizar` ancorado no próprio item
+- **Por quê:** o popup era uma lista corrida e não tinha os comandos de arranjo. Agora ele mostra o que é edição, o que é área de transferência, o que é a forma e o **Organizar** (que leva ao menu completo). "Trazer para a frente"/"Enviar para trás"/"Agrupar"/"Desagrupar" saíram da lista corrida porque estão no menu completo.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-20 — feat/ppt-menu-organizar — estilo do item "Organizar"
+- **Local:** depois de `.pp-pop-menu`
+- **Linha:** `.pp-pop-organizar` (negrito) e `.pp-pop-caret` (seta à direita)
+- **Por quê:** o item que abre outro menu precisa deixar claro isso (a seta), e o ícone ⧉ é o mesmo da fita.
+
 ## src/broker/diag.ts
 
 ### 2026-10-19 — 2d4e6c6 — log de decisões do corretor (novo arquivo)

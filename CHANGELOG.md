@@ -819,6 +819,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 **Frontend**
 
 
+- **O menu de contexto da forma ganhou o “Organizar”**: o popup de clique direito na forma
+  trazia poucos comandos (e a “Sobreposição” só com frente/trás). Agora ele é organizado em
+  **Editar** (editar o texto, selecionar a pilha), **Área de transferência** (recortar, copiar,
+  colar), **Forma** (duplicar, excluir) e **Organizar** — e o item **Organizar**, com o **mesmo ícone
+  do botão da fita, abre o menu completo de arranjo (frente/trás, avançar/recuar, agrupar,
+  alinhar, centralizar, distribuir, girar 90°, espelhar, mesma largura/altura e bloquear). O menu é
+  o mesmo nos dois lugares (fita e popup), em um módulo só.
+
 - **A parte vazia da box agora move a box (com o texto em edição)**: o `contenteditable` cobre a
   caixa inteira, então clicar no vazio de dentro dela era engolido pelo texto — ou, quando o
   clique caía fora do elemento da forma, **limpava a seleção** e o usuário tinha de escolher
