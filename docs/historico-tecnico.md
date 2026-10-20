@@ -14822,3 +14822,14 @@ antigas quando fizer sentido.
 - **Local:** Geral → Não adicionado → Frontend
 - **Linha:** `novo` (promovido a "Adicionado" no fechamento)
 - **Porquê:** abas e janelas são recurso do app todo (Geral), não de um módulo.
+
+## CHANGELOG.md
+
+### 2026-10-20 · promoção · a entrada da prévia real entra no "Adicionado" (Geral)
+- **Local:** Geral ▸ **Não adicionado** ▸ Frontend ▸ **Adicionado** ▸ Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **A prévia do PowerPoint mostra a lâmina de verdade
+  (não uma página fake)** (`0503376`, worktree `feat/previa-real-do-documento`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não sai no
+  mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
+  entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
+  promoções anteriores.

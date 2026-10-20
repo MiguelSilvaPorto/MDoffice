@@ -1768,17 +1768,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - (nada no momento)
 
-- **A prévia do PowerPoint mostra a lâmina de verdade (não uma página fake)**: os cartões da tela
-  Início desenhavam o `.pptx` a partir do **texto** extraído — um papel branco com a primeira linha
-  como título e o resto como corpo, que parecia um mockup ("parece algo falso"). Agora o cartão
-  **importa o .pptx e desenha a lâmina** com o mesmo renderizador do palco e do F5: fundo do tema,
-  formas na posição certa, imagens e o título no tamanho real (16:9 ou 4:3, conforme o arquivo). O
-  texto continua como plano B (sem acesso a arquivos ou deck sem formas) e a importação fica em
-  cache por leitura. Do lado do texto, a página do cartão mostra mais parágrafos (11 → 16), para o
-  papel não parecer vazio. Conferido no navegador com o `.pptx` do usuário (a lâmina real no cartão,
-  197×111, com o título no lugar) e em `npm run test:previa` (deck → HTML, com a proporção e o
-  fundo do tema).
-
 - **O menu dos grupos da fita abre e fica (o controle de dentro volta a ser clicável)**: com a faixa
   apertada, o grupo que não cabe vira um **botão com menu** — mas o menu **abria e sumia no mesmo
   tique**: o `hidden` que o próprio menu liga/desliga re-disparava o re-planejo do encaixe, e o
@@ -1888,6 +1877,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A prévia do PowerPoint mostra a lâmina de verdade (não uma página fake)**: os cartões da tela
+  Início desenhavam o `.pptx` a partir do **texto** extraído — um papel branco com a primeira linha
+  como título e o resto como corpo, que parecia um mockup ("parece algo falso"). Agora o cartão
+  **importa o .pptx e desenha a lâmina** com o mesmo renderizador do palco e do F5: fundo do tema,
+  formas na posição certa, imagens e o título no tamanho real (16:9 ou 4:3, conforme o arquivo). O
+  texto continua como plano B (sem acesso a arquivos ou deck sem formas) e a importação fica em
+  cache por leitura. Do lado do texto, a página do cartão mostra mais parágrafos (11 → 16), para o
+  papel não parecer vazio. Conferido no navegador com o `.pptx` do usuário (a lâmina real no cartão,
+  197×111, com o título no lugar) e em `npm run test:previa` (deck → HTML, com a proporção e o
+  fundo do tema).
 
 - **Dá para trocar de aba com o aviso “Salvar alterações?” aberto**: a trava da versão anterior
   impedia consultar outro documento; agora o aviso fica **flutuando sem bloquear o resto do app**
