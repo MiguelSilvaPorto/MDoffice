@@ -32,7 +32,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- (nada no momento)
+- **Modelo de palavras em níveis (Configurações)**: o modelo da sugestão guardava só as 12 palavras
+  seguintes mais comuns de cada palavra. Agora há **Básico (40)**, **Médio (80)** e **Alto (160)**, com
+  vocabulário maior e feitos de **texto da web** (blogs, notícias, sites), mais parecido com o que se
+  escreve no dia a dia; **Automático** (padrão) escolhe pelo computador. Economia de teclas medida em
+  texto fora do treino: 19,8% → 21,6% / 22,9% / 23,8%. O modelo antigo vira o nível **Leve**; o corretor
+  não muda. Os arquivos são gerados por `npm run corpus` (não vão para o git). Vale no Word também.
 
 ### Adicionado (na main)
 

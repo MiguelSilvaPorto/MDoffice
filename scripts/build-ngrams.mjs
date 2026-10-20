@@ -5,6 +5,7 @@
 //   --holdout=N  separa 1 parágrafo a cada N para um arquivo de teste (--test=...), fora do modelo
 //   --vocab=N    tamanho do vocabulário (padrão 22000)
 //   --trimin=N   descarta contextos de trigrama com menos de N ocorrências (padrão 4)
+//   --bi=N --tri=N  quantas palavras seguintes guardar por contexto (padrão 12 e 5)
 //
 // Uma PASTA vale como o conjunto dos `*.txt` dentro dela (o corpus baixado por
 // `baixar-corpus.mjs` passa de mil arquivos: na linha de comando não caberia).
@@ -23,12 +24,16 @@ const inputs = entradas.flatMap((caminho) => {
     .map((f) => join(caminho, f));
 });
 if (!out || !inputs.length) {
-  console.error("uso: node scripts/build-ngrams.mjs <saida.json> <corpus.txt|pasta> [...] [--holdout=N --test=arquivo --vocab=N]");
+  console.error("uso: node scripts/build-ngrams.mjs <saida.json> <corpus.txt|pasta> [...] [--holdout=N --test=arquivo --vocab=N --bi=12 --tri=5]");
   process.exit(1);
 }
 const VOCAB = +(opt.vocab ?? 22000);
 const HOLD = +(opt.holdout ?? 0);
 const TRI_MIN = +(opt.trimin ?? 4); // contextos de trigrama com menos ocorrências que isso são descartados (modelo menor)
+// quantas palavras seguintes guardar por contexto: o padrão (12/5) é o pt.json, de onde saem os
+// arquivos do corretor; os modelos maiores da sugestão (pt-40/80/160.json) passam --bi/--tri
+const BI_TOP = +(opt.bi ?? 12);
+const TRI_TOP = +(opt.tri ?? 5);
 
 const BOUNDARY = "<s>";
 const COMMA = ",";
@@ -120,7 +125,7 @@ vocab.forEach((w, i) => {
   if (c && c[0] + c[1] >= 5 && c[0] / (c[0] + c[1]) >= 0.7) caps.push(i);
 });
 
-// bigramas: contexto -> [(próxima, contagem)...] (top 12, contagem >= 2) + total do contexto
+// bigramas: contexto -> [(próxima, contagem)...] (top BI_TOP, contagem >= 2) + total do contexto
 const biBy = new Map();
 for (const [k, c] of bi) {
   const [a, b] = k.split(" ");
@@ -135,10 +140,10 @@ for (const [k, c] of bi) {
 const B = {};
 for (const [ia, l] of biBy) {
   l.sort((x, y) => y[1] - x[1]);
-  B[ia] = l.slice(0, 12).flat();
+  B[ia] = l.slice(0, BI_TOP).flat();
 }
 
-// trigramas: "a b" -> [(próxima, contagem)...] (top 5, contagem >= 2, contexto com >= 4 ocorrências)
+// trigramas: "a b" -> [(próxima, contagem)...] (top TRI_TOP, contagem >= 2, contexto com >= TRI_MIN ocorrências)
 const triBy = new Map();
 const triTot = new Map();
 for (const [k, c] of tri) {
@@ -160,7 +165,7 @@ for (const [ck, l] of triBy) {
   const tot = triTot.get(ck);
   if (tot < TRI_MIN) continue;
   l.sort((x, y) => y[1] - x[1]);
-  T[ck] = l.slice(0, 5).flat();
+  T[ck] = l.slice(0, TRI_TOP).flat();
   TT[ck] = tot;
 }
 

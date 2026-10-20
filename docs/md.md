@@ -209,6 +209,14 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   embutido é feito de **contagens** de palavras e sequências (1–3 palavras) de um corpus da
   **Wikipédia em português** (CC BY-SA 4.0) — nenhum trecho de texto é copiado para o app, e o
   corpus pode ser refeito com `scripts/baixar-corpus.mjs` + `scripts/build-ngrams.mjs`.
+- **Modelo de palavras (Configurações)**: Leve (o `pt.json`, 12 palavras seguintes por palavra),
+  **Básico** (40), **Médio** (80) ou **Alto** (160) — os três maiores também guardam um vocabulário
+  maior (30/50/80 mil palavras) e sequências mais raras, e saem de **texto da web** (FineWeb-2,
+  ODC-By 1.0: blogs, notícias, sites), mais parecido com o que as pessoas escrevem que a Wikipédia.
+  **Automático** (padrão) escolhe pela memória e pelos núcleos do computador (8 GB e 8 núcleos →
+  Alto; 4 e 4 → Médio; senão Básico). Medido em parágrafos da web fora do treino (documento novo):
+  economia de teclas 19,8% (Leve) → 21,6% · 22,9% · 23,8%; carga 0,24 s → 0,3 · 0,5 · 0,7 s e
+  37 → 60 · 76 · 90 MB de memória. O corretor fica igual em qualquer nível.
 - **Aprende com você**: aceitar e recusar ajustam a confiança — recusar uma correção do
   fantasma (digitando por cima ou com `Esc`) também conta —, e o corretor reconhece **classes
   de erro** (transposição, tecla vizinha, acento, dígrafo) para acertar antes de conhecer o par

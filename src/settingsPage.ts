@@ -15,6 +15,7 @@ import { exportarAprendizado } from "./broker/personal/aprendizadoArquivo";
 import { calibragem } from "./broker/spell/decisao";
 import { profileSummary } from "./broker/personal/profile";
 import { getGhostMode, setGhostMode, clearFeedback, feedbackSummary, type GhostMode } from "./broker/personal/feedback";
+import { MODELOS, getEscolhaModelo, onLanguageModelReady, tamanhoAutomatico, tamanhoCarregado, trocarTamanhoModelo, type EscolhaModelo } from "./broker/ghost/model";
 import { limparRitmo, resumoRitmo } from "./broker/writing";
 import type { Translation, ProviderChoice } from "./translate/controller";
 import type { Tone } from "./broker/writing";
@@ -167,6 +168,15 @@ function dd(chave: string, opcoes: [string, string][], atual: string): string {
     .join("")}</select>`;
 }
 
+/** As opções do modelo de palavras (o automático diz qual tamanho escolheria neste computador). */
+const OPCOES_MODELO: [string, string][] = [
+  ["auto", `Automático (${MODELOS[tamanhoAutomatico()].nome})`],
+  ["leve", "Leve (12)"],
+  ["basico", "Básico (40)"],
+  ["medio", "Médio (80)"],
+  ["alto", "Alto (160)"],
+];
+
 /** Tetos do cache do WebView, em MB (0 = automático). Os mesmos do lado Rust (`storage.rs`). */
 const LIMITES_DE_CACHE: [string, string][] = [
   ["0", "Automático"],
@@ -222,6 +232,11 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
               ${rowIcon("i-focus")}
               <span class="st-text"><b>Intensidade das sugestões</b><small>Discreta: só com muita certeza (aparece pouco, quase sempre certa). Equilibrada: arrisca o palpite mais provável, mesmo faltando só 2 letras (Alt+Seta para baixo troca a opção). Agressiva: aparece ainda mais e erra mais.</small></span>
               ${dd("ghostmode", [["discreto", "Discreta"], ["equilibrado", "Equilibrada"], ["agressivo", "Agressiva"]], getGhostMode())}
+            </div>
+            <div class="st-row">
+              ${rowIcon("i-grid")}
+              <span class="st-text"><b>Modelo de palavras</b><small>Quantas palavras seguintes o app conhece para cada palavra: quanto maior, mais ele acerta a próxima palavra, e mais memória usa. Automático escolhe pelo seu computador. <span data-modelo-status></span></small></span>
+              ${dd("modelo", OPCOES_MODELO, getEscolhaModelo())}
             </div>
           </div>
 
@@ -716,6 +731,19 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       (rt.decisoes >= 5 ? ` A correção automática espera ~${(rt.pausa / 1000).toFixed(1).replace(".", ",")} s de pausa para agir (aprende com os seus desfazer).` : "");
   };
   paintStyle();
+  const paintModelo = () => {
+    const t = tamanhoCarregado();
+    q("[data-modelo-status]").textContent = t ? `Em uso: ${MODELOS[t].nome} (${MODELOS[t].sucessores} palavras seguintes).` : "Carregando…";
+  };
+  paintModelo();
+  onLanguageModelReady(paintModelo); // aberto antes de o modelo terminar de carregar
+  ligarDd("modelo", OPCOES_MODELO, (valor) => {
+    q("[data-modelo-status]").textContent = "Carregando…";
+    void trocarTamanhoModelo(valor as EscolhaModelo).then(() => {
+      paintModelo();
+      flash();
+    });
+  });
   ligarDd("ghostmode", [["discreto", "Discreta"], ["equilibrado", "Equilibrada"], ["agressivo", "Agressiva"]], (valor) => {
     setGhostMode(valor as GhostMode);
     flash();

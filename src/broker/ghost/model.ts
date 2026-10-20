@@ -113,15 +113,112 @@ export function onLanguageModelReady(fn: () => void): void {
   else listeners.push(fn);
 }
 
-/** Carrega o modelo do app (uma vez). Sem o arquivo, a sugestão continua com a base pequena embutida. */
-export function loadLanguageModel(url = "/ngrams/pt.json"): Promise<void> {
+// ---------------------------------------------------------------- tamanho do modelo
+// O pt.json guarda só as 12 palavras seguintes mais comuns de cada palavra (e 5 de cada par): o
+// que ficou de fora nunca aparece como próxima palavra ("pouco" → "explorada"). Os modelos maiores
+// saem do MESMO corpus guardando mais sucessores; a pessoa escolhe nas Configurações e o
+// "automático" decide pela memória e pelos núcleos do computador. O pt.json continua sendo a base
+// dos arquivos do corretor (ctx-pt/freq-pt) e o plano B se o arquivo escolhido não existir.
+
+export type TamanhoModelo = "leve" | "basico" | "medio" | "alto";
+export type EscolhaModelo = TamanhoModelo | "auto";
+
+/** Arquivo de cada tamanho (em public/ngrams) e quantas palavras seguintes ele guarda. */
+export const MODELOS: Record<TamanhoModelo, { arquivo: string; sucessores: number; nome: string }> = {
+  leve: { arquivo: "pt.json", sucessores: 12, nome: "Leve" },
+  basico: { arquivo: "pt-40.json", sucessores: 40, nome: "Básico" },
+  medio: { arquivo: "pt-80.json", sucessores: 80, nome: "Médio" },
+  alto: { arquivo: "pt-160.json", sucessores: 160, nome: "Alto" },
+};
+
+const KEY_MODELO = "mdc.ghost.modelo";
+
+export function getEscolhaModelo(): EscolhaModelo {
+  try {
+    const v = localStorage.getItem(KEY_MODELO);
+    if (v && (v === "auto" || v in MODELOS)) return v as EscolhaModelo;
+  } catch {
+    /* sem armazenamento */
+  }
+  return "auto";
+}
+
+export function setEscolhaModelo(e: EscolhaModelo): void {
+  try {
+    localStorage.setItem(KEY_MODELO, e);
+  } catch {
+    /* sem armazenamento */
+  }
+}
+
+/**
+ * O tamanho que o computador aguenta: memória (GB, `navigator.deviceMemory`, que o WebView2 informa)
+ * e núcleos. Sem a memória informada (fora do app), fica no básico.
+ */
+export function tamanhoAutomatico(): TamanhoModelo {
+  const nav = (typeof navigator !== "undefined" ? navigator : undefined) as (Navigator & { deviceMemory?: number }) | undefined;
+  const mem = nav?.deviceMemory;
+  const cores = nav?.hardwareConcurrency ?? 2;
+  if (!mem) return "basico";
+  if (mem >= 8 && cores >= 8) return "alto";
+  if (mem >= 4 && cores >= 4) return "medio";
+  if (mem >= 2) return "basico";
+  return "leve";
+}
+
+/** O tamanho que vale agora (a escolha, ou o automático). */
+export function tamanhoEfetivo(): TamanhoModelo {
+  const e = getEscolhaModelo();
+  return e === "auto" ? tamanhoAutomatico() : e;
+}
+
+let carregado: TamanhoModelo | null = null;
+
+/** O tamanho que está carregado (null = nenhum ainda). */
+export const tamanhoCarregado = (): TamanhoModelo | null => carregado;
+
+async function baixar(t: TamanhoModelo): Promise<LangModelData> {
+  const r = await fetch(`/ngrams/${MODELOS[t].arquivo}`);
+  if (!r.ok) throw new Error(String(r.status));
+  return (await r.json()) as LangModelData;
+}
+
+/** Busca o tamanho pedido; se o arquivo não existir nesta cópia do app, cai no pt.json. */
+async function carregarTamanho(t: TamanhoModelo): Promise<void> {
+  // `carregado` antes de `setLanguageModel`: quem espera o modelo (onLanguageModelReady) já lê o tamanho certo
+  let dados: LangModelData;
+  try {
+    dados = await baixar(t);
+  } catch (e) {
+    if (t === "leve") throw e;
+    console.warn(`Modelo ${MODELOS[t].arquivo} indisponível, usando o pt.json:`, e);
+    dados = await baixar("leve");
+    t = "leve";
+  }
+  carregado = t;
+  setLanguageModel(dados);
+}
+
+/** Carrega o modelo do app (uma vez), no tamanho escolhido nas Configurações. Sem arquivo, a sugestão usa a base pequena embutida. */
+export function loadLanguageModel(): Promise<void> {
   if (current) return Promise.resolve();
-  loading ??= fetch(url)
-    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-    .then((d: LangModelData) => setLanguageModel(d))
-    .catch((e) => {
-      console.warn("Modelo de idioma da sugestão indisponível:", e);
-      loading = null;
-    });
+  loading ??= carregarTamanho(tamanhoEfetivo()).catch((e) => {
+    console.warn("Modelo de idioma da sugestão indisponível:", e);
+    loading = null;
+  });
   return loading;
+}
+
+/** Troca o tamanho do modelo (Configurações): o atual segue valendo até o novo terminar de carregar. */
+export async function trocarTamanhoModelo(e: EscolhaModelo): Promise<TamanhoModelo | null> {
+  setEscolhaModelo(e);
+  const t = tamanhoEfetivo();
+  if (t === carregado) return carregado;
+  await loading?.catch(() => undefined);
+  try {
+    await carregarTamanho(t);
+  } catch (err) {
+    console.warn("Não deu para trocar o modelo da sugestão:", err);
+  }
+  return carregado;
 }

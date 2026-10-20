@@ -14559,6 +14559,37 @@ antigas quando fizer sentido.
   As listas `PastasLigadas` das ferramentas de worktree mantêm `public\modelos` de propósito: a remoção
   segura de worktrees antigas ainda precisa reconhecer esse link.
 
+## src/broker/ghost/model.ts · src/settingsPage.ts · scripts/build-ngrams.mjs · scripts/regerar-ngrams.mjs
+
+### 2026-10-20 · modelos-tamanhos · o modelo de palavras em níveis
+
+- **Local:** `model.ts`: bloco novo "tamanho do modelo" (`MODELOS`, `getEscolhaModelo`,
+  `tamanhoAutomatico`, `carregarTamanho`, `trocarTamanhoModelo`) e `loadLanguageModel`;
+  `settingsPage.ts`: linha "Modelo de palavras" (`OPCOES_MODELO`, `paintModelo`);
+  `build-ngrams.mjs`: `BI_TOP`/`TRI_TOP`; `regerar-ngrams.mjs`: `NIVEIS` e o passo do texto da web;
+  `testar-ghost.mjs`: as frases do dia a dia em cada nível; `.gitignore`: `corpus-web/`.
+- **Linha:** `loadLanguageModel(url = "/ngrams/pt.json")` → `loadLanguageModel()` que busca o arquivo do
+  tamanho escolhido (e cai no `pt.json` se ele não existir); `l.slice(0, 12)` / `l.slice(0, 5)` →
+  `l.slice(0, BI_TOP)` / `l.slice(0, TRI_TOP)` (`--bi`/`--tri`, padrão 12/5).
+- **Porquê:** o relato "pouco … explorada não sugeriu": o `pt.json` guarda só os 12 sucessores de
+  cada palavra (e 5 de cada par) — o resto nunca aparece como próxima palavra. Pedido: níveis 40/80/160
+  escolhidos "dependendo do processamento". O que se aprendeu medindo (eval-ghost em parágrafos
+  SEPARADOS do treino — o `scripts/corpus-wikipedia.txt` usado antes é a lista de TÍTULOS do corpus,
+  não texto corrido):
+  - só subir o corte (12 → 160) num corpus pequeno quase não muda nada (26 MB de Wikipédia: 4,4 → 5,4 MB
+    e +2,7 pontos), porque poucas palavras têm 40 sucessores; o que limita é a quantidade de texto;
+  - com 100 MB de **Wikipédia** os níveis cresciam mas pioravam o dia a dia: "Bom " → "Jesus" (Bom
+    Jesus, cidade), "Tecnologia da " sem "informação" — o `test:ghost` agora prende essas frases;
+  - com ~74 MB de **texto da web** (FineWeb-2, o mesmo tipo de texto do `pt.json`), os níveis ganham do
+    `pt.json` (economia 19,8% → 21,6/22,9/23,8%, documento novo) e acertam as frases; web + Wikipédia
+    não ganhou da web sozinha e dobrava o arquivo.
+  Os níveis: Básico 40/10 sucessores, vocabulário 30 mil, trimin 6 (10,6 MB, 0,3 s, 60 MB); Médio
+  80/20, 50 mil, trimin 3 (15,2 MB, 0,5 s, 76 MB); Alto 160/40, 80 mil, trimin 2 (18,7 MB, 0,7 s,
+  90 MB). O **automático** usa `navigator.deviceMemory` (o WebView2 informa, até 8) e os núcleos. O
+  `pt.json` não muda (é o Leve e a base de `ctx-pt`/`freq-pt`); o corretor usa o modelo carregado
+  (`trocaPorContexto`), e o `avaliar-correcao` deu o mesmo resultado com Básico e Alto (0,64 FP/1000,
+  244/295 automáticas). A troca nas Configurações carrega o novo arquivo e só então substitui o modelo.
+
 ## src/broker/ghost/extension.ts
 
 ### 2026-10-19 · sugestão · a espera cai de 90 ms para 45 ms

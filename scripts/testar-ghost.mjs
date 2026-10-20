@@ -4,7 +4,7 @@
 // acertava 49% do que mostrava).
 // Uso: node scripts/testar-ghost.mjs
 import { build } from "esbuild";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -59,6 +59,36 @@ G.setLanguageModel(JSON.parse(readFileSync(join(raiz, "public/ngrams/pt.json"), 
   // próxima palavra: "dia" é 8× mais provável que a segunda — antes só aparecia com 45% de chance
   const p = G.predictFromLine("Bom ", "", 4, idx);
   ok("ghost: Bom → dia", p?.text?.startsWith("dia") === true, JSON.stringify(p?.text ?? null));
+}
+
+// ---------------------------------------------------------------- frases do dia a dia, em cada nível
+// Os níveis maiores (Configurações → Modelo de palavras) saem de outro corpus (texto da web): um
+// corpus de Wikipédia fez "Bom " virar "Bom Jesus" (nome de cidade) e "Tecnologia da " perder "informação".
+// Todo nível presente tem de acertar o que a pessoa escreve no dia a dia.
+{
+  const CASOS = [
+    ["Bom ", (t) => t?.startsWith("dia")],
+    ["Tecnologia da ", (t) => t?.startsWith("informação")],
+    ["Eu colo", (t) => t === "quei"],
+    ["é uma área pou", (t) => t === "co"],
+    ["obrig", (t) => t === "ado"],
+    ["vc tem noçao ", (t) => t === "noção "],
+  ];
+  for (const arq of ["pt-40.json", "pt-80.json", "pt-160.json"]) {
+    const caminho = join(raiz, "public/ngrams", arq);
+    if (!existsSync(caminho)) {
+      console.log(`      (${arq} não está nesta cópia: rode npm run corpus)`);
+      continue;
+    }
+    G.setLanguageModel(JSON.parse(readFileSync(caminho, "utf8")));
+    const idx = new G.DocumentIndex();
+    for (const [antes, certo] of CASOS) {
+      const r = G.predictFromLine(antes, "", antes.length, idx);
+      ok(`ghost (${arq}): ${JSON.stringify(antes)}`, certo(r?.text), JSON.stringify(r?.text ?? null));
+    }
+  }
+  // a régua abaixo mede o pt.json (a base)
+  G.setLanguageModel(JSON.parse(readFileSync(join(raiz, "public/ngrams/pt.json"), "utf8")));
 }
 
 // ---------------------------------------------------------------- a régua (precisão e economia)

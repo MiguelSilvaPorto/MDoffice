@@ -16,6 +16,13 @@ n-gramas (`scripts/build-ngrams.mjs` → `pt.json`), deriva o contexto do corret
 `freq-pt.json`). O `syn-pt.json` (sinônimos, a MEDIA do thesaurus) vem do dicionário aberto do
 LibreOffice.
 
+Os **níveis da sugestão** (Configurações → Modelo de palavras) saem de **texto da web**
+(FineWeb-2, `scripts/fetch-corpus-web.mjs` → `corpus-web/web.txt`, ~74 MB, baixado uma vez):
+`pt-40.json` (Básico, ~11 MB), `pt-80.json` (Médio, ~15 MB) e `pt-160.json` (Alto, ~19 MB). O
+`pt.json` continua sendo o nível **Leve** e a base do corretor. Sem um nível, o app cai no `pt.json`.
+O juiz dos níveis é `npm run test:ghost` (frases do dia a dia em cada nível) e o `eval-ghost` em
+parágrafos da web separados do treino.
+
 Depois de gerar, o juiz é o harness: `node scripts/avaliar-correcao.mts` (com e sem
 `--sem-modelo`) e `npm run test:correcao`.
 
