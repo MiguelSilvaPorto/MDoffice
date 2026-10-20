@@ -15196,3 +15196,14 @@ antigas quando fizer sentido.
   itens de texto continuam abaixo)"
 - **Porquê:** a bala descrevia o menu de tabela e o de texto; faltava a imagem, que era justamente
   onde o usuário procurou.
+
+## CHANGELOG.md
+
+### 2026-10-20 · promoção · a entrada do Excluir imagem entra no "Adicionado" (Word)
+- **Local:** Word ▸ **Não adicionado** ▸ Frontend ▸ **Adicionado** ▸ Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **Clique direito numa imagem: "Excluir imagem" no
+  menu** (`363bc65`, worktree `fix/excluir-imagem-clique-direito`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não sai no
+  mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
+  entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
+  promoções anteriores.
