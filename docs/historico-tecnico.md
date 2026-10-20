@@ -15290,3 +15290,14 @@ antigas quando fizer sentido.
   palco (Chrome + eventos de ponteiro, com o **redesenho da lâmina** no meio do gesto, como o
   `sairEdicao` faz) confirma: beirada → sai da edição e a caixa anda 20 px; miolo → não sai e
   nenhum patch; cursor `move` na beirada e `text` no miolo.
+
+## CHANGELOG.md
+
+### 2026-10-20 · PowerPoint · a promoção da entrada (não adicionado → adicionado)
+- **Local:** PowerPoint → **Não adicionado** → Frontend (a entrada da beirada) e PowerPoint →
+  **Adicionado** → Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não promove: no instante do commit da tarefa a entrada ainda não está na
+  `main`, então a promoção anda depois, num commit só de documentação, como nas rodadas
+  anteriores. Promovi só a entrada DESTA tarefa (`2e6fdf4`); as que seguem em "Não adicionado"
+  são de sessões com trabalho aberto.
