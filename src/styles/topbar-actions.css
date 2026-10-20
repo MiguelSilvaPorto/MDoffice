@@ -26,15 +26,17 @@
 }
 
 @media (max-width: 1180px) {
-  .palette-btn span,
-  .palette-btn kbd {
+  .busca-kbd {
     display: none;
   }
-  .palette-btn {
-    width: 30px;
-    min-width: 0;
-    padding: 0;
+  .busca {
+    max-width: 30px;
+    padding: 0 7px;
     justify-content: center;
+  }
+  .busca.aberta {
+    max-width: 100%;
+    justify-content: flex-start;
   }
   .tb-pill-btn span,
   .tb-draw-main span {

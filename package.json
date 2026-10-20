@@ -40,6 +40,7 @@
     "test:salvamento": "node scripts/testar-salvamento.mts",
     "test:codificacao": "node scripts/testar-codificacao.mjs",
     "test:layout": "node scripts/testar-layout.mts",
+    "test:busca": "node scripts/testar-busca.mjs",
     "test:menus": "node scripts/testar-menus-fita.mjs",
     "test:lamina": "node scripts/testar-tema-lamina.mjs",
     "test:encaixe": "node scripts/testar-fita-encaixe.mjs",

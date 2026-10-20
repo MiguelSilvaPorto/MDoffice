@@ -17,6 +17,20 @@ histórico de versões, backup em disco, lixeira de documentos, configurações,
 comandos, navegação e organização das pastas dos projetos e modo foco) — esses ficam na
 categoria **Geral** do [changelog](../CHANGELOG.md).
 
+**Busca de funções (`Ctrl+K`)**: a busca é **uma barra na parte de cima** — uma pílula
+pequena que cresce e vira o campo quando aberta. Ela **não escurece nem desfoca o app**
+(antes era um modal no meio da tela): o painel desce da barra e o clique fora fecha. A
+lista é montada com **os botões de verdade**: a busca lê a fita do documento à vista (a
+barra do Markdown, a fita do Word, a da Planilha e a da Apresentação, todas as abas) e
+vira cada botão em um comando, **com o ícone dele** — dá para reconhecer o botão só pelo
+desenho. Um botão novo que nascer na fita aparece na busca sozinho. E a lista **acompanha
+o documento**: com uma planilha aberta, a busca mostra as funções da planilha (AutoSoma,
+Média, Mesclar células, formato de moeda…) e esconde as dos outros módulos; com uma
+apresentação, mostra as da apresentação (Transições, Animações, Formas, Design). Quando
+não há nada do módulo atual, as funções dos outros entram com a **etiqueta** do módulo no
+resultado, e o rodapé tem o botão **"Ver todos os módulos"** — escolher uma função de
+outro módulo leva a pessoa para a aba dele antes de rodar.
+
 **Abas**: a fileira abre os documentos e cada aba tem menu (renomear, duplicar, mostrar na pasta,
 copiar caminho, **abrir em nova janela (só este documento)**…). Arrastar uma aba **para fora da
 janela** e soltar ali — ou escolher o item do menu — abre o documento numa **janela própria**: ela é

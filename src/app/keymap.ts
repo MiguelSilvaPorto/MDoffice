@@ -111,7 +111,7 @@ export const ATALHOS: Atalho[] = [
   },
 
   // -------------------------------------------------------------- escrita
-  { id: "buscar-comandos", grupo: "Escrita", rotulo: "Buscar comandos", padrao: "Ctrl+K", acao: (a) => a.openPalette() },
+  { id: "buscar-comandos", grupo: "Escrita", rotulo: "Buscar comando ou função", padrao: "Ctrl+K", acao: (a) => a.abrirBusca() },
   { id: "revisar", grupo: "Escrita", rotulo: "Revisar texto", padrao: "F7", acao: (a) => a.openReview() },
   { id: "formalizar", grupo: "Escrita", rotulo: "Formalizar texto (com prévia)", padrao: "Ctrl+Alt+F", acao: (a) => a.openFormalizar() },
   {

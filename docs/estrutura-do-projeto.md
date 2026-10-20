@@ -49,7 +49,9 @@ src/                  frontend (TypeScript, sem framework) — um "motor" por pa
 ├─ tabs.ts · sidebar.ts · outline.ts   abas, painel lateral, Estrutura
 ├─ history.ts · historyUi.ts           histórico de versões + log de alterações
 ├─ settings.ts · settingsPage.ts       configurações (aba)
-├─ palette.ts · files.ts               Ctrl+K · pontes com o backend (Tauri)
+├─ busca/              a barra de busca de funções (Ctrl+K): tipos · filtro · coleta das
+│                      fitas · a interface da barra
+├─ files.ts                          pontes com o backend (Tauri)
 ├─ styles.css         só importa os arquivos de styles/ (um por área da interface)
 └─ styles/            tokens, base, topbar, sidebar, editor, word, home, fita …
 ```

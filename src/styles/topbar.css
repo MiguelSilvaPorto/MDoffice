@@ -24,7 +24,7 @@
 #topbar input,
 #topbar .btn,
 #topbar .split-btn,
-#topbar .palette-btn,
+#topbar .busca,
 #topbar .window-controls,
 #topbar .tb-quick-actions,
 #topbar .tb-autosave-wrap {
@@ -283,7 +283,7 @@
   }
 }
 
-/* Coluna central: busca / omnibar centralizada */
+/* Coluna central: a busca de funções (o desenho dela está em styles/busca.css) */
 .tb-center {
   display: flex;
   align-items: center;
@@ -292,50 +292,6 @@
   min-width: 200px;
   max-width: 440px;
   padding: 0 10px;
-}
-
-.palette-btn {
-  width: 100%;
-  max-width: 380px;
-  height: 28px;
-  padding: 0 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--muted);
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.12s ease;
-}
-
-.palette-btn:hover {
-  background: var(--panel);
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
-  color: var(--fg);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-}
-
-.palette-text {
-  flex: 1;
-  text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.palette-btn kbd {
-  margin-left: auto;
-  padding: 1px 5px;
-  color: var(--muted);
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  font: 10px var(--ui-font);
-  letter-spacing: 0.02em;
-  flex: none;
 }
 
 /* Coluna direita: botões de ferramentas e controles da janela */

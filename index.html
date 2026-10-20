@@ -221,6 +221,8 @@
       <symbol id="i-win-close" viewBox="0 0 12 12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
       <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5.5c0 4.3-2.91 8.25-7 9.5-4.09-1.25-7-5.2-7-9.5V6z"/><path d="M9 12.5 11.5 15 15.5 10"/></symbol>
       <symbol id="i-import" viewBox="0 0 24 24"><path d="M12 3v10"/><path d="M8 9.5l4 4 4-4"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></symbol>
+      <symbol id="i-aba" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M6.5 6.5h4"/></symbol>
+      <symbol id="i-dicionario" viewBox="0 0 24 24"><path d="M12 6.5C10.5 5 8.5 4.5 6 4.5H3v13h3c2.5 0 4.5.5 6 2 1.5-1.5 3.5-2 6-2h3v-13h-3c-2.5 0-4.5.5-6 2z"/><path d="M12 6.5v13"/></symbol>
     </svg>
 
     <div id="app">
@@ -251,11 +253,14 @@
         </div>
 
         <div class="tb-center" data-tauri-drag-region>
-          <button class="btn palette-btn" data-act="palette" title="Buscar comandos e arquivos (Ctrl+K)">
-            <svg class="ic"><use href="#i-search"/></svg>
-            <span class="palette-text">Buscar comando ou documento…</span>
-            <kbd>Ctrl K</kbd>
-          </button>
+          <!-- A busca de funções: uma pílula pequena que cresce e vira a barra de
+               verdade quando aberta. Não é modal — o app não escurece. -->
+          <div class="busca" id="busca">
+            <svg class="ic busca-ic" aria-hidden="true"><use href="#i-search"/></svg>
+            <input id="busca-input" class="busca-input" type="text" placeholder="Buscar…" aria-label="Buscar comando ou função" spellcheck="false" autocomplete="off" />
+            <kbd class="busca-kbd">Ctrl K</kbd>
+            <div class="busca-painel" id="busca-painel" hidden role="listbox" aria-label="Funções do app"></div>
+          </div>
         </div>
 
         <div class="tb-right" data-tauri-drag-region>

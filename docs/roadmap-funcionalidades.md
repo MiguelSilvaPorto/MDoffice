@@ -95,7 +95,7 @@ correções simples de imagem e réguas.
 - [x] **Fita com as abas Página Inicial/Inserir/Desenhar/Design/Transições/Animações/Apresentação/Revisão/Exibir** — P0 · parcial: fita com **9 abas** (Página Inicial, Inserir, **Desenhar**, **Transições**, **Animações**, Design e Exibir, mais **Formato da Forma** e **Layout da Tabela** quando a seleção pede); faltam Apresentação, Revisão e Gravar
 - [x] **Abas contextuais (Formato da Forma, Formato da Imagem, Design/Leiaute da Tabela, Design do Gráfico)** — P0 · parcial: **Formato da Forma** e **Layout da Tabela** aparecem conforme a seleção; faltam Formato da Imagem e Design do Gráfico
 - [x] **Barra de acesso rápido / comandos na barra de título** — P1 · parcial: barra superior do app (novo, abrir, salvar, salvamento automático, desenhar, exportar, ⋯)
-- [x] **Paleta de comandos / busca "Tell me"** — P1 · tem: **Ctrl+K** busca comandos e documentos
+- [x] **Paleta de comandos / busca "Tell me"** — P1 · tem: **Ctrl+K** abre a **barra de busca** no topo (não escurece o app): acha os **botões de verdade das fitas** com o ícone de cada um, **filtra pelo documento aberto** e mostra os documentos recentes
 - [x] **Atalhos de teclado para os comandos comuns** — P0 · tem: atalhos no editor e no PowerPoint (Ctrl+Z/Y, Ctrl+C/X/V/D, Ctrl+G, setas, F5…)
 - [x] **Barra de status (contador de lâminas, notas, comentários, visões, zoom)** — P0 · parcial: posição da lâmina, zoom e dicas; sem contadores de comentários/anotações
 - [x] **Aparência clara e escura** — P1 · tem: tema claro/escuro (e "papel" na exportação)

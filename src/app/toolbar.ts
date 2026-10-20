@@ -142,7 +142,7 @@ export const toolbarMethods = {
         this.openExport();
         break;
       case "palette":
-        this.openPalette();
+        this.abrirBusca();
         break;
     }
   },

@@ -13,6 +13,7 @@ import type { ExcelTabData } from "../excel/host";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { $, h, toast, baseName, docDirOf, stripExt, copyText, loadJSON, saveJSON, fmtTime, fmtAgo } from "../util";
 import { abrirEmNovaJanela } from "./novaJanela";
+import { atualizarBusca } from "../busca/interface";
 import type { PedidoDeJanela } from "./docNaUrl";
 
 export const tabsMethods = {
@@ -197,6 +198,9 @@ export const tabsMethods = {
     this.ajustarBarraDoTipo();
     this.saveSession();
     this.sidebar?.render();
+    // a busca de funções acompanha o módulo: as funções da planilha só entram
+    // quando a planilha é a aba da frente
+    atualizarBusca();
   },
 
   saveSession(this: App): void {

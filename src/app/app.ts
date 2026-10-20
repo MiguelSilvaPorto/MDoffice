@@ -53,6 +53,8 @@ import { deepReviewMethods } from "./deepReview";
 import { trashMethods } from "./trash";
 import { criarFilaSalvamento } from "./saveQueue";
 import { criarAvisosOffice } from "./seloAutosave";
+import { configurarBusca } from "../busca/interface";
+import { MODULOS } from "../busca/tipos";
 
 export class App {
   editor!: MdEditor;
@@ -319,6 +321,27 @@ export class App {
     this.setupWindowControls();
     this.setupSplitter();
     this.setupKeys();
+    // a busca de funções (Ctrl+K): o app diz onde estão os comandos — a lista é
+    // montada na hora de abrir, porque as abas e os recentes mudam
+    configurarBusca({
+      comandos: () => this.comandosDaBusca(),
+      // comando que veio da fita de outro módulo: vai para a aba dele primeiro
+      trocarPara: async (modulo) => {
+        const alvo = this.tabs.find((t) =>
+          modulo === "md" ? t.kind === undefined || t.kind === "doc" : t.kind === modulo
+        );
+        if (!alvo) {
+          toast(`Abra um documento ${MODULOS[modulo].curto.toLowerCase()} para usar esta função.`, "info", 3200);
+          return false;
+        }
+        if (alvo !== this.tab) await this.switchTo(alvo.id);
+        return true;
+      },
+      // ao fechar, o foco volta para o documento (e não para a grade da planilha)
+      aoFechar: () => {
+        if (!this.tab || this.tab.kind === "doc" || this.tab.kind === "settings") this.editor?.focus();
+      },
+    });
     this.setupEditorInteractions();
     this.editor.onScroll(() => this.syncPreviewScroll());
     // Colar imagem: captura no documento (o CodeMirror pode consumir o evento antes do

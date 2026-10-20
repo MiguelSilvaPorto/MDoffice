@@ -59,7 +59,7 @@ export const windowControlsMethods = {
     // Duplo clique na barra superior alterna maximizar
     topbar?.addEventListener("dblclick", (e) => {
       const target = e.target as HTMLElement;
-      if (!target.closest("button, input, a, .win-btn, .btn, .split-btn, .palette-btn")) {
+      if (!target.closest("button, input, a, .win-btn, .btn, .split-btn, .busca")) {
         try {
           void getCurrentWindow().toggleMaximize().then(updateMaxIcon);
         } catch {}
@@ -70,7 +70,7 @@ export const windowControlsMethods = {
     topbar?.addEventListener("mousedown", (e) => {
       if (e.button !== 0) return;
       const target = e.target as HTMLElement;
-      if (!target.closest("button, input, a, .win-btn, .btn, .split-btn, .palette-btn")) {
+      if (!target.closest("button, input, a, .win-btn, .btn, .split-btn, .busca")) {
         try {
           void getCurrentWindow().startDragging();
         } catch {}

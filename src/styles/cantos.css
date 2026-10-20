@@ -17,9 +17,9 @@ html.cantos-quadrados :where(
     .btn, .tbtn, .tab-recents, .rc-row, .rc-item, .rc-x, .sb-tab, .sb-pill, .sb-mini, .side-add,
     .recent, .recent-btn, .recent-x, .outline-item, .hm-item, .pj-folder, .pj-folder-ic, .pj-more,
     .pj-sub, .pj-back, .pj-crumb, .pj-crumb-sep,
-    #tb-sidebar, .palette-btn, .tb-pill-btn, .tb-icon-btn, .tb-saved-path, .tb-autosave-badge,
+    #tb-sidebar, .busca, .tb-pill-btn, .tb-icon-btn, .tb-saved-path, .tb-autosave-badge,
     .tab-input, .st-seg-item, .st-seg-icone, .st-nav-ic, .st-row-ic, .st-select, .st-key,
-    .st-key kbd, .color-input, .draw-text-input, .palette-item, .home-resume-btn, .home-import-btn,
+    .st-key kbd, .color-input, .draw-text-input, .busca-item, .home-resume-btn, .home-import-btn,
     .home-chip-btn, .home-tab-pill, .home-search-box, .home-file-icon, .path-btn,
     .dd-item, .home-badge, .home-card-new-pill, .home-filter-clear-btn, .home-filter-active-bar,
     .pj-skel-bar, mark.pj-mark, .st-opcao-previa
@@ -31,7 +31,7 @@ html.cantos-quadrados :where(
 
 html.cantos-quadrados :where(
     .st-list, .st-keys-card, .st-nav-item, .st-opcao, .st-seg, .st-brand-ic, .st-sec-ic,
-    .pj-empty-ic, .dropdown, .modal, .palette, .home-card, .home-file-row, .toast, .dica,
+    .pj-empty-ic, .dropdown, .modal, .busca-painel, .home-card, .home-file-row, .toast, .dica,
     .tb-autosave-wrap, .tb-split-draw, .dr-canvas, .st-field textarea, .pp-popup, .wd-menu-pop,
     .xl-menu, .cm-issue-popup, .editor-context-menu, .pp-tpl, .pp-tpl-previa, .st-seg-desc
   ) {

@@ -2063,6 +2063,34 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A busca de funções virou uma barra no topo (e parou de escurecer o app)**: o `Ctrl+K` abria um
+  modal no meio da tela que **escurecia e desfocava o app inteiro** — dava a impressão de que o
+  programa tinha travado, e não dava para olhar a fita enquanto se procurava uma função. Agora a
+  busca é **uma barra na parte de cima**: uma pílula pequena (24px, era um botão de 28px com o
+  texto inteiro) que **cresce e vira o campo de busca** quando aberta. **Nada escurece**: o painel
+  desce da barra e o resto da tela continua com a cor normal, e o clique fora fecha a busca.
+
+  A lista mudou de fundo: antes eram ~60 comandos escritos à mão, **sem ícone** e **sem filtro** —
+  a planilha, o Word e as apresentações apareciam misturados. Agora são **os botões de verdade**:
+  a busca **lê a fita do documento à vista** (a barra do Markdown, a fita do Word, a da Planilha e a
+  da Apresentação, todas as abas) e vira cada botão em um comando, **com o ícone dele** — dá para
+  reconhecer o botão só pelo desenho, como no resto do app. Um botão novo que nascer na fita
+  aparece na busca sozinho, sem ninguém precisar lembrar de cadastrar.
+
+  E a lista **acompanha o documento**: com uma planilha aberta, a busca mostra as funções da
+  planilha (AutoSoma, Média, Mesclar células, formato de moeda…) e esconde as dos outros módulos;
+  com uma apresentação, mostra as da apresentação (Transições, Animações, Formas, Design). As
+  funções de outro módulo continuam ao alcance **quando a pessoa realmente precisa**: se não
+  houver nada do módulo atual, a busca mostra os outros módulos com a **etiqueta** no resultado
+  ("Planilha", "Apresentação"…), e o rodapé tem o botão **"Ver todos os módulos"**. Ao escolher
+  uma função de outro módulo, o app **troca para a aba dele** antes de rodar.
+
+  De brinde, dois defeitos que a mudança deu à luz: o `Ctrl+S` (e qualquer outro atalho)
+  **disparava enquanto a pessoa digitava na busca** — a busca não era modal, então a guarda do
+  `keys.ts` (que só olha se há `.modal-backdrop`) não valia; e o mesmo valia para os outros campos
+  do app (a busca da barra lateral, a barra de fórmulas da planilha). Agora a digitação segura os
+  atalhos, e só passam o `Esc`, o `Ctrl+K` e o `Ctrl+1…9` (trocar de aba com a busca aberta).
+
 
 - **Clicar na aba que já está ativa traz o documento de volta**: com o Início aberto por cima do
   editor, só a aba **nova** escondia o Início — para voltar ao arquivo que estava aberto era

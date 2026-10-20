@@ -28,6 +28,213 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/busca/tipos.ts
+
+### 2026-10-20 · feat/busca-omnibar · o que é um comando e em qual módulo ele vale
+- **Local:** arquivo novo — `Comando`, `Modulo`, `MODULOS` e `moduloAtivo()`
+- **Linha:** novo arquivo
+- **Porquê:** a busca antiga era uma lista de texto sem nenhuma informação de contexto: não sabia
+  de onde o comando vinha, não sabia o ícone e não sabia a qual documento ele se aplicava. O tipo
+  `Comando` carrega o rótulo, o grupo, o ícone, o atalho e a **lista de módulos** em que o comando
+  vale — é o que permite à busca esconder a função de planilha quando o documento à vista é uma
+  apresentação (e vice-versa). `moduloAtivo()` lê as classes do `body` (`word-open`, `xlsx-open`,
+  `ppt-open`) e devolve `null` quando não há documento à vista (a tela de Início e as Configurações
+  estão abertas) — aí não há contexto para filtrar e a busca mostra tudo.
+
+## src/busca/filtro.ts
+
+### 2026-10-20 · feat/busca-omnibar · a pontuação do que foi digitado e o agrupamento da lista
+- **Local:** arquivo novo — `norm`, `pontuar`, `valeNoModulo` e `montarResultado`
+- **Linha:** novo arquivo
+- **Porquê:** o filtro antigo era "o texto contém a palavra", o que punia quem digitava o começo do
+  nome ("alin" não achava "Alinhar à esquerda", porque o "alin" estava no meio da palavra) e
+  misturava resultados sem ordem. Agora cada termo vale por onde casa (começo do rótulo, começo de
+  palavra, meio, grupo, palavras extras) e a soma vira a ordem da lista. `montarResultado` também
+  decide o **quando um módulo mostra o outro**: se não houver nada do módulo atual, os outros
+  entram (para a busca não ser beco sem saída), mas o rodapé tem o botão "Ver todos os módulos"
+  para quem quer ver tudo de uma vez.
+
+## src/busca/coleta.ts
+
+### 2026-10-20 · feat/busca-omnibar · os botões de verdade das fitas viram comandos
+- **Local:** arquivo novo — `coletarComandos`, `rotuloDo`, `iconeDo`, `executar`
+- **Linha:** novo arquivo
+- **Porquê:** a lista de comandos era escrita à mão e ficava desatualizada — botão novo na fita
+  (e há muitos) não aparecia na busca, e os que apareciam não tinham ícone. A busca agora **lê a
+  fita que está na tela** (`#toolbar`, `#word-ribbon`, `#xl-ribbon`, `#pp-ribbon`) e vira cada
+  botão em um comando: o rótulo sai do `<span>` do botão (o nome que a pessoa lê na fita) ou do
+  `title` sem a dica entre parênteses; o ícone sai do `<use href="#i-…">` (e, quando o botão é um
+  glifo de texto — "B", "N", "Σ" — o glifo ocupa o lugar do ícone). O botão numa aba escondida
+  ("Fórmulas", "Animações") entra do mesmo jeito: ao executar, a aba é acionada antes do clique.
+  As fitas dos **outros** módulos também entram, com a etiqueta do módulo; ao escolher uma delas,
+  o app troca para a aba daquele módulo antes de rodar.
+
+## src/busca/interface.ts
+
+### 2026-10-20 · feat/busca-omnibar · a barra de busca no topo (sem modal)
+- **Local:** arquivo novo — `configurarBusca`, `abrir`, `fecharBusca`, `focarBusca`, `pintar`
+- **Linha:** novo arquivo
+- **Porquê:** a paleta antiga era um `.modal-backdrop` no meio da tela: o `background` semitransparente
+  e o `backdrop-filter: blur(3px)` escureciam e desfocavam o app inteiro, e a busca sequestrava o
+  foco. Agora a busca é uma **barra na parte de cima**: o painel desce dela, nada escurece, e o
+  clique fora fecha (a rolagem no documento, não). O campo solta o foco ao fechar — se ficasse com
+  ele, o próximo clique nele não abriria a busca (o `focus` não "volta" para um elemento que já
+  estava com o foco). O catálogo é pedido **na hora de abrir** (`configurarBusca`): as abas, os
+  recentes e o estado do salvamento automático mudam o tempo todo.
+
+## src/styles/busca.css
+
+### 2026-10-20 · feat/busca-omnibar · o desenho da barra e do painel de resultados
+- **Local:** arquivo novo — `.busca`, `.busca-painel`, `.busca-item`, `.busca-rodape` e as regras do
+  **modo foco** (que estavam na folha da paleta)
+- **Linha:** novo arquivo
+- **Porquê:** a barra é pequena de propósito (24px, largura de 172px em repouso): o botão antigo
+  ocupava 380px com o texto inteiro. Aberta, ela cresce para a largura da coluna do topo (440px) e
+  o painel desce dela com `position: absolute` — é isso que deixa o app **sem escurecimento** e
+  ainda navegável. A etiqueta do módulo (`[Planilha]`, `[Apresentação]`) usa a cor do módulo
+  (`--mod-excel`, `--mod-ppt`), a mesma dos ícones de formato. As regras do **modo foco**
+  (`body.focus-mode #topbar…`) vieram junto: elas moravam na folha da paleta (que era a folha do
+  `Ctrl+K`) e sumiriam com a folha apagada.
+
+## index.html
+
+### 2026-10-20 · feat/busca-omnibar · a barra de busca no topo e dois ícones novos
+- **Local:** `#topbar .tb-center` e o sprite SVG (`#i-aba`, `#i-dicionario`)
+- **Linha:** `<button class="btn palette-btn" data-act="palette" title="Buscar comandos e arquivos (Ctrl+K)">…</button>` → `<div class="busca" id="busca"><svg class="ic busca-ic"><use href="#i-search"/></svg><input id="busca-input" class="busca-input" type="text" placeholder="Buscar…" …><kbd class="busca-kbd">Ctrl K</kbd><div class="busca-painel" id="busca-painel" hidden></div></div>`; e dois símbolos novos no sprite (`i-aba`, `i-dicionario`)
+- **Porquê:** o botão não dava lugar para o campo de busca (a busca era um modal); a barra nova é um
+  `<input>` de verdade, com o painel ancorado nela. Os dois símbolos novos são para os itens do
+  catálogo que não tinham ícone próprio ("Ir para a aba" e "Dicionário pessoal").
+
+## src/styles.css
+
+### 2026-10-20 · feat/busca-omnibar · a folha da paleta sai e a da busca entra
+- **Local:** a lista de `@import`
+- **Linha:** `@import "./styles/palette.css";` → `@import "./styles/busca.css";`
+- **Porquê:** o estilo da paleta (do modal) foi para junto com o modal.
+
+## src/styles/topbar.css
+
+### 2026-10-20 · feat/busca-omnibar · a coluna central é a barra da busca
+- **Local:** `#topbar` (a regra de `-webkit-app-region: no-drag`) e a seção da coluna central
+- **Linha:** `#topbar .palette-btn` → `#topbar .busca` na lista de `no-drag`; e as regras `.palette-btn`, `.palette-text` e `.palette-btn kbd` → o desenho da barra, que foi para `styles/busca.css`
+- **Porquê:** a barra é uma área de digitar dentro da barra da janela: sem o `no-drag`, clicar nela
+  arrastaria a janela em vez de focar o campo.
+
+## src/styles/topbar-actions.css
+
+### 2026-10-20 · feat/busca-omnibar · a barra encolhe na janela estreita
+- **Local:** o `@media (max-width: 1180px)`
+- **Linha:** `.palette-btn span, .palette-btn kbd { display: none }` + `.palette-btn { width: 30px }` → `.busca-kbd { display: none }` + `.busca { max-width: 30px; justify-content: center }` (e `.busca.aberta` volta a ocupar a coluna)
+- **Porquê:** com a janela estreita não cabe o texto do botão; a barra vira só a lupa e, aberta,
+  ocupa a coluna toda.
+
+## src/styles/cantos.css
+
+### 2026-10-20 · feat/busca-omnibar · os cantos quadrados continuam valendo para a barra
+- **Local:** as listas de `border-radius: 2px` e `3px`
+- **Linha:** `.palette-btn` → `.busca`, `.palette-item` → `.busca-item` e `.palette` → `.busca-painel`
+- **Porquê:** a preferência de cantos quadrados do app tem que alcançar a interface nova.
+
+## src/app/commands.ts
+
+### 2026-10-20 · feat/busca-omnibar · o catálogo de comandos ganha ícone e escopo por módulo
+- **Local:** `commandsMethods.openPalette` → `abrirBusca` e `comandosDaBusca`
+- **Linha:** `openPalette` (que montava a lista e abria a paleta) → `abrirBusca` (só foca a barra) e `comandosDaBusca` (devolve a lista); cada `add` ganhou `icone`/`iconeHtml`/`atalho`/`palavras` e, quando o comando é de um módulo só, `modulos`
+- **Porquê:** sem ícone a lista era uma parede de texto (a pessoa não reconhecia o botão pelo
+  desenho) e sem escopo as funções de planilha, Word e apresentação apareciam misturadas. A lista
+  saiu do método e virou função: a busca a pede **na hora de abrir**, porque as abas e os
+  recentes mudam.
+
+## src/app/app.ts
+
+### 2026-10-20 · feat/busca-omnibar · o app diz onde estão os comandos da busca
+- **Local:** `start` e o import de `busca/interface`
+- **Linha:** novo bloco `configurarBusca({ comandos, trocarPara, aoFechar })` no `start`
+- **Porquê:** a busca (que vive fora do `App`) precisa de duas coisas que só o app sabe: a lista de
+  comandos e a **troca de aba** — quando a pessoa escolhe uma função que é de outro módulo
+  ("AutoSoma" da planilha, estando na apresentação), o app leva a pessoa para a aba daquele
+  módulo antes de rodar o comando; sem documento daquele tipo aberto, avisa em vez de fingir que
+  rodou.
+
+## src/app/keys.ts
+
+### 2026-10-20 · feat/busca-omnibar · os atalhos ficam quietos enquanto a pessoa digita
+- **Local:** `setupKeys` (a escuta do teclado)
+- **Linha:** antes o atalho era procurado sempre; agora, quando o alvo está dentro de `#busca`
+  (ou em qualquer outro `input`/`textarea`), o atalho do app **não dispara** — só passam o
+  `Ctrl+1…9` (trocar de aba) e o `Ctrl+K`
+- **Porquê:** a guarda que existia olhava apenas se havia `.modal-backdrop` — e a busca nova não
+  é modal. Sem a guarda, digitar "s" com o `Ctrl` apertado no campo da busca salvava o documento
+  e o `Ctrl+B` aplicava negrito no meio da busca. Os editores (Markdown e Word) são
+  `contenteditable`, então continuam recebendo os atalhos.
+
+## src/app/keymap.ts
+
+### 2026-10-20 · feat/busca-omnibar · o Ctrl+K abre a barra de busca
+- **Local:** a tabela `ATALHOS`
+- **Linha:** `{ id: "buscar-comandos", rotulo: "Buscar comandos", padrao: "Ctrl+K", acao: (a) => a.openPalette() }` → `rotulo: "Buscar comando ou função"` e `acao: (a) => a.abrirBusca()`
+- **Porquê:** o rótulo aparece na aba Atalhos das Configurações: a tecla não abre mais uma paleta,
+  abre a barra de busca de funções.
+
+## src/app/tabs.ts
+
+### 2026-10-20 · feat/busca-omnibar · a busca acompanha a troca de aba
+- **Local:** `afterTabChange`
+- **Linha:** novo `atualizarBusca()` no fim do método
+- **Porquê:** a lista da busca depende do documento à vista (é ela que decide o filtro por módulo).
+  Trocar de aba com a busca aberta (pelo `Ctrl+1…9`) tem de redesenhar a lista na hora.
+
+## src/app/toolbar.ts
+
+### 2026-10-20 · feat/busca-omnibar · o comando "palette" virou "abrir a busca"
+- **Local:** `act`, o `case "palette"`
+- **Linha:** `this.openPalette()` → `this.abrirBusca()`
+- **Porquê:** o nome "palette" era do modal que saiu; o comando agora foca a barra.
+
+## src/app/windowControls.ts
+
+### 2026-10-20 · feat/busca-omnibar · a barra nova também protege o arrasto da janela
+- **Local:** os seletores do duplo clique e do arrasto na barra superior
+- **Linha:** `.palette-btn` → `.busca`
+- **Porquê:** a barra é uma área de digitar: clicar nela não pode virar arrasto de janela (nem
+  maximizar).
+
+## src/palette.ts
+
+### 2026-10-20 · feat/busca-omnibar · a paleta de comandos saiu
+- **Local:** arquivo inteiro
+- **Linha:** removido (`openPalette` e `PaletteItem`)
+- **Porquê:** o que a paleta fazia (montar um modal no meio da tela, escurecer o app e sequestrar o
+  foco) foi para `src/busca/`: a barra no topo, sem escurecimento, e a lista montada com os botões
+  de verdade das fitas.
+
+## src/styles/palette.css
+
+### 2026-10-20 · feat/busca-omnibar · o estilo da paleta saiu
+- **Local:** arquivo inteiro
+- **Linha:** removido (as regras do **modo foco** foram para `src/styles/busca.css`)
+- **Porquê:** o desenho era do modal (fundo, lista com o modal no meio). O desenho novo está em
+  `src/styles/busca.css`.
+
+## scripts/testar-busca.mjs
+
+### 2026-10-20 · feat/busca-omnibar · o teste da busca de funções
+- **Local:** arquivo novo
+- **Linha:** novo arquivo
+- **Porquê:** a busca mexe em muitas coisas (filtro por módulo, coleta da fita, atalhos, foco) e
+  nenhuma delas se vê num teste de tela. O roteiro roda o app no Chrome headless e confere: a
+  barra é pequena, **nada escurece** com a busca aberta, os botões da fita aparecem com o ícone, a
+  lista muda com o documento, a função de outro módulo vem com a etiqueta, o `Ctrl+B` **não**
+  aplica negrito enquanto a pessoa digita e o botão da fita roda de verdade pela busca.
+
+## package.json
+
+### 2026-10-20 · feat/busca-omnibar · o atalho do teste da busca
+- **Local:** `scripts`
+- **Linha:** novo `"test:busca": "node scripts/testar-busca.mjs"`
+- **Porquê:** os testes do repo rodam por atalho (`npm run test:excel`); o da busca precisa do app
+  rodando (`npm run dev`), e o script avisa isso no cabeçalho.
+
 ## index.html
 
 ### 2026-10-20 · fix/melhorias-interface-inicio · ícones da barra lateral redesenhados e pasta em Projetos

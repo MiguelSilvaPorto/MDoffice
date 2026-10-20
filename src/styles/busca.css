@@ -1,0 +1,297 @@
+/* ==========================================================================
+   A barra de busca de funções (Ctrl+K): a pílula na barra de cima e o painel
+   de resultados que desce dela.
+
+   Não é um modal de propósito: o app NÃO escurece nem desfoca enquanto a
+   busca está aberta — a lista desce da barra e o resto da tela continua como
+   está, com a cor normal. O clique fora fecha.
+   ========================================================================== */
+
+.busca {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 172px;
+  height: 24px;
+  padding: 0 7px 0 8px;
+  color: var(--muted);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  transition: max-width 0.16s ease, border-color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+  -webkit-app-region: no-drag;
+}
+
+.busca:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--fg);
+}
+
+/* aberta: a pílula vira a barra de verdade (a largura é a da coluna do topo) */
+.busca.aberta {
+  max-width: 100%;
+  color: var(--fg);
+  background: var(--panel);
+  border-color: var(--accent);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.busca-ic {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+
+.busca-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  color: var(--fg);
+  background: transparent;
+  border: 0;
+  outline: none;
+  font: inherit;
+  font-size: 12px;
+}
+
+.busca-input::placeholder {
+  color: var(--muted);
+}
+
+.busca-kbd {
+  flex: none;
+  padding: 1px 5px;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: 10px var(--ui-font);
+  line-height: 1.4;
+}
+
+.busca.aberta .busca-kbd {
+  display: none;
+}
+
+/* ---------- o painel de resultados ---------- */
+
+.busca-painel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 330px;
+  max-width: 460px;
+  max-height: 62vh;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  -webkit-app-region: no-drag;
+}
+
+.bp-topo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+}
+
+.bp-contexto {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bp-contagem {
+  margin-left: auto;
+  flex: none;
+  color: var(--muted);
+}
+
+.bp-lista {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 4px;
+}
+
+.bp-grupo {
+  padding: 8px 8px 3px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.bp-vazio {
+  padding: 18px 10px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.busca-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 4px 8px;
+  color: var(--fg);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.busca-item.ativo {
+  background: var(--accent-soft);
+}
+
+.busca-item.indisponivel .bi-label,
+.busca-item.indisponivel .bi-icone {
+  opacity: 0.45;
+}
+
+.bi-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.bi-icone .ic {
+  width: 14px;
+  height: 14px;
+}
+
+/* botão sem ícone (a prévia é um desenho, não um símbolo): a caixa fica vazia */
+.bi-icone.vazio {
+  background: transparent;
+  border-color: transparent;
+}
+
+.bi-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+}
+
+/* a etiqueta do módulo (só quando o comando é de outro módulo) */
+.bi-modulo {
+  flex: none;
+  padding: 1px 6px;
+  color: var(--muted);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 10px;
+}
+
+.bi-modulo[data-mod="md"] {
+  color: var(--mod-md);
+  border-color: color-mix(in srgb, var(--mod-md) 45%, transparent);
+}
+
+.bi-modulo[data-mod="word"] {
+  color: var(--mod-word);
+  border-color: color-mix(in srgb, var(--mod-word) 45%, transparent);
+}
+
+.bi-modulo[data-mod="xlsx"] {
+  color: var(--mod-excel);
+  border-color: color-mix(in srgb, var(--mod-excel) 45%, transparent);
+}
+
+.bi-modulo[data-mod="ppt"] {
+  color: var(--mod-ppt);
+  border-color: color-mix(in srgb, var(--mod-ppt) 45%, transparent);
+}
+
+.bi-atalho {
+  flex: none;
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+/* ---------- rodapé ---------- */
+
+.busca-rodape {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.br-dicas {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.br-todos {
+  flex: none;
+  padding: 2px 8px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 10.5px;
+  cursor: pointer;
+}
+
+.br-todos:hover {
+  color: var(--fg);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+
+.br-todos.on {
+  color: var(--fg);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+/* ---------- modo foco (Ctrl+Shift+F): só o texto, sem barras ---------- */
+
+body.focus-mode #topbar,
+body.focus-mode #tabbar,
+body.focus-mode #sidebar,
+body.focus-mode #toolbar,
+body.focus-mode #preview-wrap,
+body.focus-mode #preview-puxa,
+body.focus-mode #splitter {
+  display: none;
+}
+
+body.focus-mode #editor-wrap {
+  flex: 1 1 0;
+}

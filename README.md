@@ -51,7 +51,8 @@ copiar código ou conteúdo.
 - **Apresentações (.pptx)** — apresentações: abre e salva `.pptx` com fidelidade, editor de formas,
   tabelas, gráficos, mídia, transições, modelos, notas e modo apresentação. → [detalhes](docs/powerpoint.md)
 - **Geral** — o que vale para o app todo: abas, tela de Início, histórico de versões,
-  backup em disco, configurações, busca de comandos e modo foco. → [no changelog](CHANGELOG.md)
+  backup em disco, configurações, **busca de funções** (a barra do `Ctrl+K`: acha os botões
+  de verdade das fitas, com o ícone de cada um, e filtra pelo documento aberto) e modo foco. → [no changelog](CHANGELOG.md)
 
 ## Como rodar
 

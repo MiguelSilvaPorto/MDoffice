@@ -1132,11 +1132,12 @@ sem barra de título:
 | Enter | tecla | executa o comando selecionado |
 | Esc | tecla | fecha |
 
-**Notas para recriar no mdOffice:** o mdOffice já tem a paleta em **Ctrl+K** (`src/palette.ts`),
-que também busca documentos. A diferença é que a do DeckCraft é **só de comandos** e mostra o
-atalho de cada um à direita — detalhe que ensina os atalhos ao usuário. Vale considerar mostrar o
-atalho na paleta do mdOffice e revisar a tecla (Ctrl+K × Ctrl+Shift+P) por consistência com o
-resto do app.
+**Notas para recriar no mdOffice:** o mdOffice já tem a busca em **Ctrl+K** (`src/busca/`), que
+também busca documentos e — o que é o ponto — **lê os botões de verdade das fitas** (com o ícone de
+cada um) e **filtra pelo documento aberto**, sem escurecer o app. A diferença é que a do DeckCraft é
+**só de comandos** e mostra o atalho de cada um à direita — detalhe que ensina os atalhos ao
+usuário. A busca do mdOffice mostra o atalho dos comandos do app à direita (e das fitas, na dica do
+botão); a tecla (Ctrl+K × Ctrl+Shift+P) segue a do resto do app.
 
 ---
 
