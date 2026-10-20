@@ -1596,7 +1596,8 @@ console.log("\nWord: a folha escurece junto com o tema (o papel)");
   );
   checa(
     "Word: o clique direito suprime o menu do navegador (o app mostra o dele)",
-    /addEventListener\("contextmenu", \(e\) => \{\s*e\.preventDefault\(\);/.test(ler("src/word/host.ts")),
+    /view\.dom\.addEventListener\("contextmenu", \(e\) => this\.ribbon\.menuDeContexto\(e\)\)/.test(ler("src/word/host.ts")) &&
+      /menuDeContexto\(e: MouseEvent\): void \{[\s\S]{0,200}?e\.preventDefault\(\)/.test(ler("src/word/ribbon.ts")),
     "o menu do WebView2 (Emoji, Inspecionar, Direção da escrita) apareceria no documento"
   );
   checa(
@@ -1675,6 +1676,60 @@ console.log("\nWord: o papel é fixo (A4/Carta) e o zoom é só a vista");
       /st\.setProperty\("--pg-h", `\$\{ph\}px`\)/.test(hostWord) &&
       !/insertImageData[\s\S]{0,700}setProperty\("--pg-[wh]"/.test(hostWord),
     "algo além da configuração de página mexeria no papel (o relato foi na inserção de imagem)"
+  );
+}
+
+// ---------------------------------------------------------------- Word: clique direito (a tabela tem "Excluir tabela")
+
+console.log("\nWord: o clique direito abre o menu do app (e a tabela tem 'Excluir tabela')");
+{
+  const { itensDoContexto } = await import("../src/word/contexto.ts");
+  const dentro = itensDoContexto(true) as { tipo: string; comando?: string }[];
+  const fora = itensDoContexto(false) as { tipo: string; comando?: string }[];
+  const comandos = (lista: { tipo: string; comando?: string }[]) =>
+    lista.filter((i) => i.tipo === "acao").map((i) => i.comando ?? "");
+  checa(
+    'com o cursor na tabela, "Excluir tabela" é o primeiro item do menu',
+    dentro[0]?.tipo === "acao" && dentro[0]?.comando === "t-del",
+    "é o que o dono procurou no clique direito (o menu nativo do WebView2 não tem nada de tabela)"
+  );
+  checa(
+    "o menu da tabela tem linha e coluna (inserir e excluir) e mesclar/dividir",
+    ["t-row-before", "t-row-after", "t-row-del", "t-col-before", "t-col-after", "t-col-del", "t-merge", "t-split"].every((c) =>
+      comandos(dentro).includes(c)
+    ),
+    "sem eles o menu resolveria só a exclusão e o resto continuaria escondido na aba contextual"
+  );
+  checa(
+    "fora da tabela o menu é de texto — nenhum comando de tabela",
+    !comandos(fora).some((c) => c.startsWith("t-")) &&
+      ["copy", "paste", "select-all"].every((c) => comandos(fora).includes(c)),
+    "menu de tabela sobre um parágrafo confunde (e comando t-* sem tabela não faz nada)"
+  );
+  checa(
+    "a lista não começa nem termina com separador, e não tem dois seguidos",
+    [dentro, fora].every((lista) => {
+      if (lista[0]?.tipo === "separador" || lista[lista.length - 1]?.tipo === "separador") return false;
+      for (let i = 1; i < lista.length; i++) if (lista[i].tipo === "separador" && lista[i - 1].tipo === "separador") return false;
+      return true;
+    }),
+    "separador solto no topo/fim (ou dobrado) vira um risco sem grupo"
+  );
+  const hostWord = ler("src/word/host.ts");
+  const ribbonWord = ler("src/word/ribbon.ts");
+  const editorWord = ler("src/word/editor.ts");
+  const cssWord = ler("src/styles/word.css");
+  checa(
+    "o clique direito do documento abre o menu do app (e barra o nativo do WebView2)",
+    /view\.dom\.addEventListener\("contextmenu", \(e\) => this\.ribbon\.menuDeContexto\(e\)\)/.test(hostWord) &&
+      /menuDeContexto\(e: MouseEvent\): void \{[\s\S]{0,200}?e\.preventDefault\(\)/.test(ribbonWord) &&
+      /cursorNoPonto\(x: number, y: number\): boolean/.test(editorWord),
+    "sem o preventDefault o WebView2 continuaria mostrando o menu dele por cima"
+  );
+  checa(
+    "o menu de contexto tem separadores e fecha no Esc",
+    /\.wd-menu-sep \{/.test(cssWord) && /ev\.key !== "Escape"/.test(ribbonWord),
+    "grupos sem separador viram uma lista só, e sem Esc o menu fica preso na tela"
   );
 }
 

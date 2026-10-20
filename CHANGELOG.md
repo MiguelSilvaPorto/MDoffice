@@ -387,11 +387,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   (`overflow: hidden` + reticências) para nenhum texto futuro vazar. O nome também deixou de ter um
   `max-width` fixo (86 px) maior que o cartão. A galeria continua rolando de lado normalmente.
 
-- **O clique direito no Word abre o menu do app, não o do navegador**: o `#word-pane` não tratava o
-  `contextmenu`, então o WebView2 mostrava o menu nativo (**Emoji**, **Inspecionar**, **Direção da
-  escrita**…) por cima do documento (o print do usuário). Agora o evento é suprimido no editor e,
-  com **seleção**, aparece o menu do app com **Copiar** — o mesmo padrão do editor MD\*. Sem
-  seleção, nada aparece (o nativo continua suprimido). Teste: `npm run test:layout`.
+- **O clique direito no Word abre o menu do app, não o do navegador — e a tabela tem "Excluir
+  tabela"**: o `#word-pane` não tratava o `contextmenu`, então o WebView2 mostrava o menu nativo
+  (**Emoji**, **Inspecionar**, **Direção da escrita**…, o print do usuário), que não conhece o
+  documento. Agora o clique direito abre o **menu do app** no ponto clicado (o cursor vai para lá,
+  como no nativo): com o cursor numa **tabela**, **"Excluir tabela" vem em primeiro**, seguido de
+  inserir/excluir **linha** e **coluna**, mesclar/dividir, recortar/copiar/colar e selecionar tudo;
+  fora dela, é o menu de texto (desfazer, recortar, copiar, colar, selecionar tudo). O **Excluir
+  Tabela** já existia na aba contextual **Tabela**, mas só era achado por quem descobrisse a aba —
+  o dono relatou "não consigo remover as tabelas depois que entram" e é o clique direito a porta que
+  se tenta primeiro. O menu é barrado de vazar da janela e fecha com `Esc` ou clique fora; a lista de
+  itens é pura (`src/word/contexto.ts`) e está presa no `test:layout`.
 
 - **Arrastar uma imagem (ou um trecho) dentro do documento move em vez de duplicar**: o
   `handleDrop` do editor mandava **qualquer arquivo** da área de transferência do arrasto para o

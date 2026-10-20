@@ -2,6 +2,7 @@
 import type { WordEditor, FormatState } from "./editor";
 import { FONT_FAMILIES, FONT_SIZES } from "./schema";
 import { DEFAULT_SETUP, type PageSetup } from "./model";
+import { itensDoContexto } from "./contexto";
 import { h, toast } from "../util";
 import { melhorarSelects } from "../seletor";
 import { ligarAjusteAlturaFita, ligarEncaixeFita, ligarRecolherFita, ligarRodaHorizontal } from "../fita";
@@ -54,6 +55,8 @@ export class Ribbon {
   private pop: HTMLElement | null = null;
   /** o botão que abriu o popup aberto (para o mesmo botão recolhê-lo — ver `run`/`place`) */
   private ancoraDoPop: HTMLElement | null = null;
+  /** tira as escutas do popup (o menu de contexto escuta clique fora e Esc — ver `placeEm`) */
+  private limparPop: (() => void) | null = null;
   /** Pincel de formatação: desligado, para uma seleção ("once") ou fixo ("sticky"). */
   private painter: "off" | "once" | "sticky" = "off";
   private showParaMarks = false;
@@ -581,9 +584,67 @@ export class Ribbon {
   }
 
   private closePop(): void {
+    this.limparPop?.();
+    this.limparPop = null;
     this.pop?.remove();
     this.pop = null;
     this.ancoraDoPop = null;
+  }
+
+  /**
+   * Menu do clique direito DENTRO do documento.
+   *
+   * Antes o clique direito caía no menu nativo do WebView2 ("Emoji", "Colar como texto sem
+   * formatação", "Inspecionar"…) — que não conhece tabela. O "Excluir tabela" só existia na aba
+   * contextual Tabela, e quem tentava pelo clique direito (o caminho natural) não achava nada.
+   * Com o cursor em tabela, os comandos de tabela vêm primeiro e "Excluir tabela" abre a lista.
+   */
+  menuDeContexto(e: MouseEvent): void {
+    e.preventDefault();
+    this.closePop();
+    const dentroDeTabela = this.hooks.editor.cursorNoPonto(e.clientX, e.clientY);
+    const pop = h("div", { class: "wd-pal wd-menu-pop wd-menu-contexto" });
+    for (const item of itensDoContexto(dentroDeTabela)) {
+      if (item.tipo === "separador") {
+        pop.append(h("div", { class: "wd-menu-sep" }));
+        continue;
+      }
+      const b = h("button", { class: "wd-menu-item", type: "button", text: item.rotulo });
+      // o botão não rouba o foco/seleção do documento — o comando age nela
+      b.addEventListener("mousedown", (ev) => ev.preventDefault());
+      b.addEventListener("click", () => {
+        this.closePop();
+        void this.run(item.comando, b);
+      });
+      pop.append(b);
+    }
+    this.placeEm(pop, e.clientX, e.clientY);
+  }
+
+  /** Abre o popup com o canto no ponto do clique (menu de contexto), sempre dentro da janela. */
+  private placeEm(pop: HTMLElement, x: number, y: number): void {
+    document.body.append(pop);
+    pop.style.left = `${Math.max(8, Math.min(x, window.innerWidth - pop.offsetWidth - 8))}px`;
+    pop.style.top = `${Math.max(8, Math.min(y, window.innerHeight - pop.offsetHeight - 8))}px`;
+    this.pop = pop;
+    // sem âncora: não existe "o mesmo botão" para recolher um menu de contexto
+    this.ancoraDoPop = null;
+    const off = (ev: MouseEvent) => {
+      if (pop.contains(ev.target as Node)) return;
+      this.closePop();
+    };
+    const tecla = (ev: KeyboardEvent) => {
+      if (ev.key !== "Escape") return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      this.closePop();
+    };
+    this.limparPop = () => {
+      document.removeEventListener("mousedown", off, true);
+      document.removeEventListener("keydown", tecla, true);
+    };
+    document.addEventListener("mousedown", off, true);
+    document.addEventListener("keydown", tecla, true);
   }
 
   private place(pop: HTMLElement, anchor: HTMLElement): void {

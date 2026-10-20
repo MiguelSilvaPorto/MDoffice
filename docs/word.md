@@ -45,8 +45,11 @@ arquivos `.docx` de verdade.
 - **Ilustrações**: imagens (inserir, colar ou arrastar — arrastar uma imagem **dentro** da página
   **move**; arquivo de fora continua entrando), links, **tabelas** (inserir,
   linhas/colunas, mesclar, dividir, sombrear, bordas) e marcas de parágrafo.
-- **Clique direito**: com texto selecionado, o menu do app abre com **Copiar**; sem seleção, nada
-  aparece — o menu do navegador (Emoji, Inspecionar…) não abre no documento.
+- **Clique direito**: abre o menu **do app** — o do WebView2 (Emoji, Inspecionar, Direção da
+  escrita) não abre no documento. Com o cursor numa **tabela**, a lista é a da tabela e **"Excluir
+  tabela" vem em primeiro** — junto de inserir/excluir **linha** e **coluna** e mesclar/dividir —,
+  seguida de recortar/copiar/colar e selecionar tudo; fora dela, é o menu de texto (desfazer,
+  recortar, copiar, colar, selecionar tudo). Fecha ao clicar fora ou com `Esc`.
 - **Revisão de texto**: corretor de português (sublinhados e sugestões) e voz/suplementos — em
   **título** ele não pede ponto final (o corpo do texto continua pedindo normalmente).
 - **A fita cabe na largura (sem rolagem)**: as mesmas quatro etapas do PowerPoint — **cheia**,

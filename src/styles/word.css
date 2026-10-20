@@ -492,6 +492,18 @@ body.settings-open #word-pane {
   color: var(--accent);
 }
 
+/* menu de contexto do documento (clique direito): separadores entre os grupos */
+.wd-menu-contexto {
+  min-width: 210px;
+  z-index: 120;
+}
+
+.wd-menu-sep {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--border);
+}
+
 #wd-stage {
   flex: 1;
   min-height: 0;

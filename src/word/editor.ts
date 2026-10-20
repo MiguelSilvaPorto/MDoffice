@@ -556,6 +556,26 @@ export class WordEditor {
     this.view.focus();
   }
 
+  /**
+   * Leva o cursor para o ponto clicado — o clique direito abre o menu do app ALI, como o menu
+   * nativo fazia (sem isto, o menu abriria longe do que se clicou). Devolve `true` quando o ponto
+   * caiu dentro de uma tabela: é o sinal que faz o menu mostrar "Excluir tabela".
+   */
+  cursorNoPonto(x: number, y: number): boolean {
+    const achado = this.view.posAtCoords({ left: x, top: y });
+    if (achado) {
+      const { state } = this.view;
+      const pos = Math.max(0, Math.min(achado.pos, state.doc.content.size));
+      try {
+        this.view.dispatch(state.tr.setSelection(TextSelection.near(state.doc.resolve(pos))));
+      } catch {
+        /* posição no limite do documento: fica a seleção que estava */
+      }
+    }
+    this.view.focus();
+    return isInTable(this.view.state);
+  }
+
   /** Aplica (ou tira, com `null`) um link no texto selecionado. */
   setLink(href: string | null): void {
     this.setMark("link", href ? { href } : null);

@@ -14588,3 +14588,73 @@ antigas quando fizer sentido.
 - **Porquê:** o fecho não pode promover: no instante do commit da tarefa a entrada ainda não está na
   main (a regra do repositório é "nunca promova o que ainda não entrou na main"), então a promoção é
   uma tarefa de follow-up, depois que o commit chegou (6e9d332). Promovi só a entrada DESTA tarefa.
+- **Substituído no mesmo dia** pela tarefa do "Excluir tabela pelo clique direito": o menu virou o da
+  fita (`Ribbon.menuDeContexto`, com tabela e área de transferência), a escuta subiu para o
+  `view.dom` e o menu mínimo de **Copiar** saiu (o `preventDefault` continua). A escolha de "sem
+  seleção, nada aparece" caiu junto: com o cursor numa **tabela** — mesmo sem seleção — o menu é o
+  caminho para o **Excluir tabela**.
+## src/word/contexto.ts (novo)
+
+### 2026-10-20 · esta tarefa · a lista do menu do clique direito (pura, para teste)
+- **Local:** `itensDoContexto(dentroDeTabela)` e o tipo `ItemDoContexto` (ação com `comando`/`rotulo`, ou
+  separador)
+- **Linha:** `+ export function itensDoContexto(dentroDeTabela: boolean): ItemDoContexto[]` — com tabela:
+  `Excluir tabela` · separador · inserir/excluir **linha** · separador · inserir/excluir **coluna** ·
+  separador · mesclar/dividir · separador · recortar/copiar/colar · separador · selecionar tudo; sem
+  tabela: desfazer · separador · recortar/copiar/colar · separador · selecionar tudo
+- **Porquê:** o relato ("não consigo remover as tabelas depois que entram") veio do **clique direito**: o
+  menu nativo do WebView2 ("Emoji", "Inspecionar"…) não conhece tabela, e é a porta que se tenta primeiro.
+  A lista ficou num módulo **puro** (entra "está em tabela?", sai comando + rótulo) para o `test:layout`
+  prender o que importa sem DOM: "Excluir tabela" **primeiro** com tabela, nenhum comando `t-*` sem
+  tabela e nenhum separador solto/dobrado. Quem monta o popup é a fita (`ribbon.ts`), que já tem o
+  `closePop`/`place` dos popups da fita.
+
+## src/word/editor.ts · src/word/ribbon.ts · src/word/host.ts · src/styles/word.css
+
+### 2026-10-20 · esta tarefa · o menu do app no clique direito do documento
+- **Local:** `editor.ts` — `cursorNoPonto(x, y)` (depois de `insertRule`); `ribbon.ts` — o campo
+  `limparPop`, o `closePop` (passa a chamar `limparPop`), `menuDeContexto(e)` e `placeEm(pop, x, y)`
+  (antes do `place`); `host.ts` — a escuta de `contextmenu` no `view.dom` (antes do bloco do zoom), no
+  lugar do menu mínimo de **Copiar** que outra tarefa tinha acabado de pôr no `#word-editor` (esse
+  bloco saiu, junto do import de `copyText`/`toast`);
+  `word.css` — `.wd-menu-contexto`/`.wd-menu-sep` (depois de `.wd-menu-item:hover`)
+- **Linha:** `+ view.dom.addEventListener("contextmenu", (e) => this.ribbon.menuDeContexto(e))` ·
+  `+ e.preventDefault(); … const dentroDeTabela = this.hooks.editor.cursorNoPonto(e.clientX, e.clientY)` ·
+  `+ b.addEventListener("mousedown", (ev) => ev.preventDefault())` (o botão não rouba o foco/seleção) ·
+  `+ pop.style.left = … Math.min(x, window.innerWidth - pop.offsetWidth - 8)` e o mesmo para o topo ·
+  `+ document.addEventListener("keydown", tecla, true)` (`Escape` fecha) · `closePop` ganhou
+  `this.limparPop?.()` · `+ .wd-menu-sep { height: 1px; margin: 4px 2px; background: var(--border) }`
+- **Porquê:** o **Excluir Tabela** já existia e funcionava (aba contextual **Tabela**, que aparece com o
+  cursor dentro — conferi no navegador: `t-del` apaga a tabela), mas só era achado por quem descobrisse a
+  aba contextual. O clique direito no documento não abria menu do app nenhum: caía no do WebView2, com
+  "Emoji"/"Inspecionar" e **nada de tabela** (o print do relato é exatamente esse menu). Agora o clique
+  direito abre o menu do app **no ponto clicado** (o cursor vai para lá, como no nativo) e, com o cursor
+  na tabela, o primeiro item é **Excluir tabela**. `placeEm` põe o canto do menu no ponteiro e **nunca
+  deixa vazar da janela** (o menu nativo também se reposiciona); `limparPop` tira a escuta de
+  fora/Esc quando qualquer popup fecha, para não sobrar escuta de um menu que já saiu. Os separadores
+  existem porque a lista tem quatro grupos (tabela, linha/coluna, mesclar, área de transferência).
+  Conferido no navegador: clique direito na célula → `defaultPrevented: true` e o menu com "Excluir
+  tabela" primeiro; clique no item → tabela apagada (`0` no documento); clique direito no texto → menu
+  de texto sem `t-*`; `Esc` fecha.
+
+## scripts/testar-layout.mts
+
+### 2026-10-20 · esta tarefa · 6 verificações do menu do clique direito
+- **Local:** bloco novo "Word: o clique direito abre o menu do app (e a tabela tem 'Excluir tabela')",
+  depois do bloco "Word: o papel é fixo (A4/Carta) e o zoom é só a vista"
+- **Linha:** `+ 6 checagens` — a lista pura (`itensDoContexto`): "Excluir tabela" primeiro, linha/coluna
+  e mesclar/dividir presentes, nenhum `t-*` sem tabela, separadores bem formados; e o código: a escuta de
+  `contextmenu` no host, o `preventDefault` da fita, o `cursorNoPonto` do editor e o `.wd-menu-sep`/Esc
+- **Porquê:** o defeito era de **alcance** (a exclusão existia, mas fora da vista de quem clica com o
+  botão direito). O teste prende a **ordem** (é o que resolve o relato: a primeira linha do menu) e a
+  regra de não mostrar comando de tabela sem tabela; sem isso, um ajuste futuro na lista devolveria o
+  menu sem a saída que o dono procurava.
+
+## docs/word.md · CHANGELOG.md
+
+### 2026-10-20 · esta tarefa · a bala do clique direito e a entrada
+- **Local:** a seção "Documento e páginas" (bala nova depois de "Ilustrações") e o CHANGELOG → **Word →
+  Não adicionado → Frontend**
+- **Linha:** `+ **Clique direito no documento**: abre o menu do app … "Excluir tabela" vem em primeiro …`
+- **Porquê:** o doc do módulo listava as tabelas mas não dizia **como tirá-las**; a entrada fica em "Não
+  adicionado" até o `fechar.ps1` entregar.
