@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissões necessárias para o mdOffice (diálogos nativos, título da janela e abrir pastas)",
-  "windows": ["main", "config"],
+  "description": "Permissões necessárias para o mdOffice (diálogos nativos, título da janela e abrir pastas) — inclusive nas janelas de documento (doc-*), que são o próprio app sem a fileira de abas",
+  "windows": ["main", "config", "doc-*"],
   "permissions": [
     "core:default",
     "core:webview:allow-create-webview-window",

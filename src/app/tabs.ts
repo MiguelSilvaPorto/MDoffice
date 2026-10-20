@@ -238,8 +238,9 @@ export const tabsMethods = {
 
   /**
    * Abre a aba numa janela própria — o gesto de arrastar a aba para fora da janela e o item
-   * "Abrir em nova janela" do menu. O documento é persistido ANTES (é do disco/rascunho que a
-   * janela nova lê); só depois a aba sai daqui. Cancelar o "salvar?" não move nada.
+   * "Abrir em nova janela (só este documento)" do menu. O documento é persistido ANTES (é do
+   * disco/rascunho que a janela nova lê); só depois a aba sai daqui. Cancelar o "salvar?" não
+   * move nada; documento que nunca foi salvo ganha o rascunho dele em `garantirRascunho`.
    */
   async detachTab(this: App, id: string): Promise<void> {
     const tab = this.tabs.find((t) => t.id === id);
@@ -269,14 +270,32 @@ export const tabsMethods = {
         return;
       }
     }
-    // 2) a janela nova precisa de um caminho para abrir
-    if (!tab.path) {
-      toast("Salve o documento antes de abrir em outra janela.", "info", 5000);
+    // 2) a janela nova precisa de um arquivo para abrir — documento novo ganha o rascunho
+    if (!(await this.garantirRascunho(tab)) || !tab.path) {
+      toast("Não consegui preparar o documento para abrir em outra janela.", "err", 6000);
       return;
     }
     // 3) abre a janela e só então tira a aba daqui (já está gravada: não pergunta de novo)
     if (!abrirEmNovaJanela({ path: tab.path, draft: tab.isDraft }, tabLabel(tab))) return;
     await this.closeTab(id);
+  },
+
+  /**
+   * Dá um arquivo à aba que ainda não tem — o rascunho do app, o mesmo que o fechar cria.
+   * É o que a janela nova lê: sem isso, "Abrir em nova janela" recusava justamente o
+   * documento novo (nunca salvo), que é o caso mais comum de querer tirar a aba daqui.
+   */
+  async garantirRascunho(this: App, tab: DocTab): Promise<boolean> {
+    if (tab.path) return true;
+    // os "ensure*File" são do documento ABERTO (usam o host): ativa a aba antes
+    if (tab !== this.tab) {
+      await this.switchTo(tab.id);
+      if (this.tab !== tab) return false;
+    }
+    if (tab.kind === "word") return await this.ensureWordFile();
+    if (tab.kind === "ppt") return await this.ensurePptFile();
+    if (tab.kind === "xlsx") return await this.ensureExcelFile();
+    return await this.ensureSaved();
   },
 
   /** Janela própria: abre só o documento pedido na URL — não restaura a sessão das outras. */
@@ -456,7 +475,8 @@ export const tabsMethods = {
     const items: { label: string; hint?: string; run: () => void; sep?: boolean }[] = [
       { label: "Renomear", hint: teclaVisivel("renomear"), run: () => this.tabBar.beginRename(id) },
       { label: "Duplicar aba", run: () => void this.duplicateTab(tab) },
-      { label: "Abrir em nova janela", run: () => void this.detachTab(id) },
+      // "só este documento": a janela nova abre sem a fileira de abas (e a aba sai daqui)
+      { label: "Abrir em nova janela (só este documento)", run: () => void this.detachTab(id) },
     ];
     if (tab.path) {
       items.push(

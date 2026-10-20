@@ -18,10 +18,12 @@ comandos, navegação e organização das pastas dos projetos e modo foco) — e
 categoria **Geral** do [changelog](../CHANGELOG.md).
 
 **Abas**: a fileira abre os documentos e cada aba tem menu (renomear, duplicar, mostrar na pasta,
-copiar caminho, **abrir em nova janela**…). Arrastar uma aba **para fora da janela** e soltar ali
-abre o documento numa **janela própria** — ela sobe só com aquele documento e não mexe na sessão
-das outras janelas; o documento é salvo antes de a aba sair da janela atual (rascunhos são
-gravados; arquivos seus perguntam se há alterações).
+copiar caminho, **abrir em nova janela (só este documento)**…). Arrastar uma aba **para fora da
+janela** e soltar ali — ou escolher o item do menu — abre o documento numa **janela própria**: ela é
+o app inteiro **sem as outras abas** (a barra do app, os diálogos e o salvar funcionam nela) e não
+mexe na sessão das outras janelas. O documento é persistido antes de a aba sair da janela atual:
+rascunhos são gravados, **documento novo ganha o rascunho dele na hora** e arquivos seus perguntam
+se há alterações.
 
 A **tela de Início** mostra os arquivos recentes numa **grade de cartões**, cada um com uma
 **versão do documento** pré-carregada — o tipo dá a forma e o arquivo dá o conteúdo: **Word** e

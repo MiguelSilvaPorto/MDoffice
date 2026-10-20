@@ -14755,3 +14755,70 @@ antigas quando fizer sentido.
   só como plano B"
 - **Porquê:** o documento dizia que a versão pré-carregada vinha do texto do arquivo — no PowerPoint
   agora vem do **documento** (importado e desenhado).
+
+## src-tauri/capabilities/default.json
+
+### 2026-10-20 · janela do documento · o label `doc-*` na capacidade
+- **Local:** a lista `windows` (e a `description`)
+- **Linha:** `"windows": ["main", "config"]` → `["main", "config", "doc-*"]`
+- **Porquê:** no Tauri 2 as permissões são **por label de janela**, e a janela criada por
+  `abrirEmNovaJanela` usa `doc-<ms>` — não casava com nenhuma capacidade. Resultado: a janela do
+  documento abria **sem `core:default`** e sem os `allow-*` de janela/diálogo/opener: a moldura
+  nativa ficava (o `setDecorations(false)` era negado), os botões da barra do app (minimizar/
+  maximizar/fechar/arrastar) **não faziam nada** e salvar/escolher arquivo/mostrar na pasta eram
+  recusados — é o que faz a janela deixar de parecer "um aplicativo separado". `doc-*` é o padrão
+  dos labels que `novaJanela.ts` gera (glob), sem abrir permissão para janelas de terceiros.
+
+## src/app/novaJanela.ts
+
+### 2026-10-20 · janela do documento · nasce sem moldura, como a principal
+- **Local:** as opções do `new WebviewWindow`
+- **Linha:** `+ decorations: false`, `+ shadow: true`, `+ center: true`
+- **Porquê:** a janela principal é montada no `lib.rs` com `decorations(false)`; a do documento era
+  criada com a moldura padrão e só a perdia no `setDecorations(false)` do `windowControls`, **depois**
+  da página carregar — a barra nativa piscava por cima da do app (e, sem a permissão, ficavam as
+  duas). Criar já sem moldura acerta o primeiro quadro; `shadow` mantém a sombra (a principal também
+  liga) e `center` põe a janela no meio da tela em vez do canto padrão.
+
+## src/app/tabs.ts
+
+### 2026-10-20 · janela do documento · documento novo ganha rascunho (e o rótulo diz o que leva)
+- **Local:** `detachTab`, `garantirRascunho` (nova) e o item do `openTabMenu`
+- **Linha:** `if (!tab.path) { toast("Salve o documento antes…"); return; }` →
+  `if (!(await this.garantirRascunho(tab)) || !tab.path) { toast("Não consegui preparar…"); return; }`;
+  `+ garantirRascunho` (ativa a aba quando preciso e chama `ensureWordFile`/`ensurePptFile`/
+  `ensureExcelFile`/`ensureSaved` — o mesmo rascunho do fechar); o rótulo `"Abrir em nova janela"` →
+  `"Abrir em nova janela (só este documento)"`
+- **Porquê:** o `detachTab` exigia `tab.path`, mas os `prepareClose*` só criam o rascunho quando a
+  aba está **suja** — documento novo, nunca editado, é `path: null` + `dirty: false` e caía no aviso
+  "Salve o documento antes de abrir em outra janela": o caso mais comum de "quero tirar esta aba
+  daqui" era justamente o recusado. Os `ensure*File` são do documento **aberto** (usam o host), daí
+  a troca de aba antes; o rascunho é o mesmo que o fechar grava e a janela nova o abre pelo `?doc=`.
+  O rótulo ganhou "(só este documento)" porque a janela nova não é uma cópia do app com a fileira:
+  é **uma aba**, o documento pedido — e a aba sai daqui, como no arrasto para fora.
+
+## scripts/testar-layout.mts
+
+### 2026-10-20 · janela do documento · as quatro checagens novas
+- **Local:** o bloco "Abas: arrastar para fora vira uma janela própria"
+- **Linha:** `+ 4 checagens` — `doc-*` na capacidade, `decorations: false`/`shadow: true` no
+  `novaJanela`, o `garantirRascunho` com os `ensure*File`, e o rótulo "(só este documento)"
+- **Porquê:** são as três peças que fazem a janela ser um app separado — e as três falham **em
+  silêncio**: sem permissão a janela ainda abre (com duas barras), sem `decorations` ela abre com a
+  nativa piscando, e sem o rascunho ela é recusada com um aviso que parece "não é para isso".
+
+## docs/funcionalidades.md
+
+### 2026-10-20 · janela do documento · o parágrafo das abas
+- **Local:** o parágrafo **Abas**
+- **Linha:** `+ a janela é o app inteiro sem as outras abas` e `+ documento novo ganha o rascunho dele`
+- **Porquê:** o parágrafo já prometia a janela própria; faltava dizer que ela é o app **sem as
+  outras abas** (é o que o usuário chama de "aplicativo separado"), que o menu diz "só este
+  documento" e que documento nunca salvo também vai.
+
+## CHANGELOG.md
+
+### 2026-10-20 · janela do documento · a entrada no Geral
+- **Local:** Geral → Não adicionado → Frontend
+- **Linha:** `novo` (promovido a "Adicionado" no fechamento)
+- **Porquê:** abas e janelas são recurso do app todo (Geral), não de um módulo.

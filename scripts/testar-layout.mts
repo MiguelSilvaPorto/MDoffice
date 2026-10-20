@@ -2794,6 +2794,31 @@ console.log("\nAbas: arrastar para fora vira uma janela própria");
     /async detachTab\(this: App, id: string\)/.test(tabs) && /prepareClosePpt/.test(tabs) && /abrirEmNovaJanela\(\{ path: tab\.path/.test(tabs),
     "a aba sai da janela sem salvar o que estava aberto"
   );
+  // a janela do documento é "o app sem as outras abas": ela precisa das MESMAS permissões da
+  // principal (barra própria, diálogos, abrir pasta). A capacidade valia só para "main"/"config".
+  const capacidades = ler("src-tauri/capabilities/default.json");
+  checa(
+    "a janela do documento herda as permissões (doc-*)",
+    /"windows":\s*\[[^\]]*"doc-\*"[^\]]*\]/.test(capacidades),
+    "sem o label no capabilities a janela sobe com a barra nativa + a do app e os botões mortos"
+  );
+  checa(
+    "a janela nova nasce sem moldura, como a principal",
+    /decorations:\s*false/.test(janela) && /shadow:\s*true/.test(janela),
+    "com moldura nativa a janela do documento não parece um app separado (e a barra pisca)"
+  );
+  checa(
+    "documento nunca salvo ganha rascunho antes de virar janela",
+    /async garantirRascunho\(this: App, tab: DocTab\)/.test(tabs) &&
+      /if \(tab\.kind === "ppt"\) return await this\.ensurePptFile\(\)/.test(tabs) &&
+      /garantirRascunho\(tab\)/.test(tabs),
+    "o 'Abrir em nova janela' recusava justamente o documento novo"
+  );
+  checa(
+    "o menu diz que a janela leva SÓ este documento",
+    /Abrir em nova janela \(só este documento\)/.test(tabs),
+    "o item não dizia que a janela nova é uma aba única"
+  );
 }
 
 console.log("\naba Desenhar: as ferramentas de traço num lugar só");

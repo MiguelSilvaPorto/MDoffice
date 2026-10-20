@@ -19,6 +19,13 @@ export function abrirEmNovaJanela(pedido: PedidoDeJanela, titulo: string): boole
         height: 860,
         minWidth: 720,
         minHeight: 480,
+        // sem moldura como a principal: o app desenha a barra dele (`windowControls`). Criar
+        // já sem as decorações evita a barra nativa piscar por cima da do app no primeiro
+        // quadro — e, sem a permissão da janela, ela ficaria com as DUAS barras e os botões
+        // da barra do app mortos (ver `capabilities/default.json`: o label `doc-*`).
+        decorations: false,
+        shadow: true,
+        center: true,
       });
       void janela.once("tauri://error", (e) => {
         const detalhe = String((e as { payload?: unknown } | null)?.payload ?? e);
