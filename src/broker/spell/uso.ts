@@ -63,6 +63,11 @@ export function trocaPorContexto(escrita: string, anterior: string | undefined, 
   const n = (id: number): number => modelo.data.n[id] ?? 0;
   const pCtx = (id: number): number => (contaBigrama(modelo, idAnterior, id) + SUAVIZACAO * (n(id) / modelo.total)) / (total + SUAVIZACAO);
   const pEscrita = pCtx(idEscrita);
+  // Palavra COMUM que o modelo não viu depois desta palavra: a tabela de bigramas guarda
+  // só os sucessores mais frequentes de cada contexto, então a ausência não é erro — pode
+  // ser só uma combinação rara ("à mão"). Sem evidência do contexto, uma palavra comum não
+  // é questionada (era daqui que saía "mão" → "não").
+  const frequenciaEscrita = n(idEscrita);
   // Nome próprio não é troca de classe: quem escreve "caso aja divergência" quer "haja", não
   // "Ana". As variantes de tecla vizinha/acento chegam a nomes do corpus ("aja" → "ana"), e o
   // modelo os prefere porque o nome é frequente — o resultado era a sugestão absurda do relato.
@@ -76,6 +81,9 @@ export function trocaPorContexto(escrita: string, anterior: string | undefined, 
     if (modelo.caps?.has(id) && !escritaMaiuscula) continue;
     const freq = n(id);
     if (freq < PISO_FREQUENCIA) continue;
+    // A candidata precisa aparecer NESTE contexto; sem isso, só a frequência não decide
+    // quando a escrita é uma palavra comum.
+    if (contaBigrama(modelo, idAnterior, id) === 0 && frequenciaEscrita >= 1000) continue;
     const vantagem = pCtx(id) / pEscrita;
     if (vantagem < VANTAGEM_MINIMA) continue;
     if (!melhor || vantagem > melhor.vantagem) {

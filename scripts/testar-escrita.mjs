@@ -221,14 +221,15 @@ function soAcento(antes, depois) {
 // ---------------------------------------------------------------- política da pausa
 
 const ESTRUTURAIS = new Set(["quebra-frase", "trecho-longo", "frase-longa"]);
-const REGISTRO = new Set(["giria", "internetes", "contracao", "muleta", "oralidade", "atenuacao", "redundancia", "vagueza", "cliche"]);
+const REGISTRO = new Set(["giria", "internetes", "contracao", "muleta", "oralidade", "atenuacao", "redundancia", "vagueza", "cliche", "escolha"]);
 
 /**
  * O que a varredura automática aplicaria com estas issues e este cursor — a mesma
  * política de `planejarVarredura` + `autoFixWords` (palavra sob o cursor nunca;
- * ortografia só atrás do cursor e dentro do parágrafo).
+ * ortografia só atrás do cursor e dentro do parágrafo; o ponto final nunca no
+ * parágrafo em que se está escrevendo).
  */
-function planejado(issues, texto, pos, parFrom) {
+function planejado(issues, texto, pos, parFrom, parTo) {
   const lista = [];
   for (const i of issues) {
     if (i.kind === "spell") {
@@ -236,12 +237,14 @@ function planejado(issues, texto, pos, parFrom) {
       if (!(i.to < pos)) continue;
       if (i.from < parFrom) continue;
       if (texto.slice(i.from, i.to) !== i.word) continue;
+      if (/[^\p{L}\p{N}'-]/u.test(i.auto)) continue; // palavra não leva pontuação junto
       lista.push({ from: i.from, to: i.to, insert: i.auto, issue: i, origem: "ortografia" });
       continue;
     }
     if (i.fix === undefined) continue;
     if (ESTRUTURAIS.has(i.classe)) continue;
     if (i.classe && REGISTRO.has(i.classe)) continue;
+    if (i.classe === "ponto-final" && i.from >= parFrom && i.to <= parTo) continue;
     if (i.from < pos && pos < i.to) continue;
     lista.push({ from: i.from, to: i.to, insert: i.fix, issue: i, origem: "estilo" });
   }
@@ -265,6 +268,10 @@ function aplicar(texto, correcoes) {
 }
 
 const inicioDoParagrafo = (texto, pos) => texto.lastIndexOf("\n\n", Math.max(0, pos - 1)) + 2;
+const fimDoParagrafo = (texto, pos) => {
+  const i = texto.indexOf("\n\n", pos);
+  return i < 0 ? texto.length : i;
+};
 
 // ---------------------------------------------------------------- medição
 
@@ -322,7 +329,7 @@ for (const rodada of rodadas()) {
           if (!usaAcentos(texto)) continue; // o app fica quieto: zero alteração por definição
           const issues = await checkText(texto, new Set());
           const parFrom = inicioDoParagrafo(texto, pos);
-          const correcoes = planejado(issues, texto, pos, parFrom);
+          const correcoes = planejado(issues, texto, pos, parFrom, texto.length);
           const depois = aplicar(texto, correcoes);
           if (depois !== texto) {
             alteracoes++;
@@ -344,7 +351,7 @@ for (const rodada of rodadas()) {
       for (let k = passo; k < todas.length; k += passo) {
         const pos = todas[k].index;
         const parFrom = inicioDoParagrafo(texto, pos);
-        for (const c of planejado(issues, texto, pos, parFrom)) {
+        for (const c of planejado(issues, texto, pos, parFrom, fimDoParagrafo(texto, pos))) {
           const trecho = texto.slice(c.from, c.to);
           if (c.insert === trecho) continue;
           const chave = `${c.from}|${c.to}|${c.insert}`;

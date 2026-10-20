@@ -317,7 +317,18 @@ export class App {
     this.setupKeys();
     this.setupEditorInteractions();
     this.editor.onScroll(() => this.syncPreviewScroll());
-    this.editor.view.contentDOM.addEventListener("paste", (e) => void this.onPaste(e as ClipboardEvent));
+    // Colar imagem: captura no documento (o CodeMirror pode consumir o evento antes do
+    // contentDOM). Só age quando o alvo está dentro do editor Markdown; o WebView2
+    // entrega a imagem por `files`, por `items` ou só pela área de transferência rica.
+    document.addEventListener(
+      "paste",
+      (e) => {
+        const alvo = e.target as Node | null;
+        if (!alvo || !this.editor.view.contentDOM.contains(alvo)) return;
+        void this.onPaste(e as ClipboardEvent);
+      },
+      true
+    );
     this.editor.onIssuesChanged = () => this.checkWritingSoon();
     this.editor.onIgnoreWord = (word) => this.ignoreWord(word);
     this.editor.onIgnoreStyle = (issue) => this.ignoreStyleIssue(issue);

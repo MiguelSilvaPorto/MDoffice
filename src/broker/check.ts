@@ -111,6 +111,8 @@ export async function checkText(bruto: string, ignore: Set<string>, opcoes?: { t
           message: `“${token.word}” existe, mas você quis dizer “${near}”?`,
           suggestions: [near],
           fix: near,
+          // pergunta de palavra: nunca entra sozinha (a escrita pode ser a certa)
+          classe: "escolha",
         });
       } else if (token.word.length >= 3) {
         // A palavra existe, mas o CONTEXTO pode pedir outra leitura: "a media das notas" é
@@ -128,6 +130,8 @@ export async function checkText(bruto: string, ignore: Set<string>, opcoes?: { t
             message: `“${token.word}” existe, mas o contexto pede “${troca.palavra}”?`,
             suggestions: [troca.palavra],
             fix: troca.palavra,
+            // pergunta de palavra (contexto): nunca entra sozinha
+            classe: "escolha",
           });
         }
       }

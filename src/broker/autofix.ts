@@ -75,6 +75,10 @@ export function planejarVarredura(text: string, ctx: CtxVarredura): CorrecaoAuto
       diag({ ...base, veredito: "ignorado", motivo: `registro (${i.classe}): é escolha de quem escreve, fica como sugestão` });
       continue;
     }
+    if (i.classe === "escolha") {
+      diag({ ...base, veredito: "ignorado", motivo: "sugestão de leitura/estilo: fica no aviso, não entra sozinha" });
+      continue;
+    }
     if (i.classe === "ponto-final" && i.from >= ctx.parFrom && i.to <= ctx.parTo && !ctx.parConcluido) {
       diag({ ...base, veredito: "ignorado", motivo: "parágrafo em digitação: o ponto só entra quando ele acaba" });
       continue;

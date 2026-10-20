@@ -37,7 +37,10 @@ export const assistantMethods = {
     }
     const pos = this.editor.view.state.selection.main.head;
     const par = this.paragrafoDoCursor(pos);
-    const correcoes = planejarVarredura(texto, { pos, from: 0, to: texto.length, parFrom: par.from, parTo: par.to, parConcluido: par.concluido });
+    // O parágrafo do cursor NUNCA recebe o ponto final na pausa: "cursor no fim" é o estado
+    // normal de quem está escrevendo. O ponto entra quando a pessoa muda de parágrafo (aí ele
+    // já é o parágrafo de cima) ou numa ação explícita (salvar/formatar).
+    const correcoes = planejarVarredura(texto, { pos, from: 0, to: texto.length, parFrom: par.from, parTo: par.to, parConcluido: false });
     if (!correcoes.length) return;
     // esta varredura não troca palavras: o que estava pendente de outra ficou de pé
     limparAplicadasAuto();
@@ -93,6 +96,15 @@ export const assistantMethods = {
       const achados = await checkText(text, new Set([...this.ignoreWords, ...this.ignoredHere]));
       // "Ignorar neste texto" só vale para avisos de estilo; ortografia continua no dicionário/ignoradas.
       this.issues = achados.filter((i) => i.kind !== "style" || !this.tab.ignoredStyle.has(styleKey(i)));
+      // O ponto final do ÚLTIMO parágrafo não é aviso enquanto ele está sendo escrito: o
+      // cursor "no fim" é o estado normal de quem digita, e o aviso só faz sentido quando
+      // o parágrafo já ficou para trás (ou no salvamento).
+      const doc = this.editor.view.state.doc;
+      const pos = this.editor.view.state.selection.main.head;
+      const par = this.paragrafoDoCursor(pos);
+      if (doc.sliceString(par.to, doc.length).trim() === "") {
+        this.issues = this.issues.filter((i) => !(i.classe === "ponto-final" && i.from >= par.from && i.to <= par.to));
+      }
     } catch {
       this.issues = [];
     }
@@ -196,7 +208,7 @@ export const assistantMethods = {
     const par = this.paragrafoDoCursor(pos);
     const correcoes = planejarVarredura(texto, { pos, from: 0, to: texto.length, parFrom: par.from, parTo: par.to, parConcluido: par.concluido });
     if (correcoes.length) this.editor.replaceRanges(correcoes, -1);
-    return correcoes.length + this.autoFixWords(0, texto.length, true);
+    return correcoes.length + this.autoFixWords(0, texto.length, true, true);
   },
 
   /**
@@ -244,14 +256,22 @@ export const assistantMethods = {
    * texto naquele ponto continua igual antes de trocar. O Ctrl+Z seguinte vale como recusa
    * (o ritmo espera mais e o par aprendido é descontado).
    */
-  autoFixWords(this: App, from: number, to: number, soDepoisDoCursor = true): number {
+  autoFixWords(this: App, from: number, to: number, soDepoisDoCursor = true, permitirPontuacao = false): number {
     const view = this.editor.view;
     const doc = view.state.doc;
     const pos = view.state.selection.main.head;
     const texto = doc.toString();
+    // A correção automática de palavra troca PALAVRA: ponto/vírgula que vierem junto
+    // (o aviso fundido com "falta o ponto final") só entram no fim do parágrafo ou numa
+    // ação explícita — nunca no meio da frase que está sendo escrita.
+    const temPontuacao = (s: string) => /[^\p{L}\p{N}'-]/u.test(s);
     const candidatos = this.issues.filter((i) => i.kind === "spell" && i.from >= from && i.to <= to);
     const alvos = candidatos.filter(
-      (i) => i.auto && (!soDepoisDoCursor || pos > i.to) && doc.sliceString(i.from, i.to) === i.word
+      (i) =>
+        i.auto &&
+        (!soDepoisDoCursor || pos > i.to) &&
+        doc.sliceString(i.from, i.to) === i.word &&
+        (permitirPontuacao || !temPontuacao(i.auto))
     );
     // Log de decisões: por que CADA candidato foi aplicado ou ficou de fora. É o que explica a
     // "correção lixo" (palavra pela metade, texto que mudou, falta de confiança).
@@ -270,6 +290,7 @@ export const assistantMethods = {
       if (!i.auto) diag({ ...base, veredito: "ignorado", motivo: "sem confiança para aplicar sozinho (fica como sugestão)" });
       else if (soDepoisDoCursor && pos <= i.to) diag({ ...base, veredito: "ignorado", motivo: "é (ou encosta n)a palavra sob o cursor — pode estar pela metade" });
       else if (doc.sliceString(i.from, i.to) !== i.word) diag({ ...base, veredito: "ignorado", motivo: "o texto naquele ponto mudou desde a verificação" });
+      else if (!permitirPontuacao && temPontuacao(i.auto)) diag({ ...base, veredito: "ignorado", motivo: "a correção automática não acrescenta pontuação (o ponto entra quando o parágrafo termina)" });
       else diag({ ...base, veredito: "aplicado", motivo: `vira “${i.auto}”` });
     }
     if (!alvos.length) return 0;
@@ -342,7 +363,7 @@ export const assistantMethods = {
       marcarAplicacao(todoTexto);
       diag({ gatilho: "paragrafo", regra: "varredura do parágrafo concluído", veredito: "aplicado", motivo: `${correcoes.length} ajuste(s) de estilo` });
     }
-    return correcoes.length + this.autoFixWords(from, to);
+    return correcoes.length + this.autoFixWords(from, to, true, true);
   },
 
   updateWritingBadge(this: App): void {

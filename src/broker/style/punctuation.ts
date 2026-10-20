@@ -44,7 +44,7 @@ export function safeSentenceBreak({ mask, push }: RuleCtx): void {
     const ini = Math.max(0, m.index + m[1].length - 1); // inclui o espaço antes da conjunção
     const fim = ini + 1 + conj.length;
     if (conj.toLowerCase() === "como") {
-      push(ini, fim, "Antes de “como” (exemplos) costuma vir vírgula", `, ${conj}`, [], false);
+      push(ini, fim, "Antes de “como” (exemplos) costuma vir vírgula", `, ${conj}`, [], false, "escolha");
     } else {
       const comMaiuscula = conj[0].toUpperCase() + conj.slice(1);
       push(ini, fim, "Frase muito comprida: comece nova frase aqui", `. ${comMaiuscula}`, [], false, "quebra-frase");
@@ -291,7 +291,7 @@ export function subordinateComma({ mask, push }: RuleCtx): void {
         if (nBefore < minBefore) continue;
         if (/,\s*$/.test(before)) continue;
         const start = s.index + m.index;
-        push(start, start + m[1].length + m[2].length, `Costuma vir vírgula antes de “${m[2]}”`, `, ${m[2]}`, [], false);
+        push(start, start + m[1].length + m[2].length, `Costuma vir vírgula antes de “${m[2]}”`, `, ${m[2]}`, [], false, "escolha");
       }
     }
   }

@@ -66,12 +66,14 @@ export interface WritingIssue {
    * "ponto-final" = fecha o parágrafo com ponto (só entra quando o parágrafo acabou);
    * "quebra-frase" = reestrutura a frase (nunca entra sozinha; só pelo aviso/“Corrigir tudo”);
    * "trecho-longo" = trecho comprido sem pontuação (o aviso, e a quebra sugerida quando há);
-   * "frase-longa" = frase bem mais longa que o normal da pessoa (perfil de escrita).
+   * "frase-longa" = frase bem mais longa que o normal da pessoa (perfil de escrita);
+   * "escolha" = sugestão que depende de leitura/estilo (“mão” × “não”, vírgula antes de
+   *   “enquanto”): é pergunta, nunca entra sozinha.
    *
    * As demais classes (internetês, contração, muleta…) marcam um **marcador informal**:
    * é o que conta no MIP e no agrupamento por classe do painel de revisão.
    */
-  classe?: "ponto-final" | "quebra-frase" | "trecho-longo" | "frase-longa" | ClasseMarcador;
+  classe?: "ponto-final" | "quebra-frase" | "trecho-longo" | "frase-longa" | "escolha" | ClasseMarcador;
 }
 
 export interface WritingStats {

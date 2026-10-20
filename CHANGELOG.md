@@ -37,7 +37,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   **texto sem acento por escolha** (informal, áudio transcrito) não recebe **nenhuma** alteração
   automática — nem acento, nem vírgula, nem maiúscula; o aviso continua e a ação explícita
   resolve. **Gíria e registro** ("pra", "tá", "a gente", "pq") saíram da varredura automática:
-  ficam como sugestão. A ortografia parou de chutar acento: variante desempatada pelo uso
+  ficam como sugestão. **Ponto final só quando o parágrafo acabou de verdade**: pausar no fim
+  da linha em que você está não fecha mais a frase (era daí que saíam os pontos no meio da
+  frase e as maiúsculas seguintes); **vírgulas opinativas** (antes de "enquanto"/"como") e
+  **trocas de palavra por contexto** ("mão" × "não") também ficaram só como sugestão. A
+  ortografia parou de chutar acento: variante desempatada pelo uso
   ("pao" → "pão", não "paó"), plural do verbo sem sujeito ("mantém"/"mantêm") e homógrafos
   ("bebe"/"bebê", "valido"/"válido") viram sugestão, e depois de auxiliar ("tinha valido") não
   se acentua como adjetivo. O comando **"Formatar texto" virou correção formal estrita**:
@@ -52,6 +56,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   preservados em 12/12 pares, **zero** acento divergente do gabarito e 92–96% dos acentos
   restaurados (os que faltam são ambíguos por sentido: "sai"/"saí", "as"/"às", "avó"/"avô").
   Teste: `node scripts/testar-escrita.mjs`.
+
+- **Colar imagem no Markdown voltou a funcionar (inclusive print do Windows)**: o colar lia só
+  `clipboardData.files`; no WebView2 a imagem às vezes chega só em `items` ou apenas pela área de
+  transferência rica, e o evento era ignorado sem aviso. Agora lê as três formas (com
+  `clipboard.read` de reserva), captura o evento no documento (o CodeMirror podia consumi-lo
+  antes) e registra no diagnóstico (`?diag=1`) o que veio no colar — tipos, arquivos e itens —
+  para diagnosticar qualquer variação da área de transferência.
 
 ### Adicionado (na main)
 

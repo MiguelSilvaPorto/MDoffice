@@ -24,8 +24,11 @@ dentro do documento e contar com uma escrita assistida de português que roda of
 
 ## Documentos e imagens
 
-- **Imagens**: insira pelo botão *Imagem*, **cole com `Ctrl+V`** ou **arraste o arquivo** para
-  a janela. Tudo é copiado para `assets/` com nome limpo (sem acentos/espaços).
+- **Imagens**: insira pelo botão *Imagem*, **cole com `Ctrl+V`** (inclusive print do Windows) ou
+  **arraste o arquivo** para a janela. O colar lê a imagem de `files`, de `items` e, quando o
+  WebView entrega só pela área de transferência rica, de `clipboard.read` — e registra no
+  diagnóstico (`?diag=1`) o que veio no evento. Tudo é copiado para `assets/` com nome limpo
+  (sem acentos/espaços).
 - **Documento novo já salvo na pasta padrão**: `Ctrl+N` (ou o card do Início) cria o documento e
   o guarda de uma vez em `Documentos\mdOffice\Markdown\Documento.md` — **sem perguntar pasta**. A
   raiz entra sozinha nos **Projetos** da barra lateral, com uma subpasta por tipo
@@ -95,7 +98,10 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   maiúsculas, espaços, pontuação repetida (inclusive **“....” → “...”**: reticências são três
   pontos) e ortografia com certeza — ao pausar, ao **terminar o parágrafo** e ao **salvar**.
   **Gíria e registro** (“pra”, “tá”, “a gente”, “pq”…) ficam como **sugestão**: são escolha de
-  quem escreve, não erro de forma. Num documento **sem acento por escolha** (informal, áudio
+  quem escreve, não erro de forma — assim como as **vírgulas opinativas** (antes de “enquanto”,
+  “como”) e as **trocas de palavra por contexto** (“mão” × “não”). O **ponto final** não entra
+  no parágrafo em que você está digitando: ele entra quando você passa para o parágrafo
+  seguinte ou salva. Num documento **sem acento por escolha** (informal, áudio
   transcrito), a correção automática **não mexe em nada** — nem acento, nem vírgula, nem
   maiúscula; o aviso continua no texto e a ação explícita resolve. Cada correção é um passo
   único de `Ctrl+Z` — e **desfazer ensina**: a troca desfeita volta a ser só sugestão.

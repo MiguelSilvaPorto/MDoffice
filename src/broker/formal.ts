@@ -65,6 +65,10 @@ export function planejarCorrecaoFormal(texto: string, issues: readonly WritingIs
       diag({ ...base, veredito: "ignorado", motivo: `classe ${i.classe}: reestrutura a frase` });
       continue;
     }
+    if (i.classe === "escolha") {
+      diag({ ...base, veredito: "ignorado", motivo: "sugestão de leitura/estilo: a correção formal não decide isso" });
+      continue;
+    }
     const trecho = texto.slice(i.from, i.to);
     if (esqueleto(insert) !== esqueleto(trecho) || contarPalavras(insert) !== contarPalavras(trecho)) {
       diag({
