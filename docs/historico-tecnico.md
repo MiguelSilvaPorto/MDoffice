@@ -14428,7 +14428,7 @@ antigas quando fizer sentido.
 
 ## src/broker/ghost/agreement.ts
 
-### 2026-10-20 · sugestão · concordância pronome + verbo
+### 2026-10-20 · 2679d83 · concordância pronome + verbo
 
 - **Local:** bloco novo "pessoa do verbo" (`pessoaDoSujeito`, `personFactor`, `formaDaPessoa`).
 - **Linha:** novo.
@@ -14441,7 +14441,7 @@ antigas quando fizer sentido.
 
 ## src/broker/ghost/predict.ts
 
-### 2026-10-20 · sugestão · o modo equilibrado arrisca o palpite
+### 2026-10-20 · 2679d83 · o modo equilibrado arrisca o palpite
 
 - **Local:** `THRESHOLDS` (`next`, `prefixShow`, `nextLead`, `nextRatio`, `minSuffix`), `rank` (aplica
   `personFactor` antes de normalizar), `suggestFrom` (regras `solta` e `folgada`), `CALIB.custo/pMin`.
@@ -14457,7 +14457,7 @@ antigas quando fizer sentido.
 
 ## src/broker/personal/feedback.ts
 
-### 2026-10-20 · sugestão · discreto deixa de apertar os limiares
+### 2026-10-20 · 2679d83 · discreto deixa de apertar os limiares
 
 - **Local:** `MODE_SCALE`.
 - **Linha:** `discreto: 1.4` → `discreto: 1`.
@@ -14466,7 +14466,7 @@ antigas quando fizer sentido.
 
 ## src/settingsPage.ts
 
-### 2026-10-20 · sugestão · o texto da intensidade
+### 2026-10-20 · 2679d83 · o texto da intensidade
 
 - **Local:** a linha "Intensidade das sugestões".
 - **Linha:** "Discreta: 4+ letras… Equilibrada: 3+ letras…" → "Discreta: só com muita certeza…
@@ -14475,7 +14475,7 @@ antigas quando fizer sentido.
 
 ## scripts/testar-ghost.mjs · scripts/eval-ghost.mts · scripts/calibrar-ghost.mts
 
-### 2026-10-20 · sugestão · régua por modo e casos de pronome
+### 2026-10-20 · 2679d83 · régua por modo e casos de pronome
 
 - **Local:** `testar-ghost.mjs`: stub de `localStorage` (escolhe o modo), a régua vira `regua()`.
 - **Linha:** uma régua (88% / 18% / 5%) → a mesma régua no modo **discreto** + uma no **equilibrado**

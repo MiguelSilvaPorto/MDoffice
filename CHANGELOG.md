@@ -32,13 +32,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **A sugestão passou a arriscar (estilo Copilot) e entende o pronome**: antes ela só aparecia com
-  muita certeza — "colo", "pesq" ou "Bom " não sugeriam nada. Agora, no modo **Equilibrado** (padrão), ela
-  mostra o palpite mais provável (Alt+Seta para baixo troca a opção): "pesq" → pesquisa, "Bom " → dia,
-  "obrig" → obrigado. E depois de **eu / nós / eles / você** o verbo concorda: "Eu colo" → **coloquei**,
-  "nós fize" → fizemos (o modelo, feito da Wikipédia, quase não tem 1ª pessoa). Economia de teclas no
-  `eval-ghost`: ~12% → ~25% (documento novo: ~7% → ~19%). O modo **Discreta** ficou igual ao comportamento
-  antigo, para quem prefere pouca sugestão e quase sempre certa. Vale no Word também.
+- (nada no momento)
 
 ### Adicionado (na main)
 
@@ -47,6 +41,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — arquivos, imagens e rascunhos passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **A sugestão passou a arriscar (estilo Copilot) e entende o pronome**: antes ela só aparecia com
+  muita certeza — "colo", "pesq" ou "Bom " não sugeriam nada. Agora, no modo **Equilibrado** (padrão), ela
+  mostra o palpite mais provável (Alt+Seta para baixo troca a opção): "pesq" → pesquisa, "Bom " → dia,
+  "obrig" → obrigado. E depois de **eu / nós / eles / você** o verbo concorda: "Eu colo" → **coloquei**,
+  "nós fize" → fizemos (o modelo, feito da Wikipédia, quase não tem 1ª pessoa). Economia de teclas no
+  `eval-ghost`: ~12% → ~25% (documento novo: ~7% → ~19%). O modo **Discreta** ficou igual ao comportamento
+  antigo, para quem prefere pouca sugestão e quase sempre certa. Vale no Word também.
 
 - **A sugestão enquanto digita aparece na hora, mesmo digitando rápido**: ela esperava 45 ms sem tecla
   nenhuma e o relógio reiniciava a cada letra — digitando depressa a sugestão só surgia nas pausas. Agora ela é
