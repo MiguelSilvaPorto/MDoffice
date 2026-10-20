@@ -14129,3 +14129,14 @@ antigas quando fizer sentido.
   **janela própria** … o documento é salvo antes …"
 - **Porquê:** o documento de funcionalidades não descrevia a fileira de abas; a janela por documento
   é um comportamento do app todo (categoria Geral) e precisa estar dito onde se procura.
+
+## CHANGELOG.md
+
+### 2026-10-20 · promoção · a entrada da aba arrastada para janela entra no "Adicionado" (Geral)
+- **Local:** Geral ▸ **Não adicionado** ▸ Frontend ▸ **Adicionado** ▸ Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **Arrastar a aba para fora da janela abre o documento
+  numa janela própria** (`b571157`, worktree `feat/aba-arrastada-vira-janela`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não sai no
+  mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
+  entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
+  promoções anteriores.

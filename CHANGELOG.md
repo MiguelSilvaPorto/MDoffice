@@ -1677,19 +1677,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 - (nada no momento)
 
-- **Arrastar a aba para fora da janela abre o documento numa janela própria**: o gesto da aba (que
-  já reordenava) agora detecta o ponteiro **fora da janela** — soltar ali abre o documento numa
-  **janela independente** ("quero pegar a aba e arrastar para fora… a aba ganha seu aplicativo de
-  forma independente") e tira a aba da janela atual. A janela nova sobe pelo mesmo app com
-  `?doc=<caminho>` e abre **só aquele documento**: não restaura a sessão das outras janelas nem grava
-  a sessão (a fileira da janela principal continua sendo a dela). Antes de mover, o documento é
-  **persistido** como no fechar (arquivo seu pergunta; rascunho é gravado) — a aba só sai depois que
-  a janela abriu, e cancelar o "salvar?" não move nada. Sem arrastar (janela maximizada, por
-  exemplo), o menu da aba tem **"Abrir em nova janela"**. No navegador de desenvolvimento a janela é
-  do navegador (com pop-up liberado). Conferido no navegador: soltar fora chamou
-  `index.html?doc=…` e a aba saiu; e a janela `?doc=` não sobrescreveu a sessão (sentinela intacta).
-  Teste: `npm run test:layout`.
-
 - **O menu dos grupos da fita abre e fica (o controle de dentro volta a ser clicável)**: com a faixa
   apertada, o grupo que não cabe vira um **botão com menu** — mas o menu **abria e sumia no mesmo
   tique**: o `hidden` que o próprio menu liga/desliga re-disparava o re-planejo do encaixe, e o
@@ -1787,6 +1774,19 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **Arrastar a aba para fora da janela abre o documento numa janela própria**: o gesto da aba (que
+  já reordenava) agora detecta o ponteiro **fora da janela** — soltar ali abre o documento numa
+  **janela independente** ("quero pegar a aba e arrastar para fora… a aba ganha seu aplicativo de
+  forma independente") e tira a aba da janela atual. A janela nova sobe pelo mesmo app com
+  `?doc=<caminho>` e abre **só aquele documento**: não restaura a sessão das outras janelas nem grava
+  a sessão (a fileira da janela principal continua sendo a dela). Antes de mover, o documento é
+  **persistido** como no fechar (arquivo seu pergunta; rascunho é gravado) — a aba só sai depois que
+  a janela abriu, e cancelar o "salvar?" não move nada. Sem arrastar (janela maximizada, por
+  exemplo), o menu da aba tem **"Abrir em nova janela"**. No navegador de desenvolvimento a janela é
+  do navegador (com pop-up liberado). Conferido no navegador: soltar fora chamou
+  `index.html?doc=…` e a aba saiu; e a janela `?doc=` não sobrescreveu a sessão (sentinela intacta).
+  Teste: `npm run test:layout`.
 
 - **A lista de fontes/tamanho ficou menor**: o menu do seletor (o campo Fonte da fita, no Word e no
   PowerPoint) abria com **linhas altas e até 330 px** de lista — no print do usuário a lista de
