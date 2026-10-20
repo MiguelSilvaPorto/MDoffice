@@ -495,6 +495,20 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A Arrumação ganhou "Compor": três estruturas diferentes por lâmina, imagem protagonista e mídia preservada**: o
+  "Recompor" conservador só alinhava o que já existia — e isso nunca gerava uma lâmina nova. Agora a lâmina é lida
+  em **grupos** (título com antetítulo/subtítulo, cada coluna de conteúdo, rodapé, imagem de conteúdo) e recomposta
+  em **três estruturas diferentes**, não em recoloridos da mesma arrumação: **imagem + texto** (a imagem vira herói
+  recortado — círculo, arco ou retângulo de cantos macios, com corte *cover* e sangria — e uma forma geométrica com
+  anel e pontos quando não há imagem), **cartões** e **faixas**. O texto é **re-tipografado** (título 26 pt, corpo
+  12,5 pt) com a altura medida no canvas na mesma fonte do renderizador e **desce até 9 pt** antes de desistir; a
+  caixa força a quebra de linha. **Mídia nunca é apagada**: imagem/vídeo não são podados (lâmina com vídeo/áudio não
+  é recomposta) e a imagem de conteúdo não pode ser coberta — o painel de fundo de um grupo anda junto com ele. No
+  painel, os cartões **"Novo · …" que só trocavam cor/fundo** saem quando há composição. Testado numa **cópia** do
+  deck real, lâmina por lâmina, com captura isolada do palco no app.
+
+- **Organograma real: a hierarquia lê conectores de traço, apaga os antigos em todo arranjo e a Arrumação tem mais estilos** — o organograma importado usa conectores de traço (reta e cotovelo, com o ramo da SAP azul), que o detector não enxergava: a hierarquia não era oferecida e os conectores ficavam soltos no meio do slide depois do Fluxo. Agora a hierarquia lê os conectores pelas duas pontas (com o espelhamento do cotovelo), mantém a cor de cada ramo, e **todos** os arranjos os apagam. O Fluxo ganhou estilos (em linhas e em 2, 3 ou 4 colunas), a Arrumação mostra todos os estilos distintos de uma vez (sem o "Gerar mais", que repetia os mesmos cartões) e a região da hierarquia é escolhida pela posição real dos cartões, não pelo retângulo.
+
 - **Composição ▸ Arrumação: o arranjo aparece no palco ao clicar** — o cartão alterava a lâmina na memória mas não repintava o palco, então o resultado só aparecia ao trocar de slide e voltar (os outros comandos da Composição já repintavam). Teste novo confere que os quatro comandos que mudam a lâmina chamam o repintar.
 
 - **Arrumação que funciona em slides reais: Fluxo, região livre, texto proporcional e explicação** — medido em 24 slides reais, 21 não ofereciam nenhum arranjo. Agora: o **Fluxo** mantém o tamanho de cada bloco e os alinha em linhas ou colunas (a grade/lista exigiam blocos iguais e encolhiam tudo); a região dos cartões é a **maior área livre** que não cruza texto fixo (antes, uma faixa fixa); a **legenda** abaixo do cartão anda com ele e a **imagem de canto** é arte, não cartão; o texto escala **na mesma proporção** da caixa (o piso de 8 pt fazia o texto vazar); a grade ganhou 5 e 6 colunas; o Designer só aplica um arranjo que **não encolha** os blocos; e o painel **explica por que** não há arranjo ("já estão alinhados", "não há o que arrumar", "denso demais"). Cerca de metade dos slides medidos passou a ter arranjos.

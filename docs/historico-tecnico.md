@@ -14430,3 +14430,31 @@ antigas quando fizer sentido.
   que há **Ajustar** e o **100%** no clique
 - **Porquê:** é no doc do módulo que se procura "qual é o tamanho da folha" — e a dúvida do dono era
   exatamente essa. A entrada fica em "Não adicionado" até o `fechar.ps1` entregar.
+## src/powerpoint/edicao/recompor.ts · arranjos.ts · powerpoint.ts · render/forma.ts
+
+### 2026-10-20 · esta tarefa · a composição por grupos e padrões (o "Compor")
+- **Local:** `recompor.ts` (`analisar`, `padraoUnico`, `circulo`, `midiaHero`, `cartoesTexto`, `faixasTexto`,
+  `gradeDe`, `reescrever`, `alturaDaForma`, `linhasDe`); `arranjos.ts` (as três ideias em `variantesDe` e o rótulo
+  "Compor — …"); `powerpoint.ts` (modo Tudo esconde os cartões "Novo · …" de recolorir quando há composição);
+  `render/forma.ts` (`razaoDeLinha` exportada, para a medida usar a mesma régua do renderizador)
+- **Linha:** `+ if (id === "recompor") return recompor(slide, ratio, variante);`;
+  `- return { fundos, conteudo };` → `+ return { fundos, conteudo, tituloProprio: true, … }`;
+  `- const corDoTexto = comArte ? "FFFFFF" : undefined;` → `+ … desenho.fundoEscuro ? …`;
+  `- if (alturaTotal <= 86)` → `+ if (alturaTotal <= baseConteudo - 4)`;
+  `- const mx = lado === "direita" ? 8 : 92;` → `+ … ? 90 : 10;`
+- **Porquê:** a "Recomposição" anterior (commit `bbd46df`) só **normalizava** margens e alinhamento: por
+  definição, nunca produzia uma lâmina nova — e o usuário cobrou justamente isso ("reposicionar o que está bem
+  nunca vai gerar lâminas únicas como as da Microsoft"). A tentativa seguinte de re-empilhar os blocos mostrou,
+  no app, que mover um deck já desenhado piora o resultado (o título subia 3,7% e o texto do rodapé saía de cima
+  do cartão). A saída foi **compor por grupos**: ler a semântica da lâmina (título com antetítulo/subtítulo, cada
+  coluna de conteúdo, rodapé e imagem de conteúdo) e reescrever o texto num padrão novo, com a altura medida no
+  **canvas** (a mesma fonte do renderizador) e queda de tamanho até 9 pt antes de desistir. Cada variante começa
+  por uma **estrutura diferente** (imagem + texto, cartões, faixas) — a crítica era que as "ideias" eram a mesma
+  arrumação recolorida. A imagem é **recortada** (círculo/arco/retângulo, com *cover* calculado pela proporção) e
+  pode sangrar; sem imagem, uma forma geométrica com anel e pontos ocupa o lugar. **Nada de mídia é apagado**:
+  vídeo/áudio não entram na poda (lâmina com mídia nem é recomposta) e a imagem de conteúdo não pode ser coberta
+  — o painel de fundo de um grupo anda junto com ele (presos). Três defeitos apareceram só nas capturas e foram
+  corrigidos: título duplicado (o padrão já o reescrevia e o `compor` colocava de novo), texto sem quebrar linha
+  (o .pptx traz `wrap` desligado) e rodapé escuro no fundo escuro. A captura também foi consertada (painel e
+  avisos fixos escondidos só no print, viewport maior e `captureBeyondViewport`), senão o print incluía a área
+  de fora e não dava para julgar o desenho.
