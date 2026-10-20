@@ -15473,3 +15473,15 @@ antigas quando fizer sentido.
   no mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
   entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend do Geral,
   como as promoções anteriores.
+
+## CHANGELOG.md
+
+### 2026-10-20 · promoção · a entrada do roadmap no "Adicionado"
+- **Local:** Geral → **Não adicionado** → Frontend → **Adicionado** → Frontend (fim da lista)
+- **Linha:** 1 entrada movida — **O checklist "Paridade com o DeckCraft" virou o roadmap de
+  funcionalidades** (`db47a8d`), conferida **uma** vez só depois do `git add`
+- **Porquê:** o fecho não promove (no instante do commit a entrada ainda não está na `main`), então a
+  promoção anda num passo curto de docs, como nas rodadas anteriores. Antes de mover, conferi que o
+  commit está na `main`; a entrada ficou no **fim da lista do Frontend** (antes do rótulo
+  **Ferramentas (dev)**, que é o último grupo do arquivo) — não no fim do arquivo, que ali é o grupo
+  de ferramentas (o tropeço que já aconteceu numa rodada anterior).
