@@ -288,6 +288,7 @@ export class PowerPointHost {
       aoSelecionarCantos: (c) => this.selecionarCantos(c),
       aoTransformar: (patches, fase) => this.aoTransformar(patches, fase),
       aoEditarTexto: (id, ponto) => this.entrarEdicao(id, undefined, ponto),
+      aoSairEdicao: () => this.sairEdicao(),
       aoCriar: (c) => this.aoCriar(c),
       aoDuplicarParaArrastar: () => this.duplicarParaArrastar(),
       aoCelulas: (sel) => this.selecionarCelulas(sel),

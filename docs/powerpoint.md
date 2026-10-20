@@ -87,7 +87,10 @@ avisado ao abrir (nunca some em silêncio).
   **passa do quadro** da forma: ali o clique **não larga a escolha**, vai para o texto. O **mover**
   fica na **beirada** da forma — a faixa de ~6 px por dentro do contorno — e, com **várias** formas
   escolhidas, o arrasto continua movendo o conjunto; sem a forma escolhida, o primeiro arrasto pega
-  e move, como sempre. O **cursor** troca (`mover` ↔ `texto`) para dizer quem manda em cada estado.
+  e move, como sempre. A **beirada vale também com o texto em edição**: arrastar por ela sai da
+  edição e move a caixa **no mesmo gesto** (não é preciso clicar fora da caixa antes); no miolo, o
+  clique continua sendo o cursor de texto. O **cursor** troca (`mover` ↔ `texto`) para dizer quem
+  manda em cada estado.
 - **Texto formatado por trecho**: negrito/itálico/sublinhado/riscado, marca-texto,
   sobrescrito, versalete, espaçamento, cor e limpar formatação.
 - **Mudar a caixa do texto (as cinco do Office)**: **Frase normal** (minúsculas com a primeira

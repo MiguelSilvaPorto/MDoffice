@@ -554,6 +554,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Arrastar a caixa direto, sem sair da edição do texto**: com o texto em edição, o
+  `contenteditable` cobre a caixa inteira e engolia também a **beirada** de ~6 px que agarra a
+  forma para mover — era preciso clicar num lugar vazio da lâmina para sair da edição e só então
+  arrastar. Agora a beirada continua valendo **durante a edição**: o `pointerdown` nela sai da
+  edição e o **mesmo gesto** vira o arrasto (a forma continua escolhida), e o cursor vira
+  **mover** nessa faixa. No miolo, o clique segue sendo o cursor de texto (caret e seleção do
+  texto). Teste: `npm run test:layout` + laboratório do palco (beirada move; miolo não).
+
 - **O Assistente desligado deixa o desenho fiel (e a dica para de dizer "entendi")**: o traço livre
   ainda **encaixava nas formas de baixo** com o Assistente desligado — ao soltar, a caixa pulava e
   esticava até a borda do cartão (a prévia não mostra esse encaixe, então o salto era ainda mais

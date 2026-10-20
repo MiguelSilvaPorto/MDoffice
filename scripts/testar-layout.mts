@@ -438,6 +438,30 @@ checa(
   /\.pp-frame\.pp-panorama[\s\S]{0,120}cursor: grabbing/.test(ler("src/styles/powerpoint.css"))
 );
 
+// ---------------------------------------------------------------- PowerPoint: mover com o texto em edição
+
+console.log("\nPowerPoint: a beirada da forma move mesmo com o texto em edição");
+
+checa(
+  "editando, a beirada sai da edição e o mesmo gesto vira o arrasto",
+  /if \(ctx\.editando && alvo\.closest\(`[^`]*`\)\) \{/.test(palcoPpt) &&
+    /if \(!naBeirada\) return;/.test(palcoPpt) &&
+    /pertoDaBorda\(paraPt\(emEdicao\.box, ctx\.dim\)/.test(palcoPpt) &&
+    /this\.hooks\.aoSairEdicao\(\);/.test(palcoPpt),
+  "o contenteditable cobre a caixa e engole a beirada: sem isso, só clicando fora da caixa"
+);
+checa(
+  "o host do palco implementa a saída da edição",
+  /aoSairEdicao: \(\) => void;/.test(palcoPpt) && /aoSairEdicao: \(\) => this\.sairEdicao\(\)/.test(ppt),
+  "o palco pede a saída e ninguém atende"
+);
+checa(
+  "na beirada em edição o cursor vira 'move'",
+  /classList\.toggle\("pp-borda-edicao", na\)/.test(palcoPpt) &&
+    /\.pp-slide\.pp-borda-edicao[^{]*\{[^}]*cursor:\s*move/.test(ler("src/styles/powerpoint-edicao.css")),
+  "o gesto existe e o cursor continua 'text' na beirada"
+);
+
 // ---------------------------------------------------------------- PowerPoint: alças por forma na múltipla seleção
 
 console.log("\nPowerPoint: cada forma da múltipla seleção tem as próprias 4 alças");

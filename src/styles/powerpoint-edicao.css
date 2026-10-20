@@ -1588,6 +1588,13 @@ button.ppr.big .ppr-gal-ic svg {
   outline: none;
 }
 
+/* Editando, a beirada da forma continua sendo a alça de mover: o texto cobre a caixa inteira
+   e, sem isto, só dava para arrastar a caixa depois de sair da edição clicando num lugar
+   vazio da lâmina. A classe é do palco, que mede os 6 px da beirada a cada movimento. */
+.pp-slide.pp-borda-edicao .pp-shape.pp-rica.pp-editando .pp-rt {
+  cursor: move;
+}
+
 .pp-slide .pp-fixa {
   pointer-events: none;
 }

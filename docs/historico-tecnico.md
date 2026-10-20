@@ -15272,3 +15272,21 @@ antigas quando fizer sentido.
   mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
   entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
   promoções anteriores.
+
+## src/powerpoint/stage.ts · src/powerpoint/powerpoint.ts · src/styles/powerpoint-edicao.css
+
+### 2026-10-20 · a beirada da forma move com o texto em edição · o gesto não exige mais sair da caixa
+- **Local:** `aoPressionar` (o desvio do texto em edição), o novo `marcarBeiradaDeEdicao` (chamado no
+  `aoMover`), o hook `aoSairEdicao` (novo em `StageHooks`, ligado em `powerpoint.ts`) e a regra
+  `.pp-slide.pp-borda-edicao` no CSS
+- **Linha:** `- if (ctx.editando && alvo.closest(...)) return;` → `+ if (...) { ... if (!naBeirada) return; this.hooks.aoSairEdicao(); }`
+  (a beirada de 6 px passa a sair da edição no mesmo `pointerdown`); `+ this.marcarBeiradaDeEdicao(ctx, e);`
+  no `aoMover`; `+ .pp-slide.pp-borda-edicao ... { cursor: move }` no CSS
+- **Porquê:** o relato com print: depois de digitar, a caixa fica em edição e, para movê-la, é
+  preciso clicar **fora** da caixa (num lugar vazio da lâmina) antes de arrastar. O `.pp-rt` é
+  `inset: 0` com `pointer-events: auto` enquanto edita, então cobre até a beirada que normalmente
+  agarra a forma; o `return` do `aoPressionar` entregava todo o `pointerdown` ao texto. A correção
+  mantém o texto mandando no miolo (caret/seleção) e devolve a beirada ao mover. O laboratório do
+  palco (Chrome + eventos de ponteiro, com o **redesenho da lâmina** no meio do gesto, como o
+  `sairEdicao` faz) confirma: beirada → sai da edição e a caixa anda 20 px; miolo → não sai e
+  nenhum patch; cursor `move` na beirada e `text` no miolo.

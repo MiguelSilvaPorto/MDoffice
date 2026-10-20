@@ -93,6 +93,8 @@ export interface StageHooks {
   aoTransformar: (patches: Map<string, Partial<Shape>>, fase: "inicio" | "meio" | "fim") => void;
   /** duplo clique numa forma (entrar no texto); `ponto` = onde o ponteiro clicou (o caret vai lá) */
   aoEditarTexto: (id: string, ponto?: { x: number; y: number }) => void;
+  /** sai da edição de texto mantendo a forma escolhida (a beirada da forma vira alça de mover) */
+  aoSairEdicao: () => void;
   /** terminou de arrastar com uma ferramenta de criação */
   aoCriar: (criacao: { box: ShapeBox; clique: boolean; x0: number; y0: number; x1: number; y1: number }) => void;
   /** Ctrl+arrastar: duplica a seleção e devolve os ids das cópias */
@@ -540,8 +542,20 @@ export class Stage {
     const ctx = this.hooks.contexto();
     const p = this.pontoEmPct(e);
 
-    // texto em edição: o clique é do cursor de texto
-    if (ctx.editando && alvo.closest(`[data-shape="${ctx.editando}"] [data-editando]`)) return;
+    // Texto em edição: o clique é do cursor de texto — menos na BEIRADA da forma. O
+    // `contenteditable` cobre a caixa inteira (o padding incluso), então sem isto a beirada
+    // deixa de agarrar e só resta sair da edição clicando num lugar vazio da lâmina antes de
+    // arrastar. Na beirada, sai da edição e o gesto continua como o mover normal (abaixo).
+    if (ctx.editando && alvo.closest(`[data-shape="${ctx.editando}"] [data-editando]`)) {
+      const emEdicao = ctx.shapes.find((s) => s.id === ctx.editando);
+      const naBeirada =
+        !!emEdicao &&
+        !emEdicao.bloqueada &&
+        !ctx.ferramenta &&
+        pertoDaBorda(paraPt(emEdicao.box, ctx.dim), this.pontoEmPt(e, ctx.dim), this.pxEmPt(ctx.dim, BANDA_BEIRADA_PX));
+      if (!naBeirada) return;
+      this.hooks.aoSairEdicao();
+    }
     window.getSelection()?.removeAllRanges();
 
     // controles da mídia (player de áudio/vídeo): o clique é do player, não do palco
@@ -860,6 +874,7 @@ export class Stage {
   private aoMover(e: PointerEvent): void {
     if (!this.modo) {
       const ctx = this.hooks.contexto();
+      this.marcarBeiradaDeEdicao(ctx, e);
       if (ctx.ferramenta?.tipo === "curva" || this.pontosCurva.length > 0) {
         // só para o halo do ponto inicial (`pertoDoInicio`), que avisa que o clique fecha a forma
         this.pontoComSnap(e, ctx);
@@ -891,6 +906,20 @@ export class Stage {
       this.quadro = 0;
       if (this.ultimo) this.aplicar(this.ultimo);
     });
+  }
+
+  /**
+   * Com o texto em edição, a beirada da forma é a alça de mover: o cursor avisa. Sem isto o
+   * ponteiro fica com o cursor de texto até na borda (o `.pp-rt` cobre a caixa inteira) e o
+   * gesto existe sem ninguém descobrir.
+   */
+  private marcarBeiradaDeEdicao(ctx: ContextoPalco, e: { clientX: number; clientY: number }): void {
+    let na = false;
+    if (ctx.editando && !ctx.ferramenta) {
+      const s = ctx.shapes.find((x) => x.id === ctx.editando);
+      na = !!s && !s.bloqueada && pertoDaBorda(paraPt(s.box, ctx.dim), this.pontoEmPt(e, ctx.dim), this.pxEmPt(ctx.dim, BANDA_BEIRADA_PX));
+    }
+    this.slideEl?.classList.toggle("pp-borda-edicao", na);
   }
 
   private aplicar(e: PointerEvent): void {
