@@ -12,7 +12,11 @@ arquivos `.docx` de verdade.
   rodapé e “Página X de Y”) em **Layout → Configurar Página**.
 - **Páginas de verdade**: o texto flui de uma página para a outra e parágrafos longos se
   dividem entre elas (paginação calculada, não é só uma folha rolando).
-- **Zoom** (barra inferior) e régua de trabalho na coluna de escrita.
+- **Zoom** (barra inferior) e régua de trabalho na coluna de escrita. A folha é **sempre do
+  tamanho do papel** (A4, 21 × 29,7 cm — ou Carta): o **zoom é só a vista** e o tamanho do papel
+  aparece ao lado da página (com a orientação), para uma folha vista pequena não ser confundida com
+  "o papel mudou" — e a barra traz **Ajustar** (a folha cabe na largura da janela; nunca amplia
+  além de 100%) e o número do zoom, que **volta a 100%** no clique.
 - **Tema escuro**: a folha **escurece junto** — papel e tinta acompanham o tema (é o mesmo
   desenho da prévia do Markdown), então escrever à noite não leva clarão; “Preto” do documento
   entra como **tinta automática** (é o que o Word grava em “Automático”) e o **marca-texto**

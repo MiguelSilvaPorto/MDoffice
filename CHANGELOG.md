@@ -377,6 +377,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   ProseMirror e, quando o arrasto começou **dentro** do editor, deixa o movimento acontecer;
   arquivo de **fora** (do Explorer, de outra janela) continua entrando pelo `handleFiles`. Teste:
   `npm run test:layout` (a checagem lê o `handleDrop`).
+- **A folha é A4 de verdade (e o zoom diz que é só a vista)**: o relato ("quando coloco uma imagem
+  o tamanho do papel muda — olha como é pequena essa folha, não tem um tamanho fixo A4") veio de uma
+  folha **vista pequena**: o papel **sempre foi A4** (a config do app aberto está em 794 × 1123 px =
+  A4 a 96 dpi) — o que muda é o **zoom**, e não havia nada na tela dizendo nem o tamanho do papel nem
+  que aquilo era a vista. Agora a barra do Word mostra o **tamanho do papel ao lado da página**
+  ("A4 · 21 × 29,7 cm", com a orientação no balão) e ganhou **Ajustar** — a folha cabe na largura da
+  janela (nunca aumenta além de 100%) — e o **número do zoom virou botão**: um clique volta a **100%**.
+  O papel continua saindo só da configuração de página (mudar o conteúdo, imagem inclusive, não mexe
+  nele) e há teste prendendo isso.
 
 ### Adicionado (na main)
 

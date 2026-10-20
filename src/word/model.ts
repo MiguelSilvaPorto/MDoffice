@@ -29,12 +29,16 @@ export const DEFAULT_SETUP: PageSetup = {
 
 export const CM_TO_PX = 96 / 2.54;
 
+/** Tamanho do papel em centímetros, já considerando a orientação. */
+export function pageSizeCm(setup: PageSetup): { w: number; h: number } {
+  const [wcm, hcm] = setup.size === "A4" ? [21, 29.7] : [21.59, 27.94];
+  return setup.landscape ? { w: hcm, h: wcm } : { w: wcm, h: hcm };
+}
+
 /** Tamanho da folha em pixels (96 dpi) já considerando a orientação. */
 export function pageSizePx(setup: PageSetup): { w: number; h: number } {
-  const [wcm, hcm] = setup.size === "A4" ? [21, 29.7] : [21.59, 27.94];
-  const w = (setup.landscape ? hcm : wcm) * CM_TO_PX;
-  const h = (setup.landscape ? wcm : hcm) * CM_TO_PX;
-  return { w: Math.round(w), h: Math.round(h) };
+  const { w, h } = pageSizeCm(setup);
+  return { w: Math.round(w * CM_TO_PX), h: Math.round(h * CM_TO_PX) };
 }
 
 /** Medidas dos títulos (iguais na tela e no .docx exportado). */

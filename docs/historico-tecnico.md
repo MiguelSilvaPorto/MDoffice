@@ -14370,3 +14370,63 @@ antigas quando fizer sentido.
   **própria imagem arrastada** na lista de arquivos: a original ficava no lugar e entrava uma cópia.
   Medido no navegador com uma sonda: na versão antiga o drop interno chamava o `onImage` (a
   inserção) e agora não chama; arquivo de fora continua entrando (o `moved` é falso).ao duplica))
+## src/word/model.ts
+
+### 2026-10-20 · esta tarefa · o tamanho do papel em cm (o rótulo da folha)
+- **Local:** `pageSizeCm` (nova) e `pageSizePx` (passa a sair dela)
+- **Linha:** a tabela do papel (`[21, 29.7]` para A4 e `[21.59, 27.94]` para Carta, com a orientação
+  trocando w/h) saiu de dentro do `pageSizePx` e virou o `pageSizeCm`; o `pageSizePx` = `cm ×
+  CM_TO_PX` com o mesmo `Math.round`
+- **Porquê:** o rótulo do papel na barra do Word ("A4 · 21 × 29,7 cm") precisa das medidas em cm — e
+  uma segunda tabela no host mentiria na primeira vez que alguém mudasse uma das duas. A conta do px
+  ficou a mesma (A4 = 794 × 1123, conferido no app) e o helper é puro (dá para prender no teste).
+
+## src/word/host.ts · index.html · src/styles/word.css
+
+### 2026-10-20 · esta tarefa · "Ajustar", o 100% clicável e o papel à vista
+- **Local:** `index.html` — a barra `.wd-zoombar`; `host.ts` — a fiação, o `fitToWidth()` (depois do
+  `setZoom`) e o rótulo no `applySetup`; `word.css` — `#wd-zoom-val`
+- **Linha:** `+ <span id="wd-pagesize">` ao lado da página · `+ <button id="wd-zoom-fit">Ajustar</button>`
+  · `<span id="wd-zoom-val">100%</span>` → `<button id="wd-zoom-val" title="Zoom da vista — clique
+  para voltar a 100%">100%</button>` · `+ q("#wd-zoom-fit").addEventListener("click", () =>
+  this.fitToWidth())` · `+ q("#wd-zoom-val").addEventListener("click", () => this.setZoom(1))` ·
+  `+ const cm = pageSizeCm(s); papel.textContent = \`${s.size} · ${num(cm.w)} × ${num(cm.h)} cm\`` ·
+  `#wd-zoom-val { min-width: 48px; text-align: center; font-variant-numeric: tabular-nums }`
+- **Porquê:** o relato ("quando coloco uma imagem o tamanho do papel muda — olha como é pequena essa
+  folha, não tem um tamanho fixo A4"): **o papel nunca mudou** — a config no app aberto lê `--pg-w:
+  794px`/`--pg-h: 1123px` (A4 a 96 dpi) e o `insertImageData` só encolhe a *imagem* para a largura do
+  texto, sem escrever `--pg-w/--pg-h`. O que muda é a **vista** (o zoom), e não havia nada na tela
+  dizendo nem o tamanho do papel nem que aquilo era a vista: daí a folha pequena parecer "o papel
+  mudou". A barra agora mostra o **tamanho do papel** (o balão fecha a dúvida: "a vista (zoom) não
+  muda o papel") e ganhou os dois atalhos que faltavam: **Ajustar** (a folha cabe na largura; o
+  `Math.min(1, …)` impede o *aumento* — "caber" é para quando não cabe) e o **100%** no clique do
+  número (o zoom era só o controle deslizante e os ±). O `fitToWidth` usa o `clientWidth` do palco
+  menos 32 px (sombra/ar) e não faz nada com o painel escondido (largura 0). Conferido no navegador
+  (700×800, o painel do Word montado): papel 794×1123 em **todos** os estados, rótulo "A4 · 21 × 29,7
+  cm", Ajustar → 50% (o palco de teste tinha 340 px, então o fit bate no piso), o 100% volta a 100% e
+  o "−" a 90%.
+
+## scripts/testar-layout.mts
+
+### 2026-10-20 · esta tarefa · 4 verificações (a folha fixa e a vista)
+- **Local:** bloco novo "Word: o papel é fixo (A4/Carta) e o zoom é só a vista", depois do "a folha
+  escurece junto com o tema"
+- **Linha:** `+ 4 checagens` — os dois controles na barra (`Ajustar` e o `100%` como botão), o
+  `fitToWidth` com o teto de 100%, o rótulo do papel (`pageSizeCm` + `id="wd-pagesize"` + o `title`) e
+  a **trava negativa** de que o papel só sai do tamanho do papel (o `insertImageData` **não** escreve
+  `--pg-w/--pg-h`)
+- **Porquê:** o defeito era de **percepção** (a folha pequena era o zoom) e a regressão que importa é
+  a inversa: alguém "consertar" uma folha estranha mexendo no `--pg-w` a partir do conteúdo. A última
+  checagem falha se a inserção de imagem voltar a tocar no papel — foi ela que provou que o papel não
+  muda (o título da tarefa dizia o contrário).
+
+## docs/word.md · CHANGELOG.md
+
+### 2026-10-20 · esta tarefa · a bala do zoom e a entrada
+- **Local:** a bala "Zoom" da seção "Documento e páginas" e o CHANGELOG → **Word → Não adicionado →
+  Frontend** (topo)
+- **Linha:** a bala dizia só "Zoom (barra inferior) e régua"; agora diz que a folha é **sempre do
+  tamanho do papel** (A4/Carta), que o zoom é **só a vista**, que o tamanho aparece ao lado da página e
+  que há **Ajustar** e o **100%** no clique
+- **Porquê:** é no doc do módulo que se procura "qual é o tamanho da folha" — e a dúvida do dono era
+  exatamente essa. A entrada fica em "Não adicionado" até o `fechar.ps1` entregar.

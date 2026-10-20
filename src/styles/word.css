@@ -992,8 +992,9 @@ body.settings-open #word-pane {
 }
 
 #wd-zoom-val {
-  min-width: 38px;
-  text-align: right;
+  min-width: 48px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .modal.page-modal {

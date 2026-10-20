@@ -1619,6 +1619,41 @@ console.log("\nWord: a folha escurece junto com o tema (o papel)");
   );
 }
 
+// ---------------------------------------------------------------- Word: a folha é A4 (o zoom é só a vista)
+
+console.log("\nWord: o papel é fixo (A4/Carta) e o zoom é só a vista");
+{
+  const htmlWord = ler("index.html");
+  const hostWord = ler("src/word/host.ts");
+  const modelWord = ler("src/word/model.ts");
+  checa(
+    "a barra do Word tem 'Ajustar' e o número do zoom virou o botão do 100%",
+    /<button[^>]*id="wd-zoom-fit"[^>]*>Ajustar</.test(htmlWord) && /<button[^>]*id="wd-zoom-val"[^>]*>100%</.test(htmlWord),
+    "sem eles, ver a folha inteira numa janela estreita volta a ser caçar o valor no controle deslizante"
+  );
+  checa(
+    "o 'Ajustar' faz a folha caber na largura — e nunca aumenta além de 100%",
+    /private fitToWidth\(\): void \{/.test(hostWord) && /this\.setZoom\(Math\.min\(1, disponivel \/ w\)\)/.test(hostWord),
+    "o fit poderia ampliar a página (não é para isso) ou nem existir"
+  );
+  checa(
+    "o tamanho do papel aparece ao lado da página (A4/Carta, em cm, com a orientação)",
+    /export function pageSizeCm\(setup: PageSetup\)/.test(modelWord) &&
+      /21, 29\.7/.test(modelWord) &&
+      /21\.59, 27\.94/.test(modelWord) &&
+      /id="wd-pagesize"/.test(htmlWord) &&
+      /Tamanho do papel: \$\{s\.size\}/.test(hostWord),
+    "sem o rótulo, uma folha vista com zoom baixo continua parecendo 'o papel mudou'"
+  );
+  checa(
+    "a folha é FIXA: a largura/altura saem do tamanho do papel (a imagem não mexe)",
+    /st\.setProperty\("--pg-w", `\$\{w\}px`\)/.test(hostWord) &&
+      /st\.setProperty\("--pg-h", `\$\{ph\}px`\)/.test(hostWord) &&
+      !/insertImageData[\s\S]{0,700}setProperty\("--pg-[wh]"/.test(hostWord),
+    "algo além da configuração de página mexeria no papel (o relato foi na inserção de imagem)"
+  );
+}
+
 // ---------------------------------------------------------------- dica (tooltip do app)
 
 console.log("\ndicas do app (o balão no lugar do title nativo)");

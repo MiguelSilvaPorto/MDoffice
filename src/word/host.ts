@@ -8,7 +8,7 @@ import { ghostPlugin } from "./ghost";
 import { paginationPlugin, requestPagination, GAP_PX } from "./pagination";
 import { spellPlugin } from "./spell";
 import { emptyDoc, plainText } from "./schema";
-import { CM_TO_PX, DEFAULT_SETUP, deserialize, pageSizePx, serialize, type PageSetup } from "./model";
+import { CM_TO_PX, DEFAULT_SETUP, deserialize, pageSizeCm, pageSizePx, serialize, type PageSetup } from "./model";
 import { outlineSource, type WordOutlineSource } from "./markdown";
 import { h } from "../util";
 
@@ -134,6 +134,11 @@ export class WordHost {
     );
     q("#wd-zoom-out").addEventListener("click", () => this.setZoom(this.zoom - 0.1));
     q("#wd-zoom-in").addEventListener("click", () => this.setZoom(this.zoom + 0.1));
+    // "Ajustar": a folha cabe na largura da janela (o jeito de ver a página inteira quando ela não
+    // cabe em 100% — antes só dava para caçar o valor no controle deslizante)
+    q("#wd-zoom-fit").addEventListener("click", () => this.fitToWidth());
+    // o número do zoom é o botão do "voltar a 100%"
+    q("#wd-zoom-val").addEventListener("click", () => this.setZoom(1));
     this.applySetup();
     this.ribbon.update();
   }
@@ -184,6 +189,16 @@ export class WordHost {
     st.setProperty("--wd-font", `'${s.defaultFont}', 'Segoe UI', sans-serif`);
     st.setProperty("--wd-size", `${s.defaultSize}pt`);
     this.zoomEl.style.width = `${w}px`;
+    // o TAMANHO DO PAPEL à vista (o papel é fixo: A4/Carta; o que muda de tamanho na tela é a vista —
+    // o usuário leu a folha pequena do zoom como "o papel mudou" e este rótulo responde a pergunta)
+    const cm = pageSizeCm(s);
+    const num = (v: number) => String(v).replace(".", ",");
+    const rotulo = `${s.size} · ${num(cm.w)} × ${num(cm.h)} cm`;
+    const papel = this.opts.pane.querySelector<HTMLElement>("#wd-pagesize");
+    if (papel) {
+      papel.textContent = rotulo;
+      papel.title = `Tamanho do papel: ${s.size} (${s.landscape ? "paisagem" : "retrato"}) · ${num(cm.w)} × ${num(cm.h)} cm — a vista (zoom) não muda o papel`;
+    }
     this.firstHeader.textContent = s.header.replace(/\{pagina\}/gi, "1").replace(/\{total\}/gi, String(this.pages));
     this.firstHeader.hidden = !s.header.trim();
     this.printStyle(s);
@@ -216,6 +231,17 @@ export class WordHost {
     range.value = String(Math.round(this.zoom * 100));
     this.opts.pane.querySelector("#wd-zoom-val")!.textContent = `${Math.round(this.zoom * 100)}%`;
     this.fitHolder();
+  }
+
+  /**
+   * O zoom que faz a FOLHA caber na largura da janela (com uma folga de 32 px para a sombra e o ar).
+   * É um atalho de VISTA: a página continua A4 — só passa a ser vista inteira, sem rolar de lado.
+   * Nunca AUMENTA além de 100%: "caber" é para quando não cabe.
+   */
+  private fitToWidth(): void {
+    const { w } = pageSizePx(this.editor.setup);
+    const disponivel = this.stage.clientWidth - 32;
+    if (disponivel > 0 && w > 0) this.setZoom(Math.min(1, disponivel / w));
   }
 
   private fitHolder(): void {
