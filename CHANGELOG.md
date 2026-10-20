@@ -819,6 +819,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 **Frontend**
 
 
+- **A parte vazia da box agora move a box (com o texto em edição)**: o `contenteditable` cobre a
+  caixa inteira, então clicar no vazio de dentro dela era engolido pelo texto — ou, quando o
+  clique caía fora do elemento da forma, **limpava a seleção** e o usuário tinha de escolher
+  outro documento para voltar. Agora o clique no vazio **sai da edição, mantém a box escolhida**
+  e o arrasto a move no mesmo gesto (como no PowerPoint); a beirada continua sendo a alça de
+  mover e o texto continua sendo o cursor de texto. O cursor ganha o estado "arrastar" no vazio.
+
 - **Contorno parcial (bordas por lado)**: no painel de Formato, cada lado (topo, direita,
   baixo, esquerda) tem um percentual de **0 a 100%** e um botão **⇄** para inverter o canto de
   início; os presets **Completo / 50% / 10% no topo** resolvem num clique. O contorno inteiro

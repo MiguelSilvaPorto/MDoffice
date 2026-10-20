@@ -1633,6 +1633,12 @@ button.ppr.big .ppr-gal-ic svg {
   cursor: move;
 }
 
+/* Editando, a parte VAZIA da box (fora do texto) também pega a forma: o cursor de
+   "arrastar" avisa que ali dá para mover a box sem sair do texto com um clique. */
+.pp-slide.pp-vazio-edicao .pp-shape.pp-rica.pp-editando .pp-rt {
+  cursor: grab;
+}
+
 .pp-slide .pp-fixa {
   pointer-events: none;
 }

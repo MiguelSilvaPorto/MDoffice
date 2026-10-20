@@ -542,19 +542,46 @@ export class Stage {
     const ctx = this.hooks.contexto();
     const p = this.pontoEmPct(e);
 
-    // Texto em edição: o clique é do cursor de texto — menos na BEIRADA da forma. O
-    // `contenteditable` cobre a caixa inteira (o padding incluso), então sem isto a beirada
-    // deixa de agarrar e só resta sair da edição clicando num lugar vazio da lâmina antes de
-    // arrastar. Na beirada, sai da edição e o gesto continua como o mover normal (abaixo).
-    if (ctx.editando && alvo.closest(`[data-shape="${ctx.editando}"] [data-editando]`)) {
+    // Texto em edição: o clique é do cursor de TEXTO — menos na BEIRADA da forma (que é a
+    // alça de mover) e menos na parte VAZIA da box (que também deve pegar a box: sair do
+    // texto e arrastar a forma, como no PowerPoint). O `contenteditable` cobre a caixa
+    // inteira (o padding incluso), então sem isto o clique no vazio era engolido pelo
+    // texto — ou limpava a seleção, quando caía fora do elemento da forma.
+    if (ctx.editando && !ctx.ferramenta) {
       const emEdicao = ctx.shapes.find((s) => s.id === ctx.editando);
-      const naBeirada =
-        !!emEdicao &&
-        !emEdicao.bloqueada &&
-        !ctx.ferramenta &&
-        pertoDaBorda(paraPt(emEdicao.box, ctx.dim), this.pontoEmPt(e, ctx.dim), this.pxEmPt(ctx.dim, BANDA_BEIRADA_PX));
-      if (!naBeirada) return;
-      this.hooks.aoSairEdicao();
+      if (emEdicao && !emEdicao.bloqueada) {
+        const ponto = this.pontoEmPt(e, ctx.dim);
+        const naBeirada = pertoDaBorda(paraPt(emEdicao.box, ctx.dim), ponto, this.pxEmPt(ctx.dim, BANDA_BEIRADA_PX));
+        if (naBeirada) {
+          this.hooks.aoSairEdicao();
+        } else if (this.dentroDaBox(emEdicao, e) && !this.sobreOTexto(emEdicao.id, e)) {
+          // a parte vazia da box: sai do texto, a box fica escolhida e o arrasto a move
+          this.hooks.aoSairEdicao();
+          const grupo = ctx.comGrupos([emEdicao.id]);
+          this.hooks.aoSelecionar(grupo);
+          const moviveis = ctx.shapes.filter((s) => grupo.includes(s.id) && !s.bloqueada);
+          if (!moviveis.length) return;
+          try {
+            this.slideEl.setPointerCapture(e.pointerId);
+          } catch {
+            /* ponteiro sintético */
+          }
+          this.modo = {
+            t: "mover",
+            ids: moviveis.map((s) => s.id),
+            inicial: new Map(moviveis.map((s) => [s.id, { ...s.box }])),
+            x0: p.x,
+            y0: p.y,
+            moveu: false,
+            duplicou: false,
+            clicouEm: emEdicao.id,
+          };
+          e.preventDefault();
+          return;
+        } else if (alvo.closest(`[data-shape="${ctx.editando}"] [data-editando]`)) {
+          return; // é o cursor de texto
+        }
+      }
     }
     window.getSelection()?.removeAllRanges();
 
@@ -861,6 +888,37 @@ export class Stage {
     return larguraPx > 0 ? (px * dim.w) / larguraPx : px / 1.5;
   }
 
+  /** O ponto do ponteiro está dentro da CAIXA da forma (medida em pt)? */
+  private dentroDaBox(s: Shape, e: { clientX: number; clientY: number }): boolean {
+    const ctx = this.hooks.contexto();
+    const r = paraPt(s.box, ctx.dim);
+    const p = this.pontoEmPt(e, ctx.dim);
+    return p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
+  }
+
+  /**
+   * O ponteiro está sobre o TEXTO desenhado (uma letra de verdade)? O `contenteditable`
+   * cobre a caixa inteira, então é pelas caixas das LINHAS que se sabe se o clique caiu
+   * em cima do texto ou no vazio da box.
+   */
+  private sobreOTexto(id: string, e: { clientX: number; clientY: number }): boolean {
+    const div = this.slideEl?.querySelector<HTMLElement>(`[data-shape="${id}"] .pp-shape-text`);
+    if (!div) return false;
+    const walker = document.createTreeWalker(div, NodeFilter.SHOW_TEXT);
+    let no: Node | null = walker.nextNode();
+    while (no) {
+      if ((no.textContent ?? "").trim()) {
+        const faixa = document.createRange();
+        faixa.selectNodeContents(no);
+        for (const r of Array.from(faixa.getClientRects())) {
+          if (e.clientX >= r.left - 2 && e.clientX <= r.right + 2 && e.clientY >= r.top - 2 && e.clientY <= r.bottom + 2) return true;
+        }
+      }
+      no = walker.nextNode();
+    }
+    return false;
+  }
+
   /** Afastamento das alças de canto, em pt: ~9 px na tela, igual em qualquer zoom. */
   private afastamentoPt(dim: Dim): number {
     return this.pxEmPt(dim, 9);
@@ -915,11 +973,17 @@ export class Stage {
    */
   private marcarBeiradaDeEdicao(ctx: ContextoPalco, e: { clientX: number; clientY: number }): void {
     let na = false;
+    let vazio = false;
     if (ctx.editando && !ctx.ferramenta) {
       const s = ctx.shapes.find((x) => x.id === ctx.editando);
-      na = !!s && !s.bloqueada && pertoDaBorda(paraPt(s.box, ctx.dim), this.pontoEmPt(e, ctx.dim), this.pxEmPt(ctx.dim, BANDA_BEIRADA_PX));
+      if (s && !s.bloqueada) {
+        na = pertoDaBorda(paraPt(s.box, ctx.dim), this.pontoEmPt(e, ctx.dim), this.pxEmPt(ctx.dim, BANDA_BEIRADA_PX));
+        // o vazio da box também pega a forma: o cursor avisa que ali se arrasta
+        vazio = !na && this.dentroDaBox(s, e) && !this.sobreOTexto(s.id, e);
+      }
     }
     this.slideEl?.classList.toggle("pp-borda-edicao", na);
+    this.slideEl?.classList.toggle("pp-vazio-edicao", vazio);
   }
 
   private aplicar(e: PointerEvent): void {

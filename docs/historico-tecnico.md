@@ -439,6 +439,20 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** `.home-resume-nome` (trunca em 190 px) e `.home-voltar-btn`
 - **Por quê:** o nome do arquivo não pode empurrar as ações para fora da tela, e o botão novo precisa do mesmo desenho dos outros botões do Início.
 
+## src/powerpoint/stage.ts
+
+### 2026-10-20 — fix/ppt-arrastar-box-texto — o vazio da box pega a forma
+- **Local:** `Palco.aoPressionar` (ramo do texto em edição) · novos `dentroDaBox` e `sobreOTexto` · `marcarBeiradaDeEdicao`
+- **Linha:** o ramo `if (ctx.editando && alvo.closest(...))` (só na camada de texto) virou `if (ctx.editando && !ctx.ferramenta)` com três destinos: **beirada** (sai da edição, o gesto segue como mover), **vazio da box** (sai da edição, seleciona a forma e o arrasto a move) e **texto** (o cursor de texto, como antes) · `dentroDaBox` (ponto dentro da caixa, em pt) e `sobreOTexto` (ponto sobre uma linha de texto de verdade, pelas caixas do `Range`) · a classe `pp-vazio-edicao` no palco
+- **Por quê:** o `contenteditable` cobre a caixa inteira, então o clique no vazio de dentro dela era engolido pelo texto; e, quando o clique caía fora do elemento da forma, caía no “vazio” do palco, que **limpava a seleção** — daí o relato de a seleção se desfazer sozinha e a box não poder ser arrastada por dentro. Agora o vazio sai da edição, mantém a box escolhida e move a box no mesmo gesto, como no PowerPoint.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-20 — fix/ppt-arrastar-box-texto — cursor de "arrastar" no vazio da box em edição
+- **Local:** depois de `.pp-slide.pp-borda-edicao ...`
+- **Linha:** `.pp-slide.pp-vazio-edicao .pp-shape.pp-rica.pp-editando .pp-rt { cursor: grab; }`
+- **Por quê:** a beirada já avisava (`cursor: move`) que ali se arrasta a forma; o vazio da box também precisa dizer isso, senão o cursor de texto mente sobre o que o clique vai fazer.
+
 ## src/broker/diag.ts
 
 ### 2026-10-19 — 2d4e6c6 — log de decisões do corretor (novo arquivo)
