@@ -556,6 +556,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   perde — mas avisava "Aberto com limitações: …" a cada abertura, o que não fazia sentido (o arquivo está
   preservado). O aviso deixou de existir; os que representam **perda real** (fonte embutida, imagem não
   carregada, tabela/gráfico sem suporte) continuam, numa mensagem única por arquivo.
+- **O Compor ganhou "faixa + duas colunas" para texto longo (e o título não some mais nos cartões)**: quando o
+  texto não cabe ao lado de uma imagem grande com 9 pt, a lâmina caía nos cartões. O padrão novo vira a imagem
+  numa **faixa larga** (topo ou base, cortada em *cover*) — ou, sem imagem, numa faixa na cor da marca com anel e
+  pontos — e distribui título e conteúdo em **duas colunas** balanceadas por altura, com a medida no canvas e piso
+  de 9 pt. Entra como a terceira ideia ("Compor — faixa + colunas") e como fallback das outras duas. Corrigido
+  também o **título sumido**: cartões e faixas se diziam "donos do título" sem colocá-lo, e a lâmina saía sem
+  título quando caía nesses padrões.
 
 - **A Arrumação ganhou "Compor": três estruturas diferentes por lâmina, imagem protagonista e mídia preservada**: o
   "Recompor" conservador só alinhava o que já existia — e isso nunca gerava uma lâmina nova. Agora a lâmina é lida

@@ -688,7 +688,7 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
         y += alturas[i] + VAO;
       }
     });
-    return { fundos, conteudo, tituloProprio: true };
+    return { fundos, conteudo };
   };
 
   // ---- faixas re-tipografadas: cada grupo numa faixa larga, texto grande
@@ -727,7 +727,7 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
       }
       y += h + vao;
     });
-    return { fundos, conteudo, tituloProprio: true };
+    return { fundos, conteudo };
   };
 
   /** O grupo tem cabeçalho em texto claro (branco, desenhado para a faixa colorida antiga)? */
@@ -1094,6 +1094,108 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
     }
     return { fundos, conteudo, tituloProprio: true, fundoEscuro: tom.fundo !== "FBF8F2" };
   };
+  /**
+   * Faixa + duas colunas: a imagem vira uma FAIXA larga (topo ou base, cortada em cover) e o texto
+   * ocupa o resto em DUAS colunas — é o padrão para lâmina com texto longo, onde o herói ao lado
+   * não caberia com 9 pt. Sem imagem, a faixa é a cor da marca com um anel e pontos.
+   */
+  const faixaImagem = (): Desenho | null => {
+    const imagem = [...c.paineis].filter(imagemDeConteudo).sort((a, b) => area(b.box) - area(a.box))[0];
+    const preparados = c.grupos.map(preparar);
+    if (preparados.some((g) => !g)) return null;
+    const gts = preparados as GrupoTexto[];
+    const rnd = sorteador(semente + 43);
+    // com rodapé, a faixa vai para o topo (o rodapé fica embaixo, no lugar dele)
+    const noTopo = c.rodape ? true : rnd() < 0.55;
+    const alturaBanda = 24 + rnd() * 8;
+    const banda: ShapeBox = noTopo
+      ? { x: 0, y: 0, w: 100, h: alturaBanda }
+      : { x: 0, y: 100 - alturaBanda, w: 100, h: alturaBanda };
+    const fundos: Shape[] = [];
+    const conteudo: Shape[] = [];
+
+    if (imagem) {
+      fundos.push({ ...imagem, box: banda, crop: recorteCover(imagem.box, banda, ratio) });
+      paineisUsados.add(imagem);
+    } else {
+      fundos.push(forma(banda, { fill: p.acento }));
+      const d = Math.min(28, banda.h * 0.9);
+      fundos.push({ ...forma({ x: 78 - d * 0.9, y: banda.y + (banda.h - d * 1.78) / 2, w: d * 1.8, h: d * 1.78 }, { ln: { color: "FFFFFF", w: 1.5, alpha: 0.35 } }), geom: "ellipse" });
+      for (let k = 0; k < 5; k++) {
+        const dd = 0.7 + rnd() * 0.8;
+        fundos.push({ ...forma({ x: 9 + k * 2.6, y: banda.y + banda.h / 2 - dd, w: dd, h: dd * 1.78 }, { fill: "FFFFFF", cantos: dd / 2 }), geom: "ellipse" });
+      }
+    }
+
+    // área de texto: o resto da lâmina
+    const y0 = noTopo ? banda.h + 4.2 : MARGEM;
+    const y1 = noTopo ? baseConteudo - 1 : 100 - banda.h - 4.2;
+    const largura = util;
+
+    // título (reescrito, não escalado)
+    const textos = c.titulo!.ids
+      .map((id) => slide.shapes.find((s) => s.id === id))
+      .filter((s): s is Shape => !!s && temTexto(s))
+      .sort((a, b) => a.box.y - b.box.y);
+    const maior = Math.max(...textos.map(maiorLetra));
+
+    const desenharLinha = (l: Linha, x: number, y: number, larguraLinha: number, tamanho: number, cor: string): number => {
+      const desloca = l.icones.length ? 2.8 : 0;
+      const h = alturaDaForma(l.forma, tamanho, larguraLinha - desloca) * 1.06 + 0.25;
+      for (const ic of l.icones) {
+        const lado = Math.min(2, h * 0.55);
+        conteudo.push({ ...ic, box: { x, y: y + (h - lado) / 2, w: lado, h: lado } });
+      }
+      conteudo.push(reescrever(l, { x: x + desloca, y, w: larguraLinha - desloca, h }, tamanho, cor));
+      return h;
+    };
+
+    const colW = (largura - VAO) / 2;
+    for (const escala of [1, 0.92, 0.85, 0.78]) {
+      conteudo.length = 0;
+      let y = y0;
+      for (const s of textos) {
+        const base = maiorLetra(s) >= maior - 0.1 ? 25 : maiorLetra(s) >= 12 ? 12 : 9.5;
+        const tamanho = Math.max(9, base * escala);
+        const linha: Linha = { forma: s, texto: txt(s), negrito: s.bold, icones: [] };
+        const h = desenharLinha(linha, MARGEM, y, largura, tamanho, tamanho >= 20 ? p.escuro : misturar(p.escuro, "FFFFFF", 0.25));
+        y += h + (tamanho >= 20 ? 1.4 : 0.5);
+      }
+      const yCols = y + 2.6;
+      const alturaCols = y1 - yCols;
+      if (alturaCols < 8) continue;
+
+      // altura de cada grupo na coluna, no tamanho escolhido
+      const alturas = gts.map((gt) => {
+        let h = 0;
+        if (gt.cabecalho) h += alturaDaForma(gt.cabecalho.forma, 13 * escala, colW - 2.8) * 1.06 + 1.4;
+        for (const par of gt.corpo) h += alturaDaForma(par.forma, 12.5 * escala, colW - (par.icones.length ? 2.8 : 0)) * 1.06 + 1;
+        return h + 2.6;
+      });
+      const colunas = colunasPorAltura(alturas, 2);
+      const totais = colunas.map((col) => col.reduce((a, i) => a + alturas[i], 0));
+      if (Math.max(...totais) > alturaCols + 0.5) continue;
+
+      const base = yCols + (alturaCols - Math.max(...totais)) / 2;
+      colunas.forEach((col, ci) => {
+        let yy = base;
+        const x = MARGEM + ci * (colW + VAO);
+        for (const i of col) {
+          const gt = gts[i];
+          if (gt.cabecalho) {
+            const linha: Linha = { forma: gt.cabecalho.forma, texto: gt.cabecalho.texto, negrito: true, icones: [] };
+            yy += desenharLinha(linha, x, yy, colW, 13 * escala, p.acento) + 1.4 * escala;
+          }
+          for (const par of gt.corpo) {
+            yy += desenharLinha(par, x, yy, colW, 12.5 * escala, p.escuro) + 1 * escala;
+          }
+          yy += 2.6 * escala;
+        }
+      });
+      return { fundos, conteudo, tituloProprio: true };
+    }
+    return null;
+  };
   const artes: ArteId[] = ["ondas", "facetas", "mosaico", "orbes"];
   const comArte = false;
   // cada ideia começa por uma ESTRUTURA diferente (não é a mesma arrumação recolorida):
@@ -1102,9 +1204,9 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
   //   2 = faixas largas empilhadas
   // se a estrutura não couber, a próxima da lista assume — mas a primeira tentativa é sempre outra
   const ordens = [
-    [padraoUnico, circulo, midiaHero, cartoes, faixasTexto, lista, grade],
-    [cartoes, faixasTexto, padraoUnico, midiaHero, lista, grade],
-    [faixasTexto, cartoes, padraoUnico, midiaHero, lista, grade],
+    [padraoUnico, faixaImagem, cartoes, circulo, midiaHero, faixasTexto, lista, grade],
+    [cartoes, faixaImagem, faixasTexto, padraoUnico, midiaHero, lista, grade],
+    [faixaImagem, faixasTexto, cartoes, padraoUnico, midiaHero, lista, grade],
   ];
   const ordem = ordens[variante % ordens.length];
   const desenho = ordem.map((f) => f()).find((d): d is Desenho => !!d) ?? null;
@@ -1162,4 +1264,4 @@ export function recompor(slide: Slide, ratio: number, variante = 0): Slide {
 }
 
 /** O nome com que as composições aparecem no painel. */
-export const NOMES_COMPOSICAO = ["Compor — imagem + texto", "Compor — cartões", "Compor — faixas"] as const;
+export const NOMES_COMPOSICAO = ["Compor — imagem + texto", "Compor — cartões", "Compor — faixa + colunas"] as const;

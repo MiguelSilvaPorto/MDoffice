@@ -15104,3 +15104,16 @@ antigas quando fizer sentido.
   de mover), então a promoção não afirma nada falso. Como nas rodadas anteriores, ela anda num passo
   curto de docs porque o commit do `fechar.ps1` já foi usado para entregar o código — promover junto
   seria afirmar "está na main" antes de estar.
+## src/powerpoint/edicao/recompor.ts
+
+### 2026-10-20 · esta tarefa · "faixa + duas colunas" e o título que sumia
+- **Local:** `faixaImagem` (novo padrão); `Desenho.tituloProprio` em `cartoesTexto` e `faixasTexto` (correção);
+  `ordens` (a terceira ideia e os fallbacks)
+- **Linha:** `+ const faixaImagem = (): Desenho | null => { … }`; `- return { fundos, conteudo, tituloProprio: true };`
+  → `+ return { fundos, conteudo };` em `cartoesTexto`/`faixasTexto`; `+ const ordens = [[padraoUnico, faixaImagem, …], …]`
+- **Porquê:** o padrão de imagem protagonista exige ~47% da largura para o texto; com 10 parágrafos a 9 pt ele não
+  cabe e o motor caía nos cartões (correto, mas sem impacto). O padrão de faixa usa a largura inteira: a imagem
+  (ou a cor da marca) ocupa uma faixa no topo/base e o texto se divide em DUAS colunas, o que dobra a área útil sem
+  descer do piso. A correção do título veio de uma regressão da tarefa anterior: ao marcar os padrões que
+  posicionam o título, `cartoesTexto` e `faixasTexto` foram marcados por engano — como não posicionam o título, a
+  lâmina saía sem ele (visto na captura da lâmina 4).
