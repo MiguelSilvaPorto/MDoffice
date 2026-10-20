@@ -52,6 +52,7 @@ import { layoutMethods } from "./layout";
 import { deepReviewMethods } from "./deepReview";
 import { trashMethods } from "./trash";
 import { criarFilaSalvamento } from "./saveQueue";
+import { autosaveDoDoc } from "./autosave";
 import { criarAvisosOffice } from "./seloAutosave";
 import { configurarBusca } from "../busca/interface";
 import { MODULOS } from "../busca/tipos";
@@ -150,6 +151,14 @@ export class App {
   /** Palavras ignoradas só neste documento (voltam nos outros). */
   get ignoredHere(): Set<string> {
     return this.tab.ignoredHere;
+  }
+  /**
+   * O salvamento automático do documento À VISTA. Cada documento tem o seu (o botão do topo
+   * liga e desliga só este); `undefined` na aba = herda o padrão das Configurações.
+   */
+  get autosaveLigado(): boolean {
+    if (this.tab.kind === "settings") return this.settings.autosaveOn;
+    return autosaveDoDoc(this.tab, this.settings.autosaveOn);
   }
   get issues(): WritingIssue[] {
     return this.tab.issues;

@@ -23,6 +23,12 @@ export interface DocTab {
   dirty: boolean;
   /** A última tentativa de gravar falhou (o selo não pode dizer "Salvo"). */
   saveFailed?: boolean;
+  /**
+   * O salvamento automático DESTE documento. Cada aba tem o seu: o botão do topo do app
+   * liga e desliga o documento que está à vista. `undefined` = herda o padrão das
+   * Configurações (vale para os documentos novos).
+   */
+  autosave?: boolean;
   statusSaved: string;
   autoFixArmed: boolean;
   ignoredHere: Set<string>;
@@ -164,6 +170,13 @@ export class TabBar {
     el.title = `${FILE_KIND_LABEL[fk]}\n${el.title}`;
     const name = h("span", { class: "tab-name", text: label });
     const dot = h("span", { class: "tab-dot", title: "Alterações ainda não gravadas" });
+    // documento com o salvamento automático DESLIGADO (cada aba tem o seu): a nuvemzinha
+    // apagada avisa sem precisar abrir o documento
+    let autoOff: HTMLElement | null = null;
+    if (!settings && t.autosave === false) {
+      autoOff = h("span", { class: "tab-auto-off", title: "Salvamento automático desligado neste documento" });
+      autoOff.innerHTML = '<svg class="ic"><use href="#i-cloud-off"/></svg>';
+    }
     const close = h("button", { class: "tab-x", type: "button", title: "Fechar aba (" + teclaVisivel("fechar-aba") + ")", "aria-label": `Fechar ${label}` });
     close.innerHTML = '<svg class="ic"><use href="#i-close"/></svg>';
     close.addEventListener("mousedown", (e) => e.stopPropagation());
@@ -171,7 +184,9 @@ export class TabBar {
       e.stopPropagation();
       this.hooks.onClose(t.id);
     });
-    el.append(icon, name, dot, close);
+    el.append(icon, name, dot);
+    if (autoOff) el.append(autoOff);
+    el.append(close);
 
     el.addEventListener("dblclick", (e) => {
       if (settings || (e.target as HTMLElement).closest(".tab-x")) return;

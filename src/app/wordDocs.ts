@@ -145,7 +145,7 @@ export const wordDocsMethods = {
    * barra mostra "Não salvo" e um aviso (uma vez por arquivo) explica o Ctrl+S.
    */
   async autosaveWord(this: App): Promise<void> {
-    if (!this.settings.autosaveOn) return;
+    if (!this.autosaveLigado) return;
     const tab = this.tab;
     if (tab.kind !== "word" || !tab.dirty) return;
     if (tab.path && !tab.isDraft) {

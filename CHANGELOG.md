@@ -1941,6 +1941,19 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O salvamento automático passou a ser de cada documento**: antes era um botão único no topo do
+  app que ligava e desligava a gravação automática para **todos** os documentos de uma vez — não
+  dava para deixar a planilha gravando sozinha e o documento quieto. Agora **cada aba tem a sua**:
+  o botão do topo age no **documento que está à vista** (e o botão do menu de comandos, o
+  *Documento ▸ Desativar salvamento automático deste documento*, também). O botão passa a dizer
+  de qual documento é o estado (*"Salvamento Automático: ligado em contrato.md (clique para
+  desligar) — ligado em 2 de 4 documentos"*), a aba com o autosave desligado ganha uma
+  **nuvemzinha apagada** para o aviso não depender de abrir o documento, e a escolha **sobrevive ao
+  recarregar** (a sessão guarda o caminho de cada documento e a sua flag). As **Configurações**
+  continuam com o interruptor — ele virou o **padrão dos documentos novos** (quem nunca foi
+  ajustado herda dele). A regra que já existia continua valendo: o autosave **não** reescreve um
+  `.docx`, `.pptx` ou `.xlsx` seu (o selo mostra "Não salvo" e aponta o Ctrl+S).
+
 - **O teste do cursor de mover parou de falhar por motivo errado**: o `npm run test:cursor-mover`
   (novo) subia o servidor de desenvolvimento numa porta fixa e esperava o app ficar pronto em
   poucos segundos — quando um Vite antigo de outra worktree estava segurando a porta, ou na

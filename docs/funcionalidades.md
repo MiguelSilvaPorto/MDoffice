@@ -31,6 +31,12 @@ não há nada do módulo atual, as funções dos outros entram com a **etiqueta*
 resultado, e o rodapé tem o botão **"Ver todos os módulos"** — escolher uma função de
 outro módulo leva a pessoa para a aba dele antes de rodar.
 
+O **salvamento automático é de cada documento**: o botão no topo do app liga e desliga o
+documento que está à vista (a aba com ele desligado ganha uma nuvemzinha apagada), a escolha
+sobrevive ao recarregar e as **Configurações** escolhem o que os documentos **novos** vão
+herdar. O autosave nunca reescreve um `.docx`, `.pptx` ou `.xlsx` seu — nesses o selo mostra
+"Não salvo" e o `Ctrl+S` grava.
+
 **Abas**: a fileira abre os documentos e cada aba tem menu (renomear, duplicar, mostrar na pasta,
 copiar caminho, **abrir em nova janela (só este documento)**…). Arrastar uma aba **para fora da
 janela** e soltar ali — ou escolher o item do menu — abre o documento numa **janela própria**: ela é

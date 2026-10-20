@@ -19,6 +19,7 @@
     "test:word-imagem": "node scripts/testar-word-imagem.mjs",
     "test:word-flutuante": "node scripts/testar-word-flutuante.mjs",
     "test:word-exibir": "node scripts/testar-word-exibir.mjs",
+    "test:autosave-doc": "node scripts/testar-autosave-por-documento.mjs",
     "test:ghost": "node scripts/testar-ghost.mjs",
     "test:desenho": "node scripts/testar-desenho-assistido.mjs",
     "test:ligacoes": "node scripts/testar-ligacoes.mjs",

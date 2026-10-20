@@ -78,7 +78,9 @@ export const documentsMethods = {
    * Quem faz `await` (fechar a janela, trocar de aba) espera a fila esvaziar.
    */
   async autosave(this: App): Promise<void> {
-    if (!this.settings.autosaveOn) return;
+    // cada documento tem o seu salvamento automático (o botão do topo liga/desliga o que
+    // está à vista)
+    if (!this.autosaveLigado) return;
     return this.saveQueue.pedir();
   },
 

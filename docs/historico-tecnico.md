@@ -16421,3 +16421,97 @@ antigas quando fizer sentido.
 - **Local:** `scripts`
 - **Linha:** novo `"test:word-exibir": "node scripts/testar-word-exibir.mjs"`
 - **Porquê:** a aba Exibir entra na série de travas do repositório (uma por motor).
+
+## src/app/autosave.ts
+
+### 2026-10-20 · fix/autosave-por-documento · a regra do salvamento automático (novo arquivo)
+- **Local:** arquivo novo — `autosaveDoDoc` e `mapaDeAutosave`
+- **Linha:** novo arquivo — `autosaveDoDoc(aba, padrao)` (a flag da aba; sem ela, o padrão) e `mapaDeAutosave(abas)` (o que a sessão guarda)
+- **Porquê:** o salvamento automático deixou de ser um flag global e passou a ser **de cada
+  documento** — a decisão mora num lugar só (a aba), e a regra "a aba tem a sua; sem flag, herda o
+  padrão" fica testável fora do navegador (o resto do app é uma classe gigante com DOM).
+
+## src/tabs.ts
+
+### 2026-10-20 · fix/autosave-por-documento · cada aba tem a sua flag de salvamento automático
+- **Local:** `DocTab` e `TabBar.buildTab`
+- **Linha:** `DocTab` ganhou `autosave?: boolean`; a aba com a flag `false` ganha uma **nuvemzinha apagada** (`.tab-auto-off`)
+- **Porquê:** a posição do salvamento automático é parte do **documento** (no Word, o botão é do
+  documento à vista). A nuvemzinha na aba é o aviso sem depender de abrir o documento: quem
+  desligou precisa lembrar, e a aba é onde a pessoa olha.
+
+## src/app/app.ts
+
+### 2026-10-20 · fix/autosave-por-documento · o atalho do documento à vista
+- **Local:** `App` (o getter `autosaveLigado`)
+- **Linha:** novo `get autosaveLigado()` (a aba à vista; `undefined` = o padrão das Configurações)
+- **Porquê:** todos os caminhos de gravação (o `autosave` da fila, o do Word, o selo da barra)
+  precisam da MESMA resposta — e ela muda conforme a aba ativa. Um getter só evita que cada
+  lugar reimplemente a regra e acabe divergindo.
+
+## src/app/layout.ts
+
+### 2026-10-20 · fix/autosave-por-documento · o botão do topo age no documento à vista
+- **Local:** `updateAutosaveUI` e `toggleAutosave`
+- **Linha:** `const on = this.settings.autosaveOn` → `const on = this.autosaveLigado`; `toggleAutosave` trocou `this.settings.autosaveOn = next` por `tab.autosave = next`; o título do botão passou a dizer de qual documento é o estado (e, quando os documentos divergem, "ligado em 2 de 4")
+- **Porquê:** o botão do topo é o lugar que as pessoas já conhecem — ele continua lá, mas passa a
+  valer para o **documento aberto**, e não para todos. O `settings.autosaveOn` deixou de ser
+  mudado por aqui: ele virou o **padrão dos documentos novos** (e é o que a aba sem flag herda).
+
+## src/app/documents.ts
+
+### 2026-10-20 · fix/autosave-por-documento · a fila de gravação olha o documento
+- **Local:** `autosave`
+- **Linha:** `if (!this.settings.autosaveOn) return;` → `if (!this.autosaveLigado) return;`
+- **Porquê:** a fila é o caminho de todo salvamento automático — é ela que precisa respeitar a
+  escolha do documento (e não um flag global).
+
+## src/app/wordDocs.ts
+
+### 2026-10-20 · fix/autosave-por-documento · o autosave do Word olha o documento
+- **Local:** `autosaveWord`
+- **Linha:** `if (!this.settings.autosaveOn) return;` → `if (!this.autosaveLigado) return;`
+- **Porquê:** o Word tem o seu caminho de gravação (o `.docx` do rascunho). Ele segue a mesma
+  regra dos outros módulos — o documento decide.
+
+## src/app/tabs.ts (app)
+
+### 2026-10-20 · fix/autosave-por-documento · a sessão guarda a escolha de cada documento
+- **Local:** `restoreSession` (a parte do Tauri e a do navegador) e `saveSession`/`saveBrowserTabs`
+- **Linha:** a sessão do Tauri ganhou `autosave` (caminho em minúsculas → ligado/desligado); a do navegador, `autosave` em cada aba
+- **Porquê:** sem isso a escolha se perdia a cada recarregar — e o botão do topo voltaria ao
+  padrão, parecendo que o app "esqueceu". Quem herda o padrão não é guardado (o padrão pode
+  mudar e vale para ele).
+
+## src/app/commands.ts
+
+### 2026-10-20 · fix/autosave-por-documento · o comando da paleta é do documento
+- **Local:** o comando "Documento ▸ … salvamento automático"
+- **Linha:** `this.settings.autosaveOn ? "Desativar salvamento automático" : "Ativar salvamento automático"` → `this.autosaveLigado ? "Desativar salvamento automático deste documento" : "Ativar salvamento automático deste documento"`
+- **Porquê:** a paleta é o outro caminho para a mesma ação — ela também age no documento à vista
+  (e o rótulo diz isso, para não parecer que muda o app todo).
+
+## src/settingsPage.ts
+
+### 2026-10-20 · fix/autosave-por-documento · o interruptor das Configurações virou o padrão dos novos
+- **Local:** a linha `toggle("autosave", …)`
+- **Linha:** "Salvamento automático" → "Salvamento automático dos documentos novos" (e o texto passou a explicar que cada documento tem o seu)
+- **Porquê:** depois da mudança, o interruptor das Configurações não liga/desliga nada na hora —
+  ele escolhe o que os documentos **novos** vão herdar. Um rótulo que não dissesse isso seria
+  mentiroso.
+
+## scripts/testar-autosave-por-documento.mjs
+
+### 2026-10-20 · fix/autosave-por-documento · a trava do salvamento por documento (novo arquivo)
+- **Local:** arquivo novo
+- **Linha:** novo arquivo — trava a regra (a aba sem flag herda o padrão), o mapa da sessão e o uso da flag nos caminhos de gravação
+- **Porquê:** a regra do salvamento automático é o tipo de coisa que volta a ser global sem
+  ninguém perceber (um `settings.autosaveOn` num canto e o botão do topo sem efeito). A trava
+  segura as duas coisas: a regra e o uso.
+
+## package.json
+
+### 2026-10-20 · fix/autosave-por-documento · o comando de teste do salvamento por documento
+- **Local:** `scripts`
+- **Linha:** novo `"test:autosave-doc": "node scripts/testar-autosave-por-documento.mjs"`
+- **Porquê:** a regra entra na série de travas do repositório.

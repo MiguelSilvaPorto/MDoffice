@@ -14,6 +14,7 @@ import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { $, h, toast, baseName, docDirOf, stripExt, copyText, loadJSON, saveJSON, fmtTime, fmtAgo } from "../util";
 import { abrirEmNovaJanela } from "./novaJanela";
 import { atualizarBusca } from "../busca/interface";
+import { mapaDeAutosave } from "./autosave";
 import type { PedidoDeJanela } from "./docNaUrl";
 
 export const tabsMethods = {
@@ -23,12 +24,14 @@ export const tabsMethods = {
     // guardado no localStorage pelo autosave. Sem isso, recarregar a página perdia
     // todos os documentos abertos (o relato dos 3 documentos).
     if (!files.emTauri()) {
-      const salvo = loadJSON<{ abas: { texto: string; status?: string }[]; ativa: number } | null>("mdc.browser.session", null);
+      const salvo = loadJSON<{ abas: { texto: string; status?: string; autosave?: boolean }[]; ativa: number } | null>("mdc.browser.session", null);
       const abas = (salvo?.abas ?? []).filter((a) => a.texto.trim() !== "");
       if (abas.length) {
         for (const a of abas) {
           const t = this.addTabFor(null, a.texto);
           t.statusSaved = a.status ?? "Salvo neste navegador";
+          // o salvamento automático é de cada documento: ele sobrevive ao reload
+          if (a.autosave !== undefined) t.autosave = a.autosave;
         }
         this.dropPristineStartTab();
         const idx = Math.max(0, Math.min(salvo?.ativa ?? 0, this.tabs.length - 1));
@@ -37,7 +40,7 @@ export const tabsMethods = {
         return;
       }
     }
-    const saved = loadJSON<{ paths: string[]; active: string | null; drafts: string[] } | null>("mdc.session", null);
+    const saved = loadJSON<{ paths: string[]; active: string | null; drafts: string[]; autosave?: Record<string, boolean> } | null>("mdc.session", null);
     let restored = 0;
     if (saved && Array.isArray(saved.paths)) {
       let activateTab: DocTab | null = null;
@@ -51,6 +54,9 @@ export const tabsMethods = {
               : /\.xlsx$/i.test(p) || /\.xlsm$/i.test(p)
                 ? await this.addXlsxTab(p, wasDraft)
                 : this.addTabFor(p, await files.loadDoc(p), wasDraft);
+          // o salvamento automático é de cada documento: ele sobrevive ao recarregar
+          const auto = saved.autosave?.[p.toLowerCase()];
+          if (auto !== undefined) tab.autosave = auto;
           restored++;
           if (p === saved.active) activateTab = tab;
         } catch {
@@ -211,6 +217,8 @@ export const tabsMethods = {
       paths: withPath.map((t) => t.path!),
       drafts: withPath.filter((t) => t.isDraft).map((t) => t.path!),
       active: this.tab.path,
+      // o salvamento automático de cada documento (o que não herda o padrão nem precisa ir)
+      autosave: mapaDeAutosave(withPath),
     });
     this.saveBrowserTabs();
   },
@@ -222,14 +230,14 @@ export const tabsMethods = {
    */
   saveBrowserTabs(this: App): boolean {
     if (files.emTauri()) return true;
-    const abas: { texto: string; status?: string }[] = [];
+    const abas: { texto: string; status?: string; autosave?: boolean }[] = [];
     let ativa = 0;
     for (const t of this.tabs) {
       if (t.kind && t.kind !== "doc") continue;
       const texto = this.textOf(t);
       if (!texto.trim() && !t.path) continue; // aba inicial vazia não entra na sessão
       if (t === this.tab) ativa = abas.length;
-      abas.push({ texto, status: t.statusSaved });
+      abas.push({ texto, status: t.statusSaved, autosave: t.autosave });
     }
     // Só a aba inicial vazia: é o começo do app — não apaga a sessão anterior.
     if (!abas.length && this.tabs.length <= 1) return true;

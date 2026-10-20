@@ -68,10 +68,10 @@ export const commandsMethods = {
     });
     add(
       "Documento",
-      this.settings.autosaveOn ? "Desativar salvamento automático" : "Ativar salvamento automático",
+      this.autosaveLigado ? "Desativar salvamento automático deste documento" : "Ativar salvamento automático deste documento",
       () => this.toggleAutosave(),
       {
-        icone: this.settings.autosaveOn ? "i-cloud-off" : "i-cloud",
+        icone: this.autosaveLigado ? "i-cloud-off" : "i-cloud",
         palavras: "autosave salvar automatico ligar desligar",
       }
     );

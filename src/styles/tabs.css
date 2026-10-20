@@ -163,6 +163,24 @@ body.aba-fora * {
   display: block;
 }
 
+/* documento com o salvamento automático DESLIGADO (cada aba tem o seu) */
+.tab-auto-off {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  margin: 0 2px 0 -2px;
+  opacity: 0.5;
+}
+
+.tab-auto-off .ic {
+  width: 12px;
+  height: 12px;
+}
+
+.tab:hover .tab-auto-off {
+  opacity: 0.85;
+}
+
 .tab-x {
   display: grid;
   place-items: center;

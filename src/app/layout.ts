@@ -4,6 +4,7 @@ import type { App } from "./app";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { FormatoCantos, NivelAnimacao } from "../settingsPage";
 import { modoDoSelo } from "./seloAutosave";
+import { autosaveDoDoc } from "./autosave";
 import { $, baseName, docDirOf, clamp, loadJSON, toast, saveJSON } from "../util";
 
 export const layoutMethods = {
@@ -57,7 +58,7 @@ export const layoutMethods = {
       this.updateAutosaveUI();
       return;
     }
-    const autosaveOn = this.settings.autosaveOn;
+    const autosaveOn = this.autosaveLigado;
     if (this.tab.saveFailed) {
       el.textContent = "Não foi possível salvar";
     } else if (!autosaveOn) {
@@ -82,9 +83,18 @@ export const layoutMethods = {
     const iconUse = document.querySelector<SVGUseElement>("#tb-autosave-ic use");
     if (!btn || !badge || !text) return;
 
-    const on = this.settings.autosaveOn;
+    // o botão é do DOCUMENTO À VISTA: cada um tem o seu salvamento automático
+    const on = this.autosaveLigado;
     btn.setAttribute("aria-checked", on ? "true" : "false");
     btn.classList.toggle("is-active", on);
+
+    // quantos documentos abertos estão com o autosave ligado (quando divergem, o botão
+    // avisa: o estado é do documento à vista, mas os outros podem estar diferentes)
+    const docs = this.tabs.filter((t) => t.kind !== "settings");
+    const ligados = docs.filter((t) => autosaveDoDoc(t, this.settings.autosaveOn)).length;
+    const divergente = docs.length > 1 && ligados > 0 && ligados < docs.length;
+    const resumo = divergente ? ` — ligado em ${ligados} de ${docs.length} documentos` : "";
+    const nomeDoc = this.tab.path ? baseName(this.tab.path) : this.tab.title ?? "este documento";
 
     // Com um arquivo SEU do Office, o autosave não escreve o arquivo — o selo precisa dizer
     // a verdade ("Não salvo") e não fingir uma gravação que nunca chega ao fim.
@@ -104,12 +114,12 @@ export const layoutMethods = {
     badge.classList.toggle("is-pendente", modo === "nao-salvo" || modo === "erro");
 
     if (modo === "desligado") {
-      btn.title = "Salvamento Automático: Desativado (clique para ligar)";
-      badge.title = "Salvamento Automático desligado. Pressione Ctrl+S para salvar.";
+      btn.title = `Salvamento Automático: desligado em ${nomeDoc} (clique para ligar)${resumo}`;
+      badge.title = "Salvamento Automático desligado neste documento. Pressione Ctrl+S para salvar.";
       text.textContent = "Desativado";
       if (iconUse) iconUse.setAttribute("href", "#i-cloud-off");
     } else if (modo === "nao-salvo") {
-      btn.title = "Salvamento Automático: Ativado (clique para desligar)";
+      btn.title = `Salvamento Automático: ligado em ${nomeDoc} (clique para desligar)${resumo}`;
       badge.title =
         `Alterações não salvas em ${this.path ? baseName(this.path) : "documento"}: o salvamento automático ` +
         "não reescreve arquivos .docx, .pptx e .xlsx — recursos que o app ainda não entende podem " +
@@ -117,17 +127,17 @@ export const layoutMethods = {
       text.textContent = "Não salvo";
       if (iconUse) iconUse.setAttribute("href", "#i-save");
     } else if (modo === "erro") {
-      btn.title = "Salvamento Automático: Ativado (clique para desligar)";
+      btn.title = `Salvamento Automático: ligado em ${nomeDoc} (clique para desligar)${resumo}`;
       badge.title = this.statusSaved || "A última gravação falhou — use Ctrl+S ou “Salvar como…”";
       text.textContent = "Não salvo";
       if (iconUse) iconUse.setAttribute("href", "#i-cloud-off");
     } else if (modo === "salvando") {
-      btn.title = "Salvamento Automático: Ativado (clique para desligar)";
+      btn.title = `Salvamento Automático: ligado em ${nomeDoc} (clique para desligar)${resumo}`;
       badge.title = this.saving ? "Salvando documento…" : "Salvando alterações pendentes…";
       text.textContent = "Salvando…";
       if (iconUse) iconUse.setAttribute("href", "#i-cloud");
     } else {
-      btn.title = "Salvamento Automático: Ativado (clique para desligar)";
+      btn.title = `Salvamento Automático: ligado em ${nomeDoc} (clique para desligar)${resumo}`;
       badge.title = this.statusSaved || "Todas as alterações foram salvas";
       text.textContent = "Salvo";
       if (iconUse) iconUse.setAttribute("href", "#i-check");
@@ -135,18 +145,25 @@ export const layoutMethods = {
     this.refreshPath();
   },
 
+  /**
+   * Liga/desliga o salvamento automático do DOCUMENTO À VISTA (cada um tem o seu). O botão
+   * continua no topo do app; o padrão dos documentos novos é o das Configurações.
+   */
   toggleAutosave(this: App, force?: boolean): void {
-    const next = force !== undefined ? force : !this.settings.autosaveOn;
-    this.settings.autosaveOn = next;
-    saveJSON("mdc.settings", this.settings);
+    const tab = this.tab;
+    const atual = this.autosaveLigado;
+    const next = force !== undefined ? force : !atual;
+    tab.autosave = next;
     this.setSaveState();
+    this.renderTabs();
+    const nomeDoc = tab.path ? baseName(tab.path) : tab.title ?? "este documento";
     if (next) {
-      toast("Salvamento automático ativado", "ok", 2400);
+      toast(`Salvamento automático ligado em ${nomeDoc}.`, "ok", 2400);
       if (this.dirty) {
         void this.autosave();
       }
     } else {
-      toast("Salvamento automático desativado. Salve com Ctrl+S.", "info", 2800);
+      toast(`Salvamento automático desligado em ${nomeDoc}. Salve com Ctrl+S.`, "info", 3000);
     }
   },
 
