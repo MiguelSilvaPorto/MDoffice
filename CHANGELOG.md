@@ -794,6 +794,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+
+- **Contorno parcial (bordas por lado)**: no painel de Formato, cada lado (topo, direita,
+  baixo, esquerda) tem um percentual de **0 a 100%** e um botão **⇄** para inverter o canto de
+  início; os presets **Completo / 50% / 10% no topo** resolvem num clique. O contorno inteiro
+  continua igual (com os cantos arredondados); com um lado parcial, só a parte reta é desenhada.
+  No `.pptx` cada trecho vira uma forma de linha (o PowerPoint não tem borda por lado), então o
+  arquivo abre com o mesmo desenho.
 - **Arrastar a caixa direto, sem sair da edição do texto**: com o texto em edição, o
   `contenteditable` cobre a caixa inteira e engolia também a **beirada** de ~6 px que agarra a
   forma para mover — era preciso clicar num lugar vazio da lâmina para sair da edição e só então

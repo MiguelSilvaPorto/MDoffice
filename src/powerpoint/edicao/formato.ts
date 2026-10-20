@@ -1,6 +1,7 @@
 // Formato das formas: preenchimento (sólido, gradiente, imagem), contorno, sombra, cantos, transparência.
 // Funções puras sobre uma Shape (devolvem outra).
-import type { Fill, GradStop, Line, Shadow, Shape } from "../schema";
+import type { Fill, GradStop, Line, LnLados, Shadow, Shape } from "../schema";
+import type { LadoContorno } from "./contorno";
 
 const hex6 = (c: string) => (c || "000000").replace(/^#/, "").toUpperCase().padEnd(6, "0").slice(0, 6);
 
@@ -69,9 +70,48 @@ export function comLinha(s: Shape, patch: Partial<Line> | null): Shape {
   return n;
 }
 
-export const SOMBRA_PADRAO: Shadow = { color: "000000", alpha: 0.3, blur: 8, dist: 4, dir: 90 };
+const LADOS_CONTORNO: LadoContorno[] = ["t", "r", "b", "l"];
 
-/** Sombras prontas, como a galeria "Efeitos" do PowerPoint. */
+/** Guarda só o que é parcial: 100% em tudo (e sem inversão) vira `undefined` = contorno inteiro. */
+function normalizarLados(l: LnLados): LnLados | undefined {
+  const algumParcial = LADOS_CONTORNO.some((k) => Math.max(0, Math.min(100, l[k] ?? 100)) < 100);
+  const inv = l.inv && LADOS_CONTORNO.some((k) => !!l.inv?.[k]) ? { ...l.inv } : undefined;
+  if (!algumParcial && !inv) return undefined;
+  const out: LnLados = {};
+  for (const k of LADOS_CONTORNO) {
+    const v = Math.max(0, Math.min(100, l[k] ?? 100));
+    if (v !== 100) out[k] = v;
+  }
+  if (inv) out.inv = inv;
+  return out;
+}
+
+/** Quanto de um lado do contorno é desenhado (0–100%). */
+export function comLadoContorno(s: Shape, lado: LadoContorno, pct: number): Shape {
+  const l = { ...(s.lnLados ?? {}), inv: s.lnLados?.inv ? { ...s.lnLados.inv } : undefined };
+  const v = Math.max(0, Math.min(100, Number.isFinite(pct) ? pct : 100));
+  if (v >= 100) delete l[lado];
+  else l[lado] = v;
+  return { ...s, lnLados: normalizarLados(l) };
+}
+
+/** Inverte o canto de início do trecho de um lado (o mesmo tanto, do outro canto). */
+export function inverterLadoContorno(s: Shape, lado: LadoContorno): Shape {
+  const base = s.lnLados ?? {};
+  const inv = { ...(base.inv ?? {}) };
+  if (inv[lado]) delete inv[lado];
+  else inv[lado] = true;
+  return { ...s, lnLados: normalizarLados({ ...base, inv }) };
+}
+
+/** Presets do contorno parcial: inteiro, metade, só 10% no topo. */
+export function presetContorno(s: Shape, preset: "completo" | "metade" | "topo"): Shape {
+  if (preset === "completo") return { ...s, lnLados: undefined };
+  if (preset === "metade") return { ...s, lnLados: { t: 50, r: 50, b: 50, l: 50 } };
+  return { ...s, lnLados: { t: 10, r: 0, b: 0, l: 0 } };
+}
+
+export const SOMBRA_PADRAO: Shadow = { color: "000000", alpha: 0.3, blur: 8, dist: 4, dir: 90 };/** Sombras prontas, como a galeria "Efeitos" do PowerPoint. */
 export const SOMBRAS_PRONTAS: { nome: string; sombra: Shadow | null }[] = [
   { nome: "Sem sombra", sombra: null },
   { nome: "Suave embaixo", sombra: { color: "000000", alpha: 0.22, blur: 10, dist: 4, dir: 90 } },

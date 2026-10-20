@@ -120,6 +120,12 @@ avisado ao abrir (nunca some em silêncio).
   a espessura e o traço logo depois; o **OK** virou "aplicar e fechar", a cor só entra nos
   **Recentes** quando o seletor é fechado, e as prévias do arrasto viram **um passo só** de
   desfazer (pedido: "quando eu clicar em uma cor já virar uma seleção").
+- **Contorno parcial (bordas por lado)**: no painel de Formato, cada lado — **topo, direita,
+  baixo e esquerda** — tem um percentual de **0 a 100%** e um botão **⇄** para inverter o canto
+  de início; os presets **Completo**, **50%** e **10% no topo** fazem o ajuste num clique. O
+  contorno inteiro continua idêntico (com os cantos arredondados); quando algum lado fica
+  parcial, só a parte reta de cada lado é desenhada. No `.pptx` os trechos viram formas de
+  linha, porque o PowerPoint não tem borda por lado.
 - **Ordem dos grupos na Página Inicial**: **Área de Transferência → Fonte → Parágrafo → Lâminas →
   Desenho** — o texto vem **à frente das lâminas** (o que se usa o tempo todo fica sem rolar a
   fita; o grupo **Lâminas** continua inteiro, logo depois).

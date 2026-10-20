@@ -11,10 +11,13 @@ import { Escritor } from "./rica";
 import { escreverNotas } from "./notes";
 import { inserirTiming } from "./timing";
 import { aplicarTema, fonteTema } from "./theme";
+import { expandirContornosParciais } from "./contorno";
 
 /** Gera os bytes do arquivo .pptx a partir do deck. */
 export async function deckToPptx(deck: Deck, setup: DeckSetup, titulo = "Apresentação"): Promise<Uint8Array> {
   const { default: PptxGenJS } = await import("pptxgenjs");
+  // contorno parcial vira formas de linha no arquivo (o PowerPoint não tem borda por lado)
+  deck = expandirContornosParciais(deck, setup);
   // os gráficos do app viram imagem no arquivo (o motor não escreve `c:chart` nativo): o desenho não se perde
   deck = await prepararGraficos(deck, setup);
   // a mídia precisa de uma capa rasterizada (o `blip` do PowerPoint é uma imagem)

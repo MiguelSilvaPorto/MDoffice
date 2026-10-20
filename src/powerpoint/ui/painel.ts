@@ -230,6 +230,19 @@ export class Painel {
       partes.push(linhaSel("Início", "ln-head", l.head ?? "", pontas));
       partes.push(linhaSel("Fim", "ln-tail", l.tail ?? "", pontas));
       partes.push(linhaSel("Pontas da linha", "ln-cap", l.cap ?? "flat", [["flat", "Retas"], ["round", "Arredondadas"], ["square", "Quadradas"]]));
+      // Contorno parcial: quanto de cada lado é desenhado (0-100%) e de que canto começa.
+      const lados = f.lnLados;
+      const valorLado = (k: "t" | "r" | "b" | "l") => Math.round(lados?.[k] ?? 100);
+      const invertido = (k: "t" | "r" | "b" | "l") => !!lados?.inv?.[k];
+      partes.push(`<div class="pf-sub">Bordas por lado</div>`);
+      for (const [k, rotulo] of [["t", "Topo"], ["r", "Direita"], ["b", "Baixo"], ["l", "Esquerda"]] as const) {
+        partes.push(
+          `<div class="pf-linha"><span>${rotulo}</span><span class="pf-campo"><input type="number" data-act="ln-lado-${k}" min="0" max="100" step="5" value="${valorLado(k)}" aria-label="${rotulo} do contorno (0 a 100%)"><small>%</small><button type="button" class="pf-inv${invertido(k) ? " on" : ""}" data-click="ln-inv" data-valor="${k}" title="Inverter ${rotulo.toLowerCase()}: o trecho começa no outro canto" aria-pressed="${invertido(k)}">⇄</button></span></div>`
+        );
+      }
+      partes.push(
+        `<div class="pf-linha pf-presets"><button type="button" class="btn small" data-click="ln-preset" data-valor="completo">Completo</button><button type="button" class="btn small" data-click="ln-preset" data-valor="metade">50%</button><button type="button" class="btn small" data-click="ln-preset" data-valor="topo">10% no topo</button></div>`
+      );
     }
     return partes.join("");
   }

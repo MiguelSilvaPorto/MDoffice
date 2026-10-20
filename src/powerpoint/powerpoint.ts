@@ -16,7 +16,7 @@ import { caixaCentrada, estiloDoDeck, GALERIA, novaCaixaDeTexto, novaForma, nova
 import { dicaDoTraco, formaDoTraco, formaDeCurva, formaDaTinta, type Pincel } from "./edicao/desenho";
 import { atualizarEstilos, ehBrilho, ehFamilia, ehIntensidade, estiloDaFamilia, ligarEstilo, ligarEstiloFundo, soltarEstilo, soltarEstiloFundo } from "./edicao/estilos";
 import { atualizarLigacoes, ligacaoParaFormas } from "./edicao/ligacoes";
-import { ajustarCor, CANTOS, comAjuste, comCantos, comLinha, comOpacidade, comPreenchimento, comRaioDeCanto, comSombra, gradiente, SOMBRAS_PRONTAS, solido, corPrincipal, type Canto } from "./edicao/formato";
+import { ajustarCor, CANTOS, comAjuste, comCantos, comLadoContorno, comLinha, comOpacidade, comPreenchimento, comRaioDeCanto, comSombra, gradiente, inverterLadoContorno, presetContorno, SOMBRAS_PRONTAS, solido, corPrincipal, type Canto } from "./edicao/formato";
 import { aspectSize, stageRatio } from "./schema";
 import type { Dim } from "./edicao/geometria";
 import { Historico } from "./edicao/historico";
@@ -3471,6 +3471,26 @@ export class PowerPointHost {
         return;
       case "ln-cap":
         this.comPintura((s) => patchFormas(s, ids, (f) => comLinha(f, { cap: value as never })));
+        return;
+      case "ln-lado-t":
+      case "ln-lado-r":
+      case "ln-lado-b":
+      case "ln-lado-l": {
+        const lado = cmd.slice(-1) as "t" | "r" | "b" | "l";
+        const pct = Number(String(value).replace(",", "."));
+        this.comPintura((s) => patchFormas(s, ids, (f) => comLadoContorno(f, lado, pct)), "ln-lado");
+        return;
+      }
+      case "ln-inv": {
+        const lado = value as "t" | "r" | "b" | "l";
+        this.comPintura((s) => patchFormas(s, ids, (f) => inverterLadoContorno(f, lado)), "ln-inv");
+        return;
+      }
+      case "ln-preset":
+        this.comPintura(
+          (s) => patchFormas(s, ids, (f) => presetContorno(f, value as "completo" | "metade" | "topo")),
+          "ln-preset"
+        );
         return;
 
       // ---- efeitos ----

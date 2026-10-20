@@ -205,6 +205,8 @@ export interface Shape {
   fillX?: Fill;
   /** contorno */
   ln?: Line;
+  /** contorno parcial: quanto de cada lado (0–100%) é desenhado e de que canto começa */
+  lnLados?: LnLados;
   /** sombra externa */
   shadow?: Shadow;
   /** opacidade geral (0-1) */
@@ -458,6 +460,18 @@ export interface Line {
   /** pontas de seta no início/fim */
   head?: "triangle" | "arrow" | "stealth" | "diamond" | "oval";
   tail?: "triangle" | "arrow" | "stealth" | "diamond" | "oval";
+}
+
+/**
+ * Contorno parcial: quanto de cada lado é desenhado (0–100%) e de que canto o trecho
+ * começa (`inv`: o mesmo tanto, a partir do outro canto). Ausente = 100% em todos.
+ */
+export interface LnLados {
+  t?: number;
+  r?: number;
+  b?: number;
+  l?: number;
+  inv?: { t?: boolean; r?: boolean; b?: boolean; l?: boolean };
 }
 
 export interface Shadow {

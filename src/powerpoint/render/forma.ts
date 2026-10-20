@@ -7,6 +7,7 @@ import { htmlGrafico } from "./grafico";
 import { htmlMidia } from "./midia";
 import { PRESETS_CONHECIDOS, tracadoDoPreset, tracadoLivre, retangulo4Cantos, type Traçado } from "./presets";
 import { cantosEditaveis } from "../edicao/formato";
+import { segmentosDoContorno } from "../edicao/contorno";
 
 export interface CtxRender {
   /** tamanho da lâmina em pt */
@@ -370,14 +371,21 @@ function svgDaForma(s: Shape, ctx: CtxRender, soContorno = false): string {
     mf = ` marker-end="url(#mt${s.id})"`;
   }
   const traco = atributosDeTraco(s.ln, refTraco);
-  const caminhos = tr
-    .map((t) => {
-      const preenche = t.preenche && ref !== "none";
-      const fillAttr = preenche ? `fill="${ref}"${alpha < 1 ? ` fill-opacity="${n3(alpha)}"` : ""}${t.evenodd ? ` fill-rule="evenodd"` : ""}` : `fill="none"`;
-      const tr2 = t.traco === false ? `stroke="none"` : traco;
-      return `<path d="${t.d}" ${fillAttr} ${tr2}${t.preenche ? "" : mi + mf}/>`;
-    })
-    .join("");
+  // contorno parcial: o caminho normal perde o traço e só os trechos de cada lado são
+  // desenhados (os arcos dos cantos ficam no contorno inteiro, 100% em tudo)
+  const lados = segmentosDoContorno(s, ww, hh);
+  const caminhos =
+    tr
+      .map((t) => {
+        const preenche = t.preenche && ref !== "none";
+        const fillAttr = preenche ? `fill="${ref}"${alpha < 1 ? ` fill-opacity="${n3(alpha)}"` : ""}${t.evenodd ? ` fill-rule="evenodd"` : ""}` : `fill="none"`;
+        const tr2 = t.traco === false || lados ? `stroke="none"` : traco;
+        return `<path d="${t.d}" ${fillAttr} ${tr2}${t.preenche ? "" : mi + mf}/>`;
+      })
+      .join("") +
+    (lados ?? [])
+      .map((seg) => `<path d="M${n3(seg.x1)} ${n3(seg.y1)}L${n3(seg.x2)} ${n3(seg.y2)}" fill="none" ${traco}/>`)
+      .join("");
   const flip = (s.flipH ? -1 : 1) + "," + (s.flipV ? -1 : 1);
   const mover = `translate(${s.flipH ? n3(ww) : 0} ${s.flipV ? n3(hh) : 0}) scale(${flip})`;
   let sombra = "";

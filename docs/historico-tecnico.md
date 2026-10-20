@@ -299,6 +299,62 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** `.wd-img` (inline-block, `position: relative`), `.wd-img.sel` (contorno), `.wd-img-p` (8 pontos `#4f46e5`), posições `p-nw…p-se` com cursores de redimensionar, `.wd-img-alca` (6 pontos, `cursor: grab`, aparece no hover/seleção)
 - **Por quê:** sem o contorno e as alças o recurso não se anuncia. O contorno é no wrapper (não no `<img>`, que é substituído pelo NodeView); a alça aparece no hover para não poluir o texto.
 
+## src/powerpoint/edicao/contorno.ts
+
+### 2026-10-20 — feat/ppt-contorno-parcial — contorno parcial (novo arquivo)
+- **Local:** `contornoParcial`, `segmentosDoContorno`
+- **Linha:** novo arquivo
+- **Por quê:** o PowerPoint só conhece contorno inteiro; o usuário quer 50% do contorno, 10% só no topo, invertido. A função devolve os trechos retos dos quatro lados, com a fração de cada um e o canto de início (`inv`), nas mesmas unidades da tela ou do `.pptx`. O contorno inteiro (100% em tudo) devolve `null` para continuar usando o caminho original — com os arcos dos cantos arredondados. Formas livres e não retangulares também devolvem `null` (ficam com o contorno inteiro).
+
+## src/powerpoint/schema.ts
+
+### 2026-10-20 — feat/ppt-contorno-parcial — `LnLados` no `Shape`
+- **Local:** `interface LnLados` e `Shape.lnLados`
+- **Linha:** novo tipo + `lnLados?: LnLados;`
+- **Por quê:** o modelo só tinha um `ln` uniforme. O `lnLados` guarda os percentuais por lado e a inversão; ausente = 100% em todos. O campo entra no JSON do deck e sobrevive a desfazer/refazer.
+
+## src/powerpoint/edicao/formato.ts
+
+### 2026-10-20 — feat/ppt-contorno-parcial — helpers de borda
+- **Local:** `normalizarLados`, `comLadoContorno`, `inverterLadoContorno`, `presetContorno`
+- **Linha:** novas funções
+- **Por quê:** centralizar a edição do contorno parcial: lado a 100% sai do objeto, tudo em 100% sem inversão volta a `undefined` (contorno inteiro), inversão sem lado parcial fica guardada para quando o percentual baixar, e os presets (Completo/50%/10% no topo) são um passo só de desfazer.
+
+## src/powerpoint/render/forma.ts
+
+### 2026-10-20 — feat/ppt-contorno-parcial — desenhar os trechos
+- **Local:** `svgDaForma`
+- **Linha:** `const lados = segmentosDoContorno(s, ww, hh)` · `stroke="none"` no caminho principal quando há trechos · `<path d="M…L…" fill="none" ${traco}/>` por trecho
+- **Por quê:** o caminho da forma continua pintando o preenchimento e a sombra, mas perde o traço; os trechos são desenhados por cima com o mesmo estilo de linha (cor/gradiente, espessura, tracejado, pontas). O `soContorno` (moldura de imagem) também usa os trechos.
+
+## src/powerpoint/ui/painel.ts
+
+### 2026-10-20 — feat/ppt-contorno-parcial — “Bordas por lado” no painel
+- **Local:** `htmlLinha`
+- **Linha:** seção nova com 4 `input[type=number]` (`data-act="ln-lado-t|r|b|l"`), botão `data-click="ln-inv"` e presets `data-click="ln-preset"`
+- **Por quê:** dar o controle sem esconder atrás de um menu: os quatro lados com o percentual atual (100 quando não há `lnLados`), o ⇄ para inverter e os atalhos pedidos (Completo/50%/10% no topo).
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-20 — feat/ppt-contorno-parcial — ações do contorno parcial
+- **Local:** `run` (`switch (cmd)`)
+- **Linha:** casos `ln-lado-t/r/b/l`, `ln-inv`, `ln-preset`
+- **Por quê:** aplicar aos selecionados via `comPintura`/`patchFormas` (o mesmo caminho do contorno normal), com um passo de desfazer por gesto (`ln-lado`, `ln-inv`, `ln-preset`).
+
+## src/powerpoint/pptxexport/contorno.ts
+
+### 2026-10-20 — feat/ppt-contorno-parcial — contorno parcial no `.pptx` (novo arquivo)
+- **Local:** `expandirContornosParciais`
+- **Linha:** novo arquivo
+- **Por quê:** o `a:ln` do PowerPoint é sempre em volta da forma. Antes de exportar, cada trecho vira uma forma de linha (custGeom com `M/L`, sem preenchimento) sobre a forma-base, que perde o contorno. O arquivo abre com o mesmo desenho; ao reabrir no MDOffice, os trechos voltam como formas de linha (o visual é o mesmo). Chamado no início de `deckToPptx`.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-20 — feat/ppt-contorno-parcial — estilos do contorno parcial
+- **Local:** depois de `.pf-campo`
+- **Linha:** `.pf-sub`, `.pf-inv`, `.pf-inv.on`, `.pf-presets`
+- **Por quê:** separar a seção no painel, deixar o botão de inverter com estado visível e os três presets caberem na linha sem quebrar o painel.
+
 ## src/broker/diag.ts
 
 ### 2026-10-19 — 2d4e6c6 — log de decisões do corretor (novo arquivo)
