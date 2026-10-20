@@ -583,6 +583,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O botão de esconder a lâmina voltou a ter volta**: depois de esconder uma lâmina, o botão
+  da fita passava a dizer **Mostrar** — mas clicar nele de novo não trazia a lâmina de volta
+  (o botão ficava preso em "Mostrar", sem efeito). A causa: o modelo da lâmina é uma fusão
+  (a lâmina nova é juntada com a antiga), e o `show: false` antigo sobrevivia à troca —
+  apagar a chave do modelo não tirava o valor. Agora **apagar no modelo é `undefined`** e a
+  chave some de vez: o botão alterna a cada clique. O mesmo valia para **renomear a lâmina para
+  o vazio**: o nome antigo sobrevivia e a lâmina continuava com ele.
+
 - **A box escolhida agora avisa que o vazio dela serve para arrastar**: com a caixa de texto
   escolhida, a parte vazia ficava com o cursor normal e o clique nela caía na lâmina
   (desfazendo a escolha) — o gesto ficava escondido. Agora o **vazio** da box escolhida mostra

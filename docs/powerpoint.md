@@ -183,7 +183,8 @@ avisado ao abrir (nunca some em silêncio).
   ocultar, renomear e resetar (com ida e volta no `.pptx`), duplicar e excluir (o botão
   **Duplicar** está na Página Inicial e na aba **Inserir**). O **clique direito na miniatura**
   abre um menu do app — **Duplicar lâmina**, **Nova lâmina no fim**, **Renomear…**, **Ocultar/
-  Mostrar na apresentação** e **Excluir lâmina** — agindo na lâmina clicada (antes caía no menu do
+  Mostrar na apresentação** (o botão da fita **alterna** entre *Ocultar* e *Mostrar*) e
+  **Excluir lâmina** — agindo na lâmina clicada (antes caía no menu do
   navegador: Voltar/Atualizar/Salvar como/Imprimir/Inspecionar). Quem **cria lâmina** é o **card
   "+ Nova lâmina" do fim da faixa** (o botão da fita saiu a pedido — ele fazia o mesmo duas vezes):
   a **prévia** cria a lâmina **na hora**, com o **último layout escolhido** — a primeira nasce

@@ -111,7 +111,15 @@ export function replaceSlide(deck: Deck, at: number, patch: Partial<Slide>): Dec
   const alvo = deck.slides[i];
   if (!alvo) return deck;
   const slides = deck.slides.slice();
-  slides[i] = { ...alvo, ...patch };
+  // O patch é a lâmina NOVA, então uma chave que ele NÃO tem não pode sobrar da lâmina antiga:
+  // sem isto, esconder a lâmina (`show: false`) era sem volta — o `show: false` do modelo
+  // sobrevivia ao merge e "Mostrar" não trazia a lâmina de volta.
+  // Por isso "apagar" no patch é `undefined`, e aqui a chave some de vez.
+  const nova = { ...alvo, ...patch } as Slide;
+  for (const k of Object.keys(patch) as (keyof Slide)[]) {
+    if (patch[k] === undefined) delete nova[k];
+  }
+  slides[i] = nova;
   return { ...deck, slides };
 }
 

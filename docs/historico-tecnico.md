@@ -422,6 +422,37 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   não existia, o cursor de texto nunca aparecia — o clique nas letras entra na edição, mas o
   ponteiro dizia "mover". Agora usa a classe que o palco realmente marca (`pp-escolhida`) e
   mira nas LETRAS (que são o que pega o ponteiro).
+## src/powerpoint/slides.ts
+
+### 2026-10-20 — fix/ppt-ocultar-mostrar-lamina — a fusão da lâmina sabe apagar uma chave
+- **Local:** `replaceSlide`
+- **Linha:** `slides[i] = { ...alvo, ...patch };` → a fusão continua, mas agora as chaves do
+  patch com valor `undefined` são **removidas** do resultado (um laço sobre `Object.keys(patch)`)
+- **Por quê:** o patch é a lâmina NOVA, então uma chave que ele não tem não pode sobrar da
+  lâmina antiga. Sem isto, esconder a lâmina (`show: false`) era **sem volta**: o `show: false`
+  sobrevivia à fusão e o botão "Mostrar" não trazia a lâmina de volta (relato com print). O
+  mesmo valia para o nome da lâmina: renomear para o vazio deixava o nome antigo. Com isto,
+  "apagar no modelo" tem uma forma clara — `undefined`.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-20 — fix/ppt-ocultar-mostrar-lamina — esconder/mostrar e renomear sem `delete`
+- **Local:** `run`, casos `slide-ocultar` e `slide-nome`
+- **Linha:** `slide-ocultar`: `delete n.show` → `{ ...s, show: undefined }` (e o botão passa a
+  ser uma expressão só) · `slide-nome`: `delete n.nome` → `n.nome = undefined`
+- **Por quê:** o `delete` some da chave do patch, e a fusão da lâmina (`replaceSlide`) não pode
+  saber que a ausência era de propósito — o valor antigo voltava. Com `undefined`, a intenção
+  viaja no patch e a chave é apagada de verdade (ver `replaceSlide`).
+
+## scripts/testar-lamina.mjs
+
+### 2026-10-20 — fix/ppt-ocultar-mostrar-lamina — teste do esconder/mostrar (novo arquivo)
+- **Local:** arquivo novo
+- **Linha:** `npm run test:lamina`
+- **Por quê:** o botão da fita é um alternador, e o defeito era justamente no segundo clique —
+  um teste que só olha o primeiro clique passa batido. O teste confere a ida e a volta (o
+  `show` some da lâmina), o alternar a cada clique, o renomear para o vazio e a duplicata de uma
+  lâmina escondida.
 ## src/powerpoint/render/forma.ts
 
 ### 2026-10-20 — feat/ppt-contorno-parcial — desenhar os trechos

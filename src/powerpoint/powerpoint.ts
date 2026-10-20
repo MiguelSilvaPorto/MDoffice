@@ -2805,13 +2805,10 @@ export class PowerPointHost {
         return;
       }
       case "slide-ocultar": {
-        // alterna oculta/mostra: a lâmina continua no editor, mas o apresentador pula ela
-        this.editar((s) => {
-          if (s.show !== false) return { ...s, show: false };
-          const n = { ...s };
-          delete n.show;
-          return n;
-        });
+        // alterna oculta/mostra: a lâmina continua no editor, mas o apresentador pula ela.
+        // O "apagar" é `undefined` (e não `delete`): o modelo da lâmina é uma fusão, e sem a
+        // chave o `show: false` antigo sobrevivia — o botão ficava em "Mostrar" sem efeito.
+        this.editar((s) => (s.show === false ? { ...s, show: undefined } : { ...s, show: false }));
         return;
       }
       case "slide-nome": {
@@ -2827,8 +2824,10 @@ export class PowerPointHost {
           if (limpo === (this.atual().nome ?? "")) return;
           this.editar((s) => {
             const n = { ...s };
+            // `undefined` e não `delete`: o modelo da lâmina é uma fusão (ver `replaceSlide`) —
+            // sem a chave, o nome antigo sobrevivia e a lâmina continuava com o nome velho.
             if (limpo) n.nome = limpo;
-            else delete n.nome;
+            else n.nome = undefined;
             return n;
           });
         })();
