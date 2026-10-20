@@ -15008,3 +15008,13 @@ antigas quando fizer sentido.
   (qualquer mudança no tamanho da aba desalinha) e a posição é medida **só na troca de painel**
   (fica velha se a fonte, o zoom ou um resize mudar o layout depois). As duas coisas ficaram presas
   no `test:layout`.
+
+## CHANGELOG.md
+
+### 2026-10-20 · Geral · a promoção da entrada (não adicionado → adicionado)
+- **Local:** Geral → **Não adicionado** → Frontend (a entrada da pílula) e Geral → **Adicionado** →
+  Frontend (topo)
+- **Linha:** a entrada migrou inteira, sem reescrita — só a posição mudou
+- **Porquê:** o fecho não pode promover: no instante do commit da tarefa a entrada ainda não está na
+  main (a regra do repositório é "nunca promova o que ainda não entrou na main"), então a promoção é
+  uma tarefa de follow-up, depois que o commit chegou (71be1ab). Promovi só a entrada DESTA tarefa.
