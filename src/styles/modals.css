@@ -11,6 +11,12 @@
   backdrop-filter: blur(3px);
 }
 
+/* Aviso que não escurece o documento atrás: o modal flutua, o fundo fica limpo. */
+.modal-backdrop.sem-fundo {
+  background: transparent;
+  backdrop-filter: none;
+}
+
 .modal {
   display: flex;
   flex-direction: column;
@@ -21,6 +27,51 @@
   border-radius: 16px;
   box-shadow: var(--shadow);
   overflow: hidden;
+}
+
+/* Alça de arrasto: 3×3 pontos no cabeçalho (mostra que o pop-up pode ser movido). */
+.wm-grip {
+  display: grid;
+  grid-template-columns: repeat(3, 3px);
+  grid-auto-rows: 3px;
+  gap: 2px;
+  flex: 0 0 auto;
+  opacity: 0.5;
+}
+
+.wm-grip i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.modal .wm-head:hover .wm-grip {
+  opacity: 0.85;
+}
+
+/* X circular de fechar (cancela, como o Esc e o botão Cancelar). */
+.wm-close {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.wm-close:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.wm-close .ic {
+  width: 14px;
+  height: 14px;
 }
 
 /* Pop-up arrastável: a barra de título é a alça; o movimento é um translate

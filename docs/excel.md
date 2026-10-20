@@ -20,7 +20,8 @@ Planilha com grade que cresce sob demanda, fórmulas em português e abertura de
   (o histórico guarda cópias de qualquer jeito).
 - **Aviso “Salvar alterações?” arrastável**: ao fechar uma aba com alterações, o pop-up pode
   ser **arrastado pela barra de título** para sair da frente da planilha (duplo clique na barra
-  volta ao centro).
+  volta ao centro; os **9 pontos** mostram a alça). O **X** circular cancela e o fundo **não
+  escurece** a planilha.
 
 ## Fita (abas Início, Fórmulas e Exibir)
 

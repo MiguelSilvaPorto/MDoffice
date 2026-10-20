@@ -248,10 +248,16 @@ export const wordDocsMethods = {
 
   askSaveChanges(this: App, name: string): Promise<"save" | "discard" | "cancel"> {
     return new Promise((resolve) => {
-      const backdrop = h("div", { class: "modal-backdrop" });
+      const backdrop = h("div", { class: "modal-backdrop sem-fundo" });
       const modal = h("div", { class: "modal tr-modal link-modal" });
       modal.innerHTML = `
-        <header class="wm-head"><h2>Salvar alterações?</h2></header>
+        <header class="wm-head">
+          <span class="wm-grip" aria-hidden="true">${"<i></i>".repeat(9)}</span>
+          <h2>Salvar alterações?</h2>
+          <button class="wm-close" data-x type="button" title="Cancelar (Esc)" aria-label="Fechar">
+            <svg class="ic"><use href="#i-close"/></svg>
+          </button>
+        </header>
         <div class="wm-body tr-body"><p>O documento <b></b> tem alterações que ainda não foram salvas no arquivo.</p></div>
         <footer class="wm-foot">
           <button class="btn" data-cancel>Cancelar</button>
@@ -262,9 +268,12 @@ export const wordDocsMethods = {
       modal.querySelector("b")!.textContent = name;
       // o pop-up pode ser tirado da frente do documento pela barra de título
       tornarArrastavel(modal);
+      // enquanto a resposta não vem, trocar de aba deixaria o aviso sobre outro documento
+      document.body.classList.add("modal-aberto");
       backdrop.append(modal);
       document.body.append(backdrop);
       const done = (v: "save" | "discard" | "cancel") => {
+        document.body.classList.remove("modal-aberto");
         document.removeEventListener("keydown", onKey, true);
         backdrop.remove();
         resolve(v);
@@ -278,6 +287,7 @@ export const wordDocsMethods = {
       };
       document.addEventListener("keydown", onKey, true);
       modal.querySelector("[data-cancel]")!.addEventListener("click", () => done("cancel"));
+      modal.querySelector("[data-x]")!.addEventListener("click", () => done("cancel"));
       modal.querySelector("[data-discard]")!.addEventListener("click", () => done("discard"));
       modal.querySelector("[data-save]")!.addEventListener("click", () => done("save"));
       modal.querySelector<HTMLElement>("[data-save]")!.focus();

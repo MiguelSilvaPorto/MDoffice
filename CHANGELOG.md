@@ -1859,6 +1859,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 **Frontend**
 
 
+- **O aviso “Salvar alterações?” ficou com cara de pop-up de verdade**: ganhou **X circular**
+  (cancela, como o Esc), uma alça de **9 pontos** no cabeçalho (mostra que dá para arrastar) e o
+  fundo **não escurece mais** o documento atrás. E o aviso agora **trava a troca de aba**
+  enquanto está aberto — antes dava para ir para outra aba e o aviso ficava sobre o documento
+  errado (a resposta podia agir na aba errada).
+
 - **O aviso “Salvar alterações?” agora é arrastável**: o pop-up de confirmação ao fechar uma aba
   com alterações (Word, PowerPoint e Excel) ficava preso no centro e cobria o documento. A barra
   de título virou a alça (pointer events, com captura): arrasta com o mouse/dedo, fica limitado à

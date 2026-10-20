@@ -10,7 +10,8 @@ avisado ao abrir (nunca some em silêncio).
   como…" escolhe outro lugar). A raiz entra sozinha nos **Projetos**, com uma subpasta por tipo.
 - **Aviso “Salvar alterações?” arrastável**: ao fechar uma aba com alterações, o pop-up pode
   ser **arrastado pela barra de título** para sair da frente do documento (duplo clique na barra
-  volta ao centro).
+  volta ao centro; os **9 pontos** mostram a alça). O **X** circular cancela e o fundo **não
+  escurece** o documento.
 - Lê cada lâmina como o PowerPoint a monta: formas posicionadas com precisão (grupos, rotação
   e espelhamento), retângulos arredondados, elipses, setas e formas livres; preenchimento
   sólido, em gradiente e com imagem; contornos; sombras; imagens com recorte; fundos da lâmina;

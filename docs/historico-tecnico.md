@@ -189,6 +189,27 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** `.modal .wm-head.arrastavel { cursor: grab; touch-action: none; }`, `.modal.arrastando .wm-head.arrastavel { cursor: grabbing; }` e `.modal.arrastando { user-select: none; }`
 - **Por quê:** mostrar que a barra pode ser agarrada, impedir a seleção de texto durante o arrasto e desligar o gesto de toque nela (no touch, o arrasto vira movimento do pop-up).
 
+## src/app/wordDocs.ts
+
+### 2026-10-20 — feat/popup-arrastavel-visual — cabeçalho com alça e X; aviso não escurece e trava a aba
+- **Local:** `askSaveChanges`
+- **Linha:** `<header class="wm-head">` ganha `<span class="wm-grip">` (9 `<i>`) e `<button class="wm-close" data-x>` · `modal-backdrop sem-fundo` · `document.body.classList.add("modal-aberto")` ao abrir e `remove` no `done` · handler `[data-x] → done("cancel")`
+- **Por quê:** o aviso não mostrava que era arrastável nem tinha um fechar claro, e o fundo escuro escondia o documento. O X cancela como o Esc; os 9 pontos são a alça. O `modal-aberto` é o que impede a troca de aba enquanto a pergunta está aberta (o usuário clicou em outra aba e o aviso foi junto, sobre o documento errado).
+
+## src/app/tabs.ts
+
+### 2026-10-20 — feat/popup-arrastavel-visual — troca de aba bloqueada com aviso aberto
+- **Local:** `switchTo`
+- **Linha:** `if (document.body.classList.contains("modal-aberto")) return;`
+- **Por quê:** o aviso de salvar é modal, mas o atalho de trocar de aba continuava funcionando; o aviso ficava sobre o documento novo e a resposta podia salvar/fechar a aba errada. Com o bloqueio, primeiro se responde o aviso.
+
+## src/styles/modals.css
+
+### 2026-10-20 — feat/popup-arrastavel-visual — fundo transparente, alça de 9 pontos e X circular
+- **Local:** regras novas junto de `.modal`
+- **Linha:** `.modal-backdrop.sem-fundo { background: transparent; backdrop-filter: none; }` · `.wm-grip` (grid 3×3 de pontos) · `.wm-close` (28 px, `border-radius: 50%`, hover) · `.wm-close .ic`
+- **Por quê:** o pedido era ver o documento atrás do aviso e ter uma alça visual para o arrasto. O X é um botão redondo com o ícone `#i-close`; a alça usa `currentColor`, então acompanha o tema.
+
 ## src/broker/diag.ts
 
 ### 2026-10-19 — 2d4e6c6 — log de decisões do corretor (novo arquivo)

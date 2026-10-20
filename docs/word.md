@@ -78,7 +78,8 @@ arquivos `.docx` de verdade.
   o histórico guarda cópias de qualquer jeito.
 - **Aviso “Salvar alterações?” arrastável**: ao fechar uma aba com alterações, o pop-up pode
   ser **arrastado pela barra de título** para sair da frente do documento (duplo clique na barra
-  volta ao centro).
+  volta ao centro; os **9 pontos** mostram a alça). O **X** circular cancela e o fundo **não
+  escurece** o documento.
 - **Exportar PDF** imprime a própria folha (com páginas, cabeçalho e rodapé).
 - **Importar do Office**: abre `.docx` direto das pastas do Office (e explica os formatos
   antigos `.doc`).
