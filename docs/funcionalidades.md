@@ -17,6 +17,12 @@ histórico de versões, backup em disco, lixeira de documentos, configurações,
 comandos, navegação e organização das pastas dos projetos e modo foco) — esses ficam na
 categoria **Geral** do [changelog](../CHANGELOG.md).
 
+**Abas**: a fileira abre os documentos e cada aba tem menu (renomear, duplicar, mostrar na pasta,
+copiar caminho, **abrir em nova janela**…). Arrastar uma aba **para fora da janela** e soltar ali
+abre o documento numa **janela própria** — ela sobe só com aquele documento e não mexe na sessão
+das outras janelas; o documento é salvo antes de a aba sair da janela atual (rascunhos são
+gravados; arquivos seus perguntam se há alterações).
+
 A **tela de Início** mostra os arquivos recentes numa **grade de cartões**, cada um com uma
 **versão do documento** pré-carregada — o tipo dá a forma e o arquivo dá o conteúdo: **Word** e
 **Markdown** viram uma **página A4 em pé** no papel do tema (no escuro a folha escurece, como no

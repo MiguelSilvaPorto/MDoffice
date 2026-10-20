@@ -79,6 +79,8 @@ export interface TabBarHooks {
   onRename: (id: string, value: string) => void;
   /** Nova ordem das abas (ids), depois de arrastar. */
   onReorder: (ids: string[]) => void;
+  /** A aba foi arrastada para FORA da janela: vira uma janela própria. */
+  onDetach: (id: string) => void;
   onContext: (id: string, x: number, y: number) => void;
   onRecents: (anchor: HTMLElement) => void;
 }
@@ -186,21 +188,27 @@ export class TabBar {
     return el;
   }
 
-  /** Arrastar a aba muda a ordem; um clique simples só seleciona. */
+  /** Arrastar a aba muda a ordem — e arrastar para FORA da janela vira uma janela própria. */
   private enableDrag(el: HTMLElement, id: string, total: number): void {
     el.addEventListener("pointerdown", (e) => {
       if (e.button !== 0 || (e.target as HTMLElement).closest(".tab-x") || this.renaming) return;
       const startX = e.clientX;
+      const startY = e.clientY;
       let dragging = false;
       let baseLeft = 0;
+      let fora = false;
       const selectNow = () => this.hooks.onSelect(id);
       if (!el.classList.contains("active")) selectNow();
-      if (total < 2) return;
+
+      // com o ponteiro capturado, o evento continua chegando fora da janela (coordenadas
+      // negativas ou além do tamanho): é assim que o "soltei fora" é detectado
+      const foraDaJanela = (ev: PointerEvent): boolean =>
+        ev.clientX < -32 || ev.clientY < -32 || ev.clientX > window.innerWidth + 32 || ev.clientY > window.innerHeight + 32;
 
       const move = (ev: PointerEvent) => {
         const dx = ev.clientX - startX;
         if (!dragging) {
-          if (Math.abs(dx) < 5) return;
+          if (Math.abs(dx) < 5 && Math.abs(ev.clientY - startY) < 5) return;
           dragging = true;
           baseLeft = el.getBoundingClientRect().left;
           el.classList.add("dragging");
@@ -210,6 +218,11 @@ export class TabBar {
             /* ignora */
           }
         }
+        fora = foraDaJanela(ev);
+        el.classList.toggle("fora", fora);
+        document.body.classList.toggle("aba-fora", fora);
+        if (fora) return; // fora da janela não há ordem a mudar
+        if (total < 2) return;
         const siblings = Array.from(this.strip.querySelectorAll<HTMLElement>(".tab"));
         el.style.transform = `translateX(${ev.clientX - startX}px)`;
         const myCenter = el.getBoundingClientRect().left + el.getBoundingClientRect().width / 2;
@@ -238,9 +251,16 @@ export class TabBar {
         } catch {
           /* ignora */
         }
+        document.body.classList.remove("aba-fora");
         if (!dragging) return;
-        el.classList.remove("dragging");
+        el.classList.remove("dragging", "fora");
         el.style.transform = "";
+        // soltou fora da janela: o documento ganha a própria janela (a aba sai daqui)
+        if (fora || foraDaJanela(ev)) {
+          fora = false;
+          this.hooks.onDetach(id);
+          return;
+        }
         const ids = Array.from(this.strip.querySelectorAll<HTMLElement>(".tab")).map((x) => x.dataset.id!);
         this.hooks.onReorder(ids);
       };

@@ -2648,6 +2648,35 @@ console.log("\nPowerPoint: colar texto entra na caixa escolhida (ou cria a próp
   );
 }
 
+console.log("\nAbas: arrastar para fora vira uma janela própria");
+
+{
+  const abas = ler("src/tabs.ts");
+  const tabs = ler("src/app/tabs.ts");
+  const app = ler("src/app/app.ts");
+  const janela = ler("src/app/novaJanela.ts");
+  checa(
+    "o arrasto da aba detecta o ponteiro fora da janela",
+    /foraDaJanela/.test(abas) && /this\.hooks\.onDetach\(id\)/.test(abas) && /aba-fora/.test(abas),
+    "soltar a aba fora da janela não abre janela nenhuma"
+  );
+  checa(
+    "a janela própria abre o documento pelo ?doc=",
+    /docDaUrl\(location\.search\)/.test(app) && /janelaDeDocumento = true/.test(app) && /urlDoDocumento/.test(janela) && /new WebviewWindow/.test(janela),
+    "o boot da janela nova não reconhece o ?doc="
+  );
+  checa(
+    "a sessão das outras janelas não é sobrescrita",
+    /if \(this\.janelaDeDocumento\) return;/.test(tabs),
+    "a janela de um documento grava a sessão e apaga as abas da principal"
+  );
+  checa(
+    "mover a aba persiste o documento antes de abrir a janela",
+    /async detachTab\(this: App, id: string\)/.test(tabs) && /prepareClosePpt/.test(tabs) && /abrirEmNovaJanela\(\{ path: tab\.path/.test(tabs),
+    "a aba sai da janela sem salvar o que estava aberto"
+  );
+}
+
 console.log("\naba Desenhar: as ferramentas de traço num lugar só");
 {
   const fita = ler("src/powerpoint/ui/fita.ts");

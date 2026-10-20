@@ -89,6 +89,19 @@
   transition: none;
 }
 
+/* arrastada para fora da janela: ao soltar, o documento ganha a própria janela */
+.tab.fora {
+  opacity: 0.55;
+  outline: 1px dashed var(--accent);
+  outline-offset: -2px;
+  cursor: grabbing;
+}
+
+body.aba-fora,
+body.aba-fora * {
+  cursor: grabbing !important;
+}
+
 .tab-ic {
   display: grid;
   place-items: center;

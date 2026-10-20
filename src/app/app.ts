@@ -24,6 +24,7 @@ const pickFoldersNative = () => files.pickFolders();
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { $, toast, debounce, copyText, loadJSON, toBase64Utf8, h, saveJSON } from "../util";
 import { type Recent } from "./types";
+import { docDaUrl } from "./docNaUrl";
 import { tabsMethods } from "./tabs";
 import { pagesMethods } from "./pages";
 import { homeContextMethods } from "./homeContext";
@@ -75,6 +76,8 @@ export class App {
   tabs: DocTab[] = [];
   tab!: DocTab;
   closedTabs: string[] = [];
+  /** Janela de UM documento (aba arrastada para fora): não restaura nem grava a sessão das outras. */
+  janelaDeDocumento = false;
   /** Estado do backup em disco, mostrado na barra inferior. */
   backupState: "ok" | "degradado" | "perigo" = "ok";
   /** true enquanto o salvamento automático está gravando (espelho da fila, para a interface). */
@@ -219,6 +222,7 @@ export class App {
       onNewMenu: (anchor) => this.openNewMenu(anchor),
       onRename: (id, value) => void this.renameTab(id, value),
       onReorder: (ids) => this.reorderTabs(ids),
+      onDetach: (id) => void this.detachTab(id),
       onContext: (id, x, y) => this.openTabMenu(id, x, y),
       onRecents: (anchor) => void this.openRecentsMenu(anchor),
     });
@@ -363,7 +367,14 @@ export class App {
     void this.sidebar.init();
     void this.preview.render("");
     this.editor.focus();
-    void this.restoreSession();
+    // janela própria (?doc=…): abre SÓ aquele documento; senão, reabre a sessão das abas
+    const pedido = docDaUrl(location.search);
+    if (pedido) {
+      this.janelaDeDocumento = true;
+      void this.abrirNaJanela(pedido);
+    } else {
+      void this.restoreSession();
+    }
     // carrega o dicionário em segundo plano (worker) e revisa quando ficar pronto
     window.setTimeout(() => warmUpSpell(), 2000);
     onSpellReady(() => {

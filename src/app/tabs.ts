@@ -12,6 +12,8 @@ import type { PowerPointTabData } from "../powerpoint/powerpoint";
 import type { ExcelTabData } from "../excel/host";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { $, h, toast, baseName, docDirOf, stripExt, copyText, loadJSON, saveJSON, fmtTime, fmtAgo } from "../util";
+import { abrirEmNovaJanela } from "./novaJanela";
+import type { PedidoDeJanela } from "./docNaUrl";
 
 export const tabsMethods = {
   /** Reabre as abas da sessão anterior; sem sessão, o app fica no Início (o Hub). */
@@ -174,12 +176,77 @@ export const tabsMethods = {
   },
 
   saveSession(this: App): void {
+    // janela de um documento só (aba arrastada para fora): ela não manda na sessão das outras
+    if (this.janelaDeDocumento) return;
     const withPath = this.tabs.filter((t) => t.path);
     saveJSON("mdc.session", {
       paths: withPath.map((t) => t.path!),
       drafts: withPath.filter((t) => t.isDraft).map((t) => t.path!),
       active: this.tab.path,
     });
+  },
+
+  /**
+   * Abre a aba numa janela própria — o gesto de arrastar a aba para fora da janela e o item
+   * "Abrir em nova janela" do menu. O documento é persistido ANTES (é do disco/rascunho que a
+   * janela nova lê); só depois a aba sai daqui. Cancelar o "salvar?" não move nada.
+   */
+  async detachTab(this: App, id: string): Promise<void> {
+    const tab = this.tabs.find((t) => t.id === id);
+    if (!tab || tab.kind === "settings" || this.switching) return;
+    // 1) persiste como no fechar: arquivos seus perguntam; rascunhos são gravados
+    if (tab.kind === "word") {
+      if (!(await this.prepareCloseWord(tab))) return;
+    } else if (tab.kind === "ppt") {
+      if (!(await this.prepareClosePpt(tab))) return;
+    } else if (tab.kind === "xlsx") {
+      if (!(await this.prepareCloseExcel(tab))) return;
+    } else if (tab === this.tab) {
+      if (tab.dirty && !tab.path && !(await this.ensureSaved())) return;
+      if (tab.dirty && tab.path) {
+        try {
+          await files.saveDoc(tab.path, this.editor.getText());
+          tab.dirty = false;
+        } catch {
+          return; // sem gravar, a janela nova abriria uma versão velha
+        }
+      }
+    } else if (tab.dirty && tab.path) {
+      try {
+        await files.saveDoc(tab.path, this.textOf(tab));
+        tab.dirty = false;
+      } catch {
+        return;
+      }
+    }
+    // 2) a janela nova precisa de um caminho para abrir
+    if (!tab.path) {
+      toast("Salve o documento antes de abrir em outra janela.", "info", 5000);
+      return;
+    }
+    // 3) abre a janela e só então tira a aba daqui (já está gravada: não pergunta de novo)
+    if (!abrirEmNovaJanela({ path: tab.path, draft: tab.isDraft }, tabLabel(tab))) return;
+    await this.closeTab(id);
+  },
+
+  /** Janela própria: abre só o documento pedido na URL — não restaura a sessão das outras. */
+  async abrirNaJanela(this: App, pedido: PedidoDeJanela): Promise<void> {
+    try {
+      const p = pedido.path;
+      let novo: DocTab | null = null;
+      if (/\.docx$/i.test(p)) novo = await this.addDocxTab(p, pedido.draft);
+      else if (/\.pptx$/i.test(p)) novo = await this.addPptxTab(p, pedido.draft);
+      else if (/\.xlsx$/i.test(p) || /\.xlsm$/i.test(p)) novo = await this.addXlsxTab(p, pedido.draft);
+      else novo = this.addTabFor(p, await files.loadDoc(p), pedido.draft);
+      if (novo) {
+        await this.switchTo(novo.id);
+        // a aba inicial vazia não fica numa janela de um documento só
+        this.dropPristineStartTab();
+        this.renderTabs();
+      }
+    } catch {
+      toast("Não consegui abrir o documento nesta janela.", "err", 6000);
+    }
   },
 
   /** Desenha a fileira de abas (documentos + Configurações, se aberta). */
@@ -335,6 +402,7 @@ export const tabsMethods = {
     const items: { label: string; hint?: string; run: () => void; sep?: boolean }[] = [
       { label: "Renomear", hint: teclaVisivel("renomear"), run: () => this.tabBar.beginRename(id) },
       { label: "Duplicar aba", run: () => void this.duplicateTab(tab) },
+      { label: "Abrir em nova janela", run: () => void this.detachTab(id) },
     ];
     if (tab.path) {
       items.push(

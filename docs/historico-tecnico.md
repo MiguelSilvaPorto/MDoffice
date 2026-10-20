@@ -14050,3 +14050,82 @@ antigas quando fizer sentido.
   conflito. O fechamento pegou **três rodadas de conflito** com sessões que commitaram no meio
   (o colar texto na caixa e o organograma): resolvi mantendo os dois lados e descartando a cópia
   velha do "colar texto" (já promovida).
+
+## src/app/docNaUrl.ts · src/app/novaJanela.ts (novos)
+
+### 2026-10-20 · a aba arrastada · o contrato do `?doc=` e a janela nova
+- **Local:** `docNaUrl.ts` (parser puro) e `novaJanela.ts` (`abrirEmNovaJanela`)
+- **Linha:** `novo` — `docDaUrl(busca)` devolve `{ path, draft }` (ou null = janela normal) e
+  `urlDoDocumento` monta `index.html?doc=<caminho>&draft=1`; `abrirEmNovaJanela` usa
+  `new WebviewWindow("doc-<ms>", { url, title, width: 1280, height: 860, … })` no app (`temBackend()`)
+  e `window.open` no navegador, com `tauri://error` avisando quando a janela não abre
+- **Porquê:** a janela nova precisa saber **qual** documento abrir sem passar pela sessão; a URL é
+  o contrato mais simples (não depende de evento entre janelas nem de estado compartilhado) e o
+  parser fica puro para testar. A permissão `core:webview:allow-create-webview-window` já estava no
+  `capabilities/default.json`.
+
+## src/app/tabs.ts
+
+### 2026-10-20 · a aba arrastada · persistir e tirar a aba daqui
+- **Local:** `detachTab` (nova), `abrirNaJanela` (nova), `saveSession` e `openTabMenu`
+- **Linha:** `+ if (this.janelaDeDocumento) return;` no `saveSession` · `+` `detachTab` (roda o
+  `prepareCloseWord/Ppt/Excel` como no fechar — que também cria o rascunho quando a aba ainda não
+  tem caminho —, salva o MD da aba ativa, exige `tab.path`, chama `abrirEmNovaJanela` e só então
+  `closeTab`) · `+` item "Abrir em nova janela" no menu da aba · `+` `abrirNaJanela(pedido)` (abre
+  só o documento do `?doc=` e ativa a aba, removendo a aba inicial vazia)
+- **Porquê:** o documento tem de estar no disco/rascunho **antes** de a janela nova ler — senão a
+  janela abriria uma versão velha e a aba fecharia com a edição perdida. A janela de documento não
+  pode gravar `mdc.session` (é uma chave só): sem a guarda, a janela principal perderia a fileira
+  ao reiniciar. O menu é o caminho para janela maximizada, onde não há "fora" para soltar.
+
+## src/app/app.ts
+
+### 2026-10-20 · a aba arrastada · o boot da janela de documento
+- **Local:** `start()` (perto do `restoreSession`) e os hooks do `TabBar`
+- **Linha:** `void this.restoreSession();` → `const pedido = docDaUrl(location.search); if (pedido)
+  { this.janelaDeDocumento = true; void this.abrirNaJanela(pedido); } else void this.restoreSession();`
+  · `+ onDetach: (id) => void this.detachTab(id)` · `+ janelaDeDocumento = false`
+- **Porquê:** a janela do documento abre **só ele** (sem reabrir a fileira das outras) e se marca
+  como tal para não gravar a sessão. O `onDetach` liga o gesto da aba ao fluxo de mover.
+
+## src/tabs.ts
+
+### 2026-10-20 · a aba arrastada · o arrasto detecta o ponteiro fora da janela
+- **Local:** `TabBarHooks` e `enableDrag`
+- **Linha:** `+ onDetach` · `+ const foraDaJanela = (ev) => ev.clientX < -32 || ev.clientY < -32 ||
+  ev.clientX > window.innerWidth + 32 || ev.clientY > window.innerHeight + 32` · o arrasto começa
+  com movimento em **x ou y** (antes só x) e, com o ponteiro fora, não reordena; no `up`, se
+  `fora` → `hooks.onDetach(id)` em vez de `onReorder`; a guarda `total < 2` saiu da entrada e foi
+  para o trecho da reordenação (uma aba só também pode sair para outra janela)
+- **Porquê:** com o ponteiro capturado (`setPointerCapture`), os eventos continuam chegando fora da
+  janela com coordenadas negativas/além do tamanho — é o sinal de "soltou fora". A margem de 32 px
+  evita disparar sem querer ao raspar a borda.
+
+## src/styles/tabs.css
+
+### 2026-10-20 · a aba arrastada · o estado "fora"
+- **Local:** depois de `.tab.dragging`
+- **Linha:** `+ .tab.fora` (opacidade 0,55 + contorno tracejado no acento) e `+ body.aba-fora`
+  (cursor `grabbing` em tudo)
+- **Porquê:** sem sinal visual a pessoa não sabe que soltar ali vai abrir outra janela; o contorno
+  tracejado é o mesmo vocabulário do app para "alvo".
+
+## scripts/testar-layout.mts
+
+### 2026-10-20 · a aba arrastada · as quatro checagens
+- **Local:** bloco novo "Abas: arrastar para fora vira uma janela própria", antes da aba Desenhar
+- **Linha:** `+` quatro checagens — o `foraDaJanela`/`onDetach`/`aba-fora`, o `docDaUrl(location.search)`
+  + `janelaDeDocumento` + `new WebviewWindow`, a guarda `if (this.janelaDeDocumento) return;` e o
+  `detachTab` com `prepareClose*` + `abrirEmNovaJanela({ path: tab.path …`
+- **Porquê:** o fluxo é de interface e foi conferido no navegador (soltar fora → `index.html?doc=…`
+  e a aba sai; a janela `?doc=` não sobrescreve a "SENTINELA" da sessão) — as checagens prendem o
+  contrato para a regressão de alguém devolver o arrasto a "só reordenar".
+
+## docs/funcionalidades.md
+
+### 2026-10-20 · a aba arrastada · o parágrafo das abas
+- **Local:** depois do parágrafo "Além dos módulos…"
+- **Linha:** `+` "**Abas**: … arrastar uma aba **para fora da janela** … abre o documento numa
+  **janela própria** … o documento é salvo antes …"
+- **Porquê:** o documento de funcionalidades não descrevia a fileira de abas; a janela por documento
+  é um comportamento do app todo (categoria Geral) e precisa estar dito onde se procura.
