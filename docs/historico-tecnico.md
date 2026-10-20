@@ -14866,3 +14866,12 @@ antigas quando fizer sentido.
   própria foto: clique na imagem → **não abriu ✓**, na palavra → **abriu ✓**, âncora a **0 px** da
   palavra. Rodado com a regra antiga, o mesmo harness acusa **"ABRIU ✗"** — é o print do usuário.
   O dublê é só da lista de sugestões (`checkText`); a decisão do clique é o código de produção.
+
+### 2026-10-20 · promoção · a entrada da janela do documento no "Adicionado"
+- **Local:** Geral → **Não adicionado** → Frontend → **Adicionado** → Frontend (fim da lista)
+- **Linha:** 1 entrada movida — **"Abrir em nova janela (só este documento)"** (`13bccaf`)
+- **Porquê:** o fecho não promove (no instante do commit a entrada ainda não está na `main`), então a
+  promoção anda num passo curto de docs, como nas rodadas anteriores. O commit é ancestral da `main`
+  e a entrada existe **uma** vez só, no fim da lista do **Frontend** — antes do rótulo
+  **Ferramentas (dev)**, que é o último grupo do arquivo (a promoção anterior de outra tarefa caiu
+  nele por engano; aqui a seção foi conferida antes de fechar).

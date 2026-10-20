@@ -1816,17 +1816,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   o app salva o que estiver aberto, move o arquivo, acerta a aba, os recentes e o histórico de
   versões, e avisa quando o documento é Markdown com imagens em `assets/` (elas ficam na pasta
   antiga). A pasta em foco ganha realce e a de destino abre sozinha depois do arrasto.
-- **"Abrir em nova janela (só este documento)" — a janela do documento vira um app de verdade**: o
-  item já existia no menu da aba, mas a janela nova subia **sem as permissões do app** (a capacidade
-  estava presa às janelas `main`/`config`), então ela abria com a **barra nativa do Windows por cima
-  da barra do app**, os botões minimizar/maximizar/fechar **mortos** e os diálogos (salvar, escolher
-  arquivo) recusados. Agora a janela nasce **sem moldura**, como a principal, e o label `doc-*`
-  entra na capacidade — a janela do documento tem as **mesmas permissões** da principal. De quebra,
-  o item passou a funcionar com **documento nunca salvo**: antes ele respondia "Salve o documento
-  antes…" justamente no caso mais comum (documento novo); agora o app grava o **rascunho** dele e a
-  janela abre esse rascunho. E o rótulo diz o que a janela leva: **Abrir em nova janela (só este
-  documento)** — ela abre com **uma aba** e a aba sai da janela atual (o gesto de arrastar a aba
-  para fora continua igual). 4 checagens novas em `npm run test:layout`.
 
 **Ferramentas (dev)**
 
@@ -2887,6 +2876,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   correspondência, a própria lista avisa: "Nada corresponde — Enter usa o texto digitado". Os campos
   de **número** (tamanho) não sugerem — ali o valor é livre e a lista é atalho. 8 checagens novas em
   `npm run test:layout`.
+- **"Abrir em nova janela (só este documento)" — a janela do documento vira um app de verdade**: o
+  item já existia no menu da aba, mas a janela nova subia **sem as permissões do app** (a capacidade
+  estava presa às janelas `main`/`config`), então ela abria com a **barra nativa do Windows por cima
+  da barra do app**, os botões minimizar/maximizar/fechar **mortos** e os diálogos (salvar, escolher
+  arquivo) recusados. Agora a janela nasce **sem moldura**, como a principal, e o label `doc-*`
+  entra na capacidade — a janela do documento tem as **mesmas permissões** da principal. De quebra,
+  o item passou a funcionar com **documento nunca salvo**: antes ele respondia "Salve o documento
+  antes…" justamente no caso mais comum (documento novo); agora o app grava o **rascunho** dele e a
+  janela abre esse rascunho. E o rótulo diz o que a janela leva: **Abrir em nova janela (só este
+  documento)** — ela abre com **uma aba** e a aba sai da janela atual (o gesto de arrastar a aba
+  para fora continua igual). 4 checagens novas em `npm run test:layout`.
 
 **Ferramentas (dev)**
 
