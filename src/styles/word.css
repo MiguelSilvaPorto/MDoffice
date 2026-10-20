@@ -552,6 +552,87 @@ body.settings-open #word-pane {
 }
 
 /* ------------------------------------------------------------------
+   A RÉGUA (src/word/regua.ts).
+   A horizontal vive no palco, acima da folha e grudada no topo da
+   rolagem; a vertical vive dentro da folha escalada, ao lado do
+   papel — é a folha que dá a referência da margem esquerda.
+   ------------------------------------------------------------------ */
+.wd-regua {
+  display: block;
+  border: 0;
+  background: transparent;
+}
+
+/* o `display: block` acima venceria o `[hidden]` do navegador: a régua desligada
+   apareceria mesmo assim */
+.wd-regua[hidden] {
+  display: none;
+}
+
+.wd-regua-h {
+  /* acima da folha, no fluxo do palco: acompanha a largura da folha e
+     fica grudada no topo enquanto a folha rola */
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  margin: 0 auto;
+}
+
+.wd-regua-v {
+  /* ao lado do papel, dentro da folha escalada */
+  position: absolute;
+  top: 0;
+}
+
+/* ------------------------------------------------------------------
+   Os MODOS DE EXIBIÇÃO (aba Exibir).
+   Cada modo é uma classe no painel: o CSS faz o resto — sem mexer na
+   paginação nem no motor.
+   ------------------------------------------------------------------ */
+
+/* RASCUNHO: o texto contínuo, sem a folha e sem as quebras de página. */
+#word-pane.wd-modo-rascunho .wd-sheet {
+  box-shadow: none;
+  min-height: 0;
+  background: transparent;
+}
+
+#word-pane.wd-modo-rascunho .wd-doc {
+  min-height: 0;
+  padding: 24px 28px 80px;
+  max-width: 46em;
+  margin: 0 auto;
+}
+
+#word-pane.wd-modo-rascunho .wd-spacer,
+#word-pane.wd-modo-rascunho .wd-hdr-first {
+  display: none;
+}
+
+/* LEITURA: uma coluna confortável, sem as bordas do papel e sem
+   cabeçalho/rodapé (o texto é o que importa). */
+#word-pane.wd-modo-leitura .wd-sheet {
+  box-shadow: none;
+  background: transparent;
+}
+
+#word-pane.wd-modo-leitura .wd-doc {
+  min-height: 0;
+  max-width: 40em;
+  margin: 0 auto;
+  padding: 40px 8px 80px;
+  font-size: 12.5pt;
+  line-height: 1.55;
+}
+
+#word-pane.wd-modo-leitura .wd-sp-foot,
+#word-pane.wd-modo-leitura .wd-sp-head,
+#word-pane.wd-modo-leitura .wd-sp-gap,
+#word-pane.wd-modo-leitura .wd-hdr-first {
+  display: none;
+}
+
+/* ------------------------------------------------------------------
    O papel e a tinta da folha saem daqui.
    Tudo o que a folha pinta sozinha (fundo, texto, filetes, código,
    citação, link, cabeçalho) lê estas variáveis: o tema escuro troca uma

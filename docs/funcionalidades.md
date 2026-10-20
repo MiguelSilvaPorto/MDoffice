@@ -8,7 +8,7 @@ de cada mudança de linha.
 | Módulo | O que é | Documento |
 | --- | --- | --- |
 | **MD\*** | O editor de Markdown: escrita, desenho, diagramas e a escrita assistida (corretor, sugestões, revisão, formalização e tradução) | [md.md](md.md) |
-| **Documentos (.docx)** | Documentos `.docx` de verdade: páginas, estilos, tabelas, imagens e impressão em PDF | [word.md](word.md) |
+| **Documentos (.docx)** | Documentos `.docx` de verdade: páginas, estilos, tabelas, **imagens que flutuam com o texto em volta**, **modos de exibição** (impressão, rascunho, leitura), **régua** e impressão em PDF | [word.md](word.md) |
 | **Planilhas (.xlsx)** | Planilhas `.xlsx`/`.xlsm`: grade que cresce, fórmulas, formatação e mesclagem | [excel.md](excel.md) |
 | **Apresentações (.pptx)** | Apresentações `.pptx`: abrir/salvar com fidelidade, editar formas e apresentar (F5) | [powerpoint.md](powerpoint.md) |
 

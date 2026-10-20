@@ -6,6 +6,7 @@ import { WordEditor } from "./editor";
 import { Ribbon } from "./ribbon";
 import { ghostPlugin } from "./ghost";
 import { paginationPlugin, requestPagination, GAP_PX } from "./pagination";
+import { Reguas } from "./regua";
 import { spellPlugin } from "./spell";
 import { emptyDoc, plainText } from "./schema";
 import { CM_TO_PX, DEFAULT_SETUP, deserialize, pageSizeCm, pageSizePx, papel, serialize, type PageSetup } from "./model";
@@ -47,6 +48,16 @@ export interface WordStats {
   issues: number;
 }
 
+/** Os modos de exibição da folha (aba Exibir). */
+export type ModoExibicao = "impressao" | "rascunho" | "leitura";
+
+/** O que a fita precisa saber para marcar o que está ligado. */
+export interface EstadoExibicao {
+  modo: ModoExibicao;
+  regua: boolean;
+  zoom: number;
+}
+
 export class WordHost {
   readonly editor: WordEditor;
   private ribbon: Ribbon;
@@ -61,6 +72,10 @@ export class WordHost {
   private issues = 0;
   private statusTimer = 0;
   private spell: ReturnType<typeof spellPlugin> | null = null;
+  /** o modo de exibição da folha (aba Exibir) */
+  private modo: ModoExibicao = "impressao";
+  /** a régua (horizontal e vertical) */
+  private reguas: Reguas;
 
   constructor(opts: WordHostOpts) {
     this.opts = opts;
@@ -96,6 +111,8 @@ export class WordHost {
         return [
           paginationPlugin({
             getSetup: () => this.editor.setup,
+            // no modo Rascunho o texto é contínuo: não há quebras de página
+            ativo: () => this.modo !== "rascunho",
             onPages: (n) => {
               this.pages = n;
               this.statusSoon();
@@ -118,6 +135,19 @@ export class WordHost {
       onReview: () => this.opts.onReview?.(),
       onFormalizar: () => this.opts.onFormalizar?.(),
       onAddons: () => this.opts.onAddons?.(),
+      // aba Exibir: o modo de exibição, a régua e o zoom
+      setModo: (m) => this.setModo(m),
+      alternarRegua: () => this.alternarRegua(),
+      setZoom: (z) => this.setZoom(z),
+      zoomFit: () => this.fitToWidth(),
+      zoomPage: () => this.fitPage(),
+      estadoExibicao: () => this.estadoExibicao(),
+    });
+
+    // a régua (horizontal e vertical): acompanha o papel, as margens e o zoom
+    this.reguas = new Reguas(q<HTMLCanvasElement>("#wd-regua-h"), q<HTMLCanvasElement>("#wd-regua-v"), {
+      getSetup: () => this.editor.setup,
+      getZoom: () => this.zoom,
     });
 
     // clique direito no documento abre o MENU DO APP no ponto clicado: o nativo do WebView2
@@ -215,6 +245,8 @@ export class WordHost {
     this.editor.refreshFlutuante();
     requestPagination(this.editor.view);
     this.fitHolder();
+    // a régua acompanha o papel, as margens e o zoom
+    this.reguas?.desenhar();
   }
 
   /** Na impressão o navegador pagina de verdade: @page leva tamanho, margens, cabeçalho e rodapé. */
@@ -242,6 +274,48 @@ export class WordHost {
     range.value = String(Math.round(this.zoom * 100));
     this.opts.pane.querySelector("#wd-zoom-val")!.textContent = `${Math.round(this.zoom * 100)}%`;
     this.fitHolder();
+    this.reguas?.desenhar();
+  }
+
+  // ---------- exibição (aba Exibir) ----------
+
+  /** O estado que a fita marca (modo de exibição, régua e zoom). */
+  estadoExibicao(): EstadoExibicao {
+    return { modo: this.modo, regua: this.reguas?.visivel() ?? false, zoom: this.zoom };
+  }
+
+  /**
+   * Troca o modo de exibição da folha: **Impressão** (a folha com as páginas de verdade),
+   * **Rascunho** (o texto contínuo, sem a folha) ou **Leitura** (uma coluna confortável).
+   */
+  setModo(modo: ModoExibicao): void {
+    if (this.modo === modo) return;
+    this.modo = modo;
+    const pane = this.opts.pane;
+    pane.classList.toggle("wd-modo-rascunho", modo === "rascunho");
+    pane.classList.toggle("wd-modo-leitura", modo === "leitura");
+    // o modo muda a folha: refaz o papel e a paginação
+    this.applySetup();
+    requestPagination(this.editor.view);
+    this.ribbon?.update();
+  }
+
+  /** Liga/desliga a régua (horizontal e vertical). */
+  alternarRegua(): boolean {
+    const visivel = this.reguas?.alternar() ?? false;
+    this.reguas?.desenhar();
+    this.ribbon?.update();
+    return visivel;
+  }
+
+  /**
+   * O zoom que mostra a PÁGINA INTEIRA (a altura do papel cabendo na janela) — o outro
+   * caminho é o "Ajustar", que faz a LARGURA caber.
+   */
+  private fitPage(): void {
+    const { h } = pageSizePx(this.editor.setup);
+    const disponivel = this.stage.clientHeight - 106; // o respiro do palco (em cima e embaixo)
+    if (disponivel > 0 && h > 0) this.setZoom(Math.min(2, disponivel / h));
   }
 
   /**

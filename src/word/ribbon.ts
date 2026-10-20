@@ -25,6 +25,19 @@ export interface RibbonHooks {
   onFormalizar?: () => void;
   /** Suplementos / extensões */
   onAddons?: () => void;
+  // ---------- aba Exibir ----------
+  /** Troca o modo de exibição da folha (impressão, rascunho, leitura). */
+  setModo?: (modo: "impressao" | "rascunho" | "leitura") => void;
+  /** Liga/desliga a régua. */
+  alternarRegua?: () => void;
+  /** O zoom da vista. */
+  setZoom?: (z: number) => void;
+  /** Ajusta a folha à largura da janela. */
+  zoomFit?: () => void;
+  /** Mostra a página inteira. */
+  zoomPage?: () => void;
+  /** O que está ligado (a fita marca os botões). */
+  estadoExibicao?: () => { modo: string; regua: boolean; zoom: number };
 }
 
 const COLORS = ["#000000", "#434343", "#999999", "#d9d9d9", "#ffffff", "#c00000", "#ff0000", "#ff9900", "#ffd966", "#00b050", "#00b0f0", "#0070c0", "#7030a0", "#ff66cc"];
@@ -72,6 +85,7 @@ export class Ribbon {
         <button type="button" class="wd-rtab" data-tab="insert" role="tab" aria-selected="false">Inserir</button>
         <button type="button" class="wd-rtab" data-tab="layout" role="tab" aria-selected="false">Layout</button>
         <button type="button" class="wd-rtab" data-tab="review" role="tab" aria-selected="false">Revisão</button>
+        <button type="button" class="wd-rtab" data-tab="view" role="tab" aria-selected="false">Exibir</button>
         <button type="button" class="wd-rtab wd-rtab-contextual" data-tab="table" role="tab" aria-selected="false" hidden>Tabela</button>
         <button type="button" class="wd-rtab wd-rtab-contextual" data-tab="image" role="tab" aria-selected="false" hidden>Imagem</button>
       </div>
@@ -179,6 +193,31 @@ export class Ribbon {
             ${btn("dictate", icon("i-mic") + "<span>Ditar</span>", "Ditar texto por voz", "big")}`)}
           ${group("Suplementos", `
             ${btn("addons", icon("i-addons") + "<span>Suplementos</span>", "Suplementos do Office", "big")}`)}
+        </div>
+
+        <div class="wd-rpanel" data-panel="view" hidden>
+          ${group("Modos de Exibição", `
+            <div class="rb-row">
+              ${btn("view-print", icon("i-doc") + "<span>Impressão</span>", "Layout de impressão: a folha com as páginas de verdade", "big")}
+              ${btn("view-draft", icon("i-text") + "<span>Rascunho</span>", "Rascunho: o texto contínuo, sem a folha nem as quebras de página", "big")}
+              ${btn("view-reading", icon("i-eye") + "<span>Leitura</span>", "Leitura: uma coluna confortável, sem as bordas do papel", "big")}
+            </div>`)}
+          ${group("Mostrar", `
+            <div class="rb-col">
+              <div class="rb-row">
+                ${btn("ruler", icon("i-regua") + "<span>Régua</span>", "Mostrar a régua (horizontal e vertical, com as margens)", "big")}
+              </div>
+            </div>`)}
+          ${group("Zoom", `
+            <div class="rb-col">
+              <div class="rb-row">
+                ${btn("zoom-menu", icon("i-focus") + "<span>Zoom ▾</span>", "Zoom da vista: 50% a 200%", "big")}
+              </div>
+              <div class="rb-row">
+                ${btn("zoom-fit", "<span>Ajustar</span>", "Ajustar a folha à largura da janela (só a vista muda)", "big")}
+                ${btn("zoom-page", "<span>Página inteira</span>", "Mostrar a página inteira", "big")}
+              </div>
+            </div>`)}
         </div>
 
         <div class="wd-rpanel" data-panel="table" hidden>
@@ -402,6 +441,17 @@ export class Ribbon {
         on("img-right", st.imagem.hAlign === "right");
       }
     }
+    // aba Exibir: o modo de exibição e a régua ficam marcados quando estão ligados
+    const ex = this.hooks.estadoExibicao?.();
+    if (ex) {
+      // os modos e a régua são botões de "ligado/desligado": entram com o desenho de pressionado
+      const marcado = (cmd: string, ativo: boolean) =>
+        this.el.querySelectorAll(`[data-cmd="${cmd}"]`).forEach((b) => b.classList.toggle("active-btn", ativo));
+      marcado("view-print", ex.modo === "impressao");
+      marcado("view-draft", ex.modo === "rascunho");
+      marcado("view-reading", ex.modo === "leitura");
+      marcado("ruler", ex.regua);
+    }
   }
 
   // ---------- comandos ----------
@@ -577,7 +627,60 @@ export class Ribbon {
         return this.pageDialog();
       case "page-size":
         return this.sizeMenu(anchor);
+      // ---------- aba Exibir ----------
+      case "view-print":
+        return this.hooks.setModo?.("impressao");
+      case "view-draft":
+        return this.hooks.setModo?.("rascunho");
+      case "view-reading":
+        return this.hooks.setModo?.("leitura");
+      case "ruler":
+        return this.hooks.alternarRegua?.();
+      case "zoom-menu":
+        return this.zoomMenu(anchor);
+      case "zoom-fit":
+        return this.hooks.zoomFit?.();
+      case "zoom-page":
+        return this.hooks.zoomPage?.();
     }
+  }
+
+  /**
+   * Menu do **Zoom** (aba Exibir): as porcentagens fixas, o "Ajustar" (a folha cabe na
+   * largura) e a "Página inteira" — as três coisas que a vista oferece no Word.
+   */
+  private zoomMenu(anchor: HTMLElement): void {
+    const pop = h("div", { class: "wd-pal wd-menu-pop" });
+    const atual = Math.round(this.hooks.estadoExibicao?.().zoom ?? 1) * 100;
+    for (const p of [50, 75, 100, 150, 200]) {
+      const marcado = p === atual;
+      const b = h("button", { class: `wd-menu-item${marcado ? " active" : ""}`, type: "button" });
+      b.innerHTML =
+        `<span style="width:16px;display:inline-block;color:var(--accent);font-weight:bold">${marcado ? "✓" : ""}</span>` +
+        `<span>${p}%</span>`;
+      b.addEventListener("mousedown", (e) => e.preventDefault());
+      b.addEventListener("click", () => {
+        this.closePop();
+        this.hooks.setZoom?.(p / 100);
+      });
+      pop.append(b);
+    }
+    pop.append(h("div", { class: "wd-menu-sep" }));
+    const ajustar = h("button", { class: "wd-menu-item", type: "button", text: "Ajustar à largura" });
+    ajustar.addEventListener("mousedown", (e) => e.preventDefault());
+    ajustar.addEventListener("click", () => {
+      this.closePop();
+      this.hooks.zoomFit?.();
+    });
+    pop.append(ajustar);
+    const pagina = h("button", { class: "wd-menu-item", type: "button", text: "Página inteira" });
+    pagina.addEventListener("mousedown", (e) => e.preventDefault());
+    pagina.addEventListener("click", () => {
+      this.closePop();
+      this.hooks.zoomPage?.();
+    });
+    pop.append(pagina);
+    this.place(pop, anchor);
   }
 
   /**

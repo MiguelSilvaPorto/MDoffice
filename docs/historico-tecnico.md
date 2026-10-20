@@ -16099,3 +16099,87 @@ antigas quando fizer sentido.
 - **Local:** `scripts`
 - **Linha:** novo `"test:word-flutuante": "node scripts/testar-word-flutuante.mjs"`
 - **Porquê:** o módulo novo entra na série de travas do repositório (uma por motor).
+
+## src/word/ribbon.ts
+
+### 2026-10-20 · feat/word-aba-exibir · a aba Exibir (entre Revisão e Tabela)
+- **Local:** as abas (`data-tab="view"`), o painel `data-panel="view"`, `run()` (`view-print`, `view-draft`, `view-reading`, `ruler`, `zoom-menu`, `zoom-fit`, `zoom-page`), `zoomMenu`, `update()`, `RibbonHooks`
+- **Linha:** nova aba **Exibir** depois de **Revisão** (e antes da contextual **Tabela**), com os grupos *Modos de Exibição*, *Mostrar* e *Zoom*; `RibbonHooks` ganhou `setModo`, `alternarRegua`, `setZoom`, `zoomFit`, `zoomPage` e `estadoExibicao`
+- **Porquê:** o motor do Word não tinha como **mostrar** o documento: os modos de exibição, a régua
+  (que o `docs/word.md` já prometia e o código nunca teve) e o zoom (que só existia na barra
+  inferior) moravam fora da fita. A aba é **contextual-free e sempre visível** (não depende da
+  seleção) porque é o que o Word faz — e a posição dela (entre Revisão e Tabela) foi pedida
+  explicitamente.
+
+### 2026-10-20 · feat/word-aba-exibir · o menu de zoom e os botões marcados
+- **Local:** `zoomMenu` (novo) e o fim de `update()`
+- **Linha:** novo menu com 50/75/100/150/200% + *Ajustar à largura* + *Página inteira*; `update()` marca os modos e a régua com `active-btn` (o desenho de "pressionado")
+- **Porquê:** o zoom contínuo da barra inferior não dá os **valores fixos** que as pessoas esperam
+  (Word, Word Online). E os modos de exibição e a régua são botões de **ligado/desligado**: eles
+  precisam do desenho de pressionado (`active-btn`), não do destaque de seleção (`active`) que
+  os comandos de formato usam.
+
+## src/word/regua.ts
+
+### 2026-10-20 · feat/word-aba-exibir · a régua do Word (novo arquivo)
+- **Local:** arquivo novo — `marcasDaRegua` (puro) e a classe `Reguas` (desenha as duas réguas)
+- **Linha:** novo arquivo — `marcasDaRegua(comprimentoPx, escala)` e `Reguas` (`alternar`, `desenhar`, `desenharHorizontal`, `desenharVertical`)
+- **Porquê:** a régua é um **canvas**, e não um div com-gradientes: os traços ficam nítidos em
+  qualquer zoom (o desenho é refeito na resolução da tela) e as medidas em centímetros caem em
+  qualquer papel. Onde cada uma mora é uma decisão: a **horizontal** vive no palco, acima da
+  folha e grudada no topo da rolagem (é a que mede a largura, e precisa acompanhar o zoom); a
+  **vertical** vive **dentro** da folha escalada, ao lado do papel — só assim ela continua
+  apontando para a margem esquerda quando o papel, a margem ou o zoom mudam.
+
+## src/word/host.ts
+
+### 2026-10-20 · feat/word-aba-exibir · os modos de exibição, a régua e o zoom na fita
+- **Local:** `WordHost` (o campo `modo`, o campo `reguas`, `estadoExibicao`, `setModo`, `alternarRegua`, `fitPage`, `setZoom`, `applySetup`)
+- **Linha:** `setZoom` ganhou o redesenho da régua; `applySetup` também redesenha; novos `setModo`, `alternarRegua`, `fitPage` e `estadoExibicao`; a paginação ganhou o gancho `ativo`
+- **Porquê:** o modo de exibição é uma **classe no painel** (o CSS faz o resto): trocar o modo
+  refaz a folha e a paginação, sem mexer no motor. O *Rascunho* não é só uma máscara — a
+  **paginação é desligada** (`ativo: () => this.modo !== "rascunho"`), senão o documento
+  continuaria contando páginas que não existem.
+
+## src/word/pagination.ts
+
+### 2026-10-20 · feat/word-aba-exibir · a paginação pode ser desligada
+- **Local:** `PaginationHooks` e o `run()` da paginação
+- **Linha:** novo gancho opcional `ativo?: () => boolean`; quando ele devolve `false`, os espaçadores saem e a folha vira um papel só
+- **Porquê:** no modo **Rascunho** o texto é contínuo — mas a paginação continuaria medindo e
+  contando páginas (e o contador "Página X de Y" mentiria). Desligar a paginação de verdade é
+  melhor do que esconder os espaçadores com CSS.
+
+## src/styles/word.css
+
+### 2026-10-20 · feat/word-aba-exibir · a régua na folha e os modos de exibição
+- **Local:** o bloco da régua (`.wd-regua`, `.wd-regua-h`, `.wd-regua-v`) e o bloco dos modos (`#word-pane.wd-modo-rascunho`, `#word-pane.wd-modo-leitura`)
+- **Linha:** novas regras; `.wd-regua[hidden] { display: none }`
+- **Porquê:** o `display: block` da régua **venceria** o `[hidden]` do navegador (a régua
+  desligada apareceria mesmo assim) — por isso a regra explícita. A horizontal é `sticky` (gruda
+  no topo da rolagem) e a vertical é `absolute` dentro da folha escalada (a folha é a
+  referência da margem esquerda).
+
+## index.html
+
+### 2026-10-20 · feat/word-aba-exibir · as duas réguas na folha e o ícone da fita
+- **Local:** o palco (`#wd-stage`) e o sprite de ícones
+- **Linha:** `<canvas id="wd-regua-h">` antes de `#wd-holder`; `<canvas id="wd-regua-v">` dentro de `#wd-zoom`; novo `<symbol id="i-regua">`
+- **Porquê:** a régua horizontal é **irmã** da folha (no palco, para poder grudar no topo da
+  rolagem) e a vertical é **filha** da folha escalada (para acompanhar o papel). O ícone é uma
+  régua com marcas — não havia nenhum no sprite.
+
+## scripts/testar-word-exibir.mjs
+
+### 2026-10-20 · feat/word-aba-exibir · a trava da aba Exibir (novo arquivo)
+- **Local:** arquivo novo
+- **Linha:** novo arquivo — trava a medida da régua (as marcas em centímetros, o número a cada 2 cm quando ela está apertada), a **ordem das abas** (Exibir entre Revisão e Tabela) e a existência da régua e dos modos
+- **Porquê:** a medida da régua é regra pura (dá para travar no Node) e a **ordem das abas** foi
+  pedida explicitamente — sem trava, alguém reinsere a aba no lugar errado sem perceber.
+
+## package.json
+
+### 2026-10-20 · feat/word-aba-exibir · o comando de teste da aba Exibir
+- **Local:** `scripts`
+- **Linha:** novo `"test:word-exibir": "node scripts/testar-word-exibir.mjs"`
+- **Porquê:** a aba Exibir entra na série de travas do repositório (uma por motor).

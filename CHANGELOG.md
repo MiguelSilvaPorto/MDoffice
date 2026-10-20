@@ -387,6 +387,20 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada no momento)
 
 **Frontend**
+- **O Word ganhou a aba Exibir** (entre **Revisão** e **Tabela**): até agora o motor do documento só tinha
+  Início, Inserir, Layout e Revisão — e o `docs/word.md` prometia uma régua que o código nunca teve.
+  A aba nova traz:
+  - **Modos de exibição** — **Impressão** (a folha com as páginas de verdade, o de sempre),
+    **Rascunho** (o texto contínuo, sem a folha e sem as quebras de página: a paginação é desligada
+    de verdade, não é só uma máscara) e **Leitura** (uma coluna confortável, com a letra maior e
+    o entrelinha maior, sem as bordas do papel);
+  - **Mostrar** — a **régua** horizontal (em cima da folha, grudada no topo da rolagem) e a vertical
+    (na lateral do papel), com as **margens sombreadas** e as medidas em centímetros; a régua é
+    desenhada num canvas, então fica nítida em qualquer zoom e acompanha o papel, as margens e o zoom;
+  - **Zoom** — o menu com **50/75/100/150/200%**, o **Ajustar** (a folha cabe na largura) e a
+    **Página inteira** (a folha inteira na altura da janela) — o zoom que só existia na barra
+    inferior agora também está na fita, e o botão da fita marca o que está ligado.
+
 - **A imagem voltou a poder ser movida no documento**: a alça de arrastar disparava o *drag* nativo do navegador, mas
   o editor não registrava o movimento — soltar não movia nada (a imagem ficava presa no lugar). Agora o movimento é um
   **gesto de ponteiro** próprio: arrastar a alça **ou o corpo da imagem** mostra o cursor onde ela vai cair e, ao

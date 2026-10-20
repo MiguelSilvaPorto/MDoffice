@@ -12,6 +12,8 @@ export interface PaginationHooks {
   getSetup: () => PageSetup;
   /** Quantas páginas o documento tem agora. */
   onPages: (count: number) => void;
+  /** A paginação está ligada? (no modo Rascunho o texto é contínuo: não há páginas) */
+  ativo?: () => boolean;
 }
 
 interface PState {
@@ -249,6 +251,16 @@ export function paginationPlugin(hooks: PaginationHooks): Plugin<PState> {
 
       const run = () => {
         raf = 0;
+        // desligada (modo Rascunho): o texto é contínuo, sem quebras de página — os
+        // espaçadores saem e a folha vira um papel só
+        if (hooks.ativo && !hooks.ativo()) {
+          if (signature) {
+            signature = "";
+            view.dispatch(view.state.tr.setMeta(paginationKey, { deco: DecorationSet.empty }).setMeta("addToHistory", false));
+          }
+          hooks.onPages(1);
+          return;
+        }
         const setup = hooks.getSetup();
         const { spacers, pages } = measure(view, setup);
         hooks.onPages(pages);

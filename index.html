@@ -187,6 +187,7 @@
       <symbol id="i-word" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M9 12l1.200 5 1.800-4.500L13.800 17 15 12"/></symbol>
       <symbol id="i-web" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M6.500 6.500h.01M9 6.500h.01"/></symbol>
       <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 6h14M12 6v13M9 19h6"/></symbol>
+      <symbol id="i-regua" viewBox="0 0 24 24"><rect x="2" y="8" width="20" height="8" rx="1.5"/><path d="M6 8v3M10 8v4M14 8v3M18 8v4"/></symbol>
       <symbol id="i-zip" viewBox="0 0 24 24"><path d="M5 3h14v18H5z"/><path d="M12 3v3M12 8v2M12 12v2"/><rect x="10" y="15" width="4" height="4" rx="1"/></symbol>
       <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.800 5.200L19 10l-5.200 1.800L12 17l-1.800-5.200L5 10l5.200-1.800z"/><path d="M19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></symbol>
       <symbol id="i-focus" viewBox="0 0 24 24"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4"/><circle cx="12" cy="12" r="2.500"/></symbol>
@@ -367,8 +368,10 @@
         <section id="word-pane" hidden aria-label="Documento (.docx)">
           <div id="word-ribbon" class="wd-ribbon" role="toolbar" aria-label="Formatação"></div>
           <div id="wd-stage">
+            <canvas id="wd-regua-h" class="wd-regua wd-regua-h" hidden></canvas>
             <div id="wd-holder">
               <div id="wd-zoom">
+                <canvas id="wd-regua-v" class="wd-regua wd-regua-v" hidden></canvas>
                 <div id="wd-sheet" class="wd-sheet">
                   <div class="wd-hdr-first" hidden></div>
                   <div id="word-editor"></div>

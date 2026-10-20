@@ -37,7 +37,9 @@ arquivos `.docx` de verdade.
   tamanho do papel** escolhido (A4, 21 × 29,7 cm, por padrão): o **zoom é só a vista** e o tamanho
   do papel aparece ao lado da página (com a orientação), para uma folha vista pequena não ser
   confundida com "o papel mudou" — e a barra traz **Ajustar** (a folha cabe na largura da janela;
-  nunca amplia além de 100%) e o número do zoom, que **volta a 100%** no clique.
+  nunca amplia além de 100%) e o número do zoom, que **volta a 100%** no clique. A **aba Exibir**
+  traz o **menu de zoom** (50/75/100/150/200%, *Ajustar* e *Página inteira*) e a **régua**
+  (horizontal e vertical, com as margens sombreadas e as medidas em centímetros).
 - **Tema escuro**: a folha **escurece junto** — papel e tinta acompanham o tema (é o mesmo
   desenho da prévia do Markdown), então escrever à noite não leva clarão; “Preto” do documento
   entra como **tinta automática** (é o que o Word grava em “Automático”) e o **marca-texto**
@@ -46,8 +48,13 @@ arquivos `.docx` de verdade.
 
 ## Fita (no desenho do Word Online)
 
-- Abas **Início**, **Inserir**, **Layout** e **Revisão** (e a aba contextual **Tabela**
+- Abas **Início**, **Inserir**, **Layout**, **Revisão** e **Exibir** (e a aba contextual **Tabela**
   quando o cursor está numa tabela).
+- **Exibir**: os **modos de exibição** — **Impressão** (a folha com as páginas de verdade),
+  **Rascunho** (o texto contínuo, sem a folha nem as quebras de página) e **Leitura** (uma coluna
+  confortável, com a letra e o entrelinha maiores, sem as bordas do papel); a **régua**
+  (horizontal e vertical, com as margens sombreadas e as medidas em centímetros, que acompanha o
+  papel, as margens e o zoom); e o **zoom** (50/75/100/150/200%, *Ajustar* e *Página inteira*).
 - **Fonte**: família e tamanho, negrito/itálico/sublinhado/riscado, sub/sobrescrito,
   **cor da letra** e **destaque** (marca-texto), limpar formatação. Os dois campos **mostram o
   que o documento tem** (fonte ou tamanho vindo de um `.docx` fora da lista não some) e aceitam
