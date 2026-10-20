@@ -1877,13 +1877,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
   markdown passa pelo saneamento, como todo HTML de fora no app.
 
-- **A IA local (Gemma 3 270M) saiu do app**: pesava ~280 MB no instalador e ~0,6 GB de memória
-  quando carregava, e só ajudava com placa de vídeo compatível (WebGPU). Saíram o modelo, o download no
-  `npm run build` (`scripts/baixar-modelo.mjs`, `npm run prep:modelo`) e o grupo **IA local** das
-  Configurações. A **sugestão enquanto digita** continua (modelo de palavras + o seu texto), sem a
-  escolha da IA numa pausa no meio da palavra; a **revisão inteligente** continua com as regras e os
-  sinônimos, sem a conferência da IA. A **tradução offline** não muda (usa outro modelo).
-
 - **O README fala da suíte, não de "imitar o Office"**: as frases "construir o Office inteiro" e "os programas do
   Office" viraram "construir uma **suíte de documentos** inteira" e "os **editores da suíte**". As menções que
   continuam são nomes próprios (mdOffice, MDOFFICE, o endereço do repositório e o LibreOffice, de onde vêm os
@@ -1988,6 +1981,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **A IA local (Gemma 3 270M) saiu do app**: pesava ~280 MB no instalador e ~0,6 GB de memória
+  quando carregava, e só ajudava com placa de vídeo compatível (WebGPU). Saíram o modelo, o download no
+  `npm run build` (`scripts/baixar-modelo.mjs`, `npm run prep:modelo`) e o grupo **IA local** das
+  Configurações. A **sugestão enquanto digita** continua (modelo de palavras + o seu texto), sem a
+  escolha da IA numa pausa no meio da palavra; a **revisão inteligente** continua com as regras e os
+  sinônimos, sem a conferência da IA. A **tradução offline** não muda (usa outro modelo).
 
 - **Identidade própria (sem imitar o Office) e o aviso de marcas no README e na Início**: o app usava
   os **hexes exatos** das marcas da Microsoft nos cartões dos módulos — Word `#185ABD`, Excel

@@ -14367,7 +14367,7 @@ antigas quando fizer sentido.
 
 ## src/broker/llm/* · src/broker/ghost/refine.ts · src/broker/deep/refine.ts · scripts/baixar-modelo.mjs
 
-### 2026-10-20 · remover-gemma · a IA local (Gemma 3 270M) sai do app
+### 2026-10-20 · b0cace6 · a IA local (Gemma 3 270M) sai do app
 
 - **Local:** os arquivos inteiros (cliente, configuração e worker da IA; a escolha da IA na sugestão;
   a conferência da IA na revisão inteligente; o download do modelo).
