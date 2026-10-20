@@ -221,6 +221,11 @@ export async function purgeTrash(): Promise<number> {
   return await invoke<number>("trash_purge");
 }
 
+/** O app está rodando dentro do Tauri (com arquivos) ou numa aba do navegador (sem eles)? */
+export function emTauri(): boolean {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+
 /**
  * Salvamento automático quando o app roda no NAVEGADOR (dev): o navegador não pode
  * escrever arquivos, então o texto vai para o servidor de desenvolvimento, que grava

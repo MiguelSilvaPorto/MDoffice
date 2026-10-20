@@ -1747,6 +1747,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   versões, e avisa quando o documento é Markdown com imagens em `assets/` (elas ficam na pasta
   antiga). A pasta em foco ganha realce e a de destino abre sozinha depois do arrasto.
 
+- **A sessão do navegador não perde mais os documentos no reload (e o 1º documento da sessão
+  reaberta não some)**: no modo de desenvolvimento sem Tauri, o autosave gravava **um único**
+  `temp/rascunho.md` e nunca o lia — recarregar a página perdia todas as abas. Agora o texto de
+  **todas as abas Markdown** vai para o `localStorage` a cada edição/troca de aba e volta no
+  reload (com os avisos contando “Salvo neste navegador”). De quebra, o primeiro documento de
+  uma sessão reaberta perdia o texto quando outra aba era ativada em seguida:
+  `dropPristineStartTab` remove a aba inicial vazia e agora **carrega o estado da aba que assume**
+  antes do próximo snapshot.
+
 **Ferramentas (dev)**
 
 - `npm run test:salvamento` confere os três comandos novos de `files.rs` (a conta de comandos

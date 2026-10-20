@@ -98,6 +98,27 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** `parTo` no `planejado`, corte do `ponto-final` dentro do parágrafo atual, `escolha` no conjunto de registro e corte de `auto` com pontuação
 - **Por quê:** a sonda precisa medir o que o app faria de verdade; sem isso ela continuaria contando pontos no parágrafo em digitação e vírgulas opinativas como se fossem automáticos.
 
+## src/app/tabs.ts
+
+### 2026-10-20 — esta tarefa — sessão do navegador e primeiro documento da sessão
+- **Local:** `restoreSession`, `saveSession`, `saveBrowserTabs` (novo), `dropPristineStartTab`
+- **Linha:** ramo `if (!files.emTauri())` no início de `restoreSession` lendo `mdc.browser.session` · `saveSession` chama `saveBrowserTabs` · `dropPristineStartTab` ganha `this.editor.loadState(this.tab.state, this.tab.scrollTop)` depois de remover a aba vazia
+- **Por quê:** no navegador não há caminhos de arquivo; o fallback gravava um único `temp/rascunho.md` que nunca era lido, então recarregar a página perdia os 3 documentos abertos (o relato). Agora o texto de todas as abas Markdown fica no `localStorage` e volta no reload. E ao remover a aba inicial vazia, o editor continuava mostrando o estado vazio; o `snapshotTab` seguinte gravava esse vazio por cima do primeiro documento reaberto. Carregar o estado da aba que assume corrige os dois casos.
+
+## src/app/documents.ts
+
+### 2026-10-20 — esta tarefa — autosave do navegador na sessão
+- **Local:** `salvarAgora`
+- **Linha:** `if (!files.emTauri()) { this.saveBrowserTabs(); tab.dirty = false; tab.statusSaved = "Salvo neste navegador às …"; this.afterSave(tab); return; }`
+- **Por quê:** sem Tauri, `ensureSaved`/`saveDoc` falham (o `invoke` não existe) e o app enchia a tela de “Não consegui guardar o rascunho”; o único destino possível é o `localStorage`. O salvamento agora é honesto e cobre todas as abas, não só a ativa.
+
+## src/files.ts
+
+### 2026-10-20 — esta tarefa — `emTauri()`
+- **Local:** novo helper, antes de `saveDraftFallback`
+- **Linha:** `return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;`
+- **Por quê:** separar o app de verdade (com arquivos) da aba de desenvolvimento (sem eles) para escolher o salvamento e a restauração certos sem depender de tentativa e erro do `invoke`.
+
 ## src/broker/diag.ts
 
 ### 2026-10-19 — 2d4e6c6 — log de decisões do corretor (novo arquivo)

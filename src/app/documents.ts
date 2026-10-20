@@ -90,6 +90,15 @@ export const documentsMethods = {
     const tab = this.tab;
     if (!tab.dirty) return;
     const text = this.editor.getText();
+    // Navegador: sem arquivos, a sessão inteira (todas as abas Markdown) vai para o
+    // localStorage. É o único salvamento possível ali — e o reload reabre tudo.
+    if (!files.emTauri()) {
+      this.saveBrowserTabs();
+      tab.dirty = false;
+      tab.statusSaved = `Salvo neste navegador às ${fmtTime()}`;
+      this.afterSave(tab);
+      return;
+    }
     // Documento novo (sem arquivo ainda): cria o rascunho e passa a salvar nele — é o
     // "salva conforme eu escrevo". Se não houver acesso a arquivos (navegador), cai
     // no servidor de desenvolvimento, que grava em temp/rascunho.md do projeto.

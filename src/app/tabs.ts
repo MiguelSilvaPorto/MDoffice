@@ -18,6 +18,24 @@ import type { PedidoDeJanela } from "./docNaUrl";
 export const tabsMethods = {
   /** Reabre as abas da sessão anterior; sem sessão, o app fica no Início (o Hub). */
   async restoreSession(this: App): Promise<void> {
+    // No NAVEGADOR não há caminhos de arquivo: a sessão anterior é o TEXTO das abas
+    // guardado no localStorage pelo autosave. Sem isso, recarregar a página perdia
+    // todos os documentos abertos (o relato dos 3 documentos).
+    if (!files.emTauri()) {
+      const salvo = loadJSON<{ abas: { texto: string; status?: string }[]; ativa: number } | null>("mdc.browser.session", null);
+      const abas = (salvo?.abas ?? []).filter((a) => a.texto.trim() !== "");
+      if (abas.length) {
+        for (const a of abas) {
+          const t = this.addTabFor(null, a.texto);
+          t.statusSaved = a.status ?? "Salvo neste navegador";
+        }
+        this.dropPristineStartTab();
+        const idx = Math.max(0, Math.min(salvo?.ativa ?? 0, this.tabs.length - 1));
+        await this.activate(this.tabs[idx] ?? this.tabs[this.tabs.length - 1]);
+        toast(`${abas.length} documento${abas.length === 1 ? "" : "s"} da sessão do navegador reaberto${abas.length === 1 ? "" : "s"}.`, "info", 3600);
+        return;
+      }
+    }
     const saved = loadJSON<{ paths: string[]; active: string | null; drafts: string[] } | null>("mdc.session", null);
     let restored = 0;
     if (saved && Array.isArray(saved.paths)) {
@@ -76,6 +94,10 @@ export const tabsMethods = {
     if (first.path || first.dirty || this.textOf(first).length > 0) return;
     this.tabs = this.tabs.filter((t) => t !== first);
     this.tab = this.tabs[0];
+    // O editor ainda mostra a aba vazia que saiu: carrega a que virou ativa para o
+    // próximo snapshot não gravar o vazio por cima do texto dela (o primeiro documento
+    // da sessão reaberta perdia o texto ao ativar outra aba em seguida).
+    this.editor.loadState(this.tab.state, this.tab.scrollTop);
   },
 
   textOf(this: App, tab: DocTab): string {
@@ -184,6 +206,28 @@ export const tabsMethods = {
       drafts: withPath.filter((t) => t.isDraft).map((t) => t.path!),
       active: this.tab.path,
     });
+    this.saveBrowserTabs();
+  },
+
+  /**
+   * Sessão do NAVEGADOR: sem arquivos, guarda o TEXTO de todas as abas Markdown no
+   * localStorage a cada edição/ troca de aba. É o que faz um reload não perder os
+   * documentos abertos (no Tauri as abas têm caminho e a sessão normal resolve).
+   */
+  saveBrowserTabs(this: App): void {
+    if (files.emTauri()) return;
+    const abas: { texto: string; status?: string }[] = [];
+    let ativa = 0;
+    for (const t of this.tabs) {
+      if (t.kind && t.kind !== "doc") continue;
+      const texto = this.textOf(t);
+      if (!texto.trim() && !t.path) continue; // aba inicial vazia não entra na sessão
+      if (t === this.tab) ativa = abas.length;
+      abas.push({ texto, status: t.statusSaved });
+    }
+    // Só a aba inicial vazia: é o começo do app — não apaga a sessão anterior.
+    if (!abas.length && this.tabs.length <= 1) return;
+    saveJSON("mdc.browser.session", { abas, ativa, at: Date.now() });
   },
 
   /**
