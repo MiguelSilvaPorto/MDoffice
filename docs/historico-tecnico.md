@@ -15261,3 +15261,14 @@ antigas quando fizer sentido.
   **aba Desenhar** da fita."
 - **Porquê:** o documento lista a aba Desenhar; a ausência do botão do topo agora é proposital e
   precisa estar dita para ninguém "consertar" de volta.
+
+## CHANGELOG.md
+
+### 2026-10-20 · promoção · a entrada do Desenhar fora do topo entra no "Adicionado" (PowerPoint)
+- **Local:** PowerPoint ▸ **Não adicionado** ▸ Frontend ▸ **Adicionado** ▸ Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **O botão "Desenhar" do topo sai na apresentação**
+  (`6c7e016`, worktree `fix/sem-desenhar-no-topo-na-apresentacao`)
+- **Porquê:** o commit já está na `main` (o `fechar.ps1` integrou e enviou), mas a promoção não sai no
+  mesmo commit do fechamento: a entrada **nasce** em "Não adicionado" (nunca prometer o que não
+  entrou) e só vira "Adicionado" **depois**. A entrada ficou no **topo** do Frontend, como as
+  promoções anteriores.
