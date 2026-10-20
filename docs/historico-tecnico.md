@@ -14470,3 +14470,15 @@ antigas quando fizer sentido.
   uma tarefa de follow-up, depois que o commit chegou (0618728). Promovi só a entrada DESTA tarefa —
   e aproveitei para tirar o resto de marcação que a resolução do conflito do histórico deixou
   passar (ele aparecia como texto solto no fim da entrada).
+
+## src/powerpoint/pptximport/timing.ts
+
+### 2026-10-20 · esta tarefa · o aviso de animações mantidas sai
+- **Local:** `lerTiming` (os quatro `return` que devolviam `avisos: [avisoFora]`)
+- **Linha:** `- const avisoFora = "Animações desta lâmina foram mantidas como vieram (o modelo ainda não
+  representa todos os efeitos).";` e `- avisos: [avisoFora]` → `+ avisos: []` (mantendo `bruta`, o XML
+  original)
+- **Porquê:** o aviso não indicava perda: o XML da animação é preservado inteiro (`bruta`) e a lâmina abre
+  com o que o modelo entende. Mostrá-lo a cada abertura ("Aberto com limitações: …") fazia o usuário achar
+  que algo tinha se perdido — relato com print. Os avisos que **representam perda real** (fonte embutida,
+  imagem que não carregou, tabela/gráfico sem suporte) continuam, agregados numa mensagem única por arquivo.

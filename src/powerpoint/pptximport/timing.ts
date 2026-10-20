@@ -319,8 +319,7 @@ export function lerTiming(xml: string, spids: Map<string, string>, parasInfo?: M
   };
   visitar(timing, false);
 
-  const avisoFora = "Animações desta lâmina foram mantidas como vieram (o modelo ainda não representa todos os efeitos).";
-  if (foraDoModelo) return { bruta, avisos: [avisoFora] };
+  if (foraDoModelo) return { bruta, avisos: [] };
   // sem nenhum efeito de animação (ex.: só mídia com tempo próprio): preserva o XML, sem aviso
   if (!lidos.length) return { bruta, avisos: [] };
 
@@ -342,7 +341,7 @@ export function lerTiming(xml: string, spids: Map<string, string>, parasInfo?: M
   const vistos = new Set<string>();
   for (const [spid, grupo] of porSpid) {
     const forma = spids.get(spid);
-    if (!forma || vistos.has(forma)) return { bruta, avisos: [avisoFora] };
+    if (!forma || vistos.has(forma)) return { bruta, avisos: [] };
     vistos.add(forma);
 
     // caso simples: um efeito mirando a forma inteira
@@ -364,7 +363,7 @@ export function lerTiming(xml: string, spids: Map<string, string>, parasInfo?: M
     const esperado = base.inicio === "clicar" ? "clicar" : "depois";
     const encadeado = grupo.slice(1).every((e) => e.inicio === esperado);
     const cobre = !!info && JSON.stringify(indices) === JSON.stringify(info.naoVazios);
-    if (!mesmoEfeito || !encadeado || !cobre || !temBuild(spid, base.grp)) return { bruta, avisos: [avisoFora] };
+    if (!mesmoEfeito || !encadeado || !cobre || !temBuild(spid, base.grp)) return { bruta, avisos: [] };
 
     const n = normalizarAnimacao({
       forma,

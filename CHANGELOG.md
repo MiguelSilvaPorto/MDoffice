@@ -495,6 +495,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O aviso "Animações desta lâmina foram mantidas como vieram" saiu**: ao abrir um .pptx com animações
+  fora do modelo (mídia com tempo próprio, efeitos interativos), o importador **preserva o XML** — nada se
+  perde — mas avisava "Aberto com limitações: …" a cada abertura, o que não fazia sentido (o arquivo está
+  preservado). O aviso deixou de existir; os que representam **perda real** (fonte embutida, imagem não
+  carregada, tabela/gráfico sem suporte) continuam, numa mensagem única por arquivo.
+
 - **A Arrumação ganhou "Compor": três estruturas diferentes por lâmina, imagem protagonista e mídia preservada**: o
   "Recompor" conservador só alinhava o que já existia — e isso nunca gerava uma lâmina nova. Agora a lâmina é lida
   em **grupos** (título com antetítulo/subtítulo, cada coluna de conteúdo, rodapé, imagem de conteúdo) e recomposta
