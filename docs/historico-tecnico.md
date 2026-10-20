@@ -15093,3 +15093,14 @@ antigas quando fizer sentido.
 - **Linha:** `novo`
 - **Porquê:** mudança do módulo Word; a entrada fica em "Não adicionado" até o commit do `fechar.ps1`
   entregar a `main` (a promoção é um passo separado).
+
+## CHANGELOG.md
+
+### 2026-10-20 · promoção · a entrada do botão Tamanho (A3/A2) entra no "Adicionado"
+- **Local:** Word → "Não adicionado" → Frontend → "Adicionado" → Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **A aba Layout ganhou o botão Tamanho — e o papel vai até
+  A3/A2 (relato do usuário)** (`e2c7226`)
+- **Porquê:** o commit está na `main` (conferido com `git merge-base --is-ancestor e2c7226 main` antes
+  de mover), então a promoção não afirma nada falso. Como nas rodadas anteriores, ela anda num passo
+  curto de docs porque o commit do `fechar.ps1` já foi usado para entregar o código — promover junto
+  seria afirmar "está na main" antes de estar.
