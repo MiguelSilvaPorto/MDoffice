@@ -15551,3 +15551,16 @@ antigas quando fizer sentido.
   Configurações, agora com a folha e o "M↓" da marca nova por cima.
 - **Gerado:** `app-icon.png` (1024), `public/icones/mdoffice-claro.png` e `-escuro.png` (256) e
   `src-tauri/icons/*` (Windows `.ico`, macOS `.icns`, Android/iOS e as lojas).
+
+## CHANGELOG.md
+
+### 2026-10-20 · promoção · a entrada da identidade/aviso no "Adicionado" (Geral)
+- **Local:** Geral ▸ **Não adicionado** ▸ Frontend ▸ **Adicionado** ▸ Frontend (topo)
+- **Linha:** 1 entrada movida, sem reescrita — **Identidade própria (sem imitar o Office) e o aviso de
+  marcas no README e na Início** (`fa71cf2`)
+- **Porquê:** o fecho **não promove** (no instante do commit a entrada ainda não está na `main`),
+  então a promoção anda depois, num commit só de documentação — como nas rodadas anteriores. Promovi
+  só a entrada DESTA tarefa; as que seguem em "Não adicionado" são de sessões com trabalho aberto.
+  A entrada convive com a **"Os módulos agora se chamam pelo formato"** (outra tarefa, já na `main`):
+  ela explica por que a interface deixou os nomes das marcas, e esta fecha o outro lado — as **cores
+  e os ícones** também deixaram de ser os do Office.

@@ -1844,19 +1844,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **Identidade própria (sem imitar o Office) e o aviso de marcas no README e na Início**: o app usava
-  os **hexes exatos** das marcas da Microsoft nos cartões dos módulos — Word `#185ABD`, Excel
-  `#107C41`, PowerPoint `#C43E1C` — com as **letras W/X/P** numa chapa colorida (a linguagem dos
-  ícones do Office); o botão de salvamento automático tinha até um comentário `/* Office Word Blue */`,
-  e o ícone do executável repetia o motivo **azul + laranja** do Microsoft 365. Agora os módulos têm
-  paleta e desenhos **próprios** (índigo → violeta → fúcsia → rosa; folha, grade, lâmina e o "M↓" em
-  vez de letras), o ícone do app foi redesenhado na mesma marca (o `app-icon.svg` é a fonte) e os
-  ícones do Windows/macOS foram regenerados. O **logo** passou a aparecer no **README** (claro/escuro
-  pelo tema do GitHub) e no cabeçalho da **Início**, e o rodapé da Início e o README trazem o aviso:
-  **"mdOffice não é afiliado, patrocinado nem endossado pela Microsoft. Word, Excel e PowerPoint são
-  marcas da Microsoft Corporation."** Conferido por foto da Início (claro e escuro). Teste:
-  `npm run test:identidade` (prende o aviso e proíbe os hexes do Office no `src`).
-
   markdown passa pelo saneamento, como todo HTML de fora no app.
 
 - **O README fala da suíte, não de "imitar o Office"**: as frases "construir o Office inteiro" e "os programas do
@@ -1963,6 +1950,19 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **Identidade própria (sem imitar o Office) e o aviso de marcas no README e na Início**: o app usava
+  os **hexes exatos** das marcas da Microsoft nos cartões dos módulos — Word `#185ABD`, Excel
+  `#107C41`, PowerPoint `#C43E1C` — com as **letras W/X/P** numa chapa colorida (a linguagem dos
+  ícones do Office); o botão de salvamento automático tinha até um comentário `/* Office Word Blue */`,
+  e o ícone do executável repetia o motivo **azul + laranja** do Microsoft 365. Agora os módulos têm
+  paleta e desenhos **próprios** (índigo → violeta → fúcsia → rosa; folha, grade, lâmina e o "M↓" em
+  vez de letras), o ícone do app foi redesenhado na mesma marca (o `app-icon.svg` é a fonte) e os
+  ícones do Windows/macOS foram regenerados. O **logo** passou a aparecer no **README** (claro/escuro
+  pelo tema do GitHub) e no cabeçalho da **Início**, e o rodapé da Início e o README trazem o aviso:
+  **"mdOffice não é afiliado, patrocinado nem endossado pela Microsoft. Word, Excel e PowerPoint são
+  marcas da Microsoft Corporation."** Conferido por foto da Início (claro e escuro). Teste:
+  `npm run test:identidade` (prende o aviso e proíbe os hexes do Office no `src`).
 
 - **Os módulos agora se chamam pelo formato, não pela marca da Microsoft**: na interface, "Word",
   "Excel" e "PowerPoint" viraram **Documentos (.docx)**, **Planilhas (.xlsx)** e
