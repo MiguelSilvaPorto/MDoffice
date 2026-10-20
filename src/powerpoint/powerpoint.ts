@@ -84,7 +84,6 @@ import { shapeText } from "./shapes";
 import { clampIndex, duplicateSlide, moveSlide, removeSlide, replaceSlide, resetSlide, setLayout } from "./slides";
 import { Stage, passoZoom, type CelulasSel, type Ferramenta } from "./stage";
 import { stageVars, themeOf } from "./themes";
-import { abrirCores } from "./ui/cores";
 import { Fita } from "./ui/fita";
 import { abrirGaleriaDeLayouts, miniaturaDeLayout } from "./ui/layoutPreview";
 import { Painel } from "./ui/painel";
@@ -319,21 +318,10 @@ export class PowerPointHost {
     this.pane.innerHTML = `
       <div id="pp-ribbon" class="pp-ribbon ppr" role="toolbar" aria-label="Ferramentas da apresentação"></div>
       <div id="pp-stage">
+        <!-- a barrinha do Draw é só a DICA (e o Concluir/Cancelar da curva por pontos): cor,
+             espessura, Caneta/Marca, Livre/Pontos e Assistente vivem na aba Desenhar, que já
+             mostra e comanda o mesmo pincel — repetir aqui era um popup em cima da lâmina -->
         <div class="pp-pincel" data-pincel hidden>
-          <button type="button" class="pp-pincel-cor" data-pincel-cor title="Cor do traço" aria-label="Cor do traço"></button>
-          <span class="pp-pincel-sep"></span>
-          <button type="button" class="pp-pincel-w" data-pincel-w="1" title="Traço fino (1 pt)">1</button>
-          <button type="button" class="pp-pincel-w" data-pincel-w="2" title="Traço médio (2 pt)">2</button>
-          <button type="button" class="pp-pincel-w" data-pincel-w="4" title="Traço grosso (4 pt)">4</button>
-          <button type="button" class="pp-pincel-w" data-pincel-w="8" title="Traço bem grosso (8 pt)">8</button>
-          <span class="pp-pincel-sep"></span>
-          <button type="button" class="pp-pincel-modo on" data-pincel-tipo="caneta" title="Caneta: traço normal">Caneta</button>
-          <button type="button" class="pp-pincel-modo" data-pincel-tipo="marca" title="Marca-texto: traço largo e translúcido para destacar">Marca</button>
-          <span class="pp-pincel-sep"></span>
-          <button type="button" class="pp-pincel-modo on" data-pincel-modo="livre" title="Traço livre: arraste para rabiscar">Livre</button>
-          <button type="button" class="pp-pincel-modo" data-pincel-modo="pontos" title="Curva por pontos: clique para marcar pontos de parada">Pontos</button>
-          <span class="pp-pincel-sep"></span>
-          <button type="button" class="pp-pincel-assist" data-pincel-assist title="Assistente: reconhece o traço e ajusta a forma (retângulo, retângulo arredondado, círculo, triângulo, linha e seta)">Assistente</button>
           <button type="button" class="pp-pincel-btn pp-pincel-concluir" data-pincel-concluir hidden title="Concluir curva (Enter)">Concluir</button>
           <button type="button" class="pp-pincel-btn pp-pincel-cancelar" data-pincel-cancelar hidden title="Cancelar curva (Esc)">✕</button>
           <span class="pp-pincel-dica" data-pincel-dica></span>
@@ -2276,43 +2264,9 @@ export class PowerPointHost {
     return { cor: this.pincel.cor || this.estilo().acento, w: this.pincel.w, assistente: this.pincel.assistente, tipo: this.pincel.tipo === "marca" ? "marca" : "caneta" };
   }
 
-  /** Liga os controles da barrinha do pincel (cor, espessura e assistente). */
+  /** Liga o Concluir/Cancelar da barrinha — o resto do pincel é comandado pela aba Desenhar. */
   private ligarPincel(): void {
     const barra = $<HTMLElement>("[data-pincel]", this.pane);
-    barra.querySelector<HTMLElement>("[data-pincel-cor]")?.addEventListener("click", (e) => {
-      const est = this.estilo();
-      abrirCores(e.currentTarget as HTMLElement, { atual: this.pincelUsado().cor, paleta: est.paleta, titulo: "Cor do traço" }, (cor) => {
-        this.pincel.cor = cor ?? est.acento;
-        gravarPincel(this.pincel);
-        this.atualizarPincel();
-      });
-    });
-    for (const b of barra.querySelectorAll<HTMLElement>("[data-pincel-w]")) {
-      b.addEventListener("click", () => {
-        this.pincel.w = Number(b.dataset.pincelW) || 2;
-        gravarPincel(this.pincel);
-        this.atualizarPincel();
-      });
-    }
-    for (const b of barra.querySelectorAll<HTMLElement>("[data-pincel-modo]")) {
-      b.addEventListener("click", () => {
-        const modo = (b.dataset.pincelModo as "livre" | "pontos") || "livre";
-        this.stage.definirModoDesenho(modo);
-        this.atualizarPincel();
-      });
-    }
-    for (const b of barra.querySelectorAll<HTMLElement>("[data-pincel-tipo]")) {
-      b.addEventListener("click", () => {
-        this.pincel.tipo = b.dataset.pincelTipo === "marca" ? "marca" : "caneta";
-        gravarPincel(this.pincel);
-        this.atualizarPincel();
-      });
-    }
-    barra.querySelector<HTMLElement>("[data-pincel-assist]")?.addEventListener("click", () => {
-      this.pincel.assistente = !this.pincel.assistente;
-      gravarPincel(this.pincel);
-      this.atualizarPincel();
-    });
     barra.querySelector<HTMLElement>("[data-pincel-concluir]")?.addEventListener("click", () => {
       this.stage.finalizarCurva();
       this.atualizarPincel();
@@ -2324,9 +2278,9 @@ export class PowerPointHost {
     this.atualizarPincel();
   }
 
-  /** Mostra/esconde a barrinha do pincel e reflete cor, espessura e assistente. */
+  /** Mostra/esconde a barrinha e mantém a dica (e o Concluir/Cancelar da curva por pontos). */
   private atualizarPincel(): void {
-    // a aba Desenhar mostra o mesmo estado: atualiza os botões dela junto com a barrinha
+    // a aba Desenhar mostra o estado do pincel: atualiza os botões dela junto com a barrinha
     this.fita.atualizar();
     const barra = this.pane.querySelector<HTMLElement>("[data-pincel]");
     if (!barra) return;
@@ -2335,27 +2289,10 @@ export class PowerPointHost {
     const ehBorracha = this.ferramenta?.tipo === "borracha";
     const ativo = ehDesenho || ehCurva || ehBorracha;
     barra.hidden = !ativo;
-    // com a borracha a barrinha vira só a dica: cor/espessura/modo não valem para ela
-    barra.classList.toggle("pp-pincel-so-dica", ehBorracha);
     this.frame?.classList.toggle("pp-borracha", ehBorracha);
     if (!ativo) return;
-    const p = this.pincelUsado();
-    const cor = barra.querySelector<HTMLElement>("[data-pincel-cor]");
-    if (cor) cor.style.background = `#${p.cor}`;
-    for (const b of barra.querySelectorAll<HTMLElement>("[data-pincel-w]")) {
-      b.classList.toggle("on", Number(b.dataset.pincelW) === this.pincel.w);
-    }
-    barra.querySelector("[data-pincel-assist]")?.classList.toggle("on", this.pincel.assistente);
     const marca = this.pincel.tipo === "marca";
-    for (const b of barra.querySelectorAll<HTMLElement>("[data-pincel-tipo]")) {
-      b.classList.toggle("on", (b.dataset.pincelTipo === "marca") === marca);
-    }
-    barra.querySelector("[data-pincel-assist]")?.classList.toggle("pp-fora", marca);
-
     const modo = ehCurva ? "pontos" : this.stage.obterModoDesenho();
-    for (const b of barra.querySelectorAll<HTMLElement>("[data-pincel-modo]")) {
-      b.classList.toggle("on", b.dataset.pincelModo === modo);
-    }
 
     const temPontos = this.stage.temPontosCurva();
     const btnConcluir = barra.querySelector<HTMLElement>("[data-pincel-concluir]");
@@ -3188,7 +3125,7 @@ export class PowerPointHost {
         this.stage.desenharSelecao();
         this.fita.atualizar();
         return;
-      // ---- pincel do Draw: a aba Desenhar e a barrinha flutuante mexem no MESMO estado ----
+      // ---- pincel do Draw: os controles vivem na aba Desenhar (a barrinha do palco é só a dica) ----
       case "pincel-cor": {
         const est = this.estilo();
         this.pincel.cor = String(value ?? "").trim() || est.acento;

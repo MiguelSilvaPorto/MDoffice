@@ -535,6 +535,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   formas** (como o reconhecimento e o encaixe nos eixos) só age com o **Assistente** ligado; desligado,
   o traço fica onde a mão passou e a dica mostra só **Desenho livre**. Teste: `npm run test:desenho`.
 
+- **A barrinha flutuante do Draw ficou só com a dica**: com o lápis ligado, o popup em cima da lâmina
+  repetia **cor**, **espessura** (1/2/4/8), **Caneta/Marca**, **Livre/Pontos** e **Assistente** — tudo o
+  que a aba **Desenhar** já mostra e comanda (o mesmo pincel). Agora esses controles vivem **só na
+  aba** e a barrinha do palco é só a **dica** ("Clique para marcar pontos…", o "entendi: Retângulo" do
+  assistente, a instrução da borracha) com o **Concluir/Cancelar** da curva por pontos — o que a aba
+  não tem. No marca-texto, o **Assistente** da aba fica **desabilitado** (ele não reconhece um destaque),
+  ocupando o aviso que existia no popup.
+
+
 - **O aviso "Animações desta lâmina foram mantidas como vieram" saiu**: ao abrir um .pptx com animações
   fora do modelo (mídia com tempo próprio, efeitos interativos), o importador **preserva o XML** — nada se
   perde — mas avisava "Aberto com limitações: …" a cada abertura, o que não fazia sentido (o arquivo está

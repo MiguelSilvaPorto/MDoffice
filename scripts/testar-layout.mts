@@ -2862,13 +2862,13 @@ console.log("\naba Desenhar: as ferramentas de traço num lugar só");
       /cmd\.startsWith\("pincel:modo:"\)\) this\.hooks\.run\("pincel-modo", cmd\.slice\(12\)\)/.test(fita)
   );
   checa(
-    "o host mexe no MESMO estado do pincel (aba e barrinha juntas)",
+    "o host mexe no MESMO estado do pincel (a aba é quem comanda)",
     /case "pincel-cor":/.test(ppt) &&
       /case "pincel-w":/.test(ppt) &&
       /case "pincel-modo":/.test(ppt) &&
       /case "pincel-assistente":/.test(ppt) &&
-      /private atualizarPincel\(\): void \{\r?\n\s*\/\/ a aba Desenhar mostra o mesmo estado: atualiza os botões dela junto com a barrinha\r?\n\s*this\.fita\.atualizar\(\)/.test(ppt),
-    "sem isso a aba e a barrinha divergem"
+      /private atualizarPincel\(\): void \{[\s\S]{0,200}this\.fita\.atualizar\(\)/.test(ppt),
+    "sem isso a aba ficaria com um estado velho do pincel"
   );
   checa(
     "o estado do pincel chega à fita (cor, espessura, modo, assistente e tipo)",
@@ -2954,11 +2954,12 @@ console.log("\ntinta: marca-texto, borracha e converter em forma");
   );
   checa("o despacho leva o tipo do pincel ao host", /cmd\.startsWith\("pincel-tipo:"\)\) this\.hooks\.run\("pincel-tipo", cmd\.slice\(12\)\)/.test(fita));
   checa(
-    "a barrinha tem Caneta/Marca e o host troca o tipo",
-    /data-pincel-tipo="caneta"/.test(ppt) &&
-      /data-pincel-tipo="marca"/.test(ppt) &&
+    "Caneta/Marca vivem só na aba Desenhar (e o host troca o tipo)",
+    /grande\("pincel-tipo:marca"/.test(fita) &&
       /case "pincel-tipo":/.test(ppt) &&
-      /this\.pincel\.tipo = value === "marca" \? "marca" : "caneta"/.test(ppt)
+      /this\.pincel\.tipo = value === "marca" \? "marca" : "caneta"/.test(ppt) &&
+      !/data-pincel-tipo/.test(ppt),
+    "a barrinha flutuante repetia os botões da aba"
   );
   checa(
     "os botões da aba acendem com o tipo e com a borracha",
@@ -3003,15 +3004,23 @@ console.log("\ntinta: marca-texto, borracha e converter em forma");
       /export function formaDaTinta\(s: Shape, d: Dim\): Partial<Shape> \| null/.test(desenho)
   );
   checa(
-    "com a borracha a barrinha vira só a dica e o cursor vira mira",
-    /barra\.classList\.toggle\("pp-pincel-so-dica", ehBorracha\)/.test(ppt) &&
-      /this\.frame\?\.classList\.toggle\("pp-borracha", ehBorracha\)/.test(ppt) &&
-      /\.pp-pincel\.pp-pincel-so-dica > :not\(\[data-pincel-dica\]\)\s*\{[^}]*display:\s*none/.test(css) &&
+    "a barrinha do palco é só a dica — os controles do pincel ficam na aba Desenhar",
+    /private ligarPincel\(\): void \{[\s\S]{0,500}data-pincel-concluir/.test(ppt) &&
+      !/data-pincel-cor/.test(ppt) &&
+      !/data-pincel-w=/.test(ppt) &&
+      !/data-pincel-modo=/.test(ppt) &&
+      !/data-pincel-assist/.test(ppt) &&
+      !/pp-pincel-so-dica/.test(css),
+    "o popup do Draw repetia cor, espessura, Caneta/Marca, Livre/Pontos e Assistente"
+  );
+  checa(
+    "a borracha mantém a dica e o cursor de mira",
+    /this\.frame\?\.classList\.toggle\("pp-borracha", ehBorracha\)/.test(ppt) &&
       /\.pp-frame\.pp-borracha \.pp-slide[^{]*\{[^}]*cursor:\s*crosshair/.test(css)
   );
   checa(
-    "o Assistente fica apagado no marca-texto (ele não reconhece forma)",
-    /pp-pincel-assist\.pp-fora/.test(css) && /classList\.toggle\("pp-fora", marca\)/.test(ppt)
+    "o Assistente fica desabilitado no marca-texto (agora na aba)",
+    /dis\("pincel-assistente", st\.pincel\.tipo === "marca"\)/.test(fita) && !/pp-pincel-assist/.test(css)
   );
 }
 

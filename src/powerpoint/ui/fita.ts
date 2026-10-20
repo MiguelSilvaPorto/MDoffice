@@ -475,8 +475,8 @@ export class Fita {
 
   /**
    * Aba Desenhar: tudo o que é traço num lugar só — as canetas (Draw e Curva, que saíram do
-   * Inserir), o pincel (cor, espessura, Livre/Pontos e Assistente, o MESMO estado da barrinha
-   * flutuante) e as formas para desenhar arrastando. O diagrama fica como atalho.
+   * Inserir), o pincel (cor, espessura, Livre/Pontos e Assistente — os ÚNICOS controles dele:
+   * a barrinha do palco ficou só com a dica) e as formas para desenhar arrastando.
    */
   private desenhar(): string {
     return [
@@ -964,7 +964,7 @@ export class Fita {
         });
         return;
       case "pincel:cor":
-        // a mesma paleta do pincel (a da barrinha flutuante), aqui na fita
+        // a paleta do pincel do Draw (a mesma que o traço usa)
         abrirCores(ancora, { atual: est.pincel.cor, paleta: est.paleta, titulo: "Cor do traço" }, (c) => run("pincel-cor", c ?? ""));
         return;
       case "marca-texto":
@@ -1396,6 +1396,8 @@ export class Fita {
       botaoRegioes.setAttribute("aria-label", botaoRegioes.title);
     }
     on("pincel-assistente", st.pincel.assistente);
+    // o assistente não reconhece traço de marca-texto (ele não vira forma): fica desabilitado
+    dis("pincel-assistente", st.pincel.tipo === "marca");
     for (const w of [1, 2, 4, 8]) on(`pincel:w:${w}`, st.pincel.w === w);
     on("pincel:modo:livre", st.pincel.modo === "livre");
     on("pincel:modo:pontos", st.pincel.modo === "pontos");

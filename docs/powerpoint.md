@@ -463,21 +463,21 @@ avisado ao abrir (nunca some em silêncio).
   **corridas vizinhas quase colineares viram uma só** (médias a até 5 pt e os pontos do vão a até
   8 pt da reta): quando a mão derrapa no meio do trecho, o alinhamento formava duas retas com
   médias diferentes e o caminho fazia um degrau entre elas.
-- **Modos Livre vs Pontos na aba Desenhar e na barra do Pincel**: enquanto o lápis está ligado, a **barrinha do pincel** define
-  **cor**, **espessura** (1, 2, 4 ou 8 pt), assistente, e agora permite alternar entre **[Livre]** (arraste para
-  rabiscar) e **[Pontos]** (clique para posicionar nós de parada). No modo Livre, um clique pontual **não faz
-  nada** — é o **[Pontos]** que marca nós (o clique não liga o modo por conta própria). A aba **Desenhar** tem os mesmos controles
-  (cor, espessuras, **Livre/Pontos** e **Assistente**) antes de começar o traço — é o **mesmo pincel**: o que
-  se escolhe na aba aparece aceso na barrinha (e o contrário também). A barrinha tem **[Caneta] [Marca]** para
-  trocar entre a caneta e o marca-texto sem sair do traço.
-- **Marca-texto de tinta** (aba **Desenhar ▸ Marca-texto**, ou **[Marca]** na barrinha): traço **largo e
+- **Modos Livre vs Pontos (aba Desenhar ▸ Traço)**: com o lápis ligado, a aba define a **cor**, a
+  **espessura** (1, 2, 4 ou 8 pt), o **Assistente** e o modo — **[Livre]** (arraste para rabiscar)
+  ou **[Pontos]** (clique para posicionar nós de parada). No modo Livre, um clique pontual **não faz
+  nada** — é o **[Pontos]** que marca nós (o clique não liga o modo por conta própria). A troca
+  **Caneta/Marca** também é da aba (grupo **Canetas**), sem sair do traço. Esses controles ficam **só
+  na aba**: a barrinha do palco é apenas a **dica** do que está acontecendo (e o **Concluir/Cancelar**
+  da curva por pontos) — o mesmo estado, sem um popup repetindo os botões por cima da lâmina.
+- **Marca-texto de tinta** (aba **Desenhar ▸ Marca-texto**): traço **largo e
   translúcido** para destacar o que já está na lâmina — ele **não vira forma** (o assistente não endireita um
   destaque) e a espessura escolhida vale ×3 (1 → 3 pt, 4 → 12 pt, 8 → 24 pt). Escolher o Marca-texto já liga o
   lápis; o **Esc** sai.
 - **Borracha** (aba **Desenhar ▸ Borracha**): **clique ou arraste sobre os traços de tinta** para apagá-los —
   desenho livre, curva e marca-texto. Ela só toca o que veio do Draw (uma forma comum embaixo dela **não** é
-  apagada) e cada traço apagado é um passo do **desfazer**. Com a borracha ligada a barrinha vira só a dica e o
-  cursor vira mira; o **Esc** sai.
+  apagada) e cada traço apagado é um passo do **desfazer**. Com a borracha ligada a barrinha mostra
+  só a dica dela e o cursor vira mira; o **Esc** sai.
 - **Converter em forma** (aba **Desenhar ▸ Converter em forma**): com um traço de tinta **escolhido**, ele passa
   pelo assistente e vira a **forma limpa** (retângulo, elipse, triângulo, linha, seta, arco…) **no lugar e do
   tamanho em que ele está** — inclusive depois de movido ou esticado. Se o assistente não reconhecer, o app avisa
@@ -487,7 +487,7 @@ avisado ao abrir (nunca some em silêncio).
 
 ### Curva por pontos de parada (ferramenta Curva e modo Pontos)
 
-- **Onde encontrar**: na aba **Desenhar ▸ Curva** ou ativando **[Pontos]** na aba/barrinha flutuante do Draw.
+- **Onde encontrar**: na aba **Desenhar ▸ Curva** ou ativando **[Pontos]** no grupo **Traço** da aba Desenhar.
 - **Como funciona**: cada clique na lâmina adiciona um nó de controle de passagem. O caminho é interpolado
   em tempo real com spline suave $C^1$ (Catmull-Rom), garantindo contornos limpos e sem oscilações indesejadas.
   A prévia mostra **só os nós já marcados**: não há um trecho "elástico" seguindo o mouse entre os cliques.

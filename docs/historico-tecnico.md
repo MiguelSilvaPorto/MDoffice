@@ -14919,3 +14919,76 @@ antigas quando fizer sentido.
   então a promoção anda depois, num commit só de documentação — como nas rodadas anteriores. Promovi
   só a entrada DESTA tarefa: as que seguem em "Não adicionado" nas outras categorias são de sessões
   com trabalho aberto, e mexer nelas criaria duplicata ou conflito. A entrada existe **uma** vez só.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-20 · esta tarefa · a barrinha do Draw é só a dica
+- **Local:** `montar` (o HTML de `[data-pincel]`), `ligarPincel` e `atualizarPincel`
+- **Linha:** os botões de cor / 1 / 2 / 4 / 8 / Caneta / Marca / Livre / Pontos / Assistente e os seus
+  ouvintes **saíram**; sobraram `[data-pincel-concluir]`, `[data-pincel-cancelar]` e
+  `[data-pincel-dica]`; `- import { abrirCores } from "./ui/cores"`
+- **Porquê:** o popup flutuante repetia o que a aba **Desenhar** já mostra e comanda (o mesmo estado
+  `this.pincel`), cobrindo a lâmina com uma segunda cópia dos mesmos botões. A aba é a única
+  superfície de controle do pincel; a barrinha ficou com o que a aba **não** tem: a **dica** (que
+  também recebe o "entendi: …" do assistente durante o traço) e o **Concluir/Cancelar** da curva por
+  pontos. O `abrirCores` deixou de ser usado aqui — a cor do traço abre pela fita.
+
+### 2026-10-20 · esta tarefa · o estado do pincel continua indo para a aba
+- **Local:** `atualizarPincel` (o comentário, o `this.fita.atualizar()` e o que sobrou da dica)
+- **Linha:** `Mostra/esconde a barrinha e reflete cor, espessura e assistente` → `…mantém a dica (e o
+  Concluir/Cancelar da curva por pontos)`; as reflexões de cor/espessura/tipo/assistente/modo na
+  barrinha saíram
+- **Porquê:** sem os botões duplicados não há o que acender na barrinha — quem lê `st.pincel` é a
+  fita (`fita.atualizar()`), que já era chamada no começo da função. A dica e os botões da curva
+  continuam saindo do mesmo estado (`ferramenta` e `stage.temPontosCurva()`).
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-20 · esta tarefa · o CSS dos controles que saíram
+- **Local:** o bloco da barrinha do pincel
+- **Linha:** `.pp-pincel-cor`, `.pp-pincel-sep`, `.pp-pincel-w`/`-assist`/`-modo`, os `.on` deles,
+  `.pp-pincel-assist.pp-fora` e `.pp-pincel.pp-pincel-so-dica > :not([data-pincel-dica])` **saíram**;
+  `.pp-pincel-btn` ficou sozinho; a dica perdeu o `margin-left: 6px` (agora ela pode ser o único filho
+  do pill) e ganhou `padding: 0 2px` quando tem texto
+- **Porquê:** CSS órfão de botões que não existem mais. O `pp-pincel-so-dica` existia para esconder
+  os controles na borracha — sem controles, a classe não tem o que esconder.
+
+## src/powerpoint/ui/fita.ts
+
+### 2026-10-20 · esta tarefa · o Assistente desabilitado no marca-texto
+- **Local:** a sincronização do estado (`atualizar`), logo depois de `on("pincel-assistente", …)`
+- **Linha:** `+ dis("pincel-assistente", st.pincel.tipo === "marca")`
+- **Porquê:** o aviso "o assistente não vale para o marca-texto" vivia no `pp-fora` da barrinha, que
+  saiu junto com os botões. Na aba, o mesmo aviso vira o botão **desabilitado** enquanto o
+  marca-texto está escolhido (o `desenho.ts` ignora o assistente quando `tipo === "marca"`).
+
+## scripts/testar-layout.mts
+
+### 2026-10-20 · esta tarefa · as checagens da barrinha
+- **Local:** o bloco "tinta: marca-texto, borracha e converter em forma"
+- **Linha:** `a barrinha tem Caneta/Marca…` → `Caneta/Marca vivem só na aba Desenhar…`; `com a
+  borracha a barrinha vira só a dica…` → `a barrinha do palco é só a dica…` + `a borracha mantém a
+  dica e o cursor de mira`; `o Assistente fica apagado no marca-texto…` → `…desabilitado no
+  marca-texto (agora na aba)`
+- **Porquê:** as checagens prendiam os botões duplicados. As novas prendem o contrário — que eles
+  **não** voltem para a barrinha (`!/data-pincel-cor/`, `!/data-pincel-w=/`, …) e que o
+  Concluir/Cancelar e a dica continuem lá. A checagem do `z-index` (por cima da faixa/palco)
+  continua valendo: o pill ainda flutua.
+
+## docs/powerpoint.md
+
+### 2026-10-20 · esta tarefa · a bala dos modos Livre/Pontos e a barrinha
+- **Local:** "Desenho à mão (Draw) e Curva por pontos de parada" (a bala dos modos, a do marca-texto,
+  a da borracha e o "Onde encontrar" da curva)
+- **Linha:** a bala dizia que os controles estavam "na aba e na barrinha" → agora "só na aba", com a
+  barrinha descrita como a **dica** + Concluir/Cancelar
+- **Porquê:** o documento do módulo descreve onde cada controle está; mandar procurar [Marca] ou
+  [Pontos] na barrinha seria mandar para um lugar que não existe mais.
+
+## CHANGELOG.md
+
+### 2026-10-20 · esta tarefa · a entrada da barrinha sem os duplicados
+- **Local:** PowerPoint ▸ **Não adicionado** ▸ Frontend (topo)
+- **Linha:** `novo`
+- **Porquê:** a tarefa ainda não está na main: a entrada nasce em "Não adicionado" e só é promovida
+  no fechamento.

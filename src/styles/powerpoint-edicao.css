@@ -1901,7 +1901,9 @@ button.ppr.big .ppr-gal-ic svg {
   border-radius: 4px;
 }
 
-/* a barrinha do pincel (só aparece com o lápis ligado) */
+/* a barrinha do Draw: só a DICA (e o Concluir/Cancelar da curva por pontos). Os controles do
+   pincel (cor, espessura, Caneta/Marca, Livre/Pontos e Assistente) vivem na aba Desenhar —
+   repeti-los aqui era um popup por cima da lâmina fazendo o que a fita já faz. */
 .pp-pincel {
   position: absolute;
   top: 10px;
@@ -1924,25 +1926,6 @@ button.ppr.big .ppr-gal-ic svg {
   display: none;
 }
 
-.pp-pincel-cor {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 2px solid var(--border);
-  cursor: pointer;
-  padding: 0;
-}
-
-.pp-pincel-sep {
-  width: 1px;
-  height: 18px;
-  background: var(--border);
-  margin: 0 3px;
-}
-
-.pp-pincel-w,
-.pp-pincel-assist,
-.pp-pincel-modo,
 .pp-pincel-btn {
   border: 1px solid var(--border);
   background: transparent;
@@ -1952,24 +1935,6 @@ button.ppr.big .ppr-gal-ic svg {
   line-height: 1;
   padding: 5px 7px;
   cursor: pointer;
-}
-
-.pp-pincel-w.on,
-.pp-pincel-assist.on,
-.pp-pincel-modo.on {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-fg);
-}
-
-/* o Assistente não vale para o marca-texto (ele não reconhece forma): fica apagado */
-.pp-pincel-assist.pp-fora {
-  opacity: 0.4;
-}
-
-/* com a borracha a barrinha vira só a dica: cor, espessura, modo e assistente não valem para ela */
-.pp-pincel.pp-pincel-so-dica > :not([data-pincel-dica]) {
-  display: none;
 }
 
 /* a borracha usa o cursor de mira (o traço fino é um alvo pequeno) */
@@ -2001,8 +1966,11 @@ button.ppr.big .ppr-gal-ic svg {
 .pp-pincel-dica {
   font-size: 11px;
   color: var(--muted);
-  margin-left: 6px;
   white-space: nowrap;
+}
+
+.pp-pincel-dica:not(:empty) {
+  padding: 0 2px;
 }
 
 /* nós de controle ao desenhar curvas por pontos */
