@@ -178,6 +178,117 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/disco/registro.ts
+
+### 2026-10-21 · feat/pasta-rascunhos-navegador · a pasta dos rascunhos no registro
+- **Local:** `ID_RASCUNHOS`, `PREFIXO_RASCUNHO`, `registrarDocumento` e `pastaPadrao`
+- **Linha:** `registrarDocumento(..., relativo)` → `registrarDocumento(..., relativo, idBase = "")`; novo id reservado `__rascunhos__` no armazém de pastas; `pastaPadrao` → `pastas.find((p) => p.id !== ID_RASCUNHOS)`
+- **Porquê:** o handle da pasta escolhida precisa sobreviver ao reload, e o IndexedDB já é
+  onde os handles vivem. O id reservado mantém a pasta dos rascunhos fora de `pastaPadrao()` —
+  ela é dos rascunhos, não a pasta dos documentos. O `idBase` deixa o id do rascunho ser
+  `rascunho/<nome>` mesmo morando direto na pasta escolhida, sem colidir com um documento de
+  mesmo nome registrado em outra pasta.
+
+## src/disco/rascunhos.ts
+
+### 2026-10-21 · feat/pasta-rascunhos-navegador · os rascunhos podem morar na pasta escolhida
+- **Local:** `criar`, `listar`, `pasta`, `pastaEscolhida`, `definirPasta`, `esquecerPasta` e `apagar`
+- **Linha:** `criar` usa `pastaDeRascunhosSalva() ?? pastaPadrao()`; na pasta escolhida grava
+  `nome.md` direto nela com id `rascunho/<nome>`; sem escolha mantém
+  `.mdoffice/rascunhos/<nome>`; `listar` varre os dois lugares; `apagar` reconhece os dois
+- **Porquê:** o desenho antigo dependia de uma pasta de projeto concedida. A pasta escolhida
+  resolve o caso do PWA novo: a pessoa escolhe uma pasta uma vez e os documentos novos viram
+  arquivos visíveis nela. `definirPasta` remove o registro "de projeto" que o seletor cria
+  quando nenhum documento usa aquela pasta, para ela não virar a pasta padrão dos documentos.
+
+## src/ponte/index.ts
+
+### 2026-10-21 · feat/pasta-rascunhos-navegador · os comandos da pasta dos rascunhos
+- **Local:** `comandoDoDisco`, casos de rascunho
+- **Linha:** `drafts_folder_path` passou a aguardar `rascunhos.pasta()`; novos
+  `draft_folder_get`, `draft_folder_set` e `draft_folder_clear`
+- **Porquê:** a tela de Configurações precisa ler a pasta escolhida, definir uma nova e voltar
+  ao padrão sem conhecer o IndexedDB; a ponte é a fronteira que o resto do app já usa.
+
+## src/files.ts
+
+### 2026-10-21 · feat/pasta-rascunhos-navegador · os wrappers da pasta dos rascunhos
+- **Local:** depois de `deleteDraft`
+- **Linha:** novo `DraftFolder` e `draftFolderInfo`, `setDraftFolder`, `clearDraftFolder`
+- **Porquê:** mantém a página de Configurações falando só com `files`, como já faz com
+  `pickFolders`, `listDrafts` e `deleteDraft`; no Tauri esses comandos não são chamados (a
+  linha da pasta de rascunhos só aparece no navegador).
+
+## src/settingsPage.ts
+
+### 2026-10-21 · feat/pasta-rascunhos-navegador · "Pasta dos rascunhos" no Salvamento
+- **Local:** grupo **Salvamento**, bloco `if (!nativo)` e o handler de `arm-open-drafts`
+- **Linha:** nova linha com `data-drafts-root` e os botões `drafts-dir`/`drafts-clear`; depois
+  de escolher, `ctx.salvarRascunhoAgora()` dispara o autosave; os botões de pasta do backup
+  (`backup-dir`, `backup-open`, `backup-open-app`) passaram de `on(...)` para
+  `host.querySelector(...)?.addEventListener(...)`
+- **Porquê:** o navegador precisa de um lugar real para gravar o rascunho, e a escolha fica
+  visível e reversível. Os botões de backup só existem no HTML do app nativo; o `on` sem guarda
+  estourava no navegador e derrubava o resto da página (a seção de armazenamento nunca saía de
+  "calculando…").
+
+## src/app/pages.ts
+
+### 2026-10-21 · feat/pasta-rascunhos-navegador · o atalho para gravar logo após escolher
+- **Local:** `settingsContext`
+- **Linha:** novo `salvarRascunhoAgora: () => void this.autosave()`
+- **Porquê:** ao escolher a pasta, o documento novo que já está aberto não precisa esperar o
+  próximo tique do autosave para virar arquivo; o toggle do autosave continua mandando (se
+  estiver desligado, nada é gravado).
+
+## src/app/documents.ts
+
+### 2026-10-21 · feat/pasta-rascunhos-navegador · o autosave não usa mais o temp/ do Vite
+- **Local:** `salvarAgora` (ramo `!tab.path`), `ensureSaved` e o rótulo do rascunho
+- **Linha:** removido o `saveDraftFallback("rascunho", text)` do autosave; sem pasta, o estado
+  vira `saveFailed` + "Sem pasta para guardar o rascunho" e um aviso aparece uma vez por sessão;
+  `ensureSaved` passa a dizer "Rascunho guardado na pasta escolhida" quando o id começa com
+  `rascunho/`
+- **Porquê:** o `temp/rascunho.md` só existe no servidor de desenvolvimento e dava a impressão
+  de "Salvo"; no PWA o fetch falhava em silêncio. O aviso único evita repetir o erro a cada 2 s,
+  e o rótulo novo diz onde o arquivo está de verdade.
+
+## src/app/tabs.ts
+
+### 2026-10-21 · feat/pasta-rascunhos-navegador · a sessão reabre o mesmo rascunho (sem perder o texto)
+- **Local:** `saveBrowserTabs` e `restoreSession`
+- **Linha:** cada aba da sessão de texto passou a guardar também o `path`; `restoreSession`
+  reabre o **texto** da sessão (o que estava na tela, inclusive o que o autosave ainda não
+  gravou) e, se o arquivo ainda existir, religa a aba a ele; quando o texto difere do disco, a
+  aba volta suja para o autosave gravar
+- **Porquê:** o texto do localStorage reabria uma aba **sem caminho** e o autosave seguinte
+  criava outro rascunho — o arquivo anterior ficava órfão. Reabrir só pelo arquivo resolveria o
+  órfão, mas descartaria alterações não gravadas quando o autosave está desligado ou falhou.
+  Com o caminho junto do texto, as duas coisas ficam: a identidade do arquivo e o que a pessoa
+  tinha escrito.
+
+## src/app/layout.ts
+
+### 2026-10-21 · feat/pasta-rascunhos-navegador · o rodapé mostra onde o rascunho está
+- **Local:** `updateStats` e `refreshPath`
+- **Linha:** `isDraft` com id `rascunho/...` → "Rascunho (pasta escolhida)", "Rascunho na pasta
+  escolhida" e o `title` do selo dizendo onde ele está; os rascunhos do app nativo continuam
+  "Rascunho (no app)"
+- **Porquê:** o usuário precisa saber que o arquivo está na pasta que ele escolheu (e não na
+  pasta de dados do app); o clique para "mostrar na pasta" não existe no navegador e o título
+  do botão agora não promete isso.
+
+## scripts/testar-rascunhos.mjs (novo)
+
+### 2026-10-21 · feat/pasta-rascunhos-navegador · o teste do rascunho que sobrevive
+- **Local:** roteiro novo, `test:rascunhos` no `package.json`
+- **Linha:** Chrome headless com o OPFS como disco; escolhe "Rascunhos", digita num documento
+  novo, confere o `.md` na pasta, recarrega e confere o mesmo arquivo reaberto; troca para
+  "Rascunhos2" e confere que o antigo ficou; remove a pasta e confere o aviso "Não salvo"
+- **Porquê:** o defeito só aparecia no navegador e dependia de fechar/reabrir; o teste cobre o
+  caminho inteiro (handle no IndexedDB, autosave, sessão e troca de pasta) sem depender do
+  seletor nativo do Windows.
+
 ## src/app/keymap.ts
 
 ### 2026-10-21 · fix/atalhos-conflito-navegador · o padrão do atalho depende do ambiente

@@ -159,6 +159,8 @@ export const pagesMethods = {
       restaurarCopia: (path, root, name) => this.restaurarCopia(path, root, name),
       abrirRecuperacao: () => this.openMissingBackups(),
       openHistory: (aba) => void this.openHistory(aba),
+      // escolheu a pasta dos rascunhos: não espera o próximo tique para gravar
+      salvarRascunhoAgora: () => void this.autosave(),
       repairAlignments: () => this.repairAlignments(),
       appIcon: () => appIconAtual(),
       setAppIcon: (v) => definirIconeApp(v),

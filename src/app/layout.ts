@@ -5,6 +5,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { FormatoCantos, NivelAnimacao } from "../settingsPage";
 import { modoDoSelo } from "./seloAutosave";
 import { autosaveDoDoc } from "./autosave";
+import { PREFIXO_RASCUNHO } from "../disco/registro";
 import { $, baseName, docDirOf, clamp, loadJSON, toast, saveJSON } from "../util";
 
 export const layoutMethods = {
@@ -69,7 +70,9 @@ export const layoutMethods = {
       el.textContent = this.dirty
         ? "Alterações não salvas"
         : this.isDraft
-          ? "Rascunho (no app)"
+          ? this.path?.startsWith(PREFIXO_RASCUNHO)
+            ? "Rascunho (pasta escolhida)"
+            : "Rascunho (no app)"
           : this.statusSaved;
     }
     el.classList.toggle("dirty", this.dirty);
@@ -137,9 +140,11 @@ export const layoutMethods = {
       text.textContent = "Salvando…";
       if (iconUse) iconUse.setAttribute("href", "#i-cloud");
     } else if (modo === "rascunho") {
+      const naPastaEscolhida = this.path?.startsWith(PREFIXO_RASCUNHO);
       btn.title = `Salvamento Automático: ligado em ${nomeDoc} (clique para desligar)${resumo}`;
-      badge.title =
-        this.statusSaved && /rascunho/i.test(this.statusSaved)
+      badge.title = naPastaEscolhida
+        ? "Rascunho gravado na pasta escolhida em Configurações ▸ Histórico e salvamento. Use Ctrl+Shift+S (Salvar como…) para transformá-lo num documento seu."
+        : this.statusSaved && /rascunho/i.test(this.statusSaved)
           ? `${this.statusSaved} — ainda não é um arquivo na sua pasta. Use Ctrl+Shift+S (Salvar como…) para gravar.`
           : "Este documento ainda não tem arquivo na sua pasta: o salvamento automático guarda um rascunho no app. Use Ctrl+Shift+S (Salvar como…) para escolher onde salvar.";
       text.textContent = "Rascunho";
@@ -202,17 +207,26 @@ export const layoutMethods = {
       return;
     }
 
-    const dirText = this.isDraft ? "Rascunho do app" : docDirOf(this.path);
-    const fullTitle = this.isDraft
-      ? `Rascunho guardado em: ${docDirOf(this.path)} (clique para abrir a pasta)`
-      : `${this.path} (clique para mostrar na pasta)`;
+    const naPastaEscolhida = this.isDraft && this.path.startsWith(PREFIXO_RASCUNHO);
+    const dirText = naPastaEscolhida
+      ? "Rascunho na pasta escolhida"
+      : this.isDraft
+        ? "Rascunho do app"
+        : docDirOf(this.path);
+    const fullTitle = naPastaEscolhida
+      ? "Rascunho guardado na pasta escolhida em Configurações ▸ Histórico e salvamento"
+      : this.isDraft
+        ? `Rascunho guardado em: ${docDirOf(this.path)} (clique para abrir a pasta)`
+        : `${this.path} (clique para mostrar na pasta)`;
 
     if (btn) {
       btn.hidden = false;
       btn.textContent = dirText;
-      btn.title = this.isDraft
-        ? `Rascunho guardado em: ${docDirOf(this.path)} (clique para abrir a pasta)`
-        : `Mostrar ${baseName(this.path)} na pasta`;
+      btn.title = naPastaEscolhida
+        ? "Rascunho guardado na pasta escolhida"
+        : this.isDraft
+          ? `Rascunho guardado em: ${docDirOf(this.path)} (clique para abrir a pasta)`
+          : `Mostrar ${baseName(this.path)} na pasta`;
     }
 
     if (topBtn && topText) {

@@ -15,6 +15,18 @@ const DB_NAME = "mdc-disco";
 const STORE_DOCS = "documentos";
 const STORE_PASTAS = "pastas";
 
+/**
+ * A pasta que a pessoa escolheu para os rascunhos (Configurações ▸ Histórico e salvamento).
+ *
+ * Fica no MESMO armazém das pastas concedidas, com um id reservado: o handle precisa
+ * sobreviver ao recarregar, e o IndexedDB já é o lugar onde os handles vivem. O id especial
+ * mantém essa pasta fora de `pastaPadrao()` — ela é dos rascunhos, não dos documentos.
+ */
+export const ID_RASCUNHOS = "__rascunhos__";
+
+/** Prefixo do id dos rascunhos que moram na pasta escolhida (a interface usa para o rótulo). */
+export const PREFIXO_RASCUNHO = "rascunho/";
+
 /** Um documento que o app tem aberto (o handle é o arquivo de verdade). */
 export interface DocumentoRegistrado {
   /** a identidade do documento (é o `path` do app no navegador) */
@@ -96,6 +108,9 @@ export async function registrarDocumento(
   handle: FileSystemFileHandle,
   pastaId: string,
   relativo: string,
+  /** a semente do id quando o rascunho mora numa pasta própria (evita colidir com um
+   *  documento de mesmo nome em outra pasta); sem ela, o id é o próprio `relativo` */
+  idBase = "",
 ): Promise<DocumentoRegistrado> {
   const todos = await listarDocumentos();
   const existente = todos.find(
@@ -118,7 +133,7 @@ export async function registrarDocumento(
     await atualizarDocumento(existente);
     return existente;
   }
-  const base = relativo || handle.name;
+  const base = idBase || relativo || handle.name;
   let id = base;
   let n = 1;
   while (todos.some((d) => d.id === id)) id = `${base} (${++n})`;
@@ -219,8 +234,30 @@ export async function apagarPasta(id: string): Promise<void> {
   await transacionar(STORE_PASTAS, "readwrite", (s) => s.delete(id));
 }
 
+/** Guarda a pasta escolhida para os rascunhos (o handle sobrevive ao recarregar). */
+export async function guardarPastaDeRascunhos(handle: FileSystemDirectoryHandle): Promise<PastaRegistrada> {
+  const entrada: PastaRegistrada = {
+    id: ID_RASCUNHOS,
+    handle,
+    nome: handle.name || "Pasta dos rascunhos",
+  };
+  await transacionar(STORE_PASTAS, "readwrite", (s) => s.put(entrada));
+  return entrada;
+}
+
+/** A pasta que a pessoa escolheu para os rascunhos (null = nunca escolheu). */
+export async function pastaDeRascunhosSalva(): Promise<PastaRegistrada | null> {
+  return await buscarPasta(ID_RASCUNHOS);
+}
+
+/** Esquece a pasta dos rascunhos (o handle sai do registro; os arquivos ficam). */
+export async function esquecerPastaDeRascunhos(): Promise<void> {
+  await apagarPasta(ID_RASCUNHOS);
+}
+
 /** A pasta "padrão" do app: a primeira que a pessoa concedeu (a do projeto). */
 export async function pastaPadrao(): Promise<PastaRegistrada | null> {
   const pastas = await listarPastas();
-  return pastas[0] ?? null;
+  // a pasta dos rascunhos mora no mesmo armazém, mas não é a pasta do projeto
+  return pastas.find((p) => p.id !== ID_RASCUNHOS) ?? null;
 }

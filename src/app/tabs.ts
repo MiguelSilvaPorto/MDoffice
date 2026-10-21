@@ -15,20 +15,41 @@ import { $, h, toast, baseName, docDirOf, stripExt, copyText, loadJSON, saveJSON
 import { abrirEmNovaJanela } from "./novaJanela";
 import { atualizarBusca } from "../busca/interface";
 import { mapaDeAutosave } from "./autosave";
+import { PREFIXO_RASCUNHO } from "../disco/registro";
 import type { PedidoDeJanela } from "./docNaUrl";
 
 export const tabsMethods = {
   /** Reabre as abas da sessão anterior; sem sessão, o app fica no Início (o Hub). */
   async restoreSession(this: App): Promise<void> {
-    // No NAVEGADOR não há caminhos de arquivo: a sessão anterior é o TEXTO das abas
-    // guardado no localStorage pelo autosave. Sem isso, recarregar a página perdia
-    // todos os documentos abertos (o relato dos 3 documentos).
+    // 1) Navegador: a sessão de TEXTO guarda o que estava na tela — inclusive alterações que o
+    //    autosave ainda não gravou. O `path` viaja junto: se o arquivo ainda existir, a aba volta
+    //    ligada a ele (o mesmo rascunho, sem duplicar); se o texto estiver mais novo que o disco,
+    //    a aba fica suja e o autosave grava. Se o arquivo sumiu, o texto continua na aba e ganha
+    //    um rascunho novo.
     if (!files.emTauri()) {
-      const salvo = loadJSON<{ abas: { texto: string; status?: string; autosave?: boolean }[]; ativa: number } | null>("mdc.browser.session", null);
+      const salvo = loadJSON<{
+        abas: { texto: string; status?: string; autosave?: boolean; path?: string | null }[];
+        ativa: number;
+      } | null>("mdc.browser.session", null);
       const abas = (salvo?.abas ?? []).filter((a) => a.texto.trim() !== "");
       if (abas.length) {
         for (const a of abas) {
-          const t = this.addTabFor(null, a.texto);
+          const t = this.addTabFor(a.path ?? null, a.texto);
+          if (a.path) {
+            try {
+              const noDisco = await files.loadDoc(a.path);
+              t.isDraft = a.path.startsWith(PREFIXO_RASCUNHO) || a.path.startsWith(".mdoffice/rascunhos/");
+              t.dirty = noDisco !== a.texto;
+            } catch {
+              // o arquivo sumiu: a aba fica só com o texto e o autosave cria um rascunho novo
+              t.path = null;
+              t.isDraft = false;
+              t.dirty = true;
+            }
+          } else {
+            // sessão antiga (sem caminho): mantém o texto e deixa o autosave dar um destino
+            t.dirty = true;
+          }
           t.statusSaved = a.status ?? "Salvo neste navegador";
           // o salvamento automático é de cada documento: ele sobrevive ao reload
           if (a.autosave !== undefined) t.autosave = a.autosave;
@@ -36,10 +57,12 @@ export const tabsMethods = {
         this.dropPristineStartTab();
         const idx = Math.max(0, Math.min(salvo?.ativa ?? 0, this.tabs.length - 1));
         await this.activate(this.tabs[idx] ?? this.tabs[this.tabs.length - 1]);
+        if (this.tabs.some((t) => t.dirty)) void this.autosave();
         toast(`${abas.length} documento${abas.length === 1 ? "" : "s"} da sessão do navegador reaberto${abas.length === 1 ? "" : "s"}.`, "info", 3600);
         return;
       }
     }
+    // 2) App nativo — e, no navegador, uma sessão antiga só com caminhos: reabre os arquivos.
     const saved = loadJSON<{ paths: string[]; active: string | null; drafts: string[]; autosave?: Record<string, boolean> } | null>("mdc.session", null);
     let restored = 0;
     if (saved && Array.isArray(saved.paths)) {
@@ -230,14 +253,16 @@ export const tabsMethods = {
    */
   saveBrowserTabs(this: App): boolean {
     if (files.emTauri()) return true;
-    const abas: { texto: string; status?: string; autosave?: boolean }[] = [];
+    const abas: { texto: string; status?: string; autosave?: boolean; path?: string | null }[] = [];
     let ativa = 0;
     for (const t of this.tabs) {
       if (t.kind && t.kind !== "doc") continue;
       const texto = this.textOf(t);
       if (!texto.trim() && !t.path) continue; // aba inicial vazia não entra na sessão
       if (t === this.tab) ativa = abas.length;
-      abas.push({ texto, status: t.statusSaved, autosave: t.autosave });
+      // o caminho viaja junto: sem ele, o reload reabria o texto como uma aba SEM arquivo
+      // e o autosave seguinte criava outro rascunho (o anterior ficava órfão)
+      abas.push({ texto, status: t.statusSaved, autosave: t.autosave, path: t.path });
     }
     // Só a aba inicial vazia: é o começo do app — não apaga a sessão anterior.
     if (!abas.length && this.tabs.length <= 1) return true;

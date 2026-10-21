@@ -9,7 +9,11 @@ import { enviarLimiar } from "../broker/spell";
 import { type DocTab } from "../tabs";
 import { moveHistory } from "../history";
 import { moveCommits } from "../snapshots";
+import { PREFIXO_RASCUNHO } from "../disco/registro";
 import { $, toast, baseName, docDirOf, joinPath, saveJSON, fmtTime, slugify } from "../util";
+
+/** Avisa uma vez por sessão que o rascunho não tem onde ser gravado (não repete a cada 2 s). */
+let avisouSemPasta = false;
 
 export const documentsMethods = {
   onDocChange(this: App): void {
@@ -104,29 +108,30 @@ export const documentsMethods = {
       return;
     }
     // Documento novo (sem arquivo ainda): cria o rascunho e passa a salvar nele — é o
-    // "salva conforme eu escrevo". Se não houver acesso a arquivos (navegador), cai
-    // no servidor de desenvolvimento, que grava em temp/rascunho.md do projeto.
+    // "salva conforme eu escrevo". O lugar é a pasta escolhida em Configurações ▸ Histórico
+    // e salvamento (ou a pasta concedida, no desenho antigo). O `temp/rascunho.md` do
+    // servidor de dev só existe no Vite: no PWA instalado ele não grava nada e ainda dava
+    // a impressão de "Salvo" — por isso o autosave daqui de baixo não usa mais esse atalho.
     if (!tab.path) {
       try {
         // silencioso: o autosave roda a cada 2 s — um aviso de erro a cada rodada seria ruído
         if (await this.ensureSaved(true)) return;
       } catch {
-        /* sem arquivos: segue para o salvamento pelo servidor */
+        /* sem pasta de rascunhos: cai no aviso abaixo */
       }
-      const salvou = await files.saveDraftFallback("rascunho", text);
-      if (salvou) {
-        tab.dirty = false;
-        tab.saveFailed = false;
-        tab.statusSaved = `Salvo automaticamente em temp/ às ${fmtTime()}`;
-        this.afterSave(tab);
-        return;
-      }
-      // Sem pasta (ou sem acesso a arquivos): NADA foi gravado. O selo não pode dizer
-      // "Salvo" — e o `saveFailed` faz a barra mostrar "Não salvo" em vez de "Salvando…".
+      // Sem pasta: NADA foi gravado. O selo não pode dizer "Salvo" — e o `saveFailed` faz
+      // a barra mostrar "Não salvo" em vez de "Salvando…".
+      const dica = files.emTauri()
+        ? "use Ctrl+S (Salvar como…)"
+        : "escolha a pasta em Configurações ▸ Histórico e salvamento";
       tab.saveFailed = true;
-      tab.statusSaved = "Sem pasta para guardar o rascunho — use Ctrl+S (Salvar como…)";
+      tab.statusSaved = `Sem pasta para guardar o rascunho — ${dica}`;
       if (tab === this.tab) this.setSaveState();
       this.renderTabs();
+      if (!avisouSemPasta) {
+        avisouSemPasta = true;
+        toast(`O rascunho não está sendo gravado: ${dica}.`, "err", 8000);
+      }
       return;
     }
     try {
@@ -328,7 +333,9 @@ export const documentsMethods = {
       tab.path = target;
       tab.isDraft = true;
       tab.dirty = this.tab === tab ? this.editor.getText() !== text : false;
-      tab.statusSaved = "Rascunho guardado no app";
+      // no navegador com pasta escolhida o arquivo está na pasta da pessoa, não "no app"
+      const naPastaEscolhida = target.startsWith(PREFIXO_RASCUNHO);
+      tab.statusSaved = naPastaEscolhida ? "Rascunho guardado na pasta escolhida" : "Rascunho guardado no app";
       if (this.tab === tab) {
         this.setPreviewPath(target);
         this.refreshPath();
@@ -336,7 +343,9 @@ export const documentsMethods = {
       this.afterSave(tab);
       this.saveSession();
       toast(
-        "Rascunho guardado na pasta do app (não é a versão final). Use Ctrl+Shift+S quando quiser salvar numa pasta sua.",
+        naPastaEscolhida
+          ? "Rascunho guardado na pasta que você escolheu (não é a versão final). Use Ctrl+Shift+S quando quiser salvar em outro lugar."
+          : "Rascunho guardado na pasta do app (não é a versão final). Use Ctrl+Shift+S quando quiser salvar numa pasta sua.",
         "info",
         6500
       );

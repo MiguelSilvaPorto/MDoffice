@@ -1,7 +1,16 @@
 // Página de Configurações (abre como uma aba, ao lado dos documentos). Cada ajuste vale na hora.
 import { toast, baseName } from "./util";
 import * as backup from "./backup";
-import { pickFolders, listDrafts, draftsFolder, deleteDraft } from "./files";
+import {
+  pickFolders,
+  listDrafts,
+  draftsFolder,
+  deleteDraft,
+  draftFolderInfo,
+  setDraftFolder,
+  clearDraftFolder,
+  type DraftFolder,
+} from "./files";
 import { mostrarNaPasta as revealItemInDir, perguntar as ask, emTauri } from "./ponte";
 import { podeInstalar, jaInstalado, instalarApp } from "./app/pwa";
 import { resumoVersoes, limparVersoesTudo } from "./history";
@@ -116,6 +125,8 @@ export interface SettingsCtx {
   /** Abre o diálogo de originais sumidos (arquivos que só existem no backup). */
   abrirRecuperacao: () => void;
   openHistory: (aba?: AbaHistorico) => void;
+  /** Depois de escolher a pasta dos rascunhos, grava o documento novo já (se o autosave estiver ligado). */
+  salvarRascunhoAgora: () => void;
   /** Conserta blocos de alinhamento quebrados no Markdown (ferramenta de manutenção). */
   repairAlignments: () => void;
   /** Ícone da janela escolhido (claro/escuro). */
@@ -429,6 +440,18 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
           <h4 class="st-group">Salvamento</h4>
           <div class="st-list">
             ${toggle("autosave", "Salvamento automático dos documentos novos", "Cada documento tem o seu salvamento automático: o botão no topo do app liga e desliga o documento que está à vista. Aqui se escolhe o que os documentos NOVOS vão herdar. Regrava rascunhos do app e documentos MD* enquanto você escreve; arquivos .docx, .pptx e .xlsx são gravados só no Ctrl+S (o selo da barra mostra “Não salvo”).", s.autosaveOn, "i-save")}
+            ${
+              nativo
+                ? ""
+                : `<div class="st-row">
+              ${rowIcon("i-folder-plus")}
+              <span class="st-text"><b>Pasta dos rascunhos</b><small data-drafts-root>verificando…</small></span>
+              <span class="st-btns">
+                <button class="btn small st-btn" data-act="drafts-dir">Escolher…</button>
+                <button class="btn small st-btn" data-act="drafts-clear" hidden>Remover</button>
+              </span>
+            </div>`
+            }
             ${toggle("hist", "Guardar versões dos documentos", "Uma cópia automática a cada 5 minutos (se o texto mudou) e ao salvar.", s.historyOn, "i-clock")}
             <div class="st-row">
               ${rowIcon("i-list")}
@@ -512,7 +535,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
               ${rowIcon("i-save")}
               <span class="st-text"><b>Rascunhos</b><small data-arm-drafts>calculando…</small></span>
               <span class="st-btns">
-                <button class="btn small st-btn" data-act="arm-open-drafts">Abrir pasta</button>
+                ${nativo ? `<button class="btn small st-btn" data-act="arm-open-drafts">Abrir pasta</button>` : ""}
                 <button class="btn small st-btn" data-act="arm-clear-drafts">Apagar</button>
               </span>
             </div>
@@ -992,6 +1015,50 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     ctx.patch({ historyOn: (e.target as HTMLInputElement).checked });
     flash();
   });
+  // No navegador o rascunho precisa de uma pasta de verdade. A escolha guarda o
+  // handle no IndexedDB (o mesmo das pastas de projeto), então sobrevive a reabrir.
+  if (!nativo) {
+    let pastaRascunhos: DraftFolder | null = null;
+    const paintDraftsRoot = () => {
+      const el = host.querySelector<HTMLElement>("[data-drafts-root]");
+      const limpar = host.querySelector<HTMLButtonElement>('[data-act="drafts-clear"]');
+      if (!el) return;
+      el.textContent = pastaRascunhos
+        ? `${pastaRascunhos.nome || "Pasta escolhida"} — o autosave grava os documentos novos ali, como arquivos de verdade`
+        : "Nenhuma pasta escolhida — o rascunho de um documento novo não é gravado. Escolha uma pasta para o autosave gravar de verdade.";
+      if (limpar) limpar.hidden = !pastaRascunhos;
+    };
+    void draftFolderInfo()
+      .then((info) => {
+        pastaRascunhos = info;
+        paintDraftsRoot();
+      })
+      .catch(() => paintDraftsRoot());
+    on('[data-act="drafts-dir"]', "click", async () => {
+      try {
+        const escolhida = await pickFolders();
+        if (!escolhida.length) return;
+        pastaRascunhos = await setDraftFolder(escolhida[0]);
+        paintDraftsRoot();
+        flash();
+        ctx.salvarRascunhoAgora();
+        toast("Pasta dos rascunhos definida: os documentos novos passam a ser gravados nela.", "ok", 4200);
+      } catch (e) {
+        toast("Não foi possível usar essa pasta: " + e, "err", 5000);
+      }
+    });
+    on('[data-act="drafts-clear"]', "click", async () => {
+      try {
+        await clearDraftFolder();
+        pastaRascunhos = null;
+        paintDraftsRoot();
+        flash();
+        toast("Pasta dos rascunhos removida. Os documentos novos voltam a usar a pasta concedida ao app.", "info", 4200);
+      } catch (e) {
+        toast("Não foi possível remover a pasta: " + e, "err", 5000);
+      }
+    });
+  }
   ligarDd("hist-max", [20, 40, 60, 100, 200].map((n) => [String(n), `${n} versões`] as [string, string]), (valor) => {
     ctx.patch({ historyMax: Number(valor) || 60 });
     flash();
@@ -1237,7 +1304,9 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     ctx.patch({ backupDays: Number(valor) || 0 });
     flash();
   });
-  on('[data-act="backup-dir"]', "click", async () => {
+  // os três botões de pasta do backup só existem no app nativo; no navegador o `on`
+  // estourava com o seletor ausente e derrubava o resto da página de Configurações
+  host.querySelector('[data-act="backup-dir"]')?.addEventListener("click", async () => {
     try {
       const escolhida = await pickFolders();
       if (!escolhida.length) return;
@@ -1251,7 +1320,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       toast("Não foi possível usar essa pasta: " + e, "err", 5000);
     }
   });
-  on('[data-act="backup-open"]', "click", async () => {
+  host.querySelector('[data-act="backup-open"]')?.addEventListener("click", async () => {
     if (!backupRoot) {
       toast("Nenhuma pasta escolhida — use “Trocar…” para definir uma.", "info", 3400);
       return;
@@ -1262,7 +1331,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       toast("Não foi possível abrir a pasta.", "err", 4000);
     }
   });
-  on('[data-act="backup-open-app"]', "click", async () => {
+  host.querySelector('[data-act="backup-open-app"]')?.addEventListener("click", async () => {
     try {
       const pasta = visao?.raizApp || (await backup.pastaDoApp());
       await revealItemInDir(pasta);
@@ -1376,7 +1445,8 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       toast("Não foi possível limpar: " + e, "err", 5000);
     }
   });
-  on('[data-act="arm-open-drafts"]', "click", async () => {
+  // no navegador o botão não existe (não há caminho para abrir no Explorador)
+  host.querySelector('[data-act="arm-open-drafts"]')?.addEventListener("click", async () => {
     try {
       await revealItemInDir(await draftsFolder());
     } catch {

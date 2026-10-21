@@ -204,6 +204,25 @@ export async function deleteDraft(path: string): Promise<void> {
   await invoke("delete_draft", { path });
 }
 
+export interface DraftFolder {
+  nome: string;
+}
+
+/** A pasta escolhida para os rascunhos no navegador (null = nunca escolheu). */
+export async function draftFolderInfo(): Promise<DraftFolder | null> {
+  return await invoke<DraftFolder | null>("draft_folder_get");
+}
+
+/** Define a pasta dos rascunhos a partir de uma pasta já concedida (`pickFolders`). */
+export async function setDraftFolder(path: string): Promise<DraftFolder | null> {
+  return await invoke<DraftFolder | null>("draft_folder_set", { path });
+}
+
+/** Volta a usar a pasta concedida ao app (ou o `.mdoffice/rascunhos`). */
+export async function clearDraftFolder(): Promise<void> {
+  await invoke("draft_folder_clear");
+}
+
 export interface TrashEntry {
   /** nome do arquivo dentro da lixeira (ganha -1, -2… se já houver um igual) */
   name: string;

@@ -15,6 +15,10 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   salvamento não descarta alteração nenhuma (o que foi digitado durante a gravação entra na
   gravação seguinte). Barra de status com palavras/caracteres/linhas,
   painel de recentes e índice (estrutura) navegável, tema claro/escuro.
+- **No navegador**, o documento novo é gravado de verdade na **pasta dos rascunhos** escolhida
+  em Configurações ▸ Histórico e salvamento (o handle fica guardado no navegador); sem escolha,
+  em `.mdoffice/rascunhos/` da pasta concedida. Sem nenhuma pasta, o selo mostra **"Não salvo"**
+  e o app avisa em vez de fingir que gravou.
 - **Busca no conteúdo**: a caixa **Buscar** do painel lateral procura dentro dos documentos
   dos seus projetos (ignora acento e maiúscula) e nas abas abertas, mesmo sem salvar; clique
   no resultado para abrir já na linha.

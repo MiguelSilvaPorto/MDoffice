@@ -2218,6 +2218,22 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Pasta dos rascunhos nas Configurações (navegador)**: no PWA o documento novo não tinha onde
+  ser gravado — o autosave só escrevia um `temp/rascunho.md` no servidor de desenvolvimento (que
+  nem existe no app instalado), e fechar o app perdia o rascunho. Agora **Configurações ▸ Histórico
+  e salvamento ▸ Pasta dos rascunhos** deixa escolher uma pasta de verdade; o handle fica no
+  IndexedDB e cada documento novo vira um `.md` (ou `.docx/.pptx/.xlsx`) **direto na pasta
+  escolhida**, sobrevivendo a fechar e reabrir. A sessão guarda o **caminho junto do texto**:
+  o mesmo rascunho volta a ser editado (sem duplicar) e o que ainda não foi gravado não se
+  perde. Sem pasta escolhida, o app mostra **"Não salvo"** e avisa onde configurar em vez de
+  fingir que gravou. Trava: `npm run test:rascunhos` (pasta escolhida, reload, troca de pasta
+  e remoção).
+
+- **A página de Configurações voltou a abrir inteira no navegador**: os botões de pasta do backup
+  só existem no app nativo, mas os cliques eram ligados sempre; no navegador o
+  `addEventListener` de um botão ausente derrubava o resto da página (a seção de armazenamento
+  ficava em "calculando…"). Agora cada botão só é ligado se existir no HTML.
+
 - **No navegador, os atalhos de abas não brigam mais com as teclas do navegador**: `Ctrl+T`,
   `Ctrl+W`, `Ctrl+Shift+T`, `Ctrl+Tab` e `Ctrl+1…9` pertencem ao **próprio navegador** — ele abre,
   fecha e troca as abas dele antes de o app ver a tecla, e `preventDefault` não segura. Só que o app

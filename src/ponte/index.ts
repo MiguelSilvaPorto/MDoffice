@@ -134,13 +134,20 @@ async function comandoDoDisco<T>(cmd: string, args: Record<string, unknown>): Pr
     case "backup_clear_history":
       await backupDisco.apagarHistorico(texto(args.path), texto(args.root));
       return undefined as T;
-    // ---------- rascunhos (em `.mdoffice/rascunhos`, dentro da pasta escolhida) ----------
+    // ---------- rascunhos (na pasta escolhida ou em `.mdoffice/rascunhos`) ----------
     case "draft_path":
       return (await rascunhos.criar(texto(args.base), texto(args.ext) || "md")) as T;
     case "list_drafts":
       return (await rascunhos.listar()) as T;
     case "drafts_folder_path":
-      return rascunhos.pasta() as T;
+      return (await rascunhos.pasta()) as T;
+    case "draft_folder_get":
+      return (await rascunhos.pastaEscolhida()) as T;
+    case "draft_folder_set":
+      return (await rascunhos.definirPasta(texto(args.path))) as T;
+    case "draft_folder_clear":
+      await rascunhos.esquecerPasta();
+      return undefined as T;
     case "delete_draft":
       await rascunhos.apagar(texto(args.path));
       return undefined as T;

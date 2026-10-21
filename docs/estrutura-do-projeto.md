@@ -99,7 +99,7 @@ Minha pasta/
 │  └─ captura-de-tela.png
 └─ .mdoffice/          ← o que o app guarda (no navegador; no app nativo fica na pasta de dados)
    ├─ backups/         ← as cópias datadas de cada documento
-   ├─ rascunhos/       ← documentos novos que ainda não foram salvos numa pasta
+   ├─ rascunhos/       ← documentos novos quando não há pasta de rascunhos escolhida
    └─ lixeira/         ← o que saiu da pasta, por 30 dias (index.json)
 ```
 
@@ -114,3 +114,9 @@ referenciados e um modelo de instrução.
 Documento criado e ainda não salvo fica na pasta de dados do app (rascunhos), com as
 imagens em `assets/`; ao usar **Salvar como**, o documento e as imagens vão juntos para a
 sua pasta.
+
+No **navegador**, a pasta dos rascunhos pode ser escolhida em Configurações ▸ Histórico e
+salvamento. Nesse caso os documentos novos são gravados direto nela (fora do `.mdoffice/`), e
+o handle da pasta fica no IndexedDB — a escolha sobrevive a recarregar. Sem escolha, vale o
+`.mdoffice/rascunhos/` da pasta concedida; sem nenhuma das duas, o autosave avisa que não tem
+onde gravar.
