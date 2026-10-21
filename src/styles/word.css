@@ -1102,6 +1102,10 @@ body.settings-open #word-pane {
   z-index: 120;
   min-width: 190px;
   max-width: 320px;
+  /* a mensagem pode ser gigante (a palavra apontada pelo corretor, sem espaço): o popup
+     não passa da altura da janela e rola por dentro */
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
   padding: 6px;
   background: var(--panel);
   border: 1px solid var(--border);
@@ -1114,6 +1118,9 @@ body.settings-open #word-pane {
   color: var(--muted);
   font-size: 11.5px;
   line-height: 1.4;
+  /* a palavra apontada pelo corretor pode não ter espaço nenhum: sem isto ela
+     atravessa a borda do popup em vez de quebrar dentro dele */
+  overflow-wrap: anywhere;
 }
 
 .wd-pop-item {
@@ -1127,6 +1134,8 @@ body.settings-open #word-pane {
   border-radius: 7px;
   font: inherit;
   cursor: pointer;
+  /* a sugestão também pode ser uma palavra sem espaço */
+  overflow-wrap: anywhere;
 }
 
 .wd-pop-item:hover {

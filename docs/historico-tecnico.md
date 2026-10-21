@@ -16575,3 +16575,38 @@ antigas quando fizer sentido.
 - **Linha:** novo arquivo — trava a casa de cada página na grade (a ímpar à esquerda, a par à direita, a faixa seguinte embaixo), o desenho do papel (a lombada, as duas páginas de largura) e a medição sem o deslocamento
 - **Porquê:** a aritmética da grade é regra pura (dá para travar no Node) — e é ela que decide se
   a página 2 fica ao lado da 1 ou cai no pé dela.
+
+## src/styles/word.css
+
+### 2026-10-21 · fix/popup-texto-longo · o popup de sugestão não deixa o texto vazar
+- **Local:** as regras `.wd-pop`, `.wd-pop-msg` e `.wd-pop-item`
+- **Linha:** `.wd-pop` ganhou `max-height: min(70vh, 520px)` e `overflow-y: auto`; `.wd-pop-msg` e `.wd-pop-item` ganharam `overflow-wrap: anywhere`
+- **Porquê:** o `max-width` do popup existia, mas ele limita a **caixa**: uma palavra sem espaço
+  nenhum (o corretor apontando um `aaaaaaa…` colado) não tem onde quebrar e **atravessa a borda**,
+  desenhando por cima do documento — o texto "vaza" para fora do popup. O `overflow-wrap: anywhere`
+  quebra a palavra gigante dentro do popup; e a **altura limitada com rolagem** impede que uma
+  mensagem enorme empurre o popup para fora da janela (o popup do PowerPoint já fazia isso:
+  `max-height: 78vh; overflow: auto` — aqui era o Word e o Markdown que estavam fora).
+
+## src/styles/slides.css
+
+### 2026-10-21 · fix/popup-texto-longo · o mesmo defeito no popup do Markdown
+- **Local:** as regras `.cm-issue-popup` e `.cm-issue-title`
+- **Linha:** `.cm-issue-popup` ganhou `max-height: min(70vh, 560px)` e `overflow-y: auto`; `.cm-issue-title` ganhou `overflow-wrap: anywhere`
+- **Porquê:** é o **mesmo popup** (o do corretor) no editor Markdown: a mesma palavra gigante
+  vazava da mesma forma. A correção foi junto para os dois lados não divergirem.
+
+## scripts/testar-popup-texto-longo.mjs
+
+### 2026-10-21 · fix/popup-texto-longo · a trava do popup de texto longo (novo arquivo)
+- **Local:** arquivo novo
+- **Linha:** novo arquivo — trava que o popup do Word e do Markdown tem largura e altura limitadas, rola por dentro e quebra a palavra gigante
+- **Porquê:** o defeito é de CSS (não de lógica) e é o tipo de coisa que volta: alguém ajusta o
+  `max-width` e a quebra some junto. A trava lê o CSS e confere as quatro regras.
+
+## package.json
+
+### 2026-10-21 · fix/popup-texto-longo · o comando de teste do popup
+- **Local:** `scripts`
+- **Linha:** novo `"test:popup-longo": "node scripts/testar-popup-texto-longo.mjs"`
+- **Porquê:** a trava entra na série de travas do repositório.

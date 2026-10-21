@@ -1950,6 +1950,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O texto do popup de sugestão não atravessa mais a borda**: quando a palavra apontada pelo
+  corretor é **muito grande** (e sem espaço nenhum, como um `aaaaaaa…` colado), o texto do popup
+  simplesmente **vazava para fora da caixa** e cobria o documento. Agora a mensagem e as
+  sugestões **quebram dentro do popup** (`overflow-wrap: anywhere`), e o popup ganhou **altura
+  limitada com rolagem por dentro** — assim ele nunca passa da janela, por mais gigante que
+  seja a palavra. Vale no **Word** e no **Markdown** (o popup do PowerPoint já tinha isso).
+
 - **O salvamento automático passou a ser de cada documento**: antes era um botão único no topo do
   app que ligava e desligava a gravação automática para **todos** os documentos de uma vez — não
   dava para deixar a planilha gravando sozinha e o documento quieto. Agora **cada aba tem a sua**:

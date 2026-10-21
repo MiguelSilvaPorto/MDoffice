@@ -536,6 +536,10 @@
   gap: 8px;
   min-width: 250px;
   max-width: 440px;
+  /* a mensagem pode ser gigante (a palavra apontada pelo corretor, sem espaço): o popup
+     não passa da altura da janela e rola por dentro */
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
   padding: 10px 12px;
   background: var(--panel);
   border: 1px solid var(--border);
@@ -546,6 +550,9 @@
 .cm-issue-title {
   font-size: 12.5px;
   line-height: 1.45;
+  /* a palavra apontada pelo corretor pode não ter espaço nenhum: sem isto ela
+     atravessa a borda do popup em vez de quebrar dentro dele */
+  overflow-wrap: anywhere;
 }
 
 .cm-issue-row {
