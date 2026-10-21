@@ -39,11 +39,11 @@ html.anim-completa {
 
 /* discreta: sem elevação, sem cascata e sem entradas — só cor e opacidade */
 
-html.anim-discreta :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .win-btn, .dd-item, .busca-item, .seg-btn, .st-card):hover {
+html.anim-discreta :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .dd-item, .busca-item, .seg-btn, .st-card):hover {
   transform: none !important;
 }
 
-html.anim-discreta :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .win-btn, .dd-item, .busca-item, .seg-btn):active {
+html.anim-discreta :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .dd-item, .busca-item, .seg-btn):active {
   transform: none !important;
 }
 
@@ -78,11 +78,11 @@ html.anim-discreta :where(
 
 /* completa: mais relevo e cascata mais espaçada */
 
-html.anim-completa :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .win-btn, .dd-item, .busca-item, .seg-btn):hover {
+html.anim-completa :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .dd-item, .busca-item, .seg-btn):hover {
   transform: translateY(-3px) !important;
 }
 
-html.anim-completa :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .win-btn, .dd-item, .busca-item, .seg-btn):active {
+html.anim-completa :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .dd-item, .busca-item, .seg-btn):active {
   transform: translateY(0) scale(0.96) !important;
 }
 
@@ -479,7 +479,7 @@ body.preview-saindo #splitter {
 
 /* ---------- resposta ao toque (botões, itens, abas, cartões) ---------- */
 
-:where(.btn, .tbtn, .sb-tab, .sb-mini, .tab, .tab-new, .tab-recents, .path-btn, .win-btn,
+:where(.btn, .tbtn, .sb-tab, .sb-mini, .tab, .tab-new, .tab-recents, .path-btn,
     .dd-item, .busca-item, .seg-btn, .pj-doc, .pj-folder, .pj-sub, .ch-hit, .hm-item, .recent,
     .outline-item, .home-resume-btn, .st-card, .swatch, .color-input) {
   transition:
@@ -497,7 +497,6 @@ body.preview-saindo #splitter {
 .tab-new:hover,
 .tab-recents:hover,
 .path-btn:hover,
-.win-btn:hover,
 .dd-item:hover,
 .busca-item:hover,
 .seg-btn:hover {

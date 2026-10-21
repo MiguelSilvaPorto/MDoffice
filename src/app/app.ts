@@ -45,7 +45,6 @@ import { drawingMethods } from "./drawing";
 import { aiContextMethods } from "./aiContext";
 import { menusMethods } from "./menus";
 import { toolbarMethods } from "./toolbar";
-import { windowControlsMethods } from "./windowControls";
 import { commandsMethods } from "./commands";
 import { keysMethods } from "./keys";
 import { layoutMethods } from "./layout";
@@ -327,7 +326,6 @@ export class App {
     this.applyCantos(this.initialCantos());
     void aplicarIconeApp(); // ícone da janela escolhido em Configurações > Aparência
     this.setupToolbar();
-    this.setupWindowControls();
     this.setupSplitter();
     this.setupKeys();
     // a busca de funções (Ctrl+K): o app diz onde estão os comandos — a lista é
@@ -622,11 +620,10 @@ type DrawingMethodsType = typeof drawingMethods;
 type AiContextMethodsType = typeof aiContextMethods;
 type MenusMethodsType = typeof menusMethods;
 type ToolbarMethodsType = typeof toolbarMethods;
-type WindowControlsMethodsType = typeof windowControlsMethods;
 type CommandsMethodsType = typeof commandsMethods;
 type KeysMethodsType = typeof keysMethods;
 type LayoutMethodsType = typeof layoutMethods;
 type DeepReviewMethodsType = typeof deepReviewMethods;
 type TrashMethodsType = typeof trashMethods;
-export interface App extends TabsMethodsType, PagesMethodsType, HomeContextMethodsType, DocumentsMethodsType, WordDocsMethodsType, PowerPointDocsMethodsType, ExcelDocsMethodsType, AssistantMethodsType, FormalizarMethodsType, PastaPadraoMethodsType, ProjectsMethodsType, DictionaryMethodsType, MdToolsMethodsType, HistorySearchMethodsType, MediaMethodsType, DrawingMethodsType, AiContextMethodsType, MenusMethodsType, ToolbarMethodsType, WindowControlsMethodsType, CommandsMethodsType, KeysMethodsType, LayoutMethodsType, DeepReviewMethodsType, TrashMethodsType {}
-Object.assign(App.prototype, tabsMethods, pagesMethods, homeContextMethods, documentsMethods, wordDocsMethods, powerpointDocsMethods, excelDocsMethods, assistantMethods, formalizarMethods, pastaPadraoMethods, projectsMethods, dictionaryMethods, mdToolsMethods, historySearchMethods, mediaMethods, drawingMethods, aiContextMethods, menusMethods, toolbarMethods, windowControlsMethods, commandsMethods, keysMethods, layoutMethods, deepReviewMethods, trashMethods);
+export interface App extends TabsMethodsType, PagesMethodsType, HomeContextMethodsType, DocumentsMethodsType, WordDocsMethodsType, PowerPointDocsMethodsType, ExcelDocsMethodsType, AssistantMethodsType, FormalizarMethodsType, PastaPadraoMethodsType, ProjectsMethodsType, DictionaryMethodsType, MdToolsMethodsType, HistorySearchMethodsType, MediaMethodsType, DrawingMethodsType, AiContextMethodsType, MenusMethodsType, ToolbarMethodsType, CommandsMethodsType, KeysMethodsType, LayoutMethodsType, DeepReviewMethodsType, TrashMethodsType {}
+Object.assign(App.prototype, tabsMethods, pagesMethods, homeContextMethods, documentsMethods, wordDocsMethods, powerpointDocsMethods, excelDocsMethods, assistantMethods, formalizarMethods, pastaPadraoMethods, projectsMethods, dictionaryMethods, mdToolsMethods, historySearchMethods, mediaMethods, drawingMethods, aiContextMethods, menusMethods, toolbarMethods, commandsMethods, keysMethods, layoutMethods, deepReviewMethods, trashMethods);

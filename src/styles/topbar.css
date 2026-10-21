@@ -25,7 +25,6 @@
 #topbar .btn,
 #topbar .split-btn,
 #topbar .busca,
-#topbar .window-controls,
 #topbar .tb-quick-actions,
 #topbar .tb-autosave-wrap {
   -webkit-app-region: no-drag;
@@ -387,65 +386,3 @@ body.ppt-open #tb-present {
   outline-offset: 2px;
 }
 
-.win-divider {
-  width: 1px;
-  height: 18px;
-  background: var(--border);
-  margin: 0 4px 0 6px;
-  flex: none;
-}
-
-/* ---------- controles da janela (estilo nativo Windows 11 / VS Code) ---------- */
-
-.window-controls {
-  display: flex;
-  align-items: stretch;
-  height: 100%;
-  flex: none;
-  -webkit-app-region: no-drag;
-}
-
-.win-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  outline: none;
-  user-select: none;
-  transition: background 0.1s ease, color 0.1s ease;
-  -webkit-app-region: no-drag;
-}
-
-.win-btn:hover {
-  background: color-mix(in srgb, var(--fg) 8%, transparent);
-  color: var(--fg);
-}
-
-.win-btn:active {
-  background: color-mix(in srgb, var(--fg) 14%, transparent);
-}
-
-.win-btn.close:hover {
-  background: #c42b1c !important;
-  color: #ffffff !important;
-}
-
-.win-btn.close:active {
-  background: #a92417 !important;
-  color: #ffffff !important;
-}
-
-.win-ic {
-  width: 12px;
-  height: 12px;
-  stroke: currentColor;
-  fill: none;
-  flex: none;
-  pointer-events: none;
-}

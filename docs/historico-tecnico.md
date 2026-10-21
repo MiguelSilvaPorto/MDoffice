@@ -283,6 +283,37 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** com a imagem selecionada, ela precisa ficar por cima do texto para as alças de
   arrastar e de redimensionar poderem ser clicadas; fora da seleção volta para trás do texto.
 
+## index.html
+
+### 2026-10-21 · fix/sem-controles-janela · os botões de minimizar/maximizar/fechar saíram
+- **Local:** o `.tb-right` da barra do topo e os símbolos `#i-win-*`
+- **Linha:** o bloco `.win-divider` + `.window-controls` (com `#win-min`, `#win-max`,
+  `#win-close`) e os quatro símbolos foram removidos
+- **Porquê:** o app agora roda só no navegador (PWA, com janela e controles do próprio sistema):
+  os botões do app ficavam duplicados e não tinham mais janela para comandar (eram do Tauri).
+
+## src/app/windowControls.ts
+
+### 2026-10-21 · fix/sem-controles-janela · o módulo dos controles foi apagado
+- **Local:** o arquivo inteiro
+- **Linha:** removido (com o import, a chamada `setupWindowControls()` e o tipo no `app.ts`)
+- **Porquê:** todo o módulo usava `@tauri-apps/api/window` (minimize, toggleMaximize, close,
+  startDragging) — sem Tauri ele só existia para desenhar botões que duplicavam os do sistema.
+
+## src/styles/topbar.css
+
+### 2026-10-21 · fix/sem-controles-janela · o estilo dos controles saiu junto
+- **Local:** o `no-drag` do topo e as regras `.win-divider`, `.window-controls`, `.win-btn`,
+  `.win-btn:hover/:active/.close` e `.win-ic`
+- **Porquê:** sem os botões, as regras ficariam como código morto (e o `margin` do divisor ainda
+  empurraria o menu ⋯ para a esquerda).
+
+## src/styles/movimento.css
+
+### 2026-10-21 · fix/sem-controles-janela · `.win-btn` saiu das listas de animação
+- **Local:** as listas `:where(...)` de `hover`/`active`
+- **Porquê:** a classe não existe mais; deixá-la nas listas confunde quem for mexer depois.
+
 ## src/word/schema.ts
 
 ### 2026-10-21 · feat/imagem-posicao-lados · a imagem ganhou os lados da quebra e a fixação na página

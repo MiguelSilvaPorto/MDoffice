@@ -1997,9 +1997,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 ## Geral
 
 ### Não adicionado (fora da main)
-
-**Backend**
-
 - **Pastas e documentos mexidos pelo próprio app**: três comandos novos em `files.rs` — `move_file`
   (move um documento para outra pasta **sem sobrescrever**: ganha `-1`, `-2`… se o nome já existir),
   `rename_folder` (renomeia a pasta mantendo a pasta-mãe, também sem sobrescrever) e `delete_folder`
@@ -2112,6 +2109,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   entre pastas, renomear pasta e recusar excluir pasta com conteúdo.
 
 ### Adicionado (na main)
+
+- **Os controles de janela do app saíram**: desde que o mdOffice passou a rodar **só no navegador**
+  (janela própria do PWA), os botões **minimizar / maximizar / fechar** desenhados pela interface
+  ficaram **duplicados** com os do sistema — e os do app chamavam a janela do antigo Tauri, que não
+  existe mais. Os botões, os ícones e o código deles (`windowControls.ts`) foram removidos; a
+  barra do topo continua igual, só termina no menu **⋯**.
+
+
+**Backend**
 
 **Backend**
 
