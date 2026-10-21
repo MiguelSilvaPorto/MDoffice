@@ -2161,6 +2161,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 ### Adicionado (na main)
 
+- **A pasta dos rascunhos aparece em Projetos**: ao escolher a pasta dos rascunhos em
+  **Configurações ▸ Histórico e salvamento**, ela passa a aparecer no painel **Projetos** da barra
+  lateral (com o nome e a árvore dos arquivos), e sai de lá quando a escolha é removida. Antes, o
+  `definirPasta` **apagava o registro** da pasta quando nenhum documento a usava e ninguém a
+  colocava na lista de projetos — a pasta escolhida não aparecia em lugar nenhum.
+
 - **Histórico e salvamento em grades**: a seção era uma pilha de linhas de largura total — só o
   resumo do documento ocupava quatro linhas e a página passava de uma tela mesmo sem nenhum dado.
   Agora o resumo vira **três cartões** (com o "Apagar versões e alterações" numa faixa larga), as

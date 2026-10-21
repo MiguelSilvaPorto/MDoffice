@@ -337,7 +337,7 @@ export class Sidebar {
    * Põe uma pasta na lista de projetos, por código (a pasta padrão do app entra assim).
    * Idempotente: se já estiver na lista, não duplica.
    */
-  async addProjectPath(this: Sidebar, path: string): Promise<void> {
+  async addProjectPath(this: Sidebar, path: string, mostrar = true): Promise<void> {
     if (!path) return;
     if (!this.projects.some((x) => x.toLowerCase() === path.toLowerCase())) {
       this.projects.push(path);
@@ -345,7 +345,24 @@ export class Sidebar {
       this.persist();
       await this.refresh();
     }
-    this.show("projects");
+    if (mostrar) this.show("projects");
+  }
+
+  /**
+   * Tira uma pasta da lista de projetos (sem apagar nada no disco).
+   *
+   * Usado pela pasta dos rascunhos: quando a pessoa remove a escolha em Configurações, ela
+   * deixa de aparecer em Projetos.
+   */
+  async removeProjectPath(this: Sidebar, path: string): Promise<void> {
+    const antes = this.projects.length;
+    this.projects = this.projects.filter((x) => x.toLowerCase() !== path.toLowerCase());
+    this.open.delete(path);
+    if (this.selected && this.selected.toLowerCase() === path.toLowerCase()) this.selected = null;
+    if (this.projects.length !== antes) {
+      this.persist();
+      await this.refresh();
+    }
   }
 
   private async addFolder(): Promise<void> {

@@ -10,10 +10,25 @@ import * as backup from "../backup";
 import { openPresentation } from "../powerpoint/presenter";
 import { renderSettingsPage, type SettingsSection, type HistoricoVisao, type CopiaDiscoResumo } from "../settingsPage";
 import { renderHomePage } from "../homePage";
+import { ID_RASCUNHOS } from "../disco/registro";
+import { draftFolderInfo } from "../files";
 import { appIconAtual, definirIconeApp } from "./appIcon";
 import { $, h, toast, loadJSON, saveJSON, baseName } from "../util";
 
 export const pagesMethods = {
+  /**
+   * A pasta dos rascunhos escolhida em Configurações também é um projeto: entra no painel
+   * Projetos no boot (sem trocar o painel aberto).
+   */
+  async sincronizarPastaDeRascunhosNoBoot(this: App): Promise<void> {
+    try {
+      const info = await draftFolderInfo();
+      if (info) await this.sidebar.addProjectPath(ID_RASCUNHOS, false);
+    } catch {
+      /* sem pasta escolhida (ou navegador sem File System Access) */
+    }
+  },
+
   /** Abre a aba de Configurações (uma só): mostra a página no lugar do editor. */
   showSettings(this: App, section: SettingsSection = "escrita"): void {
     if (this.showingHome) this.hideHome();
@@ -80,6 +95,12 @@ export const pagesMethods = {
       setCopilot: (on) => this.setCopilot(on),
       dictionaryCount: () => this.ignoreWords.size,
       openDictionary: () => this.showDictionary(),
+      // A pasta dos rascunhos escolhida em Configurações entra no painel Projetos (e sai quando
+      // a escolha é removida). Sem trocar o painel de lugar: quem escolheu continua onde está.
+      sincronizarPastaDeRascunhos: (ativa) => {
+        if (ativa) void this.sidebar.addProjectPath(ID_RASCUNHOS, false);
+        else void this.sidebar.removeProjectPath(ID_RASCUNHOS);
+      },
       // F4 — auto-cura de conhecimento: termos candidatos/aprendidos e o arquivo de aprendizado
       promoverTermo: (palavra) => this.promoverTermo(palavra),
       esquecerTermo: (palavra) => this.esquecerTermoAprendido(palavra),

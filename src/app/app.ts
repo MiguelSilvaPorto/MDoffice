@@ -407,6 +407,7 @@ export class App {
     this.setSaveState();
     this.updateStats();
     void this.sidebar.init();
+    void this.sincronizarPastaDeRascunhosNoBoot();
     void this.preview.render("");
     this.editor.focus();
     // janela própria (?doc=…): abre SÓ aquele documento; senão, reabre a sessão das abas

@@ -673,6 +673,41 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   escolhido, medido: `--bg` = #0e1014 mas `background-color` = #f4f5f8). Sem a transição nelas, a
   troca entra na hora; as outras superfícies (menus, cartões, abas) continuam animando.
 
+## src/disco/rascunhos.ts
+
+### 2026-10-21 · fix/pasta-rascunhos-projetos · o registro da pasta dos rascunhos fica
+- **Local:** `definirPasta`
+- **Linha:** saiu o `if (!documentos.some((d) => d.pastaId === id)) await apagarPasta(id)`
+- **Porquê:** o registro (id `__rascunhos__`) é o que permite ler a árvore da pasta; apagando-o, a
+  pasta escolhida não aparecia em Projetos (nem em Início). A pasta dos rascunhos continua fora de
+  `pastaPadrao()` (ela não é a pasta dos documentos), mas o registro agora permanece.
+
+## src/sidebar.ts
+
+### 2026-10-21 · fix/pasta-rascunhos-projetos · entrar e sair de Projetos sem trocar o painel
+- **Local:** `addProjectPath` e o novo `removeProjectPath`
+- **Linha:** `addProjectPath(path, mostrar = true)`; `removeProjectPath(path)` (persiste, atualiza e
+  limpa a seleção)
+- **Porquê:** a pasta dos rascunhos entra em Projetos no boot e ao ser escolhida **sem** arrancar a
+  pessoa do painel onde ela está; e sai quando a escolha é removida.
+
+## src/app/pages.ts
+
+### 2026-10-21 · fix/pasta-rascunhos-projetos · a ponte com a página de Configurações
+- **Local:** `pagesMethods.sincronizarPastaDeRascunhosNoBoot` e o `settingsContext`
+- **Linha:** no boot, `draftFolderInfo()` → `addProjectPath(ID_RASCUNHOS, false)`; e o hook
+  `sincronizarPastaDeRascunhos(ativa)` para a página de Configurações
+- **Porquê:** é o elo entre a escolha (guardada no IndexedDB) e a lista de projetos da barra.
+
+## src/app/app.ts
+
+## src/settingsPage.ts
+
+### 2026-10-21 · fix/pasta-rascunhos-projetos · a escolha atualiza Projetos na hora
+- **Local:** o handler de `[data-act="drafts-dir"]` e o de `[data-act="drafts-clear"]`, e o tipo `SettingsCtx`
+- **Linha:** `ctx.sincronizarPastaDeRascunhos(true)` ao escolher e `(false)` ao remover
+- **Porquê:** a pasta aparece (ou sai de) Projetos no mesmo instante, sem precisar reabrir o app.
+
 ## src/word/schema.ts
 
 ### 2026-10-21 · feat/imagem-posicao-lados · a imagem ganhou os lados da quebra e a fixação na página

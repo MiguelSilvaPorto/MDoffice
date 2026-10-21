@@ -185,11 +185,10 @@ export async function definirPasta(id: string): Promise<{ nome: string }> {
   const pasta = await buscarPasta(id);
   if (!pasta) throw new Error("A pasta escolhida não está mais disponível.");
   const salva = await guardarPastaDeRascunhos(pasta.handle);
-  // O seletor registra a pasta como se fosse de projeto. Se nenhum documento usa esse
-  // registro, ele sai: a pasta dos rascunhos não é a pasta dos documentos. Se já era um
-  // projeto (tem documentos), o registro fica — apagá-lo quebraria os arquivos abertos.
-  const documentos = await listarDocumentos();
-  if (!documentos.some((d) => d.pastaId === id)) await apagarPasta(id);
+  // O registro da pasta FICA: é por ele que o painel Projetos consegue ler a árvore da pasta
+  // dos rascunhos e mostrá-la como um projeto (ela entra com o id `__rascunhos__` quando a
+  // pessoa escolhe; ver `sincronizarPastaDeRascunhos`). Antes ele era apagado quando nenhum
+  // documento usava, e a pasta escolhida não aparecia em lugar nenhum.
   return { nome: salva.nome };
 }
 

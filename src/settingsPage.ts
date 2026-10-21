@@ -126,6 +126,8 @@ export interface SettingsCtx {
   openHistory: (aba?: AbaHistorico) => void;
   /** Depois de escolher a pasta dos rascunhos, grava o documento novo já (se o autosave estiver ligado). */
   salvarRascunhoAgora: () => void;
+  /** Mostra (ou tira) a pasta dos rascunhos no painel Projetos. */
+  sincronizarPastaDeRascunhos: (ativa: boolean) => void;
   /** Conserta blocos de alinhamento quebrados no Markdown (ferramenta de manutenção). */
   repairAlignments: () => void;
   /** Ícone da janela escolhido (claro/escuro). */
@@ -999,6 +1001,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       pastaRascunhos = await setDraftFolder(escolhida[0]);
       paintDraftsRoot();
       flash();
+      ctx.sincronizarPastaDeRascunhos(true);
       ctx.salvarRascunhoAgora();
       toast("Pasta dos rascunhos definida: os documentos novos passam a ser gravados nela.", "ok", 4200);
     } catch (e) {
@@ -1011,6 +1014,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       pastaRascunhos = null;
       paintDraftsRoot();
       flash();
+      ctx.sincronizarPastaDeRascunhos(false);
       toast("Pasta dos rascunhos removida. Os documentos novos voltam a usar a pasta concedida ao app.", "info", 4200);
     } catch (e) {
       toast("Não foi possível remover a pasta: " + e, "err", 5000);
