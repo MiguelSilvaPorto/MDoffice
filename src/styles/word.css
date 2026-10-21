@@ -943,6 +943,10 @@ body.settings-open #word-pane {
 .wd-img.sel {
   outline: 2px solid #4f46e5;
   outline-offset: 2px;
+  /* "Atrás do texto"/"Através": a imagem selecionada SOBE para as alças de arrastar e de
+     redimensionar ficarem alcançáveis (fora da seleção ela volta para trás do texto).
+     O `!important` vence o `z-index` que a decoração escreve no elemento. */
+  z-index: 5 !important;
 }
 
 .wd-img img {

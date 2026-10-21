@@ -1,8 +1,3 @@
-# Changelog — mdOffice
-
-Tudo que é feito no app entra aqui, **na categoria que mexeu**, dividido entre **Backend**
-(`src-tauri/`, Rust) e **Frontend** (`src/`, TypeScript). O "porquê" técnico de cada mudança
-de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 ## Regras
 
@@ -439,6 +434,18 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 
 ### Adicionado (na main)
+
+- **A imagem atrás do texto voltou a poder ser manipulada**: com a quebra **Atrás do texto** (e a
+  **Através**) a imagem é desenhada com `z-index` negativo, então o clique caía no texto que está
+  por cima e ela **nunca era selecionada** — sem seleção não apareciam as alças, e não havia como
+  arrastar nem redimensionar. Agora, como no Word, o clique **dentro da imagem** seleciona o
+  objeto, e a imagem selecionada **sobe** (só enquanto está selecionada) para as alças ficarem
+  alcançáveis; ao clicar no texto ela volta para trás.
+# Changelog — mdOffice
+
+Tudo que é feito no app entra aqui, **na categoria que mexeu**, dividido entre **Backend**
+(`src-tauri/`, Rust) e **Frontend** (`src/`, TypeScript). O "porquê" técnico de cada mudança
+de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Backend**
 

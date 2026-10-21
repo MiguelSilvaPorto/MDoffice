@@ -187,6 +187,35 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   cobra que o item marcado seja o `Contorno` (e que `query().imagem` esteja nulo)
 - **Porquê:** é exatamente o estado em que o menu marcava o primeiro item.
 
+## src/word/imagemFlutuante.ts
+
+### 2026-10-21 · fix/imagem-atras-selecao · achar a imagem que está atrás do texto
+- **Local:** `posDaImagemAtrasNoPonto`
+- **Linha:** devolve a posição da imagem cujo retângulo contém o ponto, quando a quebra é `atras`
+  ou `atravessar` (as que levam `z-index:-1`)
+- **Porquê:** essas quebras desenham a imagem atrás do texto; o clique cai no texto e a imagem
+  nunca é selecionada — sem seleção, sem alças e sem arrasto. A função é o que permite dar ao
+  objeto a prioridade do clique, como o Word faz.
+
+## src/word/editor.ts
+
+### 2026-10-21 · fix/imagem-atras-selecao · o clique na imagem atrás do texto a seleciona
+- **Local:** o fim do construtor (a escuta de `pointerdown`)
+- **Linha:** `window.addEventListener("pointerdown", …, true)` — se o ponteiro está sobre uma
+  imagem "atrás"/"através" e fora do DOM dela (`closest(".wd-img")`), seleciona a imagem
+  (`NodeSelection`) e cancela o evento
+- **Porquê:** o ProseMirror põe o cursor no texto antes (e os ganchos `handleDOMEvents`/`handleClick`
+  não eram chamados nesse caminho); a escuta na JANELA em captura roda primeiro e vence. Cliques
+  nas alças/corpo da própria imagem continuam com o NodeView (arrasto e redimensionamento).
+
+## src/styles/word.css
+
+### 2026-10-21 · fix/imagem-atras-selecao · a imagem selecionada sobe
+- **Local:** `.wd-img.sel`
+- **Linha:** `z-index: 5 !important` (o `!important` vence o `z-index` que a decoração escreve)
+- **Porquê:** com a imagem selecionada, ela precisa ficar por cima do texto para as alças de
+  arrastar e de redimensionar poderem ser clicadas; fora da seleção volta para trás do texto.
+
 ## src/word/schema.ts
 
 ### 2026-10-21 · feat/imagem-posicao-lados · a imagem ganhou os lados da quebra e a fixação na página

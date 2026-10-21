@@ -291,6 +291,33 @@ export function estiloDoFlutuante(
 // O plugin: pinta o flutuante nos parágrafos
 // ---------------------------------------------------------------------------
 
+/**
+ * A posição da imagem que está **atrás do texto** no ponto clicado (ou `null`).
+ *
+ * As quebras "Atrás do texto" e "Através" desenham a imagem com `z-index` negativo: o clique
+ * cai no TEXTO, que está por cima, e a imagem nunca é selecionada — sem seleção não há alças,
+ * e ela deixa de poder ser movida ou redimensionada. O Word resolve dando prioridade ao
+ * objeto: aqui o clique dentro do retângulo da imagem a seleciona (o CSS a levanta enquanto
+ * está selecionada, para as alças ficarem alcançáveis).
+ */
+export function posDaImagemAtrasNoPonto(view: EditorView, x: number, y: number): number | null {
+  let achado: number | null = null;
+  view.state.doc.descendants((no, pos) => {
+    if (achado != null) return false;
+    if (no.type.name !== "image") return true;
+    const d = dadosDaImagem(no.attrs as Record<string, unknown>);
+    if (!ehFlutuante(d)) return true;
+    const atras = d.wrap === "atras" || d.wrap === "atravessar";
+    if (!atras) return true;
+    const el = view.nodeDOM(pos);
+    if (!(el instanceof HTMLElement)) return true;
+    const r = el.getBoundingClientRect();
+    if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) achado = pos;
+    return true;
+  });
+  return achado;
+}
+
 export const flutuanteKey = new PluginKey<FlutuanteState>("flutuante");
 
 export interface FlutuanteHooks {

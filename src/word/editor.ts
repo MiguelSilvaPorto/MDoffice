@@ -34,6 +34,7 @@ import {
   deixarImagemSozinha,
   flutuanteKey,
   pluginFlutuante,
+  posDaImagemAtrasNoPonto,
   type DadosFlutuante,
   type LadoHorizontal,
   type LadosDaQuebra,
@@ -116,11 +117,35 @@ export class WordEditor {
       // `handleFiles` inseria uma SEGUNDA cópia (o relato "arrasto a imagem e ela duplica").
       // Arquivo de fora (do Explorer, de outra janela) continua entrando por aqui.
       handleDrop: (_v, event, _slice, moved) => (moved ? false : this.handleFiles((event as DragEvent).dataTransfer?.files)),
+
       nodeViews: {
         // a imagem tem alças de redimensionar e de arrastar (src/word/imagem.ts)
         image: (node, view, getPos) => new ImagemView(node, view, getPos),
       },
     });
+
+    // A imagem "atrás do texto" (e a "através") é desenhada com `z-index` negativo: o clique
+    // cai no TEXTO, que está por cima, e ela nunca é selecionada — sem seleção não há alças, e
+    // ela deixa de poder ser movida ou redimensionada. Como no Word, o clique DENTRO dela
+    // seleciona o objeto (o CSS a levanta enquanto selecionada, para as alças ficarem
+    // alcançáveis). É um ouvinte do próprio DOM (e não um dos ganchos do ProseMirror) porque
+    // ele precisa rodar DEPOIS de o ProseMirror pôr o cursor no texto e ainda assim vencer.
+    // na JANELA e na fase de CAPTURA, como as escutas do arrasto: o ponteiro pode ser consumido
+    // pelo ProseMirror e por tratadores do app antes de chegar ao elemento
+    window.addEventListener(
+      "pointerdown",
+      (event) => {
+        if (event.button !== 0) return;
+        const alvo = event.target as HTMLElement | null;
+        if (alvo?.closest(".wd-img")) return;
+        const pos = posDaImagemAtrasNoPonto(this.view, event.clientX, event.clientY);
+        if (pos == null) return;
+        event.preventDefault();
+        this.view.dispatch(this.view.state.tr.setSelection(NodeSelection.create(this.view.state.doc, pos)));
+        this.view.focus();
+      },
+      true,
+    );
   }
 
   private handleFiles(files: FileList | null | undefined): boolean {
