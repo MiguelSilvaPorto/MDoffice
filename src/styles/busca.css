@@ -97,6 +97,13 @@
   -webkit-app-region: no-drag;
 }
 
+/* O `display: flex` acima vence o `[hidden]` do navegador. Sem esta regra, a
+   busca fecha (a pílula encolhe e o campo perde o foco) mas a lista continua
+   na tela — o que parece que o clique fora não fechou nada. */
+.busca-painel[hidden] {
+  display: none;
+}
+
 .bp-topo {
   display: flex;
   align-items: center;

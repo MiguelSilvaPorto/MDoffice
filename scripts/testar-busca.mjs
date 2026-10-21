@@ -110,6 +110,13 @@ async function main() {
     );
   const grupos = () => avaliar("Array.from(document.querySelectorAll('#busca-painel .bp-grupo')).map(e => e.textContent)");
   const contexto = () => avaliar("document.querySelector('#busca-painel .bp-contexto')?.textContent");
+  // o painel está DE FATO na tela? A classe `.aberta` sozinha não basta: o
+  // `display: flex` do painel pode vencer o `hidden` e deixar a lista parada ali.
+  const painelVisivel = () =>
+    avaliar(`(() => {
+      const p = document.getElementById('busca-painel');
+      return getComputedStyle(p).display !== 'none' && !!p.offsetParent;
+    })()`);
   const clicarEm = async (rotulo) => {
     await avaliar(`
       (() => {
@@ -137,6 +144,11 @@ async function main() {
   await espera(1500);
   await esperarApp();
   await espera(2500);
+  // a sessão limpa faz o app abrir o convite de backup na primeira execução;
+  // ele é um modal do app (nada tem a ver com a busca) e, se ficar aberto,
+  // atrapalha as medidas da tela: fecha antes de começar o roteiro
+  await avaliar("document.querySelector('.modal [data-nao]')?.click()");
+  await espera(500);
 
   // ------------------------------------------------------------------ 1
   const alturaBarra = await avaliar("document.getElementById('busca').getBoundingClientRect().height");
@@ -145,6 +157,7 @@ async function main() {
 
   ok("a busca abre", await abrir());
   ok("o painel aparece", await avaliar("!document.getElementById('busca-painel').hasAttribute('hidden')"));
+  ok("o painel aparece de verdade na tela", await painelVisivel());
   ok("a lista tem os comandos do app", (await rotulos()).length > 30, String((await rotulos()).length));
   console.log("      grupos:", JSON.stringify(await grupos()));
   await foto("1-busca");
@@ -171,6 +184,7 @@ async function main() {
   await espera(3000);
   ok("a planilha abriu", await avaliar("document.body.classList.contains('xlsx-open')"));
   ok("a busca fecha depois de executar", await avaliar("!document.getElementById('busca').classList.contains('aberta')"));
+  ok("o painel some depois de executar", !(await painelVisivel()));
 
   // ------------------------------------------------------------------ 5
   ok("a busca abre de novo", await abrir());
@@ -242,6 +256,7 @@ async function main() {
   await call("Input.dispatchMouseEvent", { type: "mouseReleased", x: 200, y: 700, button: "left", clickCount: 1 });
   await espera(400);
   ok("clicar fora fecha a busca", await avaliar("!document.getElementById('busca').classList.contains('aberta')"));
+  ok("o painel some ao clicar fora", !(await painelVisivel()));
 
   // ------------------------------------------------------------------ 10
   // o Ctrl+K abre a busca
@@ -262,6 +277,7 @@ async function main() {
   await espera(1200);
   const depoisTabela = await avaliar("document.querySelector('.cm-content')?.innerText || ''");
   ok("o botão da fita roda pela busca", depoisTabela !== antesTabela && depoisTabela.includes("| Coluna A |"), JSON.stringify(depoisTabela.slice(0, 40)));
+  ok("o painel some depois de executar o botão da fita", !(await painelVisivel()));
   await foto("4-execucao");
 
   ws.close();

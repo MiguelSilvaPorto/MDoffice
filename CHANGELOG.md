@@ -2175,6 +2175,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A busca de funções volta a fechar de verdade**: ao clicar fora (ou executar um comando), a
+  pílula encolhia e o campo perdia o foco, mas a **lista de resultados continuava na tela** — o
+  `display: flex` do painel vencia o `hidden` que o fechamento ligava, então parecia que o clique
+  fora não fechava nada. Agora o painel fechado é `display: none`, e o `npm run test:busca`
+  confere a **visibilidade** do painel (e não só a classe) ao clicar fora e ao executar.
+
 - **O app passou a abrir arquivos no NAVEGADOR** (o primeiro passo para o mdOffice virar 100% TypeScript):
   até agora o motor de arquivos era só do backend Rust (Tauri) — no navegador o app rodava num
   "degradê" (o texto no `localStorage`, sem abrir nem salvar arquivo). Agora existe a camada

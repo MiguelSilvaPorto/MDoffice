@@ -28,6 +28,29 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/styles/busca.css
+
+### 2026-10-21 · fix/busca-painel-nao-fecha · o painel fechado some de verdade
+- **Local:** bloco `.busca-painel`, logo depois do `display: flex`
+- **Linha:** novo `.busca-painel[hidden] { display: none; }`
+- **Porquê:** o `hidden` que o `fecharBusca` liga perde para o `display: flex` do autor, então a
+  pílula voltava ao tamanho normal e o campo perdia o foco, mas a lista continuava na tela com o
+  último resultado — o relato de "cliquei fora e a busca não fechou". O JavaScript de fechamento
+  já estava certo; faltava a folha de estilo respeitar o atributo.
+
+## scripts/testar-busca.mjs
+
+### 2026-10-21 · fix/busca-painel-nao-fecha · o teste olha o painel, não só a classe
+- **Local:** novo `painelVisivel`, a dispensa do convite de backup e as conferências ao abrir, ao
+  executar e ao clicar fora
+- **Linha:** `getComputedStyle(p).display !== 'none' && !!p.offsetParent` — a classe `.aberta`
+  sozinha não prova que a lista sumiu; `document.querySelector('.modal [data-nao]')?.click()`
+  fecha o convite de backup da primeira execução antes do roteiro
+- **Porquê:** o teste passava com o bug porque só olhava `#busca.aberta`; a lista ficava parada
+  na tela mesmo com a classe removida. Agora o fechamento é medido pelo que a pessoa vê. E a
+  sessão limpa abre o convite de backup, que é um modal do app e fazia o check de "não é modal"
+  acusar o backdrop errado.
+
 ## src/word/pagination.ts
 
 ### 2026-10-21 · fix/imagem-fixa-tremor · o acerto da imagem fixa na mesma tarefa da edição
