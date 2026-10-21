@@ -2161,6 +2161,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 ### Adicionado (na main)
 
+- **O "Importar arquivo" agora aceita `.md`**: o seletor do Importar (o botão da tela de Início e o
+  comando do menu) só oferecia `.docx`, `.xlsx/.xlsm` e `.pptx` — um `.md` do computador nem
+  aparecia na lista. Agora entram **`.md`, `.markdown`, `.txt` e `.mdx`** (o mesmo filtro do "Abrir
+  arquivo do PC"), e o arquivo abre no editor normal de Markdown. Os textos que listavam os formatos
+  (tooltip do botão, dica do chip, comando e menu da barra) também foram atualizados.
+
 - **A tela de Início ficou sem os quatro modelos rápidos**: os chips **Trabalho ABNT**, **Relatório
   Executivo**, **Planilha Orçamentária** e **Pedido para IA** saíram — eles poluíam a abertura e
   não eram o que a pessoa procura ali. Ficaram só as duas ações de abrir arquivo (**Importar do

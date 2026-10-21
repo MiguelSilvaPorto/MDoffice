@@ -171,7 +171,7 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
   const importBtn = h("button", {
     class: "btn home-import-btn",
     type: "button",
-    title: "Importar documento (.docx), planilha (.xlsx/.xlsm) ou apresentação (.pptx)",
+    title: "Importar documento (.docx, .md), planilha (.xlsx/.xlsm) ou apresentação (.pptx)",
   });
   importBtn.innerHTML = '<svg class="ic"><use href="#i-import"/></svg><span>Importar arquivo</span>';
   importBtn.addEventListener("click", () => ctx.importOffice());
@@ -341,7 +341,7 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
     chips.append(btn);
   };
 
-  addChip("i-import", false, "Importar do Office", "Abrir arquivos .docx, .xlsx/.xlsm e .pptx do seu computador", () => ctx.importOffice());
+  addChip("i-import", false, "Importar do Office", "Abrir arquivos .docx, .xlsx/.xlsm, .pptx e .md do seu computador", () => ctx.importOffice());
   addChip("i-open", false, "Abrir arquivo do PC", "Abrir qualquer arquivo existente do disco (Ctrl+O)", () => ctx.openExisting());
 
   secTemplates.append(chips);

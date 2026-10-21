@@ -151,7 +151,7 @@ export const toolbarMethods = {
     // Menu "Mais opções": só AÇÕES. Tudo que é ajuste (tema, painéis, correção,
     // sugestões, salvamento, tradução…) vive nas Configurações.
     this.ddItem(menu, { icon: "i-saveas", label: "Salvar como…", hint: teclaVisivel("salvar-como"), onPick: () => void this.save(true) });
-    this.ddItem(menu, { icon: "i-import", label: "Importar do Office…", hint: ".docx .xlsx .xlsm .pptx", onPick: () => void this.importOfficeDialog() });
+    this.ddItem(menu, { icon: "i-import", label: "Importar do Office…", hint: ".docx .xlsx .xlsm .pptx .md", onPick: () => void this.importOfficeDialog() });
     this.ddSep(menu);
     this.ddItem(menu, { icon: "i-copy", label: "Copiar para a IA", hint: teclaVisivel("copiar-ia"), onPick: () => void this.copyForAI() });
     this.ddItem(menu, { icon: "i-export", label: "Exportar…", hint: teclaVisivel("exportar"), onPick: () => this.openExport() });

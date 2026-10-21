@@ -726,6 +726,22 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** o bloco inteiro (ABNT, relatório, orçamento e IA) foi removido
 - **Porquê:** era o único consumidor dos chips apagados; sem eles, virava código morto.
 
+## src/files.ts
+
+### 2026-10-21 · feat/importar-md · o Importar arquivo aceita Markdown
+- **Local:** `pickImportOffice`
+- **Linha:** `filters` ganhou `MD_FILTER` (cripta `md`, `markdown`, `txt`, `mdx`)
+- **Porquê:** o seletor só aceitava os formatos do Office; um `.md` não aparecia para escolher. Como o
+  `openPath` já trata o que não é Office abrindo como Markdown (`files.loadDoc`), bastava o filtro.
+
+## src/homePage.ts · src/app/commands.ts · src/app/toolbar.ts
+
+### 2026-10-21 · feat/importar-md · os textos do Importar citam o .md
+- **Local:** o `title` do botão "Importar arquivo", a dica do chip, o comando "Importar…" e o item do
+  menu da barra
+- **Linha:** as listas de formatos ganharam `.md` (e as palavras de busca, "markdown")
+- **Porquê:** se a caixa aceita `.md`, o texto tem de dizer — senão ninguém tenta.
+
 ## src/word/schema.ts
 
 ### 2026-10-21 · feat/imagem-posicao-lados · a imagem ganhou os lados da quebra e a fixação na página

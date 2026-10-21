@@ -54,9 +54,9 @@ export const commandsMethods = {
       atalho: teclaVisivel("abrir"),
       palavras: "abrir open arquivo",
     });
-    add("Documento", "Importar do Office (.docx, .xlsx, .pptx)…", () => void this.importOfficeDialog(), {
+    add("Documento", "Importar arquivo (.docx, .xlsx, .pptx, .md)…", () => void this.importOfficeDialog(), {
       icone: "i-import",
-      palavras: "docx xlsx xlsm pptx importar",
+      palavras: "docx xlsx xlsm pptx md markdown importar abrir",
     });
     add("Documento", "Salvar", () => void this.save(false), {
       icone: "i-save",

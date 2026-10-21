@@ -44,10 +44,12 @@ export async function pickOpenDoc(): Promise<string | null> {
 }
 
 /**
- * Caixa "Importar do Office": abre direto nos documentos do Word, Excel e PowerPoint.
+ * Caixa "Importar arquivo": documentos do Word, Excel e PowerPoint **e Markdown**.
  *
  * Os formatos antigos (.doc, .xls, .ppt) aparecem na lista para você não se perder —
- * escolher um deles mostra a explicação de como salvar no formato novo.
+ * escolher um deles mostra a explicação de como salvar no formato novo. O `.md` entrou
+ * depois: o "Importar" é a porta de entrada de arquivo do computador, e um `.md` abre
+ * direto no editor normal (ver `openPath`).
  */
 export async function pickImportOffice(): Promise<string | null> {
   const p = await dlgOpen({
@@ -58,6 +60,7 @@ export async function pickImportOffice(): Promise<string | null> {
       DOCX_FILTER,
       { name: "Planilha (.xlsx, inclui .xlsm)", extensions: ["xlsx", "xlsm", "xls"] },
       PPTX_FILTER,
+      MD_FILTER,
     ],
   });
   return typeof p === "string" ? p : null;
