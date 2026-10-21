@@ -62,7 +62,10 @@ mexe na sessão das outras janelas. O documento é persistido antes de a aba sai
 rascunhos são gravados, **documento novo ganha o rascunho dele na hora** e arquivos seus perguntam
 se há alterações. Com o **Início** aberto por cima, **clicar na aba que já está ativa** traz o
 documento de volta — antes só a aba nova escondia o Início, e era preciso escolher outro arquivo e
-voltar para o original.
+voltar para o original. **No navegador**, `Ctrl+T`, `Ctrl+W` e `Ctrl+Tab` são do próprio navegador
+(ele abre, fecha e troca as **abas dele** antes de o app ver a tecla): por isso os atalhos de abas
+do mdOffice usam **Ctrl+Alt** nesse modo — `Ctrl+Alt+N` cria uma nova aba — e o app nativo (Tauri)
+continua com as teclas de sempre.
 
 A **tela de Início** mostra os arquivos recentes numa **grade de cartões**, cada um com uma
 **versão do documento** pré-carregada — o tipo dá a forma e o arquivo dá o conteúdo: **Documentos

@@ -204,6 +204,12 @@ export const toolbarMethods = {
   },
 
   setupToolbar(this: App): void {
+    // O "Novo" do topo era o único `title` com atalho escrito à mão — e dizia
+    // Ctrl+N, que nem é o atalho do app (no navegador, Ctrl+N abre uma janela do
+    // navegador e o app não vê a tecla). Agora ele mostra a tecla que vale aqui:
+    // Ctrl+T no Tauri, Ctrl+Alt+N no navegador.
+    const novo = document.querySelector<HTMLElement>('[data-act="new"]');
+    if (novo) novo.title = `Novo documento (${teclaVisivel("nova-aba")})`;
     $$("[data-act]").forEach((btn) => {
       const name = btn.dataset.act!;
       btn.addEventListener("click", () => {

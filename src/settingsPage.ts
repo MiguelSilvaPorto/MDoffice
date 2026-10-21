@@ -644,6 +644,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
             <div class="st-sec-txt">
               <h3>Atalhos</h3>
               <p class="st-lead">Clique na tecla de um atalho e pressione a que você quer no lugar.</p>
+              ${emTauri() ? "" : `<p class="st-note">No navegador, Ctrl+T, Ctrl+W e Ctrl+Tab pertencem ao próprio navegador — ele abre, fecha e troca as abas dele antes de o app receber a tecla. Por isso os atalhos de abas aqui usam Ctrl+Alt (por exemplo, ${teclaVisivel("nova-aba")} cria uma nova aba).</p>`}
             </div>
           </header>
           ${GRUPOS_DE_ATALHOS.map((grupo) => {
@@ -658,7 +659,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
                 <span>${a.rotulo}</span>
                 <span class="st-key-teclas">
                   <button class="st-key-btn" data-tecla="${a.id}" title="Clique para trocar a tecla"><kbd>${teclaVisivel(a.id)}</kbd></button>
-                  <button class="st-key-voltar" data-voltar="${a.id}" title="Voltar ao padrão (${a.padrao})" aria-label="Voltar ao padrão" ${foiTrocada(a.id) ? "" : "hidden"}><svg class="ic"><use href="#i-undo"/></svg></button>
+                  <button class="st-key-voltar" data-voltar="${a.id}" title="Voltar ao padrão (${teclaPadrao(a.id)})" aria-label="Voltar ao padrão" ${foiTrocada(a.id) ? "" : "hidden"}><svg class="ic"><use href="#i-undo"/></svg></button>
                 </span>
               </div>`
                 )

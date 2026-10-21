@@ -28,6 +28,73 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/app/keymap.ts
+
+### 2026-10-21 · fix/atalhos-conflito-navegador · o padrão do atalho depende do ambiente
+- **Local:** a interface `Atalho`, a lista `ATALHOS` (grupo **Abas**), o novo `padraoDe` e
+  `teclaDe`/`teclaPadrao`/`foiTrocada`; `nomeDaTecla`
+- **Linha:** `padrao: "Ctrl+T"` → `padrao: "Ctrl+T", padraoNavegador: "Ctrl+Alt+N"` (e o mesmo para
+  `fechar-aba` → `Ctrl+Alt+W`, `fechar-tudo` → `Ctrl+Alt+Shift+W`, `reabrir-aba` →
+  `Ctrl+Alt+Shift+T`, `proxima-aba` → `Ctrl+Alt+PageDown`, `aba-anterior` → `Ctrl+Alt+PageUp`,
+  `aba-n` → `Ctrl+Alt+1`); `trocadas[id] ?? porId(id)?.padrao` → `trocadas[id] ?? padraoDe(id)` e
+  `porId(id)?.padrao` → `padraoDe(id)`; em `nomeDaTecla`, `if (e.key === "Tab")` → `if (e.key ===
+  "Tab") return "Tab"; if (e.key === "PageUp" || e.key === "PageDown") return e.key;`
+- **Porquê:** no navegador, `Ctrl+T`/`Ctrl+W`/`Ctrl+Shift+T`/`Ctrl+Tab`/`Ctrl+1…9` são atalhos do
+  **navegador**: ele consome a tecla antes do app e o `preventDefault` do `keys.ts` não a recupera.
+  O app anunciava (tooltip do "+", paleta e Configurações) uma tecla que nunca chegava nele — o
+  relato é do "+" dizendo "Novo (Ctrl+T)" e o `Ctrl+T` abrindo uma aba do navegador. O
+  `padraoNavegador` mantém a tecla do Tauri intacta e dá ao modo navegador uma combinação que ele
+  não reserva; `padraoDe` é o único lugar que escolhe entre as duas, então quem exibe ou compara
+  (`teclaVisivel`, `foiTrocada`, "voltar ao padrão") não repete a regra. `PageUp`/`PageDown` passam
+  a valer como tecla de atalho (só com Ctrl/Alt, como o resto): são a troca de abas que o navegador
+  não reserva quando acompanhadas de Alt.
+
+## src/settingsPage.ts
+
+### 2026-10-21 · fix/atalhos-conflito-navegador · a tela mostra a tecla do ambiente
+- **Local:** a seção `data-sec="atalhos"` — o cabeçalho e o `title` do botão "Voltar ao padrão"
+- **Linha:** `title="Voltar ao padrão (${a.padrao})"` → `title="Voltar ao padrão (${teclaPadrao(a.id)})"`;
+  novo `<p class="st-note">` condicional (`emTauri()`) explicando que, no navegador, as abas usam
+  `Ctrl+Alt` porque `Ctrl+T`/`Ctrl+W`/`Ctrl+Tab` são do navegador
+- **Porquê:** o resto da tela já usa `teclaVisivel`/`teclaPadrao`; este `title` era o único ponto que
+  lia `a.padrao` cru e, no navegador, prometia `Ctrl+T` mesmo com o atalho valendo `Ctrl+Alt+N`. A
+  nota evita que a troca de teclas pareça um bug: ela diz por que as teclas de abas são diferentes
+  ali e mostra a tecla que está valendo.
+
+## index.html
+
+### 2026-10-21 · fix/atalhos-conflito-navegador · o "Novo" do topo perde o Ctrl+N escrito à mão
+- **Local:** o botão `[data-act="new"]` da barra do topo
+- **Linha:** `title="Novo documento (Ctrl+N)"` → `title="Novo documento"` (a tecla entra pelo
+  `setupToolbar`, com `teclaVisivel("nova-aba")`)
+- **Porquê:** `Ctrl+N` não era o atalho de nada no app (o atalho de nova aba é `Ctrl+T`) e, no
+  navegador, é o **nova janela** do navegador: a dica prometia uma ação que o app nunca recebia e
+  escondia a tecla de verdade. Tirar a tecla do HTML evita o pisca de uma dica errada antes de o
+  JavaScript ligar os controles.
+
+## src/app/toolbar.ts
+
+### 2026-10-21 · fix/atalhos-conflito-navegador · a dica do "Novo" acompanha a tecla do ambiente
+- **Local:** `setupToolbar`, antes do `$$("[data-act]")`
+- **Linha:** novo `const novo = document.querySelector('[data-act="new"]'); if (novo) novo.title =
+  "Novo documento (" + teclaVisivel("nova-aba") + ")"`
+- **Porquê:** os outros botões com atalho já usavam `teclaVisivel`; este era o único com a tecla
+  digitada no HTML. Com a tecla de nova aba mudando no navegador (`Ctrl+Alt+N`), a dica precisa vir
+  da mesma fonte que o tooltip do "+" e a paleta — senão o app mostra três versões da mesma tecla.
+
+## docs/funcionalidades.md
+
+### 2026-10-21 · fix/atalhos-conflito-navegador · o verbete das abas conta a diferença do navegador
+- **Local:** o parágrafo **Abas**
+- **Linha:** depois de "…voltar para o original." entrou "**No navegador**, `Ctrl+T`, `Ctrl+W` e
+  `Ctrl+Tab` são do próprio navegador … os atalhos de abas do mdOffice usam **Ctrl+Alt** nesse modo
+  — `Ctrl+Alt+N` cria uma nova aba — e o app nativo (Tauri) continua com as teclas de sempre."
+- **Porquê:** o documento descrevia a fileira de abas sem dizer que o modo navegador (o normal, pelo
+  `npm run app`) tem outras teclas; sem isso a documentação repetiria o que o tooltip dizia antes da
+  correção.
+
+---
+
 ## src/styles/busca.css
 
 ### 2026-10-21 · fix/busca-painel-nao-fecha · o painel fechado some de verdade

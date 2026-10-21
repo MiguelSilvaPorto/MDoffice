@@ -2163,6 +2163,19 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **No navegador, os atalhos de abas não brigam mais com as teclas do navegador**: `Ctrl+T`,
+  `Ctrl+W`, `Ctrl+Shift+T`, `Ctrl+Tab` e `Ctrl+1…9` pertencem ao **próprio navegador** — ele abre,
+  fecha e troca as abas dele antes de o app ver a tecla, e `preventDefault` não segura. Só que o app
+  anunciava essas teclas mesmo assim: o "+" das abas dizia **"Novo (Ctrl+T)"**, e apertar `Ctrl+T`
+  abria uma **aba do navegador** em vez de um documento. Agora, quando o app roda numa aba do
+  navegador, os atalhos de abas usam **Ctrl+Alt** (`Ctrl+Alt+N` cria a nova aba, `Ctrl+Alt+W` fecha,
+  `Ctrl+Alt+Shift+W` fecha todas, `Ctrl+Alt+Shift+T` reabre a última, `Ctrl+Alt+PageDown`/`PageUp`
+  trocam e `Ctrl+Alt+1…9` vão direto para a aba); no app nativo (Tauri) as teclas continuam as de
+  sempre. Os tooltips, a paleta de comandos e **Configurações ▸ Atalhos** mostram a tecla que vale
+  naquele ambiente, e a aba Atalhos explica a diferença. O **"Novo" do topo**, que dizia `Ctrl+N`
+  (uma tecla que o app nem escutava e que, no navegador, abre uma janela nova), passou a mostrar o
+  atalho de verdade. As teclas que a pessoa já personalizou continuam valendo nos dois modos.
+
 - **A busca de funções volta a fechar de verdade**: ao clicar fora (ou executar um comando), a
   pílula encolhia e o campo perdia o foco, mas a **lista de resultados continuava na tela** — o
   `display: flex` do painel vencia o `hidden` que o fechamento ligava, então parecia que o clique

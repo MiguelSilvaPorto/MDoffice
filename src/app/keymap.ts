@@ -6,6 +6,7 @@
 // que a pessoa trocar fica em `mdc.atalhos`.
 
 import type { App } from "./app";
+import { emTauri } from "../ponte";
 import { loadJSON, saveJSON } from "../util";
 
 export interface Atalho {
@@ -15,6 +16,13 @@ export interface Atalho {
   rotulo: string;
   /** tecla de fábrica, no formato "Ctrl+Shift+T" */
   padrao: string;
+  /**
+   * Tecla de fábrica quando o app roda numa aba do navegador (e não no Tauri).
+   * Lá Ctrl+T, Ctrl+W e Ctrl+Tab pertencem ao navegador — ele abre/fecha/troca as
+   * abas dele antes de o app ver a tecla, e `preventDefault` não segura. Anunciar
+   * a tecla do Tauri nesse modo seria prometer o que não funciona.
+   */
+  padraoNavegador?: string;
   /** o que o atalho faz */
   acao?: (app: App, e: KeyboardEvent) => void;
   /**
@@ -38,13 +46,33 @@ export const GRUPOS = ["Abas", "Arquivo", "Escrita", "Formatação", "Janela e a
 
 export const ATALHOS: Atalho[] = [
   // ---------------------------------------------------------------- abas
-  { id: "nova-aba", grupo: "Abas", rotulo: "Nova aba", padrao: "Ctrl+T", acao: (a) => void a.newDoc() },
-  { id: "fechar-aba", grupo: "Abas", rotulo: "Fechar aba", padrao: "Ctrl+W", acao: (a) => void a.closeTab(a.activeTabId()) },
+  //
+  // No navegador, Ctrl+T/Ctrl+W/Ctrl+Tab/Ctrl+1…9 são do PRÓPRIO navegador: ele
+  // abre, fecha e troca as abas dele antes de o app ver a tecla, e `preventDefault`
+  // não segura. Por isso as abas têm um padrão alternativo nesse modo (`padraoNavegador`,
+  // com Alt no meio) — o Tauri continua com as teclas de sempre.
+  {
+    id: "nova-aba",
+    grupo: "Abas",
+    rotulo: "Nova aba",
+    padrao: "Ctrl+T",
+    padraoNavegador: "Ctrl+Alt+N",
+    acao: (a) => void a.newDoc(),
+  },
+  {
+    id: "fechar-aba",
+    grupo: "Abas",
+    rotulo: "Fechar aba",
+    padrao: "Ctrl+W",
+    padraoNavegador: "Ctrl+Alt+W",
+    acao: (a) => void a.closeTab(a.activeTabId()),
+  },
   {
     id: "fechar-tudo",
     grupo: "Abas",
     rotulo: "Fechar todos os documentos",
     padrao: "Ctrl+Shift+W",
+    padraoNavegador: "Ctrl+Alt+Shift+W",
     acao: (a) => void a.closeAll(),
   },
   {
@@ -52,14 +80,23 @@ export const ATALHOS: Atalho[] = [
     grupo: "Abas",
     rotulo: "Reabrir a última aba fechada",
     padrao: "Ctrl+Shift+T",
+    padraoNavegador: "Ctrl+Alt+Shift+T",
     acao: (a) => void a.reopenClosedTab(),
   },
-  { id: "proxima-aba", grupo: "Abas", rotulo: "Próxima aba", padrao: "Ctrl+Tab", acao: (a) => void a.switchRelative(1) },
+  {
+    id: "proxima-aba",
+    grupo: "Abas",
+    rotulo: "Próxima aba",
+    padrao: "Ctrl+Tab",
+    padraoNavegador: "Ctrl+Alt+PageDown",
+    acao: (a) => void a.switchRelative(1),
+  },
   {
     id: "aba-anterior",
     grupo: "Abas",
     rotulo: "Aba anterior",
     padrao: "Ctrl+Shift+Tab",
+    padraoNavegador: "Ctrl+Alt+PageUp",
     acao: (a) => void a.switchRelative(-1),
   },
   {
@@ -67,6 +104,7 @@ export const ATALHOS: Atalho[] = [
     grupo: "Abas",
     rotulo: "Ir para a aba",
     padrao: "Ctrl+1",
+    padraoNavegador: "Ctrl+Alt+1",
     digitos: true,
     acao: (a, e) => {
       const n = Number(e.key);
@@ -170,18 +208,25 @@ function porId(id: string): Atalho | undefined {
   return ATALHOS.find((a) => a.id === id);
 }
 
+/** A tecla de fábrica DESTE ambiente (no navegador, a variante que ele não reserva). */
+function padraoDe(id: string): string {
+  const a = porId(id);
+  if (!a) return "";
+  return !emTauri() && a.padraoNavegador ? a.padraoNavegador : a.padrao;
+}
+
 /** A tecla em vigor (o que a pessoa escolheu ou, sem escolha, a de fábrica). */
 export function teclaDe(id: string): string {
-  return trocadas[id] ?? porId(id)?.padrao ?? "";
+  return trocadas[id] ?? padraoDe(id);
 }
 
 /** A tecla de fábrica, para comparar e para restaurar. */
 export function teclaPadrao(id: string): string {
-  return porId(id)?.padrao ?? "";
+  return padraoDe(id);
 }
 
 export function foiTrocada(id: string): boolean {
-  return trocadas[id] !== undefined && trocadas[id] !== porId(id)?.padrao;
+  return trocadas[id] !== undefined && trocadas[id] !== padraoDe(id);
 }
 
 export function quantasTrocadas(): number {
@@ -199,14 +244,17 @@ export function teclaVisivel(id: string): string {
 /**
  * O nome da tecla, ou `null` quando ela não serve para um atalho.
  *
- * Só entram letras, dígitos, F1–F12 e Tab. Teclas de edição (setas, Backspace) e
- * modificadores soltos ficam de fora: um atalho nelas atrapalharia a digitação.
+ * Entram letras, dígitos, F1–F12, Tab e PageUp/PageDown. Teclas de edição (setas,
+ * Backspace) e modificadores soltos ficam de fora: um atalho nelas atrapalharia a
+ * digitação. PageUp/PageDown só valem acompanhadas de modificador (o `comboDeEvento`
+ * exige Ctrl ou Alt), como na troca de abas do navegador.
  */
 function nomeDaTecla(e: KeyboardEvent): string | null {
   if (/^[a-zA-Z]$/.test(e.key)) return e.key.toUpperCase();
   if (/^[0-9]$/.test(e.key)) return e.key;
   if (/^F([1-9]|1[0-2])$/.test(e.key)) return e.key;
   if (e.key === "Tab") return "Tab";
+  if (e.key === "PageUp" || e.key === "PageDown") return e.key;
   return null;
 }
 
