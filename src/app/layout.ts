@@ -136,6 +136,14 @@ export const layoutMethods = {
       badge.title = this.saving ? "Salvando documento…" : "Salvando alterações pendentes…";
       text.textContent = "Salvando…";
       if (iconUse) iconUse.setAttribute("href", "#i-cloud");
+    } else if (modo === "rascunho") {
+      btn.title = `Salvamento Automático: ligado em ${nomeDoc} (clique para desligar)${resumo}`;
+      badge.title =
+        this.statusSaved && /rascunho/i.test(this.statusSaved)
+          ? `${this.statusSaved} — ainda não é um arquivo na sua pasta. Use Ctrl+Shift+S (Salvar como…) para gravar.`
+          : "Este documento ainda não tem arquivo na sua pasta: o salvamento automático guarda um rascunho no app. Use Ctrl+Shift+S (Salvar como…) para escolher onde salvar.";
+      text.textContent = "Rascunho";
+      if (iconUse) iconUse.setAttribute("href", "#i-doc");
     } else {
       btn.title = `Salvamento Automático: ligado em ${nomeDoc} (clique para desligar)${resumo}`;
       badge.title = this.statusSaved || "Todas as alterações foram salvas";

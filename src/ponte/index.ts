@@ -16,6 +16,7 @@ import { open as dlgOpenTauri, save as dlgSaveTauri, ask as askTauri } from "@ta
 import * as disco from "../disco/arquivo";
 import * as backupDisco from "../disco/backup";
 import * as lixeira from "../disco/lixeira";
+import * as rascunhos from "../disco/rascunhos";
 import { previaDoArquivo } from "../disco/zip";
 import { buscarMarkdown, listarMarkdown } from "../disco/arvore";
 
@@ -132,6 +133,16 @@ async function comandoDoDisco<T>(cmd: string, args: Record<string, unknown>): Pr
       return (await backupDisco.lerHistorico(texto(args.path), texto(args.root))) as T;
     case "backup_clear_history":
       await backupDisco.apagarHistorico(texto(args.path), texto(args.root));
+      return undefined as T;
+    // ---------- rascunhos (em `.mdoffice/rascunhos`, dentro da pasta escolhida) ----------
+    case "draft_path":
+      return (await rascunhos.criar(texto(args.base), texto(args.ext) || "md")) as T;
+    case "list_drafts":
+      return (await rascunhos.listar()) as T;
+    case "drafts_folder_path":
+      return rascunhos.pasta() as T;
+    case "delete_draft":
+      await rascunhos.apagar(texto(args.path));
       return undefined as T;
     // ---------- lixeira (em `.mdoffice/lixeira`, dentro da pasta escolhida) ----------
     case "trash_move":

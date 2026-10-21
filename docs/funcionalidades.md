@@ -35,7 +35,11 @@ O **salvamento automático é de cada documento**: o botão no topo do app liga 
 documento que está à vista (a aba com ele desligado ganha uma nuvemzinha apagada), a escolha
 sobrevive ao recarregar e as **Configurações** escolhem o que os documentos **novos** vão
 herdar. O autosave nunca reescreve um `.docx`, `.pptx` ou `.xlsx` seu — nesses o selo mostra
-"Não salvo" e o `Ctrl+S` grava.
+"Não salvo" e o `Ctrl+S` grava. O selo só diz **"Salvo"** quando o arquivo foi gravado de
+verdade; um documento ainda sem arquivo (ou um rascunho) mostra **"Rascunho"**, e quando não há
+pasta para gravar ele mostra **"Não salvo"**. No navegador o autosave grava o arquivo aberto
+pela pasta concedida e um documento novo vira um rascunho de verdade em `.mdoffice/rascunhos/`
+(visível em **Início ▸ Rascunhos** e no painel lateral).
 
 **O app também roda no navegador (e é o modo normal)**: com o `npm run app`, o mdOffice abre no
 Chrome/Edge e ganha o disco pelo **File System Access API** — a primeira vez pede uma pasta, e é

@@ -92,9 +92,10 @@ export const documentsMethods = {
     const tab = this.tab;
     if (!tab.dirty) return;
     const text = this.editor.getText();
-    // Navegador: sem arquivos, a sessão inteira (todas as abas Markdown) vai para o
-    // localStorage. É o único salvamento possível ali — e o reload reabre tudo.
-    if (!files.emTauri()) {
+    // Navegador SEM acesso a disco (Firefox/Safari): a sessão inteira vai para o
+    // localStorage — é o único salvamento possível ali, e o reload reabre tudo. No
+    // Chromium (`npm run app`) o disco existe: o autosave grava o arquivo de verdade.
+    if (!files.temDisco()) {
       this.saveBrowserTabs();
       tab.dirty = false;
       tab.saveFailed = false;
@@ -107,16 +108,25 @@ export const documentsMethods = {
     // no servidor de desenvolvimento, que grava em temp/rascunho.md do projeto.
     if (!tab.path) {
       try {
-        if (await this.ensureSaved()) return;
+        // silencioso: o autosave roda a cada 2 s — um aviso de erro a cada rodada seria ruído
+        if (await this.ensureSaved(true)) return;
       } catch {
         /* sem arquivos: segue para o salvamento pelo servidor */
       }
       const salvou = await files.saveDraftFallback("rascunho", text);
       if (salvou) {
         tab.dirty = false;
+        tab.saveFailed = false;
         tab.statusSaved = `Salvo automaticamente em temp/ às ${fmtTime()}`;
         this.afterSave(tab);
+        return;
       }
+      // Sem pasta (ou sem acesso a arquivos): NADA foi gravado. O selo não pode dizer
+      // "Salvo" — e o `saveFailed` faz a barra mostrar "Não salvo" em vez de "Salvando…".
+      tab.saveFailed = true;
+      tab.statusSaved = "Sem pasta para guardar o rascunho — use Ctrl+S (Salvar como…)";
+      if (tab === this.tab) this.setSaveState();
+      this.renderTabs();
       return;
     }
     try {
@@ -294,7 +304,7 @@ export const documentsMethods = {
    * salva automaticamente em Documentos/mdOffice (com aviso no rodapé/toast).
    * Funciona mesmo com backends antigos (não depende de comandos novos).
    */
-  async ensureSaved(this: App): Promise<boolean> {
+  async ensureSaved(this: App, silencioso = false): Promise<boolean> {
     const tab = this.tab;
     if (tab.path) return true;
     const text = this.editor.getText();
@@ -334,7 +344,7 @@ export const documentsMethods = {
     } catch (e) {
       this.tab.saveFailed = true;
       if (this.tab === tab) this.setSaveState();
-      toast("Não consegui guardar o rascunho: " + e, "err", 7000);
+      if (!silencioso) toast("Não consegui guardar o rascunho: " + e, "err", 7000);
       return false;
     }
   },

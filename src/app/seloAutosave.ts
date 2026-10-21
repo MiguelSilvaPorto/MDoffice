@@ -10,7 +10,7 @@
 // e nada explicava o Ctrl+S — lido como um loop que nunca salva. Aqui ficam as decisões
 // puras: o estado do selo e o aviso (uma vez por arquivo).
 
-export type ModoSelo = "desligado" | "salvando" | "nao-salvo" | "erro" | "salvo";
+export type ModoSelo = "desligado" | "salvando" | "nao-salvo" | "erro" | "rascunho" | "salvo";
 
 /** O arquivo da aba é um arquivo do Office DO USUÁRIO (salvo por ele), não um rascunho do app. */
 export function ehArquivoOfficeDoUsuario(kind: string | undefined, temPath: boolean, rascunho: boolean): boolean {
@@ -23,7 +23,9 @@ export function ehArquivoOfficeDoUsuario(kind: string | undefined, temPath: bool
  * - `salvando`  — há gravação a caminho (a fila) ou em andamento: o autosave VAI gravar;
  * - `nao-salvo` — arquivo do Office do usuário com alterações: o autosave **não** vai gravar;
  * - `erro`      — a última gravação falhou: o selo não pode dizer "Salvo";
- * - `salvo`     — nada pendente.
+ * - `rascunho`  — há conteúdo guardado, mas não é um arquivo na pasta da pessoa (documento
+ *                 novo ou rascunho em `.mdoffice/rascunhos`): "Salvo" seria mentira;
+ * - `salvo`     — é um arquivo e nada está pendente.
  */
 export function modoDoSelo(opts: {
   ligado: boolean;
@@ -40,6 +42,8 @@ export function modoDoSelo(opts: {
   if (ehArquivoOfficeDoUsuario(opts.kind, opts.temPath, opts.rascunho)) {
     return opts.sujo ? "nao-salvo" : "salvo";
   }
+  // documento novo (sem arquivo) ou rascunho: "Salvo" só quando existir um arquivo seu
+  if (!opts.temPath || opts.rascunho) return opts.salvando || opts.sujo ? "salvando" : "rascunho";
   return opts.salvando || opts.sujo ? "salvando" : "salvo";
 }
 

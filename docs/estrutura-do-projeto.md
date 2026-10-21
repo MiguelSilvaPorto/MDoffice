@@ -99,6 +99,7 @@ Minha pasta/
 │  └─ captura-de-tela.png
 └─ .mdoffice/          ← o que o app guarda (no navegador; no app nativo fica na pasta de dados)
    ├─ backups/         ← as cópias datadas de cada documento
+   ├─ rascunhos/       ← documentos novos que ainda não foram salvos numa pasta
    └─ lixeira/         ← o que saiu da pasta, por 30 dias (index.json)
 ```
 

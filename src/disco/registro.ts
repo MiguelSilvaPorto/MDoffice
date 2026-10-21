@@ -72,12 +72,35 @@ async function transacionar<T>(store: string, modo: IDBTransactionMode, acao: (s
 
 // ---------- documentos ----------
 
-/** Registra um documento (o handle vem de uma escolha da pessoa) e devolve o registro. */
+/**
+ * Cache em memória do registro.
+ *
+ * A árvore registra centenas de arquivos de uma vez (`listarMarkdown`): sem o cache, cada
+ * arquivo faria um `getAll` para saber se já estava registrado — O(n²) no IndexedDB. Toda
+ * escrita passa por este módulo, então o cache não fica velho por dentro do app.
+ */
+let cache: DocumentoRegistrado[] | null = null;
+
+/**
+ * Registra um documento (o handle vem de uma escolha da pessoa) e devolve o registro.
+ *
+ * O `id` é o **caminho relativo** dentro da pasta concedida (`notas.md`, `Sub/notas.md`):
+ * continua opaco para o app (é a identidade usada no histórico, na sessão e no backup), mas
+ * é legível — a aba, o título da janela e os menus usam `baseName(path)` e passam a mostrar
+ * o nome do arquivo em vez de um código aleatório.
+ *
+ * Se o MESMO arquivo for registrado de novo (a árvore é relida a cada mudança), o registro
+ * existente é reaproveitado: o id não muda, e a aba/histórico/backup continuam valendo.
+ */
 export async function registrarDocumento(
   handle: FileSystemFileHandle,
   pastaId: string,
   relativo: string,
 ): Promise<DocumentoRegistrado> {
+  const todos = await listarDocumentos();
+  const existente = todos.find(
+    (d) => d.pastaId === pastaId && d.relativo.toLowerCase() === relativo.toLowerCase()
+  );
   let modificado = Date.now();
   let bytes = 0;
   try {
@@ -87,8 +110,20 @@ export async function registrarDocumento(
   } catch {
     /* o arquivo sumiu: o registro fica com o que sabemos */
   }
+  if (existente) {
+    existente.handle = handle;
+    existente.nome = handle.name;
+    existente.modificado = modificado;
+    existente.bytes = bytes;
+    await atualizarDocumento(existente);
+    return existente;
+  }
+  const base = relativo || handle.name;
+  let id = base;
+  let n = 1;
+  while (todos.some((d) => d.id === id)) id = `${base} (${++n})`;
   const entrada: DocumentoRegistrado = {
-    id: uid(),
+    id,
     handle,
     nome: handle.name,
     relativo,
@@ -97,7 +132,18 @@ export async function registrarDocumento(
     bytes,
   };
   await transacionar(STORE_DOCS, "readwrite", (s) => s.put(entrada));
+  todos.push(entrada);
   return entrada;
+}
+
+/** O documento já registrado com este caminho dentro da pasta (null se ainda não). */
+export async function documentoPorCaminho(
+  pastaId: string,
+  relativo: string
+): Promise<DocumentoRegistrado | null> {
+  const todos = await listarDocumentos();
+  const alvo = relativo.toLowerCase();
+  return todos.find((d) => d.pastaId === pastaId && d.relativo.toLowerCase() === alvo) ?? null;
 }
 
 /** O documento de um id (null se não estiver mais registrado). */
@@ -113,10 +159,12 @@ export async function buscarDocumento(id: string): Promise<DocumentoRegistrado |
 
 /** Todos os documentos registrados. */
 export async function listarDocumentos(): Promise<DocumentoRegistrado[]> {
+  if (cache) return cache;
   try {
     const db = await abrir();
     const r = await envolver(db.transaction(STORE_DOCS, "readonly").objectStore(STORE_DOCS).getAll());
-    return (r as DocumentoRegistrado[]) ?? [];
+    cache = (r as DocumentoRegistrado[]) ?? [];
+    return cache;
   } catch {
     return [];
   }
@@ -125,11 +173,17 @@ export async function listarDocumentos(): Promise<DocumentoRegistrado[]> {
 /** Escreve de volta os dados do documento (o handle continua o mesmo). */
 export async function atualizarDocumento(entrada: DocumentoRegistrado): Promise<void> {
   await transacionar(STORE_DOCS, "readwrite", (s) => s.put(entrada));
+  if (cache) {
+    const i = cache.findIndex((d) => d.id === entrada.id);
+    if (i >= 0) cache[i] = entrada;
+    else cache.push(entrada);
+  }
 }
 
 /** Tira o documento do registro (o arquivo em si é apagado à parte). */
 export async function apagarDocumento(id: string): Promise<void> {
   await transacionar(STORE_DOCS, "readwrite", (s) => s.delete(id));
+  if (cache) cache = cache.filter((d) => d.id !== id);
 }
 
 // ---------- pastas ----------

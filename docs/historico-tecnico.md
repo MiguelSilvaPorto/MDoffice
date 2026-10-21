@@ -17255,3 +17255,69 @@ antigas quando fizer sentido.
   `"app:tauri": "tauri dev"`; a segunda chave `test:lamina` virou `test:lamina-tema`
 - **Porquê:** o modo normal do app deixou de ser a janela do Tauri. O `test:lamina` aparecia duas
   vezes no mesmo objeto (o segundo vencia em silêncio) e o esbuild avisava a cada build/Vite.
+
+## src/app/documents.ts
+
+### 2026-10-21 · fix/autosave-verdadeiro · o autosave voltou a gravar o arquivo no navegador
+- **Local:** `salvarAgora` (o ramo do navegador e o do documento novo) e `ensureSaved`
+- **Linha:** `if (!files.emTauri())` → `if (!files.temDisco())`; `ensureSaved()` → `ensureSaved(true)`
+  no autosave; quando nem o rascunho nem o `temp/` funcionam, o ramo marca `tab.saveFailed = true`
+  e `statusSaved = "Sem pasta para guardar o rascunho — use Ctrl+S (Salvar como…)"`
+- **Porquê:** `emTauri()` é falso em QUALQUER navegador — inclusive no Chromium, que depois da W1
+  tem disco de verdade. O autosave caía no ramo "sem arquivos", gravava só no `localStorage` e
+  marcava `dirty = false`: o selo dizia "Salvo" com o arquivo do disco intacto (só o `Ctrl+S`
+  gravava). Agora só quem NÃO tem disco (Firefox/Safari) usa o `localStorage`. O `ensureSaved`
+  silencioso evita um toast de erro a cada 2 s; e o fracasso deixa o selo em "Não salvo" em vez de
+  "Salvando…" eterno.
+
+## src/disco/registro.ts
+
+### 2026-10-21 · fix/autosave-verdadeiro · o id virou o caminho relativo (e o registro reusa)
+- **Local:** `registrarDocumento`, `documentoPorCaminho` (novo) e o cache de `listarDocumentos`
+- **Linha:** `id: uid()` → `id = relativo || handle.name` (com sufixo `(2)` se já existir); o
+  registro existente de `pastaId + relativo` é reaproveitado; `listarDocumentos` mantém um cache
+  em memória, invalidado por `atualizarDocumento`/`apagarDocumento`
+- **Porquê:** o `path` do navegador é o id, e a interface usa `baseName(path)` em todo lugar (aba,
+  título, menus): com um código aleatório, abrir um arquivo mostrava "k3j9x2ab1c2d" na aba — e o
+  `openPath`, que escolhe o motor pela extensão do caminho, tratava `.docx` como Markdown. Com o
+  caminho relativo, o nome aparece e a extensão continua no fim. O reaproveitamento evita a mesma
+  pessoa abrir uma aba nova (e um histórico novo) para o mesmo arquivo; o cache evita um `getAll`
+  por arquivo quando a árvore registra centenas de uma vez.
+
+## src/disco/rascunhos.ts (novo)
+
+### 2026-10-21 · fix/autosave-verdadeiro · os rascunhos em `.mdoffice/rascunhos`
+- **Local:** arquivo novo — `criar`, `listar`, `apagar`, `pasta`
+- **Linha:** novo arquivo — o rascunho é um arquivo de verdade em `.mdoffice/rascunhos/`, registrado
+  como documento; a lista alimenta o Início/painel lateral e o "Salvar como…" apaga o rascunho
+  anterior
+- **Porquê:** sem um arquivo para gravar, o autosave de um documento novo não tinha onde salvar e
+  o selo dizia "Salvo" sem nada existir. É o mesmo desenho dos rascunhos do app nativo (que ficam
+  na pasta de dados do Windows), só que ao lado dos documentos. `apagar` só remove o que está
+  dentro da pasta de rascunhos — o "Salvar como" passa o caminho antigo, e um documento de verdade
+  nunca pode ser apagado por engano.
+
+## src/ponte/index.ts
+
+### 2026-10-21 · fix/autosave-verdadeiro · os comandos de rascunho no navegador
+- **Local:** `comandoDoDisco`
+- **Linha:** novos `case`s `draft_path`, `list_drafts`, `drafts_folder_path` e `delete_draft`
+- **Porquê:** o `ensureSaved` e o painel de Armazenamento já chamavam esses comandos; sem eles, o
+  documento novo não virava rascunho e a lista de rascunhos ficava vazia no navegador.
+
+## src/app/seloAutosave.ts + src/app/layout.ts
+
+### 2026-10-21 · fix/autosave-verdadeiro · o selo "Rascunho"
+- **Local:** `ModoSelo`/`modoDoSelo` e `updateAutosaveUI`
+- **Linha:** novo modo `"rascunho"` (para `!temPath` ou `rascunho`); o selo mostra "Rascunho" com
+  o ícone de documento e a explicação de que ainda não é um arquivo
+- **Porquê:** "Salvo" só pode significar "o seu arquivo está gravado". Um documento novo ou um
+  rascunho em `.mdoffice/rascunhos` tem conteúdo guardado, mas não é o arquivo da pessoa — dizer
+  "Salvo" ali era exatamente a mentira que o usuário viu na barra.
+
+## src/files.ts
+
+### 2026-10-21 · fix/autosave-verdadeiro · `temDisco` também sai por aqui
+- **Local:** os imports/reexports da ponte
+- **Linha:** `export { emTauri, emApp, mostrarNaPasta }` → `+ temDisco`
+- **Porquê:** o autosave precisa perguntar "existe disco?" (não "é o Tauri?").

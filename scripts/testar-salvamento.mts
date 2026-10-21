@@ -257,6 +257,14 @@ checa("rascunho do app continua no caminho da fila ('Salvando…')", selo({ rasc
 checa("documento MD continua 'Salvando…' (a fila grava)", selo({ kind: "doc" }) === "salvando");
 checa("com o salvamento automático desligado o selo é 'Desativado'", selo({ ligado: false }) === "desligado");
 checa(
+  "rascunho parado diz 'Rascunho' (não 'Salvo': ainda não é o arquivo da pessoa)",
+  selo({ kind: "doc", rascunho: true, sujo: false }) === "rascunho"
+);
+checa("documento novo (sem caminho) parado também diz 'Rascunho'", selo({ kind: "doc", temPath: false, sujo: false }) === "rascunho");
+checa("documento novo com alterações continua 'Salvando…'", selo({ kind: "doc", temPath: false }) === "salvando");
+checa("arquivo de verdade sem pendência diz 'Salvo'", selo({ kind: "doc", sujo: false }) === "salvo");
+checa("gravação que falhou diz 'Não salvo' (nunca 'Salvo')", selo({ kind: "doc", sujo: false, erro: true }) === "erro");
+checa(
   "word e xlsx seguem a mesma regra do pptx",
   selo({ kind: "word" }) === "nao-salvo" && selo({ kind: "xlsx" }) === "nao-salvo"
 );

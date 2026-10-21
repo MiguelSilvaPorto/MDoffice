@@ -2,10 +2,10 @@
 //
 // A escolha entre o app nativo (Tauri, com o backend Rust) e o navegador (File System Access
 // API, com as pastas concedidas) acontece em `src/ponte` — aqui as funções são as mesmas.
-import { invoke, abrirDialogo as dlgOpen, salvarDialogo as dlgSave, emTauri, emApp, mostrarNaPasta } from "./ponte";
+import { invoke, abrirDialogo as dlgOpen, salvarDialogo as dlgSave, emTauri, emApp, temDisco, mostrarNaPasta } from "./ponte";
 import { joinPath } from "./util";
 
-export { emTauri, emApp, mostrarNaPasta };
+export { emTauri, emApp, temDisco, mostrarNaPasta };
 
 export const MD_FILTER = { name: "Markdown", extensions: ["md", "markdown", "txt", "mdx"] };
 export const IMG_FILTER = {

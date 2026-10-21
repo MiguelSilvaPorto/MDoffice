@@ -2002,36 +2002,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
-- **O mdOffice passou a rodar como aplicativo local (PWA), sem instalador**: `npm run app` agora
-  constrói o app (se preciso) e serve o `dist/` em `http://localhost:1420`. O navegador oferece
-  **instalar** (manifest + service worker), e o app abre em janela própria, com ícone no menu
-  Iniciar, **sem a barra do navegador** — e continua abrindo com o servidor parado ou sem rede.
-  O service worker guarda só os arquivos do próprio app: o modelo da tradução e os serviços de
-  fora nunca entram no cache. Em **Configurações ▸ Aparência** há o botão *Instalar* quando o
-  navegador oferece o convite. O `npm run app` do Tauri virou `npm run app:tauri`.
-
-- **Backup e lixeira passaram a viver DENTRO da pasta escolhida** (`.mdoffice/`): cada documento
-  vira uma pasta espelhada em `.mdoffice/backups/` com as cópias datadas, a proteção `.orig` e o
-  `historico.json`; "mover para a lixeira" guarda o arquivo em `.mdoffice/lixeira/` (30 dias, com
-  `index.json`), e o que sumiu pode ser recriado a partir da cópia. Uma cópia idêntica à última é
-  ignorada (o autosave não enche o disco) e duas gravações no mesmo segundo não se sobrescrevem
-  mais (o carimbo anda um segundo até achar nome livre). O backup viaja junto com a pasta do
-  projeto — basta copiá-la.
-
-- **O tradutor passou a ser offline por padrão**: o "automático" mandava o texto para o MyMemory
-  na primeira tradução (quando o modelo local ainda não tinha sido baixado) — ou seja, o texto de
-  quem nunca escolheu nada saía do computador. Agora o padrão é o **modelo local**, e o online só
-  funciona com **"Permitir o tradutor online"** ligado (Configurações ▸ Tradução); a troca de motor
-  também respeita o consentimento. Quem já tinha "online" salvo cai no offline até autorizar.
-
-- **O `dist/` deixou de sair com o wasm duplicado**: o `@huggingface/transformers` embute o
-  onnxruntime e o build copiava o mesmo `ort-wasm` de 26 MB para `assets/` **e** `ort/`. Como o
-  worker já aponta o runtime para `/ort/`, o build descarta a cópia de `assets/` — o app servido
-  cai de ~83 MB para ~57 MB, e o `modelos/gemma-*` de 280 MB que sobrava em `dist/` não existe mais.
-
-- **O `test:lamina` duplicado no `package.json`** (dois scripts com a mesma chave; o segundo vencia
-  em silêncio) virou `test:lamina` (`testar-lamina.mjs`) e `test:lamina-tema`
-  (`testar-tema-lamina.mjs`).
+- **O salvamento automático parou de mentir (e voltou a gravar no navegador)**: no modo do navegador
+  (`npm run app`) o autosave caía no ramo "sem Tauri" e mandava o texto para o `localStorage`,
+  marcando **"Salvo"** sem tocar no arquivo aberto — o arquivo do disco só era gravado no `Ctrl+S`.
+  Agora o autosave grava de verdade o arquivo pela File System Access API. Um documento novo (sem
+  arquivo) ganha um **rascunho de verdade** em `.mdoffice/rascunhos/` (que aparece em Início ▸
+  Rascunhos e no painel lateral) e passa a ser gravado nele. O selo do topo só diz **"Salvo"** para
+  um arquivo seu: rascunho (e documento ainda sem pasta) mostra **"Rascunho"**, e quando não há
+  pasta para guardar ele diz **"Não salvo"** — antes ficava "Salvando…" para sempre. O id do
+  documento no navegador passou a ser o **caminho relativo** (`notas.md`, `Sub/notas.md`) em vez de
+  um código aleatório: a aba, o título da janela e os menus voltam a mostrar o nome do arquivo, e
+  abrir o mesmo arquivo duas vezes reusa o mesmo registro (uma aba só, o mesmo histórico).
 
 - **O texto do popup de sugestão não atravessa mais a borda**: quando a palavra apontada pelo
   corretor é **muito grande** (e sem espaço nenhum, como um `aaaaaaa…` colado), o texto do popup
@@ -2180,6 +2161,37 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   `display: flex` do painel vencia o `hidden` que o fechamento ligava, então parecia que o clique
   fora não fechava nada. Agora o painel fechado é `display: none`, e o `npm run test:busca`
   confere a **visibilidade** do painel (e não só a classe) ao clicar fora e ao executar.
+
+- **O mdOffice passou a rodar como aplicativo local (PWA), sem instalador**: `npm run app` agora
+  constrói o app (se preciso) e serve o `dist/` em `http://localhost:1420`. O navegador oferece
+  **instalar** (manifest + service worker), e o app abre em janela própria, com ícone no menu
+  Iniciar, **sem a barra do navegador** — e continua abrindo com o servidor parado ou sem rede.
+  O service worker guarda só os arquivos do próprio app: o modelo da tradução e os serviços de
+  fora nunca entram no cache. Em **Configurações ▸ Aparência** há o botão *Instalar* quando o
+  navegador oferece o convite. O `npm run app` do Tauri virou `npm run app:tauri`.
+
+- **Backup e lixeira passaram a viver DENTRO da pasta escolhida** (`.mdoffice/`): cada documento
+  vira uma pasta espelhada em `.mdoffice/backups/` com as cópias datadas, a proteção `.orig` e o
+  `historico.json`; "mover para a lixeira" guarda o arquivo em `.mdoffice/lixeira/` (30 dias, com
+  `index.json`), e o que sumiu pode ser recriado a partir da cópia. Uma cópia idêntica à última é
+  ignorada (o autosave não enche o disco) e duas gravações no mesmo segundo não se sobrescrevem
+  mais (o carimbo anda um segundo até achar nome livre). O backup viaja junto com a pasta do
+  projeto — basta copiá-la.
+
+- **O tradutor passou a ser offline por padrão**: o "automático" mandava o texto para o MyMemory
+  na primeira tradução (quando o modelo local ainda não tinha sido baixado) — ou seja, o texto de
+  quem nunca escolheu nada saía do computador. Agora o padrão é o **modelo local**, e o online só
+  funciona com **"Permitir o tradutor online"** ligado (Configurações ▸ Tradução); a troca de motor
+  também respeita o consentimento. Quem já tinha "online" salvo cai no offline até autorizar.
+
+- **O `dist/` deixou de sair com o wasm duplicado**: o `@huggingface/transformers` embute o
+  onnxruntime e o build copiava o mesmo `ort-wasm` de 26 MB para `assets/` **e** `ort/`. Como o
+  worker já aponta o runtime para `/ort/`, o build descarta a cópia de `assets/` — o app servido
+  cai de ~83 MB para ~57 MB, e o `modelos/gemma-*` de 280 MB que sobrava em `dist/` não existe mais.
+
+- **O `test:lamina` duplicado no `package.json`** (dois scripts com a mesma chave; o segundo vencia
+  em silêncio) virou `test:lamina` (`testar-lamina.mjs`) e `test:lamina-tema`
+  (`testar-tema-lamina.mjs`).
 
 - **O app passou a abrir arquivos no NAVEGADOR** (o primeiro passo para o mdOffice virar 100% TypeScript):
   até agora o motor de arquivos era só do backend Rust (Tauri) — no navegador o app rodava num
