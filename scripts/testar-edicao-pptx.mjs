@@ -25,6 +25,7 @@ const O = await empacotar("src/powerpoint/edicao/operacoes.ts", "operacoes.mjs")
 const T = await empacotar("src/powerpoint/edicao/texto.ts", "texto.mjs");
 const F = await empacotar("src/powerpoint/edicao/formato.ts", "formato.mjs");
 const MED = await empacotar("src/powerpoint/edicao/medida.ts", "medida.mjs");
+const GI = await empacotar("src/powerpoint/edicao/giro.ts", "giro.mjs");
 
 // ---------------------------------------------------------------- geometria
 const dim = { w: 960, h: 540 };
@@ -87,6 +88,19 @@ const dim = { w: 960, h: 540 };
   ok("o giro sai em graus, com a vírgula do painel", MED.textoGiro(37) === "37°" && MED.textoGiro(37.46) === "37,5°", MED.textoGiro(37.46));
   ok("o giro de várias formas mostra o SINAL (quanto a seleção virou)", MED.textoGiro(12.3, true) === "+12,3°" && MED.textoGiro(-12.3, true) === "-12,3°", MED.textoGiro(-12.3, true));
   ok("giro zero não vira '-0°'", MED.textoGiro(-0.01) === "0°" && MED.textoGiro(-0.01, true) === "0°", MED.textoGiro(-0.01, true));
+}
+
+// ---------------------------------------------------------------- ímã do giro (cardeais)
+{
+  const ima = GI.imantarAngulo;
+  ok("1,2° volta para 0° (o caso do relato)", ima(1.2).rot === 0 && ima(1.2).imantado, JSON.stringify(ima(1.2)));
+  ok("-1,2° também volta para 0°", ima(-1.2).rot === 0 && ima(-1.2).imantado, JSON.stringify(ima(-1.2)));
+  ok("88,7° encosta em 90°", ima(88.7).rot === 90 && ima(88.7).imantado, JSON.stringify(ima(88.7)));
+  ok("179,2° e 269,1° encostam em 180° e 270°", ima(179.2).rot === 180 && ima(269.1).rot === 270 && ima(179.2).imantado && ima(269.1).imantado);
+  ok("358,8° encosta em 360° (a volta completa)", ima(358.8).rot === 360 && ima(358.8).imantado, JSON.stringify(ima(358.8)));
+  ok("4° fica livre (fora da tolerância de 3°)", ima(4).rot === 4 && !ima(4).imantado, JSON.stringify(ima(4)));
+  ok("45° não é cardeal e fica livre", ima(45).rot === 45 && !ima(45).imantado);
+  ok("a tolerância é configurável", ima(4, 5).rot === 0 && ima(4, 5).imantado);
 }
 
 // ---------------------------------------------------------------- operações em várias formas

@@ -63,6 +63,17 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/powerpoint/edicao/giro.ts
+
+### 2026-10-21 · feat/ima-giro-ppt · o ímã dos cardeais, separado para o teste
+- **Local:** arquivo novo
+- **Linha:** novo `PASSO_DO_IMA = 90`, `TOLERANCIA_DO_IMA = 3` e
+  `imantarAngulo(graus, tolerancia): { rot, imantado }` — encosta no múltiplo de 90 mais próximo
+  quando a distância é de até a tolerância; fora dela devolve o ângulo como veio
+- **Porquê:** o palco precisava da conta, mas a regra é pura e fácil de errar; separada, o teste do
+  Node confere 1,2° → 0°, 88,7° → 90°, 358,8° → 360° e a borda da tolerância sem abrir o navegador.
+  O passo de 90° cobre 0/90/180/270; a volta completa vira 0 na normalização que o palco já faz.
+
 ## src/powerpoint/edicao/medida.ts
 
 ### 2026-10-21 · feat/angulo-giro-ppt · o ângulo vira texto como as medidas do gesto
@@ -76,6 +87,19 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   uma pode ter partido de um ângulo próprio.
 
 ## src/powerpoint/stage.ts
+
+### 2026-10-21 · feat/ima-giro-ppt · o gesto de girar encosta nos cardeais
+- **Local:** o caso `girar` de `Modo`, o ramo `girar` de `aoMover` (uma e várias formas) e
+  `desenharSelecao`
+- **Linha:** `delta: number` → `delta: number; imantado: boolean` (nasce `false`); sem `Shift`,
+  `const ima = imantarAngulo(rot)` (forma única) e `imantarAngulo(delta)` (seleção),
+  `modo.imantado = ima.imantado`; o balão vira `textoGiro(...) + (modo.imantado ? " · ímã" : "")` e
+  a classe ganha `imantado`
+- **Porquê:** o relato é do giro parado em 1,2°: sem `Shift`, o valor livre não tinha como voltar
+  exato a 0°. O ímã de 3° resolve isso sem apertar tecla nenhuma. O `Shift` continua com a regra
+  antiga (15°), que já inclui os cardeais; por isso ele nem passa pelo ímã. Na seleção múltipla o
+  ímã age no **delta** — o quanto o grupo girou —, porque o ângulo absoluto de cada forma é
+  diferente. O "· ímã" no balão é o aviso de que o número parou de seguir o ponteiro de propósito.
 
 ### 2026-10-21 · feat/angulo-giro-ppt · o gesto de girar ganha o ângulo ao vivo no overlay
 - **Local:** a união `Modo` (caso `girar`), a criação do modo em `aoPressionar`, o ramo `girar` de
@@ -95,6 +119,14 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ## src/styles/powerpoint-edicao.css
 
+### 2026-10-21 · feat/ima-giro-ppt · o ímã ativo ganha a cor do módulo
+- **Local:** logo depois de `.pp-medida.pp-giro`
+- **Linha:** novo `.pp-medida.pp-giro.imantado { color: var(--fi-ppt, #d24a17); border-color:
+  currentColor; }`
+- **Porquê:** o texto "· ímã" já diz que o número está encostado; a cor de destaque do módulo
+  separa "encostado" de "livre" de relance, sem precisar ler. O `currentColor` mantém a borda na
+  mesma cor do texto, nos dois temas.
+
 ### 2026-10-21 · feat/angulo-giro-ppt · o número do giro em negrito
 - **Local:** logo depois de `.pp-medida.direita`
 - **Linha:** novo `.pp-medida.pp-giro { font-weight: 700; }`
@@ -103,6 +135,14 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   o gesto, não uma medida de conferência.
 
 ## docs/powerpoint.md
+
+### 2026-10-21 · feat/ima-giro-ppt · o verbete conta o ímã e a tolerância
+- **Local:** o item **Fita métrica do arrasto**, na seção **Editar as lâminas** — a frase do giro
+- **Linha:** "O número acompanha o ponteiro ao vivo (e o `Shift`, que encaixa em 15°…)" → "…e, **sem
+  `Shift`**, **encosta nos ângulos cardeais** (0°, 90°, 180°, 270° — e a volta completa) quando
+  chega a até 3° deles: o balão avisa **`· ímã`**… O `Shift` continua encaixando em 15°…"
+- **Porquê:** a tolerância e o aviso são o que muda o gesto; sem isso a documentação diria só que o
+  ângulo aparece, e não que ele para sozinho nos cardeais.
 
 ### 2026-10-21 · feat/angulo-giro-ppt · o verbete da fita métrica conta o ângulo do giro
 - **Local:** o item **Fita métrica do arrasto**, na seção **Editar as lâminas**
@@ -113,6 +153,17 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   isso a função nova ficaria só no changelog.
 
 ## scripts/testar-edicao-pptx.mjs · scripts/testar-layout.mts
+
+### 2026-10-21 · feat/ima-giro-ppt · os testes cobrem o ímã e o aviso
+- **Local:** novo bloco **ímã do giro** em `testar-edicao-pptx.mjs` e o bloco **girar** de
+  `testar-layout.mts`
+- **Linha:** `GI.imantarAngulo(1.2)` → `{ rot: 0, imantado: true }`, `88.7` → `90`, `358.8` → `360`,
+  `4` livre, `45` livre e `imantarAngulo(4, 5)` encostando; no layout, a checagem do import de
+  `imantarAngulo`, das duas chamadas (`rot` e `delta`), do `modo.imantado`, do sufixo ` · ímã` e da
+  classe `imantado`
+- **Porquê:** a borda da tolerância é o que decide se o gesto "gruda" ou não; e o aviso no balão é
+  fácil de perder numa refatoração do template. O teste puro cobre a conta e o de layout garante que
+  o palco usa a conta e mostra o aviso.
 
 ### 2026-10-21 · feat/angulo-giro-ppt · os testes cobrem o texto e o caminho do ângulo
 - **Local:** o bloco **fita métrica** (`testar-edicao-pptx.mjs`) e o bloco **fita métrica** de

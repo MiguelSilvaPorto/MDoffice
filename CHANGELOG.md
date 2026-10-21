@@ -947,6 +947,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 **Frontend**
 
 
+- **O giro tem ímã nos ângulos cardeais**: ao girar uma forma, ela **encosta em 0°, 90°, 180°,
+  270°** (e na volta completa) quando chega a até **3°** do ângulo certo — antes, parar em 1,2° e
+  voltar para 0° exigia um movimento de precisão quase impossível no mouse. O balão do ângulo avisa
+  **`· ímã`**, fica na cor de destaque e mostra o valor exato; ao sair da tolerância, o giro volta a
+  ser livre. Com **várias formas escolhidas**, o ímã vale para o **quanto a seleção girou** (cada
+  uma mantém o próprio ângulo relativo). O `Shift` continua encaixando em passos de **15°** — o que
+  já inclui os cardeais — e não é preciso segurá-lo para o ímã agir.
+
 - **O menu "Organizar" do clique direito agora abre ao lado do item, não no canto da tela**: ao
   clicar em **Organizar** no menu de contexto da forma, o menu completo (ordem, alinhamento,
   grupo, giro e bloqueio) aparecia no **extremo superior esquerdo** da janela, longe do clique.

@@ -675,6 +675,17 @@ console.log("\nPowerPoint: a fita métrica mostra a medida enquanto arrasta");
     "sem o textoGiro o gesto não teria número; dentro da caixa girada o rótulo giraria junto e ficaria torto"
   );
   checa(
+    "o giro encosta nos cardeais sem Shift e o balão avisa com o ímã",
+    /import \{ imantarAngulo \} from "\.\/edicao\/giro"/.test(palcoPpt) &&
+      /const ima = imantarAngulo\(rot\)/.test(palcoPpt) &&
+      /const ima = imantarAngulo\(delta\)/.test(palcoPpt) &&
+      /modo\.imantado = ima\.imantado/.test(palcoPpt) &&
+      /modo\.imantado \? " · ímã" : ""/.test(palcoPpt) &&
+      /pp-giro\$\{modo\.imantado \? " imantado" : ""\}/.test(palcoPpt) &&
+      /\.pp-medida\.pp-giro\.imantado\s*\{/.test(cssMedida),
+    "sem o ímã, 1,2° continua exigindo um movimento de precisão para voltar a 0°"
+  );
+  checa(
     "o rótulo não rouba o arrasto nem some no tema escuro",
     /\.pp-medida\s*\{[^}]*pointer-events:\s*none/s.test(cssMedida) &&
       /\.pp-medida\s*\{[^}]*background:\s*var\(--panel\)/s.test(cssMedida) &&

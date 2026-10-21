@@ -20,6 +20,7 @@ import {
 } from "./edicao/geometria";
 import type { Animacao, Lado, Shape, ShapeBox } from "./schema";
 import { CANTO_ROTULO, CANTOS, cantosDe, valoresComSelecao, type Canto } from "./edicao/formato";
+import { imantarAngulo } from "./edicao/giro";
 import { alvoDaConexao, bolinhaDaConexao } from "./edicao/ligacoes";
 import { textoAltura, textoGiro, textoLargura, textoX, textoY } from "./edicao/medida";
 import { temTexto } from "./edicao/texto";
@@ -120,7 +121,7 @@ export interface StageHooks {
 type Modo =
   | { t: "mover"; ids: string[]; inicial: Map<string, ShapeBox>; x0: number; y0: number; moveu: boolean; duplicou: boolean; clicouEm: string }
   | { t: "redim"; ids: string[]; alca: Alca; inicial: Map<string, { box: ShapeBox; rot: number }>; x0: number; y0: number; moldura: ShapeBox }
-  | { t: "girar"; ids: string[]; inicial: Map<string, { box: ShapeBox; rot: number }>; centro: { x: number; y: number }; angulo0: number; delta: number }
+  | { t: "girar"; ids: string[]; inicial: Map<string, { box: ShapeBox; rot: number }>; centro: { x: number; y: number }; angulo0: number; delta: number; imantado: boolean }
   | { t: "retangulo"; x0: number; y0: number; soma: boolean; base: string[] }
   | { t: "criar"; x0: number; y0: number }
   | { t: "canto"; ids: string[]; alvo: Canto; sel: Canto[]; colapsar: boolean; mexeu: boolean; partida: { x: number; y: number }; ref: { box: ShapeBox; rot: number }; inicial: Map<string, [number, number, number, number]> }
@@ -501,14 +502,20 @@ export class Stage {
         const y = ((cb.y - Math.cos(rad) * off) / ctx.dim.h) * 100;
         // a volta completa é normalizada: "+370°" na tela seria o mesmo que "+10°"
         const curto = normalizarAngulo(modo.delta + 180) - 180;
-        const texto = um ? textoGiro(um.rot) : textoGiro(curto, true);
+        // o "· ímã" não é enfeite: é o aviso de que o número parou no cardeal e o
+        // próximo grau do ponteiro não vai mexer na forma até sair da tolerância
+        const texto = (um ? textoGiro(um.rot) : textoGiro(curto, true)) + (modo.imantado ? " · ímã" : "");
         // de que lado da bolinha o balão cai: ele sai para FORA da caixa (o "para cima"
         // local aponta para cima na tela em 0° e para baixo em 180°); perto da borda
         // da lâmina o lado da tela vence, para o número não sair do quadro
         const cima = -Math.cos(rad);
         const lado = Math.abs(cima) > 0.2 ? (cima < 0 ? "acima" : "abaixo") : y < 10 ? "abaixo" : "acima";
+        // a lâmina recorta o que passa dela: a margem lateral acompanha o zoom (34 px
+        // de meia-largura do balão viram % da lâmina), senão no zoom baixo o texto
+        // encostado na borda era cortado
+        const meia = (this.pxEmPt(ctx.dim, 34) / ctx.dim.w) * 100;
         html.push(
-          `<span class="pp-medida pp-giro ${lado}" style="left:${r2(Math.max(5, Math.min(95, x)))}%;top:${r2(Math.max(2, Math.min(98, y)))}%">${texto}</span>`
+          `<span class="pp-medida pp-giro${modo.imantado ? " imantado" : ""} ${lado}" style="left:${r2(Math.max(meia, Math.min(100 - meia, x)))}%;top:${r2(Math.max(2, Math.min(98, y)))}%">${texto}</span>`
         );
       }
     }
@@ -794,7 +801,7 @@ export class Stage {
         const m = envolventeDe(sel, ctx.dim)!;
         const c = centro(paraPt(m, ctx.dim));
         const pt = this.pontoEmPt(e, ctx.dim);
-        this.modo = { t: "girar", ids, inicial, centro: c, angulo0: anguloDoPonteiro(pt.x, pt.y, c.x, c.y), delta: 0 };
+        this.modo = { t: "girar", ids, inicial, centro: c, angulo0: anguloDoPonteiro(pt.x, pt.y, c.x, c.y), delta: 0, imantado: false };
       } else {
         const moldura = sel.length === 1 ? { ...sel[0].box } : envolventeDe(sel, ctx.dim)!;
         this.modo = { t: "redim", ids, alca: alca!.dataset.alca as Alca, inicial, x0: p.x, y0: p.y, moldura };
@@ -1169,10 +1176,26 @@ export class Stage {
       if (modo.ids.length === 1) {
         const i = modo.inicial.get(modo.ids[0])!;
         let rot = i.rot + delta;
-        if (e.shiftKey) rot = Math.round(rot / 15) * 15;
+        if (e.shiftKey) {
+          // Shift continua mandando: passos de 15° (que já incluem os cardeais)
+          rot = Math.round(rot / 15) * 15;
+          modo.imantado = false;
+        } else {
+          // sem Shift, o ímã encosta em 0/90/180/270 quando o ponteiro chega perto
+          const ima = imantarAngulo(rot);
+          rot = ima.rot;
+          modo.imantado = ima.imantado;
+        }
         patches.set(modo.ids[0], { rot: normalizarAngulo(rot) });
       } else {
-        if (e.shiftKey) delta = Math.round(delta / 15) * 15;
+        if (e.shiftKey) {
+          delta = Math.round(delta / 15) * 15;
+          modo.imantado = false;
+        } else {
+          const ima = imantarAngulo(delta);
+          delta = ima.rot;
+          modo.imantado = ima.imantado;
+        }
         const a = (delta * Math.PI) / 180;
         for (const id of modo.ids) {
           const i = modo.inicial.get(id)!;

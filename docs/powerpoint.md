@@ -74,8 +74,10 @@ avisado ao abrir (nunca some em silêncio).
   **Tamanho** do painel; perto das bordas o rótulo **vira para o outro lado** e tudo **some ao
   soltar**. **Ao girar**, o **ângulo em graus** aparece **junto da alça** de giro — uma forma mostra
   o ângulo que ela tem agora (o mesmo do campo **Rotação**); com várias escolhidas, mostra o quanto
-  a seleção virou (com sinal). O número acompanha o ponteiro ao vivo (e o `Shift`, que encaixa em
-  15°, mostra o valor já encaixado).
+  a seleção virou (com sinal). O número acompanha o ponteiro ao vivo e, **sem `Shift`**, **encosta
+  nos ângulos cardeais** (0°, 90°, 180°, 270° — e a volta completa) quando chega a até 3° deles: o
+  balão avisa **`· ímã`** e fica na cor de destaque. O `Shift` continua encaixando em 15° (o que já
+  inclui os cardeais).
 - **Arrasto leve**: o quadro do arrasto mexe **só no que mudou** — mover ou girar vai direto no
   estilo da forma (e o painel só troca os números de tamanho/posição), em vez de refazer a lâmina
   inteira a cada movimento; o que **muda o desenho** (redimensionar) refaz **só aquela forma**, e

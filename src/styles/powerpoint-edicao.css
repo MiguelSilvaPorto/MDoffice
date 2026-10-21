@@ -2300,6 +2300,13 @@ button.ppr.big .ppr-gal-ic svg {
   font-weight: 700;
 }
 
+/* O ímã ativo: o número parou em 0/90/180/270 e o balão diz isso — a cor de destaque
+   do módulo separa "está encostado" de "está livre" sem precisar ler o texto. */
+.pp-medida.pp-giro.imantado {
+  color: var(--fi-ppt, #d24a17);
+  border-color: currentColor;
+}
+
 /* dica da alça de canto: caixa do app no lugar do balão nativo do sistema */
 .pp-canto-dica {
   position: absolute;
