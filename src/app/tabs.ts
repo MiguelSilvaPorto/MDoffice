@@ -10,7 +10,7 @@ import { plainText } from "../word/schema";
 import { deckToMarkdown } from "../powerpoint/markdown";
 import type { PowerPointTabData } from "../powerpoint/powerpoint";
 import type { ExcelTabData } from "../excel/host";
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { mostrarNaPasta as revealItemInDir } from "../ponte";
 import { $, h, toast, baseName, docDirOf, stripExt, copyText, loadJSON, saveJSON, fmtTime, fmtAgo } from "../util";
 import { abrirEmNovaJanela } from "./novaJanela";
 import { atualizarBusca } from "../busca/interface";

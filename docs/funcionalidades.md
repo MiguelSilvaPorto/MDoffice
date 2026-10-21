@@ -37,6 +37,13 @@ sobrevive ao recarregar e as **Configurações** escolhem o que os documentos **
 herdar. O autosave nunca reescreve um `.docx`, `.pptx` ou `.xlsx` seu — nesses o selo mostra
 "Não salvo" e o `Ctrl+S` grava.
 
+**O app também roda no navegador**: com o `npm run dev`, o mdOffice abre no Chrome/Edge e ganha
+o disco pelo **File System Access API** — a primeira vez pede uma pasta, e é dela que o app passa
+a abrir, salvar, renomear, mover, listar a árvore, buscar e ler a `assets/`. O caminho mostrado é
+o **relativo** dentro dessa pasta (`Projeto/notas.md`) e o *handle* fica guardado (não é preciso
+escolher de novo). O backup em disco, a lixeira e o painel de armazenamento continuam só no app
+nativo por enquanto; nos navegadores sem essa API (Firefox/Safari) o app roda no modo "só texto".
+
 **Abas**: a fileira abre os documentos e cada aba tem menu (renomear, duplicar, mostrar na pasta,
 copiar caminho, **abrir em nova janela (só este documento)**…). Arrastar uma aba **para fora da
 janela** e soltar ali — ou escolher o item do menu — abre o documento numa **janela própria**: ela é

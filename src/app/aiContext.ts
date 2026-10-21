@@ -5,7 +5,7 @@ import { tabLabel } from "../tabs";
 import { openExportDialog, type ExportFormat } from "../export";
 import { exportDocx } from "../word/docxExport";
 import { toMarkdown, fromMarkdown } from "../word/markdown";
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { mostrarNaPasta as revealItemInDir } from "../ponte";
 import mdCss from "../md/markdown.css?raw";
 import { $, h, toast, baseName, stripExt, copyText, slugify } from "../util";
 

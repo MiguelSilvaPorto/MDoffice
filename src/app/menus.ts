@@ -1,7 +1,7 @@
 // Menus suspensos (⋯, clique direito) e seus itens.
 
 import type { App } from "./app";
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { mostrarNaPasta as revealItemInDir } from "../ponte";
 import { $, copyText, h } from "../util";
 import { teclaVisivel } from "./keymap";
 

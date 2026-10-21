@@ -22,6 +22,7 @@
     "test:word-exibir": "node scripts/testar-word-exibir.mjs",
     "test:word-livro": "node scripts/testar-word-livro.mjs",
     "test:autosave-doc": "node scripts/testar-autosave-por-documento.mjs",
+    "test:disco": "node scripts/testar-disco-navegador.mjs",
     "test:popup-longo": "node scripts/testar-popup-texto-longo.mjs",
     "test:ghost": "node scripts/testar-ghost.mjs",
     "test:desenho": "node scripts/testar-desenho-assistido.mjs",

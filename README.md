@@ -66,11 +66,19 @@ npm run app     # abre o app em modo desenvolvimento (Tauri + Vite)
 
 | Comando | O que faz |
 | --- | --- |
-| `npm run app` | Inicia o app (dev) |
+| `npm run app` | Inicia o app (Tauri + Vite) |
+| `npm run dev` | Roda **no navegador** (sem o Tauri) — e já abre e salva arquivos pela pasta que você concede |
 | `npm run app:build` | Compila o app de produção (instalador no Windows) |
 | `npm run check` | Checagem de tipos do TypeScript |
 | `npm run build` | Build só do frontend (gera `dist/`) |
+| `npm run test:disco` | Teste da camada de disco do navegador (a prévia do Office, a limpeza do texto e a grade) |
 | `npm run test:log` / `test:backup` / `test:pptx` | Testes do log de alterações, do backup e do `.pptx` |
+
+> **`npm run dev` no navegador**: o app ganha o disco pelo **File System Access API** (Chromium).
+> A primeira vez pede uma pasta — é dela que o app passa a abrir e salvar; o *handle* fica guardado
+> e não é preciso escolher de novo. Só o Chromium (Chrome/Edge) tem essa API; nos outros
+> navegadores o app roda no modo "só texto" (o rascunho fica no navegador). O backup em disco, a
+> lixeira e o painel de armazenamento continuam só no app nativo por enquanto.
 
 ## Documentação
 

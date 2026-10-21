@@ -2,8 +2,7 @@
 import { toast, baseName } from "./util";
 import * as backup from "./backup";
 import { pickFolders, listDrafts, draftsFolder, deleteDraft } from "./files";
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
-import { ask } from "@tauri-apps/plugin-dialog";
+import { mostrarNaPasta as revealItemInDir, perguntar as ask } from "./ponte";
 import { resumoVersoes, limparVersoesTudo } from "./history";
 import { resumoLog, limparLogTudo } from "./snapshots";
 import { relatorio as relatorioArmazenamento, removerLegado, limiteDoCache, definirLimiteDoCache } from "./storage";

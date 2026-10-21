@@ -1967,6 +1967,20 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O app passou a abrir arquivos no NAVEGADOR** (o primeiro passo para o mdOffice virar 100% TypeScript):
+  até agora o motor de arquivos era só do backend Rust (Tauri) — no navegador o app rodava num
+  "degradê" (o texto no `localStorage`, sem abrir nem salvar arquivo). Agora existe a camada
+  **`src/disco/`**, que conversa com o **File System Access API**: a pessoa concede uma pasta, o
+  app guarda o *handle* dela no IndexedDB (o handle sobrevive ao recarregar ✅) e abre, lê, grava,
+  renomeia, move, lista a árvore, busca e lê a `assets/` — com o **caminho relativo** dentro da
+  pasta (`Projeto/notas.md`) no lugar do caminho absoluto. A prévia dos cartões da Início
+  (`.docx`/`.pptx`/`.xlsx`) passou a ser feita pelo **JSZip** (que o app já trazia), com a mesma
+  limpeza de texto e a mesma grade da planilha do Rust. E o **cancelamento do diálogo** deixou de
+  ser confundido com erro: cancelar devolve `null`; uma falha de verdade (o registro negado, o
+  IndexedDB cheio) **sobe** — antes qualquer erro virava um "nada aconteceu" silencioso.
+  O app nativo continua funcionando igual (a ponte escolhe: **Tauri** quando há backend,
+  **navegador** quando não há). Trava: `npm run test:disco`.
+
 - **O texto do popup de sugestão não atravessa mais a borda**: quando a palavra apontada pelo
   corretor é **muito grande** (e sem espaço nenhum, como um `aaaaaaa…` colado), o texto do popup
   simplesmente **vazava para fora da caixa** e cobria o documento. Agora a mensagem e as

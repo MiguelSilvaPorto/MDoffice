@@ -2,8 +2,8 @@
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import hljs from "highlight.js";
-import { openUrl } from "@tauri-apps/plugin-opener";
-import { invoke } from "@tauri-apps/api/core";
+import { abrirUrl as openUrl } from "../ponte";
+import { invoke } from "../ponte";
 import { copyText, docDirOf, joinPath, escapeHtml, toast, loadJSON } from "../util";
 import { createDrawEditor, type DrawDoc } from "./draw";
 import { createTextDrawEditor, TextBoard, TEXT_DRAW_PLACEHOLDER, detectTraceStyle } from "./textdraw";

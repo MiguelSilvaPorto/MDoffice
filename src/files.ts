@@ -1,7 +1,11 @@
-// Pontes com o backend Rust (comandos do Tauri) e diálogos nativos.
-import { invoke } from "@tauri-apps/api/core";
-import { open as dlgOpen, save as dlgSave } from "@tauri-apps/plugin-dialog";
+// Pontes com o disco e os diálogos nativos.
+//
+// A escolha entre o app nativo (Tauri, com o backend Rust) e o navegador (File System Access
+// API, com as pastas concedidas) acontece em `src/ponte` — aqui as funções são as mesmas.
+import { invoke, abrirDialogo as dlgOpen, salvarDialogo as dlgSave, emTauri, emApp, mostrarNaPasta } from "./ponte";
 import { joinPath } from "./util";
+
+export { emTauri, emApp, mostrarNaPasta };
 
 export const MD_FILTER = { name: "Markdown", extensions: ["md", "markdown", "txt", "mdx"] };
 export const IMG_FILTER = {
@@ -222,9 +226,6 @@ export async function purgeTrash(): Promise<number> {
 }
 
 /** O app está rodando dentro do Tauri (com arquivos) ou numa aba do navegador (sem eles)? */
-export function emTauri(): boolean {
-  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-}
 
 /**
  * Salvamento automático quando o app roda no NAVEGADOR (dev): o navegador não pode

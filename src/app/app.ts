@@ -21,7 +21,7 @@ import * as backup from "../backup";
 
 /** Caixa nativa de escolher pasta (usada pelo diálogo do backup). */
 const pickFoldersNative = () => files.pickFolders();
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { mostrarNaPasta as revealItemInDir } from "../ponte";
 import { $, toast, debounce, copyText, loadJSON, toBase64Utf8, h, saveJSON } from "../util";
 import { type Recent } from "./types";
 import { docDaUrl } from "./docNaUrl";

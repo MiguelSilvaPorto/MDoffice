@@ -16714,3 +16714,93 @@ antigas quando fizer sentido.
 - **Local:** `scripts`
 - **Linha:** novo `"test:popup-longo": "node scripts/testar-popup-texto-longo.mjs"`
 - **Porquê:** a trava entra na série de travas do repositório.
+
+## src/disco/fsa.d.ts
+
+### 2026-10-21 · feat/disco-navegador · o que falta do File System Access API (novo arquivo)
+- **Local:** arquivo novo
+- **Linha:** novo arquivo — as interfaces `FileSystemHandlePermissionDescriptor`, o `queryPermission`/`requestPermission`/`parent` no `FileSystemHandle`, o `values()` no `FileSystemDirectoryHandle` e as funções `showOpenFilePicker`/`showSaveFilePicker`/`showDirectoryPicker` no `Window`
+- **Porquê:** o `lib.dom` do TypeScript traz os **tipos do handle**, mas não as **funções** que o
+  Chromium inventou para escolher pasta/arquivo (e nem o `parent`, que o app usa quando o arquivo
+  é aberto sozinho). Sem essas declarações o compilador não conhece o que o navegador oferece.
+
+## src/disco/registro.ts
+
+### 2026-10-21 · feat/disco-navegador · o registro dos handles (novo arquivo)
+- **Local:** arquivo novo — `registrarDocumento`, `buscarDocumento`, `listarDocumentos`, `registrarPasta`, `pastaPadrao`, `apagarDocumento`/`apagarPasta`
+- **Linha:** novo arquivo — dois object stores no IndexedDB (`documentos` e `pastas`)
+- **Porquê:** no app nativo o documento é um **caminho**; no navegador é um **handle** — e o handle
+  só sobrevive ao recarregar se for guardado no IndexedDB (o Chromium o serializa). O registro é o
+  que dá ao app a **identidade** do documento (o `id`, que ocupa o lugar do `path`): a chave do
+  histórico, da sessão, do backup e da busca.
+
+## src/disco/arquivo.ts
+
+### 2026-10-21 · feat/disco-navegador · as operações de arquivo no navegador (novo arquivo)
+- **Local:** arquivo novo — `escolherPasta`/`escolherArquivo`/`salvarComo`, `lerTexto`/`gravarTexto`/`gravarBytes`, `renomearDocumento`/`moverDocumento`/`apagarDocumentoDisco`, `pastaBase`/`pastaAssets`, os assets e a correção do cancelamento
+- **Linha:** novo arquivo — e o `cancelou(e)` (o `AbortError`/`NotAllowedError` viram `null`; o resto **sobe**)
+- **Porquê:** o FSA **não tem** renomear nem mover: o arquivo é lido, gravado no destino e o
+  original é apagado — é o mesmo "sem sobrescrever" do `move_file` do Rust. E o `catch` que
+  devolvia `null` para **qualquer** erro transformava um erro de verdade (o registro negado, o
+  IndexedDB cheio) num cancelamento silencioso: o teste no navegador pegou exatamente isso.
+  O `relativo` passou a ser **dentro** da pasta concedida (sem repetir o nome dela) — o teste
+  mostrou o `Projeto/Projeto` quando os dois lados prefixavam.
+
+## src/disco/arvore.ts
+
+### 2026-10-21 · feat/disco-navegador · a árvore e a busca sobre os handles (novo arquivo)
+- **Local:** arquivo novo — `listarMarkdown` (4 níveis, pastas vazias inclusas) e `buscarMarkdown` (o mesmo *fold* sem acento)
+- **Porquê:** a varredura do Rust vira a varredura dos `handle.values()`: cada arquivo encontrado é
+  **registrado** (é o registro que dá o id). O `nomePasta` do relativo saiu quando o teste mostrou
+  que ele duplicava a pasta na hora de achar o documento.
+
+## src/disco/zip.ts
+
+### 2026-10-21 · feat/disco-navegador · a prévia do Office no navegador (novo arquivo)
+- **Local:** arquivo novo — `textoDeXml`, `limparPrevia`, `limparGrade`, `previaDoArquivo`
+- **Linha:** novo arquivo — o mesmo papel do `preview_file` do Rust, agora com o JSZip
+- **Porquê:** o `.docx`/`.pptx`/`.xlsx` são zips e o app **já** tinha o JSZip (usa no importador do
+  Word) — reimplementar o leitor do XML em Rust para isso era redundância. A planilha continua
+  vindo como linhas de célula separadas por TAB, com a posição lida do `r="A1"`.
+
+## src/ponte/index.ts
+
+### 2026-10-21 · feat/disco-navegador · a ponte Tauri × navegador (novo arquivo)
+- **Local:** arquivo novo — `invoke`, `abrirDialogo`/`salvarDialogo`/`perguntar`, `mostrarNaPasta`/`abrirUrl`, `emTauri`/`temDisco`/`emApp`
+- **Linha:** novo arquivo — o `invoke` decide: `invokeTauri` (o Rust) ou `comandoDoDisco` (a camada do navegador)
+- **Porquê:** o app tinha o `invoke` do Tauri espalhado em quatro arquivos (`files`, `backup`,
+  `storage`, `preview`). Com a ponte, **as assinaturas são as mesmas** e o app não sabe de onde o
+  disco vem — é o que permite a troca em etapas (o app nativo continua funcionando até o Rust sair)
+  e o que fez a migração tocar só a fronteira.
+
+## src/files.ts
+
+### 2026-10-21 · feat/disco-navegador · o app fala com a ponte, não com o Tauri
+- **Local:** os imports e o `emTauri`
+- **Linha:** `import { invoke } from "@tauri-apps/api/core"` + `open/save` do plugin → `import { invoke, abrirDialogo as dlgOpen, salvarDialogo as dlgSave, emTauri, emApp, mostrarNaPasta } from "./ponte"`; o `emTauri` local saiu (veio da ponte)
+- **Porquê:** é a única mudança no app: o resto das funções ficou **igual** (mesmos nomes, mesmas
+  assinaturas) — o que mudou foi de onde elas vêm.
+
+## src/ponte + src/md/preview.ts + src/settingsPage.ts + src/app/*
+
+### 2026-10-21 · feat/disco-navegador · os diálogos e o "mostrar na pasta" pela ponte
+- **Local:** `preview.ts` (`openUrl`/`invoke`), `settingsPage`, `app`, `menus`, `tabs`, `aiContext`
+- **Linha:** os `revealItemInDir`/`ask`/`openUrl` do Tauri → os da ponte (com alias, sem tocar nos usos); o `perguntar` aceita a mesma assinatura (`{title, kind}`) porque o `ask` do Tauri recebia um objeto
+- **Porquê:** para o app rodar no navegador, essas quatro operações precisam de um equivalente (o
+  `confirm` do navegador, o `window.open`, e o "mostrar na pasta" que **não existe** sem caminho —
+  aí ele avisa em vez de sumir).
+
+## scripts/testar-disco-navegador.mjs
+
+### 2026-10-21 · feat/disco-navegador · a trava da camada de disco (novo arquivo)
+- **Local:** arquivo novo
+- **Linha:** novo arquivo — trava o `textoDeXml`, o `limparPrevia`, o `limparGrade` e a `previaDoArquivo` (com um `.docx` montado pelo JSZip)
+- **Porquê:** o acesso ao disco só existe no navegador (e foi testado lá), mas a **decisão** — o que
+  sai do XML, o corte da prévia, a grade — é pura e dá para travar no Node, junto dos outros testes.
+
+## package.json
+
+### 2026-10-21 · feat/disco-navegador · o comando de teste da camada de disco
+- **Local:** `scripts`
+- **Linha:** novo `"test:disco": "node scripts/testar-disco-navegador.mjs"`
+- **Porquê:** a trava entra na série de travas do repositório.
