@@ -28,6 +28,60 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/settingsPage.ts
+
+### 2026-10-21 · feat/historico-grade · o histórico vira cartões em grade
+- **Local:** a seção `data-sec="historico"` e o helper `toggle`
+- **Linha:** `st-list` → `st-grid st-grid-3` no resumo e em "Onde ficam os arquivos";
+  `st-grid st-grid-2` em cópias, Salvamento e Backup; o "Apagar versões e alterações" e o
+  autosave ganharam `wide`; "Pasta dos rascunhos" virou cartão normal; `toggle(...)` ganhou o
+  parâmetro `wide`; os textos do estado vazio e as descrições de autosave/log/backup foram
+  encurtados; o caminho do log virou `.historico/historico.json`
+- **Porquê:** a seção era uma pilha de linhas de largura total: só o resumo ocupava quatro
+  linhas e a página passava de uma tela mesmo sem documento aberto. Os cartões usam a largura
+  em vez da altura; o autosave (a descrição mais longa) ocupa a linha inteira para não esticar
+  a grade, e o "Pasta dos rascunhos" divide a última linha com o log. Os textos foram
+  encurtados para o cartão não voltar a ficar alto; o caminho do log perdeu o
+  `<documento>/` porque o nome comprido estourava o cartão estreito.
+
+## src/styles/settings.css
+
+### 2026-10-21 · feat/historico-grade · as grades e a queda para uma coluna
+- **Local:** depois de `.st-list-note`, novo bloco "grades do Histórico e salvamento"; media
+  queries no fim do arquivo
+- **Linha:** novos `.st-grid`, `.st-grid-2`, `.st-grid-3`, `.st-grid > .st-row` (cartão),
+  ícone menor, `.st-switch`/`.st-select` no canto direito, `.st-row.wide`, notas que atravessam,
+  `.st-subhead` e `.st-recover-col`; `1020px` faz a grade de 3 virar 2 e `860px` faz tudo virar
+  1 coluna; `overflow-wrap: anywhere` nos textos para caminhos longos
+- **Porquê:** o desenho anterior era uma lista única; os cartões precisavam de uma grade própria
+  para não herdar as bordas e os divisores do `.st-list`, e de uma regra de colapso para o
+  conteúdo não esmagar o texto em telas estreitas. O interruptor/seletor no canto mantém o
+  cartão alinhado sem uma linha extra embaixo.
+
+## scripts/testar-historico-grade.mjs (novo)
+
+### 2026-10-21 · feat/historico-grade · o teste da grade e da responsividade
+- **Local:** roteiro novo, `test:historico` no `package.json`
+- **Linha:** Chrome headless em 1300 px; confere 3 colunas no resumo, 2 nas cópias/Salvamento/
+  Backup, os quatro atalhos, o autosave `wide`, nenhum cartão estourando e a altura da seção;
+  depois muda para 800 px e confere que todas as grades viraram uma coluna
+- **Porquê:** a mudança é de desenho, mas os defeitos que ela pode trazer são mecânicos (uma
+  grade que não colapsa, um caminho que estoura o cartão, a seção voltando a crescer). O teste
+  trava isso sem depender de comparar pixels.
+
+## scripts/testar-rascunhos.mjs
+
+### 2026-10-21 · feat/historico-grade · o teste espera o app e o repaint da linha da pasta
+- **Local:** `abrirConfig` e `escolherPasta`
+- **Linha:** `abrirConfig` espera a Home/aba aparecer e fecha de novo o convite de backup (ele
+  pode surgir depois do clique do `recomecar`); a espera depois de "Escolher…" passou de `1200`
+  para `1600` ms
+- **Porquê:** com a página de Configurações mais densa e o app sem Tauri, o `Ctrl+K` às vezes
+  era disparado antes de o catálogo existir (ou com o convite de backup na frente), e a leitura
+  de `[data-drafts-root]` acontecia antes do `paintDraftsRoot`. Os arquivos eram escolhidos e
+  gravados, mas o teste lia o estado anterior. As esperas não mudam o produto; só tiram a
+  corrida.
+
 ## src/powerpoint/ui/popup.ts
 
 ### 2026-10-21 · fix/menu-organizar-posicao · a âncora é medida ANTES de fechar o popup de origem

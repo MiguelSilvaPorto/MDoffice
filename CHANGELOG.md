@@ -2161,6 +2161,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 ### Adicionado (na main)
 
+- **Histórico e salvamento em grades**: a seção era uma pilha de linhas de largura total — só o
+  resumo do documento ocupava quatro linhas e a página passava de uma tela mesmo sem nenhum dado.
+  Agora o resumo vira **três cartões** (com o "Apagar versões e alterações" numa faixa larga), as
+  cópias ficam em **duas colunas**, as pastas em **três cartões** e Salvamento/Backup em **duas
+  colunas**; em telas estreitas tudo cai para uma coluna. A seção ficou cerca de **20% mais
+  curta** (1.597 px contra 2.004 px numa janela de 1300 px) e os caminhos longos quebram dentro
+  do cartão. Trava: `npm run test:historico` (3/2 colunas, estouro horizontal e coluna única em
+  800 px).
+
 - **A tela de Aparência voltou a aplicar tema, animação e cantos**: o `on()` da página de
   Configurações fazia `null.addEventListener` quando a aba aberta não tinha os botões da seção
   **Backup** (abrir direto em "Aparência", por exemplo) — a exceção **abortava o resto da fiação**

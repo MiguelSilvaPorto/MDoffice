@@ -172,8 +172,8 @@ function rowIcon(icon: string): string {
 }
 
 /** Interruptor liga/desliga acessível. */
-function toggle(id: string, label: string, desc: string, on: boolean, icon: string): string {
-  return `<label class="st-row">
+function toggle(id: string, label: string, desc: string, on: boolean, icon: string, wide = false): string {
+  return `<label class="st-row${wide ? " wide" : ""}">
     ${rowIcon(icon)}
     <span class="st-text"><b>${label}</b><small>${desc}</small></span>
     <input type="checkbox" class="st-switch" role="switch" data-k="${id}" ${on ? "checked" : ""}>
@@ -358,34 +358,40 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
           </header>
 
           <h4 class="st-group">Este documento</h4>
-          <div class="st-list">
+          <div class="st-grid st-grid-3">
             <div class="st-row">
               ${rowIcon("i-clock")}
               <span class="st-text"><b>Versões</b><small data-hist-versoes>verificando…</small></span>
-              <span class="st-btns"><button class="btn small st-btn" data-act="hist-versoes">Abrir aba Versões</button></span>
+              <span class="st-btns"><button class="btn small st-btn" data-act="hist-versoes" title="Abrir aba Versões">Abrir</button></span>
             </div>
             <div class="st-row">
               ${rowIcon("i-code")}
               <span class="st-text"><b>Alterações</b><small data-hist-alteracoes>verificando…</small></span>
-              <span class="st-btns"><button class="btn small st-btn" data-act="hist-alteracoes">Abrir aba Alterações</button></span>
+              <span class="st-btns"><button class="btn small st-btn" data-act="hist-alteracoes" title="Abrir aba Alterações">Abrir</button></span>
             </div>
             <div class="st-row">
               ${rowIcon("i-folder")}
               <span class="st-text"><b>Cópias em disco</b><small data-hist-copias>verificando…</small></span>
-              <span class="st-btns"><button class="btn small st-btn" data-act="hist-backup">Abrir aba Backup</button></span>
+              <span class="st-btns"><button class="btn small st-btn" data-act="hist-backup" title="Abrir aba Backup">Abrir</button></span>
             </div>
-            <div class="st-row">
+            <div class="st-row wide">
               ${rowIcon("i-trash")}
               <span class="st-text"><b>Apagar versões e alterações</b><small>Some o histórico <b>deste documento</b>: versões, alterações e o log exportado. As cópias em disco <b>não</b> são apagadas.</small></span>
               <span class="st-btns"><button class="btn small st-btn danger" data-act="hist-apagar">Apagar…</button></span>
             </div>
           </div>
 
-          <h4 class="st-group">Cópias deste documento — recuperar aqui</h4>
-          <div class="st-list" data-copias-doc></div>
-
-          <h4 class="st-group">Outros documentos com backup — recuperar aqui</h4>
-          <div class="st-list" data-copias-outros></div>
+          <h4 class="st-group">Cópias e recuperação</h4>
+          <div class="st-grid st-grid-2 st-recover">
+            <section class="st-recover-col">
+              <h5 class="st-subhead">Deste documento</h5>
+              <div class="st-list" data-copias-doc></div>
+            </section>
+            <section class="st-recover-col">
+              <h5 class="st-subhead">De outros documentos</h5>
+              <div class="st-list" data-copias-outros></div>
+            </section>
+          </div>
 
           <h4 class="st-group">Arquivo apagado do disco</h4>
           <div class="st-list">
@@ -397,7 +403,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
           </div>
 
           <h4 class="st-group">Onde ficam os arquivos</h4>
-          <div class="st-list">
+          <div class="st-grid st-grid-3">
             <div class="st-row">
               ${rowIcon("i-folder-plus")}
               <span class="st-text"><b>Pasta dos documentos</b><small data-backup-root>—</small></span>
@@ -408,14 +414,21 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
             </div>
             <div class="st-row">
               ${rowIcon("i-doc")}
-              <span class="st-text"><b>Log de alterações exportado</b><small>Vai junto de cada cópia, em <code>&lt;documento&gt;/.historico/historico.json</code> — sobrevive se os dados do app forem limpos.</small></span>
+              <span class="st-text"><b>Log de alterações exportado</b><small>Vai junto de cada cópia, em <code>.historico/historico.json</code> — sobrevive se os dados do app forem limpos.</small></span>
             </div>
-            <p class="st-list-note">Versões e alterações ficam no banco local do app (não são arquivos soltos) e se recuperam pelas abas acima. As cópias em disco são arquivos datados de verdade, dentro de .mdoffice/ na pasta dos documentos.</p>
           </div>
+          <p class="st-list-note st-note-standalone">Versões e alterações ficam no banco local do app (não são arquivos soltos) e se recuperam pelas abas acima. As cópias em disco são arquivos datados de verdade, dentro de .mdoffice/ na pasta dos documentos.</p>
 
           <h4 class="st-group">Salvamento</h4>
-          <div class="st-list">
-            ${toggle("autosave", "Salvamento automático dos documentos novos", "Cada documento tem o seu salvamento automático: o botão no topo do app liga e desliga o documento que está à vista. Aqui se escolhe o que os documentos NOVOS vão herdar. Regrava rascunhos do app e documentos MD* enquanto você escreve; arquivos .docx, .pptx e .xlsx são gravados só no Ctrl+S (o selo da barra mostra “Não salvo”).", s.autosaveOn, "i-save")}
+          <div class="st-grid st-grid-2">
+            ${toggle("autosave", "Salvamento automático dos documentos novos", "Cada documento tem o seu; aqui se escolhe o padrão dos novos. Markdown e rascunhos salvam sozinhos — .docx/.pptx/.xlsx só no Ctrl+S.", s.autosaveOn, "i-save", true)}
+            ${toggle("hist", "Guardar versões dos documentos", "Uma cópia automática a cada 5 minutos (se o texto mudou) e ao salvar.", s.historyOn, "i-clock")}
+            <div class="st-row">
+              ${rowIcon("i-list")}
+              <span class="st-text"><b>Versões guardadas por documento</b><small>As marcadas por você (★) nunca são apagadas sozinhas.</small></span>
+              ${dd("hist-max", [20, 40, 60, 100, 200].map((n) => [String(n), `${n} versões`] as [string, string]), String(s.historyMax))}
+            </div>
+            ${toggle("commits", "Guardar o log de alterações", "Guarda só a instrução de cada mudança, não o arquivo inteiro; dá para voltar a qualquer ponto pela aba Alterações.", s.commitsOn, "i-code")}
             <div class="st-row">
               ${rowIcon("i-folder-plus")}
               <span class="st-text"><b>Pasta dos rascunhos</b><small data-drafts-root>verificando…</small></span>
@@ -424,26 +437,26 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
                 <button class="btn small st-btn" data-act="drafts-clear" hidden>Remover</button>
               </span>
             </div>
-            ${toggle("hist", "Guardar versões dos documentos", "Uma cópia automática a cada 5 minutos (se o texto mudou) e ao salvar.", s.historyOn, "i-clock")}
-            <div class="st-row">
-              ${rowIcon("i-list")}
-              <span class="st-text"><b>Versões guardadas por documento</b><small>As marcadas por você (★) nunca são apagadas sozinhas.</small></span>
-              ${dd("hist-max", [20, 40, 60, 100, 200].map((n) => [String(n), `${n} versões`] as [string, string]), String(s.historyMax))}
-            </div>
-            ${toggle("commits", "Guardar o log de alterações", "Guarda só a instrução de cada mudança (o que saiu e o que entrou), não o arquivo inteiro. Dá para voltar a qualquer ponto pela aba Alterações do histórico.", s.commitsOn, "i-code")}
           </div>
 
           <h4 class="st-group">Backup em disco</h4>
           <p class="st-sub">Uma cópia de verdade do arquivo, gravada em duas pastas ao mesmo tempo. Se uma falhar (HD desconectado, sem permissão), a outra ainda salva.</p>
-          <div class="st-list">
-            ${toggle("backup", "Guardar cópia dos documentos em disco", "Ao salvar, ao sair de um documento com alterações e uma vez por dia. Também vale para documentos (.docx), apresentações (.pptx) e planilhas (.xlsx).", s.backupOn, "i-folder")}
+          <div class="st-grid st-grid-2">
+            ${toggle("backup", "Guardar cópia dos documentos em disco", "Ao salvar, ao sair de um documento com alterações e uma vez por dia. Também vale para .docx, .pptx e .xlsx.", s.backupOn, "i-folder")}
             ${toggle("backupwarn", "Avisar quando o original sumir", "Se você apagar um arquivo do disco, o app avisa na barra inferior e deixa restaurar pela cópia.", s.backupWarnMissing, "i-eye")}
             <div class="st-row">
               ${rowIcon("i-trash")}
               <span class="st-text"><b>Política de limpeza</b><small>Quanto cada documento guarda antes de as cópias mais antigas saírem. As marcadas à mão nunca saem.</small></span>
               ${dd("backup-profile", backup.PERFIS.map((p) => [p.id, p.nome] as [string, string]), s.backupProfile)}
             </div>
-            <p class="st-list-note" data-backup-profile-desc></p>
+            <div class="st-row">
+              ${rowIcon("i-grid")}
+              <span class="st-text"><b>Espaço usado</b><small data-backup-size>calculando…</small></span>
+              <span class="st-btns">
+                <button class="btn small st-btn" data-act="backup-prune">Limpar cópias antigas</button>
+              </span>
+            </div>
+            <p class="st-list-note st-wide" data-backup-profile-desc></p>
             <div class="st-row" data-backup-custom ${s.backupProfile === "personalizado" ? "" : "hidden"}>
               ${rowIcon("i-copy")}
               <span class="st-text"><b>Cópias por documento</b><small>0 = guardar quantas existirem, sem limite de quantidade.</small></span>
@@ -453,13 +466,6 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
               ${rowIcon("i-clock")}
               <span class="st-text"><b>Prazo</b><small>0 = não apagar por tempo (só pela quantidade acima).</small></span>
               ${dd("backup-days", [7, 30, 90, 365, 0].map((n) => [String(n), n === 0 ? "sem prazo" : n === 365 ? "1 ano" : `${n} dias`] as [string, string]), String(s.backupDays))}
-            </div>
-            <div class="st-row">
-              ${rowIcon("i-grid")}
-              <span class="st-text"><b>Espaço usado</b><small data-backup-size>calculando…</small></span>
-              <span class="st-btns">
-                <button class="btn small st-btn" data-act="backup-prune">Limpar cópias antigas</button>
-              </span>
             </div>
           </div>
         </section>
@@ -976,8 +982,8 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     const limpar = host.querySelector<HTMLButtonElement>('[data-act="drafts-clear"]');
     if (!el) return;
     el.textContent = pastaRascunhos
-      ? `${pastaRascunhos.nome || "Pasta escolhida"} — o autosave grava os documentos novos ali, como arquivos de verdade`
-      : "Nenhuma pasta escolhida — o rascunho de um documento novo não é gravado. Escolha uma pasta para o autosave gravar de verdade.";
+      ? `${pastaRascunhos.nome || "Pasta escolhida"} — os documentos novos são gravados ali.`
+      : "Nenhuma pasta escolhida — o autosave não grava documentos novos.";
     if (limpar) limpar.hidden = !pastaRascunhos;
   };
   void draftFolderInfo()
@@ -1089,7 +1095,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     if (!v) return;
     const linhas = [q("[data-hist-versoes]"), q("[data-hist-alteracoes]"), q("[data-hist-copias]")];
     if (!v.doc) {
-      for (const l of linhas) l.textContent = "Abra (ou salve) um documento para ver o histórico dele.";
+      for (const l of linhas) l.textContent = "Abra ou salve um documento.";
     } else {
       linhas[0].textContent = v.versoes.total
         ? `${v.versoes.total} versão(ões) · ${v.versoes.marcadas} marcada(s) · última ${haQuanto(v.versoes.ultimaEm)} (${v.versoes.ultimoNome})`

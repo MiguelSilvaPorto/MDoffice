@@ -733,6 +733,168 @@ label.st-row:has(.st-switch:checked) .st-row-ic {
   display: none;
 }
 
+/* ---------- grades do Histórico e salvamento ----------
+   A seção era uma pilha de linhas de largura total: mesmo sem nenhum dado ela
+   passava de uma tela. Nas grades cada ajuste vira um cartão compacto; o resumo
+   do documento usa 3 colunas e as opções usam 2. Em telas estreitas, cai para
+   uma coluna (o texto continua inteiro, sem cortar). */
+
+.st-grid {
+  display: grid;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.st-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.st-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.st-grid > .st-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "ic text"
+    "btns btns";
+  align-items: start;
+  gap: 8px 10px;
+  padding: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="dark"] .st-grid > .st-row {
+  box-shadow: none;
+}
+
+.st-grid > .st-row > .st-row-ic {
+  grid-area: ic;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+}
+
+.st-grid > .st-row > .st-row-ic .ic {
+  width: 15px;
+  height: 15px;
+}
+
+.st-grid > .st-row > .st-text {
+  grid-area: text;
+  /* caminhos e nomes compridos (o log do histórico) quebram dentro do cartão */
+  overflow-wrap: anywhere;
+}
+
+.st-grid > .st-row > .st-btns {
+  grid-area: btns;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.st-grid > .st-row > .st-btns .st-btn {
+  padding: 5px 10px;
+}
+
+/* interruptor e seletor moram no canto direito do cartão */
+.st-grid > label.st-row,
+.st-grid > .st-row:has(> .st-select) {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "ic text ctrl";
+}
+
+.st-grid > label.st-row > .st-switch,
+.st-grid > .st-row > .st-select {
+  grid-area: ctrl;
+  align-self: start;
+}
+
+/* o interruptor do cartão largo (autosave) fica no canto, como nos demais */
+.st-grid > label.st-row.wide {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "ic text ctrl";
+}
+
+/* cartão largo: os botões ficam na mesma linha do texto */
+.st-grid > .st-row.wide {
+  grid-column: 1 / -1;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "ic text btns";
+  align-items: center;
+}
+
+.st-grid > .st-row.wide > .st-btns {
+  align-self: center;
+}
+
+/* notas que atravessam a grade (descrição da política, rodapé) */
+.st-grid > .st-list-note,
+.st-grid > .st-wide {
+  grid-column: 1 / -1;
+}
+
+.st-grid > .st-list-note {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.st-note-standalone {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+/* cópias: duas colunas, cada uma com seu título curto */
+.st-subhead {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.st-recover-col {
+  min-width: 0;
+}
+
+.st-recover-col .st-list {
+  height: 100%;
+}
+
+.st-recover-col .st-row {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1020px) {
+  .st-grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .st-grid-2,
+  .st-grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .st-grid > .st-row.wide {
+    grid-column: auto;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "ic text"
+      "btns btns";
+  }
+
+  .st-grid > .st-row.wide > .st-btns {
+    justify-content: flex-start;
+  }
+}
+
 /* ---------- histórico: linhas de cópia, documentos expansíveis e estados ---------- */
 
 /* linha que é um botão (documento expansível): o visual do .st-row, sem o chrome do botão */

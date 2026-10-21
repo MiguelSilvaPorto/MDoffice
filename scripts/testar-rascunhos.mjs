@@ -105,7 +105,16 @@ async function main() {
     await espera(300);
   };
   const abrirConfig = async () => {
-    // o catálogo de comandos pode ainda estar sendo montado logo depois do reload:
+    // o catálogo de comandos só existe depois que o app terminou de iniciar (Home
+    // montada ou a sessão restaurada). Sem esta espera, o Ctrl+K abria uma paleta vazia.
+    for (let i = 0; i < 24; i++) {
+      if (await avaliar("document.readyState === 'complete' && (!!document.querySelector('.tab') || (document.querySelector('#home-page')?.innerText || '').trim().length > 0)")) break;
+      await espera(300);
+    }
+    // o convite de backup pode aparecer DEPOIS do primeiro clique do `recomecar`;
+    // enquanto ele está na frente, o Ctrl+K não chega ao app
+    await avaliar("document.querySelector('.modal [data-nao]')?.click()");
+    await espera(400);
     // tenta de novo até a página de Configurações estar de pé
     for (let i = 0; i < 12; i++) {
       const abriu = await avaliar(`
@@ -136,7 +145,7 @@ async function main() {
         const dir = await root.getDirectoryHandle(${JSON.stringify(nome)}, { create: true });
         window.showDirectoryPicker = async () => dir;
         document.querySelector('[data-act="drafts-dir"]')?.click();
-        await new Promise((r) => setTimeout(r, 1200));
+        await new Promise((r) => setTimeout(r, 1600));
         return true;
       })()
     `);
