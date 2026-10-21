@@ -90,6 +90,60 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Porquê:** a leitura síncrona é a posição que a tela pintaria ao fim da tarefa — foi ela que
   pegou o defeito (17 px) antes do acerto síncrono. Com o acerto, fica em 1 px (arredondamento).
 
+## src/word/imagemFlutuante.ts
+
+### 2026-10-21 · fix/imagem-arrasto-texto · o gesto ao vivo entra na decoração
+- **Local:** `GestoAoVivo`, `definirGestoAoVivo`, `gestoAoVivoAtual`, `estiloDoFlutuante` e `montar`
+- **Linha:** `estiloDoFlutuante(d, larguraConteudo, larguraImagem, aoVivo)` — o `aoVivo` soma
+  `dx`/`dy` às margens e troca a largura do flutuante; o tamanho do redimensionamento vai como
+  `--wd-iw`/`--wd-ih` no estilo da imagem, com a classe `wd-img-ao-vivo`; as
+  `var(--wd-fx/–fy)` saíram do estilo
+- **Porquê:** o arrasto escrevia a posição numa variável CSS do parágrafo — mas o ProseMirror
+  **recria o parágrafo** a cada atualização e a variável morria com o elemento antigo: a imagem só
+  andava ao soltar e o texto não acompanhava. Na decoração, o valor é redesenhado junto com a
+  página e o gesto fica ao vivo.
+
+## src/word/imagem.ts
+
+### 2026-10-21 · fix/imagem-arrasto-texto · arrasto e redimensionamento ao vivo
+- **Local:** `arrastarGestoFlutuante`, `soltarGestoFlutuante`, `soltarGestoFlutuante`,
+  `arrastarGesto` (redimensionar), `commitGesto` e `encerrarGesto`
+- **Linha:** o arrasto passou a fazer `definirGestoAoVivo({ pos, dx, dy })` +
+  `view.dispatch(requestingFlutuante(view.state))` a cada movimento (em vez de
+  `style.setProperty("--wd-fx")`); o redimensionamento informa `largura`/`altura` do mesmo jeito;
+  o "soltar" calcula o `hOffset` a partir do gesto (não mede mais o DOM) e as funções
+  `elementoDoFlutuante`/`deslocamentoHorizontal` saíram
+- **Porquê:** medir o DOM no fim do gesto dava outro número (o elemento já tinha voltado para a
+  posição antiga quando a âncora mudava), e a imagem "pulava" ao soltar. O número do gesto é o
+  mesmo que a tela mostrou.
+
+## src/styles/word.css
+
+### 2026-10-21 · fix/imagem-arrasto-texto · o tamanho ao vivo da imagem
+- **Local:** depois de `.wd-img img`
+- **Linha:** `.wd-img-ao-vivo img { width: var(--wd-iw) !important; height: var(--wd-ih) !important }`
+- **Porquê:** o tamanho do redimensionamento precisa vencer o `width`/`height` que a imagem
+  carrega do esquema; o `!important` vale só durante o gesto.
+
+## scripts/testar-word-imagem-posicao.mjs
+
+### 2026-10-21 · fix/imagem-arrasto-texto · o caso do gesto ao vivo
+- **Local:** o fim do roteiro (item 5)
+- **Linha:** arrasto de 80 px e redimensionamento de 120 px com o mouse de verdade, medindo
+  imagem, largura do flutuante e a primeira linha de texto do parágrafo seguinte **durante** o
+  gesto e depois de soltar
+- **Porquê:** é o que a pessoa vê: o texto tem de andar junto com a imagem e o resultado tem de
+  ser o do gesto (sem pulo ao soltar).
+
+## scripts/testar-word-flutuante.mjs
+
+### 2026-10-21 · fix/imagem-arrasto-texto · as expectativas do estilo ao vivo
+- **Local:** os testes do estilo do quadrado
+- **Linha:** as duas checagens de `var(--wd-fx/–fy)` viraram quatro do `aoVivo` (margem
+  horizontal, vertical, largura do flutuante e `--wd-iw/--wd-ih` na imagem) e o centralizado passou
+  a esperar `margin-left:150px`
+- **Porquê:** o mecanismo mudou de variável CSS para decoração; o teste antigo cobrava a variável.
+
 ## src/word/schema.ts
 
 ### 2026-10-21 · feat/imagem-posicao-lados · a imagem ganhou os lados da quebra e a fixação na página

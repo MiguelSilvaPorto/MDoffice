@@ -26,9 +26,11 @@ import { ancoraCandidata, moverParaParagrafo, paragrafoDa } from "./ancoraImagem
 import {
   andaNaMargemDireita,
   dadosDaImagem,
+  definirGestoAoVivo,
   ehFlutuante,
   ehFloatDeTexto,
   marcarAncora,
+  requestingFlutuante,
   type DadosFlutuante,
 } from "./imagemFlutuante";
 import type { EditorView, NodeView } from "prosemirror-view";
@@ -62,14 +64,6 @@ interface GestoFlutuante {
 
 /** Só um gesto por vez (o do módulo — o NodeView pode ser remontado no meio dele). */
 let gestoFlutuante: GestoFlutuante | null = null;
-
-/** O elemento que carrega a posição do flutuante (o parágrafo ou a própria imagem). */
-function elementoDoFlutuante(view: EditorView, pos: number, alvoÉParagrafo: boolean): HTMLElement | null {
-  const no = view.nodeDOM(pos);
-  if (!(no instanceof HTMLElement)) return null;
-  if (!alvoÉParagrafo) return no;
-  return (no.parentElement as HTMLElement | null) ?? null;
-}
 
 /** O retângulo da imagem na tela (o NodeView pode ter sido remontado). */
 function caixaDaImagem(view: EditorView, pos: number): DOMRect | null {
@@ -135,18 +129,14 @@ function arrastarGestoFlutuante(view: EditorView, e: PointerEvent): void {
   const escala = escalaDaVista(view);
   const dx = (e.clientX - g.x) / escala;
   const dy = (e.clientY - g.y) / escala;
-  // o elemento que carrega a posição pode ter sido remontado no meio do gesto:
-  // ele é procurado de novo a cada movimento
-  const alvo = elementoDoFlutuante(view, g.pos, g.alvoÉParagrafo);
-  if (!alvo) return;
-  // o deslocamento vai por VARIÁVEL: o `style` do flutuante (que o ProseMirror escreve no
-  // parágrafo) é a regra que manda nas margens — escrever a margem direto não venceria
-  // (e o texto não se reorganizaria)
+  // o deslocamento vai pela DECORAÇÃO (o plugin redesenha o flutuante): escrever no
+  // elemento não serve — o ProseMirror recria o parágrafo a cada atualização e o texto
+  // ficaria parado enquanto a imagem anda.
   // float à direita: anda a margem DIREITA (aumentar a margem joga a imagem para a esquerda);
   // nos outros casos (float à esquerda/centro, "topo e base" e imagem absoluta) anda a esquerda
   const passo = andaNaMargemDireita(g.dados) ? -dx : dx;
-  alvo.style.setProperty("--wd-fx", `${Math.round(passo)}px`);
-  alvo.style.setProperty("--wd-fy", `${Math.round(dy)}px`);
+  definirGestoAoVivo({ pos: g.pos, dx: passo, dy });
+  view.dispatch(requestingFlutuante(view.state));
   // a ÂNCORA candidata: o parágrafo que ficaria com a imagem (o texto sob a borda
   // superior dela). É o que o Word faz ao arrastar — a imagem troca de parágrafo e
   // o texto passa a se acomodar em volta no ponto novo.
@@ -217,24 +207,26 @@ function soltarGestoFlutuante(view: EditorView): void {
   // onde ela tem que ficar depois da troca de âncora
   const caixa = caixaDaImagem(view, g.pos);
   const topoSoltar = caixa ? caixa.top : 0;
-  // o gesto acabou: a posição volta a ser a do documento
-  const alvo = elementoDoFlutuante(view, g.pos, g.alvoÉParagrafo);
-  alvo?.style.removeProperty("--wd-fx");
-  alvo?.style.removeProperty("--wd-fy");
+  // o gesto acabou: o ao vivo sai e a posição volta a ser a do documento (a transação
+  // do fim redesenha o flutuante já com os valores guardados)
+  definirGestoAoVivo(null);
   const escala = escalaDaVista(view);
   const dx = (g.ultimoX - g.x) / escala;
   const dy = (g.ultimoY - g.y) / escala;
   const atual = view.state.doc.nodeAt(g.pos);
   if (!atual || atual.type.name !== "image") return;
 
+  // o deslocamento horizontal final é o que o gesto JÁ mostrou (o mesmo número do ao vivo):
+  // medir o DOM aqui daria outro valor (o elemento pode já ter voltado para a posição antiga)
+  const hOffset = Math.round(g.hOffset + (andaNaMargemDireita(g.dados) ? -dx : dx));
+
   // a âncora nova: a imagem vai para o parágrafo escolhido
   const paragrafoAtual = paragrafoDa(view.state, g.pos);
   if (g.ancora != null && g.ancora !== paragrafoAtual) {
-    reancorarImagem(view, g, g.ancora, topoSoltar);
+    reancorarImagem(view, g, g.ancora, topoSoltar, hOffset);
     return;
   }
 
-  const hOffset = Math.round(g.hOffset + (g.dados.hAlign === "right" ? -dx : dx));
   const vOffset = Math.round(g.vOffset + dy);
   if (hOffset === g.hOffset && vOffset === g.vOffset) return;
   const attrs: Record<string, unknown> = { ...atual.attrs, hOffset, vOffset };
@@ -258,14 +250,13 @@ function soltarGestoFlutuante(view: EditorView): void {
  * do parágrafo de origem e reinserido no parágrafo que ficou sob ele; o
  * deslocamento é a distância entre onde ele foi solto e a nova origem.
  */
-function reancorarImagem(view: EditorView, g: GestoFlutuante, paragrafo: number, topoSoltar: number): void {
+function reancorarImagem(view: EditorView, g: GestoFlutuante, paragrafo: number, topoSoltar: number, hOffset: number): void {
   const movido = moverParaParagrafo(view.state, g.pos, paragrafo + 1);
   if (!movido) return;
   const tr = movido.tr;
   const imagem = tr.doc.nodeAt(movido.pos);
   if (!imagem) return;
-  // o deslocamento horizontal: a coluna não muda de lugar
-  const hOffset = deslocamentoHorizontal(view, g);
+  // o deslocamento horizontal vem do gesto (a coluna não muda de lugar)
   tr.setNodeMarkup(movido.pos, undefined, { ...imagem.attrs, hOffset });
   tr.setSelection(NodeSelection.create(tr.doc, movido.pos));
   view.dispatch(tr);
@@ -283,25 +274,6 @@ function reancorarImagem(view: EditorView, g: GestoFlutuante, paragrafo: number,
   const tr2 = view.state.tr.setNodeMarkup(movido.pos, undefined, attrs);
   tr2.setSelection(NodeSelection.create(tr2.doc, movido.pos));
   view.dispatch(tr2);
-}
-
-/**
- * O deslocamento horizontal que põe a imagem onde ela está agora.
- *
- * O float à esquerda mede da margem esquerda; o à direita, da margem direita (é de
- * lá que a imagem "cresce"); o centralizado, do meio da coluna.
- */
-function deslocamentoHorizontal(view: EditorView, g: GestoFlutuante): number {
-  const escala = escalaDaVista(view);
-  const coluna = view.dom.getBoundingClientRect();
-  const caixa = caixaDaImagem(view, g.pos);
-  if (!caixa) return 0;
-  if (g.dados.hAlign === "right") return Math.round((coluna.right - caixa.right) / escala);
-  if (g.dados.hAlign === "center") {
-    const central = Math.max(0, Math.round((coluna.width / escala - caixa.width / escala) / 2));
-    return Math.round((caixa.left - coluna.left) / escala - central);
-  }
-  return Math.round((caixa.left - coluna.left) / escala);
 }
 
 // ---------------------------------------------------------------------------
@@ -581,11 +553,19 @@ export class ImagemView implements NodeView {
     const altura = Math.max(1, Math.round(largura / this.proporcao));
     this.img.style.width = `${Math.round(largura)}px`;
     this.img.style.height = `${altura}px`;
+    // o texto em volta se reacomoda AO VIVO: a largura do flutuante vem da decoração (o
+    // ProseMirror pode recriar a imagem no meio do gesto e o `style` à mão se perderia)
+    const pos = this.getPos();
+    if (typeof pos === "number") {
+      definirGestoAoVivo({ pos, largura: Math.round(largura), altura });
+      this.view.dispatch(requestingFlutuante(this.view.state));
+    }
   }
 
   private commitarGesto(): void {
     if (!this.gesto) return;
     this.gesto = null;
+    definirGestoAoVivo(null);
     this.dom.classList.remove("redimensionando");
     const largura = Math.round(this.img.getBoundingClientRect().width / this.escala());
     const altura = Math.round(this.img.getBoundingClientRect().height / this.escala());
@@ -603,6 +583,7 @@ export class ImagemView implements NodeView {
 
   private encerrarGesto(): void {
     this.gesto = null;
+    definirGestoAoVivo(null);
     this.dom.classList.remove("redimensionando");
   }
 }

@@ -34,9 +34,12 @@ arquivos `.docx` de verdade.
     página** (ela fica na mesma altura da página quando o texto acima cresce — o deslocamento é
     reacertado **na mesma tarefa da edição**, antes de a tela ser pintada, então a imagem não
     "treme" enquanto se digita acima dela; o `.docx` guarda como `positionV/@relativeFrom="page"`).
-  - **Arrastar a imagem flutuante reorganiza o texto enquanto se arrasta**: o deslocamento vai
-    direto para a folha (o texto se acomoda a cada movimento) e, no fim do gesto, a posição vira
-    uma transação — `Ctrl+Z` desfaz.
+  - **Arrastar e redimensionar reorganizam o texto em tempo real**: o deslocamento (e a largura, no
+    redimensionamento) entram na decoração da página a cada movimento — o ProseMirror recria o
+    parágrafo a cada atualização, então escrever a posição no elemento não funcionaria — e o texto
+    em volta se acomoda **enquanto o gesto acontece**. Ao soltar, a posição/tamanho viram uma
+    transação (`Ctrl+Z` desfaz) e a imagem **fica onde o gesto mostrou**, inclusive solta na área
+    vazia da página.
   - **Arrastar a imagem flutuante pelo TEXTO muda a âncora dela** (como no Word): o parágrafo que
     ficaria com a imagem é marcado com uma **barrinha de acento** e, ao soltar, a imagem **vai
     para esse parágrafo** — o texto passa a se acomodar em volta **no ponto novo** e o

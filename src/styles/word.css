@@ -950,6 +950,14 @@ body.settings-open #word-pane {
   max-width: 100%;
 }
 
+/* Redimensionamento AO VIVO: o tamanho vem da decoração (variáveis), porque o ProseMirror
+   pode recriar a imagem no meio do gesto — o `style` escrito à mão se perderia. O
+   `!important` vence o `width`/`height` que a imagem carrega do esquema. */
+.wd-img-ao-vivo img {
+  width: var(--wd-iw) !important;
+  height: var(--wd-ih) !important;
+}
+
 .wd-img-p {
   position: absolute;
   width: 9px;

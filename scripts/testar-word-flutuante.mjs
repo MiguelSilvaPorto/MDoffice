@@ -55,11 +55,16 @@ const frente = estilo("frente");
 ok("à frente vem por cima do texto", frente.imagem.includes("z-index:2"), frente.imagem);
 
 const centro = estilo("quadrado", { hAlign: "center" });
-ok("centralizado usa a sobra da linha", centro.paragrafo.includes("margin-left:calc(150px"), centro.paragrafo);
+ok("centralizado usa a sobra da linha", centro.paragrafo.includes("margin-left:150px"), centro.paragrafo);
 
-// o deslocamento do arrasto entra por VARIÁVEL: o style do flutuante é a regra que manda
-ok("a margem do arrasto é uma variável", quadrado.paragrafo.includes("var(--wd-fx"), quadrado.paragrafo);
-ok("a altura do arrasto é uma variável", quadrado.paragrafo.includes("var(--wd-fy"), quadrado.paragrafo);
+// o gesto AO VIVO entra na própria decoração (o ProseMirror recria o parágrafo e o que
+// estivesse escrito à mão no elemento morreria com ele)
+const aoVivo = estiloDoFlutuante(dadosDaImagem({ wrap: "quadrado" }), 600, 300, { pos: 5, dx: 40, dy: 12 });
+ok("o arrasto ao vivo soma o deslocamento horizontal", aoVivo.paragrafo.includes("margin-left:40px"), aoVivo.paragrafo);
+ok("o arrasto ao vivo soma o deslocamento vertical", aoVivo.paragrafo.includes("margin-top:12px"), aoVivo.paragrafo);
+const aoVivoLargo = estiloDoFlutuante(dadosDaImagem({ wrap: "quadrado" }), 600, 300, { pos: 5, largura: 220, altura: 140 });
+ok("o redimensionamento ao vivo muda a largura do flutuante", aoVivoLargo.paragrafo.includes("width:220px"), aoVivoLargo.paragrafo);
+ok("o redimensionamento ao vivo leva o tamanho para a imagem", aoVivoLargo.imagem.includes("--wd-iw:220px") && aoVivoLargo.imagem.includes("--wd-ih:140px"), aoVivoLargo.imagem);
 ok("a distância do texto no contorno é o shape-margin", contorno.paragrafo.includes("shape-margin:8px"), contorno.paragrafo);
 
 // ---------- a imagem sozinha no parágrafo ----------

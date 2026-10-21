@@ -452,6 +452,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A imagem acompanha o gesto em tempo real**: ao **arrastar** e ao **redimensionar** a
+  imagem, o texto em volta se reacomoda **enquanto o gesto acontece** — antes o arrasto só
+  mostrava o resultado ao soltar e o redimensionamento mexia na imagem sem mudar a largura que o
+  flutuante reservava (o texto ficava por baixo). Agora a posição e o tamanho do gesto entram na
+  própria decoração da página (o ProseMirror recria o parágrafo a cada atualização, e o que estava
+  escrito à mão nele morria com o elemento antigo). E soltar a imagem **em qualquer ponto da
+  página** funciona: ela fica onde o gesto mostrou (inclusive na área vazia embaixo do texto), sem
+  o pulo que dava quando a âncora mudava.
+
 - **A imagem fixa na página não treme mais enquanto se digita**: com uma imagem em **Fixar na
   página**, cada vez que o texto acima ganhava uma linha a imagem **descia junto** (ela é um
   flutuante, presa ao parágrafo) e só ~90 ms depois a paginação reacertava a altura — o olho via a

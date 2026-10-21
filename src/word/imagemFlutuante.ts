@@ -161,21 +161,56 @@ export interface EstilosFlutuante {
 }
 
 /**
+ * Os valores AO VIVO do gesto em andamento (arrasto ou redimensionamento).
+ *
+ * Eles entram na **decoração**, que o ProseMirror redesenha junto com a página. Escrever
+ * a posição à mão no elemento (ou numa variável CSS dele) não serve: o ProseMirror recria
+ * o parágrafo a cada atualização e o que estava escrito nele morre com o elemento antigo
+ * — era por isso que o texto não acompanhava o arrasto.
+ */
+export interface GestoAoVivo {
+  /** posição da imagem no documento */
+  pos: number;
+  /** deslocamento horizontal em px, já com o sinal da margem do lado certo */
+  dx?: number;
+  /** deslocamento vertical em px */
+  dy?: number;
+  /** tamanho ao vivo (redimensionamento), em px de papel */
+  largura?: number;
+  altura?: number;
+}
+
+let gestoAoVivo: GestoAoVivo | null = null;
+
+/** Guarda (ou limpa, com `null`) o gesto em andamento. */
+export function definirGestoAoVivo(g: GestoAoVivo | null): void {
+  gestoAoVivo = g;
+}
+
+/** O gesto em andamento (a decoração lê daqui). */
+export function gestoAoVivoAtual(): GestoAoVivo | null {
+  return gestoAoVivo;
+}
+
+/**
  * Estilo do parágrafo-âncora (o flutuante) e da imagem dentro dele.
  *
  * `larguraConteudo` é a largura da área de texto da página (px) — usada para centralizar.
- *
- * As margens que o **arrasto** mexeem entram como `calc(... + var(--wd-fx, 0px))`: a variável
- * é o deslocamento do gesto. Ela precisa ser uma variável (e não a margem escrita direto) porque
- * o `style` que o ProseMirror escreve no parágrafo é a regra que manda — escrever a margem
- * "por cima" não venceria, e o texto não se reorganizaria.
+ * `aoVivo` são os valores do gesto em andamento: eles entram somados à posição guardada,
+ * e mudam a largura do flutuante no redimensionamento (o texto se reacomoda na hora).
  */
-export function estiloDoFlutuante(d: DadosFlutuante, larguraConteudo: number, larguraImagem: number): EstilosFlutuante {
+export function estiloDoFlutuante(
+  d: DadosFlutuante,
+  larguraConteudo: number,
+  larguraImagem: number,
+  aoVivo: GestoAoVivo | null = null,
+): EstilosFlutuante {
   if (!ehFlutuante(d)) return { paragrafo: "", imagem: "" };
   const p: string[] = [];
   const i: string[] = [];
-  const w = Math.max(1, Math.round(larguraImagem));
-  const off = Math.round(d.vOffset);
+  const w = Math.max(1, Math.round(aoVivo?.largura ?? larguraImagem));
+  const off = Math.round(d.vOffset + (aoVivo?.dy ?? 0));
+  const offH = Math.round(d.hOffset + (aoVivo?.dx ?? 0));
   switch (d.wrap) {
     case "quadrado":
     case "contorno":
@@ -186,20 +221,20 @@ export function estiloDoFlutuante(d: DadosFlutuante, larguraConteudo: number, la
       p.push(`float:${direita ? "right" : "left"}`);
       p.push(`width:${w}px`);
       p.push("line-height:0");
-      p.push(`margin-top:calc(${off}px + var(--wd-fy, 0px))`);
+      p.push(`margin-top:${off}px`);
       p.push("margin-bottom:0");
       // no contorno a distância do texto vem do `shape-margin`, não da margem
       if (ehContorno(d)) p.push(`shape-margin:${d.shapeMargin}px`);
       if (centralizado) {
         const central = Math.max(0, Math.round((larguraConteudo - w) / 2));
-        p.push(`margin-left:calc(${central + Math.round(d.hOffset)}px + var(--wd-fx, 0px))`);
+        p.push(`margin-left:${central + offH}px`);
         p.push("margin-right:0");
       } else if (direita) {
-        p.push(`margin-right:calc(${Math.round(d.hOffset)}px + var(--wd-fx, 0px))`);
+        p.push(`margin-right:${offH}px`);
         // no contorno a distância do texto vem do `shape-margin`, não da margem
         p.push(`margin-left:${ehContorno(d) ? 0 : d.shapeMargin}px`);
       } else {
-        p.push(`margin-left:calc(${Math.round(d.hOffset)}px + var(--wd-fx, 0px))`);
+        p.push(`margin-left:${offH}px`);
         p.push(`margin-right:${ehContorno(d) ? 0 : d.shapeMargin}px`);
       }
       // "através": a imagem FICA ATRÁS do texto (o texto passa por cima dela)
@@ -211,12 +246,12 @@ export function estiloDoFlutuante(d: DadosFlutuante, larguraConteudo: number, la
       // e a posição na página sai da margem
       p.push(`width:${w}px`);
       p.push("line-height:0");
-      p.push(`margin-top:calc(${off}px + var(--wd-fy, 0px))`);
+      p.push(`margin-top:${off}px`);
       p.push("margin-bottom:0");
       const sobra = Math.max(0, Math.round(larguraConteudo - w));
-      if (d.hAlign === "center") p.push(`margin-left:calc(${Math.round(sobra / 2) + Math.round(d.hOffset)}px + var(--wd-fx, 0px))`);
-      else if (d.hAlign === "right") p.push(`margin-left:calc(${Math.max(0, sobra - Math.round(d.hOffset))}px + var(--wd-fx, 0px))`);
-      else p.push(`margin-left:calc(${Math.round(d.hOffset)}px + var(--wd-fx, 0px))`);
+      if (d.hAlign === "center") p.push(`margin-left:${Math.round(sobra / 2) + offH}px`);
+      else if (d.hAlign === "right") p.push(`margin-left:${Math.max(0, sobra - offH)}px`);
+      else p.push(`margin-left:${offH}px`);
       p.push("margin-right:0");
       break;
     }
@@ -233,14 +268,21 @@ export function estiloDoFlutuante(d: DadosFlutuante, larguraConteudo: number, la
       i.push(d.wrap === "atras" ? "z-index:-1" : "z-index:2");
       // a imagem absoluta nasce na posição do texto: a margem a joga para o lado pedido
       const sobra = Math.max(0, Math.round(larguraConteudo - w));
-      if (d.hAlign === "center") i.push(`margin-left:calc(${Math.round(sobra / 2) + Math.round(d.hOffset)}px + var(--wd-fx, 0px))`);
-      else if (d.hAlign === "right") i.push(`margin-left:calc(${Math.max(0, sobra - Math.round(d.hOffset))}px + var(--wd-fx, 0px))`);
-      else i.push(`margin-left:calc(${Math.round(d.hOffset)}px + var(--wd-fx, 0px))`);
-      i.push(`margin-top:calc(${off}px + var(--wd-fy, 0px))`);
+      if (d.hAlign === "center") i.push(`margin-left:${Math.round(sobra / 2) + offH}px`);
+      else if (d.hAlign === "right") i.push(`margin-left:${Math.max(0, sobra - offH)}px`);
+      else i.push(`margin-left:${offH}px`);
+      i.push(`margin-top:${off}px`);
       break;
     }
     default:
       break;
+  }
+  // redimensionamento ao vivo: o tamanho vai pela DECORAÇÃO, não pelo `style` da imagem —
+  // o ProseMirror pode recriar a imagem no meio do gesto e o que estiver escrito à mão morre
+  // com o elemento antigo (o desenho voltaria ao tamanho guardado)
+  if (aoVivo?.largura) {
+    i.push(`--wd-iw:${w}px`);
+    i.push(`--wd-ih:${Math.max(1, Math.round(aoVivo.altura ?? w))}px`);
   }
   return { paragrafo: p.join(";"), imagem: i.join(";") };
 }
@@ -280,13 +322,18 @@ function montar(state: EditorState, hooks: FlutuanteHooks, ancora: number | null
     if (!img) return false;
     const d = dadosDaImagem(img.attrs as Record<string, unknown>);
     if (!ehFlutuante(d)) return false;
-    const estilos = estiloDoFlutuante(d, larguraConteudo, Number(img.attrs.width) || 0);
+    const imgPos = pos + 1;
+    // o gesto em andamento (arrasto/redimensionamento) entra na decoração: é ela que o
+    // ProseMirror redesenha quando recria o parágrafo, então o ao vivo não se perde
+    const vivo = gestoAoVivoAtual();
+    const aoVivo = vivo && vivo.pos === imgPos ? vivo : null;
+    const estilos = estiloDoFlutuante(d, larguraConteudo, Number(img.attrs.width) || 0, aoVivo);
     const classe = ehContorno(d) ? classeDoContorno(String(img.attrs.src)) : "";
     // o `style` da decoração é SOMADO ao do parágrafo (o do flutuante vem por último e ganha)
     decos.push(Decoration.node(pos, pos + no.nodeSize, { class: `wd-flutuante ${classe}`.trim(), style: estilos.paragrafo }));
-    const imgPos = pos + 1;
     if (estilos.imagem) {
-      decos.push(Decoration.node(imgPos, imgPos + img.nodeSize, { class: `wd-img-${d.wrap}`, style: estilos.imagem }));
+      const classeImg = `wd-img-${d.wrap}${aoVivo ? " wd-img-ao-vivo" : ""}`;
+      decos.push(Decoration.node(imgPos, imgPos + img.nodeSize, { class: classeImg, style: estilos.imagem }));
     }
     return false;
   });
