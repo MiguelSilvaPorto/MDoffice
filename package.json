@@ -18,6 +18,7 @@
     "test:corretor-word": "node scripts/testar-corretor-word.mjs",
     "test:word-imagem": "node scripts/testar-word-imagem.mjs",
     "test:word-flutuante": "node scripts/testar-word-flutuante.mjs",
+    "test:word-ancora": "node scripts/testar-word-ancora.mjs",
     "test:word-exibir": "node scripts/testar-word-exibir.mjs",
     "test:word-livro": "node scripts/testar-word-livro.mjs",
     "test:autosave-doc": "node scripts/testar-autosave-por-documento.mjs",

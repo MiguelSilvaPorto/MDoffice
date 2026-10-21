@@ -28,9 +28,16 @@ arquivos `.docx` de verdade.
   - **Arrastar a imagem flutuante reorganiza o texto enquanto se arrasta**: o deslocamento vai
     direto para a folha (o texto se acomoda a cada movimento) e, no fim do gesto, a posição vira
     uma transação — `Ctrl+Z` desfaz.
+  - **Arrastar a imagem flutuante pelo TEXTO muda a âncora dela** (como no Word): o parágrafo que
+    ficaria com a imagem é marcado com uma **barrinha de acento** e, ao soltar, a imagem **vai
+    para esse parágrafo** — o texto passa a se acomodar em volta **no ponto novo** e o
+    deslocamento é recalculado para a imagem ficar onde foi solta. A âncora é o parágrafo que
+    fica sob a **borda superior** da imagem (a mesma regra do WordCraft, do ArtCraft).
   - A imagem flutuante ganha **parágrafo próprio** (é o parágrafo que vira o flutuante): por isso
     o texto dos parágrafos **vizinhos** se reorganiza em volta dela, e não só o do parágrafo onde
     ela está.
+  - Na **paginação**, a imagem flutuante **nunca é cortada** pela quebra de página: ela desce
+    inteira para a página seguinte, com o texto (é a âncora que manda na página do objeto).
   - O `.docx` guardado sai com a imagem **ancorada** (com a quebra e a posição) e volta igual ao
     ser aberto.
 - **Zoom** (barra inferior) e régua de trabalho na coluna de escrita. A folha é **sempre do

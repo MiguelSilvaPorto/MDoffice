@@ -28,6 +28,110 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## scripts/testar-layout.mts
+
+### 2026-10-21 · feat/imagem-ancora-paginacao · o teste de layout voltou a rodar até o fim
+- **Local:** a lista de folhas que escondem a alça da prévia e a checagem do "Ajustar" do Word
+- **Linha:** `["src/styles/palette.css", "focus-mode"]` → `["src/styles/busca.css", "focus-mode"]`
+  (a folha da paleta virou a da busca) e `disponivel / w` → `disponivel / largura` (o nome da
+  variável mudou no host do Word)
+- **Porquê:** o teste lia uma folha que **não existe mais** (a da paleta de comandos, que virou a
+  barra de busca) e quebrava no meio — as checagens depois dela nunca rodavam. Agora ele roda
+  inteiro: ficaram de fora seis falhas **do módulo de Apresentações** (o palco e o menu das
+  formas), que são de outro trabalho e não foram tocadas aqui.
+
+## src/styles/movimento.css
+
+### 2026-10-21 · feat/imagem-ancora-paginacao · as animações seguem a lista da busca
+- **Local:** as regras de movimento dos itens de lista
+- **Linha:** `.palette-item` → `.busca-item` e `.palette` → `.busca-painel` (a paleta virou a barra
+  de busca)
+- **Porquê:** com a paleta trocada pela barra de busca, as regras ficaram apontando para uma classe
+  que não existe mais: a lista da busca perdia a **entrada em escadinha** e o *hover* com
+  elevação que os outros itens do app têm.
+## src/word/imagem.ts
+
+### 2026-10-21 · feat/imagem-ancora-paginacao · arrastar a imagem flutuante pelo texto troca a âncora
+- **Local:** o NodeView (as alças e os cliques) e o bloco novo do gesto de mover o flutuante
+- **Linha:** o arrasto do flutuante (que só mudava `hOffset`/`vOffset`, com o estado `flutuando`
+  dentro do NodeView e as escutas no elemento) → um gesto **no módulo** (`GestoFlutuante`,
+  `iniciarGestoFlutuante`, `arrastarGestoFlutuante`, `soltarGestoFlutuante`, `reancorarImagem`),
+  com as escutas do ponteiro na **janela** e na fase de **captura**; e o `soltar` ganhou a
+  saída nova: quando o parágrafo candidato é outro, o nó da imagem **é movido para ele**
+  (`moverParaParagrafo`) e o deslocamento é recalculado
+- **Porquê:** a imagem flutuante podia ser arrastada **na página**, mas a âncora ficava presa no
+  parágrafo onde tinha nascido — não dava para levar a imagem a outro ponto do texto e ver o
+  texto se acomodar em volta **lá** (que era o pedido). A técnica é a do WordCraft (ArtCraft —
+  MIT OR Apache-2.0, ver `THIRD-PARTY-NOTICES.md`): o objeto é tirado do parágrafo de origem,
+  reinserido no parágrafo que ficou sob ele e o deslocamento é a distância entre onde ele foi
+  solto e a nova origem. O estado do gesto saiu do NodeView porque a paginação redesenha a
+  página no meio do gesto e remonta o NodeView — com o estado dentro dele, o "soltar" se perdia
+  e a imagem voltava sozinha para o lugar; e as escutas foram para a janela (fase de captura)
+  porque o ProseMirror consome o ponteiro e a escuta no elemento não via o "soltar".
+
+## src/word/ancoraImagem.ts
+
+### 2026-10-21 · feat/imagem-ancora-paginacao · a âncora da imagem (o parágrafo que a segura)
+- **Local:** arquivo novo — `paragrafoDa`, `ancoraCandidata`, `moverParaParagrafo`
+- **Linha:** novo arquivo
+- **Porquê:** a âncora do flutuante é o **parágrafo do texto** que segura a imagem — a mesma
+  ideia do WordCraft, onde a âncora é o caractere do objeto dentro do parágrafo (no mdOffice é o
+  próprio nó da imagem). Estas funções são **puras** (sem DOM, testáveis no Node): dizem de qual
+  parágrafo a imagem é dona, qual parágrafo ficaria com ela e como trocar a âncora (tirar o nó
+  de um parágrafo e inseri-lo no outro, deixando a imagem sozinha nele — o flutuante *é* o
+  parágrafo).
+
+## src/word/imagemFlutuante.ts
+
+### 2026-10-21 · feat/imagem-ancora-paginacao · a marca do destino do arrasto
+- **Local:** o plugin do flutuante (`pluginFlutuante`, `montar`) e a função `marcarAncora`
+- **Linha:** o plugin passou a guardar também a **âncora candidata** (`FlutuanteState.ancora`) e
+  a pintá-la como decoração (`wd-ancora-alvo`); `marcarAncora(view, ancora)` marca (ou desmarca)
+  o parágrafo que ficaria com a imagem
+- **Porquê:** arrastar a imagem pelo texto precisa **dizer onde ela vai ficar ancorada** — a
+  barrinha de acento no parágrafo de destino é essa informação. A marca é uma decoração (e não
+  uma classe no DOM) para o ProseMirror ser o dono dela: uma classe solta seria apagada no
+  redesenho seguinte.
+
+## src/styles/word.css
+
+### 2026-10-21 · feat/imagem-ancora-paginacao · o desenho da marca do destino
+- **Local:** a seção do flutuante
+- **Linha:** nova regra `.wd-doc .wd-ancora-alvo` (`box-shadow: inset 3px 0 0 var(--accent)` e
+  um fundo bem discreto)
+- **Porquê:** a marca tem que **aparecer sem mexer na largura do texto** (o texto se reorganiza
+  em volta da imagem enquanto o gesto acontece) — por isso o `box-shadow` (a `border` empurraria
+  o texto).
+
+## scripts/testar-word-ancora.mjs
+
+### 2026-10-21 · feat/imagem-ancora-paginacao · o teste da âncora da imagem
+- **Local:** arquivo novo
+- **Linha:** novo arquivo
+- **Porquê:** a âncora só se vê **arrastando de verdade** — nenhum teste de tela mostra isso. O
+  roteiro sobe o Vite, abre o Chrome sem cabeça e arrasta a imagem com o mouse de verdade
+  (mesmo padrão do `testar-cursor-mover.mjs`): confere que o destino é marcado, que a âncora
+  **muda** (o nó sai do parágrafo antigo e entra no novo), que a quebra continua a mesma, que o
+  texto se acomoda em volta no ponto novo, que **um** `Ctrl+Z` desfaz o gesto inteiro e que a
+  **paginação não corta** a imagem flutuante na quebra de página.
+
+## package.json
+
+### 2026-10-21 · feat/imagem-ancora-paginacao · o atalho do teste da âncora
+- **Local:** `scripts`
+- **Linha:** novo `"test:word-ancora": "node scripts/testar-word-ancora.mjs"`
+- **Porquê:** os testes do repo rodam por atalho (`npm run test:word-imagem`); o da âncora
+  precisa do app rodando (o próprio script sobe o Vite).
+
+## THIRD-PARTY-NOTICES.md
+
+### 2026-10-21 · feat/imagem-ancora-paginacao · o aviso do material de terceiros
+- **Local:** arquivo novo (na raiz)
+- **Linha:** novo arquivo
+- **Porquê:** a técnica da reancoração foi adaptada do **WordCraft** (ArtCraft), sob MIT OR
+  Apache-2.0: o aviso de copyright e o texto da licença (a MIT, a escolhida) ficam registrados
+  aqui, como a licença pede. O código do mdOffice é original — o que foi aproveitado foi a
+  ideia, que o Word já fazia.
 ## src/busca/tipos.ts
 
 ### 2026-10-20 · feat/busca-omnibar · o que é um comando e em qual módulo ele vale

@@ -12,7 +12,7 @@
 // `shape-outside: url(...)`: o navegador usa o canal ALFA da imagem como forma do flutuante.
 
 import { Plugin, PluginKey, type EditorState, type Transaction } from "prosemirror-state";
-import { Decoration, DecorationSet } from "prosemirror-view";
+import { Decoration, DecorationSet, type EditorView } from "prosemirror-view";
 import type { Node as PMNode } from "prosemirror-model";
 
 /** Como o texto se organiza em volta da imagem. */
@@ -213,11 +213,18 @@ export function estiloDoFlutuante(d: DadosFlutuante, larguraConteudo: number, la
 // O plugin: pinta o flutuante nos parágrafos
 // ---------------------------------------------------------------------------
 
-export const flutuanteKey = new PluginKey<DecorationSet>("flutuante");
+export const flutuanteKey = new PluginKey<FlutuanteState>("flutuante");
 
 export interface FlutuanteHooks {
   /** Largura da área de texto da página (px) — para centralizar a imagem. */
   larguraConteudo: () => number;
+}
+
+export interface FlutuanteState {
+  /** as decorações do flutuante */
+  decos: DecorationSet;
+  /** o parágrafo que ficaria com a imagem (no arrasto): recebe a marca de destino */
+  ancora: number | null;
 }
 
 /** O nó de imagem é o ÚNICO conteúdo do parágrafo? (condição para o parágrafo flutuar) */
@@ -228,7 +235,7 @@ function imagemSozinha(no: PMNode): PMNode | null {
   return filho;
 }
 
-function montar(state: EditorState, hooks: FlutuanteHooks): DecorationSet {
+function montar(state: EditorState, hooks: FlutuanteHooks, ancora: number | null): DecorationSet {
   const larguraConteudo = hooks.larguraConteudo();
   const decos: Decoration[] = [];
   state.doc.descendants((no, pos) => {
@@ -247,28 +254,49 @@ function montar(state: EditorState, hooks: FlutuanteHooks): DecorationSet {
     }
     return false;
   });
+  // o parágrafo que ficaria com a imagem no arrasto: a barrinha de acento
+  if (ancora != null) {
+    const no = state.doc.nodeAt(ancora);
+    if (no) decos.push(Decoration.node(ancora, ancora + no.nodeSize, { class: "wd-ancora-alvo" }));
+  }
   return DecorationSet.create(state.doc, decos);
 }
 
 /** O plugin que transforma o parágrafo-âncora no flutuante. */
-export function pluginFlutuante(hooks: FlutuanteHooks): Plugin<DecorationSet> {
-  return new Plugin<DecorationSet>({
+export function pluginFlutuante(hooks: FlutuanteHooks): Plugin<FlutuanteState> {
+  return new Plugin<FlutuanteState>({
     key: flutuanteKey,
     state: {
-      init: (_config, state) => montar(state, hooks),
+      init: (_config, state) => ({ decos: montar(state, hooks, null), ancora: null }),
       apply(tr, value, _old, newState) {
-        const meta = tr.getMeta(flutuanteKey) as { refresh?: boolean } | undefined;
-        if (meta?.refresh) return montar(newState, hooks);
-        if (!tr.docChanged) return value.map(tr.mapping, tr.doc);
-        return montar(newState, hooks);
+        const meta = tr.getMeta(flutuanteKey) as { refresh?: boolean; ancora?: number | null } | undefined;
+        if (meta?.refresh) return { decos: montar(newState, hooks, value.ancora), ancora: value.ancora };
+        if (meta && "ancora" in meta) {
+          const ancora = meta.ancora ?? null;
+          return { decos: montar(newState, hooks, ancora), ancora };
+        }
+        if (!tr.docChanged) return { decos: value.decos.map(tr.mapping, tr.doc), ancora: value.ancora };
+        // o documento mudou: a âncora candidata pode ter ido embora
+        const ancora = value.ancora != null && newState.doc.nodeAt(value.ancora) ? value.ancora : null;
+        return { decos: montar(newState, hooks, ancora), ancora };
       },
     },
     props: {
       decorations(state) {
-        return flutuanteKey.getState(state) ?? DecorationSet.empty;
+        return flutuanteKey.getState(state)?.decos ?? DecorationSet.empty;
       },
     },
   });
+}
+
+/**
+ * Marca (ou desmarca) o parágrafo que ficaria com a imagem no arrasto.
+ *
+ * A marca é a barrinha de acento à esquerda do parágrafo — ela diz ONDE a
+ * imagem vai ficar ancorada, que é a informação que o arrasto precisa dar.
+ */
+export function marcarAncora(view: EditorView, ancora: number | null): void {
+  view.dispatch(view.state.tr.setMeta(flutuanteKey, { ancora }).setMeta("addToHistory", false));
 }
 
 /** Redesenha os flutuantes (a página mudou: a largura da área de texto mudou). */
@@ -284,15 +312,20 @@ export function requestingFlutuante(state: EditorState): Transaction {
  * Deixa a imagem sozinha no seu parágrafo: o flutuante é o parágrafo, e um texto dividindo
  * o parágrafo com a imagem ficaria espremido na caixa do flutuante. Devolve a transação e a
  * nova posição da imagem.
+ *
+ * Aceita um estado (começa uma transação nova) ou uma transação já em andamento (continua
+ * nela) — é o que o arrasto precisa, quando a imagem já foi movida de parágrafo.
  */
-export function deixarImagemSozinha(state: EditorState, imgPos: number): { tr: Transaction; pos: number } {
-  const img = state.doc.nodeAt(imgPos);
-  if (!img || img.type.name !== "image") return { tr: state.tr, pos: imgPos };
-  const $pos = state.doc.resolve(imgPos);
+export function deixarImagemSozinha(base: EditorState | Transaction, imgPos: number): { tr: Transaction; pos: number } {
+  const img = base.doc.nodeAt(imgPos);
+  if (!img || img.type.name !== "image") return { tr: "tr" in base ? base.tr : base, pos: imgPos };
+  const $pos = base.doc.resolve(imgPos);
   const parent = $pos.parent;
-  if (parent.type.name !== "paragraph" && parent.type.name !== "heading") return { tr: state.tr, pos: imgPos };
-  if (parent.childCount === 1) return { tr: state.tr, pos: imgPos };
-  let tr = state.tr;
+  if (parent.type.name !== "paragraph" && parent.type.name !== "heading") {
+    return { tr: "tr" in base ? base.tr : base, pos: imgPos };
+  }
+  if (parent.childCount === 1) return { tr: "tr" in base ? base.tr : base, pos: imgPos };
+  let tr = "tr" in base ? base.tr : base;
   let pos = imgPos;
   const offset = $pos.parentOffset;
   const temAntes = offset > 0;

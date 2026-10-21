@@ -7,7 +7,13 @@
 //  - imagem FLUTUANTE (quadrado, contorno, topo e base, através, atrás, à frente): o
 //    arrasto MOVE a imagem e o texto se reorganiza em volta enquanto o gesto acontece —
 //    o deslocamento vai direto para o elemento flutuante, sem passar pelo documento, e só
-//    no fim do gesto vira uma transação (Ctrl+Z desfaz).
+//    no fim do gesto vira uma transação (Ctrl+Z desfaz). Quando a imagem é solta sobre
+//    OUTRO parágrafo, a ÂNCORA dela muda: o nó vai para lá e o texto passa a se acomodar
+//    em volta no ponto novo (como no Word e no WordCraft).
+//
+// O gesto de mover o flutuante mora FORA do NodeView (no módulo): a paginação redesenha
+// a página no meio do gesto e o NodeView é remontado — se o estado do gesto ficasse
+// nele, o "soltar" se perderia.
 //
 // O tamanho vive nos atributos `width`/`height` do nó (é o que o .docx importa/exporta),
 // então o redimensionamento sobrevive a salvar, reabrir e desfazer (uma transação por
@@ -16,17 +22,284 @@
 import type { Node as PMNode } from "prosemirror-model";
 import { NodeSelection, TextSelection } from "prosemirror-state";
 import { moverImagem } from "./imagemMover";
+import { ancoraCandidata, moverParaParagrafo, paragrafoDa } from "./ancoraImagem";
 import {
   andaNaMargemDireita,
   dadosDaImagem,
   ehFlutuante,
   ehFloatDeTexto,
+  marcarAncora,
   type DadosFlutuante,
 } from "./imagemFlutuante";
 import type { EditorView, NodeView } from "prosemirror-view";
 
 /** Tamanho mínimo de uma imagem redimensionada (px). */
 const MINIMO = 24;
+
+// ---------------------------------------------------------------------------
+// O gesto de MOVER a imagem flutuante (fora do NodeView — ver o aviso do topo)
+// ---------------------------------------------------------------------------
+
+interface GestoFlutuante {
+  /** a posição do nó da imagem no documento */
+  pos: number;
+  /** de onde o gesto saiu (px de tela) */
+  x: number;
+  y: number;
+  /** última posição do ponteiro (px de tela) — o "soltar" usa ela para gravar o destino */
+  ultimoX: number;
+  ultimoY: number;
+  /** o deslocamento que a imagem tinha antes do gesto */
+  hOffset: number;
+  vOffset: number;
+  /** os dados de flutuação no começo do gesto */
+  dados: DadosFlutuante;
+  /** o flutuante é o PARÁGRAFO (true) ou a própria imagem absoluta (false) */
+  alvoÉParagrafo: boolean;
+  /** o parágrafo que ficaria com a imagem (a âncora candidata) */
+  ancora: number | null;
+}
+
+/** Só um gesto por vez (o do módulo — o NodeView pode ser remontado no meio dele). */
+let gestoFlutuante: GestoFlutuante | null = null;
+
+/** O elemento que carrega a posição do flutuante (o parágrafo ou a própria imagem). */
+function elementoDoFlutuante(view: EditorView, pos: number, alvoÉParagrafo: boolean): HTMLElement | null {
+  const no = view.nodeDOM(pos);
+  if (!(no instanceof HTMLElement)) return null;
+  if (!alvoÉParagrafo) return no;
+  return (no.parentElement as HTMLElement | null) ?? null;
+}
+
+/** O retângulo da imagem na tela (o NodeView pode ter sido remontado). */
+function caixaDaImagem(view: EditorView, pos: number): DOMRect | null {
+  const no = view.nodeDOM(pos);
+  if (!(no instanceof HTMLElement)) return null;
+  const img = no.querySelector("img") ?? no;
+  return img.getBoundingClientRect();
+}
+
+/** A escala da vista: o ponteiro anda em pixels de TELA, o documento em pixels de PAPEL. */
+function escalaDaVista(view: EditorView): number {
+  const dom = view.dom as HTMLElement;
+  const caixa = dom.getBoundingClientRect();
+  const s = caixa.width / dom.offsetWidth;
+  return s > 0.05 ? s : 1;
+}
+
+/**
+ * Começa o gesto de MOVER a imagem flutuante.
+ *
+ * O deslocamento vai direto para o elemento flutuante (o parágrafo, quando a imagem
+ * é um `float`; a própria imagem, quando ela é absoluta) — o navegador reflui o
+ * texto em volta a cada movimento. No fim do gesto o deslocamento vira uma transação.
+ */
+function iniciarGestoFlutuante(view: EditorView, pos: number, dados: DadosFlutuante, e: PointerEvent): void {
+  const alvoÉParagrafo = ehFloatDeTexto(dados);
+  gestoFlutuante = {
+    pos,
+    x: e.clientX,
+    y: e.clientY,
+    ultimoX: e.clientX,
+    ultimoY: e.clientY,
+    hOffset: dados.hOffset,
+    vOffset: dados.vOffset,
+    dados,
+    alvoÉParagrafo,
+    ancora: null,
+  };
+  // As escutas ficam na JANELA, na fase de CAPTURA: o ProseMirror consome o ponteiro
+  // e o parágrafo pode ser remontado no meio do gesto (a paginação redesenha a
+  // página) — com a escuta no elemento, o "soltar" nunca chegaria.
+  const mover = (ev: PointerEvent) => arrastarGestoFlutuante(view, ev);
+  const soltar = () => {
+    window.removeEventListener("pointermove", mover, true);
+    window.removeEventListener("pointerup", soltar, true);
+    window.removeEventListener("pointercancel", soltar, true);
+    soltarGestoFlutuante(view);
+  };
+  window.addEventListener("pointermove", mover, true);
+  window.addEventListener("pointerup", soltar, true);
+  window.addEventListener("pointercancel", soltar, true);
+  // o cursor de "arrastando" (o CSS cuida do resto)
+  const no = view.nodeDOM(pos);
+  if (no instanceof HTMLElement) no.classList.add("movendo");
+}
+
+/** Move o flutuante AO VIVO: o texto se reorganiza em volta enquanto o dedo arrasta. */
+function arrastarGestoFlutuante(view: EditorView, e: PointerEvent): void {
+  const g = gestoFlutuante;
+  if (!g) return;
+  g.ultimoX = e.clientX;
+  g.ultimoY = e.clientY;
+  const escala = escalaDaVista(view);
+  const dx = (e.clientX - g.x) / escala;
+  const dy = (e.clientY - g.y) / escala;
+  // o elemento que carrega a posição pode ter sido remontado no meio do gesto:
+  // ele é procurado de novo a cada movimento
+  const alvo = elementoDoFlutuante(view, g.pos, g.alvoÉParagrafo);
+  if (!alvo) return;
+  // o deslocamento vai por VARIÁVEL: o `style` do flutuante (que o ProseMirror escreve no
+  // parágrafo) é a regra que manda nas margens — escrever a margem direto não venceria
+  // (e o texto não se reorganizaria)
+  // float à direita: anda a margem DIREITA (aumentar a margem joga a imagem para a esquerda);
+  // nos outros casos (float à esquerda/centro, "topo e base" e imagem absoluta) anda a esquerda
+  const passo = andaNaMargemDireita(g.dados) ? -dx : dx;
+  alvo.style.setProperty("--wd-fx", `${Math.round(passo)}px`);
+  alvo.style.setProperty("--wd-fy", `${Math.round(dy)}px`);
+  // a ÂNCORA candidata: o parágrafo que ficaria com a imagem (o texto sob a borda
+  // superior dela). É o que o Word faz ao arrastar — a imagem troca de parágrafo e
+  // o texto passa a se acomodar em volta no ponto novo.
+  const caixa = caixaDaImagem(view, g.pos);
+  if (!caixa) return;
+  const texto = textoNaAltura(view, g, caixa.top + 1);
+  const candidata = texto != null ? ancoraCandidata(view.state, texto) : null;
+  const ancora = candidata?.paragrafo ?? null;
+  if (ancora === g.ancora) return;
+  g.ancora = ancora;
+  marcarAncora(view, ancora);
+}
+
+/**
+ * A posição do texto na altura dada — o parágrafo que está ali.
+ *
+ * O ponto é procurado do lado OPOSTO ao da imagem (é de lá que vem o texto que
+ * contorna o flutuante) e um pouco afastado dela: colado na borda da imagem o
+ * navegador não acha texto (ali é a folga do contorno) e devolve a própria imagem.
+ */
+function textoNaAltura(view: EditorView, g: GestoFlutuante, y: number): number | null {
+  const caixa = caixaDaImagem(view, g.pos);
+  if (!caixa) return null;
+  const coluna = view.dom.getBoundingClientRect();
+  const dentroDaImagem = (pos: number): boolean => {
+    const no = view.state.doc.nodeAt(g.pos);
+    if (!no) return false;
+    return pos >= g.pos && pos <= g.pos + no.nodeSize;
+  };
+  const xs = [
+    caixa.right + 10,
+    caixa.right + 26,
+    caixa.right + 48,
+    caixa.left - 10,
+    caixa.left - 26,
+    caixa.left - 48,
+    coluna.left + 4,
+    coluna.right - 4,
+  ];
+  for (const yy of [y, y + 4, y + 8]) {
+    for (const x of xs) {
+      const coords = view.posAtCoords({ left: x, top: yy });
+      if (!coords || dentroDaImagem(coords.pos)) continue;
+      return coords.pos;
+    }
+  }
+  return null;
+}
+
+/**
+ * Grava o gesto no documento.
+ *
+ * Duas saídas:
+ *  - a imagem foi solta sobre OUTRO parágrafo: a **âncora muda** (o nó vai para
+ *    lá e o texto se acomoda em volta no ponto novo);
+ *  - a âncora é a mesma: só o deslocamento muda (a imagem passeia na página).
+ */
+function soltarGestoFlutuante(view: EditorView): void {
+  const g = gestoFlutuante;
+  gestoFlutuante = null;
+  if (!g) return;
+  // a marca do destino some
+  marcarAncora(view, null);
+  // o cursor de "arrastando" sai
+  const no = view.nodeDOM(g.pos);
+  if (no instanceof HTMLElement) no.classList.remove("movendo");
+  // o topo da imagem no momento do "soltar" (com o deslocamento do gesto): é
+  // onde ela tem que ficar depois da troca de âncora
+  const caixa = caixaDaImagem(view, g.pos);
+  const topoSoltar = caixa ? caixa.top : 0;
+  // o gesto acabou: a posição volta a ser a do documento
+  const alvo = elementoDoFlutuante(view, g.pos, g.alvoÉParagrafo);
+  alvo?.style.removeProperty("--wd-fx");
+  alvo?.style.removeProperty("--wd-fy");
+  const escala = escalaDaVista(view);
+  const dx = (g.ultimoX - g.x) / escala;
+  const dy = (g.ultimoY - g.y) / escala;
+  const atual = view.state.doc.nodeAt(g.pos);
+  if (!atual || atual.type.name !== "image") return;
+
+  // a âncora nova: a imagem vai para o parágrafo escolhido
+  const paragrafoAtual = paragrafoDa(view.state, g.pos);
+  if (g.ancora != null && g.ancora !== paragrafoAtual) {
+    reancorarImagem(view, g, g.ancora, topoSoltar);
+    return;
+  }
+
+  const hOffset = Math.round(g.hOffset + (g.dados.hAlign === "right" ? -dx : dx));
+  const vOffset = Math.round(g.vOffset + dy);
+  if (hOffset === g.hOffset && vOffset === g.vOffset) return;
+  const tr = view.state.tr.setNodeMarkup(g.pos, undefined, { ...atual.attrs, hOffset, vOffset });
+  // trocar o nó zera o NodeSelection (vira cursor de texto) e as alças sumiriam
+  tr.setSelection(NodeSelection.create(tr.doc, g.pos));
+  view.dispatch(tr);
+}
+
+/**
+ * Troca a âncora da imagem: o nó vai para o parágrafo escolhido e o deslocamento
+ * é recalculado a partir dele — a imagem continua onde foi solta e o texto passa a
+ * se acomodar em volta no ponto novo.
+ *
+ * A sequência é a do WordCraft (ArtCraft — MIT OR Apache-2.0): o objeto é tirado
+ * do parágrafo de origem e reinserido no parágrafo que ficou sob ele; o
+ * deslocamento é a distância entre onde ele foi solto e a nova origem.
+ */
+function reancorarImagem(view: EditorView, g: GestoFlutuante, paragrafo: number, topoSoltar: number): void {
+  const movido = moverParaParagrafo(view.state, g.pos, paragrafo + 1);
+  if (!movido) return;
+  const tr = movido.tr;
+  const imagem = tr.doc.nodeAt(movido.pos);
+  if (!imagem) return;
+  // o deslocamento horizontal: a coluna não muda de lugar
+  const hOffset = deslocamentoHorizontal(view, g);
+  tr.setNodeMarkup(movido.pos, undefined, { ...imagem.attrs, hOffset });
+  tr.setSelection(NodeSelection.create(tr.doc, movido.pos));
+  view.dispatch(tr);
+  // o deslocamento VERTICAL sai da nova origem: depois do movimento o texto acima
+  // mudou de lugar, então a origem só é conhecida agora (com o documento já
+  // redesenhado)
+  const escala = escalaDaVista(view);
+  const caixa = caixaDaImagem(view, movido.pos);
+  if (!caixa) return;
+  const vOffset = Math.round(g.vOffset + (topoSoltar - caixa.top) / escala);
+  const tr2 = view.state.tr.setNodeMarkup(movido.pos, undefined, {
+    ...(view.state.doc.nodeAt(movido.pos)?.attrs ?? {}),
+    vOffset,
+  });
+  tr2.setSelection(NodeSelection.create(tr2.doc, movido.pos));
+  view.dispatch(tr2);
+}
+
+/**
+ * O deslocamento horizontal que põe a imagem onde ela está agora.
+ *
+ * O float à esquerda mede da margem esquerda; o à direita, da margem direita (é de
+ * lá que a imagem "cresce"); o centralizado, do meio da coluna.
+ */
+function deslocamentoHorizontal(view: EditorView, g: GestoFlutuante): number {
+  const escala = escalaDaVista(view);
+  const coluna = view.dom.getBoundingClientRect();
+  const caixa = caixaDaImagem(view, g.pos);
+  if (!caixa) return 0;
+  if (g.dados.hAlign === "right") return Math.round((coluna.right - caixa.right) / escala);
+  if (g.dados.hAlign === "center") {
+    const central = Math.max(0, Math.round((coluna.width / escala - caixa.width / escala) / 2));
+    return Math.round((caixa.left - coluna.left) / escala - central);
+  }
+  return Math.round((caixa.left - coluna.left) / escala);
+}
+
+// ---------------------------------------------------------------------------
+// O NodeView
+// ---------------------------------------------------------------------------
 
 export class ImagemView implements NodeView {
   readonly dom: HTMLElement;
@@ -40,20 +313,6 @@ export class ImagemView implements NodeView {
   private gesto: { x: number; y: number; w: number; h: number; dir: string } | null = null;
   /** dados de flutuação da imagem atual (o modo de quebra) */
   private dados: DadosFlutuante = dadosDaImagem({});
-  /** o gesto de MOVER o flutuante (imagem flutuante) */
-  private flutuando: {
-    x: number;
-    y: number;
-    /** última posição do ponteiro (px de tela) — o "soltar" usa ela para gravar o destino */
-    ultimoX: number;
-    ultimoY: number;
-    /** elemento que carrega a posição: o parágrafo (float) ou a própria imagem (absoluta) */
-    alvo: HTMLElement;
-    hOffset: number;
-    vOffset: number;
-    /** o flutuante é o PARÁGRAFO (true) ou a própria imagem absoluta (false) */
-    alvoÉParagrafo: boolean;
-  } | null = null;
 
   constructor(node: PMNode, view: EditorView, getPos: () => number | undefined) {
     this.node = node;
@@ -140,7 +399,12 @@ export class ImagemView implements NodeView {
 
   destroy(): void {
     this.encerrarGesto();
-    this.flutuando = null;
+    // a imagem saiu do documento? (o NodeView é remontado o tempo todo — quando
+    // a paginação redesenha a página — e o gesto tem de continuar)
+    const g = gestoFlutuante;
+    if (!g) return;
+    const no = this.view.state.doc.nodeAt(g.pos);
+    if (!no || no.type.name !== "image") gestoFlutuante = null;
   }
 
   /** Lê os atributos e desenha a imagem; guarda a proporção para o redimensionamento. */
@@ -179,10 +443,7 @@ export class ImagemView implements NodeView {
    * Sem esta divisão o gesto sai torto (e o redimensionamento gravava o tamanho errado).
    */
   private escala(): number {
-    const dom = this.view.dom as HTMLElement;
-    const caixa = dom.getBoundingClientRect();
-    const s = caixa.width / dom.offsetWidth;
-    return s > 0.05 ? s : 1;
+    return escalaDaVista(this.view);
   }
 
   // ---------- mover ----------
@@ -193,7 +454,10 @@ export class ImagemView implements NodeView {
   private iniciarMovimento(e: PointerEvent, alvo: HTMLElement): void {
     // imagem FLUTUANTE: o arrasto move a imagem e o texto se ajusta em volta ao vivo
     if (ehFlutuante(this.dados)) {
-      this.iniciarMovimentoFlutuante(e, alvo);
+      const pos = this.getPos();
+      if (typeof pos !== "number") return;
+      this.selecionar();
+      iniciarGestoFlutuante(this.view, pos, this.dados, e);
       return;
     }
     const pos = this.getPos();
@@ -249,95 +513,6 @@ export class ImagemView implements NodeView {
     if (!r) return;
     r.tr.setSelection(NodeSelection.create(r.tr.doc, r.destino));
     this.view.dispatch(r.tr);
-  }
-
-  // ---------- mover o flutuante (o texto se ajusta em tempo real) ----------
-
-  /**
-   * Começa o gesto de MOVER a imagem flutuante. O deslocamento vai direto para o elemento
-   * flutuante (o parágrafo, quando a imagem é um `float`; a própria imagem, quando ela é
-   * absoluta) — o navegador reflui o texto em volta a cada movimento. No fim do gesto o
-   * deslocamento vira uma transação.
-   */
-  private iniciarMovimentoFlutuante(e: PointerEvent, alvo: HTMLElement): void {
-    const pos = this.getPos();
-    if (typeof pos !== "number") return;
-    this.selecionar();
-    // o flutuante (quadrado, contorno, topo e base, através) é o PARÁGRAFO; atrás/à frente a
-    // imagem é absoluta e quem anda é ela
-    const alvoÉParagrafo = ehFloatDeTexto(this.dados);
-    const elemento = alvoÉParagrafo ? (this.dom.parentElement as HTMLElement | null) : this.dom;
-    if (!elemento) return;
-    this.flutuando = {
-      x: e.clientX,
-      y: e.clientY,
-      ultimoX: e.clientX,
-      ultimoY: e.clientY,
-      alvo: elemento,
-      hOffset: this.dados.hOffset,
-      vOffset: this.dados.vOffset,
-      alvoÉParagrafo,
-    };
-    this.dom.classList.add("movendo");
-    try {
-      alvo.setPointerCapture(e.pointerId);
-    } catch {
-      /* ponteiro sintético (teste) não tem captura */
-    }
-    const mover = (ev: PointerEvent) => this.arrastarFlutuante(ev);
-    const soltar = () => {
-      alvo.removeEventListener("pointermove", mover);
-      alvo.removeEventListener("pointerup", soltar);
-      alvo.removeEventListener("pointercancel", soltar);
-      this.soltarFlutuante();
-    };
-    alvo.addEventListener("pointermove", mover);
-    alvo.addEventListener("pointerup", soltar);
-    alvo.addEventListener("pointercancel", soltar);
-  }
-
-  /** Move o flutuante AO VIVO: o texto se reorganiza em volta enquanto o dedo arrasta. */
-  private arrastarFlutuante(e: PointerEvent): void {
-    const m = this.flutuando;
-    if (!m) return;
-    m.ultimoX = e.clientX;
-    m.ultimoY = e.clientY;
-    const escala = this.escala();
-    const dx = (e.clientX - m.x) / escala;
-    const dy = (e.clientY - m.y) / escala;
-    // o deslocamento vai por VARIÁVEL: o `style` do flutuante (que o ProseMirror escreve no
-    // parágrafo) é a regra que manda nas margens — escrever a margem direto não venceria
-    // (e o texto não se reorganizaria)
-    // float à direita: anda a margem DIREITA (aumentar a margem joga a imagem para a esquerda);
-    // nos outros casos (float à esquerda/centro, "topo e base" e imagem absoluta) anda a esquerda
-    const passo = andaNaMargemDireita(this.dados) ? -dx : dx;
-    m.alvo.style.setProperty("--wd-fx", `${Math.round(passo)}px`);
-    m.alvo.style.setProperty("--wd-fy", `${Math.round(dy)}px`);
-  }
-
-  /** Grava o deslocamento no documento (uma transação: Ctrl+Z desfaz). */
-  private soltarFlutuante(): void {
-    const m = this.flutuando;
-    this.flutuando = null;
-    this.dom.classList.remove("movendo");
-    if (!m) return;
-    // o gesto acabou: a posição volta a ser a do documento
-    m.alvo.style.removeProperty("--wd-fx");
-    m.alvo.style.removeProperty("--wd-fy");
-    const escala = this.escala();
-    const dx = (m.ultimoX - m.x) / escala;
-    const dy = (m.ultimoY - m.y) / escala;
-    const pos = this.getPos();
-    if (typeof pos !== "number") return;
-    const atual = this.view.state.doc.nodeAt(pos);
-    if (!atual || atual.type !== this.node.type) return;
-    const hOffset = Math.round(m.hOffset + (this.dados.hAlign === "right" ? -dx : dx));
-    const vOffset = Math.round(m.vOffset + dy);
-    if (hOffset === m.hOffset && vOffset === m.vOffset) return;
-    const tr = this.view.state.tr.setNodeMarkup(pos, undefined, { ...atual.attrs, hOffset, vOffset });
-    // trocar o nó zera o NodeSelection (vira cursor de texto) e as alças sumiriam
-    tr.setSelection(NodeSelection.create(tr.doc, pos));
-    this.view.dispatch(tr);
   }
 
   // ---------- redimensionar ----------

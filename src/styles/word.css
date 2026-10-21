@@ -970,6 +970,15 @@ body.settings-open #word-pane {
   z-index: -1;
 }
 
+/* O destino do arrasto: o parágrafo que ficaria com a imagem. A barrinha de
+   acento à esquerda diz ONDE a imagem vai ser ancorada — o `box-shadow` (e não a
+   borda) para não mexer na largura do texto enquanto o gesto acontece. */
+.wd-doc .wd-ancora-alvo {
+  box-shadow: inset 3px 0 0 var(--accent);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
 .wd-doc table {
   width: 100%;
   margin: 6pt 0;

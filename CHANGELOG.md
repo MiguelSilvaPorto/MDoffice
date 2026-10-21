@@ -394,6 +394,7 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada no momento)
 
 **Frontend**
+
 - **O Word ganhou o modo LIVRO** (aba **Exibir** ▸ *Modos de Exibição*): a folha vira um **livro
   aberto** — a página 1 fica à esquerda, a 2 à direita, a 3 e a 4 na faixa de baixo, com a
   **lombada no meio**. A paginação monta essa grade: cada bloco é levado para a casa da sua
@@ -450,6 +451,22 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
 
 **Frontend**
+
+- **A imagem flutuante agora anda pelo texto (a âncora muda com o arrasto)**: até aqui a imagem
+  que flutua (quadrado, contorno, topo e base, através) podia ser **arrastada na página**, mas a
+  **âncora dela ficava presa** no parágrafo onde tinha nascido — não dava para levar a imagem
+  para outro ponto do texto e ver o texto se acomodar em volta **lá**. Agora, arrastando a imagem
+  pelo texto, o parágrafo que ficaria com ela é **marcado com uma barrinha de acento** e, ao
+  soltar, a **âncora muda**: o nó da imagem vai para o parágrafo escolhido, o texto passa a se
+  acomodar em volta no ponto novo e o deslocamento é recalculado para a imagem **ficar onde foi
+  solta**. É o mesmo gesto do Word (e a mesma técnica do **WordCraft**, do ArtCraft — MIT OR
+  Apache-2.0, com a atribuição em `THIRD-PARTY-NOTICES.md`). Um `Ctrl+Z` só desfaz o gesto
+  inteiro.
+
+  De brinde, o arrasto do flutuante parou de se perder no meio do caminho: o estado do gesto
+  mora **fora** do `NodeView` (a paginação redesenha a página e o `NodeView` é remontado — com o
+  estado dentro dele, o "soltar" não chegava e a imagem voltava sozinha para o lugar) e as
+  escutas do ponteiro ficaram na janela, na fase de captura (o ProseMirror consome o ponteiro).
 
 - **A sugestão enquanto digita aparece na hora, mesmo digitando rápido**: no Word ela esperava **90 ms** sem
   tecla e o relógio reiniciava a cada letra — a 10 letras por segundo quase nunca chegava a aparecer (só nas

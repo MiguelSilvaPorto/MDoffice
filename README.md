@@ -94,6 +94,9 @@ nada de azul, verde ou laranja das marcas do Office.
 
 MIT — veja [LICENSE](LICENSE). © 2026 Miguel Silva Porto.
 
+O material de terceiros cuja técnica foi inspirada ou adaptada está em
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
 O código do projeto é MIT; os componentes de terceiros mantêm as licenças próprias —
 as fontes embutidas (OFL) e os dicionários derivados do LibreOffice/TeP.
 

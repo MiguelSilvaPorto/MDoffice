@@ -183,7 +183,7 @@ checa(
     /@keyframes mdc-menu-mais/.test(mov) &&
     /@keyframes mdc-item-mais/.test(mov) &&
     /html\.anim-completa \.modal-backdrop > :not\(style\):not\(script\)\s*\{[^}]*mdc-surgir-mais[^}]*var\(--curva-mola\)/.test(mov) &&
-    /html\.anim-completa \.palette-item:nth-child\(3\)\s*\{[^}]*animation-delay:\s*52ms/.test(mov),
+    /html\.anim-completa \.busca-item:nth-child\(3\)\s*\{[^}]*animation-delay:\s*52ms/.test(mov),
   "o nível completo voltaria a ser só 30 ms mais lento que o padrão"
 );
 checa(
@@ -265,7 +265,7 @@ const paineis: [string, string][] = [
   ["src/styles/powerpoint.css", "ppt-open"],
   ["src/styles/excel.css", "xlsx-open"],
   ["src/styles/settings.css", "settings-open"],
-  ["src/styles/palette.css", "focus-mode"],
+  ["src/styles/busca.css", "focus-mode"],
 ];
 for (const [arquivo, classe] of paineis) {
   checa(
@@ -1745,7 +1745,7 @@ console.log("\nWord: o papel é fixo (A4/Carta) e o zoom é só a vista");
   );
   checa(
     "o 'Ajustar' faz a folha caber na largura — e nunca aumenta além de 100%",
-    /private fitToWidth\(\): void \{/.test(hostWord) && /this\.setZoom\(Math\.min\(1, disponivel \/ w\)\)/.test(hostWord),
+    /private fitToWidth\(\): void \{/.test(hostWord) && /this\.setZoom\(Math\.min\(1, disponivel \/ largura\)\)/.test(hostWord),
     "o fit poderia ampliar a página (não é para isso) ou nem existir"
   );
   checa(

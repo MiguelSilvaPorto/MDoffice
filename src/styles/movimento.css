@@ -39,11 +39,11 @@ html.anim-completa {
 
 /* discreta: sem elevação, sem cascata e sem entradas — só cor e opacidade */
 
-html.anim-discreta :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .win-btn, .dd-item, .palette-item, .seg-btn, .st-card):hover {
+html.anim-discreta :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .win-btn, .dd-item, .busca-item, .seg-btn, .st-card):hover {
   transform: none !important;
 }
 
-html.anim-discreta :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .win-btn, .dd-item, .palette-item, .seg-btn):active {
+html.anim-discreta :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .win-btn, .dd-item, .busca-item, .seg-btn):active {
   transform: none !important;
 }
 
@@ -78,11 +78,11 @@ html.anim-discreta :where(
 
 /* completa: mais relevo e cascata mais espaçada */
 
-html.anim-completa :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .win-btn, .dd-item, .palette-item, .seg-btn):hover {
+html.anim-completa :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .win-btn, .dd-item, .busca-item, .seg-btn):hover {
   transform: translateY(-3px) !important;
 }
 
-html.anim-completa :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .win-btn, .dd-item, .palette-item, .seg-btn):active {
+html.anim-completa :where(.btn, .tbtn, .sb-mini, .tab-new, .tab-recents, .path-btn, .win-btn, .dd-item, .busca-item, .seg-btn):active {
   transform: translateY(0) scale(0.96) !important;
 }
 
@@ -150,35 +150,35 @@ html.anim-completa .home-grid .home-card {
 }
 
 /* a lista da paleta (Ctrl+K) entra em escadinha */
-html.anim-completa .palette-item {
+html.anim-completa .busca-item {
   animation: mdc-item-mais var(--mov-2) var(--curva-entrada) both !important;
 }
 
-html.anim-completa .palette-item:nth-child(2) {
+html.anim-completa .busca-item:nth-child(2) {
   animation-delay: 26ms !important;
 }
 
-html.anim-completa .palette-item:nth-child(3) {
+html.anim-completa .busca-item:nth-child(3) {
   animation-delay: 52ms !important;
 }
 
-html.anim-completa .palette-item:nth-child(4) {
+html.anim-completa .busca-item:nth-child(4) {
   animation-delay: 78ms !important;
 }
 
-html.anim-completa .palette-item:nth-child(5) {
+html.anim-completa .busca-item:nth-child(5) {
   animation-delay: 104ms !important;
 }
 
-html.anim-completa .palette-item:nth-child(6) {
+html.anim-completa .busca-item:nth-child(6) {
   animation-delay: 130ms !important;
 }
 
-html.anim-completa .palette-item:nth-child(7) {
+html.anim-completa .busca-item:nth-child(7) {
   animation-delay: 156ms !important;
 }
 
-html.anim-completa .palette-item:nth-child(8) {
+html.anim-completa .busca-item:nth-child(8) {
   animation-delay: 182ms !important;
 }
 
@@ -480,7 +480,7 @@ body.preview-saindo #splitter {
 /* ---------- resposta ao toque (botões, itens, abas, cartões) ---------- */
 
 :where(.btn, .tbtn, .sb-tab, .sb-mini, .tab, .tab-new, .tab-recents, .path-btn, .win-btn,
-    .dd-item, .palette-item, .seg-btn, .pj-doc, .pj-folder, .pj-sub, .ch-hit, .hm-item, .recent,
+    .dd-item, .busca-item, .seg-btn, .pj-doc, .pj-folder, .pj-sub, .ch-hit, .hm-item, .recent,
     .outline-item, .home-resume-btn, .st-card, .swatch, .color-input) {
   transition:
     background-color var(--mov-1) var(--curva),
@@ -499,7 +499,7 @@ body.preview-saindo #splitter {
 .path-btn:hover,
 .win-btn:hover,
 .dd-item:hover,
-.palette-item:hover,
+.busca-item:hover,
 .seg-btn:hover {
   transform: translateY(-1px);
 }
@@ -511,7 +511,7 @@ body.preview-saindo #splitter {
 .tab-recents:active,
 .path-btn:active,
 .dd-item:active,
-.palette-item:active,
+.busca-item:active,
 .seg-btn:active {
   transform: translateY(0) scale(0.97);
 }
@@ -564,7 +564,7 @@ textarea {
 /* ---------- a troca de tema não "pisca" ---------- */
 
 :where(body, #topbar, #tabbar, #sidebar, #statusbar, #body, #toolbar, #home-page, #settings-page,
-    #editor-wrap, #preview-wrap, .modal, .dropdown, .palette, .pp-popup, .wd-menu-pop, .xl-menu) {
+    #editor-wrap, #preview-wrap, .modal, .dropdown, .busca-painel, .pp-popup, .wd-menu-pop, .xl-menu) {
   transition:
     background-color var(--mov-2) var(--curva),
     color var(--mov-2) var(--curva),
