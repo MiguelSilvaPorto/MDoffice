@@ -2493,16 +2493,20 @@ console.log("menus da fita: o clique nunca fica mudo");
 const fitaSrc = ler("src/powerpoint/ui/fita.ts");
 // O menu "Organizar"/"Alinhar e girar": o par dos extremos junto no topo, como no Office (o relato
 // veio com print: o "Enviar para trás" só aparecia na quarta linha, depois de "Avançar"/"Recuar").
+// A lista vive em organizar.ts (módulo compartilhado pela fita e pelo clique direito desde f844c29).
+const organizarSrc = ler("src/powerpoint/ui/organizar.ts");
 checa(
   "o menu Organizar põe o par Trazer para a frente / Enviar para trás junto no topo",
-  /\["z-topo", "Trazer para a frente"\], \["z-fundo", "Enviar para trás"\], \["z-frente", "Avançar"\], \["z-tras", "Recuar"\]/.test(fitaSrc),
+  /\["z-topo", "Trazer para a frente"\],\r?\n\s*\["z-fundo", "Enviar para trás"\],\r?\n\s*\["z-frente", "Avançar"\],\r?\n\s*\["z-tras", "Recuar"\]/.test(organizarSrc),
   "os passos de camada voltariam para o meio do par (é o par que se usa junto)"
 );
 checa(
-  "o mesmo par aparece junto na fita e no menu do clique direito",
+  "a fita e o clique direito chegam ao MESMO menu Organizar",
   /pequeno\("z-topo"[^\n]*\r?\n\s*\$\{pequeno\("z-fundo"/.test(fitaSrc) &&
-    /\["z-topo", "Trazer para a frente", true\],\r?\n\s*\["z-fundo", "Enviar para trás", true\]/.test(ler("src/powerpoint/powerpoint.ts")),
-  "a fita e o clique direito já mostram o par junto: o menu não pode ser o único fora do padrão"
+    /abrirMenuOrganizar\(ancora, \(cmd, valor\) => run\(cmd, valor\)\)/.test(fitaSrc) &&
+    /ITEM_ORGANIZAR/.test(ler("src/powerpoint/powerpoint.ts")) &&
+    /abrirMenuOrganizar\(b, \(cmd, valor\) => this\.run\(cmd, valor\), \{ aoLado: true \}\)/.test(ler("src/powerpoint/powerpoint.ts")),
+  "a fita e o clique direito não podem divergir: é a mesma lista e o mesmo menu"
 );
 
 console.log("\ncomandos do PowerPoint: nenhum case repetido no switch");
@@ -2574,9 +2578,19 @@ checa(
 );
 checa(
   "o abrirPopup aplica a altura máxima (rolagem por dentro)",
-  /const p = posicaoDoPopup\(r, el\.offsetWidth, el\.offsetHeight, \{ w: window\.innerWidth, h: window\.innerHeight \}, op\.alinharDireita\);/.test(popupSrc) &&
+  /const p = posicaoDoPopup\(r, el\.offsetWidth, el\.offsetHeight, \{ w: window\.innerWidth, h: window\.innerHeight \}, op\.alinharDireita, op\.aoLado\);/.test(popupSrc) &&
     /if \(p\.maxAltura !== null\) el\.style\.maxHeight = `\$\{p\.maxAltura\}px`;/.test(popupSrc),
   "o menu passaria da janela em vez de rolar"
+);
+checa(
+  "o popup mede a âncora ANTES de fechar o popup que a contém",
+  /const r = ancora\.getBoundingClientRect\(\);\r?\n\s+fecharPopup\(\);/.test(popupSrc),
+  "o item do menu de contexto é removido junto com o menu e passaria a medir 0×0 — o submenu cairia no canto da tela"
+);
+checa(
+  "o submenu do menu de contexto abre ao lado do item",
+  /abrirMenuOrganizar\(b, \(cmd, valor\) => this\.run\(cmd, valor\), \{ aoLado: true \}\);/.test(ler("src/powerpoint/powerpoint.ts")),
+  "sem o modo ao lado o menu alto não cabe embaixo e sobe para o topo"
 );
 checa(
   "os controles desabilitados do menu ficam apagados (e sem hover)",

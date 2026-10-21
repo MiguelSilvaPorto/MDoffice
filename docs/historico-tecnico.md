@@ -28,6 +28,41 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/powerpoint/ui/popup.ts
+
+### 2026-10-21 · fix/menu-organizar-posicao · a âncora é medida ANTES de fechar o popup de origem
+- **Local:** `abrirPopup`
+- **Linha:** `fecharPopup(); … const r = ancora.getBoundingClientRect();` → `const r = ancora.getBoundingClientRect(); fecharPopup(); …`
+- **Porquê:** o item que abre um submenu (o **Organizar** do menu de contexto) vive **dentro** do popup que vai fechar. A medição acontecia depois do `fecharPopup()`: o item já estava fora da página e `getBoundingClientRect()` devolvia tudo `0` — o menu caía em `left/top = MARGEM` (o extremo superior esquerdo, o relato do usuário). Medir antes preserva a posição real do clique.
+
+### 2026-10-21 · fix/menu-organizar-posicao · o submenu abre AO LADO (novo `posicaoDoSubmenu`)
+- **Local:** `OpcoesPopup` (novo `aoLado`) e novo `posicaoDoSubmenu`; `posicaoDoPopup` ganhou o 6º parâmetro
+- **Linha:** `posicaoDoPopup(r, largura, altura, janela, alinharDireita = false)` → `…, alinharDireita = false, aoLado = false)`, com `if (aoLado) return posicaoDoSubmenu(...)`; novo `posicaoDoSubmenu` põe `left = r.right + VAO` (ou `r.left - VAO - largura` quando não cabe à direita) e `top` entre `MARGEM` e o que sobra da janela, devolvendo `maxAltura` quando o menu é mais alto que a tela
+- **Porquê:** o menu Organizar tem 21 itens (~533 px). Ancorado no rodapé do menu de contexto, não cabe embaixo; a regra antiga preferia abrir **acima**, e o menu subia até o topo da janela (por cima da fita). Ao lado ele usa a altura inteira da janela e continua colado no item clicado, sem cobrir a faixa. O caminho da fita (menu abaixo do botão) não muda: só o submenu do clique direito usa `aoLado`.
+
+## src/powerpoint/ui/organizar.ts
+
+### 2026-10-21 · fix/menu-organizar-posicao · o menu compartilhado aceita abrir ao lado
+- **Local:** `abrirMenuOrganizar` e `ITEM_ORGANIZAR`
+- **Linha:** `abrirMenuOrganizar(ancora, run)` → `abrirMenuOrganizar(ancora, run, op: { aoLado?: boolean } = {})` repassando `{ classe: "pp-pop-menu", aoLado: op.aoLado }`; a seta do item `▾` → `▸`
+- **Porquê:** a fita continua usando o padrão (abre abaixo do botão) e o item do clique direito pede o modo **ao lado**, sem duplicar a lista nem o tratamento dos comandos. A seta `▸` diz a verdade sobre o que acontece (submenu lateral); `▾` prometia um menu que desce, e era justamente o que não cabia.
+
+## src/powerpoint/powerpoint.ts
+
+### 2026-10-21 · fix/menu-organizar-posicao · o Organizar do clique direito abre ao lado do item
+- **Local:** `menuDeContexto`, ramo `[data-organizar]`
+- **Linha:** `abrirMenuOrganizar(b, (cmd, valor) => this.run(cmd, valor));` → `…, { aoLado: true });`
+- **Porquê:** com a posição medida antes do fechamento e o modo ao lado, o menu completo aparece colado ao item (à direita; à esquerda se não couber), em vez de reaparecer no canto superior esquerdo da janela.
+
+## scripts/testar-menus-fita.mjs · scripts/testar-layout.mts
+
+### 2026-10-21 · fix/menu-organizar-posicao · a régua do submenu e as checagens do menu compartilhado
+- **Local:** `testar-menus-fita.mjs` (três casos novos) e `testar-layout.mts` (menus da fita/popup)
+- **Linha:** novos casos de `posicaoDoPopup(..., false, true)` (à direita, à esquerda sem espaço, mais alto que a janela); a checagem do par `z-topo`/`z-fundo` passou a ler `organizar.ts` (a lista saiu de `fita.ts` em f844c29) e entrou a checagem de que os dois caminhos chegam ao mesmo menu, da medição antes do fechamento e do `{ aoLado: true }`
+- **Porquê:** as duas checagens antigas apontavam para a lista que não mora mais em `fita.ts` e falhavam desde o módulo compartilhado; a régua nova trava a posição do submenu (não pode voltar ao canto) e o caminho de cada um dos dois botões.
+
+---
+
 ## src/powerpoint/edicao/medida.ts
 
 ### 2026-10-21 · feat/angulo-giro-ppt · o ângulo vira texto como as medidas do gesto

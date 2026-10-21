@@ -32,12 +32,18 @@ export const ITENS_ORGANIZAR: [string, string][] = [
   ["bloquear", "Bloquear / desbloquear"],
 ];
 
-/** Abre o menu "Organizar" ancorado no elemento indicado e chama `run` com o comando. */
-export function abrirMenuOrganizar(ancora: HTMLElement, run: (cmd: string, valor?: string) => void): void {
+/** Abre o menu "Organizar" ancorado no elemento indicado e chama `run` com o comando.
+ *  `aoLado` é para o item do menu de contexto: o menu completo abre ao lado dele (como um
+ *  submenu), em vez de tentar caber embaixo — lá embaixo não cabe e ele subia para o topo. */
+export function abrirMenuOrganizar(
+  ancora: HTMLElement,
+  run: (cmd: string, valor?: string) => void,
+  op: { aoLado?: boolean } = {}
+): void {
   const el = abrirPopup(
     ancora,
     ITENS_ORGANIZAR.map(([c, n]) => `<button type="button" class="pp-pop-item" data-o="${c}">${n}</button>`).join(""),
-    { classe: "pp-pop-menu" }
+    { classe: "pp-pop-menu", aoLado: op.aoLado }
   );
   el.addEventListener("click", (ev) => {
     const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-o]");
@@ -54,4 +60,4 @@ export function abrirMenuOrganizar(ancora: HTMLElement, run: (cmd: string, valor
 }
 
 /** O item "Organizar" (o mesmo ícone do botão da fita) para o menu de contexto. */
-export const ITEM_ORGANIZAR = `<button type="button" class="pp-pop-item pp-pop-organizar" data-organizar><span class="ppr-seta">⧉</span><span>Organizar</span><span class="pp-pop-caret">▾</span></button>`;
+export const ITEM_ORGANIZAR = `<button type="button" class="pp-pop-item pp-pop-organizar" data-organizar><span class="ppr-seta">⧉</span><span>Organizar</span><span class="pp-pop-caret">▸</span></button>`;

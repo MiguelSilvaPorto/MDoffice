@@ -947,6 +947,16 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 **Frontend**
 
 
+- **O menu "Organizar" do clique direito agora abre ao lado do item, não no canto da tela**: ao
+  clicar em **Organizar** no menu de contexto da forma, o menu completo (ordem, alinhamento,
+  grupo, giro e bloqueio) aparecia no **extremo superior esquerdo** da janela, longe do clique.
+  A causa: o popup media a posição do item **depois** de fechar o menu de contexto — o item já
+  tinha sido removido da página e media `0×0`, então o menu caía na margem (8 px). Agora a
+  posição é medida antes de fechar, e o menu completo abre **ao lado direito do item** (à
+  esquerda quando não couber), com a altura ajustada à janela e rolagem por dentro. O item
+  também passou a mostrar a seta **▸** (de submenu) em vez de **▾**. O caminho da fita continua
+  abrindo o mesmo menu **abaixo do botão**.
+
 - **Girar uma forma mostra o ângulo ao vivo**: ao arrastar a alça de giro, um balão junto da alça
   mostra **quantos graus** a forma está naquele instante — o mesmo valor do campo **Rotação** do
   painel, com uma casa decimal quando precisa (ex.: `37,5°`). Com **várias formas escolhidas**, o

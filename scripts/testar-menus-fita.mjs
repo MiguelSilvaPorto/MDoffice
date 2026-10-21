@@ -88,5 +88,26 @@ const MENU = { w: 330, h: 533 };
   ok("varredura de janelas: nenhuma cobre a âncora", cobriu === 0, `${cobriu} caso(s)`);
 }
 
+{
+  // submenu (menu de contexto → "Organizar"): abre AO LADO do item, nunca no canto da tela.
+  // O item fica no rodapé de um menu estreito, no meio da janela.
+  const r = { left: 300, right: 540, top: 600, bottom: 628 };
+  const p = P.posicaoDoPopup(r, 240, 533, { w: 1384, h: 805 }, false, true);
+  ok("submenu abre à direita do item", p.left === 544, JSON.stringify(p));
+  ok("submenu não começa no canto superior esquerdo", p.top > 8 && p.left > 8, JSON.stringify(p));
+  ok("submenu inteiro cabe na janela", p.top + Math.min(533, p.maxAltura ?? 533) <= 805 - 8, JSON.stringify(p));
+}
+{
+  // sem espaço à direita: abre à esquerda do item (e não sai pela borda)
+  const r = { left: 1300, right: 1384, top: 300, bottom: 328 };
+  const p = P.posicaoDoPopup(r, 240, 300, { w: 1384, h: 805 }, false, true);
+  ok("submenu sem espaço à direita abre à esquerda", p.left === 1056, JSON.stringify(p));
+}
+{
+  // menu mais alto que a janela: começa na margem e rola por dentro
+  const p = P.posicaoDoPopup({ left: 300, right: 540, top: 100, bottom: 128 }, 240, 900, { w: 1384, h: 805 }, false, true);
+  ok("submenu mais alto que a janela encolhe e rola", p.top === 8 && p.maxAltura === 789, JSON.stringify(p));
+}
+
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");
 process.exit(falhas ? 1 : 0);

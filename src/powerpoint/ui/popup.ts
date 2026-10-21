@@ -22,6 +22,8 @@ export interface OpcoesPopup {
   aoFechar?: () => void;
   /** alinha a borda direita do popup com a da âncora */
   alinharDireita?: boolean;
+  /** submenu: abre AO LADO da âncora (à direita; à esquerda quando não cabe) */
+  aoLado?: boolean;
 }
 
 /** Caixa da âncora (o `getBoundingClientRect()` do botão) e janela útil. */
@@ -39,6 +41,26 @@ const VAO = 4;
 const MINIMO = 160;
 
 /**
+ * Onde abre um SUBMENU (o "Organizar" do menu de contexto): **ao lado** da âncora, à
+ * direita dela e, quando não couber, à esquerda. O topo acompanha o item e só sobe o
+ * suficiente para o menu inteiro caber na janela — nunca vai para o canto da tela.
+ * Se nem assim couber na altura, encolhe com rolagem interna.
+ */
+export function posicaoDoSubmenu(
+  r: Caixa,
+  largura: number,
+  altura: number,
+  janela: { w: number; h: number }
+): { left: number; top: number; maxAltura: number | null } {
+  let left = r.right + VAO;
+  if (left + largura > janela.w - MARGEM) left = r.left - VAO - largura;
+  left = Math.max(MARGEM, Math.min(left, janela.w - largura - MARGEM));
+  const alturaUtil = Math.min(altura, janela.h - 2 * MARGEM);
+  const top = Math.max(MARGEM, Math.min(r.top, janela.h - MARGEM - alturaUtil));
+  return { left, top, maxAltura: alturaUtil < altura ? alturaUtil : null };
+}
+
+/**
  * Onde o menu abre: logo abaixo da âncora — e **nunca por cima dela**. Quando não cabe embaixo,
  * o menu encolhe (com rolagem interna) em vez de subir: subir tapava o próprio botão e o clique
  * seguinte (o de reabrir/fechar) caía no menu em vez do botão. Só vai para cima quando lá há
@@ -49,8 +71,10 @@ export function posicaoDoPopup(
   largura: number,
   altura: number,
   janela: { w: number; h: number },
-  alinharDireita = false
+  alinharDireita = false,
+  aoLado = false
 ): { left: number; top: number; maxAltura: number | null } {
+  if (aoLado) return posicaoDoSubmenu(r, largura, altura, janela);
   let left = alinharDireita ? r.right - largura : r.left;
   left = Math.max(MARGEM, Math.min(left, janela.w - largura - MARGEM));
   const abaixo = Math.max(0, janela.h - (r.bottom + VAO) - MARGEM);
@@ -65,13 +89,17 @@ export function posicaoDoPopup(
 
 /** Abre um popup logo abaixo do elemento âncora. Devolve o elemento raiz. */
 export function abrirPopup(ancora: HTMLElement, html: string, op: OpcoesPopup = {}): HTMLElement {
+  // A caixa da âncora é medida ANTES de fechar o popup aberto: o item que abre um submenu
+  // (o "Organizar" do menu de contexto) está DENTRO do popup que vai fechar. Depois de
+  // removido, `getBoundingClientRect()` devolve tudo zero — era isso que jogava o submenu
+  // no extremo do canto superior esquerdo (a posição virava só a margem).
+  const r = ancora.getBoundingClientRect();
   fecharPopup();
   const el = document.createElement("div");
   el.className = `pp-popup ${op.classe ?? ""}`;
   el.innerHTML = html;
   document.body.append(el);
-  const r = ancora.getBoundingClientRect();
-  const p = posicaoDoPopup(r, el.offsetWidth, el.offsetHeight, { w: window.innerWidth, h: window.innerHeight }, op.alinharDireita);
+  const p = posicaoDoPopup(r, el.offsetWidth, el.offsetHeight, { w: window.innerWidth, h: window.innerHeight }, op.alinharDireita, op.aoLado);
   if (p.maxAltura !== null) el.style.maxHeight = `${p.maxAltura}px`;
   el.style.left = `${p.left}px`;
   el.style.top = `${p.top}px`;

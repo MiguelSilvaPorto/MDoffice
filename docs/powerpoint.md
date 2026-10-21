@@ -54,7 +54,9 @@ avisado ao abrir (nunca some em silêncio).
   **Editar** (editar o texto, selecionar a pilha), **Área de transferência** (recortar, copiar,
   colar), **Forma** (duplicar, excluir) e **Organizar** — o item **Organizar** (mesmo ícone do
   botão da fita) abre o menu completo de arranjo: frente/trás, avançar/recuar, agrupar,
-  alinhar, centralizar, distribuir, girar 90°, espelhar, mesma largura/altura e bloquear.
+  alinhar, centralizar, distribuir, girar 90°, espelhar, mesma largura/altura e bloquear. Ele
+  abre **ao lado direito do item** (à esquerda quando não couber), com o topo ajustado para
+  caber na janela e rolagem por dentro — não sobe mais para o canto superior esquerdo.
   Arrastar: a forma **escolhida** pega o
   ponteiro em **qualquer ponto do miolo** (cursor de mover) — inclusive as caixas de texto **sem
   preenchimento**, que fora da seleção continuam clique-através para não esconder o que está

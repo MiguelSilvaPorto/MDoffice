@@ -4470,8 +4470,9 @@ export class PowerPointHost {
       const b = alvo.closest<HTMLButtonElement>("[data-c],[data-organizar]");
       if (!b) return;
       if (b.hasAttribute("data-organizar")) {
-        // o item "Organizar" abre o menu completo (o da fita), ancorado nele
-        abrirMenuOrganizar(b, (cmd, valor) => this.run(cmd, valor));
+        // o item "Organizar" abre o menu completo (o da fita) AO LADO dele, como um submenu:
+        // embaixo não caberia (o item fica no rodapé do menu) e o menu subia para o topo da tela
+        abrirMenuOrganizar(b, (cmd, valor) => this.run(cmd, valor), { aoLado: true });
         return;
       }
       if (b.disabled) return;
