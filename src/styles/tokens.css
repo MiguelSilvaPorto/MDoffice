@@ -1,18 +1,18 @@
 /* ---------- variáveis ---------- */
 
 :root {
-  --bg: #f6f4f9;
+  --bg: #f1eef7;
   --panel: #ffffff;
-  --panel-2: #fbfafd;
-  --border: #e4e0ec;
+  --panel-2: #f8f6fc;
+  --border: #cec6df;
   --fg: #1d1927;
-  --muted: #6e677f;
+  --muted: #665f78;
   --accent: #6d28d9;
   --accent-soft: rgba(109, 40, 217, 0.12);
   --accent-fg: #ffffff;
   --danger: #dc2626;
   --ok: #059669;
-  --shadow: 0 10px 30px rgba(20, 14, 36, 0.12);
+  --shadow: 0 10px 30px rgba(20, 14, 36, 0.14);
   /* Identidade dos módulos: paleta PRÓPRIA do mdOffice (violeta-ametista, ciano-petróleo,
      fúcsia-orquídea e rosa-rubi — distante do azul, verde e laranja das marcas do Office;
      o mdOffice não é afiliado, patrocinado nem endossado pela Microsoft). `--mod-*-placa`
@@ -26,11 +26,12 @@
   --mod-word-placa: #7c3aed;
   --mod-excel-placa: #0891b2;
   --mod-ppt-placa: #e11d48;
-  /* Palco: a área em volta da lâmina/folha. No claro ele é o fundo do app; no escuro ganha um
-     tom próprio (abaixo), senão uma lâmina escura fica da cor do palco e some. `--lamina-borda`
-     é a moldura fina que destaca onde a lâmina termina. */
-  --palco-bg: var(--bg);
-  --lamina-borda: var(--border);
+  /* Palco: a área em volta da lâmina/folha. No claro tem tom próprio mais escuro que o papel
+     branco (#ffffff) e que os painéis da interface, para nunca fundir a lâmina branca com o
+     fundo; no escuro é um degrau acima do fundo do app. `--lamina-borda` é a moldura nítida
+     que demarca onde a lâmina/folha começa e termina nos dois temas. */
+  --palco-bg: #e2dced;
+  --lamina-borda: #7c7296;
   --ui-font: Inter, "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
   /* largura máxima da coluna de texto (editor e pré-visualização) */
   --doc-width: 980px;

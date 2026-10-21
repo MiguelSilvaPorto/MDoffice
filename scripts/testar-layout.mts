@@ -2744,12 +2744,22 @@ console.log("\nmoldura da lâmina e relevo da página no tema escuro");
     return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
   };
   const hex = (re: RegExp, txt: string) => (re.exec(txt)?.[1] ?? "").toUpperCase();
+  const palcoClaro = hex(/:root[\s\S]*?--palco-bg:\s*#([0-9a-f]{6})/i, tokensCss);
+  const bordaClara = hex(/:root[\s\S]*?--lamina-borda:\s*#([0-9a-f]{6})/i, tokensCss);
   const palcoEscuro = hex(/\[data-theme="dark"\][\s\S]*?--palco-bg:\s*#([0-9a-f]{6})/i, tokensCss);
   const bordaEscura = hex(/\[data-theme="dark"\][\s\S]*?--lamina-borda:\s*#([0-9a-f]{6})/i, tokensCss);
   const temaEscuro = hex(/escuro:\s*\{\s*bg:\s*"([0-9A-F]{6})"/, ler("src/powerpoint/schema.ts"));
   checa(
-    "o palco do escuro tem tom próprio (um degrau acima do fundo do app)",
-    /:root\s*\{[\s\S]*?--palco-bg:\s*var\(--bg\)/.test(tokensCss) && palcoEscuro.length === 6 && palcoEscuro !== "0E1014"
+    "o palco tem tom próprio nos dois temas (destaca a lâmina branca no claro e a escura no escuro)",
+    palcoClaro.length === 6 && palcoClaro !== "FFFFFF" && palcoEscuro.length === 6 && palcoEscuro !== "0E1014"
+  );
+  checa(
+    "a moldura do claro contrasta com o palco E com a lâmina branca (≥ 2,5:1) e .pp-frame não recorta a sombra",
+    bordaClara.length === 6 &&
+      contraste(bordaClara, palcoClaro) >= 2.5 &&
+      contraste(bordaClara, "FFFFFF") >= 2.5 &&
+      /\.pp-frame\s*\{[^}]*overflow:\s*visible/.test(pptCss),
+    `borda #${bordaClara} · palco #${palcoClaro} (${contraste(bordaClara, palcoClaro).toFixed(2)}) · branco #FFFFFF (${contraste(bordaClara, "FFFFFF").toFixed(2)})`
   );
   checa(
     "a moldura do escuro contrasta com o palco E com a lâmina escura (≥ 2,5:1)",
@@ -2790,7 +2800,7 @@ console.log("\nPowerPoint: as molduras das prévias são palco, não papel");
   );
   checa(
     "o token do palco existe nos dois temas (é ele que muda o tom em cada um)",
-    /:root\s*\{[\s\S]*?--palco-bg:\s*var\(--bg\)/.test(tokensCss) && /\[data-theme="dark"\]\s*\{[\s\S]*?--palco-bg:\s*#/.test(tokensCss)
+    /:root\s*\{[\s\S]*?--palco-bg:\s*#[0-9a-f]{6}/i.test(tokensCss) && /\[data-theme="dark"\]\s*\{[\s\S]*?--palco-bg:\s*#/.test(tokensCss)
   );
 }
 

@@ -618,7 +618,7 @@ body.settings-open #word-pane {
   min-height: 0;
   padding: 26px 24px 80px;
   overflow: auto;
-  background: color-mix(in srgb, var(--bg) 88%, #888);
+  background: var(--palco-bg, color-mix(in srgb, var(--bg) 88%, #888));
 }
 
 [data-theme="dark"] #wd-stage {

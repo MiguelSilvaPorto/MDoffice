@@ -557,13 +557,15 @@ body.home-open #powerpoint-pane {
 }
 
 /* O quadro mede "tamanho que cabe" × zoom. Assim o layout (e a rolagem)
-   acompanham o zoom, e o texto em `cqw` escala junto, como no PowerPoint. */
+   acompanham o zoom, e o texto em `cqw` escala junto, como no PowerPoint.
+   `overflow: visible` deixa a moldura (`--lamina-borda`) e a sombra da `.pp-slide`
+   aparecerem do lado de fora (quem recorta o conteúdo interno da lâmina é a própria `.pp-slide`). */
 .pp-frame {
   --pp-fit: min(100%, 1040px, calc(100cqh * var(--slide-ratio, 1.7778)));
   width: calc(var(--pp-fit) * var(--pp-zoom, 1));
   aspect-ratio: var(--slide-ratio, 16 / 9);
   flex: none;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* Botão direito + arrastar = panorama: o cursor de "agarrando" vale em toda a moldura
@@ -581,9 +583,9 @@ body.home-open #powerpoint-pane {
   height: 100%;
   background: var(--slide-bg, #ffffff);
   color: var(--slide-fg, #1c212b);
-  /* a moldura de 1px é o que destaca onde a lâmina termina — no tema escuro a sombra sozinha
-     sumia (fundo escuro sobre fundo escuro) */
-  box-shadow: 0 0 0 1px var(--lamina-borda, var(--border)), 0 8px 28px rgba(15, 23, 42, 0.22);
+  /* a moldura de 1px + sombra em duas camadas destacam onde a lâmina começa e termina tanto
+     no tema claro (lâmina branca sobre o palco) quanto no escuro */
+  box-shadow: 0 0 0 1px var(--lamina-borda, var(--border)), 0 2px 6px rgba(15, 23, 42, 0.16), 0 12px 32px rgba(15, 23, 42, 0.22);
   border-radius: 2px;
   overflow: hidden;
   container-type: inline-size;

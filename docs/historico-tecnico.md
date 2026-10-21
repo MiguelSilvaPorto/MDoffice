@@ -17921,3 +17921,11 @@ antigas quando fizer sentido.
   Node é a decisão de **quais** imagens entram. O teste pegou um caso que o Rust também errava: o
   destino entre `<>` com espaço era cortado no primeiro espaço - o parser agora procura o `>` antes
   de separar o título.
+
+
+## src/styles/tokens.css + src/styles/powerpoint.css + src/styles/word.css + scripts/testar-layout.mts
+
+### 2026-10-21 · fix/contraste-lamina-tema-claro · contraste da lâmina, do palco e das divisões da interface no tema claro
+- **Local:** `:root` em `src/styles/tokens.css`, `.pp-frame` e `.pp-slide` em `src/styles/powerpoint.css`, `#wd-stage` em `src/styles/word.css` e bloco de teste de contraste do palco em `scripts/testar-layout.mts`
+- **Linha:** `.pp-frame { overflow: hidden }` → `.pp-frame { overflow: visible }`; `.pp-slide` `box-shadow` reforçado para `0 0 0 1px var(--lamina-borda, var(--border)), 0 2px 6px rgba(15, 23, 42, 0.16), 0 12px 32px rgba(15, 23, 42, 0.22)`; `:root` `--bg: #f6f4f9` → `#f1eef7`, `--border: #e4e0ec` → `#cec6df`, `--palco-bg: var(--bg)` → `#e2dced` e `--lamina-borda: var(--border)` → `#7c7296`
+- **Porquê:** no tema claro a lâmina branca (`#ffffff`) sumia dentro do palco porque `.pp-frame` tinha `overflow: hidden` (cortando inteiramente o `box-shadow` externo de 1 px e a sombra de `.pp-slide`, que tem `width: 100%; height: 100%`) e porque `:root` apontava `--palco-bg` para `var(--bg)` (`#f6f4f9`, 96% branco) e `--lamina-borda` para `var(--border)` (`#e4e0ec`). Com `overflow: visible` em `.pp-frame`, tom dedicado para `--palco-bg` (`#e2dced`), moldura `--lamina-borda` (`#7c7296`, contraste >= 2.95:1 contra o palco e 3.93:1 contra o slide branco) e divisórias `--border` (`#cec6df`), fica imediatamente visível onde começam e terminam a lâmina, o palco e as barras da interface.
