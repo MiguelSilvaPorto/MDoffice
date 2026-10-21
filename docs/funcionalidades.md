@@ -14,7 +14,8 @@ de cada mudança de linha.
 
 Além dos módulos, o app tem recursos que valem para todos eles (abas, tela de Início,
 histórico de versões, backup em disco, lixeira de documentos, configurações, busca de
-comandos, navegação e organização das pastas dos projetos e modo foco) — esses ficam na
+comandos, navegação e organização das pastas dos projetos (incluindo **arrastar para
+reordenar** e **Mover para cima/baixo** no clique direito) e modo foco) — esses ficam na
 categoria **Geral** do [changelog](../CHANGELOG.md).
 
 **Busca de funções (`Ctrl+K`)**: a busca é **uma barra na parte de cima** — uma pílula

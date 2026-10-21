@@ -28,6 +28,44 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/sidebar.ts
+
+### 2026-10-21 · feat/projetos-reordenar · arrastar e mover as pastas de projeto
+- **Local:** `projects`, `renderProjects`, `menuDePasta`, `moverProjeto` e os novos
+  `iniciarArrastoProjeto`, `projetoEm`, `realcarDestinoProjeto`, `soltarProjeto` e
+  `cancelarArrastoProjeto`
+- **Linha:** `title: root` → ``title: `${root} · arraste para reordenar` ``; novo
+  `pointerdown` na linha raiz; o clique da raiz ignora `arrastouAte`; o menu de projeto ganhou
+  **Mover para cima/baixo**; a ordem final é reescrita em `this.projects`, `persist()` e
+  `renderProjects()`
+- **Porquê:** a lista só crescia no fim (a ordem era a de `mdc.projects`). O arrasto é separado
+  do arrasto de documento: o alvo é outra linha **raiz** e o risco acima/abaixo mostra onde a
+  pasta entra; o clique depois do drop é engolido para não abrir/fechar a pasta sem querer. O
+  menu do clique direito é a rota acessível (e a única no toque, onde o arrasto é desligado para
+  não brigar com a rolagem).
+
+## src/styles/workspace.css
+
+### 2026-10-21 · feat/projetos-reordenar · o risco do destino e a linha arrastada
+- **Local:** bloco de arrasto, depois de `.pj-solta`
+- **Linha:** `.pj-folder.arrastando` entra no esmaecimento de `.pj-doc.arrastando`;
+  `body.arrastando-projeto` divide o cursor de `body.arrastando-doc`; novos
+  `.pj-folder.pj-antes` e `.pj-folder.pj-depois` com `box-shadow: inset 0 ±3px 0 var(--accent)`
+- **Porquê:** sem um indicador a pessoa não sabe se a pasta vai entrar acima ou abaixo da outra;
+  o risco usa a cor de destaque e desaparece no `cancelarArrastoProjeto`. O cursor de "agarrando"
+  só vale durante o arrasto de projeto, sem mexer no arrasto de documento.
+
+## scripts/testar-projetos-ordem.mjs (novo)
+
+### 2026-10-21 · feat/projetos-reordenar · o teste do menu, do arrasto e do reload
+- **Local:** roteiro novo, `test:projetos` no `package.json`
+- **Linha:** Chrome headless com o OPFS como três pastas; confere o menu **Mover para cima**,
+  a ordem em `mdc.projects`, o risco do arrasto, a ordem depois do arrasto sintético e a
+  persistência depois de recarregar
+- **Porquê:** a funcionalidade é de interação e persistência; um teste que só olhasse a lista
+  depois de um clique não pegaria o clique do drop abrindo a pasta nem a ordem se perdendo no
+  reload. O OPFS dá pastas de verdade sem depender do seletor do Windows.
+
 ## src/settingsPage.ts
 
 ### 2026-10-21 · feat/historico-grade · o histórico vira cartões em grade

@@ -716,14 +716,25 @@ mark.pj-mark {
 }
 
 /* o documento que está sendo arrastado fica esmaecido */
-.pj-doc.arrastando {
+.pj-doc.arrastando,
+.pj-folder.arrastando {
   opacity: 0.45;
 }
 
 /* arrasto com o ponteiro: só o mouse/caneta, para o toque continuar rolando a lista */
-body.arrastando-doc {
+body.arrastando-doc,
+body.arrastando-projeto {
   user-select: none;
   cursor: grabbing;
+}
+
+/* reordenar projetos: o risco mostra onde a linha vai entrar */
+.pj-folder.pj-antes {
+  box-shadow: inset 0 3px 0 var(--accent);
+}
+
+.pj-folder.pj-depois {
+  box-shadow: inset 0 -3px 0 var(--accent);
 }
 
 .pj-arrasto {

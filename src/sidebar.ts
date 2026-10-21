@@ -79,6 +79,8 @@ export class Sidebar {
   private historico: string[] = [];
   /** caminho do documento que está sendo arrastado para uma pasta. */
   private arrastando: string | null = null;
+  /** projeto (pasta raiz) que está sendo arrastado para reordenar a lista. */
+  private arrastandoProjeto: string | null = null;
   /** a "pastilha" que acompanha o ponteiro durante o arrasto. */
   private pastilha: HTMLElement | null = null;
   /** instante até o qual um clique na linha deve ser ignorado (o arrasto acabou de soltar). */
@@ -537,7 +539,7 @@ export class Sidebar {
       const row = h("button", {
         class: `pj-folder${this.selected === root ? " selected" : ""}${expanded ? " expanded" : ""}`,
         type: "button",
-        title: root,
+        title: `${root} · arraste para reordenar`,
         "aria-expanded": String(expanded),
       });
       row.innerHTML = '<span class="pj-folder-ic"><svg class="ic"><use href="#i-folder"/></svg></span>';
@@ -562,7 +564,10 @@ export class Sidebar {
         else this.renderNodes(box, visible, openDocs, cascata || alvo === root, alvo);
       }
 
+      // arrastar a LINHA do projeto reordena a lista; clicar continua abrindo/fechando
+      row.addEventListener("pointerdown", (e) => this.iniciarArrastoProjeto(e, root));
       row.addEventListener("click", () => {
+        if (Date.now() < this.arrastouAte) return; // veio de um arrasto de reordenação
         this.selected = root;
         this.definirAtual(root);
         if (this.open.has(root)) {
@@ -867,6 +872,12 @@ export class Sidebar {
       { label: "Novo documento aqui", run: () => this.hooks.newDocIn(dir) },
       { label: "Nova pasta aqui", run: () => this.hooks.newFolder(dir) },
     ];
+    // reordenar só faz sentido para as pastas de PROJETO (as subpastas vivem na ordem do disco)
+    if (ehProjeto) {
+      const i = this.projects.indexOf(dir);
+      if (i > 0) itens.push({ label: "Mover para cima", run: () => this.moverProjeto(dir, -1) });
+      if (i >= 0 && i < this.projects.length - 1) itens.push({ label: "Mover para baixo", run: () => this.moverProjeto(dir, 1) });
+    }
     // renomear/excluir valem para as SUBPASTAS: na pasta do projeto, a ação é tirá-la da lista
     // (renomear a raiz mudaria o caminho que o projeto guarda; excluir apagaria a pasta do usuário)
     if (!ehProjeto) {
@@ -879,6 +890,18 @@ export class Sidebar {
       itens.push({ label: "Remover da lista (não apaga nada)", run: () => this.removerProjeto(dir) });
     }
     this.hooks.contextMenu(x, y, itens);
+  }
+
+  /** Move um projeto uma posição na lista (o menu do clique direito usa; o arrasto usa a ordem final). */
+  private moverProjeto(root: string, delta: -1 | 1): void {
+    const i = this.projects.indexOf(root);
+    const j = i + delta;
+    if (i < 0 || j < 0 || j >= this.projects.length) return;
+    this.projects.splice(i, 1);
+    this.projects.splice(j, 0, root);
+    this.animar = "";
+    this.persist();
+    this.renderProjects();
   }
 
   private removerProjeto(root: string): void {
@@ -990,6 +1013,102 @@ export class Sidebar {
     this.pastilha?.remove();
     this.pastilha = null;
     document.querySelectorAll("#projects-tree .arrastando").forEach((el) => el.classList.remove("arrastando"));
+  }
+
+  /**
+   * Arrastar a LINHA de um projeto para reordenar a lista.
+   *
+   * É um arrasto próprio (não é o de documento): o alvo é outra linha de projeto e o
+   * indicador é um risco aceso acima/abaixo dela. O clique que vem depois do drop é
+   * ignorado por `arrastouAte`, senão a pasta abriria ou fecharia sem querer.
+   */
+  private iniciarArrastoProjeto(e: PointerEvent, root: string): void {
+    if (e.button !== 0 || e.pointerType === "touch") return; // no toque, o menu de contexto resolve
+    if ((e.target as HTMLElement).closest(".pj-more")) return; // o "+" cria subpasta
+    const linha = e.currentTarget as HTMLElement;
+    const x0 = e.clientX;
+    const y0 = e.clientY;
+    let ativo = false;
+    const encerrar = () => {
+      window.removeEventListener("pointermove", aoMover, true);
+      window.removeEventListener("pointerup", aoSoltar, true);
+      window.removeEventListener("pointercancel", aoCancelar, true);
+    };
+    const aoMover = (ev: PointerEvent) => {
+      if (!ativo) {
+        if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < 5) return;
+        ativo = true;
+        this.arrastandoProjeto = root;
+        linha.classList.add("arrastando");
+        document.body.classList.add("arrastando-projeto");
+        this.criarPastilha(ev.clientX, ev.clientY, baseName(root) || root);
+      }
+      ev.preventDefault();
+      this.moverPastilha(ev.clientX, ev.clientY);
+      this.realcarDestinoProjeto(ev.clientX, ev.clientY);
+    };
+    const aoSoltar = (ev: PointerEvent) => {
+      encerrar();
+      if (!ativo) return;
+      ev.preventDefault();
+      this.arrastouAte = Date.now() + 300; // o clique disparado pelo drop não abre/fecha a pasta
+      this.soltarProjeto(ev.clientX, ev.clientY);
+    };
+    const aoCancelar = () => {
+      encerrar();
+      this.cancelarArrastoProjeto();
+    };
+    window.addEventListener("pointermove", aoMover, true);
+    window.addEventListener("pointerup", aoSoltar, true);
+    window.addEventListener("pointercancel", aoCancelar, true);
+  }
+
+  /** A linha de PROJETO sob o ponteiro e se o cursor está na metade de cima dela. */
+  private projetoEm(x: number, y: number): { root: string; antes: boolean; linha: HTMLElement } | null {
+    const alvo = document.elementFromPoint(x, y) as HTMLElement | null;
+    const linha = alvo?.closest<HTMLElement>("#projects-tree > .pj-folder") ?? null;
+    if (!linha) return null;
+    const root = linha.dataset.path ?? "";
+    if (!root) return null;
+    const r = linha.getBoundingClientRect();
+    return { root, antes: y < r.top + r.height / 2, linha };
+  }
+
+  /** Acende o risco de inserção acima/abaixo do projeto sob o ponteiro. */
+  private realcarDestinoProjeto(x: number, y: number): void {
+    document
+      .querySelectorAll("#projects-tree .pj-antes, #projects-tree .pj-depois")
+      .forEach((el) => el.classList.remove("pj-antes", "pj-depois"));
+    const alvo = this.projetoEm(x, y);
+    if (!alvo || alvo.root === this.arrastandoProjeto) return;
+    alvo.linha.classList.add(alvo.antes ? "pj-antes" : "pj-depois");
+  }
+
+  /** Solta o projeto na posição indicada (antes/depois da linha alvo) e persiste a ordem. */
+  private soltarProjeto(x: number, y: number): void {
+    const alvo = this.projetoEm(x, y);
+    const origem = this.arrastandoProjeto;
+    const antes = alvo?.antes ?? false;
+    this.cancelarArrastoProjeto();
+    if (!origem || !alvo || alvo.root === origem) return;
+    const lista = this.projects.filter((p) => p !== origem);
+    const idx = lista.indexOf(alvo.root);
+    if (idx < 0) return;
+    lista.splice(antes ? idx : idx + 1, 0, origem);
+    this.projects = lista;
+    this.animar = "";
+    this.persist();
+    this.renderProjects();
+  }
+
+  private cancelarArrastoProjeto(): void {
+    this.arrastandoProjeto = null;
+    document.body.classList.remove("arrastando-projeto");
+    this.pastilha?.remove();
+    this.pastilha = null;
+    document
+      .querySelectorAll("#projects-tree .pj-antes, #projects-tree .pj-depois, #projects-tree .arrastando")
+      .forEach((el) => el.classList.remove("pj-antes", "pj-depois", "arrastando"));
   }
 
   private criarPastilha(x: number, y: number, texto: string): void {

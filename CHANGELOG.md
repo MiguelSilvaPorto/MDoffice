@@ -2167,6 +2167,12 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   arquivo do PC"), e o arquivo abre no editor normal de Markdown. Os textos que listavam os formatos
   (tooltip do botão, dica do chip, comando e menu da barra) também foram atualizados.
 
+- **As pastas de projeto agora se movem para cima e para baixo**: a lista ficava na ordem em que
+  as pastas foram adicionadas. Agora **arrastar a linha do projeto** reordena (um risco aceso
+  mostra se ela entra acima ou abaixo da outra) e o **clique direito** tem **Mover para cima** e
+  **Mover para baixo**. A ordem fica em `mdc.projects` e sobrevive a recarregar; o clique que vem
+  depois do arrasto não abre/fecha a pasta. Trava: `npm run test:projetos` (menu, arrasto e reload).
+
 - **A tela de Início ficou sem os quatro modelos rápidos**: os chips **Trabalho ABNT**, **Relatório
   Executivo**, **Planilha Orçamentária** e **Pedido para IA** saíram — eles poluíam a abertura e
   não eram o que a pessoa procura ali. Ficaram só as duas ações de abrir arquivo (**Importar do

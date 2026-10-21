@@ -30,6 +30,7 @@
     "test:desenhar": "node scripts/testar-desenhar.mjs",
     "test:rascunhos": "node scripts/testar-rascunhos.mjs",
     "test:historico": "node scripts/testar-historico-grade.mjs",
+    "test:projetos": "node scripts/testar-projetos-ordem.mjs",
     "test:ligacoes": "node scripts/testar-ligacoes.mjs",
     "test:recompor": "node scripts/testar-recompor.mjs",
     "test:estilos": "node scripts/testar-estilos.mjs",
