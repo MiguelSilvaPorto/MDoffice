@@ -428,7 +428,7 @@ export class App {
     });
   }
 
-  checkWritingSoon = debounce(() => void this.runWritingCheck(), 900);
+  checkWritingSoon = debounce(() => void this.runWritingCheck(), 320);
 
   /** Manda a configuração atual do backup para quem grava (o Rust ou a camada do navegador). */
   async syncBackupConfig(): Promise<void> {
@@ -577,7 +577,7 @@ export class App {
     q("[data-nao]").addEventListener("click", () => void gravar(false));
   }
 
-  autoFixSoon = debounce(() => this.runAutoFix(), 700);
+  autoFixSoon = debounce(() => this.runAutoFix(), 380);
 
   // Depois que você para de digitar, a varredura aplica sozinha a pontuação e a limpeza
   // (ponto final, vírgulas, pontos a mais, frases coladas). O tempo de espera é o do ritmo
@@ -590,12 +590,32 @@ export class App {
 
   /** Dicionário pessoal: palavras (nomes, termos técnicos…) que não devem ser marcadas. */
 
-  updatePreview = debounce(() => {
-    void this.preview.render(this.editor.getText());
-    this.translationDocChanged();
-  }, 180);
-  statsSoon = debounce(() => this.updateStats(), 260);
-  outlineSoon = debounce(() => this.renderOutline(), 400);
+  private previewFrame = 0;
+  private statsFrame = 0;
+  private outlineFrame = 0;
+
+  updatePreview = (): void => {
+    if (this.previewFrame) return;
+    this.previewFrame = window.requestAnimationFrame(() => {
+      this.previewFrame = 0;
+      void this.preview.render(this.editor.getText());
+      this.translationDocChanged();
+    });
+  };
+  statsSoon = (): void => {
+    if (this.statsFrame) return;
+    this.statsFrame = window.requestAnimationFrame(() => {
+      this.statsFrame = 0;
+      this.updateStats();
+    });
+  };
+  outlineSoon = (): void => {
+    if (this.outlineFrame) return;
+    this.outlineFrame = window.requestAnimationFrame(() => {
+      this.outlineFrame = 0;
+      this.renderOutline();
+    });
+  };
   autosaveSoon = debounce(() => void this.autosave(), 2000);
 
 }

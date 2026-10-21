@@ -1,12 +1,13 @@
 /* ---------- ícones por tipo de arquivo (src/fileIcons.ts) ---------- */
 
-/* A paleta é a do conjunto adotado (A:\icones-finais): a mesma nos dois temas — o traço é
-   vivo por natureza e a identidade do formato não muda com o tema. */
+/* A paleta é a própria do mdOffice (fúcsia, violeta, ciano-petróleo e rosa-rubi — longe de
+   azul, verde e laranja do Office): a mesma nos dois temas, pois o traço em contorno é vivo
+   por natureza e a identidade do formato acompanha os cartões da tela Início. */
 :root {
-  --fi-md: #7c3aed;
-  --fi-word: #2b6ce4;
-  --fi-excel: #16a34a;
-  --fi-ppt: #ea580c;
+  --fi-md: #c026d3;
+  --fi-word: #7c3aed;
+  --fi-excel: #0891b2;
+  --fi-ppt: #e11d48;
 }
 
 .fi {

@@ -95,8 +95,8 @@
 }
 
 .ppr-aba.on {
-  color: var(--fi-ppt, #d24a17);
-  border-bottom-color: var(--fi-ppt, #d24a17);
+  color: var(--fi-ppt, #e11d48);
+  border-bottom-color: var(--fi-ppt, #e11d48);
   font-weight: 600;
 }
 
@@ -226,8 +226,8 @@ button.ppr .ic {
 }
 
 button.ppr:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--fi-ppt, #d24a17) 13%, transparent);
-  border-color: color-mix(in srgb, var(--fi-ppt, #d24a17) 35%, transparent);
+  background: color-mix(in srgb, var(--fi-ppt, #e11d48) 13%, transparent);
+  border-color: color-mix(in srgb, var(--fi-ppt, #e11d48) 35%, transparent);
 }
 
 button.ppr:disabled {
@@ -236,8 +236,8 @@ button.ppr:disabled {
 }
 
 button.ppr.on {
-  background: color-mix(in srgb, var(--fi-ppt, #d24a17) 22%, transparent);
-  border-color: color-mix(in srgb, var(--fi-ppt, #d24a17) 55%, transparent);
+  background: color-mix(in srgb, var(--fi-ppt, #e11d48) 22%, transparent);
+  border-color: color-mix(in srgb, var(--fi-ppt, #e11d48) 55%, transparent);
 }
 
 button.ppr.txt {
@@ -421,7 +421,7 @@ button.ppr.cor .car {
   align-items: center;
   justify-content: center;
   flex: none;
-  color: var(--fi-ppt, #d24a17);
+  color: var(--fi-ppt, #e11d48);
 }
 
 .ppr-gal-ic svg {
@@ -489,7 +489,7 @@ button.ppr.big .ppr-gal-ic svg {
 }
 
 .ppr-estilo:hover {
-  border-color: var(--fi-ppt, #d24a17);
+  border-color: var(--fi-ppt, #e11d48);
 }
 
 .ppr-estilo span {
@@ -1155,7 +1155,7 @@ button.ppr.big .ppr-gal-ic svg {
 
 .pp-side-tabs button.on {
   color: var(--fg);
-  border-bottom-color: var(--fi-ppt, #d24a17);
+  border-bottom-color: var(--fi-ppt, #e11d48);
   font-weight: 600;
 }
 
@@ -1198,7 +1198,7 @@ button.ppr.big .ppr-gal-ic svg {
 
 .pp-anim-linha.on {
   background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--fi-ppt, #d24a17) 45%, transparent);
+  border-color: color-mix(in srgb, var(--fi-ppt, #e11d48) 45%, transparent);
 }
 
 .pp-anim-num {
@@ -1209,7 +1209,7 @@ button.ppr.big .ppr-gal-ic svg {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--fi-ppt, #d24a17);
+  background: var(--fi-ppt, #e11d48);
   color: #fff;
   border-radius: 999px;
   font-size: 9.5px;
@@ -2020,8 +2020,8 @@ button.ppr.big .ppr-gal-ic svg {
 }
 
 .pp-pincel-concluir {
-  background: var(--fi-ppt, #d24a17);
-  border-color: var(--fi-ppt, #d24a17);
+  background: var(--fi-ppt, #e11d48);
+  border-color: var(--fi-ppt, #e11d48);
   color: #fff;
   font-weight: 600;
 }
@@ -2057,7 +2057,7 @@ button.ppr.big .ppr-gal-ic svg {
   margin: -5px 0 0 -5px;
   border-radius: 50%;
   background: #ffffff;
-  border: 2px solid var(--fi-ppt, #d24a17);
+  border: 2px solid var(--fi-ppt, #e11d48);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
   pointer-events: none;
   z-index: 55;
@@ -2066,7 +2066,7 @@ button.ppr.big .ppr-gal-ic svg {
 
 .pp-no-curva.reto {
   border-radius: 2px;
-  background: var(--fi-ppt, #d24a17);
+  background: var(--fi-ppt, #e11d48);
 }
 
 .pp-no-curva.inicio {
@@ -2086,7 +2086,7 @@ button.ppr.big .ppr-gal-ic svg {
 .pp-sel {
   position: absolute;
   box-sizing: border-box;
-  border: 1.5px solid var(--fi-ppt, #d24a17);
+  border: 1.5px solid var(--fi-ppt, #e11d48);
   pointer-events: none;
   z-index: 50;
 }
@@ -2098,7 +2098,7 @@ button.ppr.big .ppr-gal-ic svg {
   height: 11px;
   margin: -6px 0 0 -6px;
   padding: 0;
-  border: 1.5px solid var(--fi-ppt, #d24a17);
+  border: 1.5px solid var(--fi-ppt, #e11d48);
   border-radius: 50%;
   background: var(--panel);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
@@ -2108,8 +2108,8 @@ button.ppr.big .ppr-gal-ic svg {
 
 .pp-lig-ponto:hover,
 .pp-lig-ponto.on {
-  background: var(--fi-ppt, #d24a17);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--fi-ppt, #d24a17) 25%, transparent);
+  background: var(--fi-ppt, #e11d48);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--fi-ppt, #e11d48) 25%, transparent);
 }
 
 /* selo numerado das formas animadas (aba Animações): fica no canto da forma */
@@ -2123,7 +2123,7 @@ button.ppr.big .ppr-gal-ic svg {
   align-items: center;
   justify-content: center;
   transform: translate(-50%, -50%);
-  background: var(--fi-ppt, #d24a17);
+  background: var(--fi-ppt, #e11d48);
   color: #fff;
   border: 1px solid var(--panel);
   border-radius: 999px;
@@ -2171,7 +2171,7 @@ button.ppr.big .ppr-gal-ic svg {
   height: 9px;
   margin: -5px 0 0 -5px;
   background: #fff;
-  border: 1.5px solid var(--fi-ppt, #d24a17);
+  border: 1.5px solid var(--fi-ppt, #e11d48);
   border-radius: 2px;
   pointer-events: auto;
   z-index: 51;
@@ -2368,7 +2368,7 @@ button.ppr.big .ppr-gal-ic svg {
   height: 12px;
   margin-left: -6px;
   background: #fff;
-  border: 1.5px solid var(--fi-ppt, #d24a17);
+  border: 1.5px solid var(--fi-ppt, #e11d48);
   border-radius: 50%;
   cursor: grab;
   pointer-events: auto;
@@ -2381,7 +2381,7 @@ button.ppr.big .ppr-gal-ic svg {
   top: -15px;
   width: 0;
   height: 15px;
-  border-left: 1.5px solid var(--fi-ppt, #d24a17);
+  border-left: 1.5px solid var(--fi-ppt, #e11d48);
 }
 
 .pp-guia {
@@ -2493,7 +2493,7 @@ button.ppr.big .ppr-gal-ic svg {
   font-size: 11px;
   line-height: 1;
   color: #fff;
-  background: var(--fi-ppt, #d24a17);
+  background: var(--fi-ppt, #e11d48);
   border-radius: 3px;
   cursor: move;
   pointer-events: auto;
@@ -2560,13 +2560,13 @@ button.ppr.big .ppr-gal-ic svg {
 
 .ppr-trans-item:hover,
 .ppr-anim-item:hover {
-  border-color: var(--fi-ppt, #d24a17);
+  border-color: var(--fi-ppt, #e11d48);
 }
 
 .ppr-trans-item.on,
 .ppr-anim-item.on {
-  background: color-mix(in srgb, var(--fi-ppt, #d24a17) 18%, var(--panel-2));
-  border-color: var(--fi-ppt, #d24a17);
+  background: color-mix(in srgb, var(--fi-ppt, #e11d48) 18%, var(--panel-2));
+  border-color: var(--fi-ppt, #e11d48);
 }
 
 .ppr-trans-svg,
@@ -2617,13 +2617,13 @@ button.ppr.big .ppr-gal-ic svg {
 }
 
 .ppr-anim-item:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--fi-ppt, #d24a17) 55%, var(--border));
+  border-color: color-mix(in srgb, var(--fi-ppt, #e11d48) 55%, var(--border));
 }
 
 .ppr-anim-item.on {
-  background: color-mix(in srgb, var(--fi-ppt, #d24a17) 16%, var(--panel-2));
-  border-color: var(--fi-ppt, #d24a17);
-  box-shadow: inset 0 0 0 1px var(--fi-ppt, #d24a17);
+  background: color-mix(in srgb, var(--fi-ppt, #e11d48) 16%, var(--panel-2));
+  border-color: var(--fi-ppt, #e11d48);
+  box-shadow: inset 0 0 0 1px var(--fi-ppt, #e11d48);
 }
 
 .ppr-anim-item.on .ppr-anim-nome {
@@ -2641,7 +2641,7 @@ button.ppr.big .ppr-gal-ic svg {
   width: 13px;
   height: 13px;
   color: #fff;
-  background: var(--fi-ppt, #d24a17);
+  background: var(--fi-ppt, #e11d48);
   border-radius: 50%;
   font-size: 9px;
   line-height: 1;
@@ -2660,7 +2660,7 @@ button.ppr.big .ppr-gal-ic svg {
   place-items: center;
   width: 100%;
   height: 22px;
-  color: var(--fi-ppt, #d24a17);
+  color: var(--fi-ppt, #e11d48);
   font-size: 17px;
   line-height: 1;
 }
@@ -2721,12 +2721,12 @@ button.ppr.seg {
 }
 
 button.ppr.seg:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--fi-ppt, #d24a17) 14%, transparent);
+  background: color-mix(in srgb, var(--fi-ppt, #e11d48) 14%, transparent);
   border-color: transparent;
 }
 
 button.ppr.seg.on:not(:disabled) {
-  background: color-mix(in srgb, var(--fi-ppt, #d24a17) 26%, var(--panel-2));
+  background: color-mix(in srgb, var(--fi-ppt, #e11d48) 26%, var(--panel-2));
   border-color: transparent;
   font-weight: 600;
 }
@@ -2781,18 +2781,18 @@ button.ppr.seg.on:not(:disabled) {
 }
 
 .ppr-chip:hover {
-  border-color: color-mix(in srgb, var(--fi-ppt, #d24a17) 45%, var(--border));
+  border-color: color-mix(in srgb, var(--fi-ppt, #e11d48) 45%, var(--border));
 }
 
 .ppr-chip:has(input:checked) {
-  background: color-mix(in srgb, var(--fi-ppt, #d24a17) 16%, var(--panel-2));
-  border-color: var(--fi-ppt, #d24a17);
+  background: color-mix(in srgb, var(--fi-ppt, #e11d48) 16%, var(--panel-2));
+  border-color: var(--fi-ppt, #e11d48);
 }
 
 .ppr-chip:has(input:checked) .ppr-chip-marca {
   color: #fff;
-  background: var(--fi-ppt, #d24a17);
-  border-color: var(--fi-ppt, #d24a17);
+  background: var(--fi-ppt, #e11d48);
+  border-color: var(--fi-ppt, #e11d48);
 }
 
 .ppr-chip:has(input:disabled) {
@@ -2801,7 +2801,7 @@ button.ppr.seg.on:not(:disabled) {
 }
 
 .ppr-chip:has(input:focus-visible) {
-  outline: 2px solid var(--fi-ppt, #d24a17);
+  outline: 2px solid var(--fi-ppt, #e11d48);
   outline-offset: 1px;
 }
 
@@ -3044,7 +3044,7 @@ button.ppr.trans-dir {
   font-size: 12.5px;
   font-weight: 600;
   color: #fff;
-  background: var(--fi-ppt, #d24a17);
+  background: var(--fi-ppt, #e11d48);
   border: 0;
   border-radius: 6px 0 0 6px;
   cursor: pointer;
@@ -3103,7 +3103,7 @@ button.ppr.trans-dir {
 
 .pp-seg button.on {
   color: var(--fg);
-  background: color-mix(in srgb, var(--fi-ppt, #d24a17) 16%, transparent);
+  background: color-mix(in srgb, var(--fi-ppt, #e11d48) 16%, transparent);
   font-weight: 600;
 }
 

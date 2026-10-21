@@ -1333,7 +1333,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       const partes = [
         { nome: "Versões", bytes: vers.bytes, cor: "var(--accent)" },
         { nome: "Log", bytes: log.bytes, cor: "color-mix(in srgb, var(--accent) 55%, transparent)" },
-        { nome: "Backup", bytes: idx.bytes, cor: "var(--fi-ppt, #d24a17)" },
+        { nome: "Backup", bytes: idx.bytes, cor: "var(--fi-ppt, #e11d48)" },
         { nome: "Rascunhos", bytes: rascunhosBytes, cor: "#f59e0b" },
         { nome: "Outros", bytes: outros, cor: "var(--muted)" },
       ].filter((p) => p.bytes > 0);

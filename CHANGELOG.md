@@ -37,6 +37,11 @@
 
 **Frontend**
 
+- **Preview de Markdown 100% em tempo real durante a escrita**: mapeados e eliminados os pontos que faziam a pré-visualização congelar por 1 a 2 segundos enquanto a pessoa digitava continuamente ou piscar elementos ricos:
+  - **Atualização por quadro (`requestAnimationFrame`)**: `updatePreview`, `statsSoon` e `outlineSoon` em `src/app/app.ts` deixaram de usar `debounce` de cauda (`180 ms`, `260 ms` e `400 ms`, que reiniciavam o relógio a cada tecla e bloqueavam qualquer atualização até a pessoa parar de digitar) e passaram a agendar o próximo quadro de animação (~16 ms / 60 fps). A revisão e a autocorreção segura (`checkWritingSoon` e `autoFixSoon`) e o tradutor ao vivo (`controller.ts`) também tiveram a latência reduzida.
+  - **Parser síncrono e diff incremental do DOM (`patchDom`)**: `Preview.render()` em `src/md/preview.ts` passou a usar `marked.parse(md, { gfm: true, async: false })` num contêiner de preparação e aplica apenas as diferenças (`patchDom`) sobre os blocos que mudaram, preservando parágrafos, tabelas, listas, blocos de código e a posição de rolagem sem recriar o `innerHTML` inteiro a cada tecla.
+  - **Cache síncrono de imagens locais e diagramas Mermaid**: imagens locais já carregadas (`this.cache`) e diagramas Mermaid já renderizados (`this.mermaidCache`) são injetados de forma síncrona ainda no `postProcess()` antes da pintura do navegador, e diagramas em edição mantêm o SVG anterior visível até o novo ficar pronto — acabando com o piscar de imagens e de blocos `<pre><code>` crus durante a digitação.
+
 - **O botão Desenhar voltou a funcionar em documento novo no navegador**: o quadro grava o PNG
   e o JSON em `assets/`, ao lado do documento, então o app precisa de um arquivo antes — e o
   navegador não tem a pasta de rascunhos do app. Quando o rascunho automático não está
@@ -2961,6 +2966,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   Rust do `soma_pasta` (28 testes no total).
 
 **Frontend**
+
+- **Releitura do ícone do mdOffice e nova paleta própria (sem cores parecidas com o Office)**:
+  - **Novo ícone da suíte (`app-icon.svg`, `public/icones/mdoffice-claro.png`, `mdoffice-escuro.png`, `pwa-*.png`, `src-tauri/icons/*` e `#boot` em `index.html`)**: substituído o ícone antigo que mostrava apenas uma folha isolada com `M↓` (da época em que o app era só um editor Markdown) por uma composição em leque que representa o **mdOffice** completo — planilha com células em ciano-petróleo à esquerda, apresentação com gráfico em barras rosa-rubi à direita e folha central de escrita com o monograma `M`, linhas dos quatro formatos e a centelha de IA (`✦`) em violeta e fúcsia.
+  - **Nova paleta de interface e de módulos (`src/styles/tokens.css`, `fileicons.css`, `excel.css`, `powerpoint-edicao.css`, `word.css`, `topbar.css`, `settings.css`)**: removidas de vez as cores que espelhavam os programas da Microsoft (azul `#2b6ce4` / `#0f6cbd` em Documentos, verde `#16a34a` / `#1b8a4b` em Planilhas e laranja `#ea580c` / `#d24a17` em Apresentações). O app e as fitas agora usam uma paleta editorial própria em tons de ametista/obsidiana (`--accent: #6d28d9` / `#a78bfa`, `--bg: #f6f4f9` / `#100e16`) e os quatro formatos usam **violeta (`#7c3aed`)** para Documentos (`.docx`), **ciano-petróleo (`#0891b2`)** para Planilhas (`.xlsx`), **fúcsia (`#c026d3`)** para Markdown (`.md`) e **rosa-rubi (`#e11d48`)** para Apresentações (`.pptx`).
 
 - **Início (Hub) e barra lateral: ícones unificados, destaque único nos painéis e prévias redesenhadas**:
   - **Barra lateral (`.sb-tabs`)**: o ícone `#i-home` ganhou geometria limpa com telhado, corpo arredondado e porta; o botão de **Projetos** passou a usar `#i-folder` (pasta arredondada) em vez da grade 2×2 (`#i-grid`), e `#i-list` ganhou marcadores circulares nítidos. Além disso, `sidebar.init()`, `show()` e `setHomeActive()` agora respeitam `body.home-open` e fecham o Início ao clicar em **Projetos** ou **Estrutura**, eliminando o bug em que o botão de Início ficava colorido ao mesmo tempo em que a pílula ativa marcava outro painel.

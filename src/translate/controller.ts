@@ -339,7 +339,7 @@ export class Translation {
 
   // ---------- tempo real ----------
 
-  private debounced = debounce((md: string) => void this.live(md), 650);
+  private debounced = debounce((md: string) => void this.live(md), 320);
 
   /** O texto em português mudou (ou a aba trocou): atualiza o inglês. */
   docChanged(md: string, immediate = false): void {

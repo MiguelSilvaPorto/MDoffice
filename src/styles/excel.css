@@ -76,8 +76,8 @@ body.home-open #excel-pane {
 }
 
 .xl-tab.on {
-  color: var(--fi-excel, #1b8a4b);
-  border-bottom-color: var(--fi-excel, #1b8a4b);
+  color: var(--fi-excel, #0891b2);
+  border-bottom-color: var(--fi-excel, #0891b2);
   font-weight: 600;
 }
 
@@ -176,18 +176,18 @@ body.home-open #excel-pane {
 }
 
 .xl:hover {
-  background: color-mix(in srgb, var(--fi-excel, #1b8a4b) 13%, transparent);
-  border-color: color-mix(in srgb, var(--fi-excel, #1b8a4b) 35%, transparent);
+  background: color-mix(in srgb, var(--fi-excel, #0891b2) 13%, transparent);
+  border-color: color-mix(in srgb, var(--fi-excel, #0891b2) 35%, transparent);
 }
 
 .xl:active {
-  background: color-mix(in srgb, var(--fi-excel, #1b8a4b) 24%, transparent);
+  background: color-mix(in srgb, var(--fi-excel, #0891b2) 24%, transparent);
 }
 
 /* ligado (negrito, alinhamento atual...) */
 .xl.on {
-  background: color-mix(in srgb, var(--fi-excel, #1b8a4b) 22%, transparent);
-  border-color: color-mix(in srgb, var(--fi-excel, #1b8a4b) 55%, transparent);
+  background: color-mix(in srgb, var(--fi-excel, #0891b2) 22%, transparent);
+  border-color: color-mix(in srgb, var(--fi-excel, #0891b2) 55%, transparent);
 }
 
 .xl.fmt {
@@ -236,7 +236,7 @@ body.home-open #excel-pane {
   font-size: 26px;
   font-weight: 700;
   line-height: 1;
-  color: var(--fi-excel, #1b8a4b);
+  color: var(--fi-excel, #0891b2);
 }
 
 .xl-fx {
@@ -377,7 +377,7 @@ body.home-open #excel-pane {
 
 .xl-sinal {
   padding: 0 4px;
-  color: var(--fi-excel, #1b8a4b);
+  color: var(--fi-excel, #0891b2);
   font-family: "Cambria", Georgia, serif;
   font-style: italic;
   font-weight: 700;

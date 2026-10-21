@@ -155,7 +155,7 @@ checa(
 checa("o cartão escolhido fica marcado", /\.st-opcao:has\(input:checked\)\s*\{/.test(set), "estado :has(input:checked) ausente em .st-opcao");
 checa(
   "as prévias têm as cores fixas dos dois temas",
-  /\.st-opcao-previa\[data-tema="claro"\]\s*\{[^}]*background:\s*#ffffff/.test(set) && /\.st-opcao-previa\[data-tema="escuro"\]\s*\{[^}]*background:\s*#0e1014/.test(set),
+  /\.st-opcao-previa\[data-tema="claro"\]\s*\{[^}]*background:\s*#ffffff/.test(set) && /\.st-opcao-previa\[data-tema="escuro"\]\s*\{[^}]*background:\s*#100e16/.test(set),
   "prévia do claro/escuro ausente"
 );
 checa("o interruptor antigo do tema saiu da página", !/data-k="dark"/.test(cfg), 'ainda existe data-k="dark"');
@@ -798,8 +798,8 @@ console.log("\nícones de tipo em contorno (o estilo adotado)");
     "a folha voltou a ser preenchida"
   );
   checa(
-    "a paleta é a do conjunto adotado (md roxo, word azul, excel verde, ppt laranja)",
-    /--fi-md:\s*#7c3aed/.test(fiCss) && /--fi-word:\s*#2b6ce4/.test(fiCss) && /--fi-excel:\s*#16a34a/.test(fiCss) && /--fi-ppt:\s*#ea580c/.test(fiCss)
+    "a paleta é a própria do mdOffice (md fúcsia, word violeta, excel ciano-petróleo, ppt rosa-rubi)",
+    /--fi-md:\s*#c026d3/.test(fiCss) && /--fi-word:\s*#7c3aed/.test(fiCss) && /--fi-excel:\s*#0891b2/.test(fiCss) && /--fi-ppt:\s*#e11d48/.test(fiCss)
   );
   checa(
     "cada tipo tem a sua marca (md com #, word com linhas, excel com grade, ppt com barras)",
@@ -3405,15 +3405,23 @@ console.log("\nBarra do topo: o Desenhar sai na apresentação");
   checa(
     "Início: o cabeçalho usa o ícone do app, os 4 formatos usam a folha em contorno com a paleta unificada e a prévia vazia desenha o esqueleto da folha/grade/lâmina",
     /class="home-brand-mark" src="\/icones\/mdoffice-\$\{iconeApp\}\.png"/.test(homePageTs) &&
-      /--mod-word:\s*#2b6ce4/.test(ler("src/styles/tokens.css")) &&
-      /--mod-excel:\s*#16a34a/.test(ler("src/styles/tokens.css")) &&
-      /--mod-md:\s*#7c3aed/.test(ler("src/styles/tokens.css")) &&
-      /--mod-ppt:\s*#ea580c/.test(ler("src/styles/tokens.css")) &&
+      /--mod-word:\s*#7c3aed/.test(ler("src/styles/tokens.css")) &&
+      /--mod-excel:\s*#0891b2/.test(ler("src/styles/tokens.css")) &&
+      /--mod-md:\s*#c026d3/.test(ler("src/styles/tokens.css")) &&
+      /--mod-ppt:\s*#e11d48/.test(ler("src/styles/tokens.css")) &&
       /home-brand-icon-fg/.test(homePageTs) &&
       /home-prev-vazia/.test(homePageTs) &&
       /home-prev-skel-linha/.test(homeCss) &&
       /\.home-file-preview-ic \.fi/.test(homeCss),
     "o cabeçalho/cards da Início voltariam aos ícones antigos ou os recentes vazios ficariam sem silhueta"
+  );
+  checa(
+    "preview Markdown em tempo real: atualiza a cada quadro (requestAnimationFrame) com diff incremental e cache de imagens/Mermaid",
+    /this\.previewFrame = window\.requestAnimationFrame/.test(ler("src/app/app.ts")) &&
+      /marked\.parse\(md, \{ gfm: true, async: false \}\)/.test(ler("src/md/preview.ts")) &&
+      /private patchDom\(target: HTMLElement, source: HTMLElement\)/.test(ler("src/md/preview.ts")) &&
+      /private mermaidCache = new Map<string, string>\(\)/.test(ler("src/md/preview.ts")),
+    "o preview voltaria a atrasar 1-2s durante a digitação contínua ou piscar imagens e diagramas"
   );
   checa(
     "barra lateral: o botão de Projetos usa o ícone de pasta e clicar em Projetos/Estrutura fecha o Início para não duplicar o destaque",

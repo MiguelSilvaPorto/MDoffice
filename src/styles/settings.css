@@ -450,15 +450,15 @@ body.settings-open #preview-puxa {
 /* mini-prévia do tema: cores fixas (os dois cartões aparecem ao mesmo tempo) */
 
 .st-opcao-previa[data-tema="claro"] {
-  color: #1c212b;
+  color: #1d1927;
   background: #ffffff;
-  border-color: #d8dbe2;
+  border-color: #e4e0ec;
 }
 
 .st-opcao-previa[data-tema="escuro"] {
-  color: #f4f5f8;
-  background: #0e1014;
-  border-color: #2a2f3a;
+  color: #ece9f5;
+  background: #100e16;
+  border-color: #2d273b;
 }
 
 .st-opcao-linha {
@@ -478,11 +478,11 @@ body.settings-open #preview-puxa {
   height: 12px;
   margin-top: auto;
   border-radius: 4px;
-  background: #4f46e5;
+  background: #6d28d9;
 }
 
 .st-opcao-previa[data-tema="escuro"] .st-opcao-ponto {
-  background: #818cf8;
+  background: #a78bfa;
 }
 
 /* mini-prévia da animação: a bolinha mostra o ritmo de cada nível */

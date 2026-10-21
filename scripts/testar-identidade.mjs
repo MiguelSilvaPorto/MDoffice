@@ -78,10 +78,15 @@ const HEXES_DO_OFFICE = [
   "185ABD", // azul do Word
   "2B579A", // azul do Word (versão antiga)
   "103F91", // azul escuro da chapa do Word
+  "0F6CBD", // azul Fluent Word Online
+  "2B6CE4", // azul antes usado nos ícones do Word
   "107C41", // verde do Excel
   "0E5C2F", // verde escuro da chapa do Excel
+  "16A34A", // verde antes usado nos ícones do Excel
+  "1B8A4B", // verde antes usado como fallback na fita do Excel
   "C43E1C", // laranja do PowerPoint
   "8E2A12", // laranja escuro da chapa do PowerPoint
+  "D24A17", // laranja-avermelhado antes usado como fallback no PowerPoint
   "0284C7", // azul do "Markdown"
   "0D4E7A", // azul escuro da chapa do "Markdown"
   "7DD3FC",
@@ -106,13 +111,13 @@ ok(
 ok("o botão de salvamento automático usa a cor do app", /\.tb-autosave-track[\s\S]{0,200}background: var\(--accent\)/.test(ler("src/styles/topbar.css").replace(/\n/g, " ")));
 ok("o comentário 'Office Word Blue' saiu", !arquivos.some((rel) => ler(rel).includes("Office Word Blue")));
 
-// o boot e o ícone também são da identidade nova
+// o boot e o ícone também são da identidade nova (leque da suíte + centelha de IA)
 const boot = ler("index.html");
-ok("a tela de carregamento usa a marca nova (índigo, sem azul do Office)", boot.includes('rx="14" fill="#4F46E5"') && !boot.includes("#0D4E7A"));
+ok("a tela de carregamento usa a marca nova (suíte com leque e centelha de IA, sem azul do Office)", boot.includes('rx="14" fill="#4F46E5"') && boot.includes("#0891B2") && boot.includes("#E11D48") && !boot.includes("#0D4E7A"));
 const svgIcone = ler("app-icon.svg");
 ok(
-  "o app-icon.svg é do gradiente da marca (índigo → violeta → fúcsia)",
-  svgIcone.includes("#4F46E5") && svgIcone.includes("#7C3AED") && svgIcone.includes("#C026D3")
+  "o app-icon.svg representa a suíte completa (leque de planilha, apresentação, documento e IA no gradiente da marca)",
+  svgIcone.includes("#4F46E5") && svgIcone.includes("#7C3AED") && svgIcone.includes("#C026D3") && svgIcone.includes("#0891B2") && svgIcone.includes("#E11D48")
 );
 
 console.log(falhas ? `\n${falhas} falha(s)` : "\ntudo certo");

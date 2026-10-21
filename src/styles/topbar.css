@@ -152,7 +152,7 @@
 
 [data-theme="dark"] .tb-autosave-toggle[aria-checked="true"] .tb-autosave-track,
 [data-theme="dark"] .tb-autosave-toggle.is-active .tb-autosave-track {
-  background: #3b82f6;
+  background: var(--accent);
   opacity: 1;
 }
 

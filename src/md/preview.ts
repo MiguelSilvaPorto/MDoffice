@@ -126,7 +126,9 @@ export class Preview {
   private docPath: string | null = null;
   private dark = false;
   private token = 0;
+  private mermaidToken = 0;
   private cache = new Map<string, string>();
+  private mermaidCache = new Map<string, string>();
   private drawIndex = new Map<string, string>();
   private suspended = 0;
   private pendingText: string | null = null;
@@ -184,12 +186,13 @@ export class Preview {
       this.el.innerHTML = this.readOnly ? "" : welcomeHtml();
       return;
     }
-    const html = await marked.parse(md, { gfm: true, async: true });
-    if (myToken !== this.token) return;
-    this.el.innerHTML = DOMPurify.sanitize(String(html), { ADD_ATTR: ["target", "rel"] });
-    this.postProcess();
+    const html = marked.parse(md, { gfm: true, async: false }) as string;
+    const staging = document.createElement("div");
+    staging.innerHTML = DOMPurify.sanitize(String(html), { ADD_ATTR: ["target", "rel"] });
+    this.postProcess(staging);
+    this.patchDom(this.el, staging);
     void this.resolveImages(myToken);
-    void this.renderMermaid(myToken);
+    void this.renderMermaid();
   }
 
   /** Renderiza e ESPERA as imagens e os diagramas ficarem prontos (usado pela exportação). */
@@ -200,11 +203,11 @@ export class Preview {
       this.el.innerHTML = "";
       return;
     }
-    const html = await marked.parse(md, { gfm: true, async: true });
+    const html = marked.parse(md, { gfm: true, async: false }) as string;
     this.el.innerHTML = DOMPurify.sanitize(String(html), { ADD_ATTR: ["target", "rel"] });
-    this.postProcess();
+    this.postProcess(this.el);
     await this.resolveImages(myToken);
-    await this.renderMermaid(myToken);
+    await this.renderMermaid();
   }
 
   /** Abre o editor de desenho embutido na imagem indicada (usado após criar um desenho). */
@@ -366,14 +369,35 @@ export class Preview {
 
   // ---------- pós-processamento ----------
 
-  private postProcess(): void {
+  private mermaidCacheKey(source: string): string {
+    return `${this.dark ? "d" : "l"}:${source.trim()}`;
+  }
+
+  private buildMermaidHost(svgHtml: string, source: string): HTMLElement {
+    const host = document.createElement("div");
+    host.className = "mermaid-host";
+    host.dataset.mermaidSource = source.trim();
+    host.innerHTML = svgHtml;
+    if (!this.readOnly) {
+      const edit = document.createElement("button");
+      edit.type = "button";
+      edit.className = "draw-edit-btn mermaid-edit-btn";
+      edit.dataset.mermaidSource = source.trim();
+      edit.title = "Abrir este diagrama no construtor";
+      edit.innerHTML = '<svg class="ic"><use href="#i-flow"/></svg><span>Editar diagrama</span>';
+      host.append(edit);
+    }
+    return host;
+  }
+
+  private postProcess(root: HTMLElement = this.el): void {
     let n = 0;
-    this.el.querySelectorAll<HTMLElement>("h1,h2,h3,h4,h5,h6").forEach((hd) => {
+    root.querySelectorAll<HTMLElement>("h1,h2,h3,h4,h5,h6").forEach((hd) => {
       hd.id = `sec-${n++}-${slugify(hd.textContent || "") || "secao"}`;
     });
 
     // campos selecionáveis: as caixas de tarefa ficam clicáveis e refletem no Markdown
-    this.el.querySelectorAll<HTMLInputElement>('li > input[type="checkbox"]').forEach((cb) => {
+    root.querySelectorAll<HTMLInputElement>('li > input[type="checkbox"]').forEach((cb) => {
       if (!this.readOnly) {
         cb.disabled = false;
         cb.removeAttribute("disabled");
@@ -381,14 +405,26 @@ export class Preview {
       cb.parentElement?.classList.add("task-list-item");
     });
 
-    // Desenhos nativos do mdOffice têm um editor acessível no próprio preview.
-    this.el.querySelectorAll<HTMLImageElement>("img").forEach((img) => {
+    // Desenhos nativos do mdOffice têm um editor acessível no próprio preview,
+    // e imagens locais já em cache recebem o data URL de forma síncrona (sem piscar).
+    root.querySelectorAll<HTMLImageElement>("img").forEach((img) => {
       const src = img.getAttribute("src") || "";
       const alt = img.getAttribute("alt") || "";
-      if (!/\/assets\/desenho-[^/]+\.(?:png|svg)$/i.test(`/${src.replace(/^\.?\//, "")}`) && !/^desenho(?::|$)/i.test(alt)) return;
-      img.classList.add("draw-img");
-      img.dataset.rel = src;
-      if (this.readOnly || img.closest(".draw-image-frame")) return;
+      const isDraw = /\/assets\/desenho-[^/]+\.(?:png|svg)$/i.test(`/${src.replace(/^\.?\//, "")}`) || /^desenho(?::|$)/i.test(alt);
+      if (isDraw) {
+        img.classList.add("draw-img");
+        img.dataset.rel = src;
+      }
+      if (src && !/^(data:|https?:|blob:|asset:)/i.test(src) && this.docPath) {
+        const abs = this.resolveAbs(src);
+        const cached = this.cache.get(abs);
+        if (cached) {
+          img.dataset.rawSrc = src;
+          img.src = cached;
+          img.classList.remove("img-missing");
+        }
+      }
+      if (!isDraw || this.readOnly || img.closest(".draw-image-frame")) return;
       const frame = document.createElement("figure");
       frame.className = "draw-image-frame";
       img.replaceWith(frame);
@@ -400,13 +436,19 @@ export class Preview {
       frame.append(edit);
     });
 
-    this.el.querySelectorAll<HTMLElement>("pre > code").forEach((code) => {
+    root.querySelectorAll<HTMLElement>("pre > code").forEach((code) => {
       const cls = code.className || "";
       const pre = code.parentElement as HTMLElement | null;
       if (!pre) return;
 
       if (/language-mermaid/.test(cls)) {
-        pre.classList.add("mermaid-block");
+        const source = code.textContent || "";
+        const cachedSvg = this.mermaidCache.get(this.mermaidCacheKey(source));
+        if (cachedSvg) {
+          pre.replaceWith(this.buildMermaidHost(cachedSvg, source));
+        } else {
+          pre.classList.add("mermaid-block");
+        }
         return;
       }
 
@@ -453,10 +495,82 @@ export class Preview {
       }
     });
 
-    this.el.querySelectorAll<HTMLAnchorElement>('a[href^="http"]').forEach((a) => {
+    root.querySelectorAll<HTMLAnchorElement>('a[href^="http"]').forEach((a) => {
       a.target = "_blank";
       a.rel = "noopener noreferrer";
     });
+  }
+
+  /**
+   * Atualiza apenas os nós que realmente mudaram no preview, preservando elementos
+   * intactos (imagens, blocos de código, diagramas e rolagem) em tempo real.
+   */
+  private patchDom(target: HTMLElement, source: HTMLElement): void {
+    const oldNodes = Array.from(target.childNodes);
+    const newNodes = Array.from(source.childNodes);
+
+    let start = 0;
+    while (start < oldNodes.length && start < newNodes.length && oldNodes[start].isEqualNode(newNodes[start])) {
+      start++;
+    }
+
+    let oldEnd = oldNodes.length - 1;
+    let newEnd = newNodes.length - 1;
+    while (oldEnd >= start && newEnd >= start && oldNodes[oldEnd].isEqualNode(newNodes[newEnd])) {
+      oldEnd--;
+      newEnd--;
+    }
+
+    if (start > oldEnd && start > newEnd) return;
+
+    // Caso mais comum durante a digitação: 1 bloco mudou no meio (ex.: o parágrafo, lista ou tabela sob o cursor)
+    if (oldEnd === start && newEnd === start) {
+      const oldNode = oldNodes[start];
+      const newNode = newNodes[start];
+      if (oldNode.nodeType === Node.ELEMENT_NODE && newNode.nodeType === Node.ELEMENT_NODE) {
+        const oldEl = oldNode as HTMLElement;
+        const newEl = newNode as HTMLElement;
+        // Se era um diagrama Mermaid já renderizado e o novo está sendo editado (ainda sem cache),
+        // mantém o diagrama visível e anota o código novo para atualizar sem piscar texto cru.
+        if (oldEl.classList.contains("mermaid-host") && newEl.classList.contains("mermaid-block")) {
+          const code = newEl.querySelector("code.language-mermaid");
+          if (code) {
+            oldEl.dataset.pendingMermaid = code.textContent || "";
+            return;
+          }
+        }
+        if (oldEl.tagName === newEl.tagName && !oldEl.classList.contains("code-wrap") && !oldEl.classList.contains("draw-image-frame")) {
+          this.syncAttributes(oldEl, newEl);
+          if (/^(UL|OL|BLOCKQUOTE|TABLE|TBODY|THEAD|TR)$/.test(oldEl.tagName)) {
+            this.patchDom(oldEl, newEl);
+          } else {
+            oldEl.innerHTML = newEl.innerHTML;
+          }
+          return;
+        }
+      }
+      oldNode.replaceWith(newNode);
+      return;
+    }
+
+    const refNode = oldEnd + 1 < oldNodes.length ? oldNodes[oldEnd + 1] : null;
+    for (let i = start; i <= oldEnd; i++) {
+      oldNodes[i].remove();
+    }
+    const frag = document.createDocumentFragment();
+    for (let j = start; j <= newEnd; j++) {
+      frag.appendChild(newNodes[j]);
+    }
+    target.insertBefore(frag, refNode);
+  }
+
+  private syncAttributes(target: HTMLElement, source: HTMLElement): void {
+    for (const attr of Array.from(target.attributes)) {
+      if (!source.hasAttribute(attr.name)) target.removeAttribute(attr.name);
+    }
+    for (const attr of Array.from(source.attributes)) {
+      if (target.getAttribute(attr.name) !== attr.value) target.setAttribute(attr.name, attr.value);
+    }
   }
 
   private onClick = (e: MouseEvent): void => {
@@ -473,6 +587,14 @@ export class Preview {
           window.setTimeout(() => (copyBtn.textContent = "Copiar"), 1400);
         });
       }
+      return;
+    }
+
+    const mermaidBtn = target.closest<HTMLElement>(".mermaid-edit-btn");
+    if (mermaidBtn) {
+      e.stopPropagation();
+      const src = mermaidBtn.dataset.mermaidSource || mermaidBtn.closest<HTMLElement>(".mermaid-host")?.dataset.mermaidSource || "";
+      if (src) this.hooks.onEditMermaid(src);
       return;
     }
 
@@ -551,38 +673,45 @@ export class Preview {
           continue;
         }
       }
-      if (myToken !== this.token) return;
+      if (myToken !== this.token && !img.isConnected) return;
+      img.dataset.rawSrc = src;
       img.src = data;
       img.classList.remove("img-missing");
     }
   }
 
-  private async renderMermaid(myToken: number): Promise<void> {
+  private async renderMermaid(): Promise<void> {
     const blocks = Array.from(this.el.querySelectorAll<HTMLElement>("pre.mermaid-block > code.language-mermaid"));
-    if (!blocks.length) return;
+    const pendingHosts = Array.from(this.el.querySelectorAll<HTMLElement>(".mermaid-host[data-pending-mermaid]"));
+    if (!blocks.length && !pendingHosts.length) return;
+    const myMermaidToken = ++this.mermaidToken;
+
+    for (const host of pendingHosts) {
+      if (myMermaidToken !== this.mermaidToken) return;
+      const source = host.dataset.pendingMermaid || "";
+      delete host.dataset.pendingMermaid;
+      if (!source.trim()) continue;
+      const temp = document.createElement("div");
+      const err = await renderMermaidInto(temp, source, this.dark);
+      if (myMermaidToken !== this.mermaidToken) return;
+      if (err === null && temp.innerHTML) {
+        this.mermaidCache.set(this.mermaidCacheKey(source), temp.innerHTML);
+        if (host.isConnected) host.replaceWith(this.buildMermaidHost(temp.innerHTML, source));
+      }
+    }
+
     for (const code of blocks) {
-      if (myToken !== this.token) return;
+      if (myMermaidToken !== this.mermaidToken) return;
       const source = code.textContent || "";
-      const host = document.createElement("div");
-      host.className = "mermaid-host";
-      const err = await renderMermaidInto(host, source, this.dark);
-      if (myToken !== this.token) return;
+      const temp = document.createElement("div");
+      const err = await renderMermaidInto(temp, source, this.dark);
+      if (myMermaidToken !== this.mermaidToken) return;
       const pre = code.closest("pre");
-      if (err === null && this.readOnly) {
-        (pre ?? code).replaceWith(host);
-      } else if (err === null) {
-        // botão para reabrir o diagrama no construtor
-        const edit = document.createElement("button");
-        edit.type = "button";
-        edit.className = "draw-edit-btn";
-        edit.title = "Abrir este diagrama no construtor";
-        edit.innerHTML = '<svg class="ic"><use href="#i-flow"/></svg><span>Editar diagrama</span>';
-        edit.addEventListener("click", (e) => {
-          e.stopPropagation();
-          this.hooks.onEditMermaid(source.trim());
-        });
-        host.append(edit);
-        (pre ?? code).replaceWith(host);
+      if (err === null && temp.innerHTML) {
+        this.mermaidCache.set(this.mermaidCacheKey(source), temp.innerHTML);
+        if ((pre ?? code).isConnected) {
+          (pre ?? code).replaceWith(this.buildMermaidHost(temp.innerHTML, source));
+        }
       } else if (pre) {
         pre.classList.add("mermaid-error");
       }

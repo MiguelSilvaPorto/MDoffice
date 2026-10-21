@@ -1,30 +1,31 @@
 /* ---------- variáveis ---------- */
 
 :root {
-  --bg: #f4f5f8;
+  --bg: #f6f4f9;
   --panel: #ffffff;
-  --panel-2: #fafbfc;
-  --border: #e2e5ea;
-  --fg: #1c212b;
-  --muted: #6b7280;
-  --accent: #4f46e5;
-  --accent-soft: rgba(79, 70, 229, 0.12);
+  --panel-2: #fbfafd;
+  --border: #e4e0ec;
+  --fg: #1d1927;
+  --muted: #6e677f;
+  --accent: #6d28d9;
+  --accent-soft: rgba(109, 40, 217, 0.12);
   --accent-fg: #ffffff;
   --danger: #dc2626;
   --ok: #059669;
-  --shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
-  /* Identidade dos módulos: a mesma paleta do conjunto de ícones por formato (azul, verde,
-     roxo, laranja — distante dos hexes oficiais do Office; o mdOffice não é afiliado,
-     patrocinado nem endossado pela Microsoft). `--mod-*-placa` é o fundo/chapa dos ícones
-     dos cartões; `--mod-*` é a cor de texto/borda, que clareia no escuro para continuar legível. */
-  --mod-md: #7c3aed;
-  --mod-word: #2b6ce4;
-  --mod-excel: #16a34a;
-  --mod-ppt: #ea580c;
-  --mod-md-placa: #7c3aed;
-  --mod-word-placa: #2b6ce4;
-  --mod-excel-placa: #16a34a;
-  --mod-ppt-placa: #ea580c;
+  --shadow: 0 10px 30px rgba(20, 14, 36, 0.12);
+  /* Identidade dos módulos: paleta PRÓPRIA do mdOffice (violeta-ametista, ciano-petróleo,
+     fúcsia-orquídea e rosa-rubi — distante do azul, verde e laranja das marcas do Office;
+     o mdOffice não é afiliado, patrocinado nem endossado pela Microsoft). `--mod-*-placa`
+     é o fundo/chapa dos ícones dos cartões; `--mod-*` é a cor de texto/borda, que clareia
+     no escuro para continuar legível. */
+  --mod-md: #c026d3;
+  --mod-word: #7c3aed;
+  --mod-excel: #0891b2;
+  --mod-ppt: #e11d48;
+  --mod-md-placa: #c026d3;
+  --mod-word-placa: #7c3aed;
+  --mod-excel-placa: #0891b2;
+  --mod-ppt-placa: #e11d48;
   /* Palco: a área em volta da lâmina/folha. No claro ele é o fundo do app; no escuro ganha um
      tom próprio (abaixo), senão uma lâmina escura fica da cor do palco e some. `--lamina-borda`
      é a moldura fina que destaca onde a lâmina termina. */
@@ -37,27 +38,27 @@
 }
 
 [data-theme="dark"] {
-  --bg: #0e1014;
-  --panel: #15181e;
-  --panel-2: #191d24;
-  --border: #262b35;
-  --fg: #e6e8ee;
-  --muted: #93a0b4;
-  --accent: #818cf8;
-  --accent-soft: rgba(129, 140, 248, 0.16);
-  --accent-fg: #0e1014;
+  --bg: #100e16;
+  --panel: #17141f;
+  --panel-2: #1d1927;
+  --border: #2d273b;
+  --fg: #ece9f5;
+  --muted: #9c94b0;
+  --accent: #a78bfa;
+  --accent-soft: rgba(167, 139, 250, 0.16);
+  --accent-fg: #100e16;
   --danger: #f87171;
   --ok: #34d399;
-  --shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+  --shadow: 0 14px 40px rgba(0, 0, 0, 0.52);
   /* as cores de TEXTO dos módulos clareiam no escuro (as placas dos ícones não mudam) */
-  --mod-md: #a78bfa;
-  --mod-word: #60a5fa;
-  --mod-excel: #4ade80;
-  --mod-ppt: #fb923c;
-  /* O palco do escuro é um degrau ACIMA do fundo do app (#0e1014): é ele que separa a lâmina
+  --mod-md: #f0abfc;
+  --mod-word: #c4b5fd;
+  --mod-excel: #38bdf8;
+  --mod-ppt: #fda4af;
+  /* O palco do escuro é um degrau ACIMA do fundo do app (#100e16): é ele que separa a lâmina
      escura (ou a folha do Word) do resto da tela. A moldura da lâmina é clara o bastante para
      aparecer tanto sobre o palco quanto sobre uma lâmina escura. */
-  --palco-bg: #1a1e26;
-  --lamina-borda: #5b6472;
+  --palco-bg: #1c1826;
+  --lamina-borda: #6b6380;
   color-scheme: dark;
 }
