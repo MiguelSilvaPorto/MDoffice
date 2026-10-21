@@ -5,7 +5,7 @@ import * as files from "../files";
 import { newTab, tabLabel } from "../tabs";
 import { type HomeCtx } from "../homePage";
 import { $, toast, baseName } from "../util";
-import { AI_TEMPLATE } from "./constants";
+
 
 export const homeContextMethods = {
   homeContext(this: App): HomeCtx {
@@ -48,82 +48,6 @@ export const homeContextMethods = {
         this.tabs.push(tab);
         this.selectTab(tab.id);
         toast(`${titulo} criado — use Ctrl+Shift+S para salvar numa pasta sua.`, "ok", 3800);
-      },
-
-      createTemplate: (template) => {
-        this.hideHome();
-        let texto = "";
-        let rotulo = "Modelo";
-        if (template === "abnt") {
-          rotulo = "Trabalho ABNT";
-          texto = [
-            "# TÍTULO DO TRABALHO ACADÊMICO",
-            "",
-            "## SUBTÍTULO",
-            "",
-            "**Nome do Autor**",
-            "",
-            "---",
-            "",
-            "### RESUMO",
-            "Este trabalho apresenta uma abordagem prática para elaboração de documentos conforme os padrões da ABNT. Palavras-chave: Documento. Normas. ABNT.",
-            "",
-            "---",
-            "",
-            "### 1. INTRODUÇÃO",
-            "Contextualização do tema, justificativa e objetivos geral e específicos da pesquisa.",
-            "",
-            "### 2. DESENVOLVIMENTO",
-            "Revisão teórica, metodologia aplicada e discussão dos resultados obtidos.",
-            "",
-            "### 3. CONSIDERAÇÕES FINAIS",
-            "Síntese dos achados e recomendações para trabalhos futuros.",
-            "",
-            "---",
-            "",
-            "### REFERÊNCIAS",
-            "- SOBRENOME, Nome. *Título da Obra em Itálico*. Cidade: Editora, 2026.",
-            "- ASSOCIAÇÃO BRASILEIRA DE NORMAS TÉCNICAS. *NBR 14724*: Informação e documentação. Rio de Janeiro: ABNT, 2011.",
-            "",
-          ].join("\n");
-        } else if (template === "relatorio") {
-          rotulo = "Relatório Executivo";
-          texto = [
-            "# Relatório Executivo Mensal",
-            "",
-            "**Período:** Outubro / 2026",
-            "**Responsável:** Equipe de Gestão",
-            "",
-            "---",
-            "",
-            "## 1. Sumário Executivo",
-            "Breve resumo com as principais métricas e conquistas do período.",
-            "",
-            "## 2. Metas e Indicadores",
-            "| Indicador | Meta | Realizado | Status |",
-            "| :--- | ---: | ---: | :-: |",
-            "| Usuários Ativos | 10.000 | 12.450 | ✅ Superado |",
-            "| Tempo de Resposta | < 200ms | 145ms | ✅ No prazo |",
-            "| Satisfação (CSAT) | 90% | 94% | ✅ Superado |",
-            "",
-            "## 3. Próximos Passos",
-            "Plano de ação para o próximo ciclo de entregas.",
-            "",
-          ].join("\n");
-        } else if (template === "orcamento") {
-          // orçamento é planilha de verdade: abre o motor com as contas já montadas
-          this.hideHome();
-          void this.criarOrcamento();
-          return;
-        } else if (template === "ia") {
-          rotulo = "Pedido para IA";
-          texto = AI_TEMPLATE;
-        }
-
-        const tab = newTab(this.editor.createState(texto), { path: null, isDraft: false, statusSaved: "Novo arquivo" });
-        this.tabs.push(tab);
-        this.selectTab(tab.id);
-        toast(`${rotulo} criado com sucesso.`, "ok", 3500);
       },
 
       openExisting: () => {

@@ -708,6 +708,24 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Linha:** `ctx.sincronizarPastaDeRascunhos(true)` ao escolher e `(false)` ao remover
 - **Porquê:** a pasta aparece (ou sai de) Projetos no mesmo instante, sem precisar reabrir o app.
 
+## src/homePage.ts
+
+### 2026-10-21 · fix/home-sem-modelos · os quatro chips de modelos saíram do Início
+- **Local:** a seção 3 ("Modelos rápidos") e o tipo `HomeCtx`
+- **Linha:** os `addChip` de "Trabalho ABNT", "Relatório Executivo", "Planilha Orçamentária" e
+  "Pedido para IA" foram removidos; o título virou **Abrir arquivo** (descrição: "Um documento que
+  já existe, do seu computador"); e `createTemplate` saiu da interface
+- **Porquê:** os quatro modelos não são o que a pessoa procura na abertura — poluíam a tela. Os
+  dois atalhos que restaram (importar do Office e abrir do PC) são ações, e a seção passou a dizer
+  isso.
+
+## src/app/homeContext.ts
+
+### 2026-10-21 · fix/home-sem-modelos · `createTemplate` (e o texto do pedido para IA) saiu
+- **Local:** a implementação de `createTemplate` e o import `AI_TEMPLATE`
+- **Linha:** o bloco inteiro (ABNT, relatório, orçamento e IA) foi removido
+- **Porquê:** era o único consumidor dos chips apagados; sem eles, virava código morto.
+
 ## src/word/schema.ts
 
 ### 2026-10-21 · feat/imagem-posicao-lados · a imagem ganhou os lados da quebra e a fixação na página

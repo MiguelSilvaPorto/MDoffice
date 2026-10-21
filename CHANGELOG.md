@@ -2161,6 +2161,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 ### Adicionado (na main)
 
+- **A tela de Início ficou sem os quatro modelos rápidos**: os chips **Trabalho ABNT**, **Relatório
+  Executivo**, **Planilha Orçamentária** e **Pedido para IA** saíram — eles poluíam a abertura e
+  não eram o que a pessoa procura ali. Ficaram só as duas ações de abrir arquivo (**Importar do
+  Office** e **Abrir arquivo do PC**), e a seção passou a se chamar **Abrir arquivo** (era "Modelos
+  rápidos", que não fazia mais sentido). O código que montava os modelos (`createTemplate` e o
+  texto do pedido para IA) saiu junto.
+
 - **A pasta dos rascunhos aparece em Projetos**: ao escolher a pasta dos rascunhos em
   **Configurações ▸ Histórico e salvamento**, ela passa a aparecer no painel **Projetos** da barra
   lateral (com o nome e a árvore dos arquivos), e sai de lá quando a escolha é removida. Antes, o

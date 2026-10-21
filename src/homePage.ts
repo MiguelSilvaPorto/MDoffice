@@ -14,7 +14,6 @@ function sanitize(html: string): string {
 
 export interface HomeCtx {
   createDoc: (tipo: "word" | "excel" | "md" | "ppt") => void;
-  createTemplate: (template: "abnt" | "relatorio" | "orcamento" | "ia") => void;
   openExisting: () => void;
   /** Importar documento do Office (.docx, .xlsx, .xlsm, .pptx). */
   importOffice: () => void;
@@ -324,12 +323,12 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
   secCards.append(grid);
   wrap.append(secCards);
 
-  // 3. Modelos Prontos (Chips rápidos)
+  // 3. Abrir arquivo (os atalhos de abrir do computador)
   const secTemplates = h("section", { class: "home-section templates-section" });
   const tplHead = h("div", { class: "home-section-head" });
   tplHead.innerHTML = `
-    <h2 class="home-section-title">Modelos rápidos</h2>
-    <span class="home-section-desc">Comece com uma estrutura pronta em um clique</span>
+    <h2 class="home-section-title">Abrir arquivo</h2>
+    <span class="home-section-desc">Um documento que já existe, do seu computador</span>
   `;
   secTemplates.append(tplHead);
 
@@ -342,10 +341,6 @@ export function renderHomePage(container: HTMLElement, ctx: HomeCtx): void {
     chips.append(btn);
   };
 
-  addChip("word", true, "Trabalho ABNT", "Modelo acadêmico completo nas normas ABNT", () => ctx.createTemplate("abnt"));
-  addChip("md", true, "Relatório Executivo", "Resumo executivo, metas, resultados e conclusão", () => ctx.createTemplate("relatorio"));
-  addChip("excel", true, "Planilha Orçamentária", "Planilha com receitas, despesas e totais calculados", () => ctx.createTemplate("orcamento"));
-  addChip("i-spark", false, "Pedido para IA", "Template estruturado para orientar IAs e LLMs", () => ctx.createTemplate("ia"));
   addChip("i-import", false, "Importar do Office", "Abrir arquivos .docx, .xlsx/.xlsm e .pptx do seu computador", () => ctx.importOffice());
   addChip("i-open", false, "Abrir arquivo do PC", "Abrir qualquer arquivo existente do disco (Ctrl+O)", () => ctx.openExisting());
 
