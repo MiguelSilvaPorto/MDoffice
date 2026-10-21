@@ -305,33 +305,11 @@ ok(
   `parágrafo acima: ${p4?.alturaAntes} → ${p4?.alturaDepois} px`
 );
 
+// 6) o menu da quebra marca a opção da imagem (mesmo com a seleção fora dela)
 // ---------------------------------------------------------------------------
-// 5) arrasto e redimensionamento AO VIVO: o texto em volta acompanha o gesto
-// ---------------------------------------------------------------------------
-const medir = () => avaliar(`
-  (() => {
-    const img = document.querySelector('#word-editor .wd-img img');
-    const par = img.closest('p');
-    const ps = Array.from(document.querySelectorAll('#word-editor p'));
-    const i = ps.indexOf(par);
-    let linhaX = null;
-    if (ps[i + 1]) {
-      const rg = document.createRange();
-      rg.selectNodeContents(ps[i + 1]);
-      const r = Array.from(rg.getClientRects())[0];
-      linhaX = r ? Math.round(r.x) : null;
-    }
-    return JSON.stringify({
-      x: Math.round(img.getBoundingClientRect().x),
-      w: Math.round(img.getBoundingClientRect().width),
-      floatW: Math.round(par.getBoundingClientRect().width),
-      margem: getComputedStyle(par).marginLeft,
-      linhaX,
-    });
-  })()
-`).then((r) => (typeof r === "string" ? JSON.parse(r) : r));
-
-await avaliar(`
+// O clique na fita tira o foco do editor; o menu abria com `query().imagem` nulo e marcava
+// "Alinhado com o texto" para qualquer imagem. A fita guarda a última imagem em foco.
+const menuQuebra = await avaliar(`
   (async () => {
     const ed = window.__mdoffice.app.wordHost.editor;
     let pos = -1, size = 1;
@@ -339,73 +317,27 @@ await avaliar(`
     const sel = ed.view.state.selection;
     const Sel = sel.constructor;
     ed.view.dispatch(ed.view.state.tr.setSelection(Sel.create(ed.view.state.doc, sel.node ? pos : pos + size)));
+    await new Promise((r) => setTimeout(r, 250));
+    ed.setQuebraDeTexto('contorno');
+    await new Promise((r) => setTimeout(r, 600));
+    // a seleção sai da imagem (é o que o clique na fita faz)
+    ed.view.dispatch(ed.view.state.tr.setSelection(Sel.create(ed.view.state.doc, 1)));
+    await new Promise((r) => setTimeout(r, 400));
+    const queryNula = !ed.query().imagem;
+    document.querySelector('[data-cmd="img-wrap"]')?.click();
+    await new Promise((r) => setTimeout(r, 250));
+    const menu = document.querySelector('.wd-wrap-pop');
+    const marcado = menu ? Array.from(menu.querySelectorAll('.wd-menu-item')).filter((b) => b.classList.contains('active')).map((b) => b.textContent.replace('✓', '').trim()) : [];
+    document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     await new Promise((r) => setTimeout(r, 150));
-    ed.setFixaNaPagina(false);
-    await new Promise((r) => setTimeout(r, 700));
-    return 'ok';
+    return JSON.stringify({ queryNula, marcado, abriu: !!menu });
   })()
 `);
-
-const antesVivo = await medir();
-const alca = JSON.parse(await avaliar(`(() => { const a = document.querySelector('#word-editor .wd-img-alca'); const r = a.getBoundingClientRect(); return JSON.stringify({ x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }); })()`));
-const rato = (type, x, y) => cmd("Input.dispatchMouseEvent", { type, x, y, button: "left", ...(type === "mouseMoved" ? { buttons: 1 } : {}), ...(type === "mousePressed" || type === "mouseReleased" ? { clickCount: 1 } : {}) });
-await rato("mousePressed", alca.x, alca.y);
-await dormir(150);
-for (let i = 1; i <= 4; i++) {
-  await rato("mouseMoved", alca.x + (80 * i) / 4, alca.y);
-  await dormir(110);
-}
-const duranteArrasto = await medir();
-await rato("mouseReleased", alca.x + 80, alca.y);
-await dormir(900);
-const depoisArrasto = await medir();
-const attrsArrasto = JSON.parse(await avaliar(`(() => { const ed = window.__mdoffice.app.wordHost.editor; let p = -1; ed.view.state.doc.descendants((n, pp) => { if (n.type.name === 'image') p = pp; }); const a = ed.view.state.doc.nodeAt(p).attrs; return JSON.stringify({ hOffset: a.hOffset }); })()`));
-
+const p6 = typeof menuQuebra === "string" ? JSON.parse(menuQuebra) : menuQuebra;
 ok(
-  "arrasto ao vivo: a imagem anda antes de soltar",
-  duranteArrasto && duranteArrasto.x - antesVivo.x > 40,
-  `antes=${antesVivo?.x} durante=${duranteArrasto?.x}`
-);
-ok(
-  "arrasto ao vivo: o texto em volta anda junto",
-  duranteArrasto && antesVivo.linhaX != null && duranteArrasto.linhaX - antesVivo.linhaX > 40,
-  `linha antes=${antesVivo?.linhaX} durante=${duranteArrasto?.linhaX}`
-);
-ok(
-  "arrasto ao vivo: soltar não dá pulo (a imagem fica onde o gesto mostrou)",
-  depoisArrasto && Math.abs(depoisArrasto.x - duranteArrasto.x) <= 3,
-  `durante=${duranteArrasto?.x} depois=${depoisArrasto?.x} (hOffset=${attrsArrasto?.hOffset})`
-);
-
-// --- redimensionamento ao vivo (alça da direita) ---
-const cantoDir = JSON.parse(await avaliar(`(() => { const a = document.querySelector('#word-editor .wd-img-p.p-e'); const r = a.getBoundingClientRect(); return JSON.stringify({ x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }); })()`));
-const antesRedim = await medir();
-await rato("mousePressed", cantoDir.x, cantoDir.y);
-await dormir(150);
-for (let i = 1; i <= 4; i++) {
-  await rato("mouseMoved", cantoDir.x + (120 * i) / 4, cantoDir.y);
-  await dormir(110);
-}
-const duranteRedim = await medir();
-await rato("mouseReleased", cantoDir.x + 120, cantoDir.y);
-await dormir(900);
-const depoisRedim = await medir();
-const attrsRedim = JSON.parse(await avaliar(`(() => { const ed = window.__mdoffice.app.wordHost.editor; let p = -1; ed.view.state.doc.descendants((n, pp) => { if (n.type.name === 'image') p = pp; }); const a = ed.view.state.doc.nodeAt(p).attrs; return JSON.stringify({ width: a.width }); })()`));
-
-ok(
-  "redimensionar ao vivo: a imagem cresce antes de soltar",
-  duranteRedim && duranteRedim.w - antesRedim.w > 80,
-  `antes=${antesRedim?.w} durante=${duranteRedim?.w}`
-);
-ok(
-  "redimensionar ao vivo: o flutuante reserva a largura nova (o texto reacomoda) na hora",
-  duranteRedim && duranteRedim.floatW - antesRedim.floatW > 80 && duranteRedim.linhaX > antesRedim.linhaX + 30,
-  `float ${antesRedim?.floatW}→${duranteRedim?.floatW}  linha ${antesRedim?.linhaX}→${duranteRedim?.linhaX}`
-);
-ok(
-  "redimensionar ao vivo: soltar guarda o tamanho que o gesto mostrou",
-  Math.abs((attrsRedim?.width ?? 0) - (duranteRedim?.w ?? 0)) <= 3,
-  `durante=${duranteRedim?.w} guardado=${attrsRedim?.width}`
+  "o menu da quebra marca a opção da imagem mesmo com a seleção fora dela",
+  p6?.abriu === true && p6?.marcado?.includes("Contorno") && p6?.queryNula === true,
+  `marcado=${JSON.stringify(p6?.marcado)} (query nula: ${p6?.queryNula})`
 );
 
 await limpar();

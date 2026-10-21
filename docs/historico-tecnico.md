@@ -144,6 +144,26 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
   a esperar `margin-left:150px`
 - **Porquê:** o mecanismo mudou de variável CSS para decoração; o teste antigo cobrava a variável.
 
+## src/word/ribbon.ts
+
+### 2026-10-21 · fix/word-quebra-menu-visual · o ✓ do menu da quebra segue a imagem
+- **Local:** `ultimaImagem` (campo novo), o `update()` e o `criaMenuDeQuebra()`
+- **Linha:** `update()` guarda `st.imagem` quando existe; o menu usa
+  `this.hooks.editor.query().imagem ?? this.ultimaImagem`
+- **Porquê:** o menu marca a opção da imagem selecionada. Quando ele abre com a seleção fora dela
+  (o clique na fita tira o foco do editor e `query().imagem` volta nulo), caía no `?? "alinhado"`
+  e marcava "Alinhado com o texto" para qualquer imagem — e a seção **Lados da quebra** (que só
+  aparece quando a imagem flutua) sumia junto. Os botões já aplicavam a quebra; o defeito era só
+  visual, mas dava a impressão de que nada funcionava.
+
+## scripts/testar-word-imagem-posicao.mjs
+
+### 2026-10-21 · fix/word-quebra-menu-visual · o caso do ✓ do menu
+- **Local:** o fim do roteiro (item 6)
+- **Linha:** põe a imagem em contorno, **tira a seleção dela** (cursor no texto), abre o menu e
+  cobra que o item marcado seja o `Contorno` (e que `query().imagem` esteja nulo)
+- **Porquê:** é exatamente o estado em que o menu marcava o primeiro item.
+
 ## src/word/schema.ts
 
 ### 2026-10-21 · feat/imagem-posicao-lados · a imagem ganhou os lados da quebra e a fixação na página

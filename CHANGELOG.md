@@ -389,12 +389,6 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 ### Não adicionado (fora da main)
 
-**Backend**
-
-- (nada no momento)
-
-**Frontend**
-
 - **O Word ganhou o modo LIVRO** (aba **Exibir** ▸ *Modos de Exibição*): a folha vira um **livro
   aberto** — a página 1 fica à esquerda, a 2 à direita, a 3 e a 4 na faixa de baixo, com a
   **lombada no meio**. A paginação monta essa grade: cada bloco é levado para a casa da sua
@@ -449,6 +443,18 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 **Backend**
 
 - (nada específico do módulo — abrir/salvar passam pelos comandos do **Geral**)
+
+**Frontend**
+
+- **O menu Quebra de Texto marca a opção certa**: os botões sempre funcionaram, mas o **✓** ficava
+  no "Alinhado com o texto" mesmo com a imagem em quadrado/contorno. O menu procurava a imagem
+  *selecionada*, e o clique na fita tira a seleção do editor — sem imagem, ele caía no primeiro
+  item (e nem mostrava os **Lados da quebra**). Agora a fita guarda a última imagem em foco e o
+  menu usa essa referência quando a seleção já saiu: o ✓ (e a seção dos lados) acompanham a imagem.
+
+**Backend**
+
+- (nada no momento)
 
 **Frontend**
 

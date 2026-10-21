@@ -3,7 +3,7 @@ import type { WordEditor, FormatState } from "./editor";
 import { FONT_FAMILIES, FONT_SIZES } from "./schema";
 import { DEFAULT_SETUP, PAPER_SIZES, papel, CM_TO_PX, type PageSetup, type PaperSize } from "./model";
 import { itensDoContexto } from "./contexto";
-import { LADOS_DA_QUEBRA, MODOS_DE_QUEBRA, type LadosDaQuebra, type WrapImagem } from "./imagemFlutuante";
+import { LADOS_DA_QUEBRA, MODOS_DE_QUEBRA, type DadosFlutuante, type LadosDaQuebra, type WrapImagem } from "./imagemFlutuante";
 import { h, toast } from "../util";
 import { melhorarSelects } from "../seletor";
 import { ligarAjusteAlturaFita, ligarEncaixeFita, ligarRecolherFita, ligarRodaHorizontal } from "../fita";
@@ -71,6 +71,14 @@ export class Ribbon {
   private ancoraDoPop: HTMLElement | null = null;
   /** tira as escutas do popup (o menu de contexto escuta clique fora e Esc — ver `placeEm`) */
   private limparPop: (() => void) | null = null;
+  /**
+   * A última imagem que esteve em foco.
+   *
+   * O menu da quebra marca a opção da imagem **selecionada**; quando ele abre com a seleção
+   * fora dela (o clique na fita tira o foco do editor), `query().imagem` volta nulo e o menu
+   * marcava "Alinhado com o texto" sempre. Guardar a última imagem mantém o ✓ no lugar certo.
+   */
+  private ultimaImagem: DadosFlutuante | null = null;
   /** Pincel de formatação: desligado, para uma seleção ("once") ou fixo ("sticky"). */
   private painter: "off" | "once" | "sticky" = "off";
   private showParaMarks = false;
@@ -378,6 +386,9 @@ export class Ribbon {
 
   update(): void {
     const st = this.hooks.editor.query();
+    // guarda a imagem em foco: o menu da quebra usa esta referência quando o clique na fita
+    // já tirou a seleção da imagem (ver `ultimaImagem`)
+    if (st.imagem) this.ultimaImagem = st.imagem;
     const on = (cmd: string, active: boolean) =>
       this.el.querySelectorAll(`[data-cmd="${cmd}"]`).forEach((b) => b.classList.toggle("active", active));
     on("bold", st.bold);
@@ -708,7 +719,9 @@ export class Ribbon {
 
   private criaMenuDeQuebra(): HTMLElement {
     const pop = h("div", { class: "wd-pal wd-menu-pop wd-wrap-pop" });
-    const img = this.hooks.editor.query().imagem;
+    // a imagem em foco; sem ela (o clique na fita tirou o foco), a última que esteve em foco —
+    // senão o menu marcava "Alinhado com o texto" para qualquer imagem flutuante
+    const img = this.hooks.editor.query().imagem ?? this.ultimaImagem;
     const atual = img?.wrap ?? "alinhado";
     for (const modo of MODOS_DE_QUEBRA) {
       const marcado = modo.id === atual;
