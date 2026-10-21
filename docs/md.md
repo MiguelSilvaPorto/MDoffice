@@ -33,6 +33,13 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   WebView entrega só pela área de transferência rica, de `clipboard.read` — e registra no
   diagnóstico (`?diag=1`) o que veio no evento. Tudo é copiado para `assets/` com nome limpo
   (sem acentos/espaços).
+- **Copiar com o caminho completo das imagens**: ao copiar (ou recortar) texto do editor que tem
+  imagem, cada `![…](assets/imagem.png)` vai para a área de transferência com o caminho inteiro
+  no computador — `![…](<C:\…\assets\imagem.png>)` —, pronto para colar num chat de IA (o
+  Claude Code abre a imagem direto, sem varrer o disco). O documento não muda. Como o navegador
+  não revela onde as pastas estão, na **primeira** cópia com imagem o app pede o caminho da
+  pasta (copiado da barra de endereço do Explorador; ele confere se termina no nome da pasta) e
+  lembra. Para trocar depois: `Ctrl+K` → *Informar o caminho da pasta*.
 - **Documento novo já salvo na pasta padrão**: `Ctrl+N` (ou o card do Início) cria o documento e
   o guarda de uma vez em `Documentos\mdOffice\Markdown\Documento.md` — **sem perguntar pasta**. A
   raiz entra sozinha nos **Projetos** da barra lateral, com uma subpasta por tipo

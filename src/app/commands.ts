@@ -207,6 +207,11 @@ export const commandsMethods = {
       atalho: teclaVisivel("modo-foco"),
       palavras: "concentrar zen",
     });
+    add("Documento", "Informar o caminho da pasta (para copiar imagens com caminho completo)…", () => void this.informarPastaReal(), {
+      icone: "i-open",
+      palavras: "caminho pasta imagem copiar endereco explorador claude chat ia",
+      ...so("md"),
+    });
     add("Escrever", "Desenhar", () => void this.openDraw(), {
       icone: "i-draw",
       atalho: teclaVisivel("desenhar"),

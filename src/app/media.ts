@@ -2,10 +2,73 @@
 
 import type { App } from "./app";
 import * as files from "../files";
+import { pedirTexto } from "../dialogoTexto";
+import { comCaminhosCompletos, guardarCaminho, pastaDoDocumento, pastaRealDe, validarCaminho, type PastaDoDocumento } from "../disco/caminhoReal";
 import { diag } from "../broker/diag";
 import { $, toast, baseName, stripExt, isImagePath, isMarkdownPath, blobToBase64 } from "../util";
 
+/** A pasta do documento aberto, lida do registro na primeira cópia (a cópia em si é síncrona). */
+let pastaEmCache: { docId: string; pasta: PastaDoDocumento | null } | null = null;
+
+async function pastaDoAtual(docId: string): Promise<PastaDoDocumento | null> {
+  if (pastaEmCache?.docId !== docId) pastaEmCache = { docId, pasta: await pastaDoDocumento(docId) };
+  return pastaEmCache.pasta;
+}
+
 export const mediaMethods = {
+  /** Copiar texto do editor: as imagens relativas ganham o caminho completo (null = pasta ainda desconhecida). */
+  textoCopiadoComCaminhos(this: App, texto: string): string | null {
+    const docId = this.tab.path;
+    if (!docId || pastaEmCache?.docId !== docId || !pastaEmCache.pasta) return null;
+    const real = pastaRealDe(pastaEmCache.pasta);
+    return real ? comCaminhosCompletos(texto, real) : null;
+  },
+
+  /**
+   * A cópia saiu com os caminhos relativos: descobre a pasta (perguntando uma vez, se preciso) e
+   * regrava a área de transferência com o caminho completo de cada imagem.
+   */
+  async copiaSemCaminho(this: App, texto: string): Promise<void> {
+    const docId = this.tab.path;
+    if (!docId) return;
+    const pasta = await pastaDoAtual(docId);
+    if (!pasta) return;
+    let real = pastaRealDe(pasta);
+    if (!real) {
+      if (!(await this.informarPastaReal(pasta))) return;
+      real = pastaRealDe(pasta);
+      if (!real) return;
+    }
+    try {
+      await navigator.clipboard.writeText(comCaminhosCompletos(texto, real));
+      toast("Copiado com o caminho completo das imagens.", "ok");
+    } catch {
+      toast("Não consegui regravar a área de transferência: copie de novo.", "info");
+    }
+  },
+
+  /** Pergunta (uma vez) onde a pasta do documento está no computador. */
+  async informarPastaReal(this: App, pasta?: PastaDoDocumento | null): Promise<boolean> {
+    const docId = this.tab.path;
+    if (!pasta && docId) pasta = await pastaDoAtual(docId);
+    if (!pasta) {
+      toast("Este documento ainda não está numa pasta.", "info");
+      return false;
+    }
+    const nome = pasta.nome;
+    const caminho = await pedirTexto({
+      titulo: "Onde fica esta pasta?",
+      rotulo: nome ? `Caminho da pasta "${nome}"` : "Caminho da pasta onde está este documento",
+      dica: "O navegador não informa ao app onde as pastas estão. Abra a pasta no Explorador de Arquivos, clique na barra de endereço, copie e cole aqui — é só uma vez. Daí em diante, copiar texto com imagens leva o caminho completo de cada uma.",
+      valor: pastaRealDe({ ...pasta, subpastas: [] }) ?? "",
+      ok: "Guardar",
+      validar: (v) => validarCaminho(v, nome),
+    });
+    if (caminho === null) return false;
+    guardarCaminho(pasta.chave, caminho);
+    return true;
+  },
+
   insertImageMd(this: App, rel: string, alt: string): void {
     const { from } = this.editor.selectionPos();
     this.editor.insertAt(from, `![${alt}](${rel})\n`);

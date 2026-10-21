@@ -28,6 +28,27 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/disco/caminhoReal.ts
+
+### 2026-10-21 · feat/md-copiar-com-caminho-das-imagens · o caminho de verdade das pastas
+- **Local:** novo arquivo (`pastaDoDocumento`, `guardarCaminho`, `validarCaminho`, `pastaRealDe`, `absoluto`, `temImagemRelativa`, `comCaminhosCompletos`)
+- **Linha:** novo arquivo
+- **Porquê:** a pessoa cola o texto do documento no chat do Claude Code e quer que a IA abra as imagens. O texto só tem `assets/imagem-x.png`, e o navegador nunca diz ao site onde a pasta está, então a IA precisava varrer o disco atrás do arquivo. A pessoa informa o caminho uma vez por pasta concedida (chave `pasta:<id>`; um documento aberto sozinho usa `doc:<id>`). O caminho do documento é a pasta informada mais as subpastas do `relativo`. O caminho colado precisa terminar no nome da pasta (`PastaRegistrada.nome`), o que evita guardar a pasta errada. O destino vai entre `<…>` para o link continuar válido com espaços.
+
+## src/md/editor.ts
+
+### 2026-10-21 · feat/md-copiar-com-caminho-das-imagens · copiar/recortar com caminho completo
+- **Local:** `domEventHandlers` (novos `copy`/`cut`), novo `copiarComCaminhos`, campos `onCopiarTexto`/`onCopiaSemCaminho`
+- **Linha:** `mouseup: …` → `+ copy: (e, v) => this.copiarComCaminhos(e, v, false), cut: … true`
+- **Porquê:** só age quando a seleção tem imagem de caminho relativo. Nos outros casos, inclusive a cópia da linha inteira sem seleção, o CodeMirror copia como sempre. Com a pasta já conhecida, o texto trocado entra direto no `clipboardData`, e no recortar o trecho é apagado com `userEvent: "delete.cut"`. Se a pasta ainda não é conhecida, a cópia segue normal e o app pergunta depois, porque um diálogo não cabe dentro do evento síncrono de cópia.
+
+## src/app/media.ts · src/app/app.ts · src/app/commands.ts
+
+### 2026-10-21 · feat/md-copiar-com-caminho-das-imagens · perguntar a pasta e regravar a área de transferência
+- **Local:** `textoCopiadoComCaminhos`, `copiaSemCaminho`, `informarPastaReal` (+ cache `pastaEmCache`); ligação em `App` (`editor.onCopiarTexto`/`onCopiaSemCaminho`); comando "Informar o caminho da pasta…"
+- **Linha:** métodos novos
+- **Porquê:** a pasta do documento vem do registro (IndexedDB, assíncrono), por isso é lida na primeira cópia e fica em cache para as seguintes saírem na hora. Na primeira vez, `pedirTexto` (o diálogo do app, com validação) pergunta o caminho e `navigator.clipboard.writeText` regrava a área de transferência com os caminhos completos. O comando no `Ctrl+K` serve para corrigir o caminho se a pasta mudar de lugar.
+
 ## src/disco/arquivo.ts
 
 ### 2026-10-21 · fix/md-imagem-colada-e-selecao · imagem em assets/ é encontrada pelo caminho

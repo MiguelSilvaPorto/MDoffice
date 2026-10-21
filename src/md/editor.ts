@@ -13,6 +13,7 @@ import { setAlignment } from "./editor/alignment";
 import { wrapSelection, toggleLinePrefix, cycleHeading, continueList } from "./editor/formatting";
 import { partesDaTroca } from "./diffTroca";
 import { synonymsFor, type WritingIssue } from "../broker/writing";
+import { temImagemRelativa } from "../disco/caminhoReal";
 import { createGhostTextExtension, setGhostEffect, acceptGhostText, ghostTextField } from "../broker/autocomplete";
 
 export interface CursorPos {
@@ -137,6 +138,8 @@ export class MdEditor {
       EditorView.domEventHandlers({
         mousedown: (event) => this.handleIssueMouseDown(event),
         mouseup: (event, view) => this.handleIssueMouseUp(event, view),
+        copy: (event, view) => this.copiarComCaminhos(event, view, false),
+        cut: (event, view) => this.copiarComCaminhos(event, view, true),
       }),
     ];
   }
@@ -236,6 +239,13 @@ export class MdEditor {
 
   /** Chamado quando o usuário manda ignorar uma palavra NESTE texto (temporário). */
   onIgnoreHere: ((word: string) => void) | null = null;
+  /**
+   * Copiar/recortar texto com imagem de caminho relativo: devolve o texto com o caminho completo
+   * das imagens (ou null quando o app ainda não sabe onde a pasta está — aí a cópia segue como
+   * está e `onCopiaSemCaminho` cuida de perguntar e regravar a área de transferência).
+   */
+  onCopiarTexto: ((texto: string) => string | null) | null = null;
+  onCopiaSemCaminho: ((texto: string) => void) | null = null;
 
   /** Chamado quando o usuário manda ignorar um AVISO DE ESTILO neste texto (ex.: frase comprida). */
   onIgnoreStyle: ((issue: WritingIssue) => void) | null = null;
@@ -305,6 +315,28 @@ export class MdEditor {
   }
 
   /** Abre o popup do corretor quando o clique/seleção termina numa palavra sublinhada. */
+  /**
+   * O texto copiado leva o caminho completo das imagens (`assets/x.png` vira o caminho inteiro
+   * no computador), para colar num chat de IA e ela abrir a imagem direto. O documento não muda.
+   */
+  private copiarComCaminhos(event: ClipboardEvent, view: EditorView, recortar: boolean): boolean {
+    const ranges = view.state.selection.ranges.filter((r) => !r.empty);
+    if (!ranges.length || !event.clipboardData) return false; // sem seleção: a cópia da linha do CodeMirror
+    const texto = ranges.map((r) => view.state.sliceDoc(r.from, r.to)).join(view.state.lineBreak);
+    if (!temImagemRelativa(texto)) return false;
+    const novo = this.onCopiarTexto?.(texto) ?? null;
+    if (novo === null) {
+      // o CodeMirror copia como está; depois o app pergunta a pasta e regrava a área de transferência
+      window.setTimeout(() => this.onCopiaSemCaminho?.(texto), 0);
+      return false;
+    }
+    event.preventDefault();
+    event.clipboardData.clearData();
+    event.clipboardData.setData("text/plain", novo);
+    if (recortar) view.dispatch({ changes: ranges.map((r) => ({ from: r.from, to: r.to })), userEvent: "delete.cut", scrollIntoView: true });
+    return true;
+  }
+
   private handleIssueMouseUp(event: MouseEvent, view: EditorView): boolean {
     if (event.button !== 0) return false;
     const issues = view.state.field(issueField).issues;

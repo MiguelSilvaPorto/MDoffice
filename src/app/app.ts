@@ -362,6 +362,9 @@ export class App {
     );
     this.editor.onIssuesChanged = () => this.checkWritingSoon();
     this.editor.onIgnoreWord = (word) => this.ignoreWord(word);
+    // copiar texto com imagens: o caminho completo de cada uma vai junto (para colar num chat de IA)
+    this.editor.onCopiarTexto = (texto) => this.textoCopiadoComCaminhos(texto);
+    this.editor.onCopiaSemCaminho = (texto) => void this.copiaSemCaminho(texto);
     this.editor.onIgnoreStyle = (issue) => this.ignoreStyleIssue(issue);
     this.editor.onIgnoreHere = (word) => {
       // F4: "Ignorar neste texto" é o sinal de "este termo está certo" — com histerese, o app

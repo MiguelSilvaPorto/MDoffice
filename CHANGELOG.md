@@ -37,6 +37,17 @@
 
 **Frontend**
 
+- **Copiar texto leva o caminho completo das imagens**: copiar ou recortar no editor um trecho
+  com `![imagem](assets/imagem-….png)` põe na área de transferência
+  `![imagem](<C:\…\assets\imagem-….png>)`. Assim o texto colado num chat de IA (Claude Code)
+  aponta para o arquivo, e a IA abre a imagem sem varrer o disco atrás dela. O documento não
+  muda. O navegador não revela onde as pastas estão (o File System Access API só dá o handle e
+  o nome), então na **primeira** cópia com imagem o app pede o caminho da pasta, copiado da barra
+  de endereço do Explorador. O caminho só é aceito se terminar no nome da pasta, e fica guardado
+  por pasta. Depois disso a cópia sai com o caminho completo na hora. Para trocar:
+  `Ctrl+K` → *Informar o caminho da pasta*. Conferido no Chrome: a 1ª cópia pede a pasta e
+  regrava a área de transferência; a 2ª já sai pronta; o documento continua com `assets/…`.
+
 - **Imagem colada (ou arrastada) aparece na pré-visualização**: no navegador, colar uma imagem
   num documento Markdown gravava o arquivo em `assets/` ao lado do documento e escrevia
   `![imagem](assets/imagem-….png)` no texto, mas o preview mostrava **"Imagem não
