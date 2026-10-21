@@ -691,7 +691,15 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     window.clearTimeout(savedTimer);
     savedTimer = window.setTimeout(() => (saved.textContent = ""), 1600);
   };
-  const on = (sel: string, ev: string, fn: (e: Event) => void) => q(sel).addEventListener(ev, fn);
+  /**
+   * Liga um evento a um elemento da página.
+   *
+   * A página de Configurações é montada só com a seção da aba escolhida — abrir direto em
+   * "Aparência", por exemplo, não tem os botões do Backup. Sem o `?.` o `null.addEventListener`
+   * estourava e **abortava o resto da função**: os cartões de tema/animação/cantos ficavam
+   * desenhados mas sem listener (o rádio marcava e nada acontecia).
+   */
+  const on = (sel: string, ev: string, fn: (e: Event) => void) => q(sel)?.addEventListener(ev, fn);
   const sw = (key: string) => q<HTMLInputElement>(`[data-k="${key}"]`);
   /** Cria um elemento já com classe e texto (as linhas do histórico são montadas na mão). */
   const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, texto?: string): HTMLElementTagNameMap[K] => {
@@ -703,7 +711,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
 
   /** Liga um `dd()`: a escolha chega pelo `change` do select (a lista é o menu do app). */
   const ligarDd = (chave: string, _opcoes: [string, string][], aoEscolher: (valor: string) => void): void => {
-    q<HTMLSelectElement>(`[data-k="${chave}"]`).addEventListener("change", (e) => {
+    q<HTMLSelectElement>(`[data-k="${chave}"]`)?.addEventListener("change", (e) => {
       aoEscolher((e.target as HTMLSelectElement).value);
     });
   };
@@ -743,11 +751,11 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       flash();
     })
   );
-  sw("autofix").addEventListener("change", (e) => {
+  sw("autofix")?.addEventListener("change", (e) => {
     ctx.setAutoFix((e.target as HTMLInputElement).checked);
     flash();
   });
-  sw("copilot").addEventListener("change", (e) => {
+  sw("copilot")?.addEventListener("change", (e) => {
     ctx.setCopilot((e.target as HTMLInputElement).checked);
     flash();
   });
@@ -820,14 +828,14 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       : `<span class="muted">O app ainda não aprendeu nenhum termo sozinho.</span>`;
   };
   paintCorretor();
-  q("[data-termos-candidatos]").addEventListener("click", (e) => {
+  q("[data-termos-candidatos]")?.addEventListener("click", (e) => {
     const b = (e.target as HTMLElement).closest<HTMLElement>("[data-termo]");
     if (!b) return;
     ctx.promoverTermo(b.dataset.termo!);
     paintCorretor();
     paintDict();
   });
-  q("[data-termos-aprendidos]").addEventListener("click", (e) => {
+  q("[data-termos-aprendidos]")?.addEventListener("click", (e) => {
     const b = (e.target as HTMLElement).closest<HTMLElement>("[data-esquecer]");
     if (!b) return;
     ctx.esquecerTermo(b.dataset.esquecer!);
@@ -886,15 +894,15 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   });
 
   // tradução
-  sw("tr-on").addEventListener("change", (e) => {
+  sw("tr-on")?.addEventListener("change", (e) => {
     ctx.translation.setEnabled((e.target as HTMLInputElement).checked);
     flash();
   });
-  sw("tr-polish").addEventListener("change", (e) => {
+  sw("tr-polish")?.addEventListener("change", (e) => {
     ctx.translation.update({ polish: (e.target as HTMLInputElement).checked });
     flash();
   });
-  sw("tr-online").addEventListener("change", (e) => {
+  sw("tr-online")?.addEventListener("change", (e) => {
     const onlineOk = (e.target as HTMLInputElement).checked;
     ctx.translation.update({ onlineOk });
     if (onlineOk) {
@@ -976,11 +984,11 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   });
 
   // histórico e salvamento
-  sw("autosave").addEventListener("change", (e) => {
+  sw("autosave")?.addEventListener("change", (e) => {
     ctx.patch({ autosaveOn: (e.target as HTMLInputElement).checked });
     flash();
   });
-  sw("hist").addEventListener("change", (e) => {
+  sw("hist")?.addEventListener("change", (e) => {
     ctx.patch({ historyOn: (e.target as HTMLInputElement).checked });
     flash();
   });
@@ -1208,11 +1216,11 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   paintBackupRoot();
   paintBackupSize();
 
-  sw("backup").addEventListener("change", (e) => {
+  sw("backup")?.addEventListener("change", (e) => {
     ctx.patch({ backupOn: (e.target as HTMLInputElement).checked });
     flash();
   });
-  sw("backupwarn").addEventListener("change", (e) => {
+  sw("backupwarn")?.addEventListener("change", (e) => {
     ctx.patch({ backupWarnMissing: (e.target as HTMLInputElement).checked });
     flash();
   });
@@ -1458,11 +1466,11 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       flash();
     })
   );
-  sw("sidebar").addEventListener("change", () => {
+  sw("sidebar")?.addEventListener("change", () => {
     ctx.toggleFlag("no-sidebar");
     flash();
   });
-  sw("preview").addEventListener("change", () => {
+  sw("preview")?.addEventListener("change", () => {
     ctx.toggleFlag("no-preview");
     flash();
   });

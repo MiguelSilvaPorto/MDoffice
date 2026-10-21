@@ -402,6 +402,26 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 - **Local:** as listas `:where(...)` de `hover`/`active`
 - **Porquê:** a classe não existe mais; deixá-la nas listas confunde quem for mexer depois.
 
+## src/settingsPage.ts
+
+### 2026-10-21 · fix/tema-aparencia-crash · a fiação da página não pode morrer num elemento ausente
+- **Local:** o helper `on` (e as chamadas `sw(...)`/`q(...)` com `.addEventListener`)
+- **Linha:** `q(sel).addEventListener(...)` → `q(sel)?.addEventListener(...)`
+- **Porquê:** a página de Configurações é montada só com a seção da aba aberta; em "Aparência" não
+  existem os botões do Backup (`[data-act="backup-dir"]` etc.). O `null.addEventListener` lançava
+  e **abortava o resto da função** — os cartões de tema/animção/cantos ficavam sem listener (o
+  rádio marcava, nada aplicava). Foi o "o tema parou de funcionar".
+
+## src/styles/movimento.css
+
+### 2026-10-21 · fix/tema-aparencia-crash · body e barra do topo trocam de cor na hora
+- **Local:** a regra da "troca de tema" no fim do arquivo
+- **Linha:** `body`, `#topbar` saíram da lista do `:where(...)` que anima `background-color`
+- **Porquê:** são as superfícies que carregam as cores do tema em variáveis (`--bg`/`--panel`); com
+  a transição o Chrome ficava com a cor antiga depois da troca (a tela clara com o tema escuro
+  escolhido, medido: `--bg` = #0e1014 mas `background-color` = #f4f5f8). Sem a transição nelas, a
+  troca entra na hora; as outras superfícies (menus, cartões, abas) continuam animando.
+
 ## src/word/schema.ts
 
 ### 2026-10-21 · feat/imagem-posicao-lados · a imagem ganhou os lados da quebra e a fixação na página

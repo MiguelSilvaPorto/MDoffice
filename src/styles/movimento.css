@@ -562,7 +562,14 @@ textarea {
 
 /* ---------- a troca de tema não "pisca" ---------- */
 
-:where(body, #topbar, #tabbar, #sidebar, #statusbar, #body, #toolbar, #home-page, #settings-page,
+/*
+ * `body` e `#topbar` ficam FORA desta lista de propósito: elas são as superfícies que carregam
+ * as cores do tema em variáveis (`--bg`/`--panel`), e com a transição de `background-color` o
+ * Chrome ficava com a cor antiga depois da troca (a tela clara com o tema escuro escolhido).
+ * Sem transição, a cor entra na hora; as outras superfícies (menus, cartões, abas) continuam
+ * animando normalmente.
+ */
+:where(#tabbar, #sidebar, #statusbar, #body, #toolbar, #home-page, #settings-page,
     #editor-wrap, #preview-wrap, .modal, .dropdown, .busca-painel, .pp-popup, .wd-menu-pop, .xl-menu) {
   transition:
     background-color var(--mov-2) var(--curva),

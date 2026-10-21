@@ -2127,6 +2127,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 ### Adicionado (na main)
 
+- **A tela de Aparência voltou a aplicar tema, animação e cantos**: o `on()` da página de
+  Configurações fazia `null.addEventListener` quando a aba aberta não tinha os botões da seção
+  **Backup** (abrir direto em "Aparência", por exemplo) — a exceção **abortava o resto da fiação**
+  e os cartões ficavam desenhados mas sem listener (o rádio marcava e nada mudava, exatamente o
+  "o tema não funciona"). A fiação agora tolera elementos ausentes. E a troca de tema deixou de
+  depender da transição de cor de `body`/`#topbar`: com ela o Chrome ficava com a cor antiga (a
+  tela clara com o tema escuro escolhido) — essas duas superfícies trocam de cor na hora e o resto
+  do app continua animando.
+
 - **Os controles de janela do app saíram**: desde que o mdOffice passou a rodar **só no navegador**
   (janela própria do PWA), os botões **minimizar / maximizar / fechar** desenhados pela interface
   ficaram **duplicados** com os do sistema — e os do app chamavam a janela do antigo Tauri, que não
