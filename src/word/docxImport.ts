@@ -3,7 +3,7 @@
 // imagens, links, quebras de página, tamanho/margens da página, cabeçalho e rodapé.
 // As peças ficam em docx/: xml · props · context · styles · media · inline · blocks · page.
 import JSZip from "jszip";
-import { DEFAULT_SETUP, PAPER_SIZES, type PageSetup } from "./model";
+import { DEFAULT_SETUP, PAPER_SIZES, CM_TO_PX, type PageSetup } from "./model";
 import { schema } from "./schema";
 import type { Node as PMNode } from "prosemirror-model";
 import { first, attr, parseXml } from "./docx/xml";
@@ -37,10 +37,8 @@ export async function importDocx(bytes: Uint8Array | ArrayBuffer): Promise<{ doc
   ctx.base = { ...defaults, ...resolveStyle(ctx, "Normal").run };
   const body = first(parseXml(await docFile.async("string")).documentElement, "w:body");
   if (!body) throw new Error("O documento está vazio ou corrompido.");
-  const blocks = readBlocks(ctx, body);
-  const doc = schema.nodes.doc.create(null, blocks.length ? blocks : [schema.nodes.paragraph.create()]);
 
-  // página
+  // página — as margens entram ANTES do corpo: a âncora "fixar na página" conta do papel
   const setup: PageSetup = { ...DEFAULT_SETUP, margins: { ...DEFAULT_SETUP.margins } };
   const sect = first(body, "w:sectPr");
   const pgSz = first(sect, "w:pgSz");
@@ -67,6 +65,11 @@ export async function importDocx(bytes: Uint8Array | ArrayBuffer): Promise<{ doc
       right: cm("w:right") ?? setup.margins.right,
     };
   }
+  ctx.margemTopoPx = Math.round(setup.margins.top * CM_TO_PX);
+
+  const blocks = readBlocks(ctx, body);
+  const doc = schema.nodes.doc.create(null, blocks.length ? blocks : [schema.nodes.paragraph.create()]);
+
   if (ctx.base.font) setup.defaultFont = ctx.base.font;
   if (ctx.base.size) setup.defaultSize = ctx.base.size;
   const head = await readHeaderFooter(ctx, sect, "header");

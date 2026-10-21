@@ -27,6 +27,7 @@ import {
 import { EditorView } from "prosemirror-view";
 import { FONT_SIZES, emptyDoc, schema, type Align } from "./schema";
 import { DEFAULT_SETUP, CM_TO_PX, pageSizePx, type PageSetup } from "./model";
+import { GAP_PX } from "./pagination";
 import { ImagemView } from "./imagem";
 import {
   dadosDaImagem,
@@ -35,6 +36,7 @@ import {
   pluginFlutuante,
   type DadosFlutuante,
   type LadoHorizontal,
+  type LadosDaQuebra,
   type WrapImagem,
 } from "./imagemFlutuante";
 
@@ -604,6 +606,62 @@ export class WordEditor {
     tr.setSelection(NodeSelection.create(tr.doc, alvo.pos));
     this.view.dispatch(tr);
     this.view.focus();
+  }
+
+  /** De que lado o texto passa (o mais largo, só à esquerda, só à direita). */
+  setLadosDaQuebra(lados: LadosDaQuebra): void {
+    const alvo = this.imagemEmFoco();
+    if (!alvo) return;
+    const tr = this.view.state.tr.setNodeMarkup(alvo.pos, undefined, { ...alvo.node.attrs, lados });
+    tr.setSelection(NodeSelection.create(tr.doc, alvo.pos));
+    this.view.dispatch(tr);
+    this.view.focus();
+  }
+
+  /** Os deslocamentos da imagem (px): horizontal (da margem) e vertical (do parágrafo). */
+  setDeslocamentos(hOffset: number, vOffset: number): void {
+    const alvo = this.imagemEmFoco();
+    if (!alvo) return;
+    const tr = this.view.state.tr.setNodeMarkup(alvo.pos, undefined, {
+      ...alvo.node.attrs,
+      hOffset: Math.round(hOffset),
+      vOffset: Math.round(vOffset),
+    });
+    tr.setSelection(NodeSelection.create(tr.doc, alvo.pos));
+    this.view.dispatch(tr);
+    this.view.focus();
+  }
+
+  /**
+   * "Mover com o texto" × "Fixar na página".
+   *
+   * Ao fixar, a altura da imagem **dentro da página** é guardada (`pageOffset`) —
+   * é ela que a paginação usa para devolver a imagem ao lugar quando o texto
+   * acima muda.
+   */
+  setFixaNaPagina(fixa: boolean): void {
+    const alvo = this.imagemEmFoco();
+    if (!alvo) return;
+    const pageOffset = fixa ? this.alturaNaPagina(alvo.pos) : 0;
+    const tr = this.view.state.tr.setNodeMarkup(alvo.pos, undefined, { ...alvo.node.attrs, fixa, pageOffset });
+    tr.setSelection(NodeSelection.create(tr.doc, alvo.pos));
+    this.view.dispatch(tr);
+    this.view.focus();
+  }
+
+  /** A altura da imagem dentro da página (px, contando do topo da área de texto). */
+  alturaNaPagina(pos: number): number {
+    const el = this.view.nodeDOM(pos);
+    if (!(el instanceof HTMLElement)) return 0;
+    const img = el.querySelector("img") ?? el;
+    const r = img.getBoundingClientRect();
+    const dom = this.view.dom as HTMLElement;
+    const caixa = dom.getBoundingClientRect();
+    const escala = caixa.width / dom.offsetWidth || 1;
+    const y = (r.top - caixa.top) / escala;
+    const passo = pageSizePx(this.setup).h + GAP_PX;
+    const pagina = Math.max(0, Math.floor(y / passo));
+    return Math.max(0, Math.round(y - pagina * passo));
   }
 
   /** Texto alternativo da imagem (o "alt" do HTML e o "texto alternativo" do Word). */

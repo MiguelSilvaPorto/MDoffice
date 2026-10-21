@@ -25,6 +25,14 @@ arquivos `.docx` de verdade.
   **Através**, **Atrás do texto** e **À frente do texto**. A mesma aba traz a **posição**
   (esquerda, centro, direita), o **ajustar à largura do texto**, a **proporção original** e o
   **texto alternativo**.
+  - **Lados da quebra**: o mesmo menu escolhe **de que lado o texto passa** — **o lado mais largo**
+    (o de sempre), **só à esquerda** ou **só à direita**. O CSS não tem "texto dos dois lados": a
+    imagem vai para o lado oposto ao do texto (é o que o Word faz na prática), e o `.docx` guarda a
+    escolha (`wrapSquare/@wrapText`).
+  - **Posição ▾**: a caixa com os **deslocamentos em cm** (horizontal e vertical), a **distância do
+    texto** e a escolha entre **Mover com o texto** (a imagem anda com o parágrafo) e **Fixar na
+    página** (ela fica na mesma altura da página quando o texto acima cresce — a paginação reacerta
+    o deslocamento; o `.docx` guarda como `positionV/@relativeFrom="page"`).
   - **Arrastar a imagem flutuante reorganiza o texto enquanto se arrasta**: o deslocamento vai
     direto para a folha (o texto se acomoda a cada movimento) e, no fim do gesto, a posição vira
     uma transação — `Ctrl+Z` desfaz.

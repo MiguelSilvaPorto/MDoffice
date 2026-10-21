@@ -25,4 +25,6 @@ export interface Ctx {
   numbering: Map<string, { fmt: string; start: number }[]>;
   rels: Map<string, { target: string; external: boolean }>;
   media: Map<string, string>;
+  /** margem de cima da página (px) — a âncora "fixa na página" conta do papel */
+  margemTopoPx?: number;
 }

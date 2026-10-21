@@ -122,18 +122,26 @@ function flutuanteDoDocx(d: DadosFlutuante, ctx: Ctx, largura: number): NonNulla
           : d.wrap === "atras" || d.wrap === "frente"
             ? TextWrappingType.NONE
             : TextWrappingType.SQUARE;
+  // de que lado o texto passa (o "Lados da Quebra" do Word)
+  const lado =
+    d.lados === "esquerda"
+      ? TextWrappingSide.LEFT
+      : d.lados === "direita"
+        ? TextWrappingSide.RIGHT
+        : TextWrappingSide.LARGEST;
+  // "fixar na página": a altura conta do PAPEL (e não do parágrafo)
+  const alturaNaPagina = Math.round((d.pageOffset + Math.round(s.margins.top * CM_TO_PX)) * EMU_PX);
   return {
     horizontalPosition: {
       relative: HorizontalPositionRelativeFrom.COLUMN,
       offset: Math.round(x * EMU_PX),
     },
-    verticalPosition: {
-      relative: VerticalPositionRelativeFrom.PARAGRAPH,
-      offset: Math.round(d.vOffset * EMU_PX),
-    },
+    verticalPosition: d.fixa
+      ? { relative: VerticalPositionRelativeFrom.PAGE, offset: alturaNaPagina }
+      : { relative: VerticalPositionRelativeFrom.PARAGRAPH, offset: Math.round(d.vOffset * EMU_PX) },
     wrap: {
       type: tipo,
-      side: TextWrappingSide.BOTH_SIDES,
+      side: lado,
       margins: { distL: folga * EMU_PX, distR: folga * EMU_PX },
     },
     // "atrás do texto": a imagem fica no fundo da página

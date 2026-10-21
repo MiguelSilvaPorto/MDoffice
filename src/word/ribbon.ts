@@ -1,9 +1,9 @@
 // Fita de ferramentas do documento Word (Início, Inserir, Tabela, Página) e janela "Configurar página".
 import type { WordEditor, FormatState } from "./editor";
 import { FONT_FAMILIES, FONT_SIZES } from "./schema";
-import { DEFAULT_SETUP, PAPER_SIZES, papel, type PageSetup, type PaperSize } from "./model";
+import { DEFAULT_SETUP, PAPER_SIZES, papel, CM_TO_PX, type PageSetup, type PaperSize } from "./model";
 import { itensDoContexto } from "./contexto";
-import { MODOS_DE_QUEBRA, type WrapImagem } from "./imagemFlutuante";
+import { LADOS_DA_QUEBRA, MODOS_DE_QUEBRA, type LadosDaQuebra, type WrapImagem } from "./imagemFlutuante";
 import { h, toast } from "../util";
 import { melhorarSelects } from "../seletor";
 import { ligarAjusteAlturaFita, ligarEncaixeFita, ligarRecolherFita, ligarRodaHorizontal } from "../fita";
@@ -265,6 +265,9 @@ export class Ribbon {
                 ${btn("img-left", icon("i-align-left"), "Alinhar à esquerda")}
                 ${btn("img-center", icon("i-align-center"), "Centralizar")}
                 ${btn("img-right", icon("i-align-right"), "Alinhar à direita")}
+              </div>
+              <div class="rb-row">
+                ${btn("img-pos", icon("i-grid") + "<span>Posição ▾</span>", "Posição exata: deslocamentos, distância do texto e mover com o texto", "txt")}
               </div>
             </div>`)}
           ${group("Ajustar", `
@@ -609,6 +612,8 @@ export class Ribbon {
         return;
       case "img-wrap":
         return this.wrapMenu(anchor);
+      case "img-pos":
+        return this.posicaoPopup(anchor);
       case "img-left":
         return ed.setAlinhamentoImagem("left");
       case "img-center":
@@ -703,7 +708,8 @@ export class Ribbon {
 
   private criaMenuDeQuebra(): HTMLElement {
     const pop = h("div", { class: "wd-pal wd-menu-pop wd-wrap-pop" });
-    const atual = this.hooks.editor.query().imagem?.wrap ?? "alinhado";
+    const img = this.hooks.editor.query().imagem;
+    const atual = img?.wrap ?? "alinhado";
     for (const modo of MODOS_DE_QUEBRA) {
       const marcado = modo.id === atual;
       const b = h("button", { class: `wd-menu-item${marcado ? " active" : ""}`, type: "button" });
@@ -718,7 +724,131 @@ export class Ribbon {
       });
       pop.append(b);
     }
+    // Os LADOS da quebra (o Word tem no mesmo menu): de que lado o texto passa.
+    // Só faz sentido quando a imagem flutua e o texto a contorna.
+    const flutua =
+      atual === "quadrado" || atual === "contorno" || atual === "topo-base" || atual === "atravessar";
+    if (flutua) {
+      pop.append(h("div", { class: "wd-menu-sep" }));
+      pop.append(h("div", { class: "wd-menu-sub", text: "Lados da quebra" }));
+      const ladosAtual = img?.lados ?? "maior";
+      for (const lado of LADOS_DA_QUEBRA) {
+        const marcado = lado.id === ladosAtual;
+        const b = h("button", { class: `wd-menu-item${marcado ? " active" : ""}`, type: "button" });
+        b.innerHTML =
+          `<span style="width:16px;display:inline-block;color:var(--accent);font-weight:bold">${marcado ? "✓" : ""}</span>` +
+          `<span>${lado.nome}</span>`;
+        b.title = lado.dica;
+        b.addEventListener("mousedown", (e) => e.preventDefault());
+        b.addEventListener("click", () => {
+          this.closePop();
+          this.hooks.editor.setLadosDaQuebra(lado.id as LadosDaQuebra);
+        });
+        pop.append(b);
+      }
+    }
     return pop;
+  }
+
+  /**
+   * Popup **Posição** da aba Imagem: os deslocamentos exatos da imagem (em cm), a
+   * distância do texto e "Mover com o texto" × "Fixar na página".
+   *
+   * É o painel do Word numa caixa só: o arrasto continua sendo o jeito rápido, e
+   * aqui a pessoa ajusta o número fino (e escolhe se a imagem anda com o texto).
+   */
+  private posicaoPopup(anchor: HTMLElement): void {
+    const d = this.hooks.editor.query().imagem;
+    if (!d) return;
+    const ed = this.hooks.editor;
+    const pop = h("div", { class: "wd-pal wd-menu-pop wd-pos-pop" });
+    const cm = (v: number) => (v / CM_TO_PX).toFixed(2).replace(".", ",");
+    const paraPx = (s: string) => {
+      const n = Number(String(s).replace(/\./g, "").replace(",", "."));
+      return Number.isFinite(n) ? Math.round(n * CM_TO_PX) : 0;
+    };
+    const linha = (rotulo: string, ...filhos: HTMLElement[]) => {
+      const l = h("div", { class: "wd-pos-linha" });
+      l.append(h("span", { class: "wd-pos-rotulo", text: rotulo }), ...filhos);
+      return l;
+    };
+    const campo = (valor: number, aoMudar: (px: number) => void, dica: string) => {
+      const inp = h("input", { class: "wd-pos-campo", type: "text", value: cm(valor), title: dica, "aria-label": dica });
+      const aplicar = () => {
+        const px = paraPx(inp.value);
+        inp.value = cm(px);
+        aoMudar(px);
+      };
+      inp.addEventListener("mousedown", (e) => e.stopPropagation());
+      inp.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          aplicar();
+        }
+      });
+      inp.addEventListener("blur", aplicar);
+      return inp;
+    };
+
+    pop.append(h("div", { class: "wd-menu-sub", text: "Posição" }));
+
+    // alinhamento (o lado em que a imagem fica)
+    const alinhamento = h("div", { class: "wd-pos-seg" });
+    const opcoes: [string, "left" | "center" | "right", string][] = [
+      ["Esquerda", "left", "i-align-left"],
+      ["Centro", "center", "i-align-center"],
+      ["Direita", "right", "i-align-right"],
+    ];
+    for (const [nome, valor, icone] of opcoes) {
+      const b = h("button", {
+        class: `wd-pos-seg-btn${d.hAlign === valor ? " on" : ""}`,
+        type: "button",
+        title: `Alinhar à ${nome.toLowerCase()}`,
+      });
+      b.innerHTML = `<svg class="ic"><use href="#${icone}"/></svg><span>${nome}</span>`;
+      b.addEventListener("mousedown", (e) => e.preventDefault());
+      b.addEventListener("click", () => {
+        ed.setAlinhamentoImagem(valor);
+        this.closePop();
+        this.posicaoPopup(anchor);
+      });
+      alinhamento.append(b);
+    }
+    pop.append(linha("Horizontal", alinhamento));
+
+    // os deslocamentos (o mesmo que o arrasto grava, agora em cm). Cada campo lê o
+    // valor ATUAL do outro eixo: mexer num não pode desfazer o que o outro acabou
+    // de mudar (a caixa foi montada com os valores da abertura).
+    const atual = () => ed.query().imagem;
+    pop.append(
+      linha("Deslocamento", campo(d.hOffset, (px) => ed.setDeslocamentos(px, atual()?.vOffset ?? 0), "Deslocamento horizontal, em cm (a partir da margem)"))
+    );
+    pop.append(
+      linha("Vertical", campo(d.vOffset, (px) => ed.setDeslocamentos(atual()?.hOffset ?? 0, px), "Deslocamento vertical, em cm (a partir do parágrafo)"))
+    );
+    pop.append(
+      linha("Distância do texto", campo(d.shapeMargin, (px) => ed.setDistanciaDoTexto(px), "Distância entre a imagem e o texto, em cm"))
+    );
+
+    // "Mover com o texto" × "Fixar na página" (o do Word)
+    pop.append(h("div", { class: "wd-menu-sep" }));
+    const escolha = (rotulo: string, fixa: boolean, dica: string) => {
+      const b = h("button", { class: `wd-menu-item${(d.fixa === fixa) ? " active" : ""}`, type: "button" });
+      b.innerHTML =
+        `<span style="width:16px;display:inline-block;color:var(--accent);font-weight:bold">${d.fixa === fixa ? "✓" : ""}</span>` +
+        `<span>${rotulo}</span>`;
+      b.title = dica;
+      b.addEventListener("mousedown", (e) => e.preventDefault());
+      b.addEventListener("click", () => {
+        ed.setFixaNaPagina(fixa);
+        this.closePop();
+      });
+      return b;
+    };
+    pop.append(escolha("Mover com o texto", false, "A imagem anda junto com o parágrafo (o de sempre)"));
+    pop.append(escolha("Fixar na página", true, "A imagem fica na mesma altura da página quando o texto acima muda"));
+
+    this.place(pop, anchor);
   }
 
   /** Texto alternativo da imagem (o "alt"): a caixa de texto com o botão de aplicar. */

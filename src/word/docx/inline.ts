@@ -36,7 +36,12 @@ export type Inline = PMNode;
  * O que o app não entende do arquivo (o contorno exato, por exemplo) entra pelo que o
  * Word grava — e o desenho volta a ser o do app.
  */
-function leituraDaAncoragem(anchor: El): Record<string, unknown> {
+function leituraDaAncoragem(anchor: El, margemTopoPx = 0): Record<string, unknown> {
+  const wrapEl =
+    anchor.getElementsByTagName("wp:wrapTight")[0] ??
+    anchor.getElementsByTagName("wp:wrapThrough")[0] ??
+    anchor.getElementsByTagName("wp:wrapSquare")[0] ??
+    anchor.getElementsByTagName("wp:wrapTopAndBottom")[0];
   const wrap = anchor.getElementsByTagName("wp:wrapTight")[0]
     ? "contorno"
     : anchor.getElementsByTagName("wp:wrapThrough")[0]
@@ -48,6 +53,9 @@ function leituraDaAncoragem(anchor: El): Record<string, unknown> {
             ? "atras"
             : "frente"
           : "quadrado";
+  // de que lado o texto passa (o "Lados da Quebra" do Word)
+  const lado = (wrapEl?.getAttribute("wrapText") || "").toLowerCase();
+  const lados = lado === "left" ? "esquerda" : lado === "right" ? "direita" : "maior";
   const posH = anchor.getElementsByTagName("wp:positionH")[0];
   const align = posH?.getElementsByTagName("wp:align")[0]?.textContent?.trim().toLowerCase();
   const offH = posH?.getElementsByTagName("wp:posOffset")[0]?.textContent;
@@ -56,7 +64,10 @@ function leituraDaAncoragem(anchor: El): Record<string, unknown> {
   const hAlign = align === "right" ? "right" : align === "center" ? "center" : "left";
   const hOffset = offH ? Math.round(+offH / EMU_PER_PX) : 0;
   const vOffset = offV ? Math.round(+offV / EMU_PER_PX) : 0;
-  return { wrap, hAlign, hOffset, vOffset };
+  // "fixar na página": a altura relativa ao PAPEL vira a altura dentro da página
+  const fixa = (posV?.getAttribute("relativeFrom") || "").toLowerCase() === "page";
+  const pageOffset = fixa ? Math.max(0, Math.round(vOffset - margemTopoPx)) : 0;
+  return { wrap, hAlign, hOffset, vOffset: fixa ? 0 : vOffset, lados, fixa, pageOffset };
 }
 
 /** Lê um parágrafo e devolve o texto em partes, separando onde há quebra de página. */
@@ -162,7 +173,7 @@ export function readParagraphInlines(ctx: Ctx, p: El, styleRun: RunProps, isHead
     };
     // ancorada (`wp:anchor`)? então a imagem é flutuante: a quebra e a posição voltam do arquivo
     const anchor = el.getElementsByTagName("wp:anchor")[0];
-    if (anchor) Object.assign(attrs, leituraDaAncoragem(anchor));
+    if (anchor) Object.assign(attrs, leituraDaAncoragem(anchor, ctx.margemTopoPx ?? 0));
     return schema.nodes.image.create(attrs);
   };
 

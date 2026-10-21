@@ -21,6 +21,16 @@ export type WrapImagem = "alinhado" | "quadrado" | "contorno" | "topo-base" | "a
 /** Lado em que a imagem flutua. */
 export type LadoHorizontal = "left" | "right" | "center";
 
+/** De que lado o texto passa na imagem (os "Lados da Quebra" do Word). */
+export type LadosDaQuebra = "maior" | "esquerda" | "direita";
+
+/** Os lados da quebra, na ordem do menu. */
+export const LADOS_DA_QUEBRA: { id: LadosDaQuebra; nome: string; dica: string }[] = [
+  { id: "maior", nome: "O lado mais largo", dica: "O texto passa do lado que tiver mais espaço (o de sempre)" },
+  { id: "esquerda", nome: "Só à esquerda", dica: "O texto passa só do lado esquerdo da imagem" },
+  { id: "direita", nome: "Só à direita", dica: "O texto passa só do lado direito da imagem" },
+];
+
 /** Os modos de quebra, na ordem da fita (o do Word). */
 export const MODOS_DE_QUEBRA: { id: WrapImagem; nome: string; dica: string }[] = [
   { id: "alinhado", nome: "Alinhado com o texto", dica: "A imagem fica na linha do texto, como sempre" },
@@ -41,18 +51,28 @@ export interface DadosFlutuante {
   vOffset: number;
   /** Distância do texto (px) no contorno. */
   shapeMargin: number;
+  /** De que lado o texto passa. */
+  lados: LadosDaQuebra;
+  /** A imagem fica na mesma altura da PÁGINA (não anda com o texto). */
+  fixa: boolean;
+  /** A altura da imagem a partir do topo da página (px) — só quando `fixa`. */
+  pageOffset: number;
 }
 
 /** Lê os dados de flutuação de um nó de imagem (atributos do esquema). */
 export function dadosDaImagem(attrs: Record<string, unknown>): DadosFlutuante {
   const wrap = attrs.wrap as WrapImagem;
   const hAlign = attrs.hAlign as LadoHorizontal;
+  const lados = attrs.lados as LadosDaQuebra;
   return {
     wrap: MODOS_DE_QUEBRA.some((m) => m.id === wrap) ? wrap : "alinhado",
     hAlign: hAlign === "right" || hAlign === "center" ? hAlign : "left",
     hOffset: Number(attrs.hOffset) || 0,
     vOffset: Number(attrs.vOffset) || 0,
     shapeMargin: attrs.shapeMargin == null ? 8 : Number(attrs.shapeMargin) || 0,
+    lados: LADOS_DA_QUEBRA.some((m) => m.id === lados) ? lados : "maior",
+    fixa: attrs.fixa === true,
+    pageOffset: Number(attrs.pageOffset) || 0,
   };
 }
 
@@ -72,11 +92,25 @@ export function ehContorno(d: DadosFlutuante): boolean {
 }
 
 /**
+ * Para que lado a imagem flutua (o `float` do CSS).
+ *
+ * O CSS não tem "texto dos dois lados": um flutuante joga o texto para o lado
+ * OPOSTO. Por isso os "lados da quebra" escolhem para onde o texto vai — "só à
+ * direita" põe a imagem à esquerda — que é o que o Word faz na prática.
+ */
+export function flutuaPara(d: DadosFlutuante): "left" | "right" {
+  if (d.lados === "esquerda") return "right"; // o texto só à esquerda → a imagem vai à direita
+  if (d.lados === "direita") return "left"; // o texto só à direita → a imagem vai à esquerda
+  return d.hAlign === "right" ? "right" : "left";
+}
+
+/**
  * A posição horizontal do flutuante anda na margem **direita** (e não na esquerda)?
  * Só no float à direita: nos outros casos (float à esquerda/centro, "topo e base" e a imagem
  * absoluta) a posição é a margem esquerda.
  */
 export function andaNaMargemDireita(d: DadosFlutuante): boolean {
+  if (d.lados !== "maior") return flutuaPara(d) === "right";
   return d.hAlign === "right" && (d.wrap === "quadrado" || d.wrap === "contorno" || d.wrap === "atravessar");
 }
 
@@ -146,7 +180,9 @@ export function estiloDoFlutuante(d: DadosFlutuante, larguraConteudo: number, la
     case "quadrado":
     case "contorno":
     case "atravessar": {
-      const direita = d.hAlign === "right";
+      // o lado do texto manda no `float` (e, quando ele não foi escolhido, é o alinhamento)
+      const direita = flutuaPara(d) === "right";
+      const centralizado = d.lados === "maior" && d.hAlign === "center";
       p.push(`float:${direita ? "right" : "left"}`);
       p.push(`width:${w}px`);
       p.push("line-height:0");
@@ -154,7 +190,7 @@ export function estiloDoFlutuante(d: DadosFlutuante, larguraConteudo: number, la
       p.push("margin-bottom:0");
       // no contorno a distância do texto vem do `shape-margin`, não da margem
       if (ehContorno(d)) p.push(`shape-margin:${d.shapeMargin}px`);
-      if (d.hAlign === "center") {
+      if (centralizado) {
         const central = Math.max(0, Math.round((larguraConteudo - w) / 2));
         p.push(`margin-left:calc(${central + Math.round(d.hOffset)}px + var(--wd-fx, 0px))`);
         p.push("margin-right:0");

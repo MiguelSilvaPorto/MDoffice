@@ -11,7 +11,7 @@
 //
 // Uso: node scripts/testar-word-ancora.mjs
 import { spawn } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -19,6 +19,7 @@ import { join } from "node:path";
 const raiz = new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 const CHROME = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const temp = join(raiz, "temp");
+mkdirSync(temp, { recursive: true });
 
 let falhas = 0;
 const ok = (nome, cond, detalhe = "") => {

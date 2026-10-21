@@ -28,6 +28,147 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/word/schema.ts
+
+### 2026-10-21 · feat/imagem-posicao-lados · a imagem ganhou os lados da quebra e a fixação na página
+- **Local:** o nó `image` (atributos e o `toDOM`)
+- **Linha:** novos atributos `lados` (`"maior" | "esquerda" | "direita"`), `fixa` (booleano) e
+  `pageOffset` (px); e os `data-wd-lados` / `data-wd-fixa` na marcação HTML
+- **Porquê:** o Word escolhe **de que lado o texto passa** e se a imagem **anda com o texto ou fica
+  presa na página**; sem esses atributos o app não tinha onde guardar as duas escolhas (e elas
+  precisam sobreviver a salvar, reabrir e ao `.docx`).
+
+## src/word/imagemFlutuante.ts
+
+### 2026-10-21 · feat/imagem-posicao-lados · o lado da quebra manda no `float`
+- **Local:** `LadosDaQuebra`, `LADOS_DA_QUEBRA`, `DadosFlutuante`, `dadosDaImagem`, `flutuaPara`,
+  `andaNaMargemDireita` e `estiloDoFlutuante`
+- **Linha:** `float:${direita ? "right" : "left"}` (com `direita` vindo do alinhamento) → o
+  `float` vem de `flutuaPara(d)`, que olha os **lados da quebra** antes do alinhamento: "só à
+  esquerda" flutua à **direita** (o texto fica à esquerda) e vice-versa; o alinhamento centralizado
+  só vale quando os lados são "o mais largo"
+- **Porquê:** o CSS não tem "texto dos dois lados": um flutuante joga o texto para o lado OPOSTO —
+  então os lados da quebra escolhem para onde o texto vai (é o que o Word faz na prática). A
+  margem horizontal acompanha a direção efetiva (o `andaNaMargemDireita`), senão o deslocamento
+  passaria a ser medido da margem errada.
+
+## src/word/editor.ts
+
+### 2026-10-21 · feat/imagem-posicao-lados · os comandos da posição e dos lados
+- **Local:** `setLadosDaQuebra`, `setDeslocamentos`, `setFixaNaPagina` e `alturaNaPagina`
+- **Linha:** novos métodos (e o import do `GAP_PX` da paginação)
+- **Porquê:** o painel Posição precisa gravar os deslocamentos em px (o mesmo que o arrasto grava),
+  escolher os lados e trocar entre "mover com o texto" e "fixar na página". Ao fixar, a altura da
+  imagem **dentro da página** é medida na hora (`alturaNaPagina` = a posição dela menos o topo da
+  página, contando o `passo` da paginação) e guardada no `pageOffset` — é ela que a paginação usa
+  para devolver a imagem ao lugar.
+
+## src/word/ribbon.ts
+
+### 2026-10-21 · feat/imagem-posicao-lados · o painel Posição e os lados no menu da quebra
+- **Local:** a aba Imagem (o botão `img-pos` e o grupo Posição), `criaMenuDeQuebra` e
+  `posicaoPopup`
+- **Linha:** o menu da quebra ganhou a seção **Lados da quebra** (3 opções, com ✓ no atual); e o
+  botão **Posição ▾** abre uma caixa com o alinhamento, os deslocamentos em cm, a distância do
+  texto e as opções "Mover com o texto" / "Fixar na página"
+- **Porquê:** é o painel do Word: o arrasto é o jeito rápido, e a caixa é o ajuste fino. Cada campo
+  lê o valor ATUAL do outro eixo antes de gravar — a caixa foi montada com os valores da abertura,
+  e sem isso mexer num campo desfazia o que o outro tinha acabado de mudar.
+
+## src/word/pagination.ts
+
+### 2026-10-21 · feat/imagem-posicao-lados · a imagem fixa volta ao lugar depois da paginação
+- **Local:** `ajustesDasFixas` e o `run` do plugin
+- **Linha:** depois de medir, as imagens com `fixa` são conferidas: se a altura dentro da página
+  mudou (o texto acima cresceu), o `vOffset` é acertado **na mesma transação** das decorações (sem
+  entrar no histórico); os acertos entram na assinatura da paginação, senão o `run` saía antes de
+  aplicá-los
+- **Porquê:** "Fixar na página" é o oposto de "mover com o texto": a imagem precisa ficar na mesma
+  altura da página quando o texto muda. Como a posição da imagem é relativa ao parágrafo, alguém
+  tem de reacertar o deslocamento depois que a página é montada — e é a paginação que sabe onde a
+  página começa.
+
+## src/styles/word.css
+
+### 2026-10-21 · feat/imagem-posicao-lados · o desenho do painel Posição
+- **Local:** a seção dos menus do Word
+- **Linha:** novas regras `.wd-menu-sub` (o título "Lados da quebra"), `.wd-pos-pop`,
+  `.wd-pos-linha`, `.wd-pos-rotulo`, `.wd-pos-campo`, `.wd-pos-seg` e `.wd-pos-seg-btn`
+- **Porquê:** o painel é uma caixa de números e um seletor de alinhamento — as classes dos menus
+  existentes não tinham rótulo de campo nem controle segmentado.
+
+## src/word/docxExport.ts
+
+### 2026-10-21 · feat/imagem-posicao-lados · os lados e a fixação vão para o .docx
+- **Local:** `flutuanteDoDocx`
+- **Linha:** `side: TextWrappingSide.BOTH_SIDES` → o lado escolhido (`LEFT`/`RIGHT`/`LARGEST`); e a
+  `verticalPosition` passa a ser `PAGE` (com o offset contando a margem de cima) quando a imagem é
+  `fixa`, senão `PARAGRAPH`
+- **Porquê:** o `.docx` tem os dois conceitos (`wp:wrapSquare/@wrapText` e
+  `wp:positionV/@relativeFrom`) — sem gravá-los, o Word abriria a imagem do jeito errado.
+
+## src/word/docx/inline.ts
+
+### 2026-10-21 · feat/imagem-posicao-lados · os lados e a fixação voltam do .docx
+- **Local:** `leituraDaAncoragem` e a chamada dela em `readImage`
+- **Linha:** a leitura do `@wrapText` (do `wrapSquare`/`wrapTight`/`wrapThrough`) vira `lados`; o
+  `positionV/@relativeFrom="page"` vira `fixa: true` com o `pageOffset` (o offset menos a margem de
+  cima, que chega por parâmetro)
+- **Porquê:** importar e exportar têm de fechar o ciclo: a imagem que o Word guarda "fixa na
+  página" e "com o texto só à direita" volta igual ao abrir o arquivo.
+
+## src/word/docxImport.ts
+
+### 2026-10-21 · feat/imagem-posicao-lados · as margens entram antes do corpo
+- **Local:** a ordem do `importDocx`
+- **Linha:** a leitura do `w:sectPr`/`w:pgMar` subiu para ANTES do `readBlocks`, e
+  `ctx.margemTopoPx` recebe a margem de cima em px
+- **Porquê:** a âncora "fixa na página" conta a altura do **papel**, e as imagens são lidas dentro
+  do corpo — sem a margem antes, a primeira imagem fixa entraria com a conta errada.
+
+## src/word/docx/context.ts
+
+### 2026-10-21 · feat/imagem-posicao-lados · a margem de cima no contexto da importação
+- **Local:** `Ctx`
+- **Linha:** novo campo opcional `margemTopoPx`
+- **Porquê:** é por ele que a leitura da âncora fixa converte a altura do papel para a altura
+  dentro da página.
+
+## scripts/testar-word-imagem-posicao.mjs
+
+### 2026-10-21 · feat/imagem-posicao-lados · o teste do painel e dos lados
+- **Local:** arquivo novo
+- **Linha:** novo arquivo
+- **Porquê:** os deslocamentos, os lados e a fixação só se vêem com a página desenhada (a
+  paginação mede o DOM). O roteiro sobe o Vite, abre o Chrome e confere: o painel abre com os
+  campos, 1,00 cm vira 38 px, "só à esquerda" põe a imagem à direita (e vice-versa), **fixar**
+  mantém a imagem na altura com o texto crescendo acima e **mover com o texto** faz ela andar de
+  novo.
+
+## scripts/testar-word-ancora.mjs
+
+### 2026-10-21 · feat/imagem-posicao-lados · a pasta das fotos é criada antes
+- **Local:** o começo do roteiro
+- **Linha:** `mkdirSync(temp, { recursive: true })` antes do primeiro `writeFileSync`
+- **Porquê:** numa worktree nova a pasta `temp/` não existe e o teste morria ao tirar a primeira
+  foto (em vez de testar a âncora).
+
+## package.json
+
+### 2026-10-21 · feat/imagem-posicao-lados · o atalho do teste da posição
+- **Local:** `scripts`
+- **Linha:** novo `"test:word-imagem-posicao": "node scripts/testar-word-imagem-posicao.mjs"`
+- **Porquê:** os testes do repo rodam por atalho (`npm run test:word-ancora`).
+## scripts/ver-posicao.mjs
+
+### 2026-10-21 · feat/imagem-posicao-lados · a foto do painel Posição e dos lados
+- **Local:** arquivo novo
+- **Linha:** novo arquivo
+- **Porquê:** o painel Posição e o menu dos lados são caixas de interface — o jeito de conferir
+  o desenho é tirar a foto com o app rodando (mesmo padrão dos `harness-*` do repositório). O
+  roteiro abre o app no Chrome, monta um documento com a imagem flutuante e guarda as duas fotos
+  em `temp/`.
+
 ## scripts/testar-layout.mts
 
 ### 2026-10-21 · feat/imagem-ancora-paginacao · o teste de layout voltou a rodar até o fim

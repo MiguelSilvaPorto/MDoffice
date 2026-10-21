@@ -527,6 +527,92 @@ body.settings-open #word-pane {
   background: var(--border);
 }
 
+/* título de um grupo dentro de um menu (ex.: "Lados da quebra") */
+.wd-menu-sub {
+  padding: 6px 10px 2px;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ---------- popup Posição (aba Imagem) ---------- */
+.wd-pos-pop {
+  min-width: 340px;
+  gap: 2px;
+}
+
+.wd-pos-linha {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+}
+
+.wd-pos-rotulo {
+  flex: none;
+  width: 108px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.wd-pos-campo {
+  width: 92px;
+  padding: 4px 8px;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12.5px;
+  text-align: right;
+}
+
+.wd-pos-campo:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.wd-pos-seg {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+
+.wd-pos-seg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.wd-pos-seg-btn .ic {
+  width: 13px;
+  height: 13px;
+}
+
+.wd-pos-seg-btn:hover {
+  color: var(--fg);
+  background: var(--panel);
+}
+
+.wd-pos-seg-btn.on {
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+
 #wd-stage {
   flex: 1;
   min-height: 0;

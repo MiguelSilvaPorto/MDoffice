@@ -452,6 +452,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A imagem ganhou o painel Posição e os Lados da Quebra**: a imagem flutuante tinha só os três
+  alinhamentos e o arrasto — para acertar o lugar dela era tentativa e erro. Agora a aba **Imagem**
+  tem o botão **Posição ▾**, com os **deslocamentos em cm** (horizontal e vertical), a **distância
+  do texto** e a escolha entre **Mover com o texto** (a de sempre) e **Fixar na página** — nesta, a
+  imagem **fica na mesma altura da página** quando o texto acima cresce ou encolhe (a paginação
+  reacerta o deslocamento), como o "Fixar posição na página" do Word. E o menu **Quebra de Texto**
+  ganhou os **Lados da Quebra**: **o lado mais largo** (o de sempre), **só à esquerda** e **só à
+  direita** — a imagem vai para o lado oposto para o texto passar do lado escolhido. Os dois
+  ajustes vão para o `.docx` (`wp:wrapSquare/@wrapText` e `wp:positionV/@relativeFrom="page"`) e
+  voltam ao abrir o arquivo.
+
 - **A imagem flutuante agora anda pelo texto (a âncora muda com o arrasto)**: até aqui a imagem
   que flutua (quadrado, contorno, topo e base, através) podia ser **arrastada na página**, mas a
   **âncora dela ficava presa** no parágrafo onde tinha nascido — não dava para levar a imagem

@@ -5,6 +5,7 @@ import { Plugin, PluginKey } from "prosemirror-state";
 import { Decoration, DecorationSet, type EditorView } from "prosemirror-view";
 import type { Node as PMNode } from "prosemirror-model";
 import { fillHeaderFooter, pageSizePx, CM_TO_PX, type PageSetup } from "./model";
+import { dadosDaImagem, ehFlutuante } from "./imagemFlutuante";
 
 export const GAP_PX = 28;
 
@@ -309,6 +310,40 @@ function measure(view: EditorView, setup: PageSetup): { spacers: Spacer[]; pages
   return { spacers, pages: page + 1, folhas };
 }
 
+/**
+ * Os acertos das imagens "fixas na página".
+ *
+ * A imagem fixa não anda com o texto: ela guarda a altura **dentro da página**
+ * (`pageOffset`). Depois de a página ser montada, se ela estiver em outra altura
+ * (o texto acima cresceu ou encolheu), o deslocamento vertical dela é corrigido
+ * para voltar ao lugar — como o "Fixar posição na página" do Word.
+ *
+ * Devolve os nós que precisam de acerto (vazio quando estão todos no lugar).
+ */
+function ajustesDasFixas(view: EditorView, setup: PageSetup): { pos: number; attrs: Record<string, unknown> }[] {
+  const passo = passoDaPagina(setup);
+  const dom = view.dom as HTMLElement;
+  const caixa = dom.getBoundingClientRect();
+  const escala = caixa.width / dom.offsetWidth || 1;
+  const out: { pos: number; attrs: Record<string, unknown> }[] = [];
+  view.state.doc.descendants((no, pos) => {
+    if (no.type.name !== "image") return true;
+    const d = dadosDaImagem(no.attrs as Record<string, unknown>);
+    if (!d.fixa || !ehFlutuante(d)) return true;
+    const el = view.nodeDOM(pos);
+    if (!(el instanceof HTMLElement)) return true;
+    const img = el.querySelector("img") ?? el;
+    const y = (img.getBoundingClientRect().top - caixa.top) / escala;
+    const pagina = Math.max(0, Math.floor(y / passo));
+    const desejado = pagina * passo + d.pageOffset;
+    const diferenca = Math.round(desejado - y);
+    if (Math.abs(diferenca) < 2) return true;
+    out.push({ pos, attrs: { ...no.attrs, vOffset: Math.round(d.vOffset + diferenca) } });
+    return true;
+  });
+  return out;
+}
+
 export function paginationPlugin(hooks: PaginationHooks): Plugin<PState> {
   return new Plugin<PState>({
     key: paginationKey,
@@ -349,12 +384,16 @@ export function paginationPlugin(hooks: PaginationHooks): Plugin<PState> {
         const { spacers, pages, folhas } = measure(view, setup);
         hooks.onPages(pages);
         const livro = hooks.modo?.() === "livro";
+        // os acertos das imagens "fixas na página" entram na assinatura: mesmo com a
+        // paginação igual, o acerto precisa acontecer (o texto acima mudou)
+        const ajustes = ajustesDasFixas(view, setup);
         const sig =
           JSON.stringify(spacers.map((s) => [s.pos, Math.round(s.height), s.end ? 1 : 0])) +
           pages +
           JSON.stringify(setup) +
           (livro ? "|livro" : "|normal") +
-          (livro ? hashCurto(folhas.map((f) => `${f.pos}:${f.pagina}`).join(",")) : "");
+          (livro ? hashCurto(folhas.map((f) => `${f.pos}:${f.pagina}`).join(",")) : "") +
+          (ajustes.length ? `|fix${hashCurto(ajustes.map((a) => `${a.pos}:${a.attrs.vOffset}`).join(","))}` : "");
         if (sig === signature) return;
         signature = sig;
         const decos: Decoration[] = [];
@@ -396,7 +435,16 @@ export function paginationPlugin(hooks: PaginationHooks): Plugin<PState> {
             );
           }
         }
-        view.dispatch(view.state.tr.setMeta(paginationKey, { deco: DecorationSet.create(view.state.doc, decos) }).setMeta("addToHistory", false));
+        const tr = view.state.tr;
+        // "Fixar na página": a imagem não anda com o texto — o deslocamento
+        // vertical dela é acertado aqui (com a página já montada) para ela voltar
+        // à altura guardada. Vai na MESMA transação das decorações, sem entrar no
+        // histórico (é um acerto da vista, não uma edição da pessoa).
+        for (const ajuste of ajustes) {
+          tr.setNodeMarkup(ajuste.pos, undefined, ajuste.attrs);
+        }
+        tr.setMeta(paginationKey, { deco: DecorationSet.create(view.state.doc, decos) }).setMeta("addToHistory", false);
+        view.dispatch(tr);
       };
       const schedule = (delay = 90) => {
         window.clearTimeout(timer);

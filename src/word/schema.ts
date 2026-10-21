@@ -3,7 +3,7 @@
 import { Schema, type DOMOutputSpec, type MarkSpec, type Node as PMNode, type NodeSpec } from "prosemirror-model";
 import { tableNodes } from "prosemirror-tables";
 import { FONTES_COMUNS } from "../fontes";
-import type { LadoHorizontal, WrapImagem } from "./imagemFlutuante";
+import type { LadoHorizontal, LadosDaQuebra, WrapImagem } from "./imagemFlutuante";
 
 export type Align = "left" | "center" | "right" | "justify";
 
@@ -204,6 +204,12 @@ const nodes: Record<string, NodeSpec> = {
       vOffset: { default: 0 },
       /** Distância do texto (px) no contorno. */
       shapeMargin: { default: 8 },
+      /** De que lado o texto passa (o do Word: o mais largo, só à esquerda, só à direita). */
+      lados: { default: "maior" as LadosDaQuebra },
+      /** A imagem fica na mesma altura da PÁGINA (não anda com o texto). */
+      fixa: { default: false },
+      /** A altura da imagem a partir do topo da página (px) — só quando `fixa`. */
+      pageOffset: { default: 0 },
     },
     parseDOM: [
       {
@@ -217,24 +223,30 @@ const nodes: Record<string, NodeSpec> = {
             height: num(el.getAttribute("height")) ?? num(el.style.height),
             wrap: (el.getAttribute("data-wd-wrap") as WrapImagem) || "alinhado",
             hAlign: (el.getAttribute("data-wd-halign") as LadoHorizontal) || "left",
+            lados: (el.getAttribute("data-wd-lados") as LadosDaQuebra) || "maior",
+            fixa: el.getAttribute("data-wd-fixa") === "1",
           };
         },
       },
     ],
     toDOM: (n) => {
-      const { src, alt, width, height, wrap, hAlign } = n.attrs as {
+      const { src, alt, width, height, wrap, hAlign, lados, fixa } = n.attrs as {
         src: string;
         alt: string | null;
         width: number | null;
         height: number | null;
         wrap: WrapImagem;
         hAlign: LadoHorizontal;
+        lados: LadosDaQuebra;
+        fixa: boolean;
       };
       const style = [width ? `width:${width}px` : "", height ? `height:${height}px` : ""].filter(Boolean).join(";");
       const extra: Record<string, string> = {};
       if (wrap && wrap !== "alinhado") {
         extra["data-wd-wrap"] = wrap;
         extra["data-wd-halign"] = hAlign;
+        if (lados && lados !== "maior") extra["data-wd-lados"] = lados;
+        if (fixa) extra["data-wd-fixa"] = "1";
       }
       return ["img", { src, ...(alt ? { alt } : {}), ...(style ? { style } : {}), ...extra }];
     },
