@@ -1,0 +1,37 @@
+{
+  "id": "/",
+  "name": "mdOffice — editor de documentos",
+  "short_name": "mdOffice",
+  "description": "Editor de Markdown, Word, PowerPoint e Excel que roda no seu computador, sem enviar os documentos para lugar nenhum.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "any",
+  "background_color": "#F4F5F8",
+  "theme_color": "#4F46E5",
+  "categories": ["productivity", "office"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icones/pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icones/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icones/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

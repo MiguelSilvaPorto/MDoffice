@@ -18,6 +18,56 @@ export interface BackupConfig {
 
 export type Perfil = "leve" | "equilibrado" | "maximo" | "personalizado";
 
+// ---------- os tipos que a interface e o disco compartilham ----------
+//
+// Ficam aqui (e não em `backup.ts`) porque `backup.ts` fala com o backend e o módulo do
+// navegador (`src/disco/backup.ts`) precisa dos mesmos tipos — sem um importar o outro.
+
+/** Uma cópia datada dentro de uma pasta de backup. */
+export interface BackupFile {
+  /** raiz onde esta cópia está (para restaurar de onde veio) */
+  root: string;
+  name: string;
+  /** data/hora no formato `2026-10-09_10-42-13` */
+  stamp: string;
+  bytes: number;
+  at: number;
+  /** cópia do estado anterior (proteção contra sobrescrita) */
+  protection: boolean;
+}
+
+/** Todas as cópias de um documento (união das raízes). */
+export interface BackupEntry {
+  original: string;
+  copies: BackupFile[];
+  bytes: number;
+  /** o original não está mais no disco */
+  missing: boolean;
+}
+
+export interface BackupWriteResult {
+  written: string[];
+  failed: string[];
+  skipped: boolean;
+}
+
+/** Resumo de um documento, para o monitor de espaço. */
+export interface IndexFile {
+  original: string;
+  copies: number;
+  bytes: number;
+  oldest: number;
+  newest: number;
+  days: number;
+}
+
+export interface BackupIndex {
+  roots: string[];
+  files: IndexFile[];
+  copies: number;
+  bytes: number;
+}
+
 /**
  * Perfis de segurança: quanto cada documento guarda.
  *

@@ -51,15 +51,31 @@ src/                  frontend (TypeScript, sem framework) — um "motor" por pa
 ├─ settings.ts · settingsPage.ts       configurações (aba)
 ├─ busca/              a barra de busca de funções (Ctrl+K): tipos · filtro · coleta das
 │                      fitas · a interface da barra
-├─ files.ts                          pontes com o backend (Tauri)
+├─ disco/             o disco do NAVEGADOR (File System Access API): registro dos handles no
+│  │                  IndexedDB, operações de arquivo, árvore/busca, prévia do Office (JSZip)
+│  ├─ registro.ts     os handles (o `id` do documento ocupa o lugar do caminho)
+│  ├─ arquivo.ts      abrir/ler/gravar/renomear/mover + a pasta assets/
+│  ├─ arvore.ts       a árvore de markdown e a busca
+│  ├─ zip.ts          a prévia de .docx/.pptx/.xlsx pelo JSZip
+│  ├─ pastaApp.ts     a pasta `.mdoffice/` (backup e lixeira dentro da pasta escolhida)
+│  ├─ backup.ts       backup em `.mdoffice/backups` (cópias datadas, .orig, histórico)
+│  └─ lixeira.ts      lixeira em `.mdoffice/lixeira` (30 dias, index.json)
+├─ ponte/             o único lugar que decide Tauri × navegador (`invoke`, diálogos, avisos)
+├─ files.ts                          a fachada de arquivos do app (usa a ponte)
 ├─ styles.css         só importa os arquivos de styles/ (um por área da interface)
 └─ styles/            tokens, base, topbar, sidebar, editor, word, home, fita …
 ```
 
+O `app/pwa.ts` registra o service worker (o app abre com o servidor parado) e guarda o convite
+de instalação do navegador; o manifesto e o service worker ficam em `public/`.
+
 ## Backend — `src-tauri/` (Rust)
 
+> Em extinção: o app roda no navegador (`npm run app`) e o plano é apagar esta pasta quando a
+> migração para TypeScript terminar. Enquanto ela existir, `npm run app:tauri` usa este backend.
+
 Os comandos que só o lado nativo pode fazer: arquivos, imagens, rascunhos, projetos, busca,
-armazenamento e o pacote para IA. O frontend chama por `invoke`.
+armazenamento e o pacote para IA. O frontend chama por `invoke` (ou pela ponte, que decide).
 
 ```
 src-tauri/
@@ -78,10 +94,16 @@ Armazenamento**, guardado em `cache.json` na pasta de dados e lido antes de o Ta
 ```
 Minha pasta/
 ├─ documento.md        ← o texto Markdown
-└─ assets/             ← todas as imagens/desenhos usados no documento
-   ├─ desenho-abc123.png
-   └─ captura-de-tela.png
+├─ assets/             ← todas as imagens/desenhos usados no documento
+│  ├─ desenho-abc123.png
+│  └─ captura-de-tela.png
+└─ .mdoffice/          ← o que o app guarda (no navegador; no app nativo fica na pasta de dados)
+   ├─ backups/         ← as cópias datadas de cada documento
+   └─ lixeira/         ← o que saiu da pasta, por 30 dias (index.json)
 ```
+
+O `.mdoffice/` fica **dentro** da pasta que você concede ao app: o backup viaja junto se você
+copiar a pasta do projeto, e nada do app vai para uma pasta escondida do sistema.
 
 O Markdown referencia as imagens de forma relativa (`![Desenho](assets/desenho-abc123.png)`),
 então o par `.md` + `assets/` pode ser movido/zipado junto sem quebrar nada. Ao enviar para

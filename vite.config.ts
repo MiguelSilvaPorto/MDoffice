@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, type Connect, type Plugin } from "vite";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -78,10 +78,10 @@ function ortPlugin(): Plugin {
  */
 function batimentoPlugin(): Plugin {
   let vistoEm = 0;
-  return {
-    name: "mdc-batimento",
-    configureServer(server) {
-      server.middlewares.use("/__vivo", (req, res) => {
+  // O mesmo middleware serve o dev (`vite`) e o app instalado (`vite preview`): o watchdog
+  // pergunta em /__vivo/estado e a pagina avisa em /__vivo.
+  const atender = (server: { middlewares: Connect.Server }) => {
+    server.middlewares.use("/__vivo", (req, res) => {
         // consulta do watchdog: há quanto tempo a página não avisa
         if ((req.url ?? "").startsWith("/estado")) {
           res.setHeader("content-type", "application/json");
@@ -93,6 +93,32 @@ function batimentoPlugin(): Plugin {
         res.statusCode = 204;
         res.end();
       });
+  };
+  return {
+    name: "mdc-batimento",
+    configureServer: atender,
+    configurePreviewServer: atender,
+  };
+}
+
+/**
+ * O `@huggingface/transformers` embute o onnxruntime e o Vite copia o wasm dele para
+ * `assets/` — mas o worker já aponta o runtime para `/ort/` (`public/ort`, que existe em
+ * qualquer versão do app). Sem este filtro o MESMO wasm de 26 MB sai duas vezes no `dist`.
+ *
+ * Só o `.wasm` é descartado; o `.mjs` (pequeno) continua e o `wasmPaths` do worker garante
+ * que o runtime busque os binários em `/ort/`.
+ */
+function semOrtDuplicado(): Plugin {
+  return {
+    name: "mdc-ort-sem-duplicado",
+    apply: "build",
+    generateBundle(_opcoes, bundle) {
+      for (const [nome, item] of Object.entries(bundle)) {
+        if (item.type === "asset" && /(^|\/)ort-wasm-.*\.wasm$/.test(item.fileName)) {
+          delete bundle[nome];
+        }
+      }
     },
   };
 }
@@ -105,7 +131,7 @@ const emWorktree = /[\\/]\.worktrees[\\/][^\\/]+$/.test(process.cwd());
 // - não limpar o terminal para não esconder logs do cargo
 export default defineConfig({
   clearScreen: false,
-  plugins: [tempSavePlugin(), ortPlugin(), batimentoPlugin()],
+  plugins: [tempSavePlugin(), ortPlugin(), batimentoPlugin(), semOrtDuplicado()],
   // Cache do otimizador POR PASTA. O padrão (`node_modules/.vite`) é compartilhado,
   // porque `node_modules` é um junction apontando para a cópia principal: o servidor
   // de dev de uma worktree e o da cópia principal escrevem no MESMO cache e trocam o
@@ -160,6 +186,12 @@ export default defineConfig({
         ...(emWorktree ? [] : ["**/.worktrees/**"]),
       ],
     },
+  },
+  // `npm run app`: serve o `dist/` na mesma porta do dev. É este modo que o navegador
+  // instala como PWA (o service worker só é registrado na versão de produção).
+  preview: {
+    port: 1420,
+    strictPort: true,
   },
   build: {
     target: "es2021",

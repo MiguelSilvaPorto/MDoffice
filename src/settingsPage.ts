@@ -2,7 +2,8 @@
 import { toast, baseName } from "./util";
 import * as backup from "./backup";
 import { pickFolders, listDrafts, draftsFolder, deleteDraft } from "./files";
-import { mostrarNaPasta as revealItemInDir, perguntar as ask } from "./ponte";
+import { mostrarNaPasta as revealItemInDir, perguntar as ask, emTauri } from "./ponte";
+import { podeInstalar, jaInstalado, instalarApp } from "./app/pwa";
 import { resumoVersoes, limparVersoesTudo } from "./history";
 import { resumoLog, limparLogTudo } from "./snapshots";
 import { relatorio as relatorioArmazenamento, removerLegado, limiteDoCache, definirLimiteDoCache } from "./storage";
@@ -138,9 +139,21 @@ const TONES: { id: Tone; title: string; desc: string }[] = [
 ];
 
 const PROVIDERS: { id: ProviderChoice; title: string; desc: string }[] = [
-  { id: "auto", title: "Automático", desc: "Usa o modo offline se já estiver instalado; senão o online. Se o limite do online acabar, troca sozinho." },
-  { id: "online", title: "Online (grátis)", desc: "MyMemory. Bom para começar, mas tem limite diário e qualidade média." },
-  { id: "offline", title: "Offline", desc: "Modelo no seu PC, sem limite e sem internet (baixa cerca de 120 MB uma vez)." },
+  {
+    id: "offline",
+    title: "Offline",
+    desc: "Modelo no seu PC: sem limite, sem internet depois de baixar e nada sai do computador. É o padrão.",
+  },
+  {
+    id: "auto",
+    title: "Automático",
+    desc: "Usa o modelo local. Só manda texto para o online se você permitir abaixo e o modelo local falhar.",
+  },
+  {
+    id: "online",
+    title: "Online (grátis)",
+    desc: "MyMemory: rápido para começar, com limite diário e qualidade média. Só funciona com “Permitir o tradutor online” ligado.",
+  },
 ];
 
 /** Chip de ícone que ancora cada linha de ajuste. */
@@ -192,6 +205,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   const s = ctx.settings();
   const tr = ctx.translation.settings;
   const off = ctx.translation.offline;
+  const nativo = emTauri();
   host.textContent = "";
 
   host.innerHTML = `
@@ -312,9 +326,19 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
             <span class="muted" data-dl-status></span>
           </div>
 
+          <div class="st-list">
+            ${toggle(
+              "tr-online",
+              "Permitir o tradutor online",
+              "Desligado, o texto do documento NUNCA sai do computador: a tradução usa o modelo local. Ao ligar, os trechos são enviados ao MyMemory (serviço gratuito na internet).",
+              tr.onlineOk,
+              "i-cloud"
+            )}
+          </div>
+
           <h4 class="st-group">Limite e glossário</h4>
           <label class="st-field">
-            <span class="st-field-label"><b>E-mail para ampliar o limite do modo online</b><small>Opcional — aumenta a cota diária do provedor online.</small></span>
+            <span class="st-field-label"><b>E-mail para ampliar o limite do modo online</b><small>Opcional — só vale com o tradutor online permitido acima.</small></span>
             <input type="email" data-k="email" placeholder="voce@exemplo.com" autocomplete="off" spellcheck="false" value="${tr.email.replace(/"/g, "&quot;")}">
           </label>
           <label class="st-field">
@@ -376,22 +400,30 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
           <div class="st-list">
             <div class="st-row">
               ${rowIcon("i-folder-plus")}
-              <span class="st-text"><b>Pasta escolhida por você</b><small data-backup-root>—</small></span>
-              <span class="st-btns">
+              <span class="st-text"><b>${nativo ? "Pasta escolhida por você" : "Pasta dos documentos"}</b><small data-backup-root>—</small></span>
+              ${
+                nativo
+                  ? `<span class="st-btns">
                 <button class="btn small st-btn" data-act="backup-dir">Trocar…</button>
                 <button class="btn small st-btn" data-act="backup-open">Abrir</button>
-              </span>
+              </span>`
+                  : ""
+              }
             </div>
             <div class="st-row">
               ${rowIcon("i-folder")}
-              <span class="st-text"><b>Pasta do app</b><small data-backup-app>—</small></span>
-              <span class="st-btns"><button class="btn small st-btn" data-act="backup-open-app">Abrir</button></span>
+              <span class="st-text"><b>${nativo ? "Pasta do app" : "Backup e lixeira"}</b><small data-backup-app>—</small></span>
+              ${nativo ? `<span class="st-btns"><button class="btn small st-btn" data-act="backup-open-app">Abrir</button></span>` : ""}
             </div>
             <div class="st-row">
               ${rowIcon("i-doc")}
               <span class="st-text"><b>Log de alterações exportado</b><small>Vai junto de cada cópia, em <code>&lt;documento&gt;/.historico/historico.json</code> — sobrevive se os dados do app forem limpos.</small></span>
             </div>
-            <p class="st-list-note">Versões e alterações ficam no banco local do app (não são arquivos soltos) e se recuperam pelas abas acima. As cópias em disco são arquivos datados de verdade, nas duas pastas.</p>
+            <p class="st-list-note">Versões e alterações ficam no banco local do app (não são arquivos soltos) e se recuperam pelas abas acima. ${
+              nativo
+                ? "As cópias em disco são arquivos datados de verdade, nas duas pastas."
+                : "As cópias em disco são arquivos datados de verdade, dentro de .mdoffice/ na pasta dos documentos."
+            }</p>
           </div>
 
           <h4 class="st-group">Salvamento</h4>
@@ -576,6 +608,15 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
               </span>
               <span class="st-opcao-nome">Redondo</span>
             </label>
+          </div>
+
+          <h4 class="st-group">Aplicativo</h4>
+          <div class="st-list" data-pwa data-pwa-bloco hidden>
+            <div class="st-row">
+              ${rowIcon("i-web")}
+              <span class="st-text"><b>Instalar no computador</b><small data-pwa-txt>O mdOffice vira um aplicativo na janela própria, com ícone no menu Iniciar. Sem instalador .exe — quem instala é o navegador.</small></span>
+              <span class="st-btns"><button class="btn small st-btn" data-act="pwa-instalar">Instalar</button></span>
+            </div>
           </div>
 
           <h4 class="st-group">Janela</h4>
@@ -852,6 +893,14 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     ctx.translation.update({ polish: (e.target as HTMLInputElement).checked });
     flash();
   });
+  sw("tr-online").addEventListener("change", (e) => {
+    const onlineOk = (e.target as HTMLInputElement).checked;
+    ctx.translation.update({ onlineOk });
+    if (onlineOk) {
+      toast("Tradutor online permitido: com ele escolhido, os trechos vão para o MyMemory.", "info", 5000);
+    }
+    flash();
+  });
   const provDesc = q("[data-prov-desc]");
   const paintProvider = () => {
     const id = host.querySelector<HTMLInputElement>('input[name="prov"]:checked')?.value as ProviderChoice | undefined;
@@ -860,7 +909,15 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   paintProvider();
   host.querySelectorAll<HTMLInputElement>('input[name="prov"]').forEach((r) =>
     r.addEventListener("change", () => {
-      ctx.translation.update({ provider: r.value as ProviderChoice });
+      const escolha = r.value as ProviderChoice;
+      ctx.translation.update({ provider: escolha });
+      if (escolha === "online" && !ctx.translation.settings.onlineOk) {
+        toast(
+          "O tradutor online está desligado. Ligue “Permitir o tradutor online” para usá-lo — por enquanto a tradução continua no seu PC.",
+          "info",
+          6500
+        );
+      }
       paintProvider();
       flash();
     })
@@ -1135,7 +1192,9 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     q("[data-backup-custom2]").hidden = !custom;
   };
   const paintBackupRoot = () => {
-    q("[data-backup-root]").textContent = backupRoot || "Nenhuma pasta escolhida (o backup fica só na pasta do app)";
+    q("[data-backup-root]").textContent = nativo
+      ? backupRoot || "Nenhuma pasta escolhida (o backup fica só na pasta do app)"
+      : "A pasta que você concedeu ao app — o backup fica dentro dela, em .mdoffice/backups";
   };
   const paintBackupSize = () =>
     void backup.indice().then((idx) => {
@@ -1417,6 +1476,33 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       flash();
     })
   );
+
+  // ---------------------------------------------------------------- PWA (instalar)
+  //
+  // O "instalador" é o do navegador: quando ele oferece o convite (`beforeinstallprompt`,
+  // capturado em `src/app/pwa.ts`), a linha aparece e o botão abre o diálogo do Chrome/Edge.
+  // Instalado, a linha continua visível só para explicar que já está pronto.
+  const blocoPwa = q<HTMLElement>("[data-pwa-bloco]");
+  if (blocoPwa && (podeInstalar() || jaInstalado())) {
+    blocoPwa.hidden = false;
+    const txt = q<HTMLElement>("[data-pwa-txt]");
+    const botao = q<HTMLButtonElement>('[data-act="pwa-instalar"]');
+    if (jaInstalado()) {
+      txt.textContent = "O mdOffice já está instalado neste computador: abra pelo menu Iniciar, sem navegador em volta.";
+      botao.hidden = true;
+    } else {
+      botao.addEventListener("click", async () => {
+        const aceitou = await instalarApp();
+        if (aceitou) {
+          txt.textContent = "Instalado. O mdOffice agora abre pelo menu Iniciar.";
+          botao.hidden = true;
+          toast("mdOffice instalado neste computador.", "ok", 4000);
+        } else {
+          toast("A instalação foi cancelada. Você pode instalar depois pelo menu do navegador.", "info", 5000);
+        }
+      });
+    }
+  }
 
   // ---------------------------------------------------------------- atalhos
   //

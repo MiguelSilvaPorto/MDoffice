@@ -26,6 +26,14 @@ export interface TrSettings {
   view: ViewMode;
   layout: "cols" | "rows";
   provider: ProviderChoice;
+  /**
+   * A pessoa autorizou mandar texto para o tradutor ONLINE?
+   *
+   * É `false` de fábrica: o mdOffice é local e o texto do documento só sai do computador
+   * por escolha explícita. `false` quer dizer que nem o "automático" nem a troca de motor
+   * usam o MyMemory — o pior caso é ficar sem tradução, nunca vazar o texto.
+   */
+  onlineOk: boolean;
   /** E-mail opcional: sobe o limite gratuito do tradutor online de 5 mil para 50 mil letras por dia. */
   email: string;
   /** Arruma o português (pontuação, formalidade) antes de traduzir. */
@@ -39,7 +47,9 @@ const DEFAULTS: TrSettings = {
   enabled: false,
   view: "both",
   layout: "cols",
-  provider: "auto",
+  // Offline por padrão: nada sai do computador sem a pessoa ligar o modo online.
+  provider: "offline",
+  onlineOk: false,
   email: "",
   polish: true,
   glossary: [],
@@ -186,15 +196,25 @@ export class Translation {
 
   // ---------- motor ----------
 
-  /** Provedor em uso agora (no modo automático: offline se o modelo já foi baixado). */
+  /**
+   * Provedor em uso agora.
+   *
+   * O **online** só entra com autorização explícita (`onlineOk`): sem ela, qualquer escolha
+   * cai no offline. Antes o "automático" mandava o texto para o MyMemory quando o modelo
+   * ainda não tinha sido baixado — ou seja, a primeira tradução de quem nunca escolheu nada
+   * saía do computador.
+   */
   private provider(): Provider {
     const c = this.settings.provider;
-    if (c === "offline" || (c === "auto" && this.offline.downloaded)) return this.offline.provider();
-    return this.online;
+    const onlinePermitido = this.settings.onlineOk;
+    if (c === "online" && onlinePermitido) return this.online;
+    return this.offline.provider();
   }
 
   private fallbackProvider(current: Provider): Provider | null {
-    if (this.settings.provider !== "auto") return null;
+    if (this.settings.provider === "offline") return null;
+    // trocar de motor nunca pode furar o consentimento
+    if (!this.settings.onlineOk) return null;
     if (current.id === "online") return this.offline.provider();
     return this.online;
   }

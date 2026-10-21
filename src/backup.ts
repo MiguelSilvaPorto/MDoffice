@@ -3,9 +3,10 @@
 // Duas camadas: o histórico de dentro do app (commits e versões, ver `snapshots.ts` e
 // `history.ts`) e as cópias reais em disco, que sobrevivem a limpar os dados do app.
 
-import { invoke } from "@tauri-apps/api/core";
 import { exportCommits, listCommits, type Commit } from "./snapshots";
 import { CONFIG_PADRAO, carimbo, type BackupConfig } from "./backupPolicy";
+import type { BackupEntry, BackupFile, BackupIndex, BackupWriteResult, IndexFile } from "./backupPolicy";
+import { invoke, emApp } from "./ponte";
 
 // a política e a apresentação (perfis, carimbo de data, tamanhos) ficam em backupPolicy.ts
 export {
@@ -19,59 +20,17 @@ export {
   type Perfil,
 } from "./backupPolicy";
 
+// os tipos das cópias também (a interface e o disco do navegador usam os mesmos)
+export type { BackupEntry, BackupFile, BackupIndex, BackupWriteResult, IndexFile };
+
 /**
- * O app está rodando com o backend (janela do Tauri)?
+ * O app tem onde gravar o backup? (o Tauri, ou o navegador com uma pasta concedida)
  *
- * No navegador (durante o desenvolvimento) não existe pasta para gravar, então tudo do
- * backup em disco é desligado em silêncio — o histórico de dentro do app continua.
+ * No navegador o backup vive em `.mdoffice/backups` DENTRO da pasta que a pessoa escolheu —
+ * nada vai para uma pasta escondida do sistema, e o backup viaja junto com os documentos.
  */
 export function temBackend(): boolean {
-  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-}
-
-/** Uma cópia datada dentro de uma pasta de backup. */
-export interface BackupFile {
-  /** raiz onde esta cópia está (para restaurar de onde veio) */
-  root: string;
-  name: string;
-  /** data/hora no formato `2026-10-09_10-42-13` */
-  stamp: string;
-  bytes: number;
-  at: number;
-  /** cópia do estado anterior (proteção contra sobrescrita) */
-  protection: boolean;
-}
-
-/** Todas as cópias de um documento (união das duas raízes). */
-export interface BackupEntry {
-  original: string;
-  copies: BackupFile[];
-  bytes: number;
-  /** o original não está mais no disco */
-  missing: boolean;
-}
-
-export interface BackupWriteResult {
-  written: string[];
-  failed: string[];
-  skipped: boolean;
-}
-
-/** Resumo de um documento, para o monitor de espaço. */
-export interface IndexFile {
-  original: string;
-  copies: number;
-  bytes: number;
-  oldest: number;
-  newest: number;
-  days: number;
-}
-
-export interface BackupIndex {
-  roots: string[];
-  files: IndexFile[];
-  copies: number;
-  bytes: number;
+  return emApp();
 }
 
 export async function lerConfig(): Promise<BackupConfig> {
@@ -90,7 +49,7 @@ export async function gravarConfig(cfg: BackupConfig): Promise<void> {
 
 /** Pasta de backup da própria aplicação. */
 export async function pastaDoApp(): Promise<string> {
-  if (!temBackend()) throw new Error("O backup em disco só existe na janela do app.");
+  if (!temBackend()) throw new Error("O backup em disco precisa de uma pasta: este navegador não dá acesso ao disco.");
   return await invoke<string>("backup_app_root");
 }
 

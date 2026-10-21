@@ -6,9 +6,12 @@ import { ligarDicas } from "./dica";
 import { App } from "./app/app";
 import { ligarBatimento } from "./app/batimento";
 import { initDiagPanel } from "./app/diagPanel";
+import { iniciarPwa } from "./app/pwa";
 
 const app = new App();
 ligarMovimentoDeSaida();
+// PWA: service worker (abre sem o servidor) e o botão "Instalar" das Configurações.
+iniciarPwa();
 // Log de decisões do corretor (desligado por padrão; `?diag=1` na URL liga e mostra o painel)
 initDiagPanel();
 // As dicas do app (o balão no lugar do `title` nativo do navegador)

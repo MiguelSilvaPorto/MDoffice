@@ -74,6 +74,9 @@ console.log("ok  app-icon.svg");
 foto(pagina(appIcon, 1024), "app-icon.png", 1024);
 foto(pagina(placa("#F4F5F8"), 256), join("public", "icones", "mdoffice-claro.png"), 256);
 foto(pagina(placa("#0E1014"), 256), join("public", "icones", "mdoffice-escuro.png"), 256);
+// PWA: o Chrome/Edge pedem 192 e 512 para instalar o app (o mesmo desenho do ícone do .exe).
+foto(pagina(appIcon, 512), join("public", "icones", "pwa-512.png"), 512);
+foto(pagina(appIcon, 192), join("public", "icones", "pwa-192.png"), 192);
 
 execFileSync("npx", ["tauri", "icon", "app-icon.png"], { cwd: raiz, stdio: "inherit", shell: true });
 console.log("ok  src-tauri/icons regenerado");

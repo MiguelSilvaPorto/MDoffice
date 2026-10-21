@@ -17007,3 +17007,154 @@ antigas quando fizer sentido.
 - **Local:** `scripts`
 - **Linha:** novo `"test:disco": "node scripts/testar-disco-navegador.mjs"`
 - **Porquê:** a trava entra na série de travas do repositório.
+
+## src/translate/controller.ts
+
+### 2026-10-21 · feat/app-web · o tradutor passou a ser offline por padrão
+- **Local:** `TrSettings`, `DEFAULTS`, `provider()`, `fallbackProvider()`
+- **Linha:** `provider: "auto"` → `provider: "offline"` + `onlineOk: false` (campo novo); o `provider()`
+  deixou de escolher o online sem autorização; o `fallbackProvider` só troca de motor com `onlineOk`
+- **Porquê:** o "automático" mandava o texto para o MyMemory na PRIMEIRA tradução (quando o modelo
+  local ainda não tinha sido baixado): quem nunca escolheu nada tinha o documento saindo do
+  computador. Agora o pior caso é ficar sem tradução, nunca vazar o texto — e o consentimento vale
+  também para a troca automática de motor.
+
+## src/settingsPage.ts
+
+### 2026-10-21 · feat/app-web · o consentimento do online e o botão de instalar
+- **Local:** `PROVIDERS`, o bloco do motor de tradução, o handler `tr-online`, o bloco `data-pwa`
+  e o "Onde ficam os arquivos" do backup
+- **Linha:** novo interruptor `tr-online` + campo `onlineOk`; `data-pwa-bloco` + `pwa-instalar`;
+  a pasta do backup virou texto fixo (`.mdoffice/backups`) quando não há Tauri
+- **Porquê:** o modo online precisa dizer, na própria tela, que o texto vai para fora — e precisa de
+  um "sim" explícito. O "instalar" não pode ser um mistério na barra do navegador. E a tela de
+  backup não pode oferecer "Trocar pasta" quando o navegador não tem outra raiz: a pasta é a que a
+  pessoa concedeu.
+
+## src/app/pwa.ts (novo)
+
+### 2026-10-21 · feat/app-web · o app instalável (service worker + convite)
+- **Local:** arquivo novo — `iniciarPwa`, `instalarApp`, `podeInstalar`, `jaInstalado`
+- **Linha:** novo arquivo — registro do `/sw.js` só em produção + `beforeinstallprompt`/`appinstalled`
+- **Porquê:** "sem instalador: comando + PWA". O service worker guarda só os arquivos do próprio app
+  (nunca o modelo da tradução nem serviços de fora) e a navegação é rede-primeiro: a versão nova
+  aparece na primeira recarga, e o cache só entra quando o servidor não responde. Em
+  desenvolvimento o registro fica desligado, senão o HMR passaria a servir módulos velhos.
+
+## public/manifest.webmanifest + public/sw.js + public/icones/pwa-*.png (novos)
+
+### 2026-10-21 · feat/app-web · o manifesto, o service worker e os ícones 192/512
+- **Local:** arquivos novos
+- **Linha:** novos arquivos — `display: standalone`, tema `#4F46E5`, ícones 192/512 (any e maskable);
+  o `sw.js` com a casca (`/`, `/index.html`, manifesto) e cache em tempo de uso
+- **Porquê:** são os três requisitos para o Chrome/Edge oferecerem "Instalar". Os PNGs saem do
+  mesmo desenho do ícone do executável (`scripts/gerar-icones.mjs` agora também os gera).
+
+## index.html
+
+### 2026-10-21 · feat/app-web · o vínculo com o PWA
+- **Local:** `<head>`
+- **Linha:** novo `<link rel="manifest">`, `theme-color`, `application-name` e os
+  `apple-mobile-web-app-*`; o `apple-touch-icon` passou a usar o `pwa-192.png`
+- **Porquê:** sem o `<link rel="manifest">` o navegador nem sabe que o site é instalável; o
+  `theme-color` pinta a barra da janela instalada com a cor da marca.
+
+## vite.config.ts
+
+### 2026-10-21 · feat/app-web · o batimento no preview, o preview na 1420 e o wasm sem duplicata
+- **Local:** `batimentoPlugin`, `semOrtDuplicado` (novo), a configuração `preview`
+- **Linha:** `configureServer` → `configureServer` + `configurePreviewServer` (o mesmo `atender`);
+  novo plugin de build que apaga `assets/ort-wasm-*.wasm`; `preview: { port: 1420, strictPort: true }`
+- **Porquê:** `npm run app` serve o `dist/`, e o watchdog precisa do `/__vivo` também ali. O
+  `@huggingface/transformers` embute o onnxruntime e o Vite copiava o mesmo wasm de 26 MB para
+  `assets/` além do `public/ort/`; como o worker sempre aponta o runtime para `/ort/`, a cópia do
+  bundle era peso morto (o `dist` caiu de ~83 MB para ~57 MB).
+
+## scripts/servidor-local.mjs (novo)
+
+### 2026-10-21 · feat/app-web · o comando `npm run app`
+- **Local:** arquivo novo
+- **Linha:** novo arquivo — confere se o `dist/` está velho (mtime de `src`, `public`, HTML e
+  `vite.config`), roda `npm run build` se preciso, escolhe uma porta livre (conectando em 127.0.0.1
+  e ::1) e sobe o `vite preview`
+- **Porquê:** o comando do dia a dia não pode abrir uma versão antiga nem falhar porque a 1420 está
+  ocupada por outro servidor — e o Ctrl+C precisa encerrar o servidor de verdade (o processo é
+  iniciado pelo próprio Node, sem `shell`).
+
+## src/disco/pastaApp.ts (novo)
+
+### 2026-10-21 · feat/app-web · a pasta do app dentro da pasta concedida
+- **Local:** arquivo novo — `subpasta`, `pastaDoApp`, `raizDoDocumento`, `ler/gravar` de texto,
+  JSON e bytes, `existe`, `nomesDeArquivos`, `apagarArquivo`, `mesmosBytes`
+- **Porquê:** no navegador não existe `%LOCALAPPDATA%`: o backup e a lixeira vivem em `.mdoffice/`,
+  ao lado dos documentos. `escreverNoArquivo` copia os bytes para um `Uint8Array` novo porque o
+  `write` do FSA pede `ArrayBuffer` (o TypeScript recusa `SharedArrayBuffer`, com razão).
+
+## src/disco/backup.ts (novo)
+
+### 2026-10-21 · feat/app-web · o backup em `.mdoffice/backups`
+- **Local:** arquivo novo — `gravar`, `listar`, `restaurar`, `limpar`, `esquecer`, `indice`,
+  `sumidos`, `antigos` e o histórico
+- **Linha:** novo arquivo — cada documento vira uma pasta espelhada com as cópias datadas,
+  `.origem.txt` e `.historico/historico.json`
+- **Porquê:** é o mesmo desenho do `commands/backup.rs`, com a raiz ao lado dos documentos em vez da
+  pasta do Windows (o backup viaja junto com o projeto). Uma cópia idêntica à última é ignorada — o
+  autosave salva a cada poucos segundos e sem isso o disco encheria de repetições. O carimbo tem
+  resolução de segundo: duas gravações no mesmo segundo sobrescreviam a mesma cópia (o teste pegou),
+  então o carimbo anda um segundo até achar um nome livre. E o caminho exibido começa com o nome da
+  pasta concedida, que NÃO entra no caminho dentro dela (senão nasceria `Projeto/Projeto/notas.md`).
+
+## src/disco/lixeira.ts (novo)
+
+### 2026-10-21 · feat/app-web · a lixeira em `.mdoffice/lixeira`
+- **Local:** arquivo novo — `mover`, `limpar`
+- **Linha:** novo arquivo — `index.json` com nome, caminho original e quando foi movido; 30 dias
+- **Porquê:** é o `commands/trash.rs` com a pasta ao lado dos documentos. O arquivo é lido uma vez
+  só: os mesmos bytes viram a cópia da lixeira e a remoção do original — se a remoção falhar, o
+  arquivo aparece nos dois lugares, nunca some sem cópia.
+
+## src/ponte/index.ts
+
+### 2026-10-21 · feat/app-web · os comandos de backup e lixeira no navegador
+- **Local:** `comandoDoDisco`
+- **Linha:** novos `case` para `backup_*` (config, raízes, write, list, restore, delete, prune,
+  forget, index, missing, aged e o histórico) e `trash_move`/`trash_purge`
+- **Porquê:** as telas do app continuam chamando os mesmos comandos; o que muda é de onde eles vêm.
+  O app nativo segue usando o Rust, o navegador usa os módulos de `src/disco/`.
+
+## src/backup.ts + src/backupPolicy.ts
+
+### 2026-10-21 · feat/app-web · o backup fala com a ponte e os tipos saíram para o módulo puro
+- **Local:** `backup.ts` (imports, `temBackend`) e `backupPolicy.ts` (novos tipos)
+- **Linha:** `import { invoke } from "@tauri-apps/api/core"` → `import { invoke, emApp } from "./ponte"`;
+  `temBackend()` passou a ser `emApp()`; `BackupFile`/`BackupEntry`/`BackupWriteResult`/`IndexFile`/
+  `BackupIndex` foram para `backupPolicy.ts` e são reexportados
+- **Porquê:** o navegador agora tem backup de verdade — então `temBackend()` não pode significar
+  "existe Rust". Os tipos foram para o módulo sem dependências para o `src/disco/backup.ts` usá-los
+  sem um import circular (`backup.ts` → `ponte` → `disco/backup` → `backup`).
+
+## src/app/app.ts
+
+### 2026-10-21 · feat/app-web · o primeiro backup no navegador
+- **Local:** `askBackup` e `setupBackup`
+- **Linha:** o texto "onde guardar" virou condicional (`emTauri()`); o botão "Escolher pasta…" só
+  aparece no app nativo; o aviso de sucesso diz `.mdoffice/backups` no navegador
+- **Porquê:** a pergunta de primeira execução não pode prometer uma pasta que o navegador não tem —
+  e o backup no navegador é um só (dentro da pasta concedida), não "duas pastas".
+
+## scripts/gerar-icones.mjs
+
+### 2026-10-21 · feat/app-web · os ícones do PWA no gerador
+- **Local:** o fim do script
+- **Linha:** novos `foto(pagina(appIcon, 512), "public/icones/pwa-512.png", 512)` e o de 192
+- **Porquê:** os ícones do PWA saem do mesmo desenho do ícone do executável; gerá-los à mão uma vez
+  deixaria o repositório sem como reproduzi-los.
+
+## package.json
+
+### 2026-10-21 · feat/app-web · `app` virou o site local (e o `test:lamina` duplicado saiu)
+- **Local:** `scripts`
+- **Linha:** `"app": "tauri dev"` → `"app": "node scripts/servidor-local.mjs"`, novo
+  `"app:tauri": "tauri dev"`; a segunda chave `test:lamina` virou `test:lamina-tema`
+- **Porquê:** o modo normal do app deixou de ser a janela do Tauri. O `test:lamina` aparecia duas
+  vezes no mesmo objeto (o segundo vencia em silêncio) e o esbuild avisava a cada build/Vite.

@@ -203,7 +203,7 @@ export async function bytesDoDocumento(path: string): Promise<Uint8Array> {
  * está dentro dela. Quando o arquivo foi aberto sozinho (sem a pasta), o Chromium dá a pasta
  * dele pelo `parent` — é o mesmo lugar, só que sem o registro.
  */
-async function pastaBase(doc: DocumentoRegistrado): Promise<FileSystemDirectoryHandle> {
+export async function pastaBase(doc: DocumentoRegistrado): Promise<FileSystemDirectoryHandle> {
   if (doc.pastaId) {
     const pasta = await buscarPasta(doc.pastaId);
     if (pasta) {

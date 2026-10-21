@@ -14,6 +14,8 @@
 import { invoke as invokeTauri } from "@tauri-apps/api/core";
 import { open as dlgOpenTauri, save as dlgSaveTauri, ask as askTauri } from "@tauri-apps/plugin-dialog";
 import * as disco from "../disco/arquivo";
+import * as backupDisco from "../disco/backup";
+import * as lixeira from "../disco/lixeira";
 import { previaDoArquivo } from "../disco/zip";
 import { buscarMarkdown, listarMarkdown } from "../disco/arvore";
 
@@ -92,6 +94,50 @@ async function comandoDoDisco<T>(cmd: string, args: Record<string, unknown>): Pr
     case "default_docs_dir":
       // o navegador não tem "Documentos": a pasta é a que a pessoa conceder (ou o seletor)
       return "" as T;
+    // ---------- backup em disco (em `.mdoffice/backups`, dentro da pasta escolhida) ----------
+    case "backup_config":
+      return backupDisco.lerConfig() as T;
+    case "backup_save_config":
+      backupDisco.gravarConfig(args.config as Parameters<typeof backupDisco.gravarConfig>[0]);
+      return undefined as T;
+    case "backup_app_root":
+      return backupDisco.pastaDoAppDoBackup() as T;
+    case "backup_prepare_root":
+      return backupDisco.prepararPasta(texto(args.path)) as T;
+    case "backup_roots":
+      return (await backupDisco.pastasAtivas()) as T;
+    case "backup_write":
+      return (await backupDisco.gravar(texto(args.path))) as T;
+    case "backup_list":
+      return (await backupDisco.listar(texto(args.path))) as T;
+    case "backup_restore":
+      return (await backupDisco.restaurar(texto(args.path), texto(args.root), texto(args.name))) as T;
+    case "backup_delete":
+      await backupDisco.apagarCopia(texto(args.path), texto(args.root), texto(args.name));
+      return undefined as T;
+    case "backup_prune":
+      return (await backupDisco.limpar(Number(args.maxCopies) || 0, Number(args.maxDays) || 0)) as T;
+    case "backup_forget":
+      return (await backupDisco.esquecer(texto(args.path))) as T;
+    case "backup_index":
+      return (await backupDisco.indice()) as T;
+    case "backup_missing":
+      return (await backupDisco.sumidos()) as T;
+    case "backup_aged":
+      return (await backupDisco.antigos(Number(args.minDays) || 0)) as T;
+    case "backup_save_history":
+      await backupDisco.salvarHistorico(texto(args.path), texto(args.root), texto(args.json));
+      return undefined as T;
+    case "backup_load_history":
+      return (await backupDisco.lerHistorico(texto(args.path), texto(args.root))) as T;
+    case "backup_clear_history":
+      await backupDisco.apagarHistorico(texto(args.path), texto(args.root));
+      return undefined as T;
+    // ---------- lixeira (em `.mdoffice/lixeira`, dentro da pasta escolhida) ----------
+    case "trash_move":
+      return (await lixeira.mover(texto(args.path))) as T;
+    case "trash_purge":
+      return (await lixeira.limpar()) as T;
     default:
       throw new Error(
         `O comando "${cmd}" só existe no app nativo (ele vive na pasta de dados do app, que o navegador não alcança).`,

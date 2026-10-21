@@ -21,7 +21,7 @@ import * as backup from "../backup";
 
 /** Caixa nativa de escolher pasta (usada pelo diálogo do backup). */
 const pickFoldersNative = () => files.pickFolders();
-import { mostrarNaPasta as revealItemInDir } from "../ponte";
+import { mostrarNaPasta as revealItemInDir, emTauri } from "../ponte";
 import { $, toast, debounce, copyText, loadJSON, toBase64Utf8, h, saveJSON } from "../util";
 import { type Recent } from "./types";
 import { docDaUrl } from "./docNaUrl";
@@ -432,7 +432,7 @@ export class App {
 
   checkWritingSoon = debounce(() => void this.runWritingCheck(), 900);
 
-  /** Manda a configuração atual do backup para o Rust (é ele quem grava). */
+  /** Manda a configuração atual do backup para quem grava (o Rust ou a camada do navegador). */
   async syncBackupConfig(): Promise<void> {
     const s = this.settings;
     const numeros = backup.numerosDoPerfil(s.backupProfile, s.backupCopies, s.backupDays);
@@ -454,7 +454,7 @@ export class App {
    * barra inferior, pergunta na primeira execução e procura originais que sumiram.
    */
   async setupBackup(): Promise<void> {
-    // no navegador (desenvolvimento) não existe pasta para gravar: desliga em silêncio
+    // sem disco (Firefox/Safari): desliga o indicador em silêncio
     if (!backup.temBackend()) {
       const el = document.querySelector<HTMLElement>("#st-backup");
       if (el) el.hidden = true;
@@ -499,8 +499,10 @@ export class App {
         </ul>
         <p class="bk-ask-pasta">Onde guardar?</p>
         <div class="bk-ask-choose">
-          <span class="muted" data-pasta>Nenhuma pasta escolhida (só a pasta do próprio app)</span>
-          <button class="btn small" data-escolher>Escolher pasta…</button>
+          <span class="muted" data-pasta>${
+            emTauri() ? "Nenhuma pasta escolhida (só a pasta do próprio app)" : "Na pasta do projeto: .mdoffice/backups (junto dos documentos)"
+          }</span>
+          ${emTauri() ? '<button class="btn small" data-escolher>Escolher pasta…</button>' : ""}
         </div>
       </div>
       <footer class="wm-foot">
@@ -515,7 +517,9 @@ export class App {
     const q = <T extends HTMLElement>(s: string) => modal.querySelector<T>(s)!;
     let raiz = this.settings.backupRoot;
     const pintar = () => {
-      q("[data-pasta]").textContent = raiz || "Nenhuma pasta escolhida (só a pasta do próprio app)";
+      q("[data-pasta]").textContent = emTauri()
+        ? raiz || "Nenhuma pasta escolhida (só a pasta do próprio app)"
+        : "Na pasta do projeto: .mdoffice/backups (junto dos documentos)";
     };
     pintar();
 
@@ -535,7 +539,7 @@ export class App {
       if (e.target === backdrop) fechar();
     });
 
-    q("[data-escolher]").addEventListener("click", async () => {
+    q("[data-escolher]")?.addEventListener("click", async () => {
       try {
         const escolhida = await pickFoldersNative();
         if (!escolhida.length) return;
@@ -562,7 +566,13 @@ export class App {
         return;
       }
       await this.setupBackup();
-      toast("Backup ativado. As cópias ficam nas duas pastas, mesmo que uma falhe.", "ok", 5000);
+      toast(
+        emTauri()
+          ? "Backup ativado. As cópias ficam nas duas pastas, mesmo que uma falhe."
+          : "Backup ativado em .mdoffice/backups, junto dos documentos.",
+        "ok",
+        5000
+      );
     };
 
     q("[data-sim]").addEventListener("click", () => void gravar(true));

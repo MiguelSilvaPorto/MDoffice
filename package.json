@@ -6,7 +6,8 @@
   "description": "mdOffice - suite de documentos em portugues: Markdown, Word, Excel e PowerPoint, com escrita assistida e IA local",
   "license": "MIT",
   "scripts": {
-    "app": "tauri dev",
+    "app": "node scripts/servidor-local.mjs",
+    "app:tauri": "tauri dev",
     "app:build": "tauri build",
     "dev": "node scripts/copiar-dicionario.mjs && vite",
     "build": "node scripts/copiar-dicionario.mjs && tsc && vite build",
@@ -48,7 +49,7 @@
     "test:layout": "node scripts/testar-layout.mts",
     "test:busca": "node scripts/testar-busca.mjs",
     "test:menus": "node scripts/testar-menus-fita.mjs",
-    "test:lamina": "node scripts/testar-tema-lamina.mjs",
+    "test:lamina-tema": "node scripts/testar-tema-lamina.mjs",
     "test:encaixe": "node scripts/testar-fita-encaixe.mjs",
     "test:estudio": "node scripts/testar-estudio.mjs",
     "test:regioes": "node scripts/testar-regioes.mjs",

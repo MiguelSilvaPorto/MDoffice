@@ -1,14 +1,15 @@
 // Abrir um documento numa janela própria: é o que a aba arrastada para fora vira.
 // No app (Tauri) é uma janela de verdade; no navegador de desenvolvimento, uma janela do navegador.
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { temBackend } from "../backup";
+import { emTauri } from "../ponte";
 import { toast } from "../util";
 import { urlDoDocumento, type PedidoDeJanela } from "./docNaUrl";
 
 /** Abre o documento numa janela independente. Devolve false quando não deu (a aba fica onde está). */
 export function abrirEmNovaJanela(pedido: PedidoDeJanela, titulo: string): boolean {
   const url = urlDoDocumento(pedido);
-  if (temBackend()) {
+  // janela nativa só existe no Tauri; no navegador (inclusive o modo normal) é uma aba nova
+  if (emTauri()) {
     try {
       // a janela nova começa pelo mesmo app; o `?doc=` faz ela abrir SÓ este documento
       // (a sessão das outras janelas não é restaurada nem sobrescrita)

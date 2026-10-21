@@ -5,7 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Ícone da aba do navegador (a janela do Tauri usa o ícone do executável). -->
     <link rel="icon" type="image/png" href="/icones/mdoffice-escuro.png" />
-    <link rel="apple-touch-icon" href="/icones/mdoffice-escuro.png" />
+    <link rel="apple-touch-icon" href="/icones/pwa-192.png" />
+    <!-- PWA: instalar como aplicativo (o "instalador" é o do próprio navegador). -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#4F46E5" />
+    <meta name="application-name" content="mdOffice" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="mdOffice" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>mdOffice — editor de documentos</title>
     <script>
       // Aplica o tema guardado ANTES de qualquer pintura. Sem isto o WebView

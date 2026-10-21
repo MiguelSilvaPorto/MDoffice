@@ -56,29 +56,41 @@ copiar código ou conteúdo.
 
 ## Como rodar
 
-Requisitos: [Rust](https://rustup.rs) (stable) + build tools do Visual Studio (C++),
-[Node.js](https://nodejs.org) 20+ e WebView2 (já vem no Windows 10/11).
+Para o dia a dia: [Node.js](https://nodejs.org) 20+ e **Chrome ou Edge** (o acesso ao disco usa o
+File System Access API, que só o Chromium tem). Não há instalador `.exe` — o "instalar" é o do
+próprio navegador (PWA).
 
 ```bash
-npm install     # dependências do frontend
-npm run app     # abre o app em modo desenvolvimento (Tauri + Vite)
+npm install     # dependências
+npm run app     # constrói (se preciso) e abre em http://localhost:1420
 ```
+
+Na primeira vez, clique em **Abrir arquivo** ou **Adicionar uma pasta como projeto** e escolha a
+pasta dos seus documentos. O app guarda esse acesso e não pergunta de novo; só ele enxerga o que
+está dentro da pasta concedida. O navegador oferece **Instalar** (o ícone na barra de endereço, ou
+**Configurações ▸ Aparência ▸ Instalar**) — o mdOffice passa a abrir em janela própria, sem a barra
+do navegador, e continua abrindo com o servidor parado.
+
+O backup e a lixeira ficam em **`.mdoffice/` dentro da pasta escolhida** (ao lado dos documentos),
+então o backup viaja junto se você copiar a pasta do projeto. Nada do app vai para uma pasta
+escondida do sistema.
+
+> O app nativo (Tauri) continua existindo enquanto a migração para TypeScript não termina:
+> `npm run app:tauri` (exige Rust + WebView2) e `npm run app:build` (instalador).
 
 | Comando | O que faz |
 | --- | --- |
-| `npm run app` | Inicia o app (Tauri + Vite) |
-| `npm run dev` | Roda **no navegador** (sem o Tauri) — e já abre e salva arquivos pela pasta que você concede |
-| `npm run app:build` | Compila o app de produção (instalador no Windows) |
+| `npm run app` | Constrói se preciso e serve o app em `localhost` (modo normal, instalável como PWA) |
+| `npm run dev` | Servidor de desenvolvimento, com recarga automática |
+| `npm run app:tauri` | App nativo (Tauri + Vite) — em extinção |
+| `npm run app:build` | Instalador do app nativo (Windows) |
 | `npm run check` | Checagem de tipos do TypeScript |
 | `npm run build` | Build só do frontend (gera `dist/`) |
 | `npm run test:disco` | Teste da camada de disco do navegador (a prévia do Office, a limpeza do texto e a grade) |
 | `npm run test:log` / `test:backup` / `test:pptx` | Testes do log de alterações, do backup e do `.pptx` |
 
-> **`npm run dev` no navegador**: o app ganha o disco pelo **File System Access API** (Chromium).
-> A primeira vez pede uma pasta — é dela que o app passa a abrir e salvar; o *handle* fica guardado
-> e não é preciso escolher de novo. Só o Chromium (Chrome/Edge) tem essa API; nos outros
-> navegadores o app roda no modo "só texto" (o rascunho fica no navegador). O backup em disco, a
-> lixeira e o painel de armazenamento continuam só no app nativo por enquanto.
+> **Só o Chromium (Chrome/Edge)** tem o File System Access API. Nos outros navegadores o app roda
+> no modo "só texto" (o rascunho fica no navegador) — e o service worker/PWA também não instala.
 
 ## Documentação
 
