@@ -28,6 +28,13 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/disco/arquivo.ts
+
+### 2026-10-21 · fix/md-imagem-colada-e-selecao · imagem em assets/ é encontrada pelo caminho
+- **Local:** novos `arquivoDoCaminho` e `normalizarPartes`; `lerTexto` e `lerComoDataUrl`
+- **Linha:** `const doc = await buscarDocumento(path); … doc.handle.getFile()` → `const handle = await arquivoDoCaminho(path); … handle.getFile()`
+- **Porquê:** o registro (`registro.ts`) só guarda **documentos**. A imagem colada vai para `assets/` ao lado do documento e quem a lê (preview `resolveImages`, exportação `md/docx.ts`, o `.draw.json` do desenho, as imagens do PowerPoint) junta a pasta do **id** do documento com o relativo — `rascunho\assets\imagem-x.png` —, um caminho que nunca esteve no registro: a leitura falhava e o preview marcava "Imagem não encontrada" com o arquivo no disco. `arquivoDoCaminho` tenta o registro primeiro (o caminho de sempre) e, se não achar, casa o caminho com a pasta do id de um documento registrado (a mais funda primeiro; documentos na raiz de uma pasta concedida entram por último) e percorre o resto a partir da pasta real dele (`pastaBase`). Aceita `\` e `/`, ignora `.` e resolve `..`.
+
 ## src/app/keys.ts
 
 ### 2026-10-21 · feat/ghost-duas-palavras · Tab aceita a sugestão antes do navegador

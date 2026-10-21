@@ -152,9 +152,9 @@ export async function salvarComo(nomeSugerido: string, extensoes: string[], desc
 
 /** Lê o texto de um documento (o `path` é o id do registro). */
 export async function lerTexto(path: string): Promise<string> {
-  const doc = await buscarDocumento(path);
-  if (!doc) throw new Error("O documento não está mais disponível.");
-  const arquivo = await doc.handle.getFile();
+  const handle = await arquivoDoCaminho(path);
+  if (!handle) throw new Error("O documento não está mais disponível.");
+  const arquivo = await handle.getFile();
   return await arquivo.text();
 }
 
@@ -193,9 +193,9 @@ async function atualizar(doc: DocumentoRegistrado, bytes: number): Promise<void>
 
 /** Lê um arquivo como data URL (a prévia da imagem). */
 export async function lerComoDataUrl(path: string): Promise<string> {
-  const doc = await buscarDocumento(path);
-  if (!doc) throw new Error("O arquivo não está mais disponível.");
-  const arquivo = await doc.handle.getFile();
+  const handle = await arquivoDoCaminho(path);
+  if (!handle) throw new Error("O arquivo não está mais disponível.");
+  const arquivo = await handle.getFile();
   const buffer = new Uint8Array(await arquivo.arrayBuffer());
   let bin = "";
   for (let i = 0; i < buffer.length; i++) bin += String.fromCharCode(buffer[i]);
@@ -233,6 +233,59 @@ export async function pastaBase(doc: DocumentoRegistrado): Promise<FileSystemDir
   }
   if (doc.handle.parent) return doc.handle.parent;
   throw new Error("A pasta do documento não está mais disponível.");
+}
+
+/**
+ * O arquivo de um caminho: um documento registrado ou um arquivo AO LADO de um documento.
+ *
+ * O registro só conhece documentos (o `.md`, o `.docx`…). A imagem colada vai para a
+ * `assets/` ao lado do documento e o texto aponta para ela pelo caminho relativo — quem a lê
+ * (a pré-visualização, a exportação, o desenho) junta a pasta do id do documento com esse
+ * relativo (`rascunho\assets\imagem-x.png`), e esse caminho nunca esteve no registro: a
+ * imagem existia no disco, mas a prévia dizia "Imagem não encontrada". Aqui o caminho é
+ * casado com a pasta do id de um documento registrado e o resto é percorrido a partir da
+ * pasta real dele (`pastaBase`).
+ */
+export async function arquivoDoCaminho(path: string): Promise<FileSystemFileHandle | null> {
+  const doc = await buscarDocumento(path);
+  if (doc) return doc.handle;
+  const partes = normalizarPartes(path);
+  if (!partes || !partes.length) return null;
+  const alvo = partes.join("/").toLowerCase();
+  // os documentos cuja pasta (no id) contém o caminho — a mais funda primeiro. Um documento na
+  // raiz de uma pasta concedida tem id sem pasta ("notas.md"): ele entra por último.
+  const candidatos = (await listarDocumentos())
+    .map((d) => ({ d, pasta: (normalizarPartes(d.id) ?? []).slice(0, -1) }))
+    .filter(({ pasta }) => pasta.length < partes.length && (pasta.length === 0 || alvo.startsWith(pasta.join("/").toLowerCase() + "/")))
+    .sort((a, b) => b.pasta.length - a.pasta.length);
+  const vistos = new Set<string>();
+  for (const { d, pasta } of candidatos) {
+    const chave = `${d.pastaId ?? ""}|${pasta.join("/")}|${d.relativo.split("/").slice(0, -1).join("/")}`;
+    if (vistos.has(chave)) continue; // vários documentos na mesma pasta: basta tentar uma vez
+    vistos.add(chave);
+    try {
+      let atual = await pastaBase(d);
+      const resto = partes.slice(pasta.length);
+      for (const parte of resto.slice(0, -1)) atual = await atual.getDirectoryHandle(parte);
+      return await atual.getFileHandle(resto[resto.length - 1]);
+    } catch {
+      /* não está ao lado deste documento: tenta o próximo */
+    }
+  }
+  return null;
+}
+
+/** As partes de um caminho (`\` ou `/`, sem `.`; `..` sobe uma pasta), ou null se sair da raiz. */
+function normalizarPartes(path: string): string[] | null {
+  const out: string[] = [];
+  for (const parte of path.replace(/\\/g, "/").split("/")) {
+    if (!parte || parte === ".") continue;
+    if (parte === "..") {
+      if (!out.length) return null;
+      out.pop();
+    } else out.push(parte);
+  }
+  return out;
 }
 
 /** A pasta `assets/` ao lado do documento (criada se preciso). */

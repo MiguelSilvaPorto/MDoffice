@@ -37,6 +37,17 @@
 
 **Frontend**
 
+- **Imagem colada (ou arrastada) aparece na pré-visualização**: no navegador, colar uma imagem
+  num documento Markdown gravava o arquivo em `assets/` ao lado do documento e escrevia
+  `![imagem](assets/imagem-….png)` no texto, mas o preview mostrava **"Imagem não
+  encontrada"**. A imagem estava no disco: quem errava era a leitura. O preview (e também a
+  exportação `.docx`, o desenho ao reabrir para editar e a imagem do PowerPoint) monta o caminho
+  `pasta-do-documento\assets\imagem.png` e pede ao disco, mas o disco do navegador só
+  encontrava **documentos registrados**, e uma imagem em `assets/` nunca é registrada. Agora o
+  disco resolve o caminho a partir da pasta real do documento dono dele (`arquivoDoCaminho`).
+  Conferido no Chrome: na `main`, "Imagem não encontrada: rascunho\assets\imagem-….png" com o
+  arquivo presente em `assets/`; com a correção, a imagem aparece.
+
 - **Preview de Markdown 100% em tempo real durante a escrita**: mapeados e eliminados os pontos que faziam a pré-visualização congelar por 1 a 2 segundos enquanto a pessoa digitava continuamente ou piscar elementos ricos:
   - **Atualização por quadro (`requestAnimationFrame`)**: `updatePreview`, `statsSoon` e `outlineSoon` em `src/app/app.ts` deixaram de usar `debounce` de cauda (`180 ms`, `260 ms` e `400 ms`, que reiniciavam o relógio a cada tecla e bloqueavam qualquer atualização até a pessoa parar de digitar) e passaram a agendar o próximo quadro de animação (~16 ms / 60 fps). A revisão e a autocorreção segura (`checkWritingSoon` e `autoFixSoon`) e o tradutor ao vivo (`controller.ts`) também tiveram a latência reduzida.
   - **Parser síncrono e diff incremental do DOM (`patchDom`)**: `Preview.render()` em `src/md/preview.ts` passou a usar `marked.parse(md, { gfm: true, async: false })` num contêiner de preparação e aplica apenas as diferenças (`patchDom`) sobre os blocos que mudaram, preservando parágrafos, tabelas, listas, blocos de código e a posição de rolagem sem recriar o `innerHTML` inteiro a cada tecla.
