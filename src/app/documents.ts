@@ -121,9 +121,7 @@ export const documentsMethods = {
       }
       // Sem pasta: NADA foi gravado. O selo não pode dizer "Salvo" — e o `saveFailed` faz
       // a barra mostrar "Não salvo" em vez de "Salvando…".
-      const dica = files.emTauri()
-        ? "use Ctrl+S (Salvar como…)"
-        : "escolha a pasta em Configurações ▸ Histórico e salvamento";
+      const dica = "escolha a pasta em Configurações ▸ Histórico e salvamento";
       tab.saveFailed = true;
       tab.statusSaved = `Sem pasta para guardar o rascunho — ${dica}`;
       if (tab === this.tab) this.setSaveState();
@@ -355,7 +353,7 @@ export const documentsMethods = {
       // (Desenhar, colar uma imagem, abrir o histórico) o documento ainda pode ganhar
       // um arquivo: pede para salvar agora — essas ações gravam assets/ ao lado dele.
       // O autosave (`silencioso`) nunca abre seletor: ele espera a próxima rodada.
-      if (!silencioso && files.emApp() && !files.emTauri()) {
+      if (!silencioso && files.emApp()) {
         if (await this.save(false)) return true;
         return false;
       }

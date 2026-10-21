@@ -6,7 +6,6 @@
 // que a pessoa trocar fica em `mdc.atalhos`.
 
 import type { App } from "./app";
-import { emTauri } from "../ponte";
 import { loadJSON, saveJSON } from "../util";
 
 export interface Atalho {
@@ -17,10 +16,9 @@ export interface Atalho {
   /** tecla de fábrica, no formato "Ctrl+Shift+T" */
   padrao: string;
   /**
-   * Tecla de fábrica quando o app roda numa aba do navegador (e não no Tauri).
-   * Lá Ctrl+T, Ctrl+W e Ctrl+Tab pertencem ao navegador — ele abre/fecha/troca as
-   * abas dele antes de o app ver a tecla, e `preventDefault` não segura. Anunciar
-   * a tecla do Tauri nesse modo seria prometer o que não funciona.
+   * Tecla de fábrica no navegador: Ctrl+T, Ctrl+W e Ctrl+Tab pertencem a ele — que abre,
+   * fecha e troca as abas dele antes de o app ver a tecla, e `preventDefault` não segura.
+   * Anunciar essas teclas seria prometer o que não funciona.
    */
   padraoNavegador?: string;
   /** o que o atalho faz */
@@ -47,10 +45,9 @@ export const GRUPOS = ["Abas", "Arquivo", "Escrita", "Formatação", "Janela e a
 export const ATALHOS: Atalho[] = [
   // ---------------------------------------------------------------- abas
   //
-  // No navegador, Ctrl+T/Ctrl+W/Ctrl+Tab/Ctrl+1…9 são do PRÓPRIO navegador: ele
-  // abre, fecha e troca as abas dele antes de o app ver a tecla, e `preventDefault`
-  // não segura. Por isso as abas têm um padrão alternativo nesse modo (`padraoNavegador`,
-  // com Alt no meio) — o Tauri continua com as teclas de sempre.
+  // Ctrl+T/Ctrl+W/Ctrl+Tab/Ctrl+1…9 são do PRÓPRIO navegador: ele abre, fecha e troca as
+  // abas dele antes de o app ver a tecla, e `preventDefault` não segura. Por isso as abas
+  // usam um padrão alternativo (`padraoNavegador`, com Alt no meio).
   {
     id: "nova-aba",
     grupo: "Abas",
@@ -212,7 +209,7 @@ function porId(id: string): Atalho | undefined {
 function padraoDe(id: string): string {
   const a = porId(id);
   if (!a) return "";
-  return !emTauri() && a.padraoNavegador ? a.padraoNavegador : a.padrao;
+  return a.padraoNavegador ?? a.padrao;
 }
 
 /** A tecla em vigor (o que a pessoa escolheu ou, sem escolha, a de fábrica). */

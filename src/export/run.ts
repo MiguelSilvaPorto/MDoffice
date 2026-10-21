@@ -1,6 +1,6 @@
 // Executa a exportação escolhida (traduz, gera o arquivo e salva).
 
-import { ask } from "@tauri-apps/plugin-dialog";
+import { perguntar as ask } from "../ponte";
 import * as files from "../files";
 import { type TranslatedDoc } from "../translate/controller";
 import { buildDocx } from "../md/docx";
@@ -42,7 +42,7 @@ export async function runExport(ctx: ExportCtx, prefs: ExportPrefs, say: (t: str
     if (doc.incomplete) {
       const proceed = await ask(
         "Alguns trechos não puderam ser traduzidos (limite do tradutor ou falta de conexão). Exportar assim mesmo, deixando esses trechos em português?",
-        { title: "mdOffice", kind: "warning", okLabel: "Exportar assim", cancelLabel: "Cancelar" }
+        { title: "mdOffice", kind: "warning" }
       );
       if (!proceed) return false;
     }

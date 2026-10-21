@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Ícone da aba do navegador (a janela do Tauri usa o ícone do executável). -->
+    <!-- Ícone da aba do navegador (o app instalado usa os ícones do PWA). -->
     <link rel="icon" type="image/png" href="/icones/mdoffice-escuro.png" />
     <link rel="apple-touch-icon" href="/icones/pwa-192.png" />
     <!-- PWA: instalar como aplicativo (o "instalador" é o do próprio navegador). -->
@@ -242,8 +242,8 @@
     </svg>
 
     <div id="app">
-      <header id="topbar" data-tauri-drag-region>
-        <div class="tb-left" data-tauri-drag-region>
+      <header id="topbar">
+        <div class="tb-left">
           <button class="btn icon tb-icon-btn" id="tb-sidebar" data-act="toggle-sidebar" title="Mostrar/ocultar painel lateral"><svg class="ic"><use href="#i-sidebar"/></svg></button>
           <div class="tb-quick-actions" role="group" aria-label="Ações de arquivo">
             <button class="btn icon tb-icon-btn" data-act="new" title="Novo documento"><svg class="ic"><use href="#i-new"/></svg></button>
@@ -268,7 +268,7 @@
           </div>
         </div>
 
-        <div class="tb-center" data-tauri-drag-region>
+        <div class="tb-center">
           <!-- A busca de funções: uma pílula pequena que cresce e vira a barra de
                verdade quando aberta. Não é modal — o app não escurece. -->
           <div class="busca" id="busca">
@@ -279,7 +279,7 @@
           </div>
         </div>
 
-        <div class="tb-right" data-tauri-drag-region>
+        <div class="tb-right">
           <div class="tb-tools">
             <button class="btn toggle tb-pill-btn" id="btn-translate" data-act="translate-toggle" title="Tradução automática PT-BR → inglês (Ctrl+Alt+T)"><svg class="ic"><use href="#i-globe"/></svg><span>Traduzir</span></button>
             <div class="split-btn tb-split-draw">

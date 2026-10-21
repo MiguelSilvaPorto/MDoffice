@@ -1,14 +1,15 @@
 // Teste do salvamento automático: coalescência/single-flight da fila (com um "disco
-// lento" simulado) e os contratos do Rust que tiram o I/O da interface.
+// lento" simulado) e os contratos da camada de disco do navegador.
 //
 // Por que existe: em pasta de rede (UNC/SMB) cada gravação custa centenas de ms a
-// segundos. O autosave antigo (a) rodava o comando síncrono do Rust na thread principal
-// — travando a janela — e (b) descartava o pedido que chegasse durante uma gravação,
-// deixando a última parte do texto sem salvar. Este teste prende as duas correções.
+// segundos. O autosave antigo (a) rodava a gravação na thread principal — travando a
+// janela — e (b) descartava o pedido que chegasse durante uma gravação, deixando a última
+// parte do texto sem salvar. Este teste prende as duas correções.
 //
-// O que NÃO dá para provar aqui: a latência real de um share SMB (não há servidor de
-// rede no ambiente). A fila é testada com um disco artificialmente lento e o Rust é
-// conferido por contrato (atributo `#[tauri::command(async)]` + leitura única).
+// Até a W3 a segunda metade conferia o Rust (`#[tauri::command(async)]`, leitura única).
+// Agora o contrato é da camada do navegador: o autosave usa o disco quando existe
+// (`temDisco`, não "é o Tauri"), a gravação é feita num handle e o backup compara antes de
+// duplicar. O comportamento de ponta a ponta é exercitado no navegador (`npm run app`).
 //
 // Roda com: npm run test:salvamento
 import { readFileSync } from "node:fs";
@@ -153,94 +154,43 @@ console.log("fila do salvamento: single-flight e coalescência");
   checa("a última frase termina gravada", gravados[gravados.length - 1] === texto, JSON.stringify(gravados));
 }
 
-// ---------------------------------------------------------------- contratos do Rust
+// ---------------------------------------------------------------- a camada de disco do navegador
 
-console.log("\nRust: I/O fora da thread principal (comandos `async`)");
+console.log("\ndisco do navegador: o autosave grava de verdade");
 
-const files = ler("src-tauri/src/commands/files.rs");
-const backupRs = ler("src-tauri/src/commands/backup.rs");
-
-for (const alvo of [
-  ["load_text", files],
-  ["save_text", files],
-  ["save_binary", files],
-  ["read_file_data_url", files],
-  ["rename_file", files],
-  ["create_folder", files],
-  ["rename_folder", files],
-  ["delete_folder", files],
-  ["move_file", files],
-  ["unique_md_path", files],
-] as const) {
-  const [cmd, fonte] = alvo;
-  checa(
-    `files::${cmd} fora da main thread`,
-    new RegExp(`#\\[tauri::command\\(async\\)\\]\\r?\\npub fn ${cmd}\\(`).test(fonte),
-    "sem #[tauri::command(async)]: o Tauri roda este comando na thread principal"
-  );
-}
-checa(
-  "todos os comandos de files.rs são async",
-  (files.match(/#\[tauri::command\(async\)\]\r?\npub fn /g) ?? []).length === 11,
-  `encontrados: ${(files.match(/#\[tauri::command\(async\)\]\r?\npub fn /g) ?? []).length}`
-);
-
-const deBackup = (backupRs.match(/#\[tauri::command\(async\)\]\r?\npub fn backup_/g) ?? []).length;
-checa("os comandos de backup também saíram da main thread", deBackup >= 17, `encontrados: ${deBackup}`);
-for (const cmd of ["backup_write", "backup_list", "backup_missing", "backup_restore"]) {
-  checa(
-    `backup::${cmd} fora da main thread`,
-    new RegExp(`#\\[tauri::command\\(async\\)\\]\\r?\\npub fn ${cmd}\\(`).test(backupRs)
-  );
-}
-
-// ---------------------------------------------------------------- segurança preservada
-
-console.log("\nsegurança: proteção, pasta e leitura única");
+const arquivo = ler("src/disco/arquivo.ts");
+const documents = ler("src/app/documents.ts");
+const backupDisco = ler("src/disco/backup.ts");
+const ponte = ler("src/ponte/index.ts");
 
 checa(
-  "save_text protege antes de gravar",
-  /protect_before_write\(&app, &path, content\.as_bytes\(\)\)[\s\S]{0,120}gravar_bytes\(/.test(files),
-  "a proteção antes de sobrescrever sumiu do caminho do salvamento"
+  "o autosave pergunta 'tem disco?' (e não 'é o Tauri?')",
+  documents.includes("files.temDisco()") && !documents.includes("files.emTauri()"),
+  "o ramo do navegador voltou a mandar o texto só para o localStorage"
 );
 checa(
-  "save_binary protege antes de gravar",
-  /protect_before_write\(&app, &path, &bytes\)[\s\S]{0,120}gravar_bytes\(/.test(files),
-  "a proteção antes de sobrescrever sumiu do caminho do salvamento binário"
+  "a gravação passa pelo handle (createWritable)",
+  arquivo.includes("createWritable") && arquivo.includes("gravarNoHandle"),
+  "a gravação do arquivo sumiu"
 );
 checa(
-  "a gravação não faz exists() antes de salvar (uma ida a menos por salvamento)",
-  /pub\(crate\) fn gravar_bytes/.test(files) && !/!dir\.exists\(\)/.test(files),
-  "o exists() por salvamento voltou"
-);
-checa(
-  "a pasta é criada quando falta (NotFound) e a gravação tenta de novo",
-  /ErrorKind::NotFound[\s\S]{0,400}create_dir_all\(dir\)[\s\S]{0,400}fs::write\(p, bytes\)/.test(files),
-  "sem recuperação de pasta inexistente"
-);
-checa(
-  "a proteção ANTES de sobrescrever continua existindo no backup.rs",
-  /write_backup_of_bytes/.test(backupRs) && /decidir_protecao/.test(backupRs),
-  "a proteção por conteúdo mudou de lugar ou sumiu"
-);
-{
-  const trecho = backupRs.slice(backupRs.indexOf("fn gravar_copia_com"), backupRs.indexOf("fn write_copy_atomic"));
-  checa(
-    "a cópia de backup lê o documento uma única vez",
-    /let bytes = match ler_original\(&src\)/.test(trecho),
-    "a cópia voltou a ler o original por raiz"
-  );
-  checa(
-    "a cópia não usa mais fs::copy do original (leitura duplicada em rede)",
-    trecho.length > 0 && !trecho.includes("fs::copy"),
-    "fs::copy do original ainda está no miolo da cópia"
-  );
-}
-checa(
-  "o backup continua pulando quando o conteúdo não mudou",
-  /same_bytes_with\(&bytes,/.test(backupRs),
+  "o backup compara antes de duplicar",
+  backupDisco.includes("mesmosBytes"),
   "a comparação com a última cópia sumiu"
 );
+checa(
+  "a proteção do estado anterior continua existindo",
+  backupDisco.includes(".orig"),
+  "a proteção por conteúdo sumiu"
+);
+checa(
+  "o rascunho de documento novo existe (draft_path -> rascunhos)",
+  ponte.includes('case "draft_path"') && ler("src/disco/rascunhos.ts").includes("export async function criar"),
+  "o documento novo não tem onde ser guardado"
+);
+for (const cmd of ["save_text", "save_binary", "read_file_data_url", "load_text"]) {
+  checa(`ponte atende ${cmd}`, ponte.includes(`case "${cmd}"`), "comando sem tradução");
+}
 
 // ---------------------------------------------------------------- arquivo do Office do usuário
 

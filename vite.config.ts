@@ -126,9 +126,9 @@ function semOrtDuplicado(): Plugin {
 /** O servidor está rodando dentro de uma worktree? (muda o padrão de `watch.ignored`) */
 const emWorktree = /[\\/]\.worktrees[\\/][^\\/]+$/.test(process.cwd());
 
-// Configuração pensada para o Tauri 2:
-// - porta fixa 1420 (definida em tauri.conf.json > build.devUrl)
-// - não limpar o terminal para não esconder logs do cargo
+// Configuração do app (site local, PWA): a porta do `npm run app`/dev é fixa (1420) para o
+// endereço não mudar entre uma abertura e outra (o service worker e os handles do disco são
+// por origem).
 export default defineConfig({
   clearScreen: false,
   plugins: [tempSavePlugin(), ortPlugin(), batimentoPlugin(), semOrtDuplicado()],
@@ -160,8 +160,6 @@ export default defineConfig({
       // custa pouco e deixa o ciclo editar→ver confiável.
       usePolling: true,
       interval: 400,
-      // `src-tauri` é do Rust (quem recompila é o cargo).
-      //
       // `.worktrees` e `dist` ficam de fora porque o servidor de dev não tem nada
       // a ver com eles e a observação atrapalha os dois lados:
       // - o `dist` de uma worktree carrega o modelo de IA (270 MB) e, quando a
@@ -175,7 +173,6 @@ export default defineConfig({
       // server passa a servir módulos velhos (HMR nunca chega). Nesse caso a
       // exclusão sai: só a worktree atual é observada.
       ignored: [
-        "**/src-tauri/**",
         "**/dist/**",
         // estáticos grandes (dicionário, n-gramas, motor da tradução): não mudam em uso e o
         // polling não precisa varrê-los a cada 400 ms

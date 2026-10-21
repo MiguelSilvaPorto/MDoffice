@@ -1,5 +1,5 @@
-// Gera a marca do mdOffice: o SVG (fonte), o app-icon.png e os dois PNGs da tela de
-// Configurações/Início, e regenera os ícones do Tauri (src-tauri/icons) e do PWA.
+// Gera a marca do mdOffice: o SVG (fonte), o app-icon.png, os dois PNGs da tela de
+// Configurações/Início e os ícones do PWA (192 e 512).
 //
 // O desenho reflete o que o mdOffice se tornou: uma suíte completa de documentos
 // (Documentos, Planilhas, Apresentações e Markdown) com escrita assistida e IA local —
@@ -7,8 +7,7 @@
 // lâmina com gráfico à direita em rosa-rubi e folha central de escrita com o monograma "M",
 // linhas de documento e a centelha de IA em fúcsia/violeta).
 //
-// Uso: node scripts/gerar-icones.mjs
-//      (precisa do Chrome instalado; depois roda `tauri icon` para os tamanhos do Windows/macOS)
+// Uso: node scripts/gerar-icones.mjs  (precisa do Chrome instalado)
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -118,7 +117,4 @@ foto(pagina(placa("#100E16", "#2D273B", "rgba(167,139,250,.32)", "#F8F7FC"), 256
 // PWA: o Chrome/Edge pedem 192 e 512 para instalar o app (o mesmo desenho do ícone do .exe).
 foto(pagina(appIcon, 512), join("public", "icones", "pwa-512.png"), 512);
 foto(pagina(appIcon, 192), join("public", "icones", "pwa-192.png"), 192);
-
-execFileSync("npx", ["tauri", "icon", "app-icon.png"], { cwd: raiz, stdio: "inherit", shell: true });
-console.log("ok  src-tauri/icons regenerado");
-
+console.log("ok  public/icones (PWA)");

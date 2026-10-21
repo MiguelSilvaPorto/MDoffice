@@ -894,9 +894,9 @@ export class Sidebar {
   /**
    * Arrastar um documento até uma pasta para movê-lo.
    *
-   * O arrasto do Tauri (soltar um arquivo do sistema na janela) exige o `dragDropEnabled`, que
-   * desliga o HTML5 drag-and-drop no Windows — então o gesto é feito à mão com eventos de
-   * ponteiro: um limiar de 5 px separa o clique (abre o documento) do arrasto.
+   * O gesto é feito à mão com eventos de PONTEIRO: o arrastar-e-soltar do HTML disputa com
+   * o arrastar de arquivos do sistema (que entrega os arquivos soltos na janela), então um
+   * limiar de 5 px separa o clique (abre o documento) do arrasto.
    */
   private iniciarArrasto(e: PointerEvent, path: string): void {
     if (e.button !== 0 || e.pointerType === "touch") return; // só mouse/caneta; o toque rola a lista

@@ -24,6 +24,7 @@ import {
 } from "../backupPolicy";
 import { caminhoDeExibicao } from "./arquivo";
 import { buscarDocumento, listarDocumentos, listarPastas, type DocumentoRegistrado } from "./registro";
+import { originaisNaLixeira } from "./lixeira";
 import {
   apagarArquivo,
   escreverNoArquivo,
@@ -450,13 +451,16 @@ export async function sumidos(): Promise<BackupEntry[]> {
   const docs = await listarDocumentos();
   const vivos = new Set<string>();
   for (const doc of docs) vivos.add(await caminhoDeExibicao(doc.id));
+  // um documento movido para a lixeira saiu do registro DE PROPÓSITO: não é "sumido"
+  const naLixeira = await originaisNaLixeira();
   const fora: BackupEntry[] = [];
   for (const concedida of await listarPastas()) {
     const raiz = await subpastaSeExistir(concedida.handle, [PASTA_APP, PASTA]);
     if (!raiz) continue;
     const idx = await lerIndice(raiz);
     for (const entrada of Object.values(idx.docs)) {
-      if (vivos.has(entrada.original)) continue;
+      const chave = entrada.original.toLowerCase();
+      if (vivos.has(entrada.original) || naLixeira.has(chave)) continue;
       const dir = await subpastaSeExistir(raiz, segmentos(entrada.original));
       const copies = dir ? await listarCopias(dir) : entrada.copies;
       if (!copies.length) continue;

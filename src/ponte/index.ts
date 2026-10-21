@@ -1,33 +1,25 @@
-// A PONTE com o disco: o único lugar que sabe se o app está no Tauri ou no navegador.
+// A PONTE com o disco do app.
 //
-// No app nativo (Tauri) o disco é do backend Rust: o `invoke` manda o comando e o caminho é
-// um caminho de verdade (`C:\Docs\notas.md`). No navegador o disco é do File System Access
-// API: o "caminho" é o **id** do registro (`src/disco/registro.ts`) e o arquivo é um handle.
+// O mdOffice é um site local (PWA): o disco é o do **File System Access API** (Chromium), a
+// pessoa concede uma pasta e o app trabalha nos handles dela. O "caminho" de um documento é
+// o **id** do registro (`src/disco/registro.ts`) — um caminho relativo legível, como
+// `notas.md` — e o arquivo é o handle.
 //
-// O app **não sabe** de nada disso: `src/files.ts`, `src/backup.ts`, `src/storage.ts` e
-// `src/preview.ts` chamam as MESMAS funções (o `invoke` e os diálogos) e a ponte traduz.
-//
-// O que só existe no app nativo (o backup em disco, a lixeira na pasta de dados e o painel de
-// armazenamento) responde com um erro claro em vez de fingir que funcionou — quem chama já
-// desliga essas telas quando não há backend (`temBackend`).
-
-import { invoke as invokeTauri } from "@tauri-apps/api/core";
-import { open as dlgOpenTauri, save as dlgSaveTauri, ask as askTauri } from "@tauri-apps/plugin-dialog";
+// Até a W3 havia um segundo caminho (o backend Rust do Tauri, com caminhos absolutos); ele
+// saiu, e a ponte ficou como a **única porta** entre o app e o disco. O app continua sem
+// saber disso: `src/files.ts`, `src/backup.ts` e `src/storage.ts` chamam as mesmas funções
+// (o `invoke` e os diálogos) e a ponte traduz.
 import * as disco from "../disco/arquivo";
 import * as backupDisco from "../disco/backup";
 import * as lixeira from "../disco/lixeira";
 import * as rascunhos from "../disco/rascunhos";
+import * as pacote from "../disco/pacote";
 import { previaDoArquivo } from "../disco/zip";
 import { buscarMarkdown, listarMarkdown } from "../disco/arvore";
 
-/** O app está no Tauri (o backend Rust)? */
-export function emTauri(): boolean {
-  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-}
-
-/** O app tem acesso ao disco? (o Tauri, ou o navegador com o File System Access API) */
+/** O app tem acesso ao disco? (o Chromium tem; Firefox/Safari rodam no modo "só texto") */
 export function temDisco(): boolean {
-  return emTauri() || disco.temDisco();
+  return disco.temDisco();
 }
 
 /** O app é o de verdade (com disco), e não o modo "só texto" do navegador sem o FSA? */
@@ -39,16 +31,14 @@ export function emApp(): boolean {
 // os comandos
 // ---------------------------------------------------------------------------
 
-/** O `invoke` do app: no Tauri vai para o Rust; no navegador, para a camada de disco. */
+/** O `invoke` do app: traduz o comando para a camada de disco. */
 export async function invoke<T>(cmd: string, args: Record<string, unknown> = {}): Promise<T> {
-  if (emTauri()) return await invokeTauri<T>(cmd, args);
   return await comandoDoDisco<T>(cmd, args);
 }
 
 /**
- * Os comandos que o navegador sabe fazer. Os que não estão aqui (o backup em disco, a lixeira
- * e o painel de armazenamento, que vivem na pasta de dados do app) só existem no Tauri — quem
- * chama já os desliga por `temBackend()`, e se algum escapar o erro diz o porquê.
+ * Os comandos que o app sabe fazer. O que não está aqui não existe mais (era do backend
+ * Rust); se algum escapar, o erro diz o porquê em vez de fingir que funcionou.
  */
 async function comandoDoDisco<T>(cmd: string, args: Record<string, unknown>): Promise<T> {
   const texto = (v: unknown) => String(v ?? "");
@@ -92,6 +82,8 @@ async function comandoDoDisco<T>(cmd: string, args: Record<string, unknown>): Pr
       return (await disco.atualizarAsset(texto(args.doc), texto(args.relative), texto(args.data))) as T;
     case "copy_assets":
       return (await disco.copiarAssets(texto(args.fromDoc), texto(args.toDoc))) as T;
+    case "export_portable_bundle":
+      return (await pacote.exportar(texto(args.docPath), texto(args.content), texto(args.outputPath))) as T;
     case "default_docs_dir":
       // o navegador não tem "Documentos": a pasta é a que a pessoa conceder (ou o seletor)
       return "" as T;
@@ -158,7 +150,7 @@ async function comandoDoDisco<T>(cmd: string, args: Record<string, unknown>): Pr
       return (await lixeira.limpar()) as T;
     default:
       throw new Error(
-        `O comando "${cmd}" só existe no app nativo (ele vive na pasta de dados do app, que o navegador não alcança).`,
+        `O comando "${cmd}" não existe: ele era do backend Rust, que saiu quando o app virou 100% TypeScript.`,
       );
   }
 }
@@ -178,7 +170,7 @@ function slugify(entrada: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// os diálogos nativos
+// os diálogos
 // ---------------------------------------------------------------------------
 
 export interface OpcoesAbrir {
@@ -192,9 +184,8 @@ export interface OpcoesSalvar {
   filters?: { name: string; extensions: string[] }[];
 }
 
-/** "Abrir…": no Tauri é o diálogo do Rust; no navegador é o seletor do File System Access. */
+/** "Abrir…": o seletor do File System Access. */
 export async function abrirDialogo(opts: OpcoesAbrir): Promise<string | string[] | null> {
-  if (emTauri()) return await dlgOpenTauri(opts);
   if (opts.directory) {
     const id = await disco.escolherPasta();
     return id;
@@ -206,9 +197,8 @@ export async function abrirDialogo(opts: OpcoesAbrir): Promise<string | string[]
   return id;
 }
 
-/** "Salvar como…": no navegador, o seletor de arquivo do File System Access. */
+/** "Salvar como…": o seletor de arquivo do File System Access. */
 export async function salvarDialogo(opts: OpcoesSalvar): Promise<string | null> {
-  if (emTauri()) return await dlgSaveTauri(opts);
   const exts = (opts.filters ?? []).flatMap((f) => f.extensions);
   const descricao = opts.filters?.[0]?.name ?? "Documentos";
   const sugerido = (opts.defaultPath ?? "documento.md").split(/[\\/]/).pop() ?? "documento.md";
@@ -220,25 +210,28 @@ export async function salvarDialogo(opts: OpcoesSalvar): Promise<string | null> 
 /** A pergunta de confirmação (o "salvar alterações?" e o "apagar?"). */
 export async function perguntar(mensagem: string, opcoes?: string | { title?: string; kind?: string }): Promise<boolean> {
   const titulo = typeof opcoes === "string" ? opcoes : (opcoes?.title ?? "mdOffice");
-  if (emTauri()) return await askTauri(mensagem, { title: titulo });
   return window.confirm(`${titulo}\n\n${mensagem}`);
 }
 
-/** Mostra o arquivo na pasta — só existe no app nativo (o navegador não expõe caminho). */
-export async function mostrarNaPasta(caminho: string): Promise<void> {
-  if (!emTauri()) {
-    throw new Error("No navegador não há como abrir a pasta do arquivo.");
-  }
-  const { revealItemInDir } = await import("@tauri-apps/plugin-opener");
-  await revealItemInDir(caminho);
+/**
+ * "Mostrar na pasta": o navegador não expõe o caminho no sistema de arquivos — quem chama
+ * mostra um aviso em vez de sumir. A pasta é a que a pessoa concedeu ao app (ou o Explorer).
+ */
+export async function mostrarNaPasta(_caminho: string): Promise<void> {
+  throw new Error("O navegador não abre a pasta do arquivo — use o Explorer.");
 }
 
-/** Abre um link no navegador do sistema (ou numa aba, quando já é o navegador). */
+/** Abre um link numa aba nova. */
 export async function abrirUrl(url: string): Promise<void> {
-  if (emTauri()) {
-    const { openUrl } = await import("@tauri-apps/plugin-opener");
-    await openUrl(url);
-    return;
-  }
   window.open(url, "_blank", "noopener");
+}
+
+/**
+ * Adota um arquivo que chegou por arrastar-e-soltar.
+ *
+ * O Chromium entrega um **handle** de verdade no `drop` (`getAsFileSystemHandle`): com ele o
+ * documento abre para leitura e gravação, como se tivesse sido escolhido no "Abrir…".
+ */
+export async function adotarArquivo(handle: FileSystemFileHandle): Promise<string> {
+  return await disco.adotarArquivo(handle);
 }

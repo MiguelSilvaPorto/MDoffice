@@ -28,6 +28,21 @@ export function temDisco(): boolean {
   return typeof window !== "undefined" && typeof window.showDirectoryPicker === "function";
 }
 
+/**
+ * Adota um arquivo que chegou por arrastar-e-soltar.
+ *
+ * O Chromium entrega um handle de verdade no `drop`; o registro dá a ele um id, e o app
+ * passa a abrir/gravar o arquivo como qualquer outro. Quando o arquivo está dentro de uma
+ * pasta já concedida, o caminho relativo passa a ser o de dentro dela (o backup e a lixeira
+ * ficam no `.mdoffice` certo); quando não está, fica só o nome (e a pasta do arquivo é a
+ * que o Chromium informa pelo `parent`).
+ */
+export async function adotarArquivo(handle: FileSystemFileHandle): Promise<string> {
+  const pasta = await pastaPadrao();
+  const doc = await registrarDocumento(handle, pasta?.id ?? "", handle.name);
+  return doc.id;
+}
+
 /** O caminho que a pessoa vê: a pasta concedida + o caminho dentro dela ("Projeto/notas.md"). */
 export async function caminhoDeExibicao(path: string): Promise<string> {
   const doc = await buscarDocumento(path);

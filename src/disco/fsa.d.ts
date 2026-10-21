@@ -22,6 +22,14 @@ interface FileSystemDirectoryHandle {
   values(): AsyncIterableIterator<FileSystemHandle>;
 }
 
+interface DataTransferItem {
+  /**
+   * O handle do arquivo arrastado (só no Chromium, e só quando o item veio do sistema de
+   * arquivos). É o que permite abrir e gravar o documento solto na janela.
+   */
+  getAsFileSystemHandle?(): Promise<FileSystemHandle | null>;
+}
+
 interface FilePickerAcceptType {
   description?: string;
   /** o tipo do arquivo (extensão) → os tipos MIME aceitos */

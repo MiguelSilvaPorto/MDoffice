@@ -4,18 +4,17 @@ import * as backup from "./backup";
 import {
   pickFolders,
   listDrafts,
-  draftsFolder,
   deleteDraft,
   draftFolderInfo,
   setDraftFolder,
   clearDraftFolder,
   type DraftFolder,
 } from "./files";
-import { mostrarNaPasta as revealItemInDir, perguntar as ask, emTauri } from "./ponte";
+import { perguntar as ask } from "./ponte";
 import { podeInstalar, jaInstalado, instalarApp } from "./app/pwa";
 import { resumoVersoes, limparVersoesTudo } from "./history";
 import { resumoLog, limparLogTudo } from "./snapshots";
-import { relatorio as relatorioArmazenamento, removerLegado, limiteDoCache, definirLimiteDoCache } from "./storage";
+import { relatorio as relatorioArmazenamento } from "./storage";
 import { clearGhostMemory } from "./broker/ghost/memory";
 import { limparAprendizado } from "./broker/aprendizado";
 import { limparTermos, termosAprendidos, termosInsistentes } from "./broker/personal/termos";
@@ -200,15 +199,6 @@ const OPCOES_MODELO: [string, string][] = [
   ["alto", "Alto (160)"],
 ];
 
-/** Tetos do cache do WebView, em MB (0 = automático). Os mesmos do lado Rust (`storage.rs`). */
-const LIMITES_DE_CACHE: [string, string][] = [
-  ["0", "Automático"],
-  ["512", "512 MB"],
-  ["1024", "1 GB"],
-  ["2048", "2 GB"],
-  ["4096", "4 GB"],
-];
-
 export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section: SettingsSection = "escrita"): void {
   // Se a página for redesenhada no meio de uma troca de tecla, a escuta antiga não
   // vale mais — e deixá-la ligada calaria os atalhos do app inteiro.
@@ -216,7 +206,6 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   const s = ctx.settings();
   const tr = ctx.translation.settings;
   const off = ctx.translation.offline;
-  const nativo = emTauri();
   host.textContent = "";
 
   host.innerHTML = `
@@ -411,47 +400,30 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
           <div class="st-list">
             <div class="st-row">
               ${rowIcon("i-folder-plus")}
-              <span class="st-text"><b>${nativo ? "Pasta escolhida por você" : "Pasta dos documentos"}</b><small data-backup-root>—</small></span>
-              ${
-                nativo
-                  ? `<span class="st-btns">
-                <button class="btn small st-btn" data-act="backup-dir">Trocar…</button>
-                <button class="btn small st-btn" data-act="backup-open">Abrir</button>
-              </span>`
-                  : ""
-              }
+              <span class="st-text"><b>Pasta dos documentos</b><small data-backup-root>—</small></span>
             </div>
             <div class="st-row">
               ${rowIcon("i-folder")}
-              <span class="st-text"><b>${nativo ? "Pasta do app" : "Backup e lixeira"}</b><small data-backup-app>—</small></span>
-              ${nativo ? `<span class="st-btns"><button class="btn small st-btn" data-act="backup-open-app">Abrir</button></span>` : ""}
+              <span class="st-text"><b>Backup e lixeira</b><small data-backup-app>—</small></span>
             </div>
             <div class="st-row">
               ${rowIcon("i-doc")}
               <span class="st-text"><b>Log de alterações exportado</b><small>Vai junto de cada cópia, em <code>&lt;documento&gt;/.historico/historico.json</code> — sobrevive se os dados do app forem limpos.</small></span>
             </div>
-            <p class="st-list-note">Versões e alterações ficam no banco local do app (não são arquivos soltos) e se recuperam pelas abas acima. ${
-              nativo
-                ? "As cópias em disco são arquivos datados de verdade, nas duas pastas."
-                : "As cópias em disco são arquivos datados de verdade, dentro de .mdoffice/ na pasta dos documentos."
-            }</p>
+            <p class="st-list-note">Versões e alterações ficam no banco local do app (não são arquivos soltos) e se recuperam pelas abas acima. As cópias em disco são arquivos datados de verdade, dentro de .mdoffice/ na pasta dos documentos.</p>
           </div>
 
           <h4 class="st-group">Salvamento</h4>
           <div class="st-list">
             ${toggle("autosave", "Salvamento automático dos documentos novos", "Cada documento tem o seu salvamento automático: o botão no topo do app liga e desliga o documento que está à vista. Aqui se escolhe o que os documentos NOVOS vão herdar. Regrava rascunhos do app e documentos MD* enquanto você escreve; arquivos .docx, .pptx e .xlsx são gravados só no Ctrl+S (o selo da barra mostra “Não salvo”).", s.autosaveOn, "i-save")}
-            ${
-              nativo
-                ? ""
-                : `<div class="st-row">
+            <div class="st-row">
               ${rowIcon("i-folder-plus")}
               <span class="st-text"><b>Pasta dos rascunhos</b><small data-drafts-root>verificando…</small></span>
               <span class="st-btns">
                 <button class="btn small st-btn" data-act="drafts-dir">Escolher…</button>
                 <button class="btn small st-btn" data-act="drafts-clear" hidden>Remover</button>
               </span>
-            </div>`
-            }
+            </div>
             ${toggle("hist", "Guardar versões dos documentos", "Uma cópia automática a cada 5 minutos (se o texto mudou) e ao salvar.", s.historyOn, "i-clock")}
             <div class="st-row">
               ${rowIcon("i-list")}
@@ -527,7 +499,6 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
               ${rowIcon("i-folder")}
               <span class="st-text"><b>Backup em disco</b><small data-arm-backup>calculando…</small></span>
               <span class="st-btns">
-                <button class="btn small st-btn" data-act="arm-open-backup">Abrir pasta</button>
                 <button class="btn small st-btn" data-act="arm-prune-backup">Limpar antigas</button>
               </span>
             </div>
@@ -535,30 +506,12 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
               ${rowIcon("i-save")}
               <span class="st-text"><b>Rascunhos</b><small data-arm-drafts>calculando…</small></span>
               <span class="st-btns">
-                ${nativo ? `<button class="btn small st-btn" data-act="arm-open-drafts">Abrir pasta</button>` : ""}
                 <button class="btn small st-btn" data-act="arm-clear-drafts">Apagar</button>
               </span>
             </div>
             <div class="st-row">
               ${rowIcon("i-cloud")}
               <span class="st-text"><b>Outros dados do app</b><small data-arm-other>calculando…</small></span>
-              <span class="st-btns"><button class="btn small st-btn" data-act="arm-open-data">Abrir pasta</button></span>
-            </div>
-            <div class="st-row">
-              ${rowIcon("i-refresh")}
-              <span class="st-text"><b>Cache do WebView</b><small data-arm-cache>calculando…</small></span>
-              ${dd("cache-limite", LIMITES_DE_CACHE, "0")}
-            </div>
-          </div>
-
-          <div data-arm-legacy hidden>
-            <h4 class="st-group">Da versão anterior</h4>
-            <div class="st-list">
-              <div class="st-row">
-                ${rowIcon("i-trash")}
-                <span class="st-text"><b>Dados do mdCreator</b><small data-arm-legacy-txt>calculando…</small></span>
-                <span class="st-btns"><button class="btn small st-btn danger" data-act="arm-remove-legacy">Remover…</button></span>
-              </div>
             </div>
           </div>
         </section>
@@ -667,7 +620,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
             <div class="st-sec-txt">
               <h3>Atalhos</h3>
               <p class="st-lead">Clique na tecla de um atalho e pressione a que você quer no lugar.</p>
-              ${emTauri() ? "" : `<p class="st-note">No navegador, Ctrl+T, Ctrl+W e Ctrl+Tab pertencem ao próprio navegador — ele abre, fecha e troca as abas dele antes de o app receber a tecla. Por isso os atalhos de abas aqui usam Ctrl+Alt (por exemplo, ${teclaVisivel("nova-aba")} cria uma nova aba).</p>`}
+              <p class="st-note">Ctrl+T, Ctrl+W e Ctrl+Tab pertencem ao próprio navegador — ele abre, fecha e troca as abas dele antes de o app receber a tecla. Por isso os atalhos de abas aqui usam Ctrl+Alt (por exemplo, ${teclaVisivel("nova-aba")} cria uma nova aba).</p>
             </div>
           </header>
           ${GRUPOS_DE_ATALHOS.map((grupo) => {
@@ -1015,50 +968,48 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     ctx.patch({ historyOn: (e.target as HTMLInputElement).checked });
     flash();
   });
-  // No navegador o rascunho precisa de uma pasta de verdade. A escolha guarda o
-  // handle no IndexedDB (o mesmo das pastas de projeto), então sobrevive a reabrir.
-  if (!nativo) {
-    let pastaRascunhos: DraftFolder | null = null;
-    const paintDraftsRoot = () => {
-      const el = host.querySelector<HTMLElement>("[data-drafts-root]");
-      const limpar = host.querySelector<HTMLButtonElement>('[data-act="drafts-clear"]');
-      if (!el) return;
-      el.textContent = pastaRascunhos
-        ? `${pastaRascunhos.nome || "Pasta escolhida"} — o autosave grava os documentos novos ali, como arquivos de verdade`
-        : "Nenhuma pasta escolhida — o rascunho de um documento novo não é gravado. Escolha uma pasta para o autosave gravar de verdade.";
-      if (limpar) limpar.hidden = !pastaRascunhos;
-    };
-    void draftFolderInfo()
-      .then((info) => {
-        pastaRascunhos = info;
-        paintDraftsRoot();
-      })
-      .catch(() => paintDraftsRoot());
-    on('[data-act="drafts-dir"]', "click", async () => {
-      try {
-        const escolhida = await pickFolders();
-        if (!escolhida.length) return;
-        pastaRascunhos = await setDraftFolder(escolhida[0]);
-        paintDraftsRoot();
-        flash();
-        ctx.salvarRascunhoAgora();
-        toast("Pasta dos rascunhos definida: os documentos novos passam a ser gravados nela.", "ok", 4200);
-      } catch (e) {
-        toast("Não foi possível usar essa pasta: " + e, "err", 5000);
-      }
-    });
-    on('[data-act="drafts-clear"]', "click", async () => {
-      try {
-        await clearDraftFolder();
-        pastaRascunhos = null;
-        paintDraftsRoot();
-        flash();
-        toast("Pasta dos rascunhos removida. Os documentos novos voltam a usar a pasta concedida ao app.", "info", 4200);
-      } catch (e) {
-        toast("Não foi possível remover a pasta: " + e, "err", 5000);
-      }
-    });
-  }
+  // O rascunho precisa de uma pasta de verdade. A escolha guarda o handle no IndexedDB
+  // (o mesmo das pastas de projeto), então sobrevive a reabrir.
+  let pastaRascunhos: DraftFolder | null = null;
+  const paintDraftsRoot = () => {
+    const el = host.querySelector<HTMLElement>("[data-drafts-root]");
+    const limpar = host.querySelector<HTMLButtonElement>('[data-act="drafts-clear"]');
+    if (!el) return;
+    el.textContent = pastaRascunhos
+      ? `${pastaRascunhos.nome || "Pasta escolhida"} — o autosave grava os documentos novos ali, como arquivos de verdade`
+      : "Nenhuma pasta escolhida — o rascunho de um documento novo não é gravado. Escolha uma pasta para o autosave gravar de verdade.";
+    if (limpar) limpar.hidden = !pastaRascunhos;
+  };
+  void draftFolderInfo()
+    .then((info) => {
+      pastaRascunhos = info;
+      paintDraftsRoot();
+    })
+    .catch(() => paintDraftsRoot());
+  on('[data-act="drafts-dir"]', "click", async () => {
+    try {
+      const escolhida = await pickFolders();
+      if (!escolhida.length) return;
+      pastaRascunhos = await setDraftFolder(escolhida[0]);
+      paintDraftsRoot();
+      flash();
+      ctx.salvarRascunhoAgora();
+      toast("Pasta dos rascunhos definida: os documentos novos passam a ser gravados nela.", "ok", 4200);
+    } catch (e) {
+      toast("Não foi possível usar essa pasta: " + e, "err", 5000);
+    }
+  });
+  on('[data-act="drafts-clear"]', "click", async () => {
+    try {
+      await clearDraftFolder();
+      pastaRascunhos = null;
+      paintDraftsRoot();
+      flash();
+      toast("Pasta dos rascunhos removida. Os documentos novos voltam a usar a pasta concedida ao app.", "info", 4200);
+    } catch (e) {
+      toast("Não foi possível remover a pasta: " + e, "err", 5000);
+    }
+  });
   ligarDd("hist-max", [20, 40, 60, 100, 200].map((n) => [String(n), `${n} versões`] as [string, string]), (valor) => {
     ctx.patch({ historyMax: Number(valor) || 60 });
     flash();
@@ -1258,7 +1209,6 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   on('[data-act="hist-recuperar"]', "click", () => ctx.abrirRecuperacao());
 
   // backup em disco
-  let backupRoot = s.backupRoot;
   const paintBackupProfile = () => {
     const perfil = ctx.settings().backupProfile;
     const p = backup.PERFIS.find((x) => x.id === perfil);
@@ -1268,9 +1218,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     q("[data-backup-custom2]").hidden = !custom;
   };
   const paintBackupRoot = () => {
-    q("[data-backup-root]").textContent = nativo
-      ? backupRoot || "Nenhuma pasta escolhida (o backup fica só na pasta do app)"
-      : "A pasta que você concedeu ao app — o backup fica dentro dela, em .mdoffice/backups";
+    q("[data-backup-root]").textContent = "A pasta que você concedeu ao app — o backup fica dentro dela, em .mdoffice/backups";
   };
   const paintBackupSize = () =>
     void backup.indice().then((idx) => {
@@ -1304,41 +1252,6 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     ctx.patch({ backupDays: Number(valor) || 0 });
     flash();
   });
-  // os três botões de pasta do backup só existem no app nativo; no navegador o `on`
-  // estourava com o seletor ausente e derrubava o resto da página de Configurações
-  host.querySelector('[data-act="backup-dir"]')?.addEventListener("click", async () => {
-    try {
-      const escolhida = await pickFolders();
-      if (!escolhida.length) return;
-      backupRoot = await backup.prepararPasta(escolhida[0]);
-      ctx.patch({ backupRoot });
-      paintBackupRoot();
-      flash();
-      toast("Pasta de backup definida.", "ok", 2600);
-      await pintarHistorico();
-    } catch (e) {
-      toast("Não foi possível usar essa pasta: " + e, "err", 5000);
-    }
-  });
-  host.querySelector('[data-act="backup-open"]')?.addEventListener("click", async () => {
-    if (!backupRoot) {
-      toast("Nenhuma pasta escolhida — use “Trocar…” para definir uma.", "info", 3400);
-      return;
-    }
-    try {
-      await revealItemInDir(backupRoot);
-    } catch {
-      toast("Não foi possível abrir a pasta.", "err", 4000);
-    }
-  });
-  host.querySelector('[data-act="backup-open-app"]')?.addEventListener("click", async () => {
-    try {
-      const pasta = visao?.raizApp || (await backup.pastaDoApp());
-      await revealItemInDir(pasta);
-    } catch {
-      toast("Não foi possível abrir a pasta.", "err", 4000);
-    }
-  });
   on('[data-act="backup-prune"]', "click", async () => {
     const atual = ctx.settings();
     const numeros = backup.numerosDoPerfil(atual.backupProfile, atual.backupCopies, atual.backupDays);
@@ -1360,13 +1273,12 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
   };
   const paintArmazenamento = () => {
     void (async () => {
-      const [vers, log, idx, drafts, rep, cache] = await Promise.all([
+      const [vers, log, idx, drafts, rep] = await Promise.all([
         resumoVersoes(),
         resumoLog(),
         backup.indice().catch(() => ({ roots: [], files: [], copies: 0, bytes: 0 })),
         listDrafts().catch(() => []),
         relatorioArmazenamento().catch(() => null),
-        limiteDoCache().catch(() => null),
       ]);
       const rascunhosBytes = drafts.reduce((a, d) => a + (d.bytes ?? 0), 0);
       setTxt("[data-arm-vers]", vers.versoes ? `${vers.versoes} versão(ões) em ${vers.docs} documento(s) — ≈ ${bytes(vers.bytes)}` : "Nenhuma versão guardada.");
@@ -1375,30 +1287,11 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       setTxt("[data-arm-drafts]", drafts.length ? `${drafts.length} rascunho(s) — ${bytes(rascunhosBytes)}` : "Nenhum rascunho.");
       const dataBytes = rep?.data_bytes ?? 0;
       const outros = Math.max(0, dataBytes - vers.bytes - log.bytes - idx.bytes - rascunhosBytes);
-      setTxt("[data-arm-other]", rep ? `${bytes(outros)} — cache do WebView e preferências (se recria sozinho)` : "indisponível fora do app.");
-      // Cache do WebView: o que está em disco agora e o teto escolhido. O teto vale na próxima
-      // abertura (o WebView só lê o argumento quando a janela é criada), então enquanto o
-      // escolhido for diferente do que está em uso a linha avisa.
-      const teto = cache?.limite_mb ?? 0;
-      const emUso = cache?.aplicado_mb ?? 0;
-      const seletorCache = host.querySelector<HTMLSelectElement>('[data-k="cache-limite"]');
-      if (seletorCache && cache) seletorCache.value = String(teto); // o setter do seletor sincroniza o rótulo
-      const rotuloTeto = teto === 0 ? "automático (o WebView decide)" : bytes(teto * 1024 * 1024);
-      const pendente = teto !== emUso ? " — vale na próxima abertura do app" : "";
-      setTxt(
-        "[data-arm-cache]",
-        rep ? `${bytes(rep.cache_bytes)} agora — limite: ${rotuloTeto}${pendente}` : "indisponível fora do app."
-      );
-      const total = dataBytes + (rep?.legacy_bytes ?? 0);
+      setTxt("[data-arm-other]", rep ? `${bytes(outros)} — páginas, cache e preferências do navegador` : "indisponível neste navegador.");
       setTxt(
         "[data-arm-total]",
-        rep ? `${bytes(total)} — dados do app ${bytes(dataBytes)}${rep.legacy_dir ? ` + versão anterior ${bytes(rep.legacy_bytes)}` : ""}` : "indisponível fora do app."
+        rep ? `${bytes(dataBytes)} segundo o navegador${rep.quota_bytes ? ` (limite ≈ ${bytes(rep.quota_bytes)})` : ""}` : "indisponível neste navegador."
       );
-      const bloco = host.querySelector<HTMLElement>("[data-arm-legacy]");
-      if (bloco) {
-        bloco.hidden = !(rep?.legacy_dir && rep.legacy_bytes > 0);
-        if (!bloco.hidden) setTxt("[data-arm-legacy-txt]", `${bytes(rep!.legacy_bytes)} em ${rep!.legacy_dir} — a migração já copiou o que importava`);
-      }
       const partes = [
         { nome: "Versões", bytes: vers.bytes, cor: "var(--accent)" },
         { nome: "Log", bytes: log.bytes, cor: "color-mix(in srgb, var(--accent) 55%, transparent)" },
@@ -1426,13 +1319,6 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     toast(n ? `${n} alteração(ões) apagada(s).` : "Não havia alterações guardadas.", "ok", 3200);
     paintArmazenamento();
   });
-  on('[data-act="arm-open-backup"]', "click", async () => {
-    try {
-      await revealItemInDir(await backup.pastaDoApp());
-    } catch {
-      toast("Não foi possível abrir a pasta.", "err", 4000);
-    }
-  });
   on('[data-act="arm-prune-backup"]', "click", async () => {
     const atual = ctx.settings();
     const numeros = backup.numerosDoPerfil(atual.backupProfile, atual.backupCopies, atual.backupDays);
@@ -1443,14 +1329,6 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
       paintArmazenamento();
     } catch (e) {
       toast("Não foi possível limpar: " + e, "err", 5000);
-    }
-  });
-  // no navegador o botão não existe (não há caminho para abrir no Explorador)
-  host.querySelector('[data-act="arm-open-drafts"]')?.addEventListener("click", async () => {
-    try {
-      await revealItemInDir(await draftsFolder());
-    } catch {
-      toast("Não foi possível abrir a pasta.", "err", 4000);
     }
   });
   on('[data-act="arm-clear-drafts"]', "click", async () => {
@@ -1469,49 +1347,6 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
     }
     toast(`${lista.length} rascunho(s) apagado(s).`, "ok", 3000);
     paintArmazenamento();
-  });
-  on('[data-act="arm-open-data"]', "click", async () => {
-    try {
-      const r = await relatorioArmazenamento();
-      await revealItemInDir(r.data_dir);
-    } catch {
-      toast("Não foi possível abrir a pasta.", "err", 4000);
-    }
-  });
-  on('[data-act="arm-remove-legacy"]', "click", async () => {
-    const r = await relatorioArmazenamento().catch(() => null);
-    if (!r?.legacy_dir) return;
-    const confirmado = await ask(
-      `Remover a pasta da versão anterior (${bytes(r.legacy_bytes)})?\n\n${r.legacy_dir}\n\nA migração já copiou rascunhos, backups e preferências para a pasta nova; isto só libera o espaço que ficou para trás.`,
-      { title: "Remover dados antigos", kind: "warning" }
-    );
-    if (!confirmado) return;
-    try {
-      const liberado = await removerLegado();
-      toast(liberado ? `Pasta antiga removida: ${bytes(liberado)} liberados.` : "Nada para remover.", "ok", 4200);
-      paintArmazenamento();
-    } catch (e) {
-      toast(String(e), "err", 6000);
-    }
-  });
-  // Teto do cache do WebView: guardado no lado Rust, porque é ele quem monta a janela e passa
-  // o `--disk-cache-size`. A escolha só passa a valer quando o app abrir de novo.
-  ligarDd("cache-limite", LIMITES_DE_CACHE, async (valor) => {
-    const mb = Number(valor) || 0;
-    try {
-      const cfg = await definirLimiteDoCache(mb);
-      flash();
-      toast(
-        cfg.limite_mb === 0
-          ? "Cache do WebView: automático — vale na próxima abertura do app."
-          : `Cache do WebView: até ${bytes(cfg.limite_mb * 1024 * 1024)} — vale na próxima abertura do app.`,
-        "ok",
-        4200
-      );
-    } catch (e) {
-      toast("Não foi possível guardar o limite do cache: " + e, "err", 5200);
-    }
-    paintArmazenamento(); // mostra o limite guardado (e avisa se ainda não valeu)
   });
 
   // aparência

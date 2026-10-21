@@ -1,9 +1,9 @@
 # Estrutura do projeto
 
-Como o código do mdOffice está organizado — frontend (TypeScript, sem framework), backend
-(Rust/Tauri) e como os documentos do usuário ficam no disco.
+Como o código do mdOffice está organizado — um app **100% TypeScript** que roda no navegador
+(instalável como PWA), e como os documentos do usuário ficam no disco.
 
-## Frontend — `src/`
+## O app — `src/`
 
 Um "motor" por pasta: cada programa do Office tem o próprio diretório, e o `app/` junta tudo.
 
@@ -60,7 +60,7 @@ src/                  frontend (TypeScript, sem framework) — um "motor" por pa
 │  ├─ pastaApp.ts     a pasta `.mdoffice/` (backup e lixeira dentro da pasta escolhida)
 │  ├─ backup.ts       backup em `.mdoffice/backups` (cópias datadas, .orig, histórico)
 │  └─ lixeira.ts      lixeira em `.mdoffice/lixeira` (30 dias, index.json)
-├─ ponte/             o único lugar que decide Tauri × navegador (`invoke`, diálogos, avisos)
+├─ ponte/             a única porta entre o app e o disco (`invoke`, diálogos, avisos)
 ├─ files.ts                          a fachada de arquivos do app (usa a ponte)
 ├─ styles.css         só importa os arquivos de styles/ (um por área da interface)
 └─ styles/            tokens, base, topbar, sidebar, editor, word, home, fita …
@@ -69,25 +69,23 @@ src/                  frontend (TypeScript, sem framework) — um "motor" por pa
 O `app/pwa.ts` registra o service worker (o app abre com o servidor parado) e guarda o convite
 de instalação do navegador; o manifesto e o service worker ficam em `public/`.
 
-## Backend — `src-tauri/` (Rust)
+## O disco (File System Access API)
 
-> Em extinção: o app roda no navegador (`npm run app`) e o plano é apagar esta pasta quando a
-> migração para TypeScript terminar. Enquanto ela existir, `npm run app:tauri` usa este backend.
-
-Os comandos que só o lado nativo pode fazer: arquivos, imagens, rascunhos, projetos, busca,
-armazenamento e o pacote para IA. O frontend chama por `invoke` (ou pela ponte, que decide).
+Não há backend: o app trabalha nos **handles** das pastas que a pessoa concede. O "caminho" de um
+documento é o `id` do registro (`src/disco/registro.ts`) — o caminho relativo dentro da pasta,
+como `notas.md` — e o arquivo é o handle guardado no IndexedDB (sobrevive ao recarregar).
 
 ```
-src-tauri/
-├─ src/commands/      files · assets · drafts · projects · search · storage · bundle · backup · util · tests
-├─ src/lib.rs         registro dos plugins/comandos e a janela (montada aqui, para o cache)
-├─ src/main.rs        entrada do app (migra a pasta de dados antes de abrir)
-└─ tauri.conf.json    build e empacotamento (a janela fica no lib.rs)
+src/disco/
+├─ registro.ts   os handles no IndexedDB (o id ocupa o lugar do caminho)
+├─ arquivo.ts    abrir, ler, gravar, renomear, mover, assets/
+├─ arvore.ts     a árvore de markdown e a busca
+├─ zip.ts        a prévia de .docx/.pptx/.xlsx pelo JSZip
+├─ pastaApp.ts   a pasta `.mdoffice/` dentro da pasta concedida
+├─ backup.ts     backup em `.mdoffice/backups`
+├─ rascunhos.ts  documentos novos em `.mdoffice/rascunhos`
+└─ lixeira.ts    lixeira em `.mdoffice/lixeira` (30 dias)
 ```
-
-A **janela** é montada no `lib.rs` (e não pelo `tauri.conf.json`) porque o teto do cache do
-WebView vira o argumento `--disk-cache-size` na criação dela — escolhido em **Configurações ▸
-Armazenamento**, guardado em `cache.json` na pasta de dados e lido antes de o Tauri existir.
 
 ## Como o documento é organizado (no disco)
 
@@ -97,7 +95,7 @@ Minha pasta/
 ├─ assets/             ← todas as imagens/desenhos usados no documento
 │  ├─ desenho-abc123.png
 │  └─ captura-de-tela.png
-└─ .mdoffice/          ← o que o app guarda (no navegador; no app nativo fica na pasta de dados)
+└─ .mdoffice/          ← o que o app guarda
    ├─ backups/         ← as cópias datadas de cada documento
    ├─ rascunhos/       ← documentos novos quando não há pasta de rascunhos escolhida
    └─ lixeira/         ← o que saiu da pasta, por 30 dias (index.json)

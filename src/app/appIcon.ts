@@ -1,8 +1,7 @@
-// Ícone do app (janela e barra de tarefas): "claro" ou "escuro", escolhido em
-// Configurações > Aparência. O ícone do .exe/instalador é fixo (gerado no build com
-// `npm run icon`); este aqui troca na hora pela API do Tauri (setIcon).
-import { Image } from "@tauri-apps/api/image";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+// Ícone do app: "claro" ou "escuro", escolhido em Configurações > Aparência.
+//
+// No navegador o ícone da janela é o do próprio navegador; o que dá para trocar é o
+// **favicon** (a aba e o atalho). O ícone do app instalado (PWA) é fixo, gerado no build.
 
 export type AppIcon = "claro" | "escuro";
 
@@ -19,16 +18,17 @@ export function appIconAtual(): AppIcon {
   return document.documentElement.dataset.theme === "dark" ? "escuro" : "claro";
 }
 
-/** Aplica o ícone escolhido na janela. Fora do Tauri (navegador/dev) não faz nada. */
+/** Aplica o ícone escolhido no favicon da aba. */
 export async function aplicarIconeApp(): Promise<void> {
-  try {
-    const res = await fetch(`/icones/mdoffice-${appIconAtual()}.png`);
-    if (!res.ok) return;
-    const bytes = new Uint8Array(await res.arrayBuffer());
-    await getCurrentWindow().setIcon(await Image.fromBytes(bytes));
-  } catch {
-    /* navegador ou permissão ausente: mantém o ícone padrão */
+  const href = `/icones/mdoffice-${appIconAtual()}.png`;
+  let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "icon";
+    document.head.append(link);
   }
+  link.type = "image/png";
+  link.href = href;
 }
 
 /** Guarda a escolha e aplica na hora. */

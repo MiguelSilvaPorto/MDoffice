@@ -122,3 +122,23 @@ export async function limpar(): Promise<number> {
   }
   return apagados;
 }
+
+/**
+ * Os caminhos originais guardados na lixeira (em minúsculas).
+ *
+ * O aviso de "arquivo sumiu" do backup usa esta lista para não reclamar de um documento que
+ * saiu da pasta **de propósito**.
+ */
+export async function originaisNaLixeira(): Promise<Set<string>> {
+  const fora = new Set<string>();
+  for (const concedida of await listarPastas()) {
+    const app = await subpastaSeExistir(concedida.handle, [".mdoffice"]);
+    if (!app) continue;
+    const pasta = await subpastaSeExistir(app, [PASTA]);
+    if (!pasta) continue;
+    for (const item of (await lerJson<ItemDaLixeira[]>(pasta, INDICE)) ?? []) {
+      if (item.original) fora.add(item.original.toLowerCase());
+    }
+  }
+  return fora;
+}

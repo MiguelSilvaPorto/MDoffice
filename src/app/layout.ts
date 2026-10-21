@@ -1,7 +1,6 @@
 // Rodapé, título da janela, estrutura, tema e divisor entre editor e pré-visualização.
 
 import type { App } from "./app";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { FormatoCantos, NivelAnimacao } from "../settingsPage";
 import { modoDoSelo } from "./seloAutosave";
 import { autosaveDoDoc } from "./autosave";
@@ -184,16 +183,7 @@ export const layoutMethods = {
     // sem documento, a janela é só o app (nada de "Sem título.md")
     const name = this.path ? baseName(this.path) : `${this.title ?? "Sem título"}.md`;
     this.renderTabs();
-    const title = this.tabs.length ? `${this.dirty ? "• " : ""}${name} — mdOffice` : "mdOffice";
-    document.title = title;
-    // Fora do Tauri (ex.: preview no navegador) a API não existe: seguimos em silêncio.
-    try {
-      void getCurrentWindow()
-        .setTitle(title)
-        .catch(() => {});
-    } catch {
-      /* sem janela nativa */
-    }
+    document.title = this.tabs.length ? `${this.dirty ? "• " : ""}${name} — mdOffice` : "mdOffice";
   },
 
   refreshPath(this: App): void {

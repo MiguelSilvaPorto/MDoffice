@@ -96,7 +96,7 @@ function textBlockAt(markdown: string, index: number): string | null {
 /**
  * O ícone do app que está valendo: a escolha das Configurações (`mdc.appicon`, a mesma chave de
  * `app/appIcon.ts`), com o tema como padrão. Serve para o cartão de boas-vindas mostrar o mesmo
- * ícone da janela — sem importar o módulo do Tauri (que só troca o ícone de verdade).
+ * ícone da aba, sem importar o módulo que troca o favicon.
  */
 export function iconeDoApp(): "claro" | "escuro" {
   const tema: "claro" | "escuro" = document.documentElement.dataset.theme === "dark" ? "escuro" : "claro";

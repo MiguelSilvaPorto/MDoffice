@@ -2,7 +2,6 @@
 
 import type { App } from "./app";
 import * as files from "../files";
-import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { diag } from "../broker/diag";
 import { $, toast, baseName, stripExt, isImagePath, isMarkdownPath, blobToBase64 } from "../util";
 
@@ -87,32 +86,67 @@ export const mediaMethods = {
     }
   },
 
+  /**
+   * Arrastar e soltar arquivos na janela.
+   *
+   * O Chromium entrega um **handle** de verdade no `drop` (`getAsFileSystemHandle`): o
+   * documento abre para leitura e gravação, como no "Abrir…". Sem o handle (navegador sem a
+   * API), o documento não pode ser aberto — mas a imagem ainda pode ser copiada para assets/.
+   */
   async setupDragDrop(this: App): Promise<void> {
-    try {
-      await getCurrentWebview().onDragDropEvent(async (event) => {
-        if (event.payload.type !== "drop") return;
-        await this.handleDropped(event.payload.paths as string[]);
-      });
-    } catch (e) {
-      console.warn("Drag & drop indisponível:", e);
-    }
+    const temArquivos = (e: DragEvent): boolean => Array.from(e.dataTransfer?.types ?? []).includes("Files");
+    document.addEventListener("dragover", (e) => {
+      if (!temArquivos(e)) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    });
+    document.addEventListener("drop", (e) => {
+      if (!temArquivos(e)) return;
+      e.preventDefault();
+      void this.handleDrop(e);
+    });
   },
 
-  async handleDropped(this: App, paths: string[]): Promise<void> {
-    const mdPath = paths.find(
-      (p) => isMarkdownPath(p) || /\.docx$/i.test(p) || /\.pptx$/i.test(p) || /\.xlsx$/i.test(p) || /\.xlsm$/i.test(p)
+  async handleDrop(this: App, e: DragEvent): Promise<void> {
+    const dt = e.dataTransfer;
+    if (!dt) return;
+    const itens = Array.from(dt.items ?? []);
+    const soltos: { nome: string; handle: FileSystemFileHandle | null; file: File | null }[] = [];
+    for (const item of itens) {
+      if (item.kind !== "file") continue;
+      const file = item.getAsFile();
+      const handle = await item.getAsFileSystemHandle?.().catch(() => null);
+      const arquivoHandle = handle && handle.kind === "file" ? (handle as FileSystemFileHandle) : null;
+      soltos.push({ nome: file?.name ?? "", handle: arquivoHandle, file });
+    }
+    if (!soltos.length) return;
+
+    const documentos = soltos.filter(
+      (a) => isMarkdownPath(a.nome) || /\.(docx|pptx|xlsx|xlsm)$/i.test(a.nome)
     );
-    const images = paths.filter(isImagePath);
-    if (mdPath) await this.openPath(mdPath);
-    if (!images.length) return;
+    for (const doc of documentos) {
+      if (!doc.handle) {
+        toast(`O navegador não deu acesso a "${doc.nome}" — use Abrir arquivo (Ctrl+O).`, "info", 6500);
+        continue;
+      }
+      const id = await files.adotarArquivo(doc.handle);
+      await this.openPath(id);
+    }
+
+    const imagens = soltos.filter((a) => isImagePath(a.nome));
+    if (!imagens.length) return;
     if (!(await this.ensureSaved())) return;
-    for (const p of images) {
+    for (const img of imagens) {
       try {
-        const rel = await files.copyAsset(this.path!, p);
-        this.insertImageMd(rel, stripExt(baseName(p)));
+        const arquivo = img.handle ? await img.handle.getFile() : img.file;
+        if (!arquivo) continue;
+        const ext = (arquivo.type.split("/")[1] || "png").replace("jpeg", "jpg");
+        const name = `imagem-${Date.now().toString(36)}.${ext}`;
+        const rel = await files.writeAsset(this.path!, name, await blobToBase64(arquivo));
+        this.insertImageMd(rel, stripExt(img.nome));
         toast(`Imagem salva em ${rel}`, "ok");
       } catch (err) {
-        toast("Falha ao copiar a imagem: " + err, "err");
+        toast("Falha ao salvar a imagem arrastada: " + err, "err");
       }
     }
   },

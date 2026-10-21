@@ -763,18 +763,24 @@ console.log("\npasta padrão dos documentos (Documentos/mdOffice com as quatro s
     "o nome da marca não pode ser o nome da funcionalidade; citar o formato (.docx/.xlsx/.pptx) é uso descritivo"
   );
 
-  // o documento novo nasce pela pasta padrão: os quatro fluxos chamam nascerNoPadrao
+  // os documentos do Office nascem como rascunho em .mdoffice/rascunhos (nascerNoPadrao)
   const fluxos = [
-    ["src/app/tabs.ts", "md"],
     ["src/app/wordDocs.ts", "word"],
     ["src/app/excelDocs.ts", "excel"],
     ["src/app/powerpointDocs.ts", "ppt"],
   ] as [string, string][];
   for (const [arquivo, tipo] of fluxos) {
-    checa(`${arquivo}: o documento novo nasce na pasta padrão`, new RegExp(`nascerNoPadrao\\("${tipo}"\\)`).test(ler(arquivo)), "sem isso o documento novo continua rascunho");
+    checa(`${arquivo}: o documento novo nasce guardado (rascunho)`, new RegExp(`nascerNoPadrao\\("${tipo}"\\)`).test(ler(arquivo)), "sem isso o documento novo não tem onde ser salvo");
   }
+  checa(
+    "o Markdown novo vira rascunho no primeiro autosave",
+    /ensureSaved\(true\)/.test(ler("src/app/documents.ts")) && /draftPath/.test(ler("src/app/documents.ts"))
+  );
   checa("a ponte cria a pasta no disco", /create_folder/.test(ler("src/files.ts")));
-  checa("a árvore de projetos lista os quatro tipos", /\.xlsx/.test(ler("src-tauri/src/commands/projects.rs")) && /\.pptx/.test(ler("src-tauri/src/commands/projects.rs")));
+  checa(
+    "a árvore de projetos lista os quatro tipos",
+    /\.xlsx/.test(ler("src/disco/arvore.ts")) && /\.pptx/.test(ler("src/disco/arvore.ts"))
+  );
 }
 
 console.log("\nboas-vindas: o logo é o ícone do app");{
@@ -826,7 +832,7 @@ const fitaPpt = ler("src/powerpoint/ui/fita.ts");
 const homeCss = ler("src/styles/home.css");
 const homePageTs = ler("src/homePage.ts");
 const filesTs = ler("src/files.ts");
-const libRs = ler("src-tauri/src/lib.rs");
+const zipTs = ler("src/disco/zip.ts");
 checa(
   "Início: os recentes são uma grade de cartões com a versão do documento",
   /\.home-file-grid\s*\{[\s\S]{0,160}display:\s*grid/.test(homeCss) &&
@@ -850,12 +856,11 @@ checa(
   "os três desenhos voltariam a ser o mesmo papel branco"
 );
 checa(
-  "Início: a prévia vem do comando preview_file (com a grade da planilha no Rust)",
+  "Início: a prévia vem da camada de disco (com a grade da planilha)",
   /invoke<PreviaDoc>\("preview_file"/.test(filesTs) &&
-    /commands::files::preview_file/.test(libRs) &&
-    /pub fn preview_file/.test(ler("src-tauri/src/commands/files.rs")) &&
-    /fn valores_da_planilha/.test(ler("src-tauri/src/commands/files.rs")) &&
-    /fn limpar_grade/.test(ler("src-tauri/src/commands/files.rs")),
+    /case "preview_file"/.test(ler("src/ponte/index.ts")) &&
+    /export async function previaDoArquivo/.test(zipTs) &&
+    /function limparGrade/.test(zipTs),
   "o comando da prévia não está ligado (ou a planilha perdeu as linhas)"
 );
 checa(
@@ -2210,53 +2215,20 @@ console.log("\nPowerPoint: o 'Configurar' saiu (a aba Design cobre)");
   );
 }
 
-console.log("\ncache do WebView: teto escolhido na tela e aplicado na janela");
+console.log("\narmazenamento: o painel mede o navegador (não há mais cache do WebView)");
 {
-  const conf = JSON.parse(ler("src-tauri/tauri.conf.json")) as { app: { windows: unknown[] } };
-  const rust = ler("src-tauri/src/lib.rs");
-  const storage = ler("src-tauri/src/commands/storage.rs");
   const pagina = ler("src/settingsPage.ts");
   const front = ler("src/storage.ts");
-
-  // A janela saiu do `tauri.conf.json` para o `lib.rs`: é o único jeito de o argumento do
-  // cache chegar ANTES de o WebView existir (o conf é compilado junto com o app).
-  checa("a janela não é mais criada pelo tauri.conf.json", Array.isArray(conf.app.windows) && conf.app.windows.length === 0, "app.windows do conf precisa ficar vazio");
   checa(
-    "a janela é montada no lib.rs com os mesmos valores do arquivo",
-    /WebviewWindowBuilder::new\(app, "main", tauri::WebviewUrl::default\(\)\)/.test(rust) &&
-      /\.inner_size\(1320\.0, 860\.0\)/.test(rust) &&
-      /\.min_inner_size\(940\.0, 620\.0\)/.test(rust) &&
-      /\.decorations\(false\)/.test(rust) &&
-      /\.shadow\(true\)/.test(rust),
-    "título, tamanho, mínimo, decoração e sombra precisam continuar iguais"
+    "a tela usa a estimativa do navegador",
+    /navigator\.storage\?\.estimate/.test(front),
+    "o painel voltaria a depender da pasta de dados do Windows"
   );
-  checa("o lib.rs decide o teto antes de montar a janela", /let args_webview = commands::storage::preparar_webview\(\)/.test(rust) && /additional_browser_args\(&args_webview\)/.test(rust));
+  checa("o painel mostra o total e o limite do navegador", /data-arm-total/.test(pagina) && /quota_bytes/.test(front));
   checa(
-    "os padrões do wry continuam nos argumentos",
-    /--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection/.test(storage),
-    "passar argumentos substitui os padrões do wry (menu mini e SmartScreen)"
-  );
-  checa("o teto vira --disk-cache-size em bytes", /--disk-cache-size=\{\}/.test(storage) && /limite_mb \* 1024 \* 1024/.test(storage));
-  checa("sem teto escolhido (automático) não vai argumento extra", /if limite_mb > 0/.test(storage));
-  checa("a escolha fica em cache.json na pasta de dados", /const CACHE_CFG: &str = "cache\.json"/.test(storage));
-  checa("o Rust recusa teto fora das opções", /fn validar_limite/.test(storage) && /fora das opções/.test(storage));
-  checa(
-    "as opções da tela são as mesmas do Rust",
-    /\[0, 512, 1024, 2048, 4096\]/.test(storage) && /\["0", "Automático"\]/.test(pagina) && /\["4096", "4 GB"\]/.test(pagina),
-    "seletor e LIMITES_MB precisam concordar"
-  );
-  checa(
-    "a conta do cache separa o cache das preferências",
-    /pub\(crate\) fn soma_cache/.test(storage) && /PASTAS_DE_CACHE/.test(storage) && /cache_bytes/.test(front),
-    "o painel mostra o cache em si, não só o 'Outros dados'"
-  );
-  checa(
-    "a tela grava o teto pelo comando do Rust e avisa quando só vale depois",
-    /storage_set_cache_limit/.test(front) && /definirLimiteDoCache/.test(pagina) && /ligarDd\("cache-limite"/.test(pagina) && /vale na próxima abertura do app/.test(pagina)
-  );
-  checa(
-    "o painel mostra o cache agora e o limite em uso",
-    /data-arm-cache/.test(pagina) && /aplicado_mb/.test(storage) && /emUso/.test(pagina)
+    "o cache do WebView e o legado saíram da tela",
+    !/cache-limite/.test(pagina) && !/arm-legacy/.test(pagina) && !/definirLimiteDoCache/.test(pagina),
+    "a tela ainda oferece um cache que não existe mais"
   );
 }
 
@@ -2450,14 +2422,14 @@ console.log("\nPowerPoint: arrastar a miniatura para reordenar (ponteiro, não H
 {
   const ppt = ler("src/powerpoint/powerpoint.ts");
   const css = ler("src/styles/powerpoint-edicao.css");
-  // O relato: "clico e seguro com o botão esquerdo para arrastar e o app bloqueia". O `draggable`
-  // do HTML não começa dentro do app porque o Tauri substitui o manipulador de arrasto do WebView2
-  // (é ele que entrega os arquivos soltos na janela) — o arrasto passou a ser por eventos de
-  // ponteiro, que funcionam com o manipulador do Tauri ligado.
+  // O relato: "clico e seguro com o botão esquerdo para arrastar e o app bloqueia". O
+  // `draggable` do HTML não começa dentro do app e disputa com o arrastar-e-soltar de
+  // arquivos (que entrega os arquivos soltos na janela) — o arrasto da faixa passou a ser
+  // por eventos de ponteiro, que convivem com os dois.
   checa(
     "a miniatura não usa mais o draggable do HTML",
     !/btn\.draggable = true/.test(ppt) && !/addEventListener\("dragstart"/.test(ppt),
-    "o arrasto nativo nunca começa no WebView do Tauri: a miniatura fica presa"
+    "o arrasto nativo nunca começa: a miniatura fica presa"
   );
   checa(
     "o arrasto é por eventos de ponteiro, com captura no começo do gesto",
@@ -2922,7 +2894,7 @@ console.log("\nAbas: arrastar para fora vira uma janela própria");
   );
   checa(
     "a janela própria abre o documento pelo ?doc=",
-    /docDaUrl\(location\.search\)/.test(app) && /janelaDeDocumento = true/.test(app) && /urlDoDocumento/.test(janela) && /new WebviewWindow/.test(janela),
+    /docDaUrl\(location\.search\)/.test(app) && /janelaDeDocumento = true/.test(app) && /urlDoDocumento/.test(janela) && /window\.open\(url/.test(janela),
     "o boot da janela nova não reconhece o ?doc="
   );
   checa(
@@ -2934,19 +2906,6 @@ console.log("\nAbas: arrastar para fora vira uma janela própria");
     "mover a aba persiste o documento antes de abrir a janela",
     /async detachTab\(this: App, id: string\)/.test(tabs) && /prepareClosePpt/.test(tabs) && /abrirEmNovaJanela\(\{ path: tab\.path/.test(tabs),
     "a aba sai da janela sem salvar o que estava aberto"
-  );
-  // a janela do documento é "o app sem as outras abas": ela precisa das MESMAS permissões da
-  // principal (barra própria, diálogos, abrir pasta). A capacidade valia só para "main"/"config".
-  const capacidades = ler("src-tauri/capabilities/default.json");
-  checa(
-    "a janela do documento herda as permissões (doc-*)",
-    /"windows":\s*\[[^\]]*"doc-\*"[^\]]*\]/.test(capacidades),
-    "sem o label no capabilities a janela sobe com a barra nativa + a do app e os botões mortos"
-  );
-  checa(
-    "a janela nova nasce sem moldura, como a principal",
-    /decorations:\s*false/.test(janela) && /shadow:\s*true/.test(janela),
-    "com moldura nativa a janela do documento não parece um app separado (e a barra pisca)"
   );
   checa(
     "documento nunca salvo ganha rascunho antes de virar janela",
@@ -3247,7 +3206,7 @@ console.log("\nfechar todos: o app fica sem nenhuma aba, no Início");
     "a barra de status fala de 'nenhum documento'",
     /if \(!this\.tabs\.length\) \{\r?\n\s*\$\("#st-words"\)\.textContent = "Nenhum documento aberto";/.test(layout) &&
       /if \(!this\.tabs\.length\) \{\r?\n\s*el\.textContent = "Nenhum documento aberto";/.test(layout) &&
-      /const title = this\.tabs\.length \?/.test(layout)
+      /document\.title = this\.tabs\.length \?/.test(layout)
   );
 }
 

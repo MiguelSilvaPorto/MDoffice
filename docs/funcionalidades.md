@@ -79,9 +79,9 @@ com o cabeçalho das colunas e o número das linhas. Nas **Apresentações (.ppt
 mesmo renderizador do palco e do F5 põe fundo do tema, formas, imagens e o título no tamanho real
 (16:9 ou 4:3, conforme o arquivo) — o texto extraído fica só como plano B. Sem texto (ou num
 formato sem prévia), o cartão fica com o ícone do formato. O `.md` lê
-o próprio texto e os formatos do Office (.docx/.pptx/.xlsx) abrem o zip e tiram o texto do XML
-principal, no lado Rust (comando `preview_file`) — o documento **não** é carregado no app só para a
-prévia (no `.xlsx`, o mesmo comando lê a planilha e devolve as primeiras linhas com as células
+o próprio texto e os formatos do Office (.docx/.pptx/.xlsx) são abertos com o JSZip e têm o texto
+do XML principal extraído (`src/disco/zip.ts`) — o documento **não** é carregado no app só para a
+prévia (no `.xlsx`, a mesma leitura tira as primeiras linhas com as células
 separadas por TAB; a estrutura de cada cartão é decidida em `src/homePrevia.ts`). Com documento
 aberto, o Início tem o caminho de volta visível: o botão **Voltar** fixo ao lado do logo e o
 **Continuar editando** (com o nome do arquivo) como primeira ação do cabeçalho — e o **Esc**

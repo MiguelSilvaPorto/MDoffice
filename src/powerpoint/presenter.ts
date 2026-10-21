@@ -3,7 +3,6 @@
 // um documento Markdown qualquer — por isso concentra openPresentation/deckSummary.
 import { marked } from "marked";
 import DOMPurify from "dompurify";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { direcaoDe, duracaoDe } from "./edicao/transicao";
 import { faixaDaMidia, formatarTempo } from "./edicao/midia";
 import { deckFromMarkdown } from "./markdown";
@@ -610,9 +609,9 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
   // ---- tela cheia ----
   // O modo apresentação do Office toma a tela inteira; aqui o pedido sai no gesto que abriu
   // (F5, botão ou menu) — o navegador só concede tela cheia com um gesto do usuário — e o
-  // mesmo caminho serve ao botão do HUD e à tecla F. Se o pedido do elemento falhar (WebView
-  // sem suporte, permissão negada), a tela cheia é pedida à JANELA do app (Tauri); falhando
-  // as duas, a apresentação continua no tamanho da janela, sem erro na tela.
+  // mesmo caminho serve ao botão do HUD e à tecla F. Se o pedido do ELEMENTO falhar (permissão
+  // negada, navegador sem suporte), a tela cheia é pedida à página; falhando as duas, a
+  // apresentação continua no tamanho da janela, sem erro na tela.
   let janelaCheia = false;
   const emTelaCheia = (): boolean => !!document.fullscreenElement || janelaCheia;
   const atualizarBotaoCheia = (): void => {
@@ -625,14 +624,17 @@ export function openDeckView(deck: Deck, setup: DeckSetup = DEFAULT_SETUP, titul
     if (janelaCheia === ligado) return;
     janelaCheia = ligado; // otimista: a barra responde na hora, e o erro desfaz
     try {
-      void getCurrentWindow()
-        .setFullscreen(ligado)
-        .catch(() => {
+      const pedido = ligado ? document.documentElement.requestFullscreen?.() : document.exitFullscreen?.();
+      if (pedido) {
+        void pedido.catch(() => {
           janelaCheia = false;
           atualizarBotaoCheia();
         });
+      } else {
+        janelaCheia = false;
+      }
     } catch {
-      janelaCheia = false; // preview no navegador: sem janela nativa
+      janelaCheia = false;
     }
   };
   const definirTelaCheia = (ligado: boolean): void => {

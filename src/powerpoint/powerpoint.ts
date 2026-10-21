@@ -254,9 +254,9 @@ export class PowerPointHost {
 
   /**
    * Arrasto da miniatura em andamento. É feito com eventos de PONTEIRO, e não com o `draggable`
-   * do HTML: o WebView do Tauri substitui o manipulador de arrasto do Windows (é ele que entrega
-   * os arquivos soltos na janela), e com isso o arrasto nativo nunca começa — a miniatura ficava
-   * presa no app (relato do usuário: "o app bloqueia").
+   * do HTML: o arrastar-e-soltar nativo disputa com o arrastar de arquivos do sistema (que
+   * entrega os arquivos soltos na janela), e com isso a miniatura ficava presa (relato do
+   * usuário: "o app bloqueia").
    */
   private arrastoFaixa: { de: number; x: number; y: number; ativo: boolean; ponteiro: number } | null = null;
   /** o clique que o navegador dispara no fim de um arrasto não pode escolher a lâmina errada */
@@ -1814,10 +1814,10 @@ export class PowerPointHost {
 
   /**
    * Arrasto da faixa de lâminas com eventos de PONTEIRO — e não com o `draggable` do HTML: o
-   * WebView do Tauri substitui o manipulador de arrasto do Windows (é ele que entrega os arquivos
-   * soltos na janela), e por isso o arrasto nativo **nunca começa** dentro do app (a miniatura
-   * ficava presa; relato do usuário: "o app bloqueia"). O gesto é o mesmo do resto do app:
-   * `pointerdown` + captura do ponteiro, um mínimo de movimento para virar arrasto (o clique
+   * arrastar-e-soltar nativo disputa com o arrastar de arquivos do sistema, e por isso o
+   * arrasto **nunca começa** dentro do app (a miniatura ficava presa; relato do usuário: "o
+   * app bloqueia"). O gesto é o mesmo do resto do app: `pointerdown` + captura do ponteiro,
+   * um mínimo de movimento para virar arrasto (o clique
    * simples continua só escolhendo a lâmina), a linha de inserção acompanhando o ponteiro e o
    * `moverLaminaPara` no soltar.
    */

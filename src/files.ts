@@ -1,11 +1,12 @@
-// Pontes com o disco e os diálogos nativos.
+// Pontes com o disco e os diálogos.
 //
-// A escolha entre o app nativo (Tauri, com o backend Rust) e o navegador (File System Access
-// API, com as pastas concedidas) acontece em `src/ponte` — aqui as funções são as mesmas.
-import { invoke, abrirDialogo as dlgOpen, salvarDialogo as dlgSave, emTauri, emApp, temDisco, mostrarNaPasta } from "./ponte";
+// O app não escolhe mais entre dois backends: o disco é o do File System Access API (as
+// pastas concedidas), e a tradução dos comandos acontece em `src/ponte` — aqui as funções
+// são as mesmas que o resto do app sempre chamou.
+import { invoke, abrirDialogo as dlgOpen, salvarDialogo as dlgSave, emApp, temDisco, mostrarNaPasta, adotarArquivo } from "./ponte";
 import { joinPath } from "./util";
 
-export { emTauri, emApp, temDisco, mostrarNaPasta };
+export { emApp, temDisco, mostrarNaPasta, adotarArquivo };
 
 export const MD_FILTER = { name: "Markdown", extensions: ["md", "markdown", "txt", "mdx"] };
 export const IMG_FILTER = {
@@ -244,12 +245,12 @@ export async function purgeTrash(): Promise<number> {
   return await invoke<number>("trash_purge");
 }
 
-/** O app está rodando dentro do Tauri (com arquivos) ou numa aba do navegador (sem eles)? */
-
 /**
- * Salvamento automático quando o app roda no NAVEGADOR (dev): o navegador não pode
- * escrever arquivos, então o texto vai para o servidor de desenvolvimento, que grava
- * em `temp/rascunho.md` dentro do projeto (a mesma pasta que o app usa).
+ * Salvamento de emergência para o servidor de desenvolvimento gravar em `temp/`.
+ *
+ * Só é usado quando não há pasta concedida nem rascunho possível (o navegador sem disco ou
+ * o build de dev sem a pasta). No app publicado o endpoint não existe e a função devolve
+ * `false` — o autosave então marca "Não salvo", sem fingir que gravou.
  */
 export async function saveDraftFallback(name: string, content: string): Promise<boolean> {
   try {

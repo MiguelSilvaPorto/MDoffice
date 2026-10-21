@@ -22,7 +22,7 @@ const forcar = process.argv.includes("--build") || process.argv.includes("-b");
 
 /** O que entra na conta de "o app mudou": fontes, HTML, configuração e arquivos estáticos. */
 const VIGIADOS = ["src", "public", "index.html", "vite.config.ts", "package.json", "tsconfig.json"];
-const IGNORADOS = new Set(["node_modules", "dist", "src-tauri", "temp", ".vite", ".worktrees"]);
+const IGNORADOS = new Set(["node_modules", "dist", "temp", ".vite", ".worktrees"]);
 
 function maisNovo(caminho) {
   let quando = 0;

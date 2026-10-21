@@ -11,8 +11,8 @@
 **Suíte de documentos em português: Markdown, documentos, planilhas e apresentações num app só — com escrita assistida e IA local, sem cobrança extra por IA.**
 
 ![status](https://img.shields.io/badge/status-em%20desenvolvimento-orange)
-![feito com](https://img.shields.io/badge/feito%20com-TypeScript%20%2B%20Rust%2FTauri-blue)
-![plataforma](https://img.shields.io/badge/plataforma-Windows-lightgrey)
+![feito com](https://img.shields.io/badge/feito%20com-TypeScript%20%2B%20PWA-blue)
+![plataforma](https://img.shields.io/badge/plataforma-navegador%20%2F%20Windows-lightgrey)
 ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 [GitHub](https://github.com/MiguelSilvaPorto/mdoffice) ·
@@ -71,19 +71,17 @@ está dentro da pasta concedida. O navegador oferece **Instalar** (o ícone na b
 **Configurações ▸ Aparência ▸ Instalar**) — o mdOffice passa a abrir em janela própria, sem a barra
 do navegador, e continua abrindo com o servidor parado.
 
-O backup e a lixeira ficam em **`.mdoffice/` dentro da pasta escolhida** (ao lado dos documentos),
-então o backup viaja junto se você copiar a pasta do projeto. Nada do app vai para uma pasta
-escondida do sistema.
+O backup, os rascunhos e a lixeira ficam em **`.mdoffice/` dentro da pasta escolhida** (ao lado dos
+documentos), então o backup viaja junto se você copiar a pasta do projeto. Nada do app vai para uma
+pasta escondida do sistema.
 
-> O app nativo (Tauri) continua existindo enquanto a migração para TypeScript não termina:
-> `npm run app:tauri` (exige Rust + WebView2) e `npm run app:build` (instalador).
+O mdOffice é **100% TypeScript**: não há backend Rust, instalador `.exe` nem Tauri. O "aplicativo"
+é o próprio site local, que o navegador instala.
 
 | Comando | O que faz |
 | --- | --- |
 | `npm run app` | Constrói se preciso e serve o app em `localhost` (modo normal, instalável como PWA) |
 | `npm run dev` | Servidor de desenvolvimento, com recarga automática |
-| `npm run app:tauri` | App nativo (Tauri + Vite) — em extinção |
-| `npm run app:build` | Instalador do app nativo (Windows) |
 | `npm run check` | Checagem de tipos do TypeScript |
 | `npm run build` | Build só do frontend (gera `dist/`) |
 | `npm run test:disco` | Teste da camada de disco do navegador (a prévia do Office, a limpeza do texto e a grade) |

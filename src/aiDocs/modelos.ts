@@ -159,8 +159,8 @@ const regras: Modelo = {
   campos: [
     { id: "alvo", rotulo: "Arquivo", tipo: "escolha", opcoes: ALVOS, ajuda: "AGENTS.md é aceito por vários agentes; CLAUDE.md é o do Claude Code; GEMINI.md o do Gemini CLI." },
     { id: "projeto", rotulo: "Nome do projeto", tipo: "texto", placeholder: "mdOffice", ajuda: "Aparece no título." },
-    { id: "resumo", rotulo: "O que é o projeto", tipo: "area", placeholder: "Editor de documentos (Markdown, .docx, .xlsx e .pptx) em Tauri + TypeScript.", ajuda: "Duas frases: o que é e para quem." },
-    { id: "stack", rotulo: "Tecnologias", tipo: "lista", placeholder: "Tauri 2 + Rust\nTypeScript + Vite, sem framework", ajuda: "Uma por linha." },
+    { id: "resumo", rotulo: "O que é o projeto", tipo: "area", placeholder: "Editor de documentos (Markdown, .docx, .xlsx e .pptx) em TypeScript, rodando no navegador.", ajuda: "Duas frases: o que é e para quem." },
+    { id: "stack", rotulo: "Tecnologias", tipo: "lista", placeholder: "TypeScript + Vite\nPWA (service worker + manifest)", ajuda: "Uma por linha." },
     { id: "comandos", rotulo: "Comandos úteis", tipo: "lista", placeholder: "npm run dev — abre o app\nnpx tsc --noEmit — confere os tipos", ajuda: "Formato: comando — o que faz." },
     { id: "estrutura", rotulo: "Onde fica cada coisa", tipo: "lista", placeholder: "src/word — editor de documentos .docx\nsrc/excel — planilhas", ajuda: "Formato: pasta — conteúdo." },
     { id: "estilo", rotulo: "Estilo de código", tipo: "lista", placeholder: "Siga o estilo dos arquivos vizinhos\nComentários só onde o porquê não é óbvio", ajuda: "Convenções que a IA deve seguir." },
@@ -170,8 +170,8 @@ const regras: Modelo = {
   exemplo: {
     alvo: "AGENTS.md",
     projeto: "mdOffice",
-    resumo: "Editor de documentos (Markdown, .docx, .xlsx e .pptx) em Tauri + TypeScript, feito para uso offline.",
-    stack: "Tauri 2 + Rust\nTypeScript + Vite, sem framework de interface",
+    resumo: "Editor de documentos (Markdown, .docx, .xlsx e .pptx) em TypeScript, rodando no navegador, sem mandar os documentos para fora.",
+    stack: "TypeScript + Vite\nPWA (service worker + manifest), sem framework de interface",
     comandos: "npm run dev — abre o app em modo de desenvolvimento\nnpx tsc --noEmit — confere os tipos\nnpm run test:pptx-edicao — testa a edição de apresentações",
     estrutura: "src/word — motor dos documentos .docx\nsrc/excel — planilhas e fórmulas\nsrc/powerpoint — apresentações .pptx",
     estilo: "Siga o estilo dos arquivos vizinhos\nComentários só onde o porquê não é óbvio\nTextos da interface em português do Brasil",

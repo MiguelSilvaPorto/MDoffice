@@ -18,10 +18,7 @@ import { PowerPointHost } from "../powerpoint/powerpoint";
 import { ExcelHost } from "../excel/host";
 import { loadSettings, type AppSettings } from "../settings";
 import * as backup from "../backup";
-
-/** Caixa nativa de escolher pasta (usada pelo diálogo do backup). */
-const pickFoldersNative = () => files.pickFolders();
-import { mostrarNaPasta as revealItemInDir, emTauri } from "../ponte";
+import { mostrarNaPasta as revealItemInDir } from "../ponte";
 import { $, toast, debounce, copyText, loadJSON, toBase64Utf8, h, saveJSON } from "../util";
 import { type Recent } from "./types";
 import { docDaUrl } from "./docNaUrl";
@@ -497,10 +494,7 @@ export class App {
         </ul>
         <p class="bk-ask-pasta">Onde guardar?</p>
         <div class="bk-ask-choose">
-          <span class="muted" data-pasta>${
-            emTauri() ? "Nenhuma pasta escolhida (só a pasta do próprio app)" : "Na pasta do projeto: .mdoffice/backups (junto dos documentos)"
-          }</span>
-          ${emTauri() ? '<button class="btn small" data-escolher>Escolher pasta…</button>' : ""}
+          <span class="muted" data-pasta>Na pasta do projeto: .mdoffice/backups (junto dos documentos)</span>
         </div>
       </div>
       <footer class="wm-foot">
@@ -513,13 +507,6 @@ export class App {
     document.body.append(backdrop);
 
     const q = <T extends HTMLElement>(s: string) => modal.querySelector<T>(s)!;
-    let raiz = this.settings.backupRoot;
-    const pintar = () => {
-      q("[data-pasta]").textContent = emTauri()
-        ? raiz || "Nenhuma pasta escolhida (só a pasta do próprio app)"
-        : "Na pasta do projeto: .mdoffice/backups (junto dos documentos)";
-    };
-    pintar();
 
     const fechar = () => {
       document.removeEventListener("keydown", onKey, true);
@@ -537,40 +524,24 @@ export class App {
       if (e.target === backdrop) fechar();
     });
 
-    q("[data-escolher]")?.addEventListener("click", async () => {
-      try {
-        const escolhida = await pickFoldersNative();
-        if (!escolhida.length) return;
-        raiz = await backup.prepararPasta(escolhida[0]);
-        pintar();
-      } catch {
-        toast("Não foi possível usar essa pasta.", "err");
-      }
-    });
-
     const gravar = async (ligado: boolean) => {
       this.settings = {
         ...this.settings,
         backupOn: ligado,
-        backupRoot: ligado ? raiz : "",
+        // não há "outra pasta" para escolher: o backup vive na pasta concedida
+        backupRoot: "",
         backupAsked: true,
       };
       saveJSON("mdc.settings", this.settings);
       fechar();
       if (!ligado) {
-        // avisa o Rust para ele não proteger arquivos nem gravar cópias
+        // avisa a camada do backup para ela não proteger arquivos nem gravar cópias
         await this.syncBackupConfig();
         toast("Backup em disco desligado. O histórico de versões continua funcionando.", "info", 5000);
         return;
       }
       await this.setupBackup();
-      toast(
-        emTauri()
-          ? "Backup ativado. As cópias ficam nas duas pastas, mesmo que uma falhe."
-          : "Backup ativado em .mdoffice/backups, junto dos documentos.",
-        "ok",
-        5000
-      );
+      toast("Backup ativado em .mdoffice/backups, junto dos documentos.", "ok", 5000);
     };
 
     q("[data-sim]").addEventListener("click", () => void gravar(true));

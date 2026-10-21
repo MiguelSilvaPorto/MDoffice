@@ -64,8 +64,11 @@ ok(
   /class="home-brand"/.test(home) && /class="home-brand-mark"/.test(home) && /home-brand-nome">mdOffice</.test(home)
 );
 ok(
-  "o ícone do executável tem fonte vetorial e os ícones gerados",
-  existsSync(join(raiz, "app-icon.svg")) && existsSync(join(raiz, "src-tauri/icons/icon.png")) && existsSync(join(raiz, "src-tauri/icons/icon.ico")),
+  "a marca tem fonte vetorial e os ícones do app/PWA são gerados",
+  existsSync(join(raiz, "app-icon.svg")) &&
+    existsSync(join(raiz, "public/icones/pwa-512.png")) &&
+    existsSync(join(raiz, "public/icones/pwa-192.png")) &&
+    existsSync(join(raiz, "public/icones/mdoffice-claro.png")),
   "o PNG de 1024 é artefato (ignorado); a fonte é o app-icon.svg"
 );
 

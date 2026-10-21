@@ -17754,7 +17754,7 @@ antigas quando fizer sentido.
 - **Linha:** `export { emTauri, emApp, mostrarNaPasta }` → `+ temDisco`
 - **Porquê:** o autosave precisa perguntar "existe disco?" (não "é o Tauri?").
 
-## scripts/gerar-icones.mjs · app-icon.svg · index.html · public/icones/* · src-tauri/icons/*
+## scripts/gerar-icones.mjs · app-icon.svg · index.html · public/icones/*
 
 ### 2026-10-21 · feat/releitura-icone-paleta-preview · novo ícone da suíte mdOffice (leque de 3 folhas + centelha de IA)
 - **Local:** `scripts/gerar-icones.mjs` (`folha` → `suite` e `placa`), `app-icon.svg`, `#boot .boot-mark` em `index.html`, `public/icones/mdoffice-claro.png`, `public/icones/mdoffice-escuro.png`, `public/icones/pwa-192.png`, `public/icones/pwa-512.png` e `src-tauri/icons/*`
@@ -17774,3 +17774,150 @@ antigas quando fizer sentido.
 - **Local:** `updatePreview`, `statsSoon`, `outlineSoon`, `checkWritingSoon` e `autoFixSoon` em `src/app/app.ts`; `Preview.render`, `renderAndWait`, `postProcess`, `patchDom`, `syncAttributes`, `onClick`, `resolveImages` e `renderMermaid` em `src/md/preview.ts`; `debounced` em `src/translate/controller.ts`
 - **Linha:** `updatePreview = debounce(..., 180)`, `statsSoon = debounce(..., 260)` e `outlineSoon = debounce(..., 400)` → agendamento por quadro via `window.requestAnimationFrame` (`this.previewFrame`, `this.statsFrame`, `this.outlineFrame`); `await marked.parse(md, { gfm: true, async: true })` + `this.el.innerHTML = ...` → `marked.parse(md, { gfm: true, async: false })` síncrono num `staging` offscreen seguido de `this.patchDom(this.el, staging)`, resolução síncrona de imagens já presentes em `this.cache` dentro de `postProcess()` e injeção síncrona de diagramas Mermaid já renderizados via `this.mermaidCache` (mantendo o `.mermaid-host` anterior com `data-pending-mermaid` enquanto um diagrama editado é re-renderizado em segundo plano)
 - **Porquê:** o `debounce` de cauda (`180 ms` no preview, `260 ms` nas estatísticas e `400 ms` na estrutura) reiniciava o timer a cada tecla pressionada, fazendo o preview congelar por 1 a 2 segundos inteiros durante a digitação contínua e só atualizar quando a pessoa parava de escrever. Além disso, substituir `this.el.innerHTML` inteiro a cada renderização destruía imagens locais e diagramas Mermaid já prontos, causando piscadas até a resolução assíncrona terminar (ou abortando o Mermaid pelo `myToken !== this.token` enquanto o usuário continuava digitando). Com `requestAnimationFrame` + parse síncrono + `patchDom` + caches síncronos de imagens e Mermaid, cada letra digitada reflete no próximo quadro (~16 ms) sem piscar nem perder rolagem.
+
+## src-tauri/ (apagado)
+
+### 2026-10-21 · refactor/sem-tauri · o backend Rust saiu
+- **Local:** a pasta inteira, com `Cargo.toml`/`Cargo.lock`, `tauri.conf.json`, `capabilities/` e `icons/`
+- **Linha:** 71 arquivos rastreados removidos (~3.400 linhas de Rust); `@tauri-apps/api`,
+  `@tauri-apps/plugin-dialog`, `@tauri-apps/plugin-opener` e `@tauri-apps/cli` saíram do
+  `package.json`
+- **Porquê:** depois da W1/W2 o app roda inteiro no navegador — o Rust era um caminho paralelo que
+  ninguém mais usava, e mantê-lo custava um toolchain inteiro (Rust + Visual Studio + WebView2)
+  para compilar. O que era dele virou TypeScript nesta tarefa (o Pacote IA, o painel de
+  armazenamento e as últimas APIs de janela).
+
+## src/ponte/index.ts
+
+### 2026-10-21 · refactor/sem-tauri · a ponte ficou com um caminho só
+- **Local:** o topo do arquivo, `invoke`, os diálogos e `mostrarNaPasta`
+- **Linha:** `invokeTauri`/`dlgOpenTauri`/`dlgSaveTauri`/`askTauri` e o `if (emTauri())` saíram;
+  `invoke` chama sempre `comandoDoDisco`; `emTauri` deixou de existir; `adotarArquivo` (novo) e o
+  `case "export_portable_bundle"` entraram
+- **Porquê:** não há mais dois backends para escolher. O erro do `default` agora diz que o comando
+  "era do backend Rust", para quem ler um `invoke` esquecido não procurar o Tauri.
+
+## src/disco/pacote.ts (novo)
+
+### 2026-10-21 · refactor/sem-tauri · o Pacote IA em TypeScript
+- **Local:** arquivo novo — `imagensDoMarkdown`, `exportar`
+- **Linha:** novo arquivo — o ZIP com o Markdown, cada imagem **local** referenciada, o
+  `<imagem>.draw.json` e a folha `INSTRUCOES_PARA_IA.md`
+- **Porquê:** era o `export_portable_bundle` do Rust. O app já trazia o JSZip (importador do Word e
+  a prévia): reimplementar em Rust o que o navegador já sabe fazer era o último peso do backend.
+  As imagens `data:` e as URLs ficam de fora (já estão no texto ou precisam de rede), como antes.
+
+## src/disco/lixeira.ts + src/disco/backup.ts
+
+### 2026-10-21 · refactor/sem-tauri · o "sumido" não reclama do que foi para a lixeira
+- **Local:** `originaisNaLixeira` (novo) e `sumidos`
+- **Linha:** o `sumidos()` passou a pular os caminhos que estão no `index.json` da lixeira
+- **Porquê:** era o `trashed_paths` do Rust. Mover para a lixeira tira o documento do registro de
+  propósito; sem o filtro, o aviso de "arquivo sumiu" acusaria um documento que a pessoa mandou
+  para a lixeira.
+
+## src/app/windowControls.ts
+
+### 2026-10-21 · refactor/sem-tauri · os botões de janela saem
+- **Local:** `setupWindowControls`
+- **Linha:** as chamadas `setDecorations`/`isMaximized`/`minimize`/`toggleMaximize`/`close`/
+  `startDragging` → esconder `.window-controls` e `.win-divider`
+- **Porquê:** quem desenha a moldura agora é o navegador (ou a janela do PWA instalado). Os botões
+  do Tauri ficariam mortos na barra — e o arrasto da janela não existe numa página.
+
+## src/app/appIcon.ts
+
+### 2026-10-21 · refactor/sem-tauri · o ícone do app virou o favicon
+- **Local:** `aplicarIconeApp`
+- **Linha:** `getCurrentWindow().setIcon(Image.fromBytes(...))` → trocar o `href` do
+  `<link rel="icon">` para `mdoffice-claro/escuro.png`
+- **Porquê:** o navegador não deixa a página trocar o ícone da janela; o que dá para trocar é o
+  favicon (aba e atalho). A escolha de Aparência continua funcionando e o ícone do PWA é fixo.
+
+## src/powerpoint/presenter.ts
+
+### 2026-10-21 · refactor/sem-tauri · a tela cheia é a da página
+- **Local:** `telaCheiaDaJanela`
+- **Linha:** `getCurrentWindow().setFullscreen(ligado)` → `document.documentElement.requestFullscreen()`
+  / `document.exitFullscreen()`
+- **Porquê:** a janela nativa não existe mais; o fallback do modo apresentação passou a ser a tela
+  cheia da própria página (o pedido do elemento continua sendo o primeiro caminho).
+
+## src/app/media.ts
+
+### 2026-10-21 · refactor/sem-tauri · arrastar arquivos com o handle do Chromium
+- **Local:** `setupDragDrop` e `handleDrop` (o antigo `handleDropped`)
+- **Linha:** `getCurrentWebview().onDragDropEvent` (caminhos absolutos) → `dragover`/`drop` do DOM
+  com `DataTransferItem.getAsFileSystemHandle()`
+- **Porquê:** o Tauri entregava caminhos; o navegador entrega `File`. O Chromium também entrega um
+  **handle** de verdade no drop — com ele o documento solto abre para leitura e gravação, como no
+  "Abrir…". A imagem é lida do `File`/handle e vai para `assets/` em base64.
+
+## src/storage.ts + src/settingsPage.ts
+
+### 2026-10-21 · refactor/sem-tauri · o painel de armazenamento mede o navegador
+- **Local:** `relatorio` e a seção Armazenamento das Configurações
+- **Linha:** `invoke("storage_report")` → `navigator.storage.estimate()`; saíram a linha do
+  "Cache do WebView", o seletor de teto, o bloco "Da versão anterior" e os botões "Abrir pasta"
+- **Porquê:** a pasta de dados do Windows e o `--disk-cache-size` eram do Tauri. O que o navegador
+  sabe medir é o uso da origem (IndexedDB, cache e localStorage); o resto virou promessa vazia.
+
+## src/app/pastaPadrao.ts
+
+### 2026-10-21 · refactor/sem-tauri · o documento novo nasce como rascunho
+- **Local:** o arquivo inteiro (simplificado) e `nascerNoPadrao`
+- **Linha:** a criação/migração de `Documentos/mdOffice/<tipo>` saiu; `nascerNoPadrao` passou a usar
+  `files.draftPath` (`.mdoffice/rascunhos`) para Markdown e Office
+- **Porquê:** não há "Documentos" no navegador nem como criar pastas fora da pasta concedida. O
+  documento novo precisa de um arquivo de verdade (o autosave grava nele) e o "Salvar como…"
+  escolhe a pasta definitiva.
+
+## src/app/tabs.ts
+
+### 2026-10-21 · refactor/sem-tauri · a sessão antiga é só compatibilidade
+- **Local:** `restoreSession`, `saveBrowserTabs` e `newDoc`
+- **Linha:** a sessão normal (`mdc.session`, com ids) vem primeiro; `mdc.browser.session` (texto
+  das abas) ficou como fallback de quem veio do modo "só texto"; `saveBrowserTabs` usa `temDisco`;
+  `newDoc` não chama mais `nascerNoPadrao`
+- **Porquê:** com o disco no navegador, a sessão por ids é a certa — o fallback antigo era
+  preferido e reabria texto velho por cima dela. E o Markdown novo nasce vazio, virando rascunho
+  no primeiro autosave (como os documentos do Office).
+
+## src/export/run.ts
+
+### 2026-10-21 · refactor/sem-tauri · a pergunta da exportação usa a ponte
+- **Local:** o import e a chamada do `ask`
+- **Linha:** `@tauri-apps/plugin-dialog` → `perguntar` da ponte (sem `okLabel`/`cancelLabel`)
+- **Porquê:** era a última chamada de diálogo direto no plugin; o `window.confirm` do navegador não
+  tem rótulos personalizados, e a mensagem já explica a escolha.
+
+## package.json + vite.config.ts + .gitignore + scripts
+
+### 2026-10-21 · refactor/sem-tauri · os comandos e as marcas do Tauri saíram
+- **Local:** scripts, dependências, `vite.config.ts`, `.gitignore`, `servidor-local.mjs` e `gerar-icones.mjs`
+- **Linha:** `app:tauri`/`app:build`/`tauri`/`icon` removidos; `**/src-tauri/**` saiu do watcher;
+  `src-tauri/target|gen` saíram do `.gitignore`; o gerador de ícones não chama mais `tauri icon`
+- **Porquê:** não há mais o que compilar nem empacotar. O gerador de ícones continua produzindo a
+  fonte SVG e os PNGs do app/PWA.
+
+## scripts/testar-backup.mts + testar-lixeira.mts + testar-salvamento.mts + testar-layout.mts + testar-identidade.mjs
+
+### 2026-10-21 · refactor/sem-tauri · os testes passaram a conferir o contrato novo
+- **Local:** as metades que liam `src-tauri/**`
+- **Linha:** `backup.rs`/`lib.rs`/`files.rs`/`trash.rs`/`storage.rs` → a ponte (`case "…"`), o
+  `src/disco/*.ts` e os arquivos de `public/icones`; o teste do cache do WebView virou o do
+  `navigator.storage.estimate`
+- **Porquê:** o contrato que importa agora é "todo comando que o app chama existe na ponte" e "a
+  regra está na camada de disco". Os testes deixaram de ser uma cópia do Rust e passaram a
+  proteger o que o app faz — inclusive o conserto do autosave (`temDisco`, rascunho, selo).
+
+## scripts/testar-pacote-ia.mjs (novo) + package.json
+
+### 2026-10-21 · refactor/sem-tauri · a trava da leitura de imagens do Pacote IA
+- **Local:** arquivo novo e o script `test:pacote`
+- **Linha:** novo arquivo — `imagensDoMarkdown` com imagens repetidas, título, `<destino com espaço>`
+  e Markdown quebrado
+- **Porquê:** o ZIP precisa do disco (handles) e é exercitado no navegador; o que dá para travar no
+  Node é a decisão de **quais** imagens entram. O teste pegou um caso que o Rust também errava: o
+  destino entre `<>` com espaço era cortado no primeiro espaço - o parser agora procura o `>` antes
+  de separar o título.

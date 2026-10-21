@@ -7,8 +7,6 @@
   "license": "MIT",
   "scripts": {
     "app": "node scripts/servidor-local.mjs",
-    "app:tauri": "tauri dev",
-    "app:build": "tauri build",
     "dev": "node scripts/copiar-dicionario.mjs && vite",
     "build": "node scripts/copiar-dicionario.mjs && tsc && vite build",
     "check": "tsc --noEmit",
@@ -25,6 +23,7 @@
     "test:word-livro": "node scripts/testar-word-livro.mjs",
     "test:autosave-doc": "node scripts/testar-autosave-por-documento.mjs",
     "test:disco": "node scripts/testar-disco-navegador.mjs",
+    "test:pacote": "node scripts/testar-pacote-ia.mjs",
     "test:popup-longo": "node scripts/testar-popup-texto-longo.mjs",
     "test:ghost": "node scripts/testar-ghost.mjs",
     "test:desenho": "node scripts/testar-desenho-assistido.mjs",
@@ -63,8 +62,6 @@
     "test:pptx": "node scripts/testar-pptx.mjs",
     "test:pptx-edicao": "node scripts/testar-edicao-pptx.mjs",
     "preview": "vite preview",
-    "tauri": "tauri",
-    "icon": "tauri icon app-icon.png",
     "prep:dicionario": "node scripts/copiar-dicionario.mjs",
     "test:abnt": "node scripts/testar-regras-abnt.mts",
     "test:abnt-contexto": "node scripts/testar-abnt-contexto.mts",
@@ -86,9 +83,6 @@
     "@codemirror/view": "^6.34.0",
     "@huggingface/transformers": "^4.3.1",
     "@lezer/highlight": "^1.2.0",
-    "@tauri-apps/api": "^2.1.0",
-    "@tauri-apps/plugin-dialog": "^2.0.0",
-    "@tauri-apps/plugin-opener": "^2.2.0",
     "dictionary-pt": "^4.0.0",
     "docx": "^9.9.0",
     "dompurify": "^3.1.0",
@@ -111,7 +105,6 @@
     "typo-js": "^1.3.2"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.1.0",
     "typescript": "^5.6.0",
     "vite": "^6.0.0"
   },

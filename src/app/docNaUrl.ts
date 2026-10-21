@@ -1,5 +1,5 @@
-// O documento que uma janela própria deve abrir — vem na URL (`?doc=<caminho>&draft=1`).
-// Módulo puro (sem DOM nem Tauri): é o contrato entre a janela que ENTREGA a aba e a que a recebe.
+// O documento que uma janela própria deve abrir — vem na URL (`?doc=<id>&draft=1`).
+// Módulo puro (sem DOM): é o contrato entre a janela que ENTREGA a aba e a que a recebe.
 
 export interface PedidoDeJanela {
   /** caminho do arquivo (ou do rascunho guardado pelo app) */

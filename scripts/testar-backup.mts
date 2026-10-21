@@ -1,9 +1,10 @@
-// Teste de integração do backup em disco (roda com `npx tsx scripts/testar-backup.mts`).
+// Teste do backup: a política (perfis, carimbo, tamanhos) e o contrato da ponte.
 //
-// Sobe um mini-servidor HTTP que traduz cada comando `backup_*` para o mesmo código Rust
-// já compilado? Não: aqui testamos a LÓGICA do contrato. O teste real do Rust já está em
-// `cargo test`. Este script confere que o formato que o frontend espera é o que o Rust
-// devolve — verificando o JSON contra os tipos de TypeScript.
+// Até a W3 metade deste teste lia o `backup.rs` e conferia nomes de funções/atributos do
+// Rust. Com o app 100% TypeScript, o contrato passou a ser outro: todo comando `backup_*`
+// (e os de arquivo/rascunho) que o app chama precisa existir na ponte (`src/ponte/index.ts`),
+// que é quem traduz para a camada de disco. O comportamento do backup em si é exercitado no
+// navegador (`npm run app`).
 //
 // Uso: npx tsx scripts/testar-backup.mts
 import { readFileSync } from "node:fs";
@@ -17,49 +18,27 @@ const checa = (nome: string, ok: boolean, falhou = "") => {
   if (!ok) falhas++;
 };
 
-console.log("contrato do backup (frontend ↔ Rust)");
+console.log("contrato da ponte (o app ↔ a camada de disco)");
 
-const rust = readFileSync(join(raiz, "src-tauri/src/commands/backup.rs"), "utf8");
-const ts = readFileSync(join(raiz, "src/backup.ts"), "utf8");
+const ponte = readFileSync(join(raiz, "src/ponte/index.ts"), "utf8");
+const fontes = ["src/backup.ts", "src/files.ts"].map((f) => readFileSync(join(raiz, f), "utf8"));
 
-// os comandos que o frontend chama precisam existir no Rust
-const comandos = [...ts.matchAll(/invoke<[^>]*>\("(backup_[a-z_]+)"|invoke\("(backup_[a-z_]+)"/g)].map(
-  (m) => m[1] ?? m[2]
-);
-for (const c of [...new Set(comandos)]) {
-  checa(`comando ${c}`, rust.includes(`pub fn ${c}`), "não existe em backup.rs");
-}
-
-// e todos precisam estar registrados
-const lib = readFileSync(join(raiz, "src-tauri/src/lib.rs"), "utf8");
-for (const c of [...new Set(comandos)]) {
-  checa(`registro ${c}`, lib.includes(`commands::backup::${c}`), "não registrado em lib.rs");
-}
-
-// os campos que o frontend lê nos tipos do Rust
-const campos: [string, string][] = [
-  ["BackupFile.bytes", "pub bytes: u64"],
-  ["BackupFile.protection", "pub protection: bool"],
-  ["BackupFile.stamp", "pub stamp: String"],
-  ["BackupEntry.missing", "pub missing: bool"],
-  ["BackupWriteResult.skipped", "pub skipped: bool"],
-  ["BackupWriteResult.failed", "pub failed: Vec<String>"],
-  ["IndexFile.days", "pub days: u32"],
-  ["BackupIndex.copies", "pub copies: u64"],
+// todo comando chamado pelo app precisa ter um `case` na ponte
+const comandos = [
+  ...new Set(
+    fontes.flatMap((fonte) => [...fonte.matchAll(/invoke(?:<[^>]*>)?\("([a-z_]+)"/g)].map((m) => m[1]))
+  ),
 ];
-for (const [nome, alvo] of campos) checa(`campo ${nome}`, rust.includes(alvo), `esperava "${alvo}"`);
+for (const c of comandos) {
+  checa(`comando ${c}`, ponte.includes(`case "${c}"`), "não existe na ponte");
+}
 
-// a proteção antes de sobrescrever está ligada nos três pontos de gravação
-const files = readFileSync(join(raiz, "src-tauri/src/commands/files.rs"), "utf8");
-const assets = readFileSync(join(raiz, "src-tauri/src/commands/assets.rs"), "utf8");
-checa("save_text protege", files.includes("protect_before_write"), "files.rs sem proteção");
-checa("save_binary protege", /pub fn save_binary\(app: tauri::AppHandle/.test(files), "assinatura não recebe AppHandle");
-checa("asset_update protege", assets.includes("protect_before_write"), "assets.rs sem proteção");
+// o backup em disco do navegador guarda o estado anterior antes de sobrescrever
+const backupDisco = readFileSync(join(raiz, "src/disco/backup.ts"), "utf8");
+checa("o backup protege o estado anterior (.orig)", backupDisco.includes(".orig"), "sem a proteção");
+checa("o backup não grava cópia repetida", backupDisco.includes("mesmosBytes"), "sem a comparação");
 
-// o hook de leitura marca o conteúdo do disco (para não proteger à toa)
-checa("load_text marca o disco", files.includes("note_disk_content"), "sem note_disk_content");
-
-// os perfis e a conversão perfil -> política (a ponte entre a interface e o Rust)
+// os perfis e a conversão perfil -> política (a ponte entre a interface e o disco)
 const { PERFIS, numerosDoPerfil, carimbo, diaDeHoje, tamanhoLegivel } = await import("../src/backupPolicy.ts");
 
 const porId = (id: string) => PERFIS.find((p) => p.id === id)!;

@@ -24,9 +24,9 @@ export {
 export type { BackupEntry, BackupFile, BackupIndex, BackupWriteResult, IndexFile };
 
 /**
- * O app tem onde gravar o backup? (o Tauri, ou o navegador com uma pasta concedida)
+ * O app tem onde gravar o backup? (a pasta concedida, com o File System Access API)
  *
- * No navegador o backup vive em `.mdoffice/backups` DENTRO da pasta que a pessoa escolheu —
+ * O backup vive em `.mdoffice/backups` DENTRO da pasta que a pessoa escolheu —
  * nada vai para uma pasta escondida do sistema, e o backup viaja junto com os documentos.
  */
 export function temBackend(): boolean {

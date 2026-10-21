@@ -21,48 +21,46 @@ import type { PedidoDeJanela } from "./docNaUrl";
 export const tabsMethods = {
   /** Reabre as abas da sessão anterior; sem sessão, o app fica no Início (o Hub). */
   async restoreSession(this: App): Promise<void> {
-    // 1) Navegador: a sessão de TEXTO guarda o que estava na tela — inclusive alterações que o
+    // 1) A sessão do navegador guarda o TEXTO do que estava na tela — inclusive alterações que o
     //    autosave ainda não gravou. O `path` viaja junto: se o arquivo ainda existir, a aba volta
     //    ligada a ele (o mesmo rascunho, sem duplicar); se o texto estiver mais novo que o disco,
     //    a aba fica suja e o autosave grava. Se o arquivo sumiu, o texto continua na aba e ganha
     //    um rascunho novo.
-    if (!files.emTauri()) {
-      const salvo = loadJSON<{
-        abas: { texto: string; status?: string; autosave?: boolean; path?: string | null }[];
-        ativa: number;
-      } | null>("mdc.browser.session", null);
-      const abas = (salvo?.abas ?? []).filter((a) => a.texto.trim() !== "");
-      if (abas.length) {
-        for (const a of abas) {
-          const t = this.addTabFor(a.path ?? null, a.texto);
-          if (a.path) {
-            try {
-              const noDisco = await files.loadDoc(a.path);
-              t.isDraft = a.path.startsWith(PREFIXO_RASCUNHO) || a.path.startsWith(".mdoffice/rascunhos/");
-              t.dirty = noDisco !== a.texto;
-            } catch {
-              // o arquivo sumiu: a aba fica só com o texto e o autosave cria um rascunho novo
-              t.path = null;
-              t.isDraft = false;
-              t.dirty = true;
-            }
-          } else {
-            // sessão antiga (sem caminho): mantém o texto e deixa o autosave dar um destino
+    const salvo = loadJSON<{
+      abas: { texto: string; status?: string; autosave?: boolean; path?: string | null }[];
+      ativa: number;
+    } | null>("mdc.browser.session", null);
+    const abas = (salvo?.abas ?? []).filter((a) => a.texto.trim() !== "");
+    if (abas.length) {
+      for (const a of abas) {
+        const t = this.addTabFor(a.path ?? null, a.texto);
+        if (a.path) {
+          try {
+            const noDisco = await files.loadDoc(a.path);
+            t.isDraft = a.path.startsWith(PREFIXO_RASCUNHO) || a.path.startsWith(".mdoffice/rascunhos/");
+            t.dirty = noDisco !== a.texto;
+          } catch {
+            // o arquivo sumiu: a aba fica só com o texto e o autosave cria um rascunho novo
+            t.path = null;
+            t.isDraft = false;
             t.dirty = true;
           }
-          t.statusSaved = a.status ?? "Salvo neste navegador";
-          // o salvamento automático é de cada documento: ele sobrevive ao reload
-          if (a.autosave !== undefined) t.autosave = a.autosave;
+        } else {
+          // sessão antiga (sem caminho): mantém o texto e deixa o autosave dar um destino
+          t.dirty = true;
         }
-        this.dropPristineStartTab();
-        const idx = Math.max(0, Math.min(salvo?.ativa ?? 0, this.tabs.length - 1));
-        await this.activate(this.tabs[idx] ?? this.tabs[this.tabs.length - 1]);
-        if (this.tabs.some((t) => t.dirty)) void this.autosave();
-        toast(`${abas.length} documento${abas.length === 1 ? "" : "s"} da sessão do navegador reaberto${abas.length === 1 ? "" : "s"}.`, "info", 3600);
-        return;
+        t.statusSaved = a.status ?? "Rascunho guardado no app";
+        // o salvamento automático é de cada documento: ele sobrevive ao reload
+        if (a.autosave !== undefined) t.autosave = a.autosave;
       }
+      this.dropPristineStartTab();
+      const idx = Math.max(0, Math.min(salvo?.ativa ?? 0, this.tabs.length - 1));
+      await this.activate(this.tabs[idx] ?? this.tabs[this.tabs.length - 1]);
+      if (this.tabs.some((t) => t.dirty)) void this.autosave();
+      toast(`${abas.length} documento${abas.length === 1 ? "" : "s"} da sessão anterior reaberto${abas.length === 1 ? "" : "s"}.`, "info", 3600);
+      return;
     }
-    // 2) App nativo — e, no navegador, uma sessão antiga só com caminhos: reabre os arquivos.
+    // 2) Uma sessão antiga só com caminhos: reabre os arquivos.
     const saved = loadJSON<{ paths: string[]; active: string | null; drafts: string[]; autosave?: Record<string, boolean> } | null>("mdc.session", null);
     let restored = 0;
     if (saved && Array.isArray(saved.paths)) {
@@ -94,6 +92,7 @@ export const tabsMethods = {
         return;
       }
     }
+
     // Nada para reabrir: o app fica no INÍCIO (o Hub) — como quando se fecha a última aba — em vez
     // de abrir sozinho o último rascunho (o relato: "não tem nada aberto e ele abre…"). Os
     // rascunhos continuam guardados e à mão em **Recentes ▸ "Rascunhos guardados no app"**.
@@ -247,12 +246,11 @@ export const tabsMethods = {
   },
 
   /**
-   * Sessão do NAVEGADOR: sem arquivos, guarda o TEXTO de todas as abas Markdown no
-   * localStorage a cada edição/ troca de aba. É o que faz um reload não perder os
-   * documentos abertos (no Tauri as abas têm caminho e a sessão normal resolve).
+   * A sessão de TEXTO das abas (o que estava na tela, inclusive o que o autosave ainda não
+   * gravou) e o caminho de cada uma. O reload reabre com o texto e compara com o disco: se o
+   * texto estiver mais novo, a aba fica suja e o autosave grava.
    */
   saveBrowserTabs(this: App): boolean {
-    if (files.emTauri()) return true;
     const abas: { texto: string; status?: string; autosave?: boolean; path?: string | null }[] = [];
     let ativa = 0;
     for (const t of this.tabs) {
@@ -672,15 +670,10 @@ export const tabsMethods = {
     const tab = newTab(this.editor.createState(""));
     this.tabs.push(tab);
     await this.switchTo(tab.id);
-    // No navegador não há pasta padrão (nem Tauri para gravar): a aba fica como documento
-    // novo e o autosave guarda o texto na sessão do navegador.
-    if (!files.emTauri()) {
-      tab.statusSaved = "Novo documento (navegador)";
-      this.setSaveState();
-      return;
-    }
-    // nasce salvo na pasta padrão do app (Documentos/mdOffice/Markdown), sem perguntar nada
-    await this.nascerNoPadrao("md");
+    // O documento nasce vazio: o primeiro autosave cria o rascunho em .mdoffice/rascunhos
+    // (e a aba passa a ter um arquivo de verdade).
+    tab.statusSaved = "Novo documento";
+    this.setSaveState();
   },
 
   /** Cria um documento novo dentro da pasta de um projeto e abre numa aba. */

@@ -49,7 +49,7 @@ export function juntarPasta(raiz: string, sub: string): string {
   return `${raiz.replace(/[\\/]+$/, "")}${sep}${sub}`;
 }
 
-/** A raiz padrão, a partir do que o sistema informa (o Tauri entrega `…/Documentos/mdOffice`). */
+/** A subpasta sugerida por tipo, a partir da raiz (no navegador a raiz é vazia). */
 export function comRaizPadrao(raiz: string, tipo: TipoComPasta): string {
   return juntarPasta(raiz, PASTA_DO_TIPO[tipo]);
 }

@@ -2046,6 +2046,17 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O Rust saiu: o mdOffice é 100% TypeScript**: o `src-tauri/` inteiro (13 arquivos, ~3.400
+  linhas de Rust), o `Cargo.toml`/`Cargo.lock` e as dependências `@tauri-apps/*` foram apagados.
+  O que era do backend virou TypeScript: a **prévia do Office** (JSZip), o **Pacote IA** (o ZIP
+  com o Markdown, as imagens, os desenhos e as instruções) e o **armazenamento** (a estimativa do
+  navegador). As últimas APIs nativas ganharam equivalentes do navegador: o **ícone do app** troca
+  o favicon, a **tela cheia** da apresentação usa a da página, os **botões de janela** do Tauri
+  somem, o **arrastar arquivos para a janela** usa `getAsFileSystemHandle` (o documento solto abre
+  para leitura e gravação) e a **janela própria** de um documento é uma janela do navegador.
+  Rascunhos, backup, lixeira e a sessão continuam em `.mdoffice/` e no IndexedDB. Os testes que
+  liam o Rust foram migrados para o contrato novo (a ponte atende todo comando que o app chama).
+
 - **O salvamento automático parou de mentir (e voltou a gravar no navegador)**: no modo do navegador
   (`npm run app`) o autosave caía no ramo "sem Tauri" e mandava o texto para o `localStorage`,
   marcando **"Salvo"** sem tocar no arquivo aberto — o arquivo do disco só era gravado no `Ctrl+S`.
