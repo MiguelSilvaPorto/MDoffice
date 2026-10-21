@@ -342,6 +342,14 @@ export const documentsMethods = {
       );
       return true;
     } catch (e) {
+      // No navegador a pasta de rascunhos do app não existe. Numa ação explícita
+      // (Desenhar, colar uma imagem, abrir o histórico) o documento ainda pode ganhar
+      // um arquivo: pede para salvar agora — essas ações gravam assets/ ao lado dele.
+      // O autosave (`silencioso`) nunca abre seletor: ele espera a próxima rodada.
+      if (!silencioso && files.emApp() && !files.emTauri()) {
+        if (await this.save(false)) return true;
+        return false;
+      }
       this.tab.saveFailed = true;
       if (this.tab === tab) this.setSaveState();
       if (!silencioso) toast("Não consegui guardar o rascunho: " + e, "err", 7000);

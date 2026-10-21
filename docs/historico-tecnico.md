@@ -95,6 +95,30 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/app/documents.ts
+
+### 2026-10-21 · fix/desenhar-documento-novo · ação explícita pede o arquivo quando o rascunho não existe
+- **Local:** `ensureSaved`, bloco `catch`
+- **Linha:** antes só marcava `saveFailed` e mostrava o toast; agora, quando
+  `!silencioso && files.emApp() && !files.emTauri()`, tenta `this.save(false)` e devolve o
+  resultado — o autosave chama `ensureSaved(true)` e continua sem abrir seletor
+- **Porquê:** o desenho grava o PNG e o JSON em `assets/`, ao lado do documento, mas no
+  navegador a pasta de rascunhos do app (`.mdoffice/rascunhos`) só existe depois que a pessoa
+  concede uma pasta. Sem ela, o `ensureSaved` falhava e o Desenhar morria com "Não consegui
+  guardar o rascunho: O documento não está mais disponível." A ação explícita agora oferece o
+  "Salvar como" (o arquivo escolhido vira a base do `assets/`); o autosave segue silencioso.
+
+## scripts/testar-desenhar.mjs (novo)
+
+### 2026-10-21 · fix/desenhar-documento-novo · o fluxo do botão Desenhar em documento novo
+- **Local:** roteiro novo, `test:desenhar` no `package.json`
+- **Linha:** Chrome headless com o OPFS como pasta concedida; no caso 1 confere o rascunho em
+  `.mdoffice/rascunhos`; no caso 2 derruba o `.mdoffice` e confere o "Salvar como" (seletor
+  chamado, desenho inserido e quadro aberto)
+- **Porquê:** o defeito só aparecia no navegador e num documento novo; o teste automatiza os
+  dois caminhos (rascunho automático e arquivo escolhido) sem depender do seletor nativo do
+  Windows.
+
 ## src/styles/busca.css
 
 ### 2026-10-21 · fix/busca-painel-nao-fecha · o painel fechado some de verdade

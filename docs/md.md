@@ -51,6 +51,9 @@ dentro do documento e contar com uma escrita assistida de português que roda of
 ## Desenho assistido (prancheta)
 
 - *Desenhar* cria a imagem e abre o canvas embutido no preview, sem popup.
+- **Documento novo no navegador**: como o PNG e o JSON vão para `assets/`, o documento precisa
+  de um arquivo. Com uma pasta concedida, o app cria o rascunho em `.mdoffice/rascunhos/`
+  sozinho; sem ela, pede para salvar o documento uma vez antes de abrir o quadro.
 - A caneta reconhece traços tortos e corrige linhas, retângulos, elipses/círculos e polígonos;
   também encaixa alinhamentos. Formas, texto, cores, seleção/mover, borracha e desfazer/refazer.
 - **Mover e copiar objetos**: **⌖ Selecionar** move com ímã de alinhamento; **Alt+arrastar**

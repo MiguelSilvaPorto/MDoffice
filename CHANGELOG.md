@@ -37,6 +37,15 @@
 
 **Frontend**
 
+- **O botão Desenhar voltou a funcionar em documento novo no navegador**: o quadro grava o PNG
+  e o JSON em `assets/`, ao lado do documento, então o app precisa de um arquivo antes — e o
+  navegador não tem a pasta de rascunhos do app. Quando o rascunho automático não está
+  disponível (sem pasta concedida ou backend antigo), o Desenhar agora pede para **salvar o
+  documento uma vez** e segue com o arquivo escolhido, em vez de morrer com *"Não consegui
+  guardar o rascunho: O documento não está mais disponível."*. O autosave continua em
+  silêncio e nunca abre seletor. Vale também para colar/arrastar imagem e abrir o histórico
+  num documento novo. Trava: `npm run test:desenhar` (rascunho e "Salvar como" no Chrome).
+
 - **Modelo de palavras em níveis (Configurações)**: o modelo da sugestão guardava só as 12 palavras
   seguintes mais comuns de cada palavra. Agora há **Básico (40)**, **Médio (80)** e **Alto (160)**, com
   vocabulário maior e feitos de **texto da web** (blogs, notícias, sites), mais parecido com o que se
