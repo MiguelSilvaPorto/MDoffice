@@ -4,7 +4,7 @@ import type { EditorState } from "prosemirror-state";
 import type { Node as PMNode } from "prosemirror-model";
 import { WordEditor } from "./editor";
 import { Ribbon } from "./ribbon";
-import { ghostPlugin } from "./ghost";
+import { ghostPlugin, aceitarSugestaoWord, temSugestaoWord } from "./ghost";
 import { fixarImagensNaPagina, paginationPlugin, requestPagination, GAP_PX } from "./pagination";
 import { Reguas } from "./regua";
 import { spellPlugin } from "./spell";
@@ -218,6 +218,23 @@ export class WordHost {
 
   focus(): void {
     this.editor.focus();
+  }
+
+  /** O elemento do texto (para saber se o foco está nele). */
+  editorDom(): HTMLElement {
+    return this.editor.view.dom;
+  }
+
+  /** Há sugestão fantasma na tela? */
+  temSugestao(): boolean {
+    return this.opts.ghostEnabled() && temSugestaoWord(this.editor.view);
+  }
+
+  /** Aceita a sugestão fantasma (o Tab que chegou ao app, mesmo com o foco fora do texto). */
+  aceitarSugestao(): boolean {
+    if (!this.temSugestao()) return false;
+    this.editor.view.focus();
+    return aceitarSugestaoWord(this.editor.view);
   }
 
   // ---------- página ----------

@@ -28,6 +28,69 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/app/keys.ts
+
+### 2026-10-21 · feat/ghost-duas-palavras · Tab aceita a sugestão antes do navegador
+- **Local:** `setupKeys` (novo ouvinte de `keydown` na captura, antes do dos atalhos)
+- **Linha:** novo bloco — Tab sem modificador + sugestão viva no editor da aba (`editor.aceitarSugestao()` / `wordHost.aceitarSugestao()`) → `preventDefault` + `stopPropagation`
+- **Porquê:** no navegador o Tab é a tecla de navegação da página. Com o foco fora do texto (um clique na barra) a sugestão continuava na tela e o Tab passava o foco do botão Desenhar para o Exportar. Na captura o app chega antes de qualquer outro ouvinte e do comportamento padrão; ignora `input/textarea/select/contenteditable` de fora do editor, modal aberto e a captura de atalho das Configurações.
+
+## src/broker/ghost/types.ts
+
+### 2026-10-21 · feat/ghost-duas-palavras · palpite das próximas palavras
+- **Local:** `GhostSuggestion`
+- **Linha:** novos campos `extra?: string` e `extras?: (string | undefined)[]`
+- **Porquê:** a sugestão passou a ter duas partes: a firme (`text`, que o Tab aceita) e o palpite das próximas palavras (`extra`, mais claro, aceito palavra por palavra). `extras` acompanha `alts` para o Alt+↓/↑ trocar a opção sem perder o palpite da principal.
+
+## src/broker/ghost/suggestion.ts
+
+### 2026-10-21 · feat/ghost-duas-palavras · aceites e digitação com o palpite
+- **Local:** `consumeTyped`, `cycleSuggestion`; novos `aceiteDoTab`, `aceiteDaPalavra` e a interface `Aceite`
+- **Linha:** `if (!rest) return null` → `if (!rest) return s.extra ? { text: "", extra: s.extra, pos } : null` (e o ramo `!s.text` que consome o palpite); `cycleSuggestion` passou a trocar `extra` junto
+- **Porquê:** o Markdown e o Word aceitavam com regras próprias (`/^(\S+\s*)/`); com o palpite as duas regras ficaram iguais e passaram para cá. A palavra entra com o espaço da frente (`"tado"`, depois `" final"`), então o palpite não deixa espaço sobrando no fim. Digitar a palavra à mão mantém o palpite; digitar outra coisa o descarta.
+
+## src/broker/ghost/predict.ts
+
+### 2026-10-21 · feat/ghost-duas-palavras · até duas próximas palavras
+- **Local:** `THRESHOLDS.palpite` (novo), `suggestFrom`, `predictWithModel`, `predictFromLine`
+- **Linha:** `suggestFrom(...): string | null` → `{ text; extra? } | null`; depois da corrente firme (`T.chain` 0,85), um laço do palpite até `palpite` (2) palavras com o critério da próxima palavra (`T.next`/`nextLead`/`nextRatio`; `NEXT_DISCRETO` no modo Discreta)
+- **Porquê:** o pedido era prever até as duas próximas palavras. A corrente já existia, mas com 0,85 quase nunca aparecia — e baixar o limiar dela pioraria o Tab, que aceita tudo de uma vez (no eval as sugestões longas acertavam 46%). Como o palpite só entra pela seta, uma palavra por vez, ele pode usar o critério mais solto da próxima palavra sem custar nada a quem só aperta Tab. A régua do `testar-ghost` (que mede o `text`) não mudou.
+
+## src/broker/ghost/field.ts
+
+### 2026-10-21 · feat/ghost-duas-palavras · widget do palpite e seta para a direita
+- **Local:** `GhostTextWidget`, `ghostTextField.update`, `acceptGhostText`, `acceptGhostWord`, novos `sugestaoViva`/`aplicarAceite`/`acceptGhostWordAtLineEnd`, `ghostTextKeymap`
+- **Linha:** widget ganhou o `span.cm-ghost-extra`; `if (!suggestion || !suggestion.text)` → também vale sugestão só com palpite; novo `{ key: "ArrowRight", run: acceptGhostWordAtLineEnd }`
+- **Porquê:** o pedido era aceitar mais uma palavra com uma seta. A seta sozinha só aceita no fim da linha — no meio do texto ela continua movendo o cursor. O Ctrl/Alt+→ de antes continua valendo.
+
+## src/word/ghost.ts
+
+### 2026-10-21 · feat/ghost-duas-palavras · mesmas regras no Word
+- **Local:** `accept`, `apply` do plugin, `decorations`, `handleKeyDown`; novos `aceitarSugestaoWord`/`temSugestaoWord`
+- **Linha:** `accept` passou a usar `aceiteDoTab`/`aceiteDaPalavra`; `handleKeyDown` ganhou a seta sozinha no fim do parágrafo (`$head.parentOffset === parent.content.size`); `span.wd-ghost-extra` no widget
+- **Porquê:** o Word usa o mesmo preditor; sem isso o palpite apareceria no Markdown e não no Word. As funções exportadas servem ao Tab da captura (`keys.ts`).
+
+## src/md/editor.ts · src/word/host.ts
+
+### 2026-10-21 · feat/ghost-duas-palavras · ponte para o Tab do app
+- **Local:** novos `temSugestao()` e `aceitarSugestao()` (e `editorDom()` no `WordHost`)
+- **Linha:** métodos novos
+- **Porquê:** o ouvinte do `keys.ts` precisa saber se há sugestão no editor da aba e aceitá-la devolvendo o foco ao texto, sem conhecer CodeMirror/ProseMirror.
+
+## src/styles/editor.css
+
+### 2026-10-21 · feat/ghost-duas-palavras · palpite mais claro
+- **Local:** `.cm-ghost-extra, .wd-ghost-extra`
+- **Linha:** novo `opacity: 0.6` (dentro do span da sugestão, a opacidade se multiplica)
+- **Porquê:** o palpite precisa parecer menos certo que a parte firme — é ele que o Tab não leva.
+
+## src/settingsPage.ts · src/app/assistant.ts · scripts/testar-ghost.mjs
+
+### 2026-10-21 · feat/ghost-duas-palavras · textos e trava
+- **Local:** dica do "Sugestões enquanto digita", aviso ao ligar as sugestões; novo bloco "o palpite das próximas palavras" no teste
+- **Linha:** "Tab aceita; Alt+Seta aceita uma palavra." → "Tab aceita; a seta para a direita aceita uma palavra por vez."
+- **Porquê:** os textos ensinavam o atalho antigo; o teste trava o palpite ("Por ou" → "tro" + " lado"), o máximo de duas palavras e os aceites do Tab/seta/digitação.
+
 ## src/app/wordDocs.ts
 
 ### 2026-10-21 · feat/rascunho-padrao-projeto-novo · salvar rascunho não abre o "Salvar como"

@@ -1,12 +1,13 @@
 // Sugestão de próximas palavras (texto fantasma, estilo Copilot) dentro do documento Word.
 // Usa o mesmo preditor do editor Markdown (broker/ghost): palavras do próprio texto + português comum.
-// Tab aceita tudo, Alt+Seta / Ctrl+Seta aceita palavra por palavra, Esc descarta.
+// Tab aceita a parte firme; a seta para a direita (no fim do parágrafo) e Alt/Ctrl+Seta aceitam
+// palavra por palavra — inclusive o palpite das próximas palavras, mais claro; Esc descarta.
 import { Plugin, PluginKey, TextSelection, type EditorState } from "prosemirror-state";
 import { Decoration, DecorationSet, type EditorView } from "prosemirror-view";
 import { DocumentIndex } from "../broker/ghost/documentIndex";
 import { predictFromLine } from "../broker/ghost/predict";
 import type { GhostSuggestion } from "../broker/ghost/types";
-import { consumeTyped, cycleSuggestion, altLabel, outcomeOf, parDaCorrecao } from "../broker/ghost/suggestion";
+import { consumeTyped, cycleSuggestion, altLabel, outcomeOf, parDaCorrecao, aceiteDoTab, aceiteDaPalavra } from "../broker/ghost/suggestion";
 import { accepted, rejected } from "../broker/personal/feedback";
 import { registrarCorrecao, registrarRecusaDeSugestao } from "../broker/aprendizado";
 
@@ -45,23 +46,35 @@ function setSuggestion(view: EditorView, s: GhostSuggestion | null): void {
   view.dispatch(view.state.tr.setMeta(key, { set: s }));
 }
 
+/** Há sugestão na tela (parte firme ou só o palpite das próximas palavras)? */
+const viva = (s: GhostSuggestion | null | undefined): s is GhostSuggestion => !!s && (!!s.text || !!s.extra?.trim());
+
 function accept(view: EditorView, wordOnly: boolean): boolean {
   const cur = key.getState(view.state);
-  if (!cur || !cur.text) return false;
-  const m = wordOnly && !cur.replace ? /^(\S+\s*)/.exec(cur.text) : null;
+  if (!viva(cur)) return false;
+  const aceite = wordOnly ? aceiteDaPalavra(cur) : aceiteDoTab(cur);
+  if (!aceite) return false;
   const o = outcomeOf(cur);
-  if (o && (!m || m[1].trim() === cur.text.split(" ")[0])) accepted(o);
-  const insert = m ? m[1] : cur.text;
-  const rest = cur.text.slice(insert.length);
+  if (o && aceite.primeiraInteira) accepted(o);
   const pos = cur.pos - (cur.replace ?? 0); // correção: troca o que foi digitado
   // correção do fantasma aceita: vira troca aprendida para o corretor também
   const par = parDaCorrecaoDoc(cur, view.state.doc);
   if (par) registrarCorrecao(par[0], par[1]);
-  const tr = view.state.tr.insertText(insert, pos, cur.pos);
-  tr.setSelection(TextSelection.create(tr.doc, pos + insert.length));
-  tr.setMeta(key, { set: rest ? { text: rest, pos: pos + insert.length } : null });
+  const tr = view.state.tr.insertText(aceite.insert, pos, cur.pos);
+  tr.setSelection(TextSelection.create(tr.doc, pos + aceite.insert.length));
+  tr.setMeta(key, { set: aceite.rest ? { ...aceite.rest, pos: pos + aceite.insert.length } : null });
   view.dispatch(tr.scrollIntoView());
   return true;
+}
+
+/** Aceita a sugestão do editor (o Tab que chega pelo app, com o foco fora do texto). */
+export function aceitarSugestaoWord(view: EditorView): boolean {
+  return accept(view, false);
+}
+
+/** O editor tem sugestão na tela? */
+export function temSugestaoWord(view: EditorView): boolean {
+  return viva(key.getState(view.state));
 }
 
 export function ghostPlugin(hooks: WordGhostHooks): Plugin {
@@ -105,7 +118,7 @@ export function ghostPlugin(hooks: WordGhostHooks): Plugin {
             }
           });
           if (pure && at === cur.pos) {
-            const bate = cur.text.toLowerCase().startsWith(typed.toLowerCase());
+            const bate = (cur.text || cur.extra || "").toLowerCase().startsWith(typed.toLowerCase());
             if (!bate) {
               const o = outcomeOf(cur);
               if (o) rejected(o, false); // digitou outra coisa: essa sugestão não serviu
@@ -124,7 +137,7 @@ export function ghostPlugin(hooks: WordGhostHooks): Plugin {
     props: {
       decorations(state) {
         const s = key.getState(state);
-        if (!s || !s.text || !hooks.enabled()) return null;
+        if (!viva(s) || !hooks.enabled()) return null;
         const w = document.createElement("span");
         w.className = "wd-ghost";
         w.textContent = s.text;
@@ -132,12 +145,25 @@ export function ghostPlugin(hooks: WordGhostHooks): Plugin {
         if (s.replace) w.classList.add("wd-ghost-fix");
         const label = altLabel(s);
         if (label) w.dataset.alts = label;
-        return DecorationSet.create(state.doc, [Decoration.widget(s.pos, w, { side: 1, key: `ghost-${s.pos}-${s.text}-${s.alt ?? 0}` })]);
+        // o palpite das próximas palavras, mais claro (a seta para a direita aceita uma por vez)
+        if (s.extra) {
+          const palpite = document.createElement("span");
+          palpite.className = "wd-ghost-extra";
+          palpite.textContent = s.extra;
+          w.append(palpite);
+        }
+        return DecorationSet.create(state.doc, [Decoration.widget(s.pos, w, { side: 1, key: `ghost-${s.pos}-${s.text}-${s.extra ?? ""}-${s.alt ?? 0}` })]);
       },
       handleKeyDown(view, e) {
-        if (!hooks.enabled() || !key.getState(view.state)) return false;
+        if (!hooks.enabled() || !viva(key.getState(view.state))) return false;
         if (e.key === "Tab" && !e.shiftKey && !e.ctrlKey && !e.altKey) return accept(view, false);
         if (e.key === "ArrowRight" && (e.altKey || e.ctrlKey) && !e.shiftKey) return accept(view, true);
+        // seta para a direita sozinha: só no fim do parágrafo (no meio, continua andando com o cursor)
+        if (e.key === "ArrowRight" && !e.altKey && !e.ctrlKey && !e.shiftKey && !e.metaKey) {
+          const $c = view.state.selection.$head;
+          if (!view.state.selection.empty || $c.parentOffset !== $c.parent.content.size) return false;
+          return accept(view, true);
+        }
         if (e.altKey && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
           const cur = key.getState(view.state)!;
           if (!cur.alts || cur.alts.length < 2) return false;

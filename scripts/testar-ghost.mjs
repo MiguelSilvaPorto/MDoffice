@@ -29,7 +29,8 @@ const ok = (nome, cond, detalhe = "") => {
 const G = await empacotar(
   `export { predictFromLine, THRESHOLDS } from "./src/broker/ghost/predict.ts";
    export { DocumentIndex } from "./src/broker/ghost/documentIndex.ts";
-   export { setLanguageModel } from "./src/broker/ghost/model.ts";`,
+   export { setLanguageModel } from "./src/broker/ghost/model.ts";
+   export { consumeTyped, aceiteDoTab, aceiteDaPalavra } from "./src/broker/ghost/suggestion.ts";`,
   "ghost.mjs"
 );
 
@@ -154,6 +155,35 @@ modo = "equilibrado";
   ok("ghost (equilibrada): economiza mais teclas que a discreta", economia >= 24, `${economia.toFixed(1)}%`);
   ok("ghost (equilibrada): aparece em boa parte das posições", cobertura >= 15, `${cobertura.toFixed(1)}%`);
   ok("ghost (equilibrada): ainda acerta boa parte do que mostra", precisao >= 40, `${precisao.toFixed(1)}%`);
+}
+
+// ---------------------------------------------------------------- o palpite das próximas palavras
+// O pedido: além de completar a palavra, prever até as duas próximas (mais claras); o Tab aceita a
+// palavra e a seta para a direita traz uma palavra do palpite por vez.
+modo = "equilibrado";
+{
+  const idx = new G.DocumentIndex();
+  const r = G.predictFromLine("Por ou", "", 6, idx);
+  ok("ghost: completa a palavra e arrisca a próxima (Por ou → tro + lado)", r?.text === "tro" && r?.extra === " lado", JSON.stringify(r ? [r.text, r.extra] : null));
+  const palavras = (r?.extra ?? "").trim().split(/\s+/).filter(Boolean).length;
+  ok("ghost: o palpite tem no máximo duas palavras", palavras <= G.THRESHOLDS.palpite, String(palavras));
+
+  const s = { text: "o", extra: " lado bom", pos: 8 };
+  const tab = G.aceiteDoTab(s);
+  ok("ghost: o Tab aceita só a palavra e deixa o palpite", tab?.insert === "o" && tab?.rest?.text === "" && tab?.rest?.extra === " lado bom", JSON.stringify(tab));
+  const seta1 = G.aceiteDaPalavra({ ...tab.rest, pos: 9 });
+  ok("ghost: a seta traz uma palavra do palpite", seta1?.insert === " lado" && seta1?.rest?.extra === " bom", JSON.stringify(seta1));
+  const seta2 = G.aceiteDaPalavra({ ...seta1.rest, pos: 14 });
+  ok("ghost: a última palavra do palpite encerra a sugestão", seta2?.insert === " bom" && seta2?.rest === null, JSON.stringify(seta2));
+  const firme = G.aceiteDaPalavra({ text: "tado final", extra: " ficou", pos: 0 });
+  ok("ghost: a seta anda pela parte firme antes do palpite", firme?.insert === "tado" && firme?.rest?.text === " final" && firme?.rest?.extra === " ficou", JSON.stringify(firme));
+  const digitou = G.consumeTyped({ text: "o", extra: " lado", pos: 8 }, "o");
+  ok("ghost: digitar a palavra à mão mantém o palpite", digitou?.text === "" && digitou?.extra === " lado", JSON.stringify(digitou));
+  const espaco = G.consumeTyped(digitou, " ");
+  ok("ghost: digitar o espaço come o palpite", espaco?.extra === "lado", JSON.stringify(espaco));
+  ok("ghost: digitar outra coisa descarta o palpite", G.consumeTyped(digitou, "x") === null);
+  const corr = G.aceiteDaPalavra({ text: "noção ", pos: 13, replace: 6 });
+  ok("ghost: correção continua inteira na seta", corr?.insert === "noção " && corr?.rest === null, JSON.stringify(corr));
 }
 
 console.log("");

@@ -1,9 +1,9 @@
-// Widget visual, estado do CodeMirror 6 e atalhos (Tab, Esc, Alt+Seta, Ctrl+Seta).
+// Widget visual, estado do CodeMirror 6 e atalhos (Tab, Esc, Seta para a direita, Alt+Seta, Ctrl+Seta).
 
 import { EditorView, WidgetType, Decoration, type DecorationSet, keymap } from "@codemirror/view";
 import { StateField, StateEffect, Facet, Prec, type Text, type EditorState } from "@codemirror/state";
 import { type GhostSuggestion } from "./types";
-import { consumeTyped, cycleSuggestion, altLabel, outcomeOf, parDaCorrecao } from "./suggestion";
+import { consumeTyped, cycleSuggestion, altLabel, outcomeOf, parDaCorrecao, aceiteDoTab, aceiteDaPalavra, type Aceite } from "./suggestion";
 import { accepted, rejected } from "../personal/feedback";
 import { registrarCorrecao, registrarRecusaDeSugestao } from "../aprendizado";
 
@@ -25,7 +25,7 @@ function recusarCorrecao(s: GhostSuggestion, doc: Text): void {
 }
 
 export class GhostTextWidget extends WidgetType {
-  constructor(readonly text: string, readonly label: string | null = null, readonly fix = false) {
+  constructor(readonly text: string, readonly label: string | null = null, readonly fix = false, readonly extra = "") {
     super();
   }
 
@@ -36,11 +36,18 @@ export class GhostTextWidget extends WidgetType {
     span.setAttribute("aria-hidden", "true");
     if (this.label) span.dataset.alts = this.label;
     if (this.fix) span.classList.add("cm-ghost-fix");
+    // o palpite das próximas palavras, mais claro (a seta para a direita aceita uma por vez)
+    if (this.extra) {
+      const palpite = document.createElement("span");
+      palpite.className = "cm-ghost-extra";
+      palpite.textContent = this.extra;
+      span.append(palpite);
+    }
     return span;
   }
 
   eq(other: GhostTextWidget): boolean {
-    return other.text === this.text && other.label === this.label && other.fix === this.fix;
+    return other.text === this.text && other.label === this.label && other.fix === this.fix && other.extra === this.extra;
   }
 }
 
@@ -131,13 +138,13 @@ export const ghostTextField = StateField.define<{
 
     if (!changed) return val;
 
-    if (!suggestion || !suggestion.text) {
+    if (!suggestion || (!suggestion.text && !suggestion.extra?.trim())) {
       return { suggestion: null, decorations: Decoration.none };
     }
 
     const deco = Decoration.set([
       Decoration.widget({
-        widget: new GhostTextWidget(suggestion.text, altLabel(suggestion), !!suggestion.replace),
+        widget: new GhostTextWidget(suggestion.text, altLabel(suggestion), !!suggestion.replace, suggestion.extra ?? ""),
         side: 1,
       }).range(suggestion.pos),
     ]);
@@ -147,53 +154,54 @@ export const ghostTextField = StateField.define<{
   provide: (field) => EditorView.decorations.from(field, (v) => v.decorations),
 });
 
-// ---------- atalhos de teclado (Tab / Esc / Alt+Seta / Ctrl+Seta) ----------
+// ---------- atalhos de teclado (Tab / Esc / Seta para a direita / Alt+Seta / Ctrl+Seta) ----------
 
-/** Aceita toda a sugestão de ghost text atual */
-export function acceptGhostText(view: EditorView): boolean {
-  const fieldVal = view.state.field(ghostTextField, false);
-  const cur = fieldVal?.suggestion;
-  if (!cur || !cur.text) return false;
+/** A sugestão que está na tela (parte firme ou só o palpite das próximas palavras). */
+function sugestaoViva(view: EditorView): GhostSuggestion | null {
+  const cur = view.state.field(ghostTextField, false)?.suggestion;
+  return cur && (cur.text || cur.extra?.trim()) ? cur : null;
+}
 
+/** Insere o que foi aceito e deixa na tela o que sobrou da sugestão. */
+function aplicarAceite(view: EditorView, cur: GhostSuggestion, aceite: Aceite): boolean {
   const o = outcomeOf(cur);
-  if (o) accepted(o);
+  if (o && aceite.primeiraInteira) accepted(o);
   // correção do fantasma aceita: vira troca aprendida para o corretor também
   const par = parDaCorrecaoNoDoc(cur, view.state.doc);
   if (par) registrarCorrecao(par[0], par[1]);
-  const insert = cur.text;
   const from = cur.pos - (cur.replace ?? 0); // correção: troca o que foi digitado
+  const nextPos = from + aceite.insert.length;
   view.dispatch({
-    changes: { from, to: cur.pos, insert },
-    selection: { anchor: from + insert.length },
-    effects: setGhostEffect.of(null),
+    changes: { from, to: cur.pos, insert: aceite.insert },
+    selection: { anchor: nextPos },
+    effects: setGhostEffect.of(aceite.rest ? { ...aceite.rest, pos: nextPos } : null),
     scrollIntoView: true,
   });
   return true;
 }
 
-/** Aceita apenas a próxima palavra da sugestão (estilo Alt+Seta / Ctrl+Seta do Copilot) */
+/** Tab: aceita a parte firme da sugestão (o palpite das próximas palavras continua na tela). */
+export function acceptGhostText(view: EditorView): boolean {
+  const cur = sugestaoViva(view);
+  const aceite = cur && aceiteDoTab(cur);
+  return cur && aceite ? aplicarAceite(view, cur, aceite) : false;
+}
+
+/** Aceita apenas a próxima palavra da sugestão (Seta para a direita / Alt+Seta / Ctrl+Seta). */
 export function acceptGhostWord(view: EditorView): boolean {
-  const fieldVal = view.state.field(ghostTextField, false);
-  const cur = fieldVal?.suggestion;
-  if (!cur || !cur.text) return false;
+  const cur = sugestaoViva(view);
+  const aceite = cur && aceiteDaPalavra(cur);
+  return cur && aceite ? aplicarAceite(view, cur, aceite) : false;
+}
 
-  if (cur.replace) return acceptGhostText(view);
-  const m = /^(\S+\s*)/.exec(cur.text);
-  if (!m) return false;
-
-  const o = outcomeOf(cur);
-  if (o && m[1].trim() === cur.text.split(" ")[0]) accepted(o);
-  const word = m[1];
-  const remaining = cur.text.slice(word.length);
-  const nextPos = cur.pos + word.length;
-
-  view.dispatch({
-    changes: { from: cur.pos, to: cur.pos, insert: word },
-    selection: { anchor: nextPos },
-    effects: setGhostEffect.of(remaining.length > 0 ? { text: remaining, pos: nextPos } : null),
-    scrollIntoView: true,
-  });
-  return true;
+/**
+ * A seta para a direita SEM modificador só aceita no fim da linha: no meio do texto ela continua
+ * andando com o cursor, como sempre.
+ */
+function acceptGhostWordAtLineEnd(view: EditorView): boolean {
+  const { head, empty } = view.state.selection.main;
+  if (!empty || head !== view.state.doc.lineAt(head).to) return false;
+  return acceptGhostWord(view);
 }
 
 /** Troca a sugestão pela próxima/anterior opção (Alt+Seta para baixo/cima). */
@@ -235,6 +243,10 @@ export const ghostTextKeymap = Prec.highest(
     {
       key: "Alt-ArrowUp",
       run: (view) => cycleGhostText(view, -1),
+    },
+    {
+      key: "ArrowRight",
+      run: (view) => acceptGhostWordAtLineEnd(view),
     },
     {
       key: "Alt-ArrowRight",

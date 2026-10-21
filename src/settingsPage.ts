@@ -242,7 +242,7 @@ export function renderSettingsPage(host: HTMLElement, ctx: SettingsCtx, section:
           <h4 class="st-group">Digitação e sugestões</h4>
           <div class="st-list">
             ${toggle("autofix", "Correção automática", "Ponto final, vírgulas, maiúsculas, espaços e palavras erradas entram sozinhos (Ctrl+Z desfaz).", ctx.autoFix(), "i-brush")}
-            ${toggle("copilot", "Sugestões enquanto digita", "Mostra a continuação da frase em cinza. Tab aceita; Alt+Seta aceita uma palavra.", ctx.copilot(), "i-spark")}
+            ${toggle("copilot", "Sugestões enquanto digita", "Mostra a continuação da frase em cinza (e, mais claro, um palpite das duas próximas palavras). Tab aceita; a seta para a direita aceita uma palavra por vez.", ctx.copilot(), "i-spark")}
             <div class="st-row">
               ${rowIcon("i-focus")}
               <span class="st-text"><b>Intensidade das sugestões</b><small>Discreta: só com muita certeza (aparece pouco, quase sempre certa). Equilibrada: arrisca o palpite mais provável, mesmo faltando só 2 letras (Alt+Seta para baixo troca a opção). Agressiva: aparece ainda mais e erra mais.</small></span>

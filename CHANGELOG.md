@@ -2161,6 +2161,20 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 ### Adicionado (na main)
 
+- **Sugestão enquanto digita: o Tab volta a aceitar no navegador e a sugestão prevê as próximas
+  duas palavras** (Markdown e Word). **Bug:** no navegador o Tab passou a ser disputado com a
+  navegação da página — com a sugestão na tela e o foco fora do texto (depois de um clique na
+  barra), o Tab levava o foco do **Desenhar** para o **Exportar** em vez de aceitar. Agora um
+  ouvinte do app, na fase de captura, aceita a sugestão visível antes do navegador e devolve o
+  foco ao texto (campos de busca, Configurações e caixas de outros módulos continuam com o Tab
+  deles; com um modal aberto ele não age). **Melhoria:** além de completar a palavra, a
+  sugestão arrisca **até as duas próximas palavras**, mostradas **mais claras** ("Por ou" →
+  "tro" + "lado"). O **Tab** aceita a parte em cinza e deixa o palpite na tela; a **seta para a
+  direita** (no fim da linha/parágrafo) e o **Ctrl/Alt+→** aceitam **uma palavra por vez**,
+  inclusive as do palpite. Cada palavra do palpite passa pelo mesmo critério da próxima palavra
+  depois de um espaço. Trava: `node scripts/testar-ghost.mjs` (palpite, Tab, seta, digitar por
+  cima).
+
 - **Documento novo do Office não pergunta mais onde salvar**: ao criar um **Word (.docx)**,
   **Excel (.xlsx)** ou **PowerPoint (.pptx)** do zero, o app já grava o **rascunho** na pasta
   escolhida em Configurações ▸ Histórico e salvamento — mas o diálogo **"Salvar como"** abria

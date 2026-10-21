@@ -61,6 +61,13 @@ export const THRESHOLDS = {
   nextRatio: 3,
   /** quantas palavras no máximo numa sugestão */
   maxWords: 3,
+  /**
+   * O palpite das próximas palavras (mais claro, aceito palavra por palavra com a seta para a
+   * direita): depois da palavra sugerida, tenta prever até mais `palpite` palavras. Como o Tab não
+   * leva o palpite, ele pode arriscar mais que a corrente (`chain`): cada palavra passa pelo mesmo
+   * critério da próxima palavra depois de um espaço (`next`/`nextLead`/`nextRatio`).
+   */
+  palpite: 2,
   /** oferece corrigir a palavra recém-digitada quando parece erro de digitação */
   typoFix: true,
   /** usa a regra de concordância de gênero e número */
@@ -185,7 +192,7 @@ export function predictFromLine(before: string, after: string, pos: number, inde
   }
   const r = predictWithModel(model, before, index, THRESHOLDS.alternatives);
   if (r?.replace) return { text: r.texts[0], pos, replace: r.replace }; // correção do que foi digitado: sem alternativas nem aprendizado
-  return r ? { text: r.texts[0], pos, alts: r.texts, altWords: r.words, prev: r.prev, mode: r.mode } : null;
+  return r ? { text: r.texts[0], extra: r.extras[0], pos, alts: r.texts, extras: r.extras, altWords: r.words, prev: r.prev, mode: r.mode } : null;
 }
 
 // ---------------------------------------------------------------- contexto
@@ -427,12 +434,12 @@ function rank(model: LangModel, index: DocumentIndex, tokens: string[], prefix: 
 }
 
 /** Sugestão principal + alternativas (da mais para a menos provável). A primeira é a que aparece em cinza. */
-function predictWithModel(model: LangModel, before: string, index: DocumentIndex, k = 1): { texts: string[]; words: string[]; prev: string; mode: "next" | "prefix"; replace?: number } | null {
+function predictWithModel(model: LangModel, before: string, index: DocumentIndex, k = 1): { texts: string[]; extras: (string | undefined)[]; words: string[]; prev: string; mode: "next" | "prefix"; replace?: number } | null {
   const ctx = readContext(before);
   if (!ctx) return null;
   const T = THRESHOLDS;
   const prev0 = ctx.tokens.length ? ctx.tokens[ctx.tokens.length - 1] : SENTENCE_START;
-  const typoFix = (): { texts: string[]; words: string[]; prev: string; mode: "next"; replace: number } | null => {
+  const typoFix = (): { texts: string[]; extras: (string | undefined)[]; words: string[]; prev: string; mode: "next"; replace: number } | null => {
     const jt = ctx.justTyped;
     if (!T.typoFix || !jt) return null;
     // nome próprio no meio da frase (inicial maiúscula): não mexe
@@ -443,7 +450,7 @@ function predictWithModel(model: LangModel, before: string, index: DocumentIndex
     const cap = jt.word[0] !== jt.word[0].toLowerCase();
     const text = upper ? fixed.toUpperCase() : cap ? fixed[0].toUpperCase() + fixed.slice(1) : fixed;
     // troca a palavra e mantém o espaço que a pessoa digitou
-    return { texts: [text + " ".repeat(jt.spaces)], words: [fixed], prev: prev0, mode: "next", replace: jt.word.length + jt.spaces };
+    return { texts: [text + " ".repeat(jt.spaces)], extras: [undefined], words: [fixed], prev: prev0, mode: "next", replace: jt.word.length + jt.spaces };
   };
   // o contexto de uma palavra com erro é pouco confiável: a correção vem antes de qualquer previsão
   const fixFirst = typoFix();
@@ -451,25 +458,32 @@ function predictWithModel(model: LangModel, before: string, index: DocumentIndex
   const list = rank(model, index, ctx.tokens, ctx.prefix, k);
   if (!list.length) return null;
   const out: string[] = [];
+  const extras: (string | undefined)[] = [];
   const words: string[] = [];
   for (let i = 0; i < list.length; i++) {
-    let text = suggestFrom(model, index, ctx, list[i], i === 0, list[1]?.p ?? 0);
+    const sug = suggestFrom(model, index, ctx, list[i], i === 0, list[1]?.p ?? 0);
+    let text = sug?.text ?? null;
     // faltam poucas letras: digitar custa quase o mesmo que o Tab, então a sugestão só atrapalha
     if (text && ctx.prefix !== null && text.trimEnd().length < minChars()) text = null;
     if (i === 0) {
       if (!text) return null;
       out.push(text);
+      extras.push(sug?.extra);
       words.push(list[i].best.lc);
     } else if (text && list[i].p >= T.alt && !out.includes(text)) {
       out.push(text);
+      extras.push(sug?.extra);
       words.push(list[i].best.lc);
     }
   }
-  return { texts: out, words, prev: prev0, mode: ctx.prefix !== null ? "prefix" : "next" };
+  return { texts: out, extras, words, prev: prev0, mode: ctx.prefix !== null ? "prefix" : "next" };
 }
 
-/** Monta o texto a sugerir a partir de uma palavra escolhida (ou nada, se o ganho não pagar o custo). */
-function suggestFrom(model: LangModel, index: DocumentIndex, ctx: Ctx, first: Ranked, main: boolean, second = 0): string | null {
+/**
+ * Monta o texto a sugerir a partir de uma palavra escolhida (ou nada, se o ganho não pagar o custo).
+ * `text` é a parte firme (o Tab aceita); `extra`, o palpite das próximas palavras (só na principal).
+ */
+function suggestFrom(model: LangModel, index: DocumentIndex, ctx: Ctx, first: Ranked, main: boolean, second = 0): { text: string; extra?: string } | null {
   const T = THRESHOLDS;
   const words: string[] = [];
   let tokens = ctx.tokens;
@@ -488,7 +502,7 @@ function suggestFrom(model: LangModel, index: DocumentIndex, ctx: Ctx, first: Ra
     if (main && !solta && !decidir(prob, suffix.length)) return null;
     words.push(suffix);
     tokens = [...tokens, first.best.lc];
-    if (!main) return suffix;
+    if (!main) return { text: suffix };
   } else {
     let w = first.best.display;
     if (ctx.sentenceStart) w = w[0].toUpperCase() + w.slice(1);
@@ -498,7 +512,7 @@ function suggestFrom(model: LangModel, index: DocumentIndex, ctx: Ctx, first: Ra
     if (main && !folgada && first.p < limiar(discreto ? NEXT_DISCRETO : T.next, "next")) return null;
     words.push(w);
     tokens = [...tokens, first.best.lc];
-    if (!main) return w;
+    if (!main) return { text: w };
   }
   // a corrente segue o limiar fixo T.chain no n-grama: ela é RARA (a calibração dela exigiria
   // muitos dados que quase não existem) e multiplicar as chances deixava a corrente impossível.
@@ -508,7 +522,19 @@ function suggestFrom(model: LangModel, index: DocumentIndex, ctx: Ctx, first: Ra
     words.push(nx.best.display);
     tokens = [...tokens, nx.best.lc];
   }
-  return ctx.prefix !== null ? words[0] + (words.length > 1 ? " " + words.slice(1).join(" ") : "") : words.join(" ");
+  const text = words.join(" ");
+  // o palpite: até `palpite` palavras depois da sugerida (as da corrente firme já contam)
+  const palpite: string[] = [];
+  const discreto = getGhostMode() === "discreto";
+  while (words.length - 1 + palpite.length < T.palpite) {
+    const [nx, seg] = rank(model, index, tokens, null, 2);
+    if (!nx) break;
+    const folgada = !discreto && nx.p >= T.nextLead && nx.p >= T.nextRatio * (seg?.p ?? 0);
+    if (!folgada && nx.p < limiar(discreto ? NEXT_DISCRETO : T.next, "next")) break;
+    palpite.push(nx.best.display);
+    tokens = [...tokens, nx.best.lc];
+  }
+  return { text, extra: palpite.length ? " " + palpite.join(" ") : undefined };
 }
 
 /**

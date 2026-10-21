@@ -283,6 +283,13 @@
   vertical-align: super;
 }
 
+/* palpite das próximas palavras: mais claro que a sugestão (o Tab não leva; a seta para a direita
+   aceita uma palavra por vez). Fica dentro do span da sugestão, então a opacidade se multiplica. */
+.cm-ghost-extra,
+.wd-ghost-extra {
+  opacity: 0.6;
+}
+
 /* correção do que acabou de ser digitado (Tab troca) */
 .cm-ghost-fix,
 .wd-ghost-fix {

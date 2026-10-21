@@ -210,8 +210,13 @@ dentro do documento e contar com uma escrita assistida de português que roda of
 
 ## Sugestões enquanto você digita
 
-- A continuação aparece em cinza depois do cursor: **Tab** aceita tudo, **Alt+→** palavra por
-  palavra, **Alt+↓/↑** alternam até 3 opções e **Esc** descarta. Vem de três fontes: modelo
+- A continuação aparece em cinza depois do cursor e, **mais clara**, um **palpite das próximas
+  duas palavras** (ex.: "Por ou" → "tro" + "lado"). **Tab** aceita a parte em cinza (o palpite
+  fica na tela); a **seta para a direita** (no fim da linha) ou **Ctrl/Alt+→** aceita **uma
+  palavra por vez**, inclusive as do palpite; **Alt+↓/↑** alternam até 3 opções e **Esc**
+  descarta. O **Tab** tem prioridade sobre o navegador: com uma sugestão na tela ele aceita, mesmo
+  que o foco tenha ido para um botão da barra (antes o navegador passava o foco para o próximo
+  botão). Vem de três fontes: modelo
   do português embutido, o próprio documento e uma memória dos seus textos recentes. O modelo
   embutido é feito de **contagens** de palavras e sequências (1–3 palavras) de um corpus da
   **Wikipédia em português** (CC BY-SA 4.0) — nenhum trecho de texto é copiado para o app, e o

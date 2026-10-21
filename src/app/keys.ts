@@ -9,6 +9,28 @@ import { atalhoDoEvento, emCaptura } from "./keymap";
 
 export const keysMethods = {
   setupKeys(this: App): void {
+    // Tab com sugestão fantasma na tela: aceita, antes do navegador usar a tecla para passar o
+    // foco ao próximo botão (no app de desktop não havia essa disputa). Escuta na captura, então
+    // chega primeiro, inclusive quando o foco saiu do texto (um clique na barra) e a sugestão
+    // continuou à vista — era o "aperto Tab e ele pula do Desenhar para o Exportar".
+    window.addEventListener(
+      "keydown",
+      (e) => {
+        if (e.key !== "Tab" || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey || e.isComposing) return;
+        if (emCaptura() || document.querySelector(".modal-backdrop")) return;
+        // outro campo de texto (busca, Configurações, caixa do PowerPoint): o Tab é dele
+        const alvo = e.target as HTMLElement | null;
+        const editorDom = this.tab.kind === "word" ? this.wordHost.editorDom() : this.tab.kind === "doc" || !this.tab.kind ? this.editor.view.dom : null;
+        if (!editorDom || !editorDom.isConnected || editorDom.offsetParent === null) return;
+        if (alvo?.closest?.("input, textarea, select, [contenteditable]") && !editorDom.contains(alvo)) return;
+        const aceitou = this.tab.kind === "word" ? this.wordHost.aceitarSugestao() : this.editor.aceitarSugestao();
+        if (!aceitou) return;
+        e.preventDefault();
+        e.stopPropagation();
+      },
+      true
+    );
+
     window.addEventListener("keydown", (e) => {
       // A aba Atalhos está esperando a próxima tecla para trocar um atalho: quem
       // manda lá é ela, e o resto do app fica quieto.

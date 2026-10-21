@@ -183,7 +183,7 @@ export const assistantMethods = {
     this.editor.setGhostTextEnabled(on);
     toast(
       on
-        ? "Sugestões inline ligadas (estilo Copilot): use Tab para aceitar ou Alt+Seta para palavra por palavra."
+        ? "Sugestões inline ligadas (estilo Copilot): Tab aceita a palavra; a seta para a direita traz as próximas, uma por vez."
         : "Sugestões inline desativadas.",
       "ok",
       2800

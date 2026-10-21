@@ -120,7 +120,8 @@ arquivos `.docx` de verdade.
   clicar numa imagem, no espaço da linha ou na margem não abre o popup (a imagem é inline e ficava na
   borda da faixa da palavra); um aviso que atravessa uma imagem não oferece sugestão (aplicar
   apagaria a imagem). O **texto fantasma** (sugestões enquanto digita) funciona aqui também, com
-  **Tab/Alt+→/Alt+↓**.
+  **Tab** (aceita a palavra), **→** no fim do parágrafo ou **Ctrl/Alt+→** (uma palavra por vez,
+  inclusive o palpite das próximas duas, mais claro) e **Alt+↓** (troca a opção).
 - **Revisar texto** (`F7`) e a **revisão inteligente** analisam o documento Word como o
   Markdown (regras e sinônimos).
 - **Formalizar** (`Ctrl+Alt+F` ou **Revisão → Revisão de Texto → Formalizar**): a mesma janela

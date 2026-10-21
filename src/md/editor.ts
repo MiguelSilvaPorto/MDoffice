@@ -13,7 +13,7 @@ import { setAlignment } from "./editor/alignment";
 import { wrapSelection, toggleLinePrefix, cycleHeading, continueList } from "./editor/formatting";
 import { partesDaTroca } from "./diffTroca";
 import { synonymsFor, type WritingIssue } from "../broker/writing";
-import { createGhostTextExtension, setGhostEffect } from "../broker/autocomplete";
+import { createGhostTextExtension, setGhostEffect, acceptGhostText, ghostTextField } from "../broker/autocomplete";
 
 export interface CursorPos {
   line: number;
@@ -150,6 +150,19 @@ export class MdEditor {
 
   isGhostTextEnabled(): boolean {
     return this.ghostTextEnabled;
+  }
+
+  /** Há sugestão fantasma na tela? */
+  temSugestao(): boolean {
+    const s = this.view.state.field(ghostTextField, false)?.suggestion;
+    return this.ghostTextEnabled && !!s && (!!s.text || !!s.extra?.trim());
+  }
+
+  /** Aceita a sugestão fantasma (o Tab que chegou ao app, mesmo com o foco fora do texto). */
+  aceitarSugestao(): boolean {
+    if (!this.temSugestao()) return false;
+    this.view.focus();
+    return acceptGhostText(this.view);
   }
 
   // ---------- conteúdo ----------
