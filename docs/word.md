@@ -31,8 +31,9 @@ arquivos `.docx` de verdade.
     escolha (`wrapSquare/@wrapText`).
   - **Posição ▾**: a caixa com os **deslocamentos em cm** (horizontal e vertical), a **distância do
     texto** e a escolha entre **Mover com o texto** (a imagem anda com o parágrafo) e **Fixar na
-    página** (ela fica na mesma altura da página quando o texto acima cresce — a paginação reacerta
-    o deslocamento; o `.docx` guarda como `positionV/@relativeFrom="page"`).
+    página** (ela fica na mesma altura da página quando o texto acima cresce — o deslocamento é
+    reacertado **na mesma tarefa da edição**, antes de a tela ser pintada, então a imagem não
+    "treme" enquanto se digita acima dela; o `.docx` guarda como `positionV/@relativeFrom="page"`).
   - **Arrastar a imagem flutuante reorganiza o texto enquanto se arrasta**: o deslocamento vai
     direto para a folha (o texto se acomoda a cada movimento) e, no fim do gesto, a posição vira
     uma transação — `Ctrl+Z` desfaz.

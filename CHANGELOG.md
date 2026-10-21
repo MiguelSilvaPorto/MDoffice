@@ -452,6 +452,15 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A imagem fixa na página não treme mais enquanto se digita**: com uma imagem em **Fixar na
+  página**, cada vez que o texto acima ganhava uma linha a imagem **descia junto** (ela é um
+  flutuante, presa ao parágrafo) e só ~90 ms depois a paginação reacertava a altura — o olho via a
+  descida e a volta, a "chacoalhada". Agora o acerto acontece **na mesma tarefa da edição**, logo
+  depois de o texto entrar na tela e **antes de ela ser pintada**: a imagem não sai do lugar. E
+  mover a imagem continua funcionando — arrastando (ou pelo painel) a altura dentro da página vai
+  junto, então ela fica onde foi solta. O teste do painel Posição ganhou um caso que digita 120
+  teclas acima da imagem e cobra que ela não ande mais de 3 px (antes andava 17).
+
 - **A imagem ganhou o painel Posição e os Lados da Quebra**: a imagem flutuante tinha só os três
   alinhamentos e o arrasto — para acertar o lugar dela era tentativa e erro. Agora a aba **Imagem**
   tem o botão **Posição ▾**, com os **deslocamentos em cm** (horizontal e vertical), a **distância

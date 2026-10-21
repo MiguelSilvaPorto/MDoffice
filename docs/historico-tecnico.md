@@ -28,6 +28,68 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/word/pagination.ts
+
+### 2026-10-21 · fix/imagem-fixa-tremor · o acerto da imagem fixa na mesma tarefa da edição
+- **Local:** `ajustesDasFixas`, o novo `fixarImagensNaPagina` e a guarda `acertandoFixa`
+- **Linha:** `export function fixarImagensNaPagina(view, setup): boolean` — mede, e quando a imagem
+  fixa está fora da altura guardada despacha o acerto (`setNodeMarkup` do `vOffset`,
+  `addToHistory: false`); a guarda impede que a transação do acerto dispare outro acerto. No
+  `ajustesDasFixas`, `pageOffset` negativo passou a significar **"recalcule a altura"** (a imagem
+  mudou de âncora num arrasto): a altura vira a de agora, sem acertar nada
+- **Porquê:** o acerto era só o do ciclo da paginação (90 ms + `requestAnimationFrame`). Nesse
+  intervalo o navegador já pintou a imagem **uma linha abaixo** (ela é um flutuante, presa ao
+  parágrafo, e o texto acima cresceu) e o acerto a puxava de volta — o "tremor" que se vê ao
+  digitar. Feito na mesma tarefa, o que se pinta já é o lugar certo. O `run()` continua com o
+  acerto dele para os casos em que o layout muda sem edição (imagem carregando, janela
+  redimensionada, configuração da página).
+
+## src/word/editor.ts
+
+### 2026-10-21 · fix/imagem-fixa-tremor · o gancho `ajustarFixas`
+- **Local:** `WordEditorHooks` e o `dispatchTransaction`
+- **Linha:** novo `ajustarFixas?: (view) => void`, chamado logo depois de `view.updateState(next)`
+  quando `tr.docChanged` e **antes** de `onChange`
+- **Porquê:** é o único ponto em que o DOM já tem a mudança e a tela ainda não foi pintada — a
+  janela exata para o acerto da imagem fixa. O editor em si não sabe medir página: quem faz isso
+  é a paginação, ligada pelo host.
+
+### 2026-10-21 · fix/imagem-fixa-tremor · `setDeslocamentos` leva a altura da página junto
+- **Local:** `setDeslocamentos`
+- **Linha:** quando a imagem é `fixa`, o `pageOffset` recebe `+ (vOffset novo − vOffset antigo)`
+- **Porquê:** mover a imagem pelo painel muda o lugar dela; se a altura dentro da página ficasse
+  parada, o acerto (que agora roda na hora) a puxaria de volta e a imagem não sairia do lugar.
+
+## src/word/imagem.ts
+
+### 2026-10-21 · fix/imagem-fixa-tremor · o arrasto de uma imagem fixa
+- **Local:** `moverPelaAncora` (o arrasto no lugar) e `reancorarImagem` (o arrasto que troca de
+  âncora)
+- **Linha:** no arrasto no lugar, o `pageOffset` anda junto com o `vOffset`
+  (`+ (novo − anterior)`, quando `fixa`); ao trocar de âncora, o `pageOffset` vira `-1` (o pedido
+  de medição que a paginação resolve)
+- **Porquê:** sem isso o acerto síncrono desfaria o arrasto de uma imagem fixa (ela voltaria para a
+  altura antiga no mesmo quadro). A altura dentro da página precisa acompanhar quem move a imagem.
+
+## src/word/host.ts
+
+### 2026-10-21 · fix/imagem-fixa-tremor · a ligação do acerto
+- **Local:** os hooks do `new WordEditor`
+- **Linha:** `ajustarFixas: (view) => { if (this.modo === "impressao") fixarImagensNaPagina(view, this.editor.setup); }`
+- **Porquê:** a conta da altura depende do passo da página. No **Rascunho** não há páginas e no
+  **Livro** a grade desloca as folhas (duas por faixa) — nos dois a conta não vale, então o acerto
+  só roda no modo **Impressão**.
+
+## scripts/testar-word-imagem-posicao.mjs
+
+### 2026-10-21 · fix/imagem-fixa-tremor · o caso do tremor
+- **Local:** o fim do roteiro (item 4)
+- **Linha:** 120 teclas no início do documento, lendo a altura da imagem **logo depois de cada
+  tecla** (mesma tarefa); cobra amplitude ≤ 3 px e confere que o parágrafo acima cresceu (senão o
+  caso não provaria nada)
+- **Porquê:** a leitura síncrona é a posição que a tela pintaria ao fim da tarefa — foi ela que
+  pegou o defeito (17 px) antes do acerto síncrono. Com o acerto, fica em 1 px (arredondamento).
+
 ## src/word/schema.ts
 
 ### 2026-10-21 · feat/imagem-posicao-lados · a imagem ganhou os lados da quebra e a fixação na página

@@ -335,6 +335,12 @@ function ajustesDasFixas(view: EditorView, setup: PageSetup): { pos: number; att
     const img = el.querySelector("img") ?? el;
     const y = (img.getBoundingClientRect().top - caixa.top) / escala;
     const pagina = Math.max(0, Math.floor(y / passo));
+    // pageOffset negativo = "recalcule a altura" (a imagem mudou de âncora num arrasto):
+    // a altura dentro da página passa a ser a de agora, sem acertar nada
+    if (Number(no.attrs.pageOffset) < 0) {
+      out.push({ pos, attrs: { ...no.attrs, pageOffset: Math.round(y - pagina * passo) } });
+      return true;
+    }
     const desejado = pagina * passo + d.pageOffset;
     const diferenca = Math.round(desejado - y);
     if (Math.abs(diferenca) < 2) return true;
@@ -342,6 +348,37 @@ function ajustesDasFixas(view: EditorView, setup: PageSetup): { pos: number; att
     return true;
   });
   return out;
+}
+
+/** Evita que o acerto de uma imagem dispare outro acerto (a transação interna volta aqui). */
+let acertandoFixa = false;
+
+/**
+ * Acerta as imagens "fixas na página" **na hora**, na mesma tarefa da edição.
+ *
+ * Este é o ponto que evita o "tremor": quando o texto acima ganha uma linha, o
+ * navegador já reposiciona a imagem (ela é um flutuante, presa ao parágrafo) — se
+ * o acerto só viesse depois, no ciclo da paginação, a imagem desceria e voltaria,
+ * e o olho veria a chacoalhada. Rodando aqui, logo depois de o DOM ser atualizado
+ * e **antes de a tela ser pintada**, o deslocamento é corrigido no mesmo quadro.
+ *
+ * Chamado pelo editor (`hooks.ajustarFixas`) a cada mudança no documento. Devolve
+ * `true` quando alguma imagem precisou de acerto.
+ */
+export function fixarImagensNaPagina(view: EditorView, setup: PageSetup): boolean {
+  if (acertandoFixa) return false;
+  const ajustes = ajustesDasFixas(view, setup);
+  if (!ajustes.length) return false;
+  acertandoFixa = true;
+  try {
+    const tr = view.state.tr;
+    for (const ajuste of ajustes) tr.setNodeMarkup(ajuste.pos, undefined, ajuste.attrs);
+    // acerto da vista: não entra no histórico (um Ctrl+Z não deve devolver a imagem de lado)
+    view.dispatch(tr.setMeta("addToHistory", false));
+  } finally {
+    acertandoFixa = false;
+  }
+  return true;
 }
 
 export function paginationPlugin(hooks: PaginationHooks): Plugin<PState> {

@@ -75,6 +75,12 @@ export interface WordEditorHooks {
   earlyPlugins?: () => Plugin[];
   /** Imagem colada ou arrastada (data URL). */
   onImage?: (dataUrl: string) => void;
+  /**
+   * Acerta as imagens "fixas na página" logo depois de a mudança entrar no DOM —
+   * ainda na mesma tarefa, antes de a tela ser pintada (senão elas descem e voltam:
+   * o "tremor" que se vê ao digitar acima de uma imagem fixa).
+   */
+  ajustarFixas?: (view: EditorView) => void;
 }
 
 const PARA_TYPES = ["paragraph", "heading"];
@@ -96,7 +102,12 @@ export class WordEditor {
       dispatchTransaction: (tr) => {
         const next = this.view.state.apply(tr);
         this.view.updateState(next);
-        if (tr.docChanged) this.hooks.onChange();
+        if (tr.docChanged) {
+          // primeiro o acerto das imagens fixas (ele despacha de volta para cá, mas o
+          // módulo da paginação se protege): assim o que se pinta já é o lugar certo
+          this.hooks.ajustarFixas?.(this.view);
+          this.hooks.onChange();
+        }
         if (tr.docChanged || tr.selectionSet || tr.storedMarksSet) this.hooks.onSelection();
       },
       handlePaste: (_v, event) => this.handleFiles(event.clipboardData?.files),
@@ -622,11 +633,15 @@ export class WordEditor {
   setDeslocamentos(hOffset: number, vOffset: number): void {
     const alvo = this.imagemEmFoco();
     if (!alvo) return;
-    const tr = this.view.state.tr.setNodeMarkup(alvo.pos, undefined, {
-      ...alvo.node.attrs,
-      hOffset: Math.round(hOffset),
-      vOffset: Math.round(vOffset),
-    });
+    const antesV = Math.round(Number(alvo.node.attrs.vOffset) || 0);
+    const depoisV = Math.round(vOffset);
+    const attrs: Record<string, unknown> = { ...alvo.node.attrs, hOffset: Math.round(hOffset), vOffset: depoisV };
+    // "fixa na página": mover a imagem move a altura dela DENTRO da página junto — sem
+    // isso o acerto da paginação a puxaria de volta para a altura antiga
+    if (alvo.node.attrs.fixa) {
+      attrs.pageOffset = Math.round((Number(alvo.node.attrs.pageOffset) || 0) + (depoisV - antesV));
+    }
+    const tr = this.view.state.tr.setNodeMarkup(alvo.pos, undefined, attrs);
     tr.setSelection(NodeSelection.create(tr.doc, alvo.pos));
     this.view.dispatch(tr);
     this.view.focus();

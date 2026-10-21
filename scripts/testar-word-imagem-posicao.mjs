@@ -260,6 +260,51 @@ ok(
   `antes=${p3?.antesMover} depois=${p3?.solto.y}`
 );
 
+// ---------------------------------------------------------------------------
+// 4) o tremor ao digitar acima (a imagem fixa não pode "piscar")
+// ---------------------------------------------------------------------------
+// A leitura é feita LOGO depois de cada tecla, ainda na mesma tarefa: é a posição
+// que a tela pintaria ao fim dela. Antes do acerto síncrono, essa leitura pegava a
+// imagem uma linha abaixo (ela descia com o texto e só voltava no ciclo seguinte).
+const tremor = await avaliar(`
+  (async () => {
+    const ed = window.__mdoffice.app.wordHost.editor;
+    const achar = () => { let q = -1; ed.view.state.doc.descendants((n, p) => { if (n.type.name === 'image') q = p; }); return q; };
+    let pos = -1, size = 1;
+    ed.view.state.doc.descendants((n, p) => { if (n.type.name === 'image') { pos = p; size = n.nodeSize; } });
+    const sel = ed.view.state.selection;
+    const Sel = sel.constructor;
+    ed.view.dispatch(ed.view.state.tr.setSelection(Sel.create(ed.view.state.doc, sel.node ? pos : pos + size)));
+    await new Promise((r) => setTimeout(r, 200));
+    ed.setFixaNaPagina(true);
+    await new Promise((r) => setTimeout(r, 900));
+    const y = () => Math.round(document.querySelector('#word-editor .wd-img img').getBoundingClientRect().y);
+    const prim = () => Math.round(document.querySelector('#word-editor p').getBoundingClientRect().height);
+    const alturaAntes = prim();
+    const ys = [];
+    for (let i = 0; i < 120; i++) {
+      ed.view.dispatch(ed.view.state.tr.insertText('x', 1));
+      ys.push(y());
+    }
+    await new Promise((r) => setTimeout(r, 500));
+    return JSON.stringify({
+      min: Math.min(...ys), max: Math.max(...ys), amostras: ys.length,
+      alturaAntes, alturaDepois: prim(), fixa: ed.view.state.doc.nodeAt(achar()).attrs.fixa,
+    });
+  })()
+`);
+const p4 = typeof tremor === "string" ? JSON.parse(tremor) : tremor;
+ok(
+  "digitar no topo não faz a imagem fixa tremer (mesmo com o texto acima crescendo)",
+  p4 && p4.max - p4.min <= 3,
+  `y de ${p4?.min} a ${p4?.max} em ${p4?.amostras} teclas (amplitude ${p4 ? p4.max - p4.min : "?"} px)`
+);
+ok(
+  "o teste do tremor tem texto crescendo acima da imagem (senão não prova nada)",
+  p4 && p4.alturaDepois - p4.alturaAntes >= 17,
+  `parágrafo acima: ${p4?.alturaAntes} → ${p4?.alturaDepois} px`
+);
+
 await limpar();
 console.log("");
 if (falhas) {

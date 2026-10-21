@@ -237,7 +237,13 @@ function soltarGestoFlutuante(view: EditorView): void {
   const hOffset = Math.round(g.hOffset + (g.dados.hAlign === "right" ? -dx : dx));
   const vOffset = Math.round(g.vOffset + dy);
   if (hOffset === g.hOffset && vOffset === g.vOffset) return;
-  const tr = view.state.tr.setNodeMarkup(g.pos, undefined, { ...atual.attrs, hOffset, vOffset });
+  const attrs: Record<string, unknown> = { ...atual.attrs, hOffset, vOffset };
+  // "fixa na página": o arrasto move a imagem, então a altura dela DENTRO da página
+  // anda junto — senão o acerto da paginação puxaria a imagem de volta
+  if (atual.attrs.fixa) {
+    attrs.pageOffset = Math.round((Number(atual.attrs.pageOffset) || 0) + (vOffset - g.vOffset));
+  }
+  const tr = view.state.tr.setNodeMarkup(g.pos, undefined, attrs);
   // trocar o nó zera o NodeSelection (vira cursor de texto) e as alças sumiriam
   tr.setSelection(NodeSelection.create(tr.doc, g.pos));
   view.dispatch(tr);
@@ -270,10 +276,11 @@ function reancorarImagem(view: EditorView, g: GestoFlutuante, paragrafo: number,
   const caixa = caixaDaImagem(view, movido.pos);
   if (!caixa) return;
   const vOffset = Math.round(g.vOffset + (topoSoltar - caixa.top) / escala);
-  const tr2 = view.state.tr.setNodeMarkup(movido.pos, undefined, {
-    ...(view.state.doc.nodeAt(movido.pos)?.attrs ?? {}),
-    vOffset,
-  });
+  const attrs: Record<string, unknown> = { ...(view.state.doc.nodeAt(movido.pos)?.attrs ?? {}), vOffset };
+  // "fixa na página": a âncora mudou, então a altura dentro da página também. Quem mede
+  // é a paginação (que conhece o passo da página): -1 pede a medição na próxima passada.
+  if (attrs.fixa) attrs.pageOffset = -1;
+  const tr2 = view.state.tr.setNodeMarkup(movido.pos, undefined, attrs);
   tr2.setSelection(NodeSelection.create(tr2.doc, movido.pos));
   view.dispatch(tr2);
 }

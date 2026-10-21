@@ -5,7 +5,7 @@ import type { Node as PMNode } from "prosemirror-model";
 import { WordEditor } from "./editor";
 import { Ribbon } from "./ribbon";
 import { ghostPlugin } from "./ghost";
-import { paginationPlugin, requestPagination, GAP_PX } from "./pagination";
+import { fixarImagensNaPagina, paginationPlugin, requestPagination, GAP_PX } from "./pagination";
 import { Reguas } from "./regua";
 import { spellPlugin } from "./spell";
 import { emptyDoc, plainText } from "./schema";
@@ -96,6 +96,12 @@ export class WordHost {
         this.statusSoon();
       },
       onImage: (url) => void this.insertImageData(url),
+      // "Fixar na página": a imagem é reacertada na mesma tarefa da edição (antes de pintar),
+      // senão ela desce com o texto e volta no ciclo da paginação — o tremor ao digitar.
+      // No Rascunho não há páginas, e no Livro a grade desloca as folhas: a conta não vale.
+      ajustarFixas: (view) => {
+        if (this.modo === "impressao") fixarImagensNaPagina(view, this.editor.setup);
+      },
       earlyPlugins: () => [ghostPlugin({ enabled: () => this.opts.ghostEnabled() })],
       plugins: () => {
         this.spell = spellPlugin({
