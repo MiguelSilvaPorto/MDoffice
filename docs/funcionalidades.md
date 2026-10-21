@@ -42,7 +42,10 @@ pasta para gravar ele mostra **"Não salvo"**. No navegador o autosave grava o a
 pela pasta concedida e um documento novo vira um rascunho de verdade — na **pasta dos rascunhos**
 escolhida em Configurações ▸ Histórico e salvamento (ou em `.mdoffice/rascunhos/`, sem escolha),
 visível em **Início ▸ Rascunhos** e no painel lateral. O handle da pasta fica guardado; fechar e
-reabrir o app continua editando o **mesmo** arquivo.
+reabrir o app continua editando o **mesmo** arquivo. Em **Word, Excel e PowerPoint**, criar um
+documento do zero **grava o rascunho na pasta escolhida** e o `Ctrl+S` continua gravando nele —
+não abre o "Salvar como". O seletor de pasta fica só no **Ctrl+Shift+S (Salvar como…)**, para
+quando a pessoa quiser tirar o documento da pasta de rascunhos.
 
 **O app também roda no navegador (e é o modo normal)**: com o `npm run app`, o mdOffice abre no
 Chrome/Edge e ganha o disco pelo **File System Access API** — a primeira vez pede uma pasta, e é

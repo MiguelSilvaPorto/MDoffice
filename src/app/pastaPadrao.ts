@@ -48,7 +48,14 @@ export const pastaPadraoMethods = {
       this.tab.isDraft = true;
       await this.save(false);
       await this.sidebar.refresh();
-      toast(`Rascunho guardado em .mdoffice/rascunhos — “Salvar como…” escolhe outro lugar.`, "ok", 4600);
+      const escolhida = await files.draftFolderInfo().catch(() => null);
+      toast(
+        escolhida
+          ? `Rascunho guardado na pasta “${escolhida.nome}” — “Salvar como…” escolhe outro lugar.`
+          : `Rascunho guardado em .mdoffice/rascunhos — “Salvar como…” escolhe outro lugar.`,
+        "ok",
+        4600
+      );
     } catch (e) {
       // a gravação falhou: o selo não pode continuar dizendo "Salvo"
       tab.dirty = true;

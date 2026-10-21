@@ -28,6 +28,43 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/app/wordDocs.ts
+
+### 2026-10-21 · feat/rascunho-padrao-projeto-novo · salvar rascunho não abre o "Salvar como"
+- **Local:** `saveWord`
+- **Linha:** `if (saveAs || !tab.path || wasDraft)` → `if (saveAs || !tab.path)`; `tab.statusSaved = "Salvo às …"` → `tab.isDraft ? "Rascunho atualizado às …" : "Salvo às …"`; `this.addRecent(tab.path!)` → `if (!tab.isDraft) this.addRecent(tab.path!)`; o bloco dos toasts de .docx ficou dentro de `if (!tab.isDraft)`
+- **Porquê:** o documento novo nasce com `path` e `isDraft = true` (`nascerNoPadrao`) e chama `save(false)` na criação. A condição antiga lia o rascunho como "ainda não tem arquivo" e abria o seletor de pasta **na criação** (e em todo `Ctrl+S`), embora o `.docx` do rascunho já exista na pasta escolhida. O rascunho continua sendo rascunho: só o **Salvar como…** (`saveAs`) escolhe uma pasta do usuário. O selo diz "Rascunho atualizado" e o rascunho não entra nos recentes (mesmo padrão do Markdown).
+
+## src/app/excelDocs.ts
+
+### 2026-10-21 · feat/rascunho-padrao-projeto-novo · salvar rascunho não abre o "Salvar como"
+- **Local:** `saveExcel`
+- **Linha:** `if (saveAs || !tab.path || wasDraft || macro)` → `if (saveAs || !tab.path || macro)`; `tab.statusSaved` e `addRecent` passaram a considerar `tab.isDraft` (como no Word); toasts de .xlsx só para arquivo do usuário
+- **Porquê:** mesma causa do Word — `nascerNoPadrao("excel")` chama `save(false)` com um rascunho já gravado, e o `wasDraft` forçava o seletor. O `macro` **fica**: um `.xlsm` não pode ser sobrescrito sem avisar, porque o app não preserva as macros e salva como `.xlsx`.
+
+## src/app/powerpointDocs.ts
+
+### 2026-10-21 · feat/rascunho-padrao-projeto-novo · salvar rascunho não abre o "Salvar como"
+- **Local:** `savePpt`
+- **Linha:** `if (saveAs || !tab.path || wasDraft)` → `if (saveAs || !tab.path)`; `tab.statusSaved` e `addRecent` passaram a considerar `tab.isDraft`; toasts de .pptx só para arquivo do usuário
+- **Porquê:** o mesmo furo do Word e do Excel: o `.pptx` do rascunho já está na pasta escolhida, então criar a apresentação do zero não pode pedir um destino. "Salvar como…" continua abrindo o seletor para quem quer gravar fora da pasta de rascunhos.
+
+## src/app/pastaPadrao.ts
+
+### 2026-10-21 · feat/rascunho-padrao-projeto-novo · o aviso de criação diz a pasta de verdade
+- **Local:** `nascerNoPadrao`
+- **Linha:** `toast("Rascunho guardado em .mdoffice/rascunhos — …")` → `files.draftFolderInfo()` e a mensagem ``Rascunho guardado na pasta “<nome>” — …`` (com o caminho antigo só quando não há pasta escolhida)
+- **Porquê:** com a pasta escolhida em Configurações, o rascunho **não** fica em `.mdoffice/rascunhos`; o aviso mandava a pessoa olhar no lugar errado.
+
+## scripts/testar-layout.mts · scripts/testar-rascunhos.mjs
+
+### 2026-10-21 · feat/rascunho-padrao-projeto-novo · a régua do rascunho como destino padrão
+- **Local:** `testar-layout.mts` (bloco dos fluxos do Office) e `testar-rascunhos.mjs` (seções 4 e 5)
+- **Linha:** nova checagem de que `saveWord/saveExcel/savePpt` usam `saveAs || !tab.path` (sem `wasDraft`); seção 5 nova cria Word, Excel e PowerPoint do zero com um `showSaveFilePicker` espião e confere que o seletor **não** foi chamado, que cada arquivo nasceu na pasta escolhida e que `save(true)` **chama** o seletor; a seção 4 passou a usar `recomecar()` (limpa a pasta escolhida **e** as concedidas)
+- **Porquê:** a checagem estática trava a condição que impedia o diálogo na criação. A seção 4 antiga só esquecia a pasta escolhida e o app caía na primeira pasta concedida (`.mdoffice/rascunhos`), que é o desenho documentado — o aviso de "não está gravando" só é verdade quando não há pasta nenhuma.
+
+---
+
 ## src/sidebar.ts
 
 ### 2026-10-21 · feat/projetos-reordenar · arrastar e mover as pastas de projeto

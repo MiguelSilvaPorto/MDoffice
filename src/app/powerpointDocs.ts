@@ -179,7 +179,10 @@ export const powerpointDocsMethods = {
     try {
       const previous = tab.path;
       const wasDraft = tab.isDraft;
-      if (saveAs || !tab.path || wasDraft) {
+      // Rascunho NÃO é motivo para perguntar onde salvar: ele JÁ tem arquivo (o da pasta de
+      // rascunhos, escolhida em Configurações). O Ctrl+S grava nele; "Salvar como…" é que
+      // escolhe uma pasta do usuário.
+      if (saveAs || !tab.path) {
         const suggested = `${tabLabel(tab)}.pptx`;
         let defaultPath = suggested;
         try {
@@ -200,18 +203,21 @@ export const powerpointDocsMethods = {
         void moveCommits(previous, tab.path!);
       }
       tab.dirty = false;
-      tab.statusSaved = `Salvo às ${fmtTime()}`;
+      tab.statusSaved = tab.isDraft ? `Rascunho atualizado às ${fmtTime()}` : `Salvo às ${fmtTime()}`;
       this.recordVersion(tab.path!, this.pptSerialized(tab), true);
       // cópia real em disco
       void this.backupNow(tab.path!, "salvar");
       void this.exportLog(tab.path!);
-      this.addRecent(tab.path!);
+      if (!tab.isDraft) this.addRecent(tab.path!);
       this.setPreviewPath(tab.path);
       this.afterTabChange();
-      if (!this.pptxNotice) {
-        this.pptxNotice = true;
-        toast("Salvo como .pptx. A apresentação vira caixas de texto posicionadas; animações e efeitos que o mdOffice ainda não entende não são exportados.", "info", 7500);
-      } else toast(`Apresentação salva em ${baseName(tab.path!)}`, "ok", 2600);
+      // No rascunho, quem avisa é o selo ("Rascunho atualizado") — não um toast a cada Ctrl+S.
+      if (!tab.isDraft) {
+        if (!this.pptxNotice) {
+          this.pptxNotice = true;
+          toast("Salvo como .pptx. A apresentação vira caixas de texto posicionadas; animações e efeitos que o mdOffice ainda não entende não são exportados.", "info", 7500);
+        } else toast(`Apresentação salva em ${baseName(tab.path!)}`, "ok", 2600);
+      }
       return true;
     } catch (e) {
       toast("Erro ao salvar: " + e, "err", 7000);

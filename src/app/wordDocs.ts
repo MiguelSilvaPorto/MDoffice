@@ -176,7 +176,10 @@ export const wordDocsMethods = {
     try {
       const previous = tab.path;
       const wasDraft = tab.isDraft;
-      if (saveAs || !tab.path || wasDraft) {
+      // Rascunho NÃO é motivo para perguntar onde salvar: ele JÁ tem arquivo (o da pasta de
+      // rascunhos, escolhida em Configurações ▸ Histórico e salvamento). O Ctrl+S grava nele;
+      // só o "Salvar como…" (Ctrl+Shift+S) abre o seletor para escolher uma pasta do usuário.
+      if (saveAs || !tab.path) {
         const suggested = `${tabLabel(tab)}.docx`;
         let defaultPath = suggested;
         try {
@@ -197,18 +200,22 @@ export const wordDocsMethods = {
         void moveCommits(previous, tab.path!);
       }
       tab.dirty = false;
-      tab.statusSaved = `Salvo às ${fmtTime()}`;
+      tab.statusSaved = tab.isDraft ? `Rascunho atualizado às ${fmtTime()}` : `Salvo às ${fmtTime()}`;
       this.recordVersion(tab.path!, this.wordSerialized(tab), true);
       // cópia real em disco (o .docx é binário: a cópia é do arquivo inteiro)
       void this.backupNow(tab.path!, "salvar");
       void this.exportLog(tab.path!);
-      this.addRecent(tab.path!);
+      if (!tab.isDraft) this.addRecent(tab.path!);
       this.setPreviewPath(tab.path);
       this.afterTabChange();
-      if (!this.docxNotice) {
-        this.docxNotice = true;
-        toast("Salvo como .docx. Se o arquivo veio de outro editor, recursos que o mdOffice ainda não entende (comentários, revisões, campos) podem ser simplificados.", "info", 7500);
-      } else toast(`Documento salvo em ${baseName(tab.path!)}`, "ok", 2600);
+      // No rascunho, quem avisa é o selo ("Rascunho atualizado"): um toast de "salvo em…" a
+      // cada Ctrl+S seria ruído — e o nome do arquivo de rascunho não é uma escolha da pessoa.
+      if (!tab.isDraft) {
+        if (!this.docxNotice) {
+          this.docxNotice = true;
+          toast("Salvo como .docx. Se o arquivo veio de outro editor, recursos que o mdOffice ainda não entende (comentários, revisões, campos) podem ser simplificados.", "info", 7500);
+        } else toast(`Documento salvo em ${baseName(tab.path!)}`, "ok", 2600);
+      }
       return true;
     } catch (e) {
       toast("Erro ao salvar: " + e, "err", 7000);

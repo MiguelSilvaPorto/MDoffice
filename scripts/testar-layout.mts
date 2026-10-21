@@ -771,6 +771,12 @@ console.log("\npasta padrão dos documentos (Documentos/mdOffice com as quatro s
   ] as [string, string][];
   for (const [arquivo, tipo] of fluxos) {
     checa(`${arquivo}: o documento novo nasce guardado (rascunho)`, new RegExp(`nascerNoPadrao\\("${tipo}"\\)`).test(ler(arquivo)), "sem isso o documento novo não tem onde ser salvo");
+    const src = ler(arquivo);
+    checa(
+      `${arquivo}: salvar um rascunho NÃO abre o seletor de arquivo`,
+      /if \(saveAs \|\| !tab\.path(?: \|\| macro)?\) \{/.test(src) && !/if \(saveAs \|\| !tab\.path[^)]*\bwasDraft\b/.test(src),
+      "o nascimento do documento chama save(false) com isDraft=true: com wasDraft na condição, o 'Salvar como' abria na cara do usuário mesmo com a pasta de rascunhos escolhida"
+    );
   }
   checa(
     "o Markdown novo vira rascunho no primeiro autosave",

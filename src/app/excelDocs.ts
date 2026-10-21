@@ -193,9 +193,11 @@ export const excelDocsMethods = {
     try {
       const previous = tab.path;
       const wasDraft = tab.isDraft;
-      // .xlsm não pode ser sobrescrito: o app não preserva macros, então salva como .xlsx
+      // Rascunho NÃO é motivo para perguntar onde salvar: ele JÁ tem arquivo (o da pasta de
+      // rascunhos). O Ctrl+S grava nele; "Salvar como…" é que escolhe uma pasta do usuário.
+      // .xlsm continua forçando o seletor: o app não preserva macros, então salva como .xlsx.
       const macro = /\.xlsm$/i.test(tab.path ?? "");
-      if (saveAs || !tab.path || wasDraft || macro) {
+      if (saveAs || !tab.path || macro) {
         const suggested = `${tabLabel(tab)}.xlsx`;
         let defaultPath = suggested;
         try {
@@ -216,22 +218,25 @@ export const excelDocsMethods = {
         void moveCommits(previous, tab.path!);
       }
       tab.dirty = false;
-      tab.statusSaved = `Salvo às ${fmtTime()}`;
+      tab.statusSaved = tab.isDraft ? `Rascunho atualizado às ${fmtTime()}` : `Salvo às ${fmtTime()}`;
       this.recordVersion(tab.path!, this.excelSerialized(tab), true);
       // cópia real em disco
       void this.backupNow(tab.path!, "salvar");
       void this.exportLog(tab.path!);
-      this.addRecent(tab.path!);
+      if (!tab.isDraft) this.addRecent(tab.path!);
       this.setPreviewPath(tab.path);
       this.afterTabChange();
-      if (!this.xlsxNotice) {
-        this.xlsxNotice = true;
-        toast(
-          "Salvo como .xlsx. Células, fórmulas, números, cores e mesclas vão como estão; gráficos, imagens e formatação condicional que o mdOffice ainda não entende não são exportados.",
-          "info",
-          8500
-        );
-      } else toast(`Planilha salva em ${baseName(tab.path!)}`, "ok", 2600);
+      // No rascunho, quem avisa é o selo ("Rascunho atualizado") — não um toast a cada Ctrl+S.
+      if (!tab.isDraft) {
+        if (!this.xlsxNotice) {
+          this.xlsxNotice = true;
+          toast(
+            "Salvo como .xlsx. Células, fórmulas, números, cores e mesclas vão como estão; gráficos, imagens e formatação condicional que o mdOffice ainda não entende não são exportados.",
+            "info",
+            8500
+          );
+        } else toast(`Planilha salva em ${baseName(tab.path!)}`, "ok", 2600);
+      }
       return true;
     } catch (e) {
       toast("Erro ao salvar: " + e, "err", 7000);

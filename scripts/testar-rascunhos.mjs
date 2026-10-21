@@ -175,6 +175,22 @@ async function main() {
       })()
     `);
   };
+  /** Arquivos de uma extensão (docx, xlsx, pptx) na pasta escolhida. */
+  const lerPastaPorExt = async (nome, ext) => {
+    return await avaliar(`
+      (async () => {
+        const root = await navigator.storage.getDirectory();
+        const dir = await root.getDirectoryHandle(${JSON.stringify(nome)}, { create: true });
+        const saida = [];
+        for await (const [chave, h] of dir.entries()) {
+          if (h.kind !== 'file' || !chave.toLowerCase().endsWith(${JSON.stringify("." + ext)})) continue;
+          const f = await h.getFile();
+          saida.push({ nome: chave, bytes: f.size });
+        }
+        return saida;
+      })()
+    `);
+  };
   const estado = () =>
     avaliar(`(() => ({
       titulo: document.title,
@@ -230,15 +246,51 @@ async function main() {
   ok("3: o rascunho antigo ficou onde estava", pasta1.length === 1 && pasta1[0].texto.includes("primeiro rascunho"), JSON.stringify(pasta1));
 
   // ------------------------------------------------------------------ 4
-  // remover a pasta: o autosave não pode dizer que salvou
-  await abrirConfig();
-  await avaliar("document.querySelector('[data-act=\"drafts-clear\"]')?.click()");
-  await espera(800);
+  // remover TUDO (a pasta escolhida e as pastas concedidas): o autosave não pode dizer que
+  // salvou. Só limpar a pasta escolhida não basta — o desenho antigo cai na primeira pasta
+  // concedida (.mdoffice/rascunhos), e aí "Rascunho do app" é uma resposta verdadeira.
+  await recomecar();
   await novoDocumento("rascunho sem pasta nenhuma");
   e = await estado();
   const toasts = e.toasts.join(" ");
   ok("4: o app avisa que não está gravando", /Sem pasta|não está sendo gravado/i.test(e.barra + " " + toasts), (e.barra + " " + toasts).slice(0, 200));
   ok("4: o rodapé não diz que salvou", !/Rascunho \(pasta escolhida\)/i.test(e.barra), e.barra.slice(0, 160));
+
+  // ------------------------------------------------------------------ 5
+  // Office do zero: o rascunho é o destino padrão. Criar o projeto NÃO pode abrir o
+  // "Salvar como" — o `nascerNoPadrao` chama save(false) com isDraft=true justamente para
+  // gravar o arquivo na pasta de rascunhos escolhida.
+  await abrirConfig();
+  await escolherPasta("RascunhosOffice");
+  await avaliar(`
+    window.__savePicker = 0;
+    window.showSaveFilePicker = async () => {
+      window.__savePicker++;
+      throw new DOMException('cancelado', 'AbortError');
+    };
+    true
+  `);
+  const office = [
+    ["Word", "newWordDoc", "docx"],
+    ["Excel", "newExcelDoc", "xlsx"],
+    ["PowerPoint", "newPowerPointDoc", "pptx"],
+  ];
+  for (const [nome, metodo, ext] of office) {
+    await avaliar(`__mdoffice.app.${metodo}()`);
+    await espera(1200);
+    const arquivos = await lerPastaPorExt("RascunhosOffice", ext);
+    const pickers = await avaliar("window.__savePicker");
+    const toasts = await avaliar("[...document.querySelectorAll('.toast')].map((e) => e.textContent).join(' ')");
+    ok(`5: ${nome} novo gravou o rascunho .${ext} na pasta escolhida`, arquivos.length >= 1, JSON.stringify(arquivos));
+    ok(`5: ${nome} novo NÃO abriu o "Salvar como"`, pickers === 0, `picker chamado ${pickers}x`);
+    ok(`5: ${nome} novo avisa o nome da pasta escolhida`, toasts.includes("Rascunho guardado na pasta “RascunhosOffice”"), (toasts || "").slice(0, 220));
+  }
+  // Ctrl+S de novo: continua gravando o rascunho, sem seletor.
+  await avaliar("__mdoffice.app.save(false)");
+  ok("5: salvar o rascunho de novo continua sem abrir o seletor", (await avaliar("window.__savePicker")) === 0, `picker ${await avaliar("window.__savePicker")}x`);
+  // "Salvar como…" continua sendo a porta para escolher uma pasta do usuário.
+  await avaliar("__mdoffice.app.save(true)");
+  ok("5: 'Salvar como…' continua abrindo o seletor", (await avaliar("window.__savePicker")) === 1, `picker ${await avaliar("window.__savePicker")}x`);
 
   ws.close();
   proc.kill();

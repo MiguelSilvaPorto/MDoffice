@@ -2161,6 +2161,18 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 ### Adicionado (na main)
 
+- **Documento novo do Office não pergunta mais onde salvar**: ao criar um **Word (.docx)**,
+  **Excel (.xlsx)** ou **PowerPoint (.pptx)** do zero, o app já grava o **rascunho** na pasta
+  escolhida em Configurações ▸ Histórico e salvamento — mas o diálogo **"Salvar como"** abria
+  na cara do usuário logo na criação, e de novo a cada `Ctrl+S`. A causa: os três `save*`
+  tratavam `isDraft` como "ainda não tem arquivo" e pediam um destino, embora o rascunho já
+  fosse um arquivo de verdade na pasta escolhida. Agora o `Ctrl+S` grava o rascunho e o selo
+  mostra **"Rascunho atualizado"**; o seletor de pasta fica só no **Ctrl+Shift+S (Salvar
+  como…)**, que continua sendo a porta para tirar o documento da pasta de rascunhos. O
+  `.xlsm` continua pedindo um nome `.xlsx` (as macros não são preservadas) e a mensagem de
+  criação agora diz **o nome da pasta escolhida**. Trava: `node scripts/testar-rascunhos.mjs`
+  (cria os três tipos e confere que o seletor **não** foi chamado).
+
 - **O "Importar arquivo" agora aceita `.md`**: o seletor do Importar (o botão da tela de Início e o
   comando do menu) só oferecia `.docx`, `.xlsx/.xlsm` e `.pptx` — um `.md` do computador nem
   aparecia na lista. Agora entram **`.md`, `.markdown`, `.txt` e `.mdx`** (o mesmo filtro do "Abrir
