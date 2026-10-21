@@ -70,7 +70,10 @@ avisado ao abrir (nunca some em silêncio).
   junto do canto); ao **redimensionar** ou **desenhar** uma forma, a **linha de baixo** mostra a
   **largura** e a **da direita** a **altura**. A unidade é o **cm**, a mesma dos campos de
   **Tamanho** do painel; perto das bordas o rótulo **vira para o outro lado** e tudo **some ao
-  soltar**.
+  soltar**. **Ao girar**, o **ângulo em graus** aparece **junto da alça** de giro — uma forma mostra
+  o ângulo que ela tem agora (o mesmo do campo **Rotação**); com várias escolhidas, mostra o quanto
+  a seleção virou (com sinal). O número acompanha o ponteiro ao vivo (e o `Shift`, que encaixa em
+  15°, mostra o valor já encaixado).
 - **Arrasto leve**: o quadro do arrasto mexe **só no que mudou** — mover ou girar vai direto no
   estilo da forma (e o painel só troca os números de tamanho/posição), em vez de refazer a lâmina
   inteira a cada movimento; o que **muda o desenho** (redimensionar) refaz **só aquela forma**, e

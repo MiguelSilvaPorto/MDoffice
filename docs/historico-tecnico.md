@@ -28,6 +28,70 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/powerpoint/edicao/medida.ts
+
+### 2026-10-21 · feat/angulo-giro-ppt · o ângulo vira texto como as medidas do gesto
+- **Local:** fim do arquivo, depois de `textoAltura`
+- **Linha:** novo `export function textoGiro(graus: number, delta = false): string` — usa o mesmo
+  `toLocaleString("pt-BR", { maximumFractionDigits: 1 })` das medidas e devolve `37°` (forma única)
+  ou `+37°` / `-12°` (`delta`, para a seleção); valores entre -0,05 e 0,05 saem como `0°`
+- **Porquê:** o balão do giro precisa do mesmo formato do campo **Rotação** do painel (vírgula, no
+  máximo uma casa) e de uma função pura, para o teste do Node conferir a conta sem abrir o app. O
+  sinal só entra no caso de várias formas: ali o número é o **quanto a seleção virou**, porque cada
+  uma pode ter partido de um ângulo próprio.
+
+## src/powerpoint/stage.ts
+
+### 2026-10-21 · feat/angulo-giro-ppt · o gesto de girar ganha o ângulo ao vivo no overlay
+- **Local:** a união `Modo` (caso `girar`), a criação do modo em `aoPressionar`, o ramo `girar` de
+  `aoMover` e `desenharSelecao` (bloco novo depois da fita métrica); `SELETOR_DO_OVERLAY`
+- **Linha:** `{ t: "girar"; … angulo0: number }` → `… angulo0: number; delta: number` (nasce `0`);
+  no ramo do movimento, `modo.delta = delta` antes de `aoTransformar`; novo bloco `if (gesto ===
+  "girar" && this.modo?.t === "girar" && sel.length)` que calcula a posição da alça no espaço da
+  lâmina (`bh / 2 + pxEmPt(36)`, vetor local `(sin(rot), -cos(rot))`), normaliza a volta para
+  `-180..180` (`normalizarAngulo(delta + 180) - 180`) e injeta
+  `<span class="pp-medida pp-giro …">`; o seletor de limpeza ganhou `.pp-giro`
+- **Porquê:** o overlay some e se redesenha a cada quadro; o rótulo tinha de ser um elemento dele
+  (senão empilharia, como o leque da curva já fez). O texto **não** pode morar dentro do `div`
+  girado: giraria junto e ficaria torto — por isso a posição é calculada a partir do centro e do
+  vetor "para cima" local, exatamente onde a bolinha de giro está. Uma forma mostra o ângulo que ela
+  tem agora (o mesmo que o painel lê); várias mostram o delta, porque o valor absoluto de cada uma
+  seria diferente. `pxEmPt` mantém a distância da alça igual em qualquer zoom.
+
+## src/styles/powerpoint-edicao.css
+
+### 2026-10-21 · feat/angulo-giro-ppt · o número do giro em negrito
+- **Local:** logo depois de `.pp-medida.direita`
+- **Linha:** novo `.pp-medida.pp-giro { font-weight: 700; }`
+- **Porquê:** o balão reaproveita a ficha da fita métrica (fundo, borda, sombra e
+  `pointer-events: none`); só o número fica em negrito, porque é um valor que a pessoa lê **durante**
+  o gesto, não uma medida de conferência.
+
+## docs/powerpoint.md
+
+### 2026-10-21 · feat/angulo-giro-ppt · o verbete da fita métrica conta o ângulo do giro
+- **Local:** o item **Fita métrica do arrasto**, na seção **Editar as lâminas**
+- **Linha:** depois de "…tudo **some ao soltar**." entrou "**Ao girar**, o **ângulo em graus**
+  aparece **junto da alça** de giro — uma forma mostra o ângulo que ela tem agora … com várias
+  escolhidas, mostra o quanto a seleção virou (com sinal)…"
+- **Porquê:** a documentação descrevia as medidas de mover/redimensionar/desenhar e não o giro; sem
+  isso a função nova ficaria só no changelog.
+
+## scripts/testar-edicao-pptx.mjs · scripts/testar-layout.mts
+
+### 2026-10-21 · feat/angulo-giro-ppt · os testes cobrem o texto e o caminho do ângulo
+- **Local:** o bloco **fita métrica** (`testar-edicao-pptx.mjs`) e o bloco **fita métrica** de
+  `testar-layout.mts`
+- **Linha:** novo `MED.textoGiro(37) === "37°"`, `MED.textoGiro(37.46) === "37,5°"`,
+  `MED.textoGiro(12.3, true) === "+12,3°"` e `MED.textoGiro(-0.01, true) === "0°"`; e a checagem de
+  que `desenharSelecao` tem o bloco do `girar`, chama `textoGiro(um.rot)`/`textoGiro(curto, true)`,
+  emite `class="pp-medida pp-giro` e que a classe tem `font-weight: 700`
+- **Porquê:** o formato do número é fácil de quebrar numa refatoração (a vírgula, a casa, o sinal e
+  o `-0°`); e o teste de layout garante que o balão continua sendo desenhado pelo palco e limpo pelo
+  seletor do overlay — o defeito que já apareceu com o leque da curva.
+
+---
+
 ## src/app/keymap.ts
 
 ### 2026-10-21 · fix/atalhos-conflito-navegador · o padrão do atalho depende do ambiente

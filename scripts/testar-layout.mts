@@ -666,6 +666,15 @@ console.log("\nPowerPoint: a fita métrica mostra a medida enquanto arrasta");
     "sem a virada o rótulo sairia da lâmina em quem está na borda"
   );
   checa(
+    "girar mostra o ângulo ao vivo junto da alça (uma forma: o ângulo atual; várias: o quanto virou)",
+    /this\.modo\?\.t === "girar" && sel\.length/.test(palcoPpt) &&
+      /textoGiro\(um\.rot\)/.test(palcoPpt) &&
+      /textoGiro\(curto, true\)/.test(palcoPpt) &&
+      /class="pp-medida pp-giro/.test(palcoPpt) &&
+      /\.pp-medida\.pp-giro\s*\{[^}]*font-weight:\s*700/s.test(cssMedida),
+    "sem o textoGiro o gesto não teria número; dentro da caixa girada o rótulo giraria junto e ficaria torto"
+  );
+  checa(
     "o rótulo não rouba o arrasto nem some no tema escuro",
     /\.pp-medida\s*\{[^}]*pointer-events:\s*none/s.test(cssMedida) &&
       /\.pp-medida\s*\{[^}]*background:\s*var\(--panel\)/s.test(cssMedida) &&

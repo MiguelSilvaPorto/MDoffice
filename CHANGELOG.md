@@ -947,6 +947,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 **Frontend**
 
 
+- **Girar uma forma mostra o ângulo ao vivo**: ao arrastar a alça de giro, um balão junto da alça
+  mostra **quantos graus** a forma está naquele instante — o mesmo valor do campo **Rotação** do
+  painel, com uma casa decimal quando precisa (ex.: `37,5°`). Com **várias formas escolhidas**, o
+  balão mostra **o quanto a seleção virou**, com sinal (`+30°` / `-12°`), porque cada forma pode ter
+  partido de um ângulo próprio. O valor acompanha o gesto e o `Shift`, que encaixa em 15°, mostra o
+  número já encaixado; ao soltar, o balão some. O rótulo fica **em pé** (não gira junto com a caixa)
+  e não atrapalha o arrasto.
+
 - **O menu de contexto da forma ganhou o “Organizar”**: o popup de clique direito na forma
   trazia poucos comandos (e a “Sobreposição” só com frente/trás). Agora ele é organizado em
   **Editar** (editar o texto, selecionar a pilha), **Área de transferência** (recortar, copiar,

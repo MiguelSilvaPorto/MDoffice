@@ -21,7 +21,7 @@ import {
 import type { Animacao, Lado, Shape, ShapeBox } from "./schema";
 import { CANTO_ROTULO, CANTOS, cantosDe, valoresComSelecao, type Canto } from "./edicao/formato";
 import { alvoDaConexao, bolinhaDaConexao } from "./edicao/ligacoes";
-import { textoAltura, textoLargura, textoX, textoY } from "./edicao/medida";
+import { textoAltura, textoGiro, textoLargura, textoX, textoY } from "./edicao/medida";
 import { temTexto } from "./edicao/texto";
 import { pontosDoDesenhoLivre, svgPathDePontos, type PontoTraco } from "./edicao/desenho";
 
@@ -36,7 +36,7 @@ const BANDA_BEIRADA_PX = 6;
  * Some inteiro a cada redesenho (`desenharSelecao`). Ao acrescentar um elemento novo, ele entra
  * aqui: fora da lista, as cópias se **empilham** a cada quadro do arrasto (foi o leque da curva).
  */
-const SELETOR_DO_OVERLAY = ".pp-sel, .pp-guia, .pp-marquee, .pp-celsel, .pp-selo, .pp-lig-ponto, .pp-traco, .pp-no-curva, .pp-medida";
+const SELETOR_DO_OVERLAY = ".pp-sel, .pp-guia, .pp-marquee, .pp-celsel, .pp-selo, .pp-lig-ponto, .pp-traco, .pp-no-curva, .pp-medida, .pp-giro";
 
 /**
  * Passo do zoom por clique/roda/atalho: cresce com o nível, como nas pranchetas de
@@ -120,7 +120,7 @@ export interface StageHooks {
 type Modo =
   | { t: "mover"; ids: string[]; inicial: Map<string, ShapeBox>; x0: number; y0: number; moveu: boolean; duplicou: boolean; clicouEm: string }
   | { t: "redim"; ids: string[]; alca: Alca; inicial: Map<string, { box: ShapeBox; rot: number }>; x0: number; y0: number; moldura: ShapeBox }
-  | { t: "girar"; ids: string[]; inicial: Map<string, { box: ShapeBox; rot: number }>; centro: { x: number; y: number }; angulo0: number }
+  | { t: "girar"; ids: string[]; inicial: Map<string, { box: ShapeBox; rot: number }>; centro: { x: number; y: number }; angulo0: number; delta: number }
   | { t: "retangulo"; x0: number; y0: number; soma: boolean; base: string[] }
   | { t: "criar"; x0: number; y0: number }
   | { t: "canto"; ids: string[]; alvo: Canto; sel: Canto[]; colapsar: boolean; mexeu: boolean; partida: { x: number; y: number }; ref: { box: ShapeBox; rot: number }; inicial: Map<string, [number, number, number, number]> }
@@ -480,6 +480,38 @@ export class Stage {
         }
       }
     }
+    // Giro: o ângulo aparece junto da alça. O rótulo NÃO entra na caixa girada (ali
+    // ele giraria junto e ficaria torto): a posição é calculada no espaço da lâmina,
+    // como a própria alça. Uma forma mostra o ângulo que ela tem AGORA (o mesmo do
+    // campo Rotação); várias mostram o quanto a seleção girou, porque cada uma pode
+    // ter partido de um ângulo próprio.
+    if (gesto === "girar" && this.modo?.t === "girar" && sel.length) {
+      const modo = this.modo;
+      const um = sel.length === 1 ? sel[0] : null;
+      const b = um ? um.box : envolventeDe(sel, ctx.dim);
+      if (b) {
+        const rot = um ? um.rot : 0;
+        const bh = (b.h / 100) * ctx.dim.h;
+        const cb = { x: ((b.x + b.w / 2) / 100) * ctx.dim.w, y: ((b.y + b.h / 2) / 100) * ctx.dim.h };
+        // a bolinha de giro vive ~32 px acima do topo, no espaço LOCAL da caixa; + 4 px
+        // de folga. `pxEmPt` mantém a distância igual em qualquer zoom, como a alça.
+        const off = bh / 2 + this.pxEmPt(ctx.dim, 36);
+        const rad = (rot * Math.PI) / 180;
+        const x = ((cb.x + Math.sin(rad) * off) / ctx.dim.w) * 100;
+        const y = ((cb.y - Math.cos(rad) * off) / ctx.dim.h) * 100;
+        // a volta completa é normalizada: "+370°" na tela seria o mesmo que "+10°"
+        const curto = normalizarAngulo(modo.delta + 180) - 180;
+        const texto = um ? textoGiro(um.rot) : textoGiro(curto, true);
+        // de que lado da bolinha o balão cai: ele sai para FORA da caixa (o "para cima"
+        // local aponta para cima na tela em 0° e para baixo em 180°); perto da borda
+        // da lâmina o lado da tela vence, para o número não sair do quadro
+        const cima = -Math.cos(rad);
+        const lado = Math.abs(cima) > 0.2 ? (cima < 0 ? "acima" : "abaixo") : y < 10 ? "abaixo" : "acima";
+        html.push(
+          `<span class="pp-medida pp-giro ${lado}" style="left:${r2(Math.max(5, Math.min(95, x)))}%;top:${r2(Math.max(2, Math.min(98, y)))}%">${texto}</span>`
+        );
+      }
+    }
     el.insertAdjacentHTML("beforeend", html.join(""));
     // o pincel de formatação não é uma ferramenta de desenhar: o ponteiro vira o "copiar" (cursor de
     // cruz fica para quem cria/rabisca)
@@ -762,7 +794,7 @@ export class Stage {
         const m = envolventeDe(sel, ctx.dim)!;
         const c = centro(paraPt(m, ctx.dim));
         const pt = this.pontoEmPt(e, ctx.dim);
-        this.modo = { t: "girar", ids, inicial, centro: c, angulo0: anguloDoPonteiro(pt.x, pt.y, c.x, c.y) };
+        this.modo = { t: "girar", ids, inicial, centro: c, angulo0: anguloDoPonteiro(pt.x, pt.y, c.x, c.y), delta: 0 };
       } else {
         const moldura = sel.length === 1 ? { ...sel[0].box } : envolventeDe(sel, ctx.dim)!;
         this.modo = { t: "redim", ids, alca: alca!.dataset.alca as Alca, inicial, x0: p.x, y0: p.y, moldura };
@@ -1153,6 +1185,7 @@ export class Stage {
           patches.set(id, { box: dePt({ x: nx - r.w / 2, y: ny - r.h / 2, w: r.w, h: r.h }, ctx.dim), rot: normalizarAngulo(i.rot + delta) });
         }
       }
+      modo.delta = delta;
       this.hooks.aoTransformar(patches, "meio");
       return;
     }

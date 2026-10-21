@@ -84,6 +84,9 @@ const dim = { w: 960, h: 540 };
   ok("caixa zerada sai 0 cm", MED.textoLargura({ x: 0, y: 0, w: 0, h: 0 }, d) === "0 cm" && MED.textoAltura({ x: 0, y: 0, w: 0, h: 0 }, d) === "0 cm");
   ok("vírgula decimal, como o painel", /^x \d+,\d cm$/.test(MED.textoX({ x: 15, y: 15, w: 30, h: 30 }, d)), MED.textoX({ x: 15, y: 15, w: 30, h: 30 }, d));
   ok("uma casa no máximo (nada de 16,933333)", !/\d,\d\d/.test(MED.textoLargura({ x: 0, y: 0, w: 13, h: 17 }, d)), MED.textoLargura({ x: 0, y: 0, w: 13, h: 17 }, d));
+  ok("o giro sai em graus, com a vírgula do painel", MED.textoGiro(37) === "37°" && MED.textoGiro(37.46) === "37,5°", MED.textoGiro(37.46));
+  ok("o giro de várias formas mostra o SINAL (quanto a seleção virou)", MED.textoGiro(12.3, true) === "+12,3°" && MED.textoGiro(-12.3, true) === "-12,3°", MED.textoGiro(-12.3, true));
+  ok("giro zero não vira '-0°'", MED.textoGiro(-0.01) === "0°" && MED.textoGiro(-0.01, true) === "0°", MED.textoGiro(-0.01, true));
 }
 
 // ---------------------------------------------------------------- operações em várias formas

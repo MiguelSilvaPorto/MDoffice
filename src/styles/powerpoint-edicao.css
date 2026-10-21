@@ -2294,6 +2294,12 @@ button.ppr.big .ppr-gal-ic svg {
   transform: translate(0, -50%) translateX(7px);
 }
 
+/* O ângulo do giro usa a mesma ficha da fita métrica, mas com o número em negrito:
+   é um valor que a pessoa está lendo no meio do gesto, não uma medida de conferência. */
+.pp-medida.pp-giro {
+  font-weight: 700;
+}
+
 /* dica da alça de canto: caixa do app no lugar do balão nativo do sistema */
 .pp-canto-dica {
   position: absolute;
