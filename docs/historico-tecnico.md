@@ -28,6 +28,48 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/broker/style/capitalization.ts
+
+### 2026-10-29 · fix/correcao-virgulas-pontos-titulos · título e parágrafo depois do título em maiúscula
+- **Local:** novo `headingStartLowercase`; `paragraphStartLowercase` (regex e bloco do Word)
+- **Linha:** `paraStartRx = /(^|\n[^\S\n]*\n)…/` → `/(^|\n[^\S\n]*\n|(?:^|\n)[ \t]*#{1,6}[^\n]*\n)…/`
+- **Porquê:** a regra de parágrafo só enxergava o começo do texto ou uma linha em branco. Num documento que abre com `# titulo` seguido do parágrafo na linha de baixo (o caso do relato), o título e o primeiro parágrafo ficavam minúsculos. O `headingStartLowercase` cobre `#`…`######` e as linhas que o Word entrega pela lista `titulos`; o parágrafo passou a considerar a linha logo abaixo do título como começo de bloco. Os dois são `safe`, então entram na pausa, no salvar e no “Formatar texto”.
+
+## src/broker/style/punctuation.ts
+
+### 2026-10-29 · fix/correcao-virgulas-pontos-titulos · vírgulas de subordinação e de “e + sujeito”
+- **Local:** `subordinateComma` (novo `FORTES`), novo `eComSujeitoComma`
+- **Linha:** `push(…, [], false, "escolha")` → `push(…, [], false, FORTES.has(conj) ? undefined : "escolha")`; `+ eComSujeitoComma`
+- **Porquê:** a vírgula antes de “pois” era detectada, mas marcada como “escolha”, e nem a varredura automática nem o “Formatar texto” aplicavam — o texto do relato ficava “escrevo pois eu tava…”. As conjunções em que a vírgula é a regra geral (`pois`, `embora`, `já que`, `visto que`, `uma vez que`, `ainda que`, `mesmo que`, `de modo que`, `de forma que`) passaram a entrar sozinhas; “porque” e “enquanto” continuam sugestão. `eComSujeitoComma` cobre a coordenação com sujeito próprio depois de uma oração desenvolvida (“… dentro do programa, e ele tem…”): exige 8+ palavras desde a última pontuação e que ainda não haja vírgula, e roda antes da sugestão de quebrar a frase para a vírgula não ser descartada pelo mesmo trecho.
+
+## src/broker/style/index.ts
+
+### 2026-10-29 · fix/correcao-virgulas-pontos-titulos · o ponto final não é descartado por outro aviso
+- **Local:** import/ordem de `RULES` (`headingStartLowercase`, `eComSujeitoComma`), dedup de `checkStyle`
+- **Linha:** `if (seen.has(key)) return false` → `if (i.classe === "ponto-final") return true;` antes do `seen`
+- **Porquê:** o dedup por `from-to` mantinha só o primeiro aviso do trecho. Quando a última palavra também era “app” (internetês), o aviso do ponto final era descartado e o parágrafo ficava sem ponto. O ponto final agora sobrevive e o planejador o aplica como inserção, sem disputar o trecho com a outra regra. A vírgula de “e + sujeito” entra antes de `safeSentenceBreak` pelo mesmo motivo: no mesmo “e”, a vírgula é menos invasiva que começar outra frase.
+
+## src/broker/autofix.ts · src/broker/formal.ts
+
+### 2026-10-29 · fix/correcao-virgulas-pontos-titulos · ponto final como inserção
+- **Local:** `planejarVarredura`; `planejarCorrecaoFormal`
+- **Linha:** `out.push({ from: i.from, to: i.to, insert: i.fix })` → bloco `if (i.classe === "ponto-final") out.push({ from: i.to, to: i.to, insert: "." })`
+- **Porquê:** tratar o ponto como troca da palavra apagava o aviso de ortografia/internetês na mesma palavra (ou era engolido por ele). A inserção no fim da palavra convive com a correção da palavra: o ponto entra depois dela, sem apagar o texto e sem “app..”. No “Formatar texto” isso também fecha o último parágrafo, mesmo com o cursor nele.
+
+## src/broker/check.ts
+
+### 2026-10-29 · fix/correcao-virgulas-pontos-titulos · sem fundir o ponto na correção da palavra
+- **Local:** bloco `fundidos` removido; `finais` passa a usar `issues` direto
+- **Linha:** `const fundidos: WritingIssue[] = [] …` → `const finais = issues.map(…)`
+- **Porquê:** a fusão juntava “palavra errada + falta o ponto” e acrescentava “.” ao `auto`/`fix` da palavra. Como o ponto agora é uma inserção aplicada pelo planejador, manter a fusão produzia dois pontos (“correção..”) na correção automática — a palavra era corrigida num passe e o ponto entrava em outro. Os dois avisos ficam separados; o planejador aplica cada um no lugar certo.
+
+## scripts/testar-correcao.mjs · scripts/testar-correcao-navegador.mjs
+
+### 2026-10-29 · fix/correcao-virgulas-pontos-titulos · travas das vírgulas, do ponto e do título
+- **Local:** novos casos em `testar-correcao.mjs`; novo `testar-correcao-navegador.mjs` (script `npm run test:correcao-navegador`)
+- **Linha:** casos novos
+- **Porquê:** o teste puro prende as regras e a política (título/parágrafo, “pois” na automática, “porque” fora, “e + sujeito”, ponto sobrevivendo ao aviso na mesma palavra, sem ponto duplo). O teste do navegador usa **o texto do relato** de ponta a ponta (`Input.insertText`, pausa real de 3,5 s, `formatarTexto` e `applySaveFixes`) e confere título, parágrafo, vírgulas, pontos, o “app” final e a ausência de duplicação — inclusive com o convite de backup podendo reaparecer no meio.
+
 ## src/app/autosaveTimer.ts
 
 ### 2026-10-29 · feat/salvamento-continuo-e-preview-de-imagem · teto de 5 s no autosave

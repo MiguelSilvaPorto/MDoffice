@@ -69,6 +69,13 @@ export function planejarCorrecaoFormal(texto: string, issues: readonly WritingIs
       diag({ ...base, veredito: "ignorado", motivo: "sugestão de leitura/estilo: a correção formal não decide isso" });
       continue;
     }
+    if (i.classe === "ponto-final") {
+      // inserção no fim da palavra: não disputa o trecho com a ortografia/internetês que
+      // possa estar na mesma palavra e não apaga o que a outra regra deixou de fora
+      diag({ ...base, veredito: "aplicado", motivo: "insere o ponto final do parágrafo" });
+      out.push({ from: i.to, to: i.to, insert: "." });
+      continue;
+    }
     const trecho = texto.slice(i.from, i.to);
     if (esqueleto(insert) !== esqueleto(trecho) || contarPalavras(insert) !== contarPalavras(trecho)) {
       diag({

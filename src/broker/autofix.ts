@@ -83,6 +83,14 @@ export function planejarVarredura(text: string, ctx: CtxVarredura): CorrecaoAuto
       diag({ ...base, veredito: "ignorado", motivo: "parágrafo em digitação: o ponto só entra quando ele acaba" });
       continue;
     }
+    if (i.classe === "ponto-final") {
+      // O ponto entra como INSERÇÃO no fim da palavra, não como troca dela: assim ele
+      // convive com outro aviso no mesmo trecho (o "app" internetês, por exemplo) sem
+      // sumir — e sem apagar a palavra que a outra regra ainda vai decidir.
+      diag({ ...base, veredito: "aplicado", motivo: "insere o ponto final do parágrafo" });
+      out.push({ from: i.to, to: i.to, insert: "." });
+      continue;
+    }
     diag({ ...base, veredito: "aplicado", motivo: `vira “${i.fix}”` });
     out.push({ from: i.from, to: i.to, insert: i.fix });
   }

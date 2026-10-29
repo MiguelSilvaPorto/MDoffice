@@ -13,6 +13,7 @@
     "corpus": "node scripts/regerar-ngrams.mjs",
     "test:excel": "node scripts/testar-excel.mjs && node scripts/testar-grade-excel.mjs",
     "test:correcao": "node scripts/testar-correcao.mjs",
+    "test:correcao-navegador": "node scripts/testar-correcao-navegador.mjs",
     "test:identidade": "node scripts/testar-identidade.mjs",
     "test:corretor-word": "node scripts/testar-corretor-word.mjs",
     "test:word-imagem": "node scripts/testar-word-imagem.mjs",

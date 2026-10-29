@@ -37,6 +37,26 @@
 
 **Frontend**
 
+- **A correção automática passou a fechar o texto de verdade**: com o corretor ligado, um texto
+  como “# melhorias de interface / quero uma melhoria … pois eu tava … dentro do programa e ele
+  tem dificuldades … abertos” continuava com o **título e o primeiro parágrafo em minúscula**,
+  **sem a vírgula antes de “pois”** e **sem o ponto final** de um parágrafo terminado em “app”.
+  Agora:
+  - **Título** (`#`, `##`… e os títulos do Word) e o **parágrafo logo abaixo dele** começam com
+    maiúscula — antes a regra só olhava o começo do texto ou uma linha em branco no meio.
+  - A **vírgula antes de “pois”, “embora”, “já que”, “visto que”, “uma vez que”, “ainda que”,
+    “mesmo que”, “de modo que” e “de forma que”** entra sozinha na pausa/salvar; “porque” e
+    “enquanto” continuam sugestão (dependem da leitura). Depois de uma oração desenvolvida, a
+    **vírgula antes de “e” + sujeito** (“… dentro do programa, e ele tem…”) também entra.
+  - O **ponto final** deixou de ser descartado quando a última palavra tem outro aviso no mesmo
+    trecho (o “app” internetês, por exemplo): ele é aplicado como **inserção** no fim do
+    parágrafo e convive com a correção da palavra sem apagá-la nem virar “app..”. O
+    **“Formatar texto”** fecha também o **último parágrafo** (o automático continua esperando
+    você sair dele, para não cortar uma frase em construção).
+  - O ponto final sumia de vez com uma palavra que também tinha aviso de ortografia; o teste no
+    navegador (`npm run test:correcao-navegador`) confere o texto mal formado inteiro, inclusive
+    **Ctrl+S** com a última palavra “app”, e o `npm run test:correcao` cobre as regras puras.
+
 - **Salvamento automático enquanto você escreve sem parar**: o autosave esperava **2 s sem
   nenhuma tecla** para gravar, e cada tecla reiniciava o relógio. Quem digitava corrido passava
   minutos sem nada ir para o disco — a gravação só acontecia quando a pessoa parava, e fechar o

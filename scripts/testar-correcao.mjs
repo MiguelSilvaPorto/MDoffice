@@ -47,6 +47,7 @@ const ok = (nome, cond, detalhe = "") => {
 
 const S = await empacotar("src/broker/style/index.ts", "style.mjs");
 const A = await empacotar("src/broker/autofix.ts", "autofix.mjs");
+const FORMAT = await empacotar("src/broker/formal.ts", "formal.mjs");
 const R = await empacotar("src/broker/personal/autofmt.ts", "autofmt.mjs");
 // Módulos de formalidade: checkStyle + tom + stats + catálogo no MESMO bundle, para
 // o setTone() daqui valer para o checkStyle que está sendo chamado.
@@ -88,7 +89,7 @@ const igual = (nome, texto, esperado) => {
 // ---------------------------------------------------------------- ponto final
 igual("ponto final no fim do parágrafo", "O relatorio ficou pronto", "O relatorio ficou pronto.");
 igual("não fecha frase terminando em conector", "O relatorio ficou pronto para", "O relatorio ficou pronto para");
-igual("título não recebe ponto", "## titulo sem ponto", "## titulo sem ponto");
+igual("título não recebe ponto (mas recebe maiúscula)", "## titulo sem ponto", "## Titulo sem ponto");
 // título do WORD: o texto projetado não tem `#` — a linha chega marcada pela projeção (`titulos`)
 {
   const semLista = F.checkStyle("TESTE DE ESCRITA").filter((i) => i.classe === "ponto-final");
@@ -107,6 +108,57 @@ igual("quatro pontos viram três (reticências)", "Esperando....", "Esperando...
 igual("quatro pontos no meio da frase também", "Ele pensou.... O plano mudou.", "Ele pensou... O plano mudou.");
 igual("linha pontilhada longa fica (separador)", "Introdução..... 5", "Introdução..... 5");
 
+// ---------------------------------------------------------------- título e parágrafo
+igual("título Markdown começa com maiúscula", "# titulo do projeto", "# Titulo do projeto");
+igual("subtítulo também", "## objetivos do projeto", "## Objetivos do projeto");
+igual(
+  "parágrafo logo abaixo do título começa com maiúscula",
+  "# titulo\nquero isso agora",
+  "# Titulo\nQuero isso agora."
+);
+{
+  // Word: o título vem pela lista `titulos` (sem "#") e o corpo pode estar na linha de baixo.
+  const titulo = S.checkStyle("titulo do projeto", { titulos: [0] });
+  ok("título do Word começa com maiúscula", titulo.some((i) => i.fix === "Titulo"), JSON.stringify(titulo));
+  const corpo = S.checkStyle("titulo do projeto\no corpo comeca aqui", { titulos: [0] });
+  ok("parágrafo abaixo do título do Word começa com maiúscula", corpo.some((i) => i.word === "o" && i.fix === "O"), JSON.stringify(corpo));
+}
+
+// O ponto final não pode sumir quando a última palavra tem outro aviso no mesmo trecho.
+{
+  const t = "O projeto é para app";
+  const issues = S.checkStyle(t);
+  const ponto = issues.filter((i) => i.classe === "ponto-final");
+  ok("o ponto final sobrevive ao aviso na mesma palavra", ponto.length === 1 && ponto[0].word === "app", JSON.stringify(ponto));
+  const plano = A.planejarVarredura(t, { pos: 0, from: 0, to: t.length, parFrom: 0, parTo: t.length, parConcluido: true });
+  ok(
+    "o ponto final entra como inserção no fim do parágrafo",
+    plano.some((c) => c.from === t.length && c.to === t.length && c.insert === "."),
+    JSON.stringify(plano)
+  );
+  ok(
+    "o internetês na mesma palavra continua fora da automática",
+    !plano.some((c) => c.insert === "aplicativo"),
+    JSON.stringify(plano)
+  );
+}
+
+// "Formatar texto" (correção formal) aplica o título, a vírgula e os pontos no texto
+// mal formado que motivou a tarefa.
+{
+  const texto =
+    "# melhorias de interface\n" +
+    "quero uma melhoria de funcionalidade que para salvar documentos conforme escrevo pois eu tava fazendo teste de escrita recentemente dentro do programa e ele tem dificuldades em salvar o documentos abertos\n\n" +
+    "As imagens que eu colei dentro do próprio app ele tem dificuldades em renderizador no preview do app";
+  const issues = S.checkStyle(texto);
+  const saida = FORMAT.aplicarCorrecoes(texto, FORMAT.planejarCorrecaoFormal(texto, issues));
+  ok("Formatar: título e primeiro parágrafo com maiúscula", saida.startsWith("# Melhorias de interface\nQuero uma"), JSON.stringify(saida.slice(0, 60)));
+  ok("Formatar: vírgula antes de “pois”", saida.includes("escrevo, pois"), saida.split("\n")[1]?.slice(0, 120));
+  ok("Formatar: fecha o primeiro parágrafo", saida.includes("documentos abertos."), saida.split("\n")[1]?.slice(-40));
+  ok("Formatar: fecha o último parágrafo (com “app” no fim)", saida.trimEnd().endsWith("preview do app."), saida.trimEnd().slice(-40));
+  ok("Formatar: não cria ponto duplo", !saida.includes(".."), saida.match(/.{0,20}\.\..{0,20}/)?.[0] ?? "");
+}
+
 // ---------------------------------------------------------------- vírgulas
 igual("vírgula antes de “mas”", "eu comprei pão mas esqueci o leite", "Eu comprei pão, mas esqueci o leite.");
 igual("expressão intercalada sem sobrar espaço", "O resultado no entanto foi diferente", "O resultado, no entanto, foi diferente.");
@@ -119,6 +171,45 @@ igual("“entretanto” intercalado não duplica vírgulas", "O time entregou o 
 igual("“porém” intercalado ganha só a vírgula de antes", "O plano deu certo porém faltou verba", "O plano deu certo, porém faltou verba.");
 igual("“entretanto” já com vírgula antes não é tocado", "O time entregou o projeto, entretanto faltou teste.", "O time entregou o projeto, entretanto faltou teste.");
 igual("frase subordinada longa ganha vírgula", "A reunião foi longa pois muita coisa estava pendente", "A reunião foi longa, pois muita coisa estava pendente.");
+{
+  // A vírgula de "pois" não é só do "Corrigir tudo": a correção automática também a
+  // aplica, porque é a regra geral (não uma leitura possível).
+  const t = "A reunião foi longa pois muita coisa estava pendente";
+  const plano = A.planejarVarredura(t, { pos: 0, from: 0, to: t.length, parFrom: 0, parTo: t.length, parConcluido: true });
+  ok(
+    "a vírgula antes de “pois” entra na correção automática",
+    plano.some((c) => t.slice(c.from, c.to) === " pois" && c.insert === ", pois"),
+    JSON.stringify(plano)
+  );
+  // "porque" continua sugestão: a vírgula é opcional em frase curta.
+  const q = "A reunião foi longa porque muita coisa estava pendente";
+  const pq = A.planejarVarredura(q, { pos: 0, from: 0, to: q.length, parFrom: 0, parTo: q.length, parConcluido: true });
+  ok("“porque” continua fora da correção automática", !pq.some((c) => c.insert === ", porque"), JSON.stringify(pq));
+  // "pois é" é conversa, não oração explicativa: não leva vírgula.
+  const pe = "Eu acho que pois é";
+  const ppe = A.planejarVarredura(pe, { pos: 0, from: 0, to: pe.length, parFrom: 0, parTo: pe.length, parConcluido: true });
+  ok("“pois é” não ganha vírgula", !ppe.some((c) => c.insert === ", pois"), JSON.stringify(ppe));
+}
+igual(
+  "vírgula antes de “e” com outro sujeito",
+  "Eu comprei o pão na padaria da esquina e ele esqueceu o leite em casa",
+  "Eu comprei o pão na padaria da esquina, e ele esqueceu o leite em casa."
+);
+igual("sem vírgula em oração curta com “e”", "Eu comprei pão e ele esqueceu o leite", "Eu comprei pão e ele esqueceu o leite.");
+{
+  const t = "Eu comprei o pão na padaria da esquina e ele esqueceu o leite em casa";
+  const plano = A.planejarVarredura(t, { pos: 0, from: 0, to: t.length, parFrom: 0, parTo: t.length, parConcluido: true });
+  ok(
+    "a vírgula de “e ele” entra na correção automática",
+    plano.some((c) => t.slice(c.from, c.to) === " e" && c.insert === ", e"),
+    JSON.stringify(plano)
+  );
+}
+igual(
+  "vírgula não atravessa a quebra de linha",
+  "A reunião foi longa\npois muita coisa estava pendente",
+  "A reunião foi longa\npois muita coisa estava pendente."
+);
 igual("não mexe em código", "Use `no entanto` no texto", "Use `no entanto` no texto.");
 igual("não mexe em número", "O valor é 1.000,00", "O valor é 1.000,00.");
 
@@ -333,9 +424,12 @@ igual("formalidade: citação não é tocada", "> acho que o prazo é curto.", "
 const T = "eu comprei pao mas esqueci o leite";
 const fimT = T.length;
 const p1 = A.planejarVarredura(T, { pos: fimT, from: 0, to: fimT, parFrom: 0, parTo: fimT, parConcluido: true });
-ok("política: parágrafo concluído fecha com ponto", p1.some((c) => c.insert === "leite."));
+// O ponto entra como INSERÇÃO no fim do parágrafo (não como troca da palavra): assim ele
+// não desaparece quando a última palavra tem outro aviso.
+const fechaPonto = (plano) => plano.some((c) => c.from === fimT && c.to === fimT && c.insert === ".");
+ok("política: parágrafo concluído fecha com ponto", fechaPonto(p1));
 const p2 = A.planejarVarredura(T, { pos: 5, from: 0, to: fimT, parFrom: 0, parTo: fimT, parConcluido: false });
-ok("política: parágrafo em andamento não fecha com ponto", !p2.some((c) => c.insert === "leite."));
+ok("política: parágrafo em andamento não fecha com ponto", !fechaPonto(p2));
 ok("política: vírgulas entram mesmo em andamento", p2.some((c) => c.insert === ", mas"));
 const posLeite = T.indexOf("leite") + 2;
 const p3 = A.planejarVarredura(T, { pos: posLeite, from: 0, to: fimT, parFrom: 0, parTo: fimT, parConcluido: true });

@@ -114,16 +114,22 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   minúscula por um **nome próprio** (“Ana”) — nome só entra quando a pessoa já escreveu com
   maiúscula.
 - **Correção automática com decisão** (liga/desliga): só o que é **forma** entra sozinho —
-  maiúsculas, espaços, pontuação repetida (inclusive **“....” → “...”**: reticências são três
-  pontos) e ortografia com certeza — ao pausar, ao **terminar o parágrafo** e ao **salvar**.
-  **Gíria e registro** (“pra”, “tá”, “a gente”, “pq”…) ficam como **sugestão**: são escolha de
-  quem escreve, não erro de forma — assim como as **vírgulas opinativas** (antes de “enquanto”,
-  “como”) e as **trocas de palavra por contexto** (“mão” × “não”). O **ponto final** não entra
-  no parágrafo em que você está digitando: ele entra quando você passa para o parágrafo
-  seguinte ou salva. Num documento **sem acento por escolha** (informal, áudio
-  transcrito), a correção automática **não mexe em nada** — nem acento, nem vírgula, nem
-  maiúscula; o aviso continua no texto e a ação explícita resolve. Cada correção é um passo
-  único de `Ctrl+Z` — e **desfazer ensina**: a troca desfeita volta a ser só sugestão.
+  maiúsculas (inclusive **título** `#`, `##`… e o **parágrafo logo abaixo dele**), espaços,
+  pontuação repetida (inclusive **“....” → “...”**: reticências são três pontos) e ortografia
+  com certeza — ao pausar, ao **terminar o parágrafo** e ao **salvar**. A **vírgula antes de
+  “pois”, “embora”, “já que”, “visto que”, “uma vez que”, “ainda que”, “mesmo que”, “de modo
+  que” e “de forma que”** entra sozinha; depois de uma oração desenvolvida, a **vírgula antes
+  de “e” + sujeito** (“… dentro do programa, e ele tem…”) também. **Gíria e registro** (“pra”,
+  “tá”, “a gente”, “pq”…) ficam como **sugestão**: são escolha de quem escreve, não erro de
+  forma — assim como as **vírgulas opinativas** (antes de “porque”, “enquanto”, “como”) e as
+  **trocas de palavra por contexto** (“mão” × “não”). O **ponto final** entra como inserção no
+  fim do parágrafo e **não some** quando a última palavra tem outro aviso (o “app” internetês,
+  por exemplo); ele não fecha o parágrafo em que você está digitando — entra quando você passa
+  para o seguinte ou salva, e o **“Formatar texto”** fecha também o último. Num documento **sem
+  acento por escolha** (informal, áudio transcrito), a correção automática **não mexe em nada**
+  — nem acento, nem vírgula, nem maiúscula; o aviso continua no texto e a ação explícita
+  resolve. Cada correção é um passo único de `Ctrl+Z` — e **desfazer ensina**: a troca desfeita
+  volta a ser só sugestão.
 - **“Formatar texto” = correção formal**: restaura acentos/cedilha, insere pontuação, acerta
   espaçamento e maiúsculas em quantas rodadas precisar — e **não troca palavras**: “vc → você”
   ou “pra → para” não entram por aqui (ficam como sugestão). A regra é estrutural: o que entra

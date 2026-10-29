@@ -5,11 +5,11 @@ import { MASCA, maskNonProse } from "../mask";
 import { getTone } from "../tone";
 import type { WritingIssue } from "../types";
 import { abbreviationsAndGlued, repeatedWords, doubleSpaces, spaceBeforePunct, spaceAfterPunct, spaceAfterSentence, repeatedPunct } from "./spacing";
-import { commasAroundExpressions, safeSentenceBreak, longRunWithoutPunct, adversativeComma, introConnectiveComma, adverbialComma, missingFinalPeriod, subordinateComma } from "./punctuation";
+import { commasAroundExpressions, safeSentenceBreak, longRunWithoutPunct, adversativeComma, eComSujeitoComma, introConnectiveComma, adverbialComma, missingFinalPeriod, subordinateComma } from "./punctuation";
 import { duplicatedPunct, frasesColadas } from "./limpeza";
 import { divisoresDoTrecho } from "./divisores";
 import { encurtarTrecho } from "../encurtar";
-import { lowercaseAfterPeriod, paragraphStartLowercase } from "./capitalization";
+import { headingStartLowercase, lowercaseAfterPeriod, paragraphStartLowercase } from "./capitalization";
 import { phrases } from "./phrases";
 import { informalRegister } from "./register";
 import { aGente, aiConector, entaoConector, voceVeQue, haAtras, vouEstarGerundio, vouFazer } from "./formalidade";
@@ -30,8 +30,12 @@ const RULES: Rule[] = [
   frasesColadas,
   informalRegister,
   commasAroundExpressions,
+  // a vírgula de "e + sujeito" vem antes da sugestão de quebrar a frase: no mesmo "e",
+  // separar as orações com vírgula é menos invasivo do que começar outra frase.
+  eComSujeitoComma,
   safeSentenceBreak,
   longRunWithoutPunct,
+  headingStartLowercase,
   lowercaseAfterPeriod,
   paragraphStartLowercase,
   phrases,
@@ -152,6 +156,10 @@ export function checkStyle(text: string, opcoes?: { titulos?: readonly number[] 
       return !(/^[·\s]*$/.test(pedaco) && pedaco.includes(MASCA) && text.slice(i.from, i.to).trim() !== "");
     })
     .filter((i) => {
+      // O ponto final é uma INSERÇÃO no fim do parágrafo e não pode desaparecer porque a
+      // última palavra também tem outro aviso ("app" internetês, "correçao" ortografia…).
+      // Antes ele era descartado pelo mesmo `from-to` e o parágrafo ficava sem ponto.
+      if (i.classe === "ponto-final") return true;
       const key = `${i.from}-${i.to}`;
       if (seen.has(key)) return false;
       seen.add(key);

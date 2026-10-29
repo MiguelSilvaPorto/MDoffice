@@ -151,27 +151,15 @@ export async function checkText(bruto: string, ignore: Set<string>, opcoes?: { t
     }))
   );
 
-  // Junta avisos que caem no MESMO trecho: palavra errada + falta do ponto final.
-  // Assim a correção da palavra já sai com o ponto ("correçao" → "correção."), em vez de
-  // um aviso anular o outro (antes eles se sobrepunham e só um era aplicado).
-  const fundidos: WritingIssue[] = [];
-  for (const i of issues) {
-    const par = fundidos.find((f) => f.kind !== i.kind && f.from === i.from && f.to === i.to);
-    if (par && (/ponto final/.test(par.message) || /ponto final/.test(i.message))) {
-      const palavra = par.kind === "spell" ? par : i;
-      palavra.message = `${palavra.message} — e falta o ponto final`;
-      palavra.suggestions = palavra.suggestions.map((s) => (s.endsWith(".") ? s : `${s}.`));
-      if (palavra.auto && !palavra.auto.endsWith(".")) palavra.auto = `${palavra.auto}.`;
-      if (palavra.fix && !palavra.fix.endsWith(".")) palavra.fix = `${palavra.fix}.`;
-      fundidos.splice(fundidos.indexOf(par), 1);
-      fundidos.push(palavra);
-      continue;
-    }
-    fundidos.push(i);
-  }
+  // O ponto final NÃO é mais fundido na correção da palavra: ele vive como aviso próprio
+  // e o planejador o aplica como inserção no fim do parágrafo. Fundir os dois (como se
+  // fazia) fazia o ponto sumir quando a palavra tinha outro aviso — e, na correção
+  // automática, podia virar dois pontos ("correção..") porque a palavra e o ponto eram
+  // aplicados em passes diferentes.
+  //
   // De volta ao texto ORIGINAL: os avisos nasceram em posições do normalizado, e quem
   // consome (o editor) conta posições no que está escrito na tela.
-  const finais = fundidos
+  const finais = issues
     .map((i) => ({ ...i, from: paraOriginal(norm, i.from), to: paraOriginal(norm, i.to) }))
     .sort((a, b) => a.from - b.from);
   // Log de decisões: só o que PODE ser aplicado (auto/fix/safe) — é o que interessa para explicar

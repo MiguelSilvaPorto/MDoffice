@@ -108,6 +108,26 @@ export function adversativeComma({ mask, push }: RuleCtx): void {
   }
 }
 
+/**
+ * Vírgula antes de “e” que abre uma oração com sujeito próprio.
+ *
+ * "Eu comprei o pão e ele esqueceu o leite" → a segunda oração tem outro sujeito; a
+ * vírgula separa as duas e evita a leitura corrida. Só entra depois de uma oração já
+ * desenvolvida (8+ palavras desde a última pontuação) e quando ainda não há vírgula.
+ */
+export function eComSujeitoComma({ mask, push }: RuleCtx): void {
+  let m: RegExpExecArray | null;
+  // só espaço horizontal: um "e" no começo da linha seguinte não pode virar ", e" e
+  // juntar as duas linhas do parágrafo
+  const rx = /(?<=[\p{L}\d])([^\S\n]+)(e)([^\S\n]+)(eu|você|vocês|ele|ela|eles|elas|nós)(?=[^\S\n]+[\p{L}])/giu;
+  while ((m = rx.exec(mask)) !== null) {
+    if (mask.slice(m.index - 1, m.index) === ",") continue; // já tem a vírgula
+    if (!trechoDesenvolvido(mask, m.index, 8)) continue;
+    const start = m.index;
+    push(start, start + m[1].length + m[2].length, `Vírgula antes de “e ${m[4]}” (outro sujeito)`, `, ${m[2]}`, [], false);
+  }
+}
+
 /** Vírgula depois de conectivos no começo da frase. */
 export function introConnectiveComma({ mask, push }: RuleCtx): void {
   let m: RegExpExecArray | null;
@@ -276,22 +296,43 @@ export function subordinateComma({ mask, push }: RuleCtx): void {
     ["de forma que", 5],
     ["porque", 11],
   ];
+  /**
+   * Conjunções em que a vírgula de antes é a regra geral, não uma preferência de leitura:
+   * entram sozinhas na pausa e no salvar (e no “Formatar texto”). "porque" e "enquanto"
+   * ficam de fora — a primeira dispensa vírgula em frase curta e a segunda pode ser
+   * temporal ("enquanto ele lia, ela escrevia") sem a pausa.
+   */
+  const FORTES = new Set(["pois", "embora", "já que", "visto que", "uma vez que", "ainda que", "mesmo que", "de modo que", "de forma que"]);
   const sentenceRx = /[^.!?\n]+/g;
   let s: RegExpExecArray | null;
   while ((s = sentenceRx.exec(mask)) !== null) {
     const sentence = s[0];
     for (const [conj, minBefore] of CONJ) {
-      const rx = new RegExp(`(?<=[\\p{L}\\d])(\\s+)(${conj})(?=\\s+[\\p{L}])`, "giu");
+      // espaço horizontal: a vírgula não pode atravessar uma quebra de linha e juntar as
+      // duas linhas do parágrafo (o "pois" no começo da linha seguinte fica fora)
+      const rx = new RegExp(`(?<=[\\p{L}\\d])([^\\S\\n]+)(${conj})(?=[^\\S\\n]+[\\p{L}])`, "giu");
       let m: RegExpExecArray | null;
       while ((m = rx.exec(sentence)) !== null) {
         const before = sentence.slice(0, m.index);
         const prevWord = (/([\p{L}]+)$/u.exec(before)?.[1] ?? "").toLowerCase();
         if (["e", "ou", "nem", "mas", "só", "mesmo", "até"].includes(prevWord)) continue; // "e porque…", "só porque…", "até que…"
+        // "pois é", "pois bem", "pois então" são expressões de conversa, não uma oração
+        // explicativa: a vírgula antes de "pois" ficaria errada.
+        const depois = (/^\s+([\p{L}]+)/u.exec(sentence.slice(m.index + m[0].length))?.[1] ?? "").toLowerCase();
+        if (["é", "bem", "então", "sim", "não"].includes(depois)) continue;
         const nBefore = (before.match(/[\p{L}][\p{L}'-]*/gu) ?? []).length;
         if (nBefore < minBefore) continue;
         if (/,\s*$/.test(before)) continue;
         const start = s.index + m.index;
-        push(start, start + m[1].length + m[2].length, `Costuma vir vírgula antes de “${m[2]}”`, `, ${m[2]}`, [], false, "escolha");
+        push(
+          start,
+          start + m[1].length + m[2].length,
+          `Costuma vir vírgula antes de “${m[2]}”`,
+          `, ${m[2]}`,
+          [],
+          false,
+          FORTES.has(conj) ? undefined : "escolha"
+        );
       }
     }
   }
