@@ -8,7 +8,7 @@
 // fundo escurecido.
 import { h } from "../util";
 import { ligarAjusteAlturaFita, ligarEncaixeFita, ligarRecolherFita } from "../fita";
-import type { Alinhamento, FormatoNumero } from "./schema";
+import { FONTE_PADRAO, TAMANHO_PADRAO, type Alinhamento, type FormatoNumero } from "./schema";
 import { melhorarSelects } from "../seletor";
 
 /** O que a fita precisa saber e fazer (o host implementa). */
@@ -23,6 +23,8 @@ export interface FormatState {
   temSelecao: boolean;
   negrito: boolean;
   italico: boolean;
+  fonte: string;
+  tamanho: number;
   alinhamento: Alinhamento;
   numero: FormatoNumero;
   cor: string;
@@ -32,12 +34,74 @@ export interface FormatState {
   temMescla: boolean;
 }
 
-/** Paleta no espírito do Excel: cinzas na primeira fileira, cores na segunda. */
-const CORES = [
-  "#000000", "#404040", "#595959", "#7f7f7f", "#a6a6a6", "#d9d9d9", "#ffffff",
-  "#c00000", "#ff0000", "#ffc000", "#ffff00", "#92d050", "#00b050", "#00b0f0",
-  "#0070c0", "#002060", "#7030a0", "#e11d48", "#f97316", "#14b8a6", "#6366f1",
+/** Paleta no espírito do Excel: tema, cores padrão, cinzas e as últimas usadas. */
+const CORES_TEMA = [
+  "#ffffff", "#000000", "#e7e6e6", "#44546a", "#4472c4",
+  "#ed7d31", "#a5a5a5", "#ffc000", "#5b9bd5", "#70ad47",
 ];
+const CORES_PADRAO = [
+  "#c00000", "#ff0000", "#ffc000", "#ffff00", "#92d050",
+  "#00b050", "#00b0f0", "#0070c0", "#002060", "#7030a0",
+];
+const CORES_CINZA = ["#000000", "#404040", "#595959", "#7f7f7f", "#a6a6a6", "#d9d9d9", "#ffffff"];
+const CHAVE_RECENTES = "mdc.excel.cores.recentes";
+
+/** Catálogo do “Inserir função”: só o que o motor realmente calcula. */
+const FUNCOES: { nome: string; categoria: string; sintaxe: string; descricao: string }[] = [
+  { nome: "SOMA", categoria: "Matemática", sintaxe: "SOMA(número1; número2; …)", descricao: "Soma números ou faixas." },
+  { nome: "PROD", categoria: "Matemática", sintaxe: "PROD(número1; número2; …)", descricao: "Multiplica os números." },
+  { nome: "ARRED", categoria: "Matemática", sintaxe: "ARRED(número; casas)", descricao: "Arredonda para a quantidade de casas." },
+  { nome: "INT", categoria: "Matemática", sintaxe: "INT(número)", descricao: "Arredonda para baixo até o inteiro." },
+  { nome: "MOD", categoria: "Matemática", sintaxe: "MOD(número; divisor)", descricao: "Resto da divisão." },
+  { nome: "POTÊNCIA", categoria: "Matemática", sintaxe: "POTÊNCIA(base; expoente)", descricao: "Eleva a base ao expoente." },
+  { nome: "RAIZ", categoria: "Matemática", sintaxe: "RAIZ(número)", descricao: "Raiz quadrada." },
+  { nome: "ABS", categoria: "Matemática", sintaxe: "ABS(número)", descricao: "Valor sem sinal." },
+  { nome: "PI", categoria: "Matemática", sintaxe: "PI()", descricao: "Valor de π (3,14159…)." },
+  { nome: "MÉDIA", categoria: "Estatística", sintaxe: "MÉDIA(número1; …)", descricao: "Média dos números." },
+  { nome: "MÍN", categoria: "Estatística", sintaxe: "MÍN(número1; …)", descricao: "Menor número." },
+  { nome: "MÁX", categoria: "Estatística", sintaxe: "MÁX(número1; …)", descricao: "Maior número." },
+  { nome: "CONT.NÚM", categoria: "Estatística", sintaxe: "CONT.NÚM(valor1; …)", descricao: "Conta quantos números existem." },
+  { nome: "CONT.VALORES", categoria: "Estatística", sintaxe: "CONT.VALORES(valor1; …)", descricao: "Conta células não vazias (inclusive texto)." },
+  { nome: "MED", categoria: "Estatística", sintaxe: "MED(número1; …)", descricao: "Mediana dos números." },
+  { nome: "DESVPAD", categoria: "Estatística", sintaxe: "DESVPAD(número1; …)", descricao: "Desvio padrão de uma amostra." },
+  { nome: "DESVPADP", categoria: "Estatística", sintaxe: "DESVPADP(número1; …)", descricao: "Desvio padrão da população." },
+  { nome: "SE", categoria: "Lógica", sintaxe: "SE(teste; se_verdadeiro; se_falso)", descricao: "Escolhe um resultado conforme o teste." },
+  { nome: "E", categoria: "Lógica", sintaxe: "E(teste1; teste2; …)", descricao: "Verdadeiro se todos os testes forem verdadeiros." },
+  { nome: "OU", categoria: "Lógica", sintaxe: "OU(teste1; teste2; …)", descricao: "Verdadeiro se algum teste for verdadeiro." },
+  { nome: "NÃO", categoria: "Lógica", sintaxe: "NÃO(teste)", descricao: "Inverte verdadeiro/falso." },
+  { nome: "SOMASE", categoria: "Pesquisa", sintaxe: "SOMASE(faixa; critério; faixa_soma)", descricao: "Soma as células que passam no critério." },
+  { nome: "CONT.SE", categoria: "Pesquisa", sintaxe: "CONT.SE(faixa; critério)", descricao: "Conta as células que passam no critério." },
+  { nome: "CONCATENAR", categoria: "Texto", sintaxe: "CONCATENAR(texto1; texto2; …)", descricao: "Junta textos e faixas." },
+  { nome: "TEXTO", categoria: "Texto", sintaxe: "TEXTO(valor; formato)", descricao: "Formata um número como texto." },
+  { nome: "ESQUERDA", categoria: "Texto", sintaxe: "ESQUERDA(texto; caracteres)", descricao: "Primeiros caracteres do texto." },
+  { nome: "DIREITA", categoria: "Texto", sintaxe: "DIREITA(texto; caracteres)", descricao: "Últimos caracteres do texto." },
+  { nome: "EXT.TEXTO", categoria: "Texto", sintaxe: "EXT.TEXTO(texto; início; caracteres)", descricao: "Trecho do meio do texto." },
+  { nome: "NÚM.CARACT", categoria: "Texto", sintaxe: "NÚM.CARACT(texto)", descricao: "Quantidade de caracteres." },
+  { nome: "MAIÚSCULA", categoria: "Texto", sintaxe: "MAIÚSCULA(texto)", descricao: "Texto em maiúsculas." },
+  { nome: "MINÚSCULA", categoria: "Texto", sintaxe: "MINÚSCULA(texto)", descricao: "Texto em minúsculas." },
+  { nome: "ESPAÇOS", categoria: "Texto", sintaxe: "ESPAÇOS(texto)", descricao: "Remove espaços extras." },
+  { nome: "HOJE", categoria: "Data/hora", sintaxe: "HOJE()", descricao: "Data de hoje (serial do Excel)." },
+  { nome: "AGORA", categoria: "Data/hora", sintaxe: "AGORA()", descricao: "Data e hora atuais." },
+];
+
+function lerRecentes(): string[] {
+  try {
+    const cru = JSON.parse(localStorage.getItem(CHAVE_RECENTES) ?? "[]");
+    return Array.isArray(cru) ? cru.filter((c) => typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c)).slice(0, 10) : [];
+  } catch {
+    return [];
+  }
+}
+
+function lembrarCor(cor: string): void {
+  if (!/^#[0-9a-f]{6}$/i.test(cor)) return;
+  try {
+    const lista = [cor, ...lerRecentes().filter((c) => c.toLowerCase() !== cor.toLowerCase())].slice(0, 10);
+    localStorage.setItem(CHAVE_RECENTES, JSON.stringify(lista));
+  } catch {
+    /* sem armazenamento: a paleta ainda funciona nesta sessão */
+  }
+}
 
 const ic = (nome: string) => `<svg class="ic"><use href="#${nome}"/></svg>`;
 
@@ -80,6 +144,26 @@ const NUMEROS: [FormatoNumero, string][] = [
   ["data", "Data"],
 ];
 
+/** Fontes comuns em documentos brasileiros (a lista é só uma sugestão; o .xlsx guarda o nome). */
+const FONTES = [
+  "Calibri",
+  "Aptos",
+  "Arial",
+  "Cambria",
+  "Consolas",
+  "Courier New",
+  "Garamond",
+  "Georgia",
+  "Segoe UI",
+  "Tahoma",
+  "Times New Roman",
+  "Trebuchet MS",
+  "Verdana",
+];
+
+/** Tamanhos em pontos, do menor ao maior (o Excel usa 8–72 no menu). */
+const TAMANHOS = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72];
+
 const GRAU_FX = `<span class="xl-fx">fx</span>`;
 
 export function fita(host: HTMLElement, hooks: RibbonHooks): HTMLElement {
@@ -105,7 +189,13 @@ export function fita(host: HTMLElement, hooks: RibbonHooks): HTMLElement {
       "Fonte",
       `
       <div class="xl-rows">
-        <div class="xl-row xl-biu">
+        <div class="xl-row xl-fontes">
+          <select class="xl-select xl-fonte" data-fonte title="Fonte" aria-label="Fonte">
+            ${FONTES.map((f) => `<option value="${f}">${f}</option>`).join("")}
+          </select>
+          <select class="xl-select xl-tamanho" data-tamanho title="Tamanho da fonte" aria-label="Tamanho da fonte">
+            ${TAMANHOS.map((t) => `<option value="${t}">${t}</option>`).join("")}
+          </select>
           ${btn("negrito", ic("i-bold"), "Negrito (Ctrl+B)", "fmt")}
           ${btn("italico", ic("i-italic"), "Itálico (Ctrl+I)", "fmt")}
         </div>
@@ -164,6 +254,11 @@ export function fita(host: HTMLElement, hooks: RibbonHooks): HTMLElement {
       </div>`
     )}
     ${group(
+      "Tabelas",
+      `
+      ${big("tabela", ic("i-grid"), "Tabela", "Aplicar um estilo de tabela à seleção (cabeçalho e linhas alternadas)")}`
+    )}
+    ${group(
       "Edição",
       `
       ${big("soma", ic("i-sigma"), "AutoSoma", "AutoSoma: escreve =SOMA(...) na célula")}
@@ -191,6 +286,7 @@ export function fita(host: HTMLElement, hooks: RibbonHooks): HTMLElement {
       "Biblioteca de Funções",
       `
       ${big("soma", ic("i-sigma"), "AutoSoma", "Escreve =SOMA(...) na célula")}
+      ${big("funcao", ic("i-function"), "Inserir função", "Escolher uma função e começar a digitar os argumentos")}
       <div class="xl-col">
         ${txt("media", ic("i-average"), "Média", "Escreve =MÉDIA(...) na célula")}
         ${txt("cont", ic("i-hash"), "Contar números", "Escreve =CONT.NÚM(...) na célula")}
@@ -236,8 +332,19 @@ export function fita(host: HTMLElement, hooks: RibbonHooks): HTMLElement {
   });
 
   host.addEventListener("change", (e) => {
-    const sel = (e.target as HTMLElement).closest<HTMLSelectElement>("[data-numero]");
-    if (sel) hooks.run("numero", sel.value);
+    const alvo = e.target as HTMLElement;
+    const numero = alvo.closest<HTMLSelectElement>("[data-numero]");
+    if (numero) {
+      hooks.run("numero", numero.value);
+      return;
+    }
+    const fonte = alvo.closest<HTMLSelectElement>("[data-fonte]");
+    if (fonte) {
+      hooks.run("fonte", fonte.value);
+      return;
+    }
+    const tamanho = alvo.closest<HTMLSelectElement>("[data-tamanho]");
+    if (tamanho) hooks.run("tamanho", tamanho.value);
   });
 
   host.addEventListener("click", (e) => {
@@ -272,6 +379,14 @@ export function fita(host: HTMLElement, hooks: RibbonHooks): HTMLElement {
       hooks.run(cmd, barra?.dataset.cor || (cmd === "cor-texto" ? "#c00000" : "#ffff00"));
       return;
     }
+    if (cmd === "funcao") {
+      abrirFuncoes(b, hooks);
+      return;
+    }
+    if (cmd === "tabela") {
+      abrirTabelas(b, hooks);
+      return;
+    }
     hooks.run(cmd);
   });
 
@@ -304,12 +419,35 @@ export function marcarFita(host: HTMLElement, s: FormatState): void {
   liga("mesclar", s.temMescla);
   const sel = host.querySelector<HTMLSelectElement>("[data-numero]");
   if (sel && sel.value !== s.numero) sel.value = s.numero;
+  const garantirOpcao = (select: HTMLSelectElement, valor: string): void => {
+    if (![...select.options].some((o) => o.value === valor)) {
+      const opt = document.createElement("option");
+      opt.value = valor;
+      opt.textContent = valor;
+      select.append(opt);
+    }
+  };
+  const fonteSel = host.querySelector<HTMLSelectElement>("[data-fonte]");
+  if (fonteSel) {
+    const fonte = s.fonte || FONTE_PADRAO;
+    garantirOpcao(fonteSel, fonte);
+    if (fonteSel.value !== fonte) fonteSel.value = fonte;
+  }
+  const tamanhoSel = host.querySelector<HTMLSelectElement>("[data-tamanho]");
+  if (tamanhoSel) {
+    const tamanho = String(s.tamanho || TAMANHO_PADRAO);
+    garantirOpcao(tamanhoSel, tamanho);
+    if (tamanhoSel.value !== tamanho) tamanhoSel.value = tamanho;
+  }
   for (const [k, cor, padrao] of [
     ["cor-texto", s.cor, "#c00000"],
     ["cor-fundo", s.fundo, "#ffff00"],
   ] as const) {
     const barra = host.querySelector<HTMLElement>(`[data-bar="${k}"]`);
-    if (barra) barra.style.background = cor || barra.dataset.cor || padrao;
+    if (barra) {
+      if (cor) barra.dataset.cor = cor;
+      barra.style.background = cor || barra.dataset.cor || padrao;
+    }
   }
   const z = host.querySelector<HTMLElement>("[data-zoomtxt]");
   if (z) z.textContent = `${s.zoom}%`;
@@ -321,27 +459,46 @@ function abrirCores(ancora: HTMLElement, hooks: RibbonHooks): void {
   const cmd = ancora.dataset.paleta === "cor-fundo" ? "cor-fundo" : "cor-texto";
   const grupo = ancora.closest<HTMLElement>(".xl-cor");
   const barra = grupo?.querySelector<HTMLElement>(`[data-bar="${cmd}"]`) ?? null;
+  const atual = (barra?.dataset.cor || "").toLowerCase();
+  const recentes = lerRecentes();
+
+  const opcao = (cor: string) =>
+    `<button type="button" class="xl-cor-op${cor.toLowerCase() === atual ? " atual" : ""}" data-cor="${cor}" style="--cor:${cor}" title="${cor}" aria-label="${cor}"></button>`;
+  const secao = (titulo: string, corpo: string) =>
+    `<div class="xl-cores-secao"><div class="xl-cores-titulo">${titulo}</div>${corpo}</div>`;
 
   const pop = h("div", { class: "xl-cores", role: "dialog", "aria-label": "Escolher cor" });
   pop.innerHTML = `
-    <div class="xl-cores-topo"><span>${cmd === "cor-fundo" ? "Cor de preenchimento" : "Cor da fonte"}</span><button type="button" class="xl-cores-x" data-fechar title="Fechar">${ic("i-close")}</button></div>
-    <div class="xl-cores-grade">
-      ${CORES.map((c) => `<button type="button" class="xl-cor-op" data-cor="${c}" style="--cor:${c}" title="${c}" aria-label="${c}"></button>`).join("")}
+    <div class="xl-cores-topo">
+      <span>${cmd === "cor-fundo" ? "Cor de preenchimento" : "Cor da fonte"}</span>
+      <button type="button" class="xl-cores-x" data-fechar title="Fechar">${ic("i-close")}</button>
+    </div>
+    <div class="xl-cores-corpo">
+      ${secao(
+        "Usadas recentemente",
+        recentes.length
+          ? `<div class="xl-cores-grade">${recentes.map(opcao).join("")}</div>`
+          : `<div class="xl-cores-dica">As cores que você usar aparecem aqui.</div>`
+      )}
+      ${secao("Cores do tema", `<div class="xl-cores-grade">${CORES_TEMA.map(opcao).join("")}</div>`)}
+      ${secao("Cores padrão", `<div class="xl-cores-grade">${CORES_PADRAO.map(opcao).join("")}</div>`)}
+      ${secao("Cinzas", `<div class="xl-cores-grade xl-cores-grade-cinza">${CORES_CINZA.map(opcao).join("")}</div>`)}
     </div>
     <div class="xl-cores-rodape">
       <button type="button" class="xl-cores-auto" data-cor="">${cmd === "cor-fundo" ? "Sem preenchimento" : "Automática"}</button>
       <label class="xl-cores-livre" title="Escolher uma cor personalizada">
         <input type="color" value="${barra?.dataset.cor || "#000000"}" data-corlivre />
-        <span>Outra cor…</span>
+        <span>Mais cores…</span>
       </label>
     </div>`;
   document.body.append(pop);
 
   // posiciona perto do botão, sem sair da janela
   const r = ancora.getBoundingClientRect();
-  const larg = 260;
+  const larg = 312;
+  const altura = 430;
   const esq = Math.max(8, Math.min(r.left - larg + r.width, window.innerWidth - larg - 8));
-  const topo = Math.min(r.bottom + 6, window.innerHeight - 260);
+  const topo = Math.min(r.bottom + 6, window.innerHeight - altura);
   pop.style.left = `${esq}px`;
   pop.style.top = `${Math.max(8, topo)}px`;
 
@@ -372,6 +529,7 @@ function abrirCores(ancora: HTMLElement, hooks: RibbonHooks): void {
       barra.dataset.cor = cor;
       barra.style.background = cor || (cmd === "cor-fundo" ? "#ffff00" : "#c00000");
     }
+    if (cor) lembrarCor(cor);
     hooks.run(cmd, cor);
     fechar();
   };
@@ -388,4 +546,132 @@ function abrirCores(ancora: HTMLElement, hooks: RibbonHooks): void {
   });
   livre?.addEventListener("change", () => aplicar(livre.value));
   void hooks.pickImage;
+}
+
+/** Base dos popovers da fita: posiciona perto do botão e fecha no fora/Esc/rolagem. */
+function abrirPopover(
+  ancora: HTMLElement,
+  classe: string,
+  rotulo: string,
+  html: string,
+  largura: number,
+  altura: number
+): { pop: HTMLElement; fechar: () => void } {
+  document.querySelectorAll(`.${classe}`).forEach((el) => el.remove());
+  const pop = h("div", { class: classe, role: "dialog", "aria-label": rotulo });
+  pop.innerHTML = html;
+  document.body.append(pop);
+
+  const r = ancora.getBoundingClientRect();
+  const esq = Math.max(8, Math.min(r.left - largura + r.width, window.innerWidth - largura - 8));
+  const topo = Math.min(r.bottom + 6, window.innerHeight - altura);
+  pop.style.left = `${esq}px`;
+  pop.style.top = `${Math.max(8, topo)}px`;
+
+  function fechar(): void {
+    document.removeEventListener("mousedown", fora, true);
+    document.removeEventListener("keydown", tecla, true);
+    window.removeEventListener("resize", fechar);
+    window.removeEventListener("scroll", fechar, true);
+    pop.remove();
+  }
+  function fora(ev: MouseEvent): void {
+    if (!pop.contains(ev.target as Node) && !ancora.contains(ev.target as Node)) fechar();
+  }
+  function tecla(ev: KeyboardEvent): void {
+    if (ev.key === "Escape") {
+      ev.preventDefault();
+      ev.stopPropagation();
+      fechar();
+    }
+  }
+  document.addEventListener("mousedown", fora, true);
+  document.addEventListener("keydown", tecla, true);
+  window.addEventListener("resize", fechar);
+  window.addEventListener("scroll", fechar, true);
+  pop.querySelector("[data-fechar]")?.addEventListener("click", fechar);
+  return { pop, fechar };
+}
+
+/** Fórmulas que o motor calcula, com busca — clicar começa `=FUNÇÃO(` na célula ativa. */
+function abrirFuncoes(ancora: HTMLElement, hooks: RibbonHooks): void {
+  const semAcento = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const itens = FUNCOES.map(
+    (f) => `<button type="button" class="xl-funcao" data-funcao="${f.nome}" data-busca="${semAcento(
+      `${f.nome} ${f.categoria} ${f.sintaxe} ${f.descricao}`
+    )}">
+      <span class="xl-funcao-nome">${f.nome}</span>
+      <span class="xl-funcao-cat">${f.categoria}</span>
+      <span class="xl-funcao-sin">${f.sintaxe}</span>
+      <span class="xl-funcao-desc">${f.descricao}</span>
+    </button>`
+  ).join("");
+
+  const { pop, fechar } = abrirPopover(
+    ancora,
+    "xl-funcoes",
+    "Inserir função",
+    `<div class="xl-pop-topo"><span>Inserir função</span><button type="button" class="xl-cores-x" data-fechar title="Fechar">${ic("i-close")}</button></div>
+     <input class="xl-funcoes-busca" type="search" placeholder="Buscar função (ex.: soma, se, texto…)" aria-label="Buscar função" />
+     <div class="xl-funcoes-lista">${itens || `<div class="xl-funcoes-vazio">Nenhuma função encontrada.</div>`}</div>`,
+    380,
+    450
+  );
+
+  const busca = pop.querySelector<HTMLInputElement>(".xl-funcoes-busca");
+  const lista = pop.querySelector<HTMLElement>(".xl-funcoes-lista");
+  busca?.focus();
+  busca?.addEventListener("input", () => {
+    const q = semAcento(busca.value.trim());
+    let achou = 0;
+    for (const b of lista?.querySelectorAll<HTMLElement>("[data-funcao]") ?? []) {
+      const visivel = !q || (b.dataset.busca ?? "").includes(q);
+      b.hidden = !visivel;
+      if (visivel) achou++;
+    }
+    let vazio = lista?.querySelector<HTMLElement>(".xl-funcoes-vazio");
+    if (!achou && lista && !vazio) {
+      vazio = h("div", { class: "xl-funcoes-vazio", text: "Nenhuma função encontrada." });
+      lista.append(vazio);
+    } else if (achou && vazio) {
+      vazio.remove();
+    }
+  });
+  pop.querySelectorAll<HTMLElement>("[data-funcao]").forEach((b) => {
+    b.addEventListener("click", () => {
+      hooks.run("funcao", b.dataset.funcao ?? "");
+      fechar();
+    });
+  });
+}
+
+/** Estilos de tabela reais (cabeçalho + linhas alternadas) aplicados à seleção. */
+function abrirTabelas(ancora: HTMLElement, hooks: RibbonHooks): void {
+  const card = (id: string, nome: string, cab: string, alt: string) =>
+    `<button type="button" class="xl-tabela-card" data-tabela="${id}">
+      <span class="xl-tabela-mini" style="--cab:${cab};--alt:${alt}">
+        <span class="xl-tabela-mini-cab"></span><span></span><span class="alt"></span><span></span>
+      </span>
+      <span>${nome}</span>
+    </button>`;
+  const { pop, fechar } = abrirPopover(
+    ancora,
+    "xl-tabelas",
+    "Estilo de tabela",
+    `<div class="xl-pop-topo"><span>Estilo de tabela</span><button type="button" class="xl-cores-x" data-fechar title="Fechar">${ic("i-close")}</button></div>
+     <p class="xl-tabelas-dica">Aplica na seleção: cabeçalho em destaque e linhas alternadas.</p>
+     <div class="xl-tabelas-grade">
+       ${card("azul", "Azul", "#1f4e78", "#ddebf7")}
+       ${card("verde", "Verde", "#375623", "#e2efda")}
+       ${card("cinza", "Cinza", "#404040", "#f2f2f2")}
+     </div>`,
+    286,
+    300
+  );
+  pop.querySelectorAll<HTMLElement>("[data-tabela]").forEach((b) => {
+    b.addEventListener("click", () => {
+      hooks.run("tabela", b.dataset.tabela ?? "");
+      fechar();
+    });
+  });
 }

@@ -46,19 +46,23 @@ Planilha com grade que cresce sob demanda, fórmulas em português e abertura de
 ## Fita (abas Início, Fórmulas e Exibir)
 
 - **Área de transferência**: colar, recortar, copiar e desfazer/refazer.
-- **Fonte**: negrito e itálico com **ícones SVG de verdade** (não mais “N”/“I” em texto),
-  **cor da fonte** e **cor de preenchimento** em botões divididos: a parte da esquerda aplica a
-  última cor usada e a seta abre a **paleta ancorada no botão** (com “Automática”, “Sem
-  preenchimento” e uma cor personalizada), sem escurecer a planilha.
+- **Fonte**: **família** (Calibri, Arial, Times New Roman…), **tamanho em pontos** (8–72),
+  negrito e itálico com **ícones SVG de verdade** (não mais “N”/“I” em texto), **cor da fonte** e
+  **cor de preenchimento** em botões divididos: a parte da esquerda aplica a última cor usada e a
+  seta abre a **paleta** (recentes, cores do tema, cores padrão, cinzas, “Automática”/“Sem
+  preenchimento” e “Mais cores…”), ancorada no botão e sem escurecer a planilha.
 - **Alinhamento**: esquerda, centro, direita e **justificado**; **mesclar** e **desfazer
   mesclagem**. O alinhamento vale na tela e é preservado no `.xlsx` (`horizontal` do estilo).
 - **Número**: formatos (geral, número, moeda, porcentagem, data…), **R$**, **%**, duas casas e
   aumentar/diminuir **casas decimais**. Os botões de casas usam ícones próprios, não texto solto.
 - **Células**: inserir/excluir **linha** e **coluna** (com as fórmulas, mesclas e medidas
   ajustadas), ajustar **altura** e **largura** ao conteúdo.
+- **Tabelas**: **Tabela** aplica na seleção um estilo com **cabeçalho em destaque** e **linhas
+  alternadas** (azul, verde ou cinza); o estilo fica nas células e sobrevive ao `.xlsx`.
 - **Edição**: **AutoSoma** (escreve `=SOMA(...)`), limpar conteúdo e formato, limpar só o formato.
-- **Fórmulas**: biblioteca (AutoSoma, Média, Contar números, Mínimo, Máximo), barra de
-  fórmulas e **auditoria** (mostrar o texto das fórmulas em vez dos valores).
+- **Fórmulas**: biblioteca (AutoSoma, Média, Contar números, Mínimo, Máximo), **Inserir função**
+  com catálogo pesquisável das funções que o motor calcula (clicar começa `=FUNÇÃO(` na célula
+  ativa), barra de fórmulas e **auditoria** (mostrar o texto das fórmulas em vez dos valores).
 - **Exibir**: zoom e mostrar fórmulas.
 - **A fita cabe na largura (sem rolagem)**: os mesmos quatro degraus das outras fitas — **cheia**,
   **compacta** (as métricas da fita do Excel passaram a acompanhar a escala e o aperto, com piso de
@@ -80,6 +84,8 @@ Planilha com grade que cresce sob demanda, fórmulas em português e abertura de
 - **Fórmulas compartilhadas** do Excel (`<f t="shared">`) são lidas e deslocadas para cada
   célula dependente; `numFmt` personalizado ganha um id próprio (moeda, data e decimal não se
   misturam mais ao reabrir).
+- **Fonte e tamanho** de cada célula viajam no `.xlsx` (`<name>`/`<sz>` do estilo), inclusive ao
+  abrir um arquivo do Excel com Arial 16, por exemplo.
 - **Documentação completa**: cada função por categoria (matemática, estatística, financeiras,
   data/hora, texto, pesquisa/referência, lógica, informação, engenharia, banco de dados e
   matrizes dinâmicas) em [docs/excel/formulas](excel/formulas/README.md), com sintaxe, regras,

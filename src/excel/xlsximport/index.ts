@@ -93,17 +93,21 @@ function lerEstilos(xml: string): Estilo[] {
   const out: Estilo[] = [];
 
   // fontes
-  const fontes: { negrito: boolean; italico: boolean; cor?: string }[] = [];
+  const fontes: { negrito: boolean; italico: boolean; cor?: string; nome?: string; tamanho?: number }[] = [];
   const blocoFontes = /<fonts\b[^>]*>([\s\S]*?)<\/fonts>/.exec(xml)?.[1] ?? "";
   const reFonte = /<font\b[^>]*>([\s\S]*?)<\/font>/g;
   let mf: RegExpExecArray | null;
   while ((mf = reFonte.exec(blocoFontes))) {
     const b = mf[1];
     const cor = /<color\b[^>]*rgb="([0-9A-Fa-f]{8})"/.exec(b)?.[1];
+    const nome = /<name\b[^>]*val="([^"]*)"/.exec(b)?.[1];
+    const tamanho = /<sz\b[^>]*val="([\d.]+)"/.exec(b)?.[1];
     fontes.push({
       negrito: /<b\b\s*\/?>/.test(b),
       italico: /<i\b\s*\/?>/.test(b),
       cor: cor ? cor.slice(2, 8).toUpperCase() : undefined,
+      nome: nome ? destrair(nome) : undefined,
+      tamanho: tamanho ? Number(tamanho) : undefined,
     });
   }
 
@@ -135,6 +139,8 @@ function lerEstilos(xml: string): Estilo[] {
     const fonte = fontes[numAttr("fontId")];
     if (fonte?.negrito) estilo.negrito = true;
     if (fonte?.italico) estilo.italico = true;
+    if (fonte?.nome && fonte.nome.toLowerCase() !== "calibri") estilo.fonte = fonte.nome;
+    if (fonte?.tamanho && Math.abs(fonte.tamanho - 11) > 0.01) estilo.tamanho = fonte.tamanho;
     if (fonte?.cor && fonte.cor !== "000000") estilo.cor = fonte.cor;
     const fundo = preenchimentos[numAttr("fillId")];
     if (fundo) estilo.fundo = fundo;

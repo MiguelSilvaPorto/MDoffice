@@ -18477,3 +18477,31 @@ antigas quando fizer sentido.
 - **Local:** a seção “Configuração” do `docs/excel.md` e o Excel → Não adicionado → Frontend do `CHANGELOG.md`
 - **Linha:** a seção que mandava abrir a engrenagem → os padrões do livro e a nota de que a janela saiu; `+` a entrada da remoção
 - **Porquê:** o documento do módulo era o único lugar que ainda mandava procurar o botão removido; a entrada do changelog fica em “Não adicionado” até o `fechar.ps1` entregar a `main`.
+
+## src/excel/schema.ts · src/excel/host.ts · src/excel/xlsxexport/index.ts · src/excel/xlsximport/index.ts
+
+### 2026-10-29 · feat/excel-fontes-paleta-e-funcoes · família e tamanho de fonte de ponta a ponta
+- **Local:** `Estilo`; `desenharCelulas`, `ajustarEntrada`, `estadoFormatacao` e `executar`; `chaveEstilo`/`registrarFonte`/`fontsXml`; `lerEstilos`
+- **Linha:** `+ fonte?: string; tamanho?: number` no modelo; `+ font-family:'…', 'Segoe UI', sans-serif; font-size:…pt` no estilo inline da célula e da entrada; `+ case "fonte"` e `case "tamanho"`; `chaveEstilo` e `registrarFonte` incluem os dois; `<sz val="${f.tamanho}"/><name val="${f.nome}"/>` no XML; a importação lê `<name>`/`<sz>` (o padrão Calibri 11 não vira estilo explícito)
+- **Porquê:** a fita só oferecia negrito/itálico e cores, e o modelo não tinha onde guardar a fonte. Sem os dois no `Estilo`, escolher Arial 16 na fita não sobreviveria ao `.xlsx`; com eles, a célula, o editor, o arquivo e a reabertura usam a mesma fonte. As aspas do `font-family` são simples de propósito: o CSS vai dentro de `style="…"` e aspas duplas quebravam o atributo (a cor e o tamanho sumiam).
+
+## src/excel/ribbon.ts · src/styles/excel.css
+
+### 2026-10-29 · feat/excel-fontes-paleta-e-funcoes · a paleta e os controles novos da fita
+- **Local:** grupo Fonte (selects `data-fonte`/`data-tamanho`), `abrirCores`, `abrirPopover`, `abrirFuncoes`, `abrirTabelas`; CSS `.xl-fonte`, `.xl-tamanho`, `.xl-cores-*`, `.xl-funcoes`, `.xl-tabelas`
+- **Linha:** `+` os dois selects e os listeners de `change`; a paleta de 21 cores → seções **Usadas recentemente/Cores do tema/Cores padrão/Cinzas** (com `localStorage`), ✓ na cor atual, “Automática/Sem preenchimento” e “Mais cores…” (input color); `+` catálogo `FUNCOES` (34 funções) com busca sem acento; `+` três cartões de tabela com miniatura; `+` CSS de 10 colunas, popovers de 380/286 px e rolagem interna
+- **Porquê:** a paleta anterior era uma grade única de 21 quadrados sem contexto, sem recentes e sem indicação da cor atual — o print do usuário mostrava exatamente essa pobreza. As seções dão hierarquia; as recentes economizam o clique seguinte; o ✓ elimina a dúvida de qual cor está aplicada. “Inserir função” e “Tabela” são comandos que fazem algo real: um insere `=FUNÇÃO(` na célula, o outro aplica cabeçalho + linhas alternadas (formatação que o `.xlsx` guarda), em vez de botões vazios.
+
+## scripts/testar-excel.mjs
+
+### 2026-10-29 · feat/excel-fontes-paleta-e-funcoes · as travas de fonte e da fita nova
+- **Local:** seção “fonte, tamanho e paleta” e o livro `.xlsx` de números
+- **Linha:** `+` ida-e-volta de Arial 16 no `.xlsx` (modelo + `<name>`/`<sz>` + padrão Calibri 11); `+` checagens de `data-fonte`/`data-tamanho`, seções da paleta, `Inserir função`/`Tabela` e o `font-family`/`font-size` no desenho da célula
+- **Porquê:** o defeito de aspas no `style` só apareceu no navegador (o modelo atualizava, mas o CSS era cortado); as travas prendem o formato do XML e a presença dos controles. A conferência no navegador mostrou Times New Roman 18 pt aplicado na célula e os popovers abrindo sem modal.
+
+## docs/excel.md · CHANGELOG.md
+
+### 2026-10-29 · feat/excel-fontes-paleta-e-funcoes · a documentação do módulo
+- **Local:** balas de Fonte, Células/Fórmulas/Tabelas e a seção de Fórmulas do `docs/excel.md`; Excel → Não adicionado → Backend/Frontend
+- **Linha:** `+` família/tamanho, a paleta em seções, Inserir função, Tabela e a ida-e-volta de `<name>`/`<sz>`
+- **Porquê:** o documento dizia apenas “negrito, itálico, cor de preenchimento e cor da fonte” — não mencionava fonte, tamanho, paleta com recentes nem os comandos novos. As entradas ficam em “Não adicionado” até o `fechar.ps1` entregar a `main`.

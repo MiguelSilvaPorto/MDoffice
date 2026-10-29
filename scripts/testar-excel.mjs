@@ -347,6 +347,7 @@ const livroNumeros = {
         D1: { texto: "=SUM(B1:B1)" },
         E1: { texto: "=SE(A1>0;1,5;2,5)" },
         F1: { texto: "=VERDADEIRO" },
+        G1: { texto: "Fonte", estilo: { fonte: "Arial", tamanho: 16 } },
       },
       colunas: {},
       linhas: {},
@@ -376,6 +377,10 @@ igual("a moeda continua moeda", folhaNum.B1.estilo.numero, "moeda");
 igual("o decimal continua decimal", folhaNum.A3.estilo.numero, "decimal");
 igual("as casas do decimal sobrevivem", folhaNum.A3.estilo.casas, 4);
 igual("a fórmula em inglês volta como SOMA", folhaNum.D1.texto, "=SOMA(B1:B1)");
+igual("a família da fonte sobrevive", folhaNum.G1.estilo?.fonte, "Arial");
+igual("o tamanho da fonte sobrevive", folhaNum.G1.estilo?.tamanho, 16);
+ok("o XML guarda a fonte e o tamanho", estilosNum.includes('<name val="Arial"/>') && estilosNum.includes('<sz val="16"/>'));
+ok("a fonte padrão do livro continua Calibri 11", estilosNum.includes('<name val="Calibri"/>') && estilosNum.includes('<sz val="11"/>'));
 
 // fórmula compartilhada: o mestre vale para as dependentes, deslocado
 const zipCompart = new JSZip();
@@ -418,6 +423,29 @@ livroJust.folhas[0].celulas.E2 = {
 };
 const lidoJust = await xlsxParaLivro(await livroParaXlsx(livroJust, { titulo: "Just", casas: config.casas, grade: true }));
 igual("justificado sobrevive ao .xlsx", lidoJust.livro.folhas[0].celulas.E2?.estilo?.alinhamento, "justificado");
+
+// ------------------------------------------------------------------
+console.log("\nfonte, tamanho e paleta");
+ok(
+  "a fita tem família e tamanho de fonte",
+  ribbonFonte.includes('data-fonte') && ribbonFonte.includes('data-tamanho') && ribbonFonte.includes("FONTES")
+);
+ok(
+  "a paleta tem recentes, tema, padrão, cinzas e mais cores",
+  ribbonFonte.includes("Usadas recentemente") &&
+    ribbonFonte.includes("Cores do tema") &&
+    ribbonFonte.includes("Cores padrão") &&
+    ribbonFonte.includes("Cinzas") &&
+    ribbonFonte.includes("Mais cores")
+);
+ok(
+  "a fita oferece inserir função e estilo de tabela",
+  ribbonFonte.includes("abrirFuncoes") && ribbonFonte.includes("abrirTabelas") && ribbonFonte.includes('"tabela"')
+);
+ok(
+  "a célula desenha a fonte e o tamanho do modelo",
+  /font-family:'\$\{\(estilo\?\.fonte/.test(hostFonte) && /font-size:\$\{Math\.max\(6/.test(hostFonte)
+);
 
 // ------------------------------------------------------------------
 console.log("\nhost: recálculo dos dependentes, seleção e planilha nova");

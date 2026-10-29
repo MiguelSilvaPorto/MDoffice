@@ -91,6 +91,28 @@ const ALINHAMENTO_CSS: Record<Alinhamento, string> = {
   justificado: "justify",
 };
 
+/** Estilos de tabela que aplicam cabeçalho e linhas alternadas (só com o que o motor tem). */
+const ESTILOS_TABELA: Record<
+  string,
+  { cabecalho: Partial<Estilo>; corpo: Partial<Estilo>; alternado: Partial<Estilo> }
+> = {
+  azul: {
+    cabecalho: { negrito: true, cor: "FFFFFF", fundo: "1F4E78" },
+    corpo: { negrito: undefined, cor: undefined, fundo: undefined },
+    alternado: { fundo: "DDEBF7" },
+  },
+  verde: {
+    cabecalho: { negrito: true, cor: "FFFFFF", fundo: "375623" },
+    corpo: { negrito: undefined, cor: undefined, fundo: undefined },
+    alternado: { fundo: "E2EFDA" },
+  },
+  cinza: {
+    cabecalho: { negrito: true, cor: "FFFFFF", fundo: "404040" },
+    corpo: { negrito: undefined, cor: undefined, fundo: undefined },
+    alternado: { fundo: "F2F2F2" },
+  },
+};
+
 export interface ExcelHostOptions {
   pane: HTMLElement;
   /** mudou alguma coisa: o App marca a aba como suja e agenda o salvamento */
@@ -739,6 +761,10 @@ export class ExcelHost {
           `left:${x}px;top:${y}px;width:${mesclada.largura}px;height:${mesclada.altura}px`,
           estilo?.negrito ? "font-weight:700" : "",
           estilo?.italico ? "font-style:italic" : "",
+          // a fonte e o tamanho são do modelo (e vão para o .xlsx); o padrão é Calibri 11 pt.
+          // aspas simples: o style vai dentro de um atributo HTML com aspas duplas.
+          `font-family:'${(estilo?.fonte ?? "Calibri").replace(/'/g, "")}', 'Segoe UI', sans-serif`,
+          `font-size:${Math.max(6, Math.min(96, estilo?.tamanho ?? 11))}pt`,
           estilo?.cor ? `color:#${estilo.cor}` : "",
           estilo?.fundo ? `background:#${estilo.fundo}` : "",
           // os nomes do modelo são em português; o CSS só entende left/center/right/justify
@@ -1148,7 +1174,10 @@ export class ExcelHost {
     const alt = (somaAlturas(f.linhas, m.l2, LINHA_PX) - somaAlturas(f.linhas, m.l1 - 1, LINHA_PX)) * z;
     // a entrada vive em .xl-area (que não rola), então desconta a rolagem;
     // mínimos evitam que ela suma quando a célula está fora da vista
-    this.entrada.style.cssText = `left:${x}px;top:${y}px;width:${Math.max(60, larg)}px;height:${Math.max(20, alt)}px;display:block;`;
+    const estilo = f.celulas[ref(this.edicao.linha, this.edicao.col)]?.estilo;
+    const familia = JSON.stringify(estilo?.fonte ?? "Calibri");
+    const tamanho = Math.max(6, Math.min(96, estilo?.tamanho ?? 11));
+    this.entrada.style.cssText = `left:${x}px;top:${y}px;width:${Math.max(60, larg)}px;height:${Math.max(20, alt)}px;display:block;font-family:${familia}, "Segoe UI", sans-serif;font-size:${tamanho}pt;`;
   }
 
   private focarGrade(): void {
@@ -1678,6 +1707,8 @@ export class ExcelHost {
       temSelecao: this.sel.l1 !== this.sel.l2 || this.sel.c1 !== this.sel.c2,
       negrito: !!estilo?.negrito,
       italico: !!estilo?.italico,
+      fonte: estilo?.fonte ?? "Calibri",
+      tamanho: estilo?.tamanho ?? 11,
       alinhamento: estilo?.alinhamento ?? "esquerda",
       numero: estilo?.numero ?? "geral",
       cor: estilo?.cor ? `#${estilo.cor}` : "",
@@ -1735,17 +1766,30 @@ export class ExcelHost {
   /** Aplica um estilo a todas as células da seleção. */
   private aplicarEstilo(patch: Partial<Estilo>): void {
     this.guardarPilha();
+    this.aplicarEstiloEm(this.sel, patch);
+    this.sujo();
+    this.pintar();
+    this.opts.onStatus?.();
+  }
+
+  /** Aplica o estilo num retângulo (usado pela seleção e pelo estilo de tabela). */
+  private aplicarEstiloEm(alvo: Intervalo, patch: Partial<Estilo>): void {
     const f = this.folha;
+    const area = (alvo.l2 - alvo.l1 + 1) * (alvo.c2 - alvo.c1 + 1);
     // Seleção enorme (coluna/linha inteira): só mexe nas células que existem,
     // em vez de criar uma vazia para cada posição selecionada.
+    const enorme =
+      area > 20_000 ||
+      (alvo.l1 === 0 && alvo.l2 >= this.limLinhas - 1) ||
+      (alvo.c1 === 0 && alvo.c2 >= this.limColunas - 1);
     const alvos: { linha: number; col: number }[] = [];
-    if (this.selecaoEnorme()) {
+    if (enorme) {
       for (const chave of Object.keys(f.celulas)) {
         const p = partes(chave);
-        if (p && dentro(this.sel, p.linha, p.col)) alvos.push(p);
+        if (p && dentro(alvo, p.linha, p.col)) alvos.push(p);
       }
     } else {
-      for (const p of percorrer(this.sel)) alvos.push(p);
+      for (const p of percorrer(alvo)) alvos.push(p);
     }
     for (const { linha, col } of alvos) {
       const r = ref(linha, col);
@@ -1764,9 +1808,6 @@ export class ExcelHost {
         if (ehVazia(cel)) delete f.celulas[r];
       }
     }
-    this.sujo();
-    this.pintar();
-    this.opts.onStatus?.();
   }
 
   private alternarEstilo(patch: Partial<Estilo>): void {
@@ -1943,6 +1984,32 @@ export class ExcelHost {
     this.aplicarEstilo({ numero, casas: numero === "porcento" ? 0 : this.config.casas });
   }
 
+  /** Abre a célula ativa com `=FUNÇÃO(` para a pessoa completar os argumentos. */
+  private inserirFuncao(nome: string): void {
+    const funcao = nome.trim().toUpperCase();
+    if (!/^[\p{L}\p{N}._]+$/u.test(funcao)) return;
+    this.editarCelula(`=${funcao}(`);
+  }
+
+  /** Estilo de tabela: cabeçalho + linhas alternadas (o que o motor consegue guardar). */
+  private aplicarTabela(id: string): void {
+    const estilo = ESTILOS_TABELA[id];
+    if (!estilo) return;
+    if (this.selecaoEnorme()) {
+      this.aviso("Selecione a área da tabela (não a planilha inteira) para aplicar o estilo.");
+      return;
+    }
+    this.guardarPilha();
+    const { l1, c1, l2, c2 } = this.sel;
+    for (let l = l1; l <= l2; l++) {
+      const patch = l === l1 ? estilo.cabecalho : (l - l1) % 2 === 0 ? estilo.alternado : estilo.corpo;
+      this.aplicarEstiloEm({ l1: l, c1, l2: l, c2 }, patch);
+    }
+    this.sujo();
+    this.pintar();
+    this.opts.onStatus?.();
+  }
+
   private executar(cmd: string, valor?: string): void {
     switch (cmd) {
       // ---- área de transferência e histórico ----
@@ -2019,6 +2086,21 @@ export class ExcelHost {
         return;
       case "italico":
         this.alternarEstilo({ italico: !this.estiloAtual()?.italico });
+        return;
+      case "fonte":
+        if (valor) this.aplicarEstilo({ fonte: valor });
+        return;
+      case "tamanho": {
+        if (!valor) return;
+        const n = Math.max(6, Math.min(96, Number(valor)));
+        if (Number.isFinite(n)) this.aplicarEstilo({ tamanho: n });
+        return;
+      }
+      case "funcao":
+        if (valor) this.inserirFuncao(valor);
+        return;
+      case "tabela":
+        if (valor) this.aplicarTabela(valor);
         return;
       case "cor-texto":
         if (valor !== undefined) this.aplicarEstilo({ cor: valor ? semHash(valor) : undefined });
@@ -2357,7 +2439,9 @@ export class ExcelHost {
       for (let l = this.sel.l1; l <= ateL; l++) {
         const texto = this.valorExibido(l, c);
         const fonte = f.celulas[ref(l, c)]?.estilo;
-        const tamanho = (fonte?.negrito ? 8.2 : 7.4) + (fonte?.casas ?? 0);
+        // a medida acompanha negrito e tamanho da fonte (11 pt é a referência)
+        const escala = Math.max(0.7, Math.min(3, (fonte?.tamanho ?? 11) / 11));
+        const tamanho = (fonte?.negrito ? 8.2 : 7.4) * escala + (fonte?.casas ?? 0);
         maior = Math.max(maior, texto.length * tamanho + 18);
       }
       f.colunas[c] = Math.round(Math.min(400, maior));
@@ -2375,9 +2459,10 @@ export class ExcelHost {
         const texto = this.valorExibido(l, c);
         const cel = f.celulas[ref(l, c)];
         if (!texto) continue;
+        const escala = Math.max(0.7, Math.min(3, (cel?.estilo?.tamanho ?? 11) / 11));
         const largura = somaLarguras(f.colunas, c, COLUNA_PX) - somaLarguras(f.colunas, c - 1, COLUNA_PX);
-        const linhas = Math.ceil(texto.length / Math.max(4, largura / 7.4));
-        maior = Math.max(maior, linhas * 20 + 6);
+        const linhas = Math.ceil(texto.length / Math.max(4, largura / (7.4 * escala)));
+        maior = Math.max(maior, linhas * 20 * escala + 6);
       }
       if (maior > LINHA_PX) f.linhas[l] = Math.round(Math.min(200, maior));
     }

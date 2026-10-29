@@ -292,6 +292,21 @@ body.home-open #excel-pane {
   min-width: 130px;
 }
 
+.xl-fontes {
+  gap: calc(3px * var(--fita-e, 1));
+}
+
+/* a família e o tamanho substituem o espaço do antigo par N/I na mesma linha */
+.xl-fonte {
+  min-width: max(116px, calc(124px * var(--fita-e, 1))) !important;
+  max-width: max(124px, calc(140px * var(--fita-e, 1)));
+}
+
+.xl-tamanho {
+  min-width: max(54px, calc(58px * var(--fita-e, 1))) !important;
+  max-width: max(58px, calc(62px * var(--fita-e, 1)));
+}
+
 .xl-letra {
   font-size: max(11.5px, calc(12px * var(--fita-e, 1)));
   font-weight: 700;
@@ -368,8 +383,8 @@ body.home-open #excel-pane {
 .xl-cores {
   position: fixed;
   z-index: 90;
-  width: 260px;
-  padding: 10px;
+  width: 312px;
+  padding: 12px;
   color: var(--fg);
   background: var(--panel);
   border: 1px solid var(--border);
@@ -385,14 +400,21 @@ body.home-open #excel-pane {
   }
 }
 
-.xl-cores-topo {
+.xl-cores-topo,
+.xl-pop-topo {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
-  color: var(--muted);
+  gap: 8px;
+  margin-bottom: 9px;
+  color: var(--fg);
   font-size: 12px;
   font-weight: 600;
+}
+
+.xl-cores-topo span,
+.xl-pop-topo span {
+  letter-spacing: 0.01em;
 }
 
 .xl-cores-x {
@@ -419,15 +441,43 @@ body.home-open #excel-pane {
   height: 14px;
 }
 
-.xl-cores-grade {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
+.xl-cores-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 338px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.xl-cores-secao {
+  display: flex;
+  flex-direction: column;
   gap: 5px;
 }
 
+.xl-cores-titulo {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.xl-cores-grade {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+}
+
+.xl-cores-grade-cinza {
+  grid-template-columns: repeat(7, 1fr);
+}
+
 .xl-cor-op {
+  position: relative;
   width: 100%;
-  height: 25px;
+  height: 23px;
   padding: 0;
   background: var(--cor);
   border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
@@ -441,13 +491,32 @@ body.home-open #excel-pane {
   outline-offset: 1px;
 }
 
+.xl-cor-op.atual::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 5px;
+  height: 9px;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: translate(-50%, -50%) rotate(45deg);
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.8));
+}
+
+.xl-cores-dica {
+  padding: 2px 0;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
 .xl-cores-rodape {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-top: 9px;
-  padding-top: 8px;
+  margin-top: 10px;
+  padding-top: 9px;
   border-top: 1px solid var(--border);
 }
 
@@ -483,6 +552,173 @@ body.home-open #excel-pane {
   border: 1px solid var(--border);
   border-radius: 5px;
   cursor: pointer;
+}
+
+/* ---------- inserir função ---------- */
+
+.xl-funcoes,
+.xl-tabelas {
+  position: fixed;
+  z-index: 90;
+  padding: 12px;
+  color: var(--fg);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  animation: xl-cores-entra 0.12s ease-out;
+}
+
+.xl-funcoes {
+  width: 380px;
+}
+
+.xl-funcoes-busca {
+  width: 100%;
+  height: 30px;
+  margin-bottom: 8px;
+  padding: 0 9px;
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.xl-funcoes-busca:focus {
+  outline: none;
+  border-color: var(--fi-excel, #0891b2);
+}
+
+.xl-funcoes-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 328px;
+  overflow-y: auto;
+}
+
+.xl-funcao {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1px 8px;
+  padding: 7px 8px;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.xl-funcao:hover {
+  background: color-mix(in srgb, var(--fi-excel, #0891b2) 8%, transparent);
+  border-color: color-mix(in srgb, var(--fi-excel, #0891b2) 24%, transparent);
+}
+
+.xl-funcao-nome {
+  color: var(--fi-excel, #0891b2);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.xl-funcao-cat {
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.xl-funcao-sin {
+  grid-column: 1 / -1;
+  color: var(--fg);
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 11px;
+}
+
+.xl-funcao-desc {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.xl-funcoes-vazio {
+  padding: 14px 8px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* ---------- estilo de tabela ---------- */
+
+.xl-tabelas {
+  width: 286px;
+}
+
+.xl-tabelas-dica {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+.xl-tabelas-grade {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.xl-tabela-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.xl-tabela-card:hover {
+  border-color: var(--fi-excel, #0891b2);
+  background: color-mix(in srgb, var(--fi-excel, #0891b2) 7%, transparent);
+}
+
+.xl-tabela-mini {
+  display: grid;
+  grid-template-rows: 12px repeat(3, 11px);
+  width: 100%;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.xl-tabela-mini > span {
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.xl-tabela-mini-cab {
+  background: var(--cab);
+  border-top: 0 !important;
+}
+
+.xl-tabela-mini > span.alt {
+  background: var(--alt);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xl-cores,
+  .xl-funcoes,
+  .xl-tabelas {
+    animation: none;
+  }
 }
 
 /* ---------- barra de fórmulas ---------- */

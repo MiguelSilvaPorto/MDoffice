@@ -73,6 +73,8 @@ function chaveEstilo(e: Estilo | undefined): string {
   return [
     e.negrito ? 1 : 0,
     e.italico ? 1 : 0,
+    e.fonte ?? "",
+    e.tamanho ?? "",
     corHex(e.cor) ?? "",
     corHex(e.fundo) ?? "",
     e.alinhamento ?? "",
@@ -140,18 +142,22 @@ function estilosXml(tab: TabelaEstilos, casasPadrao: number): string {
   // fontes e preenchimentos. No XML o Excel exige que as DUAS primeiras
   // entradas de <fills> sejam "none" e "gray125"; por isso um preenchimento
   // próprio começa no índice 2 (e o índice 0 é "sem preenchimento").
-  const fontes: { b: boolean; i: boolean; cor: string | null }[] = [{ b: false, i: false, cor: null }];
-  const indiceFonte = new Map<string, number>([["0||", 0]]);
+  const fontes: { b: boolean; i: boolean; cor: string | null; nome: string; tamanho: number }[] = [
+    { b: false, i: false, cor: null, nome: "Calibri", tamanho: 11 },
+  ];
+  const indiceFonte = new Map<string, number>([["0||Calibri|11", 0]]);
   const preenchimentos: string[] = [];
   const indicePreench = new Map<string, number>([["", 0]]);
 
   const registrarFonte = (e: Estilo | undefined): number => {
     const cor = corHex(e?.cor);
-    const k = `${e?.negrito ? 1 : 0}|${e?.italico ? 1 : 0}|${cor ?? ""}`;
+    const nome = (e?.fonte ?? "Calibri").trim() || "Calibri";
+    const tamanho = Number.isFinite(e?.tamanho) ? Math.max(6, Math.min(96, e!.tamanho!)) : 11;
+    const k = `${e?.negrito ? 1 : 0}|${e?.italico ? 1 : 0}|${cor ?? ""}|${nome}|${tamanho}`;
     const ja = indiceFonte.get(k);
     if (ja !== undefined) return ja;
     const i = fontes.length;
-    fontes.push({ b: !!e?.negrito, i: !!e?.italico, cor });
+    fontes.push({ b: !!e?.negrito, i: !!e?.italico, cor, nome, tamanho });
     indiceFonte.set(k, i);
     return i;
   };
@@ -209,9 +215,9 @@ function estilosXml(tab: TabelaEstilos, casasPadrao: number): string {
 
   const fontsXml = `<fonts count="${fontes.length}">${fontes
     .map((f) => {
-      const p = [f.b ? "<b/>" : "", f.i ? "<i/>" : "", '<sz val="11"/>'];
+      const p = [f.b ? "<b/>" : "", f.i ? "<i/>" : "", `<sz val="${f.tamanho}"/>`];
       if (f.cor) p.push(`<color rgb="FF${f.cor}"/>`);
-      p.push('<name val="Calibri"/>');
+      p.push(`<name val="${escapar(f.nome)}"/>`);
       return `<font>${p.filter(Boolean).join("")}</font>`;
     })
     .join("")}</fonts>`;

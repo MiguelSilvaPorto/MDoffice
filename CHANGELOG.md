@@ -732,7 +732,11 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Backend**
 
-- **O motor de valores parou de “adivinhar” números**: `numeroDe` agora exige que o texto inteiro
+- **Fonte e tamanho de letra viraram parte do modelo**: `Estilo` ganhou `fonte` (família) e
+  `tamanho` (pontos). A célula desenha os dois, o editor acompanha e o `.xlsx` grava/lê
+  `<name>`/`<sz>` do estilo — abrir um arquivo com Arial 16 ou escolher Times New Roman 18 na
+  fita mantém o resultado ao salvar e reabrir. Células sem escolha continuam em Calibri 11.
+- **O motor de valores parou de "adivinhar" números**: `numeroDe` agora exige que o texto inteiro
   seja número (com `R$`, `%`, parênteses de negativo e milhar pt-BR). Antes ele arrancava qualquer
   letra em volta, e por isso `01/01/2026` virava 1012026, `Item 1` virava 1 e `1/2` virava 12. A
   data é testada antes do número; `0.125` é decimal e `1.234` é milhar; `(100)` é −100.
@@ -756,6 +760,18 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A fita ganhou fonte e tamanho de verdade**: o grupo **Fonte** agora tem a **família**
+  (Calibri, Aptos, Arial, Times New Roman, Cambria, Georgia, Segoe UI…) e o **tamanho em pontos**
+  (8–72) ao lado de negrito/itálico. A célula, a caixa de edição e o `.xlsx` acompanham — antes a
+  fita só tinha N/I e cores.
+- **A seleção de cores foi refeita**: o popover agora tem **Usadas recentemente**, **Cores do
+  tema**, **Cores padrão**, **Cinzas**, “Automática/Sem preenchimento”, **Mais cores…** (seletor
+  do sistema) e marca a cor atual com ✓. As recentes ficam guardadas e reaparecem na próxima
+  abertura; a paleta abre ancorada no botão e continua sem modal.
+- **Novos comandos reais na fita**: **Inserir função** (catálogo pesquisável com as 34 funções
+  que o motor calcula; clicar começa `=FUNÇÃO(` na célula) e **Tabela** (estilos azul, verde e
+  cinza com cabeçalho em destaque e linhas alternadas, aplicados na seleção e preservados no
+  `.xlsx`).
 - **O botão “Configurar” saiu da fita do Excel**: a engrenagem abria um diálogo de grade, casas
   decimais, moeda e zoom que não tinha função prática no uso da planilha. O botão, o hook
   `onConfigure`, o comando `configure` e o próprio diálogo foram removidos; a planilha continua

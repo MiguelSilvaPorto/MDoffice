@@ -10,12 +10,20 @@ export type Alinhamento = "esquerda" | "centro" | "direita" | "justificado";
 export interface Estilo {
   negrito?: boolean;
   italico?: boolean;
+  /** família da fonte (ex.: "Calibri", "Arial") */
+  fonte?: string;
+  /** tamanho da fonte em pontos (padrão 11) */
+  tamanho?: number;
   cor?: string; // cor do texto (hex de 6, sem #)
   fundo?: string; // cor de preenchimento (hex de 6, sem #)
   alinhamento?: Alinhamento;
   numero?: FormatoNumero;
   casas?: number; // casas decimais (padrão 2)
 }
+
+/** Fonte e tamanho que o Excel usa quando a célula não escolhe outro. */
+export const FONTE_PADRAO = "Calibri";
+export const TAMANHO_PADRAO = 11;
 
 /** Uma célula guarda o texto cru que o usuário digitou (com "=" quando é fórmula). */
 export interface Celula {

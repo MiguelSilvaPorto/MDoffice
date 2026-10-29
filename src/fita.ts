@@ -531,7 +531,9 @@ export function ligarEncaixeFita(o: OpcoesEncaixeFita): void {
   // escolheu um comando do menu: fecha (menus com `data-menu` abrem popup próprio e ficam)
   pop.addEventListener("click", (e) => {
     const b = (e.target as HTMLElement).closest<HTMLElement>("[data-cmd]");
-    if (b && !b.hasAttribute("data-menu")) fecharMenu();
+    // fecha no microtask: o comando ainda precisa medir a posição do botão para
+    // abrir a paleta/o popover ancorado antes de o corpo voltar para o grupo
+    if (b && !b.hasAttribute("data-menu")) queueMicrotask(fecharMenu);
   });
   // Esc fecha o menu
   document.addEventListener("keydown", (e) => {
