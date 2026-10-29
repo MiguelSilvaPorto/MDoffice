@@ -36,7 +36,8 @@ Planilha com grade que cresce sob demanda, fórmulas em português e abertura de
 
 - **Área de transferência**: colar, recortar, copiar e desfazer/refazer.
 - **Fonte**: negrito, itálico, **cor de preenchimento** e **cor da fonte**.
-- **Alinhamento**: esquerda, centro, direita; **mesclar** e **desfazer mesclagem**.
+- **Alinhamento**: esquerda, centro, direita e **justificado**; **mesclar** e **desfazer
+  mesclagem**. O alinhamento vale na tela e é preservado no `.xlsx` (`horizontal` do estilo).
 - **Número**: formatos (geral, número, moeda, porcentagem, data…), **R$**, **%**, separador
   de milhar e aumentar/diminuir **casas decimais**.
 - **Células**: inserir/excluir **linha** e **coluna**, ajustar **altura** e **largura** ao

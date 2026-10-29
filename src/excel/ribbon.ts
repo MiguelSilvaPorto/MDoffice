@@ -107,6 +107,7 @@ export function fita(host: HTMLElement, hooks: RibbonHooks): HTMLElement {
           ${btn("align-esquerda", ic("i-align-left"), "Alinhar à esquerda", "fmt")}
           ${btn("align-centro", ic("i-align-center"), "Centralizar", "fmt")}
           ${btn("align-direita", ic("i-align-right"), "Alinhar à direita", "fmt")}
+          ${btn("align-justificado", ic("i-align-justify"), "Justificar", "fmt")}
         </div>
         <div class="xl-row">
           ${btn("mesclar", ic("i-table-merge") + "<span>Mesclar</span>", "Mesclar células selecionadas", "txt")}
@@ -269,6 +270,7 @@ export function marcarFita(host: HTMLElement, s: FormatState): void {
   liga("align-esquerda", s.alinhamento === "esquerda");
   liga("align-centro", s.alinhamento === "centro");
   liga("align-direita", s.alinhamento === "direita");
+  liga("align-justificado", s.alinhamento === "justificado");
   liga("mesclar", s.temMescla);
   const sel = host.querySelector<HTMLSelectElement>("[data-numero]");
   if (sel && sel.value !== s.numero) sel.value = s.numero;

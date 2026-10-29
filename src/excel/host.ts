@@ -81,6 +81,14 @@ export interface ExcelTabData {
   coluna: number;
 }
 
+/** O nome do alinhamento no modelo (português) → o valor que o CSS entende. */
+const ALINHAMENTO_CSS: Record<Alinhamento, string> = {
+  esquerda: "left",
+  centro: "center",
+  direita: "right",
+  justificado: "justify",
+};
+
 export interface ExcelHostOptions {
   pane: HTMLElement;
   /** mudou alguma coisa: o App marca a aba como suja e agenda o salvamento */
@@ -637,7 +645,8 @@ export class ExcelHost {
           estilo?.italico ? "font-style:italic" : "",
           estilo?.cor ? `color:#${estilo.cor}` : "",
           estilo?.fundo ? `background:#${estilo.fundo}` : "",
-          estilo?.alinhamento ? `text-align:${estilo.alinhamento === "esquerda" ? "left" : estilo.alinhamento}` : "",
+          // os nomes do modelo são em português; o CSS só entende left/center/right/justify
+          estilo?.alinhamento ? `text-align:${ALINHAMENTO_CSS[estilo.alinhamento]}` : "",
         ]
           .filter(Boolean)
           .join(";");
@@ -1759,6 +1768,9 @@ export class ExcelHost {
         return;
       case "align-direita":
         this.aplicarEstilo({ alinhamento: "direita" });
+        return;
+      case "align-justificado":
+        this.aplicarEstilo({ alinhamento: "justificado" });
         return;
       case "numero":
         if (valor) this.aplicarNumero(valor as FormatoNumero);

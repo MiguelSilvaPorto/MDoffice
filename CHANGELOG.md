@@ -746,6 +746,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O Excel ganhou o botão Justificar** (e o centro/direita voltaram a funcionar de verdade): a
+  fita só tinha esquerda/centro/direita, e o CSS recebia os nomes do modelo em português
+  (`text-align: centro`/`direita`), que o navegador ignora — o botão acendia e o texto não
+  mudava. Agora há **Justificar** ao lado dos três, o mapa `esquerda/centro/direita/justificado`
+  vira `left/center/right/justify` no desenho da célula e o alinhamento é lido e gravado no
+  `.xlsx` (`horizontal="justify"`). Trava: `npm run test:excel` (fita, mapa CSS e ida-e-volta do
+  justificado no arquivo) + conferência no navegador (`text-align: justify` na célula).
+
 - **Os números das linhas pararam de sair do lugar**: o botão do cabeçalho de linha não ocupava
   a largura da coluna de cabeçalho (encolhia para o tamanho do número, deixando a borda e o
   número parados à esquerda) e a borda de 1px entrava **por fora** da altura de 25px — a cada

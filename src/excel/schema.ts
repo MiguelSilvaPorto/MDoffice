@@ -4,7 +4,7 @@
 /** Como o número aparece na célula (vira numFmt no .xlsx). */
 export type FormatoNumero = "geral" | "decimal" | "moeda" | "porcento" | "data";
 
-export type Alinhamento = "esquerda" | "centro" | "direita";
+export type Alinhamento = "esquerda" | "centro" | "direita" | "justificado";
 
 /** Aparência de uma célula (vira fonte/preenchimento/alinhamento/numFmt no .xlsx). */
 export interface Estilo {

@@ -28,6 +28,27 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/excel/schema.ts · src/excel/host.ts · src/excel/ribbon.ts
+
+### 2026-10-29 · fix/excel-justificado · Justificar na fita (e centro/direita no CSS)
+- **Local:** `Alinhamento`; `ALINHAMENTO_CSS`, `desenharCelulas`, `run`; botões/marcação da fita
+- **Linha:** `"esquerda" | "centro" | "direita"` → `+ "justificado"`; `text-align:${estilo.alinhamento === "esquerda" ? "left" : estilo.alinhamento}` → `text-align:${ALINHAMENTO_CSS[...]}`; `+ case "align-justificado"`; `+ btn("align-justificado", ic("i-align-justify"), "Justificar")`
+- **Porquê:** a fita não oferecia o justificado (o pedido) e, pior, o CSS recebia `text-align: centro/direita`, valores inválidos: o botão acendia e o texto continuava à esquerda. O mapa traduz os nomes do modelo para `left/center/right/justify`; o tipo, a fita e o comando acompanham. O justificado aparece em células com texto que quebra (o modelo trabalha com uma linha por célula; o valor fica gravado e vale no `.xlsx`).
+
+## src/excel/xlsxexport/index.ts · src/excel/xlsximport/index.ts
+
+### 2026-10-29 · fix/excel-justificado · justificado no .xlsx
+- **Local:** `alignment horizontal` na exportação; leitura de `horizontal` na importação
+- **Linha:** `left|center|right` → `+ justify` na exportação; regex `(left|center|right)` → `(left|center|right|justify)`, com `justify → justificado`
+- **Porquê:** o alinhamento precisa sobreviver ao arquivo. Sem o `justify` no mapa, o justificado viraria `center` na exportação e, ao reabrir, o estilo mudava. Agora a ida-e-volta preserva `justificado`.
+
+## scripts/testar-excel.mjs
+
+### 2026-10-29 · fix/excel-justificado · travas do justificado
+- **Local:** seção “justificado: fita, CSS e .xlsx”
+- **Linha:** `+ ok(...)` (botão/marcação), `+ ok(...)` (mapa CSS) e ida-e-volta do `.xlsx`
+- **Porquê:** o botão sem o mapa CSS não alinha; o mapa sem o `.xlsx` perde o estilo ao salvar. O teste prende as três partes e o navegador confirmou `text-align: justify` na célula e o botão ativo.
+
 ## src/styles/excel.css
 
 ### 2026-10-29 · fix/excel-cabecalho-linha-alinhado · cabeçalho de linha ocupa a coluna e a borda não soma 1px

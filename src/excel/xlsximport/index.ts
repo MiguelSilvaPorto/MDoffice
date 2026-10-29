@@ -132,8 +132,11 @@ function lerEstilos(xml: string): Estilo[] {
     const fundo = preenchimentos[numAttr("fillId")];
     if (fundo) estilo.fundo = fundo;
 
-    const alinhar = /horizontal="(left|center|right)"/.exec(corpo)?.[1];
-    if (alinhar) estilo.alinhamento = alinhar === "left" ? "esquerda" : alinhar === "right" ? "direita" : "centro";
+    const alinhar = /horizontal="(left|center|right|justify)"/.exec(corpo)?.[1];
+    if (alinhar) {
+      estilo.alinhamento =
+        alinhar === "left" ? "esquerda" : alinhar === "right" ? "direita" : alinhar === "justify" ? "justificado" : "centro";
+    }
 
     const numFmtId = numAttr("numFmtId");
     const padrao = FORMATO_PADRAO(numFmtId);

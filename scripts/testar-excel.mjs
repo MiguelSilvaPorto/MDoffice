@@ -281,6 +281,30 @@ igual("2 x 5200", e2, 10400);
 igual("soma dos quatro", calcular("=10400+1800+1280+950", ctx), 14430);
 
 // ------------------------------------------------------------------
+console.log("\njustificado: fita, CSS e .xlsx");
+const hostFonte = readFileSync(join(raiz, "src/excel/host.ts"), "utf8");
+const ribbonFonte = readFileSync(join(raiz, "src/excel/ribbon.ts"), "utf8");
+ok(
+  "a fita tem o botão Justificar",
+  ribbonFonte.includes('btn("align-justificado"') && ribbonFonte.includes('liga("align-justificado"'),
+  "o grupo Alinhamento só tinha esquerda/centro/direita"
+);
+ok(
+  "o CSS recebe justify (e centro/direita viram center/right)",
+  /justificado: "justify"/.test(hostFonte) && /centro: "center"/.test(hostFonte) && /direita: "right"/.test(hostFonte)
+);
+const livroJust = {
+  ...livro,
+  folhas: livro.folhas.map((f) => ({ ...f, celulas: { ...f.celulas } })),
+};
+livroJust.folhas[0].celulas.E2 = {
+  ...livroJust.folhas[0].celulas.E2,
+  estilo: { ...(livroJust.folhas[0].celulas.E2?.estilo ?? {}), alinhamento: "justificado" },
+};
+const lidoJust = await xlsxParaLivro(await livroParaXlsx(livroJust, { titulo: "Just", casas: config.casas, grade: true }));
+igual("justificado sobrevive ao .xlsx", lidoJust.livro.folhas[0].celulas.E2?.estilo?.alinhamento, "justificado");
+
+// ------------------------------------------------------------------
 console.log("\nhost: recálculo dos dependentes, seleção e planilha nova");
 const hostSrc = readFileSync(join(raiz, "src/excel/host.ts"), "utf8");
 ok(

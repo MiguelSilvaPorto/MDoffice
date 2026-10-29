@@ -171,8 +171,15 @@ function estilosXml(tab: TabelaEstilos, casasPadrao: number): string {
     if (fontId) partes.push('applyFont="1"');
     if (fillId) partes.push('applyFill="1"');
     if (e?.alinhamento) {
-      // o XML do Excel usa os nomes em inglês (left/center/right)
-      const css = e.alinhamento === "esquerda" ? "left" : e.alinhamento === "direita" ? "right" : "center";
+      // o XML do Excel usa os nomes em inglês (left/center/right/justify)
+      const css =
+        e.alinhamento === "esquerda"
+          ? "left"
+          : e.alinhamento === "direita"
+            ? "right"
+            : e.alinhamento === "justificado"
+              ? "justify"
+              : "center";
       partes.push('applyAlignment="1"');
       xfXml.push(
         `<xf ${partes.join(" ")}><alignment horizontal="${css}" vertical="center"/></xf>`
