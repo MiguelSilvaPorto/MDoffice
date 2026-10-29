@@ -37,6 +37,31 @@
 
 **Frontend**
 
+- **Salvamento automático enquanto você escreve sem parar**: o autosave esperava **2 s sem
+  nenhuma tecla** para gravar, e cada tecla reiniciava o relógio. Quem digitava corrido passava
+  minutos sem nada ir para o disco — a gravação só acontecia quando a pessoa parava, e fechar o
+  app antes disso perdia a última parte do texto (o rodapé ficava em "Alterações não salvas").
+  Agora a gravação sai **900 ms depois da última tecla**, mas nunca espera mais de **5 s** desde
+  a última gravação: digitando sem parar, o documento é gravado de tempos em tempos. Trocar de
+  app, minimizar, esconder a janela, recarregar ou fechar também grava na hora (e guarda o texto
+  no `localStorage` de forma síncrona, para o reload não perder a última palavra). O rodapé
+  **"Não foi possível salvar"** virou ação: clicar (ou Enter) tenta de novo — num documento novo,
+  abre o "Salvar como…" — e o aviso some quando o rascunho finalmente é criado. Se não houver
+  pasta nenhuma para gravar, o app pergunta **onde salvar** (`Escolher pasta` / `Agora não`) em
+  vez de só reclamar no rodapé. `npm run test:salvamento` cobre o relógio com timers falsos.
+
+- **Imagem colada aparece na hora na pré-visualização**: colar, arrastar ou inserir uma imagem
+  grava o arquivo em `assets/` e só depois o preview pedia o arquivo de volta ao disco. Quando
+  essa leitura demorava, falhava por permissão pendente ou o documento ainda não tinha pasta, a
+  imagem não aparecia — apesar de estar gravada. Agora o app entrega ao preview **os mesmos bytes
+  que acabou de gravar** (`seedAsset`) e mostra a imagem imediatamente; o disco continua sendo o
+  caminho normal ao reabrir o documento. O mesmo vale para desenhos. A leitura de várias imagens
+  passou a ser em paralelo, e quando o documento ganha a pasta depois do primeiro desenho do
+  preview, as imagens que estavam como "não encontrada" são relidas sozinhas — e clicar na
+  imagem ausente tenta de novo na hora. Trava: `npm run test:imagem-preview` (cola um PNG no
+  Chrome headless e confirma que o preview mostra a imagem mesmo depois de o arquivo ser
+  removido do disco logo em seguida).
+
 - **Copiar texto leva o caminho completo das imagens**: copiar ou recortar no editor um trecho
   com `![imagem](assets/imagem-….png)` põe na área de transferência
   `![imagem](<C:\…\assets\imagem-….png>)`. Assim o texto colado num chat de IA (Claude Code)

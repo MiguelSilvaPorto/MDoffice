@@ -37,6 +37,7 @@ export const drawingMethods = {
       const name = `desenho-${Date.now().toString(36)}.png`;
       const png = placeholderDataUrl(1600, 1000);
       const rel = await files.writeAsset(this.path!, name, png.split(",", 2)[1]);
+      this.preview.seedAsset(rel, png); // o PNG recém-criado não precisa ser relido do disco
       const initial: DrawDoc = { version: 1, w: 1600, h: 1000, elements: [] };
       await files.updateAsset(this.path!, `${rel}.draw.json`, toBase64Utf8(JSON.stringify(initial)));
       this.editor.insertAt(sel.from, `![Desenho](${rel})\n`);

@@ -146,10 +146,40 @@ export class Preview {
   }
 
   setDocPath(p: string | null): void {
-    if (p !== this.docPath) {
-      this.docPath = p;
-      this.cache.clear();
-      this.drawIndex.clear();
+    if (p === this.docPath) return;
+    this.docPath = p;
+    this.cache.clear();
+    this.drawIndex.clear();
+    // O documento ganhou uma pasta DEPOIS de o preview já ter desenhado: as imagens que
+    // antes não tinham como ser lidas (e ficaram marcadas como ausentes) agora podem ser
+    // encontradas ao lado dele. Relê sem esperar a próxima tecla — era o caso da imagem
+    // colada num documento novo, logo depois de o rascunho ganhar o primeiro arquivo.
+    if (this.lastMarkdown && this.el.querySelector("img.img-missing")) {
+      void this.resolveImages(++this.token);
+    }
+  }
+
+  /**
+   * Guarda o data URL de uma imagem que o app acabou de gravar (colar, arrastar, desenhar
+   * ou inserir pelo botão) para o preview não depender da leitura de volta do disco.
+   *
+   * O arquivo é gravado em `assets/` antes de o Markdown ganhar `![…](assets/…)`. Ler o
+   * arquivo de novo só para exibir é uma volta desnecessária — e, quando a pasta está com
+   * permissão pendente ou o registro ainda não conhece o arquivo, essa leitura falha e a
+   * imagem não aparece, apesar de o arquivo estar no disco. Aqui o preview já tem os bytes
+   * (é a mesma imagem que acabou de ser gravada) e mostra na hora; o disco continua sendo o
+   * caminho normal ao reabrir o documento.
+   */
+  seedAsset(rel: string, dataUrl: string): void {
+    if (!rel || !dataUrl) return;
+    const abs = this.resolveAbs(rel);
+    this.cache.set(abs, dataUrl);
+    for (const img of Array.from(this.el.querySelectorAll<HTMLImageElement>("img"))) {
+      if (img.dataset.rawSrc !== rel && img.getAttribute("src") !== rel) continue;
+      img.dataset.rawSrc = rel;
+      img.src = dataUrl;
+      img.classList.remove("img-missing");
+      img.removeAttribute("title");
     }
   }
 
@@ -415,9 +445,10 @@ export class Preview {
         img.classList.add("draw-img");
         img.dataset.rel = src;
       }
-      if (src && !/^(data:|https?:|blob:|asset:)/i.test(src) && this.docPath) {
-        const abs = this.resolveAbs(src);
-        const cached = this.cache.get(abs);
+      if (src && !/^(data:|https?:|blob:|asset:)/i.test(src)) {
+        // O cache também vale sem `docPath`: uma imagem recém-colada é semeada pelo app
+        // (`seedAsset`) antes de o documento ganhar arquivo, e não pode esperar o disco.
+        const cached = this.cache.get(this.resolveAbs(src));
         if (cached) {
           img.dataset.rawSrc = src;
           img.src = cached;
@@ -577,6 +608,14 @@ export class Preview {
     const target = e.target as HTMLElement | null;
     if (!target) return;
 
+    // imagem que não foi encontrada: clicar tenta ler de novo (a pasta pode ter voltado a
+    // responder, ou a permissão pode ter sido concedida depois)
+    const faltando = target.closest<HTMLImageElement>("img.img-missing");
+    if (faltando) {
+      void this.resolveImages(++this.token);
+      return;
+    }
+
     const copyBtn = target.closest<HTMLElement>(".code-copy");
     if (copyBtn) {
       const code = copyBtn.closest(".code-wrap")?.querySelector("code");
@@ -654,30 +693,40 @@ export class Preview {
 
   private async resolveImages(myToken: number): Promise<void> {
     const imgs = Array.from(this.el.querySelectorAll<HTMLImageElement>("img"));
-    for (const img of imgs) {
-      const src = img.getAttribute("src") || "";
-      if (!src || /^(data:|https?:|blob:|asset:)/i.test(src)) continue;
-      if (!this.docPath) {
-        img.classList.add("img-missing");
-        continue;
-      }
-      const abs = this.resolveAbs(src);
-      let data = this.cache.get(abs);
-      if (!data) {
-        try {
-          data = await invoke<string>("read_file_data_url", { path: abs });
-          this.cache.set(abs, data);
-        } catch {
+    // Em paralelo: um documento com várias imagens não espera a leitura de uma para começar
+    // a próxima (antes a última imagem de uma página cheia aparecia bem depois das outras).
+    await Promise.all(
+      imgs.map(async (img) => {
+        const src = img.getAttribute("src") || "";
+        if (!src || /^(data:|https?:|blob:|asset:)/i.test(src)) return;
+        // já foi exibida (pelo cache ou pelo data URL semeado ao colar): não volta ao disco
+        if (img.dataset.rawSrc === src && !img.classList.contains("img-missing")) return;
+        if (!this.docPath) {
+          img.dataset.rawSrc = src;
           img.classList.add("img-missing");
-          img.title = "Imagem não encontrada: " + abs;
-          continue;
+          img.title = "Salve o documento para que a imagem apareça.";
+          return;
         }
-      }
-      if (myToken !== this.token && !img.isConnected) return;
-      img.dataset.rawSrc = src;
-      img.src = data;
-      img.classList.remove("img-missing");
-    }
+        const abs = this.resolveAbs(src);
+        let data = this.cache.get(abs);
+        if (!data) {
+          try {
+            data = await invoke<string>("read_file_data_url", { path: abs });
+            this.cache.set(abs, data);
+          } catch {
+            img.dataset.rawSrc = src;
+            img.classList.add("img-missing");
+            img.title = `Imagem não encontrada: ${abs} — clique para tentar de novo.`;
+            return;
+          }
+        }
+        if (myToken !== this.token && !img.isConnected) return;
+        img.dataset.rawSrc = src;
+        img.src = data;
+        img.classList.remove("img-missing");
+        img.removeAttribute("title");
+      }),
+    );
   }
 
   private async renderMermaid(): Promise<void> {

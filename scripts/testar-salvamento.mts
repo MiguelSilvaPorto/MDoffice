@@ -27,6 +27,7 @@ const ler = (rel: string) => readFileSync(join(raiz, rel), "utf8");
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 const { criarFilaSalvamento } = await import("../src/app/saveQueue.ts");
+const { criarAgendadorSalvamento } = await import("../src/app/autosaveTimer.ts");
 
 // ---------------------------------------------------------------- a fila
 
@@ -154,6 +155,145 @@ console.log("fila do salvamento: single-flight e coalescência");
   checa("a última frase termina gravada", gravados[gravados.length - 1] === texto, JSON.stringify(gravados));
 }
 
+// ---------------------------------------------------------------- o relógio do autosave
+
+console.log("\nrelógio do autosave: grava mesmo digitando sem parar");
+
+{
+  // Relógio e timers falsos: o teste controla o tempo sem dormir.
+  const criarRelogio = () => {
+    let agora = 0;
+    let proximoId = 1;
+    const timers = new Map<number, { quando: number; fn: () => void }>();
+    return {
+      agora: () => agora,
+      agendar: (fn: () => void, ms: number) => {
+        const id = proximoId++;
+        timers.set(id, { quando: agora + Math.max(0, ms), fn });
+        return id;
+      },
+      cancelar: (id: number) => {
+        timers.delete(id);
+      },
+      avancar: async (ms: number) => {
+        const alvo = agora + ms;
+        for (;;) {
+          const proximo = [...timers.entries()]
+            .filter(([, t]) => t.quando <= alvo)
+            .sort((a, b) => a[1].quando - b[1].quando)[0];
+          if (!proximo) break;
+          timers.delete(proximo[0]);
+          agora = proximo[1].quando;
+          proximo[1].fn();
+          await Promise.resolve(); // deixa o encadeamento de promises (gravação) terminar
+        }
+        agora = alvo;
+      },
+    };
+  };
+
+  // Digitação contínua (uma tecla a cada 300 ms por 12 s): as gravações não podem esperar
+  // a pessoa parar. O teto de 5 s vale mesmo com o relógio sendo reiniciado a cada tecla.
+  {
+    const relogio = criarRelogio();
+    const gravacoes: number[] = [];
+    const ag = criarAgendadorSalvamento({
+      salvar: () => {
+        gravacoes.push(relogio.agora());
+      },
+      pausaMs: 900,
+      maximoMs: 5000,
+      agora: relogio.agora,
+      agendarTimer: relogio.agendar,
+      cancelarTimer: relogio.cancelar,
+    });
+    for (let t = 0; t < 12000; t += 300) {
+      ag();
+      await relogio.avancar(300);
+    }
+    const maiorIntervalo = gravacoes.slice(1).reduce((m, t, i) => Math.max(m, t - gravacoes[i]), 0);
+    checa("digitando sem parar, grava mais de uma vez", gravacoes.length >= 2, `gravações: ${JSON.stringify(gravacoes)}`);
+    checa("nenhuma gravação espera mais de 5 s", maiorIntervalo <= 5000, `maior intervalo: ${maiorIntervalo} ms`);
+    checa(
+      "a primeira gravação chega no teto (não só quando a pessoa para)",
+      gravacoes[0] >= 4800 && gravacoes[0] <= 5000,
+      `primeira: ${gravacoes[0]} ms`
+    );
+
+    // parou de digitar: a última alteração entra na pausa curta (900 ms)
+    await relogio.avancar(900);
+    checa(
+      "ao parar, a última alteração é gravada",
+      gravacoes[gravacoes.length - 1] > 12000,
+      JSON.stringify(gravacoes)
+    );
+    checa("o agendador fica sem pendência depois de gravar", ag.pendente === false);
+  }
+
+  // Uma gravação lenta não pode ser atropelada por outra: a próxima só começa depois que a
+  // atual termina — e o texto digitado nesse meio-tempo é gravado logo em seguida.
+  {
+    const relogio = criarRelogio();
+    let terminou: (() => void) | null = null;
+    let ativos = 0;
+    let maxAtivos = 0;
+    const gravacoes: number[] = [];
+    const ag = criarAgendadorSalvamento({
+      salvar: () => {
+        ativos++;
+        maxAtivos = Math.max(maxAtivos, ativos);
+        gravacoes.push(relogio.agora());
+        return new Promise<void>((ok) => {
+          terminou = () => {
+            ativos--;
+            ok();
+          };
+        });
+      },
+      pausaMs: 900,
+      maximoMs: 5000,
+      agora: relogio.agora,
+      agendarTimer: relogio.agendar,
+      cancelarTimer: relogio.cancelar,
+    });
+    ag();
+    await relogio.avancar(900); // começa a gravação lenta
+    ag();
+    await relogio.avancar(5000); // digita durante a gravação: nada em paralelo
+    checa("uma gravação por vez (a fila continua valendo)", maxAtivos === 1 && gravacoes.length === 1, `ativas: ${maxAtivos}, gravações: ${gravacoes.length}`);
+    terminou!();
+    await Promise.resolve();
+    await Promise.resolve();
+    await relogio.avancar(900); // a alteração pendente ganha a vez
+    checa("a alteração feita durante a gravação entra na próxima", gravacoes.length === 2, `gravações: ${JSON.stringify(gravacoes)}`);
+  }
+
+  // Rajada curta: um pedido só, no fim da pausa.
+  {
+    const relogio = criarRelogio();
+    let gravacoes = 0;
+    const ag = criarAgendadorSalvamento({
+      salvar: () => {
+        gravacoes++;
+      },
+      pausaMs: 900,
+      maximoMs: 5000,
+      agora: relogio.agora,
+      agendarTimer: relogio.agendar,
+      cancelarTimer: relogio.cancelar,
+    });
+    ag();
+    await relogio.avancar(300);
+    ag();
+    await relogio.avancar(300);
+    ag();
+    await relogio.avancar(300);
+    checa("as teclas seguidas continuam virando uma gravação só", gravacoes === 0, `gravações: ${gravacoes}`);
+    await relogio.avancar(900);
+    checa("a gravação sai depois da pausa", gravacoes === 1, `gravações: ${gravacoes}`);
+  }
+}
+
 // ---------------------------------------------------------------- a camada de disco do navegador
 
 console.log("\ndisco do navegador: o autosave grava de verdade");
@@ -162,6 +302,10 @@ const arquivo = ler("src/disco/arquivo.ts");
 const documents = ler("src/app/documents.ts");
 const backupDisco = ler("src/disco/backup.ts");
 const ponte = ler("src/ponte/index.ts");
+const appFonte = ler("src/app/app.ts");
+const previewFonte = ler("src/md/preview.ts");
+const mediaFonte = ler("src/app/media.ts");
+const layoutFonte = ler("src/app/layout.ts");
 
 checa(
   "o autosave pergunta 'tem disco?' (e não 'é o Tauri?')",
@@ -191,6 +335,43 @@ checa(
 for (const cmd of ["save_text", "save_binary", "read_file_data_url", "load_text"]) {
   checa(`ponte atende ${cmd}`, ponte.includes(`case "${cmd}"`), "comando sem tradução");
 }
+
+// O autosave contínuo e a imagem recém-colada: o que o teste puro acima garante precisa
+// estar ligado no app de verdade (não adianta o relógio existir e ninguém usá-lo).
+checa(
+  "o app usa o relógio com teto (não o debounce de 2 s)",
+  appFonte.includes("criarAgendadorSalvamento") &&
+    /maximoMs:\s*5000/.test(appFonte) &&
+    !/debounce\(\(\) => void this\.autosave\(\), 2000\)/.test(appFonte),
+  "o autosave voltou a esperar a pessoa parar"
+);
+checa(
+  "o autosave grava ao esconder a janela/trocar de app",
+  /visibilitychange/.test(appFonte) && /visibilityState !== "hidden"/.test(appFonte),
+  "sair do app deixou de gravar na hora"
+);
+checa(
+  "o rascunho criado depois de uma falha limpa o selo",
+  /tab\.saveFailed = false;\s*\r?\n\s*tab\.dirty = this\.tab === tab/.test(documents),
+  "o selo continuaria dizendo 'Não foi possível salvar' com o arquivo gravado"
+);
+checa(
+  "o selo com falha tenta salvar de novo",
+  documents.includes("async retrySave(") && /acionavel\(\s*true/.test(layoutFonte) && appFonte.includes("#save-state"),
+  "o aviso vermelho do rodapé voltou a ser só texto"
+);
+checa(
+  "o preview aceita a imagem recém-gravada (seedAsset)",
+  previewFonte.includes("seedAsset(rel: string, dataUrl: string)") &&
+    /setDocPath[\s\S]{0,2500}img\.img-missing/.test(previewFonte),
+  "a imagem colada voltou a depender da leitura de volta do disco"
+);
+checa(
+  "colar e arrastar entregam os bytes ao preview",
+  /insertImageMd\(rel, "imagem", `data:/.test(mediaFonte) &&
+    /insertImageMd\(rel, stripExt\(img\.nome\), `data:/.test(mediaFonte),
+  "a imagem colada/arrastada não é semeada no preview"
+);
 
 // ---------------------------------------------------------------- arquivo do Office do usuário
 

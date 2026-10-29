@@ -9,11 +9,13 @@ import { enviarLimiar } from "../broker/spell";
 import { type DocTab } from "../tabs";
 import { moveHistory } from "../history";
 import { moveCommits } from "../snapshots";
-import { PREFIXO_RASCUNHO } from "../disco/registro";
-import { $, toast, baseName, docDirOf, joinPath, saveJSON, fmtTime, slugify } from "../util";
+import { ID_RASCUNHOS, PREFIXO_RASCUNHO } from "../disco/registro";
+import { $, h, toast, baseName, docDirOf, joinPath, saveJSON, fmtTime, slugify } from "../util";
 
-/** Avisa uma vez por sessão que o rascunho não tem onde ser gravado (não repete a cada 2 s). */
+/** Avisa uma vez por sessão que o rascunho não tem onde ser gravado (o autosave tenta de novo a cada rodada). */
 let avisouSemPasta = false;
+/** A pergunta "onde salvar?" já está aberta (não abre uma por cima da outra). */
+let pedidoDePastaAberto = false;
 
 export const documentsMethods = {
   onDocChange(this: App): void {
@@ -82,6 +84,9 @@ export const documentsMethods = {
    * Quem faz `await` (fechar a janela, trocar de aba) espera a fila esvaziar.
    */
   async autosave(this: App): Promise<void> {
+    // as Configurações não são um documento: não há o que gravar (e o gatilho de esconder
+    // a janela chama o autosave sem olhar a aba que está à vista)
+    if (this.tab.kind === "settings") return;
     // cada documento tem o seu salvamento automático (o botão do topo liga/desliga o que
     // está à vista)
     if (!this.autosaveLigado) return;
@@ -114,21 +119,23 @@ export const documentsMethods = {
     // a impressão de "Salvo" — por isso o autosave daqui de baixo não usa mais esse atalho.
     if (!tab.path) {
       try {
-        // silencioso: o autosave roda a cada 2 s — um aviso de erro a cada rodada seria ruído
+        // silencioso: o autosave roda a cada pausa/teto — um aviso de erro a cada rodada
+        // seria ruído
         if (await this.ensureSaved(true)) return;
       } catch {
         /* sem pasta de rascunhos: cai no aviso abaixo */
       }
       // Sem pasta: NADA foi gravado. O selo não pode dizer "Salvo" — e o `saveFailed` faz
       // a barra mostrar "Não salvo" em vez de "Salvando…".
-      const dica = "escolha a pasta em Configurações ▸ Histórico e salvamento";
       tab.saveFailed = true;
-      tab.statusSaved = `Sem pasta para guardar o rascunho — ${dica}`;
+      tab.statusSaved = "Sem pasta para salvar — clique para escolher";
       if (tab === this.tab) this.setSaveState();
       this.renderTabs();
       if (!avisouSemPasta) {
         avisouSemPasta = true;
-        toast(`O rascunho não está sendo gravado: ${dica}.`, "err", 8000);
+        // Não abre o seletor sozinho: o navegador só permite escolher pasta a partir de um
+        // gesto. A pergunta explica e o botão dela abre o seletor.
+        void this.pedirPastaParaSalvar();
       }
       return;
     }
@@ -330,6 +337,10 @@ export const documentsMethods = {
       await files.saveDoc(target, text);
       tab.path = target;
       tab.isDraft = true;
+      // a gravação deu certo: o selo não pode continuar dizendo "Não foi possível salvar"
+      // por causa de uma tentativa anterior (era o que acontecia ao criar o rascunho depois
+      // de uma falha: o arquivo existia e o rodapé continuava vermelho).
+      tab.saveFailed = false;
       tab.dirty = this.tab === tab ? this.editor.getText() !== text : false;
       // no navegador com pasta escolhida o arquivo está na pasta da pessoa, não "no app"
       const naPastaEscolhida = target.startsWith(PREFIXO_RASCUNHO);
@@ -397,5 +408,106 @@ export const documentsMethods = {
     } catch (e) {
       toast("Não foi possível renomear: " + e, "err", 6000);
     }
+  },
+
+  /**
+   * Nova tentativa depois de o rodapé mostrar "Não foi possível salvar".
+   *
+   * Chamado pelo clique no rodapé (ou Enter/Espaço com ele focado). Num documento sem
+   * arquivo, abre o "Salvar como…" — o clique é o gesto que o navegador exige para o
+   * seletor de arquivos. O autosave nunca abre seletor sozinho.
+   */
+  async retrySave(this: App): Promise<void> {
+    if (!this.tabs.length) return;
+    const tinhaArquivo = !!this.path;
+    // limpa o vermelho na hora: se a nova tentativa falhar (ou for cancelada), volta a marcar
+    this.tab.saveFailed = false;
+    this.setSaveState();
+    const ok = await this.save(false);
+    if (!ok) {
+      this.tab.saveFailed = true;
+      this.setSaveState();
+      return;
+    }
+    // documento novo: o seletor escolheu a pasta; o autosave segue nela
+    if (!tinhaArquivo) void this.autosave();
+  },
+
+  /**
+   * Pergunta, uma vez, onde o app pode gravar os documentos novos.
+   *
+   * Aparece quando o salvamento automático tenta gravar um documento sem arquivo e não há
+   * pasta concedida nem pasta de rascunhos escolhida. O botão "Escolher pasta" é um gesto
+   * de verdade — é o que permite abrir o seletor do navegador e guardar o handle para as
+   * próximas gravações. "Agora não" deixa o rodapé com o aviso clicável.
+   */
+  async pedirPastaParaSalvar(this: App): Promise<void> {
+    if (pedidoDePastaAberto || !files.temDisco()) return;
+    // já há um diálogo aberto (ex.: a pergunta do backup na primeira execução): não empilha
+    // outro por cima; o rodapé "Não foi possível salvar" continua clicável
+    if (document.querySelector(".modal-backdrop")) return;
+    pedidoDePastaAberto = true;
+
+    const backdrop = h("div", { class: "modal-backdrop" });
+    const modal = h("div", { class: "modal bk-ask" });
+    modal.innerHTML = `
+      <header class="wm-head">
+        <svg class="ic"><use href="#i-save"/></svg>
+        <h2>Onde o mdOffice deve salvar o que você escreve?</h2>
+      </header>
+      <div class="bk-ask-body">
+        <p>O salvamento automático está ligado, mas este documento ainda não tem uma pasta.
+        Escolha uma e o texto passa a ser gravado sozinho enquanto você escreve — sem
+        precisar lembrar do <kbd>Ctrl</kbd>+<kbd>S</kbd>.</p>
+        <ul class="bk-ask-list">
+          <li>O arquivo fica na pasta que você escolher; nada vai para a nuvem.</li>
+          <li>As imagens coladas vão junto, na pasta <code>assets/</code> ao lado do documento.</li>
+          <li>Dá para trocar depois em <b>Configurações ▸ Histórico e salvamento</b>.</li>
+        </ul>
+      </div>
+      <footer class="wm-foot">
+        <span class="muted">Você também pode usar <kbd>Ctrl</kbd>+<kbd>S</kbd> a qualquer momento.</span>
+        <span class="dr-spacer"></span>
+        <button class="btn" data-nao>Agora não</button>
+        <button class="btn primary" data-sim>Escolher pasta</button>
+      </footer>`;
+    backdrop.append(modal);
+    document.body.append(backdrop);
+
+    const fechar = (): void => {
+      pedidoDePastaAberto = false;
+      document.removeEventListener("keydown", onKey, true);
+      backdrop.remove();
+    };
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === "Escape") fechar();
+    };
+    document.addEventListener("keydown", onKey, true);
+    modal.querySelector<HTMLButtonElement>("[data-nao]")?.addEventListener("click", fechar);
+
+    const sim = modal.querySelector<HTMLButtonElement>("[data-sim]");
+    sim?.addEventListener("click", async () => {
+      sim.disabled = true;
+      try {
+        const pastas = await files.pickFolders();
+        const id = pastas[0];
+        if (!id) {
+          sim.disabled = false;
+          return; // cancelou o seletor: a pergunta continua aberta
+        }
+        await files.setDraftFolder(id);
+        try {
+          await this.sidebar.addProjectPath(ID_RASCUNHOS, false);
+        } catch {
+          /* a árvore se atualiza no próximo render */
+        }
+        fechar();
+        toast("Pasta escolhida: os documentos novos passam a ser salvos nela automaticamente.", "ok", 5200);
+        await this.autosave();
+      } catch (e) {
+        sim.disabled = false;
+        toast("Não consegui usar essa pasta: " + e, "err", 6000);
+      }
+    });
   },
 };

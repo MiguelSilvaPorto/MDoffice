@@ -28,6 +28,55 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/app/autosaveTimer.ts
+
+### 2026-10-29 · feat/salvamento-continuo-e-preview-de-imagem · teto de 5 s no autosave
+- **Local:** novo arquivo (`criarAgendadorSalvamento`, `PAUSA_PADRAO_MS`, `TETO_PADRAO_MS`)
+- **Linha:** novo arquivo
+- **Porquê:** o autosave era um `debounce` de 2 s e cada tecla reiniciava o relógio: quem digitava sem parar podia passar minutos sem gravação nenhuma, e fechar o app perdia o texto. O agendador mantém a pausa curta (900 ms) para a gravação parecer imediata, mas limita a espera a 5 s desde a última gravação (`Math.min(pausa, teto - desdeUltima)`). Uma gravação lenta não é atropelada: os pedidos que chegam durante ela ficam `pendentes` e a próxima só começa quando a atual termina. Relógio e timers entram por parâmetro para o teste rodar com tempo falso.
+
+## src/app/app.ts
+
+### 2026-10-29 · feat/salvamento-continuo-e-preview-de-imagem · autosave contínuo e gravação ao sair
+- **Local:** campo `autosaveSoon`; `start()` (`visibilitychange`, `pagehide`, `beforeunload`, clique/tecla no `#save-state`); `onSaveDrawing`
+- **Linha:** `autosaveSoon = debounce(() => void this.autosave(), 2000)` → `criarAgendadorSalvamento({ salvar: () => this.autosave(), pausaMs: 900, maximoMs: 5000 })`
+- **Porquê:** o relógio novo só resolve o problema se estiver ligado no app. Além dele, esconder a janela/trocar de app (`visibilitychange`), recarregar (`pagehide`) e fechar (`beforeunload`) pedem a gravação na hora, e `saveBrowserTabs()` guarda o texto de forma **síncrona** no `localStorage` antes do pedido ao disco — se a gravação assíncrona não terminar, o reload restaura a versão mais nova. O rodapé de falha ganhou clique/Enter para tentar de novo. O desenho recém-salvo também entra no `seedAsset` do preview.
+
+## src/app/documents.ts
+
+### 2026-10-29 · feat/salvamento-continuo-e-preview-de-imagem · selo limpo, nova tentativa e pergunta da pasta
+- **Local:** `salvarAgora` (ramo sem pasta), `ensureSaved`, novos `retrySave` e `pedirPastaParaSalvar`
+- **Linha:** `tab.statusSaved = "Sem pasta para guardar o rascunho — …"` → `"Sem pasta para salvar — clique para escolher"`; `+ tab.saveFailed = false` depois de gravar o rascunho; `+ retrySave`/`pedirPastaParaSalvar`
+- **Porquê:** quando o rascunho era criado depois de uma falha, o arquivo existia mas o rodapé continuava em "Não foi possível salvar" (`saveFailed` ficava ligado). `retrySave` é a ação do rodapé: num documento sem arquivo abre o "Salvar como…" a partir do clique (gesto que o navegador exige), num arquivo aberto grava direto. Sem pasta nenhuma, `pedirPastaParaSalvar` mostra uma pergunta única com "Escolher pasta" (define a pasta dos rascunhos e já grava) e "Agora não" — antes só havia um toast que desaparecia.
+
+## src/app/layout.ts · src/styles/statusbar.css
+
+### 2026-10-29 · feat/salvamento-continuo-e-preview-de-imagem · rodapé de falha é um botão
+- **Local:** `setSaveState` (novo `acionavel`), estilo `#save-state.is-action`
+- **Linha:** `el.textContent = "Não foi possível salvar"` → `+ acionavel(true, "Clique para tentar salvar de novo (Ctrl+S)")`
+- **Porquê:** o aviso de falha era só texto: a pessoa não tinha o que fazer ali além de procurar o menu. Com `role="button"`, `tabindex` e o estilo de erro, clicar (ou Enter/Espaço) chama `retrySave`; nas outras situações o rodapé volta a ser texto comum e perde a função.
+
+## src/md/preview.ts
+
+### 2026-10-29 · feat/salvamento-continuo-e-preview-de-imagem · imagem recém-gravada aparece sem reler o disco
+- **Local:** novo `seedAsset`; `setDocPath`; `postProcess` (uso do cache); `resolveImages`
+- **Linha:** `setDocPath` só limpava o cache → `+ if (this.lastMarkdown && this.el.querySelector("img.img-missing")) void this.resolveImages(++this.token)`; `+ seedAsset(rel, dataUrl)`
+- **Porquê:** colar/arrastar grava `assets/…` e o preview pedia o arquivo de volta ao disco; quando a leitura falhava (permissão pendente, registro sem o arquivo, documento ainda sem pasta) a imagem não aparecia apesar de gravada. `seedAsset` guarda no cache o **mesmo data URL** que o app acabou de gerar e atualiza a `<img>` na hora; o disco continua valendo ao reabrir. Quando o documento ganha a pasta depois do primeiro desenho, `setDocPath` relê as imagens marcadas como ausentes. A leitura das imagens passou a ser em paralelo (`Promise.all`) e o `postProcess` usa o cache mesmo sem `docPath`, para a imagem semeada não depender de o documento já ter caminho.
+
+## src/disco/arquivo.ts
+
+### 2026-10-29 · feat/salvamento-continuo-e-preview-de-imagem · ler a assets/ pela pasta real do documento
+- **Local:** `arquivoDoCaminho`
+- **Linha:** `let atual = await pastaBase(d)` → `bases = [pastaBase(d), d.handle.parent]` tentadas com o mesmo relativo
+- **Porquê:** o handle do arquivo pode continuar acessível mesmo quando o registro da pasta concedida não responde (permissão perdida depois de recarregar, registro antigo), e o `pastaBase` pode apontar para a pasta errada quando o arquivo foi escolhido fora do projeto. Antes, o `catch` pulava o candidato e a imagem aparecia como "não encontrada" apesar de o `.md` abrir. O `parent` do próprio arquivo é, por definição, a pasta onde as `assets/` vivem: tentar as duas bases com o mesmo resto do caminho cobre os dois casos.
+
+## src/app/media.ts · src/app/drawing.ts
+
+### 2026-10-29 · feat/salvamento-continuo-e-preview-de-imagem · entregar os bytes ao preview
+- **Local:** `insertImageMd` (novo parâmetro `dataUrl`), `onPaste`, `handleDrop`, `insertImageFromDialog`; `newImageDrawing` em `drawing.ts`
+- **Linha:** `this.insertImageMd(rel, "imagem")` → `this.insertImageMd(rel, "imagem", \`data:${f.type || "image/png"};base64,${b64}\`)`
+- **Porquê:** colar e arrastar já têm os bytes em base64 antes de gravar; passar esse data URL ao preview evita uma segunda leitura e elimina a janela em que a imagem já está no disco mas ainda não aparece. No botão **Imagem**, o data URL é lido da origem antes de a cópia ser exibida (se a leitura falhar, o preview lê o arquivo copiado, como antes). O desenho novo semeia o PNG do quadro para abrir o canvas sem piscar. `npm run test:imagem-preview` (Chrome headless) cola um PNG, confere o `data:` no preview e **remove o arquivo do disco** antes de renderizar de novo: se a imagem continuar, veio do seed, não de uma leitura de volta.
+
 ## src/disco/caminhoReal.ts
 
 ### 2026-10-21 · feat/md-copiar-com-caminho-das-imagens · o caminho de verdade das pastas

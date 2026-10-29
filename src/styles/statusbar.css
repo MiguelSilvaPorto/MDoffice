@@ -18,6 +18,22 @@
   font-weight: 600;
 }
 
+/* A última gravação falhou: o rodapé vira o botão de tentar de novo. */
+#save-state.is-action {
+  color: var(--danger);
+  font-weight: 600;
+  padding: 1px 6px;
+  margin: 0 -6px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#save-state.is-action:hover,
+#save-state.is-action:focus-visible {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  outline: none;
+}
+
 .path-btn {
   max-width: 40vw;
   overflow: hidden;

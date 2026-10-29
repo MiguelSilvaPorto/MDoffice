@@ -13,7 +13,10 @@ dentro do documento e contar com uma escrita assistida de português que roda of
 - **Salvamento automático** a cada alteração, sem travar a interface — inclusive em documento
   aberto de uma **pasta de rede** (UNC/SMB), onde cada gravação pode levar segundos; a fila de
   salvamento não descarta alteração nenhuma (o que foi digitado durante a gravação entra na
-  gravação seguinte). Barra de status com palavras/caracteres/linhas,
+  gravação seguinte). A gravação sai **900 ms depois da última tecla** e, em digitação contínua,
+  **nunca espera mais de 5 s** desde a última gravação — trocar de app, minimizar, recarregar ou
+  fechar também grava na hora. Se a gravação falhar, o rodapé **"Não foi possível salvar"** vira
+  um botão para tentar de novo. Barra de status com palavras/caracteres/linhas,
   painel de recentes e índice (estrutura) navegável, tema claro/escuro.
 - **No navegador**, o documento novo é gravado de verdade na **pasta dos rascunhos** escolhida
   em Configurações ▸ Histórico e salvamento (o handle fica guardado no navegador); sem escolha,
@@ -32,7 +35,9 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   **arraste o arquivo** para a janela. O colar lê a imagem de `files`, de `items` e, quando o
   WebView entrega só pela área de transferência rica, de `clipboard.read` — e registra no
   diagnóstico (`?diag=1`) o que veio no evento. Tudo é copiado para `assets/` com nome limpo
-  (sem acentos/espaços).
+  (sem acentos/espaços) e **aparece na hora no preview**: o app entrega ao preview os mesmos
+  bytes que gravou, sem depender da leitura de volta do disco (que continua valendo ao reabrir
+  o documento).
 - **Copiar com o caminho completo das imagens**: ao copiar (ou recortar) texto do editor que tem
   imagem, cada `![…](assets/imagem.png)` vai para a área de transferência com o caminho inteiro
   no computador — `![…](<C:\…\assets\imagem.png>)` —, pronto para colar num chat de IA (o
@@ -40,15 +45,15 @@ dentro do documento e contar com uma escrita assistida de português que roda of
   não revela onde as pastas estão, na **primeira** cópia com imagem o app pede o caminho da
   pasta (copiado da barra de endereço do Explorador; ele confere se termina no nome da pasta) e
   lembra. Para trocar depois: `Ctrl+K` → *Informar o caminho da pasta*.
-- **Documento novo já salvo na pasta padrão**: `Ctrl+N` (ou o card do Início) cria o documento e
-  o guarda de uma vez em `Documentos\mdOffice\Markdown\Documento.md` — **sem perguntar pasta**. A
-  raiz entra sozinha nos **Projetos** da barra lateral, com uma subpasta por tipo
-  (`Markdown`, `Word`, `Excel`, `PowerPoint`); "Salvar como…" continua perguntando, já sugerindo
-  a subpasta do tipo.
-- **Rascunhos na pasta do app**: o documento que ainda não foi salvo (ou que você editou e não
-  salvou) **não vai para Documentos** — fica na pasta de dados do app, com as imagens em
-  `assets/`. Ao reabrir, o último rascunho é restaurado; ao salvar, o documento **e as imagens**
-  vão juntos e o rascunho sai.
+- **Documento novo ganha um rascunho de verdade**: `Ctrl+N` (ou o card do Início) cria o
+  documento e o salvamento automático o grava na **pasta dos rascunhos** escolhida em
+  Configurações ▸ Histórico e salvamento (sem escolha: `.mdoffice/rascunhos/` da primeira pasta
+  concedida). Não é preciso escolher pasta para começar a escrever; "Salvar como…" escolhe o
+  lugar definitivo quando você quiser. Sem **nenhuma** pasta concedida, o app pergunta onde
+  salvar (e o rodapé fica clicável para tentar de novo).
+- **Rascunhos**: o documento que ainda não foi salvo (ou que você editou e não salvou) fica na
+  pasta dos rascunhos, com as imagens em `assets/`. Ao reabrir, o último rascunho é restaurado;
+  ao salvar, o documento **e as imagens** vão juntos e o rascunho sai.
 - **Como o documento é organizado**: par `.md` + pasta `assets/`, referências relativas —
   pode mover/zipar junto sem quebrar nada ([detalhes](estrutura-do-projeto.md)).
 

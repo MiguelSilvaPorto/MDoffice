@@ -35,7 +35,11 @@ outro módulo leva a pessoa para a aba dele antes de rodar.
 O **salvamento automático é de cada documento**: o botão no topo do app liga e desliga o
 documento que está à vista (a aba com ele desligado ganha uma nuvemzinha apagada), a escolha
 sobrevive ao recarregar e as **Configurações** escolhem o que os documentos **novos** vão
-herdar. O autosave nunca reescreve um `.docx`, `.pptx` ou `.xlsx` seu — nesses o selo mostra
+herdar. A gravação sai **900 ms depois da última tecla** e, em digitação contínua, nunca fica
+mais de **5 s** sem gravar; trocar de app, minimizar, recarregar ou fechar também grava na hora
+(com uma cópia síncrona no `localStorage`, caso a gravação no disco não termine). Se a gravação
+falhar, o rodapé **"Não foi possível salvar"** é clicável e tenta de novo. O autosave nunca
+reescreve um `.docx`, `.pptx` ou `.xlsx` seu — nesses o selo mostra
 "Não salvo" e o `Ctrl+S` grava. O selo só diz **"Salvo"** quando o arquivo foi gravado de
 verdade; um documento ainda sem arquivo (ou um rascunho) mostra **"Rascunho"**, e quando não há
 pasta para gravar ele mostra **"Não salvo"**. No navegador o autosave grava o arquivo aberto

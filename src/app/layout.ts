@@ -52,22 +52,48 @@ export const layoutMethods = {
 
   setSaveState(this: App): void {
     const el = $("#save-state");
+    // o rodapé é uma ação só quando a última gravação falhou: clicar tenta de novo
+    const acionavel = (on: boolean, dica = ""): void => {
+      el.classList.toggle("is-action", on);
+      if (!on) {
+        el.removeAttribute("role");
+        el.removeAttribute("tabindex");
+        el.removeAttribute("title");
+        return;
+      }
+      el.setAttribute("role", "button");
+      el.tabIndex = 0;
+      el.title = dica;
+    };
     if (!this.tabs.length) {
       el.textContent = "Nenhum documento aberto";
       el.classList.remove("dirty");
+      acionavel(false);
       this.updateAutosaveUI();
       return;
     }
     const autosaveOn = this.autosaveLigado;
     if (this.tab.saveFailed) {
-      el.textContent = "Não foi possível salvar";
+      // sem arquivo: o problema é não ter para onde gravar (e o clique escolhe a pasta);
+      // com arquivo: a gravação em si falhou (o clique tenta de novo)
+      el.textContent = this.path ? "Não foi possível salvar" : "Sem pasta para salvar";
+      acionavel(
+        true,
+        this.path
+          ? "Clique para tentar salvar de novo (Ctrl+S)"
+          : "Clique para escolher a pasta e salvar este documento",
+      );
     } else if (!autosaveOn) {
+      acionavel(false);
       el.textContent = this.dirty
         ? "Alterações não salvas (Auto-salvar desligado)"
         : "Salvo (Auto-salvar desligado)";
     } else {
+      acionavel(false);
       el.textContent = this.dirty
-        ? "Alterações não salvas"
+        ? this.saving
+          ? "Salvando…"
+          : "Alterações não salvas"
         : this.isDraft
           ? this.path?.startsWith(PREFIXO_RASCUNHO)
             ? "Rascunho (pasta escolhida)"

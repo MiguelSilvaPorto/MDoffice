@@ -263,13 +263,27 @@ export async function arquivoDoCaminho(path: string): Promise<FileSystemFileHand
     const chave = `${d.pastaId ?? ""}|${pasta.join("/")}|${d.relativo.split("/").slice(0, -1).join("/")}`;
     if (vistos.has(chave)) continue; // vários documentos na mesma pasta: basta tentar uma vez
     vistos.add(chave);
+    // Duas bases possíveis para o MESMO relativo: a pasta registrada do documento e a pasta
+    // real do handle (`parent`). A segunda continua valendo quando o registro da pasta não
+    // responde (permissão perdida ao recarregar, registro antigo) e é, por definição, a pasta
+    // onde as `assets/` do documento vivem.
+    const bases: FileSystemDirectoryHandle[] = [];
     try {
-      let atual = await pastaBase(d);
-      const resto = partes.slice(pasta.length);
-      for (const parte of resto.slice(0, -1)) atual = await atual.getDirectoryHandle(parte);
-      return await atual.getFileHandle(resto[resto.length - 1]);
+      bases.push(await pastaBase(d));
     } catch {
-      /* não está ao lado deste documento: tenta o próximo */
+      /* sem a pasta registrada: tenta só o parent abaixo */
+    }
+    const pai = d.handle.parent;
+    if (pai && !bases.includes(pai)) bases.push(pai);
+    const resto = partes.slice(pasta.length);
+    for (const base of bases) {
+      try {
+        let atual = base;
+        for (const parte of resto.slice(0, -1)) atual = await atual.getDirectoryHandle(parte);
+        return await atual.getFileHandle(resto[resto.length - 1]);
+      } catch {
+        /* não está nesta base: tenta a outra */
+      }
     }
   }
   return null;

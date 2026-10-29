@@ -28,6 +28,7 @@
     "test:ghost": "node scripts/testar-ghost.mjs",
     "test:desenho": "node scripts/testar-desenho-assistido.mjs",
     "test:desenhar": "node scripts/testar-desenhar.mjs",
+    "test:imagem-preview": "node scripts/testar-imagem-preview.mjs",
     "test:rascunhos": "node scripts/testar-rascunhos.mjs",
     "test:historico": "node scripts/testar-historico-grade.mjs",
     "test:projetos": "node scripts/testar-projetos-ordem.mjs",

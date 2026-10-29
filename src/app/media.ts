@@ -69,7 +69,15 @@ export const mediaMethods = {
     return true;
   },
 
-  insertImageMd(this: App, rel: string, alt: string): void {
+  /**
+   * Insere a referência da imagem no Markdown e já entrega os bytes ao preview.
+   *
+   * `dataUrl` é a imagem que acabou de ser gravada (colar/arrastar): o preview mostra na
+   * hora, sem depender da leitura de volta do disco. Sem ele (imagem escolhida pelo botão),
+   * o preview lê o arquivo como sempre.
+   */
+  insertImageMd(this: App, rel: string, alt: string, dataUrl?: string): void {
+    if (dataUrl) this.preview.seedAsset(rel, dataUrl);
     const { from } = this.editor.selectionPos();
     this.editor.insertAt(from, `![${alt}](${rel})\n`);
     this.updatePreview();
@@ -82,7 +90,14 @@ export const mediaMethods = {
     if (!(await this.ensureSaved())) return;
     try {
       const rel = await files.copyAsset(this.path!, src);
-      this.insertImageMd(rel, stripExt(baseName(src)));
+      // os mesmos bytes que acabaram de ser copiados vão para o preview (sem reler o disco)
+      let dataUrl: string | undefined;
+      try {
+        dataUrl = await files.readDataUrl(src);
+      } catch {
+        /* sem a leitura otimista: o preview lê o arquivo copiado */
+      }
+      this.insertImageMd(rel, stripExt(baseName(src)), dataUrl);
       toast(`Imagem salva em ${rel}`, "ok");
     } catch (e) {
       toast("Falha ao copiar a imagem: " + e, "err");
@@ -141,7 +156,9 @@ export const mediaMethods = {
       try {
         const b64 = await blobToBase64(f);
         const rel = await files.writeAsset(this.path!, name, b64);
-        this.insertImageMd(rel, "imagem");
+        // o preview recebe exatamente os bytes gravados: aparece na hora, mesmo que a
+        // leitura de volta do disco ainda não esteja disponível
+        this.insertImageMd(rel, "imagem", `data:${f.type || "image/png"};base64,${b64}`);
         toast(`Imagem colada e salva em ${rel}`, "ok");
       } catch (err) {
         toast("Falha ao salvar a imagem colada: " + err, "err");
@@ -205,8 +222,9 @@ export const mediaMethods = {
         if (!arquivo) continue;
         const ext = (arquivo.type.split("/")[1] || "png").replace("jpeg", "jpg");
         const name = `imagem-${Date.now().toString(36)}.${ext}`;
-        const rel = await files.writeAsset(this.path!, name, await blobToBase64(arquivo));
-        this.insertImageMd(rel, stripExt(img.nome));
+        const b64 = await blobToBase64(arquivo);
+        const rel = await files.writeAsset(this.path!, name, b64);
+        this.insertImageMd(rel, stripExt(img.nome), `data:${arquivo.type || "image/png"};base64,${b64}`);
         toast(`Imagem salva em ${rel}`, "ok");
       } catch (err) {
         toast("Falha ao salvar a imagem arrastada: " + err, "err");

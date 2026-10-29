@@ -48,6 +48,7 @@ import { layoutMethods } from "./layout";
 import { deepReviewMethods } from "./deepReview";
 import { trashMethods } from "./trash";
 import { criarFilaSalvamento } from "./saveQueue";
+import { criarAgendadorSalvamento } from "./autosaveTimer";
 import { autosaveDoDoc } from "./autosave";
 import { criarAvisosOffice } from "./seloAutosave";
 import { configurarBusca } from "../busca/interface";
@@ -97,7 +98,8 @@ export class App {
     gravar: () => this.salvarAgora(),
     aoMudarEstado: (salvando) => {
       this.saving = salvando;
-      this.updateAutosaveUI();
+      // o rodapé também acompanha ("Salvando…" → "Rascunho"/"Salvo")
+      this.setSaveState();
     },
   });
   /**
@@ -198,6 +200,8 @@ export class App {
         await files.updateAsset(this.path, `${rel}.draw.json`, toBase64Utf8(json));
         this.setPreviewPath(this.path);
         this.preview.invalidateAsset(rel);
+        // o PNG que acabou de sair do quadro já vai para o preview (sem reler o disco)
+        this.preview.seedAsset(rel, `data:image/png;base64,${png}`);
         toast("Desenho atualizado no documento.", "ok");
       },
       onRemoveDrawing: async (rel) => {
@@ -397,11 +401,44 @@ export class App {
       if (this.path) void revealItemInDir(this.path).catch(() => {});
     });
     window.addEventListener("blur", () => void this.autosave());
+    // Ao esconder a janela (trocar de app, minimizar, trocar de aba do navegador) a pessoa
+    // pode não voltar: grava agora, sem esperar a pausa. `pagehide` cobre o fechar no
+    // celular e o recarregar; o `beforeunload` abaixo continua sendo a última rede.
+    // Com as Configurações à vista, a aba ativa não é um documento: a sessão de texto não
+    // deve ser reescrita com outro "ativo" (volta ao documento quando ele estiver à vista).
+    const guardarTextoSincrono = (): void => {
+      if (this.tab.kind !== "settings") this.saveBrowserTabs();
+    };
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState !== "hidden") return;
+      // o localStorage é síncrono: guarda o texto AGORA, mesmo que a gravação no disco não
+      // chegue a terminar (o reload restaura a versão mais nova e o autosave a grava)
+      guardarTextoSincrono();
+      void this.autosave();
+    });
+    window.addEventListener("pagehide", () => {
+      guardarTextoSincrono();
+      void this.autosave();
+    });
     window.addEventListener("beforeunload", () => {
+      guardarTextoSincrono();
       void this.autosave();
       // última cópia em disco antes de fechar (o async pode não terminar, mas o
       // salvamento automático já gravou o arquivo; isto é a rede de segurança)
       if (this.dirty) void this.backupNow(this.path, "fechar");
+    });
+    // "Não foi possível salvar" no rodapé vira uma ação: clicar tenta de novo (e, num
+    // documento sem arquivo, abre o "Salvar como…" para escolher a pasta).
+    const selo = document.querySelector<HTMLElement>("#save-state");
+    selo?.addEventListener("click", () => {
+      if (this.tab?.saveFailed) void this.retrySave();
+    });
+    selo?.addEventListener("keydown", (e) => {
+      if (!this.tab?.saveFailed) return;
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        void this.retrySave();
+      }
     });
     await this.setupDragDrop();
 
@@ -591,8 +628,18 @@ export class App {
       this.renderOutline();
     });
   };
-  autosaveSoon = debounce(() => void this.autosave(), 2000);
-
+  /**
+   * O pedido de salvamento depois de uma alteração.
+   *
+   * Não é um `debounce` simples: esperar a pausa (900 ms) mas **nunca** deixar passar mais
+   * de 5 s desde a última gravação. Assim quem digita sem parar continua salvando de tempos
+   * em tempos, em vez de ficar sem gravação até parar (ver `autosaveTimer.ts`).
+   */
+  autosaveSoon = criarAgendadorSalvamento({
+    salvar: () => this.autosave(),
+    pausaMs: 900,
+    maximoMs: 5000,
+  });
 }
 
 // Os métodos ficam em arquivos próprios (um por assunto) e são colados na classe aqui.
