@@ -13,7 +13,7 @@ import { xlsxParaLivro } from "../excel/xlsximport";
 import type { ConfigPlanilha, Estilo, Folha, Livro } from "../excel/schema";
 import { nomeColuna } from "../excel/refs";
 import { bytesToBase64 } from "../util";
-import { $, h, toast, baseName, joinPath, fmtTime, slugify } from "../util";
+import { $, toast, baseName, joinPath, fmtTime, slugify } from "../util";
 
 export const excelDocsMethods = {
   /** Cria uma aba de planilha (sem ativá-la). */
@@ -326,83 +326,4 @@ export const excelDocsMethods = {
     toast("Planilha orçamentária criada — os totais já são fórmulas. Ctrl+Shift+S salva como .xlsx.", "ok", 4200);
   },
 
-  /** Abre o diálogo "Configurar planilha" e aplica o resultado. */
-  async configureExcel(this: App): Promise<void> {
-    const novo = await this.askExcelConfig(this.excelHost.setup_());
-    if (novo) this.excelHost.setConfig(novo);
-  },
-
-  /** Diálogo "Configurar planilha": grade, casas decimais, símbolo da moeda e zoom. */
-  askExcelConfig(this: App, config: ConfigPlanilha): Promise<ConfigPlanilha | null> {
-    return new Promise((resolve) => {
-      const rascunho: ConfigPlanilha = { ...config };
-      const backdrop = h("div", { class: "modal-backdrop" });
-      const modal = h("div", { class: "modal pg-modal" });
-      modal.innerHTML = `
-        <header class="wm-head">
-          <svg class="ic"><use href="#i-gear"/></svg>
-          <h2>Configurar planilha</h2>
-          <button class="btn icon" data-close title="Fechar (Esc)"><svg class="ic"><use href="#i-close"/></svg></button>
-        </header>
-        <div class="wm-body">
-          <p class="pg-hint">Vale para toda a planilha: linhas de grade, casas decimais, moeda e zoom.</p>
-          <label class="pg-row"><span class="pg-check"><input type="checkbox" data-k="grade"> Mostrar as linhas de grade</span></label>
-          <label class="pg-row"><span class="pg-rot">Casas decimais</span>
-            <input type="number" data-k="casas" min="0" max="10" step="1" />
-          </label>
-          <label class="pg-row"><span class="pg-rot">Símbolo da moeda</span>
-            <input type="text" data-k="moeda" placeholder="R$" />
-          </label>
-          <label class="pg-row"><span class="pg-rot">Zoom (%)</span>
-            <input type="number" data-k="zoom" min="50" max="200" step="10" />
-          </label>
-        </div>
-        <footer class="wm-foot">
-          <button class="btn" data-cancel>Cancelar</button>
-          <span class="dr-spacer"></span>
-          <button class="btn primary" data-ok>Aplicar</button>
-        </footer>`;
-      backdrop.append(modal);
-      document.body.append(backdrop);
-
-      type Campo = HTMLSelectElement | HTMLInputElement;
-      const ler = (campo: Campo): unknown => {
-        const k = campo.dataset.k as keyof ConfigPlanilha;
-        if (campo instanceof HTMLInputElement && campo.type === "checkbox") return campo.checked;
-        if (campo instanceof HTMLInputElement && campo.type === "number") return +campo.value;
-        return campo.value;
-      };
-      modal.querySelectorAll<Campo>("[data-k]").forEach((campo) => {
-        const k = campo.dataset.k as keyof ConfigPlanilha;
-        if (campo instanceof HTMLInputElement && campo.type === "checkbox") campo.checked = !!rascunho[k];
-        else campo.value = String(rascunho[k] ?? "");
-      });
-
-      const done = (v: ConfigPlanilha | null) => {
-        document.removeEventListener("keydown", onKey, true);
-        backdrop.remove();
-        resolve(v);
-      };
-      const onKey = (e: KeyboardEvent) => {
-        if (e.key === "Escape") {
-          e.preventDefault();
-          e.stopPropagation();
-          done(null);
-        }
-      };
-      document.addEventListener("keydown", onKey, true);
-      backdrop.addEventListener("mousedown", (e) => {
-        if (e.target === backdrop) done(null);
-      });
-      modal.querySelector("[data-close]")!.addEventListener("click", () => done(null));
-      modal.querySelector("[data-cancel]")!.addEventListener("click", () => done(null));
-      modal.querySelector<HTMLButtonElement>("[data-ok]")!.addEventListener("click", () => {
-        modal.querySelectorAll<Campo>("[data-k]").forEach((campo) => {
-          (rascunho as unknown as Record<string, unknown>)[campo.dataset.k!] = ler(campo);
-        });
-        done(rascunho);
-      });
-      modal.querySelector<HTMLElement>("[data-ok]")!.focus();
-    });
-  },
 };

@@ -97,8 +97,6 @@ export interface ExcelHostOptions {
   onDirty?: () => void;
   /** aba, linha, coluna ou seleção mudaram (rodapé e barra de fórmulas) */
   onStatus?: () => void;
-  /** o usuário pediu o diálogo "Configurar planilha" */
-  onConfigure?: () => void;
   /** salvar em outro formato não se aplica: o App cuida */
   onPickImage?: () => void;
 }
@@ -238,7 +236,6 @@ export class ExcelHost {
     this.fitaEl = fita(this.fitaEl, {
       query: () => this.estadoFormatacao(),
       run: (cmd, valor) => this.executar(cmd, valor),
-      configure: () => this.opts.onConfigure?.(),
       pickImage: () => this.opts.onPickImage?.(),
     });
 
@@ -2112,9 +2109,6 @@ export class ExcelHost {
       case "zoom-reset":
         this.setZoom(100);
         return;
-      case "configure":
-        this.opts.onConfigure?.();
-        return;
       case "image":
         this.aviso("Imagens dentro da planilha ainda não são suportadas pelo motor.");
         return;
@@ -2518,15 +2512,9 @@ export class ExcelHost {
     return snap ? this.textoLegivel(snap.livro) : serialized;
   }
 
-  /** Configuração atual (para o diálogo "Configurar planilha"). */
+  /** Configuração atual do livro (usada ao abrir um .xlsx). */
   setup_(): ConfigPlanilha {
     return { ...this.config };
-  }
-
-  setConfig(patch: Partial<ConfigPlanilha>): void {
-    this.config = { ...this.config, ...patch };
-    this.sujo();
-    this.pintar();
   }
 
   /** Texto da planilha em português (a IA, o corretor e o histórico usam). */

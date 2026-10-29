@@ -18463,3 +18463,17 @@ antigas quando fizer sentido.
 - **Local:** as balas de valores/seleção/edição/fita/fórmulas do `docs/excel.md` e o CHANGELOG → Excel → Não adicionado (Backend/Frontend)
 - **Linha:** `+` o comportamento novo (data x número, texto com dígito, cópia 1×1, colagem na ativa, alça no bloco, paleta ancorada, tradução PT↔EN, `numFmt` único, fórmula compartilhada)
 - **Porquê:** o documento descrevia a fita com “N/I” e não contava as regras de valor/cópia que a mudança fixou; a entrada fica em “Não adicionado” até o `fechar.ps1` entregar a `main`.
+
+## src/excel/ribbon.ts · src/excel/host.ts · src/app/excelDocs.ts
+
+### 2026-10-29 · fix/excel-remover-configurar · o botão Configurar planilha sai da fita
+- **Local:** a barra de abas do `fita()`; `RibbonHooks.configure`, `ExcelHostOptions.onConfigure` e o `case "configure"`; `configureExcel`/`askExcelConfig` em `excelDocs.ts` e a ligação em `app.ts`
+- **Linha:** `- <button … data-cmd="configure" …>Configurar</button>`; `- configure: () => this.opts.onConfigure?.()`; `- case "configure": this.opts.onConfigure?.(); return;`; `- configureExcel` e `- askExcelConfig` (o diálogo inteiro); `- onConfigure: () => void this.configureExcel()` no construtor do host e `- h` do import de `excelDocs`
+- **Porquê:** o botão não tinha função prática: abria um modal de grade/casas/moeda/zoom que não mudava o uso da planilha. Tirar só o botão deixaria hook, comando, diálogo e uma busca de comando apontando para uma tela inalcançável; a remoção foi feita de ponta a ponta. A configuração do livro continua existindo com os padrões (grade, 2 casas, R$, zoom 100%) e é preservada no documento; `setup_()` ficou porque a abertura de `.xlsx` ainda lê a configuração atual. Trava: `npm run test:excel` e conferência no navegador (a fita e a busca não mostram mais “Configurar planilha”).
+
+## docs/excel.md · CHANGELOG.md
+
+### 2026-10-29 · fix/excel-remover-configurar · a documentação acompanha
+- **Local:** a seção “Configuração” do `docs/excel.md` e o Excel → Não adicionado → Frontend do `CHANGELOG.md`
+- **Linha:** a seção que mandava abrir a engrenagem → os padrões do livro e a nota de que a janela saiu; `+` a entrada da remoção
+- **Porquê:** o documento do módulo era o único lugar que ainda mandava procurar o botão removido; a entrada do changelog fica em “Não adicionado” até o `fechar.ps1` entregar a `main`.

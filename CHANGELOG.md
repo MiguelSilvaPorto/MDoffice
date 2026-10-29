@@ -756,6 +756,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **O botão “Configurar” saiu da fita do Excel**: a engrenagem abria um diálogo de grade, casas
+  decimais, moeda e zoom que não tinha função prática no uso da planilha. O botão, o hook
+  `onConfigure`, o comando `configure` e o próprio diálogo foram removidos; a planilha continua
+  com os padrões do livro (grade visível, 2 casas, R$ e zoom 100%), que acompanham o documento.
+  Trava: `npm run test:excel` e conferência no navegador (a fita não mostra mais o botão nem o
+  comando na busca).
+
 - **Seleção e edição consertadas**: clicar depois de editar não é mais engolido nem estende
   “tudo desde a célula editada”; duplo clique abre a edição de verdade (o `mousedown` não recria
   mais as células antes do `dblclick`); `mouseup` perdido não deixa o arrasto preso; cabeçalho de

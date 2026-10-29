@@ -87,8 +87,9 @@ Planilha com grade que cresce sob demanda, fórmulas em português e abertura de
 
 ## Configuração
 
-Em **Configurar planilha** (engrenagem na fita): **linhas de grade**, **casas decimais**,
-**símbolo da moeda** e **zoom**.
+O livro nasce com os padrões: **linhas de grade visíveis**, **2 casas decimais**, **R$** e
+**zoom 100%**. Esses valores acompanham o documento; a antiga janela **Configurar planilha**
+saiu da fita (o botão não tinha função prática).
 
 ## Escrita assistida e histórico
 

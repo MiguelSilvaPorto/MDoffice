@@ -46,7 +46,7 @@ export interface Livro {
   ativa: number;
 }
 
-/** Configuração do livro: o "Configurar planilha" do App (como o do PowerPoint). */
+/** Configuração do livro (grade, casas, moeda e zoom), preservada no documento. */
 export interface ConfigPlanilha {
   /** mostrar as linhas da grade */
   grade: boolean;

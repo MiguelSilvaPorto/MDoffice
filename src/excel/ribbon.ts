@@ -15,7 +15,6 @@ import { melhorarSelects } from "../seletor";
 export interface RibbonHooks {
   query: () => FormatState;
   run: (cmd: string, value?: string) => void;
-  configure: () => void;
   pickImage: () => void;
 }
 
@@ -219,7 +218,6 @@ export function fita(host: HTMLElement, hooks: RibbonHooks): HTMLElement {
     <div class="xl-tabs" role="tablist">
       ${ABAS.map((a, i) => `<button type="button" class="xl-tab${i === 0 ? " on" : ""}" role="tab" data-xltab="${a.id}">${a.nome}</button>`).join("")}
       <span class="xl-tabs-fill"></span>
-      <button type="button" class="xl-tab xl-tab-cfg" data-cmd="configure" title="Configurar planilha: grade, casas decimais, moeda e zoom">${ic("i-gear")}<span>Configurar</span></button>
     </div>
     <div class="xl-panels">
       <div class="xl-panel" data-xlpanel="inicio">${painelInicio}</div>

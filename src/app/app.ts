@@ -314,7 +314,6 @@ export class App {
       pane: $("#excel-pane"),
       onDirty: () => this.onExcelChange(),
       onStatus: () => this.excelStatus(),
-      onConfigure: () => void this.configureExcel(),
     });
     $("#ol-collapse").addEventListener("click", () => this.outline.collapseAll(true));
     $("#ol-expand").addEventListener("click", () => this.outline.collapseAll(false));
