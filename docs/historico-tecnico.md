@@ -28,6 +28,27 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/excel/host.ts
+
+### 2026-10-29 · fix/excel-calculo-selecao-template · dependentes recalculam e seleção começa do zero
+- **Local:** `sujo`, `mousedown` da grade, `createTab`
+- **Linha:** `sujo` passou a chamar `this.cache.clear()`; `const estendido = e.shiftKey || e.ctrlKey` → `e.shiftKey`; `+ this.sel` no mousedown com Shift; `createTab` → `return this.createEmpty()`
+- **Porquê:** o cache de `valorCalculado` usava só o texto da célula como chave. Editar C2 não mudava o texto de E2 (`=C2*D2`), então E2 continuava com o valor antigo (14 × 5.200 mostrava 10.400) e o `=SOMA(E2:E5)` somava valores velhos. Limpar o cache em qualquer edição (barato para a grade) faz os dependentes recalcularem no repaint. Na seleção, Ctrl era sinônimo de "estender": depois de um bloco pequeno, Ctrl+clique num bloco maior pegava tudo desde o âncora antigo. O app só tem uma faixa, então Ctrl agora começa uma seleção nova (como um clique comum) e só Shift estende — e o Shift estende já no mousedown, porque antes um Shift+clique sem arrastar não mudava nada. O "Novo" abria `livroDeExemplo()` (orçamento pronto); agora `createTab()` devolve `createEmpty()` e a pessoa começa na célula A1 vazia.
+
+## src/styles/tabs.css
+
+### 2026-10-29 · fix/excel-calculo-selecao-template · ícone da aba gira no hover
+- **Local:** `.tab-ic .ic`, novo `.tab:hover .tab-ic .ic`
+- **Linha:** `+ transition: transform 0.28s ease` e `+ transform: rotate(1turn)` no hover
+- **Porquê:** pedido de interface: o ícone da aba ganha uma volta ao passar o mouse, sem mexer no layout (só `transform`). `prefers-reduced-motion` desliga a animação para quem pediu menos movimento.
+
+## scripts/testar-excel.mjs
+
+### 2026-10-29 · fix/excel-calculo-selecao-template · travas do host
+- **Local:** fim do teste, seção "host"
+- **Linha:** novos `ok(...)`
+- **Porquê:** prender que `sujo` limpa o cache, que Ctrl não estende (`e.shiftKey` sozinho), que o Shift monta a seleção no mousedown, que `createTab` devolve `createEmpty` e que o ícone da aba tem `rotate(1turn)`. O recálculo de dependentes e os quatro gestos de seleção foram conferidos no navegador (14→2 muda 72.800→10.400; clique simples/Ctrl/Shift/volta).
+
 ## src/styles/busca.css
 
 ### 2026-10-29 · fix/regua-indentacao-e-brilho-busca · um só brilho na busca

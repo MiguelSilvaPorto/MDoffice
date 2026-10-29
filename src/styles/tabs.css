@@ -116,6 +116,23 @@ body.aba-fora * {
 .tab-ic .ic {
   width: 15px;
   height: 15px;
+  /* o ícone da aba dá uma volta no hover (pedido de interface): é só enfeite, então
+     respeita quem pediu menos movimento no sistema */
+  transition: transform 0.28s ease;
+}
+
+.tab:hover .tab-ic .ic {
+  transform: rotate(1turn);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-ic .ic {
+    transition: none;
+  }
+
+  .tab:hover .tab-ic .ic {
+    transform: none;
+  }
 }
 
 .tab.draft .tab-name {

@@ -5,9 +5,15 @@ Planilha com grade que cresce sob demanda, fórmulas em português e abertura de
 
 ## A planilha
 
-- **Planilha nova já salva na pasta padrão**: `+ → Planilha Excel` cria e guarda de uma vez em
-  `Documentos\mdOffice\Excel\Documento.xlsx`, sem perguntar pasta ("Salvar como…" escolhe outro
-  lugar). A raiz entra sozinha nos **Projetos**, com uma subpasta por tipo.
+- **Planilha nova em branco**: `+ → Planilha Excel` cria uma planilha **vazia** — sem o orçamento
+  de exemplo que abria antes — e guarda o rascunho na pasta escolhida (sem perguntar pasta;
+  "Salvar como…" escolhe outro lugar).
+- **Cálculo sempre em dia**: editar uma célula recalcula as fórmulas que dependem dela (o Total
+  de `=C2*D2` e o `=SOMA(...)` acompanham a quantidade na hora), inclusive ao desfazer, colar e
+  preencher pela alça.
+- **Seleção**: clique simples começa uma seleção nova; **Shift+clique** estende do parágrafo
+  ativo até a célula clicada; **Ctrl+clique** também começa uma seleção nova (o app trabalha com
+  uma faixa só — antes o Ctrl estendia desde o âncora antigo e parecia selecionar tudo).
 - **Grade que cresce sozinha**: role ou escreva além do fim e novas linhas/colunas aparecem
   (rolagem infinita), sem tamanho fixo.
 - **Desfazer/refazer** funcionam de qualquer ponto da planilha (`Ctrl+Z` / `Ctrl+Y`).

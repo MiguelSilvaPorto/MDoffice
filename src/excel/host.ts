@@ -62,7 +62,6 @@ import {
   duplicarFolha,
   ehVazia,
   inserirFolha,
-  livroDeExemplo,
   moverFolha,
   novaFolha,
   nomeLivre,
@@ -261,8 +260,21 @@ export class ExcelHost {
       if (!alvoCel) return;
       arrastando = true;
       ancorou = true;
-      const estendido = e.shiftKey || e.ctrlKey;
-      if (!estendido) {
+      // Só o Shift ESTENDE a seleção (do âncora ativo até a célula clicada). O Ctrl era
+      // tratado como extensão também, mas o app só tem UMA faixa: Ctrl+clique depois de
+      // uma seleção pequena pegava tudo desde o âncora antigo (o relato). Ctrl agora
+      // começa uma seleção nova, como um clique comum.
+      const estendido = e.shiftKey;
+      if (estendido) {
+        // o Shift+clique precisa estender já no mousedown: antes só o mousemove mexia na
+        // seleção, então um clique sem arrastar deixava a seleção antiga intacta
+        this.sel = {
+          l1: Math.min(this.linha, alvoCel.linha),
+          c1: Math.min(this.coluna, alvoCel.col),
+          l2: Math.max(this.linha, alvoCel.linha),
+          c2: Math.max(this.coluna, alvoCel.col),
+        };
+      } else {
         this.sel = { l1: alvoCel.linha, c1: alvoCel.col, l2: alvoCel.linha, c2: alvoCel.col };
         this.linha = alvoCel.linha;
         this.coluna = alvoCel.col;
@@ -2069,13 +2081,23 @@ export class ExcelHost {
 
   private sujo(): void {
     this.guardarPilha();
+    // Qualquer edição pode mudar o valor de uma fórmula que depende desta célula. O
+    // cache guarda o valor por TEXTO da própria célula; se só apagássemos a célula
+    // editada, o Total (=C2*D2) continuaria com o valor antigo. Limpar tudo é barato
+    // (a grade repinta poucas células) e garante que os dependentes recalculem.
+    this.cache.clear();
     this.opts.onDirty?.();
   }
 
-  /** Livro de exemplo que "Novo" abre. */
+  /**
+   * Planilha nova: **em branco**.
+   *
+   * Antes o "Novo" abria o livro de exemplo (orçamento de Desenvolvimento/Suporte), e a
+   * pessoa precisava apagar o template antes de começar. O exemplo continua em
+   * `livroDeExemplo()` para quem quiser abri-lo, mas não entra mais sozinho.
+   */
   createTab(): ExcelTabData {
-    const { livro, config } = livroDeExemplo();
-    return { livro, config, linha: 0, coluna: 0 };
+    return this.createEmpty();
   }
 
   /** Livro vazio (para um .xlsx em branco). */

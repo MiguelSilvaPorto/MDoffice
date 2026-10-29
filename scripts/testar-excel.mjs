@@ -6,7 +6,7 @@
 // O teste NÃO abre o Excel: ele grava um .xlsx de verdade e confere se o
 // próprio leitor do motor recupera exatamente o que foi colocado.
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { register } from "node:module";
 import { pathToFileURL } from "node:url";
@@ -279,6 +279,26 @@ const e2 = calcular("=C2*D2", {
 });
 igual("2 x 5200", e2, 10400);
 igual("soma dos quatro", calcular("=10400+1800+1280+950", ctx), 14430);
+
+// ------------------------------------------------------------------
+console.log("\nhost: recálculo dos dependentes, seleção e planilha nova");
+const hostSrc = readFileSync(join(raiz, "src/excel/host.ts"), "utf8");
+ok(
+  "qualquer edição limpa o cache (o Total dependente recalcula)",
+  /private sujo\(\)[\s\S]{0,700}this\.cache\.clear\(\)/.test(hostSrc),
+  "o cache por texto da própria célula deixava C2*D2 velho"
+);
+ok(
+  "Ctrl não estende mais a partir do âncora antigo",
+  /const estendido = e\.shiftKey;/.test(hostSrc) && !/const estendido = e\.shiftKey \|\| e\.ctrlKey;/.test(hostSrc)
+);
+ok(
+  "Shift+clique estende já no mousedown",
+  /const estendido = e\.shiftKey;[\s\S]{0,400}this\.sel = \{\s*l1: Math\.min/.test(hostSrc)
+);
+ok("planilha nova nasce em branco (sem o orçamento de exemplo)", /createTab\(\): ExcelTabData \{\s*return this\.createEmpty\(\);/.test(hostSrc));
+const tabsCss = readFileSync(join(raiz, "src/styles/tabs.css"), "utf8");
+ok("o ícone da aba gira no hover", /\.tab:hover \.tab-ic \.ic \{[\s\S]{0,80}rotate\(1turn\)/.test(tabsCss));
 
 // ------------------------------------------------------------------
 console.log("\n.xls antigo e .csv");

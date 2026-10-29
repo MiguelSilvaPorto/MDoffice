@@ -746,6 +746,20 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **A planilha recalcula na hora e a seleção não pega mais o que não devia**: mudar a
+  **Quantidade** de 2 para 14 mantinha o Total em 10.400 (`=C2*D2` com o valor antigo) e o
+  Total geral em 14.430, porque o cache de cálculo só olhava o texto da **própria** célula e
+  não invalidava as fórmulas dependentes. Agora qualquer edição limpa o cache: o Total e o
+  `=SOMA(...)` acompanham a célula editada (e o desfazer/colar/preencher também).
+  A **seleção** tinha dois problemas: **Ctrl+clique** era tratado como extensão e, depois de
+  selecionar duas células pequenas, clicar num bloco maior selecionava tudo desde o âncora
+  antigo; e **Shift+clique** só estendia se o mouse se mexesse. Ctrl agora começa uma seleção
+  nova e o Shift estende já no clique (uma faixa por vez, como o motor sempre teve).
+  **Planilha nova** abre **em branco** — o orçamento de exemplo (Desenvolvimento/Suporte,
+  `=SOMA(E2:E5)`) deixou de entrar sozinho no "Novo"; ele continua disponível como exemplo
+  para quem quiser. Trava: `npm run test:excel` (fórmulas) + conferência no navegador do
+  recálculo e dos quatro gestos de seleção.
+
 - **Grade que cresce sob demanda** (rolagem infinita) e desfazer/refazer de qualquer ponto.
 - Fórmulas em português (referências `A1`/`$A$1`, operadores, erros) e **barra de fórmulas**.
 - **Documentação das funções** por categoria em [docs/excel/formulas](docs/excel/formulas/README.md).
@@ -2236,6 +2250,10 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   entre pastas, renomear pasta e recusar excluir pasta com conteúdo.
 
 ### Adicionado (na main)
+
+- **O ícone da aba gira no hover**: passar o mouse numa aba faz o ícone do tipo do documento
+  dar uma volta (0,28 s) e voltar ao normal ao sair; com `prefers-reduced-motion` ele fica
+  parado. É só enfeite, mas dá vida à fileira de abas.
 
 - **A barra de busca parou de brilhar duas vezes**: ao abrir a busca, o campo ganhava uma
   **segunda borda roxa** (o `outline` do `:focus-visible` global) por dentro da pílula, que já
