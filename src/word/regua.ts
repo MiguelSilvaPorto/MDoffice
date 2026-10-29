@@ -23,7 +23,16 @@ export interface ReguaHooks {
   getZoom: () => number;
   /** Quantas páginas a folha mede (o modo livro mede duas, lado a lado). */
   getPaginas?: () => number;
+  /** Os recuos do parágrafo selecionado, em pontos (para os marcadores). */
+  getIndents?: () => { left: number; right: number };
+  /** Aplica um recuo (em pontos) ao parágrafo selecionado — o arrasto do marcador. */
+  setIndent?: (lado: "left" | "right", pt: number) => void;
 }
+
+/** 1 ponto = 96/72 px (a folha é desenhada a 96 dpi). */
+const PT_TO_PX = 96 / 72;
+/** Distância (px de tela) para pegar o marcador com o ponteiro. */
+const PEGA_MARCADOR = 8;
 
 interface Cores {
   /** o fundo da régua (a cor do app). */
@@ -52,13 +61,26 @@ export class Reguas {
   private h: HTMLCanvasElement | null;
   private v: HTMLCanvasElement | null;
   private hooks: ReguaHooks;
-  private ligada = false;
+  /**
+   * A régua nasce **ligada**: com os marcadores de recuo ela é ferramenta de formatação,
+   * não só enfeite. O botão "Régua" (aba Exibir) continua desligando.
+   */
+  private ligada = true;
+  /** Marcador que está sendo arrastado (ou null). */
+  private arrastando: "left" | "right" | null = null;
 
   constructor(h: HTMLCanvasElement | null, v: HTMLCanvasElement | null, hooks: ReguaHooks) {
     this.h = h;
     this.v = v;
     this.hooks = hooks;
     this.aplicarVisibilidade();
+    h?.addEventListener("pointerdown", this.onPointerDown);
+    h?.addEventListener("pointermove", this.onPointerMove);
+    h?.addEventListener("pointerup", this.onPointerUp);
+    h?.addEventListener("pointercancel", this.onPointerUp);
+    h?.addEventListener("pointerleave", () => {
+      if (!this.arrastando && this.h) this.h.style.cursor = "default";
+    });
   }
 
   /** A régua está ligada? */
@@ -141,7 +163,139 @@ export class Reguas {
       ctx.stroke();
       if (grande) ctx.fillText(String(m.cm), x, 9);
     }
+    this.desenharMarcadores(ctx, s, zoom, paginas);
   }
+
+  /**
+   * Os marcadores de recuo (esquerdo e direito), como no Word: um triângulo no topo da
+   * régua e uma linha até a base. Arrastar o da esquerda afasta o texto da margem
+   * esquerda; o da direita, da margem direita.
+   */
+  private desenharMarcadores(
+    ctx: CanvasRenderingContext2D,
+    s: PageSetup,
+    zoom: number,
+    paginas: number
+  ): void {
+    if (!this.hooks.getIndents || !this.hooks.setIndent) return;
+    const ind = this.hooks.getIndents();
+    const { w } = pageSizePx(s);
+    const ml = s.margins.left * CM_TO_PX;
+    const mr = s.margins.right * CM_TO_PX;
+    const larguraPagina = w * zoom;
+    const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#6d28d9";
+    ctx.save();
+    ctx.strokeStyle = accent;
+    ctx.fillStyle = accent;
+    ctx.lineWidth = 1.5;
+    for (let p = 0; p < paginas; p++) {
+      const base = p * larguraPagina;
+      const xEsq = base + ml * zoom + ind.left * PT_TO_PX * zoom;
+      const xDir = base + (w - mr) * zoom - ind.right * PT_TO_PX * zoom;
+      for (const x of [xEsq, xDir]) {
+        ctx.beginPath();
+        ctx.moveTo(x, ESPESSURA - 1);
+        ctx.lineTo(x, 8);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, 1);
+        ctx.lineTo(x - 5, 8);
+        ctx.lineTo(x + 5, 8);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+    const cm = (pt: number): string => (pt / 28.3465).toFixed(1).replace(".", ",");
+    if (this.h) {
+      this.h.title = `Recuo esquerdo: ${cm(ind.left)} cm · direito: ${cm(ind.right)} cm — arraste os marcadores`;
+    }
+  }
+
+  /** O marcador sob o ponteiro (o mais próximo), ou null. */
+  private marcadorEm(x: number): "left" | "right" | null {
+    if (!this.hooks.getIndents) return null;
+    const s = this.hooks.getSetup();
+    const zoom = this.hooks.getZoom();
+    const { w } = pageSizePx(s);
+    const ml = s.margins.left * CM_TO_PX;
+    const mr = s.margins.right * CM_TO_PX;
+    const paginas = Math.max(1, this.hooks.getPaginas?.() ?? 1);
+    const ind = this.hooks.getIndents();
+    const larguraPagina = w * zoom;
+    let melhor: { lado: "left" | "right"; dist: number } | null = null;
+    for (let p = 0; p < paginas; p++) {
+      const base = p * larguraPagina;
+      const xEsq = base + ml * zoom + ind.left * PT_TO_PX * zoom;
+      const xDir = base + (w - mr) * zoom - ind.right * PT_TO_PX * zoom;
+      for (const [lado, xm] of [["left", xEsq], ["right", xDir]] as const) {
+        const dist = Math.abs(x - xm);
+        if (dist <= PEGA_MARCADOR && (!melhor || dist < melhor.dist)) melhor = { lado, dist };
+      }
+    }
+    return melhor?.lado ?? null;
+  }
+
+  /** O recuo (pt) que o ponteiro representa, no marcador e na página em que ele está. */
+  private valorDoPonteiro(x: number, lado: "left" | "right"): number {
+    const s = this.hooks.getSetup();
+    const zoom = this.hooks.getZoom();
+    const { w } = pageSizePx(s);
+    const ml = s.margins.left * CM_TO_PX;
+    const mr = s.margins.right * CM_TO_PX;
+    const paginas = Math.max(1, this.hooks.getPaginas?.() ?? 1);
+    const ind = this.hooks.getIndents?.() ?? { left: 0, right: 0 };
+    const larguraPagina = w * zoom;
+    const pagina = Math.min(paginas - 1, Math.max(0, Math.floor(x / larguraPagina)));
+    const base = pagina * larguraPagina;
+    const textoPt = (w - ml - mr) / PT_TO_PX;
+    if (lado === "left") {
+      const pt = (x - (base + ml * zoom)) / zoom / PT_TO_PX;
+      return Math.round(Math.min(Math.max(0, textoPt - ind.right), Math.max(0, pt)));
+    }
+    const pt = (base + (w - mr) * zoom - x) / zoom / PT_TO_PX;
+    return Math.round(Math.min(Math.max(0, textoPt - ind.left), Math.max(0, pt)));
+  }
+
+  private onPointerDown = (e: PointerEvent): void => {
+    const lado = this.marcadorEm(e.offsetX);
+    if (!lado || !this.hooks.setIndent) return;
+    this.arrastando = lado;
+    try {
+      this.h?.setPointerCapture(e.pointerId);
+    } catch {
+      /* sem captura: o arrasto segue dentro do canvas */
+    }
+    if (this.h) this.h.style.cursor = "ew-resize";
+    e.preventDefault();
+  };
+
+  private onPointerMove = (e: PointerEvent): void => {
+    if (!this.h) return;
+    if (!this.arrastando) {
+      this.h.style.cursor = this.marcadorEm(e.offsetX) ? "ew-resize" : "default";
+      return;
+    }
+    const lado = this.arrastando;
+    const atual = this.hooks.getIndents?.() ?? { left: 0, right: 0 };
+    const pt = this.valorDoPonteiro(e.offsetX, lado);
+    if (pt === (lado === "left" ? atual.left : atual.right)) return;
+    // o host aplica ao parágrafo e redesenha a régua no `onChange` do editor: um desenho
+    // por movimento, não dois (o `desenhar` daqui e o do host)
+    this.hooks.setIndent?.(lado, pt);
+    e.preventDefault();
+  };
+
+  private onPointerUp = (e: PointerEvent): void => {
+    if (!this.arrastando) return;
+    this.arrastando = null;
+    try {
+      this.h?.releasePointerCapture(e.pointerId);
+    } catch {
+      /* já soltou */
+    }
+    if (this.h) this.h.style.cursor = "default";
+  };
 
   /**
    * A régua vertical: mede a ALTURA do papel. Ela mora dentro da folha escalada, então o

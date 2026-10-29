@@ -58,7 +58,10 @@ arquivos `.docx` de verdade.
   confundida com "o papel mudou" — e a barra traz **Ajustar** (a folha cabe na largura da janela;
   nunca amplia além de 100%) e o número do zoom, que **volta a 100%** no clique. A **aba Exibir**
   traz o **menu de zoom** (50/75/100/150/200%, *Ajustar* e *Página inteira*) e a **régua**
-  (horizontal e vertical, com as margens sombreadas e as medidas em centímetros).
+  (horizontal e vertical, com as margens sombreadas e as medidas em centímetros). A régua
+  horizontal nasce ligada e tem **marcadores arrastáveis de recuo**: o da esquerda afasta o
+  texto da margem esquerda e o da direita, da margem direita; o título da régua mostra o valor
+  em cm.
 - **Tema escuro**: a folha **escurece junto** — papel e tinta acompanham o tema (é o mesmo
   desenho da prévia do Markdown), então escrever à noite não leva clarão; “Preto” do documento
   entra como **tinta automática** (é o que o Word grava em “Automático”) e o **marca-texto**
@@ -74,7 +77,8 @@ arquivos `.docx` de verdade.
   confortável, com a letra e o entrelinha maiores, sem as bordas do papel) e **Livro** (a folha
   **aberta**: a página 1 à esquerda, a 2 à direita, a 3 e a 4 na faixa de baixo, com a **lombada
   no meio**); a **régua** (horizontal e vertical, com as margens sombreadas e as medidas em
-  centímetros, que acompanha o papel, as margens e o zoom); e o **zoom** (50/75/100/150/200%,
+  centímetros, que acompanha o papel, as margens e o zoom — a horizontal tem os **marcadores
+  de recuo esquerdo e direito** para arrastar); e o **zoom** (50/75/100/150/200%,
   *Ajustar* e *Página inteira*). O modo **Livro** é da tela: no impresso e no PDF a folha volta
   a ter uma página de largura e o texto sai na sequência.
 - **Fonte**: família e tamanho, negrito/itálico/sublinhado/riscado, sub/sobrescrito,
@@ -83,8 +87,8 @@ arquivos `.docx` de verdade.
   **digitação** — dá para escrever qualquer tamanho (com vírgula) ou qualquer nome de fonte, com
   a lista do app no botão ao lado. **Digitar sugere** (a lista abre filtrada, sem ligar para
   maiúsculas nem acentos; setas andam, **Enter** escolhe o destacado, **Esc** devolve o texto).
-- **Parágrafo**: marcadores e numeração com níveis, recuo, entrelinha, alinhamento
-  (esquerda, centro, direita e **justificado**).
+- **Parágrafo**: marcadores e numeração com níveis, recuo (inclusive **à direita**, pela
+  régua), entrelinha, alinhamento (esquerda, centro, direita e **justificado**).
 - **Popups da fita (cor da letra, destaque, grade da tabela)**: abrir e **fechar pelo mesmo
   botão** — clicar de novo nele **recolhe** o que estava aberto (clicar fora ou `Esc` também
   fecha, e outro botão troca o popup de lugar).

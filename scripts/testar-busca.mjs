@@ -157,6 +157,11 @@ async function main() {
 
   ok("a busca abre", await abrir());
   ok("o painel aparece", await avaliar("!document.getElementById('busca-painel').hasAttribute('hidden')"));
+  ok(
+    "o campo não ganha um segundo brilho (outline) dentro da pílula",
+    (await avaliar("getComputedStyle(document.getElementById('busca-input')).outlineStyle")) === "none",
+    await avaliar("getComputedStyle(document.getElementById('busca-input')).outline")
+  );
   ok("o painel aparece de verdade na tela", await painelVisivel());
   ok("a lista tem os comandos do app", (await rotulos()).length > 30, String((await rotulos()).length));
   console.log("      grupos:", JSON.stringify(await grupos()));

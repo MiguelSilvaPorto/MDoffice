@@ -90,10 +90,14 @@ export class WordHost {
       onChange: () => {
         this.opts.onChange();
         this.statusSoon();
+        // o recuo pode ter mudado pelo teclado/desfazer: os marcadores acompanham
+        this.reguas?.desenhar();
       },
       onSelection: () => {
         this.ribbon?.update();
         this.statusSoon();
+        // a régua mostra o recuo do parágrafo em que o cursor está
+        this.reguas?.desenhar();
       },
       onImage: (url) => void this.insertImageData(url),
       // "Fixar na página": a imagem é reacertada na mesma tarefa da edição (antes de pintar),
@@ -163,6 +167,9 @@ export class WordHost {
       getZoom: () => this.zoom,
       // no modo livro a folha mede duas páginas de largura
       getPaginas: () => (this.modo === "livro" ? 2 : 1),
+      // os marcadores de recuo: o valor do parágrafo da seleção e a aplicação ao arrastar
+      getIndents: () => this.editor.paragraphIndents(),
+      setIndent: (lado, pt) => this.editor.setIndent(lado, pt),
     });
 
     // clique direito no documento abre o MENU DO APP no ponto clicado: o nativo do WebView2

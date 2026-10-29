@@ -86,7 +86,7 @@ export interface WordEditorHooks {
 
 const PARA_TYPES = ["paragraph", "heading"];
 /** Atributos de parágrafo que o pincel de formatação leva junto. */
-const PAINTER_PARA_ATTRS = ["align", "lineHeight", "spaceBefore", "spaceAfter", "indentLeft", "indentFirst"];
+const PAINTER_PARA_ATTRS = ["align", "lineHeight", "spaceBefore", "spaceAfter", "indentLeft", "indentRight", "indentFirst"];
 
 export class WordEditor {
   readonly view: EditorView;
@@ -380,7 +380,7 @@ export class WordEditor {
     tr = tr.removeMark(from, to);
     state.doc.nodesBetween(from, to, (node, pos) => {
       if (PARA_TYPES.includes(node.type.name)) {
-        tr = tr.setNodeMarkup(pos, node.type, { ...node.attrs, align: null, spaceBefore: null, spaceAfter: null, lineHeight: null, indentLeft: null, indentFirst: null, bg: null, borderBottom: null });
+        tr = tr.setNodeMarkup(pos, node.type, { ...node.attrs, align: null, spaceBefore: null, spaceAfter: null, lineHeight: null, indentLeft: null, indentRight: null, indentFirst: null, bg: null, borderBottom: null });
       }
     });
     this.view.dispatch(tr.setStoredMarks([]));
@@ -513,6 +513,33 @@ export class WordEditor {
       return { indentLeft: next || null };
     })(this.view.state, this.view.dispatch);
     this.view.focus();
+  }
+
+  /** Os recuos do parágrafo da seleção, em pontos (a régua desenha os marcadores com eles). */
+  paragraphIndents(): { left: number; right: number } {
+    const { $from } = this.view.state.selection;
+    for (let d = $from.depth; d >= 0; d--) {
+      const n = $from.node(d);
+      if (n.type.name === "paragraph" || n.type.name === "heading") {
+        return {
+          left: (n.attrs.indentLeft as number | null) ?? 0,
+          right: (n.attrs.indentRight as number | null) ?? 0,
+        };
+      }
+    }
+    return { left: 0, right: 0 };
+  }
+
+  /**
+   * Aplica o recuo esquerdo/direito (em pontos) aos parágrafos da seleção.
+   *
+   * Não rouba o foco: quem está arrastando é a régua, e o documento mantém a seleção
+   * (o `mapTextblocks` lê `view.state.selection`, que continua valendo sem foco).
+   */
+  setIndent(lado: "left" | "right", pt: number): void {
+    const key = lado === "left" ? "indentLeft" : "indentRight";
+    const valor = Math.max(0, Math.round(pt));
+    this.mapTextblocks(() => ({ [key]: valor || null }))(this.view.state, this.view.dispatch);
   }
 
   /** Estilo do bloco: parágrafo, título 1–6, citação, código. */

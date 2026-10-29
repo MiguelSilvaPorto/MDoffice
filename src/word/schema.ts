@@ -15,8 +15,9 @@ export interface ParaAttrs {
   spaceAfter: number | null;
   /** entrelinha como múltiplo (1, 1.15, 1.5, 2…) */
   lineHeight: number | null;
-  /** recuo à esquerda e da primeira linha, em pontos */
+  /** recuo à esquerda, à direita e da primeira linha, em pontos */
   indentLeft: number | null;
+  indentRight: number | null;
   indentFirst: number | null;
   /** cor de fundo / sombreamento do parágrafo */
   bg: string | null;
@@ -30,6 +31,7 @@ const paraAttrs = {
   spaceAfter: { default: null as number | null },
   lineHeight: { default: null as number | null },
   indentLeft: { default: null as number | null },
+  indentRight: { default: null as number | null },
   indentFirst: { default: null as number | null },
   bg: { default: null as string | null },
   borderBottom: { default: null as boolean | null },
@@ -73,6 +75,7 @@ function paraStyle(attrs: Record<string, unknown>, semEntrelinha = false): strin
   // com imagem, a entrelinha fixa some: a linha cresce para caber a imagem (que continua inline)
   if (a.lineHeight != null && !semEntrelinha) css.push(`line-height:${a.lineHeight}`);
   if (a.indentLeft != null) css.push(`margin-left:${a.indentLeft}pt`);
+  if (a.indentRight != null) css.push(`margin-right:${a.indentRight}pt`);
   if (a.indentFirst != null) css.push(`text-indent:${a.indentFirst}pt`);
   if (a.bg) css.push(`background-color:${a.bg};padding:4px 8px;border-radius:3px`);
   if (a.borderBottom) css.push(`border-bottom:1.5px solid currentColor;padding-bottom:3px`);
@@ -88,6 +91,7 @@ function paraFromDOM(dom: HTMLElement): Partial<ParaAttrs> {
     spaceAfter: toPt(st.marginBottom),
     lineHeight: num(st.lineHeight) && !/[a-z%]/i.test(st.lineHeight) ? num(st.lineHeight) : null,
     indentLeft: toPt(st.marginLeft),
+    indentRight: toPt(st.marginRight),
     indentFirst: toPt(st.textIndent),
     bg: st.backgroundColor || null,
     borderBottom: !!st.borderBottom || null,

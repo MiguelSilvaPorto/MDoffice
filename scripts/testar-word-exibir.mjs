@@ -63,6 +63,31 @@ ok("o modo Rascunho tem estilo", css.includes("wd-modo-rascunho"));
 ok("o modo Leitura tem estilo", css.includes("wd-modo-leitura"));
 ok("a régua desligada some (o display do .wd-regua não vence o [hidden])", css.includes(".wd-regua[hidden]"));
 
+// ---------- os marcadores de recuo (a régua que formata) ----------
+const regua = readFileSync(join(raiz, "src/word/regua.ts"), "utf8");
+ok(
+  "a régua tem os marcadores de recuo esquerdo e direito",
+  regua.includes("getIndents") && regua.includes("setIndent") && regua.includes("marcadorEm") && regua.includes("onPointerMove"),
+  "sem eles a régua é só uma escala"
+);
+ok("o arrasto não rola a página no toque", css.includes("touch-action: none"));
+
+const schema = readFileSync(join(raiz, "src/word/schema.ts"), "utf8");
+const editor = readFileSync(join(raiz, "src/word/editor.ts"), "utf8");
+ok("o parágrafo tem recuo à direita no modelo", /indentRight: number \| null/.test(schema) && /margin-right:\$\{a\.indentRight\}pt/.test(schema));
+ok("o editor lê e aplica o recuo da seleção", editor.includes("paragraphIndents()") && editor.includes('setIndent(lado: "left" | "right"'));
+
+const host = readFileSync(join(raiz, "src/word/host.ts"), "utf8");
+ok(
+  "o host liga os marcadores ao parágrafo da seleção",
+  /getIndents: \(\) => this\.editor\.paragraphIndents\(\)/.test(host) && /setIndent: \(lado, pt\) => this\.editor\.setIndent\(lado, pt\)/.test(host)
+);
+
+const exportacao = readFileSync(join(raiz, "src/word/docxExport.ts"), "utf8");
+const props = readFileSync(join(raiz, "src/word/docx/props.ts"), "utf8");
+const blocos = readFileSync(join(raiz, "src/word/docx/blocks.ts"), "utf8");
+ok("o .docx exporta e importa o recuo à direita", /right: pt\(right\)/.test(exportacao) && /w:right/.test(props) && /indentRight: props\.right/.test(blocos));
+
 console.log("");
 console.log(falhas ? `${falhas} falha(s)` : "tudo certo");
 process.exit(falhas ? 1 : 0);

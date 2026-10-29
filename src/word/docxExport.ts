@@ -257,9 +257,11 @@ function spacingOf(attrs: Record<string, unknown>, headingLevel?: number) {
 
 function indentOf(attrs: Record<string, unknown>, extraLeft = 0) {
   const left = ((attrs.indentLeft as number | null) ?? 0) + extraLeft;
+  const right = attrs.indentRight as number | null;
   const first = attrs.indentFirst as number | null;
   return {
     ...(left ? { left: pt(left) } : {}),
+    ...(right ? { right: pt(right) } : {}),
     ...(first ? (first < 0 ? { hanging: pt(-first) } : { firstLine: pt(first) }) : {}),
   };
 }

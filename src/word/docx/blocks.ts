@@ -27,6 +27,7 @@ export function paraAttrs(props: ParaProps, defaults: ParaProps, isHeading: bool
     spaceAfter: isHeading ? null : diff(props.after, defaults.after),
     lineHeight: isHeading ? null : diff(props.line, defaults.line),
     indentLeft: props.left && props.left > 0 ? props.left : null,
+    indentRight: props.right && props.right > 0 ? props.right : null,
     indentFirst: props.first && props.first !== 0 ? props.first : null,
   };
 }

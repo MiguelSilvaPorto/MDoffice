@@ -57,6 +57,15 @@
   font-size: 12px;
 }
 
+/* O `:focus-visible` global (movimento.css) empata em especificidade com `.busca-input` e,
+   por vir depois, desenhava uma SEGUNDA borda roxa dentro da pílula — o "brilho errado".
+   A pílula aberta já tem a borda de destaque; o campo não precisa de outline próprio. */
+.busca-input:focus,
+.busca-input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
 .busca-input::placeholder {
   color: var(--muted);
 }

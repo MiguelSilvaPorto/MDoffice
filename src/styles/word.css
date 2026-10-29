@@ -662,6 +662,10 @@ body.settings-open #word-pane {
   top: 0;
   z-index: 3;
   margin: 0 auto;
+  /* os marcadores de recuo são arrastados com o ponteiro: o toque não rola a página */
+  touch-action: none;
+  user-select: none;
+  cursor: default;
 }
 
 .wd-regua-v {

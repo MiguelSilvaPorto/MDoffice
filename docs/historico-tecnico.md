@@ -28,6 +28,48 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/styles/busca.css
+
+### 2026-10-29 · fix/regua-indentacao-e-brilho-busca · um só brilho na busca
+- **Local:** depois de `.busca-input`
+- **Linha:** `+ .busca-input:focus, .busca-input:focus-visible { outline: none; box-shadow: none; }`
+- **Porquê:** o `:where(button, a, input…):focus-visible` de `movimento.css` tem a mesma especificidade do `.busca-input` e, por vir depois na cascata, desenhava um **segundo outline roxo** (2px, offset 2px) dentro da pílula — que já fica com a borda de destaque quando aberta. O campo agora zera o próprio outline no foco (a regra mais específica vence independentemente da ordem); a pílula continua com uma borda roxa só.
+
+## src/word/regua.ts
+
+### 2026-10-29 · fix/regua-indentacao-e-brilho-busca · marcadores de recuo esquerdo e direito
+- **Local:** `ReguaHooks` (`getIndents`/`setIndent`), `ligada` (agora `true`), `desenharMarcadores`, `marcadorEm`, `valorDoPonteiro`, `onPointerDown/Move/Up`
+- **Linha:** `+ desenharMarcadores(ctx, s, zoom, paginas)` no fim de `desenharHorizontal`; `+` listeners de ponteiro no construtor
+- **Porquê:** a régua era só escala. Para formatar o texto para a esquerda/direita, o horizontal ganhou dois marcadores (triângulo + linha) na posição do recuo; arrastar converte os px da tela em pontos (`96/72`), limita ao espaço de texto (descontando o outro recuo) e chama `setIndent`. A régua nasce ligada porque agora é ferramenta de formatação — o botão **Régua** continua desligando. `touch-action: none` no CSS impede o toque de rolar a página durante o arrasto.
+
+## src/word/schema.ts · src/word/editor.ts · src/word/host.ts
+
+### 2026-10-29 · fix/regua-indentacao-e-brilho-busca · recuo à direita no modelo e no editor
+- **Local:** `ParaAttrs`/`paraAttrs`/`paraStyle`/`paraFromDOM`; `PAINTER_PARA_ATTRS`, reset do pincel, `paragraphIndents`/`setIndent`; hooks da régua no `WordHost`
+- **Linha:** `+ indentRight` (attr, `margin-right`, `marginRight`); `+ paragraphIndents()/setIndent(lado, pt)`; `+ getIndents/setIndent` no construtor de `Reguas`
+- **Porquê:** o modelo só tinha `indentLeft`/`indentFirst`; sem o `indentRight` o marcador da direita não teria onde gravar. O recuo é aplicado aos parágrafos da seleção (`mapTextblocks`), lido do parágrafo do cursor (`$from`) para desenhar o marcador e redesenhado no `onChange`/`onSelection` (teclado, desfazer e clique em outro parágrafo também atualizam).
+
+## src/word/docxExport.ts · src/word/docx/props.ts · src/word/docx/blocks.ts
+
+### 2026-10-29 · fix/regua-indentacao-e-brilho-busca · recuo à direita no .docx
+- **Local:** `indentOf`; `ParaProps`/`readPPr`; `paraAttrs`
+- **Linha:** `+ right: pt(right)` na exportação; `+ right?: number` e `w:right`/`w:end` na leitura; `+ indentRight: props.right…`
+- **Porquê:** o recuo à direita precisa sobreviver ao arquivo: o `.docx` grava `w:ind w:right` (e `w:end` nas versões novas), a importação lê para `props.right` e o `paraAttrs` leva para `indentRight`. Sem isso o marcador funcionaria na tela e sumiria ao salvar/reabrir.
+
+## src/word/ribbon.ts
+
+### 2026-10-29 · fix/regua-indentacao-e-brilho-busca · dica do botão Régua
+- **Local:** botão `ruler` da aba Exibir
+- **Linha:** `"Mostrar a régua (horizontal e vertical, com as margens)"` → `"Mostrar a régua (arraste os marcadores para o recuo esquerdo/direito)"`
+- **Porquê:** a régua agora tem uma função além de medir; a dica precisa dizer o que fazer com os marcadores.
+
+## scripts/testar-word-exibir.mjs · scripts/testar-busca.mjs
+
+### 2026-10-29 · fix/regua-indentacao-e-brilho-busca · travas da régua e do brilho
+- **Local:** novos `ok(...)` nos dois testes
+- **Linha:** `+` marcadores/modelo/exportação; `+` `outlineStyle` do campo de busca com a busca aberta
+- **Porquê:** a régua e a busca são fáceis de "consertar" quebrando o outro lado (ex.: o outline global voltar, ou o `indentRight` sumir do `.docx`). Os testes prendem a presença das peças e o CSS; o arrasto em si foi conferido no navegador (marcador esquerdo e direito, título em cm e `margin-left/right`).
+
 ## src/broker/style/capitalization.ts
 
 ### 2026-10-29 · fix/correcao-virgulas-pontos-titulos · título e parágrafo depois do título em maiúscula

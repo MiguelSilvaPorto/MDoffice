@@ -21,6 +21,7 @@ export interface ParaProps {
   after?: number;
   line?: number;
   left?: number;
+  right?: number;
   first?: number;
   numId?: string;
   ilvl?: number;
@@ -77,9 +78,11 @@ export function readPPr(pPr: El | null): ParaProps {
   const ind = first(pPr, "w:ind");
   if (ind) {
     const left = twipsToPt(attr(ind, "w:left") ?? attr(ind, "w:start"));
+    const right = twipsToPt(attr(ind, "w:right") ?? attr(ind, "w:end"));
     const firstLine = twipsToPt(attr(ind, "w:firstLine"));
     const hanging = twipsToPt(attr(ind, "w:hanging"));
     if (left != null) p.left = left;
+    if (right != null) p.right = right;
     if (firstLine != null) p.first = firstLine;
     else if (hanging != null) p.first = -hanging;
   }

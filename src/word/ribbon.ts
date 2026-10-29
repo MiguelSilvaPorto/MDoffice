@@ -214,7 +214,7 @@ export class Ribbon {
           ${group("Mostrar", `
             <div class="rb-col">
               <div class="rb-row">
-                ${btn("ruler", icon("i-regua") + "<span>Régua</span>", "Mostrar a régua (horizontal e vertical, com as margens)", "big")}
+                ${btn("ruler", icon("i-regua") + "<span>Régua</span>", "Mostrar a régua (arraste os marcadores para o recuo esquerdo/direito)", "big")}
               </div>
             </div>`)}
           ${group("Zoom", `

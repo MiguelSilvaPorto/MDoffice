@@ -516,6 +516,15 @@
 
 ### Adicionado (na main)
 
+- **A régua do Word virou ferramenta de recuo (esquerdo e direito)**: antes ela só mostrava as
+  margens e os centímetros. Agora a régua horizontal nasce **ligada** e tem **dois marcadores
+  arrastáveis** — o da esquerda afasta o texto da margem esquerda e o da direita, da margem
+  direita (como no Word). O arrasto aplica o recuo aos parágrafos da seleção, o título da régua
+  mostra o valor em cm e o modelo ganhou o **recuo à direita** (`indentRight`), que também é
+  lido e gravado no `.docx`. O botão **Régua** (aba Exibir) continua desligando as duas réguas.
+  Trava: `npm run test:word-exibir` (marcadores, modelo e exportação) + arrasto conferido no
+  navegador.
+
 - **A imagem atrás do texto voltou a poder ser manipulada**: com a quebra **Atrás do texto** (e a
   **Através**) a imagem é desenhada com `z-index` negativo, então o clique caía no texto que está
   por cima e ela **nunca era selecionada** — sem seleção não apareciam as alças, e não havia como
@@ -2227,6 +2236,13 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
   entre pastas, renomear pasta e recusar excluir pasta com conteúdo.
 
 ### Adicionado (na main)
+
+- **A barra de busca parou de brilhar duas vezes**: ao abrir a busca, o campo ganhava uma
+  **segunda borda roxa** (o `outline` do `:focus-visible` global) por dentro da pílula, que já
+  tem a borda de destaque. Era o `:where(…):focus-visible` de `movimento.css` vencendo o
+  `outline: none` do campo por vir depois na cascata. O campo agora zera o próprio outline no
+  foco; a pílula mantém **uma** borda roxa, limpa. Trava: `npm run test:busca` confere o
+  `outline` do campo com a busca aberta.
 
 - **Sugestão enquanto digita: o Tab volta a aceitar no navegador e a sugestão prevê as próximas
   duas palavras** (Markdown e Word). **Bug:** no navegador o Tab passou a ser disputado com a
