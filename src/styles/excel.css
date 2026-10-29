@@ -463,9 +463,19 @@ body.home-open #excel-pane {
   border: 0;
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
+  /* o height/width vem inline do JS: sem border-box a borda de 1px entra POR FORA e a
+     linha/cabeçalho cresce 1px a cada linha (os números iam descendo da grade) */
+  box-sizing: border-box;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
+}
+
+/* a linha inteira do cabeçalho: sem left/width o botão encolhia para o tamanho do número
+   e o número/borda ficavam parados à esquerda, sem centralizar na coluna de 46px */
+.xl-cab-l {
+  left: 0;
+  width: 100%;
 }
 
 .xl-cab-l.sel,
@@ -481,6 +491,7 @@ body.home-open #excel-pane {
   z-index: 4;
   width: 46px;
   height: 26px;
+  box-sizing: border-box;
   background: var(--panel-2);
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);

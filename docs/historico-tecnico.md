@@ -28,6 +28,13 @@ mudou (por categoria); aqui fica **onde** mudou e **por que** — arquivo, local
 
 ---
 
+## src/styles/excel.css
+
+### 2026-10-29 · fix/excel-cabecalho-linha-alinhado · cabeçalho de linha ocupa a coluna e a borda não soma 1px
+- **Local:** `.xl-cab-l, .xl-cab-c`; novo `.xl-cab-l`; `.xl-canto`
+- **Linha:** `+ box-sizing: border-box` nos cabeçalhos e no canto; `+ .xl-cab-l { left: 0; width: 100%; }`
+- **Porquê:** o botão da linha era `position: absolute` sem `left`/`width`: encolhia para o tamanho do número e a borda/realce paravam à esquerda, sem centralizar na coluna de 46px. Pior: sem `border-box`, o `height` inline de 25px recebia mais 1px de `border-bottom` **por fora**, então cada linha do cabeçalho ficava 1px mais alta que a linha da grade e os números iam descendo (o "descentralizado" do print). `width: 100%` + `box-sizing: border-box` alinham largura, altura e centro; o canto 46×26 também conta a borda dentro da medida.
+
 ## src/excel/host.ts
 
 ### 2026-10-29 · fix/excel-calculo-selecao-template · dependentes recalculam e seleção começa do zero

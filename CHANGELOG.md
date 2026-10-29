@@ -746,6 +746,14 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Frontend**
 
+- **Os números das linhas pararam de sair do lugar**: o botão do cabeçalho de linha não ocupava
+  a largura da coluna de cabeçalho (encolhia para o tamanho do número, deixando a borda e o
+  número parados à esquerda) e a borda de 1px entrava **por fora** da altura de 25px — a cada
+  linha o cabeçalho crescia 1px e os números iam descendo em relação à grade. Agora o cabeçalho
+  ocupa `100%` da coluna, usa `box-sizing: border-box` (a borda entra dentro da altura) e o
+  número fica centralizado; o canto superior também passou a contar a borda dentro de 46×26.
+  Trava: `npm run test:excel` (largura/`border-box` no CSS).
+
 - **A planilha recalcula na hora e a seleção não pega mais o que não devia**: mudar a
   **Quantidade** de 2 para 14 mantinha o Total em 10.400 (`=C2*D2` com o valor antigo) e o
   Total geral em 14.430, porque o cache de cálculo só olhava o texto da **própria** célula e

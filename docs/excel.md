@@ -16,6 +16,9 @@ Planilha com grade que cresce sob demanda, fórmulas em português e abertura de
   uma faixa só — antes o Ctrl estendia desde o âncora antigo e parecia selecionar tudo).
 - **Grade que cresce sozinha**: role ou escreva além do fim e novas linhas/colunas aparecem
   (rolagem infinita), sem tamanho fixo.
+- **Cabeçalhos alinhados**: os números das linhas e as letras das colunas ficam centralizados
+  e acompanham exatamente a altura/largura das células (a borda do cabeçalho não soma 1px por
+  linha, então os números não vão “descendo” em relação à grade).
 - **Desfazer/refazer** funcionam de qualquer ponto da planilha (`Ctrl+Z` / `Ctrl+Y`).
 - **Abas de planilha**: nova, duplicar, excluir e mover para a esquerda/direita.
 - **Zoom** (aba Exibir e barra inferior) e **linhas de grade** ligáveis nas configurações.

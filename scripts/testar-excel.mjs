@@ -299,6 +299,16 @@ ok(
 ok("planilha nova nasce em branco (sem o orçamento de exemplo)", /createTab\(\): ExcelTabData \{\s*return this\.createEmpty\(\);/.test(hostSrc));
 const tabsCss = readFileSync(join(raiz, "src/styles/tabs.css"), "utf8");
 ok("o ícone da aba gira no hover", /\.tab:hover \.tab-ic \.ic \{[\s\S]{0,80}rotate\(1turn\)/.test(tabsCss));
+const excelCss = readFileSync(join(raiz, "src/styles/excel.css"), "utf8");
+ok(
+  "o cabeçalho de linha ocupa a coluna inteira (número centralizado)",
+  /\.xl-cab-l \{\s*left: 0;\s*width: 100%;/.test(excelCss),
+  "sem width/left o botão encolhia para o número"
+);
+ok(
+  "a borda do cabeçalho não soma 1px por linha",
+  /\.xl-cab-l,\s*\.xl-cab-c \{[\s\S]{0,500}box-sizing: border-box/.test(excelCss)
+);
 
 // ------------------------------------------------------------------
 console.log("\n.xls antigo e .csv");
