@@ -12,7 +12,16 @@
 //   >  multiplicação (* /)  >  potência (^)  >  unário (- +)  >  percentual (%)
 
 import { intervalo, ref, type Intervalo } from "./refs";
-import { ErroFormula, ehErro, valorParaTexto, type Valor } from "./values";
+import {
+  ErroFormula,
+  ehErro,
+  numeroDe,
+  dataDe,
+  dataParaSerial,
+  serialParaDataHora,
+  valorParaTexto,
+  type Valor,
+} from "./values";
 import type { ConfigPlanilha, Estilo } from "./schema";
 
 /** O que o avaliador entrega ao motor: número, texto, booleano, vazio ou erro. */
@@ -21,13 +30,15 @@ export type Operando = Valor | ErroFormula;
 const EPOCH_MS = Date.UTC(1899, 11, 30);
 const DIA_MS = 86_400_000;
 
-const ehNumero = (v: Operando): v is number => typeof v === "number";
-
 /** Texto como o Excel mostra (VERDADEIRO/FALSO e número com vírgula). */
 export function textoDe(v: Operando): string {
   if (v === null || v === undefined) return "";
   if (typeof v === "boolean") return v ? "VERDADEIRO" : "FALSO";
-  if (typeof v === "number") return v.toLocaleString("pt-BR", { maximumFractionDigits: 10 });
+  if (typeof v === "number") {
+    // conversão para texto (concatenação, critérios) NÃO usa separador de milhar
+    const s = String(v);
+    return s.includes(".") && !s.includes("e") && !s.includes("E") ? s.replace(".", ",") : s;
+  }
   return String(v);
 }
 
@@ -38,20 +49,12 @@ function comoNumero(v: Operando): Operando {
   if (v === null) return 0; // célula vazia vale zero nas operações
   if (typeof v === "boolean") return v ? 1 : 0;
   const s = textoDe(v).trim();
-  const n = Number(s.replace(/\s/g, "").replace(",", "."));
-  if (Number.isFinite(n) && s !== "") return n;
-  const d = serialDeTexto(s);
-  return d === null ? new ErroFormula("#VALOR!") : d;
-}
-
-/** "01/01/2026" -> serial do Excel (o motor não usa esta função para exibir datas). */
-function serialDeTexto(s: string): number | null {
-  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(s);
-  if (!m) return null;
-  const a = +m[3] < 100 ? (+m[3] < 30 ? 2000 + +m[3] : 1900 + +m[3]) : +m[3];
-  const d = new Date(Date.UTC(a, +m[2] - 1, +m[1]));
-  if (d.getUTCMonth() !== +m[2] - 1) return null;
-  return Math.floor((Date.UTC(a, +m[2] - 1, +m[1]) - EPOCH_MS) / DIA_MS);
+  if (!s) return 0;
+  // a mesma regra da célula: "1.234,56" vale 1234,56, mas "Item 1" não é número
+  const n = numeroDe(s);
+  if (n !== null) return n;
+  const d = dataDe(s);
+  return d ? dataParaSerial(d) : new ErroFormula("#VALOR!");
 }
 
 /** Converte para texto (erro passa adiante). */
@@ -67,17 +70,22 @@ function comoBooleano(v: Operando): boolean {
   return s !== "" && s !== "FALSO" && s !== "FALSE" && s !== "0";
 }
 
-/** Compara como o Excel: números antes de texto; texto sem diferenciar caixa. */
+/** Compara como o Excel: número < texto < lógico; texto sem diferenciar caixa. */
 function comparar(a: Operando, b: Operando): number {
   if (ehErro(a) || ehErro(b)) return 0;
-  if (ehNumero(a) && ehNumero(b)) return a === b ? 0 : a < b ? -1 : 1;
-  if (typeof a === "boolean" || typeof b === "boolean") {
-    const x = comoBooleano(a) ? 1 : 0;
-    const y = comoBooleano(b) ? 1 : 0;
-    return x === y ? 0 : x < y ? -1 : 1;
-  }
-  const sa = ehNumero(a) ? a : textoDe(a).toUpperCase();
-  const sb = ehNumero(b) ? b : textoDe(b).toUpperCase();
+  // célula vazia assume o tipo do outro lado (vazia = 0, vazia = "", vazia = FALSO)
+  const na =
+    a === null ? (typeof b === "string" ? "" : typeof b === "boolean" ? (b ? false : false) : 0) : a;
+  const nb =
+    b === null ? (typeof a === "string" ? "" : typeof a === "boolean" ? (a ? false : false) : 0) : b;
+  const tipo = (v: Operando): number => (typeof v === "number" ? 0 : typeof v === "string" ? 1 : 2);
+  const ta = tipo(na);
+  const tb = tipo(nb);
+  if (ta !== tb) return ta < tb ? -1 : 1;
+  if (typeof na === "number" && typeof nb === "number") return na === nb ? 0 : na < nb ? -1 : 1;
+  if (typeof na === "boolean" && typeof nb === "boolean") return na === nb ? 0 : na ? 1 : -1;
+  const sa = textoDe(na).toUpperCase();
+  const sb = textoDe(nb).toUpperCase();
   return sa === sb ? 0 : sa < sb ? -1 : 1;
 }
 
@@ -111,9 +119,31 @@ function refAtual(p: Peca | undefined): string | null {
   return p?.t === "ref" ? p.v : null;
 }
 
+/**
+ * Aceita os números como a pessoa digita em português: `1.234,56`, `1,5`, `10%`.
+ * O avaliador trabalha com o ponto decimal; a conversão é feita só fora do texto
+ * entre aspas. Quando a fórmula tem `;` (separador pt-BR), a vírgula é decimal;
+ * sem `;` e sem chamada de função, também. `1.234` é milhar.
+ */
+function normalizarNumeros(formula: string): string {
+  if (!/[.,]/.test(formula)) return formula;
+  const temSeparador = formula.includes(";");
+  const temFuncao = formula.includes("(");
+  const converter = !temSeparador && temFuncao ? false : true;
+  if (!converter) return formula;
+  const partes = formula.split('"');
+  for (let k = 0; k < partes.length; k += 2) {
+    partes[k] = partes[k]
+      // 1.234,56 (ponto de milhar + vírgula decimal) -> 1234.56
+      .replace(/(\d{1,3}(?:\.\d{3})+),(\d+)/g, (_, inteiro: string, dec: string) => `${inteiro.replace(/\./g, "")}.${dec}`)
+      .replace(/(\d),(\d)/g, "$1.$2");
+  }
+  return partes.join('"');
+}
+
 /** Quebra o texto da fórmula (sem o "=") em peças. */
 export function quebrar(formula: string): Peca[] {
-  const s = formula.replace(/^=/, "");
+  const s = normalizarNumeros(formula).replace(/^=/, "");
   const pecas: Peca[] = [];
   let i = 0;
   while (i < s.length) {
@@ -275,10 +305,11 @@ class Montador {
   }
 
   private potencia(): No {
-    let a = this.unario();
-    while (opAtual(this.atual()) === "^") {
+    const a = this.unario();
+    // no Excel a potência associa à direita: 2^3^2 = 2^(3^2) = 512
+    if (opAtual(this.atual()) === "^") {
       this.i++;
-      a = { k: "bin", op: "^", a, b: this.unario() };
+      return { k: "bin", op: "^", a, b: this.potencia() };
     }
     return a;
   }
@@ -378,24 +409,36 @@ export interface Contexto {
 
 /** Funções que recebem faixas inteiras em vez de célula por célula. */
 const AGREGACOES = new Set([
-  "SOMA", "PROD", "MÉDIA", "MEDIA", "MIN", "MÍN", "MAX", "MÁX",
+  "SOMA", "SUM", "PROD", "PRODUCT", "MÉDIA", "MEDIA", "AVERAGE", "MIN", "MÍN", "MAX", "MÁX",
   "CONT.NÚM", "CONT.NUM", "COUNT", "CONT.VALORES", "COUNTA",
-  "MED", "DESVPAD", "STDEV", "DESVPADP", "STDEVP",
+  "MED", "MEDIAN", "DESVPAD", "STDEV", "DESVPADP", "STDEVP",
 ]);
 
 /** Funções que precisam receber o erro do argumento em vez de repassá-lo. */
 const RECEBEM_ERRO = new Set(["ÉERRO", "ISERROR", "É.NÚMERO", "ISNUMBER", "VAZIO", "ISBLANK"]);
 
-/** Só os números de uma lista de valores (ignora texto, vazio e lógicos). */
-function numerosDe(lista: Operando[]): number[] {
+/** Item de uma agregação: o valor e se ele veio de uma faixa (o Excel ignora texto de faixa). */
+interface ItemAgregacao {
+  valor: Operando;
+  deFaixa: boolean;
+}
+
+/** Só os números de uma lista de valores (ignora texto de faixa; converte texto solto). */
+function numerosDe(itens: ItemAgregacao[]): number[] {
   const out: number[] = [];
-  for (const v of lista) {
+  for (const { valor: v, deFaixa } of itens) {
     if (ehErro(v)) throw v;
     if (typeof v === "number") {
       out.push(v);
       continue;
     }
-    if (typeof v === "boolean" || v === null) continue;
+    if (v === null || v === "") continue;
+    // dentro de uma faixa, texto e lógico não entram na conta (como no Excel)
+    if (deFaixa) continue;
+    if (typeof v === "boolean") {
+      out.push(v ? 1 : 0);
+      continue;
+    }
     const n = comoNumero(v);
     if (ehErro(n)) throw n;
     out.push(n as number);
@@ -483,7 +526,7 @@ function chamada(nome: string, args: No[], ctx: Contexto, pilha: Set<string>): O
   const n = nome.toUpperCase();
 
   if (AGREGACOES.has(n)) {
-    const lista: Operando[] = [];
+    const itens: ItemAgregacao[] = [];
     for (const a of args) {
       if (a.k === "faixa") {
         // a chave impede que a função "volte" para dentro da própria faixa
@@ -491,15 +534,50 @@ function chamada(nome: string, args: No[], ctx: Contexto, pilha: Set<string>): O
         if (pilha.has(chave)) return new ErroFormula("#CIRC!");
         pilha.add(chave);
         try {
-          lista.push(...ctx.faixaAlvo(a.alvo));
+          for (const v of ctx.faixaAlvo(a.alvo)) itens.push({ valor: v, deFaixa: true });
         } finally {
           pilha.delete(chave);
         }
       } else {
-        lista.push(avaliar(a, ctx, pilha));
+        itens.push({ valor: avaliar(a, ctx, pilha), deFaixa: false });
       }
     }
-    return agregar(n, lista);
+    return agregar(n, itens);
+  }
+
+  // SE/E/OU são preguiçosos: o ramo que não vale não é calculado (como no Excel),
+  // então =SE(A1=0;0;1/A1) devolve 0 em vez de #DIV/0!.
+  if (n === "SE" || n === "IF") {
+    if (!args.length) return new ErroFormula("#VALOR!");
+    const teste = avaliar(args[0], ctx, pilha);
+    if (ehErro(teste)) return teste;
+    if (comoBooleano(teste)) return args[1] ? avaliar(args[1], ctx, pilha) : true;
+    return args[2] ? avaliar(args[2], ctx, pilha) : false;
+  }
+  if (n === "E" || n === "AND") {
+    for (const a of args) {
+      const v = avaliar(a, ctx, pilha);
+      if (ehErro(v)) return v;
+      if (!comoBooleano(v)) return false;
+    }
+    return true;
+  }
+  if (n === "OU" || n === "OR") {
+    for (const a of args) {
+      const v = avaliar(a, ctx, pilha);
+      if (ehErro(v)) return v;
+      if (comoBooleano(v)) return true;
+    }
+    return false;
+  }
+
+  // CONCATENAR/CONCAT aceitam faixas e juntam todas as células (o Excel faz isso)
+  if (n === "CONCATENAR" || n === "CONCAT") {
+    return args
+      .map((a) =>
+        a.k === "faixa" ? ctx.faixaAlvo(a.alvo).map((v) => textoDe(v)).join("") : textoDe(avaliar(a, ctx, pilha))
+      )
+      .join("");
   }
 
   const vals = args.map((a) => avaliar(a, ctx, pilha));
@@ -509,52 +587,71 @@ function chamada(nome: string, args: No[], ctx: Contexto, pilha: Set<string>): O
     if (erro) return erro;
   }
 
+  // as funções numéricas convertem com a regra pt-BR e devolvem #VALOR! em vez de NaN
+  const num = (i: number, padrao = 0): Operando => {
+    const v = vals[i];
+    if (v === undefined) return padrao;
+    return comoNumero(v);
+  };
+
   switch (n) {
-    case "ABS":
-      return Math.abs(vals[0] as number);
+    case "ABS": {
+      const a = num(0);
+      return ehErro(a) ? a : Math.abs(a as number);
+    }
     case "RAIZ":
-    case "SQRT":
-      return (vals[0] as number) < 0 ? new ErroFormula("#NÚM!") : Math.sqrt(vals[0] as number);
+    case "SQRT": {
+      const a = num(0);
+      if (ehErro(a)) return a;
+      return (a as number) < 0 ? new ErroFormula("#NÚM!") : Math.sqrt(a as number);
+    }
     case "POTÊNCIA":
-    case "POWER":
-      return Math.pow(vals[0] as number, vals[1] as number);
-    case "INT":
-      return Math.floor(vals[0] as number);
+    case "POWER": {
+      const a = num(0);
+      const b = num(1);
+      if (ehErro(a)) return a;
+      if (ehErro(b)) return b;
+      return Math.pow(a as number, b as number);
+    }
+    case "INT": {
+      const a = num(0);
+      return ehErro(a) ? a : Math.floor(a as number);
+    }
     case "ARRED":
-    case "ROUND":
-      return arredondar(vals[0] as number, vals[1] as number);
+    case "ROUND": {
+      const a = num(0);
+      const b = num(1, 0);
+      if (ehErro(a)) return a;
+      if (ehErro(b)) return b;
+      return arredondar(a as number, b as number);
+    }
     case "ARREDONDAR.PARA.CIMA":
-    case "CEILING":
-      return Math.ceil(vals[0] as number);
+    case "CEILING": {
+      const a = num(0);
+      return ehErro(a) ? a : Math.ceil(a as number);
+    }
     case "ARREDONDAR.PARA.BAIXO":
-    case "FLOOR":
-      return Math.floor(vals[0] as number);
+    case "FLOOR": {
+      const a = num(0);
+      return ehErro(a) ? a : Math.floor(a as number);
+    }
     case "MOD":
     case "RESTO": {
-      const a = vals[0] as number;
-      const b = vals[1] as number;
-      if (b === 0) return new ErroFormula("#DIV/0!");
-      return a - b * Math.floor(a / b); // resto com o sinal do dividendo
+      const a = num(0);
+      const b = num(1);
+      if (ehErro(a)) return a;
+      if (ehErro(b)) return b;
+      if ((b as number) === 0) return new ErroFormula("#DIV/0!");
+      return (a as number) - (b as number) * Math.floor((a as number) / (b as number)); // resto com o sinal do dividendo
     }
     case "PI":
       return Math.PI;
     case "SOMASE":
+    case "SUMIF":
       return somase(args, ctx, pilha, false);
     case "CONT.SE":
     case "COUNTIF":
       return somase(args, ctx, pilha, true);
-    case "SE":
-    case "IF": {
-      const teste = comoBooleano(vals[0]);
-      if (teste) return vals[1] ?? null;
-      return vals.length > 2 ? vals[2] : false;
-    }
-    case "E":
-    case "AND":
-      return vals.every(comoBooleano);
-    case "OU":
-    case "OR":
-      return vals.some(comoBooleano);
     case "NÃO":
     case "NOT":
       return !comoBooleano(vals[0]);
@@ -571,9 +668,8 @@ function chamada(nome: string, args: No[], ctx: Contexto, pilha: Set<string>): O
     case "ISNUMBER":
       return typeof vals[0] === "number";
     case "TEXTO":
-    case "CONCATENAR":
-    case "CONCAT":
-      return vals.map(textoDe).join("");
+    case "TEXT":
+      return formatarComoTexto(vals[0], textoDe(vals[1] ?? ""));
     case "NÚM.CARACT":
     case "LEN":
       return textoDe(vals[0]).length;
@@ -588,18 +684,18 @@ function chamada(nome: string, args: No[], ctx: Contexto, pilha: Set<string>): O
       return textoDe(vals[0]).trim().replace(/\s+/g, " ");
     case "ESQUERDA":
     case "LEFT":
-      return textoDe(vals[0]).slice(0, Math.max(0, Math.trunc(vals[1] as number)));
+      return textoDe(vals[0]).slice(0, Math.max(0, Math.trunc((vals[1] as number) ?? 1)));
     case "DIREITA":
     case "RIGHT": {
       const s = textoDe(vals[0]);
-      const n = Math.max(0, Math.trunc(vals[1] as number));
+      const n = Math.max(0, Math.trunc((vals[1] as number) ?? 1));
       return n === 0 ? "" : s.slice(Math.max(0, s.length - n));
     }
     case "EXT.TEXTO":
     case "MID": {
       const s = textoDe(vals[0]);
-      const ini = Math.max(1, Math.trunc(vals[1] as number));
-      const n = Math.max(0, Math.trunc(vals[2] as number));
+      const ini = Math.max(1, Math.trunc((vals[1] as number) ?? 1));
+      const n = Math.max(0, Math.trunc((vals[2] as number) ?? 0));
       return s.slice(ini - 1, ini - 1 + n);
     }
     case "HOJE":
@@ -609,15 +705,16 @@ function chamada(nome: string, args: No[], ctx: Contexto, pilha: Set<string>): O
     case "NOW":
       return Math.floor((Date.now() - EPOCH_MS) / DIA_MS + 0.5);
     default:
-      return new ErroFormula(`#NOME? (${nome})`);
+      return new ErroFormula("#NOME?");
   }
 }
 
 /** Reduz as funções de agregação a um número. */
-function agregar(nome: string, lista: Operando[]): Operando {
-  const nums = numerosDe(lista);
+function agregar(nome: string, itens: ItemAgregacao[]): Operando {
+  const nums = numerosDe(itens);
   switch (nome) {
     case "SOMA":
+    case "SUM":
       return nums.reduce((a, b) => a + b, 0);
     case "PROD":
     case "PRODUCT":
@@ -638,8 +735,9 @@ function agregar(nome: string, lista: Operando[]): Operando {
       return nums.length;
     case "CONT.VALORES":
     case "COUNTA":
-      return lista.filter((v) => v !== null && v !== "").length;
+      return itens.filter(({ valor }) => valor !== null && valor !== "").length;
     case "MED":
+    case "MEDIAN":
       if (!nums.length) return new ErroFormula("#NÚM!");
       const o = [...nums].sort((a, b) => a - b);
       const meio = o.length >> 1;
@@ -661,14 +759,18 @@ function desvio(nums: number[], amostra: boolean): number {
   return Math.sqrt(soma / (nums.length - (amostra ? 1 : 0)));
 }
 
-/** Arredonda como o Excel (2,675 vira 2,68; o JS puro daria 2,67). */
+/** Arredonda como o Excel (2,675 vira 2,68; casas negativas arredondam o inteiro). */
 function arredondar(n: number, casas: number): number {
-  const c = Math.max(0, Math.min(10, Math.trunc(casas)));
-  // o truque do expoente evita o clássico 2,675 -> 2,67 do JavaScript
-  return Math.round(Number(`${n}e${c}`)) / f(c);
+  if (!Number.isFinite(n)) return n;
+  const c = Math.max(-10, Math.min(10, Math.trunc(casas)));
+  const fator = 10 ** c;
+  const x = n * fator;
+  if (!Number.isFinite(x)) return n;
+  // toPrecision tira o ruído binário (2,675*100 = 267,49999…) e o sinal preserva
+  // o comportamento do Excel nos negativos (-2,675 -> -2,68)
+  const arredondado = Math.sign(x) * Math.round(Math.abs(Number(x.toPrecision(15))));
+  return arredondado / fator;
 }
-
-const f = (c: number): number => 10 ** c;
 
 /** SOMASE/CONT.SE: soma (ou conta) as células da faixa que passam no critério. */
 function somase(args: No[], ctx: Contexto, pilha: Set<string>, apenasConta: boolean): Operando {
@@ -679,20 +781,26 @@ function somase(args: No[], ctx: Contexto, pilha: Set<string>, apenasConta: bool
   if (!cond) return new ErroFormula("#VALOR!");
   const somaAlvo = args[2]?.k === "faixa" ? args[2].alvo : null;
   const valoresCrit = ctx.faixaAlvo(alvo);
-  const totalLinhas = alvo.l2 - alvo.l1 + 1;
+  const larguraCrit = alvo.c2 - alvo.c1 + 1;
+  const larguraSoma = somaAlvo ? somaAlvo.c2 - somaAlvo.c1 + 1 : larguraCrit;
 
   let soma = 0;
   let conta = 0;
   for (let i = 0; i < valoresCrit.length; i++) {
-    const alvoCelula = somaAlvo
-      ? { ...somaAlvo, l1: somaAlvo.l1 + i, l2: somaAlvo.l1 + i, c1: somaAlvo.c1, c2: somaAlvo.c2 }
-      : null;
-    const daVez = alvoCelula ? ctx.faixaAlvo(alvoCelula)[0] ?? null : null;
+    // o índice anda linha a linha; a coluna vem do resto da divisão (intervalos
+    // de várias colunas ficavam desalinhados e somavam a célula errada)
+    const dl = Math.floor(i / larguraCrit);
+    const dc = i % larguraCrit;
+    const foraSoma = somaAlvo ? dc >= larguraSoma || somaAlvo.l1 + dl > somaAlvo.l2 : false;
+    const daVez = somaAlvo
+      ? foraSoma
+        ? null
+        : ctx.faixaAlvo({ l1: somaAlvo.l1 + dl, l2: somaAlvo.l1 + dl, c1: somaAlvo.c1 + dc, c2: somaAlvo.c1 + dc })[0] ?? null
+      : valoresCrit[i];
     if (!passaNoCriterio(valoresCrit[i], cond, ctx, pilha)) continue;
     conta++;
     if (!apenasConta && typeof daVez === "number") soma += daVez;
   }
-  void totalLinhas;
   return apenasConta ? conta : soma;
 }
 
@@ -706,8 +814,10 @@ function passaNoCriterio(v: Operando, cond: No, ctx: Contexto, pilha: Set<string
     const m = /^(>=|<=|<>|>|<|=)\s*(.*)$/.exec(s);
     if (m) {
       const resto = m[2].trim();
-      const numero = Number(resto.replace(",", "."));
-      const outro: Operando = Number.isFinite(numero) && resto !== "" ? numero : resto;
+      const numero = numeroDe(resto);
+      const outro: Operando = numero !== null ? numero : resto;
+      // critério numérico ignora texto na faixa (como o Excel)
+      if (typeof outro === "number" && typeof v !== "number" && m[1] !== "<>") return false;
       const c = comparar(v, outro);
       switch (m[1]) {
         case ">=":
@@ -733,17 +843,163 @@ function passaNoCriterio(v: Operando, cond: No, ctx: Contexto, pilha: Set<string
       return re.test(textoDe(v));
     }
   }
-  return comparar(v, alvo) === 0;
+  // critério sem operador: "10" casa com o número 10 (e "A*" já foi tratado acima)
+  const numero = numeroDe(String(alvo));
+  return comparar(v, numero !== null ? numero : alvo) === 0;
+}
+
+/** Formata um número como o TEXTO do Excel (os códigos mais comuns). */
+function formatarComoTexto(v: Operando, codigo: string): string {
+  if (ehErro(v)) return v.codigo;
+  if (typeof v !== "number") return textoDe(v);
+  const c = codigo.replace(/\[[^\]]*\]/g, "");
+  if (/%/.test(c)) {
+    const casas = /[.,](0+)/.exec(c)?.[1].length ?? 0;
+    return `${(v * 100).toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas })}%`;
+  }
+  if (/(^|[^a-z])[dmyhs]{1,4}/i.test(c) && !/[#0]/.test(c.replace(/[dmyhs]/gi, ""))) {
+    const d = serialParaDataHora(v);
+    if (d) {
+      const base = `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}/${d.getUTCFullYear()}`;
+      if (/h/i.test(c)) {
+        return `${base} ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+      }
+      return base;
+    }
+  }
+  const casas = /[.,](0+)/.exec(c)?.[1].length ?? 0;
+  return v.toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
+}
+
+// ---------- nomes de função: português <-> inglês ----------
+
+/**
+ * O .xlsx guarda as fórmulas em inglês. Esta tabela traduz os dois sentidos para
+ * que um arquivo do Excel com =SUM(A1:A2) funcione aqui e um =SOMA(...) nosso
+ * abra no Excel. As duas grafias continuam aceitas pelo avaliador.
+ */
+const NOMES_FORMULA: [string, string][] = [
+  ["SOMA", "SUM"],
+  ["PROD", "PRODUCT"],
+  ["MÉDIA", "AVERAGE"],
+  ["MEDIA", "AVERAGE"],
+  ["MÍN", "MIN"],
+  ["MIN", "MIN"],
+  ["MÁX", "MAX"],
+  ["MAX", "MAX"],
+  ["CONT.NÚM", "COUNT"],
+  ["CONT.NUM", "COUNT"],
+  ["CONT.VALORES", "COUNTA"],
+  ["COUNTA", "COUNTA"],
+  ["MED", "MEDIAN"],
+  ["DESVPAD", "STDEV"],
+  ["DESVPADP", "STDEVP"],
+  ["SE", "IF"],
+  ["E", "AND"],
+  ["OU", "OR"],
+  ["NÃO", "NOT"],
+  ["NÃO.VAZIO", "COUNTA"],
+  ["VAZIO", "ISBLANK"],
+  ["ÉERRO", "ISERROR"],
+  ["É.NÚMERO", "ISNUMBER"],
+  ["TEXTO", "TEXT"],
+  ["CONCATENAR", "CONCATENATE"],
+  ["CONCAT", "CONCAT"],
+  ["NÚM.CARACT", "LEN"],
+  ["MAIÚSCULA", "UPPER"],
+  ["MINÚSCULA", "LOWER"],
+  ["ESPAÇOS", "TRIM"],
+  ["ESQUERDA", "LEFT"],
+  ["DIREITA", "RIGHT"],
+  ["EXT.TEXTO", "MID"],
+  ["HOJE", "TODAY"],
+  ["AGORA", "NOW"],
+  ["ABS", "ABS"],
+  ["RAIZ", "SQRT"],
+  ["POTÊNCIA", "POWER"],
+  ["INT", "INT"],
+  ["ARRED", "ROUND"],
+  ["ARREDONDAR.PARA.CIMA", "CEILING"],
+  ["ARREDONDAR.PARA.BAIXO", "FLOOR"],
+  ["MOD", "MOD"],
+  ["RESTO", "MOD"],
+  ["PI", "PI"],
+  ["SOMASE", "SUMIF"],
+  ["CONT.SE", "COUNTIF"],
+];
+
+const PT_PARA_EN = new Map(NOMES_FORMULA);
+const EN_PARA_PT = new Map<string, string>();
+for (const [pt, en] of NOMES_FORMULA) if (!EN_PARA_PT.has(en)) EN_PARA_PT.set(en, pt);
+
+/** Troca os nomes de função (fora do texto entre aspas), mantendo referências e números. */
+export function traduzirFormula(formula: string, paraIngles: boolean): string {
+  const mapa = paraIngles ? PT_PARA_EN : EN_PARA_PT;
+  let saida = "";
+  let i = 0;
+  while (i < formula.length) {
+    const c = formula[i];
+    if (c === '"') {
+      let j = i + 1;
+      while (j < formula.length) {
+        if (formula[j] === '"') {
+          if (formula[j + 1] === '"') {
+            j += 2;
+            continue;
+          }
+          break;
+        }
+        j++;
+      }
+      saida += formula.slice(i, Math.min(j + 1, formula.length));
+      i = Math.min(j + 1, formula.length);
+      continue;
+    }
+    if (/[\p{L}_]/u.test(c) && !/[\p{L}\p{N}_.]/u.test(formula[i - 1] ?? "")) {
+      const m = /^[\p{L}_][\p{L}\p{N}_.]*/u.exec(formula.slice(i));
+      if (m) {
+        let j = i + m[0].length;
+        while (/\s/.test(formula[j] ?? "")) j++;
+        if (formula[j] === "(") {
+          const traduzido = mapa.get(m[0].toUpperCase());
+          saida += traduzido ?? m[0];
+          i += m[0].length;
+          continue;
+        }
+      }
+    }
+    saida += c;
+    i++;
+  }
+  return saida;
+}
+
+/** Fórmula pronta para o XML do .xlsx: inglês, vírgula entre argumentos e ponto decimal. */
+export function formulaParaXlsx(formula: string): string {
+  let f = traduzirFormula(normalizarNumeros(formula), true);
+  // separador de argumentos do XML é sempre a vírgula (fora do texto)
+  const partes = f.split('"');
+  for (let k = 0; k < partes.length; k += 2) {
+    partes[k] = partes[k].replace(/;/g, ",").replace(/\bVERDADEIRO\b/gi, "TRUE").replace(/\bFALSO\b/gi, "FALSE");
+  }
+  f = partes.join('"');
+  return f.replace(/^=/, "");
 }
 
 // ---------- porta de entrada ----------
 
 /** Calcula uma fórmula. Nunca lança: devolve o erro do Excel para a grade mostrar. */
 export function calcular(formula: string, ctx: Contexto): Operando {
+  if (formula.trim() === "=#REF!" || formula.replace(/"[^"]*"/g, "").includes("#REF!")) {
+    return new ErroFormula("#REF!");
+  }
   const no = analisar(formula);
   if (!no) return new ErroFormula("#ERRO!");
   try {
-    return avaliar(no, ctx, new Set());
+    const r = avaliar(no, ctx, new Set());
+    // Infinity/NaN não podem virar o texto "NaN" dentro da célula
+    if (typeof r === "number" && !Number.isFinite(r)) return new ErroFormula("#NÚM!");
+    return r;
   } catch (e) {
     return ehErro(e) ? e : new ErroFormula("#VALOR!");
   }

@@ -157,26 +157,27 @@ body.home-open #excel-pane {
   align-items: center;
   justify-content: center;
   gap: calc(5px * var(--fita-e, 1));
-  min-width: max(24px, calc(28px * var(--fita-e, 1)));
-  height: max(22px, calc(26px * var(--fita-e, 1)));
+  min-width: max(26px, calc(30px * var(--fita-e, 1)));
+  height: max(24px, calc(28px * var(--fita-e, 1)));
   padding: 0 calc(6px * var(--fita-e, 1));
   color: var(--fg);
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 3px;
+  border-radius: 4px;
   /* a fonte acompanha o ajuste, com piso: abaixo do piso o texto ficaria ilegível */
-  font-size: max(11.5px, calc(13px * var(--fita-e, 1)));
+  font-size: max(11.5px, calc(12.5px * var(--fita-e, 1)));
   cursor: pointer;
   white-space: nowrap;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
 .xl .ic {
-  width: max(14px, calc(16px * var(--fita-e, 1)));
-  height: max(14px, calc(16px * var(--fita-e, 1)));
+  width: max(15px, calc(17px * var(--fita-e, 1)));
+  height: max(15px, calc(17px * var(--fita-e, 1)));
 }
 
 .xl:hover {
-  background: color-mix(in srgb, var(--fi-excel, #0891b2) 13%, transparent);
+  background: color-mix(in srgb, var(--fi-excel, #0891b2) 12%, transparent);
   border-color: color-mix(in srgb, var(--fi-excel, #0891b2) 35%, transparent);
 }
 
@@ -184,22 +185,28 @@ body.home-open #excel-pane {
   background: color-mix(in srgb, var(--fi-excel, #0891b2) 24%, transparent);
 }
 
+.xl:focus-visible {
+  outline: 2px solid var(--fi-excel, #0891b2);
+  outline-offset: -1px;
+}
+
 /* ligado (negrito, alinhamento atual...) */
 .xl.on {
-  background: color-mix(in srgb, var(--fi-excel, #0891b2) 22%, transparent);
-  border-color: color-mix(in srgb, var(--fi-excel, #0891b2) 55%, transparent);
+  color: var(--fi-excel, #0891b2);
+  background: color-mix(in srgb, var(--fi-excel, #0891b2) 18%, transparent);
+  border-color: color-mix(in srgb, var(--fi-excel, #0891b2) 45%, transparent);
 }
 
 .xl.fmt {
-  min-width: 26px;
-  padding: 0 4px;
+  min-width: max(26px, calc(30px * var(--fita-e, 1)));
+  padding: 0 calc(5px * var(--fita-e, 1));
 }
 
 /* botão pequeno com nome ao lado do ícone (Recortar, Copiar, Inserir linha...) */
 .xl.txt {
   justify-content: flex-start;
-  font-size: 12px;
-  height: 24px;
+  font-size: max(11.5px, calc(12px * var(--fita-e, 1)));
+  height: max(22px, calc(24px * var(--fita-e, 1)));
 }
 
 /* botão grande: ícone em cima, nome embaixo */
@@ -207,23 +214,24 @@ body.home-open #excel-pane {
   flex-direction: column;
   justify-content: flex-start;
   gap: calc(3px * var(--fita-e, 1));
-  min-width: max(44px, calc(58px * var(--fita-e, 1)));
+  min-width: max(50px, calc(62px * var(--fita-e, 1)));
   height: auto;
-  padding: calc(6px * var(--fita-e, 1)) calc(6px * var(--fita-e, 1)) calc(3px * var(--fita-e, 1));
-  font-size: 12px;
+  padding: calc(6px * var(--fita-e, 1)) calc(7px * var(--fita-e, 1)) calc(4px * var(--fita-e, 1));
+  font-size: max(11px, calc(11.5px * var(--fita-e, 1)));
   align-self: stretch;
 }
 
 .xl.big .ic {
-  width: max(20px, calc(30px * var(--fita-e, 1)));
-  height: max(20px, calc(30px * var(--fita-e, 1)));
+  width: max(22px, calc(28px * var(--fita-e, 1)));
+  height: max(22px, calc(28px * var(--fita-e, 1)));
+  color: var(--fi-excel, #0891b2);
 }
 
 .xl.big > span:not(.xl-sigma):not(.xl-fx):not(.xl-zoomval) {
   line-height: 1.1;
   text-align: center;
   white-space: normal;
-  max-width: 76px;
+  max-width: 78px;
 }
 
 .xl-sigma,
@@ -284,70 +292,197 @@ body.home-open #excel-pane {
   min-width: 130px;
 }
 
-.xl.colorbtn {
-  flex-direction: column;
-  gap: 1px;
-  padding: 0 7px;
-}
-
-.xl-a {
-  display: inline-flex;
-  font-size: 14px;
+.xl-letra {
+  font-size: max(11.5px, calc(12px * var(--fita-e, 1)));
   font-weight: 700;
-  line-height: 1;
+  letter-spacing: 0.2px;
 }
 
-.xl-balde .ic {
-  width: 15px;
-  height: 15px;
+.xl-letra-forte {
+  font-size: max(12px, calc(13px * var(--fita-e, 1)));
+}
+
+.xl-biu {
+  gap: calc(2px * var(--fita-e, 1));
+}
+
+/* botão dividido de cor: [ícone][seta] com a barrinha da cor embaixo */
+.xl-cor {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  height: max(24px, calc(28px * var(--fita-e, 1)));
+  margin-bottom: 3px;
+  border-radius: 4px;
+  transition: background 0.12s ease;
+}
+
+.xl-cor:hover {
+  background: color-mix(in srgb, var(--fi-excel, #0891b2) 12%, transparent);
+}
+
+.xl-cor-main {
+  min-width: max(25px, calc(28px * var(--fita-e, 1)));
+  padding: 0 calc(3px * var(--fita-e, 1));
+  border-radius: 4px 0 0 4px;
+}
+
+.xl-cor-seta {
+  min-width: max(13px, calc(15px * var(--fita-e, 1)));
+  width: max(13px, calc(15px * var(--fita-e, 1)));
+  padding: 0;
+  border-radius: 0 4px 4px 0;
+}
+
+.xl-cor-seta .ic {
+  width: max(9px, calc(10px * var(--fita-e, 1)));
+  height: max(9px, calc(10px * var(--fita-e, 1)));
+}
+
+.xl-cor-main:hover,
+.xl-cor-seta:hover {
+  background: color-mix(in srgb, var(--fi-excel, #0891b2) 18%, transparent);
 }
 
 .xl-bar {
-  display: block;
-  width: 18px;
-  height: 4px;
-  border-radius: 1px;
+  position: absolute;
+  left: calc(4px * var(--fita-e, 1));
+  right: calc(4px * var(--fita-e, 1));
+  bottom: calc(-3px * var(--fita-e, 1));
+  height: 3px;
+  border-radius: 2px;
   background: var(--muted);
+  pointer-events: none;
 }
 
 .xl-bar[data-bar="cor-texto"] {
-  background: var(--danger);
+  background: #c00000;
 }
 
 .xl-bar[data-bar="cor-fundo"] {
-  background: #fde047;
+  background: #ffff00;
 }
 
-/* ---------- paleta de cores ---------- */
-
-.xl-cores-back {
-  display: grid;
-  place-items: center;
-  background: rgba(15, 23, 42, 0.25);
-}
+/* ---------- paleta de cores (popover) ---------- */
 
 .xl-cores {
-  display: grid;
-  grid-template-columns: repeat(7, 28px);
-  gap: 6px;
-  padding: 12px;
+  position: fixed;
+  z-index: 90;
+  width: 260px;
+  padding: 10px;
+  color: var(--fg);
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: var(--shadow);
+  animation: xl-cores-entra 0.12s ease-out;
 }
 
-.xl-cores button {
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+@keyframes xl-cores-entra {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.xl-cores-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.xl-cores-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
   cursor: pointer;
 }
 
-.xl-cores button:hover {
-  outline: 2px solid var(--accent);
+.xl-cores-x:hover {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+}
+
+.xl-cores-x .ic {
+  width: 14px;
+  height: 14px;
+}
+
+.xl-cores-grade {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+
+.xl-cor-op {
+  width: 100%;
+  height: 25px;
+  padding: 0;
+  background: var(--cor);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+}
+
+.xl-cor-op:hover {
+  outline: 2px solid var(--fi-excel, #0891b2);
   outline-offset: 1px;
+}
+
+.xl-cores-rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.xl-cores-auto {
+  padding: 5px 8px;
+  color: var(--fg);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.xl-cores-auto:hover {
+  border-color: var(--fi-excel, #0891b2);
+}
+
+.xl-cores-livre {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.xl-cores-livre input[type="color"] {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  cursor: pointer;
 }
 
 /* ---------- barra de fórmulas ---------- */
@@ -484,6 +619,12 @@ body.home-open #excel-pane {
   background: var(--accent);
 }
 
+.xl-cab-l:hover:not(.sel),
+.xl-cab-c:hover:not(.sel) {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--fi-excel, #0891b2) 10%, transparent);
+}
+
 .xl-canto {
   position: absolute;
   left: 0;
@@ -514,11 +655,33 @@ body.home-open #excel-pane {
 }
 
 /* números ficam à direita, como no Excel */
+.xl-cel.num,
 .xl-cel.n-decimal,
 .xl-cel.n-moeda,
 .xl-cel.n-porcento {
   justify-content: flex-end;
   font-variant-numeric: tabular-nums;
+}
+
+/* data também é número (serial) e fica à direita */
+.xl-cel.n-data {
+  justify-content: flex-end;
+}
+
+/* alinhamento horizontal: num flex, `text-align` sozinho não move o texto —
+   quem posiciona é o `justify-content` (o `text-align` continua no estilo inline
+   para a exportação e para o justificado em textos de várias linhas) */
+.xl-cel.al-centro {
+  justify-content: center;
+}
+
+.xl-cel.al-direita {
+  justify-content: flex-end;
+}
+
+.xl-cel.al-esquerda,
+.xl-cel.al-justificado {
+  justify-content: flex-start;
 }
 
 .xl-cel.formula {
@@ -554,15 +717,24 @@ body.home-open #excel-pane {
   z-index: 2;
 }
 
+/* caixa invisível que posiciona a alça no canto do BLOCO selecionado */
+.xl-realce.alca-caixa {
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+  z-index: 3;
+}
+
 .xl-alca-preench {
   position: absolute;
-  right: -4px;
-  bottom: -4px;
-  width: 9px;
-  height: 9px;
+  right: -5px;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
   background: var(--accent);
-  border: 1px solid var(--panel);
-  border-radius: 1px;
+  border: 2px solid var(--panel);
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
   cursor: crosshair;
   /* o realce inteiro ignora o mouse; a alça é a exceção */
   pointer-events: auto;

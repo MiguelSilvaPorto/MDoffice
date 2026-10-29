@@ -732,11 +732,48 @@ de linha fica no [histórico técnico](docs/historico-tecnico.md).
 
 **Backend**
 
-- (nada no momento)
+- **O motor de valores parou de “adivinhar” números**: `numeroDe` agora exige que o texto inteiro
+  seja número (com `R$`, `%`, parênteses de negativo e milhar pt-BR). Antes ele arrancava qualquer
+  letra em volta, e por isso `01/01/2026` virava 1012026, `Item 1` virava 1 e `1/2` virava 12. A
+  data é testada antes do número; `0.125` é decimal e `1.234` é milhar; `(100)` é −100.
+- **Fórmulas mais parecidas com o Excel**: `SE`/`E`/`OU` são preguiçosos, texto dentro de faixa
+  não quebra mais `SOMA`/`MÉDIA`/`MÍN`/`MAX` (e `CONT.VALORES` conta texto), `SOMASE` sem o
+  terceiro argumento e com várias colunas alinha a soma, potência associa à direita
+  (`2^3^2 = 512`), `ARRED` aceita negativos/casas negativas, funções numéricas devolvem `#VALOR!`
+  em vez de `NaN`, e referência circular entre células mostra `#CIRC!`.
+- **Números em português nas fórmulas**: `=1,5+1` e `=1.234,56+1` são aceitos; `TEXTO` formata
+  de verdade (`=TEXTO(1234,5;"#.##0,00")` → `1.234,50`) e `CONCATENAR` aceita faixas.
+- **Fórmulas do Excel traduzidas**: `SUM`, `IF`, `AVERAGE`, `COUNT`, `SUMIF` etc. viram as funções
+  internas na importação; na exportação o XML recebe os nomes em inglês e a vírgula entre
+  argumentos (com o ponto decimal), como o OOXML exige.
+- **`.xlsx` mais fiel**: cada formato personalizado ganha um `numFmtId` próprio (164, 165…),
+  números do XML (`0.125`, `1.234`) são convertidos para a escrita pt-BR sem virar 125/1234,
+  datas são testadas antes de números na exportação, fórmulas compartilhadas (`t="shared"`) são
+  deslocadas para as dependentes, erros são gravados com o código OOXML (`#VALUE!`, `#NAME?`…) e
+  formatos embutidos de moeda/porcentagem/data são lidos com as casas certas.
+- **Inserir/excluir linhas e colunas ajusta as fórmulas**: referências a células deslocadas
+  acompanham, as que somem viram `#REF!`, e mesclas e medidas (altura/largura) andam junto.
 
 **Frontend**
 
-- (nada no momento)
+- **Seleção e edição consertadas**: clicar depois de editar não é mais engolido nem estende
+  “tudo desde a célula editada”; duplo clique abre a edição de verdade (o `mousedown` não recria
+  mais as células antes do `dblclick`); `mouseup` perdido não deixa o arrasto preso; cabeçalho de
+  linha/coluna devolve o foco à grade; **Shift+setas encolhem** a seleção; **Ctrl+seta** pula
+  para a borda do conteúdo; **Enter** desce uma linha.
+- **Copiar/colar**: uma célula copia **1×1** (antes virava 2×2 e colava quatro células), a
+  colagem parte da **célula ativa** (não do canto da seleção), uma cópia interna desloca as
+  referências relativas das fórmulas e leva o estilo, e numa mescla só a âncora recebe o valor.
+- **Alça de preenchimento no canto do bloco**: num bloco A2:B3 a alça fica em B3 (antes ficava no
+  canto de A2, dentro do bloco); preencher continua o padrão numérico (1, 2 → 3, 4) e origem
+  vazia limpa o destino.
+- **Fita refinada**: negrito e itálico usam ícones SVG reais; os botões de cor viraram botões
+  divididos (aplicar a última cor / seta para a paleta) e a paleta abre **ancorada no botão**,
+  com “Automática”, “Sem preenchimento” e cor personalizada — nada de modal escurecendo a
+  planilha. Os demais botões ganharam ícones próprios (casas decimais, altura/largura, média,
+  contar, mínimo/máximo, mover aba) e tamanhos/hover/estado `on` consistentes.
+- **A fita encaixa na primeira abertura**: abrir uma planilha já mede a largura e colapsa os
+  grupos que não couberem (antes só acontecia depois de redimensionar a janela).
 
 ### Adicionado (na main)
 

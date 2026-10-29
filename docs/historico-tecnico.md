@@ -18400,3 +18400,66 @@ antigas quando fizer sentido.
 - **Local:** `:root` em `src/styles/tokens.css`, `.pp-frame` e `.pp-slide` em `src/styles/powerpoint.css`, `#wd-stage` em `src/styles/word.css` e bloco de teste de contraste do palco em `scripts/testar-layout.mts`
 - **Linha:** `.pp-frame { overflow: hidden }` → `.pp-frame { overflow: visible }`; `.pp-slide` `box-shadow` reforçado para `0 0 0 1px var(--lamina-borda, var(--border)), 0 2px 6px rgba(15, 23, 42, 0.16), 0 12px 32px rgba(15, 23, 42, 0.22)`; `:root` `--bg: #f6f4f9` → `#f1eef7`, `--border: #e4e0ec` → `#cec6df`, `--palco-bg: var(--bg)` → `#e2dced` e `--lamina-borda: var(--border)` → `#7c7296`
 - **Porquê:** no tema claro a lâmina branca (`#ffffff`) sumia dentro do palco porque `.pp-frame` tinha `overflow: hidden` (cortando inteiramente o `box-shadow` externo de 1 px e a sombra de `.pp-slide`, que tem `width: 100%; height: 100%`) e porque `:root` apontava `--palco-bg` para `var(--bg)` (`#f6f4f9`, 96% branco) e `--lamina-borda` para `var(--border)` (`#e4e0ec`). Com `overflow: visible` em `.pp-frame`, tom dedicado para `--palco-bg` (`#e2dced`), moldura `--lamina-borda` (`#7c7296`, contraste >= 2.95:1 contra o palco e 3.93:1 contra o slide branco) e divisórias `--border` (`#cec6df`), fica imediatamente visível onde começam e terminam a lâmina, o palco e as barras da interface.
+
+## src/excel/values.ts · src/excel/host.ts
+
+### 2026-10-29 · refactor/excel-motor-e-fita · número estrito, data antes de número
+- **Local:** `numeroDe` e o bloco de conversão de `valorCalculado`/`calcularEm`
+- **Linha:** `s.replace(/%/g, "").replace(/[^\d,.\-+]/g, "")` → validação do texto inteiro (moeda, `%`, parênteses, milhar pt-BR) e `dataDe` antes de `numeroDe`; `+ numeroDoXml` para o `<v>` do .xlsx
+- **Porquê:** a limpeza antiga arrancava qualquer letra em volta do número. Por isso `01/01/2026` virava 1012026 (e aparecia como 30/10/4670), `Item 1` virava 1 e `1/2` virava 12. Agora só é número o texto inteiro; a data é testada primeiro, `0.125` é decimal, `1.234` é milhar e `(100)` é −100.
+
+## src/excel/formula.ts · src/excel/xlsxexport/index.ts · src/excel/xlsximport/index.ts
+
+### 2026-10-29 · refactor/excel-motor-e-fita · fórmulas mais próximas do Excel
+- **Local:** `AGREGACOES`, `numerosDe`, `chamada`, `calcular`, `passaNoCriterio`, `traduzirFormula`/`formulaParaXlsx`
+- **Linha:** `SE`/`E`/`OU` saíram do `args.map` para ramos preguiçosos; `ItemAgregacao` separa faixa de escalar; `SOMASE` usa a própria faixa quando não há terceiro argumento e calcula `dl/dc`; `potencia` virou recursiva à direita; `ARRED` usa `toPrecision` com sinal e casas negativas; funções numéricas passam por `comoNumero`; `+ tabela PT↔EN`; `+ formulaParaXlsx` (inglês, vírgula entre argumentos, ponto decimal)
+- **Porquê:** texto dentro de faixa quebrava `SOMA`/`MÉDIA`/`MÍN`/`MAX`; `SE` calculava o ramo que não valia; `SOMASE` sem soma devolvia 0 e multicoluna desalinhava; `2^3^2` dava 64; `ARRED(-2,675;2)` dava −2,67 e `1e21` virava NaN; funções com texto mostravam `NaN`. O .xlsx guarda as fórmulas em inglês: sem a tradução, `=SUM(...)` do Excel virava `#NOME?` e `=SOMA(...)` nosso não abria no Excel.
+
+## src/excel/xlsxexport/index.ts · src/excel/xlsximport/index.ts
+
+### 2026-10-29 · refactor/excel-motor-e-fita · numFmt único, decimal do XML e fórmula compartilhada
+- **Local:** `numFmt`/`estilosXml`, `numeroDaCelula`, `textoDaCelula`, `lerEstilos`, `lerAba`
+- **Linha:** `id: 164` fixo → `id: -1` + `resolverId` (164, 165… por código); `numeroDaCelula` testa `serialDe` antes de `numeroDe`; `<v>` numérico passa por `numeroDoXml`; `FORMATO_PADRAO` separa moeda (5–8, 42–44), porcento (9–10) e data (14–22); `+ mestres/pendentes` para `<f t="shared">`; `+ codigoErroXlsx`
+- **Porquê:** todos os formatos personalizados usavam 164 e o último sobrescrevia os outros (moeda virava data ao reabrir); `0.125` era lido como 125 e `1.234` como 1234; datas eram tratadas como número na exportação; fórmulas compartilhadas viravam texto estático; erros em português não são códigos válidos do OOXML.
+
+## src/excel/host.ts · src/excel/refs.ts
+
+### 2026-10-29 · refactor/excel-motor-e-fita · seleção, cópia, alça e linhas/colunas
+- **Local:** mousedown/mousemove/mouseup, `definirSelecao`, `atualizarSelecao`, `mover`, `pularBorda`, `copiar`/`colarTexto`, `preencherSelecao`, `inserirLinhas`/`excluirLinhas` e `inserirColunas`/`excluirColunas`
+- **Linha:** `+ if (this.edicao) this.confirmarEdicao(false)` antes da seleção; `pintar()` no mousedown → `atualizarSelecao()`; `+ ancora/ponta`; `+ e.buttons === 0` no mousemove; `+ escondidaPorMescla`; `+ areaTransferencia` (TSV + origem + estilo); `+ ajustarFormula` e `ajustarAposMover`; `+ série numérica` na alça; `+` o `input` da célula mantém `edicao.texto` em dia (clicar fora não perde a última letra)
+- **Porquê:** o blur da edição reescrevia `sel` e o clique seguinte era engolido ou estendia desde a célula editada; o `pintar()` no mousedown destruía o elemento e o `dblclick` nativo nunca chegava; o `mouseup` perdido deixava o arrasto preso; Ctrl+C de uma célula copiava 2×2; colar usava o canto da seleção e gravava embaixo de mescla; a alça ficava no canto da ativa; Shift+seta só crescia; inserir/excluir linha não ajustava fórmula. A cópia interna também precisava deslocar referências e levar o estilo, como no Excel.
+
+## src/excel/ribbon.ts · index.html · src/styles/excel.css
+
+### 2026-10-29 · refactor/excel-motor-e-fita · a fita com ícones reais e paleta ancorada
+- **Local:** grupo Fonte, `corBtn`, `abrirCores`, `marcarFita`; símbolos `i-bold`/`i-italic`/`i-font-color`/`i-decimals-*`/`i-average`/`i-hash`/…; `.xl`, `.xl-cor`, `.xl-bar`, `.xl-cores`
+- **Linha:** `<b>N</b>`/`<i>I</i>` → `ic("i-bold")`/`ic("i-italic")`; `modal-backdrop xl-cores-back` → `div.xl-cores` `position: fixed` sem fundo; `+ botão dividido` (aplicar última cor + seta); `+ .xl-cel.num` e `.xl-realce.alca-caixa`
+- **Porquê:** a fita parecia falsa porque o negrito e o itálico eram letras de texto e o balde/A eram aproximações; a paleta abria um modal escurecendo a planilha. Agora os ícones são os mesmos SVG do app, a paleta abre ao lado do botão (com Automática/Sem preenchimento/cor livre) e os botões têm tamanho, hover e estado `on` consistentes.
+
+## src/fita.ts
+
+### 2026-10-29 · refactor/excel-motor-e-fita · o encaixe mede a fita na primeira abertura
+- **Local:** o fim do `ligarEncaixeFita` (observadores)
+- **Linha:** `+ IntersectionObserver` na raiz da fita, `+ MutationObserver` na classe do `body` e `+ requestAnimationFrame(agendar)`
+- **Porquê:** a fita nascia escondida (o app abre no Início) e o `aplicar()` desistia com `offsetParent === null`; quando a planilha abria, nenhum resize acontecia e os grupos ficavam cortados até redimensionar a janela. Os três gatilhos medem de novo quando a fita entra na tela ou o módulo abre.
+
+## scripts/testar-grade-excel.mjs
+
+### 2026-10-29 · refactor/excel-motor-e-fita · o teste da grade roda o código atual
+- **Local:** o bloco de compilação e o shim `El`
+- **Linha:** `if (!existsSync(caminhoHost) || --recompile)` → compila sempre com `--noCheck`; `+ hasAttribute/removeAttribute/before/after/options/selectedOptions`, `HTMLSelectElement`, `MutationObserver`, `ResizeObserver`, `IntersectionObserver` e `requestAnimationFrame`; o clique no cabeçalho passou a chamar o `mousedown` do contêiner (o `onclick` por botão saiu)
+- **Porquê:** o teste rodava contra um `temp/excel-ui-js` antigo (o host de sessões anteriores) e não pegava regressões; com `--noCheck` o `tsc` emite o host e a fita sem puxar os `?raw`/`import.meta.env` do app, e o shim cobre o que o `seletor.ts` e a fita usam. O clique do cabeçalho mudou de `onclick` para delegação no `mousedown`, então o teste acompanhou o mecanismo novo.
+
+## scripts/testar-excel.mjs
+
+### 2026-10-29 · refactor/excel-motor-e-fita · as travas do motor novo
+- **Local:** seções de valores, fórmulas, .xlsx e host
+- **Linha:** `+ 59` verificações — número estrito/data/texto, `SE`/`E`/`OU`, texto em faixa, `SOMASE` sem terceiro argumento e multicoluna, `ARRED` negativo/casas negativas, `TEXTO`, `CONCATENAR` com faixa, `SUM`/`IF`, tradução na exportação, `numFmt` único, decimal do XML, ida-e-volta de data/moeda, fórmula compartilhada, `ajustarFormula`, `LOG10`, cópia 1×1, colagem na ativa, alça no bloco e Enter
+- **Porquê:** as travas antigas eram regex no fonte e não pegavam o comportamento; as novas exercitam o motor compilado (incluindo um .xlsx montado à mão para a fórmula compartilhada) e falham se os defeitos voltarem.
+
+## docs/excel.md · CHANGELOG.md
+
+### 2026-10-29 · refactor/excel-motor-e-fita · a documentação do módulo
+- **Local:** as balas de valores/seleção/edição/fita/fórmulas do `docs/excel.md` e o CHANGELOG → Excel → Não adicionado (Backend/Frontend)
+- **Linha:** `+` o comportamento novo (data x número, texto com dígito, cópia 1×1, colagem na ativa, alça no bloco, paleta ancorada, tradução PT↔EN, `numFmt` único, fórmula compartilhada)
+- **Porquê:** o documento descrevia a fita com “N/I” e não contava as regras de valor/cópia que a mudança fixou; a entrada fica em “Não adicionado” até o `fechar.ps1` entregar a `main`.

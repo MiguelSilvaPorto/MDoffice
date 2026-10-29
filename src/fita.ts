@@ -545,6 +545,23 @@ export function ligarEncaixeFita(o: OpcoesEncaixeFita): void {
     larguraAntes = o.el.clientWidth;
     agendar();
   }).observe(o.el);
+  // a fita pode nascer escondida (o app abre no Início) e só depois aparecer: quando
+  // ela entra na tela, mede e encaixa de novo — sem isso a primeira abertura de uma
+  // planilha ficava com os grupos cortados até a janela mudar de tamanho.
+  const visibilidade =
+    typeof IntersectionObserver !== "undefined"
+      ? new IntersectionObserver((entradas) => {
+          if (entradas.some((e) => e.isIntersecting)) agendar();
+        })
+      : null;
+  visibilidade?.observe(o.el);
+  // abrir/fechar um módulo troca a classe do body (xlsx-open, word-open…): a fita
+  // que estava escondida volta a ter largura e precisa ser medida de novo
+  new MutationObserver(() => agendar()).observe(document.body, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+  requestAnimationFrame(() => agendar());
   // Só o `hidden` (a troca de aba). O `class` NÃO entra aqui de propósito: o próprio encaixe mexe
   // nas classes dos grupos, e observar isso o faria reencaixar a cada passagem (um laço).
   // O MENU dos grupos também liga/desliga o próprio `hidden` ao abrir e ao fechar — isso não é "a

@@ -83,7 +83,7 @@ ajustarExtensoes(saidaJs);
 
 const mod = async (caminho) => import(pathToFileURL(join(saidaJs, caminho)).href);
 const { calcular } = await mod("formula.js");
-const { dataParaSerial, serialParaData, numeroDe, dataDe, formatarNumero } = await mod("values.js");
+const { dataParaSerial, serialParaData, numeroDe, dataDe, formatarNumero, numeroDoXml } = await mod("values.js");
 const { nomeColuna, indiceColuna, partes, ref, intervalo, somaLarguras, somaAlturas, indiceEm } = await mod("refs.js");
 const { novaFolha, livroDeExemplo } = await mod("model.js");
 const { livroParaXlsx } = await mod("xlsxexport/index.js");
@@ -138,6 +138,25 @@ igual("serial de volta", serialParaData(46023).toISOString().slice(0, 10), "2026
 igual("formata moeda", formatarNumero(1234.5, "moeda", 2, "R$"), "R$ 1.234,50");
 igual("formata porcento", formatarNumero(0.15, "porcento", 0, "R$"), "15%");
 igual("formata decimal", formatarNumero(1234.5, "decimal", 2, "R$"), "1.234,50");
+
+// ------------------------------------------------------------------
+console.log("\nValores: texto com dígitos, datas e números do XML");
+igual("texto com número continua texto", numeroDe("Item 1"), null);
+igual("data não é número", numeroDe("01/01/2026"), null);
+igual("hora não é número", numeroDe("10:30"), null);
+igual("fração não é número", numeroDe("1/2"), null);
+igual("0.125 é decimal", numeroDe("0.125"), 0.125);
+igual("1.234 é milhar", numeroDe("1.234"), 1234);
+igual("1.234,56 é mil duzentos e trinta e quatro", numeroDe("1.234,56"), 1234.56);
+igual("(100) é -100", numeroDe("(100)"), -100);
+igual("15% é 15 (o chamador divide)", numeroDe("15%"), 15);
+igual("R$ 10,50", numeroDe("R$ 10,50"), 10.5);
+igual("-R$ 10", numeroDe("-R$ 10"), -10);
+igual("1.234.567,89", numeroDe("1.234.567,89"), 1234567.89);
+igual("número do XML 0.125", numeroDoXml("0.125"), "0,125");
+igual("número do XML 1.234", numeroDoXml("1.234"), "1,234");
+igual("data com hora vira fração do dia", dataParaSerial(dataDe("01/01/2026 12:00")), 46023.5);
+igual("XFE1 está fora do limite do Excel", partes("XFE1"), null);
 
 // ------------------------------------------------------------------
 console.log("\nFórmulas");
@@ -214,6 +233,33 @@ igual("função desconhecida", String(calcular("=FOOBAR(1)", ctx)).includes("#NO
 igual("outra aba dá #REF!", String(calcular("=Planilha2!A1", ctx)), "#REF!");
 igual("texto com aspas duplas", calcular('="diz ""oi"""', ctx), 'diz "oi"');
 
+console.log("\nFórmulas: texto em faixa, preguiça e conversões");
+const ctxTexto = contexto({ A1: "Qtd", A2: 1, A3: 2 });
+igual("SOMA ignora texto da faixa", calcular("=SOMA(A1:A3)", ctxTexto), 3);
+igual("CONT.VALORES conta texto", calcular("=CONT.VALORES(A1:A3)", ctxTexto), 3);
+igual("CONT.NÚM ignora texto", calcular("=CONT.NÚM(A1:A3)", ctxTexto), 2);
+igual("SE não calcula o ramo falso", calcular("=SE(A1=0;0;1/A1)", contexto({ A1: 0 })), 0);
+igual("SE não calcula o ramo verdadeiro", calcular("=SE(A1=1;1/A1;0)", contexto({ A1: 0 })), 0);
+igual("OU curto-circuita", calcular("=OU(A1=0;1/0=0)", contexto({ A1: 0 })), true);
+igual("E curto-circuita", calcular("=E(A1=0;1/0=0)", contexto({ A1: 1 })), false);
+igual("número antes de texto", calcular('=1<"a"', ctx), true);
+igual("potência associa à direita", calcular("=2^3^2", ctx), 512);
+igual("ARRED negativo", calcular("=ARRED(0-2.675;2)", ctx), -2.68);
+igual("ARRED casas negativas", calcular("=ARRED(1234.5;-2)", ctx), 1200);
+igual("ABS de texto vira erro", String(calcular('=ABS("x")', ctx)), "#VALOR!");
+igual("vírgula decimal pt-BR", calcular("=1,5+1", ctx), 2.5);
+igual("milhar e decimal pt-BR", calcular("=1.234,56+1", ctx), 1235.56);
+igual("TEXTO formata número", calcular('=TEXTO(1234.5;"#.##0,00")', ctx), "1.234,50");
+igual("CONCATENAR aceita faixa", calcular("=CONCATENAR(A1:A3)", ctx), "102030");
+igual("SOMASE sem terceiro argumento", calcular('=SOMASE(A1:A2;">0")', contexto({ A1: 1, A2: 2 })), 3);
+igual(
+  "SOMASE multicoluna alinha a soma",
+  calcular('=SOMASE(A1:B1;">0";C1:D1)', contexto({ A1: 1, B1: 2, C1: 10, D1: 20 })),
+  30
+);
+igual("SUM em inglês", calcular("=SUM(A1:A3)", ctx), 60);
+igual("IF em inglês", calcular("=IF(A1>5;1;2)", ctx), 1);
+
 // referência circular
 const circular = {
   valorDe: (alvo) => (alvo === "A1" ? calcular("=A2", circular) : calcular("=A1", circular)),
@@ -223,7 +269,7 @@ ok("referência circular não trava", String(calcular("=A1", circular)).length >
 
 // ------------------------------------------------------------------
 console.log("\nDeslocamento de referências (a alça de preenchimento)");
-const { deslocarFormula } = await mod("refs.js");
+const { deslocarFormula, ajustarFormula } = await mod("refs.js");
 igual("para baixo", deslocarFormula("=C2*D2", 1, 0), "=C3*D3");
 igual("duas para baixo", deslocarFormula("=C2*D2", 2, 0), "=C4*D4");
 igual("para a direita", deslocarFormula("=C2*D2", 0, 1), "=D2*E2");
@@ -237,6 +283,11 @@ igual("sai da planilha vira #REF!", deslocarFormula("=A1", -1, 0), "=#REF!");
 igual("deslocamento zero não muda nada", deslocarFormula("=C2*D2", 0, 0), "=C2*D2");
 igual("número solto não é referência", deslocarFormula("=100+2", 1, 0), "=100+2");
 igual("percentual", deslocarFormula("=A1*10%", 1, 0), "=A2*10%");
+igual("nome de função com dígito não vira referência", deslocarFormula("=LOG10(A1)", 1, 0), "=LOG10(A2)");
+igual("inserir linha desloca a faixa", ajustarFormula("=SOMA(A1:A2)", "linha", 1, 1, "inserir"), "=SOMA(A1:A3)");
+igual("excluir linha vira #REF!", ajustarFormula("=A2", "linha", 1, 1, "excluir"), "=#REF!");
+igual("inserir coluna desloca referência", ajustarFormula("=B1+C1", "coluna", 1, 1, "inserir"), "=C1+D1");
+igual("excluir coluna depois da faixa sobe", ajustarFormula("=C1", "coluna", 1, 1, "excluir"), "=B1");
 
 // ------------------------------------------------------------------
 console.log("\n. xlsx: exportar e ler de volta");
@@ -281,6 +332,70 @@ igual("2 x 5200", e2, 10400);
 igual("soma dos quatro", calcular("=10400+1800+1280+950", ctx), 14430);
 
 // ------------------------------------------------------------------
+console.log("\n. xlsx: números, formatos e fórmulas em inglês");
+const { default: JSZip } = await import("jszip");
+const livroNumeros = {
+  folhas: [
+    {
+      nome: "Dados",
+      celulas: {
+        A1: { texto: "01/01/2026", estilo: { numero: "data" } },
+        A2: { texto: "0,125", estilo: { numero: "porcento", casas: 2 } },
+        A3: { texto: "1.234,5678", estilo: { numero: "decimal", casas: 4 } },
+        B1: { texto: "10", estilo: { numero: "moeda", casas: 2 } },
+        C1: { texto: "=SOMA(B1:B1)" },
+        D1: { texto: "=SUM(B1:B1)" },
+        E1: { texto: "=SE(A1>0;1,5;2,5)" },
+        F1: { texto: "=VERDADEIRO" },
+      },
+      colunas: {},
+      linhas: {},
+      mesclas: [],
+    },
+  ],
+  ativa: 0,
+};
+const bytesNumeros = await livroParaXlsx(livroNumeros, { casas: 2, grade: true });
+const zipNumeros = await JSZip.loadAsync(bytesNumeros);
+const estilosNum = await zipNumeros.file("xl/styles.xml").async("string");
+const abaNum = await zipNumeros.file("xl/worksheets/sheet1.xml").async("string");
+const idsFormato = [...estilosNum.matchAll(/<numFmt numFmtId="(\d+)"/g)].map((m) => m[1]);
+ok("formatos personalizados têm ids únicos", idsFormato.length >= 3 && new Set(idsFormato).size === idsFormato.length, idsFormato.join(","));
+ok("fórmula é exportada em inglês", abaNum.includes("<f>SUM(B1:B1)</f>"));
+ok(
+  "fórmula com SE/vírgula decimal vira IF com ponto e vírgula de argumento",
+  abaNum.includes("<f>IF(A1&gt;0,1.5,2.5)</f>")
+);
+ok("booleano é exportado como TRUE", abaNum.includes("<f>TRUE</f>"));
+const lidoNumeros = await xlsxParaLivro(bytesNumeros);
+const folhaNum = lidoNumeros.livro.folhas[0].celulas;
+igual("a data volta como data", folhaNum.A1.texto, "01/01/2026");
+igual("o decimal do XML não vira 125", numeroDe(folhaNum.A2.texto), 0.125);
+igual("o decimal grande continua decimal", numeroDe(folhaNum.A3.texto), 1234.5678);
+igual("a moeda continua moeda", folhaNum.B1.estilo.numero, "moeda");
+igual("o decimal continua decimal", folhaNum.A3.estilo.numero, "decimal");
+igual("as casas do decimal sobrevivem", folhaNum.A3.estilo.casas, 4);
+igual("a fórmula em inglês volta como SOMA", folhaNum.D1.texto, "=SOMA(B1:B1)");
+
+// fórmula compartilhada: o mestre vale para as dependentes, deslocado
+const zipCompart = new JSZip();
+zipCompart.file(
+  "xl/workbook.xml",
+  `<?xml version="1.0"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Compart" sheetId="1" r:id="rId1"/></sheets></workbook>`
+);
+zipCompart.file(
+  "xl/_rels/workbook.xml.rels",
+  `<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`
+);
+zipCompart.file(
+  "xl/worksheets/sheet1.xml",
+  `<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1"><v>1</v></c><c r="B1"><f t="shared" ref="B1:B2" si="0">A1*2</f><v>2</v></c></row><row r="2"><c r="A2"><v>2</v></c><c r="B2"><f t="shared" si="0"/><v>4</v></c></row></sheetData></worksheet>`
+);
+const lidoCompart = await xlsxParaLivro(await zipCompart.generateAsync({ type: "uint8array" }));
+igual("fórmula compartilhada mestre", lidoCompart.livro.folhas[0].celulas.B1.texto, "=A1*2");
+igual("fórmula compartilhada dependente deslocada", lidoCompart.livro.folhas[0].celulas.B2.texto, "=A2*2");
+
+// ------------------------------------------------------------------
 console.log("\njustificado: fita, CSS e .xlsx");
 const hostFonte = readFileSync(join(raiz, "src/excel/host.ts"), "utf8");
 const ribbonFonte = readFileSync(join(raiz, "src/excel/ribbon.ts"), "utf8");
@@ -313,12 +428,31 @@ ok(
   "o cache por texto da própria célula deixava C2*D2 velho"
 );
 ok(
-  "Ctrl não estende mais a partir do âncora antigo",
-  /const estendido = e\.shiftKey;/.test(hostSrc) && !/const estendido = e\.shiftKey \|\| e\.ctrlKey;/.test(hostSrc)
+  "clique comum começa uma seleção nova",
+  /this\.definirSelecao\(alvoCel, alvoCel, alvoCel\)/.test(hostSrc),
+  "o Ctrl não pode estender a partir do âncora antigo"
 );
 ok(
   "Shift+clique estende já no mousedown",
-  /const estendido = e\.shiftKey;[\s\S]{0,400}this\.sel = \{\s*l1: Math\.min/.test(hostSrc)
+  /this\.definirSelecao\(this\.ancora, alvoCel, this\.ancora\)/.test(hostSrc)
+);
+ok(
+  "o clique confirma a edição antes de trocar a seleção",
+  /if \(this\.edicao\) this\.confirmarEdicao\(false\)/.test(hostSrc)
+);
+ok(
+  "uma célula copiada não vira 2×2",
+  !/sel\.l2 = Math\.min\(sel\.l1 \+ 1/.test(hostSrc),
+  "valoresDaSelecao expandia a célula única"
+);
+ok("a alça fica no canto do bloco selecionado", /alca-caixa/.test(hostSrc));
+ok(
+  "colar usa a célula ativa como âncora",
+  /const base = \{ linha: this\.linha, coluna: this\.coluna \}/.test(hostSrc)
+);
+ok(
+  "Enter anda uma linha para baixo",
+  /case "Enter":[\s\S]{0,220}this\.mover\(this\.linha \+ 1/.test(hostSrc)
 );
 ok("planilha nova nasce em branco (sem o orçamento de exemplo)", /createTab\(\): ExcelTabData \{\s*return this\.createEmpty\(\);/.test(hostSrc));
 const tabsCss = readFileSync(join(raiz, "src/styles/tabs.css"), "utf8");

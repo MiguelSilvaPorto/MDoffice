@@ -15,8 +15,8 @@
 // Usa o JSZip (já dependência do app, como no pptximport) para fechar o ZIP.
 
 import type { Celula, Estilo, Folha, Livro } from "../schema";
-import { dataParaSerial, ehErro, ehPercentual, numeroDe } from "../values";
-import { calcular, ehFormula, type Contexto, type Operando } from "../formula";
+import { dataDe, dataParaSerial, ehErro, ehPercentual, ErroFormula, numeroDe } from "../values";
+import { calcular, ehFormula, formulaParaXlsx, type Contexto, type Operando } from "../formula";
 import { intervalo, nomeColuna, partes as partesRef, percorrer, ref } from "../refs";
 import { CONFIG_PADRAO } from "../model";
 
@@ -95,7 +95,7 @@ function montarEstilos(livro: Livro): TabelaEstilos {
   return { indice, xfs };
 }
 
-/** numFmtId do Excel: abaixo de 164 são padrões, os nossos começam em 164. */
+/** numFmtId do Excel: abaixo de 164 são padrões; -1 pede um id novo (164, 165…). */
 function numFmt(e: Estilo | undefined, casasPadrao: number): { id: number; codigo?: string } {
   if (!e?.numero || e.numero === "geral") return { id: 0 };
   const casas = Number.isInteger(e.casas) ? (e.casas as number) : casasPadrao;
@@ -104,15 +104,15 @@ function numFmt(e: Estilo | undefined, casasPadrao: number): { id: number; codig
     case "decimal":
       if (casas === 0) return { id: 1 }; // "0"
       if (casas === 2) return { id: 2 }; // "0.00"
-      return { id: 164, codigo: `#,##0${casas ? `.${zeros}` : ""}` };
+      return { id: -1, codigo: `#,##0${casas ? `.${zeros}` : ""}` };
     case "moeda":
-      return { id: 164, codigo: `"R$" #,##0${casas ? `.${zeros}` : ""}` };
+      return { id: -1, codigo: `"R$" #,##0${casas ? `.${zeros}` : ""}` };
     case "porcento":
       if (casas === 0) return { id: 9 }; // "0%"
       if (casas === 2) return { id: 10 }; // "0.00%"
-      return { id: 164, codigo: `0.${zeros}%` };
+      return { id: -1, codigo: `0.${zeros}%` };
     case "data":
-      return { id: 164, codigo: "dd/mm/yyyy" };
+      return { id: -1, codigo: "dd/mm/yyyy" };
     default:
       return { id: 0 };
   }
@@ -120,11 +120,22 @@ function numFmt(e: Estilo | undefined, casasPadrao: number): { id: number; codig
 
 /** Gera xl/styles.xml. */
 function estilosXml(tab: TabelaEstilos, casasPadrao: number): string {
+  // cada código distinto ganha um id próprio: antes TODOS os formatos personalizados
+  // usavam 164, e o último sobrescrevia os outros no mapa (moeda virava data etc.)
   const formatos = new Map<number, string>();
-  for (const e of tab.xfs) {
-    const f = numFmt(e, casasPadrao);
-    if (f.id >= 164 && f.codigo) formatos.set(f.id, f.codigo);
-  }
+  const idPorCodigo = new Map<string, number>();
+  let proximoId = 164;
+  const resolverId = (f: { id: number; codigo?: string }): number => {
+    if (f.id >= 0) return f.id;
+    const codigo = f.codigo ?? "0";
+    const existente = idPorCodigo.get(codigo);
+    if (existente !== undefined) return existente;
+    const id = proximoId++;
+    idPorCodigo.set(codigo, id);
+    formatos.set(id, codigo);
+    return id;
+  };
+  const ids = tab.xfs.map((e) => resolverId(numFmt(e, casasPadrao)));
 
   // fontes e preenchimentos. No XML o Excel exige que as DUAS primeiras
   // entradas de <fills> sejam "none" e "gray125"; por isso um preenchimento
@@ -156,18 +167,19 @@ function estilosXml(tab: TabelaEstilos, casasPadrao: number): string {
   };
 
   const xfXml: string[] = [];
-  for (const e of tab.xfs) {
-    const f = numFmt(e, casasPadrao);
+  for (let i = 0; i < tab.xfs.length; i++) {
+    const e = tab.xfs[i];
+    const id = ids[i];
     const fontId = registrarFonte(e);
     const fillId = registrarPreench(e);
     const partes = [
-      `numFmtId="${f.id}"`,
+      `numFmtId="${id}"`,
       `fontId="${fontId}"`,
       `fillId="${fillId}"`,
       'borderId="0"',
       'xfId="0"',
     ];
-    if (f.id) partes.push('applyNumberFormat="1"');
+    if (id) partes.push('applyNumberFormat="1"');
     if (fontId) partes.push('applyFont="1"');
     if (fillId) partes.push('applyFill="1"');
     if (e?.alinhamento) {
@@ -223,8 +235,10 @@ function sharedStrings(livro: Livro): { indice: Map<string, number>; xml: string
   const indice = new Map<string, number>();
   const ehTexto = (c: Celula): boolean => {
     if (c.formula || ehFormula(c.texto)) return false;
+    if (ehBooleano(c)) return false;
     if (numeroDe(c.texto) !== null && !ehPercentual(c.texto)) return false;
     if (ehPercentual(c.texto)) return false; // porcentagem é número no Excel
+    if (serialDe(c.texto) !== null) return false; // data também é número (serial)
     return true;
   };
   for (const f of livro.folhas) {
@@ -245,24 +259,10 @@ function sharedStrings(livro: Livro): { indice: Map<string, number>; xml: string
 
 // ---------- valores ----------
 
-/** Reconhece dd/mm/aaaa e aaaa-mm-dd e devolve o serial que o Excel grava. */
+/** Reconhece dd/mm/aaaa, aaaa-mm-dd e data com hora; devolve o serial do Excel. */
 function serialDe(texto: string): number | null {
-  const br = /^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/.exec(texto.trim());
-  const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(texto.trim());
-  let a: number, m: number, d: number;
-  if (br) {
-    a = +br[3];
-    if (a < 100) a += a < 30 ? 2000 : 1900;
-    m = +br[2];
-    d = +br[1];
-  } else if (iso) {
-    a = +iso[1];
-    m = +iso[2];
-    d = +iso[3];
-  } else return null;
-  const dt = new Date(Date.UTC(a, m - 1, d));
-  if (dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) return null;
-  return dataParaSerial(dt);
+  const d = dataDe(texto);
+  return d ? dataParaSerial(d) : null;
 }
 
 /** O número que o Excel deve gravar para esta célula (ou null se for texto). */
@@ -270,10 +270,29 @@ function numeroDaCelula(c: Celula): number | null {
   const s = c.texto.trim();
   if (s === "VERDADEIRO" || s === "TRUE") return 1;
   if (s === "FALSO" || s === "FALSE") return 0;
+  // data primeiro: "01/01/2026" não é número, é serial
+  const data = serialDe(s);
+  if (data !== null) return data;
   const pct = ehPercentual(s);
   const n = numeroDe(s);
   if (n !== null) return pct ? n / 100 : n;
-  return serialDe(s);
+  return null;
+}
+
+/** Códigos de erro do motor (português) para os códigos que o OOXML aceita. */
+const ERRO_XLSX: Record<string, string> = {
+  "#VALOR!": "#VALUE!",
+  "#NÚM!": "#NUM!",
+  "#NOME?": "#NAME?",
+  "#CIRC!": "#REF!",
+  "#ERRO!": "#VALUE!",
+  "#REF!": "#REF!",
+  "#DIV/0!": "#DIV/0!",
+};
+
+function codigoErroXlsx(codigo: string): string {
+  const limpo = codigo.replace(/\s*\(.*\)$/, "");
+  return ERRO_XLSX[limpo] ?? limpo;
 }
 
 const ehBooleano = (c: Celula): boolean => {
@@ -283,21 +302,28 @@ const ehBooleano = (c: Celula): boolean => {
 
 /** Contexto de cálculo para gravar o resultado em cache junto da fórmula. */
 function contextoDaFolha(f: Folha): Contexto {
+  const vistos = new Set<string>();
   const calc = (refA1: string): Operando => {
     const c = f.celulas[refA1];
     if (!c || !c.texto) return null;
-    if (c.formula || ehFormula(c.texto)) {
-      return calcular(c.texto, {
-        valorDe: (alvo) => calc(alvo),
-        faixaAlvo: (alvo) => {
-          const out: Operando[] = [];
-          for (const { linha, col } of percorrer(alvo)) out.push(calc(ref(linha, col)));
-          return out;
-        },
-      });
+    if (vistos.has(refA1)) return new ErroFormula("#CIRC!");
+    vistos.add(refA1);
+    try {
+      if (c.formula || ehFormula(c.texto)) {
+        return calcular(c.texto, {
+          valorDe: (alvo) => calc(alvo),
+          faixaAlvo: (alvo) => {
+            const out: Operando[] = [];
+            for (const { linha, col } of percorrer(alvo)) out.push(calc(ref(linha, col)));
+            return out;
+          },
+        });
+      }
+      const n = numeroDaCelula(c);
+      return n === null ? c.texto : n;
+    } finally {
+      vistos.delete(refA1);
     }
-    const n = numeroDaCelula(c);
-    return n === null ? c.texto : n;
   };
   return {
     valorDe: (alvo) => calc(alvo),
@@ -315,11 +341,12 @@ function celulaXml(refA1: string, c: Celula, estiloId: number, f: Folha, ss: Map
   const formula = c.formula || ehFormula(c.texto);
 
   if (formula) {
-    // a fórmula grava o texto sem o "=" e o resultado já calculado em <v>
-    const corpo = escapar(c.texto.replace(/^=/, ""));
+    // a fórmula grava o texto sem o "=" e o resultado já calculado em <v>; o
+    // formato do arquivo é inglês (SUM, IF…) e usa vírgula entre argumentos
+    const corpo = escapar(formulaParaXlsx(c.texto));
     const resultado = calcular(c.texto, contextoDaFolha(f));
     if (ehErro(resultado)) {
-      return `<c r="${refA1}"${s} t="e"><f>${corpo}</f><v>${escapar(resultado.codigo)}</v></c>`;
+      return `<c r="${refA1}"${s} t="e"><f>${corpo}</f><v>${escapar(codigoErroXlsx(resultado.codigo))}</v></c>`;
     }
     if (typeof resultado === "number") return `<c r="${refA1}"${s}><f>${corpo}</f><v>${resultado}</v></c>`;
     if (typeof resultado === "boolean") {

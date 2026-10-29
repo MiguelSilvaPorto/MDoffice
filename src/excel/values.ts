@@ -22,33 +22,71 @@ export const ehErro = (v: unknown): v is ErroFormula => v instanceof ErroFormula
 const RE_DATA_BR = /^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/;
 const RE_DATA_HORA = /^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/;
 const RE_DATA_ISO = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
-const RE_MILHARES = /^-?\d{1,3}(\.\d{3})+$/;
-const RE_NUMERO_LIMPO = /^-?\d+(\.\d+)?$/;
+const RE_NUMERO_LIMPO = /^[+\-]?\d+(\.\d+)?$/;
+const RE_MOEDA = /^(?:R\$|US\$|\$|€|£)\s*/i;
+const RE_MOEDA_FIM = /\s*(?:R\$|US\$|\$|€|£)$/i;
 
 /**
  * Converte o que o usuário digitou em número, ou devolve null quando não é número.
  * Aceita o jeito do Excel em português: "R$ 1.234,56", "15%", "1.234", "-12,5".
+ *
+ * A regra é **estrita**: o texto inteiro precisa ser um número (com moeda, %, ou
+ * parênteses de negativo). Antes a função arrancava qualquer letra em volta, e
+ * "Item 1" virava 1, "01/01/2026" virava 1012026 e "1/2" virava 12 — datas e
+ * textos apareciam como números na grade.
  */
 export function numeroDe(texto: string): number | null {
   let s = texto.trim();
-  // tira o símbolo da moeda, o "%" e qualquer texto em volta do número
-  s = s.replace(/%/g, "").replace(/[^\d,.\-+]/g, "").trim();
+  if (!s) return null;
+
+  // (100) é a forma contábil de -100
+  const parenteses = /^\((.*)\)$/.exec(s);
+  let sinal = 1;
+  if (parenteses) {
+    s = parenteses[1].trim();
+    sinal = -1;
+  }
+
+  if (/%\s*$/.test(s)) s = s.replace(/%\s*$/, "").trim();
+  // "-R$ 10" também é moeda: o sinal vem antes do símbolo
+  s = s.replace(/^([+-]?)\s*(?:R\$|US\$|\$|€|£)\s*/i, "$1").trim();
+  s = s.replace(RE_MOEDA, "").trim();
+  s = s.replace(RE_MOEDA_FIM, "").trim();
   if (!s || !/\d/.test(s)) return null;
+  // só dígitos, sinais, separadores e espaços de milhar: qualquer letra, "/" ou ":"
+  // significa que é texto/data, não número
+  if (!/^[+\-]?[\d.,\s]+$/.test(s) || /[\/:]/.test(s)) return null;
+  s = s.replace(/\s+/g, "");
+
   const temPonto = s.includes(".");
   const temVirgula = s.includes(",");
+  let normal: string;
   if (temPonto && temVirgula) {
-    // ponto é separador de milhar e vírgula é decimal: 1.234,56
-    s = s.replace(/\./g, "").replace(",", ".");
+    // o separador que aparece por último é o decimal: 1.234,56 ou 1,234.56
+    normal =
+      s.lastIndexOf(",") > s.lastIndexOf(".")
+        ? s.replace(/\./g, "").replace(",", ".")
+        : s.replace(/,/g, "");
   } else if (temVirgula) {
-    // só vírgula: decimal (1,5). Milhar com vírgula não existe em português.
-    s = s.replace(",", ".");
-  } else if (temPonto && RE_MILHARES.test(s)) {
-    // 1.234 -> milhar
-    s = s.replace(/\./g, "");
+    // vírgula é o decimal; mais de uma vírgula só pode ser milhar (raro)
+    const partes = s.split(",");
+    normal = partes.length > 2 ? `${partes.slice(0, -1).join("")}.${partes[partes.length - 1]}` : s.replace(",", ".");
+  } else if (temPonto) {
+    const partes = s.split(".");
+    const inteiro = partes[0].replace(/^[+\-]/, "");
+    const ultimo = partes[partes.length - 1] ?? "";
+    // "1.234" é milhar; "0.125" e "1.23" são decimais (o Excel aceita o ponto)
+    normal =
+      partes.length > 2 || (partes.length === 2 && ultimo.length === 3 && inteiro !== "" && inteiro !== "0")
+        ? s.replace(/\./g, "")
+        : s;
+  } else {
+    normal = s;
   }
-  if (!RE_NUMERO_LIMPO.test(s)) return null;
-  const n = Number(s);
-  return Number.isFinite(n) ? n : null;
+
+  if (!RE_NUMERO_LIMPO.test(normal)) return null;
+  const n = Number(normal);
+  return Number.isFinite(n) ? n * sinal : null;
 }
 
 /** true quando o texto é uma data que o Excel reconhece (dd/mm/aaaa ou aaaa-mm-dd). */
@@ -80,11 +118,23 @@ function montarData(ano: number, mes: number, dia: number): Date | null {
 }
 
 /** true quando o texto termina em % (o Excel guarda 0,15 e mostra 15%). */
-export const ehPercentual = (texto: string): boolean => /^-?[\d][\d.,]*\s*%$/.test(texto.trim());
+export const ehPercentual = (texto: string): boolean =>
+  /^(?:R\$|US\$|\$|€|£)?\s*[+-]?[\d][\d.,\s]*%\s*$/i.test(texto.trim());
+
+/**
+ * Número vindo do XML do .xlsx (sempre com ponto decimal, sem milhar) para a
+ * representação interna em português. Sem isso, "0.125" era lido como 125 pela
+ * regra pt-BR e "1.234" virava mil duzentos e trinta e quatro.
+ */
+export function numeroDoXml(bruto: string): string {
+  const n = Number(bruto.trim());
+  if (!Number.isFinite(n)) return bruto;
+  return n.toLocaleString("pt-BR", { maximumFractionDigits: 10, useGrouping: false });
+}
 
 /** true quando o texto começa com o símbolo da moeda. */
 export const ehMoeda = (texto: string, moeda: string): boolean => {
-  const s = texto.trim();
+  const s = texto.trim().replace(/^[+-]\s*/, "");
   return moeda.length > 0 && s.toUpperCase().startsWith(moeda.toUpperCase());
 };
 
@@ -106,7 +156,10 @@ const BASE_EPOCA_UM = Date.UTC(1899, 11, 31);
 export function dataParaSerial(d: Date): number {
   const dias = (Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - BASE_EPOCA_ZERO) / DIA_MS;
   // Antes de 1900-03-01 o Excel desconta o dia 29/02/1900 que ele finge existir.
-  return Math.round(dias >= 61 ? dias : dias - 1);
+  const base = Math.round(dias >= 61 ? dias : dias - 1);
+  // a hora vira a fração do dia (o Excel guarda data e hora no mesmo serial)
+  const frac = (d.getUTCHours() * 3600 + d.getUTCMinutes() * 60 + d.getUTCSeconds()) / 86_400;
+  return base + frac;
 }
 
 /** Número do Excel -> Date (o serial 60 é o 29/02/1900 que não existe). */

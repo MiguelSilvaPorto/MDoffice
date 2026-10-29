@@ -5,7 +5,7 @@
 // É o complemento do scripts/testar-excel.mjs: aquele prova o cálculo e o
 // arquivo .xlsx; este prova que a interface responde.
 
-import { mkdirSync, existsSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
@@ -27,38 +27,41 @@ function ok(nome, condicao, detalhe = "") {
 }
 
 // ---------- compila o motor (mesmo caminho do teste anterior) ----------
+// Compila SEMPRE: o artefato velho já escondeu regressões (o teste rodava contra
+// o host de uma sessão anterior). `--noCheck` emite só o necessário para o Node.
+mkdirSync(saidaJs, { recursive: true });
+console.log("Compilando o motor para testar a grade…");
+execFileSync(
+  process.execPath,
+  [
+    join(raiz, "node_modules", "typescript", "bin", "tsc"),
+    "--outDir", saidaJs,
+    "--module", "esnext",
+    "--moduleResolution", "bundler",
+    "--target", "es2022",
+    "--lib", "es2022,dom,dom.iterable",
+    "--skipLibCheck", "--strict", "--esModuleInterop",
+    // o host importa a fita inteira (que referencia o App só em tipos). Sem checar
+    // tipos, o tsc emite só o que o Node precisa e não puxa os `?raw`/`import.meta.env`
+    // do app — o teste da grade roda o DOM simulado, não o bundle do Vite.
+    "--noCheck",
+    "--rootDir", join(raiz, "src"),
+    join(raiz, "src", "excel", "host.ts"),
+  ],
+  { stdio: "inherit", cwd: raiz }
+);
+const fs = await import("node:fs");
 const caminhoHost = join(saidaJs, "excel", "host.js");
-// --recompile força a recompilação (o caminho padrão reaproveita o que existe)
-if (!existsSync(caminhoHost) || process.argv.includes("--recompile")) {
-  mkdirSync(saidaJs, { recursive: true });
-  console.log("Compilando o motor para testar a grade…");
-  execFileSync(
-    process.execPath,
-    [
-      join(raiz, "node_modules", "typescript", "bin", "tsc"),
-      "--outDir", saidaJs,
-      "--module", "esnext",
-      "--moduleResolution", "bundler",
-      "--target", "es2022",
-      "--lib", "es2022,dom,dom.iterable",
-      "--skipLibCheck", "--strict", "--esModuleInterop",
-      "--rootDir", join(raiz, "src"),
-      join(raiz, "src", "excel", "host.ts"),
-    ],
-    { stdio: "inherit", cwd: raiz }
-  );
-  const fs = await import("node:fs");
-  const ajustar = (dir) => {
-    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-      const p = join(dir, e.name);
-      if (e.isDirectory()) ajustar(p);
-      else if (e.name.endsWith(".js")) {
-        fs.writeFileSync(p, fs.readFileSync(p, "utf8").replace(/from\s+"(\.[^"]*?)"/g, (m, a) => (a.endsWith(".js") ? m : `from "${a}.js"`)));
-      }
+const ajustar = (dir) => {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name);
+    if (e.isDirectory()) ajustar(p);
+    else if (e.name.endsWith(".js")) {
+      fs.writeFileSync(p, fs.readFileSync(p, "utf8").replace(/from\s+"(\.[^"]*?)"/g, (m, a) => (a.endsWith(".js") ? m : `from "${a}.js"`)));
     }
-  };
-  ajustar(saidaJs);
-}
+  }
+};
+ajustar(saidaJs);
 
 // ---------- DOM mínimo ----------
 // Só o que o ExcelHost usa: elementos com className/innerHTML/style/dataset,
@@ -118,6 +121,7 @@ class El {
       // data-x="v" e também o atributo sem valor (ex.: data-grade)
       for (const [, k, val] of resto.matchAll(/data-([\w-]+)(?:="([^"]*)")?/g)) filho.dataset[k] = val ?? "";
       for (const [, k, val] of resto.matchAll(/([\w-]+)="([^"]*)"/g)) filho.attrs[k] = val;
+      filho.pai = this;
       this.children.push(filho);
     }
   }
@@ -127,6 +131,35 @@ class El {
   get className() { return this._cls ?? ""; }
   get tagName() { return String(this.tag).toUpperCase(); }
   append(...f) { for (const x of f) { this.children.push(x); x.pai = this; } }
+  before(...novos) {
+    const pai = this.pai;
+    if (!pai) return;
+    const i = pai.children.indexOf(this);
+    pai.children.splice(i, 0, ...novos);
+    for (const n of novos) n.pai = pai;
+  }
+  after(...novos) {
+    const pai = this.pai;
+    if (!pai) return;
+    const i = pai.children.indexOf(this);
+    pai.children.splice(i + 1, 0, ...novos);
+    for (const n of novos) n.pai = pai;
+  }
+  get options() { return this.children.filter((c) => String(c.tag).toLowerCase() === "option"); }
+  get selectedOptions() {
+    const opts = this.options;
+    const marcadas = opts.filter((o) => o.selected || (o.attrs.value ?? o.textContent) === this.value);
+    return marcadas.length ? marcadas : opts.slice(0, 1);
+  }
+  get selectedIndex() {
+    const i = this.options.findIndex((o) => o.attrs.selected !== undefined || o.selected);
+    return i >= 0 ? i : 0;
+  }
+  set selectedIndex(i) {
+    this.options.forEach((o, k) => { o.selected = k === i; });
+    const opt = this.options[i];
+    if (opt) this.value = opt.attrs.value ?? opt.textContent ?? "";
+  }
   addEventListener(t, fn) { (this.listeners[t] ||= []).push(fn); }
   removeEventListener(t, fn) {
     const l = this.listeners[t];
@@ -163,14 +196,23 @@ class El {
   setSelectionRange() {}
   scrollIntoView() {}
   setAttribute(k, v) { this.attrs[k] = String(v); }
+  hasAttribute(k) { return this.attrs[k] !== undefined; }
+  removeAttribute(k) { delete this.attrs[k]; }
   closest(sel) {
-    const m = /^\[([\w-]+)(?:="([^"]*)")?\]$/.exec(String(sel).trim());
+    const ops = String(sel).split(",").map((s) => s.trim());
     let el = this;
     while (el) {
-      if (m) {
-        const nome = m[1];
-        const valor = nome.startsWith("data-") ? el.dataset[nome.slice(5)] : el.attrs[nome];
-        if (m[2] === undefined ? valor !== undefined : String(valor) === m[2]) return el;
+      for (const op of ops) {
+        const m = /^\[([\w-]+)(?:="([^"]*)")?\]$/.exec(op);
+        if (m) {
+          const nome = m[1];
+          const valor = nome.startsWith("data-") ? el.dataset[nome.slice(5)] : el.attrs[nome];
+          if (m[2] === undefined ? valor !== undefined : String(valor) === m[2]) return el;
+        } else if (op.startsWith(".") && String(el.className).split(/\s+/).includes(op.slice(1))) {
+          return el;
+        } else if (String(el.tag).toLowerCase() === op.toLowerCase()) {
+          return el;
+        }
       }
       el = el.pai ?? null;
     }
@@ -229,6 +271,28 @@ class El {
 }
 
 const docEl = new El("body");
+// O seletor do app lê o descritor de `value` do prototype do <select> real.
+class HTMLSelectElementFake {
+  get value() { return this._valor ?? ""; }
+  set value(v) { this._valor = String(v); }
+}
+globalThis.HTMLSelectElement = HTMLSelectElementFake;
+globalThis.MutationObserver = class {
+  observe() {}
+  disconnect() {}
+  takeRecords() { return []; }
+};
+globalThis.ResizeObserver = class {
+  observe() {}
+  disconnect() {}
+};
+globalThis.IntersectionObserver = class {
+  constructor(cb) { this.cb = cb; }
+  observe() {}
+  disconnect() {}
+};
+globalThis.requestAnimationFrame = (fn) => setTimeout(() => fn(0), 0);
+globalThis.cancelAnimationFrame = (t) => clearTimeout(t);
 // Simula o App: o painel do Excel marca a classe "xlsx-open" no body.
 let modalAberto = false;
 globalThis.document = {
@@ -408,7 +472,7 @@ host.load({
 const cabColunas = pane.querySelector(".xl-cab-colunas");
 const botoesCol = cabColunas.querySelectorAll("[data-colcab]");
 ok("o cabeçalho desenhou letras de coluna", botoesCol.length > 0, String(botoesCol.length));
-cabColunas.onclick({ target: botoesCol[0] });
+for (const fn of cabColunas.listeners.mousedown ?? []) fn({ target: botoesCol[0], preventDefault() {}, button: 0, shiftKey: false });
 ok(
   "a seleção cobre a coluna até o fim da grade",
   host.sel.l1 === 0 && host.sel.l2 === host.limLinhas - 1 && host.sel.c1 === 0 && host.sel.c2 === 0,
@@ -419,7 +483,7 @@ console.log("\nClicar no número seleciona a linha inteira");
 const cabLinhas = pane.querySelector(".xl-cab-linhas");
 const botoesLin = cabLinhas.querySelectorAll("[data-lincab]");
 ok("o cabeçalho desenhou números de linha", botoesLin.length > 0, String(botoesLin.length));
-cabLinhas.onclick({ target: botoesLin[0] });
+for (const fn of cabLinhas.listeners.mousedown ?? []) fn({ target: botoesLin[0], preventDefault() {}, button: 0, shiftKey: false });
 ok(
   "a seleção cobre a linha até o fim da grade",
   host.sel.c1 === 0 && host.sel.c2 === host.limColunas - 1 && host.sel.l1 === 0 && host.sel.l2 === 0,

@@ -2,7 +2,7 @@
 // letras (A..Z, depois AA, AB…), linhas começando em 1. Tudo que precisa falar
 // "célula B4" — a grade, as fórmulas e o .xlsx — passa por aqui.
 
-import { COLUNA_PX, LINHA_PX } from "./schema";
+import { COLUNA_PX, LINHA_PX, LIMITE_COLUNAS, LIMITE_LINHAS } from "./schema";
 
 /** 0 -> "A", 25 -> "Z", 26 -> "AA". */
 export function nomeColuna(i: number): string {
@@ -40,7 +40,8 @@ export function partes(refA1: string): { linha: number; col: number } | null {
   if (!m) return null;
   const col = indiceColuna(m[1]);
   const linha = parseInt(m[2], 10) - 1;
-  if (col < 0 || linha < 0) return null;
+  // XFE1 (coluna 16385) existe na regex, mas não na planilha do Excel
+  if (col < 0 || col >= LIMITE_COLUNAS || linha < 0 || linha >= LIMITE_LINHAS) return null;
   return { linha, col };
 }
 
@@ -173,6 +174,51 @@ export function yLinha(linhas: Record<number, number>, linha: number, padrao: nu
  */
 export function deslocarFormula(formula: string, dLinha: number, dCol: number): string {
   if (!dLinha && !dCol) return formula;
+  return mapearReferencias(formula, (col, lin, colFixa, linFixa) => {
+    const novaCol = colFixa ? col : col + dCol;
+    const novaLin = linFixa ? lin : lin + dLinha;
+    if (novaCol < 0 || novaLin < 0) return "#REF!";
+    return `${colFixa ? "$" : ""}${nomeColuna(novaCol)}${linFixa ? "$" : ""}${novaLin + 1}`;
+  });
+}
+
+/**
+ * Ajusta as referências quando uma linha/coluna é inserida ou excluída.
+ * `inicio` e `qtd` são 0-based; `modo` decide se as referências a partir de
+ * `inicio` descem (inserir) ou se as que estavam na faixa viram `#REF!` (excluir).
+ */
+export function ajustarFormula(
+  formula: string,
+  eixo: "linha" | "coluna",
+  inicio: number,
+  qtd: number,
+  modo: "inserir" | "excluir"
+): string {
+  return mapearReferencias(formula, (col, lin, colFixa, linFixa) => {
+    let nc = col;
+    let nl = lin;
+    const alvo = eixo === "linha" ? lin : col;
+    if (modo === "inserir") {
+      if (alvo >= inicio) {
+        if (eixo === "linha") nl += qtd;
+        else nc += qtd;
+      }
+    } else if (alvo >= inicio && alvo < inicio + qtd) {
+      return "#REF!";
+    } else if (alvo >= inicio + qtd) {
+      if (eixo === "linha") nl -= qtd;
+      else nc -= qtd;
+    }
+    if (nc < 0 || nl < 0) return "#REF!";
+    return `${colFixa ? "$" : ""}${nomeColuna(nc)}${linFixa ? "$" : ""}${nl + 1}`;
+  });
+}
+
+/** Percorre as referências A1 de uma fórmula (fora de texto entre aspas) e troca cada uma. */
+function mapearReferencias(
+  formula: string,
+  trocar: (col: number, lin: number, colFixa: boolean, linFixa: boolean) => string
+): string {
   let saida = "";
   let i = 0;
   while (i < formula.length) {
@@ -194,21 +240,16 @@ export function deslocarFormula(formula: string, dLinha: number, dCol: number): 
       i = Math.min(j + 1, formula.length);
       continue;
     }
-    // referência: $A$1, A$1, $A1, A1
+    // referência: $A$1, A$1, $A1, A1 (mas não o nome de uma função como LOG10()
     const m = /^(\$?)([A-Za-z]{1,3})(\$?)(\d{1,7})/.exec(formula.slice(i));
-    if (m && !/[A-Za-z0-9_$]/.test(formula[i - 1] ?? "")) {
+    const depois = formula[i + (m?.[0].length ?? 0)] ?? "";
+    if (m && depois !== "(" && !/[A-Za-z0-9_$]/.test(formula[i - 1] ?? "")) {
       const colFixa = m[1] === "$";
       const linFixa = m[3] === "$";
       const col = indiceColuna(m[2]);
       const lin = parseInt(m[4], 10) - 1;
-      const novaCol = colFixa ? col : col + dCol;
-      const novaLin = linFixa ? lin : lin + dLinha;
       if (col >= 0 && lin >= 0) {
-        if (novaCol < 0 || novaLin < 0) {
-          saida += "#REF!";
-        } else {
-          saida += `${colFixa ? "$" : ""}${nomeColuna(novaCol)}${linFixa ? "$" : ""}${novaLin + 1}`;
-        }
+        saida += trocar(col, lin, colFixa, linFixa);
         i += m[0].length;
         continue;
       }

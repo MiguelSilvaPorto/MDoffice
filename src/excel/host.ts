@@ -9,7 +9,7 @@
 
 import { $, h } from "../util";
 import { fita, marcarFita, type FormatState } from "./ribbon";
-import { calcular, ehFormula, textoDe as operandoTexto, type Contexto, type Operando } from "./formula";
+import { calcular, ehFormula, type Contexto, type Operando } from "./formula";
 import {
   CABECALHO_COL_PX,
   CABECALHO_LINHA_PX,
@@ -31,6 +31,7 @@ import {
 import {
   dentro,
   deslocarFormula,
+  ajustarFormula,
   faixa,
   indiceEm,
   intervalo,
@@ -53,6 +54,7 @@ import {
   ehErro,
   ehMoeda,
   ehPercentual,
+  ErroFormula,
   numeroDe,
   valorParaTexto,
   type Valor,
@@ -129,6 +131,12 @@ export class ExcelHost {
   private coluna = 0;
   /** seleção retangular (quando é só a célula ativa, l1=c1=l2=c2) */
   private sel: Intervalo = { l1: 0, c1: 0, l2: 0, c2: 0 };
+  /**
+   * Âncora e ponta da seleção. O Shift+seta move só a ponta, então a seleção
+   * pode encolher (antes o min/max contra a seleção inteira só crescia).
+   */
+  private ancora: { linha: number; col: number } = { linha: 0, col: 0 };
+  private ponta: { linha: number; col: number } = { linha: 0, col: 0 };
 
   /**
    * Tamanho atual da grade. A grade é "infinita": começa em COLUNAS_INICIAIS ×
@@ -159,6 +167,15 @@ export class ExcelHost {
 
   /** Cache: texto já calculado por célula, para não recalcular a cada tecla. */
   private cache: Map<string, { chave: string; valor: Operando }> = new Map();
+  /** pilha de células em cálculo, para detectar referência circular entre células. */
+  private calculando = new Set<string>();
+  /** última cópia interna (para colar fórmula deslocando referências e manter o estilo). */
+  private areaTransferencia: {
+    texto: string;
+    valores: string[][];
+    celulas: Celula[][];
+    origem: { linha: number; col: number };
+  } | null = null;
   constructor(opts: ExcelHostOptions) {
     this.opts = opts;
     this.pane = opts.pane;
@@ -202,7 +219,11 @@ export class ExcelHost {
     this.cabecalhoLinhas = h("div", { class: "xl-cab-linhas" });
     this.cabecalhoColunas = h("div", { class: "xl-cab-colunas" });
     this.canto = h("div", { class: "xl-canto", title: "Selecionar tudo (Ctrl+A)" });
-    this.canto.addEventListener("click", () => this.selecionarTudo());
+    this.canto.addEventListener("mousedown", (e) => {
+      if (this.edicao) this.confirmarEdicao(false);
+      this.selecionarTudo();
+      e.preventDefault();
+    });
     this.superficie = $("[data-superficie]", this.pane);
     const area = $("[data-area]", this.pane);
     area.append(this.cabecalhoLinhas, this.cabecalhoColunas, this.canto);
@@ -243,9 +264,14 @@ export class ExcelHost {
 
     // ---- mouse: clique seleciona, arrastar estende, alça preenche ----
     let arrastando = false;
-    let ancorou = false;
     let selBase: Intervalo | null = null;
     let direcao: "baixo" | "direita" | null = null;
+    const soltar = () => {
+      arrastando = false;
+      this.preenchendo = false;
+      selBase = null;
+      direcao = null;
+    };
 
     this.superficie.addEventListener("mousedown", (e) => {
       const alvo = e.target as HTMLElement | null;
@@ -266,33 +292,43 @@ export class ExcelHost {
       if (!cel) return;
       const alvoCel = this.posicaoDe(Number(cel.dataset.lin), Number(cel.dataset.col));
       if (!alvoCel) return;
+
+      // Confirma a edição ANTES de mexer na seleção. O blur do input chamava
+      // confirmarEdicao, que reescrevia linha/coluna/sel para a célula editada:
+      // o clique seguinte era engolido ou estendia "tudo desde a lista".
+      if (this.edicao) this.confirmarEdicao(false);
+
+      // duplo clique: o mousedown repinta a grade e o navegador não chega a
+      // disparar o dblclick; trata aqui, no segundo mousedown (detail = 2)
+      if (e.detail >= 2) {
+        this.definirSelecao(alvoCel, alvoCel);
+        this.focarGrade();
+        this.atualizarSelecao();
+        this.editarCelula(this.valorBruto(alvoCel.linha, alvoCel.col));
+        e.preventDefault();
+        return;
+      }
+
       arrastando = true;
-      ancorou = true;
-      // Só o Shift ESTENDE a seleção (do âncora ativo até a célula clicada). O Ctrl era
-      // tratado como extensão também, mas o app só tem UMA faixa: Ctrl+clique depois de
-      // uma seleção pequena pegava tudo desde o âncora antigo (o relato). Ctrl agora
-      // começa uma seleção nova, como um clique comum.
-      const estendido = e.shiftKey;
-      if (estendido) {
-        // o Shift+clique precisa estender já no mousedown: antes só o mousemove mexia na
-        // seleção, então um clique sem arrastar deixava a seleção antiga intacta
-        this.sel = {
-          l1: Math.min(this.linha, alvoCel.linha),
-          c1: Math.min(this.coluna, alvoCel.col),
-          l2: Math.max(this.linha, alvoCel.linha),
-          c2: Math.max(this.coluna, alvoCel.col),
-        };
+      if (e.shiftKey) {
+        // Shift estende do âncora até a célula clicada, já no mousedown
+        this.definirSelecao(this.ancora, alvoCel, this.ancora);
       } else {
-        this.sel = { l1: alvoCel.linha, c1: alvoCel.col, l2: alvoCel.linha, c2: alvoCel.col };
-        this.linha = alvoCel.linha;
-        this.coluna = alvoCel.col;
+        this.definirSelecao(alvoCel, alvoCel, alvoCel);
       }
       this.focarGrade();
-      this.pintar();
+      this.atualizarSelecao();
       e.preventDefault();
     });
 
     window.addEventListener("mousemove", (e) => {
+      if (arrastando && e.buttons === 0) {
+        // o mouseup pode se perder fora da janela; sem botão pressionado, o
+        // arrasto acabou (antes a seleção continuava seguindo o ponteiro)
+        soltar();
+        this.pintarRealce();
+        return;
+      }
       if (!arrastando) {
         this.hover = this.posicaoDoEvento(e);
         return;
@@ -311,49 +347,72 @@ export class ExcelHost {
         } else {
           this.sel = { ...selBase, c2: Math.max(selBase.c2, p.col) };
         }
-        this.pintar();
+        this.atualizarSelecao();
         return;
       }
 
-      if (!ancorou) return;
-      this.sel = {
-        l1: Math.min(this.linha, p.linha),
-        c1: Math.min(this.coluna, p.col),
-        l2: Math.max(this.linha, p.linha),
-        c2: Math.max(this.coluna, p.col),
-      };
-      this.pintar();
+      this.definirSelecao(this.ancora, p, this.ancora);
+      this.atualizarSelecao();
     });
 
     window.addEventListener("mouseup", () => {
       if (arrastando && this.preenchendo && selBase && direcao) {
         this.preencherSelecao(selBase, direcao);
       }
-      arrastando = false;
-      ancorou = false;
-      this.preenchendo = false;
-      selBase = null;
-      direcao = null;
+      soltar();
+      this.pintarRealce();
+    });
+    window.addEventListener("blur", () => {
+      soltar();
+      this.pintarRealce();
+    });
+    document.addEventListener("pointercancel", () => {
+      soltar();
+      this.pintarRealce();
     });
 
     this.superficie.addEventListener("mousemove", (e) => {
+      if (arrastando) return;
       const p = this.posicaoDoEvento(e);
       this.hover = p;
       this.pintarRealce();
     });
     this.superficie.addEventListener("mouseleave", () => {
+      if (arrastando) return;
       this.hover = null;
       this.pintarRealce();
     });
 
-    // ---- duplo clique edita ----
+    // ---- cabeçalhos: selecionar linha/coluna inteira ----
+    // O handler fica no contêiner (que não é recriado), não em cada botão: antes
+    // o repaint trocava o innerHTML e o clique do cabeçalho era perdido.
+    const selecionarCabecalho = (e: MouseEvent) => {
+      const alvo = (e.target as HTMLElement).closest<HTMLElement>("[data-colcab],[data-lincab]");
+      if (!alvo) return;
+      if (this.edicao) this.confirmarEdicao(false);
+      if (alvo.dataset.colcab !== undefined) {
+        const c = Number(alvo.dataset.colcab);
+        this.definirSelecao({ linha: 0, col: c }, { linha: this.limLinhas - 1, col: c }, { linha: 0, col: c });
+      } else {
+        const l = Number(alvo.dataset.lincab);
+        this.definirSelecao({ linha: l, col: 0 }, { linha: l, col: this.limColunas - 1 }, { linha: l, col: 0 });
+      }
+      this.focarGrade();
+      this.atualizarSelecao();
+      this.opts.onStatus?.();
+      e.preventDefault();
+    };
+    this.cabecalhoColunas.addEventListener("mousedown", selecionarCabecalho);
+    this.cabecalhoLinhas.addEventListener("mousedown", selecionarCabecalho);
+
+    // ---- duplo clique edita (o mousedown já trata o caso nativo) ----
     this.superficie.addEventListener("dblclick", (e) => {
+      if (this.edicao) return;
       const alvo = (e.target as HTMLElement).closest<HTMLElement>("[data-cel]");
       if (!alvo) return;
       const l = Number(alvo.dataset.lin);
       const c = Number(alvo.dataset.col);
-      this.linha = l;
-      this.coluna = c;
+      this.definirSelecao({ linha: l, col: c }, { linha: l, col: c });
       this.editarCelula(this.valorBruto(l, c));
       e.preventDefault();
     });
@@ -364,9 +423,15 @@ export class ExcelHost {
 
     // ---- a caixa de edição dentro da célula ----
     this.entrada.addEventListener("keydown", (e) => this.teclaDaEntrada(e));
+    this.entrada.addEventListener("input", () => {
+      if (!this.edicao) return;
+      this.edicao.texto = this.entrada.value;
+      this.barraFormula.value = this.entrada.value;
+    });
     this.entrada.addEventListener("blur", () => {
-      // só confirma se ainda estiver em edição (o Tab/Enter já resolveu)
-      if (this.edicao) this.confirmarEdicao(true);
+      // só confirma se ainda estiver em edição (o Tab/Enter já resolveu);
+      // não rouba o foco de quem recebeu o clique (barra de fórmulas, fita…)
+      if (this.edicao) this.confirmarEdicao(false);
     });
 
     // ---- arrastar e soltar uma célula solta valores de texto ----
@@ -397,6 +462,48 @@ export class ExcelHost {
     const y = e.clientY - r.top + this.grade.scrollTop;
     if (x < CABECALHO_COL_PX || y < CABECALHO_LINHA_PX) return null;
     return { linha: this.linhaEm(y), col: this.colunaEm(x) };
+  }
+
+  /** Aplica uma seleção (âncora → ponta) e mantém a célula ativa. */
+  private definirSelecao(
+    ancora: { linha: number; col: number },
+    ponta: { linha: number; col: number },
+    ativa: { linha: number; col: number } = ancora
+  ): void {
+    const l = (v: number) => Math.max(0, Math.min(this.limLinhas - 1, v));
+    const c = (v: number) => Math.max(0, Math.min(this.limColunas - 1, v));
+    const a = { linha: l(ancora.linha), col: c(ancora.col) };
+    const b = { linha: l(ponta.linha), col: c(ponta.col) };
+    this.ancora = a;
+    this.ponta = b;
+    this.linha = l(ativa.linha);
+    this.coluna = c(ativa.col);
+    this.sel = {
+      l1: Math.min(a.linha, b.linha),
+      c1: Math.min(a.col, b.col),
+      l2: Math.max(a.linha, b.linha),
+      c2: Math.max(a.col, b.col),
+    };
+  }
+
+  /** Redesenha só o que a seleção muda (sem recriar as células no meio do clique). */
+  private atualizarSelecao(): void {
+    this.desenharCabecalhos();
+    this.pintarRealce();
+    this.pintarBarraFormula();
+    this.pintarStatus();
+    marcarFita(this.fitaEl, this.estadoFormatacao());
+    this.ajustarEntrada();
+  }
+
+  /** A célula está dentro de uma mescla, mas não é a âncora dela? */
+  private escondidaPorMescla(linha: number, col: number): boolean {
+    for (const m of this.folha.mesclas) {
+      const r = intervalo(m);
+      if (!r || !dentro(r, linha, col)) continue;
+      return r.l1 !== linha || r.c1 !== col;
+    }
+    return false;
   }
 
   /** Índice da coluna na posição horizontal do conteúdo (nula se passou do fim). */
@@ -451,34 +558,44 @@ export class ExcelHost {
     const cel = f.celulas[refA1];
     if (!cel || !cel.texto) return null;
 
+    // referência circular entre células: a pilha fica no host, então A1=B1 e
+    // B1=A1 param em #CIRC! em vez de estourar a pilha e virar #VALOR!
+    if (this.calculando.has(refA1)) return new ErroFormula("#CIRC!");
+
     // cache: só recalcula quando o texto bruto muda
     const guardado = this.cache.get(refA1);
     if (guardado && guardado.chave === cel.texto) return guardado.valor;
 
     let valor: Operando;
-    if (cel.formula || ehFormula(cel.texto)) {
-      valor = calcular(cel.texto, this.contexto());
-    } else {
-      const bruto = cel.texto;
-      const boo = booleanoDe(bruto);
-      if (boo !== null) {
-        valor = boo;
+    this.calculando.add(refA1);
+    try {
+      if (cel.formula || ehFormula(cel.texto)) {
+        valor = calcular(cel.texto, this.contexto());
       } else {
-        const num = numeroDe(bruto);
-        if (num !== null) {
-          const pct = ehPercentual(bruto);
-          valor = pct ? num / 100 : num;
+        const bruto = cel.texto;
+        const boo = booleanoDe(bruto);
+        if (boo !== null) {
+          valor = boo;
         } else {
+          // data antes de número: "01/01/2026" contém dígitos, mas é data
           const d = dataDe(bruto);
+          const num = d ? null : numeroDe(bruto);
           if (d) {
             valor = dataParaSerial(d);
+          } else if (num !== null) {
+            valor = ehPercentual(bruto) ? num / 100 : num;
           } else {
             valor = bruto;
           }
         }
       }
+    } finally {
+      this.calculando.delete(refA1);
     }
-    this.cache.set(refA1, { chave: cel.texto, valor });
+    // HOJE/AGORA mudam sozinhos: não entram no cache (senão congelam até editar)
+    if (!/(?:HOJE|AGORA|TODAY|NOW)\s*\(/i.test(cel.texto)) {
+      this.cache.set(refA1, { chave: cel.texto, valor });
+    }
     return valor;
   }
 
@@ -556,17 +673,6 @@ export class ExcelHost {
       );
     }
     this.cabecalhoColunas.innerHTML = cols.join("");
-    // selecionar coluna inteira (até o fim da grade — como no Excel)
-    this.cabecalhoColunas.onclick = (e) => {
-      const alvo = (e.target as HTMLElement).closest<HTMLElement>("[data-colcab]");
-      if (!alvo) return;
-      const c = Number(alvo.dataset.colcab);
-      this.linha = 0;
-      this.coluna = c;
-      this.sel = { l1: 0, c1: c, l2: this.limLinhas - 1, c2: c };
-      this.pintar();
-      this.opts.onStatus?.();
-    };
 
     const scrollY = this.grade.scrollTop;
     const visAltura = this.grade.clientHeight;
@@ -583,17 +689,6 @@ export class ExcelHost {
       );
     }
     this.cabecalhoLinhas.innerHTML = lins.join("");
-    // selecionar linha inteira (até o fim da grade — como no Excel)
-    this.cabecalhoLinhas.onclick = (e) => {
-      const alvo = (e.target as HTMLElement).closest<HTMLElement>("[data-lincab]");
-      if (!alvo) return;
-      const l = Number(alvo.dataset.lincab);
-      this.linha = l;
-      this.coluna = 0;
-      this.sel = { l1: l, c1: 0, l2: l, c2: this.limColunas - 1 };
-      this.pintar();
-      this.opts.onStatus?.();
-    };
   }
 
   private desenharCelulas(): void {
@@ -638,6 +733,10 @@ export class ExcelHost {
         const classes = ["xl-cel"];
         if (cel?.formula) classes.push("formula");
         if (estilo?.numero) classes.push(`n-${estilo.numero}`);
+        if (estilo?.alinhamento) classes.push(`al-${estilo.alinhamento}`);
+        // número (inclusive data, que é serial) fica à direita quando não há
+        // alinhamento escolhido — como no Excel
+        if (!this.mostrarFrases && !estilo?.alinhamento && typeof this.valorCalculado(r) === "number") classes.push("num");
         if (mesclada.l2 > mesclada.l1 || mesclada.c2 > mesclada.c1) classes.push("mesclada");
         const estiloCss = [
           `left:${x}px;top:${y}px;width:${mesclada.largura}px;height:${mesclada.altura}px`,
@@ -817,9 +916,15 @@ export class ExcelHost {
     // borda grossa da célula ativa (dentro da seleção) + alça de preenchimento
     if (!this.edicao) {
       const m = this.mesclaDe(this.linha, this.coluna);
-      const div = caixa(m.l1, m.c1, m.l2, m.c2, "ativa");
-      div.append(h("span", { class: "xl-alca-preench", title: "Arrastar para preencher as células abaixo/direita" }));
-      this.superficie.append(div);
+      this.superficie.append(caixa(m.l1, m.c1, m.l2, m.c2, "ativa"));
+
+      // a alça fica no canto INFERIOR DIREITO da seleção (não da célula ativa):
+      // num bloco A2:B3 ela precisa estar em B3 para arrastar de fora do bloco
+      const ini = this.mesclaDe(this.sel.l1, this.sel.c1);
+      const fim = this.mesclaDe(this.sel.l2, this.sel.c2);
+      const alca = caixa(ini.l1, ini.c1, fim.l2, fim.c2, "alca-caixa");
+      alca.append(h("span", { class: "xl-alca-preench", title: "Arrastar para preencher as células abaixo/direita" }));
+      this.superficie.append(alca);
     }
   }
 
@@ -885,13 +990,19 @@ export class ExcelHost {
     const linhaInteira = this.sel.c1 === 0 && this.sel.l1 === this.sel.l2 && this.sel.c2 === this.limColunas - 1;
     if (this.limLinhas < this.tetoLinhas() && g.scrollTop + g.clientHeight >= g.scrollHeight - folga) {
       this.limLinhas = Math.min(this.tetoLinhas(), this.limLinhas * 2);
-      if (colunaInteira) this.sel = { ...this.sel, l2: this.limLinhas - 1 };
+      if (colunaInteira) {
+        this.sel = { ...this.sel, l2: this.limLinhas - 1 };
+        this.ponta = { linha: this.limLinhas - 1, col: this.ponta.col };
+      }
       this.pintar();
       return;
     }
     if (this.limColunas < LIMITE_COLUNAS && g.scrollLeft + g.clientWidth >= g.scrollWidth - folga) {
       this.limColunas = Math.min(LIMITE_COLUNAS, this.limColunas * 2);
-      if (linhaInteira) this.sel = { ...this.sel, c2: this.limColunas - 1 };
+      if (linhaInteira) {
+        this.sel = { ...this.sel, c2: this.limColunas - 1 };
+        this.ponta = { linha: this.ponta.linha, col: this.limColunas - 1 };
+      }
       this.pintar();
     }
   }
@@ -933,6 +1044,7 @@ export class ExcelHost {
     this.edicao = { linha: this.linha, col: this.coluna, texto: textoInicial ?? original, original };
     this.entrada.hidden = false;
     this.entrada.value = textoInicial ?? original;
+    this.barraFormula.value = this.entrada.value;
     this.ajustarEntrada();
     this.pintarRealce();
     this.entrada.focus();
@@ -948,12 +1060,28 @@ export class ExcelHost {
     this.edicao = null;
     this.entrada.hidden = true;
     this.escrever(linha, col, texto);
-    this.linha = linha;
-    this.coluna = col;
-    this.sel = { l1: linha, c1: col, l2: linha, c2: col };
+    // a seleção NÃO muda aqui: quem clicou em outra célula já definiu a nova
+    // seleção; o Enter/Tab move depois. Antes o blur reescrevia linha/coluna/sel
+    // e o clique seguinte estendia a partir da célula editada.
     if (focarGrade) this.focarGrade();
     this.pintar();
     this.opts.onStatus?.();
+  }
+
+  /** Formato que o texto sugere, preservando o que a célula já tinha. */
+  private estiloDetectado(texto: string, base?: Estilo): Estilo | undefined {
+    const estilo: Estilo = { ...(base ?? {}) };
+    const pct = ehPercentual(texto);
+    const moeda = ehMoeda(texto, this.config.moeda);
+    const data = dataDe(texto);
+    if (pct) {
+      estilo.numero = "porcento";
+      // "15%" mostra 15% (sem casas); "15,5%" mostra uma casa
+      const casas = /[.,](\d+)\s*%\s*$/.exec(texto)?.[1].length;
+      estilo.casas = casas ?? 0;
+    } else if (moeda) estilo.numero = "moeda";
+    else if (data) estilo.numero = "data";
+    return Object.keys(estilo).length ? estilo : undefined;
   }
 
   /** Escreve o texto numa célula, aplicando o estilo que o texto sugere. */
@@ -972,21 +1100,10 @@ export class ExcelHost {
     }
 
     // detecta número, moeda, porcentagem e data para já marcar o formato
-    const estilo: Estilo = { ...(atual?.estilo ?? {}) };
-    const pct = ehPercentual(limpo);
-    const moeda = ehMoeda(limpo, this.config.moeda);
-    const data = dataDe(limpo);
-    if (pct && estilo.numero !== "porcento") estilo.numero = "porcento";
-    else if (moeda && estilo.numero !== "moeda") estilo.numero = "moeda";
-    else if (data && estilo.numero !== "data") estilo.numero = "data";
-    else if (!pct && !moeda && !data && numeroDe(limpo) !== null && estilo.numero === "geral") {
-      // número puro sem formato: o "geral" já mostra certinho
-    }
-    if (ehFormula(limpo)) {
-      f.celulas[r] = { texto: limpo, formula: true, estilo: Object.keys(estilo).length ? estilo : undefined };
-    } else {
-      f.celulas[r] = { texto: limpo, estilo: Object.keys(estilo).length ? estilo : undefined };
-    }
+    const estilo = this.estiloDetectado(limpo, atual?.estilo);
+    f.celulas[r] = ehFormula(limpo)
+      ? { texto: limpo, formula: true, estilo }
+      : { texto: limpo, estilo };
     this.cache.delete(r);
     this.sujo();
   }
@@ -996,9 +1113,10 @@ export class ExcelHost {
     const f = this.folha;
     const r = ref(linha, col);
     const atual = f.celulas[r];
-    const estilo = estiloBase ?? atual?.estilo;
+    const estilo = estiloBase ?? this.estiloDetectado(texto, atual?.estilo);
     if (texto === "") {
       if (atual && ehVazia({ ...atual, texto: "" })) delete f.celulas[r];
+      else if (atual) atual.texto = "";
     } else {
       f.celulas[r] = ehFormula(texto)
         ? { texto, formula: true, estilo }
@@ -1043,9 +1161,6 @@ export class ExcelHost {
   /** Copia a seleção (ou a linha inteira) para um retângulo de valores. */
   private valoresDaSelecao(): { valores: string[][]; origem: { linha: number; col: number } } {
     let sel = this.sel;
-    if (sel.l1 === sel.l2 && sel.c1 === sel.c2) {
-      sel = { ...sel, l2: Math.min(sel.l1 + 1, this.limLinhas - 1), c2: Math.min(sel.c1 + 1, this.limColunas - 1) };
-    }
     // Coluna/linha inteira (letra/número): copia só até onde há conteúdo — colar
     // centenas de milhares de linhas vazias não ajuda ninguém.
     if (sel.l1 === 0 && sel.l2 >= this.limLinhas - 1) sel = { ...sel, l2: Math.max(sel.l1, this.ultimaLinhaUsada()) };
@@ -1069,11 +1184,18 @@ export class ExcelHost {
     this.colarTexto(texto);
   }
 
-  /** Cola um texto (uma célula, ou uma grade separada por tabulação/quebra de linha) a partir da seleção. */
+  /** Cola um texto (uma célula, ou uma grade separada por tabulação/quebra de linha) na célula ativa. */
   private colarTexto(texto: string): void {
-    // texto sem tabulação nem quebra de linha: entra inteiro na célula ativa
-    if (!/[\t\n]/.test(texto)) {
-      this.escrever(this.linha, this.coluna, texto);
+    const base = { linha: this.linha, coluna: this.coluna };
+    // cópia interna: além dos valores, desloca as fórmulas e copia o estilo
+    const interno = !!this.areaTransferencia && texto === this.areaTransferencia.texto;
+    const dL = interno && this.areaTransferencia ? base.linha - this.areaTransferencia.origem.linha : 0;
+    const dC = interno && this.areaTransferencia ? base.coluna - this.areaTransferencia.origem.col : 0;
+
+    // texto sem tabulação nem quebra de linha (e que não é cópia interna): entra
+    // inteiro na célula ativa
+    if (!/[\t\n]/.test(texto) && !interno) {
+      this.escrever(base.linha, base.coluna, texto);
       this.pintar();
       this.opts.onStatus?.();
       return;
@@ -1088,14 +1210,29 @@ export class ExcelHost {
       return;
     }
     // a grade cresce para caber a colagem (respeitando os limites do Excel)
-    this.garantirLimites(this.sel.l1 + linhas.length - 1, this.sel.c1 + largura - 1);
+    this.garantirLimites(base.linha + linhas.length - 1, base.coluna + largura - 1);
     let mudou = false;
     linhas.forEach((linhaTxt, iL) => {
       linhaTxt.split("\t").forEach((celulaTxt, iC) => {
-        const l = this.sel.l1 + iL;
-        const c = this.sel.c1 + iC;
+        const l = base.linha + iL;
+        const c = base.coluna + iC;
         if (l >= LIMITE_LINHAS || c >= LIMITE_COLUNAS) return;
-        this.escreverValor(l, c, celulaTxt.replace(/\r/g, ""));
+        // numa mescla só a âncora recebe: gravar em B6:D6 deixava valores
+        // invisíveis (a mescla desenha apenas a âncora)
+        if (this.escondidaPorMescla(l, c)) return;
+        let valor = celulaTxt.replace(/\r/g, "");
+        let estilo: Estilo | undefined;
+        if (interno && this.areaTransferencia) {
+          const fonte = this.areaTransferencia.celulas[iL]?.[iC] ?? null;
+          if (fonte) {
+            valor =
+              fonte.formula || ehFormula(fonte.texto)
+                ? deslocarFormula(fonte.texto, dL, dC)
+                : fonte.texto;
+            estilo = fonte.estilo ? { ...fonte.estilo } : undefined;
+          }
+        }
+        this.escreverValor(l, c, valor, estilo);
         mudou = true;
       });
     });
@@ -1108,9 +1245,18 @@ export class ExcelHost {
 
   /** Copia a seleção para a área de transferência (TSV, como o Excel). */
   private copiar(): void {
-    const { valores } = this.valoresDaSelecao();
+    const { valores, origem } = this.valoresDaSelecao();
     const tsv = valores.map((l) => l.join("\t")).join("\n");
-    void navigator.clipboard.writeText(tsv).catch(() => {});
+    // A cópia guarda o CONTEÚDO (não só as coordenadas): colar em outra aba ou
+    // depois de editar a origem continua levando o que foi copiado.
+    const celulas: Celula[][] = valores.map((linha, iL) =>
+      linha.map((_, iC) => {
+        const c = this.folha.celulas[ref(origem.linha + iL, origem.col + iC)];
+        return c ? { texto: c.texto, formula: c.formula, estilo: c.estilo } : { texto: "" };
+      })
+    );
+    this.areaTransferencia = { texto: tsv, valores, celulas, origem };
+    void navigator.clipboard?.writeText(tsv).catch(() => {});
   }
 
   // ==================================================================
@@ -1123,29 +1269,38 @@ export class ExcelHost {
     const ultC = this.ultimaColunaUsada();
 
     switch (e.key) {
-      case "ArrowUp":
+      case "ArrowUp": {
         e.preventDefault();
-        this.mover(this.linha - 1, this.coluna, e.shiftKey);
+        const p = ctrl ? this.pularBorda(-1, 0) : { linha: this.linha - 1, col: this.coluna };
+        this.mover(p.linha, p.col, e.shiftKey);
         return;
-      case "ArrowDown":
+      }
+      case "ArrowDown": {
         e.preventDefault();
-        this.mover(this.linha + 1, this.coluna, e.shiftKey);
+        const p = ctrl ? this.pularBorda(1, 0) : { linha: this.linha + 1, col: this.coluna };
+        this.mover(p.linha, p.col, e.shiftKey);
         return;
-      case "ArrowLeft":
+      }
+      case "ArrowLeft": {
         e.preventDefault();
-        this.mover(this.linha, this.coluna - 1, e.shiftKey);
+        const p = ctrl ? this.pularBorda(0, -1) : { linha: this.linha, col: this.coluna - 1 };
+        this.mover(p.linha, p.col, e.shiftKey);
         return;
-      case "ArrowRight":
+      }
+      case "ArrowRight": {
         e.preventDefault();
-        this.mover(this.linha, this.coluna + 1, e.shiftKey);
+        const p = ctrl ? this.pularBorda(0, 1) : { linha: this.linha, col: this.coluna + 1 };
+        this.mover(p.linha, p.col, e.shiftKey);
         return;
+      }
       case "Tab":
         e.preventDefault();
         this.mover(this.linha, this.coluna + (e.shiftKey ? -1 : 1), false);
         return;
       case "Enter":
+        // Enter anda uma linha para baixo (como no Excel); F2/digitar editam
         e.preventDefault();
-        this.editarCelula();
+        this.mover(this.linha + 1, this.coluna, false);
         return;
       case "F2":
         e.preventDefault();
@@ -1336,8 +1491,14 @@ export class ExcelHost {
     }
     if (!mudou) return;
     // a coluna/linha inteira selecionada acompanha o crescimento (como no Excel)
-    if (colunaInteira) this.sel = { ...this.sel, l2: this.limLinhas - 1 };
-    if (linhaInteira) this.sel = { ...this.sel, c2: this.limColunas - 1 };
+    if (colunaInteira) {
+      this.sel = { ...this.sel, l2: this.limLinhas - 1 };
+      this.ponta = { linha: this.limLinhas - 1, col: this.ponta.col };
+    }
+    if (linhaInteira) {
+      this.sel = { ...this.sel, c2: this.limColunas - 1 };
+      this.ponta = { linha: this.ponta.linha, col: this.limColunas - 1 };
+    }
     this.pintar();
   }
 
@@ -1356,21 +1517,48 @@ export class ExcelHost {
     const l = Math.max(0, Math.min(this.limLinhas - 1, linha));
     const c = Math.max(0, Math.min(this.limColunas - 1, coluna));
     if (estender) {
-      this.sel = {
-        l1: Math.min(this.sel.l1, l),
-        c1: Math.min(this.sel.c1, c),
-        l2: Math.max(this.sel.l2, l),
-        c2: Math.max(this.sel.c2, c),
-      };
+      // Shift move a PONTA a partir da posição atual dela, com a âncora fixa:
+      // assim a seleção também encolhe (A2:C4 + Shift+← vira A2:B4). O delta usa
+      // a coordenada PEDIDA (antes de limitar), senão na borda ele virava zero.
+      const dL = linha - this.linha;
+      const dC = coluna - this.coluna;
+      const ponta = { linha: this.ponta.linha + dL, col: this.ponta.col + dC };
+      this.definirSelecao(this.ancora, ponta, this.ancora);
     } else {
-      this.linha = l;
-      this.coluna = c;
-      this.sel = { l1: l, c1: c, l2: l, c2: c };
+      this.definirSelecao({ linha: l, col: c }, { linha: l, col: c }, { linha: l, col: c });
     }
-    this.rolarAte(l, c);
+    this.rolarAte(this.ponta.linha, this.ponta.col);
     this.pintar();
     this.focarGrade();
     this.opts.onStatus?.();
+  }
+
+  /** Ctrl+seta: pula para a borda do bloco de conteúdo (como no Excel). */
+  private pularBorda(dL: number, dC: number): { linha: number; col: number } {
+    const f = this.folha;
+    const tem = (l: number, c: number): boolean =>
+      l >= 0 && c >= 0 && l < this.limLinhas && c < this.limColunas && !!f.celulas[ref(l, c)]?.texto;
+    let l = this.linha;
+    let c = this.coluna;
+    const maxL = Math.max(this.ultimaLinhaUsada(), l);
+    const maxC = Math.max(this.ultimaColunaUsada(), c);
+    const pode = (nl: number, nc: number) => nl >= 0 && nc >= 0 && nl <= maxL && nc <= maxC;
+    if (tem(l, c)) {
+      while (pode(l + dL, c + dC) && tem(l + dL, c + dC)) {
+        l += dL;
+        c += dC;
+      }
+    } else {
+      while (pode(l + dL, c + dC) && !tem(l + dL, c + dC)) {
+        l += dL;
+        c += dC;
+      }
+      if (pode(l + dL, c + dC) && tem(l + dL, c + dC)) {
+        l += dL;
+        c += dC;
+      }
+    }
+    return { linha: l, col: c };
   }
 
   /**
@@ -1401,7 +1589,16 @@ export class ExcelHost {
   }
 
   private selecionarTudo(): void {
-    this.sel = { l1: 0, c1: 0, l2: this.ultimaLinhaUsada(), c2: this.ultimaColunaUsada() };
+    const ul = this.ultimaLinhaUsada();
+    const uc = this.ultimaColunaUsada();
+    const jaNaArea = this.sel.l1 === 0 && this.sel.c1 === 0 && this.sel.l2 === ul && this.sel.c2 === uc;
+    // primeiro Ctrl+A pega a área usada; o segundo pega a grade inteira
+    this.definirSelecao(
+      { linha: 0, col: 0 },
+      { linha: jaNaArea ? this.limLinhas - 1 : ul, col: jaNaArea ? this.limColunas - 1 : uc },
+      { linha: 0, col: 0 }
+    );
+    this.rolarAte(0, 0);
     this.pintar();
     this.opts.onStatus?.();
   }
@@ -1463,7 +1660,14 @@ export class ExcelHost {
   private clamparSelecao(): void {
     this.linha = Math.min(this.linha, this.ultimaLinhaUsada());
     this.coluna = Math.min(this.coluna, this.ultimaColunaUsada());
-    this.sel = { ...this.sel, l2: Math.min(this.sel.l2, this.ultimaLinhaUsada()), c2: Math.min(this.sel.c2, this.ultimaColunaUsada()) };
+    this.sel = {
+      l1: Math.min(this.sel.l1, this.ultimaLinhaUsada()),
+      c1: Math.min(this.sel.c1, this.ultimaColunaUsada()),
+      l2: Math.min(this.sel.l2, this.ultimaLinhaUsada()),
+      c2: Math.min(this.sel.c2, this.ultimaColunaUsada()),
+    };
+    this.ancora = { linha: this.sel.l1, col: this.sel.c1 };
+    this.ponta = { linha: this.sel.l2, col: this.sel.c2 };
   }
 
   // ==================================================================
@@ -1612,6 +1816,43 @@ export class ExcelHost {
     const f = this.folha;
     const altOrigem = origem.l2 - origem.l1 + 1;
     const largOrigem = origem.c2 - origem.c1 + 1;
+    // Série numérica (1, 2 → 3, 4): só quando TODAS as células da linha/coluna de
+    // origem são números e o passo é constante. Fórmulas continuam sendo copiadas
+    // com as referências deslocadas, não viram série.
+    const series = new Map<number, { passo: number; ultimo: number }>();
+    const acharSerie = (refs: string[]): { passo: number; ultimo: number } | null => {
+      if (refs.length < 2) return null;
+      const nums: number[] = [];
+      for (const r of refs) {
+        const cel = f.celulas[r];
+        if (!cel || cel.formula || ehFormula(cel.texto)) return null;
+        const v = this.valorCalculado(r);
+        if (typeof v !== "number") return null;
+        nums.push(v);
+      }
+      const passo = nums[1] - nums[0];
+      for (let i = 2; i < nums.length; i++) {
+        if (Math.abs(nums[i] - nums[i - 1] - passo) > 1e-9) return null;
+      }
+      return { passo, ultimo: nums[nums.length - 1] };
+    };
+    if (altOrigem * largOrigem <= LIMITE_COLAR) {
+      if (direcao === "baixo") {
+        for (let c = origem.c1; c <= origem.c2; c++) {
+          const refs: string[] = [];
+          for (let l = origem.l1; l <= origem.l2; l++) refs.push(ref(l, c));
+          const s = acharSerie(refs);
+          if (s) series.set(c, s);
+        }
+      } else {
+        for (let l = origem.l1; l <= origem.l2; l++) {
+          const refs: string[] = [];
+          for (let c = origem.c1; c <= origem.c2; c++) refs.push(ref(l, c));
+          const s = acharSerie(refs);
+          if (s) series.set(l, s);
+        }
+      }
+    }
     // O arrasto da alça é limitado pela tela, mas uma coluna/linha inteira
     // selecionada poderia gerar uma varredura enorme — corta no teto de colagem.
     let feitas = 0;
@@ -1627,15 +1868,32 @@ export class ExcelHost {
           this.opts.onStatus?.();
           return;
         }
+        // série numérica: continua o padrão em vez de repetir o bloco
+        const serie = direcao === "baixo" ? series.get(c) : series.get(l);
+        if (serie) {
+          const k = direcao === "baixo" ? l - origem.l2 : c - origem.c2;
+          const valor = serie.ultimo + serie.passo * k;
+          const texto = valor.toLocaleString("pt-BR", { useGrouping: false, maximumFractionDigits: 10 });
+          const base = f.celulas[ref(direcao === "baixo" ? origem.l2 : l, direcao === "baixo" ? c : origem.c2)]?.estilo;
+          this.escreverValor(l, c, texto, base);
+          continue;
+        }
         // a origem "anda em círculo" dentro do retângulo inicial
         const ol = direcao === "baixo" ? origem.l1 + ((l - origem.l1) % altOrigem) : l;
         const oc = direcao === "direita" ? origem.c1 + ((c - origem.c1) % largOrigem) : c;
         const cel = f.celulas[ref(ol, oc)];
-        if (!cel) continue;
+        if (!cel) {
+          // origem vazia limpa o destino (como no Excel)
+          this.escreverValor(l, c, "", undefined);
+          continue;
+        }
         const texto = cel.formula || ehFormula(cel.texto) ? deslocarFormula(cel.texto, l - ol, c - oc) : cel.texto;
         this.escreverValor(l, c, texto, cel.estilo);
       }
     }
+    // a seleção final vira o novo bloco (e a alça fica no canto dele)
+    this.ancora = { linha: origem.l1, col: origem.c1 };
+    this.ponta = { linha: this.sel.l2, col: this.sel.c2 };
     this.sujo();
     this.pintar();
     this.opts.onStatus?.();
@@ -1676,13 +1934,16 @@ export class ExcelHost {
       this.linha = destino.linha;
       this.coluna = destino.col;
       this.sel = { l1: destino.linha, c1: destino.col, l2: destino.linha, c2: destino.col };
+      this.ancora = { linha: destino.linha, col: destino.col };
+      this.ponta = { linha: destino.linha, col: destino.col };
     }
     this.pintar();
     this.opts.onStatus?.();
   }
 
   private aplicarNumero(numero: FormatoNumero): void {
-    this.aplicarEstilo({ numero, casas: this.config.casas });
+    // o botão de porcentagem do Excel usa 0 casas (15%); moeda/número usam as do livro
+    this.aplicarEstilo({ numero, casas: numero === "porcento" ? 0 : this.config.casas });
   }
 
   private executar(cmd: string, valor?: string): void {
@@ -1695,12 +1956,20 @@ export class ExcelHost {
         this.copiar();
         this.limparSelecao();
         return;
-      case "colar":
-        void navigator.clipboard
-          .readText()
-          .then((t) => t && this.colarTexto(t))
-          .catch(() => {});
+      case "colar": {
+        const leitura = navigator.clipboard?.readText();
+        if (!leitura) {
+          if (this.areaTransferencia) this.colarTexto(this.areaTransferencia.texto);
+          return;
+        }
+        void leitura
+          .then((t) => this.colarTexto(t || this.areaTransferencia?.texto || ""))
+          .catch(() => {
+            // sem permissão de leitura, a última cópia interna ainda funciona
+            if (this.areaTransferencia) this.colarTexto(this.areaTransferencia.texto);
+          });
         return;
+      }
       case "desfazer":
         this.desfazer();
         return;
@@ -1735,13 +2004,13 @@ export class ExcelHost {
 
       // ---- linhas e colunas ----
       case "linha-inserir":
-        this.inserirLinhas(1);
+        this.inserirLinhas(Math.max(1, this.sel.l2 - this.sel.l1 + 1));
         return;
       case "linha-excluir":
         this.excluirLinhas();
         return;
       case "col-inserir":
-        this.inserirColunas(1);
+        this.inserirColunas(Math.max(1, this.sel.c2 - this.sel.c1 + 1));
         return;
       case "col-excluir":
         this.excluirColunas();
@@ -1755,10 +2024,10 @@ export class ExcelHost {
         this.alternarEstilo({ italico: !this.estiloAtual()?.italico });
         return;
       case "cor-texto":
-        this.aplicarEstilo({ cor: valor ? semHash(valor) : undefined });
+        if (valor !== undefined) this.aplicarEstilo({ cor: valor ? semHash(valor) : undefined });
         return;
       case "cor-fundo":
-        this.aplicarEstilo({ fundo: valor ? semHash(valor) : undefined });
+        if (valor !== undefined) this.aplicarEstilo({ fundo: valor ? semHash(valor) : undefined });
         return;
       case "align-esquerda":
         this.aplicarEstilo({ alinhamento: "esquerda" });
@@ -1778,12 +2047,18 @@ export class ExcelHost {
       case "limpar-formato": {
         this.guardarPilha();
         const f = this.folha;
-        for (const { linha, col } of percorrer(this.sel)) {
-          const cel = f.celulas[ref(linha, col)];
-          if (cel) {
-            cel.estilo = undefined;
-            if (ehVazia(cel)) delete f.celulas[ref(linha, col)];
-          }
+        // seleção enorme (coluna/linha inteira): mexe só no que existe
+        const chaves = this.selecaoEnorme()
+          ? Object.keys(f.celulas).filter((k) => {
+              const p = partes(k);
+              return !!p && dentro(this.sel, p.linha, p.col);
+            })
+          : [...percorrer(this.sel)].map(({ linha, col }) => ref(linha, col));
+        for (const chave of chaves) {
+          const cel = f.celulas[chave];
+          if (!cel) continue;
+          cel.estilo = undefined;
+          if (ehVazia(cel)) delete f.celulas[chave];
         }
         this.sujo();
         this.pintar();
@@ -1868,6 +2143,8 @@ export class ExcelHost {
     this.linha = 0;
     this.coluna = 0;
     this.sel = { l1: 0, c1: 0, l2: 0, c2: 0 };
+    this.ancora = { linha: 0, col: 0 };
+    this.ponta = { linha: 0, col: 0 };
     this.cache.clear();
     // a aba nova pode ter conteúdo mais longe do que a grade atual alcança
     this.garantirLimites(this.ultimaLinhaUsada(), this.ultimaColunaUsada());
@@ -1883,6 +2160,8 @@ export class ExcelHost {
     this.linha = 0;
     this.coluna = 0;
     this.sel = { l1: 0, c1: 0, l2: 0, c2: 0 };
+    this.ancora = { linha: 0, col: 0 };
+    this.ponta = { linha: 0, col: 0 };
     this.sujo();
     this.pintar();
   }
@@ -1903,6 +2182,8 @@ export class ExcelHost {
     this.linha = 0;
     this.coluna = 0;
     this.sel = { l1: 0, c1: 0, l2: 0, c2: 0 };
+    this.ancora = { linha: 0, col: 0 };
+    this.ponta = { linha: 0, col: 0 };
     this.cache.clear();
     this.sujo();
     this.pintar();
@@ -1920,6 +2201,36 @@ export class ExcelHost {
 
   // ---- linhas e colunas ----
 
+  /** Reescreve as fórmulas, mesclas e medidas depois de inserir/excluir linhas ou colunas. */
+  private ajustarAposMover(
+    eixo: "linha" | "coluna",
+    inicio: number,
+    qtd: number,
+    modo: "inserir" | "excluir"
+  ): void {
+    const f = this.folha;
+    for (const cel of Object.values(f.celulas)) {
+      if (cel.formula || ehFormula(cel.texto)) {
+        cel.texto = ajustarFormula(cel.texto, eixo, inicio, qtd, modo);
+      }
+    }
+    f.mesclas = f.mesclas
+      .map((m) => ajustarFormula(m, eixo, inicio, qtd, modo))
+      .filter((m) => !m.includes("#REF!"));
+    const medidas = (mapa: Record<number, number>): Record<number, number> => {
+      const novo: Record<number, number> = {};
+      for (const [k, v] of Object.entries(mapa)) {
+        const i = Number(k);
+        if (modo === "excluir" && i >= inicio && i < inicio + qtd) continue;
+        const ni = modo === "inserir" ? (i >= inicio ? i + qtd : i) : i >= inicio + qtd ? i - qtd : i;
+        novo[ni] = v;
+      }
+      return novo;
+    };
+    if (eixo === "linha") f.linhas = medidas(f.linhas);
+    else f.colunas = medidas(f.colunas);
+  }
+
   /** Empurra células para baixo a partir da linha de seleção. */
   private inserirLinhas(qtd: number): void {
     this.guardarPilha();
@@ -1932,6 +2243,7 @@ export class ExcelHost {
       novas[ref(p.linha + qtd, p.col)] = v;
     }
     f.celulas = { ...Object.fromEntries(Object.entries(f.celulas).filter(([k]) => !partes(k) || partes(k)!.linha < inicio)), ...novas };
+    this.ajustarAposMover("linha", inicio, qtd, "inserir");
     this.cache.clear();
     this.sujo();
     this.pintar();
@@ -1950,6 +2262,8 @@ export class ExcelHost {
       novas[ref(p.linha >= ini + qtd ? p.linha - qtd : p.linha, p.col)] = v;
     }
     f.celulas = novas;
+    this.ajustarAposMover("linha", ini, qtd, "excluir");
+    this.clamparSelecao();
     this.cache.clear();
     this.sujo();
     this.pintar();
@@ -1966,6 +2280,7 @@ export class ExcelHost {
       novas[ref(p.linha, p.col + qtd)] = v;
     }
     f.celulas = { ...Object.fromEntries(Object.entries(f.celulas).filter(([k]) => !partes(k) || partes(k)!.col < inicio)), ...novas };
+    this.ajustarAposMover("coluna", inicio, qtd, "inserir");
     this.cache.clear();
     this.sujo();
     this.pintar();
@@ -1984,6 +2299,8 @@ export class ExcelHost {
       novas[ref(p.linha, p.col >= ini + qtd ? p.col - qtd : p.col)] = v;
     }
     f.celulas = novas;
+    this.ajustarAposMover("coluna", ini, qtd, "excluir");
+    this.clamparSelecao();
     this.cache.clear();
     this.sujo();
     this.pintar();
@@ -2007,6 +2324,19 @@ export class ExcelHost {
       return !cruza;
     });
     f.mesclas.push(faixa(this.sel));
+    // como no Excel, a mescla guarda só o valor da âncora; os demais ficariam
+    // escondidos embaixo dela (e voltariam ao desmesclar)
+    if (!this.selecaoEnorme()) {
+      const ancora = ref(this.sel.l1, this.sel.c1);
+      for (const { linha, col } of percorrer(this.sel)) {
+        const chave = ref(linha, col);
+        if (chave === ancora) continue;
+        const cel = f.celulas[chave];
+        if (!cel) continue;
+        cel.texto = "";
+        if (ehVazia(cel)) delete f.celulas[chave];
+      }
+    }
     this.sujo();
     this.pintar();
   }
@@ -2074,6 +2404,8 @@ export class ExcelHost {
         c1: this.sel.c1,
         c2: this.sel.c2,
       };
+      this.ancora = { linha: Math.min(this.ancora.linha, teto - 1), col: this.ancora.col };
+      this.ponta = { linha: Math.min(this.ponta.linha, teto - 1), col: this.ponta.col };
       this.linha = Math.min(this.linha, teto - 1);
     }
     this.pintar();
@@ -2139,6 +2471,8 @@ export class ExcelHost {
     this.linha = Math.min(data.linha ?? 0, this.limLinhas - 1);
     this.coluna = Math.min(data.coluna ?? 0, this.limColunas - 1);
     this.sel = { l1: this.linha, c1: this.coluna, l2: this.linha, c2: this.coluna };
+    this.ancora = { linha: this.linha, col: this.coluna };
+    this.ponta = { linha: this.linha, col: this.coluna };
     this.cache.clear();
     this.pilhaDesfazer = [];
     this.pilhaRefazer = [];
@@ -2253,25 +2587,31 @@ export class ExcelHost {
   }
 
   /** Calcula o valor de uma célula de uma folha arbitrária. */
-  private calcularEm(f: Folha, refA1: string): Operando {
+  private calcularEm(f: Folha, refA1: string, pilha = new Set<string>()): Operando {
     const cel = f.celulas[refA1];
     if (!cel || !cel.texto) return null;
-    const contexto: Contexto = {
-      valorDe: (alvo) => this.calcularEm(f, alvo),
-      faixaAlvo: (alvo) => {
-        const out: Operando[] = [];
-        for (const { linha, col } of percorrer(alvo)) out.push(this.calcularEm(f, ref(linha, col)));
-        return out;
-      },
-    };
-    if (cel.formula || ehFormula(cel.texto)) return calcular(cel.texto, contexto);
-    const boo = booleanoDe(cel.texto);
-    if (boo !== null) return boo;
-    const num = numeroDe(cel.texto);
-    if (num !== null) return ehPercentual(cel.texto) ? num / 100 : num;
-    const d = dataDe(cel.texto);
-    if (d) return dataParaSerial(d);
-    return cel.texto;
+    if (pilha.has(refA1)) return new ErroFormula("#CIRC!");
+    pilha.add(refA1);
+    try {
+      const contexto: Contexto = {
+        valorDe: (alvo) => this.calcularEm(f, alvo, pilha),
+        faixaAlvo: (alvo) => {
+          const out: Operando[] = [];
+          for (const { linha, col } of percorrer(alvo)) out.push(this.calcularEm(f, ref(linha, col), pilha));
+          return out;
+        },
+      };
+      if (cel.formula || ehFormula(cel.texto)) return calcular(cel.texto, contexto);
+      const boo = booleanoDe(cel.texto);
+      if (boo !== null) return boo;
+      const d = dataDe(cel.texto);
+      if (d) return dataParaSerial(d);
+      const num = numeroDe(cel.texto);
+      if (num !== null) return ehPercentual(cel.texto) ? num / 100 : num;
+      return cel.texto;
+    } finally {
+      pilha.delete(refA1);
+    }
   }
 
   /** Estatísticas para o rodapé. */

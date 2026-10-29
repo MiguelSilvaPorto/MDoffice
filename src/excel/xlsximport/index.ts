@@ -11,6 +11,9 @@
 
 import type { Celula, Estilo, Folha, FormatoNumero, Livro } from "../schema";
 import { CONFIG_PADRAO } from "../model";
+import { numeroDoXml } from "../values";
+import { deslocarFormula, intervalo, partes as partesRef } from "../refs";
+import { traduzirFormula } from "../formula";
 
 /** Desfaz as entidades XML mais comuns (o mesmo do pptximport/xml.ts). */
 function destrair(s: string): string {
@@ -43,9 +46,13 @@ function textosCompartilhados(xml: string): string[] {
 /** Formatos de número declarados pelo autor (id -> código). */
 function formatosCustomizados(xml: string): Map<number, string> {
   const out = new Map<number, string>();
-  const re = /<numFmt\b[^>]*numFmtId="(\d+)"[^>]*formatCode="([^"]*)"[^>]*\/>/g;
+  const re = /<numFmt\b([^>]*)\/>/g;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(xml))) out.set(+m[1], destrair(m[2]));
+  while ((m = re.exec(xml))) {
+    const id = /\bnumFmtId="(\d+)"/.exec(m[1])?.[1];
+    const codigo = /\bformatCode="([^"]*)"/.exec(m[1])?.[1];
+    if (id !== undefined && codigo !== undefined) out.set(+id, destrair(codigo));
+  }
   return out;
 }
 
@@ -53,28 +60,28 @@ function formatosCustomizados(xml: string): Map<number, string> {
 const FORMATO_PADRAO = (id: number): FormatoNumero | null => {
   if (id === 0) return "geral";
   if (id === 1 || id === 2 || id === 3 || id === 4 || id === 37 || id === 38 || id === 39 || id === 40) return "decimal";
+  if (id === 5 || id === 6 || id === 7 || id === 8 || id === 42 || id === 43 || id === 44) return "moeda";
   if (id === 9 || id === 10) return "porcento";
   if (id >= 14 && id <= 22) return "data";
-  if (id === 44 || id === 42 || id === 164) return "moeda"; // 164 só se o código tiver R$
   return null;
 };
 
 /** Interpreta o formatCode do Excel como o formato do motor. */
 function formatoDoCodigo(codigo: string): { numero: FormatoNumero; casas: number } | null {
-  const c = codigo.replace(/\[[^\]]*\]/g, ""); // ignora [R$] etc
-  const ehData = /d{1,2}m{1,2}|m{1,2}d{1,2}|yyyy|dd\/mm|hh/i.test(c) && !/[#0]/.test(c.replace(/[dmyhs]/gi, ""));
-  if (ehData) return { numero: "data", casas: 0 };
-  const temMoeda = /R\$|["']R\$|\\R/i.test(codigo);
-  if (temMoeda) {
-    const casas = (c.match(/\.(0+)/)?.[1].length ?? 2) as number;
+  // tira literais ("R$") e blocos de cor/condição ([R$], [Vermelho]) antes de olhar os símbolos
+  const c = codigo.replace(/"[^"]*"/g, "").replace(/\[[^\]]*\]/g, "").replace(/\\./g, "");
+  const temData = /(^|[^a-z])[dmyhs]{1,4}/i.test(c) && !/[#0]/.test(c);
+  if (temData) return { numero: "data", casas: 0 };
+  if (/R\$|€|£|\$/.test(codigo)) {
+    const casas = (c.match(/[.,](0+)/)?.[1].length ?? 0) as number;
     return { numero: "moeda", casas };
   }
   if (c.includes("%")) {
-    const casas = (c.match(/\.(0+)/)?.[1].length ?? 0) as number;
+    const casas = (c.match(/[.,](0+)/)?.[1].length ?? 0) as number;
     return { numero: "porcento", casas };
   }
   if (/[#0]/.test(c)) {
-    const casas = (c.match(/\.(0+)/)?.[1].length ?? 0) as number;
+    const casas = (c.match(/[.,](0+)/)?.[1].length ?? 0) as number;
     return { numero: "decimal", casas };
   }
   return null;
@@ -142,18 +149,17 @@ function lerEstilos(xml: string): Estilo[] {
     const padrao = FORMATO_PADRAO(numFmtId);
     if (padrao) {
       estilo.numero = padrao;
-      if (padrao === "moeda" && numFmtId === 164) {
-        const codigo = formatos.get(numFmtId);
-        const casas = codigo ? (codigo.match(/\.(0+)/)?.[1].length ?? 2) : 2;
-        estilo.casas = casas;
-      }
-      if (numFmtId >= 164) {
-        const codigo = formatos.get(numFmtId);
-        const interpretado = codigo ? formatoDoCodigo(codigo) : null;
-        if (interpretado) {
-          estilo.numero = interpretado.numero;
-          if (interpretado.numero !== "data") estilo.casas = interpretado.casas;
-        }
+      // casas dos formatos embutidos (0%, 0.00%, moeda…)
+      const casasEmbutidas: Record<number, number> = { 1: 0, 2: 2, 3: 0, 4: 2, 9: 0, 10: 2, 5: 2, 6: 2, 7: 2, 8: 2, 42: 2, 43: 2, 44: 2 };
+      if (casasEmbutidas[numFmtId] !== undefined) estilo.casas = casasEmbutidas[numFmtId];
+    }
+    // formatos personalizados (164+) são lidos pelo código, não pelo id fixo
+    if (numFmtId >= 164) {
+      const codigo = formatos.get(numFmtId);
+      const interpretado = codigo ? formatoDoCodigo(codigo) : null;
+      if (interpretado) {
+        estilo.numero = interpretado.numero;
+        if (interpretado.numero !== "data") estilo.casas = interpretado.casas;
       }
     }
     out.push(Object.keys(estilo).length ? estilo : {});
@@ -189,7 +195,7 @@ function mapaDeRelacoes(xml: string): Map<string, string> {
 }
 
 /** Converte o texto da célula para o que o motor guarda (número, texto, data). */
-function textoDaCelula(tipo: string, valorBruto: string, inline: string, formatos: Map<number, string>): string {
+function textoDaCelula(tipo: string, valorBruto: string, inline: string): string {
   const bruto = destrair(valorBruto);
   switch (tipo) {
     case "s": {
@@ -204,14 +210,27 @@ function textoDaCelula(tipo: string, valorBruto: string, inline: string, formato
       return bruto; // erro (#DIV/0! etc.) — o motor mostra como texto
     case "str":
       return bruto;
+    case "d": {
+      // data ISO (t="d"): 2026-01-01 -> 01/01/2026
+      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(bruto);
+      return m ? `${m[3]}/${m[2]}/${m[1]}` : bruto;
+    }
     default:
-      return bruto;
+      if (!bruto) return "";
+      // <v> do XML é sempre ponto decimal, sem milhar: 0.125 e 1.234 precisam
+      // virar "0,125" e "1,234" para a regra pt-BR não ler 125 / 1234
+      return tipo === "" || tipo === "n" ? numeroDoXml(bruto) : bruto;
   }
 }
 
 /** Lê uma aba (xl/worksheets/sheetN.xml) e monta a Folha do motor. */
-function lerAba(xml: string, estilos: Estilo[], compartilhados: string[], formatos: Map<number, string>): Folha {
+function lerAba(xml: string, estilos: Estilo[], compartilhados: string[]): Folha {
   const folha: Folha = { nome: "Planilha1", celulas: {}, colunas: {}, linhas: {}, mesclas: [] };
+
+  // fórmulas compartilhadas: a primeira célula guarda a fórmula mestre e as
+  // outras (com <f t="shared" si="…"/>) recebem a mesma fórmula deslocada
+  const mestres = new Map<string, { formula: string; l1: number; c1: number }>();
+  const pendentes: { chave: string; si: string; linha: number; col: number }[] = [];
 
   // linhas com altura personalizada
   const reRow = /<row\b([^>]*?)(?:\/>|>([\s\S]*?)<\/row>)/g;
@@ -235,25 +254,53 @@ function lerAba(xml: string, estilos: Estilo[], compartilhados: string[], format
 
       const valorBruto = /<v\b[^>]*>([\s\S]*?)<\/v>/.exec(dentro)?.[1] ?? "";
       const inline = /<t\b[^>]*>([\s\S]*?)<\/t>/.exec(dentro)?.[1] ?? "";
-      const formula = /<f\b[^>]*>([\s\S]*?)<\/f>/.exec(dentro)?.[1];
+
+      // <f ...>texto</f> ou <f .../> (a célula dependente de uma fórmula compartilhada)
+      const fTag = /<f\b([^>]*?)(?:\/>|>([\s\S]*?)<\/f>)/.exec(dentro);
+      let formula: string | undefined;
+      let compartilhada = "";
+      if (fTag) {
+        const attrsF = fTag[1] ?? "";
+        const corpoF = fTag[2] ?? "";
+        const tipoF = /\bt="([^"]*)"/.exec(attrsF)?.[1] ?? "";
+        const si = /\bsi="([^"]*)"/.exec(attrsF)?.[1] ?? "";
+        if (tipoF === "shared" && si) {
+          if (corpoF.trim()) {
+            const faixaMestre = intervalo(/\bref="([^"]*)"/.exec(attrsF)?.[1] ?? refA1);
+            const pos = partesRef(refA1);
+            mestres.set(si, {
+              formula: corpoF.replace(/^=/, ""),
+              l1: faixaMestre?.l1 ?? pos?.linha ?? 0,
+              c1: faixaMestre?.c1 ?? pos?.col ?? 0,
+            });
+            formula = corpoF;
+          } else {
+            formula = "";
+            compartilhada = si;
+          }
+        } else {
+          formula = corpoF;
+        }
+      }
 
       let texto: string;
-      if (formula !== undefined) {
-        // a fórmula vem sem o "="; devolvemos com o "=" que o motor usa
-        texto = `=${destrair(formula)}`;
+      if (formula !== undefined && !compartilhada) {
+        // a fórmula vem sem o "="; devolvemos com o "=" que o motor usa e
+        // traduzimos os nomes do Excel (SUM -> SOMA, IF -> SE…)
+        texto = formula === "" ? "" : `=${traduzirFormula(destrair(formula), false)}`;
       } else if (tipo === "s") {
         texto = compartilhados[Number(valorBruto)] ?? "";
       } else {
-        texto = textoDaCelula(tipo, valorBruto, inline, formatos);
-        // um número puro fica como o motor escreve ("1.234,5" continua aceito)
-        if (tipo === "" && texto && !/^-?[\d.,]+$/.test(texto)) {
-          // pode ser uma data gravada como número com formato "data"
-        }
+        texto = textoDaCelula(tipo, valorBruto, inline);
       }
 
       const estilo = estilos[sIdx];
       const cel: Celula = { texto };
       if (formula !== undefined) cel.formula = true;
+      if (compartilhada) {
+        const pos = partesRef(refA1);
+        pendentes.push({ chave: refA1, si: compartilhada, linha: pos?.linha ?? 0, col: pos?.col ?? 0 });
+      }
       if (estilo && Object.keys(estilo).length) {
         // o formato de data grava um serial; o motor mostra o texto dd/mm/aaaa
         if (estilo.numero === "data" && /^-?[\d.]+$/.test(texto.trim())) {
@@ -263,9 +310,20 @@ function lerAba(xml: string, estilos: Estilo[], compartilhados: string[], format
           cel.estilo = estilo;
         }
       }
-      if (cel.texto === "" && !cel.estilo) continue; // célula vazia não entra
+      // célula vazia não entra; a dependente de fórmula compartilhada entra mesmo
+      // vazia para ser resolvida depois
+      if (cel.texto === "" && !cel.estilo && formula === undefined) continue;
       folha.celulas[refA1] = cel;
     }
+  }
+
+  // resolve as dependentes depois de ler a aba inteira (o mestre pode vir depois)
+  for (const p of pendentes) {
+    const cel = folha.celulas[p.chave];
+    const mestre = mestres.get(p.si);
+    if (!cel || !mestre) continue;
+    const deslocada = deslocarFormula(mestre.formula, p.linha - mestre.l1, p.col - mestre.c1);
+    cel.texto = `=${traduzirFormula(deslocada, false)}`;
   }
 
   // colunas com largura personalizada
@@ -295,13 +353,13 @@ function lerAba(xml: string, estilos: Estilo[], compartilhados: string[], format
     if (xSplit > 0 || ySplit > 0) folha.congelado = { colunas: xSplit, linhas: ySplit };
   }
 
-  void formatos;
   return folha;
 }
 
 /** Serial do Excel -> "dd/mm/aaaa" (o motor guarda datas assim). */
 function serialParaBr(serial: string): string {
-  const n = Number(serial);
+  // no XML o decimal é ponto, mas o valor pode ter passado pela conversão pt-BR
+  const n = Number(serial.replace(",", "."));
   if (!Number.isFinite(n)) return serial;
   const base = Date.UTC(1899, 11, 30);
   const dias = Math.floor(n);
@@ -328,7 +386,6 @@ export async function xlsxParaLivro(bytes: Uint8Array): Promise<{ livro: Livro; 
 
   const estilosXml = await zip.file("xl/styles.xml")?.async("string");
   const estilos = estilosXml ? lerEstilos(estilosXml) : [{}];
-  const formatos = estilosXml ? formatosCustomizados(estilosXml) : new Map<number, string>();
 
   const ssXml = await zip.file("xl/sharedStrings.xml")?.async("string");
   const compartilhados = ssXml ? textosCompartilhados(ssXml) : [];
@@ -344,7 +401,7 @@ export async function xlsxParaLivro(bytes: Uint8Array): Promise<{ livro: Livro; 
     const caminho = alvo ? `xl/${alvo}` : `xl/worksheets/sheet${i + 1}.xml`;
     const arq = zip.file(caminho) ?? zip.file(`xl/worksheets/sheet${i + 1}.xml`);
     if (!arq) continue;
-    const folha = lerAba(await arq.async("string"), estilos, compartilhados, formatos);
+    const folha = lerAba(await arq.async("string"), estilos, compartilhados);
     folha.nome = aba.nome || `Planilha${i + 1}`;
     folhas.push(folha);
   }
